@@ -178,16 +178,43 @@ test("put_artwork uploads only to Fourthwall storage", async () => {
   expect(refused.isError).toBe(true);
   const uploaded = await call("put_artwork", {
     artworkId: "a1",
-    uploadUrl: "https://storage.googleapis.com/fw/upload?sig=1",
+    uploadUrl:
+      "https://storage.googleapis.com/popshopprod-orders-tmp/upload.png?sig=1",
   });
   expect(uploaded.isError).toBeFalsy();
   expect(puts).toEqual([
     {
       contentType: "image/png",
       lengthRange: `0,${png.byteLength}`,
-      url: "https://storage.googleapis.com/fw/upload?sig=1",
+      url: "https://storage.googleapis.com/popshopprod-orders-tmp/upload.png?sig=1",
     },
   ]);
+});
+
+test("put_artwork refuses other buckets on Google storage", async () => {
+  await call("stage_artwork", { url: "https://fal.media/files/a.png" });
+  const result = await call("put_artwork", {
+    artworkId: "a1",
+    uploadUrl: "https://storage.googleapis.com/someone-else/upload.png?sig=1",
+  });
+  expect(result.isError).toBe(true);
+  expect(puts).toEqual([]);
+});
+
+test("stage_artwork refuses a download that declares more than 50 MB", async () => {
+  globalThis.fetch = Object.assign(
+    async () =>
+      await Promise.resolve(
+        new Response("x", {
+          headers: { "content-length": String(60 * 1024 * 1024) },
+        })
+      ),
+    { preconnect: realFetch.preconnect }
+  );
+  const result = await call("stage_artwork", {
+    url: "https://fal.media/big.png",
+  });
+  expect(result.isError).toBe(true);
 });
 
 test("price_product prices the demo tee at $30", async () => {
