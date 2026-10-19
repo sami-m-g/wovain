@@ -6,7 +6,9 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 
 - Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `devpost/*.md`.
 - Every planning doc has a `.md` (read by the skills) and an `.html` review page. **The HTML is the source of truth**; keep both in sync with the `sync-plan` skill.
+- Review pages link the shared `devpost/plan.css` (tokens, tables, tags, tabs, diagrams); only page-specific CSS stays inline.
 - A Stop hook blocks ending a turn while a pair has drifted. Check manually:
+
   ```bash
   uv run -q --script .claude/skills/sync-plan/scripts/plan_sync.py devpost
   ```
@@ -19,9 +21,30 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 
 ## Writing
 
-- Prefer tables and diagrams; keep paragraphs short. Run the `humanizer` skill on prose for docs and UI copy.
+- Follow the learner's preferences in `devpost/learner-profile.md` (Collaboration and Communication Preferences): format, question pacing, wireframes.
+- Run the `humanizer` skill on prose for docs and UI copy.
+
+## Connected services
+
+- Fourthwall MCP: call `get-instructions` → `ecommerce_get-current-shop` → `load-skills` before any other Fourthwall tool.
+- Meta Ads MCP: every call needs `advertiser_job` and `client_conversation_id`. It has no automated-rules tool; rules need the Marketing API (`adrules_library`).
+- Research: prefer first-party sources (Meta help via `ads_get_help_article`, Fourthwall `omni_knowledge`); label blog or vendor figures as unverified.
+
+## Design and ads skills
+
+| Need | Use |
+| --- | --- |
+| Visual direction for a new surface (planning-doc HTML, ChatGPT cards) | `/impeccable shape`, then build |
+| Review or refine existing UI | `/impeccable critique`, `audit`, `polish`, `bolder`, `quieter` |
+| Concrete palettes, font pairings, chart types, stack-specific UI rules | `ui-ux-pro-max` (lookup only; Impeccable keeps the direction) |
+| Ad creatives and banners | `ui-ux-pro-max:banner-design` |
+| Pre-launch ad account audit, ad plans | `/claude-ads:ads` (returns `unknown` on accounts with no history) |
+
+- Impeccable's hooks check UI files after each edit and at Stop; act on their findings.
 
 ## Gotchas
 
 - `devpost/learner-profile.md` is gitignored on purpose; never commit it.
 - Never commit `.env*` (only `.env.example`) or MCP URLs that embed tokens (e.g. the Modal video connector).
+- Before installing a third-party plugin, check it for `hooks.json` and `.mcp.json`; install with `claude plugin install <plugin>@<marketplace> --scope project -y`.
+- Shell is zsh: unquoted `$var` doesn't word-split. Build multi-word arguments with arrays.

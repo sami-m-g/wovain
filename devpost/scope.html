@@ -4,67 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>wovain Scope</title>
+<link rel="stylesheet" href="plan.css">
 <style>
-  :root {
-    --bg: #f6f5f1; --surface: #ffffff; --text: #1c1c1a; --muted: #6a6862;
-    --line: #e3e1d9; --node: #f0eee7; --accent: #c2410c; --accent-soft: #fde9dd;
-    --ok: #15803d; --ok-soft: #e1f7e7; --later: #a16207; --later-soft: #fdf3d1;
-    --cut: #b91c1c; --cut-soft: #fde4e4;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #151513; --surface: #1e1e1b; --text: #ecebe6; --muted: #a19f97;
-      --line: #35342f; --node: #282723; --accent: #fb923c; --accent-soft: #3a2416;
-      --ok: #4ade80; --ok-soft: #13301e; --later: #facc15; --later-soft: #332a0e;
-      --cut: #f87171; --cut-soft: #3a1818;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #151513; --surface: #1e1e1b; --text: #ecebe6; --muted: #a19f97;
-    --line: #35342f; --node: #282723; --accent: #fb923c; --accent-soft: #3a2416;
-    --ok: #4ade80; --ok-soft: #13301e; --later: #facc15; --later-soft: #332a0e;
-    --cut: #f87171; --cut-soft: #3a1818;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 72px; }
-  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .tag { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent);
-    background: var(--accent-soft); padding: 3px 10px; border-radius: 999px; }
-  .theme { font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 8px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
-  h1 { font-size: 36px; line-height: 1.1; margin: 14px 0 8px; }
-  .lede { font-size: 18px; color: var(--muted); margin: 0; max-width: 68ch; }
-  h2 { font-size: 20px; margin: 44px 0 12px; }
-  p { margin: 0 0 12px; max-width: 72ch; }
   .kernel { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
     border-radius: 12px; padding: 16px 20px; }
   .kernel p { margin: 0; }
-  .wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 15px;
-    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
-  tr:last-child td { border-bottom: 0; }
-  th { background: var(--node); font-weight: 600; }
-  td:first-child { font-weight: 600; }
   td.new { color: var(--ok); }
-  .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 16px; overflow-x: auto; }
-  .diagram svg { display: block; width: 100%; min-width: 660px; height: auto; }
-  .diagram rect { fill: var(--node); stroke: var(--line); }
+  td:first-child { font-weight: 600; }
   .diagram .gate rect { fill: var(--accent-soft); stroke: var(--accent); }
-  .diagram .done rect { fill: var(--ok-soft); stroke: var(--ok); }
-  .diagram text { fill: var(--text); font: 13px ui-sans-serif, system-ui, sans-serif; }
-  .diagram .lbl { fill: var(--muted); font-size: 12px; }
-  .diagram path { stroke: var(--muted); fill: none; stroke-width: 1.6; }
-  .diagram .fb { stroke: var(--accent); stroke-dasharray: 4 4; }
   .diagram .route rect { fill: none; stroke: var(--line); stroke-dasharray: 6 5; }
   .diagram .rlbl { fill: var(--muted); font-size: 11px; letter-spacing: .08em; }
-  .diagram .int { stroke: var(--cut); stroke-dasharray: 6 4; }
-  .diagram .inthead, .diagram .intdot { fill: var(--cut); stroke: none; }
+  .diagram .int { stroke: var(--bad); stroke-dasharray: 6 4; }
+  .diagram .inthead, .diagram .intdot { fill: var(--bad); stroke: none; }
   .diagram .later { stroke: var(--muted); stroke-dasharray: 2 4; }
-  .diagram svg { min-width: 760px; }
-  .note { color: var(--muted); font-size: 15px; margin-top: 10px; }
   ol.script { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 8px; }
   ol.script li { counter-increment: s; background: var(--surface); border: 1px solid var(--line);
     border-radius: 10px; padding: 10px 14px 10px 48px; position: relative; }
@@ -72,14 +24,9 @@
     border-radius: 50%; background: var(--node); text-align: center; font-size: 13px; line-height: 22px; font-weight: 600; }
   ol.script li.proof { border-color: var(--ok); background: var(--ok-soft); }
   ol.script li.proof::before { background: var(--ok); color: var(--surface); }
-  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .tabs button { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--surface); color: var(--text); }
   .tabs button[aria-selected="true"][data-k="now"] { background: var(--ok-soft); border-color: var(--ok); }
-  .tabs button[aria-selected="true"][data-k="later"] { background: var(--later-soft); border-color: var(--later); }
-  .tabs button[aria-selected="true"][data-k="cut"] { background: var(--cut-soft); border-color: var(--cut); }
-  .panel[hidden] { display: none; }
-  @media (max-width: 600px) { h1 { font-size: 29px; } }
+  .tabs button[aria-selected="true"][data-k="later"] { background: var(--warn-soft); border-color: var(--warn); }
+  .tabs button[aria-selected="true"][data-k="cut"] { background: var(--bad-soft); border-color: var(--bad); }
 </style>
 </head>
 <body>
@@ -144,8 +91,8 @@
   <div class="wrap"><table>
     <tr><th>Principle</th><th>In practice</th></tr>
     <tr><td>Talk to it</td><td>Voice in ChatGPT if the cards work there; speech-to-text otherwise</td></tr>
-    <tr><td>Reuse, don't rebuild</td><td>Fourthwall and Meta Ads MCPs, TikTok Agentic Hub skills, a ready-made video generator, Meta's Advantage+ and automated rules for optimization</td></tr>
-    <tr><td>Use all of ChatGPT</td><td>Plugin extensions for the UI (sidebar, a side panel next to the chat, viewers) plus built-in image generation, web search, and voice, instead of rebuilding any of them</td></tr>
+    <tr><td>Reuse, don't rebuild</td><td>Fourthwall and Meta Ads MCPs, a ready-made video generator, Meta's Advantage+ and automated rules for optimization</td></tr>
+    <tr><td>Use all of ChatGPT</td><td>Inline cards for the UI (side panels and viewers are Work and desktop only), plus built-in image generation through a skill, web search, and voice where it supports cards, instead of rebuilding any of them</td></tr>
   </table></div>
 
   <h2>Why this matters to the learner</h2>
@@ -177,8 +124,8 @@
     <tr><td>Publishing</td><td>Fourthwall products published after card approval</td></tr>
     <tr><td>Ads</td><td>Short videos from a ready-made generator, plus ad copy (primary text and headline)</td></tr>
     <tr><td>Economics</td><td>Price, Fourthwall cost, margin, and breakeven per product on the ad card</td></tr>
-    <tr><td>Campaign</td><td>One Advantage+ campaign testing the designs; launched live, or paused if the merchant prefers</td></tr>
-    <tr><td>Management</td><td>Meta automated rules created either way, with kill and scale thresholds from each product's breakeven; Advantage+ handles targeting and budget</td></tr>
+    <tr><td>Campaign</td><td>One Advantage+ campaign testing the designs, launched live</td></tr>
+    <tr><td>Management</td><td>Meta automated rules from each product's breakeven: kill thresholds per product, scaling for the whole campaign; Advantage+ handles targeting and budget</td></tr>
   </table></div>
   <div class="panel wrap" data-k="later" hidden><table>
     <tr><th>Item</th><th>Why later</th></tr>
@@ -186,7 +133,7 @@
     <tr><td>The learner's own trend tools</td><td>Web research is enough to prove the loop</td></tr>
     <tr><td>Campaign results card in chat</td><td>Needs spend data first</td></tr>
     <tr><td>Campaign results feeding back into trend research</td><td>Needs real spend and results first</td></tr>
-    <tr><td>TikTok Shop and TikTok ads</td><td>A second sales channel</td></tr>
+    <tr><td>TikTok Shop and TikTok ads, possibly through TikTok Agentic Hub skills</td><td>A second sales channel</td></tr>
     <tr><td>Larger design batches</td><td>2 or 3 designs prove the test pattern</td></tr>
   </table></div>
   <div class="panel wrap" data-k="cut" hidden><table>
@@ -200,11 +147,11 @@
   <h2>Open questions for later phases</h2>
   <div class="wrap"><table>
     <tr><th>Question</th><th>Phase</th></tr>
-    <tr><td>Exact kill and scale thresholds, and how breakeven is calculated (fees, shipping)</td><td><code>3-prd</code></td></tr>
+    <tr><td>Exact kill and scale thresholds, and how breakeven is calculated (fees, shipping)</td><td>Resolved in <code>prd.md</code></td></tr>
     <tr><td>Can a plugin extension use ChatGPT's built-in image generation, or must designs come through the MCP server?</td><td><code>4-spec</code></td></tr>
-    <tr><td>Which video generator, and which TikTok Agentic Hub skill?</td><td><code>4-spec</code></td></tr>
+    <tr><td>Which video generator?</td><td><code>4-spec</code></td></tr>
     <tr><td>Can the Meta Ads MCP create automated rules, or does that need the Marketing API?</td><td><code>4-spec</code></td></tr>
-    <tr><td>Does the Fourthwall store already send purchase events to Meta (pixel or Conversions API)? Advantage+ needs them.</td><td><code>4-spec</code></td></tr>
+    <tr><td>Does the Fourthwall store already send purchase events to Meta (pixel or Conversions API)? Advantage+ needs them.</td><td>Resolved: built into Fourthwall, connect before the demo</td></tr>
     <tr><td>Do ChatGPT app tools and cards work in Live voice? Reports say support arrived 2026-09-23.</td><td><code>4-spec</code></td></tr>
   </table></div>
 </main>

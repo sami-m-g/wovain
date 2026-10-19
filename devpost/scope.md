@@ -50,8 +50,8 @@ You steer every step, and Meta runs the campaign once you approve.
 | Principle | In practice |
 |---|---|
 | Talk to it | Voice in ChatGPT if the cards work there; speech-to-text otherwise |
-| Reuse, don't rebuild | Fourthwall and Meta Ads MCPs, TikTok Agentic Hub skills, a ready-made video generator, Meta's Advantage+ and automated rules for optimization |
-| Use all of ChatGPT | Plugin extensions for the UI (sidebar, a side panel next to the chat, viewers) plus built-in image generation, web search, and voice, instead of rebuilding any of them |
+| Reuse, don't rebuild | Fourthwall and Meta Ads MCPs, a ready-made video generator, Meta's Advantage+ and automated rules for optimization |
+| Use all of ChatGPT | Inline cards for the UI (side panels and viewers are Work and desktop only), plus built-in image generation through a skill, web search, and voice where it supports cards, instead of rebuilding any of them |
 
 ## Why this matters to the learner
 They want a working project "created with minimal code" that they can show, a first step toward "making profit in print on demand," and a test of how far ChatGPT's own capabilities go in a build of four hours at most.
@@ -78,8 +78,8 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 | Publishing | Fourthwall products published after card approval |
 | Ads | Short videos from a ready-made generator, plus ad copy (primary text and headline) |
 | Economics | Price, Fourthwall cost, margin, and breakeven per product on the ad card |
-| Campaign | One Advantage+ campaign testing the designs; launched live, or paused if the merchant prefers |
-| Management | Meta automated rules created either way, with kill and scale thresholds from each product's breakeven; Advantage+ handles targeting and budget |
+| Campaign | One Advantage+ campaign testing the designs, launched live |
+| Management | Meta automated rules from each product's breakeven: kill thresholds per product, scaling for the whole campaign; Advantage+ handles targeting and budget |
 
 ## Later
 
@@ -89,7 +89,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 | The learner's own trend tools | Web research is enough to prove the loop |
 | Campaign results card in chat | Needs spend data first |
 | Campaign results feeding back into trend research | Needs real spend and results first |
-| TikTok Shop and TikTok ads | A second sales channel |
+| TikTok Shop and TikTok ads, possibly through TikTok Agentic Hub skills | A second sales channel |
 | Larger design batches | 2 or 3 designs prove the test pattern |
 
 ## Explicitly cut
@@ -105,9 +105,9 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 
 | Question | Phase |
 |---|---|
-| Exact kill and scale thresholds, and how breakeven is calculated (fees, shipping) | `3-prd` |
+| Exact kill and scale thresholds, and how breakeven is calculated (fees, shipping) | Resolved in `prd.md` |
 | Can a plugin extension use ChatGPT's built-in image generation, or must designs come through the MCP server? | `4-spec` |
-| Which video generator, and which TikTok Agentic Hub skill? | `4-spec` |
+| Which video generator? | `4-spec` |
 | Can the Meta Ads MCP create automated rules, or does that need the Marketing API? | `4-spec` |
-| Does the Fourthwall store already send purchase events to Meta (pixel or Conversions API)? Advantage+ needs them. | `4-spec` |
+| Does the Fourthwall store already send purchase events to Meta (pixel or Conversions API)? Advantage+ needs them. | Resolved: built into Fourthwall, connect before the demo |
 | Do ChatGPT app tools and cards work in Live voice? Reports say support arrived 2026-09-23. | `4-spec` |
