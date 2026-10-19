@@ -12,17 +12,26 @@
     ]
   },
   "enabledPlugins": {
+    "claude-ads@ai-marketing-hub-claude-ads": true,
     "claude-code-setup@anthropic-plugin-directory": true,
     "claude-md-management@anthropic-plugin-directory": true,
     "commit-commands@anthropic-plugin-directory": true,
     "context7@anthropic-plugin-directory": true,
     "frontend-design@anthropic-plugin-directory": false,
+    "hookify@claude-plugins-official": true,
     "humanizer@humanizer": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
     "impeccable@impeccable": true,
-    "claude-ads@ai-marketing-hub-claude-ads": true
+    "modern-web-guidance@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
   },
   "extraKnownMarketplaces": {
+    "ai-marketing-hub-claude-ads": {
+      "source": {
+        "source": "github",
+        "repo": "agricidaniel/claude-ads"
+      }
+    },
     "humanizer": {
       "source": {
         "source": "github",
@@ -39,12 +48,6 @@
       "source": {
         "source": "github",
         "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
-      }
-    },
-    "ai-marketing-hub-claude-ads": {
-      "source": {
-        "source": "github",
-        "repo": "agricidaniel/claude-ads"
       }
     }
   }

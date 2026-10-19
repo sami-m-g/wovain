@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` + `@modelcontextprotocol/ext-apps`) serving React 18 cards built on OpenAI's `@openai/apps-sdk-ui`, bundled with Vite into single-file `ui://` resources. `devpost/spec.md` (`4-spec`) confirms or overrides it.
+Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` + `@modelcontextprotocol/ext-apps`) serving React 19 cards built on OpenAI's `@openai/apps-sdk-ui`, bundled with Vite into single-file `ui://` resources. `devpost/spec.md` (`4-spec`) confirms or overrides it.
 
 ## Users
 
@@ -39,7 +39,7 @@ Every step ends in an approval card built from real Fourthwall products, placeme
 
 - Name: wovain (lowercase).
 - Accent: indigo dye #3B4CCA, used only where ChatGPT allows brand color.
-- Voice: friendly coach. Warm, explains the why in one sentence, still leads with the numbers. Example: "Video A wasn't selling, so I paused it to save budget: $20.64 spent, no sales."
+- Voice: friendly coach. Warm, explains the why in one sentence, still leads with the numbers. Example: "Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales."
 
 ## Evidence on Hand
 

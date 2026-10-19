@@ -22,7 +22,7 @@ Source: `scope.md > What "working" looks like`.
 7. The merchant adds each ad card to the campaign, skips it, or gives feedback.
 8. When the last ad card is added or skipped, the campaign card launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.
 9. Success: Meta Ads Manager shows the live campaign and its rules, and the products are live in the Fourthwall shop.
-10. Later, when a rule fires, an optimization card reports what happened and suggests a fix to approve.
+10. Later, when a rule has fired, the next time the merchant checks in, an optimization card reports what happened and suggests a fix to approve.
 
 ```mermaid
 flowchart LR
@@ -51,8 +51,11 @@ Everything happens inside the ChatGPT conversation. Cards appear inline in the o
 | Ad card | Right after its product is published | 1 per published product |
 | Campaign card | After the last ad card is added or skipped | 1 |
 | Optimization card | When a campaign rule fires | 1 per event |
+| Settings card | When the merchant asks for wovain settings | 1 per request |
 
 Feedback works two ways on every card: free typing in the chat, or the card's own controls and feedback field.
+
+Every card also has a quick-settings menu (⚙) for the values it uses; the Settings card edits all of them. Changes apply without a redeploy.
 
 ### Trend card wireframe
 
@@ -102,7 +105,7 @@ Feedback works two ways on every card: free typing in the chat, or the card's ow
 │ ─────────────────────────────────────────────────────────────│
 │ $30 − $17.70 base − $1.38 fees − $0.60 reserve = $10.32      │
 │ Breakeven: $10.32 per sale · 2.9× return on ad spend         │
-│ Rules: off at $20.64 with no sales · budget +20% under $8.26 │
+│ Rules: off at $30.96 with no sales · budget +20% under $8.26 │
 │ ─────────────────────────────────────────────────────────────│
 │ [ Add to campaign ]  [ Skip ]   Feedback: ________________   │
 └──────────────────────────────────────────────────────────────┘
@@ -124,9 +127,23 @@ Feedback works two ways on every card: free typing in the chat, or the card's ow
 ```
 ┌─ Rule fired · Japanese Cat Sunset Tee ───────────────────────┐
 │ "Video A wasn't selling, so I paused it to save budget."     │
-│ $20.64 spent, no sales (2× breakeven)                        │
+│ $30.96 spent, no sales (3× breakeven)                        │
 │ Suggested fix: new 3-second hook, same product               │
 │ [ Apply the fix ]  [ Dismiss ]                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Settings card wireframe
+
+```
+┌─ wovain settings ────────────────────────────────────────────┐
+│ "Change anything here; new cards use it right away."         │
+│ Video model   Kling v3 Standard 720p ▾  $1.26 per clip       │
+│ Audio         MMAudio (background) ▾    $0.015 per clip      │
+│ Pricing       ≥ $10 profit or 30% margin                     │
+│ Budget        $15 per product per day                        │
+│ Rules         kill 3× breakeven · scale +20% / 48 h          │
+│ [ Save ]                                                     │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -149,11 +166,11 @@ The merchant asks for trending designs; wovain researches the web and returns 5 
 
 | Field per idea | Evidence |
 |---|---|
-| Direction and % growth | Google Trends rising queries, linked |
-| Audience and seasonality | Google Trends 5-year view |
-| Competition | Active ad count from the Meta Ad Library, plus Etsy listing count |
+| Direction and % growth | Google Trends rising queries via SerpApi, linked |
+| Audience and seasonality | Google Trends 5-year view via SerpApi |
+| Competition | Active ad count from Meta's ad library search, plus Etsy listing count from the Etsy API |
 | Price range and example listings | Public listings, linked |
-| Trademark flag | USPTO search (clothing class 025). Warns only; the merchant decides. |
+| Trademark flag | Trademark screening on USPTO data (clothing class 025) via Marker API. Warns only; the merchant decides; not legal advice. |
 
 - As a merchant, I want trend ideas backed by facts so that I pick designs with real demand.
   - The trend card shows 5 ideas, each with every field above.
@@ -187,7 +204,8 @@ Source: `scope.md > The POC boundary` (Economics), `scope.md > Open questions fo
 
 - Pricing rule: at least $10 profit or a 30% margin, whichever is greater, rounded up to a clean price.
 - Breakeven per sale = price − base cost − card fees (2.9% + $0.30 on price, shipping and sales tax) − 2% refund reserve.
-- Breakeven return on ad spend = price ÷ breakeven per sale.
+- Breakeven return on ad spend = price ÷ breakeven per sale. This is on product price; if the pixel reports value including shipping and tax ($37.10), the matching target in Meta is 3.6×.
+- Breakeven uses the base cost of the priciest size offered by default, because 2XL and up cost more; a setting switches to a size-weighted average. The demo numbers below use the XS–XL base cost.
 
 | Demo tee at $30 | Amount |
 |---|---|
@@ -199,7 +217,7 @@ Source: `scope.md > The POC boundary` (Economics), `scope.md > Open questions fo
 | Breakeven return on ad spend | 2.9× |
 
 - The design card shows price, base cost, profit and margin.
-- The ad card shows the full breakeven line and the breakeven return on ad spend.
+- The ad card leads with breakeven cost per sale, the number the rules use, and shows the return on ad spend target second, based on the purchase value the pixel actually sends.
 
 Breakeven per sale under different assumptions (price $30, base cost $17.70):
 
@@ -213,12 +231,14 @@ Costs of running the proof of concept, on top of per-sale costs:
 
 | POC cost | Amount | Note |
 |---|---|---|
-| Meta test budget | $135 to $180 | $45 a day for 3 to 4 days; kill rules stop losing ads early; scaling can raise it up to $90 a day |
-| Ad videos (6 clips) | Depends on the tool | Chosen in 4-spec; Creatify and HeyGen are paid, Modal is already connected |
+| Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
+| Ad videos (6 clips) | $7.65 | Kling v3 Standard 720p on fal at $1.26 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
-| ChatGPT plan | Depends on your plan | Developer-mode plugins are confirmed for Business, Enterprise and Edu |
+| ChatGPT plan | Depends on your plan | Plus works: custom plugins can be added on chatgpt.com/plugins |
+| Trend data | $0 | Free tiers: SerpApi (250 searches a month), Etsy API, Marker API |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
-| Server hosting for the demo | $0 | A free tier or tunnel is enough for a demo |
+| Server hosting for the demo | $0 | wovain runs inside the ChatGPT desktop app on the Mac |
+| Total for the test | $143 to $197 | Ad spend plus $7.65 of video |
 
 ### Ad cards
 
@@ -226,17 +246,20 @@ Source: `scope.md > The POC boundary` (Ads).
 
 | Creative | Spec |
 |---|---|
-| Video A | UGC-style, on-model, 9:16, 15 seconds or less, captions, brand in the first 3 seconds |
+| Video A | UGC-style, on-model, 9:16, 15 seconds or less, captions, brand in the first 3 seconds, background audio |
 | Video B | UGC-style, a second angle or styling, same spec |
 | Static | The Fourthwall mockup image |
 | Headline | Short, product-led |
 | Primary text | 2 to 3 lines |
+
+Videos come from Kling v3 on fal with the design as a reference, so the print stays the same; background audio is generated separately. Model and audio are switchable in Settings.
 
 - As a merchant, I want ads and margins for each product right after it goes live so that I can judge whether advertising it makes sense.
   - An ad card appears right after each product is published.
   - It shows 2 playable videos, 1 static image, a headline and primary text.
   - It shows the breakeven line and the rule thresholds for that product.
   - Each video has a full-screen control that plays it at phone size over the chat.
+  - The merchant checks print fidelity in the full-screen view before adding the ad.
   - Feedback regenerates the whole card.
 
 ### Campaign launch
@@ -255,21 +278,25 @@ Source: `scope.md > The POC boundary` (Management).
 
 | Rule | Condition | Action | Checked |
 |---|---|---|---|
-| Kill, no sales | An ad's spend reaches 2× breakeven with 0 sales | Pause that ad | Every 30 minutes |
-| Kill, too expensive | Cost per sale above 1.5× breakeven with at least 3 sales in 7 days | Pause that ad | Every 30 minutes |
-| Scale | Campaign cost per sale below 0.8× breakeven over 3 days with at least 3 sales | Campaign budget +20%, at most once per 48 hours, capped at 2× the starting budget | Daily |
+| Kill, no sales | An ad's spend reaches 3× breakeven with 0 sales | Pause that ad | Every 30 minutes |
+| Kill, design | A product's total spend across its ads reaches 4× breakeven with 0 sales | Pause all of that product's ads | Every 30 minutes |
+| Kill, too expensive | Cost per sale above 1.5× breakeven with at least 5 sales in 7 days | Pause that ad | Every 30 minutes |
+| Scale | Campaign cost per sale below 0.8× breakeven over 3 days with at least 10 sales | Campaign budget +20%, at most once per 48 hours, capped at 2× the starting budget | Daily |
 | Alert | Campaign cost per sale above breakeven | Notify the merchant | Daily |
 
-- All four rules exist in Ads Manager after launch, with each product's thresholds.
+- All five rules exist in Ads Manager after launch, with each product's thresholds.
+- Every ad link carries `utm_content` set to the ad ID, so Fourthwall's sales-by-UTM report can confirm each ad's sales.
+- The 3×, +20% and $15 values are practitioner heuristics, not Meta guidance; all are editable in Settings.
 
 ### Optimization
 
 Source: `scope.md > The core loop` (interrupt campaign: change direction).
 
-When a rule fires, wovain runs its optimization skills on the flagged item and shows an optimization card: what happened, and a suggested fix (for example a new hook, a new video, or a price test), using Fourthwall's conversion and visitor reports as evidence. Only the flagged ad changes; everything else keeps running.
+When a rule has fired, wovain runs its optimization skills on the flagged item and shows an optimization card: what happened, and a suggested fix (for example a new hook, a new video, or a price test), using Fourthwall's conversion and visitor reports as evidence. Only the flagged ad changes; everything else keeps running. Every ad link carries `utm_content` set to the ad ID. Before showing the card, wovain cross-checks Fourthwall's sales-by-UTM report: Meta reports some purchases late and its rules can only read Meta's numbers, so if the shop shows a sale Meta missed, the card offers to turn the ad back on. ChatGPT can't start a conversation, so wovain checks rule history when the merchant asks how the campaign is doing; Meta also sends its own rule notifications.
 
 - A fired rule produces an optimization card naming the ad, the numbers, and the rule.
 - Apply the fix carries out the suggestion; Dismiss leaves the campaign as is.
+- If the shop shows a sale for a paused ad that Meta missed, the card offers to turn that ad back on.
 
 ## States and Boundaries
 
@@ -284,7 +311,7 @@ When a rule fires, wovain runs its optimization skills on the flagged item and s
 | 7 | A video fails to generate | The ad card shows the failed slot | "Video B didn't render. I can try again, or you can go with the image only." | Retry, or use the static image only |
 | 8 | Ad account has no payment method | Campaign card shows Ready, blocked; products stay live and ad cards are kept | "Your campaign is ready, but Meta needs a payment method on your ad account before it can launch." | Add payment method, then check again and launch |
 | 9 | No purchase events from the store | Same Ready, blocked state | "Meta can't see sales from your store yet, and Advantage+ needs them to learn who buys." | Connect the Meta Pixel and Conversions API in Fourthwall, then check again and launch |
-| 10 | A rule fires on a running campaign | Optimization card; only the flagged ad changes | "Video A wasn't selling, so I paused it to save budget: $20.64 spent, no sales (2× breakeven)." | Apply the fix, or dismiss |
+| 10 | A rule has fired on a running campaign | Optimization card; only the flagged ad changes | "Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales (3× breakeven)." | Apply the fix, or dismiss |
 
 - Approve and Add to campaign are disabled while their action runs, so nothing is published or added twice.
 - Published products stay live whatever happens later in the flow.
@@ -298,11 +325,13 @@ When a rule fires, wovain runs its optimization skills on the flagged item and s
 | Approve publishes each design immediately | Fewer steps; matches the scope's direct publishing |
 | Price: at least $10 profit or 30% margin, whichever is greater; demo tee at $30 | Fourthwall's stricter guideline; $30 leaves $10.32 per sale for ads instead of $8.43 |
 | Every blank: the rule minimum, raised to the next clean price that leaves at least $10 breakeven per sale | Same headroom choice as the demo tee ($28 to $30); the card shows the math and flags when competitors sell far lower |
-| One Advantage+ campaign for all products | Meta: combining ads combines learning; at $45 a day, split campaigns would all stay Learning Limited |
+| One Advantage+ campaign for all products | Meta: combining ads combines learning; at $45 a day, split campaigns would all stay Learning Limited; even combined, it may still stay Learning Limited (about 31 sales a week against Meta's ~50) |
 | Launch after the last ad card | Meta: adding ads resets learning |
 | 2 videos and 1 static image per product | Meta: up to 10 creatives per ad set and a mix of video and static |
 | $15 per product per day | Middle of the $10 to $50 practitioner range |
-| Kill at 2× breakeven with no sales; scale +20% per 48 hours | Most-cited middle ground; Meta advises against frequent budget changes |
+| Kill at 3× breakeven with no sales, checked every 30 minutes; scale +20% per 48 hours | Practitioner heuristics (unverified). 3× cuts the chance of killing an ad that is really at breakeven from 13.5% to 5%, and shop sales by UTM catch purchases Meta reports late |
+| Test designs, not just ads: a design-level kill at 4× breakeven pauses all of a product's ads | In print-on-demand the design is what's being tested; the per-ad rule only trims weak creatives |
+| Breakeven on the priciest size by default, size-weighted as an option | Rules never under-protect; the weighted view is closer once real size data exists |
 | UGC-style video | Industry standard for apparel on Meta; Meta says native, non-ad-like creative performs better |
 | The customer pays shipping; the card uses the live rate, about $5 otherwise | Fourthwall passes the true rate to the customer (US tees $4.50 to $6.50); breakeven at $30 only moves between $10.28 and $10.34 |
 | The campaign launches live; there is no paused option | One button keeps the campaign card simple |
@@ -312,6 +341,10 @@ When a rule fires, wovain runs its optimization skills on the flagged item and s
 | Ad card: everything on one card; each video has a full-screen control | One glance and one decision, while full screen lets you judge videos at phone size |
 | Designs come from ChatGPT's built-in image generation, triggered by a wovain skill | ChatGPT makes better images (scope); there is no direct API, so a skill asks ChatGPT and hands the image to wovain |
 | A fired rule triggers optimization, not a full pause | The merchant's definition of "change direction" mid-campaign |
+| Video: Kling v3 Standard 720p on fal by default, with the design as a reference ("elements") | Cheapest model that keeps the print stable; Pro 1080p ($1.68) is one setting away |
+| Audio: generated background audio (MMAudio), configurable | Meta's music only works on image ads; MMAudio costs $0.015 per clip against $0.63 for Kling's own audio |
+| Every value is configurable from a Settings card and per-card quick settings | The merchant tunes prices, budgets, rules and models without a redeploy |
+| Print fidelity is checked by eye in the full-screen video view | No provider offers an automatic check; keeps the POC small |
 
 
 ## What We're Building
@@ -321,8 +354,9 @@ When a rule fires, wovain runs its optimization skills on the flagged item and s
 - Immediate Fourthwall publishing on approve.
 - Ad card per product: 2 UGC-style videos, 1 static image, copy, breakeven math.
 - One Advantage+ sales campaign launched after the last ad card, at $15 per product per day.
-- Four Meta automated rules: kill (no sales), kill (too expensive), scale, alert.
+- Five Meta automated rules: kill (no sales), kill (design), kill (too expensive), scale, alert.
 - Optimization card when a rule fires.
+- Settings card and per-card quick settings for every value.
 - The 10 states in States and Boundaries.
 
 ## Deferred From the POC
@@ -360,11 +394,11 @@ When a rule fires, wovain runs its optimization skills on the flagged item and s
 | The Meta ad account needs a payment method | The demo |
 | The Fourthwall shop is "Coming soon"; ads need a live store | The demo |
 | Connect the Meta Pixel and Conversions API in Fourthwall (built in, no code) | The demo |
-| Which video tool: Modal, Creatify or HeyGen? | `4-spec` |
-| Rules need Meta's Marketing API; Meta's Ads plugin can't create them | `4-spec` |
-| Can Etsy listing counts and USPTO checks be reached reliably? | `4-spec` |
-| Does ChatGPT hand its generated image to wovain's tool when a wovain skill asks for it? | `4-spec` |
-| Does your ChatGPT plan allow developer-mode plugins? (confirmed for Business, Enterprise and Edu; disputed for Plus and Pro) | `4-spec` |
-| Can a card's video go full screen itself, or does it need ChatGPT's full-screen view? | `4-spec` |
-| A published plugin must own its Fourthwall and Meta connections; the demo can use the existing ones | `4-spec` |
-| Do ChatGPT app cards work in Live voice? | `4-spec` |
+| Which video tool: Modal, Creatify or HeyGen? (Kling v3 on fal chosen) | Resolved in `spec.md` |
+| Rules need Meta's Marketing API; Meta's Ads plugin can't create them | Resolved in `spec.md` |
+| Can Etsy listing counts and USPTO checks be reached reliably? | Resolved in `spec.md` |
+| Does ChatGPT hand its generated image to wovain's tool when a wovain skill asks for it? | Resolved in `spec.md` |
+| Does your ChatGPT plan allow custom plugins? (Plus confirmed: 'Add custom MCP server' is available) | Resolved in `spec.md` |
+| Can a card's video go full screen itself, or does it need ChatGPT's full-screen view? | Resolved in `spec.md` |
+| A published plugin must own its Fourthwall and Meta connections; the demo can use the existing ones | Resolved in `spec.md` |
+| Do ChatGPT app cards work in Live voice? | Resolved in `spec.md` |
