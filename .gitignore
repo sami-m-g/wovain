@@ -14,9 +14,14 @@ dist/
 # Local server data
 apps/server/data/
 
-# synced from node_modules by `skills experimental_sync` (see prepare script)
+# restored by `bun run prepare`: course skills from skills-lock.json, ultracite from node_modules
+/.agents/skills/
 /.claude/skills/ultracite/
 
 # per-developer overrides
 /.claude/settings.local.json
 /lefthook-local.yml
+
+# plugin build output (bun run plugin:build)
+/plugin/bin/
+/plugin/cards/
