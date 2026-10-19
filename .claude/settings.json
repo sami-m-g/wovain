@@ -1,20 +1,4 @@
 {
-  "enabledPlugins": {
-    "claude-code-setup@anthropic-plugin-directory": true,
-    "claude-md-management@anthropic-plugin-directory": true,
-    "commit-commands@anthropic-plugin-directory": true,
-    "context7@anthropic-plugin-directory": true,
-    "frontend-design@anthropic-plugin-directory": true,
-    "humanizer@humanizer": true
-  },
-  "extraKnownMarketplaces": {
-    "humanizer": {
-      "source": {
-        "source": "github",
-        "repo": "blader/humanizer"
-      }
-    }
-  },
   "hooks": {
     "Stop": [
       {
@@ -26,5 +10,42 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "claude-code-setup@anthropic-plugin-directory": true,
+    "claude-md-management@anthropic-plugin-directory": true,
+    "commit-commands@anthropic-plugin-directory": true,
+    "context7@anthropic-plugin-directory": true,
+    "frontend-design@anthropic-plugin-directory": false,
+    "humanizer@humanizer": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "impeccable@impeccable": true,
+    "claude-ads@ai-marketing-hub-claude-ads": true
+  },
+  "extraKnownMarketplaces": {
+    "humanizer": {
+      "source": {
+        "source": "github",
+        "repo": "blader/humanizer"
+      }
+    },
+    "impeccable": {
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      }
+    },
+    "ui-ux-pro-max-skill": {
+      "source": {
+        "source": "github",
+        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
+      }
+    },
+    "ai-marketing-hub-claude-ads": {
+      "source": {
+        "source": "github",
+        "repo": "agricidaniel/claude-ads"
+      }
+    }
   }
 }
