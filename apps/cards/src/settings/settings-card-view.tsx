@@ -12,6 +12,7 @@ import {
   VideoCaption,
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
+import { RadioGroup } from "@openai/apps-sdk-ui/components/RadioGroup";
 import { SegmentedControl } from "@openai/apps-sdk-ui/components/SegmentedControl";
 import { Switch } from "@openai/apps-sdk-ui/components/Switch";
 import { settingsSchema } from "@wovain/shared/settings";
@@ -129,6 +130,34 @@ const Field = ({
         {error}
       </p>
     );
+
+  if (field.kind === "choice" && field.options.length > 3) {
+    return (
+      <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <span aria-hidden className="text-secondary text-sm">
+          {field.label}
+        </span>
+        <RadioGroup
+          aria-label={field.label}
+          direction="col"
+          onChange={onChange}
+          value={typeof value === "string" ? value : ""}
+        >
+          {field.options.map((option) => (
+            <RadioGroup.Item key={option.value} value={option.value}>
+              <span className="flex flex-col">
+                <span className="text-sm">{option.label}</span>
+                {option.hint === undefined ? null : (
+                  <span className="text-secondary text-xs">{option.hint}</span>
+                )}
+              </span>
+            </RadioGroup.Item>
+          ))}
+        </RadioGroup>
+        {errorText}
+      </div>
+    );
+  }
 
   if (field.kind === "choice") {
     return (

@@ -89,7 +89,9 @@ export const PicksTestVideoModel = meta.story({
   args: { initialState: { open: ["video"] } },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("radio", { name: /H3 Turbo/u }));
+    await userEvent.click(
+      canvas.getByRole("radio", { name: /MiniMax H3 Max Turbo/u })
+    );
     await userEvent.click(canvas.getByRole("button", { name: "Save" }));
     await expect(
       await canvas.findByText(
