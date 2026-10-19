@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    "./settings": "./src/settings.ts",
+    "./economics": "./src/economics.ts",
+    "./design": "./src/design.ts"
   },
   "dependencies": {
     "zod": "4.6.7"

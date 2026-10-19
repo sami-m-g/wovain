@@ -41,3 +41,13 @@ body {
   --color-text-primary-solid: #fff;
   --color-ring-primary-solid: var(--wovain-accent);
 }
+
+/* Live status: the kit's success badge falls under 4.5:1 for 12px text. */
+.wovain-status-live {
+  background: #ddf5e7;
+  color: #0b6630;
+}
+:root[data-theme="dark"] .wovain-status-live {
+  background: rgb(52 199 112 / 0.18);
+  color: #7ee2a5;
+}

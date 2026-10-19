@@ -22,7 +22,9 @@
     "knip": "knip",
     "skills:restore": "skills experimental_install -y",
     "storybook": "bun run --filter @wovain/cards storybook",
-    "test:stories": "bun run --filter @wovain/cards test:stories"
+    "test:stories": "bun run --filter @wovain/cards test:stories",
+    "plugin:dev": "bun run scripts/plugin-install.ts --dev",
+    "cards:watch": "bun run apps/cards/build.ts --watch"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",

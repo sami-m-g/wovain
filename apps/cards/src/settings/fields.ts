@@ -1,4 +1,4 @@
-import type { Settings } from "@wovain/shared";
+import type { Settings } from "@wovain/shared/settings";
 
 // What the card shows for each setting. Groups and keys mirror packages/shared.
 type Group = keyof Settings;

@@ -51,7 +51,7 @@ flowchart LR
 |---|---|---|---|
 | 1 | Ask for trending designs | `wovain-trends` skill: web search for candidates, `trends_evidence` (SerpApi, Etsy, Marker), Meta ad library search for ad counts | Trend card |
 | 2 | Tick 2 or 3, click "Design the ones I picked" | The card posts the picks; skipped if you bring your own idea | Next step starts |
-| 3 | Wait | `wovain-design` skill: ChatGPT generates the art; `stage_artwork` receives it; fal removes the background and upscales; wovain uploads it to Fourthwall; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design card per idea |
+| 3 | Wait | `wovain-design` skill: ChatGPT generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design card per idea |
 | 4 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design card shows Live with a link |
 | 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal runs Kling twice, then MMAudio; `finish_video` burns in captions and brand; copy and margins are computed | Ad card per product |
 | 6 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last card, the campaign step starts | Next ad card, or the campaign card |
@@ -134,7 +134,7 @@ Five skills (ChatGPT's limit). Each one names the tools to call in order and the
 | Skill | Steps | PRD ref |
 |---|---|---|
 | `wovain-trends` | Web search for candidates, `trends_evidence`, Meta ad library counts, `show_trend_card` | `prd.md > Trend research` |
-| `wovain-design` | Generate art, `stage_artwork`, fal background removal and upscale, Fourthwall upload, blank and mockups, `price_product`, `show_design_card`; on approve, publish and `record_design` | `prd.md > Design cards`, `prd.md > Pricing and economics` |
+| `wovain-design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_card`; on approve, publish and `record_design` | `prd.md > Design cards`, `prd.md > Pricing and economics` |
 | `wovain-ads` | `video_plan`, fal Kling ×2, fal MMAudio, `finish_video`, copy, `show_ad_card`, `record_ad` | `prd.md > Ad cards` |
 | `wovain-campaign` | Payment and pixel checks, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_card` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
 | `wovain-optimize` | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_card`, apply the fix or turn an ad back on | `prd.md > Optimization` |
@@ -148,10 +148,10 @@ What it does: one Bun process serving MCP over stdio and the card files as `ui:/
 | Tool | Does | Talks to |
 |---|---|---|
 | `trends_evidence` | Growth, seasonality, Etsy count and trademark screen per idea | SerpApi, Etsy API, Marker API |
-| `stage_artwork` | Receives ChatGPT's image (`openai/fileParams`), checks pixels, uploads it to fal storage so fal and Fourthwall can fetch it from a public URL | wovain.json, fal storage |
-| `put_artwork` | PUTs the final artwork bytes to Fourthwall's signed upload URL | Fourthwall upload URL |
+| `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, a chat attachment in the temp folder, or an `openai/fileParams` file), checks pixels and transparency, keeps the bytes for upload | wovain.json, `data/media/` |
+| `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
-| `record_design` | Saves design status, product ID and link | wovain.json |
+| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | wovain.json |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
 | `finish_video` | Downloads the clip, burns in captions and the brand for the first 3 seconds with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL | ffmpeg, fal storage |
 | `record_ad` | Saves ad choices and copy | wovain.json |
@@ -293,10 +293,10 @@ One file, `wovain.json` in the plugin's data folder (`${PLUGIN_DATA}`; `apps/ser
 |---|---|---|---|
 | Settings | `settings` | `update_settings` | Same values |
 | Ideas | `runs[runId].ideas` | `show_trend_card` | Trend card can be redrawn |
-| Designs | `runs[runId].designs` (art URL, customization ID, product ID, price, status) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
+| Designs | `designs` and `artworks` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `runs[runId].ads` (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
 | Campaign | `runs[runId].campaign` (campaign, ad set, ad and rule IDs, status) | `create_rules`, campaign step | Optimization reads it |
-| Media | Local copies in `apps/server/data/media/`; public copies on fal storage | `stage_artwork`, `finish_video` | Files stay until deleted |
+| Media | Local copies in `data/media/`; public copies in Fourthwall's media library and on fal storage | `stage_artwork`, `finish_video` | Files stay until deleted |
 
 Card state inside a chat (ticks, typed feedback) lives in the card's widget state; ChatGPT keeps it with the message.
 
@@ -411,7 +411,7 @@ Verify early in the build, in this order:
 | # | Check | If it fails |
 |---|---|---|
 | 1 | Desktop-only plugin installs from the local folder on Plus; the app starts the stdio server; a card renders; a card button's message triggers a Fourthwall tool with auto-approve | HTTP mode + ngrok on chatgpt.com |
-| 2 | `openai/fileParams` delivers a ChatGPT image with a fetchable URL in the desktop app | Ask the merchant to upload the image |
+| 2 | `openai/fileParams` delivers a ChatGPT image with a fetchable URL in the desktop app (build step 2: it doesn't; image generation returns a `data:` URL, which `stage_artwork` accepts) | Ask the merchant to upload the image |
 | 3 | fal Kling v3 Standard with elements and a mockup start frame keeps the print readable; MMAudio adds audio | Switch to Pro 1080p in Settings |
 | 4 | Meta accepts a fal.media video URL; one NOTIFICATION rule created with the system user token; rule filters match per-product ads by name | Upload from file; adjust filters |
 | 5 | Meta MCP campaign gets `ADVANTAGE_PLUS_SALES` state | Set fields through the Graph API |

@@ -19,7 +19,7 @@ Build mode: learn
   Learner check: Install `plugin/` as a desktop-only plugin in the ChatGPT desktop app, ask "show my wovain settings", change the daily budget to $20 and Save, then ask again and see $20. Also ask ChatGPT to "show my Fourthwall shop" and confirm it runs without an approval prompt.
   Commit: `feat(server): add plugin skeleton, settings store and settings card`
 
-- [ ] **2. Your own idea becomes a live Fourthwall product from one approved design card**
+- [x] **2. Your own idea becomes a live Fourthwall product from one approved design card**
   Becomes usable: Say "design a tee for: Japanese cat sunset"; ChatGPT generates the art, wovain cleans and uploads it, Fourthwall picks a blank and renders mockups, and a design card shows mockup, colors, placement, file quality, sizes, title, description and price with profit and margin. Approve publishes it and the card shows Live with a shop link; Skip drops it; feedback regenerates the card.
   Why now: This is the unique kernel: a design built on Fourthwall's real blanks, placements, sizes and prices, ending in a card you approve. It also carries spec check #2 (`openai/fileParams` delivers ChatGPT's image) and the economics every later card and rule depends on.
   PRD ref: `prd.md > The Core Journey` (steps 1 own-idea path, 4, 5), `prd.md > Design cards`, `prd.md > Pricing and economics`, `prd.md > States and Boundaries` (#4, #5, #6)
@@ -81,7 +81,7 @@ Build mode: learn
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 2, the first real product published from a design card (shapes the ad and campaign cards)
+- [x] Early usable behavior explored — after slice 2, the first real product published from a design card (shapes the ad and campaign cards). Learner found: artwork import, upload 403, blocked mockups, raw badge codes, slow iteration; all fixed and retried. "Japanese Cat Sunset — Woodblock-Inspired Tee" approved and PUBLIC at $32. Feedback-regenerate not yet tried live (covered by stories). fal needs credits before slice 3.
 - [ ] Final kick-the-tires exploration and feedback completed
 
 ## Final Review
@@ -109,3 +109,9 @@ Activity mode:
 - Card choice fields use the kit's `SegmentedControl` instead of `Select` — the kit's `Select` trigger fails axe's nested-interactive rule in the story tests.
 - `plugin/mcp.json` ships only the wovain server; Fourthwall, Meta Ads and fal are connected directly in the app, and slice 1's "show my Fourthwall shop" check moves to slice 2, where Fourthwall is first used — declared inside the plugin, the three remote servers failed or timed out at startup and held every turn for 30 s or more, while the same URLs answered `curl` in about a second.
 - The server starts without keys when `.env` is missing — the first install crashed on the missing file and hid every wovain tool.
+- `stage_artwork` takes image generation's `data:` URL and chat attachments from the temp folder, and the skill uploads to Fourthwall before fal cleans or upscales from that public URL — in desktop local threads, image generation returns a `data:` URL rather than an `openai/fileParams` file object (spec check #2), and wovain has no public storage of its own.
+- `put_artwork` sends `x-goog-content-length-range: 0,<bytes>` with the content type — Fourthwall's signed upload URL includes that header in its signature; without it Google storage answered 403 twice.
+- Cards declare `cdn.fourthwall.com`, `imgproxy.fourthwall.dev` and fal's media hosts in their resource CSP, and card URIs moved to `-v2` — the card sandbox blocked Fourthwall's mockups until declared, and the host caches cards by URI.
+- Designs and staged artwork live in top-level `designs` and `artworks` in `wovain.json`, and the card follows publishing through `get_design` — one merchant runs one flow at a time, so per-run grouping added nothing; MSW moves to slice 5, the first slice with outside API calls to mock.
+- The minimum artwork width is 150 px per print inch (unverified Fourthwall guidance); with fal out of credits, ChatGPT chose an 8×8 in placement so the 1254 px art stays sharp (PRD state #4).
+- `bun run plugin:dev` and `bun run cards:watch` added — the learner asked for faster iteration than reinstall, restart and a new chat per change.
