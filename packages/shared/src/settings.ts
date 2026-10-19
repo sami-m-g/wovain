@@ -50,7 +50,7 @@ export const rulesSettings = z.object({
 export const videoSettings = z.object({
   clipsPerProduct: z.int().min(1).max(4).default(2),
   elements: z.boolean().default(true),
-  model: z.enum(videoModelIds).default("kling-v3-standard"),
+  model: z.enum(videoModelIds).default("h3-max-reference"),
   resolution: z.enum(["720p", "1080p"]).default("720p"),
   seconds: z.int().min(5).max(15).default(15),
 });

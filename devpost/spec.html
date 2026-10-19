@@ -59,7 +59,7 @@
 <tr>
 <td>fal MCP</td>
 <td>fal's official server</td>
-<td>Kling video, background audio, upscaling, background removal</td>
+<td>Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal</td>
 </tr>
 <tr>
 <td>wovain server</td>
@@ -163,7 +163,7 @@
 <tr>
 <td>5</td>
 <td>Wait</td>
-<td><code>wovain-ads</code> skill: <code>video_plan</code> gives the fal request; fal runs Kling twice, then MMAudio; <code>finish_video</code> burns in captions and brand; copy and margins are computed</td>
+<td><code>wovain-ads</code> skill: <code>video_plan</code> gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; <code>finish_video</code> burns in captions and brand; copy and margins are computed</td>
 <td>Ad card per product</td>
 </tr>
 <tr>
@@ -377,7 +377,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td><code>wovain-ads</code></td>
-<td><code>video_plan</code>, fal Kling ×2, fal MMAudio, <code>finish_video</code>, copy, <code>show_ad_card</code>, <code>record_ad</code></td>
+<td><code>video_plan</code>, fal video ×2, fal MMAudio, <code>finish_video</code>, copy, <code>show_ad_card</code>, <code>record_ad</code></td>
 <td><code>prd.md &gt; Ad cards</code></td>
 </tr>
 <tr>
@@ -557,7 +557,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td>Video</td>
-<td>model Kling v3 Standard (or Kling v3 Pro; cheaper with the print kept by reference images: MiniMax H3 Max Reference, Kling O1 Standard Reference up to 10 s; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on</td>
+<td>model MiniMax H3 Max Reference (or with the print kept: Kling O1 Standard Reference up to 10 s, Kling v3 Standard or Pro; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on</td>
 </tr>
 <tr>
 <td>Audio</td>
@@ -890,7 +890,7 @@ pre-push:
 </tr>
 <tr>
 <td>fal MCP</td>
-<td><code>submit_job</code> / <code>check_job</code> for <code>fal-ai/kling-video/v3/standard/image-to-video</code> (start image = mockup, elements = artwork), <code>fal-ai/mmaudio-v2</code>, background removal, upscaler; fal storage uploads (<code>FAL_KEY</code>)</td>
+<td><code>submit_jobs</code> / <code>wait_for_jobs</code> for <code>minimax/h3-max/reference-to-video</code> (references = mockup and artwork; Kling endpoints when chosen), <code>fal-ai/mmaudio-v2</code>, background removal, upscaler; fal storage uploads (<code>FAL_KEY</code>)</td>
 <td>OAuth in ChatGPT; <code>FAL_KEY</code> on the server</td>
 <td>Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY)</td>
 <td>https://fal.ai/docs/model-apis/mcp</td>
@@ -918,7 +918,7 @@ pre-push:
 </tr>
 </tbody>
 </table></div>
-<p>POC running cost on top of ad spend: about $12.70 for 6 Kling videos with audio ($1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.</p>
+<p>POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.</p>
 <h2>Important Failure Modes</h2>
 <ul>
 <li><strong>Desktop-only install isn't available for a personal plugin</strong> → switch the server to its HTTP mode and connect through ngrok on chatgpt.com. (Verified in build step 1: the personal install works.)</li>
@@ -962,10 +962,10 @@ pre-push:
 <td>Fewer safety prompts; cards stay the approval point</td>
 </tr>
 <tr>
-<td>Video: Kling v3 Standard 720p on fal, elements on</td>
+<td>Video: MiniMax H3 Max Reference on fal by default (mockup and artwork as references)</td>
 <td>Learner</td>
-<td>Cheapest model that holds the print; fal has the only official MCP with elements</td>
-<td>Lower resolution than Pro; one setting away</td>
+<td>Kept the print on-model in the first real test at $0.75 a clip, cheaper than Kling v3 ($2.10) after fal's price change</td>
+<td>Newer model with less track record; Kling one setting away</td>
 </tr>
 <tr>
 <td>Audio: fal MMAudio, configurable</td>
@@ -1064,8 +1064,8 @@ pre-push:
 </tr>
 <tr>
 <td>3</td>
-<td>fal Kling v3 Standard with elements and a mockup start frame keeps the print readable; MMAudio adds audio</td>
-<td>Switch to Pro 1080p in Settings</td>
+<td>A fal video model keeps the print readable on-model; MMAudio adds audio (build step 3: MiniMax H3 Max Reference passed with the mockup and artwork as references)</td>
+<td>Switch models in Settings</td>
 </tr>
 <tr>
 <td>4</td>

@@ -2,11 +2,13 @@ import { z } from "zod";
 
 // Image-to-video models on fal that wovain can use. Prices are fal's list
 // prices (get_pricing, Oct 19, 2026); the card shows them per clip.
+// The default first: on-model clips that keep the print, at $0.75 per clip
+// (verified on the first real product; see devpost/checklist.md > Revisions).
 export const videoModelIds = [
-  "kling-v3-standard",
-  "kling-v3-pro",
   "h3-max-reference",
   "kling-o1-reference",
+  "kling-v3-standard",
+  "kling-v3-pro",
   "h3-max-turbo",
   "h3-max",
 ] as const;

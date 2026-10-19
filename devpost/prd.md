@@ -138,7 +138,7 @@ Every card also has a quick-settings menu (⚙) for the values it uses; the Sett
 ```
 ┌─ wovain settings ────────────────────────────────────────────┐
 │ "Change anything here; new cards use it right away."         │
-│ Video model   Kling v3 Standard 720p ▾  $2.10 per clip       │
+│ Video model   H3 Max Reference 768P ▾  $0.75 per clip        │
 │ Audio         MMAudio (background) ▾    $0.015 per clip      │
 │ Pricing       ≥ $10 profit or 30% margin                     │
 │ Budget        $15 per product per day                        │
@@ -232,13 +232,13 @@ Costs of running the proof of concept, on top of per-sale costs:
 | POC cost | Amount | Note |
 |---|---|---|
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
-| Ad videos (6 clips) | $12.69 | Kling v3 Standard 720p on fal at $2.10 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings, where MiniMax H3 Max Reference ($0.75) and Kling O1 Standard Reference ($0.84 for 10 s) keep the print for less, and MiniMax H3 Max Turbo ($0.24 per clip, $1.55 for 6) serves test runs. Prices are fal list prices (Oct 19, 2026); the Settings card shows live fal prices |
+| Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings card shows live fal prices |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
 | ChatGPT plan | Depends on your plan | Plus works: wovain installs as a personal plugin in the ChatGPT desktop app (verified in build step 1) |
 | Trend data | $0 | Free tiers: SerpApi (250 searches a month), Etsy API, Marker API |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
 | Server hosting for the demo | $0 | wovain runs inside the ChatGPT desktop app on the Mac |
-| Total for the test | $148 to $202 | Ad spend plus $12.69 of video |
+| Total for the test | $140 to $194 | Ad spend plus $4.59 of video |
 
 ### Ad cards
 
@@ -252,7 +252,7 @@ Source: `scope.md > The POC boundary` (Ads).
 | Headline | Short, product-led |
 | Primary text | 2 to 3 lines |
 
-Videos come from Kling v3 on fal with the design as a reference, so the print stays the same; background audio is generated separately. Model and audio are switchable in Settings.
+Videos come from MiniMax H3 Max Reference on fal with the mockup and the design as references, so the print stays the same; background audio is generated separately. Model and audio are switchable in Settings.
 
 - As a merchant, I want ads and margins for each product right after it goes live so that I can judge whether advertising it makes sense.
   - An ad card appears right after each product is published.
@@ -341,7 +341,7 @@ When a rule has fired, wovain runs its optimization skills on the flagged item a
 | Ad card: everything on one card; each video has a full-screen control | One glance and one decision, while full screen lets you judge videos at phone size |
 | Designs come from ChatGPT's built-in image generation, triggered by a wovain skill | ChatGPT makes better images (scope); there is no direct API, so a skill asks ChatGPT and hands the image to wovain |
 | A fired rule triggers optimization, not a full pause | The merchant's definition of "change direction" mid-campaign |
-| Video: Kling v3 Standard 720p on fal by default, with the design as a reference ("elements") | Cheapest model that keeps the print stable; Pro is one setting away, and the cheaper MiniMax H3 models serve test runs that don't need the print to hold |
+| Video: MiniMax H3 Max Reference on fal by default, with the mockup and the design as references | On-model UGC clips that kept the print in the first real test, at $0.75 per clip; Kling v3 ($2.10) and Kling O1 Reference ($0.84, 10 s) are one setting away, and the cheaper MiniMax H3 models serve test runs |
 | Audio: generated background audio (MMAudio), configurable | Meta's music only works on image ads; MMAudio costs $0.015 per clip against $0.63 for Kling's own audio |
 | Every value is configurable from a Settings card and per-card quick settings | The merchant tunes prices, budgets, rules and models without a redeploy |
 | Print fidelity is checked by eye in the full-screen video view | No provider offers an automatic check; keeps the POC small |
