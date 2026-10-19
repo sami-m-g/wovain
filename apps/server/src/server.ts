@@ -5,6 +5,7 @@ import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import type { Store } from "./store.ts";
 import { registerAdTools } from "./tools/ads.ts";
+import { registerCampaignTools } from "./tools/campaign.ts";
 import { registerDesignTools } from "./tools/design.ts";
 import { registerSettingsTools } from "./tools/settings.ts";
 
@@ -18,5 +19,6 @@ export const createServer = (env: Env, store: Store) => {
   registerSettingsTools(server, store, videoPricing);
   registerDesignTools(server, store);
   registerAdTools(server, store, env, videoPricing);
+  registerCampaignTools(server, store, env);
   return server;
 };

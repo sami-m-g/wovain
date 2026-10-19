@@ -56,4 +56,4 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 - Lefthook runs fix, typecheck and gitleaks on commit, commitlint on the message, and tests, knip and story tests on push.
 - Course skills aren't committed: run `bun run skills:restore` after cloning (it fetches them from `skills-lock.json`).
 - See a card without ChatGPT: `bun run storybook` (one story per card state, light and dark).
-- Try it in ChatGPT: `bun run plugin:install` ships the compiled plugin; `bun run plugin:dev` installs a launcher that runs the server from this repo. With dev mode plus `bun run cards:watch`, a card edit shows on the next redraw ("redraw design d1"); server or skill edits need an app restart, not a reinstall.
+- Try it in ChatGPT: `bun run plugin:install` ships the compiled plugin; `bun run plugin:dev` installs a launcher that runs the server from this repo. With dev mode plus `bun run cards:watch`, a card edit shows on the next redraw ("redraw design d1"); server edits need an app restart; skill edits need `bun run plugin:dev` again (skills are copied at install), then a restart.

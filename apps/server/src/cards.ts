@@ -8,7 +8,7 @@ import {
 import type { McpServer } from "@modelcontextprotocol/server";
 
 // Each card is one self-contained HTML file built by apps/cards (Vite single-file).
-const cardNames = ["settings", "design", "ad"] as const;
+const cardNames = ["settings", "design", "ad", "campaign"] as const;
 export type CardName = (typeof cardNames)[number];
 
 // The URI is the host's cache key: bump the version when a card changes shape.

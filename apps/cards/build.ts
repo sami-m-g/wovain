@@ -2,7 +2,7 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 
 // Mirrors cardNames in apps/server/src/cards.ts.
-const cards = ["settings", "design", "ad"];
+const cards = ["settings", "design", "ad", "campaign"];
 // --watch rebuilds a card on save (bun run cards:watch); the server reads the
 // HTML on every request, so the next redraw in ChatGPT shows the change.
 const watch = process.argv.includes("--watch");

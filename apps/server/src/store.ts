@@ -32,6 +32,14 @@ const storeSchema = z.object({
   // One ad set per design, keyed by design id.
   ads: z.record(z.string(), adSchema).default({}),
   artworks: z.record(z.string(), artworkSchema).default({}),
+  // The launched campaign and which of its rules exist in Meta.
+  campaign: z
+    .object({
+      adAccountId: z.string(),
+      campaignId: z.string(),
+      rulesCreated: z.array(z.string()),
+    })
+    .optional(),
   designs: z.record(z.string(), designSchema).default({}),
   settings: settingsSchema.prefault({}),
 });
@@ -93,9 +101,17 @@ export const createStore = (dataDir: string) => {
       const data = await read();
       return data.ads[designId];
     },
+    getAds: async (): Promise<Ad[]> => {
+      const data = await read();
+      return Object.values(data.ads);
+    },
     getArtwork: async (id: string): Promise<Artwork | undefined> => {
       const data = await read();
       return data.artworks[id];
+    },
+    getCampaign: async () => {
+      const data = await read();
+      return data.campaign;
     },
     getDesign: async (id: string): Promise<Design | undefined> => {
       const data = await read();
@@ -136,6 +152,11 @@ export const createStore = (dataDir: string) => {
         const saved = { ...artwork, id: nextId("a", data.artworks) };
         data.artworks[saved.id] = saved;
         return saved;
+      }),
+    saveCampaign: async (campaign: NonNullable<StoreData["campaign"]>) =>
+      await update((data) => {
+        data.campaign = campaign;
+        return campaign;
       }),
     // A design without an id is new; one with an id replaces the stored copy,
     // keeping its publish state unless the caller sets it.
