@@ -21,16 +21,26 @@ const decodeDataUrl = (url: string) => {
   return bytes;
 };
 
+// The app may start the server without the shell's TMPDIR, so ask macOS for
+// this user's own temp folder too (getconf), never all of /private/var/folders.
+const attachmentRoots = async () => {
+  const userTemp = Bun.spawnSync(["/usr/bin/getconf", "DARWIN_USER_TEMP_DIR"])
+    .stdout.toString()
+    .trim();
+  const candidates = [tmpdir(), ...(userTemp === "" ? [] : [userTemp])];
+  const resolved = await Promise.all(
+    candidates.map(async (dir) => await realpath(dir).catch(() => dir))
+  );
+  return [...new Set(resolved)];
+};
+
 // Attachments in desktop chats land in the system temp folder; nothing outside
 // it is read, so a prompt can't point the server at other files on the Mac.
 const readAttachment = async (localPath: string) => {
-  // macOS keeps per-user temp files under /private/var/folders even when the
-  // app starts the server without the shell's TMPDIR.
-  const [tempRoot, resolved] = await Promise.all([
-    realpath(tmpdir()),
+  const [roots, resolved] = await Promise.all([
+    attachmentRoots(),
     realpath(path.resolve(localPath)),
   ]);
-  const roots = [tempRoot, "/private/var/folders"];
   if (!roots.some((root) => resolved.startsWith(`${root}${path.sep}`))) {
     throw new Error("only images attached in this chat can be read");
   }
