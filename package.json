@@ -1,0 +1,35 @@
+{
+  "name": "wovain",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "bun run --filter @wovain/cards build",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "typecheck": "tsc -b --noEmit",
+    "typecheck:6": "tsc6 -b --noEmit",
+    "test": "bun test",
+    "mock": "WOVAIN_MOCK=1 bun run apps/server/src/index.ts",
+    "start": "bun run apps/server/src/index.ts",
+    "prepare": "lefthook install && skills experimental_sync -y -a claude-code --copy"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@types/bun": "^1.4.3",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "lefthook": "2.2.2",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "oxlint-plugin-react-doctor": "^0.9.16",
+    "oxlint-tsgolint": "^7.0.2004",
+    "skills": "1.7.2",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "ultracite": "8.0.1"
+  }
+}
