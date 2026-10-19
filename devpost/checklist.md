@@ -9,7 +9,7 @@ Build mode: learn
 
 ## Slices
 
-- [ ] **1. The wovain plugin loads in the ChatGPT desktop app and its Settings card saves**
+- [x] **1. The wovain plugin loads in the ChatGPT desktop app and its Settings card saves**
   Becomes usable: Installing `plugin/` in the ChatGPT desktop app starts the wovain server; asking for "wovain settings" shows the Settings card; Save writes `wovain.json` and the next card reads the new value. The plugin's `mcp.json` also brings in Fourthwall, Meta Ads and fal.
   Why now: Spec check #1 is the riskiest assumption in the whole plan (desktop-only personal install, stdio server, a card rendering, a card's message triggering an auto-approved Fourthwall tool). If it fails, every later slice moves to HTTP mode + ngrok, so we find out first. Settings is the smallest real card and every later card reads it. Bootstrapping lives here.
   PRD ref: `prd.md > Screens and Layout` (Settings card), `prd.md > Look and Feel`
@@ -102,3 +102,10 @@ Activity mode:
 
 ## Revisions
 
+
+- The plugin ships a compiled server (`plugin/bin/wovain-server`) and its cards (`plugin/cards/`), built by `bun run plugin:build` and installed with `bun run plugin:install` into a local marketplace, instead of `mcp.json` running `bun run apps/server/src/index.ts` — ChatGPT installs a cached copy of `plugin/` and launches it without your shell's PATH or environment, so the repo path and `bun` aren't reachable; data lives in `${PLUGIN_DATA}` and keys come from the repo's `.env` via `WOVAIN_ENV_FILE`.
+- `plugin/plugin.json` and `plugin/mcp.json` follow the Agent Plugins 1.0.0 schemas; remote servers rely on OAuth discovery without an `auth` block — the portable schema rejects OpenAI's `extensions.com.openai.auth` on servers.
+- Storybook, story tests and knip moved into slice 1, and course skills are restored from `skills-lock.json` (`bun run skills:restore`) instead of being committed — the learner asked for all DX tooling before feature code; slice 2 keeps MSW and writes design-card stories, slice 7 drops knip and Storybook setup.
+- Card choice fields use the kit's `SegmentedControl` instead of `Select` — the kit's `Select` trigger fails axe's nested-interactive rule in the story tests.
+- `plugin/mcp.json` ships only the wovain server; Fourthwall, Meta Ads and fal are connected directly in the app, and slice 1's "show my Fourthwall shop" check moves to slice 2, where Fourthwall is first used — declared inside the plugin, the three remote servers failed or timed out at startup and held every turn for 30 s or more, while the same URLs answered `curl` in about a second.
+- The server starts without keys when `.env` is missing — the first install crashed on the missing file and hid every wovain tool.

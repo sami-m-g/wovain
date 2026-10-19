@@ -1,0 +1,13 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "wovain": {
+      "type": "stdio",
+      "command": "./bin/wovain-server",
+      "env": {
+        "WOVAIN_CARDS_DIR": "${PLUGIN_ROOT}/cards",
+        "WOVAIN_DATA_DIR": "${PLUGIN_DATA}"
+      }
+    }
+  }
+}

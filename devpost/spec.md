@@ -99,11 +99,12 @@ Start it:
 
 ```bash
 bun install
-cp .env.example .env            # fill in keys
-bun run build                   # builds the cards into apps/cards/dist
+bun run skills:restore          # course skills from skills-lock.json
+cp .env.example .env            # fill in keys (optional until a tool needs one)
+bun run plugin:install          # builds the cards and server binary, installs plugin/
 ```
 
-Connect it: in the ChatGPT desktop app, install the `plugin/` folder as a desktop-only plugin (exact install steps verified in build step 1). The app launches the wovain server itself from the `command` in `plugin/mcp.json`. If the child servers don't load from the plugin, add Fourthwall, Meta Ads and fal directly in the app.
+Connect it: `bun run plugin:install` copies `plugin/` to `~/.codex/plugins/wovain` and lists it in the personal marketplace `~/.agents/plugins/marketplace.json`. Restart the ChatGPT desktop app, open Plugins, then Personal, click + on wovain, and start a new chat. The app runs a cached copy and launches the compiled server `bin/wovain-server`, so it needs no Bun on its PATH; the server stores data in `${PLUGIN_DATA}` and reads keys from the repo's `.env` through `WOVAIN_ENV_FILE`. Fourthwall, Meta Ads and fal are added directly in the app: declared inside the plugin, they timed out at startup and held up every turn (verified in build step 1).
 
 Demo recording: in the ChatGPT desktop app on the Mac, follow `scope.md > What "working" looks like` in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and a public GitHub repo; deployment is optional and not planned.
 
@@ -122,7 +123,7 @@ Carried from `prd.md > Look and Feel`.
 
 ### Plugin package
 
-What it does: tells ChatGPT what wovain is and which servers it uses. `plugin.json` holds name, version, description and display info. `mcp.json` lists four servers: Fourthwall (`https://mcp.fourthwall.com`), Meta Ads (`https://mcp.facebook.com/ads`), fal (`https://mcp.fal.ai/mcp-relay`) as remote servers, and wovain as a local `command` server (`bun run apps/server/src/index.ts`). It holds no secret, so it is committed as is.
+What it does: tells ChatGPT what wovain is and how to start its server. `plugin.json` holds name, version, description and display info, per the Agent Plugins 1.0.0 schema. `mcp.json` lists one local stdio server, wovain (`./bin/wovain-server`, compiled from `apps/server` by `bun run plugin:build`, with the built cards in `cards/`). Fourthwall (`https://mcp.fourthwall.com/app`), Meta Ads (`https://mcp.facebook.com/ads`) and fal (`https://mcp.fal.ai/mcp-relay`) are connected in the app instead. It holds no secret, so it is committed as is; the binary and cards are build output.
 
 PRD ref: `prd.md > Screens and Layout`.
 
@@ -286,7 +287,7 @@ Scripts in the root `package.json`:
 
 ## Data Model
 
-One file, `apps/server/data/wovain.json` (gitignored), read and written by the server only.
+One file, `wovain.json` in the plugin's data folder (`${PLUGIN_DATA}`; `apps/server/data/` in development, gitignored), read and written by the server only.
 
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
@@ -305,7 +306,8 @@ Card state inside a chat (ticks, typed feedback) lives in the card's widget stat
 wovain/
 ├── plugin/                      # what ChatGPT installs
 │   ├── plugin.json              # manifest: name, version, display info
-│   ├── mcp.json                 # Fourthwall, Meta Ads, fal (remote) + wovain (local stdio)
+│   ├── mcp.json                 # wovain (local stdio, compiled binary)
+│   ├── bin/, cards/             # build output from bun run plugin:build (gitignored)
 │   ├── skills/
 │   │   ├── wovain-trends/SKILL.md
 │   │   ├── wovain-design/SKILL.md
@@ -335,7 +337,8 @@ wovain/
 ├── packages/mocks/              # MSW handlers: tests, mock mode, Storybook
 ├── .github/                     # workflows/ci.yml, workflows/release-please.yml, dependabot.yml
 ├── .vscode/                     # settings.json, extensions.json
-├── .claude/skills/              # course skills, plus new-tool/ and demo-check/
+├── .claude/skills/              # course skills (bun run skills:restore), plus new-tool/ and demo-check/
+├── scripts/                     # plugin-build.ts, plugin-install.ts
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
 ├── .env.example
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
@@ -364,7 +367,7 @@ POC running cost on top of ad spend: about $8 for 6 videos with audio, plus a fe
 
 ## Important Failure Modes
 
-- **Desktop-only install isn't available for a personal plugin** → switch the server to its HTTP mode and connect through ngrok on chatgpt.com.
+- **Desktop-only install isn't available for a personal plugin** → switch the server to its HTTP mode and connect through ngrok on chatgpt.com. (Verified in build step 1: the personal install works.)
 - **ChatGPT's image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the card shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
 - **Fourthwall rejects the publish** → card keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
 - **A video or its audio fails** → the ad card shows the failed slot with Retry, or image only (#7).

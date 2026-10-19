@@ -22,3 +22,5 @@ pre-push:
       run: bun run test
     - name: knip
       run: bun run knip
+    - name: stories
+      run: bun run test:stories

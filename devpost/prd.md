@@ -234,7 +234,7 @@ Costs of running the proof of concept, on top of per-sale costs:
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
 | Ad videos (6 clips) | $7.65 | Kling v3 Standard 720p on fal at $1.26 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
-| ChatGPT plan | Depends on your plan | Plus works: custom plugins can be added on chatgpt.com/plugins |
+| ChatGPT plan | Depends on your plan | Plus works: wovain installs as a personal plugin in the ChatGPT desktop app (verified in build step 1) |
 | Trend data | $0 | Free tiers: SerpApi (250 searches a month), Etsy API, Marker API |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
 | Server hosting for the demo | $0 | wovain runs inside the ChatGPT desktop app on the Mac |

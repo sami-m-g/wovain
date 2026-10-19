@@ -53,4 +53,6 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 
 - TypeScript only, strictest settings in `tsconfig.base.json`; no `.js` or `.mjs` files.
 - Ultracite (oxlint + oxfmt) enforces style: `bun run check`, `bun run fix`. A Claude hook runs `ultracite fix` after each edit; the `ultracite` skill (synced from `node_modules` by `bun run prepare`) holds the full rules.
-- Lefthook runs fix, typecheck and gitleaks on commit, commitlint on the message, and tests on push.
+- Lefthook runs fix, typecheck and gitleaks on commit, commitlint on the message, and tests, knip and story tests on push.
+- Course skills aren't committed: run `bun run skills:restore` after cloning (it fetches them from `skills-lock.json`).
+- See a card without ChatGPT: `bun run storybook` (one story per card state, light and dark).
