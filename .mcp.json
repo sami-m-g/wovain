@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fourthwall": {
+      "type": "http",
+      "url": "https://mcp.fourthwall.com/app"
+    },
+    "meta-ads": {
+      "type": "http",
+      "url": "https://mcp.facebook.com/ads"
+    }
+  }
+}
