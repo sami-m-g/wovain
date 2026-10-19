@@ -20,7 +20,18 @@ const envSchema = z.object({
     .string()
     .default(path.join(import.meta.dir, "..", "..", "cards", "dist")),
   WOVAIN_DATA_DIR: z.string().default(path.join(import.meta.dir, "..", "data")),
+  // Comma-separated extra hostnames for HTTP mode, e.g. the ngrok domain.
+  WOVAIN_HTTP_ALLOWED_HOSTS: z
+    .string()
+    .default("")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((host) => host.trim())
+        .filter((host) => host !== "")
+    ),
   WOVAIN_HTTP_PORT: z.coerce.number().int().optional(),
+  WOVAIN_HTTP_TOKEN: z.string().min(32).optional(),
   WOVAIN_MOCK: z.stringbool().default(false),
 });
 

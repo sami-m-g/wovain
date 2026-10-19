@@ -26,7 +26,8 @@ export const economicsSettings = z.object({
 });
 
 export const campaignSettings = z.object({
-  dailyBudgetPerProduct: z.number().min(1).default(15),
+  // Upper bounds stop a typo from launching a runaway budget.
+  dailyBudgetPerProduct: z.number().min(1).max(500).default(15),
 });
 
 export const rulesSettings = z.object({
@@ -36,7 +37,7 @@ export const rulesSettings = z.object({
   killExpensiveMinSales: z.int().min(1).default(5),
   killExpensiveMultiple: z.number().min(1).default(1.5),
   killNoSalesMultiple: z.number().min(1).default(3),
-  scaleCapMultiple: z.number().min(1).default(2),
+  scaleCapMultiple: z.number().min(1).max(5).default(2),
   scaleEveryHours: z.int().min(24).default(48),
   scaleMinSales: z.int().min(1).default(10),
   scaleStepPct: z.number().min(1).default(20),
