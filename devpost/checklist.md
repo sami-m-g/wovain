@@ -39,7 +39,7 @@ Build mode: learn
   Learner check: Open the ad card for the product from slice 2, play both videos full screen and judge whether the print still reads, check the margin line matches what you expect, then Add to campaign.
   Commit: `feat(ads): add ad card with kling videos, captions and breakeven`
 
-- [ ] **4. Approved ads launch one Advantage+ sales campaign with the five rules**
+- [x] **4. Approved ads launch one Advantage+ sales campaign with the five rules**
   Becomes usable: After the last ad card is added or skipped, wovain checks the payment method and pixel, builds one Advantage+ sales campaign at $15 per product per day with every added ad (each link tagged `utm_content` = ad ID), creates the five rules through the Graph API, activates it, and the campaign card shows Live with an Ads Manager link, or Ready, blocked with the fix.
   Why now: This is the last step of the demo script and the proof. It depends on ads from slice 3 and carries spec checks #4 and #5 (fal.media URL upload, rule creation and filters, `ADVANTAGE_PLUS_SALES` state).
   PRD ref: `prd.md > The Core Journey` (steps 8, 9), `prd.md > Campaign launch`, `prd.md > Campaign rules`, `prd.md > States and Boundaries` (#8, #9)
