@@ -1,12 +1,12 @@
-import type { Settings } from "@wovain/shared/settings";
+import type { Settings } from "@wovain-foss/shared/settings";
 import {
   LIST_PRICES_AS_OF,
   clipCost,
   clipSeconds,
   videoModelIds,
   videoModels,
-} from "@wovain/shared/video-models";
-import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
+} from "@wovain-foss/shared/video-models";
+import type { VideoModelId, VideoPrices } from "@wovain-foss/shared/video-models";
 
 // What the card shows for each setting. Groups and keys mirror packages/shared.
 type Group = keyof Settings;

@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { videoModels } from "@wovain/shared/video-models";
+import { videoModels } from "@wovain-foss/shared/video-models";
 
 import { createVideoPricing } from "../src/lib/fal-pricing.ts";
 
