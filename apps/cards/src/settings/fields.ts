@@ -1,4 +1,11 @@
 import type { Settings } from "@wovain/shared/settings";
+import {
+  LIST_PRICES_AS_OF,
+  clipCost,
+  videoModelIds,
+  videoModels,
+} from "@wovain/shared/video-models";
+import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
 
 // What the card shows for each setting. Groups and keys mirror packages/shared.
 type Group = keyof Settings;
@@ -38,41 +45,36 @@ export interface Section {
 
 const money = (value: number) => `$${value.toFixed(value % 1 === 0 ? 0 : 2)}`;
 
-// Per-clip costs from prd.md > Pricing and economics (fal pricing, 15 s clip).
-const clipCost: Record<Settings["video"]["model"], number> = {
-  "kling-v3-pro": 1.68,
-  "kling-v3-standard": 1.26,
-};
 const audioCost: Record<Settings["audio"]["source"], number> = {
   "kling-native": 0.63,
   mmaudio: 0.015,
   off: 0,
 };
 
-const videoLabel: Record<Settings["video"]["model"], string> = {
-  "kling-v3-pro": "Kling v3 Pro",
-  "kling-v3-standard": "Kling v3 Standard",
-};
+// One option per fal model, priced for a 15 s clip from live fal prices
+// (or the recorded list prices when the server has no FAL_KEY).
+const videoOptions = (prices: VideoPrices) =>
+  videoModelIds.map((id) => ({
+    label: `${videoModels[id].shortLabel} · ${money(clipCost(id, 15, prices))}`,
+    value: id,
+  }));
+
+const priceNote = (prices: VideoPrices, model: VideoModelId) =>
+  prices[model].source === "fal" ? "" : ` (list price, ${LIST_PRICES_AS_OF})`;
 const audioLabel: Record<Settings["audio"]["source"], string> = {
   "kling-native": "Kling native",
   mmaudio: "MMAudio background",
   off: "Off",
 };
 
-export const mainSections: Section[] = [
+export const mainSections = (prices: VideoPrices): Section[] => [
   {
     fields: [
       {
         key: "model",
         kind: "choice",
         label: "Model",
-        options: [
-          {
-            label: "Standard · $1.26",
-            value: "kling-v3-standard",
-          },
-          { label: "Pro · $1.68", value: "kling-v3-pro" },
-        ],
+        options: videoOptions(prices),
       },
       {
         key: "resolution",
@@ -98,12 +100,16 @@ export const mainSections: Section[] = [
         max: 4,
         min: 1,
       },
-      { key: "elements", kind: "toggle", label: "Keep the print (elements)" },
+      {
+        key: "elements",
+        kind: "toggle",
+        label: "Keep the print (elements, Kling only)",
+      },
     ],
     group: "video",
     id: "video",
     summary: (s) =>
-      `${videoLabel[s.video.model]} ${s.video.resolution} · ${money(clipCost[s.video.model])} per clip`,
+      `${videoModels[s.video.model].label} ${s.video.resolution} · ${money(clipCost(s.video.model, s.video.seconds, prices))} per clip${priceNote(prices, s.video.model)}${videoModels[s.video.model].keepsPrint ? "" : " · test only"}`,
     title: "Video model",
   },
   {
