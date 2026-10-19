@@ -1,19 +1,32 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 import { settingsPatchSchema, settingsSchema } from "@wovain/shared/settings";
+import { videoPricesSchema } from "@wovain/shared/video-models";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";
+import type { VideoPricing } from "../lib/fal-pricing.ts";
 import type { Store } from "../store.ts";
 
-const settingsOutput = z.object({ settings: settingsSchema });
-
-const result = (settings: z.infer<typeof settingsSchema>, text: string) => ({
-  content: [{ text, type: "text" as const }],
-  structuredContent: { settings },
+const settingsOutput = z.object({
+  settings: settingsSchema,
+  videoPrices: videoPricesSchema,
 });
 
-export const registerSettingsTools = (server: McpServer, store: Store) => {
+export const registerSettingsTools = (
+  server: McpServer,
+  store: Store,
+  videoPricing: VideoPricing
+) => {
+  // Every settings result carries current video prices for the card's labels.
+  const result = async (
+    settings: z.infer<typeof settingsSchema>,
+    text: string
+  ) => ({
+    content: [{ text, type: "text" as const }],
+    structuredContent: { settings, videoPrices: await videoPricing() },
+  });
+
   server.registerTool(
     "get_settings",
     {
@@ -25,7 +38,7 @@ export const registerSettingsTools = (server: McpServer, store: Store) => {
     },
     async () => {
       const settings = await store.getSettings();
-      return result(settings, JSON.stringify(settings));
+      return await result(settings, JSON.stringify(settings));
     }
   );
 
@@ -46,7 +59,7 @@ export const registerSettingsTools = (server: McpServer, store: Store) => {
     },
     async ({ patch }) => {
       const settings = await store.updateSettings(patch);
-      return result(settings, `Saved. ${JSON.stringify(settings)}`);
+      return await result(settings, `Saved. ${JSON.stringify(settings)}`);
     }
   );
 
@@ -63,7 +76,7 @@ export const registerSettingsTools = (server: McpServer, store: Store) => {
     },
     async () => {
       const settings = await store.getSettings();
-      return result(settings, "Showing the wovain Settings card.");
+      return await result(settings, "Showing the wovain Settings card.");
     }
   );
 };

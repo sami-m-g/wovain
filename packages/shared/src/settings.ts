@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { videoModelIds } from "./video-models.ts";
+
 // Every value the PRD names is a setting. Defaults come from spec.md > Settings.
 
 export const trendsSettings = z.object({
@@ -48,9 +50,7 @@ export const rulesSettings = z.object({
 export const videoSettings = z.object({
   clipsPerProduct: z.int().min(1).max(4).default(2),
   elements: z.boolean().default(true),
-  model: z
-    .enum(["kling-v3-standard", "kling-v3-pro"])
-    .default("kling-v3-standard"),
+  model: z.enum(videoModelIds).default("kling-v3-standard"),
   resolution: z.enum(["720p", "1080p"]).default("720p"),
   seconds: z.int().min(5).max(15).default(15),
 });

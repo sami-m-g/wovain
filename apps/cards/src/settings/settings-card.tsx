@@ -1,12 +1,16 @@
 import { settingsSchema } from "@wovain/shared/settings";
 import type { Settings } from "@wovain/shared/settings";
+import { videoPricesSchema } from "@wovain/shared/video-models";
 import { z } from "zod";
 
 import { readWidgetState, useCard, writeWidgetState } from "../lib/bridge.ts";
 import { SettingsCardView } from "./settings-card-view.tsx";
 import { widgetSchema } from "./state.ts";
 
-const resultSchema = z.object({ settings: settingsSchema });
+const resultSchema = z.object({
+  settings: settingsSchema,
+  videoPrices: videoPricesSchema,
+});
 
 // Wires the view to ChatGPT: the tool result opens it, Save calls update_settings.
 export const SettingsCard = () => {
@@ -41,6 +45,7 @@ export const SettingsCard = () => {
       onRemember={writeWidgetState}
       onSave={save}
       settings={data.settings}
+      videoPrices={data.videoPrices}
     />
   );
 };

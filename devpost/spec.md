@@ -190,7 +190,7 @@ Every value in the PRD is a setting, edited in the Settings card or a card's ⚙
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
 | Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
 | Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven; ad links tagged utm_content = ad ID |
-| Video | model Kling v3 Standard, 720p, 15 s, 2 clips per product, elements on |
+| Video | model Kling v3 Standard (or Kling v3 Pro; MiniMax H3 Max Turbo or H3 Max for test runs, without elements), 720p, 15 s, 2 clips per product, elements on |
 | Audio | source MMAudio (or Kling native, or off), prompt "upbeat background music, no vocals" |
 | Overlay | captions on, brand for the first 3 s |
 | Meta | AI disclosure on, Graph API v26.0 |
@@ -358,12 +358,12 @@ wovain/
 | Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews`, `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-conversion-rates-report`, `get-visitors-report` | OAuth in ChatGPT | $0 | https://docs.fourthwall.com/ai/mcp.md |
 | Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_library_search`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in ChatGPT | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
-| fal MCP | `submit_job` / `check_job` for `fal-ai/kling-video/v3/standard/image-to-video` (start image = mockup, elements = artwork), `fal-ai/mmaudio-v2`, background removal, upscaler; fal storage uploads (`FAL_KEY`) | OAuth in ChatGPT; `FAL_KEY` on the server | Kling Standard $0.084/s ($1.26 per 15 s), MMAudio $0.001/s | https://fal.ai/docs/model-apis/mcp |
+| fal MCP | `submit_job` / `check_job` for `fal-ai/kling-video/v3/standard/image-to-video` (start image = mockup, elements = artwork), `fal-ai/mmaudio-v2`, background removal, upscaler; fal storage uploads (`FAL_KEY`) | OAuth in ChatGPT; `FAL_KEY` on the server | Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY) | https://fal.ai/docs/model-apis/mcp |
 | SerpApi | `engine=google_trends` (timeseries, related queries) | API key | Free 250 searches a month | https://serpapi.com/google-trends-api |
 | Etsy Open API v3 | `GET /v3/application/listings/active?keywords=` (`count`, prices, links) | `x-api-key` | Free; app approval takes days to weeks | https://developers.etsy.com/documentation |
 | Marker API | Trademark word search, filtered to class 025 | Token | Free tier (unverified) | https://markerapi.com |
 
-POC running cost on top of ad spend: about $8 for 6 videos with audio, plus a few cents for upscaling; trend data free.
+POC running cost on top of ad spend: about $12.70 for 6 Kling videos with audio ($1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.
 
 ## Important Failure Modes
 

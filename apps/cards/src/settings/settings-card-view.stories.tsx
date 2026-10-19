@@ -83,3 +83,23 @@ export const SaveFails = meta.story({
     await expect(budget).toHaveValue(25);
   },
 });
+
+// Cheaper fal models for testing; the summary flags that they don't keep the print.
+export const PicksTestVideoModel = meta.story({
+  args: { initialState: { open: ["video"] } },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("radio", { name: /H3 Turbo/u }));
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await expect(
+      await canvas.findByText(
+        /MiniMax H3 Max Turbo 720p · \$0\.24 per clip \(list price, Oct 19, 2026\) · test only/u
+      )
+    ).toBeVisible();
+    await expect(args.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        video: { ...settings.video, model: "h3-max-turbo" },
+      })
+    );
+  },
+});

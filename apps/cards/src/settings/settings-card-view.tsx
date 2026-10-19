@@ -16,6 +16,8 @@ import { SegmentedControl } from "@openai/apps-sdk-ui/components/SegmentedContro
 import { Switch } from "@openai/apps-sdk-ui/components/Switch";
 import { settingsSchema } from "@wovain/shared/settings";
 import type { Settings } from "@wovain/shared/settings";
+import { listVideoPrices } from "@wovain/shared/video-models";
+import type { VideoPrices } from "@wovain/shared/video-models";
 import { useId, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 import type { z } from "zod";
@@ -251,6 +253,8 @@ const SectionRow = ({
 };
 
 export interface SettingsCardViewProps {
+  // Current fal video prices; list prices when the server has no FAL_KEY.
+  videoPrices?: VideoPrices | undefined;
   initialState?: WidgetState | undefined;
   onRemember?: (state: WidgetState) => void;
   onSave: (settings: Settings) => Promise<Settings>;
@@ -263,6 +267,7 @@ export const SettingsCardView = ({
   onRemember,
   onSave,
   settings,
+  videoPrices = listVideoPrices(),
 }: SettingsCardViewProps) => {
   const [saved, setSaved] = useState(settings);
   const [edits, setEdits] = useState<Draft | undefined>(initialState?.draft);
@@ -346,7 +351,7 @@ export const SettingsCardView = ({
         Change anything here, and new cards use it right away.
       </p>
 
-      <div className="mt-3">{rows(mainSections)}</div>
+      <div className="mt-3">{rows(mainSections(videoPrices))}</div>
 
       <div className="border-subtle border-t">
         <button
