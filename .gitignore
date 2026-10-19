@@ -5,3 +5,18 @@
 .env
 .env.*
 !.env.example
+
+# Build output and dependencies
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local server data
+apps/server/data/
+
+# synced from node_modules by `skills experimental_sync` (see prepare script)
+/.claude/skills/ultracite/
+
+# per-developer overrides
+/.claude/settings.local.json
+/lefthook-local.yml

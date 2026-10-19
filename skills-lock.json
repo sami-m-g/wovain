@@ -36,6 +36,13 @@
       "sourceType": "github",
       "skillPath": "skills/6-ship/SKILL.md",
       "computedHash": "0f896f6738de4880742d04ddbb7c1f3a0436118f7a8e68eacde6e5d62495cb89"
+    },
+    "ultracite": {
+      "source": "ultracite",
+      "sourceType": "node_modules",
+      "skillPath": "skills/ultracite/SKILL.md",
+      "version": "8.0.1",
+      "computedHash": "786edd8e07ffab37d1d27c68a1a991b0fe4d0ba911fc97d4f93d232115f0485e"
     }
   }
 }

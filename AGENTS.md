@@ -48,3 +48,9 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 - Never commit `.env*` (only `.env.example`) or MCP URLs that embed tokens (e.g. the Modal video connector).
 - Before installing a third-party plugin, check it for `hooks.json` and `.mcp.json`; install with `claude plugin install <plugin>@<marketplace> --scope project -y`.
 - Shell is zsh: unquoted `$var` doesn't word-split. Build multi-word arguments with arrays.
+
+## Code standards
+
+- TypeScript only, strictest settings in `tsconfig.base.json`; no `.js` or `.mjs` files.
+- Ultracite (oxlint + oxfmt) enforces style: `bun run check`, `bun run fix`. A Claude hook runs `ultracite fix` after each edit; the `ultracite` skill (synced from `node_modules` by `bun run prepare`) holds the full rules.
+- Lefthook runs fix, typecheck and gitleaks on commit, commitlint on the message, and tests on push.
