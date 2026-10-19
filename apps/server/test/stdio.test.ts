@@ -5,8 +5,9 @@ import path from "node:path";
 
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
+import { z } from "zod";
 
-const settingsCard = "ui://wovain/settings-v1.html";
+const settingsCard = "ui://wovain/settings-v2.html";
 
 // WOVAIN_SERVER_BIN=plugin/bin/wovain-server runs these against the compiled plugin.
 const serverBin = process.env["WOVAIN_SERVER_BIN"];
@@ -81,6 +82,11 @@ test.skipIf(!cardsBuilt)(
     const { contents } = await client.readResource({ uri: settingsCard });
     const [card] = contents;
     expect(card?.mimeType).toBe("text/html;profile=mcp-app");
+    // Mockups load from Fourthwall's CDN only if the card declares it.
+    const ui = z
+      .object({ csp: z.object({ resourceDomains: z.array(z.string()) }) })
+      .parse(card?._meta?.["ui"]);
+    expect(ui.csp.resourceDomains).toContain("https://cdn.fourthwall.com");
     expect(card && "text" in card ? card.text : "").toContain(
       "<!doctype html>"
     );

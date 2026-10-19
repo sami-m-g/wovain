@@ -14,8 +14,8 @@ import {
 import { Input } from "@openai/apps-sdk-ui/components/Input";
 import { SegmentedControl } from "@openai/apps-sdk-ui/components/SegmentedControl";
 import { Switch } from "@openai/apps-sdk-ui/components/Switch";
-import { settingsSchema } from "@wovain/shared";
-import type { Settings } from "@wovain/shared";
+import { settingsSchema } from "@wovain/shared/settings";
+import type { Settings } from "@wovain/shared/settings";
 import { useId, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 import type { z } from "zod";

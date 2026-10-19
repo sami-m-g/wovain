@@ -1,5 +1,5 @@
-import { settingsSchema } from "@wovain/shared";
-import type { Settings } from "@wovain/shared";
+import { settingsSchema } from "@wovain/shared/settings";
+import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
 import { readWidgetState, useCard, writeWidgetState } from "../lib/bridge.ts";

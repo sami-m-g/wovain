@@ -151,7 +151,7 @@
 <tr>
 <td>3</td>
 <td>Wait</td>
-<td><code>wovain-design</code> skill: ChatGPT generates the art; <code>stage_artwork</code> receives it; fal removes the background and upscales; wovain uploads it to Fourthwall; Fourthwall picks the blank and renders mockups; <code>price_product</code> sets the price</td>
+<td><code>wovain-design</code> skill: ChatGPT generates the art; <code>stage_artwork</code> measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; <code>price_product</code> sets the price</td>
 <td>Design card per idea</td>
 </tr>
 <tr>
@@ -372,7 +372,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td><code>wovain-design</code></td>
-<td>Generate art, <code>stage_artwork</code>, fal background removal and upscale, Fourthwall upload, blank and mockups, <code>price_product</code>, <code>show_design_card</code>; on approve, publish and <code>record_design</code></td>
+<td>Generate art, <code>stage_artwork</code>, Fourthwall upload (<code>put_artwork</code>), fal background removal and upscale, blank and mockups, <code>price_product</code>, <code>show_design_card</code>; on approve, publish and <code>record_design</code></td>
 <td><code>prd.md &gt; Design cards</code>, <code>prd.md &gt; Pricing and economics</code></td>
 </tr>
 <tr>
@@ -413,12 +413,12 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td><code>stage_artwork</code></td>
-<td>Receives ChatGPT's image (<code>openai/fileParams</code>), checks pixels, uploads it to fal storage so fal and Fourthwall can fetch it from a public URL</td>
-<td>wovain.json, fal storage</td>
+<td>Receives the artwork (image generation's <code>data:</code> URL, a public https URL, a chat attachment in the temp folder, or an <code>openai/fileParams</code> file), checks pixels and transparency, keeps the bytes for upload</td>
+<td>wovain.json, <code>data/media/</code></td>
 </tr>
 <tr>
 <td><code>put_artwork</code></td>
-<td>PUTs the final artwork bytes to Fourthwall's signed upload URL</td>
+<td>PUTs the artwork bytes to Fourthwall's signed upload URL with the signed <code>Content-Type</code> and <code>x-goog-content-length-range</code> headers</td>
 <td>Fourthwall upload URL</td>
 </tr>
 <tr>
@@ -428,7 +428,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td><code>record_design</code></td>
-<td>Saves design status, product ID and link</td>
+<td>Saves design status (publishing, live, rejected, skipped), product ID and link; <code>get_design</code> lets the card follow it while publishing</td>
 <td>wovain.json</td>
 </tr>
 <tr>
@@ -782,7 +782,7 @@ pre-push:
 </tr>
 <tr>
 <td>Designs</td>
-<td><code>runs[runId].designs</code> (art URL, customization ID, product ID, price, status)</td>
+<td><code>designs</code> and <code>artworks</code> (art URL, customization ID, product ID, price, status; staged artwork size and file)</td>
 <td><code>stage_artwork</code>, <code>record_design</code></td>
 <td>Approved products stay live; pending ones can be redrawn</td>
 </tr>
@@ -800,7 +800,7 @@ pre-push:
 </tr>
 <tr>
 <td>Media</td>
-<td>Local copies in <code>apps/server/data/media/</code>; public copies on fal storage</td>
+<td>Local copies in <code>data/media/</code>; public copies in Fourthwall's media library and on fal storage</td>
 <td><code>stage_artwork</code>, <code>finish_video</code></td>
 <td>Files stay until deleted</td>
 </tr>
@@ -1059,7 +1059,7 @@ pre-push:
 </tr>
 <tr>
 <td>2</td>
-<td><code>openai/fileParams</code> delivers a ChatGPT image with a fetchable URL in the desktop app</td>
+<td><code>openai/fileParams</code> delivers a ChatGPT image with a fetchable URL in the desktop app (build step 2: it doesn't; image generation returns a <code>data:</code> URL, which <code>stage_artwork</code> accepts)</td>
 <td>Ask the merchant to upload the image</td>
 </tr>
 <tr>

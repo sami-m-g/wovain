@@ -8,24 +8,44 @@ import {
 import type { McpServer } from "@modelcontextprotocol/server";
 
 // Each card is one self-contained HTML file built by apps/cards (Vite single-file).
-const cardNames = ["settings"] as const;
+const cardNames = ["settings", "design"] as const;
 export type CardName = (typeof cardNames)[number];
 
 // The URI is the host's cache key: bump the version when a card changes shape.
-export const cardUri = (name: CardName) => `ui://wovain/${name}-v1.html`;
+export const cardUri = (name: CardName) => `ui://wovain/${name}-v2.html`;
+
+// Cards run in a sandbox that only loads media from declared hosts:
+// Fourthwall's mockups and artwork, and fal's generated videos.
+const ui = {
+  csp: {
+    resourceDomains: [
+      "https://cdn.fourthwall.com",
+      "https://imgproxy.fourthwall.dev",
+      "https://fal.media",
+      "https://v3.fal.media",
+    ],
+  },
+  prefersBorder: true,
+};
 
 export const registerCards = (server: McpServer, cardsDir: string) => {
   for (const name of cardNames) {
     const uri = cardUri(name);
-    registerAppResource(server, `wovain ${name} card`, uri, {}, async () => ({
-      contents: [
-        {
-          _meta: { ui: { prefersBorder: true } },
-          mimeType: RESOURCE_MIME_TYPE,
-          text: await readFile(path.join(cardsDir, `${name}.html`), "utf-8"),
-          uri,
-        },
-      ],
-    }));
+    registerAppResource(
+      server,
+      `wovain ${name} card`,
+      uri,
+      { _meta: { ui } },
+      async () => ({
+        contents: [
+          {
+            _meta: { ui },
+            mimeType: RESOURCE_MIME_TYPE,
+            text: await readFile(path.join(cardsDir, `${name}.html`), "utf-8"),
+            uri,
+          },
+        ],
+      })
+    );
   }
 };

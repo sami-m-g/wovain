@@ -1,17 +1,34 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { designSchema } from "@wovain/shared/design";
+import type { Design } from "@wovain/shared/design";
 import {
   applySettingsPatch,
   defaultSettings,
   settingsSchema,
-} from "@wovain/shared";
-import type { Settings, SettingsPatch } from "@wovain/shared";
+} from "@wovain/shared/settings";
+import type { Settings, SettingsPatch } from "@wovain/shared/settings";
 import { z } from "zod";
 
-// One JSON file holds settings and the state of each run (spec.md > Data Model).
+// Artwork staged on this machine: the bytes live in data/media/<id>.<ext>.
+const artworkSchema = z.object({
+  bytes: z.int().positive(),
+  contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  file: z.string(),
+  height: z.int().positive(),
+  id: z.string().regex(/^a\d+$/u),
+  // Absent for data URLs and chat attachments, which have no public URL.
+  sourceUrl: z.url().optional(),
+  transparent: z.boolean(),
+  width: z.int().positive(),
+});
+export type Artwork = z.infer<typeof artworkSchema>;
+
+// One JSON file holds settings, staged artwork and designs (spec.md > Data Model).
 const storeSchema = z.object({
-  runs: z.record(z.string(), z.unknown()).default({}),
+  artworks: z.record(z.string(), artworkSchema).default({}),
+  designs: z.record(z.string(), designSchema).default({}),
   settings: settingsSchema.prefault({}),
 });
 
@@ -20,8 +37,14 @@ type StoreData = z.infer<typeof storeSchema>;
 const isMissingFile = (error: unknown) =>
   error instanceof Error && "code" in error && error.code === "ENOENT";
 
+const nextId = (prefix: string, existing: Record<string, unknown>) => {
+  const used = Object.keys(existing).map((id) => Number(id.slice(1)));
+  return `${prefix}${Math.max(0, ...used) + 1}`;
+};
+
 export const createStore = (dataDir: string) => {
   const file = path.join(dataDir, "wovain.json");
+  const mediaDir = path.join(dataDir, "media");
 
   const read = async (): Promise<StoreData> => {
     try {
@@ -42,24 +65,80 @@ export const createStore = (dataDir: string) => {
     await rename(tmp, file);
   };
 
+  // Tool calls can overlap (a card polling while a skill writes), so every
+  // read-modify-write waits for the one before it.
+  let tail: Promise<unknown> = Promise.resolve();
+  const update = async <T>(change: (data: StoreData) => T): Promise<T> => {
+    const previous = tail;
+    const { promise, resolve: release } = Promise.withResolvers<undefined>();
+    tail = promise;
+    await previous;
+    try {
+      const data = await read();
+      const result = change(data);
+      await write(data);
+      return result;
+    } finally {
+      release();
+    }
+  };
+
   return {
     file,
+    getArtwork: async (id: string): Promise<Artwork | undefined> => {
+      const data = await read();
+      return data.artworks[id];
+    },
+    getDesign: async (id: string): Promise<Design | undefined> => {
+      const data = await read();
+      return data.designs[id];
+    },
     getSettings: async (): Promise<Settings> => {
       const data = await read();
       return data.settings;
     },
-    resetSettings: async (): Promise<Settings> => {
-      const data = await read();
-      data.settings = defaultSettings();
-      await write(data);
-      return data.settings;
-    },
-    updateSettings: async (patch: SettingsPatch): Promise<Settings> => {
-      const data = await read();
-      data.settings = applySettingsPatch(data.settings, patch);
-      await write(data);
-      return data.settings;
-    },
+    mediaDir,
+    resetSettings: async (): Promise<Settings> =>
+      await update((data) => {
+        data.settings = defaultSettings();
+        return data.settings;
+      }),
+    saveArtwork: async (artwork: Omit<Artwork, "id">): Promise<Artwork> =>
+      await update((data) => {
+        const saved = { ...artwork, id: nextId("a", data.artworks) };
+        data.artworks[saved.id] = saved;
+        return saved;
+      }),
+    // A design without an id is new; one with an id replaces the stored copy,
+    // keeping its publish state unless the caller sets it.
+    saveDesign: async (
+      design: Omit<Design, "id"> & { id?: string | undefined }
+    ) =>
+      await update((data) => {
+        const id = design.id ?? nextId("d", data.designs);
+        const saved = designSchema.parse({
+          ...data.designs[id],
+          ...design,
+          id,
+        });
+        data.designs[id] = saved;
+        return saved;
+      }),
+    updateDesign: async (id: string, patch: Partial<Design>) =>
+      await update((data) => {
+        const current = data.designs[id];
+        if (current === undefined) {
+          throw new Error(`No design ${id}`);
+        }
+        const saved = designSchema.parse({ ...current, ...patch, id });
+        data.designs[id] = saved;
+        return saved;
+      }),
+    updateSettings: async (patch: SettingsPatch): Promise<Settings> =>
+      await update((data) => {
+        data.settings = applySettingsPatch(data.settings, patch);
+        return data.settings;
+      }),
   };
 };
 

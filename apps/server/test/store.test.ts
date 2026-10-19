@@ -3,7 +3,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { defaultSettings } from "@wovain/shared";
+import { defaultSettings } from "@wovain/shared/settings";
 
 import { loadEnv } from "../src/env.ts";
 import { createStore } from "../src/store.ts";

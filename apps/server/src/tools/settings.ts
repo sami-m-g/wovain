@@ -1,6 +1,6 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { settingsPatchSchema, settingsSchema } from "@wovain/shared";
+import { settingsPatchSchema, settingsSchema } from "@wovain/shared/settings";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";
