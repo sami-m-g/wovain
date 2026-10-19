@@ -20,5 +20,23 @@ export default definePreview({
       </div>
     ),
   ],
-  parameters: { a11y: { test: "error" }, layout: "padded" },
+  parameters: {
+    a11y: { test: "error" },
+    layout: "padded",
+    // The widths a card actually gets inside ChatGPT's message column.
+    viewport: {
+      options: {
+        chatDesktop: {
+          name: "ChatGPT desktop",
+          styles: { height: "900px", width: "768px" },
+        },
+        chatPhone: {
+          name: "ChatGPT phone",
+          styles: { height: "844px", width: "390px" },
+        },
+      },
+    },
+  },
+  // A Docs page per card: props table and every story side by side.
+  tags: ["autodocs"],
 });
