@@ -1,6 +1,10 @@
 {
   "enabledPlugins": {
+    "claude-code-setup@anthropic-plugin-directory": true,
+    "claude-md-management@anthropic-plugin-directory": true,
     "commit-commands@anthropic-plugin-directory": true,
+    "context7@anthropic-plugin-directory": true,
+    "frontend-design@anthropic-plugin-directory": true,
     "humanizer@humanizer": true
   },
   "extraKnownMarketplaces": {
@@ -10,5 +14,17 @@
         "repo": "blader/humanizer"
       }
     }
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run -q --script \"$CLAUDE_PROJECT_DIR\"/.claude/skills/sync-plan/scripts/plan_sync.py --hook"
+          }
+        ]
+      }
+    ]
   }
 }
