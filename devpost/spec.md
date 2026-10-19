@@ -190,7 +190,7 @@ Every value in the PRD is a setting, edited in the Settings card or a card's ⚙
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
 | Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
 | Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven; ad links tagged utm_content = ad ID |
-| Video | model Kling v3 Standard (or Kling v3 Pro; MiniMax H3 Max Turbo or H3 Max for test runs, without elements), 720p, 15 s, 2 clips per product, elements on |
+| Video | model Kling v3 Standard (or Kling v3 Pro; cheaper with the print kept by reference images: MiniMax H3 Max Reference, Kling O1 Standard Reference up to 10 s; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on |
 | Audio | source MMAudio (or Kling native, or off), prompt "upbeat background music, no vocals" |
 | Overlay | captions on, brand for the first 3 s |
 | Meta | AI disclosure on, Graph API v26.0 |

@@ -5,6 +5,8 @@ import { z } from "zod";
 export const videoModelIds = [
   "kling-v3-standard",
   "kling-v3-pro",
+  "h3-max-reference",
+  "kling-o1-reference",
   "h3-max-turbo",
   "h3-max",
 ] as const;
@@ -13,10 +15,11 @@ export type VideoModelId = (typeof videoModelIds)[number];
 
 export interface VideoModel {
   endpointId: string;
-  // Kling's "elements" pass the artwork as a reference so the print holds;
-  // other models animate from the mockup alone, so check fidelity full screen.
+  // True when the model takes the artwork as a reference (Kling elements or
+  // reference images) so the print holds; others animate the mockup alone.
   keepsPrint: boolean;
   label: string;
+  maxSeconds: number;
   shortLabel: string;
   usdPerSecond: number;
 }
@@ -26,20 +29,39 @@ export const videoModels: Record<VideoModelId, VideoModel> = {
     endpointId: "minimax/h3-max/image-to-video",
     keepsPrint: false,
     label: "MiniMax H3 Max",
+    maxSeconds: 15,
     shortLabel: "H3 Max",
     usdPerSecond: 0.0325,
+  },
+  "h3-max-reference": {
+    endpointId: "minimax/h3-max/reference-to-video",
+    keepsPrint: true,
+    label: "MiniMax H3 Max Reference",
+    maxSeconds: 15,
+    shortLabel: "H3 Ref",
+    usdPerSecond: 0.05,
   },
   "h3-max-turbo": {
     endpointId: "minimax/h3-max-turbo/image-to-video",
     keepsPrint: false,
     label: "MiniMax H3 Max Turbo",
+    maxSeconds: 15,
     shortLabel: "H3 Turbo",
     usdPerSecond: 0.01625,
+  },
+  "kling-o1-reference": {
+    endpointId: "fal-ai/kling-video/o1/standard/reference-to-video",
+    keepsPrint: true,
+    label: "Kling O1 Standard Reference",
+    maxSeconds: 10,
+    shortLabel: "Kling O1",
+    usdPerSecond: 0.084,
   },
   "kling-v3-pro": {
     endpointId: "fal-ai/kling-video/v3/pro/image-to-video",
     keepsPrint: true,
     label: "Kling v3 Pro",
+    maxSeconds: 15,
     shortLabel: "Kling Pro",
     usdPerSecond: 0.14,
   },
@@ -47,17 +69,23 @@ export const videoModels: Record<VideoModelId, VideoModel> = {
     endpointId: "fal-ai/kling-video/v3/standard/image-to-video",
     keepsPrint: true,
     label: "Kling v3 Standard",
+    maxSeconds: 15,
     shortLabel: "Kling v3",
     usdPerSecond: 0.14,
   },
 };
+
+// A clip runs the requested length, capped at what the model can make.
+export const clipSeconds = (model: VideoModelId, seconds: number) =>
+  Math.min(seconds, videoModels[model].maxSeconds);
 
 export const clipCost = (
   model: VideoModelId,
   seconds: number,
   prices?: VideoPrices
 ) =>
-  (prices?.[model].usdPerSecond ?? videoModels[model].usdPerSecond) * seconds;
+  (prices?.[model].usdPerSecond ?? videoModels[model].usdPerSecond) *
+  clipSeconds(model, seconds);
 
 // When the list prices above were read from fal; live prices replace them
 // whenever the server has FAL_KEY.

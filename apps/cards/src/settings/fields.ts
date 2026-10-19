@@ -2,6 +2,7 @@ import type { Settings } from "@wovain/shared/settings";
 import {
   LIST_PRICES_AS_OF,
   clipCost,
+  clipSeconds,
   videoModelIds,
   videoModels,
 } from "@wovain/shared/video-models";
@@ -19,7 +20,8 @@ interface NumberField {
 }
 interface ChoiceField {
   kind: "choice";
-  options: { label: string; value: string }[];
+  // More than 3 options render as a list, where each option can carry a hint.
+  options: { hint?: string; label: string; value: string }[];
 }
 interface ToggleField {
   kind: "toggle";
@@ -54,10 +56,15 @@ const audioCost: Record<Settings["audio"]["source"], number> = {
 // One option per fal model, priced for a 15 s clip from live fal prices
 // (or the recorded list prices when the server has no FAL_KEY).
 const videoOptions = (prices: VideoPrices) =>
-  videoModelIds.map((id) => ({
-    label: `${videoModels[id].shortLabel} · ${money(clipCost(id, 15, prices))}`,
-    value: id,
-  }));
+  videoModelIds.map((id) => {
+    const model = videoModels[id];
+    const seconds = Math.min(15, model.maxSeconds);
+    return {
+      hint: `${money(clipCost(id, 15, prices))} per ${seconds} s clip · ${model.keepsPrint ? "keeps the print" : "test only, print can drift"}`,
+      label: model.label,
+      value: id,
+    };
+  });
 
 const priceNote = (prices: VideoPrices, model: VideoModelId) =>
   prices[model].source === "fal" ? "" : ` (list price, ${LIST_PRICES_AS_OF})`;
@@ -109,7 +116,7 @@ export const mainSections = (prices: VideoPrices): Section[] => [
     group: "video",
     id: "video",
     summary: (s) =>
-      `${videoModels[s.video.model].label} ${s.video.resolution} · ${money(clipCost(s.video.model, s.video.seconds, prices))} per clip${priceNote(prices, s.video.model)}${videoModels[s.video.model].keepsPrint ? "" : " · test only"}`,
+      `${videoModels[s.video.model].label} ${s.video.resolution} · ${money(clipCost(s.video.model, s.video.seconds, prices))} per clip${priceNote(prices, s.video.model)}${clipSeconds(s.video.model, s.video.seconds) < s.video.seconds ? ` · ${videoModels[s.video.model].maxSeconds} s max` : ""}${videoModels[s.video.model].keepsPrint ? "" : " · test only"}`,
     title: "Video model",
   },
   {
