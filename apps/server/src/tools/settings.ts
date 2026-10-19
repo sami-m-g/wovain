@@ -1,7 +1,7 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { settingsPatchSchema, settingsSchema } from "@wovain/shared/settings";
-import { videoPricesSchema } from "@wovain/shared/video-models";
+import { settingsPatchSchema, settingsSchema } from "@wovain-foss/shared/settings";
+import { videoPricesSchema } from "@wovain-foss/shared/video-models";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";

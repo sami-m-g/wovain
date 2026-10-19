@@ -1,5 +1,5 @@
 {
-  "name": "wovain",
+  "name": "wovain-foss",
   "version": "0.1.0",
   "private": true,
   "workspaces": [
@@ -8,7 +8,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "bun run --filter @wovain/cards build",
+    "build": "bun run --filter @wovain-foss/cards build",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "typecheck": "tsc -b --noEmit",
@@ -21,8 +21,8 @@
     "plugin:install": "bun run scripts/plugin-install.ts",
     "knip": "knip",
     "skills:restore": "skills experimental_install -y",
-    "storybook": "bun run --filter @wovain/cards storybook",
-    "test:stories": "bun run --filter @wovain/cards test:stories",
+    "storybook": "bun run --filter @wovain-foss/cards storybook",
+    "test:stories": "bun run --filter @wovain-foss/cards test:stories",
     "plugin:dev": "bun run scripts/plugin-install.ts --dev",
     "cards:watch": "bun run apps/cards/build.ts --watch"
   },

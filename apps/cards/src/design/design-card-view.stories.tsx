@@ -1,4 +1,4 @@
-import type { Design } from "@wovain/shared/design";
+import type { Design } from "@wovain-foss/shared/design";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";

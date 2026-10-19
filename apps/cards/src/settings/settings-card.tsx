@@ -1,6 +1,6 @@
-import { settingsSchema } from "@wovain/shared/settings";
-import type { Settings } from "@wovain/shared/settings";
-import { videoPricesSchema } from "@wovain/shared/video-models";
+import { settingsSchema } from "@wovain-foss/shared/settings";
+import type { Settings } from "@wovain-foss/shared/settings";
+import { videoPricesSchema } from "@wovain-foss/shared/video-models";
 import { z } from "zod";
 
 import { readWidgetState, useCard, writeWidgetState } from "../lib/bridge.ts";

@@ -1,7 +1,7 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
-import { designResultSchema } from "@wovain/shared/design";
-import type { Design } from "@wovain/shared/design";
-import { settingsSchema } from "@wovain/shared/settings";
+import { designResultSchema } from "@wovain-foss/shared/design";
+import type { Design } from "@wovain-foss/shared/design";
+import { settingsSchema } from "@wovain-foss/shared/settings";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 

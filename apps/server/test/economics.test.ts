@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { basisCost, breakeven, priceProduct } from "@wovain/shared/economics";
-import { defaultSettings } from "@wovain/shared/settings";
+import { basisCost, breakeven, priceProduct } from "@wovain-foss/shared/economics";
+import { defaultSettings } from "@wovain-foss/shared/settings";
 
 const { economics, pricing } = defaultSettings();
 const round = (value: number) => Math.round(value * 100) / 100;

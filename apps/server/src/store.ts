@@ -1,14 +1,14 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { designSchema } from "@wovain/shared/design";
-import type { Design } from "@wovain/shared/design";
+import { designSchema } from "@wovain-foss/shared/design";
+import type { Design } from "@wovain-foss/shared/design";
 import {
   applySettingsPatch,
   defaultSettings,
   settingsSchema,
-} from "@wovain/shared/settings";
-import type { Settings, SettingsPatch } from "@wovain/shared/settings";
+} from "@wovain-foss/shared/settings";
+import type { Settings, SettingsPatch } from "@wovain-foss/shared/settings";
 import { z } from "zod";
 
 // Artwork staged on this machine: the bytes live in data/media/<id>.<ext>.

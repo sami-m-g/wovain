@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "wovain",
+      "name": "wovain-foss",
       "devDependencies": {
         "@commitlint/cli": "21.2.4",
         "@commitlint/config-conventional": "21.2.4",
@@ -23,12 +23,12 @@
       },
     },
     "apps/cards": {
-      "name": "@wovain/cards",
+      "name": "@wovain-foss/cards",
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/ext-apps": "2.0.3",
         "@openai/apps-sdk-ui": "0.2.2",
-        "@wovain/shared": "workspace:*",
+        "@wovain-foss/shared": "workspace:*",
         "react": "19.3.1",
         "react-dom": "19.3.1",
         "zod": "4.6.7",
@@ -53,12 +53,12 @@
       },
     },
     "apps/server": {
-      "name": "@wovain/server",
+      "name": "@wovain-foss/server",
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/ext-apps": "2.0.3",
         "@modelcontextprotocol/server": "2.3.1",
-        "@wovain/shared": "workspace:*",
+        "@wovain-foss/shared": "workspace:*",
         "zod": "4.6.7",
       },
       "devDependencies": {
@@ -66,7 +66,7 @@
       },
     },
     "packages/shared": {
-      "name": "@wovain/shared",
+      "name": "@wovain-foss/shared",
       "version": "0.1.0",
       "dependencies": {
         "zod": "4.6.7",
@@ -764,11 +764,11 @@
 
     "@webcontainer/env": ["@webcontainer/env@1.1.1", "", {}, "sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng=="],
 
-    "@wovain/cards": ["@wovain/cards@workspace:apps/cards"],
+    "@wovain-foss/cards": ["@wovain-foss/cards@workspace:apps/cards"],
 
-    "@wovain/server": ["@wovain/server@workspace:apps/server"],
+    "@wovain-foss/server": ["@wovain-foss/server@workspace:apps/server"],
 
-    "@wovain/shared": ["@wovain/shared@workspace:packages/shared"],
+    "@wovain-foss/shared": ["@wovain-foss/shared@workspace:packages/shared"],
 
     "acorn": ["acorn@8.19.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw=="],
 

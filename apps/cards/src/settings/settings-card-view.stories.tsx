@@ -1,5 +1,5 @@
-import { defaultSettings } from "@wovain/shared/settings";
-import type { Settings } from "@wovain/shared/settings";
+import { defaultSettings } from "@wovain-foss/shared/settings";
+import type { Settings } from "@wovain-foss/shared/settings";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";
