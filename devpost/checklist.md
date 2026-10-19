@@ -90,9 +90,9 @@ Build mode: learn
 
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
-- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
+- [x] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
 
 Activity and evidence:
 Route and stops:
@@ -120,3 +120,4 @@ Activity mode:
 - Slices 5 (trend card) and 6 (optimization card) moved to later, by the learner's call, to finish the campaign launch and `6-ship` within the time left. The own-idea path (slice 2) stays the journey's entry point for the demo.
 - Slice 4: Meta's rules engine judges one ad, ad set or campaign at a time, so "Kill, design" runs on the campaign when it holds one product; with several products it waits for the check-in (slice 6, now later). The ad account has no Business Manager, so `META_SYSTEM_USER_TOKEN` holds a long-lived user token with `ads_management`; the five rules were created and read back live. The Meta connector builds a draft: nothing spends until the merchant presses Launch, which publishes it. Live findings folded into `wovain-campaign`: fall back to the merchant's own Pages when none is linked to the ad account, `hide_ui` on create calls, a thumbnail by `image_hash` only, and no `headline` on video creatives (the connector maps it to a retired CTA field). Skill edits need `bun run plugin:dev` and a new chat.
 - Slice 7 (mock mode, `/demo-check`, `/new-tool`) moved to later by the learner's call: every journey step has already run for real, so the demo is recorded from those chats and Ads Manager. Its CI, Dependabot, release-please and knip parts already shipped during slice 1 and the repo setup.
+- Wrap-up was a brief evidence-based recap, not a guided tour, by the learner's time-boxed finish: the "Add to campaign" route in `devpost/app-map.html` (snapshot of c744d79, every path and anchor checked against the code) and the practice of keeping money math in server code pinned by a test. The optional edit and reflection weren't offered, to keep within the hour.
