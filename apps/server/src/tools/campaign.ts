@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   campaignResultSchema,
   campaignStatusSchema,
+  metaLinkSchema,
 } from "@wovain-foss/shared/campaign";
 import type { Campaign } from "@wovain-foss/shared/campaign";
 import { breakeven } from "@wovain-foss/shared/economics";
@@ -227,7 +228,7 @@ export const registerCampaignTools = (
             z.object({
               fix: z.string().min(1).max(200),
               issue: z.string().min(1).max(120),
-              url: z.url().optional(),
+              url: metaLinkSchema.optional(),
             })
           )
           .optional(),

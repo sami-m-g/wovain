@@ -230,3 +230,18 @@ test("without a Meta token, create_rules creates nothing and says how to fix it"
   expect(text).toContain("utm_content={{ad.id}}");
   await client.close();
 });
+
+test("show_campaign_card refuses blocker links outside Meta", async () => {
+  const client = await connect({});
+  const result = await client.callTool({
+    arguments: {
+      blockers: [
+        { fix: "Pay here.", issue: "Billing", url: "https://evil.example/pay" },
+      ],
+      status: "blocked",
+    },
+    name: "show_campaign_card",
+  });
+  expect(result.isError).toBe(true);
+  await client.close();
+});

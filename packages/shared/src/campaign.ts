@@ -6,14 +6,20 @@ import { z } from "zod";
 export const campaignStatusSchema = z.enum(["ready", "live", "blocked"]);
 export type CampaignStatus = z.infer<typeof campaignStatusSchema>;
 
+// Blocker links come from the model, so only Meta's own https pages pass.
+export const metaLinkSchema = z.url({
+  hostname: /^(?:business|adsmanager|www)\.facebook\.com$/u,
+  protocol: /^https$/u,
+});
+
 export const campaignSchema = z.object({
-  adsManagerUrl: z.url().optional(),
+  adsManagerUrl: metaLinkSchema.optional(),
   blockers: z
     .array(
       z.object({
         fix: z.string().min(1).max(200),
         issue: z.string().min(1).max(120),
-        url: z.url().optional(),
+        url: metaLinkSchema.optional(),
       })
     )
     .default([]),
