@@ -1,6 +1,6 @@
 ---
 name: sync-plan
-description: Sync a devpost planning doc (scope, prd, spec) between its .md and .html companion. Use after editing either file, when the sync hook reports drift, or when the user asks to sync planning docs.
+description: Sync a devpost planning doc (scope, prd, spec) between its .md and .html companion, and carry a changed fact across scope, prd and spec. Use after editing either file, when the sync hook reports drift, or when the user asks to sync planning docs.
 ---
 
 # sync-plan
@@ -20,6 +20,7 @@ Each planning doc in `devpost/` exists twice: `<name>.md` (read by the course sk
 3. Diagrams are not compared by the script. If the HTML diagram changed, update the Mermaid block in the `.md` so its nodes, labels, and edges match the SVG.
 4. Keep the `.md` frontmatter (`doc:`, `status:`) and section headings; the course skills read them. The HTML status tag must match `status:`.
 5. Re-run step 1 until it prints "All planning docs are in sync."
+6. Check the other planning docs for the same fact. A change in one doc (often `spec.md` after a build discovery) can contradict `scope.md`, `prd.md` or `spec.md` elsewhere. Search each for the changed terms (for example `grep -n -i '<term>' devpost/{scope,prd,spec}.md`), update every pair that states the old fact, and re-run step 1. Say which docs you checked and what changed, or that nothing else needed updating.
 
 ## Notes
 
