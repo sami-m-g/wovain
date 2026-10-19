@@ -21,7 +21,7 @@ describe("settings store", () => {
       roundToCleanPrice: true,
     });
     expect(settings.rules.killNoSalesMultiple).toBe(3);
-    expect(settings.video.model).toBe("kling-v3-standard");
+    expect(settings.video.model).toBe("h3-max-reference");
     expect(settings.audio.source).toBe("mmaudio");
     expect(settings.meta.graphApiVersion).toBe("v26.0");
   });

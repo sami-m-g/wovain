@@ -18,7 +18,7 @@ wovain is a plugin you install in ChatGPT (Plus works). A plugin is a folder wit
 | Skills | Instruction files ChatGPT reads | The playbook for each step: research, design, ads, campaign, optimization |
 | Fourthwall MCP | Fourthwall's official server | Blanks, mockups, prices, publishing |
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
-| fal MCP | fal's official server | Kling video, background audio, upscaling, background removal |
+| fal MCP | fal's official server | Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal |
 | wovain server | Our small Bun server, started by the ChatGPT desktop app | Draws the cards, does the margin math, trend lookups, video captions, Meta rules, settings |
 | Cards | Small web pages ChatGPT shows inline | Trend, design, ad, campaign, optimization and settings cards |
 
@@ -53,7 +53,7 @@ flowchart LR
 | 2 | Tick 2 or 3, click "Design the ones I picked" | The card posts the picks; skipped if you bring your own idea | Next step starts |
 | 3 | Wait | `wovain-design` skill: ChatGPT generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design card per idea |
 | 4 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design card shows Live with a link |
-| 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal runs Kling twice, then MMAudio; `finish_video` burns in captions and brand; copy and margins are computed | Ad card per product |
+| 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; `finish_video` burns in captions and brand; copy and margins are computed | Ad card per product |
 | 6 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last card, the campaign step starts | Next ad card, or the campaign card |
 | 7 | Wait | `wovain-campaign` skill: checks payment method and pixel; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign card: Live, or Ready, blocked |
 | 8 | Later: "How's my campaign?" | `wovain-optimize` skill: `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization card per fired rule |
@@ -135,7 +135,7 @@ Five skills (ChatGPT's limit). Each one names the tools to call in order and the
 |---|---|---|
 | `wovain-trends` | Web search for candidates, `trends_evidence`, Meta ad library counts, `show_trend_card` | `prd.md > Trend research` |
 | `wovain-design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_card`; on approve, publish and `record_design` | `prd.md > Design cards`, `prd.md > Pricing and economics` |
-| `wovain-ads` | `video_plan`, fal Kling ×2, fal MMAudio, `finish_video`, copy, `show_ad_card`, `record_ad` | `prd.md > Ad cards` |
+| `wovain-ads` | `video_plan`, fal video ×2, fal MMAudio, `finish_video`, copy, `show_ad_card`, `record_ad` | `prd.md > Ad cards` |
 | `wovain-campaign` | Payment and pixel checks, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_card` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
 | `wovain-optimize` | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_card`, apply the fix or turn an ad back on | `prd.md > Optimization` |
 
@@ -190,7 +190,7 @@ Every value in the PRD is a setting, edited in the Settings card or a card's ⚙
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
 | Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
 | Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven; ad links tagged utm_content = ad ID |
-| Video | model Kling v3 Standard (or Kling v3 Pro; cheaper with the print kept by reference images: MiniMax H3 Max Reference, Kling O1 Standard Reference up to 10 s; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on |
+| Video | model MiniMax H3 Max Reference (or with the print kept: Kling O1 Standard Reference up to 10 s, Kling v3 Standard or Pro; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on |
 | Audio | source MMAudio (or Kling native, or off), prompt "upbeat background music, no vocals" |
 | Overlay | captions on, brand for the first 3 s |
 | Meta | AI disclosure on, Graph API v26.0 |
@@ -358,12 +358,12 @@ wovain/
 | Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews`, `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-conversion-rates-report`, `get-visitors-report` | OAuth in ChatGPT | $0 | https://docs.fourthwall.com/ai/mcp.md |
 | Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_library_search`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in ChatGPT | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
-| fal MCP | `submit_job` / `check_job` for `fal-ai/kling-video/v3/standard/image-to-video` (start image = mockup, elements = artwork), `fal-ai/mmaudio-v2`, background removal, upscaler; fal storage uploads (`FAL_KEY`) | OAuth in ChatGPT; `FAL_KEY` on the server | Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY) | https://fal.ai/docs/model-apis/mcp |
+| fal MCP | `submit_jobs` / `wait_for_jobs` for `minimax/h3-max/reference-to-video` (references = mockup and artwork; Kling endpoints when chosen), `fal-ai/mmaudio-v2`, background removal, upscaler; fal storage uploads (`FAL_KEY`) | OAuth in ChatGPT; `FAL_KEY` on the server | Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY) | https://fal.ai/docs/model-apis/mcp |
 | SerpApi | `engine=google_trends` (timeseries, related queries) | API key | Free 250 searches a month | https://serpapi.com/google-trends-api |
 | Etsy Open API v3 | `GET /v3/application/listings/active?keywords=` (`count`, prices, links) | `x-api-key` | Free; app approval takes days to weeks | https://developers.etsy.com/documentation |
 | Marker API | Trademark word search, filtered to class 025 | Token | Free tier (unverified) | https://markerapi.com |
 
-POC running cost on top of ad spend: about $12.70 for 6 Kling videos with audio ($1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.
+POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.
 
 ## Important Failure Modes
 
@@ -390,7 +390,7 @@ POC running cost on top of ad spend: about $12.70 for 6 Kling videos with audio 
 |---|---|---|---|
 | Plugin with child MCPs plus a thin wovain server | Learner | Reuse Fourthwall, Meta and fal; code only what's missing | One extra model turn per click |
 | Auto-approve for Fourthwall, Meta and fal tools | Learner | One click per card | Fewer safety prompts; cards stay the approval point |
-| Video: Kling v3 Standard 720p on fal, elements on | Learner | Cheapest model that holds the print; fal has the only official MCP with elements | Lower resolution than Pro; one setting away |
+| Video: MiniMax H3 Max Reference on fal by default (mockup and artwork as references) | Learner | Kept the print on-model in the first real test at $0.75 a clip, cheaper than Kling v3 ($2.10) after fal's price change | Newer model with less track record; Kling one setting away |
 | Audio: fal MMAudio, configurable | Learner | Meta's music skips video ads; 42× cheaper than Kling audio | Generic background music |
 | Every value in Settings and per-card ⚙ | Learner | Tune without redeploys | A bigger settings schema |
 | Trend data: free bundle | Learner | $0 a month | Etsy approval wait; Marker unverified |
@@ -412,7 +412,7 @@ Verify early in the build, in this order:
 |---|---|---|
 | 1 | Desktop-only plugin installs from the local folder on Plus; the app starts the stdio server; a card renders; a card button's message triggers a Fourthwall tool with auto-approve | HTTP mode + ngrok on chatgpt.com |
 | 2 | `openai/fileParams` delivers a ChatGPT image with a fetchable URL in the desktop app (build step 2: it doesn't; image generation returns a `data:` URL, which `stage_artwork` accepts) | Ask the merchant to upload the image |
-| 3 | fal Kling v3 Standard with elements and a mockup start frame keeps the print readable; MMAudio adds audio | Switch to Pro 1080p in Settings |
+| 3 | A fal video model keeps the print readable on-model; MMAudio adds audio (build step 3: MiniMax H3 Max Reference passed with the mockup and artwork as references) | Switch models in Settings |
 | 4 | Meta accepts a fal.media video URL; one NOTIFICATION rule created with the system user token; rule filters match per-product ads by name | Upload from file; adjust filters |
 | 5 | Meta MCP campaign gets `ADVANTAGE_PLUS_SALES` state | Set fields through the Graph API |
 | 6 | Marker API is alive; Etsy app approved | Show labeled search links |
