@@ -79,7 +79,7 @@ flowchart LR
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
 - Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so Node 24 LTS or 26 stays the fallback if Bun misbehaves.
-- The server keeps an optional Streamable HTTP mode behind a flag. It is the fallback if the desktop-only install fails: the laptop then runs the server, ngrok exposes it, and wovain is used on chatgpt.com.
+- The server keeps an optional Streamable HTTP mode behind a flag. It is the fallback if the desktop-only install fails: the laptop then runs the server, ngrok exposes it, and wovain is used on chatgpt.com. It listens on 127.0.0.1 only, needs a bearer token (`WOVAIN_HTTP_TOKEN`), and accepts only localhost and the tunnel host (`WOVAIN_HTTP_ALLOWED_HOSTS`), so the tunnel can't be used by anyone else to reach the shop or ads.
 - Ultracite with oxlint and oxfmt: the learner's choice (`ultracite init --linter oxlint`).
 - React 19: both `@openai/apps-sdk-ui` and `ext-apps` support it; OpenAI's docs still show 18.
 
@@ -188,7 +188,7 @@ Every value in the PRD is a setting, edited in the Settings card or a card's ⚙
 | Trends | ideas 5, pick 2 to 3 |
 | Pricing | min profit $10, min margin 30%, round up to a clean price |
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
-| Campaign | $15 per product per day |
+| Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
 | Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven; ad links tagged utm_content = ad ID |
 | Video | model Kling v3 Standard, 720p, 15 s, 2 clips per product, elements on |
 | Audio | source MMAudio (or Kling native, or off), prompt "upbeat background music, no vocals" |
