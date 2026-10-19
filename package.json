@@ -16,10 +16,13 @@
     "test": "bun test",
     "mock": "WOVAIN_MOCK=1 bun run apps/server/src/index.ts",
     "start": "bun run apps/server/src/index.ts",
-    "prepare": "lefthook install && skills experimental_install -y && skills experimental_sync -y -a claude-code --copy",
+    "prepare": "lefthook install && skills experimental_sync -y -a claude-code --copy",
     "plugin:build": "bun run scripts/plugin-build.ts",
     "plugin:install": "bun run scripts/plugin-install.ts",
-    "knip": "knip"
+    "knip": "knip",
+    "skills:restore": "skills experimental_install -y",
+    "storybook": "bun run --filter @wovain/cards storybook",
+    "test:stories": "bun run --filter @wovain/cards test:stories"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",

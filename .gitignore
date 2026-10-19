@@ -14,7 +14,7 @@ dist/
 # Local server data
 apps/server/data/
 
-# restored by `bun run prepare`: course skills from skills-lock.json, ultracite from node_modules
+# course skills: `bun run skills:restore` (from skills-lock.json); ultracite: `bun run prepare` (node_modules)
 /.agents/skills/
 /.claude/skills/ultracite/
 

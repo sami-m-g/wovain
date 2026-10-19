@@ -1,0 +1,20 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/shared"
+    },
+    {
+      "path": "apps/server"
+    },
+    {
+      "path": "apps/cards"
+    },
+    {
+      "path": "scripts"
+    }
+  ],
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}
