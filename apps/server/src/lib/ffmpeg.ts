@@ -90,9 +90,17 @@ export const burnOverlays = async (
         "-y",
         "-loglevel",
         "error",
+        // Downloaded files are untrusted: force the demuxer and allow only
+        // local files, so a playlist posing as a clip can't read other paths.
+        "-protocol_whitelist",
+        "file",
+        "-f",
+        "mov",
         "-i",
         input,
-        ...(useLogo ? ["-i", logoFile] : []),
+        ...(useLogo
+          ? ["-protocol_whitelist", "file", "-f", "image2pipe", "-i", logoFile]
+          : []),
         "-filter_complex",
         graph,
         "-map",
