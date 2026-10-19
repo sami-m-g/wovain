@@ -1,5 +1,14 @@
 {
   "enabledPlugins": {
-    "commit-commands@anthropic-plugin-directory": true
+    "commit-commands@anthropic-plugin-directory": true,
+    "humanizer@humanizer": true
+  },
+  "extraKnownMarketplaces": {
+    "humanizer": {
+      "source": {
+        "source": "github",
+        "repo": "blader/humanizer"
+      }
+    }
   }
 }
