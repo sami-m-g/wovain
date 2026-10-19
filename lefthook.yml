@@ -20,3 +20,5 @@ pre-push:
   jobs:
     - name: test
       run: bun run test
+    - name: knip
+      run: bun run knip
