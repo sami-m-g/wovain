@@ -8,11 +8,11 @@ import {
 import type { McpServer } from "@modelcontextprotocol/server";
 
 // Each card is one self-contained HTML file built by apps/cards (Vite single-file).
-const cardNames = ["settings", "design"] as const;
+const cardNames = ["settings", "design", "ad"] as const;
 export type CardName = (typeof cardNames)[number];
 
 // The URI is the host's cache key: bump the version when a card changes shape.
-export const cardUri = (name: CardName) => `ui://wovain/${name}-v2.html`;
+export const cardUri = (name: CardName) => `ui://wovain/${name}-v3.html`;
 
 // Cards run in a sandbox that only loads media from declared hosts:
 // Fourthwall's mockups and artwork, and fal's generated videos.
@@ -21,8 +21,11 @@ const ui = {
     resourceDomains: [
       "https://cdn.fourthwall.com",
       "https://imgproxy.fourthwall.dev",
+      // fal serves media from several hosts (v3b.fal.media for finished clips).
       "https://fal.media",
+      "https://*.fal.media",
       "https://v3.fal.media",
+      "https://v3b.fal.media",
     ],
   },
   prefersBorder: true,

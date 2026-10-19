@@ -29,6 +29,13 @@ await run([
   "--outfile",
   path.join(pluginDir, "bin", "wovain-server"),
 ]);
+// ffmpeg burns captions into the ad videos; the compiled server can't run a
+// binary from inside itself, so the plugin carries its own copy.
+const { default: ffmpeg } = await import("ffmpeg-static");
+if (ffmpeg === null) {
+  throw new Error("ffmpeg-static has no binary for this platform");
+}
+await cp(ffmpeg, path.join(pluginDir, "bin", "ffmpeg"));
 await cp(
   path.join(root, "apps", "cards", "dist"),
   path.join(pluginDir, "cards"),

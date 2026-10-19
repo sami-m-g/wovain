@@ -7,6 +7,9 @@ import { z } from "zod";
 // user-safe error when one is missing, so the Settings card works on day one.
 const envSchema = z.object({
   ETSY_API_KEY: z.string().optional(),
+  // Optional: a fal key with the Billing preset, only for reading what fal
+  // actually charged (video_spend). FAL_KEY stays without billing access.
+  FAL_BILLING_KEY: z.string().optional(),
   FAL_KEY: z.string().optional(),
   MARKER_API_TOKEN: z.string().optional(),
   META_AD_ACCOUNT_ID: z.string().optional(),
@@ -20,6 +23,18 @@ const envSchema = z.object({
     .string()
     .default(path.join(import.meta.dir, "..", "..", "cards", "dist")),
   WOVAIN_DATA_DIR: z.string().default(path.join(import.meta.dir, "..", "data")),
+  // ffmpeg for caption burn-in: the plugin ships its own binary and sets this;
+  // in development the ffmpeg-static path is used.
+  WOVAIN_FFMPEG: z.string().optional(),
+  // A bold font for captions: macOS ships Arial Bold (where wovain runs);
+  // Linux (CI) ships DejaVu Sans Bold.
+  WOVAIN_FONT: z
+    .string()
+    .default(
+      process.platform === "darwin"
+        ? "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+        : "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    ),
   // Comma-separated extra hostnames for HTTP mode, e.g. the ngrok domain.
   WOVAIN_HTTP_ALLOWED_HOSTS: z
     .string()

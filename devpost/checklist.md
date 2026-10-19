@@ -29,7 +29,7 @@ Build mode: learn
   Learner check: In the desktop app, ask for a tee from your own idea, look over the design card (mockup, sizes, numbers), give one piece of feedback and see the card come back changed, then Approve and open the shop link.
   Commit: `feat(design): add design card and publish to fourthwall on approve`
 
-- [ ] **3. Each published product gets an ad card with two videos, a static image, copy and its breakeven**
+- [x] **3. Each published product gets an ad card with two videos, a static image, copy and its breakeven**
   Becomes usable: Right after a product goes live, an ad card shows two 15-second 9:16 UGC-style videos with captions, brand in the first 3 seconds and background audio, the mockup as a static, headline and primary text, the breakeven line and that product's rule thresholds. Each video plays full screen; Add to campaign and Skip record the choice; feedback regenerates the card.
   Why now: Video is the second-riskiest dependency (spec check #3: Kling elements must keep the print readable) and the campaign can't launch without ads. It reuses the economics from slice 2.
   PRD ref: `prd.md > The Core Journey` (steps 6, 7), `prd.md > Ad cards`, `prd.md > Pricing and economics`, `prd.md > States and Boundaries` (#7)
@@ -116,3 +116,5 @@ Activity mode:
 - The minimum artwork width is 150 px per print inch (unverified Fourthwall guidance); with fal out of credits, ChatGPT chose an 8×8 in placement so the 1254 px art stays sharp (PRD state #4).
 - `bun run plugin:dev` and `bun run cards:watch` added — the learner asked for faster iteration than reinstall, restart and a new chat per change.
 - Video model options add MiniMax H3 Max Turbo and H3 Max for test runs, and the Settings card shows live fal prices (`/v1/models/pricing` with `FAL_KEY`, cached a day) with dated list prices as the fallback — fal's Kling v3 Standard price rose from the planned $1.26 to $2.10 per 15 s clip, and the learner wanted cheaper options while testing.
+- Slice 3 shipped with H3 Max Reference (not Kling v3 Standard): it kept the print on-model in a live run. fal billed about $0.08/s against a $0.05/s list price, so cost lines now say "list price, actual may be higher" and an optional `FAL_BILLING_KEY` lets `video_spend` report the real charge. The card's CSP needed `v3b.fal.media` for finished clips. Brand overlay is off by default (Meta already shows the Page name and picture); captions sit at 60% height. Caption styling and editable video scenes are left for later; the scene prompts stay locked to protect the print.
+- Slices 5 (trend card) and 6 (optimization card) moved to later, by the learner's call, to finish the campaign launch and `6-ship` within the time left. The own-idea path (slice 2) stays the journey's entry point for the demo.

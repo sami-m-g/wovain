@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { basisCost, breakeven, priceProduct } from "@wovain-foss/shared/economics";
+import {
+  basisCost,
+  breakeven,
+  priceProduct,
+} from "@wovain-foss/shared/economics";
 import { defaultSettings } from "@wovain-foss/shared/settings";
 
 const { economics, pricing } = defaultSettings();

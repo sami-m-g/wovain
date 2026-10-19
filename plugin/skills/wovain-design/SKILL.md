@@ -33,6 +33,7 @@ Every idea ends with its design card; don't stop at the artwork or ask the merch
   2. `ecommerce_bulk-update-offer-variant-prices` with the card's price for every variant.
   3. `ecommerce_update-offer-status` to `PUBLIC`.
   4. wovain `record_design` with `status: "live"`, `productId` and the product's shop URL.
+  5. Start the `wovain-ads` skill for that design.
 
   If Fourthwall refuses at any step, call `record_design` with `status: "rejected"` and its reason in plain words. The card already shows Publishing and updates itself, so say one short line and nothing more.
 

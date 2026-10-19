@@ -53,7 +53,7 @@ flowchart LR
 | 2 | Tick 2 or 3, click "Design the ones I picked" | The card posts the picks; skipped if you bring your own idea | Next step starts |
 | 3 | Wait | `wovain-design` skill: ChatGPT generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design card per idea |
 | 4 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design card shows Live with a link |
-| 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; `finish_video` burns in captions and brand; copy and margins are computed | Ad card per product |
+| 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; `finish_video` burns in captions (and the brand, when turned on); copy and margins are computed | Ad card per product |
 | 6 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last card, the campaign step starts | Next ad card, or the campaign card |
 | 7 | Wait | `wovain-campaign` skill: checks payment method and pixel; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign card: Live, or Ready, blocked |
 | 8 | Later: "How's my campaign?" | `wovain-optimize` skill: `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization card per fired rule |
@@ -153,7 +153,7 @@ What it does: one Bun process serving MCP over stdio and the card files as `ui:/
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
 | `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | wovain.json |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
-| `finish_video` | Downloads the clip, burns in captions and the brand for the first 3 seconds with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL | ffmpeg, fal storage |
+| `finish_video` | Downloads the clip, burns in the caption at 60% height inside Meta's 9:16 safe zone (and a logo or the shop name for the first seconds when the brand overlay is on) with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL | ffmpeg, fal storage |
 | `record_ad` | Saves ad choices and copy | wovain.json |
 | `create_rules` | Creates the five rules per the PRD | Meta Graph API |
 | `campaign_check` | Reads rule history and campaign results | Meta Graph API |
@@ -192,7 +192,7 @@ Every value in the PRD is a setting, edited in the Settings card or a card's ⚙
 | Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven; ad links tagged utm_content = ad ID |
 | Video | model MiniMax H3 Max Reference (or with the print kept: Kling O1 Standard Reference up to 10 s, Kling v3 Standard or Pro; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on |
 | Audio | source MMAudio (or Kling native, or off), prompt "upbeat background music, no vocals" |
-| Overlay | captions on, brand for the first 3 s |
+| Overlay | captions on at 60% height; brand overlay off (0 s), with an optional logo image or the shop name |
 | Meta | AI disclosure on, Graph API v26.0 |
 
 ## Development Tooling

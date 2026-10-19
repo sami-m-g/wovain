@@ -246,7 +246,7 @@ Source: `scope.md > The POC boundary` (Ads).
 
 | Creative | Spec |
 |---|---|
-| Video A | UGC-style, on-model, 9:16, 15 seconds or less, captions, brand in the first 3 seconds, background audio |
+| Video A | UGC-style, on-model, 9:16, 15 seconds or less, captions inside Meta's safe zone (below the print, above the bottom 40%), background audio; brand overlay optional and off, since Meta shows the Page name and picture on every ad |
 | Video B | UGC-style, a second angle or styling, same spec |
 | Static | The Fourthwall mockup image |
 | Headline | Short, product-led |

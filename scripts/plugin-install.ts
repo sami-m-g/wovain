@@ -81,6 +81,10 @@ if (wovain !== undefined) {
     WOVAIN_ENV_FILE: path.join(root, ".env"),
     ...(dev && { WOVAIN_CARDS_DIR: path.join(root, "apps", "cards", "dist") }),
   };
+  // Dev mode runs the source, which finds ffmpeg-static itself.
+  if (dev) {
+    delete wovain.env["WOVAIN_FFMPEG"];
+  }
 }
 await writeFile(mcpFile, `${JSON.stringify(mcp, null, 2)}\n`);
 

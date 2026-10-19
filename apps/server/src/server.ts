@@ -4,6 +4,7 @@ import { registerCards } from "./cards.ts";
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import type { Store } from "./store.ts";
+import { registerAdTools } from "./tools/ads.ts";
 import { registerDesignTools } from "./tools/design.ts";
 import { registerSettingsTools } from "./tools/settings.ts";
 
@@ -13,7 +14,9 @@ export const createServer = (env: Env, store: Store) => {
     { capabilities: { resources: {}, tools: {} } }
   );
   registerCards(server, env.WOVAIN_CARDS_DIR);
-  registerSettingsTools(server, store, createVideoPricing(env.FAL_KEY));
+  const videoPricing = createVideoPricing(env.FAL_KEY);
+  registerSettingsTools(server, store, videoPricing);
   registerDesignTools(server, store);
+  registerAdTools(server, store, env, videoPricing);
   return server;
 };

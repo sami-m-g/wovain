@@ -6,7 +6,8 @@
       "command": "./bin/wovain-server",
       "env": {
         "WOVAIN_CARDS_DIR": "${PLUGIN_ROOT}/cards",
-        "WOVAIN_DATA_DIR": "${PLUGIN_DATA}"
+        "WOVAIN_DATA_DIR": "${PLUGIN_DATA}",
+        "WOVAIN_FFMPEG": "${PLUGIN_ROOT}/bin/ffmpeg"
       }
     }
   }

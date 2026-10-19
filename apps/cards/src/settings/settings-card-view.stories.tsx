@@ -95,7 +95,7 @@ export const PicksTestVideoModel = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Save" }));
     await expect(
       await canvas.findByText(
-        /MiniMax H3 Max Turbo 720p · \$0\.24 per clip \(list price, Oct 19, 2026\) · test only/u
+        /MiniMax H3 Max Turbo 720p · \$0\.24 per clip \(list price, Oct 19, 2026; actual may be higher\) · test only/u
       )
     ).toBeVisible();
     await expect(args.onSave).toHaveBeenCalledWith(

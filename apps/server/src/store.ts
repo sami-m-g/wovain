@@ -1,6 +1,8 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { adSchema } from "@wovain-foss/shared/ad";
+import type { Ad } from "@wovain-foss/shared/ad";
 import { designSchema } from "@wovain-foss/shared/design";
 import type { Design } from "@wovain-foss/shared/design";
 import {
@@ -27,6 +29,8 @@ export type Artwork = z.infer<typeof artworkSchema>;
 
 // One JSON file holds settings, staged artwork and designs (spec.md > Data Model).
 const storeSchema = z.object({
+  // One ad set per design, keyed by design id.
+  ads: z.record(z.string(), adSchema).default({}),
   artworks: z.record(z.string(), artworkSchema).default({}),
   designs: z.record(z.string(), designSchema).default({}),
   settings: settingsSchema.prefault({}),
@@ -85,6 +89,10 @@ export const createStore = (dataDir: string) => {
 
   return {
     file,
+    getAd: async (designId: string): Promise<Ad | undefined> => {
+      const data = await read();
+      return data.ads[designId];
+    },
     getArtwork: async (id: string): Promise<Artwork | undefined> => {
       const data = await read();
       return data.artworks[id];
@@ -98,10 +106,30 @@ export const createStore = (dataDir: string) => {
       return data.settings;
     },
     mediaDir,
+    // Records add or skip and counts the ad cards still waiting, in one step.
+    recordAd: async (designId: string, status: Ad["status"]) =>
+      await update((data) => {
+        const current = data.ads[designId];
+        if (current === undefined) {
+          throw new Error(`No ad card for ${designId}`);
+        }
+        const ad = adSchema.parse({ ...current, status });
+        data.ads[designId] = ad;
+        const waiting = Object.values(data.ads).filter(
+          (item) => item.status === "draft"
+        ).length;
+        return { ad, waiting };
+      }),
     resetSettings: async (): Promise<Settings> =>
       await update((data) => {
         data.settings = defaultSettings();
         return data.settings;
+      }),
+    saveAd: async (ad: Ad) =>
+      await update((data) => {
+        const saved = adSchema.parse(ad);
+        data.ads[saved.designId] = saved;
+        return saved;
       }),
     saveArtwork: async (artwork: Omit<Artwork, "id">): Promise<Artwork> =>
       await update((data) => {

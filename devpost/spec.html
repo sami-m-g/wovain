@@ -163,7 +163,7 @@
 <tr>
 <td>5</td>
 <td>Wait</td>
-<td><code>wovain-ads</code> skill: <code>video_plan</code> gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; <code>finish_video</code> burns in captions and brand; copy and margins are computed</td>
+<td><code>wovain-ads</code> skill: <code>video_plan</code> gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; <code>finish_video</code> burns in captions (and the brand, when turned on); copy and margins are computed</td>
 <td>Ad card per product</td>
 </tr>
 <tr>
@@ -438,7 +438,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td><code>finish_video</code></td>
-<td>Downloads the clip, burns in captions and the brand for the first 3 seconds with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL</td>
+<td>Downloads the clip, burns in the caption at 60% height inside Meta's 9:16 safe zone (and a logo or the shop name for the first seconds when the brand overlay is on) with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL</td>
 <td>ffmpeg, fal storage</td>
 </tr>
 <tr>
@@ -565,7 +565,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td>Overlay</td>
-<td>captions on, brand for the first 3 s</td>
+<td>captions on at 60% height; brand overlay off (0 s), with an optional logo image or the shop name</td>
 </tr>
 <tr>
 <td>Meta</td>

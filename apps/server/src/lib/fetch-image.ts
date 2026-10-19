@@ -77,7 +77,9 @@ const isBlockedIPv6 = (address: string): boolean => {
 const isBlocked = (address: string) =>
   isIP(address) === 6 ? isBlockedIPv6(address) : isBlockedIPv4(address);
 
-const MAX_BYTES = 50 * 1024 * 1024;
+const MB = 1024 * 1024;
+const MAX_IMAGE_BYTES = 50 * MB;
+export const MAX_VIDEO_BYTES = 200 * MB;
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 60_000;
 
@@ -112,9 +114,13 @@ const assertPublicHttps = async (raw: string | URL) => {
 export const isPublicAddress = (address: string) => !isBlocked(address);
 
 // Stops reading once the body passes the cap instead of buffering it first.
-const readCapped = async (response: Response): Promise<Uint8Array> => {
-  if (Number(response.headers.get("content-length") ?? 0) > MAX_BYTES) {
-    throw new Error("Image is larger than 50 MB");
+const readCapped = async (
+  response: Response,
+  maxBytes: number
+): Promise<Uint8Array> => {
+  const tooLarge = `File is larger than ${maxBytes / MB} MB`;
+  if (Number(response.headers.get("content-length") ?? 0) > maxBytes) {
+    throw new Error(tooLarge);
   }
   const reader = response.body?.getReader();
   if (reader === undefined) {
@@ -129,16 +135,19 @@ const readCapped = async (response: Response): Promise<Uint8Array> => {
       return new Uint8Array(Buffer.concat(chunks));
     }
     total += value.byteLength;
-    if (total > MAX_BYTES) {
+    if (total > maxBytes) {
       // oxlint-disable-next-line no-await-in-loop -- the loop ends here
       await reader.cancel();
-      throw new Error("Image is larger than 50 MB");
+      throw new Error(tooLarge);
     }
     chunks.push(value);
   }
 };
 
-export const downloadImage = async (raw: string): Promise<Uint8Array> => {
+export const downloadImage = async (
+  raw: string,
+  maxBytes = MAX_IMAGE_BYTES
+): Promise<Uint8Array> => {
   let url = await assertPublicHttps(raw);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each hop depends on the last
@@ -156,7 +165,7 @@ export const downloadImage = async (raw: string): Promise<Uint8Array> => {
       throw new Error(`Download failed with ${response.status}`);
     }
     // oxlint-disable-next-line no-await-in-loop -- the loop ends here
-    return await readCapped(response);
+    return await readCapped(response, maxBytes);
   }
   throw new Error("Too many redirects");
 };

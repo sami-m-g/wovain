@@ -7,7 +7,7 @@ import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { z } from "zod";
 
-const settingsCard = "ui://wovain/settings-v2.html";
+const settingsCard = "ui://wovain/settings-v3.html";
 
 // WOVAIN_SERVER_BIN=plugin/bin/wovain-server runs these against the compiled plugin.
 const serverBin = process.env["WOVAIN_SERVER_BIN"];
@@ -87,6 +87,8 @@ test.skipIf(!cardsBuilt)(
       .object({ csp: z.object({ resourceDomains: z.array(z.string()) }) })
       .parse(card?._meta?.["ui"]);
     expect(ui.csp.resourceDomains).toContain("https://cdn.fourthwall.com");
+    // Finished ad clips are served from v3b.fal.media.
+    expect(ui.csp.resourceDomains).toContain("https://v3b.fal.media");
     expect(card && "text" in card ? card.text : "").toContain(
       "<!doctype html>"
     );

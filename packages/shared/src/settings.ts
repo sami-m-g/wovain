@@ -61,8 +61,11 @@ export const audioSettings = z.object({
 });
 
 export const overlaySettings = z.object({
-  brandSeconds: z.int().min(0).max(15).default(3),
+  // Off by default: Meta already shows the Page name and picture on every ad.
+  brandSeconds: z.int().min(0).max(15).default(0),
   captions: z.boolean().default(true),
+  // A logo image (transparent PNG works best); empty shows the shop name.
+  logoUrl: z.union([z.literal(""), z.url()]).default(""),
 });
 
 export const metaSettings = z.object({

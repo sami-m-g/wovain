@@ -6,7 +6,10 @@ import {
   videoModelIds,
   videoModels,
 } from "@wovain-foss/shared/video-models";
-import type { VideoModelId, VideoPrices } from "@wovain-foss/shared/video-models";
+import type {
+  VideoModelId,
+  VideoPrices,
+} from "@wovain-foss/shared/video-models";
 
 // What the card shows for each setting. Groups and keys mirror packages/shared.
 type Group = keyof Settings;
@@ -66,8 +69,12 @@ const videoOptions = (prices: VideoPrices) =>
     };
   });
 
+// fal's price list leaves out resolution, audio and provider rules, so the
+// card says it's a list price and that the real charge can be higher.
 const priceNote = (prices: VideoPrices, model: VideoModelId) =>
-  prices[model].source === "fal" ? "" : ` (list price, ${LIST_PRICES_AS_OF})`;
+  prices[model].source === "fal"
+    ? " (list price, actual may be higher)"
+    : ` (list price, ${LIST_PRICES_AS_OF}; actual may be higher)`;
 const audioLabel: Record<Settings["audio"]["source"], string> = {
   "kling-native": "Kling native",
   mmaudio: "MMAudio background",
@@ -361,11 +368,16 @@ export const moreSections: Section[] = [
         min: 0,
         unit: "s",
       },
+      {
+        key: "logoUrl",
+        kind: "text",
+        label: "Logo image URL (empty shows the shop name)",
+      },
     ],
     group: "overlay",
     id: "overlay",
     summary: (s) =>
-      `${s.overlay.captions ? "Captions on" : "Captions off"} · brand ${s.overlay.brandSeconds} s`,
+      `${s.overlay.captions ? "Captions on" : "Captions off"} · ${s.overlay.brandSeconds === 0 ? "no brand overlay" : `${s.overlay.logoUrl === "" ? "shop name" : "logo"} ${s.overlay.brandSeconds} s`}`,
     title: "Video overlay",
   },
   {
