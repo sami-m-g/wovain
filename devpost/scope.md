@@ -50,7 +50,7 @@ You steer every step, and Meta runs the campaign once you approve.
 | Principle | In practice |
 |---|---|
 | Talk to it | Voice in ChatGPT if the cards work there; speech-to-text otherwise |
-| Reuse, don't rebuild | Fourthwall and Meta Ads MCPs, a ready-made video generator, Meta's Advantage+ and automated rules for optimization |
+| Reuse, don't rebuild | Fourthwall and Meta Ads MCPs, fal's video models, Meta's Advantage+ and automated rules for optimization |
 | Use all of ChatGPT | Inline cards for the UI (side panels and viewers are Work and desktop only), plus built-in image generation through a skill, web search, and voice where it supports cards, instead of rebuilding any of them |
 
 ## Why this matters to the learner
@@ -71,15 +71,16 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 
 | Area | In the POC |
 |---|---|
-| Host | ChatGPT plugin: skills, an MCP server, and plugin extensions for the UI |
+| Host | ChatGPT plugin: skills, an MCP server, and plugin extensions for the UI (desktop-only: runs in the ChatGPT desktop app on the Mac) |
 | Trends | Web research when the merchant asks for it or for trending designs; skipped when they bring their own idea |
 | Design | 2 or 3 designs generated in ChatGPT, each fitted to a Fourthwall product |
 | Listing | Title, description, variants, and price for each product, on the design card |
 | Publishing | Fourthwall products published after card approval |
-| Ads | Short videos from a ready-made generator, plus ad copy (primary text and headline) |
+| Ads | Short videos from Kling v3 on fal with generated background audio, plus ad copy (primary text and headline) |
 | Economics | Price, Fourthwall cost, margin, and breakeven per product on the ad card |
 | Campaign | One Advantage+ campaign testing the designs, launched live |
 | Management | Meta automated rules from each product's breakeven: kill thresholds per product, scaling for the whole campaign; Advantage+ handles targeting and budget |
+| Settings | Every value (models, prices, budget, rules) editable from a Settings card and per-card quick settings |
 
 ## Later
 
@@ -106,8 +107,8 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 | Question | Phase |
 |---|---|
 | Exact kill and scale thresholds, and how breakeven is calculated (fees, shipping) | Resolved in `prd.md` |
-| Can a plugin extension use ChatGPT's built-in image generation, or must designs come through the MCP server? | `4-spec` |
-| Which video generator? | `4-spec` |
-| Can the Meta Ads MCP create automated rules, or does that need the Marketing API? | `4-spec` |
+| Can a plugin extension use ChatGPT's built-in image generation, or must designs come through the MCP server? | Resolved in `spec.md` |
+| Which video generator? | Resolved in `spec.md` |
+| Can the Meta Ads MCP create automated rules, or does that need the Marketing API? | Resolved in `spec.md` |
 | Does the Fourthwall store already send purchase events to Meta (pixel or Conversions API)? Advantage+ needs them. | Resolved: built into Fourthwall, connect before the demo |
-| Do ChatGPT app tools and cards work in Live voice? Reports say support arrived 2026-09-23. | `4-spec` |
+| Do ChatGPT app tools and cards work in Live voice? Reports say support arrived 2026-09-23. | Resolved in `spec.md` |
