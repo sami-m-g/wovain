@@ -71,19 +71,17 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         readOnlyHint: false,
       },
       description:
-        "Stage design artwork and measure it. Pass exactly one: `url` for image generation's result (a data:image/... URL) or a public https image (fal's result, a Fourthwall CDN image); `path` for an image file the merchant attached in this desktop chat; or `artwork` for a ChatGPT file object. Returns pixel size, transparency and byte size, which request-media-upload-link and the design card need.",
+        "Stage design artwork and measure it. Pass exactly one: `url` for image generation's result (a data:image/... URL) or a public https image (fal's result, a Fourthwall CDN image), or `artwork` for a file the merchant attached (a ChatGPT file object). Returns pixel size, transparency and byte size, which request-media-upload-link and the design card need.",
       inputSchema: z.object({
         artwork: fileParamSchema.optional(),
-        path: z.string().optional(),
         url: z.string().optional(),
       }),
       outputSchema: artworkOutput,
       title: "Stage artwork",
     },
-    async ({ artwork, path: localPath, url }) => {
+    async ({ artwork, url }) => {
       const { bytes, source } = await loadArtwork({
         fileUrl: artwork?.download_url,
-        localPath,
         url,
       });
       const info = readImageInfo(bytes);

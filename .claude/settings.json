@@ -12,13 +12,13 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Write|Edit",
         "hooks": [
           {
-            "command": "bunx ultracite fix --hook",
-            "type": "command"
+            "type": "command",
+            "command": "bunx ultracite fix --hook"
           }
-        ],
-        "matcher": "Write|Edit"
+        ]
       }
     ]
   },
@@ -34,7 +34,9 @@
     "impeccable@impeccable": true,
     "modern-web-guidance@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "vercel@claude-plugins-official": true,
+    "neon@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ai-marketing-hub-claude-ads": {
@@ -61,5 +63,8 @@
         "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
       }
     }
+  },
+  "env": {
+    "VERCEL_PLUGIN_TELEMETRY": "off"
   }
 }

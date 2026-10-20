@@ -1,6 +1,6 @@
 # AGENTS.md
 
-wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. No app code yet; the stack is decided in `devpost/spec.md`.
+wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: MCP server library in `apps/server`, hosted by Next.js in `apps/web` on Vercel, cards in `apps/cards`.
 
 ## Workflow
 
@@ -56,4 +56,6 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 - Lefthook runs fix, typecheck and gitleaks on commit, commitlint on the message, and tests, knip and story tests on push.
 - Course skills aren't committed: run `bun run skills:restore` after cloning (it fetches them from `skills-lock.json`).
 - See a card without ChatGPT: `bun run storybook` (one story per card state, light and dark).
-- Try it in ChatGPT: `bun run plugin:install` ships the compiled plugin; `bun run plugin:dev` installs a launcher that runs the server from this repo. With dev mode plus `bun run cards:watch`, a card edit shows on the next redraw ("redraw design d1"); server edits need an app restart; skill edits need `bun run plugin:dev` again (skills are copied at install), then a restart.
+- Run the server: `bun run dev` (Next.js in `apps/web` serves `/mcp` on localhost:3000; keys live in `apps/web/.env`, set `WOVAIN_HTTP_TOKEN` or every request gets a 401). Run `bun run cards:watch` beside it; a card edit shows on the next redraw ("redraw design d1").
+- Try it in ChatGPT: `bun run plugin:install` installs `plugin/` pointed at the hosted `/mcp`; `--url https://<tunnel>/mcp` points it at your local server instead. Skill edits need `plugin:install` again (skills are copied at install), then an app restart.
+- Next.js 16 differs from older versions: read `apps/web/node_modules/next/dist/docs/` before writing Next code. `apps/web/oxlint.config.ts` extends the root Ultracite config with the Next presets.

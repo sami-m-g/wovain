@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { copyFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { Client } from "@modelcontextprotocol/client";
@@ -126,20 +125,6 @@ test("stage_artwork takes image generation's data URL", async () => {
   expect(result.isError).toBeFalsy();
   expect(result.structuredContent).toMatchObject({ height: 32, width: 64 });
   expect(result.structuredContent).not.toHaveProperty("url");
-});
-
-test("stage_artwork reads a chat attachment from the temp folder only", async () => {
-  const attachment = path.join(await tempDir("wovain-att-"), "clip.png");
-  await copyFile(
-    path.join(import.meta.dir, "fixtures", "rgba-64x32.png"),
-    attachment
-  );
-  const read = await call("stage_artwork", { path: attachment });
-  expect(read.isError).toBeFalsy();
-  const outside = await call("stage_artwork", {
-    path: path.join(import.meta.dir, "fixtures", "rgba-64x32.png"),
-  });
-  expect(outside.isError).toBe(true);
 });
 
 test("stage_artwork refuses private addresses", async () => {

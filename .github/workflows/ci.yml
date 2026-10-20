@@ -22,6 +22,8 @@ jobs:
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
+      - name: Build cards and web
+        run: bun run build
       - name: Lint and format
         run: bun run check
       - name: Typecheck (TypeScript 7, strict)

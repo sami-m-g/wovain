@@ -71,7 +71,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 
 | Area | In the POC |
 |---|---|
-| Host | ChatGPT plugin: skills, an MCP server, and plugin extensions for the UI (desktop-only: runs in the ChatGPT desktop app on the Mac) |
+| Host | ChatGPT plugin: skills, an MCP server, and plugin extensions for the UI (the MCP server is hosted on Vercel, so wovain works on chatgpt.com and in the desktop app) |
 | Trends | Web research when the merchant asks for it or for trending designs; skipped when they bring their own idea |
 | Design | 2 or 3 designs generated in ChatGPT, each fitted to a Fourthwall product |
 | Listing | Title, description, variants, and price for each product, on the design card |

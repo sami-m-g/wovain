@@ -1,15 +1,16 @@
-import { chmod, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
+import { parseArgs } from "node:util";
 
 import { z } from "zod";
 
-// Installs plugin/ as a personal desktop-only plugin, per
-// https://developers.openai.com/plugins/build/plugins (local marketplace).
-// --dev installs a launcher that runs the server from this repo's source and
-// serves cards from apps/cards/dist, so card edits need only `bun run cards:watch`
-// and a redraw, and server or skill edits need only an app restart.
-const dev = process.argv.includes("--dev");
+// Installs plugin/ as a personal plugin in the ChatGPT desktop app, per
+// https://developers.openai.com/plugins/build/plugins (local marketplace),
+// pointed at a wovain server: the hosted one by default, or `--url` (a tunnel
+// to `bun run dev`). WOVAIN_HTTP_TOKEN from apps/web/.env goes into the
+// installed copy only, never into plugin/.
+const { values } = parseArgs({ options: { url: { type: "string" } } });
 const root = path.join(import.meta.dir, "..");
 const home = homedir();
 const installDir = path.join(home, ".codex", "plugins", "wovain");
@@ -27,10 +28,12 @@ const marketplaceSchema = z.looseObject({
 });
 
 const mcpSchema = z.looseObject({
-  mcpServers: z.record(
-    z.string(),
-    z.looseObject({ env: z.record(z.string(), z.string()).optional() })
-  ),
+  mcpServers: z.object({
+    wovain: z.looseObject({
+      headers: z.record(z.string(), z.string()).optional(),
+      url: z.url(),
+    }),
+  }),
 });
 
 const readJson = async (file: string): Promise<unknown> => {
@@ -41,50 +44,23 @@ const readJson = async (file: string): Promise<unknown> => {
   }
 };
 
-const proc = Bun.spawn(["bun", "run", dev ? "build" : "plugin:build"], {
-  cwd: root,
-  stdio: ["inherit", "inherit", "inherit"],
-});
-if ((await proc.exited) !== 0) {
-  process.exit(1);
-}
-
 await rm(installDir, { force: true, recursive: true });
 await mkdir(path.dirname(installDir), { recursive: true });
-const builtDirs = new Set(
-  ["bin", "cards"].map((dir) => path.join(root, "plugin", dir))
-);
-await cp(path.join(root, "plugin"), installDir, {
-  // Dev mode leaves out the compiled server and copied cards.
-  filter: (source) => !(dev && builtDirs.has(source)),
-  recursive: true,
-});
+await cp(path.join(root, "plugin"), installDir, { recursive: true });
 
-if (dev) {
-  const launcher = path.join(installDir, "bin", "wovain-server");
-  await mkdir(path.dirname(launcher), { recursive: true });
-  // process.execPath is this Bun: the app's PATH may not include it.
-  await writeFile(
-    launcher,
-    `#!/bin/sh\n# wovain dev launcher (bun run plugin:dev): runs the repo's server source.\nexec "${process.execPath}" run "${path.join(root, "apps", "server", "src", "index.ts")}"\n`
-  );
-  await chmod(launcher, 0o755);
-}
-
-// The app doesn't pass your shell environment, so point the server at the repo's .env.
 const mcpFile = path.join(installDir, "mcp.json");
 const mcp = mcpSchema.parse(await readJson(mcpFile));
 const { wovain } = mcp.mcpServers;
-if (wovain !== undefined) {
-  wovain.env = {
-    ...wovain.env,
-    WOVAIN_ENV_FILE: path.join(root, ".env"),
-    ...(dev && { WOVAIN_CARDS_DIR: path.join(root, "apps", "cards", "dist") }),
-  };
-  // Dev mode runs the source, which finds ffmpeg-static itself.
-  if (dev) {
-    delete wovain.env["WOVAIN_FFMPEG"];
-  }
+if (values.url !== undefined) {
+  wovain.url = z.url().parse(values.url);
+}
+const envFile = path.join(root, "apps", "web", ".env");
+if (await Bun.file(envFile).exists()) {
+  process.loadEnvFile(envFile);
+}
+const token = process.env["WOVAIN_HTTP_TOKEN"];
+if (token !== undefined && token !== "") {
+  wovain.headers = { ...wovain.headers, Authorization: `Bearer ${token}` };
 }
 await writeFile(mcpFile, `${JSON.stringify(mcp, null, 2)}\n`);
 
@@ -118,7 +94,7 @@ await rm(
   }
 );
 
-console.info(`Installed${dev ? " in dev mode" : ""} to ${installDir}
+console.info(`Installed to ${installDir}, using ${wovain.url}
 Marketplace "${marketplace.name}" updated at ${marketplaceFile}
 
 Next: quit and reopen the ChatGPT desktop app, open Plugins → Personal,

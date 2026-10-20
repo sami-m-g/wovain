@@ -1,13 +1,9 @@
-import { readFile, realpath, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
 import { downloadImage, MAX_IMAGE_BYTES } from "./fetch-image.ts";
 
 const DATA_URL =
   /^data:image\/(?:png|jpeg|webp);base64,(?<base64>[A-Za-z0-9+/=\s]+)$/u;
 
-// The desktop app's image generation returns a data: URL, not a file object.
+// ChatGPT's image generation returns a data: URL, not a file object.
 const decodeDataUrl = (url: string) => {
   const base64 = DATA_URL.exec(url)?.groups?.["base64"];
   if (base64 === undefined) {
@@ -20,64 +16,23 @@ const decodeDataUrl = (url: string) => {
   return bytes;
 };
 
-// The app may start the server without the shell's TMPDIR, so ask macOS for
-// this user's own temp folder too (getconf), never all of /private/var/folders.
-const attachmentRoots = async () => {
-  const userTemp = Bun.spawnSync(["/usr/bin/getconf", "DARWIN_USER_TEMP_DIR"])
-    .stdout.toString()
-    .trim();
-  const candidates = [tmpdir(), ...(userTemp === "" ? [] : [userTemp])];
-  const resolved = await Promise.all(
-    candidates.map(async (dir) => await realpath(dir).catch(() => dir))
-  );
-  return [...new Set(resolved)];
-};
-
-// The roots never change while the server runs, so getconf runs once.
-let roots: Promise<string[]> | undefined;
-
-// Attachments in desktop chats land in the system temp folder; nothing outside
-// it is read, so a prompt can't point the server at other files on the Mac.
-const readAttachment = async (localPath: string) => {
-  roots ??= attachmentRoots();
-  const [allowed, resolved] = await Promise.all([
-    roots,
-    realpath(path.resolve(localPath)),
-  ]);
-  if (!allowed.some((root) => resolved.startsWith(`${root}${path.sep}`))) {
-    throw new Error("only images attached in this chat can be read");
-  }
-  const info = await stat(resolved);
-  if (!info.isFile() || info.size > MAX_IMAGE_BYTES) {
-    throw new Error("the attachment isn't an image file under 50 MB");
-  }
-  return new Uint8Array(await readFile(resolved));
-};
-
 export interface ArtworkSource {
   fileUrl?: string | undefined;
-  localPath?: string | undefined;
   url?: string | undefined;
 }
 
 // Returns the image bytes, plus the public URL when there is one (fal and
-// Fourthwall can fetch it; data URLs and attachments have none).
+// Fourthwall can fetch it; data URLs have none).
 export const loadArtwork = async ({
   fileUrl,
-  localPath,
   url,
 }: ArtworkSource): Promise<{ bytes: Uint8Array; source?: string }> => {
-  const given = [fileUrl, localPath, url].filter(
-    (value) => value !== undefined
-  );
+  const given = [fileUrl, url].filter((value) => value !== undefined);
   if (given.length !== 1) {
-    throw new Error("pass exactly one of artwork, path or url");
+    throw new Error("pass exactly one of artwork or url");
   }
   if (url?.startsWith("data:") === true) {
     return { bytes: decodeDataUrl(url) };
-  }
-  if (localPath !== undefined) {
-    return { bytes: await readAttachment(localPath) };
   }
   const remote = fileUrl ?? url ?? "";
   return { bytes: await downloadImage(remote), source: remote };

@@ -22,7 +22,7 @@
 <main>
   <p class="tag">App map · snapshot of commit c744d79 (Oct 19, 2026)</p>
   <h1>wovain app map</h1>
-  <p class="lede">wovain is a ChatGPT desktop plugin for print-on-demand sellers. Inside one chat it turns an idea into a live Fourthwall product, makes video ads for it, and builds one Meta Advantage+ sales campaign guarded by five automated rules.</p>
+  <p class="lede">wovain is a ChatGPT plugin for print-on-demand sellers, served from a hosted MCP server. Inside one chat it turns an idea into a live Fourthwall product, makes video ads for it, and builds one Meta Advantage+ sales campaign guarded by five automated rules.</p>
 
   <section aria-labelledby="pieces">
     <h2 id="pieces">The main pieces</h2>
@@ -90,7 +90,7 @@
     <h2 id="run">Run it again</h2>
     <ul>
       <li><code>bun install</code>, then copy <code>.env.example</code> to <code>.env</code> and fill in the keys you need.</li>
-      <li><code>bun run plugin:install</code> installs the compiled plugin in the ChatGPT desktop app; restart the app.</li>
+      <li><code>bun run plugin:install</code> installs the plugin in the ChatGPT desktop app, pointed at the hosted <code>/mcp</code>; restart the app.</li>
       <li>For iteration: <code>bun run plugin:dev</code> plus <code>bun run cards:watch</code>.</li>
       <li>See every card without ChatGPT: <code>bun run storybook</code>.</li>
       <li>Checks: <code>bun run check</code>, <code>bun run typecheck</code>, <code>bun test</code>, <code>bun run test:stories</code>.</li>

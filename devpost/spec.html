@@ -63,7 +63,7 @@
 </tr>
 <tr>
 <td>wovain server</td>
-<td>Our small Bun server, started by the ChatGPT desktop app</td>
+<td>Our small Next.js server, hosted on Vercel and reached over HTTPS</td>
 <td>Draws the cards, does the margin math, trend lookups, video captions, Meta rules, settings</td>
 </tr>
 <tr>
@@ -89,8 +89,8 @@
   <path d="M880 210H122" marker-end="url(#ar)"/><text class="lbl" x="500" y="203" text-anchor="middle">card redraws: Live + link</text>
 </svg>
 </div>
-<p>Where things are kept: a single SQLite file on your laptop holds settings and the state of each run, so a restart or a new chat picks up where you left off.</p>
-<p>Where you use it: wovain runs in the ChatGPT desktop app on the Mac, not on the web or phone.</p>
+<p>Where things are kept: the server keeps settings and the state of each run, so a new chat picks up where you left off. For now that is one SQLite file (in <code>/tmp</code> on Vercel, so it resets on a cold start); hosting step 2 moves it to Neon Postgres, with each user's own rows.</p>
+<p>Where you use it: on chatgpt.com and in the ChatGPT desktop app, because the server is hosted instead of started on your Mac.</p>
 <h2>The Core Journey Through the System</h2>
 <p>PRD ref: <code>prd.md &gt; The Core Journey</code>.</p>
 <div class="diagram" role="img" aria-label="The merchant talks to ChatGPT, which follows wovain's skills. Skills call four MCP servers: the wovain server, Fourthwall, Meta Ads and fal. The wovain server serves the cards and calls SerpApi, Etsy and Marker for trend data, the Meta Graph API for rules, and keeps wovain.sqlite. Card buttons post chat messages back to ChatGPT.">
@@ -101,7 +101,7 @@
   </defs>
   <g data-n="user"><rect x="20" y="175" width="150" height="50" rx="10"/><text x="95" y="197" text-anchor="middle">Merchant in</text><text x="95" y="213" text-anchor="middle">ChatGPT</text></g>
   <g data-n="skills"><rect x="220" y="175" width="150" height="50" rx="10"/><text x="295" y="197" text-anchor="middle">wovain skills</text><text x="295" y="213" text-anchor="middle" class="lbl">5 playbooks</text></g>
-  <g data-n="wovain" class="ours"><rect x="440" y="40" width="190" height="50" rx="10"/><text x="535" y="62" text-anchor="middle">wovain server</text><text x="535" y="78" text-anchor="middle" class="lbl">Bun, runs in ChatGPT desktop</text></g>
+  <g data-n="wovain" class="ours"><rect x="440" y="40" width="190" height="50" rx="10"/><text x="535" y="62" text-anchor="middle">wovain server</text><text x="535" y="78" text-anchor="middle" class="lbl">Next.js on Vercel</text></g>
   <g data-n="fw"><rect x="440" y="130" width="190" height="44" rx="10"/><text x="535" y="157" text-anchor="middle">Fourthwall MCP</text></g>
   <g data-n="meta"><rect x="440" y="214" width="190" height="44" rx="10"/><text x="535" y="241" text-anchor="middle">Meta Ads MCP</text></g>
   <g data-n="fal"><rect x="440" y="298" width="190" height="44" rx="10"/><text x="535" y="325" text-anchor="middle">fal MCP (Kling, MMAudio)</text></g>
@@ -211,7 +211,7 @@
 </tr>
 <tr>
 <td>MCP server</td>
-<td><code>@modelcontextprotocol/server</code> v2 over stdio</td>
+<td><code>@modelcontextprotocol/server</code> v2 over Streamable HTTP at <code>/mcp</code>, mounted in Next.js 16 on Vercel's Bun runtime</td>
 <td>2.3.1</td>
 <td>https://github.com/modelcontextprotocol/typescript-sdk</td>
 </tr>
@@ -286,12 +286,12 @@
 <ul>
 <li>TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.</li>
 <li>Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so <code>bunfig.toml</code> sets <code>[run] bun = true</code> and even Storybook, Vitest and other tools with a node shebang run on Bun; no Node install is needed.</li>
-<li>The server keeps an optional Streamable HTTP mode behind a flag. It is the fallback if the desktop-only install fails: the laptop then runs the server, ngrok exposes it, and wovain is used on chatgpt.com. It listens on 127.0.0.1 only, needs a bearer token (<code>WOVAIN_HTTP_TOKEN</code>), and accepts only localhost and the tunnel host (<code>WOVAIN_HTTP_ALLOWED_HOSTS</code>), so the tunnel can't be used by anyone else to reach the shop or ads.</li>
+<li>Hosting: the learner moved wovain from a desktop-only stdio plugin to a hosted server, so it works on chatgpt.com and server or card changes ship on deploy. Next.js (<code>apps/web</code>) mounts the MCP handler from <code>apps/server</code> at <code>/mcp</code>; it was picked over a bare <code>Bun.serve()</code> because full OAuth needs real pages (sign-in, consent, Meta linking, privacy policy), and it matches the learner's other project. Until OAuth lands, one bearer token (<code>WOVAIN_HTTP_TOKEN</code>) guards every request, and without it nothing is served.</li>
 <li>Ultracite with oxlint and oxfmt: the learner's choice (<code>ultracite init --linter oxlint</code>).</li>
 <li>React 19: both <code>@openai/apps-sdk-ui</code> and <code>ext-apps</code> support it; OpenAI's docs still show 18.</li>
 </ul>
 <h2>Where It Runs and How Someone Tries It</h2>
-<p>The ChatGPT desktop app for macOS is where you use it. wovain installs as a desktop-only plugin, and the app starts the wovain server on the Mac over stdio. No tunnel and no hosting. It works only in the desktop app's local threads, not on the web or phone. Source: https://developers.openai.com/plugins/deploy/desktop-only. Publishing local MCP servers is limited to approved partners, so build step 1 verifies the personal install path first.</p>
+<p>wovain is a hosted MCP server: a Next.js app (<code>apps/web</code>) on Vercel serves Streamable HTTP at <code>/mcp</code>, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus <code>mcp.json</code> pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and cards but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store, 3 OAuth 2.1 sign-in so anyone can install (Neon Auth lacks the OAuth-provider plugin, so likely Better Auth with its tables in Neon), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -302,15 +302,15 @@
 <tbody>
 <tr>
 <td>Plan</td>
-<td>ChatGPT Plus, ChatGPT desktop app for macOS</td>
+<td>ChatGPT Plus; chatgpt.com, or the desktop app for the plugin with its skills</td>
 </tr>
 <tr>
-<td>Laptop</td>
-<td>Bun 1.4 on the Mac</td>
+<td>Host</td>
+<td>Vercel (Bun runtime); Bun 1.4 locally for development</td>
 </tr>
 <tr>
-<td>Keys in <code>.env</code></td>
-<td><code>META_SYSTEM_USER_TOKEN</code>, <code>META_AD_ACCOUNT_ID</code>, <code>META_PAGE_ID</code>, <code>META_PIXEL_ID</code>, <code>SERPAPI_KEY</code>, <code>ETSY_API_KEY</code>, <code>MARKER_API_TOKEN</code>, <code>FAL_KEY</code> (fal storage uploads)</td>
+<td>Keys in <code>apps/web/.env</code> (project settings on Vercel)</td>
+<td><code>META_SYSTEM_USER_TOKEN</code>, <code>META_AD_ACCOUNT_ID</code>, <code>META_PAGE_ID</code>, <code>META_PIXEL_ID</code>, <code>SERPAPI_KEY</code>, <code>ETSY_API_KEY</code>, <code>MARKER_API_TOKEN</code>, <code>FAL_KEY</code> (fal storage uploads), <code>WOVAIN_HTTP_TOKEN</code> (guards <code>/mcp</code> until OAuth)</td>
 </tr>
 <tr>
 <td>Rehearsal</td>
@@ -325,11 +325,13 @@
 <p>Start it:</p>
 <pre><code class="language-bash">bun install
 bun run skills:restore          # course skills from skills-lock.json
-cp .env.example .env            # fill in keys (optional until a tool needs one)
-bun run plugin:install          # builds the cards and server binary, installs plugin/
+cp apps/web/.env.example apps/web/.env   # fill in keys (optional until a tool needs one)
+bun run build                   # builds the cards, then the Next.js app
+bun run dev                     # serves /mcp on localhost:3000
+bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (--url for a tunnel)
 </code></pre>
-<p>Connect it: <code>bun run plugin:install</code> copies <code>plugin/</code> to <code>~/.codex/plugins/wovain</code> and lists it in the personal marketplace <code>~/.agents/plugins/marketplace.json</code>. Restart the ChatGPT desktop app, open Plugins, then Personal, click + on wovain, and start a new chat. The app runs a cached copy and launches the compiled server <code>bin/wovain-server</code>, so it needs no Bun on its PATH; the server stores data in <code>${PLUGIN_DATA}</code> and reads keys from the repo's <code>.env</code> through <code>WOVAIN_ENV_FILE</code>. Fourthwall, Meta Ads and fal are added directly in the app: declared inside the plugin, they timed out at startup and held up every turn (verified in build step 1).</p>
-<p>Demo recording: in the ChatGPT desktop app on the Mac, follow <code>scope.md &gt; What &quot;working&quot; looks like</code> in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and a public GitHub repo; deployment is optional and not planned.</p>
+<p>Connect it: <code>bun run plugin:install</code> copies <code>plugin/</code> to <code>~/.codex/plugins/wovain</code>, points its <code>mcp.json</code> at the hosted <code>/mcp</code> (or <code>--url</code>, such as a tunnel to <code>bun run dev</code>), adds <code>WOVAIN_HTTP_TOKEN</code> from <code>apps/web/.env</code> as a header in that copy only, and lists it in the personal marketplace <code>~/.agents/plugins/marketplace.json</code>. Restart the ChatGPT desktop app, open Plugins, then Personal, click + on wovain, and start a new chat. Fourthwall, Meta Ads and fal are added directly in the app: declared inside the plugin, they timed out at startup and held up every turn (verified in build step 1).</p>
+<p>Demo recording: in ChatGPT (the desktop app or chatgpt.com), follow <code>scope.md &gt; What &quot;working&quot; looks like</code> in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and a public GitHub repo; the hosted server on Vercel is the deployment.</p>
 <h2>Look and Feel</h2>
 <p>Carried from <code>prd.md &gt; Look and Feel</code>.</p>
 <ul>
@@ -350,7 +352,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </div>
 <section class="panel" data-k="plugin-package" role="tabpanel">
 <h3>Plugin package</h3>
-<p>What it does: tells ChatGPT what wovain is and how to start its server. <code>plugin.json</code> holds name, version, description and display info, per the Agent Plugins 1.0.0 schema. <code>mcp.json</code> lists one local stdio server, wovain (<code>./bin/wovain-server</code>, compiled from <code>apps/server</code> by <code>bun run plugin:build</code>, with the built cards in <code>cards/</code>). Fourthwall (<code>https://mcp.fourthwall.com/app</code>), Meta Ads (<code>https://mcp.facebook.com/ads</code>) and fal (<code>https://mcp.fal.ai/mcp-relay</code>) are connected in the app instead. It holds no secret, so it is committed as is; the binary and cards are build output.</p>
+<p>What it does: tells ChatGPT what wovain is and where its server is. <code>plugin.json</code> holds name, version, description and display info, per the Agent Plugins 1.0.0 schema. <code>mcp.json</code> lists one Streamable HTTP server, wovain, at the hosted <code>/mcp</code> URL; the cards come from the server, not the package. Fourthwall (<code>https://mcp.fourthwall.com/app</code>), Meta Ads (<code>https://mcp.facebook.com/ads</code>) and fal (<code>https://mcp.fal.ai/mcp-relay</code>) are connected in the app instead. It holds no secret, so it is committed as is; the token goes only into the installed copy.</p>
 <p>PRD ref: <code>prd.md &gt; Screens and Layout</code>.</p>
 </section>
 <section class="panel" data-k="skills" role="tabpanel" hidden>
@@ -396,7 +398,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </section>
 <section class="panel" data-k="wovain-server" role="tabpanel" hidden>
 <h3>wovain server</h3>
-<p>What it does: one Bun process serving MCP over stdio and the card files as <code>ui://</code> resources. Finished media goes to fal storage, which gives each file a public <code>fal.media</code> URL. Each tool is one file with a zod input and output schema from <code>packages/shared</code>. Tools return user-safe errors and never pass raw upstream errors through.</p>
+<p>What it does: the MCP server as a library (<code>apps/server</code>), mounted by the Next.js route <code>apps/web/app/mcp/route.ts</code>: Streamable HTTP with a fresh server per request, and the card files as <code>ui://</code> resources. Finished media goes to fal storage, which gives each file a public <code>fal.media</code> URL. Each tool is one file with a zod input and output schema from <code>packages/shared</code>. Tools return user-safe errors and never pass raw upstream errors through.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -413,7 +415,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </tr>
 <tr>
 <td><code>stage_artwork</code></td>
-<td>Receives the artwork (image generation's <code>data:</code> URL, a public https URL, a chat attachment in the temp folder, or an <code>openai/fileParams</code> file), checks pixels and transparency, keeps the bytes for upload</td>
+<td>Receives the artwork (image generation's <code>data:</code> URL, a public https URL, or an <code>openai/fileParams</code> file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload</td>
 <td>wovain.sqlite, <code>data/media/</code></td>
 </tr>
 <tr>
@@ -598,7 +600,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 <tr>
 <td><code>/demo-check</code></td>
 <td>Project skill, user-only</td>
-<td>Preflight before recording: desktop plugin loaded, cards build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account</td>
+<td>Preflight before recording: plugin loaded and <code>/mcp</code> reachable, cards build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account</td>
 </tr>
 <tr>
 <td>claude-ads plugin (installed)</td>
@@ -753,11 +755,12 @@ pre-push:
 "test:coverage": "vitest run --coverage",
 "storybook": "storybook dev -p 6006",
 "test:stories": "vitest run --project storybook",
-"mock": "WOVAIN_MOCK=1 bun run apps/server/src/index.ts",
+"dev": "bun run --filter @wovain-foss/web dev",
+"mock": "WOVAIN_MOCK=1 bun run dev",
 "prepare": "lefthook install &amp;&amp; skills experimental_sync -y -a claude-code --copy &amp;&amp; msw init apps/cards/.storybook/public"
 </code></pre>
 <h2>Data Model</h2>
-<p>One SQLite file, <code>wovain.sqlite</code> in the plugin's data folder (<code>${PLUGIN_DATA}</code>; <code>apps/server/data/</code> in development, gitignored), read and written by the server only. Each record is one JSON row, checked against its zod schema on every read. An older <code>wovain.json</code> is imported once on start and kept as <code>wovain.json.imported</code>.</p>
+<p>One SQLite file, <code>wovain.sqlite</code> (<code>apps/server/data/</code> in development, gitignored; <code>/tmp/wovain</code> on Vercel, so it resets on a cold start until hosting step 2 moves the store to Neon Postgres), read and written by the server only. Each record is one JSON row, checked against its zod schema on every read. An older <code>wovain.json</code> is imported once on start and kept as <code>wovain.json.imported</code>.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -811,8 +814,7 @@ pre-push:
 <pre><code>wovain/
 ├── plugin/                      # what ChatGPT installs
 │   ├── plugin.json              # manifest: name, version, display info
-│   ├── mcp.json                 # wovain (local stdio, compiled binary)
-│   ├── bin/, cards/             # build output from bun run plugin:build (gitignored)
+│   ├── mcp.json                 # wovain (Streamable HTTP, the hosted /mcp URL)
 │   ├── skills/
 │   │   ├── wovain-trends/SKILL.md
 │   │   ├── wovain-design/SKILL.md
@@ -821,16 +823,22 @@ pre-push:
 │   │   └── wovain-optimize/SKILL.md
 │   └── assets/logo.svg
 ├── apps/
-│   ├── server/                  # Bun MCP server
+│   ├── server/                  # MCP server library: tools, cards, store
 │   │   ├── src/
-│   │   │   ├── index.ts         # stdio MCP server (HTTP mode behind a flag)
+│   │   │   ├── index.ts         # exports createHttpFetch, loadEnv, createStore
+│   │   │   ├── http.ts          # Streamable HTTP handler, bearer token until OAuth
 │   │   │   ├── env.ts           # zod-checked environment
 │   │   │   ├── store.ts         # wovain.sqlite read and write
 │   │   │   ├── tools/           # one file per tool
 │   │   │   ├── cards.ts         # registers the ui:// card resources
 │   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, ffmpeg, economics, rules
 │   │   ├── test/                # economics, rules, tool schemas, fixtures/
+│   │   ├── assets/fonts/        # DejaVu Sans Bold for captions
 │   │   └── data/                # wovain.sqlite, media/ (gitignored)
+│   ├── web/                     # Next.js on Vercel (Bun runtime)
+│   │   ├── app/mcp/route.ts     # mounts the MCP server at /mcp
+│   │   ├── next.config.ts       # traces cards, font and ffmpeg into the function
+│   │   └── .env.example         # server keys (apps/web/.env, gitignored)
 │   └── cards/                   # React cards, Vite single-file builds
 │       ├── src/
 │       │   ├── trend/ design/ ad/ campaign/ optimization/ settings/   # each with *.stories.tsx
@@ -843,9 +851,8 @@ pre-push:
 ├── .github/                     # workflows/ci.yml, workflows/release-please.yml, dependabot.yml
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course skills (bun run skills:restore), plus new-tool/ and demo-check/
-├── scripts/                     # plugin-build.ts, plugin-install.ts
+├── scripts/                     # plugin-install.ts
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
-├── .env.example
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
 ├── lefthook.yml                 # pre-commit, commit-msg, pre-push
 ├── commitlint.config.ts         # conventional commits
@@ -921,7 +928,8 @@ pre-push:
 <p>POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.</p>
 <h2>Important Failure Modes</h2>
 <ul>
-<li><strong>Desktop-only install isn't available for a personal plugin</strong> → switch the server to its HTTP mode and connect through ngrok on chatgpt.com. (Verified in build step 1: the personal install works.)</li>
+<li><strong>ChatGPT drops the bearer header from the plugin's <code>mcp.json</code></strong> → move OAuth (hosting step 3) ahead of everything else.</li>
+<li><strong>Vercel's <code>/tmp</code> resets</strong> → settings and runs vanish on a cold start until the Neon store (hosting step 2).</li>
 <li><strong>ChatGPT's image is too small or not transparent</strong> → fal removes the background and upscales; if still under the print size, the card shows print quality red and Approve disabled (<code>prd.md &gt; States and Boundaries</code> #4).</li>
 <li><strong>Fourthwall rejects the publish</strong> → card keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).</li>
 <li><strong>A video or its audio fails</strong> → the ad card shows the failed slot with Retry, or image only (#7).</li>
@@ -935,8 +943,8 @@ pre-push:
 <li><strong>Optimization card on check-in</strong> instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.</li>
 <li><strong>Print fidelity checked by eye</strong> in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.</li>
 <li><strong>Trademark screening via Marker</strong> instead of an official USPTO search API: none exists. Labeled screening, not legal advice.</li>
-<li><strong>One SQLite file</strong> (Bun's built-in <code>bun:sqlite</code>) instead of a database server: one merchant, one laptop, and transactions instead of a hand-written write lock.</li>
-<li><strong>Desktop-only plugin on the Mac</strong> instead of hosting: no tunnel or server to run; a public plugin would need a hosted server with OAuth.</li>
+<li><strong>One SQLite file</strong> (Bun's built-in <code>bun:sqlite</code>) for now instead of a database server, with transactions instead of a hand-written write lock; hosting step 2 replaces it with Neon Postgres.</li>
+<li><strong>One bearer token</strong> instead of OAuth for now: enough for one operator; anyone else installing needs OAuth (hosting step 3).</li>
 </ul>
 <h2>Decisions and Open Issues</h2>
 <div class="wrap"><table>
@@ -992,10 +1000,10 @@ pre-push:
 <td>Official examples assume Node</td>
 </tr>
 <tr>
-<td>Desktop-only plugin, server over stdio</td>
+<td>Hosted Next.js server on Vercel (Bun runtime), Streamable HTTP</td>
 <td>Learner</td>
-<td>No tunnel or hosting, like Claude's local plugins</td>
-<td>Desktop app only; no web or phone</td>
+<td>Works on chatgpt.com, ships on deploy, real pages for OAuth</td>
+<td>A host to run; OAuth and per-user data still to build</td>
 </tr>
 <tr>
 <td>Fidelity by eye</td>
@@ -1096,6 +1104,11 @@ pre-push:
 <td>9</td>
 <td>Storybook renders the cards with the mocked <code>window.openai</code> bridge</td>
 <td>Use a plain Vite gallery page</td>
+</tr>
+<tr>
+<td>10</td>
+<td>The hosted <code>/mcp</code> answers the plugin with the bearer header from <code>mcp.json</code>; a card renders on chatgpt.com</td>
+<td>OAuth first (hosting step 3)</td>
 </tr>
 </tbody>
 </table></div>

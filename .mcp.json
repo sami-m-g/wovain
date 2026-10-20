@@ -11,6 +11,11 @@
     "meta-ads": {
       "type": "http",
       "url": "https://mcp.facebook.com/ads"
+    },
+    "next-devtools": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": ["next-devtools-mcp@0.4.0"]
     }
   }
 }

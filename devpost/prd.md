@@ -234,10 +234,10 @@ Costs of running the proof of concept, on top of per-sale costs:
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
 | Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings card shows live fal prices |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
-| ChatGPT plan | Depends on your plan | Plus works: wovain installs as a personal plugin in the ChatGPT desktop app (verified in build step 1) |
+| ChatGPT plan | Depends on your plan | Plus works: the plugin installs in the ChatGPT desktop app (verified in build step 1), and the hosted server also works on chatgpt.com |
 | Trend data | $0 | Free tiers: SerpApi (250 searches a month), Etsy API, Marker API |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
-| Server hosting for the demo | $0 | wovain runs inside the ChatGPT desktop app on the Mac |
+| Server hosting | $0 | Vercel Hobby and Neon's free plan to start (unverified; Hobby is for non-commercial use, so Vercel Pro at $20 a month once others rely on it) |
 | Total for the test | $140 to $194 | Ad spend plus $4.59 of video |
 
 ### Ad cards

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": "../../node_modules/.tsbuild/apps/web",
+    "jsx": "react-jsx",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "plugins": [{ "name": "next" }],
+    "types": ["bun"]
+  },
+  "include": ["next-env.d.ts", "next.config.ts", "app", ".next/types/**/*.ts"]
+}

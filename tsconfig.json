@@ -12,6 +12,9 @@
     },
     {
       "path": "scripts"
+    },
+    {
+      "path": "apps/web"
     }
   ],
   "compilerOptions": {

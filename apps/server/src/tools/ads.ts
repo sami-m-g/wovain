@@ -82,7 +82,7 @@ export const registerAdTools = (
         throw new Error("add FAL_KEY to .env so finished videos can be hosted");
       }
       const settings = await store.getSettings();
-      const ffmpeg = env.WOVAIN_FFMPEG ?? ffmpegStatic ?? "";
+      const ffmpeg = ffmpegStatic ?? "";
       const logoSource =
         settings.overlay.logoUrl === "" ? logoUrl : settings.overlay.logoUrl;
       const [video, logo] = await Promise.all([

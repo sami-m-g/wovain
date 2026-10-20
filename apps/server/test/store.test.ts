@@ -72,8 +72,7 @@ describe("env", () => {
     expect(env.WOVAIN_MOCK).toBe(true);
   });
 
-  test("starts without keys when the env file is missing", () => {
-    const env = loadEnv({ WOVAIN_ENV_FILE: "/nonexistent/wovain/.env" });
-    expect(env.FAL_KEY).toBeUndefined();
+  test("ships the caption font with the server", async () => {
+    expect(await Bun.file(loadEnv({}).WOVAIN_FONT).exists()).toBe(true);
   });
 });

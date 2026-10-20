@@ -1,11 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 
-import {
-  createMcpHandler,
-  hostHeaderValidationResponse,
-  localhostAllowedHostnames,
-  originValidationResponse,
-} from "@modelcontextprotocol/server";
+import { createMcpHandler } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
@@ -18,30 +13,26 @@ const tokenMatches = (header: string | null, token: string) => {
   return given.length === expected.length && timingSafeEqual(given, expected);
 };
 
-// HTTP fallback (spec.md > Important Failure Modes): bearer token on every
-// request, and Host/Origin checks against localhost plus the tunnel's host,
-// so a tunnel or a DNS-rebinding page can't drive the merchant's shop and ads.
-export const createHttpFetch = (env: Env, store: Store, token: string) => {
+const unauthorized = () =>
+  new Response("Unauthorized", {
+    headers: { "www-authenticate": "Bearer" },
+    status: 401,
+  });
+
+// Streamable HTTP, one server per request. Until OAuth lands, one bearer
+// token guards every request; without WOVAIN_HTTP_TOKEN nothing is served.
+export const createHttpFetch = (env: Env, store: Store) => {
   const videoPricing = createVideoPricing(env.FAL_KEY);
   const handler = createMcpHandler(() =>
     createServer(env, store, videoPricing)
   );
-  const allowedHosts = [
-    ...localhostAllowedHostnames(),
-    ...env.WOVAIN_HTTP_ALLOWED_HOSTS,
-  ];
+  const token = env.WOVAIN_HTTP_TOKEN;
   return async (request: Request): Promise<Response> => {
-    const rejected =
-      hostHeaderValidationResponse(request, allowedHosts) ??
-      originValidationResponse(request, allowedHosts);
-    if (rejected !== undefined) {
-      return rejected;
-    }
-    if (!tokenMatches(request.headers.get("authorization"), token)) {
-      return new Response("Unauthorized", {
-        headers: { "www-authenticate": "Bearer" },
-        status: 401,
-      });
+    if (
+      token === undefined ||
+      !tokenMatches(request.headers.get("authorization"), token)
+    ) {
+      return unauthorized();
     }
     return await handler.fetch(request);
   };
