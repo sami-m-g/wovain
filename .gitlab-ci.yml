@@ -55,6 +55,7 @@ variables:
 .bun-install:
   cache:
     key:
+      prefix: bun-node-modules
       files: [bun.lock]
     paths: [node_modules/.cache/bun/]
   variables:
