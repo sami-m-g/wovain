@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "wovain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "From trend to live Fourthwall products and a Meta Advantage+ campaign, one approved card at a time.",
   "license": "MIT",
   "extensions": {
@@ -11,8 +11,13 @@
         "shortDescription": "Print-on-demand: trends, products and Meta ads from one chat",
         "developerName": "wovain",
         "category": "Productivity",
-        "capabilities": ["Read", "Write"],
-        "defaultPrompt": ["Show my wovain settings"],
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": [
+          "Show my wovain settings"
+        ],
         "brandColor": "#3B4CCA",
         "logo": "./assets/logo.png",
         "composerIcon": "./assets/logo.png"
