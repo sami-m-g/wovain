@@ -72,7 +72,22 @@ This copies `plugin/` into your personal plugin marketplace, pointed at the host
 
 Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
 
-The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror. GitLab CI/CD (`.gitlab-ci.yml`) verifies every push and merge request, deploys each merge request to a Vercel preview (a GitLab review environment) and `main` to https://wovain.vercel.app, then smoke-tests the live OAuth chain. It needs the CI variables `VERCEL_TOKEN` (masked), `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
+The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
+
+| Stage | What runs |
+| --- | --- |
+| verify | Build, lint, typecheck, knip, tests, card stories |
+| test | GitLab SAST, Secret Detection and Dependency Scanning |
+| package | The ChatGPT plugin as a zip artifact |
+| deploy | Merge requests: a Vercel preview on its own Neon branch `mr-<iid>`, removed when the review environment stops. `main`: https://wovain.vercel.app |
+| monitor | A smoke test of the live OAuth chain |
+| release | semantic-release, after the smoke test passes |
+
+It needs the CI variables `VERCEL_TOKEN`, `NEON_API_KEY`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` and `NEON_PROJECT_ID`. Google sign-in only works on production, because Google needs exact redirect URIs.
+
+## Releases
+
+Releases come from conventional commits. semantic-release (`.releaserc.json`) picks the version, writes `CHANGELOG.md`, sets the version in `package.json` and `plugin/plugin.json`, commits that as `chore(release): x [skip ci]`, tags it, and publishes a GitLab release with the plugin zip as the generic package `wovain-plugin`. The tag `v0.1.0` on the first commit is its baseline. Renovate opens dependency update merge requests every Monday from a pipeline schedule (`renovate.json`: updates wait 7 days, minor and patch are grouped).
 
 ## Layout
 

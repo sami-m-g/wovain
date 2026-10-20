@@ -6,7 +6,7 @@
 #             main: production
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release + plugin zip
-# Renovate runs on its own pipeline schedule (RENOVATE=true).
+# Renovate runs on the "Renovate dependency updates" pipeline schedule.
 # CI variables: VERCEL_TOKEN, NEON_API_KEY, GITLAB_TOKEN, RENOVATE_TOKEN
 # (all masked), VERCEL_ORG_ID, VERCEL_PROJECT_ID, NEON_PROJECT_ID.
 
@@ -56,9 +56,9 @@ variables:
   cache:
     key:
       files: [bun.lock]
-    paths: [.bun-cache/]
+    paths: [node_modules/.cache/bun/]
   variables:
-    BUN_INSTALL_CACHE_DIR: .bun-cache
+    BUN_INSTALL_CACHE_DIR: node_modules/.cache/bun
   before_script:
     - apt-get update -qq && apt-get install -y -qq git >/dev/null
     - bun install --frozen-lockfile
@@ -112,9 +112,9 @@ deploy:preview:
   variables:
     NEON_BRANCH: mr-$CI_MERGE_REQUEST_IID
   script:
-    # Each merge request gets its own Neon branch (from main) with the
-    # migrations applied, so a preview never writes to production data.
-    - neonctl branches get "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" >/dev/null 2>&1 || neonctl branches create --project-id "$NEON_PROJECT_ID" --name "$NEON_BRANCH" --parent main --api-key "$NEON_API_KEY" >/dev/null
+    # Each merge request gets its own Neon branch, forked from dev (schema,
+    # no production users or tokens) with the MR's migrations applied.
+    - neonctl branches get "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" >/dev/null 2>&1 || neonctl branches create --project-id "$NEON_PROJECT_ID" --name "$NEON_BRANCH" --parent dev --api-key "$NEON_API_KEY" >/dev/null
     - export DATABASE_URL="$(neonctl connection-string "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --pooled --api-key "$NEON_API_KEY")"
     - bun install --frozen-lockfile --ignore-scripts
     - bun run db:migrate
@@ -195,14 +195,14 @@ release:
   script:
     - npx semantic-release
 
-# Configure: dependency update merge requests, on the RENOVATE=true schedule.
+# Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
 renovate:
   stage: verify
   image:
     name: renovate/renovate:44.138.0
     entrypoint: [""]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $RENOVATE == "true"
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "Renovate dependency updates"
   variables:
     GIT_STRATEGY: none
     RENOVATE_PLATFORM: gitlab

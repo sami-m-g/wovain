@@ -217,9 +217,10 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | knip | Dead-code check | Finds unused files, exports and dependencies before pushes and in CI |
 | Storybook | Card workshop | One story per card state with a mocked `window.openai`; a11y and interaction tests |
 | MSW mock mode | Rehearsal | `bun run mock` answers wovain's outside calls from `packages/mocks`, so the demo can be rehearsed without spending |
-| GitLab CI/CD (`.gitlab-ci.yml`) | CI/CD | Stages verify, deploy, monitor: `verify` (build, check, typecheck, knip, test on `oven/bun:1.4.2`) and `stories` (Playwright); `deploy:preview` sends each merge request to a Vercel preview, tracked as the review environment `review/<MR iid>` (auto-stops after a week); `deploy:production` runs `vercel deploy --prod` from `main` (environment production, https://wovain.vercel.app); `smoke:production` curls the live OAuth chain (`/mcp` 401, both metadata documents, the sign-in page). CI variables: `VERCEL_TOKEN` (masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
-| GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace and available, not wired yet: code review, SAST false-positive detection, resolve SAST vulnerability, developer, fix CI/CD pipeline, convert to GitLab CI/CD |
-| release-please | Releases | Changelog and version bumps from conventional commits; its GitHub workflow is removed and release automation moves to GitLab later. Dependabot is removed too |
+| GitLab CI/CD (`.gitlab-ci.yml`) | CI/CD | Stages verify, test, package, deploy, monitor, release: `verify` (build, check, typecheck, knip, test on `oven/bun:1.4.2`) and `stories` (Playwright); `test` runs GitLab's SAST, Secret Detection and Dependency Scanning templates; `package:plugin` zips the plugin as an artifact; `deploy:preview` gives each merge request its own Neon branch `mr-<iid>` (created from `dev`, which has the schema but no production data, with neonctl 8.8.0, migrated with `bun run db:migrate`) and a Vercel preview that uses it through `--env DATABASE_URL`, tracked as the review environment `review/<MR iid>` (auto-stops after a week; `stop:preview` deletes the branch); `deploy:production` runs `vercel deploy --prod` from `main` (environment production, https://wovain.vercel.app); `smoke:production` curls the live OAuth chain (`/mcp` 401, both metadata documents, the sign-in page); `release` runs semantic-release only after the smoke test passes. Renovate runs on the pipeline schedule "Renovate dependency updates" (Mondays 06:00 UTC). CI variables: `VERCEL_TOKEN`, `NEON_API_KEY` (scoped to the wovain Neon project), `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `NEON_PROJECT_ID`. Google sign-in doesn't work on preview URLs (Google needs exact redirect URIs), so previews are for checks that don't need a login |
+| GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. With the Developer role we can run the developer flow (issue to MR), "Fix pipeline with Duo" on a failed pipeline, and code review (the MR template assigns `@GitLabDuo` as reviewer). SAST false-positive detection and SAST vulnerability resolution need a Maintainer to switch on; that request goes to GitLab contributor-success |
+| semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to `package.json` and `plugin/plugin.json`, then zips the plugin), git (commits `CHANGELOG.md` and the versions as `chore(release): x [skip ci]`) and gitlab (a GitLab release with the plugin zip as the generic package `wovain-plugin`). The tag `v0.1.0` on the first commit is the baseline, so the first release covers the whole history. It replaces release-please, whose config files are gone. That release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
+| Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
 | Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the cards), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
@@ -291,7 +292,7 @@ Scripts in the root `package.json`:
 
 ## Data Model
 
-One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The schema is Drizzle (`packages/db`): `records` keeps each record in a `jsonb` column, and Better Auth's tables come from `bunx auth@1.7.7 generate`. drizzle-kit writes SQL migrations to `packages/db/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
+One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The schema is Drizzle (`packages/db`): `records` keeps each record in a `jsonb` column, and Better Auth's tables come from `bunx auth@1.7.7 generate`. drizzle-kit writes SQL migrations to `packages/db/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, each merge request preview gets its own branch `mr-<iid>` (deleted when the review environment stops), and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
 
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
@@ -357,10 +358,13 @@ wovain/
 │   ├── migrations/              # SQL from drizzle-kit (bun run db:generate)
 │   └── drizzle.config.ts
 ├── packages/mocks/              # MSW handlers: tests, mock mode, Storybook
-├── .gitlab-ci.yml               # verify, deploy (Vercel preview / production), monitor (smoke)
+├── .gitlab-ci.yml               # verify, test (security), package, deploy (preview + Neon branch / production), monitor, release
+├── .gitlab/                     # issue and MR templates, CODEOWNERS
+├── .releaserc.json              # semantic-release plugins
+├── renovate.json                # Renovate dependency updates
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course skills (bun run skills:restore), plus new-tool/ and demo-check/
-├── scripts/                     # plugin-install.ts
+├── scripts/                     # plugin-install.ts, plan-sync.ts, prepare.ts, set-version.ts (release versions)
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
 ├── lefthook.yml                 # pre-commit, commit-msg, pre-push
@@ -390,7 +394,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 ## Important Failure Modes
 
 - **Google sign-in isn't configured, or ChatGPT stalls at consent** → the sign-in page says so; add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on Vercel, and check the redirect URIs on the Google client.
-- **Preview deployments share the production database** → turn on Neon's branch per preview in the Vercel integration before testers use previews.
+- **Google sign-in fails on preview URLs** → Google only accepts exact redirect URIs, so test sign-in on production; each preview still has its own Neon branch, so previews never touch production data.
 - **ChatGPT's image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the card shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
 - **Fourthwall rejects the publish** → card keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
 - **A video or its audio fails** → the ad card shows the failed slot with Retry, or image only (#7).
