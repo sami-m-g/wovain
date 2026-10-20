@@ -23,6 +23,13 @@ const asQuery = (params: Record<string, string | string[] | undefined>) => {
   return query;
 };
 
+// ChatGPT's OAuth redirect hosts. Any app can register itself and pick its own
+// name, so only a client that returns to one of these is shown by name.
+const CHATGPT_HOSTS = new Set(["chatgpt.com", "chat.openai.com"]);
+
+const hostOf = (uri: string | null) =>
+  uri !== null && URL.canParse(uri) ? new URL(uri).host : undefined;
+
 // The authorize step sends a signed query here; anything unsigned is refused.
 const Consent = async ({ searchParams }: Props) => {
   const query = asQuery(await searchParams);
@@ -45,14 +52,25 @@ const Consent = async ({ searchParams }: Props) => {
       query: { client_id: clientId },
     })
     .catch(() => null);
-  const name = client?.client_name ?? "This app";
+  const host = hostOf(query.get("redirect_uri")) ?? "an unknown address";
+  const trusted = CHATGPT_HOSTS.has(host);
+  const name = trusted
+    ? (client?.client_name ?? "ChatGPT")
+    : "An unverified app";
   return (
     <main className="panel">
       <h1>Allow {name} to use wovain?</h1>
       <p>
         It will design products, make ads and run campaigns for your shop
-        through wovain, as you ask in chat.
+        through wovain, as you ask in chat. You’ll go back to{" "}
+        <strong>{host}</strong>.
       </p>
+      {trusted ? null : (
+        <p role="alert">
+          This app doesn’t return to ChatGPT. Deny unless you set it up
+          yourself.
+        </p>
+      )}
       <ConsentButtons />
     </main>
   );

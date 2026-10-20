@@ -8,12 +8,17 @@ import { getMigrations } from "better-auth/db/migration";
 import { z } from "zod";
 
 import { createAuth } from "../lib/auth.ts";
+import { loadAuthEnv } from "../lib/env.ts";
 
 const site = "http://localhost:3000";
 const redirectUri = "https://chatgpt.com/connector_platform_oauth_redirect";
 
 const auth = createAuth(
-  { BETTER_AUTH_SECRET: "s".repeat(32), BETTER_AUTH_URL: site },
+  loadAuthEnv({
+    BETTER_AUTH_SECRET: "s".repeat(32),
+    BETTER_AUTH_URL: site,
+    WOVAIN_ALLOWED_EMAILS: "Owner@Example.com",
+  }),
   await mkdtemp(path.join(tmpdir(), "wovain-auth-"))
 );
 
@@ -94,5 +99,26 @@ describe("OAuth for ChatGPT", () => {
     expect(location.pathname).toBe("/sign-in");
     expect(location.searchParams.get("client_id")).toBe(clientId);
     expect(location.searchParams.has("sig")).toBe(true);
+  });
+});
+
+const createUser = async (email: string) => {
+  const { internalAdapter } = await auth.$context;
+  return await internalAdapter
+    .createUser(
+      { email, emailVerified: true, name: "Test" },
+      { method: "admin" }
+    )
+    .catch(() => null);
+};
+
+// Everyone signed in acts through the operator's Meta and fal keys for now.
+describe("sign-in allowlist", () => {
+  test("lets a listed email create an account, ignoring case", async () => {
+    expect(await createUser("owner@example.com")).not.toBeNull();
+  });
+
+  test("creates no account for anyone else", async () => {
+    expect(await createUser("stranger@example.com")).toBeNull();
   });
 });

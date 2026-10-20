@@ -11,6 +11,21 @@ const authEnvSchema = z.object({
   VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   VERCEL_URL: z.string().optional(),
+  // Comma-separated emails allowed to sign in. Until each merchant links their
+  // own Meta and fal accounts, every signed-in user acts through the
+  // operator's keys, so an empty list lets nobody in.
+  WOVAIN_ALLOWED_EMAILS: z
+    .string()
+    .default("")
+    .transform(
+      (value) =>
+        new Set(
+          value
+            .split(",")
+            .map((email) => email.trim().toLowerCase())
+            .filter((email) => email !== "")
+        )
+    ),
 });
 
 export type AuthEnv = z.infer<typeof authEnvSchema>;

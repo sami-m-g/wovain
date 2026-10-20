@@ -37,9 +37,32 @@ export const createAuth = (env: AuthEnv, dataDir: string) => {
           },
         }
       : {};
+  const allowed = (email: string | null | undefined) =>
+    email !== null &&
+    email !== undefined &&
+    env.WOVAIN_ALLOWED_EMAILS.has(email.toLowerCase());
   return betterAuth({
     baseURL,
     database: authDatabase(env, dataDir),
+    // Sign-in is closed to anyone off the allowlist (env.ts explains why):
+    // no account is created for them, and a removed user gets no new session.
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session, ctx) => {
+            const user = await ctx?.context.internalAdapter.findUserById(
+              session.userId
+            );
+            return allowed(user?.email);
+          },
+        },
+      },
+      user: {
+        create: {
+          before: async (user) => await Promise.resolve(allowed(user.email)),
+        },
+      },
+    },
     plugins: [
       jwt(),
       mcp({
