@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { requireMcpAuth } from "@better-auth/mcp";
-import { createTestDb } from "@wovain-foss/db/testing";
+import { createTestDb } from "@wovain/db/testing";
 import { z } from "zod";
 
 import { createAuth } from "../lib/auth.ts";

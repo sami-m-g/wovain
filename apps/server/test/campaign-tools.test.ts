@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 
-import { campaignResultSchema } from "@wovain-foss/shared/campaign";
-import { metaRules } from "@wovain-foss/shared/rules";
-import type { MetaRule } from "@wovain-foss/shared/rules";
-import { defaultSettings } from "@wovain-foss/shared/settings";
+import { campaignResultSchema } from "@wovain/shared/campaign";
+import { metaRules } from "@wovain/shared/rules";
+import type { MetaRule } from "@wovain/shared/rules";
+import { defaultSettings } from "@wovain/shared/settings";
 
 import type { Store } from "../src/store.ts";
 import {

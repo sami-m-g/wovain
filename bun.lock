@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "wovain-foss",
+      "name": "wovain",
       "devDependencies": {
         "@commitlint/cli": "21.2.4",
         "@commitlint/config-conventional": "21.2.4",
@@ -26,12 +26,12 @@
       },
     },
     "apps/cards": {
-      "name": "@wovain-foss/cards",
+      "name": "@wovain/cards",
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/ext-apps": "2.0.3",
         "@openai/apps-sdk-ui": "0.2.2",
-        "@wovain-foss/shared": "workspace:*",
+        "@wovain/shared": "workspace:*",
         "react": "19.3.1",
         "react-dom": "19.3.1",
         "zod": "4.6.7",
@@ -56,15 +56,15 @@
       },
     },
     "apps/server": {
-      "name": "@wovain-foss/server",
+      "name": "@wovain/server",
       "version": "0.1.0",
       "dependencies": {
         "@fal-ai/client": "1.10.1",
         "@modelcontextprotocol/ext-apps": "2.0.3",
         "@modelcontextprotocol/server": "2.3.1",
         "@vercel/blob": "2.8.1",
-        "@wovain-foss/db": "workspace:*",
-        "@wovain-foss/shared": "workspace:*",
+        "@wovain/db": "workspace:*",
+        "@wovain/shared": "workspace:*",
         "ffmpeg-static": "5.3.0",
         "zod": "4.6.7",
       },
@@ -73,7 +73,7 @@
       },
     },
     "apps/web": {
-      "name": "@wovain-foss/web",
+      "name": "@wovain/web",
       "version": "0.1.0",
       "dependencies": {
         "@better-auth/cimd": "1.7.7",
@@ -81,8 +81,8 @@
         "@better-auth/mcp": "1.7.7",
         "@better-auth/oauth-provider": "1.7.7",
         "@better-auth/utils": "0.4.2",
-        "@wovain-foss/db": "workspace:*",
-        "@wovain-foss/server": "workspace:*",
+        "@wovain/db": "workspace:*",
+        "@wovain/server": "workspace:*",
         "better-auth": "1.7.7",
         "better-call": "1.4.0",
         "next": "16.4.2",
@@ -97,7 +97,7 @@
       },
     },
     "packages/db": {
-      "name": "@wovain-foss/db",
+      "name": "@wovain/db",
       "version": "0.1.0",
       "dependencies": {
         "drizzle-orm": "0.45.4",
@@ -109,7 +109,7 @@
       },
     },
     "packages/shared": {
-      "name": "@wovain-foss/shared",
+      "name": "@wovain/shared",
       "version": "0.1.0",
       "dependencies": {
         "zod": "4.6.7",
@@ -937,15 +937,15 @@
 
     "@webcontainer/env": ["@webcontainer/env@1.1.1", "", {}, "sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng=="],
 
-    "@wovain-foss/cards": ["@wovain-foss/cards@workspace:apps/cards"],
+    "@wovain/cards": ["@wovain/cards@workspace:apps/cards"],
 
-    "@wovain-foss/db": ["@wovain-foss/db@workspace:packages/db"],
+    "@wovain/db": ["@wovain/db@workspace:packages/db"],
 
-    "@wovain-foss/server": ["@wovain-foss/server@workspace:apps/server"],
+    "@wovain/server": ["@wovain/server@workspace:apps/server"],
 
-    "@wovain-foss/shared": ["@wovain-foss/shared@workspace:packages/shared"],
+    "@wovain/shared": ["@wovain/shared@workspace:packages/shared"],
 
-    "@wovain-foss/web": ["@wovain-foss/web@workspace:apps/web"],
+    "@wovain/web": ["@wovain/web@workspace:apps/web"],
 
     "acorn": ["acorn@8.19.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw=="],
 

@@ -7,9 +7,9 @@ import {
   designSchema,
   quoteResultSchema,
   designStatusSchema,
-} from "@wovain-foss/shared/design";
-import type { Design, DesignQuote } from "@wovain-foss/shared/design";
-import { priceProduct, sizeCostSchema } from "@wovain-foss/shared/economics";
+} from "@wovain/shared/design";
+import type { Design, DesignQuote } from "@wovain/shared/design";
+import { priceProduct, sizeCostSchema } from "@wovain/shared/economics";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";

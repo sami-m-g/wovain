@@ -3,8 +3,8 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   settingsPatchSchema,
   settingsResultSchema,
-} from "@wovain-foss/shared/settings";
-import type { Settings } from "@wovain-foss/shared/settings";
+} from "@wovain/shared/settings";
+import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";

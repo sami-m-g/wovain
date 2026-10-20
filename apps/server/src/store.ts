@@ -1,15 +1,12 @@
 import { get as getBlob, put as putBlob } from "@vercel/blob";
-import { and, counters, eq, records, sql } from "@wovain-foss/db";
-import type { Db } from "@wovain-foss/db";
-import { adSchema } from "@wovain-foss/shared/ad";
-import type { Ad } from "@wovain-foss/shared/ad";
-import { designSchema } from "@wovain-foss/shared/design";
-import type { Design } from "@wovain-foss/shared/design";
-import {
-  applySettingsPatch,
-  settingsSchema,
-} from "@wovain-foss/shared/settings";
-import type { Settings, SettingsPatch } from "@wovain-foss/shared/settings";
+import { and, counters, eq, records, sql } from "@wovain/db";
+import type { Db } from "@wovain/db";
+import { adSchema } from "@wovain/shared/ad";
+import type { Ad } from "@wovain/shared/ad";
+import { designSchema } from "@wovain/shared/design";
+import type { Design } from "@wovain/shared/design";
+import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
+import type { Settings, SettingsPatch } from "@wovain/shared/settings";
 import { z } from "zod";
 
 // Staged artwork: the bytes live in media under `key`, the record in Neon.

@@ -1,6 +1,6 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
-import { adResultSchema } from "@wovain-foss/shared/ad";
-import type { Ad, AdStatus } from "@wovain-foss/shared/ad";
+import { adResultSchema } from "@wovain/shared/ad";
+import type { Ad, AdStatus } from "@wovain/shared/ad";
 
 import { callTool, say, useCard } from "../lib/bridge.ts";
 import { AdCardView } from "./ad-card-view.tsx";

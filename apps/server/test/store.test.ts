@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { defaultSettings } from "@wovain-foss/shared/settings";
+import { defaultSettings } from "@wovain/shared/settings";
 
 import { loadEnv } from "../src/env.ts";
 import { createStore } from "../src/store.ts";

@@ -1,4 +1,4 @@
-import type { Campaign } from "@wovain-foss/shared/campaign";
+import type { Campaign } from "@wovain/shared/campaign";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";

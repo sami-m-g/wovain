@@ -6,8 +6,8 @@ import {
   Play,
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
-import type { Ad, AdSlot, AdVideo } from "@wovain-foss/shared/ad";
-import { money } from "@wovain-foss/shared/economics";
+import type { Ad, AdSlot, AdVideo } from "@wovain/shared/ad";
+import { money } from "@wovain/shared/economics";
 import { useId, useRef, useState } from "react";
 
 export interface AdCardActions {

@@ -6,9 +6,9 @@ import {
   SettingsCog,
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
-import { printQuality } from "@wovain-foss/shared/design";
-import type { Design } from "@wovain-foss/shared/design";
-import { money } from "@wovain-foss/shared/economics";
+import { printQuality } from "@wovain/shared/design";
+import type { Design } from "@wovain/shared/design";
+import { money } from "@wovain/shared/economics";
 import { useEffect, useId, useState } from "react";
 
 import { PricingSettings } from "./pricing-settings.tsx";

@@ -1,5 +1,5 @@
 import { createMcpHandler } from "@modelcontextprotocol/server";
-import type { Db } from "@wovain-foss/db";
+import type { Db } from "@wovain/db";
 
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";

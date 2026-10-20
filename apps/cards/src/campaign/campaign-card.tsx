@@ -1,5 +1,5 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
-import { campaignResultSchema } from "@wovain-foss/shared/campaign";
+import { campaignResultSchema } from "@wovain/shared/campaign";
 
 import { say, useCard } from "../lib/bridge.ts";
 import { CampaignCardView } from "./campaign-card-view.tsx";

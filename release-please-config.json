@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "wovain-foss",
+      "package-name": "wovain",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {

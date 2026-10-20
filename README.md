@@ -24,8 +24,8 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 ## Setup
 
 ```bash
-git clone https://github.com/sami-m-g/wovain-foss.git
-cd wovain-foss
+git clone https://github.com/sami-m-g/wovain.git
+cd wovain
 bun install
 cp apps/web/.env.example apps/web/.env
 ```

@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 
-import { defaultSettings } from "@wovain-foss/shared/settings";
+import { defaultSettings } from "@wovain/shared/settings";
 import {
   clipCost,
   clipSeconds,
   videoModels,
-} from "@wovain-foss/shared/video-models";
+} from "@wovain/shared/video-models";
 
 test("a 15 s clip costs what fal lists", () => {
   expect(clipCost("kling-v3-standard", 15)).toBeCloseTo(2.1, 2);

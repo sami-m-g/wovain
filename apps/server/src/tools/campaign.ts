@@ -4,17 +4,17 @@ import {
   blockerSchema,
   campaignResultSchema,
   campaignStatusSchema,
-} from "@wovain-foss/shared/campaign";
-import type { Campaign } from "@wovain-foss/shared/campaign";
-import { breakeven, money } from "@wovain-foss/shared/economics";
+} from "@wovain/shared/campaign";
+import type { Campaign } from "@wovain/shared/campaign";
+import { breakeven, money } from "@wovain/shared/economics";
 import {
   adName,
   metaRules,
   ruleLabels,
   ruleThresholds,
-} from "@wovain-foss/shared/rules";
-import type { RuleLabel, RuleProduct } from "@wovain-foss/shared/rules";
-import type { Settings } from "@wovain-foss/shared/settings";
+} from "@wovain/shared/rules";
+import type { RuleLabel, RuleProduct } from "@wovain/shared/rules";
+import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";

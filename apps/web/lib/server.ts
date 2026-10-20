@@ -1,7 +1,7 @@
 import path from "node:path";
 
-import { createDb } from "@wovain-foss/db";
-import { blobMedia, loadEnv } from "@wovain-foss/server";
+import { createDb } from "@wovain/db";
+import { blobMedia, loadEnv } from "@wovain/server";
 
 import { createAuth } from "./auth.ts";
 import { loadAuthEnv, siteUrl } from "./env.ts";

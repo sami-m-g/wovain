@@ -2,8 +2,8 @@ import {
   listVideoPrices,
   videoModelIds,
   videoModels,
-} from "@wovain-foss/shared/video-models";
-import type { VideoPrices } from "@wovain-foss/shared/video-models";
+} from "@wovain/shared/video-models";
+import type { VideoPrices } from "@wovain/shared/video-models";
 import { z } from "zod";
 
 // fal's Platform API returns current list prices (the same data its MCP's

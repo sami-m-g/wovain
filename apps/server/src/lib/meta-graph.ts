@@ -1,4 +1,4 @@
-import type { MetaRule } from "@wovain-foss/shared/rules";
+import type { MetaRule } from "@wovain/shared/rules";
 import { z } from "zod";
 
 // The one thing the Meta Ads MCP can't do: automated rules

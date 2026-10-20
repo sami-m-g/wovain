@@ -1,5 +1,5 @@
 {
-  "name": "@wovain-foss/web",
+  "name": "@wovain/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "@better-auth/mcp": "1.7.7",
     "@better-auth/oauth-provider": "1.7.7",
     "@better-auth/utils": "0.4.2",
-    "@wovain-foss/db": "workspace:*",
-    "@wovain-foss/server": "workspace:*",
+    "@wovain/db": "workspace:*",
+    "@wovain/server": "workspace:*",
     "better-auth": "1.7.7",
     "better-call": "1.4.0",
     "next": "16.4.2",

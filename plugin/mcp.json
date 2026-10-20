@@ -3,7 +3,7 @@
   "mcpServers": {
     "wovain": {
       "type": "streamable-http",
-      "url": "https://wovain-foss.vercel.app/mcp"
+      "url": "https://wovain.vercel.app/mcp"
     }
   }
 }

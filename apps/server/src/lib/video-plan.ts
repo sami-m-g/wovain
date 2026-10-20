@@ -1,15 +1,12 @@
-import type { AdSlot } from "@wovain-foss/shared/ad";
-import type { Design } from "@wovain-foss/shared/design";
-import type { Settings } from "@wovain-foss/shared/settings";
+import type { AdSlot } from "@wovain/shared/ad";
+import type { Design } from "@wovain/shared/design";
+import type { Settings } from "@wovain/shared/settings";
 import {
   clipCost,
   clipSeconds,
   videoModels,
-} from "@wovain-foss/shared/video-models";
-import type {
-  VideoModelId,
-  VideoPrices,
-} from "@wovain-foss/shared/video-models";
+} from "@wovain/shared/video-models";
+import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
 
 // Turns settings and a design into ready-to-submit fal requests, one per clip,
 // so the wovain-ads skill passes them to fal's submit_jobs unchanged.

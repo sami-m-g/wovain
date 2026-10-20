@@ -1,6 +1,6 @@
 import { defineConfig } from "@neon/config/v1";
 
-// The Neon project behind wovain (wovain-foss, managed through the Vercel
+// The Neon project behind wovain (the Neon project named wovain, managed through the Vercel
 // integration). Preview it with `bunx neon@8.8.0 config plan` and apply it
 // with `bunx neon@8.8.0 config apply`; both need a Neon API key.
 export default defineConfig({

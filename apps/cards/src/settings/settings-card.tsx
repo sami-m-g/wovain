@@ -1,5 +1,5 @@
-import { settingsResultSchema } from "@wovain-foss/shared/settings";
-import type { Settings } from "@wovain-foss/shared/settings";
+import { settingsResultSchema } from "@wovain/shared/settings";
+import type { Settings } from "@wovain/shared/settings";
 
 import {
   callTool,

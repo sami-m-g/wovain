@@ -1,16 +1,13 @@
-import { settingsSchema } from "@wovain-foss/shared/settings";
-import type { Settings } from "@wovain-foss/shared/settings";
+import { settingsSchema } from "@wovain/shared/settings";
+import type { Settings } from "@wovain/shared/settings";
 import {
   LIST_PRICES_AS_OF,
   clipCost,
   clipSeconds,
   videoModelIds,
   videoModels,
-} from "@wovain-foss/shared/video-models";
-import type {
-  VideoModelId,
-  VideoPrices,
-} from "@wovain-foss/shared/video-models";
+} from "@wovain/shared/video-models";
+import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
 import { z } from "zod";
 
 // What the card shows for each setting. Groups and keys mirror packages/shared.

@@ -1,8 +1,8 @@
 import { cimd } from "@better-auth/cimd";
 import { fetchClientMetadataResource } from "@better-auth/cimd/node";
 import { mcp } from "@better-auth/mcp";
-import { schema } from "@wovain-foss/db";
-import type { Db } from "@wovain-foss/db";
+import { schema } from "@wovain/db";
+import type { Db } from "@wovain/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";

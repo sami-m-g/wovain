@@ -1,4 +1,4 @@
-import type { Ad } from "@wovain-foss/shared/ad";
+import type { Ad } from "@wovain/shared/ad";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";

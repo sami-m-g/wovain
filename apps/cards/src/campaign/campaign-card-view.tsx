@@ -1,7 +1,7 @@
 import { Badge } from "@openai/apps-sdk-ui/components/Badge";
 import { Button } from "@openai/apps-sdk-ui/components/Button";
-import type { Campaign } from "@wovain-foss/shared/campaign";
-import { money } from "@wovain-foss/shared/economics";
+import type { Campaign } from "@wovain/shared/campaign";
+import { money } from "@wovain/shared/economics";
 import { useId, useState } from "react";
 
 export interface CampaignCardActions {

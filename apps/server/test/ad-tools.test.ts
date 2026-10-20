@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import path from "node:path";
 
 import type { Client } from "@modelcontextprotocol/client";
-import { defaultSettings } from "@wovain-foss/shared/settings";
-import { listVideoPrices } from "@wovain-foss/shared/video-models";
+import { defaultSettings } from "@wovain/shared/settings";
+import { listVideoPrices } from "@wovain/shared/video-models";
 import { z } from "zod";
 
 import { setResolver } from "../src/lib/fetch-image.ts";

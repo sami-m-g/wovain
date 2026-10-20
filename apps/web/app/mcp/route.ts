@@ -1,6 +1,6 @@
 import { requireMcpAuth } from "@better-auth/mcp";
-import { eq, user } from "@wovain-foss/db";
-import { createMcpFetch } from "@wovain-foss/server";
+import { eq, user } from "@wovain/db";
+import { createMcpFetch } from "@wovain/server";
 
 import { isAllowed, siteUrl } from "../../lib/env.ts";
 import { auth, authEnv, env, storage } from "../../lib/server.ts";

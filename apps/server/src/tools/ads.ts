@@ -7,10 +7,10 @@ import {
   adSlotSchema,
   adStatusSchema,
   adVideoSchema,
-} from "@wovain-foss/shared/ad";
-import type { Ad } from "@wovain-foss/shared/ad";
-import { breakeven } from "@wovain-foss/shared/economics";
-import { ruleThresholds } from "@wovain-foss/shared/rules";
+} from "@wovain/shared/ad";
+import type { Ad } from "@wovain/shared/ad";
+import { breakeven } from "@wovain/shared/economics";
+import { ruleThresholds } from "@wovain/shared/rules";
 import ffmpegStatic from "ffmpeg-static";
 import { z } from "zod";
 
