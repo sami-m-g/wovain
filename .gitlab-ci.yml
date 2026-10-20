@@ -35,6 +35,8 @@ default:
   interruptible: true
 
 variables:
+  # Run SAST and Secret Detection on merge requests too, not only on main.
+  AST_ENABLE_MR_PIPELINES: "true"
   BUN_VERSION: 1.4.2
   NEONCTL: neonctl@8.8.0
   VERCEL_CLI: vercel@64.0.2
@@ -113,11 +115,12 @@ deploy:preview:
   variables:
     NEON_BRANCH: mr-$CI_MERGE_REQUEST_IID
   script:
-    # Each merge request gets its own Neon branch, forked from dev (schema,
-    # no production users or tokens) with the MR's migrations applied.
-    - neonctl branches get "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" >/dev/null 2>&1 || neonctl branches create --project-id "$NEON_PROJECT_ID" --name "$NEON_BRANCH" --parent dev --api-key "$NEON_API_KEY" >/dev/null
-    - export DATABASE_URL="$(neonctl connection-string "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --pooled --api-key "$NEON_API_KEY")"
+    # Each merge request gets its own Neon branch; neon.ts sets its parent
+    # (dev: schema, no production users or tokens) and 7-day expiry. The
+    # MR's migrations are applied on top.
     - bun install --frozen-lockfile --ignore-scripts
+    - neon checkout "$NEON_BRANCH" --create --no-env-pull --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"
+    - export DATABASE_URL="$(neonctl connection-string "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --pooled --api-key "$NEON_API_KEY")"
     - bun run db:migrate
     - npx --yes "$VERCEL_CLI" deploy --yes --token "$VERCEL_TOKEN" --env DATABASE_URL="$DATABASE_URL" > deploy-url.txt
     - echo "DEPLOY_URL=$(cat deploy-url.txt)" > deploy.env

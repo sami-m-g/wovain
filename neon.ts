@@ -17,7 +17,13 @@ export default defineConfig({
     if (branch.name === "dev") {
       return { parent: "main" };
     }
-    // Anything else (a preview's or a test's branch) cleans itself up.
+    // A merge request's preview branch (mr-<iid>, created by CI through
+    // `neon checkout --create`) forks dev, so it gets the schema but no
+    // production users or tokens, and expires even if stop:preview never runs.
+    if (branch.name.startsWith("mr-")) {
+      return { parent: "dev", ttl: "7d" };
+    }
+    // Anything else (a test's branch) cleans itself up.
     return { parent: "main", ttl: "7d" };
   },
 });
