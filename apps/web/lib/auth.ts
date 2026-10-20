@@ -1,32 +1,20 @@
-import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
-import path from "node:path";
-
 import { cimd } from "@better-auth/cimd";
 import { fetchClientMetadataResource } from "@better-auth/cimd/node";
 import { mcp } from "@better-auth/mcp";
+import { schema } from "@wovain-foss/db";
+import type { Db } from "@wovain-foss/db";
 import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins";
-import { Pool } from "pg";
 
-import { siteUrl } from "./env.ts";
-import type { AuthEnv } from "./env.ts";
-
-// Neon when DATABASE_URL is set (its own tables beside wovain's records),
-// else a SQLite file next to the local store.
-const authDatabase = (env: AuthEnv, dataDir: string) => {
-  if (env.DATABASE_URL !== undefined) {
-    return new Pool({ connectionString: env.DATABASE_URL });
-  }
-  mkdirSync(dataDir, { recursive: true });
-  return new Database(path.join(dataDir, "auth.sqlite"), { create: true });
-};
+import { isAllowed, siteUrl } from "./env.ts";
+import type { AllowCheck, AuthEnv } from "./env.ts";
 
 // wovain is ChatGPT's OAuth server (developers.openai.com/plugins/build/auth):
 // ChatGPT registers itself (CIMD, or DCR as a fallback), sends the merchant to
 // /sign-in and /consent, then calls /mcp with a token bound to that URL.
-export const createAuth = (env: AuthEnv, dataDir: string) => {
+export const createAuth = (env: AuthEnv, db: Db) => {
   const baseURL = siteUrl(env);
   const google =
     env.GOOGLE_CLIENT_ID !== undefined && env.GOOGLE_CLIENT_SECRET !== undefined
@@ -37,13 +25,11 @@ export const createAuth = (env: AuthEnv, dataDir: string) => {
           },
         }
       : {};
-  const allowed = (email: string | null | undefined) =>
-    email !== null &&
-    email !== undefined &&
-    env.WOVAIN_ALLOWED_EMAILS.has(email.toLowerCase());
+  const allowed = (user: AllowCheck | null | undefined) => isAllowed(env, user);
   return betterAuth({
     baseURL,
-    database: authDatabase(env, dataDir),
+    // Its tables live in packages/db beside wovain's records.
+    database: drizzleAdapter(db, { provider: "pg", schema }),
     // Sign-in is closed to anyone off the allowlist (env.ts explains why):
     // no account is created for them, and a removed user gets no new session.
     databaseHooks: {
@@ -53,13 +39,13 @@ export const createAuth = (env: AuthEnv, dataDir: string) => {
             const user = await ctx?.context.internalAdapter.findUserById(
               session.userId
             );
-            return allowed(user?.email);
+            return allowed(user);
           },
         },
       },
       user: {
         create: {
-          before: async (user) => await Promise.resolve(allowed(user.email)),
+          before: async (user) => await Promise.resolve(allowed(user)),
         },
       },
     },

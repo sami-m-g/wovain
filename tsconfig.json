@@ -5,6 +5,9 @@
       "path": "packages/shared"
     },
     {
+      "path": "packages/db"
+    },
+    {
       "path": "apps/server"
     },
     {

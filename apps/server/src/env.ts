@@ -5,10 +5,9 @@ import { z } from "zod";
 // Keys are optional at startup: each tool checks the ones it needs and returns a
 // user-safe error when one is missing, so the Settings card works on day one.
 const envSchema = z.object({
-  // A private Vercel Blob store for staged artwork; unset keeps files in
-  // WOVAIN_DATA_DIR/media.
+  // The private Vercel Blob store for staged artwork.
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
-  // Neon Postgres (pooled); unset means a SQLite file in WOVAIN_DATA_DIR.
+  // Neon Postgres (pooled): main in production, the dev branch locally.
   DATABASE_URL: z.string().optional(),
   ETSY_API_KEY: z.string().optional(),
   // Optional: a fal key with the Billing preset, only for reading what fal
@@ -26,9 +25,6 @@ const envSchema = z.object({
   WOVAIN_CARDS_DIR: z
     .string()
     .default(() => path.join(import.meta.dirname, "..", "..", "cards", "dist")),
-  WOVAIN_DATA_DIR: z
-    .string()
-    .default(() => path.join(import.meta.dirname, "..", "data")),
   // A bold font for captions, shipped with the server so every host has it.
   WOVAIN_FONT: z
     .string()

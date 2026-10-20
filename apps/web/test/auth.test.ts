@@ -1,10 +1,7 @@
-import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { describe, expect, test } from "bun:test";
 
 import { requireMcpAuth } from "@better-auth/mcp";
-import { getMigrations } from "better-auth/db/migration";
+import { createTestDb } from "@wovain-foss/db/testing";
 import { z } from "zod";
 
 import { createAuth } from "../lib/auth.ts";
@@ -19,7 +16,7 @@ const auth = createAuth(
     BETTER_AUTH_URL: site,
     WOVAIN_ALLOWED_EMAILS: "Owner@Example.com",
   }),
-  await mkdtemp(path.join(tmpdir(), "wovain-auth-"))
+  await createTestDb()
 );
 
 const get = async (pathname: string) =>
@@ -27,11 +24,6 @@ const get = async (pathname: string) =>
 
 const json = async (response: Response) =>
   z.record(z.string(), z.unknown()).parse(await response.json());
-
-beforeAll(async () => {
-  const { runMigrations } = await getMigrations(auth.options);
-  await runMigrations();
-});
 
 // The discovery chain ChatGPT follows (developers.openai.com/plugins/build/auth).
 describe("OAuth for ChatGPT", () => {

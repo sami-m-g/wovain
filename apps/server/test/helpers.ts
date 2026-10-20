@@ -1,30 +1,34 @@
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
+import type { Db } from "@wovain-foss/db";
+import { createTestDb } from "@wovain-foss/db/testing";
 import type { Design } from "@wovain-foss/shared/design";
 
 import { loadEnv } from "../src/env.ts";
 import { createServer } from "../src/server.ts";
-import { createStore, fileMedia, openDatabase } from "../src/store.ts";
-import type { Store } from "../src/store.ts";
+import { createStore } from "../src/store.ts";
+import type { Media, Store } from "../src/store.ts";
 
-export const tempDir = async (prefix = "wovain-") =>
-  await mkdtemp(path.join(tmpdir(), prefix));
-
-// SQLite and files in a folder, as the server runs without Neon and Blob.
-export const testStorage = async (dir?: string) => {
-  const root = dir ?? (await tempDir());
+// Blob stand-in: bytes kept in memory for the test's lifetime.
+const memoryMedia = (): Media => {
+  const blobs = new Map<string, Uint8Array<ArrayBuffer>>();
   return {
-    db: openDatabase(undefined, root),
-    media: fileMedia(path.join(root, "media")),
+    get: async (key) => await Promise.resolve(blobs.get(key)),
+    put: async (key, bytes) => {
+      blobs.set(key, new Uint8Array(bytes));
+      await Promise.resolve();
+    },
   };
 };
 
-export const testStore = async (dir?: string) => {
-  const { db, media } = await testStorage(dir);
+// In-memory Postgres (PGlite) with every migration applied, plus memory media.
+export const testStorage = async (): Promise<{ db: Db; media: Media }> => ({
+  db: await createTestDb(),
+  media: memoryMedia(),
+});
+
+export const testStore = async (storage?: { db: Db; media: Media }) => {
+  const { db, media } = storage ?? (await testStorage());
   return createStore(db, media, "test");
 };
 

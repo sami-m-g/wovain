@@ -57,3 +57,15 @@ export const siteUrl = (env: AuthEnv) => {
   }
   return "http://localhost:3000";
 };
+
+export interface AllowCheck {
+  email: string;
+  emailVerified: boolean;
+}
+
+// Only a verified email on the allowlist may sign in or call the tools.
+export const isAllowed = (env: AuthEnv, user: AllowCheck | null | undefined) =>
+  user !== null &&
+  user !== undefined &&
+  user.emailVerified &&
+  env.WOVAIN_ALLOWED_EMAILS.has(user.email.toLowerCase());

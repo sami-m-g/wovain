@@ -5,7 +5,7 @@
       "entry": ["src/*/main.tsx"]
     },
     ".": {
-      "entry": ["scripts/*.ts"]
+      "entry": ["scripts/*.ts", "neon.ts"]
     }
   }
 }

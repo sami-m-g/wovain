@@ -39,6 +39,9 @@ Fill in `apps/web/.env` (empty values count as unset; on Vercel, set them in the
 | `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
 | `BETTER_AUTH_SECRET` | Signs sessions and OAuth state for sign-in | `openssl rand -hex 32` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in, the page ChatGPT sends merchants to | Google Cloud OAuth web client; redirect URI `<site>/api/auth/callback/google` |
+| `WOVAIN_ALLOWED_EMAILS` | Who may sign in (comma-separated verified emails; empty lets nobody in) | Your Google account email |
+| `DATABASE_URL` | Required: records and sign-in data in Neon Postgres | Neon `dev` branch's pooled URL (production uses `main`) |
+| `BLOB_READ_WRITE_TOKEN` | Required: staged artwork in the private Blob store | `vercel env pull` (the Blob integration sets it) |
 
 The other keys in `.env.example` aren't used yet.
 
@@ -48,7 +51,7 @@ The other keys in `.env.example` aren't used yet.
 bun run plugin:install
 ```
 
-This copies `plugin/` into your personal plugin marketplace, pointed at the hosted `/mcp` (pass `--url https://<tunnel>/mcp` for a local server). It carries no credentials: the first time you use wovain, ChatGPT sends you to sign in with Google and approve access. Quit and reopen the ChatGPT app, then try "@wovain show my settings". Run `bun run auth:migrate` once before the first local sign-in.
+This copies `plugin/` into your personal plugin marketplace, pointed at the hosted `/mcp` (pass `--url https://<tunnel>/mcp` for a local server). It carries no credentials: the first time you use wovain, ChatGPT sends you to sign in with Google and approve access. Quit and reopen the ChatGPT app, then try "@wovain show my settings". Run `bun run db:migrate` once before the first local sign-in.
 
 ## Develop
 
@@ -57,10 +60,12 @@ This copies `plugin/` into your personal plugin marketplace, pointed at the host
 | `bun run dev` | Next.js serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in ChatGPT) |
 | `bun run build` | Builds the cards, then the Next.js app |
 | `bun run cards:watch` | Rebuilds cards on save; redraw a card in chat to see the change |
+| `bun run db:generate` | Writes a SQL migration in `packages/db/migrations` after a schema change |
+| `bun run db:migrate` | Applies the migrations to the Neon branch in `DATABASE_URL` |
 | `bun run storybook` | Every card state, light and dark, at ChatGPT widths, without ChatGPT |
 | `bun run check` / `bun run fix` | Lint and format (Ultracite: oxlint + oxfmt) |
 | `bun run typecheck` | TypeScript, strictest settings |
-| `bun test` | Server and shared tests |
+| `bun test` | Server, web and shared tests (on PGlite, no database needed) |
 | `bun run test:stories` | Card stories as tests (Playwright) |
 | `bun run knip` | Unused files, exports and dependencies |
 | `bun run skills:restore` | Restores the course skills listed in `skills-lock.json` |
@@ -72,9 +77,10 @@ Git hooks (Lefthook) run fix, typecheck and gitleaks on commit, commitlint on th
 | Path | What's there |
 | --- | --- |
 | `plugin/` | The plugin manifest, `mcp.json` and the skills ChatGPT follows (`wovain-design`, `wovain-ads`, `wovain-campaign`) |
-| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, ffmpeg overlays, Meta rules client, store (Neon Postgres, or SQLite locally) |
+| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, ffmpeg overlays, Meta rules client, store (Neon Postgres through Drizzle) |
 | `apps/web/` | Next.js app on Vercel that serves the MCP server at `/mcp` |
 | `apps/cards/` | The React cards (MCP Apps) and their Storybook stories |
+| `packages/db/` | Drizzle schema (wovain's records and Better Auth's tables), client and migrations |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and cards |
 | `devpost/` | Planning documents and the app map |
 

@@ -1,8 +1,6 @@
-import { mkdirSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-
 import { get as getBlob, put as putBlob } from "@vercel/blob";
+import { and, counters, eq, records, sql } from "@wovain-foss/db";
+import type { Db } from "@wovain-foss/db";
 import { adSchema } from "@wovain-foss/shared/ad";
 import type { Ad } from "@wovain-foss/shared/ad";
 import { designSchema } from "@wovain-foss/shared/design";
@@ -12,10 +10,9 @@ import {
   settingsSchema,
 } from "@wovain-foss/shared/settings";
 import type { Settings, SettingsPatch } from "@wovain-foss/shared/settings";
-import { SQL } from "bun";
 import { z } from "zod";
 
-// Staged artwork: the bytes live in media under `key`, the record in the database.
+// Staged artwork: the bytes live in media under `key`, the record in Neon.
 const artworkSchema = z.object({
   bytes: z.int().positive(),
   contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
@@ -43,30 +40,28 @@ type Kind = "ad" | "artwork" | "campaign" | "design" | "settings";
 const ONLY = "current";
 
 // Artwork bytes between stage_artwork and put_artwork, which may run on
-// different server instances: Vercel Blob when hosted, files locally.
+// different server instances.
 export interface Media {
   get: (key: string) => Promise<Uint8Array<ArrayBuffer> | undefined>;
   put: (key: string, bytes: Uint8Array, contentType: string) => Promise<void>;
 }
 
-export const fileMedia = (dir: string): Media => ({
-  get: async (key) => {
-    const file = Bun.file(path.join(dir, key));
-    return (await file.exists())
-      ? new Uint8Array(await file.arrayBuffer())
-      : undefined;
-  },
-  put: async (key, bytes) => {
-    const file = path.join(dir, key);
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, bytes);
-  },
-});
+const requireToken = (token: string | undefined) => {
+  if (token === undefined) {
+    throw new Error(
+      "BLOB_READ_WRITE_TOKEN is not set, so artwork can't be staged"
+    );
+  }
+  return token;
+};
 
-// A private store: the bytes are only readable with the project's token.
-export const blobMedia = (token: string): Media => ({
+// The private Blob store: the bytes are only readable with the project's token.
+export const blobMedia = (token: string | undefined): Media => ({
   get: async (key) => {
-    const result = await getBlob(key, { access: "private", token });
+    const result = await getBlob(key, {
+      access: "private",
+      token: requireToken(token),
+    });
     const bytes =
       result?.statusCode === 200
         ? new Uint8Array(await new Response(result.stream).arrayBuffer())
@@ -79,73 +74,54 @@ export const blobMedia = (token: string): Media => ({
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType,
-      token,
+      token: requireToken(token),
     });
   },
 });
 
-// Neon Postgres when DATABASE_URL is set, else a SQLite file: Bun.SQL speaks
-// both, so the queries below run unchanged on either.
-export const openDatabase = (
-  databaseUrl: string | undefined,
-  dataDir: string
-) => {
-  if (databaseUrl !== undefined) {
-    return new SQL(databaseUrl);
-  }
-  mkdirSync(dataDir, { recursive: true });
-  return new SQL(`sqlite://${path.join(dataDir, "wovain.sqlite")}`);
-};
-
-const ready = new WeakMap<SQL, Promise<void>>();
-const sqliteQueue = new WeakMap<SQL, Promise<unknown>>();
-
-const migrate = async (db: SQL) => {
-  await db`CREATE TABLE IF NOT EXISTS records (user_id TEXT NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (user_id, kind, id))`;
-  await db`CREATE TABLE IF NOT EXISTS counters (user_id TEXT NOT NULL, kind TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (user_id, kind))`;
-};
+const selectData = (q: Db) =>
+  q.select({ data: records.data }).from(records).$dynamic();
 
 // One merchant's records (spec.md > Data Model): settings, staged artwork,
 // designs, ads (one ad set per design, keyed by design id) and the campaign.
 // Each row is one record as JSON, checked against its schema on every read.
-export const createStore = (db: SQL, media: Media, userId: string) => {
-  const migrated = async () => {
-    let done = ready.get(db);
-    if (done === undefined) {
-      done = migrate(db);
-      ready.set(db, done);
-    }
-    await done;
+export const createStore = (db: Db, media: Media, userId: string) => {
+  const table = <T>(kind: Kind, schema: z.ZodType<T>) => {
+    const mine = and(eq(records.userId, userId), eq(records.kind, kind));
+    return {
+      all: async (q: Db = db): Promise<T[]> => {
+        const rows = await selectData(q).where(mine);
+        return rows.map((row) => schema.parse(row.data));
+      },
+      get: async (id: string, q: Db = db): Promise<T | undefined> => {
+        const [row] = await selectData(q).where(and(mine, eq(records.id, id)));
+        return row === undefined ? undefined : schema.parse(row.data);
+      },
+      // Counters make ids unique even when two tool calls save at once.
+      nextId: async (prefix: string, q: Db = db) => {
+        const [row] = await q
+          .insert(counters)
+          .values({ kind, n: 1, userId })
+          .onConflictDoUpdate({
+            set: { n: sql`${counters.n} + 1` },
+            target: [counters.userId, counters.kind],
+          })
+          .returning({ n: counters.n });
+        return `${prefix}${row?.n ?? 1}`;
+      },
+      put: async (id: string, value: T, q: Db = db): Promise<T> => {
+        const saved = schema.parse(value);
+        await q
+          .insert(records)
+          .values({ data: saved, id, kind, userId })
+          .onConflictDoUpdate({
+            set: { data: saved },
+            target: [records.userId, records.kind, records.id],
+          });
+        return saved;
+      },
+    };
   };
-
-  const table = <T>(kind: Kind, schema: z.ZodType<T>) => ({
-    all: async (q: SQL = db): Promise<T[]> => {
-      await migrated();
-      const rows: { data: string }[] =
-        await q`SELECT data FROM records WHERE user_id = ${userId} AND kind = ${kind}`;
-      return rows.map((row) => schema.parse(JSON.parse(row.data)));
-    },
-    get: async (id: string, q: SQL = db): Promise<T | undefined> => {
-      await migrated();
-      const [row]: { data: string }[] =
-        await q`SELECT data FROM records WHERE user_id = ${userId} AND kind = ${kind} AND id = ${id}`;
-      return row === undefined ? undefined : schema.parse(JSON.parse(row.data));
-    },
-    // Counters make ids unique even when two tool calls save at once.
-    nextId: async (prefix: string, q: SQL = db) => {
-      await migrated();
-      const [row]: { n: number | string }[] =
-        await q`INSERT INTO counters (user_id, kind, n) VALUES (${userId}, ${kind}, 1) ON CONFLICT (user_id, kind) DO UPDATE SET n = counters.n + 1 RETURNING n`;
-      return `${prefix}${Number(row?.n ?? 1)}`;
-    },
-    put: async (id: string, value: T, q: SQL = db): Promise<T> => {
-      await migrated();
-      const saved = schema.parse(value);
-      const data = JSON.stringify(saved);
-      await q`INSERT INTO records (user_id, kind, id, data) VALUES (${userId}, ${kind}, ${id}, ${data}) ON CONFLICT (user_id, kind, id) DO UPDATE SET data = excluded.data`;
-      return saved;
-    },
-  });
   const ads = table("ad", adSchema);
   const artworks = table("artwork", artworkSchema);
   const campaigns = table("campaign", campaignSchema);
@@ -154,7 +130,7 @@ export const createStore = (db: SQL, media: Media, userId: string) => {
 
   const settings = async () =>
     (await settingsTable.get(ONLY)) ?? settingsSchema.parse({});
-  const requireDesign = async (id: string, q: SQL = db) => {
+  const requireDesign = async (id: string, q: Db = db) => {
     const design = await designs.get(id, q);
     if (design === undefined) {
       throw new Error(`No design ${id}`);
@@ -165,22 +141,8 @@ export const createStore = (db: SQL, media: Media, userId: string) => {
   // Each change that reads before it writes runs in one transaction, so
   // overlapping tool calls (a card polling while a skill writes) can't
   // interleave inside it.
-  const transaction = async <T>(work: (q: SQL) => Promise<T>) => {
-    await migrated();
-    const run = async () => await db.begin(async (tx) => await work(tx));
-    if (db.options.adapter !== "sqlite") {
-      return await run();
-    }
-    // SQLite has one connection, so its transactions wait their turn; the
-    // queue holds settled promises, so one failure doesn't block the next.
-    const previous = sqliteQueue.get(db);
-    const queued = (async () => {
-      await previous;
-      return await run();
-    })();
-    sqliteQueue.set(db, Promise.allSettled([queued]));
-    return await queued;
-  };
+  const transaction = async <T>(work: (q: Db) => Promise<T>) =>
+    await db.transaction(async (tx) => await work(tx));
 
   return {
     getAds: async (): Promise<Ad[]> => await ads.all(),

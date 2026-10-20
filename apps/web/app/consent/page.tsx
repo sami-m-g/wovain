@@ -23,12 +23,24 @@ const asQuery = (params: Record<string, string | string[] | undefined>) => {
   return query;
 };
 
-// ChatGPT's OAuth redirect hosts. Any app can register itself and pick its own
-// name, so only a client that returns to one of these is shown by name.
-const CHATGPT_HOSTS = new Set(["chatgpt.com", "chat.openai.com"]);
+// ChatGPT's OAuth redirect. Any app can register itself and pick its own name,
+// so only a client returning to exactly this address is shown by name.
+const CHATGPT_REDIRECT = {
+  hosts: new Set(["chatgpt.com", "chat.openai.com"]),
+  path: "/connector_platform_oauth_redirect",
+};
 
-const hostOf = (uri: string | null) =>
-  uri !== null && URL.canParse(uri) ? new URL(uri).host : undefined;
+const parse = (uri: string | null) =>
+  uri !== null && URL.canParse(uri) ? new URL(uri) : undefined;
+
+const returnsToChatGpt = (url: URL | undefined) =>
+  url !== undefined &&
+  url.protocol === "https:" &&
+  url.port === "" &&
+  url.username === "" &&
+  url.password === "" &&
+  CHATGPT_REDIRECT.hosts.has(url.hostname) &&
+  url.pathname === CHATGPT_REDIRECT.path;
 
 // The authorize step sends a signed query here; anything unsigned is refused.
 const Consent = async ({ searchParams }: Props) => {
@@ -52,8 +64,9 @@ const Consent = async ({ searchParams }: Props) => {
       query: { client_id: clientId },
     })
     .catch(() => null);
-  const host = hostOf(query.get("redirect_uri")) ?? "an unknown address";
-  const trusted = CHATGPT_HOSTS.has(host);
+  const redirect = parse(query.get("redirect_uri"));
+  const host = redirect?.host ?? "an unknown address";
+  const trusted = returnsToChatGpt(redirect);
   const name = trusted
     ? (client?.client_name ?? "ChatGPT")
     : "An unverified app";

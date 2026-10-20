@@ -1,5 +1,5 @@
 import { createMcpHandler } from "@modelcontextprotocol/server";
-import type { SQL } from "bun";
+import type { Db } from "@wovain-foss/db";
 
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
@@ -18,10 +18,7 @@ export interface Caller {
 // Streamable HTTP, one server per request, scoped to the caller's records.
 // The handler never reads credentials itself: a request without a verified
 // caller is refused.
-export const createMcpFetch = (
-  env: Env,
-  storage: { db: SQL; media: Media }
-) => {
+export const createMcpFetch = (env: Env, storage: { db: Db; media: Media }) => {
   const videoPricing = createVideoPricing(env.FAL_KEY);
   const handler = createMcpHandler(({ authInfo }) => {
     const userId = authInfo?.extra?.["userId"];

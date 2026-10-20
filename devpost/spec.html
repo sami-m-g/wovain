@@ -281,17 +281,29 @@
 <td>7.x</td>
 <td>https://ffmpeg.org</td>
 </tr>
+<tr>
+<td>Database</td>
+<td>Neon Postgres through Drizzle ORM (<code>drizzle-orm/bun-sql</code> on <code>Bun.SQL</code>), migrations by drizzle-kit; PGlite (Postgres in WASM, in-process) for tests</td>
+<td>0.45.4 / 0.31.11 / 0.5.8</td>
+<td>https://orm.drizzle.team</td>
+</tr>
+<tr>
+<td>Infrastructure as code</td>
+<td><code>neon.ts</code> (<code>@neon/config</code>) for the Neon project's branches and services; <code>apps/web/vercel.ts</code> (<code>@vercel/config</code>) for the Vercel project</td>
+<td>1.8.7 / 0.12.0</td>
+<td>https://neon.com/docs</td>
+</tr>
 </tbody>
 </table></div>
 <ul>
 <li>TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.</li>
 <li>Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so <code>bunfig.toml</code> sets <code>[run] bun = true</code> and even Storybook, Vitest and other tools with a node shebang run on Bun; no Node install is needed.</li>
-<li>Hosting: the learner moved wovain from a desktop-only stdio plugin to a hosted server, so it works on chatgpt.com and server or card changes ship on deploy. Next.js (<code>apps/web</code>) mounts the MCP handler from <code>apps/server</code> at <code>/mcp</code>; it was picked over a bare <code>Bun.serve()</code> because full OAuth needs real pages (sign-in, consent, Meta linking, privacy policy), and it matches the learner's other project. <code>apps/web</code> turns off <code>exactOptionalPropertyTypes</code>, which Better Auth's types don't satisfy; the other packages keep it. <code>pg</code> is bundled (<code>transpilePackages</code>) because under <code>next dev</code> on Bun its external alias fails to resolve. Sign-in is self-hosted Better Auth 1.7.7 (pinned) in <code>apps/web</code> with its <code>mcp</code>, <code>cimd</code> and <code>jwt</code> plugins, and its tables live in the same Neon database. Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the <code>@neondatabase/auth</code> 0.6.0-beta code).</li>
+<li>Hosting: the learner moved wovain from a desktop-only stdio plugin to a hosted server, so it works on chatgpt.com and server or card changes ship on deploy. Next.js (<code>apps/web</code>) mounts the MCP handler from <code>apps/server</code> at <code>/mcp</code>; it was picked over a bare <code>Bun.serve()</code> because full OAuth needs real pages (sign-in, consent, Meta linking, privacy policy), and it matches the learner's other project. <code>apps/web</code> turns off <code>exactOptionalPropertyTypes</code>, which Better Auth's types don't satisfy; the other packages keep it. Sign-in is self-hosted Better Auth 1.7.7 (pinned) in <code>apps/web</code> with its <code>mcp</code>, <code>cimd</code> and <code>jwt</code> plugins, on its Drizzle adapter, so its tables sit in the same Neon database and the same migrations as wovain's. Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the <code>@neondatabase/auth</code> 0.6.0-beta code).</li>
 <li>Ultracite with oxlint and oxfmt: the learner's choice (<code>ultracite init --linter oxlint</code>).</li>
 <li>React 19: both <code>@openai/apps-sdk-ui</code> and <code>ext-apps</code> support it; OpenAI's docs still show 18.</li>
 </ul>
 <h2>Where It Runs and How Someone Tries It</h2>
-<p>wovain is a hosted MCP server: a Next.js app (<code>apps/web</code>) on Vercel serves Streamable HTTP at <code>/mcp</code>, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus <code>mcp.json</code> pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and cards but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store and private Blob media (done), 3 OAuth 2.1 sign-in so anyone can install (done; the Google keys are still to add), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace. ChatGPT finds the sign-in on its own: <code>/mcp</code> without a token answers 401 with <code>resource_metadata</code> pointing at <code>/.well-known/oauth-protected-resource/mcp</code>, which names <code>/api/auth</code> as the authorization server (metadata at <code>/.well-known/oauth-authorization-server/api/auth</code>: PKCE S256, CIMD, and dynamic registration at <code>/api/auth/oauth2/register</code>). The merchant signs in at <code>/sign-in</code> (Google for now), approves at <code>/consent</code>, and <code>/mcp</code> checks each token with <code>requireMcpAuth</code>. The site URL comes from Vercel (the production domain, or a preview's <code>VERCEL_URL</code>) or is localhost; <code>BETTER_AUTH_URL</code> overrides it. Google sign-in waits on a Google OAuth web client with redirect URIs <code>https://wovain-foss.vercel.app/api/auth/callback/google</code> and <code>http://localhost:3000/api/auth/callback/google</code>.</p>
+<p>wovain is a hosted MCP server: a Next.js app (<code>apps/web</code>) on Vercel serves Streamable HTTP at <code>/mcp</code>, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus <code>mcp.json</code> pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and cards but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store and private Blob media (done), 3 OAuth 2.1 sign-in so anyone can install (done; the Google keys are still to add), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace. ChatGPT finds the sign-in on its own: <code>/mcp</code> without a token answers 401 with <code>resource_metadata</code> pointing at <code>/.well-known/oauth-protected-resource/mcp</code>, which names <code>/api/auth</code> as the authorization server (metadata at <code>/.well-known/oauth-authorization-server/api/auth</code>: PKCE S256, CIMD, and dynamic registration at <code>/api/auth/oauth2/register</code>). The merchant signs in at <code>/sign-in</code> (Google for now), approves at <code>/consent</code>, and <code>/mcp</code> checks each token with <code>requireMcpAuth</code>. The site URL comes from Vercel (the production domain, or a preview's <code>VERCEL_URL</code>) or is localhost; <code>BETTER_AUTH_URL</code> overrides it. Google sign-in waits on a Google OAuth web client with redirect URIs <code>https://wovain-foss.vercel.app/api/auth/callback/google</code> and <code>http://localhost:3000/api/auth/callback/google</code>. Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in <code>WOVAIN_ALLOWED_EMAILS</code>. The list is checked when an account or session is created and on every <code>/mcp</code> call, so taking an email off it cuts off tokens already issued; an empty list lets nobody in. The consent page trusts an app's own name only when its redirect is exactly <code>https://chatgpt.com/connector_platform_oauth_redirect</code> (or the same path on <code>chat.openai.com</code>, with no port or user info); any other app is labeled unverified, with the host it returns to.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -310,7 +322,7 @@
 </tr>
 <tr>
 <td>Keys in <code>apps/web/.env</code> (project settings on Vercel)</td>
-<td><code>META_SYSTEM_USER_TOKEN</code>, <code>META_AD_ACCOUNT_ID</code>, <code>META_PAGE_ID</code>, <code>META_PIXEL_ID</code>, <code>SERPAPI_KEY</code>, <code>ETSY_API_KEY</code>, <code>MARKER_API_TOKEN</code>, <code>FAL_KEY</code> (fal storage uploads), <code>BETTER_AUTH_SECRET</code> (signs sessions and OAuth state), <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> (Google sign-in); on Vercel the Neon and Blob integrations add <code>DATABASE_URL</code> and <code>BLOB_READ_WRITE_TOKEN</code></td>
+<td><code>META_SYSTEM_USER_TOKEN</code>, <code>META_AD_ACCOUNT_ID</code>, <code>META_PAGE_ID</code>, <code>META_PIXEL_ID</code>, <code>SERPAPI_KEY</code>, <code>ETSY_API_KEY</code>, <code>MARKER_API_TOKEN</code>, <code>FAL_KEY</code> (fal storage uploads), <code>BETTER_AUTH_SECRET</code> (signs sessions and OAuth state), <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> (Google sign-in), <code>WOVAIN_ALLOWED_EMAILS</code> (who may sign in), <code>DATABASE_URL</code> (Neon: the <code>dev</code> branch locally) and <code>BLOB_READ_WRITE_TOKEN</code> (the private Blob store); on Vercel the Neon and Blob integrations set the last two</td>
 </tr>
 <tr>
 <td>Rehearsal</td>
@@ -326,6 +338,7 @@
 <pre><code class="language-bash">bun install
 bun run skills:restore          # course skills from skills-lock.json
 cp apps/web/.env.example apps/web/.env   # fill in keys (optional until a tool needs one)
+bun run db:migrate              # applies packages/db/migrations to DATABASE_URL
 bun run build                   # builds the cards, then the Next.js app
 bun run dev                     # serves /mcp on localhost:3000
 bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (--url for a tunnel)
@@ -760,7 +773,7 @@ pre-push:
 "prepare": "lefthook install &amp;&amp; skills experimental_sync -y -a claude-code --copy &amp;&amp; msw init apps/cards/.storybook/public"
 </code></pre>
 <h2>Data Model</h2>
-<p>One <code>records</code> table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the <code>sub</code> of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a <code>counters</code> table hands out ids, so two saves at once never share one. <code>Bun.SQL</code> runs the same queries on a SQLite file (<code>apps/server/data/</code>, gitignored) when <code>DATABASE_URL</code> is unset, for tests and local development. Staged artwork bytes go to the private Blob store <code>wovain-foss-media</code> (files in <code>apps/server/data/media/</code> without <code>BLOB_READ_WRITE_TOKEN</code>).</p>
+<p>One <code>records</code> table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the <code>sub</code> of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a <code>counters</code> table hands out ids, so two saves at once never share one. The schema is Drizzle (<code>packages/db</code>): <code>records</code> keeps each record in a <code>jsonb</code> column, and Better Auth's tables come from <code>bunx auth@1.7.7 generate</code>. drizzle-kit writes SQL migrations to <code>packages/db/migrations</code> (<code>bun run db:generate</code>), and <code>bun run db:migrate</code> applies them to the Neon branch in <code>DATABASE_URL</code>. Local development uses the Neon <code>dev</code> branch, and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store <code>wovain-foss-media</code>; local development uses it too, so there is no offline fallback.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -825,25 +838,24 @@ pre-push:
 ├── apps/
 │   ├── server/                  # MCP server library: tools, cards, store
 │   │   ├── src/
-│   │   │   ├── index.ts         # exports createMcpFetch, loadEnv, storage helpers
+│   │   │   ├── index.ts         # exports createMcpFetch, loadEnv, blobMedia
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── env.ts           # zod-checked environment
-│   │   │   ├── store.ts         # records on Neon or SQLite, artwork on Blob or files
+│   │   │   ├── store.ts         # records through Drizzle, artwork on Blob
 │   │   │   ├── tools/           # one file per tool
 │   │   │   ├── cards.ts         # registers the ui:// card resources
 │   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, ffmpeg, economics, rules
 │   │   ├── test/                # economics, rules, tool schemas, fixtures/
-│   │   ├── assets/fonts/        # DejaVu Sans Bold for captions
-│   │   └── data/                # local SQLite and media without Neon or Blob (gitignored)
+│   │   └── assets/fonts/        # DejaVu Sans Bold for captions
 │   ├── web/                     # Next.js on Vercel (Bun runtime)
 │   │   ├── app/mcp/route.ts     # mounts the MCP server at /mcp behind requireMcpAuth
 │   │   ├── app/api/auth/[...all]/route.ts   # Better Auth: sign-in, OAuth endpoints
 │   │   ├── app/.well-known/[...path]/route.ts   # OAuth metadata at the site root
 │   │   ├── app/sign-in/, app/consent/   # the pages ChatGPT sends merchants to
 │   │   ├── lib/                 # auth.ts, auth-client.ts, env.ts, server.ts
-│   │   ├── scripts/migrate.ts   # bun run auth:migrate: Better Auth's tables
 │   │   ├── test/auth.test.ts    # the OAuth discovery chain
 │   │   ├── next.config.ts       # traces cards, font and ffmpeg into the function
+│   │   ├── vercel.ts            # Vercel project config (Bun runtime), replaces vercel.json
 │   │   └── .env.example         # server keys (apps/web/.env, gitignored)
 │   └── cards/                   # React cards, Vite single-file builds
 │       ├── src/
@@ -853,6 +865,14 @@ pre-push:
 │       ├── test/
 │       └── vite.config.ts
 ├── packages/shared/             # zod schemas and types for tools and cards
+├── packages/db/                 # Drizzle schema, client and migrations
+│   ├── src/app-schema.ts        # records (jsonb) and counters
+│   ├── src/auth-schema.ts       # Better Auth's tables (generated)
+│   ├── src/schema.ts, client.ts # one schema object; Bun.SQL client for Neon
+│   ├── src/testing.ts           # PGlite database with every migration applied
+│   ├── src/migrate.ts           # bun run db:migrate
+│   ├── migrations/              # SQL from drizzle-kit (bun run db:generate)
+│   └── drizzle.config.ts
 ├── packages/mocks/              # MSW handlers: tests, mock mode, Storybook
 ├── .github/                     # workflows/ci.yml, workflows/release-please.yml, dependabot.yml
 ├── .vscode/                     # settings.json, extensions.json
@@ -864,6 +884,7 @@ pre-push:
 ├── commitlint.config.ts         # conventional commits
 ├── knip.json                    # dead-code check
 ├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
+├── neon.ts                      # Neon policy: Neon Auth off, dev kept, other branches expire in 7 days
 ├── package.json                 # bun workspaces and scripts
 ├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
 └── devpost/                     # planning docs
@@ -949,7 +970,7 @@ pre-push:
 <li><strong>Optimization card on check-in</strong> instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.</li>
 <li><strong>Print fidelity checked by eye</strong> in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.</li>
 <li><strong>Trademark screening via Marker</strong> instead of an official USPTO search API: none exists. Labeled screening, not legal advice.</li>
-<li><strong>One table of JSON records</strong> instead of a table per entity: each record is checked by its zod schema on read, and <code>Bun.SQL</code> runs the same queries on Neon and on SQLite for tests.</li>
+<li><strong>One table of JSON records</strong> instead of a table per entity: each record is checked by its zod schema on read, and Drizzle runs the same schema and migrations on Neon and, for tests, on PGlite.</li>
 <li><strong>Google-only sign-in</strong> for now: email codes need a sending domain, then Resend from the Vercel Marketplace.</li>
 </ul>
 <h2>Decisions and Open Issues</h2>

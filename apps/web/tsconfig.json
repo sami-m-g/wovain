@@ -20,10 +20,10 @@
   "include": [
     "next-env.d.ts",
     "next.config.ts",
+    "vercel.ts",
     "app",
     "app/.well-known/**/*.ts",
     "lib",
-    "scripts",
     "test",
     ".next/types/**/*.ts"
   ]

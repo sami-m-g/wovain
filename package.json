@@ -23,12 +23,14 @@
     "test:stories": "bun run --filter @wovain-foss/cards test:stories",
     "cards:watch": "bun run apps/cards/build.ts --watch",
     "dev": "bun run --filter @wovain-foss/web dev",
-    "auth:migrate": "bun run --filter @wovain-foss/web auth:migrate"
+    "db:generate": "bun run --filter @wovain-foss/db generate",
+    "db:migrate": "bun run --filter @wovain-foss/db migrate"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@commitlint/types": "21.2.3",
+    "@neon/config": "1.8.7",
     "@types/bun": "^1.4.3",
     "@typescript/native": "npm:typescript@7.0.2",
     "knip": "6.42.0",

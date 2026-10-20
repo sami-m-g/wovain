@@ -11,9 +11,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Local server data
-apps/server/data/
-
 # course skills: `bun run skills:restore` (from skills-lock.json); ultracite: `bun run prepare` (node_modules)
 /.agents/skills/
 /.claude/skills/ultracite/
