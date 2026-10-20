@@ -86,7 +86,11 @@ const traced = async (request: Request) =>
       }
       return response;
     } catch (error) {
-      span.recordException(error instanceof Error ? error : String(error));
+      // Only the error's class: messages can carry SQL values, emails or tokens.
+      span.setAttribute(
+        "error.type",
+        error instanceof Error ? error.name : "unknown"
+      );
       span.setStatus({ code: SpanStatusCode.ERROR });
       throw error;
     } finally {
