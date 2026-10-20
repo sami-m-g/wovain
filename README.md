@@ -42,6 +42,8 @@ Fill in `apps/web/.env` (empty values count as unset; on Vercel, set them in the
 | `WOVAIN_ALLOWED_EMAILS` | Who may sign in (comma-separated verified emails; empty lets nobody in) | Your Google account email |
 | `DATABASE_URL` | Required: records and sign-in data in Neon Postgres | Neon `dev` branch's pooled URL (production uses `main`) |
 | `BLOB_READ_WRITE_TOKEN` | Required: staged artwork in the private Blob store | `vercel env pull` (the Blob integration sets it) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional: send traces to GitLab Observability (unset sends nothing) | GitLab group → Observe → Observability configuration |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Optional: the auth header for that endpoint, as `key=value` | Same page |
 
 The other keys in `.env.example` aren't used yet.
 

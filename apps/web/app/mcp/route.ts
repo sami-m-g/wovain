@@ -1,4 +1,5 @@
 import { requireMcpAuth } from "@better-auth/mcp";
+import { SpanStatusCode, trace } from "@opentelemetry/api";
 import { eq, user } from "@wovain/db";
 import { createMcpFetch } from "@wovain/server";
 
@@ -42,6 +43,57 @@ const handle = requireMcpAuth(
   { resource: `${siteUrl(authEnv)}/mcp` }
 );
 
-export const DELETE = handle;
-export const GET = handle;
-export const POST = handle;
+const tracer = trace.getTracer("wovain-mcp");
+
+// Next's request span shows `POST /mcp`; this child span adds which MCP
+// method and tool ran and how it ended. No user ids or arguments are
+// recorded. Without a registered provider (see instrumentation.ts) the
+// tracer is a no-op.
+const rpcOf = async (request: Request) => {
+  if (request.method !== "POST") {
+    return {};
+  }
+  const body: unknown = await request
+    .clone()
+    .json()
+    .catch(() => null);
+  if (typeof body !== "object" || body === null || !("method" in body)) {
+    return {};
+  }
+  const method = typeof body.method === "string" ? body.method : undefined;
+  const params = "params" in body ? body.params : undefined;
+  const tool =
+    typeof params === "object" &&
+    params !== null &&
+    "name" in params &&
+    typeof params.name === "string"
+      ? params.name
+      : undefined;
+  return {
+    ...(method === undefined ? {} : { "mcp.method": method }),
+    ...(tool === undefined ? {} : { "mcp.tool": tool }),
+  };
+};
+
+const traced = async (request: Request) =>
+  await tracer.startActiveSpan("mcp.request", async (span) => {
+    span.setAttributes(await rpcOf(request));
+    try {
+      const response = await handle(request);
+      span.setAttribute("http.response.status_code", response.status);
+      if (response.status >= 500) {
+        span.setStatus({ code: SpanStatusCode.ERROR });
+      }
+      return response;
+    } catch (error) {
+      span.recordException(error instanceof Error ? error : String(error));
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+    } finally {
+      span.end();
+    }
+  });
+
+export const DELETE = traced;
+export const GET = traced;
+export const POST = traced;

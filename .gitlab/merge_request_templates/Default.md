@@ -27,4 +27,4 @@ Closes #
 - [ ] Migrations generated with `bun run db:generate` if the schema changed
 - [ ] No secrets, tokens or `.env` files in the diff
 
-/assign_reviewer @GitLabDuo
+<!-- Duo code review (0.25 GitLab Credits per review) is off until approved; to request one, add: /assign_reviewer @GitLabDuo -->

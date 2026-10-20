@@ -20,6 +20,7 @@
   "include": [
     "next-env.d.ts",
     "next.config.ts",
+    "instrumentation.ts",
     "app",
     "app/.well-known/**/*.ts",
     "lib",
