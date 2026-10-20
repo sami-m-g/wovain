@@ -37,7 +37,8 @@ Fill in `apps/web/.env` (empty values count as unset; on Vercel, set them in the
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
 | `FAL_BILLING_KEY` | Optional: what fal actually charged (`video_spend`) | fal API key with the Billing preset |
 | `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
-| `WOVAIN_HTTP_TOKEN` | Guards `/mcp` until OAuth; without it every request gets a 401 | `openssl rand -hex 32` |
+| `BETTER_AUTH_SECRET` | Signs sessions and OAuth state for sign-in | `openssl rand -hex 32` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in, the page ChatGPT sends merchants to | Google Cloud OAuth web client; redirect URI `<site>/api/auth/callback/google` |
 
 The other keys in `.env.example` aren't used yet.
 
@@ -47,7 +48,7 @@ The other keys in `.env.example` aren't used yet.
 bun run plugin:install
 ```
 
-This copies `plugin/` into your personal plugin marketplace, pointed at the hosted `/mcp` (pass `--url https://<tunnel>/mcp` for a local server), and adds your `WOVAIN_HTTP_TOKEN` to the installed copy. Quit and reopen the ChatGPT app, then try "@wovain show my settings".
+This copies `plugin/` into your personal plugin marketplace, pointed at the hosted `/mcp` (pass `--url https://<tunnel>/mcp` for a local server). It carries no credentials: the first time you use wovain, ChatGPT sends you to sign in with Google and approve access. Quit and reopen the ChatGPT app, then try "@wovain show my settings". Run `bun run auth:migrate` once before the first local sign-in.
 
 ## Develop
 

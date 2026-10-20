@@ -1,14 +1,30 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // Better Auth 1.7 types declare optional fields as `?: undefined`, which
+    // this flag rejects; the server, cards and shared packages keep it on.
+    "exactOptionalPropertyTypes": false,
     "composite": true,
     "emitDeclarationOnly": true,
     "noEmit": false,
     "outDir": "../../node_modules/.tsbuild/apps/web",
     "jsx": "react-jsx",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "types": ["bun"]
   },
-  "include": ["next-env.d.ts", "next.config.ts", "app", ".next/types/**/*.ts"]
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "app",
+    "app/.well-known/**/*.ts",
+    "lib",
+    "scripts",
+    "test",
+    ".next/types/**/*.ts"
+  ]
 }

@@ -8,10 +8,9 @@ import {
 import { z } from "zod";
 
 import { loadEnv } from "../src/env.ts";
-import { createHttpFetch } from "../src/http.ts";
+import { createMcpFetch } from "../src/http.ts";
 import { testStorage } from "./helpers.ts";
 
-const token = "t".repeat(32);
 const url = "https://wovain.example/mcp";
 const settingsCard = "ui://wovain/settings-v3.html";
 const cardsDir = path.join(import.meta.dir, "..", "..", "cards", "dist");
@@ -19,66 +18,44 @@ const cardsBuilt = await Bun.file(
   path.join(cardsDir, "settings.html")
 ).exists();
 
-const httpFetch = createHttpFetch(
-  loadEnv({ WOVAIN_CARDS_DIR: cardsDir, WOVAIN_HTTP_TOKEN: token }),
+const mcpFetch = createMcpFetch(
+  loadEnv({ WOVAIN_CARDS_DIR: cardsDir }),
   await testStorage()
 );
 
-const initialize = (headers: Record<string, string>) =>
-  new Request(url, {
-    body: JSON.stringify({
-      id: 0,
-      jsonrpc: "2.0",
-      method: "initialize",
-      params: {
-        capabilities: {},
-        clientInfo: { name: "t", version: "0" },
-        protocolVersion: "2025-06-18",
-      },
-    }),
-    headers: {
-      accept: "application/json, text/event-stream",
-      "content-type": "application/json",
-      ...headers,
-    },
-    method: "POST",
-  });
-
-describe("bearer token", () => {
-  test("rejects a request without the token", async () => {
-    const response = await httpFetch(initialize({}));
-    expect(response.status).toBe(401);
-  });
-
-  test("rejects a wrong token", async () => {
-    const response = await httpFetch(
-      initialize({ authorization: "Bearer nope" })
-    );
-    expect(response.status).toBe(401);
-  });
-
-  test("serves nothing when no token is configured", async () => {
-    const open = createHttpFetch(loadEnv({}), await testStorage());
-    const response = await open(initialize({ authorization: "Bearer " }));
-    expect(response.status).toBe(401);
-  });
+// apps/web verifies the OAuth token first and passes who it belongs to.
+const caller = (userId: string) => ({
+  clientId: "chatgpt",
+  scopes: [],
+  token: "verified-upstream",
+  userId,
 });
 
-// A real MCP client over Streamable HTTP, the way ChatGPT connects.
-describe("over HTTP", () => {
+const connect = async (userId: string) => {
   const client = new Client({ name: "wovain-test", version: "0.0.0" });
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(url), {
+      fetch: async (input, init) =>
+        await mcpFetch(new Request(input, init), caller(userId)),
+    })
+  );
+  return client;
+};
+
+// A real MCP client over Streamable HTTP, the way ChatGPT connects, once for
+// each of two merchants.
+describe("over HTTP", () => {
+  let client: Client;
+  let other: Client;
 
   beforeAll(async () => {
-    await client.connect(
-      new StreamableHTTPClientTransport(new URL(url), {
-        fetch: async (input, init) => await httpFetch(new Request(input, init)),
-        requestInit: { headers: { authorization: `Bearer ${token}` } },
-      })
-    );
+    client = await connect("alice");
+    other = await connect("bob");
   });
 
   afterAll(async () => {
     await client.close();
+    await other.close();
   });
 
   test("lists the settings tools and the settings card resource", async () => {
@@ -108,6 +85,37 @@ describe("over HTTP", () => {
     expect(read.structuredContent).toMatchObject({
       settings: { campaign: { dailyBudgetPerProduct: 20 } },
     });
+  });
+
+  test("each merchant sees only their own settings", async () => {
+    const read = await other.callTool({ arguments: {}, name: "get_settings" });
+    expect(read.structuredContent).toMatchObject({
+      settings: { campaign: { dailyBudgetPerProduct: 15 } },
+    });
+  });
+
+  test("refuses a request with no merchant", async () => {
+    const response = await mcpFetch(
+      new Request(url, {
+        body: JSON.stringify({
+          id: 0,
+          jsonrpc: "2.0",
+          method: "initialize",
+          params: {
+            capabilities: {},
+            clientInfo: { name: "t", version: "0" },
+            protocolVersion: "2025-06-18",
+          },
+        }),
+        headers: {
+          accept: "application/json, text/event-stream",
+          "content-type": "application/json",
+        },
+        method: "POST",
+      }),
+      caller("")
+    );
+    expect(response.ok).toBe(false);
   });
 
   test.skipIf(!cardsBuilt)(

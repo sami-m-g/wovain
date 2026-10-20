@@ -41,7 +41,6 @@ const envSchema = z.object({
         "DejaVuSans-Bold.ttf"
       )
     ),
-  WOVAIN_HTTP_TOKEN: z.string().min(32).optional(),
   WOVAIN_MOCK: z.stringbool().default(false),
 });
 

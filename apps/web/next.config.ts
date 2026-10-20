@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: root,
   // ffmpeg-static finds its binary next to its own files.
   serverExternalPackages: ["ffmpeg-static"],
+  // Bundled, not external: under `next dev` on Bun the external alias for pg
+  // fails to resolve (production builds load either way).
+  transpilePackages: ["pg"],
   turbopack: { root },
   typedRoutes: true,
 };

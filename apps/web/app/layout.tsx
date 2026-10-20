@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import "./globals.css";
+
 export const metadata: Metadata = {
   description:
     "From trend to live Fourthwall products and a Meta Advantage+ campaign, one approved card at a time.",

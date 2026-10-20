@@ -6,16 +6,27 @@
   "scripts": {
     "dev": "bun --bun next dev",
     "build": "bun run --cwd ../cards build && bun --bun next build",
-    "start": "bun --bun next start"
+    "start": "bun --bun next start",
+    "auth:migrate": "bun run scripts/migrate.ts"
   },
   "dependencies": {
+    "@better-auth/cimd": "1.7.7",
+    "@better-auth/core": "1.7.7",
+    "@better-auth/mcp": "1.7.7",
+    "@better-auth/oauth-provider": "1.7.7",
+    "@better-auth/utils": "0.4.2",
     "@wovain-foss/server": "workspace:*",
+    "better-auth": "1.7.7",
+    "better-call": "1.4.0",
     "next": "16.4.2",
+    "pg": "8.23.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "26.6.5",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19"
   }

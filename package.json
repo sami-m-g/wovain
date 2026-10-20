@@ -22,7 +22,8 @@
     "storybook": "bun run --filter @wovain-foss/cards storybook",
     "test:stories": "bun run --filter @wovain-foss/cards test:stories",
     "cards:watch": "bun run apps/cards/build.ts --watch",
-    "dev": "bun run --filter @wovain-foss/web dev"
+    "dev": "bun run --filter @wovain-foss/web dev",
+    "auth:migrate": "bun run --filter @wovain-foss/web auth:migrate"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",

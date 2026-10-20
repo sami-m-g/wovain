@@ -8,8 +8,8 @@ import { z } from "zod";
 // Installs plugin/ as a personal plugin in the ChatGPT desktop app, per
 // https://developers.openai.com/plugins/build/plugins (local marketplace),
 // pointed at a wovain server: the hosted one by default, or `--url` (a tunnel
-// to `bun run dev`). WOVAIN_HTTP_TOKEN from apps/web/.env goes into the
-// installed copy only, never into plugin/.
+// to `bun run dev`). ChatGPT signs in through wovain's OAuth, so the plugin
+// carries no credentials.
 const { values } = parseArgs({ options: { url: { type: "string" } } });
 const root = path.join(import.meta.dir, "..");
 const home = homedir();
@@ -29,10 +29,7 @@ const marketplaceSchema = z.looseObject({
 
 const mcpSchema = z.looseObject({
   mcpServers: z.object({
-    wovain: z.looseObject({
-      headers: z.record(z.string(), z.string()).optional(),
-      url: z.url(),
-    }),
+    wovain: z.looseObject({ url: z.url() }),
   }),
 });
 
@@ -53,14 +50,6 @@ const mcp = mcpSchema.parse(await readJson(mcpFile));
 const { wovain } = mcp.mcpServers;
 if (values.url !== undefined) {
   wovain.url = z.url().parse(values.url);
-}
-const envFile = path.join(root, "apps", "web", ".env");
-if (await Bun.file(envFile).exists()) {
-  process.loadEnvFile(envFile);
-}
-const token = process.env["WOVAIN_HTTP_TOKEN"];
-if (token !== undefined && token !== "") {
-  wovain.headers = { ...wovain.headers, Authorization: `Bearer ${token}` };
 }
 await writeFile(mcpFile, `${JSON.stringify(mcp, null, 2)}\n`);
 
