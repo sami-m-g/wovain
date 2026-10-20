@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "minimumReleaseAge": "7 days",
+  "labels": ["type::chore", "stage::configure"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "minor and patch"
+    },
+    {
+      "description": "Better Auth packages move in lockstep",
+      "matchPackageNames": [
+        "better-auth",
+        "better-call",
+        "@better-auth/**",
+        "auth"
+      ],
+      "groupName": "better auth"
+    }
+  ]
+}

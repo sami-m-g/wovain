@@ -1,0 +1,24 @@
+# Who reviews what. GitLab requests these owners on merge requests that touch
+# the paths below. Making their approval required needs a Maintainer to turn
+# on "Require approval from code owners" for the protected branch; this
+# workspace grants Developer, so for now the file assigns reviewers only.
+
+* @sami-m-g
+
+[Auth] @sami-m-g
+/apps/web/lib/
+/apps/web/app/api/auth/
+/apps/web/app/.well-known/
+/apps/web/app/mcp/
+/apps/web/app/sign-in/
+/apps/web/app/consent/
+
+[Database] @sami-m-g
+/packages/db/
+
+[Pipeline] @sami-m-g
+/.gitlab-ci.yml
+/.gitlab/
+
+[Planning docs] @sami-m-g
+/devpost/

@@ -7,8 +7,6 @@ pre-commit:
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck
-    - name: gitleaks
-      run: gitleaks git --staged --redact --no-banner
 
 commit-msg:
   jobs:

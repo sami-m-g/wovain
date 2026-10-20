@@ -211,8 +211,8 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | `/demo-check` | Project skill, user-only | Preflight before recording: plugin loaded and `/mcp` reachable, cards build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account |
 | claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance seeds the `wovain-optimize` skill; claude-ads is MIT-licensed, and `wovain-optimize` credits it in a NOTICE file |
 | `ultracite fix` after each edit | Hook (from `ultracite init --hooks claude`) | Lint and format every edit |
-| `gitleaks git --staged` in Lefthook pre-commit | Hook | Blocks secrets and tokens before they reach GitLab or the GitHub mirror |
-| Lefthook | Git hooks | Ultracite fix, type check and gitleaks before commits; commitlint on commit messages; knip, tests and story tests before pushes |
+| GitLab Secret Detection (CI template) | CI | Flags secrets and tokens in every push and merge request; replaced the local gitleaks hook |
+| Lefthook | Git hooks | Ultracite fix and type check before commits; commitlint on commit messages; knip, tests and story tests before pushes |
 | commitlint | Commit check | Enforces conventional commits locally and on pull requests |
 | knip | Dead-code check | Finds unused files, exports and dependencies before pushes and in CI |
 | Storybook | Card workshop | One story per card state with a mocked `window.openai`; a11y and interaction tests |
@@ -256,8 +256,6 @@ pre-commit:
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck
-    - name: gitleaks
-      run: gitleaks git --staged --redact --no-banner
 commit-msg:
   jobs:
     - name: commitlint

@@ -1,9 +1,14 @@
-# wovain's pipeline: verify every push and merge request, deploy merge
-# requests to a Vercel preview (a review environment) and main to
-# production, then check the live OAuth chain. Vercel builds each
-# deployment; these jobs only start it, so builds match the Vercel project
-# settings (apps/web, Bun 1.4). Needs CI variables VERCEL_TOKEN (masked),
-# VERCEL_ORG_ID and VERCEL_PROJECT_ID.
+# wovain's pipeline, one job per DevSecOps stage it covers:
+#   verify    build, lint, types, dead code, tests, card stories
+#   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
+#   package   the ChatGPT plugin zip
+#   deploy    merge requests: a Vercel preview on its own Neon branch;
+#             main: production
+#   monitor   smoke-test the live OAuth chain
+#   release   semantic-release: version, CHANGELOG, GitLab release + plugin zip
+# Renovate runs on its own pipeline schedule (RENOVATE=true).
+# CI variables: VERCEL_TOKEN, NEON_API_KEY, GITLAB_TOKEN, RENOVATE_TOKEN
+# (all masked), VERCEL_ORG_ID, VERCEL_PROJECT_ID, NEON_PROJECT_ID.
 
 workflow:
   rules:
@@ -12,14 +17,40 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH
 
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+
 stages:
   - verify
+  - test
+  - package
   - deploy
   - monitor
+  - release
 
 default:
   image: oven/bun:1.4.2
   interruptible: true
+
+variables:
+  BUN_VERSION: 1.4.2
+  NEONCTL: neonctl@8.8.0
+  VERCEL_CLI: vercel@64.0.2
+
+# Every push and merge request, but not the Renovate schedule.
+.on-changes:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+.on-main:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 .bun-install:
   cache:
@@ -34,7 +65,7 @@ default:
 
 verify:
   stage: verify
-  extends: .bun-install
+  extends: [.bun-install, .on-changes]
   script:
     - bun run build
     - bun run check
@@ -44,24 +75,50 @@ verify:
 
 stories:
   stage: verify
-  extends: .bun-install
+  extends: [.bun-install, .on-changes]
   script:
     - bunx playwright install --with-deps chromium
     - bun run test:stories
 
-.vercel:
+# Package: the plugin (skills, manifest, logo, mcp.json pointing at
+# production) as a zip artifact. The release job builds the versioned zip
+# and publishes it to the package registry.
+package:plugin:
+  stage: package
+  extends: .on-changes
+  needs: [verify]
+  script:
+    - apt-get update -qq && apt-get install -y -qq zip >/dev/null
+    - VERSION=$(bun -e 'console.log((await Bun.file("plugin/plugin.json").json()).version)')
+    - (cd plugin && zip -qr "../wovain-plugin-$VERSION.zip" .)
+  artifacts:
+    name: wovain-plugin
+    paths: [wovain-plugin-*.zip]
+    expire_in: 30 days
+
+# Node for the Vercel and Neon CLIs, plus Bun for migrations. Lifecycle
+# scripts are skipped: prepare installs git hooks, which CI doesn't need.
+.deploy:
   image: node:24-slim
   stage: deploy
   interruptible: false
-  variables:
-    VERCEL_CLI: vercel@64.0.2
+  before_script:
+    - npm install -g --silent "bun@$BUN_VERSION" "$NEONCTL"
 
 deploy:preview:
-  extends: .vercel
+  extends: .deploy
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  variables:
+    NEON_BRANCH: mr-$CI_MERGE_REQUEST_IID
   script:
-    - npx --yes "$VERCEL_CLI" deploy --yes --token "$VERCEL_TOKEN" > deploy-url.txt
+    # Each merge request gets its own Neon branch (from main) with the
+    # migrations applied, so a preview never writes to production data.
+    - neonctl branches get "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" >/dev/null 2>&1 || neonctl branches create --project-id "$NEON_PROJECT_ID" --name "$NEON_BRANCH" --parent main --api-key "$NEON_API_KEY" >/dev/null
+    - export DATABASE_URL="$(neonctl connection-string "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --pooled --api-key "$NEON_API_KEY")"
+    - bun install --frozen-lockfile --ignore-scripts
+    - bun run db:migrate
+    - npx --yes "$VERCEL_CLI" deploy --yes --token "$VERCEL_TOKEN" --env DATABASE_URL="$DATABASE_URL" > deploy-url.txt
     - echo "DEPLOY_URL=$(cat deploy-url.txt)" > deploy.env
   artifacts:
     reports:
@@ -72,23 +129,29 @@ deploy:preview:
     on_stop: stop:preview
     auto_stop_in: 1 week
 
+# Runs when the merge request closes or the environment is stopped: the
+# Neon branch goes; Vercel keeps the deployment until it expires.
 stop:preview:
-  extends: .vercel
+  extends: .deploy
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: manual
       allow_failure: true
+  variables:
+    GIT_STRATEGY: none
+    NEON_BRANCH: mr-$CI_MERGE_REQUEST_IID
+  before_script:
+    - npm install -g --silent "$NEONCTL"
   script:
-    - echo "Preview for !$CI_MERGE_REQUEST_IID stopped; Vercel keeps the deployment until it expires."
+    - neonctl branches delete "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || echo "No Neon branch $NEON_BRANCH"
   environment:
     name: review/$CI_MERGE_REQUEST_IID
     action: stop
 
 deploy:production:
-  extends: .vercel
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  extends: [.deploy, .on-main]
   resource_group: production
+  before_script: []
   script:
     - npx --yes "$VERCEL_CLI" deploy --prod --yes --token "$VERCEL_TOKEN"
   environment:
@@ -99,11 +162,11 @@ deploy:production:
 # points at the metadata, which names wovain's OAuth server.
 smoke:production:
   stage: monitor
+  extends: .on-main
   image: curlimages/curl:8.11.1
   needs: [deploy:production]
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:
+    GIT_STRATEGY: none
     SITE: https://wovain.vercel.app
   script:
     - |
@@ -112,3 +175,41 @@ smoke:production:
     - curl -sf "$SITE/.well-known/oauth-protected-resource/mcp" | grep -q "\"resource\":\"$SITE/mcp\""
     - curl -sf "$SITE/.well-known/oauth-authorization-server/api/auth" | grep -q '"code_challenge_methods_supported":\["S256"\]'
     - curl -sf "$SITE/sign-in" | grep -q 'Continue with Google'
+
+# Release only what passed the smoke test: semantic-release reads the
+# conventional commits since the last tag, writes the version and
+# CHANGELOG.md back to main ([skip ci]), tags, and publishes a GitLab
+# release with the plugin zip in the package registry.
+release:
+  stage: release
+  extends: .on-main
+  image: node:24-slim
+  interruptible: false
+  needs: [smoke:production]
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git zip >/dev/null
+    - npm install -g --silent "bun@$BUN_VERSION"
+    - bun install --frozen-lockfile --ignore-scripts
+  script:
+    - npx semantic-release
+
+# Configure: dependency update merge requests, on the RENOVATE=true schedule.
+renovate:
+  stage: verify
+  image:
+    name: renovate/renovate:44.138.0
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $RENOVATE == "true"
+  variables:
+    GIT_STRATEGY: none
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: $CI_API_V4_URL
+    RENOVATE_REPOSITORIES: $CI_PROJECT_PATH
+    RENOVATE_ONBOARDING: "false"
+    RENOVATE_REQUIRE_CONFIG: required
+    LOG_LEVEL: info
+  script:
+    - renovate

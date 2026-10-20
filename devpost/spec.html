@@ -626,14 +626,14 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 <td>Lint and format every edit</td>
 </tr>
 <tr>
-<td><code>gitleaks git --staged</code> in Lefthook pre-commit</td>
-<td>Hook</td>
-<td>Blocks secrets and tokens before they reach GitLab or the GitHub mirror</td>
+<td>GitLab Secret Detection (CI template)</td>
+<td>CI</td>
+<td>Flags secrets and tokens in every push and merge request; replaced the local gitleaks hook</td>
 </tr>
 <tr>
 <td>Lefthook</td>
 <td>Git hooks</td>
-<td>Ultracite fix, type check and gitleaks before commits; commitlint on commit messages; knip, tests and story tests before pushes</td>
+<td>Ultracite fix and type check before commits; commitlint on commit messages; knip, tests and story tests before pushes</td>
 </tr>
 <tr>
 <td>commitlint</td>
@@ -741,8 +741,6 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck
-    - name: gitleaks
-      run: gitleaks git --staged --redact --no-banner
 commit-msg:
   jobs:
     - name: commitlint
