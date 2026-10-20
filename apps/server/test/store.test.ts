@@ -101,8 +101,4 @@ describe("env", () => {
     expect(env.SERPAPI_KEY).toBe("abc");
     expect(env.WOVAIN_MOCK).toBe(true);
   });
-
-  test("ships the caption font with the server", async () => {
-    expect(await Bun.file(loadEnv({}).WOVAIN_FONT).exists()).toBe(true);
-  });
 });

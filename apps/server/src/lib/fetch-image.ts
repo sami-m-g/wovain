@@ -46,7 +46,6 @@ const isBlocked = (address: string) => {
 
 const MB = 1024 * 1024;
 export const MAX_IMAGE_BYTES = 50 * MB;
-export const MAX_VIDEO_BYTES = 200 * MB;
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 60_000;
 

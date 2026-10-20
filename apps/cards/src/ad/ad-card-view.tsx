@@ -70,7 +70,7 @@ const VideoTile = ({
 
   return (
     <div className="border-subtle relative aspect-[9/16] w-full overflow-hidden rounded-xl border bg-black">
-      {/* Ads autoplay muted on Meta, so captions are burned into the video. */}
+      {/* Ads autoplay muted on Meta, so the preview plays muted too. */}
       <video
         aria-label={`Video ${video.slot}, ${video.angle}`}
         className="size-full object-cover"

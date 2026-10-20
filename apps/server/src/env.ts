@@ -25,18 +25,6 @@ const envSchema = z.object({
   WOVAIN_CARDS_DIR: z
     .string()
     .default(() => path.join(import.meta.dirname, "..", "..", "cards", "dist")),
-  // A bold font for captions, shipped with the server so every host has it.
-  WOVAIN_FONT: z
-    .string()
-    .default(() =>
-      path.join(
-        import.meta.dirname,
-        "..",
-        "assets",
-        "fonts",
-        "DejaVuSans-Bold.ttf"
-      )
-    ),
   // The wovain logo ChatGPT shows for the connector (served by apps/web).
   WOVAIN_ICON_URL: z.url().optional(),
   WOVAIN_MOCK: z.stringbool().default(false),

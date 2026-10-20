@@ -8,9 +8,9 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 
 | Step | What you see in ChatGPT | Status |
 | --- | --- | --- |
-| Settings | Settings card: budget, rule multiples, video model, overlays | Working |
+| Settings | Settings card: budget, rule multiples, video model and audio | Working |
 | Design | "@wovain design a tee for: …" → design card with mockups, price, profit and margin; Approve publishes it on Fourthwall | Working |
-| Ads | Ad card with two 9:16 UGC-style videos (fal), captions, copy and the breakeven line; Add to campaign or Skip | Working |
+| Ads | Ad card with two 9:16 UGC-style videos (fal), copy and the breakeven line; Add to campaign or Skip | Working |
 | Campaign | Campaign card: one Advantage+ sales campaign built as a Meta draft, the five rules created in Meta, Launch to publish | Working (Launch needs a payment method on the ad account) |
 | Trend research, optimization check-in, mock mode | — | Planned, not built (see the checklist's Revisions) |
 
@@ -96,7 +96,7 @@ Releases come from conventional commits. semantic-release (`.releaserc.json`) pi
 | Path | What's there |
 | --- | --- |
 | `plugin/` | The plugin manifest, `mcp.json` and the skills ChatGPT follows (`wovain-design`, `wovain-ads`, `wovain-campaign`) |
-| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, ffmpeg overlays, Meta rules client, store (Neon Postgres through Drizzle) |
+| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, Meta rules client, store (Neon Postgres through Drizzle) |
 | `apps/web/` | Next.js app on Vercel that serves the MCP server at `/mcp` |
 | `apps/cards/` | The React cards (MCP Apps) and their Storybook stories |
 | `packages/db/` | Drizzle schema (wovain's records and Better Auth's tables), client and migrations |

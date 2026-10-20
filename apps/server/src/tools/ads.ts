@@ -1,26 +1,19 @@
-import { createHash } from "node:crypto";
-
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 import {
   adResultSchema,
-  adSlotSchema,
   adStatusSchema,
   adVideoSchema,
 } from "@wovain/shared/ad";
 import type { Ad } from "@wovain/shared/ad";
 import { breakeven } from "@wovain/shared/economics";
 import { ruleThresholds } from "@wovain/shared/rules";
-import ffmpegStatic from "ffmpeg-static";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";
 import type { Env } from "../env.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
-import { uploadToFal } from "../lib/fal-storage.ts";
 import { fetchSpend } from "../lib/fal-usage.ts";
-import { downloadImage, MAX_VIDEO_BYTES } from "../lib/fetch-image.ts";
-import { burnOverlays } from "../lib/ffmpeg.ts";
 import { text } from "../lib/tool-result.ts";
 import { planVideos } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
@@ -52,62 +45,6 @@ export const registerAdTools = (
       ]);
       const plan = planVideos(design, settings, prices);
       return { content: text(JSON.stringify(plan)) };
-    }
-  );
-
-  server.registerTool(
-    "finish_video",
-    {
-      annotations: {
-        destructiveHint: false,
-        openWorldHint: true,
-        readOnlyHint: false,
-      },
-      description:
-        "Finish one ad clip: burn in the logo (wovain's logo setting, else `logoUrl`, else the shop name as text) for the first seconds and a short caption for the whole clip (ads autoplay muted), then host it on fal storage. Pass fal's final video URL (after background audio). Returns the public URL for show_ad_card and Meta.",
-      inputSchema: z.object({
-        brand: z.string().min(1).max(40),
-        caption: z.string().max(90).optional(),
-        designId: z.string(),
-        // The shop's logo when wovain's logo setting is empty.
-        logoUrl: z.url().optional(),
-        slot: adSlotSchema,
-        videoUrl: z.url(),
-      }),
-      outputSchema: z.object({ url: z.url() }),
-      title: "Finish ad video",
-    },
-    async ({ brand, caption, designId, logoUrl, slot, videoUrl }) => {
-      if (env.FAL_KEY === undefined) {
-        throw new Error("add FAL_KEY to .env so finished videos can be hosted");
-      }
-      const settings = await store.getSettings();
-      const ffmpeg = ffmpegStatic ?? "";
-      const logoSource =
-        settings.overlay.logoUrl === "" ? logoUrl : settings.overlay.logoUrl;
-      const [video, logo] = await Promise.all([
-        downloadImage(videoUrl, MAX_VIDEO_BYTES),
-        logoSource === undefined ? undefined : downloadImage(logoSource),
-      ]);
-      const finished = await burnOverlays(video, {
-        brand,
-        brandSeconds: settings.overlay.brandSeconds,
-        caption: settings.overlay.captions ? caption : undefined,
-        ffmpeg,
-        font: env.WOVAIN_FONT,
-        logo,
-      });
-      const hash = createHash("sha256")
-        .update(finished)
-        .digest("hex")
-        .slice(0, 12);
-      const url = await uploadToFal(
-        env.FAL_KEY,
-        finished,
-        `wovain-${designId}-${slot}-${hash}.mp4`,
-        "video/mp4"
-      );
-      return { content: text(url), structuredContent: { url } };
     }
   );
 

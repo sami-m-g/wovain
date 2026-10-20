@@ -60,14 +60,6 @@ export const audioSettings = z.object({
   source: z.enum(["mmaudio", "kling-native", "off"]).default("mmaudio"),
 });
 
-export const overlaySettings = z.object({
-  // Off by default: Meta already shows the Page name and picture on every ad.
-  brandSeconds: z.int().min(0).max(15).default(0),
-  captions: z.boolean().default(true),
-  // A logo image (transparent PNG works best); empty shows the shop name.
-  logoUrl: z.union([z.literal(""), z.url()]).default(""),
-});
-
 export const metaSettings = z.object({
   aiDisclosure: z.boolean().default(true),
   graphApiVersion: z
@@ -81,7 +73,6 @@ export const settingsSchema = z.object({
   campaign: campaignSettings.prefault({}),
   economics: economicsSettings.prefault({}),
   meta: metaSettings.prefault({}),
-  overlay: overlaySettings.prefault({}),
   pricing: pricingSettings.prefault({}),
   rules: rulesSettings.prefault({}),
   trends: trendsSettings.prefault({}),
@@ -104,7 +95,6 @@ export const settingsPatchSchema = z.object({
   campaign: campaignSettings.partial().optional(),
   economics: economicsSettings.partial().optional(),
   meta: metaSettings.partial().optional(),
-  overlay: overlaySettings.partial().optional(),
   pricing: pricingSettings.partial().optional(),
   rules: rulesSettings.partial().optional(),
   trends: trendsSettings.partial().optional(),

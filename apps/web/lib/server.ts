@@ -15,13 +15,6 @@ export const authEnv = loadAuthEnv();
 
 export const env = loadEnv({
   WOVAIN_CARDS_DIR: path.join(apps, "cards", "dist"),
-  WOVAIN_FONT: path.join(
-    apps,
-    "server",
-    "assets",
-    "fonts",
-    "DejaVuSans-Bold.ttf"
-  ),
   WOVAIN_ICON_URL: `${siteUrl(authEnv)}/icon.png`,
   ...process.env,
 });

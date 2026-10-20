@@ -1,53 +1,18 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import path from "node:path";
 
 import type { Client } from "@modelcontextprotocol/client";
 import { defaultSettings } from "@wovain/shared/settings";
 import { listVideoPrices } from "@wovain/shared/video-models";
 import { z } from "zod";
 
-import { setResolver } from "../src/lib/fetch-image.ts";
 import { planVideos } from "../src/lib/video-plan.ts";
 import type { Store } from "../src/store.ts";
-import {
-  connectClient,
-  demoDesign,
-  restoreFetch,
-  stubFetch,
-  testStore,
-} from "./helpers.ts";
-
-const clip = await Bun.file(
-  path.join(import.meta.dir, "fixtures", "clip-1s.mp4")
-).arrayBuffer();
+import { connectClient, demoDesign, testStore } from "./helpers.ts";
 
 let client: Client;
 let store: Store;
-let uploads: { contentType: string | null; size: number }[] = [];
 
 beforeEach(async () => {
-  uploads = [];
-  setResolver(async () => await Promise.resolve(["93.184.216.34"]));
-  stubFetch(async (input: string | URL | Request, init?: RequestInit) => {
-    const url = input instanceof Request ? input.url : input.toString();
-    if (url.includes("storage/upload/initiate")) {
-      return await Promise.resolve(
-        Response.json({
-          file_url: "https://v3b.fal.media/files/b/x/finished.mp4",
-          upload_url: "https://upload.fal.media/put?sig=1",
-        })
-      );
-    }
-    if (init?.method === "PUT") {
-      const { body } = init;
-      uploads.push({
-        contentType: new Headers(init.headers).get("content-type"),
-        size: body instanceof Blob ? body.size : 0,
-      });
-      return await Promise.resolve(new Response(null, { status: 200 }));
-    }
-    return await Promise.resolve(new Response(clip, { status: 200 }));
-  });
   store = await testStore();
   await store.saveDesign(demoDesign);
   client = await connectClient({ FAL_KEY: "test-key" }, store);
@@ -55,8 +20,6 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await client.close();
-  restoreFetch();
-  setResolver();
 });
 
 const call = async (name: string, args: Record<string, unknown>) =>
@@ -106,24 +69,6 @@ test("record_ad counts the ad cards still waiting", async () => {
     ad: { status: "added" },
     waiting: 0,
   });
-});
-
-test("finish_video burns overlays and hosts the clip on fal", async () => {
-  const result = await call("finish_video", {
-    brand: "Wovain",
-    caption: "Sakura season's softest tee",
-    designId: "d1",
-    slot: "A",
-    videoUrl: "https://v3b.fal.media/files/b/x/raw.mp4",
-  });
-  // The tool's own error text, so a failure (ffmpeg, font, upload) says why.
-  expect(result.isError === true ? result.content : undefined).toBeUndefined();
-  expect(result.structuredContent).toEqual({
-    url: "https://v3b.fal.media/files/b/x/finished.mp4",
-  });
-  expect(uploads).toHaveLength(1);
-  expect(uploads[0]?.contentType).toBe("video/mp4");
-  expect(uploads[0]?.size).toBeGreaterThan(1000);
 });
 
 test("video plans fit each model's inputs", () => {

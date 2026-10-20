@@ -9,7 +9,6 @@ import {
   Tag,
   Trending,
   Video,
-  VideoCaption,
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
 import { RadioGroup } from "@openai/apps-sdk-ui/components/RadioGroup";
@@ -34,7 +33,6 @@ const icons: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   budget: DollarCircle,
   economics: BarChart,
   meta: SettingsSlider,
-  overlay: VideoCaption,
   pricing: Tag,
   rules: ShieldCheck,
   trends: Trending,

@@ -4,19 +4,13 @@ import type { NextConfig } from "next";
 
 const root = path.join(import.meta.dirname, "..", "..");
 
-// The MCP route reads the built cards, the caption font and the ffmpeg binary
-// from disk, so they're traced into the function from the monorepo root.
+// The MCP route reads the built cards from disk, so they're traced into the
+// function from the monorepo root.
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/mcp": [
-      "../cards/dist/*.html",
-      "../server/assets/**",
-      "../../node_modules/.bun/ffmpeg-static@*/node_modules/ffmpeg-static/ffmpeg",
-    ],
+    "/mcp": ["../cards/dist/*.html"],
   },
   outputFileTracingRoot: root,
-  // ffmpeg-static finds its binary next to its own files.
-  serverExternalPackages: ["ffmpeg-static"],
   turbopack: { root },
   typedRoutes: true,
 };

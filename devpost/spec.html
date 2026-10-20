@@ -64,7 +64,7 @@
 <tr>
 <td>wovain server</td>
 <td>Our small Next.js server, hosted on Vercel and reached over HTTPS</td>
-<td>Draws the cards, does the margin math, trend lookups, video captions, Meta rules, settings</td>
+<td>Draws the cards, does the margin math, trend lookups, Meta rules, settings</td>
 </tr>
 <tr>
 <td>Cards</td>
@@ -73,7 +73,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>Why a wovain server at all: ChatGPT can only show a card that an MCP server serves, a card's buttons can only call its own server, and three jobs have no MCP (Meta automated rules, trend APIs, caption burn-in). Everything else goes through the official servers.</p>
+<p>Why a wovain server at all: ChatGPT can only show a card that an MCP server serves, a card's buttons can only call its own server, and two jobs have no MCP (Meta automated rules, trend APIs). Everything else goes through the official servers.</p>
 <p>How a click works: you press Approve on a card. The card posts a short message (&quot;Approve design d2&quot;) into the chat. ChatGPT follows the skill and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the card as live. One click, one extra model turn.</p>
 <div class="diagram" role="img" aria-label="Approve click: the design card posts 'Approve design d2' into the chat. ChatGPT follows the design skill and calls Fourthwall to create the product, set prices and make it public, all auto-approved. Then it calls wovain's record_design and show_design_card, and the card redraws as Live with a link.">
 <svg viewBox="0 0 1000 250" xmlns="http://www.w3.org/2000/svg">
@@ -163,7 +163,7 @@
 <tr>
 <td>5</td>
 <td>Wait</td>
-<td><code>wovain-ads</code> skill: <code>video_plan</code> gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; <code>finish_video</code> burns in captions (and the brand, when turned on); copy and margins are computed</td>
+<td><code>wovain-ads</code> skill: <code>video_plan</code> gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed</td>
 <td>Ad card per product</td>
 </tr>
 <tr>
@@ -276,12 +276,6 @@
 <td>https://commitlint.js.org</td>
 </tr>
 <tr>
-<td>Video post-processing</td>
-<td>ffmpeg bundled with the server (<code>ffmpeg-static</code>), so it runs wherever the server runs</td>
-<td>7.x</td>
-<td>https://ffmpeg.org</td>
-</tr>
-<tr>
 <td>Database</td>
 <td>Neon Postgres through Drizzle ORM (<code>drizzle-orm/bun-sql</code> on <code>Bun.SQL</code>), migrations by drizzle-kit; PGlite (Postgres in WASM, in-process) for tests</td>
 <td>0.45.4 / 0.31.11 / 0.5.8</td>
@@ -322,7 +316,7 @@
 </tr>
 <tr>
 <td>Keys in <code>apps/web/.env</code> (project settings on Vercel)</td>
-<td><code>META_SYSTEM_USER_TOKEN</code>, <code>META_AD_ACCOUNT_ID</code>, <code>META_PAGE_ID</code>, <code>META_PIXEL_ID</code>, <code>SERPAPI_KEY</code>, <code>ETSY_API_KEY</code>, <code>MARKER_API_TOKEN</code>, <code>FAL_KEY</code> (fal storage uploads), <code>BETTER_AUTH_SECRET</code> (signs sessions and OAuth state), <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> (Google sign-in), <code>WOVAIN_ALLOWED_EMAILS</code> (who may sign in), <code>DATABASE_URL</code> (Neon: the <code>dev</code> branch locally) and <code>BLOB_READ_WRITE_TOKEN</code> (the private Blob store); on Vercel the Neon and Blob integrations set the last two</td>
+<td><code>META_SYSTEM_USER_TOKEN</code>, <code>META_AD_ACCOUNT_ID</code>, <code>META_PAGE_ID</code>, <code>META_PIXEL_ID</code>, <code>SERPAPI_KEY</code>, <code>ETSY_API_KEY</code>, <code>MARKER_API_TOKEN</code>, <code>FAL_KEY</code> (live fal prices), <code>BETTER_AUTH_SECRET</code> (signs sessions and OAuth state), <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> (Google sign-in), <code>WOVAIN_ALLOWED_EMAILS</code> (who may sign in), <code>DATABASE_URL</code> (Neon: the <code>dev</code> branch locally) and <code>BLOB_READ_WRITE_TOKEN</code> (the private Blob store); on Vercel the Neon and Blob integrations set the last two</td>
 </tr>
 <tr>
 <td>Rehearsal</td>
@@ -352,7 +346,7 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 <li>One token, <code>--wovain-accent: #3B4CCA</code>, used only on primary buttons, badges and icons.</li>
 <li>Status colors stay semantic: green Live, amber Ready-blocked, red Paused.</li>
 <li>Each card opens with one coach line, then the numbers. Money cards lead with breakeven cost per sale; return on ad spend comes second. At most 2 buttons; the ⚙ quick-settings menu is an icon, not a button. No tabs or inner scrolling.</li>
-<li>Images use fixed aspect ratios and alt text. Videos are muted with burned-in captions, tap to play, and the ⛶ control calls ChatGPT's full-screen view (<code>requestDisplayMode</code>), since the card can't go full screen itself.</li>
+<li>Images use fixed aspect ratios and alt text. Videos are muted, tap to play, and the ⛶ control calls ChatGPT's full-screen view (<code>requestDisplayMode</code>), since the card can't go full screen itself.</li>
 <li>No shadcn: ChatGPT requires its own design system, and <code>@openai/apps-sdk-ui</code> is the official kit.</li>
 </ul>
 <h2>Components</h2>
@@ -392,7 +386,7 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 </tr>
 <tr>
 <td><code>wovain-ads</code></td>
-<td><code>video_plan</code>, fal video ×2, fal MMAudio, <code>finish_video</code>, copy, <code>show_ad_card</code>, <code>record_ad</code></td>
+<td><code>video_plan</code>, fal video ×2, fal MMAudio, copy, <code>show_ad_card</code>, <code>record_ad</code></td>
 <td><code>prd.md &gt; Ad cards</code></td>
 </tr>
 <tr>
@@ -411,7 +405,7 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 </section>
 <section class="panel" data-k="wovain-server" role="tabpanel" hidden>
 <h3>wovain server</h3>
-<p>What it does: the MCP server as a library (<code>apps/server</code>), mounted by the Next.js route <code>apps/web/app/mcp/route.ts</code>: Streamable HTTP with a fresh server per request, and the card files as <code>ui://</code> resources. Finished media goes to fal storage, which gives each file a public <code>fal.media</code> URL. Each tool is one file with a zod input and output schema from <code>packages/shared</code>. Tools return user-safe errors and never pass raw upstream errors through.</p>
+<p>What it does: the MCP server as a library (<code>apps/server</code>), mounted by the Next.js route <code>apps/web/app/mcp/route.ts</code>: Streamable HTTP with a fresh server per request, and the card files as <code>ui://</code> resources. Finished clips stay at the public <code>fal.media</code> URLs fal returns. Each tool is one file with a zod input and output schema from <code>packages/shared</code>. Tools return user-safe errors and never pass raw upstream errors through.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -450,11 +444,6 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 <td><code>video_plan</code></td>
 <td>Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio)</td>
 <td>Settings</td>
-</tr>
-<tr>
-<td><code>finish_video</code></td>
-<td>Downloads the clip, burns in the caption at 60% height inside Meta's 9:16 safe zone (and a logo or the shop name for the first seconds when the brand overlay is on) with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL</td>
-<td>ffmpeg, fal storage</td>
 </tr>
 <tr>
 <td><code>record_ad</code></td>
@@ -577,10 +566,6 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 <tr>
 <td>Audio</td>
 <td>source MMAudio (or Kling native, or off), prompt &quot;upbeat background music, no vocals&quot;</td>
-</tr>
-<tr>
-<td>Overlay</td>
-<td>captions on at 60% height; brand overlay off (0 s), with an optional logo image or the shop name</td>
 </tr>
 <tr>
 <td>Meta</td>
@@ -824,8 +809,8 @@ pre-push:
 </tr>
 <tr>
 <td>Media</td>
-<td>Staged artwork in the private Blob store; public copies in Fourthwall's media library and on fal storage</td>
-<td><code>stage_artwork</code>, <code>finish_video</code></td>
+<td>Staged artwork in the private Blob store; public copies in Fourthwall's media library; clips at fal's own URLs</td>
+<td><code>stage_artwork</code></td>
 <td>Files stay until deleted</td>
 </tr>
 </tbody>
@@ -852,9 +837,8 @@ pre-push:
 │   │   │   ├── store.ts         # records through Drizzle, artwork on Blob
 │   │   │   ├── tools/           # one file per tool
 │   │   │   ├── cards.ts         # registers the ui:// card resources
-│   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, ffmpeg, economics, rules
-│   │   ├── test/                # economics, rules, tool schemas, fixtures/
-│   │   └── assets/fonts/        # DejaVu Sans Bold for captions
+│   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, economics, rules
+│   │   └── test/                # economics, rules, tool schemas, fixtures/
 │   ├── web/                     # Next.js on Vercel (Bun runtime)
 │   │   ├── app/mcp/route.ts     # mounts the MCP server at /mcp behind requireMcpAuth
 │   │   ├── app/api/auth/[...all]/route.ts   # Better Auth: sign-in, OAuth endpoints
@@ -862,7 +846,7 @@ pre-push:
 │   │   ├── app/sign-in/, app/consent/   # the pages ChatGPT sends merchants to
 │   │   ├── lib/                 # auth.ts, auth-client.ts, env.ts, server.ts
 │   │   ├── test/auth.test.ts    # the OAuth discovery chain
-│   │   ├── next.config.ts       # traces cards, font and ffmpeg into the function
+│   │   ├── next.config.ts       # traces the built cards into the function
 │   │   ├── vercel.json          # Vercel project config: Bun 1.4 runtime, Next.js
 │   │   └── .env.example         # server keys (apps/web/.env, gitignored)
 │   └── cards/                   # React cards, Vite single-file builds
@@ -935,7 +919,7 @@ pre-push:
 </tr>
 <tr>
 <td>fal MCP</td>
-<td><code>submit_jobs</code> / <code>wait_for_jobs</code> for <code>minimax/h3-max/reference-to-video</code> (references = mockup and artwork; Kling endpoints when chosen), <code>fal-ai/mmaudio-v2</code>, background removal, upscaler; fal storage uploads (<code>FAL_KEY</code>)</td>
+<td><code>submit_jobs</code> / <code>wait_for_jobs</code> for <code>minimax/h3-max/reference-to-video</code> (references = mockup and artwork; Kling endpoints when chosen), <code>fal-ai/mmaudio-v2</code>, background removal, upscaler; live prices (<code>FAL_KEY</code>)</td>
 <td>OAuth in ChatGPT; <code>FAL_KEY</code> on the server</td>
 <td>Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY)</td>
 <td>https://fal.ai/docs/model-apis/mcp</td>
@@ -1080,14 +1064,14 @@ pre-push:
 <td>About an hour more setup</td>
 </tr>
 <tr>
-<td>JSON-record store on Neon, optimization on check-in, ffmpeg captions</td>
+<td>JSON-record store on Neon, optimization on check-in</td>
 <td>Derived</td>
 <td>Follow from the choices above</td>
 <td>See What Was Simplified</td>
 </tr>
 </tbody>
 </table></div>
-<p>Learning moment: the learner asked &quot;why even a server, not a plain plugin with child MCP servers?&quot; It was clarified by three platform facts: cards must be served by our own MCP server, card buttons can only call that server, and Meta rules, trend APIs and caption burn-in have no MCP. The learner then picked the thinnest server. A second question, &quot;what is elements, and can't we support it ourselves?&quot;, was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.</p>
+<p>Learning moment: the learner asked &quot;why even a server, not a plain plugin with child MCP servers?&quot; It was clarified by three platform facts: cards must be served by our own MCP server, card buttons can only call that server, and Meta rules and trend APIs have no MCP. The learner then picked the thinnest server. A second question, &quot;what is elements, and can't we support it ourselves?&quot;, was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.</p>
 <p>Verify early in the build, in this order:</p>
 <div class="wrap"><table>
 <thead>
@@ -1171,7 +1155,7 @@ const STEPS = [
   ['Tick 2 or 3, click Design', 'The card posts the picks into the chat', 'Next step starts', ['cards','skills']],
   ['Wait', 'Art from ChatGPT, stage_artwork, fal cleanup and upscale, Fourthwall upload and mockups, price_product', 'Design card per idea', ['skills','wovain','fal','fw','json','cards']],
   ['Approve, Skip or feedback', 'Fourthwall creates and publishes the product; record_design saves it', 'Design card: Live + link', ['cards','skills','fw','wovain','json']],
-  ['Wait', 'video_plan, fal Kling ×2 and MMAudio, finish_video adds captions and brand', 'Ad card per product', ['skills','wovain','fal','json','cards']],
+  ['Wait', 'video_plan, fal Kling ×2 and MMAudio', 'Ad card per product', ['skills','wovain','fal','json','cards']],
   ['Add, Skip or feedback', 'record_ad saves the choice; the last card starts the campaign step', 'Next ad card or campaign card', ['cards','wovain','json']],
   ['Wait', 'Payment and pixel checks, Meta campaign build, create_rules, activate', 'Campaign card: Live or blocked', ['skills','meta','wovain','graph','cards']],
   ['Later: how is my campaign?', 'campaign_check reads rule history; Fourthwall reports and sales by UTM add evidence', 'Optimization card per fired rule', ['skills','wovain','graph','fw','cards']],

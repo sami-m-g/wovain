@@ -50,8 +50,5 @@
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "ultracite": "8.0.1",
     "zod": "4.6.7"
-  },
-  "trustedDependencies": [
-    "ffmpeg-static"
-  ]
+  }
 }

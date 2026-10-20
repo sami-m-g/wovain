@@ -391,25 +391,6 @@ export const moreSections: Section[] = sections([
   },
   {
     fields: [
-      { key: "captions", label: "Burn in captions" },
-      {
-        key: "brandSeconds",
-        label: "Show the brand for",
-        unit: "s",
-      },
-      {
-        key: "logoUrl",
-        label: "Logo image URL (empty shows the shop name)",
-      },
-    ],
-    group: "overlay",
-    id: "overlay",
-    summary: (s) =>
-      `${s.overlay.captions ? "Captions on" : "Captions off"} · ${s.overlay.brandSeconds === 0 ? "no brand overlay" : `${s.overlay.logoUrl === "" ? "shop name" : "logo"} ${s.overlay.brandSeconds} s`}`,
-    title: "Video overlay",
-  },
-  {
-    fields: [
       { key: "aiDisclosure", label: "Label ads as AI-made" },
       { key: "graphApiVersion", label: "Graph API version" },
     ],

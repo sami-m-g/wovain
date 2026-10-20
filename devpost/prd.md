@@ -154,7 +154,7 @@ Every card also has a quick-settings menu (⚙) for the values it uses; the Sett
 - Status colors stay semantic: green for live, amber for blocked, red for paused.
 - Voice: friendly coach. Each card opens with one coach line that explains the call, with the numbers below it.
 - Each card has at most 2 buttons, no tabs and no scrolling inside the card (ChatGPT's rules).
-- Images use fixed aspect ratios and alt text. Videos are tap to play, muted with captions, with a full-screen control that plays them at phone size over the chat.
+- Images use fixed aspect ratios and alt text. Videos are tap to play, muted, with a full-screen control that plays them at phone size over the chat.
 
 ## Features and Behavior
 
@@ -246,7 +246,7 @@ Source: `scope.md > The POC boundary` (Ads).
 
 | Creative | Spec |
 |---|---|
-| Video A | UGC-style, on-model, 9:16, 15 seconds or less, captions inside Meta's safe zone (below the print, above the bottom 40%), background audio; brand overlay optional and off, since Meta shows the Page name and picture on every ad |
+| Video A | UGC-style, on-model, 9:16, 15 seconds or less, background audio; no text burned in, since Meta shows the Page name and picture on every ad and the primary text carries the message |
 | Video B | UGC-style, a second angle or styling, same spec |
 | Static | The Fourthwall mockup image |
 | Headline | Short, product-led |
