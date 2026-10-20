@@ -78,7 +78,7 @@ flowchart LR
 | Video post-processing | ffmpeg bundled with the server (`ffmpeg-static`), so it runs wherever the server runs | 7.x | https://ffmpeg.org |
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
-- Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so Node 24 LTS or 26 stays the fallback if Bun misbehaves.
+- Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so `bunfig.toml` sets `[run] bun = true` and even Storybook, Vitest and other tools with a node shebang run on Bun; no Node install is needed.
 - The server keeps an optional Streamable HTTP mode behind a flag. It is the fallback if the desktop-only install fails: the laptop then runs the server, ngrok exposes it, and wovain is used on chatgpt.com. It listens on 127.0.0.1 only, needs a bearer token (`WOVAIN_HTTP_TOKEN`), and accepts only localhost and the tunnel host (`WOVAIN_HTTP_ALLOWED_HOSTS`), so the tunnel can't be used by anyone else to reach the shop or ads.
 - Ultracite with oxlint and oxfmt: the learner's choice (`ultracite init --linter oxlint`).
 - React 19: both `@openai/apps-sdk-ui` and `ext-apps` support it; OpenAI's docs still show 18.
@@ -345,7 +345,7 @@ wovain/
 ├── lefthook.yml                 # pre-commit, commit-msg, pre-push
 ├── commitlint.config.ts         # conventional commits
 ├── knip.json                    # dead-code check
-├── .nvmrc                       # 26 (Node fallback)
+├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
 ├── package.json                 # bun workspaces and scripts
 ├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
 └── devpost/                     # planning docs
