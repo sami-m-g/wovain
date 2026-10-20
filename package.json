@@ -15,7 +15,7 @@
     "typecheck:6": "tsc6 -b --noEmit",
     "test": "bun test",
     "mock": "WOVAIN_MOCK=1 bun run dev",
-    "prepare": "lefthook install && skills experimental_sync -y -a claude-code --copy",
+    "prepare": "bun run scripts/prepare.ts",
     "plugin:install": "bun run scripts/plugin-install.ts",
     "knip": "knip",
     "skills:restore": "skills experimental_install -y",
