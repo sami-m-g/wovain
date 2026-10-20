@@ -116,7 +116,8 @@ test("finish_video burns overlays and hosts the clip on fal", async () => {
     slot: "A",
     videoUrl: "https://v3b.fal.media/files/b/x/raw.mp4",
   });
-  expect(result.isError).toBeFalsy();
+  // The tool's own error text, so a failure (ffmpeg, font, upload) says why.
+  expect(result.isError === true ? result.content : undefined).toBeUndefined();
   expect(result.structuredContent).toEqual({
     url: "https://v3b.fal.media/files/b/x/finished.mp4",
   });
