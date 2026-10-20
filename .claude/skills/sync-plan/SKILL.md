@@ -11,7 +11,7 @@ Each planning doc in `devpost/` exists twice: `<name>.md` (read by the course sk
 
 1. Check drift:
    ```bash
-   uv run -q --script .claude/skills/sync-plan/scripts/plan_sync.py devpost
+   bun scripts/plan-sync.ts devpost
    ```
    Exit 0 means every pair matches; stop there.
 2. The output is a diff from `.md` to `.html`, one line per table row, list item, or paragraph:

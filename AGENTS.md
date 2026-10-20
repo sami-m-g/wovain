@@ -10,7 +10,7 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 - A Stop hook blocks ending a turn while a pair has drifted. Check manually:
 
   ```bash
-  uv run -q --script .claude/skills/sync-plan/scripts/plan_sync.py devpost
+  bun scripts/plan-sync.ts devpost
   ```
 
 ## Commits

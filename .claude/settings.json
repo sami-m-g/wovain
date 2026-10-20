@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run -q --script \"$CLAUDE_PROJECT_DIR\"/.claude/skills/sync-plan/scripts/plan_sync.py --hook"
+            "command": "bun \"$CLAUDE_PROJECT_DIR\"/scripts/plan-sync.ts --hook"
           }
         ]
       }

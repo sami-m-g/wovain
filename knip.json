@@ -3,6 +3,9 @@
   "workspaces": {
     "apps/cards": {
       "entry": ["src/*/main.tsx"]
+    },
+    ".": {
+      "entry": ["scripts/*.ts"]
     }
   }
 }
