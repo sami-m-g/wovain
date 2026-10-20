@@ -5,14 +5,13 @@ import { metaRules } from "@wovain-foss/shared/rules";
 import type { MetaRule } from "@wovain-foss/shared/rules";
 import { defaultSettings } from "@wovain-foss/shared/settings";
 
-import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
 import {
   connectClient,
   demoDesign,
   restoreFetch,
   stubFetch,
-  tempDir,
+  testStore,
 } from "./helpers.ts";
 
 let store: Store;
@@ -40,7 +39,7 @@ beforeEach(async () => {
       Response.json({ data: [{ id: "1", name: "wovain 555 · Alert" }] })
     );
   });
-  store = createStore(await tempDir());
+  store = await testStore();
   await store.saveDesign(demoDesign);
   await store.saveAd({
     coach: "Two clips.",

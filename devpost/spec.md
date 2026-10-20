@@ -26,7 +26,7 @@ Why a wovain server at all: ChatGPT can only show a card that an MCP server serv
 
 How a click works: you press Approve on a card. The card posts a short message ("Approve design d2") into the chat. ChatGPT follows the skill and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the card as live. One click, one extra model turn.
 
-Where things are kept: the server keeps settings and the state of each run, so a new chat picks up where you left off. For now that is one SQLite file (in `/tmp` on Vercel, so it resets on a cold start); hosting step 2 moves it to Neon Postgres, with each user's own rows.
+Where things are kept: Neon Postgres keeps settings and the state of each run, one set of rows per user, so a new chat picks up where you left off. Staged artwork waits in a private Vercel Blob store until it is uploaded to Fourthwall.
 
 Where you use it: on chatgpt.com and in the ChatGPT desktop app, because the server is hosted instead of started on your Mac.
 
@@ -43,7 +43,7 @@ flowchart LR
   S --> FAL[fal MCP]
   W --> SA[SerpApi, Etsy, Marker]
   W --> G[Meta Graph API: rules]
-  W --> J[(wovain.sqlite)]
+  W --> J[(Neon Postgres + Blob)]
   W --> C[Cards in chat]
 ```
 
@@ -85,13 +85,13 @@ flowchart LR
 
 ## Where It Runs and How Someone Tries It
 
-wovain is a hosted MCP server: a Next.js app (`apps/web`) on Vercel serves Streamable HTTP at `/mcp`, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus `mcp.json` pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and cards but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store, 3 OAuth 2.1 sign-in so anyone can install (Neon Auth lacks the OAuth-provider plugin, so likely Better Auth with its tables in Neon), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace.
+wovain is a hosted MCP server: a Next.js app (`apps/web`) on Vercel serves Streamable HTTP at `/mcp`, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus `mcp.json` pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and cards but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store and private Blob media (done), 3 OAuth 2.1 sign-in so anyone can install (Neon Auth lacks the OAuth-provider plugin, so likely Better Auth with its tables in Neon), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace.
 
 | Need | Value |
 |---|---|
 | Plan | ChatGPT Plus; chatgpt.com, or the desktop app for the plugin with its skills |
 | Host | Vercel (Bun runtime); Bun 1.4 locally for development |
-| Keys in `apps/web/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `SERPAPI_KEY`, `ETSY_API_KEY`, `MARKER_API_TOKEN`, `FAL_KEY` (fal storage uploads), `WOVAIN_HTTP_TOKEN` (guards `/mcp` until OAuth) |
+| Keys in `apps/web/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `SERPAPI_KEY`, `ETSY_API_KEY`, `MARKER_API_TOKEN`, `FAL_KEY` (fal storage uploads), `WOVAIN_HTTP_TOKEN` (guards `/mcp` until OAuth); on Vercel the Neon and Blob integrations add `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN` |
 | Rehearsal | `WOVAIN_MOCK=1`: wovain's outside calls are answered by MSW, and the skills skip publish and launch steps |
 | Sign-ins in ChatGPT | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
@@ -150,16 +150,16 @@ What it does: the MCP server as a library (`apps/server`), mounted by the Next.j
 | Tool | Does | Talks to |
 |---|---|---|
 | `trends_evidence` | Growth, seasonality, Etsy count and trademark screen per idea | SerpApi, Etsy API, Marker API |
-| `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | wovain.sqlite, `data/media/` |
+| `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | records, Blob media |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
-| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | wovain.sqlite |
+| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | records |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
 | `finish_video` | Downloads the clip, burns in the caption at 60% height inside Meta's 9:16 safe zone (and a logo or the shop name for the first seconds when the brand overlay is on) with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL | ffmpeg, fal storage |
-| `record_ad` | Saves ad choices and copy | wovain.sqlite |
+| `record_ad` | Saves ad choices and copy | records |
 | `create_rules` | Creates the five rules per the PRD | Meta Graph API |
 | `campaign_check` | Reads rule history and campaign results | Meta Graph API |
-| `get_settings`, `update_settings` | Read and change any setting | wovain.sqlite |
+| `get_settings`, `update_settings` | Read and change any setting | records |
 | `show_*_card` (6) | Return card data and attach the card | Cards |
 
 PRD ref: `prd.md > Features and Behavior`.
@@ -183,7 +183,7 @@ Each card state from `prd.md > States and Boundaries` has a Storybook story with
 
 ### Settings
 
-Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in wovain.sqlite, and used by the next card without a redeploy.
+Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in the merchant's records, and used by the next card without a redeploy.
 
 | Group | Settings (defaults) |
 |---|---|
@@ -290,7 +290,7 @@ Scripts in the root `package.json`:
 
 ## Data Model
 
-One SQLite file, `wovain.sqlite` (`apps/server/data/` in development, gitignored; `/tmp/wovain` on Vercel, so it resets on a cold start until hosting step 2 moves the store to Neon Postgres), read and written by the server only. Each record is one JSON row, checked against its zod schema on every read. An older `wovain.json` is imported once on start and kept as `wovain.json.imported`.
+One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; until OAuth every row belongs to `owner`. Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. `Bun.SQL` runs the same queries on a SQLite file (`apps/server/data/`, gitignored) when `DATABASE_URL` is unset, for tests and local development. Staged artwork bytes go to the private Blob store `wovain-foss-media` (files in `apps/server/data/media/` without `BLOB_READ_WRITE_TOKEN`).
 
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
@@ -299,7 +299,7 @@ One SQLite file, `wovain.sqlite` (`apps/server/data/` in development, gitignored
 | Designs | `designs` and `artworks` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `runs[runId].ads` (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
 | Campaign | `runs[runId].campaign` (campaign, ad set, ad and rule IDs, status) | `create_rules`, campaign step | Optimization reads it |
-| Media | Local copies in `data/media/`; public copies in Fourthwall's media library and on fal storage | `stage_artwork`, `finish_video` | Files stay until deleted |
+| Media | Staged artwork in the private Blob store; public copies in Fourthwall's media library and on fal storage | `stage_artwork`, `finish_video` | Files stay until deleted |
 
 Card state inside a chat (ticks, typed feedback) lives in the card's widget state; ChatGPT keeps it with the message.
 
@@ -323,13 +323,13 @@ wovain/
 │   │   │   ├── index.ts         # exports createHttpFetch, loadEnv, createStore
 │   │   │   ├── http.ts          # Streamable HTTP handler, bearer token until OAuth
 │   │   │   ├── env.ts           # zod-checked environment
-│   │   │   ├── store.ts         # wovain.sqlite read and write
+│   │   │   ├── store.ts         # records on Neon or SQLite, artwork on Blob or files
 │   │   │   ├── tools/           # one file per tool
 │   │   │   ├── cards.ts         # registers the ui:// card resources
 │   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, ffmpeg, economics, rules
 │   │   ├── test/                # economics, rules, tool schemas, fixtures/
 │   │   ├── assets/fonts/        # DejaVu Sans Bold for captions
-│   │   └── data/                # wovain.sqlite, media/ (gitignored)
+│   │   └── data/                # local SQLite and media without Neon or Blob (gitignored)
 │   ├── web/                     # Next.js on Vercel (Bun runtime)
 │   │   ├── app/mcp/route.ts     # mounts the MCP server at /mcp
 │   │   ├── next.config.ts       # traces cards, font and ffmpeg into the function
@@ -375,7 +375,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 ## Important Failure Modes
 
 - **ChatGPT drops the bearer header from the plugin's `mcp.json`** → move OAuth (hosting step 3) ahead of everything else.
-- **Vercel's `/tmp` resets** → settings and runs vanish on a cold start until the Neon store (hosting step 2).
+- **Preview deployments share the production database** → turn on Neon's branch per preview in the Vercel integration before testers use previews.
 - **ChatGPT's image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the card shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
 - **Fourthwall rejects the publish** → card keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
 - **A video or its audio fails** → the ad card shows the failed slot with Retry, or image only (#7).
@@ -389,7 +389,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 - **Optimization card on check-in** instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.
 - **Print fidelity checked by eye** in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.
 - **Trademark screening via Marker** instead of an official USPTO search API: none exists. Labeled screening, not legal advice.
-- **One SQLite file** (Bun's built-in `bun:sqlite`) for now instead of a database server, with transactions instead of a hand-written write lock; hosting step 2 replaces it with Neon Postgres.
+- **One table of JSON records** instead of a table per entity: each record is checked by its zod schema on read, and `Bun.SQL` runs the same queries on Neon and on SQLite for tests.
 - **One bearer token** instead of OAuth for now: enough for one operator; anyone else installing needs OAuth (hosting step 3).
 
 ## Decisions and Open Issues
@@ -410,7 +410,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Design-level kill at 4×; breakeven on priciest size, size-weighted optional | Learner | Matches print-on-demand: the design is the test, sizes cost differently | Slightly stricter kills |
 | TypeScript 6 + 7 dual setup, Ultracite with oxlint, oxfmt, Lefthook, Ultracite skill and hooks | Learner | Official setup; fast type checks and lint on every edit and commit | Two TypeScript versions to keep in step |
 | DX set from the sister wovain repo: commitlint, knip, Lefthook with type check on commit, MSW with mock mode, Storybook, CI, Dependabot, release-please, plus modern-web-guidance, security-guidance and hookify; no shadcn | Learner | Same habits as their main project; rehearse without spending; check card states outside ChatGPT | About an hour more setup |
-| SQLite store, optimization on check-in, ffmpeg captions | Derived | Follow from the choices above | See What Was Simplified |
+| JSON-record store on Neon, optimization on check-in, ffmpeg captions | Derived | Follow from the choices above | See What Was Simplified |
 
 Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" It was clarified by three platform facts: cards must be served by our own MCP server, card buttons can only call that server, and Meta rules, trend APIs and caption burn-in have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
 

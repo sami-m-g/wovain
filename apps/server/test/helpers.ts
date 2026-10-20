@@ -8,10 +8,25 @@ import type { Design } from "@wovain-foss/shared/design";
 
 import { loadEnv } from "../src/env.ts";
 import { createServer } from "../src/server.ts";
+import { createStore, fileMedia, openDatabase } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
 
 export const tempDir = async (prefix = "wovain-") =>
   await mkdtemp(path.join(tmpdir(), prefix));
+
+// SQLite and files in a folder, as the server runs without Neon and Blob.
+export const testStorage = async (dir?: string) => {
+  const root = dir ?? (await tempDir());
+  return {
+    db: openDatabase(undefined, root),
+    media: fileMedia(path.join(root, "media")),
+  };
+};
+
+export const testStore = async (dir?: string) => {
+  const { db, media } = await testStorage(dir);
+  return createStore(db, media, "test");
+};
 
 // A client talking to a fresh wovain server over an in-memory transport.
 export const connectClient = async (

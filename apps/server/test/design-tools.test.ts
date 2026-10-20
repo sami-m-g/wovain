@@ -4,8 +4,12 @@ import path from "node:path";
 import type { Client } from "@modelcontextprotocol/client";
 
 import { setResolver } from "../src/lib/fetch-image.ts";
-import { createStore } from "../src/store.ts";
-import { connectClient, restoreFetch, stubFetch, tempDir } from "./helpers.ts";
+import {
+  connectClient,
+  restoreFetch,
+  stubFetch,
+  testStore,
+} from "./helpers.ts";
 
 const png = await Bun.file(
   path.join(import.meta.dir, "fixtures", "rgba-64x32.png")
@@ -45,7 +49,7 @@ beforeEach(async () => {
     return await Promise.resolve(new Response(png, { status: 200 }));
   };
   stubFetch(fakeFetch);
-  const store = createStore(await tempDir());
+  const store = await testStore();
   client = await connectClient({}, store);
 });
 

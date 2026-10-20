@@ -71,7 +71,7 @@ Git hooks (Lefthook) run fix, typecheck and gitleaks on commit, commitlint on th
 | Path | What's there |
 | --- | --- |
 | `plugin/` | The plugin manifest, `mcp.json` and the skills ChatGPT follows (`wovain-design`, `wovain-ads`, `wovain-campaign`) |
-| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, ffmpeg overlays, Meta rules client, SQLite store |
+| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, ffmpeg overlays, Meta rules client, store (Neon Postgres, or SQLite locally) |
 | `apps/web/` | Next.js app on Vercel that serves the MCP server at `/mcp` |
 | `apps/cards/` | The React cards (MCP Apps) and their Storybook stories |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and cards |

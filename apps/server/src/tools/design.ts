@@ -1,6 +1,4 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
@@ -94,18 +92,18 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         .digest("hex")
         .slice(0, 16);
       const fileName = `wovain-${hash}.${extensions[contentType]}`;
-      await mkdir(store.mediaDir, { recursive: true });
-      const file = path.join(store.mediaDir, fileName);
-      await writeFile(file, bytes);
-      const saved = await store.saveArtwork({
-        bytes: bytes.byteLength,
-        contentType,
-        file,
-        height: info.height,
-        ...(source === undefined ? {} : { sourceUrl: source }),
-        transparent: info.transparent,
-        width: info.width,
-      });
+      const saved = await store.saveArtwork(
+        {
+          bytes: bytes.byteLength,
+          contentType,
+          height: info.height,
+          ...(source === undefined ? {} : { sourceUrl: source }),
+          transparent: info.transparent,
+          width: info.width,
+        },
+        bytes,
+        fileName
+      );
       const result = {
         artworkId: saved.id,
         bytes: saved.bytes,
@@ -143,7 +141,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         throw new Error(`no staged artwork ${artworkId}`);
       }
       const response = await fetch(await assertUploadUrl(uploadUrl), {
-        body: await readFile(artwork.file),
+        body: await store.readArtworkBytes(artwork),
         // Fourthwall signs the upload with its content type and a size
         // limit; both headers must match or Google storage answers 403.
         headers: {

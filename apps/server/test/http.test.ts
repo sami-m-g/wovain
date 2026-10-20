@@ -9,8 +9,7 @@ import { z } from "zod";
 
 import { loadEnv } from "../src/env.ts";
 import { createHttpFetch } from "../src/http.ts";
-import { createStore } from "../src/store.ts";
-import { tempDir } from "./helpers.ts";
+import { testStorage } from "./helpers.ts";
 
 const token = "t".repeat(32);
 const url = "https://wovain.example/mcp";
@@ -22,7 +21,7 @@ const cardsBuilt = await Bun.file(
 
 const httpFetch = createHttpFetch(
   loadEnv({ WOVAIN_CARDS_DIR: cardsDir, WOVAIN_HTTP_TOKEN: token }),
-  createStore(await tempDir())
+  await testStorage()
 );
 
 const initialize = (headers: Record<string, string>) =>
@@ -59,7 +58,7 @@ describe("bearer token", () => {
   });
 
   test("serves nothing when no token is configured", async () => {
-    const open = createHttpFetch(loadEnv({}), createStore(await tempDir()));
+    const open = createHttpFetch(loadEnv({}), await testStorage());
     const response = await open(initialize({ authorization: "Bearer " }));
     expect(response.status).toBe(401);
   });

@@ -8,14 +8,13 @@ import { z } from "zod";
 
 import { setResolver } from "../src/lib/fetch-image.ts";
 import { planVideos } from "../src/lib/video-plan.ts";
-import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
 import {
   connectClient,
   demoDesign,
   restoreFetch,
   stubFetch,
-  tempDir,
+  testStore,
 } from "./helpers.ts";
 
 const clip = await Bun.file(
@@ -49,7 +48,7 @@ beforeEach(async () => {
     }
     return await Promise.resolve(new Response(clip, { status: 200 }));
   });
-  store = createStore(await tempDir());
+  store = await testStore();
   await store.saveDesign(demoDesign);
   client = await connectClient({ FAL_KEY: "test-key" }, store);
 });
