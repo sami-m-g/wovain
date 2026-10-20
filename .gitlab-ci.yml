@@ -1,0 +1,114 @@
+# wovain's pipeline: verify every push and merge request, deploy merge
+# requests to a Vercel preview (a review environment) and main to
+# production, then check the live OAuth chain. Vercel builds each
+# deployment; these jobs only start it, so builds match the Vercel project
+# settings (apps/web, Bun 1.4). Needs CI variables VERCEL_TOKEN (masked),
+# VERCEL_ORG_ID and VERCEL_PROJECT_ID.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+stages:
+  - verify
+  - deploy
+  - monitor
+
+default:
+  image: oven/bun:1.4.2
+  interruptible: true
+
+.bun-install:
+  cache:
+    key:
+      files: [bun.lock]
+    paths: [.bun-cache/]
+  variables:
+    BUN_INSTALL_CACHE_DIR: .bun-cache
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git >/dev/null
+    - bun install --frozen-lockfile
+
+verify:
+  stage: verify
+  extends: .bun-install
+  script:
+    - bun run build
+    - bun run check
+    - bun run typecheck
+    - bun run knip
+    - bun run test
+
+stories:
+  stage: verify
+  extends: .bun-install
+  script:
+    - bunx playwright install --with-deps chromium
+    - bun run test:stories
+
+.vercel:
+  image: node:24-slim
+  stage: deploy
+  interruptible: false
+  variables:
+    VERCEL_CLI: vercel@64.0.2
+
+deploy:preview:
+  extends: .vercel
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - npx --yes "$VERCEL_CLI" deploy --yes --token "$VERCEL_TOKEN" > deploy-url.txt
+    - echo "DEPLOY_URL=$(cat deploy-url.txt)" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+  environment:
+    name: review/$CI_MERGE_REQUEST_IID
+    url: $DEPLOY_URL
+    on_stop: stop:preview
+    auto_stop_in: 1 week
+
+stop:preview:
+  extends: .vercel
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: true
+  script:
+    - echo "Preview for !$CI_MERGE_REQUEST_IID stopped; Vercel keeps the deployment until it expires."
+  environment:
+    name: review/$CI_MERGE_REQUEST_IID
+    action: stop
+
+deploy:production:
+  extends: .vercel
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  resource_group: production
+  script:
+    - npx --yes "$VERCEL_CLI" deploy --prod --yes --token "$VERCEL_TOKEN"
+  environment:
+    name: production
+    url: https://wovain.vercel.app
+
+# ChatGPT's first steps against the live server: /mcp asks for a token and
+# points at the metadata, which names wovain's OAuth server.
+smoke:production:
+  stage: monitor
+  image: curlimages/curl:8.11.1
+  needs: [deploy:production]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  variables:
+    SITE: https://wovain.vercel.app
+  script:
+    - |
+      status=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' "$SITE/mcp")
+      test "$status" = 401 || { echo "/mcp answered $status, expected 401"; exit 1; }
+    - curl -sf "$SITE/.well-known/oauth-protected-resource/mcp" | grep -q "\"resource\":\"$SITE/mcp\""
+    - curl -sf "$SITE/.well-known/oauth-authorization-server/api/auth" | grep -q '"code_challenge_methods_supported":\["S256"\]'
+    - curl -sf "$SITE/sign-in" | grep -q 'Continue with Google'

@@ -111,7 +111,7 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 
 Connect it: `bun run plugin:install` copies `plugin/` to `~/.codex/plugins/wovain`, points its `mcp.json` at the hosted `/mcp` (or `--url`, such as a tunnel to `bun run dev`), and lists it in the personal marketplace `~/.agents/plugins/marketplace.json`. Restart the ChatGPT desktop app, open Plugins, then Personal, click + on wovain, and start a new chat. Fourthwall, Meta Ads and fal are added directly in the app: declared inside the plugin, they timed out at startup and held up every turn (verified in build step 1).
 
-Demo recording: in ChatGPT (the desktop app or chatgpt.com), follow `scope.md > What "working" looks like` in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and a public GitHub repo; the hosted server on Vercel is the deployment.
+Demo recording: in ChatGPT (the desktop app or chatgpt.com), follow `scope.md > What "working" looks like` in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and the public GitLab repo (https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, mirrored to https://github.com/sami-m-g/wovain); the hosted server on Vercel is the deployment.
 
 ## Look and Feel
 
@@ -211,15 +211,15 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | `/demo-check` | Project skill, user-only | Preflight before recording: plugin loaded and `/mcp` reachable, cards build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account |
 | claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance seeds the `wovain-optimize` skill; claude-ads is MIT-licensed, and `wovain-optimize` credits it in a NOTICE file |
 | `ultracite fix` after each edit | Hook (from `ultracite init --hooks claude`) | Lint and format every edit |
-| `gitleaks git --staged` in Lefthook pre-commit | Hook | Blocks secrets and tokens before they reach GitHub |
+| `gitleaks git --staged` in Lefthook pre-commit | Hook | Blocks secrets and tokens before they reach GitLab or the GitHub mirror |
 | Lefthook | Git hooks | Ultracite fix, type check and gitleaks before commits; commitlint on commit messages; knip, tests and story tests before pushes |
 | commitlint | Commit check | Enforces conventional commits locally and on pull requests |
 | knip | Dead-code check | Finds unused files, exports and dependencies before pushes and in CI |
 | Storybook | Card workshop | One story per card state with a mocked `window.openai`; a11y and interaction tests |
 | MSW mock mode | Rehearsal | `bun run mock` answers wovain's outside calls from `packages/mocks`, so the demo can be rehearsed without spending |
-| GitHub Actions CI | CI | Actions pinned to commit SHAs: commitlint, check, typecheck, knip, test and story tests |
-| Dependabot | Updates | Weekly bun and Actions updates, grouped minor and patch, 7-day cooldown |
-| release-please | Releases | Changelog and version bumps from conventional commits |
+| GitLab CI/CD (`.gitlab-ci.yml`) | CI/CD | Stages verify, deploy, monitor: `verify` (build, check, typecheck, knip, test on `oven/bun:1.4.2`) and `stories` (Playwright); `deploy:preview` sends each merge request to a Vercel preview, tracked as the review environment `review/<MR iid>` (auto-stops after a week); `deploy:production` runs `vercel deploy --prod` from `main` (environment production, https://wovain.vercel.app); `smoke:production` curls the live OAuth chain (`/mcp` 401, both metadata documents, the sign-in page). CI variables: `VERCEL_TOKEN` (masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
+| GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace and available, not wired yet: code review, SAST false-positive detection, resolve SAST vulnerability, developer, fix CI/CD pipeline, convert to GitLab CI/CD |
+| release-please | Releases | Changelog and version bumps from conventional commits; its GitHub workflow is removed and release automation moves to GitLab later. Dependabot is removed too |
 | `skills` CLI | Skills sync | `prepare` copies package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
 | Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the cards), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
@@ -293,7 +293,7 @@ Scripts in the root `package.json`:
 
 ## Data Model
 
-One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The schema is Drizzle (`packages/db`): `records` keeps each record in a `jsonb` column, and Better Auth's tables come from `bunx auth@1.7.7 generate`. drizzle-kit writes SQL migrations to `packages/db/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-foss-media`; local development uses it too, so there is no offline fallback.
+One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The schema is Drizzle (`packages/db`): `records` keeps each record in a `jsonb` column, and Better Auth's tables come from `bunx auth@1.7.7 generate`. drizzle-kit writes SQL migrations to `packages/db/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
 
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
@@ -359,7 +359,7 @@ wovain/
 │   ├── migrations/              # SQL from drizzle-kit (bun run db:generate)
 │   └── drizzle.config.ts
 ├── packages/mocks/              # MSW handlers: tests, mock mode, Storybook
-├── .github/                     # workflows/ci.yml, workflows/release-please.yml, dependabot.yml
+├── .gitlab-ci.yml               # verify, deploy (Vercel preview / production), monitor (smoke)
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course skills (bun run skills:restore), plus new-tool/ and demo-check/
 ├── scripts/                     # plugin-install.ts

@@ -24,7 +24,7 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 ## Setup
 
 ```bash
-git clone https://github.com/sami-m-g/wovain.git
+git clone https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase.git wovain
 cd wovain
 bun install
 cp apps/web/.env.example apps/web/.env
@@ -71,6 +71,8 @@ This copies `plugin/` into your personal plugin marketplace, pointed at the host
 | `bun run skills:restore` | Restores the course skills listed in `skills-lock.json` |
 
 Git hooks (Lefthook) run fix, typecheck and gitleaks on commit, commitlint on the message, and tests, knip and story tests on push.
+
+The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror. GitLab CI/CD (`.gitlab-ci.yml`) verifies every push and merge request, deploys each merge request to a Vercel preview (a GitLab review environment) and `main` to https://wovain.vercel.app, then smoke-tests the live OAuth chain. It needs the CI variables `VERCEL_TOKEN` (masked), `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
 
 ## Layout
 
