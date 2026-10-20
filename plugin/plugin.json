@@ -14,8 +14,8 @@
         "capabilities": ["Read", "Write"],
         "defaultPrompt": ["Show my wovain settings"],
         "brandColor": "#3B4CCA",
-        "logo": "./assets/logo.svg",
-        "composerIcon": "./assets/logo.svg"
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/logo.png"
       }
     }
   }

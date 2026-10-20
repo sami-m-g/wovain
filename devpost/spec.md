@@ -319,7 +319,7 @@ wovain/
 │   │   ├── wovain-ads/SKILL.md
 │   │   ├── wovain-campaign/SKILL.md
 │   │   └── wovain-optimize/SKILL.md
-│   └── assets/logo.svg
+│   └── assets/logo.svg, logo.png   # source and the PNG ChatGPT shows
 ├── apps/
 │   ├── server/                  # MCP server library: tools, cards, store
 │   │   ├── src/

@@ -19,7 +19,10 @@ const cardsBuilt = await Bun.file(
 ).exists();
 
 const mcpFetch = createMcpFetch(
-  loadEnv({ WOVAIN_CARDS_DIR: cardsDir }),
+  loadEnv({
+    WOVAIN_CARDS_DIR: cardsDir,
+    WOVAIN_ICON_URL: "https://wovain.example/icon.png",
+  }),
   await testStorage()
 );
 
@@ -56,6 +59,15 @@ describe("over HTTP", () => {
   afterAll(async () => {
     await client.close();
     await other.close();
+  });
+
+  test("names itself with the wovain logo", () => {
+    expect(client.getServerVersion()).toMatchObject({
+      icons: [
+        { mimeType: "image/png", src: "https://wovain.example/icon.png" },
+      ],
+      name: "wovain",
+    });
   });
 
   test("lists the settings tools and the settings card resource", async () => {

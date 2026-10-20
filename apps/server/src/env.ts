@@ -37,6 +37,8 @@ const envSchema = z.object({
         "DejaVuSans-Bold.ttf"
       )
     ),
+  // The wovain logo ChatGPT shows for the connector (served by apps/web).
+  WOVAIN_ICON_URL: z.url().optional(),
   WOVAIN_MOCK: z.stringbool().default(false),
 });
 

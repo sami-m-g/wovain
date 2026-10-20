@@ -17,7 +17,23 @@ export const createServer = (
   videoPricing: VideoPricing = createVideoPricing(env.FAL_KEY)
 ) => {
   const server = new McpServer(
-    { name: "wovain", version: "0.1.0" },
+    {
+      // The logo ChatGPT shows for the connector.
+      ...(env.WOVAIN_ICON_URL === undefined
+        ? {}
+        : {
+            icons: [
+              {
+                mimeType: "image/png",
+                sizes: ["512x512"],
+                src: env.WOVAIN_ICON_URL,
+              },
+            ],
+          }),
+      name: "wovain",
+      title: "wovain",
+      version: "0.1.0",
+    },
     { capabilities: { resources: {}, tools: {} } }
   );
   registerCards(server, env.WOVAIN_CARDS_DIR);
