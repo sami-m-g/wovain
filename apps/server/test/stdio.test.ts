@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { z } from "zod";
+
+import { tempDir } from "./helpers.ts";
 
 const settingsCard = "ui://wovain/settings-v3.html";
 
@@ -26,7 +26,7 @@ const inheritedEnv = Object.fromEntries(
 );
 
 beforeAll(async () => {
-  const dataDir = await mkdtemp(path.join(tmpdir(), "wovain-"));
+  const dataDir = await tempDir();
   await client.connect(
     new StdioClientTransport({
       args:

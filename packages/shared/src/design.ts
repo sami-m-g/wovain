@@ -79,6 +79,7 @@ export const designSchema = z.object({
 export type Design = z.infer<typeof designSchema>;
 
 export const designResultSchema = z.object({ design: designSchema });
+export const quoteResultSchema = z.object({ quote: quoteSchema });
 
 // Print quality the card shows next to the artwork's pixel width.
 export const printQuality = (artwork: Design["artwork"]) =>

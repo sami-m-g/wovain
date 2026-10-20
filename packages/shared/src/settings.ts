@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { videoModelIds } from "./video-models.ts";
+import { videoModelIds, videoPricesSchema } from "./video-models.ts";
 
 // Every value the PRD names is a setting. Defaults come from spec.md > Settings.
 
@@ -91,6 +91,12 @@ export const settingsSchema = z.object({
 export type Settings = z.infer<typeof settingsSchema>;
 
 export const defaultSettings = (): Settings => settingsSchema.parse({});
+
+// What every settings tool returns: current video prices ride along for labels.
+export const settingsResultSchema = z.object({
+  settings: settingsSchema,
+  videoPrices: videoPricesSchema,
+});
 
 // A partial update: any group, any subset of its fields.
 export const settingsPatchSchema = z.object({

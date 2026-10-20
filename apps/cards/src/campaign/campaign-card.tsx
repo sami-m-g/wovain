@@ -1,13 +1,9 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { campaignResultSchema } from "@wovain-foss/shared/campaign";
 
-import { useCard } from "../lib/bridge.ts";
+import { say, useCard } from "../lib/bridge.ts";
 import { CampaignCardView } from "./campaign-card-view.tsx";
 import type { CampaignCardActions } from "./campaign-card-view.tsx";
-
-const say = async (app: App, text: string) => {
-  await app.sendMessage({ content: [{ text, type: "text" }], role: "user" });
-};
 
 // Launch and re-check go through chat, where the wovain-campaign skill holds
 // the Meta tools; the card never publishes anything itself.

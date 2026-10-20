@@ -7,6 +7,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   designResultSchema,
   designSchema,
+  quoteResultSchema,
   designStatusSchema,
 } from "@wovain-foss/shared/design";
 import type { Design, DesignQuote } from "@wovain-foss/shared/design";
@@ -17,6 +18,7 @@ import { cardUri } from "../cards.ts";
 import { assertUploadUrl } from "../lib/fetch-image.ts";
 import { readImageInfo } from "../lib/image.ts";
 import { loadArtwork } from "../lib/load-artwork.ts";
+import { text } from "../lib/tool-result.ts";
 import type { Store } from "../store.ts";
 
 // ChatGPT passes a generated or uploaded image as a file object
@@ -27,26 +29,6 @@ const fileParamSchema = z.object({
   file_name: z.string().optional(),
   mime_type: z.string().optional(),
 });
-
-const text = (value: string) => [{ text: value, type: "text" as const }];
-
-// Tools return a short, user-safe message instead of raw upstream errors.
-const safely = async <T>(
-  run: () => Promise<{
-    content: ReturnType<typeof text>;
-    structuredContent?: T;
-  }>
-) => {
-  try {
-    return await run();
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : "Unknown error";
-    return {
-      content: text(`wovain couldn't finish this: ${reason}`),
-      isError: true,
-    };
-  }
-};
 
 const extensions = {
   "image/jpeg": "jpg",
@@ -98,50 +80,49 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       outputSchema: artworkOutput,
       title: "Stage artwork",
     },
-    async ({ artwork, path: localPath, url }) =>
-      await safely(async () => {
-        const { bytes, source } = await loadArtwork({
-          fileUrl: artwork?.download_url,
-          localPath,
-          url,
-        });
-        const info = readImageInfo(bytes);
-        if (info === undefined) {
-          throw new Error("the image isn't a PNG, JPEG or WebP");
-        }
-        const contentType = `image/${info.format}` as const;
-        const hash = createHash("sha256")
-          .update(bytes)
-          .digest("hex")
-          .slice(0, 16);
-        const fileName = `wovain-${hash}.${extensions[contentType]}`;
-        await mkdir(store.mediaDir, { recursive: true });
-        const file = path.join(store.mediaDir, fileName);
-        await writeFile(file, bytes);
-        const saved = await store.saveArtwork({
-          bytes: bytes.byteLength,
-          contentType,
-          file,
-          height: info.height,
-          ...(source === undefined ? {} : { sourceUrl: source }),
-          transparent: info.transparent,
-          width: info.width,
-        });
-        const result = {
-          artworkId: saved.id,
-          bytes: saved.bytes,
-          contentType,
-          fileName,
-          height: saved.height,
-          transparent: saved.transparent,
-          ...(source === undefined ? {} : { url: source }),
-          width: saved.width,
-        };
-        return {
-          content: text(JSON.stringify(result)),
-          structuredContent: result,
-        };
-      })
+    async ({ artwork, path: localPath, url }) => {
+      const { bytes, source } = await loadArtwork({
+        fileUrl: artwork?.download_url,
+        localPath,
+        url,
+      });
+      const info = readImageInfo(bytes);
+      if (info === undefined) {
+        throw new Error("the image isn't a PNG, JPEG or WebP");
+      }
+      const contentType = `image/${info.format}` as const;
+      const hash = createHash("sha256")
+        .update(bytes)
+        .digest("hex")
+        .slice(0, 16);
+      const fileName = `wovain-${hash}.${extensions[contentType]}`;
+      await mkdir(store.mediaDir, { recursive: true });
+      const file = path.join(store.mediaDir, fileName);
+      await writeFile(file, bytes);
+      const saved = await store.saveArtwork({
+        bytes: bytes.byteLength,
+        contentType,
+        file,
+        height: info.height,
+        ...(source === undefined ? {} : { sourceUrl: source }),
+        transparent: info.transparent,
+        width: info.width,
+      });
+      const result = {
+        artworkId: saved.id,
+        bytes: saved.bytes,
+        contentType,
+        fileName,
+        height: saved.height,
+        transparent: saved.transparent,
+        ...(source === undefined ? {} : { url: source }),
+        width: saved.width,
+      };
+      return {
+        content: text(JSON.stringify(result)),
+        structuredContent: result,
+      };
+    }
   );
 
   server.registerTool(
@@ -158,29 +139,28 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       outputSchema: z.object({ bytes: z.int(), uploaded: z.boolean() }),
       title: "Upload artwork to Fourthwall",
     },
-    async ({ artworkId, uploadUrl }) =>
-      await safely(async () => {
-        const artwork = await store.getArtwork(artworkId);
-        if (artwork === undefined) {
-          throw new Error(`no staged artwork ${artworkId}`);
-        }
-        const response = await fetch(await assertUploadUrl(uploadUrl), {
-          body: await readFile(artwork.file),
-          // Fourthwall signs the upload with its content type and a size
-          // limit; both headers must match or Google storage answers 403.
-          headers: {
-            "content-type": artwork.contentType,
-            "x-goog-content-length-range": `0,${artwork.bytes}`,
-          },
-          method: "PUT",
-          signal: AbortSignal.timeout(60_000),
-        });
-        if (!response.ok) {
-          throw new Error(`Fourthwall storage answered ${response.status}`);
-        }
-        const result = { bytes: artwork.bytes, uploaded: true };
-        return { content: text("Uploaded."), structuredContent: result };
-      })
+    async ({ artworkId, uploadUrl }) => {
+      const artwork = await store.getArtwork(artworkId);
+      if (artwork === undefined) {
+        throw new Error(`no staged artwork ${artworkId}`);
+      }
+      const response = await fetch(await assertUploadUrl(uploadUrl), {
+        body: await readFile(artwork.file),
+        // Fourthwall signs the upload with its content type and a size
+        // limit; both headers must match or Google storage answers 403.
+        headers: {
+          "content-type": artwork.contentType,
+          "x-goog-content-length-range": `0,${artwork.bytes}`,
+        },
+        method: "PUT",
+        signal: AbortSignal.timeout(60_000),
+      });
+      if (!response.ok) {
+        throw new Error(`Fourthwall storage answered ${response.status}`);
+      }
+      const result = { bytes: artwork.bytes, uploaded: true };
+      return { content: text("Uploaded."), structuredContent: result };
+    }
   );
 
   server.registerTool(
@@ -197,24 +177,23 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         shipping: z.number().min(0).optional(),
         sizes: z.array(sizeCostSchema).min(1),
       }),
-      outputSchema: z.object({ quote: designSchema.shape.quote }),
+      outputSchema: quoteResultSchema,
       title: "Price a product",
     },
-    async ({ shipping, sizes }) =>
-      await safely(async () => {
-        const settings = await store.getSettings();
-        const economics =
-          shipping === undefined
-            ? settings.economics
-            : { ...settings.economics, shipping };
-        const quote = toDesignQuote(
-          priceProduct(sizes, settings.pricing, economics)
-        );
-        return {
-          content: text(JSON.stringify(quote)),
-          structuredContent: { quote },
-        };
-      })
+    async ({ shipping, sizes }) => {
+      const settings = await store.getSettings();
+      const economics =
+        shipping === undefined
+          ? settings.economics
+          : { ...settings.economics, shipping };
+      const quote = toDesignQuote(
+        priceProduct(sizes, settings.pricing, economics)
+      );
+      return {
+        content: text(JSON.stringify(quote)),
+        structuredContent: { quote },
+      };
+    }
   );
 
   registerAppTool(
@@ -237,16 +216,15 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       outputSchema: designResultSchema,
       title: "Show design card",
     },
-    async (input) =>
-      await safely(async () => {
-        const design = await store.saveDesign({ ...input, status: "draft" });
-        return {
-          content: text(
-            `Showing design ${design.id}. Wait for the merchant to approve, skip or give feedback on the card.`
-          ),
-          structuredContent: { design },
-        };
-      })
+    async (input) => {
+      const design = await store.saveDesign({ ...input, status: "draft" });
+      return {
+        content: text(
+          `Showing design ${design.id}. Wait for the merchant to approve, skip or give feedback on the card.`
+        ),
+        structuredContent: { design },
+      };
+    }
   );
 
   registerAppTool(
@@ -273,29 +251,25 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       outputSchema: designResultSchema,
       title: "Record design state",
     },
-    async ({ id, productId, productUrl, rejectReason, status }) =>
-      await safely(async () => {
-        const current = await store.getDesign(id);
-        if (current === undefined) {
-          throw new Error(`no design ${id}`);
-        }
-        const patch: Partial<Design> = { status };
-        if (productId !== undefined) {
-          patch.productId = productId;
-        }
-        if (productUrl !== undefined) {
-          patch.productUrl = productUrl;
-        }
-        if (status === "rejected") {
-          patch.rejectCount = current.rejectCount + 1;
-          patch.rejectReason = rejectReason ?? "No reason given";
-        }
-        const design = await store.updateDesign(id, patch);
-        return {
-          content: text(`Design ${id} is ${status}.`),
-          structuredContent: { design },
-        };
-      })
+    async ({ id, productId, productUrl, rejectReason, status }) => {
+      const current = await store.requireDesign(id);
+      const patch: Partial<Design> = { status };
+      if (productId !== undefined) {
+        patch.productId = productId;
+      }
+      if (productUrl !== undefined) {
+        patch.productUrl = productUrl;
+      }
+      if (status === "rejected") {
+        patch.rejectCount = current.rejectCount + 1;
+        patch.rejectReason = rejectReason ?? "No reason given";
+      }
+      const design = await store.updateDesign(id, patch);
+      return {
+        content: text(`Design ${id} is ${status}.`),
+        structuredContent: { design },
+      };
+    }
   );
 
   registerAppTool(
@@ -314,13 +288,9 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       outputSchema: designResultSchema,
       title: "Get design",
     },
-    async ({ id }) =>
-      await safely(async () => {
-        const design = await store.getDesign(id);
-        if (design === undefined) {
-          throw new Error(`no design ${id}`);
-        }
-        return { content: text(design.status), structuredContent: { design } };
-      })
+    async ({ id }) => {
+      const design = await store.requireDesign(id);
+      return { content: text(design.status), structuredContent: { design } };
+    }
   );
 };

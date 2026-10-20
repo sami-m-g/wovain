@@ -1,63 +1,26 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { Client } from "@modelcontextprotocol/client";
-import { InMemoryTransport } from "@modelcontextprotocol/server";
-import type { Design } from "@wovain-foss/shared/design";
+import type { Client } from "@modelcontextprotocol/client";
 import { defaultSettings } from "@wovain-foss/shared/settings";
 import { listVideoPrices } from "@wovain-foss/shared/video-models";
 import { z } from "zod";
 
-import { loadEnv } from "../src/env.ts";
 import { setResolver } from "../src/lib/fetch-image.ts";
 import { planVideos } from "../src/lib/video-plan.ts";
-import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
+import {
+  connectClient,
+  demoDesign,
+  restoreFetch,
+  stubFetch,
+  tempDir,
+} from "./helpers.ts";
 
-const realFetch = globalThis.fetch;
 const clip = await Bun.file(
   path.join(import.meta.dir, "fixtures", "clip-1s.mp4")
 ).arrayBuffer();
-
-// The PRD's demo tee: $30 on a $17.70 blank (prd.md > Pricing and economics).
-const design: Omit<Design, "id"> = {
-  artwork: {
-    requiredPx: 1800,
-    transparent: true,
-    url: "https://cdn.fourthwall.com/customizations/art.png",
-    widthPx: 4500,
-  },
-  blank: { catalogProductId: "pro_1", name: "Bella+Canvas 3001 tee" },
-  coach: "Soft bestseller tee.",
-  colors: [{ hex: "#111111", inStock: true, name: "Black" }],
-  customizationId: "cus_1",
-  idea: "Japanese cat sunset",
-  listing: { description: "Two lines.", title: "Japanese Cat Sunset Tee" },
-  mockups: [
-    {
-      alt: "Black tee",
-      color: "Black",
-      url: "https://cdn.fourthwall.com/offer-renders/black.webp",
-    },
-  ],
-  placement: { area: "Front", printSize: "12×16 in", style: "large center" },
-  quote: {
-    baseCost: 17.7,
-    breakevenPerSale: 10.32,
-    cardFees: 1.38,
-    marginPct: 41,
-    price: 30,
-    profit: 12.3,
-    refundReserve: 0.6,
-    roas: 2.9,
-  },
-  rejectCount: 0,
-  sizes: [{ baseCost: 17.7, inStock: true, size: "M" }],
-  status: "live",
-};
 
 let client: Client;
 let store: Store;
@@ -66,42 +29,34 @@ let uploads: { contentType: string | null; size: number }[] = [];
 beforeEach(async () => {
   uploads = [];
   setResolver(async () => await Promise.resolve(["93.184.216.34"]));
-  globalThis.fetch = Object.assign(
-    async (input: string | URL | Request, init?: RequestInit) => {
-      const url = input instanceof Request ? input.url : input.toString();
-      if (url.includes("storage/upload/initiate")) {
-        return await Promise.resolve(
-          Response.json({
-            file_url: "https://v3b.fal.media/files/b/x/finished.mp4",
-            upload_url: "https://upload.fal.media/put?sig=1",
-          })
-        );
-      }
-      if (init?.method === "PUT") {
-        const body =
-          init.body instanceof Uint8Array ? init.body : new Uint8Array();
-        uploads.push({
-          contentType: new Headers(init.headers).get("content-type"),
-          size: body.byteLength,
-        });
-        return await Promise.resolve(new Response(null, { status: 200 }));
-      }
-      return await Promise.resolve(new Response(clip, { status: 200 }));
-    },
-    { preconnect: realFetch.preconnect }
-  );
-  store = createStore(await mkdtemp(path.join(tmpdir(), "wovain-")));
-  await store.saveDesign(design);
-  const server = createServer(loadEnv({ FAL_KEY: "test-key" }), store);
-  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-  await server.connect(serverSide);
-  client = new Client({ name: "test", version: "0" });
-  await client.connect(clientSide);
+  stubFetch(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : input.toString();
+    if (url.includes("storage/upload/initiate")) {
+      return await Promise.resolve(
+        Response.json({
+          file_url: "https://v3b.fal.media/files/b/x/finished.mp4",
+          upload_url: "https://upload.fal.media/put?sig=1",
+        })
+      );
+    }
+    if (init?.method === "PUT") {
+      const { body } = init;
+      uploads.push({
+        contentType: new Headers(init.headers).get("content-type"),
+        size: body instanceof Blob ? body.size : 0,
+      });
+      return await Promise.resolve(new Response(null, { status: 200 }));
+    }
+    return await Promise.resolve(new Response(clip, { status: 200 }));
+  });
+  store = createStore(await tempDir());
+  await store.saveDesign(demoDesign);
+  client = await connectClient({ FAL_KEY: "test-key" }, store);
 });
 
 afterEach(async () => {
   await client.close();
-  globalThis.fetch = realFetch;
+  restoreFetch();
   setResolver();
 });
 
@@ -173,7 +128,7 @@ test("finish_video burns overlays and hosts the clip on fal", async () => {
 
 test("video plans fit each model's inputs", () => {
   const settings = defaultSettings();
-  const stored = { ...design, id: "d1" };
+  const stored = { ...demoDesign, id: "d1" };
   const prices = listVideoPrices();
 
   const reference = planVideos(
@@ -185,7 +140,7 @@ test("video plans fit each model's inputs", () => {
   expect(reference.clips[0]?.input).toMatchObject({
     aspect_ratio: "9:16",
     duration: 15,
-    reference_image_urls: [design.mockups[0]?.url, design.artwork.url],
+    reference_image_urls: [demoDesign.mockups[0]?.url, demoDesign.artwork.url],
   });
   expect(reference.audio?.endpointId).toBe("fal-ai/mmaudio-v2");
   expect(reference.estimate.usd).toBeCloseTo(2 * (0.75 + 0.015), 2);
@@ -204,8 +159,8 @@ test("video plans fit each model's inputs", () => {
     prices
   );
   expect(kling.clips[0]?.input).toMatchObject({
-    elements: [{ frontal_image_url: design.artwork.url }],
-    start_image_url: design.mockups[0]?.url,
+    elements: [{ frontal_image_url: demoDesign.artwork.url }],
+    start_image_url: demoDesign.mockups[0]?.url,
   });
   expect(kling.keepsPrint).toBe(true);
 });

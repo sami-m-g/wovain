@@ -1,6 +1,7 @@
 import { Badge } from "@openai/apps-sdk-ui/components/Badge";
 import { Button } from "@openai/apps-sdk-ui/components/Button";
 import type { Campaign } from "@wovain-foss/shared/campaign";
+import { money } from "@wovain-foss/shared/economics";
 import { useId, useState } from "react";
 
 export interface CampaignCardActions {
@@ -13,8 +14,6 @@ export interface CampaignCardActions {
 export interface CampaignCardViewProps extends CampaignCardActions {
   campaign: Campaign;
 }
-
-const money = (value: number) => `$${value.toFixed(2)}`;
 
 const statusBadge = (status: Campaign["status"]) => {
   if (status === "live") {

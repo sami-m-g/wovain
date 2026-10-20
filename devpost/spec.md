@@ -26,7 +26,7 @@ Why a wovain server at all: ChatGPT can only show a card that an MCP server serv
 
 How a click works: you press Approve on a card. The card posts a short message ("Approve design d2") into the chat. ChatGPT follows the skill and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the card as live. One click, one extra model turn.
 
-Where things are kept: a single JSON file on your laptop holds settings and the state of each run, so a restart or a new chat picks up where you left off.
+Where things are kept: a single SQLite file on your laptop holds settings and the state of each run, so a restart or a new chat picks up where you left off.
 
 Where you use it: wovain runs in the ChatGPT desktop app on the Mac, not on the web or phone.
 
@@ -43,7 +43,7 @@ flowchart LR
   S --> FAL[fal MCP]
   W --> SA[SerpApi, Etsy, Marker]
   W --> G[Meta Graph API: rules]
-  W --> J[(wovain.json)]
+  W --> J[(wovain.sqlite)]
   W --> C[Cards in chat]
 ```
 
@@ -148,16 +148,16 @@ What it does: one Bun process serving MCP over stdio and the card files as `ui:/
 | Tool | Does | Talks to |
 |---|---|---|
 | `trends_evidence` | Growth, seasonality, Etsy count and trademark screen per idea | SerpApi, Etsy API, Marker API |
-| `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, a chat attachment in the temp folder, or an `openai/fileParams` file), checks pixels and transparency, keeps the bytes for upload | wovain.json, `data/media/` |
+| `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, a chat attachment in the temp folder, or an `openai/fileParams` file), checks pixels and transparency, keeps the bytes for upload | wovain.sqlite, `data/media/` |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
-| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | wovain.json |
+| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | wovain.sqlite |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
 | `finish_video` | Downloads the clip, burns in the caption at 60% height inside Meta's 9:16 safe zone (and a logo or the shop name for the first seconds when the brand overlay is on) with ffmpeg-static, uploads the result to fal storage and returns the public URL for the ad card and Meta's upload by URL | ffmpeg, fal storage |
-| `record_ad` | Saves ad choices and copy | wovain.json |
+| `record_ad` | Saves ad choices and copy | wovain.sqlite |
 | `create_rules` | Creates the five rules per the PRD | Meta Graph API |
 | `campaign_check` | Reads rule history and campaign results | Meta Graph API |
-| `get_settings`, `update_settings` | Read and change any setting | wovain.json |
+| `get_settings`, `update_settings` | Read and change any setting | wovain.sqlite |
 | `show_*_card` (6) | Return card data and attach the card | Cards |
 
 PRD ref: `prd.md > Features and Behavior`.
@@ -181,7 +181,7 @@ Each card state from `prd.md > States and Boundaries` has a Storybook story with
 
 ### Settings
 
-Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in wovain.json, and used by the next card without a redeploy.
+Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in wovain.sqlite, and used by the next card without a redeploy.
 
 | Group | Settings (defaults) |
 |---|---|
@@ -287,7 +287,7 @@ Scripts in the root `package.json`:
 
 ## Data Model
 
-One file, `wovain.json` in the plugin's data folder (`${PLUGIN_DATA}`; `apps/server/data/` in development, gitignored), read and written by the server only.
+One SQLite file, `wovain.sqlite` in the plugin's data folder (`${PLUGIN_DATA}`; `apps/server/data/` in development, gitignored), read and written by the server only. Each record is one JSON row, checked against its zod schema on every read. An older `wovain.json` is imported once on start and kept as `wovain.json.imported`.
 
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
@@ -320,12 +320,12 @@ wovain/
 │   │   ├── src/
 │   │   │   ├── index.ts         # stdio MCP server (HTTP mode behind a flag)
 │   │   │   ├── env.ts           # zod-checked environment
-│   │   │   ├── store.ts         # wovain.json read and write
+│   │   │   ├── store.ts         # wovain.sqlite read and write
 │   │   │   ├── tools/           # one file per tool
 │   │   │   ├── cards.ts         # registers the ui:// card resources
 │   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, ffmpeg, economics, rules
 │   │   ├── test/                # economics, rules, tool schemas, fixtures/
-│   │   └── data/                # wovain.json, media/ (gitignored)
+│   │   └── data/                # wovain.sqlite, media/ (gitignored)
 │   └── cards/                   # React cards, Vite single-file builds
 │       ├── src/
 │       │   ├── trend/ design/ ad/ campaign/ optimization/ settings/   # each with *.stories.tsx
@@ -381,7 +381,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 - **Optimization card on check-in** instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.
 - **Print fidelity checked by eye** in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.
 - **Trademark screening via Marker** instead of an official USPTO search API: none exists. Labeled screening, not legal advice.
-- **One JSON file** instead of a database: one merchant, one laptop.
+- **One SQLite file** (Bun's built-in `bun:sqlite`) instead of a database server: one merchant, one laptop, and transactions instead of a hand-written write lock.
 - **Desktop-only plugin on the Mac** instead of hosting: no tunnel or server to run; a public plugin would need a hosted server with OAuth.
 
 ## Decisions and Open Issues
@@ -402,7 +402,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Design-level kill at 4×; breakeven on priciest size, size-weighted optional | Learner | Matches print-on-demand: the design is the test, sizes cost differently | Slightly stricter kills |
 | TypeScript 6 + 7 dual setup, Ultracite with oxlint, oxfmt, Lefthook, Ultracite skill and hooks | Learner | Official setup; fast type checks and lint on every edit and commit | Two TypeScript versions to keep in step |
 | DX set from the sister wovain repo: commitlint, knip, Lefthook with type check on commit, MSW with mock mode, Storybook, CI, Dependabot, release-please, plus modern-web-guidance, security-guidance and hookify; no shadcn | Learner | Same habits as their main project; rehearse without spending; check card states outside ChatGPT | About an hour more setup |
-| JSON store, optimization on check-in, ffmpeg captions | Derived | Follow from the choices above | See What Was Simplified |
+| SQLite store, optimization on check-in, ffmpeg captions | Derived | Follow from the choices above | See What Was Simplified |
 
 Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" It was clarified by three platform facts: cards must be served by our own MCP server, card buttons can only call that server, and Meta rules, trend APIs and caption burn-in have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
 

@@ -1,44 +1,34 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
-import { designResultSchema } from "@wovain-foss/shared/design";
+import {
+  designResultSchema,
+  quoteResultSchema,
+} from "@wovain-foss/shared/design";
 import type { Design } from "@wovain-foss/shared/design";
-import { settingsSchema } from "@wovain-foss/shared/settings";
+import {
+  defaultSettings,
+  settingsResultSchema,
+} from "@wovain-foss/shared/settings";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { readWidgetState, useCard, writeWidgetState } from "../lib/bridge.ts";
+import {
+  callTool,
+  readWidgetState,
+  say,
+  useCard,
+  writeWidgetState,
+} from "../lib/bridge.ts";
 import { DesignCardView } from "./design-card-view.tsx";
 import type { DesignCardActions } from "./design-card-view.tsx";
 import type { PricingValues } from "./pricing-settings.tsx";
 
 const widgetSchema = z.object({ feedback: z.string() });
-const settingsResult = z.object({ settings: settingsSchema });
-const quoteResult = z.object({
-  quote: designResultSchema.shape.design.shape.quote,
-});
-
-const callFor = async <T,>(
-  app: App,
-  schema: z.ZodType<T>,
-  name: string,
-  args: Record<string, unknown>
-): Promise<T> => {
-  const result = await app.callServerTool({ arguments: args, name });
-  const parsed = schema.safeParse(result.structuredContent);
-  if (result.isError === true || !parsed.success) {
-    throw new Error(`${name} failed`);
-  }
-  return parsed.data;
-};
-
-const say = async (app: App, text: string) => {
-  await app.sendMessage({ content: [{ text, type: "text" }], role: "user" });
-};
 
 // Card buttons can only call wovain, so Fourthwall steps go through the chat:
 // the card posts a short message and the wovain-design skill does the rest.
 const actionsFor = (app: App): DesignCardActions => ({
   onApprove: async (design) => {
-    await callFor(app, designResultSchema, "record_design", {
+    await callTool(app, designResultSchema, "record_design", {
       id: design.id,
       status: "publishing",
     });
@@ -54,13 +44,13 @@ const actionsFor = (app: App): DesignCardActions => ({
     await app.openLink({ url });
   },
   onReprice: async (design: Design, pricing: PricingValues) => {
-    await callFor(app, settingsResult, "update_settings", {
+    await callTool(app, settingsResultSchema, "update_settings", {
       patch: { pricing },
     });
-    const { quote } = await callFor(app, quoteResult, "price_product", {
+    const { quote } = await callTool(app, quoteResultSchema, "price_product", {
       sizes: design.sizes.map(({ baseCost, size }) => ({ baseCost, size })),
     });
-    const { design: saved } = await callFor(
+    const { design: saved } = await callTool(
       app,
       designResultSchema,
       "show_design_card",
@@ -69,7 +59,7 @@ const actionsFor = (app: App): DesignCardActions => ({
     return saved;
   },
   onSkip: async (design) => {
-    const { design: saved } = await callFor(
+    const { design: saved } = await callTool(
       app,
       designResultSchema,
       "record_design",
@@ -81,7 +71,7 @@ const actionsFor = (app: App): DesignCardActions => ({
     return saved;
   },
   poll: async (design) => {
-    const { design: saved } = await callFor(
+    const { design: saved } = await callTool(
       app,
       designResultSchema,
       "get_design",
@@ -95,17 +85,16 @@ const actionsFor = (app: App): DesignCardActions => ({
 
 export const DesignCard = () => {
   const { app, data, error } = useCard("design", designResultSchema);
-  const [pricing, setPricing] = useState<PricingValues>({
-    minMarginPct: 30,
-    minProfit: 10,
-  });
+  const [pricing, setPricing] = useState<PricingValues>(
+    () => defaultSettings().pricing
+  );
 
   useEffect(() => {
     const load = async () => {
       if (app !== null) {
-        const { settings } = await callFor(
+        const { settings } = await callTool(
           app,
-          settingsResult,
+          settingsResultSchema,
           "get_settings",
           {}
         );

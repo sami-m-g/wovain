@@ -2,9 +2,8 @@ import { readFile, realpath, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { downloadImage } from "./fetch-image.ts";
+import { downloadImage, MAX_IMAGE_BYTES } from "./fetch-image.ts";
 
-const MAX_BYTES = 50 * 1024 * 1024;
 const DATA_URL =
   /^data:image\/(?:png|jpeg|webp);base64,(?<base64>[A-Za-z0-9+/=\s]+)$/u;
 
@@ -15,7 +14,7 @@ const decodeDataUrl = (url: string) => {
     throw new Error("only PNG, JPEG or WebP data URLs are accepted");
   }
   const bytes = new Uint8Array(Buffer.from(base64, "base64"));
-  if (bytes.byteLength > MAX_BYTES) {
+  if (bytes.byteLength > MAX_IMAGE_BYTES) {
     throw new Error("Image is larger than 50 MB");
   }
   return bytes;
@@ -34,18 +33,22 @@ const attachmentRoots = async () => {
   return [...new Set(resolved)];
 };
 
+// The roots never change while the server runs, so getconf runs once.
+let roots: Promise<string[]> | undefined;
+
 // Attachments in desktop chats land in the system temp folder; nothing outside
 // it is read, so a prompt can't point the server at other files on the Mac.
 const readAttachment = async (localPath: string) => {
-  const [roots, resolved] = await Promise.all([
-    attachmentRoots(),
+  roots ??= attachmentRoots();
+  const [allowed, resolved] = await Promise.all([
+    roots,
     realpath(path.resolve(localPath)),
   ]);
-  if (!roots.some((root) => resolved.startsWith(`${root}${path.sep}`))) {
+  if (!allowed.some((root) => resolved.startsWith(`${root}${path.sep}`))) {
     throw new Error("only images attached in this chat can be read");
   }
   const info = await stat(resolved);
-  if (!info.isFile() || info.size > MAX_BYTES) {
+  if (!info.isFile() || info.size > MAX_IMAGE_BYTES) {
     throw new Error("the attachment isn't an image file under 50 MB");
   }
   return new Uint8Array(await readFile(resolved));

@@ -1,15 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 
 import { loadEnv } from "../src/env.ts";
 import { createHttpFetch } from "../src/http.ts";
 import { createStore } from "../src/store.ts";
+import { tempDir } from "./helpers.ts";
 
 const token = "t".repeat(32);
 const env = loadEnv({ WOVAIN_HTTP_ALLOWED_HOSTS: "wovain.ngrok.app" });
-const store = createStore(await mkdtemp(path.join(tmpdir(), "wovain-")));
+const store = createStore(await tempDir());
 const httpFetch = createHttpFetch(env, store, token);
 
 const initialize = (headers: Record<string, string>) =>

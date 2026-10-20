@@ -2,24 +2,16 @@ import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { adResultSchema } from "@wovain-foss/shared/ad";
 import type { Ad, AdStatus } from "@wovain-foss/shared/ad";
 
-import { useCard } from "../lib/bridge.ts";
+import { callTool, say, useCard } from "../lib/bridge.ts";
 import { AdCardView } from "./ad-card-view.tsx";
 import type { AdCardActions } from "./ad-card-view.tsx";
 
-const say = async (app: App, text: string) => {
-  await app.sendMessage({ content: [{ text, type: "text" }], role: "user" });
-};
-
 const record = async (app: App, ad: Ad, status: AdStatus) => {
-  const result = await app.callServerTool({
-    arguments: { designId: ad.designId, status },
-    name: "record_ad",
+  const result = await callTool(app, adResultSchema, "record_ad", {
+    designId: ad.designId,
+    status,
   });
-  const parsed = adResultSchema.safeParse(result.structuredContent);
-  if (result.isError === true || !parsed.success) {
-    throw new Error("record_ad failed");
-  }
-  return parsed.data.ad;
+  return result.ad;
 };
 
 // Add and Skip are recorded by wovain directly; the chat message tells the

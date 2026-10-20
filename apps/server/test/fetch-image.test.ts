@@ -21,6 +21,7 @@ test.each([
   "2001:0:4136:e378::1",
   "fd00::1",
   "fe80::1",
+  "fe80::1%en0",
 ])("blocks %s", (address) => {
   expect(isPublicAddress(address)).toBe(false);
 });

@@ -2,19 +2,15 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 import {
   settingsPatchSchema,
-  settingsSchema,
+  settingsResultSchema,
 } from "@wovain-foss/shared/settings";
-import { videoPricesSchema } from "@wovain-foss/shared/video-models";
+import type { Settings } from "@wovain-foss/shared/settings";
 import { z } from "zod";
 
 import { cardUri } from "../cards.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
+import { text } from "../lib/tool-result.ts";
 import type { Store } from "../store.ts";
-
-const settingsOutput = z.object({
-  settings: settingsSchema,
-  videoPrices: videoPricesSchema,
-});
 
 export const registerSettingsTools = (
   server: McpServer,
@@ -22,11 +18,8 @@ export const registerSettingsTools = (
   videoPricing: VideoPricing
 ) => {
   // Every settings result carries current video prices for the card's labels.
-  const result = async (
-    settings: z.infer<typeof settingsSchema>,
-    text: string
-  ) => ({
-    content: [{ text, type: "text" as const }],
+  const result = async (settings: Settings, message: string) => ({
+    content: text(message),
     structuredContent: { settings, videoPrices: await videoPricing() },
   });
 
@@ -36,7 +29,7 @@ export const registerSettingsTools = (
       annotations: { readOnlyHint: true },
       description:
         "Read every wovain setting (trends, pricing, economics, campaign budget, rules, video, audio, overlay, Meta). Call before any step that uses a setting.",
-      outputSchema: settingsOutput,
+      outputSchema: settingsResultSchema,
       title: "Get wovain settings",
     },
     async () => {
@@ -57,7 +50,7 @@ export const registerSettingsTools = (
       description:
         "Change one or more wovain settings. Pass only the groups and fields that change; everything else keeps its value. New cards use the result right away.",
       inputSchema: z.object({ patch: settingsPatchSchema }),
-      outputSchema: settingsOutput,
+      outputSchema: settingsResultSchema,
       title: "Update wovain settings",
     },
     async ({ patch }) => {
@@ -74,7 +67,7 @@ export const registerSettingsTools = (
       annotations: { readOnlyHint: true },
       description:
         "Show the wovain Settings card, where the merchant can view and edit every setting. Use when the merchant asks for wovain settings.",
-      outputSchema: settingsOutput,
+      outputSchema: settingsResultSchema,
       title: "Show wovain settings",
     },
     async () => {

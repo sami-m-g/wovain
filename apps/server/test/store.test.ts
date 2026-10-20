@@ -1,14 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { defaultSettings } from "@wovain-foss/shared/settings";
 
 import { loadEnv } from "../src/env.ts";
 import { createStore } from "../src/store.ts";
-
-const tempDir = async () => await mkdtemp(path.join(tmpdir(), "wovain-"));
+import { tempDir } from "./helpers.ts";
 
 describe("settings store", () => {
   test("starts with the spec defaults when no file exists", async () => {
@@ -28,17 +26,27 @@ describe("settings store", () => {
 
   test("a patch changes only the named fields and survives a reload", async () => {
     const dir = await tempDir();
-    const store = createStore(dir);
-    await store.updateSettings({ campaign: { dailyBudgetPerProduct: 20 } });
+    await createStore(dir).updateSettings({
+      campaign: { dailyBudgetPerProduct: 20 },
+    });
 
     const reloaded = await createStore(dir).getSettings();
     expect(reloaded.campaign.dailyBudgetPerProduct).toBe(20);
     expect(reloaded.rules).toEqual(defaultSettings().rules);
+  });
 
-    const onDisk: unknown = JSON.parse(await readFile(store.file, "utf-8"));
-    expect(onDisk).toMatchObject({
-      settings: { campaign: { dailyBudgetPerProduct: 20 } },
-    });
+  test("imports an old wovain.json once and keeps it renamed", async () => {
+    const dir = await tempDir();
+    await writeFile(
+      path.join(dir, "wovain.json"),
+      JSON.stringify({ settings: { campaign: { dailyBudgetPerProduct: 25 } } })
+    );
+    const settings = await createStore(dir).getSettings();
+    expect(settings.campaign.dailyBudgetPerProduct).toBe(25);
+    expect(await Bun.file(path.join(dir, "wovain.json")).exists()).toBe(false);
+    expect(
+      await Bun.file(path.join(dir, "wovain.json.imported")).exists()
+    ).toBe(true);
   });
 
   test("rejects an invalid value and keeps the file unchanged", async () => {

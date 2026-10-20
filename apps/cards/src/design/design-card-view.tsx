@@ -8,6 +8,7 @@ import {
 import { Input } from "@openai/apps-sdk-ui/components/Input";
 import { printQuality } from "@wovain-foss/shared/design";
 import type { Design } from "@wovain-foss/shared/design";
+import { money } from "@wovain-foss/shared/economics";
 import { useEffect, useId, useState } from "react";
 
 import { PricingSettings } from "./pricing-settings.tsx";
@@ -36,7 +37,6 @@ export interface DesignCardViewProps extends DesignCardActions {
 }
 
 const MAX_REJECTIONS = 2;
-const money = (value: number) => `$${value.toFixed(2)}`;
 
 const statusBadge = (status: Design["status"]) => {
   if (status === "live") {

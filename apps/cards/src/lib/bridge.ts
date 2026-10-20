@@ -1,5 +1,11 @@
-import { useApp } from "@modelcontextprotocol/ext-apps/react";
-import type { McpUiHostContext } from "@modelcontextprotocol/ext-apps/react";
+import {
+  applyDocumentTheme,
+  useApp,
+} from "@modelcontextprotocol/ext-apps/react";
+import type {
+  App,
+  McpUiHostContext,
+} from "@modelcontextprotocol/ext-apps/react";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 
@@ -13,10 +19,11 @@ declare global {
   }
 }
 
-const applyTheme = (context: McpUiHostContext | undefined) => {
-  const theme = context?.theme;
-  if (theme !== undefined) {
-    document.documentElement.dataset["theme"] = theme;
+// Sets data-theme and color-scheme. Host color variables are left out on
+// purpose: they share the --color-* names of the UI kit's tokens.
+const applyTheme = (context: Partial<McpUiHostContext> | undefined) => {
+  if (context?.theme !== undefined) {
+    applyDocumentTheme(context.theme);
   }
 };
 
@@ -46,6 +53,26 @@ export const useCard = <T>(name: string, schema: z.ZodType<T>) => {
   }, [app]);
 
   return { app, data, error };
+};
+
+// Calls a wovain tool and checks its result against the shared schema.
+export const callTool = async <T>(
+  app: App,
+  schema: z.ZodType<T>,
+  name: string,
+  args: Record<string, unknown>
+): Promise<T> => {
+  const result = await app.callServerTool({ arguments: args, name });
+  const parsed = schema.safeParse(result.structuredContent);
+  if (result.isError === true || !parsed.success) {
+    throw new Error(`${name} failed`);
+  }
+  return parsed.data;
+};
+
+// Posts a chat message as the user, for steps only the skills can take.
+export const say = async (app: App, text: string) => {
+  await app.sendMessage({ content: [{ text, type: "text" }], role: "user" });
 };
 
 // Keeps in-progress edits with the message, so a re-render doesn't lose them.

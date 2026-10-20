@@ -3,26 +3,23 @@ import { afterEach, expect, test } from "bun:test";
 import { videoModels } from "@wovain-foss/shared/video-models";
 
 import { createVideoPricing } from "../src/lib/fal-pricing.ts";
+import { restoreFetch, stubFetch } from "./helpers.ts";
 
-const realFetch = globalThis.fetch;
 let calls: { authorization: string | null; url: string }[] = [];
 
 const answer = (body: unknown, status = 200) => {
   calls = [];
-  globalThis.fetch = Object.assign(
-    async (input: string | URL | Request, init?: RequestInit) => {
-      calls.push({
-        authorization: new Headers(init?.headers).get("authorization"),
-        url: input instanceof Request ? input.url : input.toString(),
-      });
-      return await Promise.resolve(Response.json(body, { status }));
-    },
-    { preconnect: realFetch.preconnect }
-  );
+  stubFetch(async (input: string | URL | Request, init?: RequestInit) => {
+    calls.push({
+      authorization: new Headers(init?.headers).get("authorization"),
+      url: input instanceof Request ? input.url : input.toString(),
+    });
+    return await Promise.resolve(Response.json(body, { status }));
+  });
 };
 
 afterEach(() => {
-  globalThis.fetch = realFetch;
+  restoreFetch();
 });
 
 test("uses fal's live per-second prices and keeps list prices for other units", async () => {

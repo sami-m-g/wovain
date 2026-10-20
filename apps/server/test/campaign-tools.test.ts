@@ -1,96 +1,47 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 
-import { Client } from "@modelcontextprotocol/client";
-import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { campaignResultSchema } from "@wovain-foss/shared/campaign";
-import type { Design } from "@wovain-foss/shared/design";
 import { metaRules } from "@wovain-foss/shared/rules";
 import type { MetaRule } from "@wovain-foss/shared/rules";
 import { defaultSettings } from "@wovain-foss/shared/settings";
 
-import { loadEnv } from "../src/env.ts";
-import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
-
-const realFetch = globalThis.fetch;
-
-// The PRD's demo tee: $30 on a $17.70 blank (prd.md > Pricing and economics).
-const design: Omit<Design, "id"> = {
-  artwork: {
-    requiredPx: 1800,
-    transparent: true,
-    url: "https://cdn.fourthwall.com/customizations/art.png",
-    widthPx: 4500,
-  },
-  blank: { catalogProductId: "pro_1", name: "Bella+Canvas 3001 tee" },
-  coach: "Soft bestseller tee.",
-  colors: [{ hex: "#111111", inStock: true, name: "Black" }],
-  customizationId: "cus_1",
-  idea: "Japanese cat sunset",
-  listing: { description: "Two lines.", title: "Japanese Cat Sunset Tee" },
-  mockups: [
-    {
-      alt: "Black tee",
-      color: "Black",
-      url: "https://cdn.fourthwall.com/offer-renders/black.webp",
-    },
-  ],
-  placement: { area: "Front", printSize: "12×16 in", style: "large center" },
-  quote: {
-    baseCost: 17.7,
-    breakevenPerSale: 10.32,
-    cardFees: 1.38,
-    marginPct: 41,
-    price: 30,
-    profit: 12.3,
-    refundReserve: 0.6,
-    roas: 2.9,
-  },
-  rejectCount: 0,
-  sizes: [{ baseCost: 17.7, inStock: true, size: "M" }],
-  status: "live",
-};
+import {
+  connectClient,
+  demoDesign,
+  restoreFetch,
+  stubFetch,
+  tempDir,
+} from "./helpers.ts";
 
 let store: Store;
 let graphCalls: { body: string; method: string; url: string }[] = [];
 
-const connect = async (env: Record<string, string>) => {
-  const server = createServer(loadEnv(env), store);
-  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-  await server.connect(serverSide);
-  const client = new Client({ name: "test", version: "0" });
-  await client.connect(clientSide);
-  return client;
-};
+const connect = async (env: Record<string, string>) =>
+  await connectClient(env, store);
 
 beforeEach(async () => {
   graphCalls = [];
-  globalThis.fetch = Object.assign(
-    async (input: string | URL | Request, init?: RequestInit) => {
-      const url = input instanceof Request ? input.url : input.toString();
-      graphCalls.push({
-        body: init?.body instanceof URLSearchParams ? init.body.toString() : "",
-        method: init?.method ?? "GET",
-        url,
-      });
-      if (init?.method === "POST") {
-        return await Promise.resolve(
-          Response.json({ id: String(graphCalls.length) })
-        );
-      }
-      // One rule already exists, so create_rules must skip it.
+  stubFetch(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : input.toString();
+    graphCalls.push({
+      body: init?.body instanceof URLSearchParams ? init.body.toString() : "",
+      method: init?.method ?? "GET",
+      url,
+    });
+    if (init?.method === "POST") {
       return await Promise.resolve(
-        Response.json({ data: [{ id: "1", name: "wovain 555 · Alert" }] })
+        Response.json({ id: String(graphCalls.length) })
       );
-    },
-    { preconnect: realFetch.preconnect }
-  );
-  store = createStore(await mkdtemp(path.join(tmpdir(), "wovain-")));
-  await store.saveDesign(design);
+    }
+    // One rule already exists, so create_rules must skip it.
+    return await Promise.resolve(
+      Response.json({ data: [{ id: "1", name: "wovain 555 · Alert" }] })
+    );
+  });
+  store = createStore(await tempDir());
+  await store.saveDesign(demoDesign);
   await store.saveAd({
     coach: "Two clips.",
     designId: "d1",
@@ -136,7 +87,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  globalThis.fetch = realFetch;
+  restoreFetch();
 });
 
 const filter = (rule: MetaRule | undefined, field: string) =>

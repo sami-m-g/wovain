@@ -1,17 +1,13 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { copyFile, mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { copyFile } from "node:fs/promises";
 import path from "node:path";
 
-import { Client } from "@modelcontextprotocol/client";
-import { InMemoryTransport } from "@modelcontextprotocol/server";
+import type { Client } from "@modelcontextprotocol/client";
 
-import { loadEnv } from "../src/env.ts";
 import { setResolver } from "../src/lib/fetch-image.ts";
-import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
+import { connectClient, restoreFetch, stubFetch, tempDir } from "./helpers.ts";
 
-const realFetch = globalThis.fetch;
 const png = await Bun.file(
   path.join(import.meta.dir, "fixtures", "rgba-64x32.png")
 ).arrayBuffer();
@@ -49,21 +45,15 @@ beforeEach(async () => {
     }
     return await Promise.resolve(new Response(png, { status: 200 }));
   };
-  globalThis.fetch = Object.assign(fakeFetch, {
-    preconnect: realFetch.preconnect,
-  });
-  const store = createStore(await mkdtemp(path.join(tmpdir(), "wovain-")));
-  const server = createServer(loadEnv({}), store);
-  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-  await server.connect(serverSide);
-  client = new Client({ name: "test", version: "0" });
-  await client.connect(clientSide);
+  stubFetch(fakeFetch);
+  const store = createStore(await tempDir());
+  client = await connectClient({}, store);
 });
 
 afterEach(async () => {
   await client.close();
   setResolver();
-  globalThis.fetch = realFetch;
+  restoreFetch();
 });
 
 const call = async (name: string, args: Record<string, unknown>) =>
@@ -139,10 +129,7 @@ test("stage_artwork takes image generation's data URL", async () => {
 });
 
 test("stage_artwork reads a chat attachment from the temp folder only", async () => {
-  const attachment = path.join(
-    await mkdtemp(path.join(tmpdir(), "wovain-att-")),
-    "clip.png"
-  );
+  const attachment = path.join(await tempDir("wovain-att-"), "clip.png");
   await copyFile(
     path.join(import.meta.dir, "fixtures", "rgba-64x32.png"),
     attachment
@@ -202,14 +189,13 @@ test("put_artwork refuses other buckets on Google storage", async () => {
 });
 
 test("stage_artwork refuses a download that declares more than 50 MB", async () => {
-  globalThis.fetch = Object.assign(
+  stubFetch(
     async () =>
       await Promise.resolve(
         new Response("x", {
           headers: { "content-length": String(60 * 1024 * 1024) },
         })
-      ),
-    { preconnect: realFetch.preconnect }
+      )
   );
   const result = await call("stage_artwork", {
     url: "https://fal.media/big.png",

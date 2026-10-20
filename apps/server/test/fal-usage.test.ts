@@ -1,12 +1,12 @@
 import { afterEach, expect, test } from "bun:test";
 
 import { fetchSpend } from "../src/lib/fal-usage.ts";
+import { restoreFetch, stubFetch } from "./helpers.ts";
 
-const realFetch = globalThis.fetch;
 const urls: string[] = [];
 
 afterEach(() => {
-  globalThis.fetch = realFetch;
+  restoreFetch();
   urls.length = 0;
 });
 
@@ -42,13 +42,10 @@ test("sums what fal billed across pages, by endpoint", async () => {
       ],
     },
   ];
-  globalThis.fetch = Object.assign(
-    async (input: string | URL | Request) => {
-      urls.push(input instanceof Request ? input.url : input.toString());
-      return await Promise.resolve(Response.json(pages.shift()));
-    },
-    { preconnect: realFetch.preconnect }
-  );
+  stubFetch(async (input: string | URL | Request) => {
+    urls.push(input instanceof Request ? input.url : input.toString());
+    return await Promise.resolve(Response.json(pages.shift()));
+  });
   const spend = await fetchSpend(
     "billing-key",
     new Date("2026-10-19T14:00:00Z")
@@ -65,9 +62,8 @@ test("sums what fal billed across pages, by endpoint", async () => {
 });
 
 test("reports a refused key as an error", async () => {
-  globalThis.fetch = Object.assign(
-    async () => await Promise.resolve(Response.json({}, { status: 403 })),
-    { preconnect: realFetch.preconnect }
+  stubFetch(
+    async () => await Promise.resolve(Response.json({}, { status: 403 }))
   );
   const failed = await fetchSpend("api-key", new Date()).then(
     () => false,

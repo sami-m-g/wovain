@@ -7,6 +7,7 @@ import {
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
 import type { Ad, AdSlot, AdVideo } from "@wovain-foss/shared/ad";
+import { money } from "@wovain-foss/shared/economics";
 import { useId, useRef, useState } from "react";
 
 export interface AdCardActions {
@@ -24,7 +25,6 @@ export interface AdCardViewProps extends AdCardActions {
   ad: Ad;
 }
 
-const money = (value: number) => `$${value.toFixed(2)}`;
 const times = (value: number) => `${value.toFixed(1)}×`;
 
 const VideoTile = ({

@@ -1,41 +1,24 @@
-import { z } from "zod";
+import { createFalClient } from "@fal-ai/client";
 
 // fal's CDN gives finished videos a public URL that the ad card can play and
-// Meta can fetch (rest.fal.ai storage API: initiate, then PUT the bytes).
-const INITIATE_URL =
-  "https://rest.fal.ai/storage/upload/initiate?storage_type=fal-cdn-v3";
-
-const initiateSchema = z.object({ file_url: z.url(), upload_url: z.url() });
-
+// Meta can fetch.
 export const uploadToFal = async (
   falKey: string,
   bytes: Uint8Array,
   fileName: string,
   contentType: string
 ): Promise<string> => {
-  const initiate = await fetch(INITIATE_URL, {
-    body: JSON.stringify({ content_type: contentType, file_name: fileName }),
-    headers: {
-      authorization: `Key ${falKey}`,
-      "content-type": "application/json",
-    },
-    method: "POST",
-    signal: AbortSignal.timeout(30_000),
+  // The client sets no timeout, so a stalled upload would hang finish_video.
+  const fal = createFalClient({
+    credentials: falKey,
+    fetch: Object.assign(
+      async (input: string | URL | Request, init?: RequestInit) =>
+        await fetch(input, { ...init, signal: AbortSignal.timeout(120_000) }),
+      { preconnect: fetch.preconnect }
+    ),
   });
-  if (!initiate.ok) {
-    throw new Error(`fal storage answered ${initiate.status}`);
-  }
-  const { file_url: fileUrl, upload_url: uploadUrl } = initiateSchema.parse(
-    await initiate.json()
-  );
-  const upload = await fetch(uploadUrl, {
-    body: new Uint8Array(bytes),
-    headers: { "content-type": contentType },
-    method: "PUT",
-    signal: AbortSignal.timeout(120_000),
+  const file = new File([new Uint8Array(bytes)], fileName, {
+    type: contentType,
   });
-  if (!upload.ok) {
-    throw new Error(`fal storage upload answered ${upload.status}`);
-  }
-  return fileUrl;
+  return await fal.storage.upload(file);
 };

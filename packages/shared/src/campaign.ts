@@ -12,17 +12,15 @@ export const metaLinkSchema = z.url({
   protocol: /^https$/u,
 });
 
+export const blockerSchema = z.object({
+  fix: z.string().min(1).max(200),
+  issue: z.string().min(1).max(120),
+  url: metaLinkSchema.optional(),
+});
+
 export const campaignSchema = z.object({
   adsManagerUrl: metaLinkSchema.optional(),
-  blockers: z
-    .array(
-      z.object({
-        fix: z.string().min(1).max(200),
-        issue: z.string().min(1).max(120),
-        url: metaLinkSchema.optional(),
-      })
-    )
-    .default([]),
+  blockers: z.array(blockerSchema).default([]),
   campaignId: z.string().optional(),
   dailyBudget: z.number().positive(),
   products: z.array(

@@ -26,6 +26,8 @@ export interface Breakeven {
   salesTax: number;
 }
 
+export const money = (value: number) => `$${value.toFixed(2)}`;
+
 const percent = (value: number) => value / 100;
 
 export const breakeven = (

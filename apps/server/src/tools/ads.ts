@@ -21,36 +21,9 @@ import { uploadToFal } from "../lib/fal-storage.ts";
 import { fetchSpend } from "../lib/fal-usage.ts";
 import { downloadImage, MAX_VIDEO_BYTES } from "../lib/fetch-image.ts";
 import { burnOverlays } from "../lib/ffmpeg.ts";
+import { text } from "../lib/tool-result.ts";
 import { planVideos } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
-
-const text = (value: string) => [{ text: value, type: "text" as const }];
-
-// Tools return a short, user-safe message instead of raw upstream errors.
-const safely = async <T>(
-  run: () => Promise<{
-    content: ReturnType<typeof text>;
-    structuredContent?: T;
-  }>
-) => {
-  try {
-    return await run();
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : "Unknown error";
-    return {
-      content: text(`wovain couldn't finish this: ${reason}`),
-      isError: true,
-    };
-  }
-};
-
-const designFor = async (store: Store, designId: string) => {
-  const design = await store.getDesign(designId);
-  if (design === undefined) {
-    throw new Error(`no design ${designId}`);
-  }
-  return design;
-};
 
 export const registerAdTools = (
   server: McpServer,
@@ -71,16 +44,15 @@ export const registerAdTools = (
       inputSchema: z.object({ designId: z.string() }),
       title: "Plan ad videos",
     },
-    async ({ designId }) =>
-      await safely(async () => {
-        const [design, settings, prices] = await Promise.all([
-          designFor(store, designId),
-          store.getSettings(),
-          videoPricing(),
-        ]);
-        const plan = planVideos(design, settings, prices);
-        return { content: text(JSON.stringify(plan)) };
-      })
+    async ({ designId }) => {
+      const [design, settings, prices] = await Promise.all([
+        store.requireDesign(designId),
+        store.getSettings(),
+        videoPricing(),
+      ]);
+      const plan = planVideos(design, settings, prices);
+      return { content: text(JSON.stringify(plan)) };
+    }
   );
 
   server.registerTool(
@@ -105,44 +77,38 @@ export const registerAdTools = (
       outputSchema: z.object({ url: z.url() }),
       title: "Finish ad video",
     },
-    async ({ brand, caption, designId, logoUrl, slot, videoUrl }) =>
-      await safely(async () => {
-        if (env.FAL_KEY === undefined) {
-          throw new Error(
-            "add FAL_KEY to .env so finished videos can be hosted"
-          );
-        }
-        const [settings, video] = await Promise.all([
-          store.getSettings(),
-          downloadImage(videoUrl, MAX_VIDEO_BYTES),
-        ]);
-        const ffmpeg = env.WOVAIN_FFMPEG ?? ffmpegStatic ?? "";
-        const logoSource =
-          settings.overlay.logoUrl === "" ? logoUrl : settings.overlay.logoUrl;
-        const logo =
-          logoSource === undefined
-            ? undefined
-            : await downloadImage(logoSource);
-        const finished = await burnOverlays(video, {
-          brand,
-          brandSeconds: settings.overlay.brandSeconds,
-          caption: settings.overlay.captions ? caption : undefined,
-          ffmpeg,
-          font: env.WOVAIN_FONT,
-          logo,
-        });
-        const hash = createHash("sha256")
-          .update(finished)
-          .digest("hex")
-          .slice(0, 12);
-        const url = await uploadToFal(
-          env.FAL_KEY,
-          finished,
-          `wovain-${designId}-${slot}-${hash}.mp4`,
-          "video/mp4"
-        );
-        return { content: text(url), structuredContent: { url } };
-      })
+    async ({ brand, caption, designId, logoUrl, slot, videoUrl }) => {
+      if (env.FAL_KEY === undefined) {
+        throw new Error("add FAL_KEY to .env so finished videos can be hosted");
+      }
+      const settings = await store.getSettings();
+      const ffmpeg = env.WOVAIN_FFMPEG ?? ffmpegStatic ?? "";
+      const logoSource =
+        settings.overlay.logoUrl === "" ? logoUrl : settings.overlay.logoUrl;
+      const [video, logo] = await Promise.all([
+        downloadImage(videoUrl, MAX_VIDEO_BYTES),
+        logoSource === undefined ? undefined : downloadImage(logoSource),
+      ]);
+      const finished = await burnOverlays(video, {
+        brand,
+        brandSeconds: settings.overlay.brandSeconds,
+        caption: settings.overlay.captions ? caption : undefined,
+        ffmpeg,
+        font: env.WOVAIN_FONT,
+        logo,
+      });
+      const hash = createHash("sha256")
+        .update(finished)
+        .digest("hex")
+        .slice(0, 12);
+      const url = await uploadToFal(
+        env.FAL_KEY,
+        finished,
+        `wovain-${designId}-${slot}-${hash}.mp4`,
+        "video/mp4"
+      );
+      return { content: text(url), structuredContent: { url } };
+    }
   );
 
   server.registerTool(
@@ -158,22 +124,21 @@ export const registerAdTools = (
       inputSchema: z.object({ since: z.iso.datetime().optional() }),
       title: "fal spend",
     },
-    async ({ since }) =>
-      await safely(async () => {
-        if (env.FAL_BILLING_KEY === undefined) {
-          return {
-            content: text(
-              "Actual fal spend isn't set up: add a fal key with the Billing preset to .env as FAL_BILLING_KEY. Until then, only list-price estimates are available."
-            ),
-          };
-        }
-        const start =
-          since === undefined
-            ? new Date(Date.now() - 2 * 60 * 60 * 1000)
-            : new Date(since);
-        const spend = await fetchSpend(env.FAL_BILLING_KEY, start);
-        return { content: text(JSON.stringify(spend)) };
-      })
+    async ({ since }) => {
+      if (env.FAL_BILLING_KEY === undefined) {
+        return {
+          content: text(
+            "Actual fal spend isn't set up: add a fal key with the Billing preset to .env as FAL_BILLING_KEY. Until then, only list-price estimates are available."
+          ),
+        };
+      }
+      const start =
+        since === undefined
+          ? new Date(Date.now() - 2 * 60 * 60 * 1000)
+          : new Date(since);
+      const spend = await fetchSpend(env.FAL_BILLING_KEY, start);
+      return { content: text(JSON.stringify(spend)) };
+    }
   );
 
   registerAppTool(
@@ -202,49 +167,48 @@ export const registerAdTools = (
       outputSchema: adResultSchema,
       title: "Show ad card",
     },
-    async ({ coach, designId, headline, primaryText, videos }) =>
-      await safely(async () => {
-        const [design, settings] = await Promise.all([
-          designFor(store, designId),
-          store.getSettings(),
-        ]);
-        const { baseCost, price } = design.quote;
-        const math = breakeven(price, baseCost, settings.economics);
-        const [mockup] = design.mockups;
-        const ad: Ad = {
-          coach,
-          designId,
-          economics: {
-            baseCost,
-            breakevenPerSale: math.perSale,
-            cardFees: math.cardFees,
-            price,
-            refundReserve: math.refundReserve,
-            roas: math.roas,
-            roasOnOrderValue: math.roasOnOrderValue,
-          },
-          headline,
-          primaryText,
-          productTitle: design.listing.title,
-          rules: {
-            ...ruleThresholds(math.perSale, settings.rules),
-            scaleStepPct: settings.rules.scaleStepPct,
-          },
-          staticImage: {
-            alt: mockup?.alt ?? design.listing.title,
-            url: mockup?.url ?? design.artwork.url,
-          },
-          status: "draft",
-          videos,
-        };
-        const saved = await store.saveAd(ad);
-        return {
-          content: text(
-            `Showing the ad card for ${designId}. Wait for the merchant to add it to the campaign, skip it or give feedback.`
-          ),
-          structuredContent: { ad: saved },
-        };
-      })
+    async ({ coach, designId, headline, primaryText, videos }) => {
+      const [design, settings] = await Promise.all([
+        store.requireDesign(designId),
+        store.getSettings(),
+      ]);
+      const { baseCost, price } = design.quote;
+      const math = breakeven(price, baseCost, settings.economics);
+      const [mockup] = design.mockups;
+      const ad: Ad = {
+        coach,
+        designId,
+        economics: {
+          baseCost,
+          breakevenPerSale: math.perSale,
+          cardFees: math.cardFees,
+          price,
+          refundReserve: math.refundReserve,
+          roas: math.roas,
+          roasOnOrderValue: math.roasOnOrderValue,
+        },
+        headline,
+        primaryText,
+        productTitle: design.listing.title,
+        rules: {
+          ...ruleThresholds(math.perSale, settings.rules),
+          scaleStepPct: settings.rules.scaleStepPct,
+        },
+        staticImage: {
+          alt: mockup?.alt ?? design.listing.title,
+          url: mockup?.url ?? design.artwork.url,
+        },
+        status: "draft",
+        videos,
+      };
+      const saved = await store.saveAd(ad);
+      return {
+        content: text(
+          `Showing the ad card for ${designId}. Wait for the merchant to add it to the campaign, skip it or give feedback.`
+        ),
+        structuredContent: { ad: saved },
+      };
+    }
   );
 
   registerAppTool(
@@ -265,15 +229,14 @@ export const registerAdTools = (
       outputSchema: adResultSchema.extend({ waiting: z.int() }),
       title: "Record ad choice",
     },
-    async ({ designId, status }) =>
-      await safely(async () => {
-        const { ad: saved, waiting } = await store.recordAd(designId, status);
-        return {
-          content: text(
-            `Design ${designId} ads ${status}. ${waiting} ad card(s) still waiting.`
-          ),
-          structuredContent: { ad: saved, waiting },
-        };
-      })
+    async ({ designId, status }) => {
+      const { ad: saved, waiting } = await store.recordAd(designId, status);
+      return {
+        content: text(
+          `Design ${designId} ads ${status}. ${waiting} ad card(s) still waiting.`
+        ),
+        structuredContent: { ad: saved, waiting },
+      };
+    }
   );
 };

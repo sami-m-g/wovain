@@ -89,11 +89,11 @@
   <path d="M880 210H122" marker-end="url(#ar)"/><text class="lbl" x="500" y="203" text-anchor="middle">card redraws: Live + link</text>
 </svg>
 </div>
-<p>Where things are kept: a single JSON file on your laptop holds settings and the state of each run, so a restart or a new chat picks up where you left off.</p>
+<p>Where things are kept: a single SQLite file on your laptop holds settings and the state of each run, so a restart or a new chat picks up where you left off.</p>
 <p>Where you use it: wovain runs in the ChatGPT desktop app on the Mac, not on the web or phone.</p>
 <h2>The Core Journey Through the System</h2>
 <p>PRD ref: <code>prd.md &gt; The Core Journey</code>.</p>
-<div class="diagram" role="img" aria-label="The merchant talks to ChatGPT, which follows wovain's skills. Skills call four MCP servers: the wovain server, Fourthwall, Meta Ads and fal. The wovain server serves the cards and calls SerpApi, Etsy and Marker for trend data, the Meta Graph API for rules, and keeps wovain.json. Card buttons post chat messages back to ChatGPT.">
+<div class="diagram" role="img" aria-label="The merchant talks to ChatGPT, which follows wovain's skills. Skills call four MCP servers: the wovain server, Fourthwall, Meta Ads and fal. The wovain server serves the cards and calls SerpApi, Etsy and Marker for trend data, the Meta Graph API for rules, and keeps wovain.sqlite. Card buttons post chat messages back to ChatGPT.">
 <svg id="arch" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted);stroke:none"/></marker>
@@ -108,7 +108,7 @@
   <g data-n="cards" class="ours"><rect x="720" y="10" width="250" height="40" rx="10"/><text x="845" y="35" text-anchor="middle">Cards (6, React)</text></g>
   <g data-n="apis"><rect x="720" y="62" width="250" height="40" rx="10"/><text x="845" y="87" text-anchor="middle">SerpApi · Etsy · Marker</text></g>
   <g data-n="graph"><rect x="720" y="114" width="250" height="40" rx="10"/><text x="845" y="139" text-anchor="middle">Meta Graph API (rules)</text></g>
-  <g data-n="json" class="ours"><rect x="720" y="166" width="250" height="40" rx="10"/><text x="845" y="191" text-anchor="middle">wovain.json + media</text></g>
+  <g data-n="json" class="ours"><rect x="720" y="166" width="250" height="40" rx="10"/><text x="845" y="191" text-anchor="middle">wovain.sqlite + media</text></g>
   <path d="M170 200H218" marker-end="url(#ar)"/>
   <path d="M370 192L438 70" marker-end="url(#ar)"/>
   <path d="M370 197L438 152" marker-end="url(#ar)"/>
@@ -414,7 +414,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 <tr>
 <td><code>stage_artwork</code></td>
 <td>Receives the artwork (image generation's <code>data:</code> URL, a public https URL, a chat attachment in the temp folder, or an <code>openai/fileParams</code> file), checks pixels and transparency, keeps the bytes for upload</td>
-<td>wovain.json, <code>data/media/</code></td>
+<td>wovain.sqlite, <code>data/media/</code></td>
 </tr>
 <tr>
 <td><code>put_artwork</code></td>
@@ -429,7 +429,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 <tr>
 <td><code>record_design</code></td>
 <td>Saves design status (publishing, live, rejected, skipped), product ID and link; <code>get_design</code> lets the card follow it while publishing</td>
-<td>wovain.json</td>
+<td>wovain.sqlite</td>
 </tr>
 <tr>
 <td><code>video_plan</code></td>
@@ -444,7 +444,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 <tr>
 <td><code>record_ad</code></td>
 <td>Saves ad choices and copy</td>
-<td>wovain.json</td>
+<td>wovain.sqlite</td>
 </tr>
 <tr>
 <td><code>create_rules</code></td>
@@ -459,7 +459,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 <tr>
 <td><code>get_settings</code>, <code>update_settings</code></td>
 <td>Read and change any setting</td>
-<td>wovain.json</td>
+<td>wovain.sqlite</td>
 </tr>
 <tr>
 <td><code>show_*_card</code> (6)</td>
@@ -526,7 +526,7 @@ bun run plugin:install          # builds the cards and server binary, installs p
 </section>
 <section class="panel" data-k="settings" role="tabpanel" hidden>
 <h3>Settings</h3>
-<p>Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in wovain.json, and used by the next card without a redeploy.</p>
+<p>Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in wovain.sqlite, and used by the next card without a redeploy.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -757,7 +757,7 @@ pre-push:
 "prepare": "lefthook install &amp;&amp; skills experimental_sync -y -a claude-code --copy &amp;&amp; msw init apps/cards/.storybook/public"
 </code></pre>
 <h2>Data Model</h2>
-<p>One file, <code>wovain.json</code> in the plugin's data folder (<code>${PLUGIN_DATA}</code>; <code>apps/server/data/</code> in development, gitignored), read and written by the server only.</p>
+<p>One SQLite file, <code>wovain.sqlite</code> in the plugin's data folder (<code>${PLUGIN_DATA}</code>; <code>apps/server/data/</code> in development, gitignored), read and written by the server only. Each record is one JSON row, checked against its zod schema on every read. An older <code>wovain.json</code> is imported once on start and kept as <code>wovain.json.imported</code>.</p>
 <div class="wrap"><table>
 <thead>
 <tr>
@@ -825,12 +825,12 @@ pre-push:
 │   │   ├── src/
 │   │   │   ├── index.ts         # stdio MCP server (HTTP mode behind a flag)
 │   │   │   ├── env.ts           # zod-checked environment
-│   │   │   ├── store.ts         # wovain.json read and write
+│   │   │   ├── store.ts         # wovain.sqlite read and write
 │   │   │   ├── tools/           # one file per tool
 │   │   │   ├── cards.ts         # registers the ui:// card resources
 │   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, ffmpeg, economics, rules
 │   │   ├── test/                # economics, rules, tool schemas, fixtures/
-│   │   └── data/                # wovain.json, media/ (gitignored)
+│   │   └── data/                # wovain.sqlite, media/ (gitignored)
 │   └── cards/                   # React cards, Vite single-file builds
 │       ├── src/
 │       │   ├── trend/ design/ ad/ campaign/ optimization/ settings/   # each with *.stories.tsx
@@ -935,7 +935,7 @@ pre-push:
 <li><strong>Optimization card on check-in</strong> instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.</li>
 <li><strong>Print fidelity checked by eye</strong> in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.</li>
 <li><strong>Trademark screening via Marker</strong> instead of an official USPTO search API: none exists. Labeled screening, not legal advice.</li>
-<li><strong>One JSON file</strong> instead of a database: one merchant, one laptop.</li>
+<li><strong>One SQLite file</strong> (Bun's built-in <code>bun:sqlite</code>) instead of a database server: one merchant, one laptop, and transactions instead of a hand-written write lock.</li>
 <li><strong>Desktop-only plugin on the Mac</strong> instead of hosting: no tunnel or server to run; a public plugin would need a hosted server with OAuth.</li>
 </ul>
 <h2>Decisions and Open Issues</h2>
@@ -1034,7 +1034,7 @@ pre-push:
 <td>About an hour more setup</td>
 </tr>
 <tr>
-<td>JSON store, optimization on check-in, ffmpeg captions</td>
+<td>SQLite store, optimization on check-in, ffmpeg captions</td>
 <td>Derived</td>
 <td>Follow from the choices above</td>
 <td>See What Was Simplified</td>

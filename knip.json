@@ -1,15 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
-    ".": {
-      "entry": ["scripts/*.ts", "*.config.ts"]
-    },
-    "apps/server": {
-      "entry": ["src/index.ts", "test/**/*.test.ts"]
-    },
     "apps/cards": {
       "entry": ["src/*/main.tsx"]
-    },
-    "packages/shared": {}
+    }
   }
 }
