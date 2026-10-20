@@ -77,7 +77,7 @@ flowchart LR
 | Commits and dead code | commitlint (conventional commits) and knip | 21.x / 6.x | https://commitlint.js.org |
 | Video post-processing | ffmpeg bundled with the server (`ffmpeg-static`), so it runs wherever the server runs | 7.x | https://ffmpeg.org |
 | Database | Neon Postgres through Drizzle ORM (`drizzle-orm/bun-sql` on `Bun.SQL`), migrations by drizzle-kit; PGlite (Postgres in WASM, in-process) for tests | 0.45.4 / 0.31.11 / 0.5.8 | https://orm.drizzle.team |
-| Infrastructure as code | `neon.ts` (`@neon/config`) for the Neon project's branches and services; `apps/web/vercel.ts` (`@vercel/config`) for the Vercel project | 1.8.7 / 0.12.0 | https://neon.com/docs |
+| Infrastructure as code | `neon.ts` (`@neon/config`) for the Neon project's branches and services; a static `apps/web/vercel.json` for the Vercel project (`vercel.ts` was tried and dropped: Vercel installs dependencies on Bun 1.3 to compile it, which ignores our lockfile) | 1.8.7 | https://neon.com/docs |
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
 - Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so `bunfig.toml` sets `[run] bun = true` and even Storybook, Vitest and other tools with a node shebang run on Bun; no Node install is needed.
@@ -340,7 +340,7 @@ wovain/
 │   │   ├── lib/                 # auth.ts, auth-client.ts, env.ts, server.ts
 │   │   ├── test/auth.test.ts    # the OAuth discovery chain
 │   │   ├── next.config.ts       # traces cards, font and ffmpeg into the function
-│   │   ├── vercel.ts            # Vercel project config (Bun runtime), replaces vercel.json
+│   │   ├── vercel.json          # Vercel project config: Bun 1.4 runtime, Next.js
 │   │   └── .env.example         # server keys (apps/web/.env, gitignored)
 │   └── cards/                   # React cards, Vite single-file builds
 │       ├── src/
