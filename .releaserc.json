@@ -24,7 +24,7 @@
         "assets": [
           {
             "path": "wovain-plugin-*.zip",
-            "label": "ChatGPT plugin (wovain-plugin-${nextRelease.version}.zip)",
+            "label": "wovain-plugin-${nextRelease.version}.zip",
             "target": "generic_package",
             "packageName": "wovain-plugin"
           }
