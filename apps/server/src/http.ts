@@ -8,6 +8,7 @@ import {
 } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
+import { createVideoPricing } from "./lib/fal-pricing.ts";
 import { createServer } from "./server.ts";
 import type { Store } from "./store.ts";
 
@@ -21,7 +22,10 @@ const tokenMatches = (header: string | null, token: string) => {
 // request, and Host/Origin checks against localhost plus the tunnel's host,
 // so a tunnel or a DNS-rebinding page can't drive the merchant's shop and ads.
 export const createHttpFetch = (env: Env, store: Store, token: string) => {
-  const handler = createMcpHandler(() => createServer(env, store));
+  const videoPricing = createVideoPricing(env.FAL_KEY);
+  const handler = createMcpHandler(() =>
+    createServer(env, store, videoPricing)
+  );
   const allowedHosts = [
     ...localhostAllowedHostnames(),
     ...env.WOVAIN_HTTP_ALLOWED_HOSTS,

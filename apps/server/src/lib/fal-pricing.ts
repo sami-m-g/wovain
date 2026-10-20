@@ -10,7 +10,8 @@ import { z } from "zod";
 // get_pricing shows). It needs FAL_KEY; without one, or if fal is unreachable,
 // the cards fall back to the list prices recorded in video-models.ts.
 const PRICING_URL = "https://api.fal.ai/v1/models/pricing";
-const CACHE_MS = 24 * 60 * 60 * 1000;
+// Short enough that a fal price change shows up within the half hour.
+const CACHE_MS = 30 * 60 * 1000;
 
 const pricingSchema = z.object({
   prices: z.array(
