@@ -72,6 +72,8 @@ verify:
     - bun run check
     - bun run typecheck
     - bun run knip
+    # finish_video needs ffmpeg-static's binary (downloaded by its postinstall)
+    - bun --cwd apps/server -e 'const f = (await import("ffmpeg-static")).default; console.log("ffmpeg:", f, await Bun.file(f ?? "").exists())'
     - bun run test
 
 stories:
