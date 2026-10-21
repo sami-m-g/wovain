@@ -5,13 +5,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (trend → 
 ## Workflow
 
 - Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `devpost/*.md`.
-- Every planning doc has a `.md` (read by the skills) and an `.html` review page. **The HTML is the source of truth**; keep both in sync with the `sync-plan` skill.
-- Review pages link the shared `devpost/plan.css` (tokens, tables, tags, tabs, diagrams); only page-specific CSS stays inline.
-- A Stop hook blocks ending a turn while a pair has drifted. Check manually:
-
-  ```bash
-  bun scripts/plan-sync.ts devpost
-  ```
+- Planning docs are Markdown only; the `.md` in `devpost/` is the source of truth.
 
 ## Commits
 

@@ -22,7 +22,6 @@
 
 - Follow AGENTS.md (TypeScript only, Ultracite style, Conventional Commit titles).
 - Schema changes go through `bun run db:generate`; never edit applied migrations.
-- Planning docs change in both `.md` and `.html` (`bun scripts/plan-sync.ts devpost`).
 
 ## Out of scope
 
