@@ -205,6 +205,7 @@ const provider = new gcp.iam.WorkloadIdentityPoolProvider("gitlab", {
   // called main.
   attributeCondition: `assertion.project_path == "${gitlabProject}" && assertion.ref == "main" && assertion.ref_type == "branch" && assertion.ref_protected == "true"`,
   attributeMapping: {
+    "attribute.environment": "assertion.environment",
     "attribute.project_path": "assertion.project_path",
     "attribute.ref": "assertion.ref",
     "attribute.ref_protected": "assertion.ref_protected",
@@ -220,8 +221,9 @@ const deployer = new gcp.serviceaccount.Account(
   { accountId: "gitlab-deploy", displayName: "GitLab CI deploys" },
   afterApis
 );
+// Each account answers only to jobs in its own GitLab environment.
 new gcp.serviceaccount.IAMMember("deployer-from-gitlab", {
-  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.ref/main`,
+  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.environment/production`,
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: deployer.name,
 });
@@ -253,7 +255,7 @@ const infra = new gcp.serviceaccount.Account(
   afterApis
 );
 new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
-  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.ref/main`,
+  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.environment/infrastructure`,
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: infra.name,
 });

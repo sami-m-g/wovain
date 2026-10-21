@@ -12,6 +12,10 @@ infra:production:
     - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
     - export PATH="$HOME/.pulumi/bin:$PATH"
     - pnpm infra:up --yes --non-interactive
+  # Google trusts gitlab-infra only for jobs in this environment.
+  environment:
+    name: infrastructure
+    deployment_tier: other
 
 # App Hosting builds from the GitHub mirror, and its automatic rollouts stay
 # off: this job pushes the merged commit there, then rolls out that exact
