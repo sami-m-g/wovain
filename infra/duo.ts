@@ -71,9 +71,9 @@ const lookup = graphql
   });
 
 const VARS =
-  "$description: String!, $eventTypes: [Int!]!, $filter: JSON, $userId: UserID, $aiCatalogItemConsumerId: AiCatalogItemConsumerID";
+  "$description: String!, $eventTypes: [Int!]!, $filter: JSON, $userId: UserID, $aiCatalogItemConsumerId: AiCatalogItemConsumerID, $active: Boolean";
 const INPUT =
-  "description: $description, eventTypes: $eventTypes, filter: $filter, userId: $userId, aiCatalogItemConsumerId: $aiCatalogItemConsumerId";
+  "description: $description, eventTypes: $eventTypes, filter: $filter, userId: $userId, aiCatalogItemConsumerId: $aiCatalogItemConsumerId, active: $active";
 
 const flowTrigger = (
   name: string,
@@ -83,6 +83,8 @@ const flowTrigger = (
     serviceAccount: string;
     events: number[];
     filter?: object;
+    // An inactive trigger stays configured but doesn't run.
+    active?: boolean;
   }
 ) =>
   new graphql.Mutation(
@@ -94,6 +96,7 @@ const flowTrigger = (
       deleteMutation:
         "mutation($id: AiFlowTriggerID!) { aiFlowTriggerDelete(input: { id: $id }) { errors } }",
       mutationVariables: {
+        active: String(args.active ?? true),
         aiCatalogItemConsumerId: args.flow,
         description: args.description,
         eventTypes: JSON.stringify(args.events),
@@ -103,7 +106,7 @@ const flowTrigger = (
       },
       // Returns every mutation variable, so the provider can see drift.
       readQuery:
-        "query($projectPath: ID!, $id: AiFlowTriggerID!) { project(fullPath: $projectPath) { fullPath aiFlowTriggers(ids: [$id]) { nodes { id description eventTypes filter user { id } aiCatalogItemConsumer { id } } } } }",
+        "query($projectPath: ID!, $id: AiFlowTriggerID!) { project(fullPath: $projectPath) { fullPath aiFlowTriggers(ids: [$id]) { nodes { id active description eventTypes filter user { id } aiCatalogItemConsumer { id } } } } }",
       readQueryVariables: { projectPath },
       updateMutation: `mutation($id: AiFlowTriggerID!, ${VARS}) { aiFlowTriggerUpdate(input: { id: $id, ${INPUT} }) { errors aiFlowTrigger { id } } }`,
     },
@@ -118,6 +121,8 @@ flowTrigger("duo-developer", {
 });
 
 flowTrigger("duo-fix-pipeline", {
+  // Off for now.
+  active: false,
   description: "Fix CI/CD on failed pipeline",
   events: [EVENT.pipeline],
   filter: {
@@ -137,6 +142,8 @@ flowTrigger("duo-fix-pipeline", {
 });
 
 flowTrigger("duo-code-review", {
+  // Off for now.
+  active: false,
   description: "Code review on new or ready MR",
   events: [EVENT.mergeRequest, EVENT.mergeRequestReady],
   filter: {
