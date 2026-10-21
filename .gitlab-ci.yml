@@ -5,8 +5,8 @@
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
-# CI variables: VERCEL_TOKEN, GITLAB_TOKEN, RENOVATE_TOKEN (all masked),
-# VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+# CI variables: VERCEL_TOKEN, GITLAB_TOKEN, RENOVATE_TOKEN,
+# GITHUB_MIRROR_KEY (all masked), VERCEL_ORG_ID, VERCEL_PROJECT_ID.
 
 workflow:
   rules:
@@ -141,6 +141,31 @@ release:
     - bun install --frozen-lockfile --ignore-scripts
   script:
     - npx semantic-release
+
+# Keep the GitHub mirror on GitLab's main, including the [skip ci] release
+# commit and its tag, which land after this pipeline started. Runs even when
+# an earlier job failed, since the mirror should match GitLab either way.
+# GITHUB_MIRROR_KEY is a base64 write deploy key for sami-m-g/wovain.
+mirror:github:
+  stage: .post
+  image: alpine:3.21
+  interruptible: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - apk add --no-cache -q git openssh-client
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$GITHUB_MIRROR_KEY" | base64 -d > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+    # GitHub's published host key (docs.github.com, "GitHub's SSH key fingerprints").
+    - echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > ~/.ssh/known_hosts
+  script:
+    - git fetch -q origin main --tags
+    - git push git@github.com:sami-m-g/wovain.git refs/remotes/origin/main:refs/heads/main --tags
 
 # Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
 renovate:

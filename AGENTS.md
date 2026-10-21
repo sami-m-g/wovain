@@ -12,7 +12,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (trend → 
 - Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, lowercase, imperative, no trailing period.
 - Types: `feat`, `fix`, `docs` (planning docs), `chore` (config, skills, hooks), `refactor`, `test`.
 - Create commits with the `commit-commands:commit` skill (`/commit`).
-- The primary repo is GitLab (gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, Developer role). `origin` pushes to GitLab and to the GitHub mirror (github.com/sami-m-g/wovain) in one `git push`, since GitLab push mirrors need Maintainer. CI/CD is `.gitlab-ci.yml`; there are no GitHub Actions or Dependabot (Renovate replaces it).
+- The primary repo is GitLab (gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, Developer role). The GitHub mirror (github.com/sami-m-g/wovain) follows GitLab's `main` through the `mirror:github` CI job after every `main` pipeline, since GitLab push mirrors need Maintainer; `origin` also pushes to both in one `git push`. CI/CD is `.gitlab-ci.yml`; there are no GitHub Actions or Dependabot (Renovate replaces it).
 - Commit types drive releases: semantic-release turns `feat` into a minor and `fix` into a patch release after production passes its smoke test. Don't edit `CHANGELOG.md` or the version in `package.json` by hand. Pull before pushing, because the release commit lands on GitLab first.
 
 ## Writing
