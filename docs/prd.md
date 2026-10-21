@@ -40,7 +40,7 @@ flowchart LR
 Everything happens inside the ChatGPT conversation. Widgets appear inline in the order of the journey, with no separate app or dashboard.
 
 | Surface | When it appears | Count |
-|---|---|---|
+| --- | --- | --- |
 | Design widget | After the merchant gives their ideas | 1 per idea (2 or 3) |
 | Ad widget | Right after its product is published | 1 per published product |
 | Campaign widget | After the last ad widget is added or skipped | 1 |
@@ -140,7 +140,7 @@ Every widget also has a quick-settings menu (⚙) for the values it uses; the Se
 Source: `scope.md > The POC boundary` (Design, Listing).
 
 | Field | Content |
-|---|---|
+| --- | --- |
 | Blank | A Fourthwall blank, preferring Our Pick or Bestseller badges and high reviews |
 | Mockup | The design on the blank in 3 to 5 in-stock colors that contrast with the artwork |
 | Placement | Print area and size, for example front, large center, 12×16 in |
@@ -165,30 +165,30 @@ Source: `scope.md > The POC boundary` (Economics), `scope.md > Open questions fo
 - Breakeven return on ad spend = price ÷ breakeven per sale. This is on product price; if the pixel reports value including shipping and tax ($37.10), the matching target in Meta is 3.6×.
 - Breakeven uses the base cost of the priciest size offered by default, because 2XL and up cost more; a setting switches to a size-weighted average. The demo numbers below use the XS–XL base cost.
 
-| Demo tee at $30 | Amount |
-|---|---|
-| Price | $30.00 |
-| Fourthwall base cost | −$17.70 |
-| Card fees (on $30 + ~$5 shipping + ~$2.10 sales tax) | −$1.38 |
-| Refund and reprint reserve (2%) | −$0.60 |
-| Breakeven per sale | $10.32 |
-| Breakeven return on ad spend | 2.9× |
+| Demo tee at $30                                      | Amount  |
+| ---------------------------------------------------- | ------- |
+| Price                                                | $30.00  |
+| Fourthwall base cost                                 | −$17.70 |
+| Card fees (on $30 + ~$5 shipping + ~$2.10 sales tax) | −$1.38  |
+| Refund and reprint reserve (2%)                      | −$0.60  |
+| Breakeven per sale                                   | $10.32  |
+| Breakeven return on ad spend                         | 2.9×    |
 
 - The design widget shows price, base cost, profit and margin.
 - The ad widget leads with breakeven cost per sale, the number the rules use, and shows the return on ad spend target second, based on the purchase value the pixel actually sends.
 
 Breakeven per sale under different assumptions (price $30, base cost $17.70):
 
-| Case | Shipping | Sales tax | Refund reserve | Breakeven per sale |
-|---|---|---|---|---|
-| Upside | $4.50 | None | 1% | $10.70 |
-| Base | $5.00 | 7% ($2.10) | 2% | $10.32 |
-| Downside | $6.50 | 9% ($2.70) | 5% | $9.36 |
+| Case     | Shipping | Sales tax  | Refund reserve | Breakeven per sale |
+| -------- | -------- | ---------- | -------------- | ------------------ |
+| Upside   | $4.50    | None       | 1%             | $10.70             |
+| Base     | $5.00    | 7% ($2.10) | 2%             | $10.32             |
+| Downside | $6.50    | 9% ($2.70) | 5%             | $9.36              |
 
 Costs of running the proof of concept, on top of per-sale costs:
 
 | POC cost | Amount | Note |
-|---|---|---|
+| --- | --- | --- |
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
 | Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings widget shows live fal prices |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
@@ -202,7 +202,7 @@ Costs of running the proof of concept, on top of per-sale costs:
 Source: `scope.md > The POC boundary` (Ads).
 
 | Creative | Spec |
-|---|---|
+| --- | --- |
 | Video A | UGC-style, on-model, 9:16, 15 seconds or less, background audio; no text burned in, since Meta shows the Page name and picture on every ad and the primary text carries the message |
 | Video B | UGC-style, a second angle or styling, same spec |
 | Static | The Fourthwall mockup image |
@@ -234,7 +234,7 @@ Source: `scope.md > The POC boundary` (Campaign).
 Source: `scope.md > The POC boundary` (Management).
 
 | Rule | Condition | Action | Checked |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Kill, no sales | An ad's spend reaches 3× breakeven with 0 sales | Pause that ad | Every 30 minutes |
 | Kill, design | A product's total spend across its ads reaches 4× breakeven with 0 sales | Pause all of that product's ads | Every 30 minutes |
 | Kill, too expensive | Cost per sale above 1.5× breakeven with at least 5 sales in 7 days | Pause that ad | Every 30 minutes |
@@ -258,7 +258,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 ## States and Boundaries
 
 | # | When | What the merchant sees | Copy | Next action |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | Artwork too low-resolution for the placement | Print quality turns red; Approve is disabled | "This artwork is 1100 px, and this print size needs 1500 px or more, so it would print blurry." | Regenerate at higher resolution, or use a smaller placement |
 | 2 | Some colors or sizes out of stock | Those variants crossed out and excluded by default | "Navy is out of 4XL and 5XL, so I left those sizes off." | None needed; the merchant can add them back |
 | 3 | Fourthwall rejects the publish | The widget keeps all edits and shows the reason | "Fourthwall didn't accept this product (reason). Your edits are saved." | Try again; after 2 failures, finish in Fourthwall's designer |
@@ -273,7 +273,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 ## Product Decisions
 
 | Decision | Reason |
-|---|---|
+| --- | --- |
 | Design widgets follow the research-backed fields above | The merchant wanted widgets "informative backed by facts" |
 | Feedback is free typing or widget controls, and regenerates the whole widget | A change usually affects several details on the widget |
 | Approve publishes each design immediately | Fewer steps; matches the scope's direct publishing |
@@ -300,7 +300,6 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 | Every value is configurable from a Settings widget and per-widget quick settings | The merchant tunes prices, budgets, rules and models without a redeploy |
 | Print fidelity is checked by eye in the full-screen video view | No provider offers an automatic check; keeps the POC small |
 
-
 ## What We're Building
 
 - Design widget per idea: mockup, placement, file quality, listing, price; approve, skip, feedback.
@@ -315,7 +314,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 ## Deferred From the POC
 
 | Item | Why deferred |
-|---|---|
+| --- | --- |
 | Moving a winning product into its own campaign | Needs real results first |
 | Bundles and 2-pack offers | Adds a promotion step to the flow |
 | Per-product budgets | Advantage+ manages budget for the whole campaign |
@@ -331,7 +330,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 ## Non-Goals
 
 | Non-goal | Reason |
-|---|---|
+| --- | --- |
 | Trend research | The merchant brings their own ideas |
 | A custom video or image model | The goal is minimal code |
 | A custom media-buying engine | Advantage+ and Meta rules already optimize campaigns |
@@ -341,7 +340,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 ## Open Questions
 
 | Question | Must answer before |
-|---|---|
+| --- | --- |
 | The Meta ad account needs a payment method | The demo |
 | The Fourthwall shop is "Coming soon"; ads need a live store | The demo |
 | Connect the Meta Pixel and Conversions API in Fourthwall (built in, no code) | The demo |

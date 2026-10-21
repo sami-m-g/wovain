@@ -3,7 +3,7 @@ pre-commit:
   jobs:
     - run: bunx ultracite fix {staged_files}
       glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
-      exclude: ["docs/**", ".claude/skills/**"]
+      exclude: [".claude/skills/**"]
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck

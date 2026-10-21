@@ -12,7 +12,6 @@ export default defineConfig({
   extends: [core, react, jsPlugins],
   ignorePatterns: [
     ...core.ignorePatterns,
-    "docs/**",
     ".agents/skills/**",
     ".claude/skills/**",
   ],
