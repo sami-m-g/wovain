@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   description:
-    "From trend to live Fourthwall products and a Meta Advantage+ campaign, one approved card at a time.",
+    "From trend to live Fourthwall products and a Meta Advantage+ campaign, one approved widget at a time.",
   title: "wovain",
 };
 

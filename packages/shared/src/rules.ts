@@ -1,7 +1,7 @@
 import type { Settings } from "./settings.ts";
 
 // The five campaign rules (prd.md > Campaign rules), as dollar thresholds for
-// one product. The ad card shows them; the campaign step creates them in Meta.
+// one product. The ad widget shows them; the campaign step creates them in Meta.
 export interface RuleThresholds {
   // Alert when campaign cost per sale goes above breakeven.
   alertAbove: number;

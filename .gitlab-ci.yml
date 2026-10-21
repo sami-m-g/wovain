@@ -1,5 +1,5 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
-#   verify    build, lint, types, dead code, tests, card stories
+#   verify    build, lint, types, dead code, tests, widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
 #   deploy    merge requests: a Vercel preview on its own Neon branch;
 #             main: production

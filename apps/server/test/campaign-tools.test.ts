@@ -151,11 +151,11 @@ test("create_rules skips existing rules and records the campaign", async () => {
   );
   expect(posts.some((p) => p.body.includes("Alert"))).toBe(false);
 
-  const card = await client.callTool({
+  const widget = await client.callTool({
     arguments: { status: "live" },
-    name: "show_campaign_card",
+    name: "show_campaign_widget",
   });
-  const { campaign } = campaignResultSchema.parse(card.structuredContent);
+  const { campaign } = campaignResultSchema.parse(widget.structuredContent);
   expect(campaign.dailyBudget).toBe(15);
   expect(campaign.products).toEqual([
     { ads: 2, designId: "d1", title: "Japanese Cat Sunset Tee" },
@@ -181,7 +181,7 @@ test("without a Meta token, create_rules creates nothing and says how to fix it"
   await client.close();
 });
 
-test("show_campaign_card refuses blocker links outside Meta", async () => {
+test("show_campaign_widget refuses blocker links outside Meta", async () => {
   const client = await connect({});
   const result = await client.callTool({
     arguments: {
@@ -190,7 +190,7 @@ test("show_campaign_card refuses blocker links outside Meta", async () => {
       ],
       status: "blocked",
     },
-    name: "show_campaign_card",
+    name: "show_campaign_widget",
   });
   expect(result.isError).toBe(true);
   await client.close();

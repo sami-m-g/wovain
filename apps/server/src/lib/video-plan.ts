@@ -14,7 +14,7 @@ import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
 const MMAUDIO = "fal-ai/mmaudio-v2";
 const MMAUDIO_USD_PER_SECOND = 0.001;
 
-// Two UGC angles per product (prd.md > Ad cards: Video A and Video B).
+// Two UGC angles per product (prd.md > Ad widgets: Video A and Video B).
 const angles: Record<AdSlot, { angle: string; scene: string }> = {
   A: {
     angle: "UGC on-model",

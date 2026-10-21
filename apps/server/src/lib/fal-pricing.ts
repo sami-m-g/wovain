@@ -8,7 +8,7 @@ import { z } from "zod";
 
 // fal's Platform API returns current list prices (the same data its MCP's
 // get_pricing shows). It needs FAL_KEY; without one, or if fal is unreachable,
-// the cards fall back to the list prices recorded in video-models.ts.
+// the widgets fall back to the list prices recorded in video-models.ts.
 const PRICING_URL = "https://api.fal.ai/v1/models/pricing";
 // Short enough that a fal price change shows up within the half hour.
 const CACHE_MS = 30 * 60 * 1000;

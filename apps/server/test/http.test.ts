@@ -12,16 +12,16 @@ import { createMcpFetch } from "../src/http.ts";
 import { testStorage } from "./helpers.ts";
 
 const url = "https://wovain.example/mcp";
-const settingsCard = "ui://wovain/settings-v3.html";
-const cardsDir = path.join(import.meta.dir, "..", "..", "cards", "dist");
-const cardsBuilt = await Bun.file(
-  path.join(cardsDir, "settings.html")
+const settingsWidget = "ui://wovain/settings-v3.html";
+const widgetsDir = path.join(import.meta.dir, "..", "..", "widgets", "dist");
+const widgetsBuilt = await Bun.file(
+  path.join(widgetsDir, "settings.html")
 ).exists();
 
 const mcpFetch = createMcpFetch(
   loadEnv({
-    WOVAIN_CARDS_DIR: cardsDir,
     WOVAIN_ICON_URL: "https://wovain.example/icon.png",
+    WOVAIN_WIDGETS_DIR: widgetsDir,
   }),
   await testStorage()
 );
@@ -70,21 +70,23 @@ describe("over HTTP", () => {
     });
   });
 
-  test("lists the settings tools and the settings card resource", async () => {
+  test("lists the settings tools and the settings widget resource", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((tool) => tool.name);
     for (const name of [
       "get_settings",
       "update_settings",
-      "show_settings_card",
+      "show_settings_widget",
     ]) {
       expect(names).toContain(name);
     }
-    const card = tools.find((tool) => tool.name === "show_settings_card");
-    expect(card?._meta?.["ui"]).toMatchObject({ resourceUri: settingsCard });
+    const widget = tools.find((tool) => tool.name === "show_settings_widget");
+    expect(widget?._meta?.["ui"]).toMatchObject({
+      resourceUri: settingsWidget,
+    });
 
     const { resources } = await client.listResources();
-    expect(resources.map((resource) => resource.uri)).toContain(settingsCard);
+    expect(resources.map((resource) => resource.uri)).toContain(settingsWidget);
   });
 
   test("update_settings then get_settings round-trips", async () => {
@@ -130,20 +132,20 @@ describe("over HTTP", () => {
     expect(response.ok).toBe(false);
   });
 
-  test.skipIf(!cardsBuilt)(
-    "serves the built settings card as an MCP App",
+  test.skipIf(!widgetsBuilt)(
+    "serves the built settings widget as an MCP App",
     async () => {
-      const { contents } = await client.readResource({ uri: settingsCard });
-      const [card] = contents;
-      expect(card?.mimeType).toBe("text/html;profile=mcp-app");
-      // Mockups load from Fourthwall's CDN only if the card declares it.
+      const { contents } = await client.readResource({ uri: settingsWidget });
+      const [widget] = contents;
+      expect(widget?.mimeType).toBe("text/html;profile=mcp-app");
+      // Mockups load from Fourthwall's CDN only if the widget declares it.
       const ui = z
         .object({ csp: z.object({ resourceDomains: z.array(z.string()) }) })
-        .parse(card?._meta?.["ui"]);
+        .parse(widget?._meta?.["ui"]);
       expect(ui.csp.resourceDomains).toContain("https://cdn.fourthwall.com");
       // Finished ad clips are served from v3b.fal.media.
       expect(ui.csp.resourceDomains).toContain("https://v3b.fal.media");
-      expect(card && "text" in card ? card.text : "").toContain(
+      expect(widget && "text" in widget ? widget.text : "").toContain(
         "<!doctype html>"
       );
     }

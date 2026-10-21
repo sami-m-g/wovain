@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     // Better Auth 1.7 types declare optional fields as `?: undefined`, which
-    // this flag rejects; the server, cards and shared packages keep it on.
+    // this flag rejects; the server, widgets and shared packages keep it on.
     "exactOptionalPropertyTypes": false,
     "composite": true,
     "emitDeclarationOnly": true,

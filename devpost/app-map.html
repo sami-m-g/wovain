@@ -57,8 +57,8 @@
       <tbody>
         <tr><td>Skills</td><td>Tell ChatGPT the steps for each stage: design, ads, campaign.</td><td><code>plugin/skills/wovain-*/SKILL.md</code></td></tr>
         <tr><td>wovain server</td><td>MCP tools that do the math, image and video work, storage and the Meta rules call. Money numbers are computed here, never by the model.</td><td><code>apps/server/src/tools/</code>, <code>apps/server/src/lib/</code></td></tr>
-        <tr><td>Cards</td><td>The interactive cards in the chat: Settings, Design, Ad, Campaign.</td><td><code>apps/cards/src/&lt;card&gt;/</code></td></tr>
-        <tr><td>Shared rules</td><td>Schemas, breakeven economics and rule thresholds used by both server and cards.</td><td><code>packages/shared/src/</code></td></tr>
+        <tr><td>Widgets</td><td>The interactive widgets in the chat: Settings, Design, Ad, Campaign.</td><td><code>apps/widgets/src/&lt;widget&gt;/</code></td></tr>
+        <tr><td>Shared rules</td><td>Schemas, breakeven economics and rule thresholds used by both server and widgets.</td><td><code>packages/shared/src/</code></td></tr>
         <tr><td>Connected services</td><td>Fourthwall (products), fal (videos) and Meta Ads (campaign) are connected in the ChatGPT app; wovain calls Meta's API only for rules.</td><td>ChatGPT app connectors, <code>apps/server/src/lib/meta-graph.ts</code></td></tr>
       </tbody>
     </table>
@@ -66,14 +66,14 @@
 
   <section aria-labelledby="action">
     <h2 id="action">One action, end to end: “Add to campaign”</h2>
-    <p>What happens between pressing <strong>Add to campaign</strong> on the ad card and seeing the campaign card with its rules.</p>
+    <p>What happens between pressing <strong>Add to campaign</strong> on the ad widget and seeing the campaign widget with its rules.</p>
     <ol class="flow">
-      <li><strong>Ad card button</strong> records the choice, then posts a chat message.<div class="where"><code>apps/cards/src/ad/ad-card.tsx</code> · <code>onAdd</code> → tool <code>record_ad</code></div></li>
+      <li><strong>Ad widget button</strong> records the choice, then posts a chat message.<div class="where"><code>apps/widgets/src/ad/ad-widget.tsx</code> · <code>onAdd</code> → tool <code>record_ad</code></div></li>
       <li><strong>Skill</strong> sees the message and starts the campaign steps.<div class="where"><code>plugin/skills/wovain-campaign/SKILL.md</code></div></li>
       <li><strong>Plan</strong>: budget in cents, ad names, product links with UTM tags.<div class="where"><code>apps/server/src/tools/campaign.ts</code> · <code>campaign_plan</code></div></li>
       <li class="ext"><strong>Meta Ads connector</strong> builds the draft campaign, ad set and video ads.<div class="where">ChatGPT's Meta Ads connector (outside this repo)</div></li>
       <li><strong>Rules</strong>: five payloads in cents, posted to Meta's rules API.<div class="where"><code>apps/server/src/tools/campaign.ts</code> · <code>create_rules</code> → <code>packages/shared/src/rules.ts</code> · <code>metaRules</code> → <code>apps/server/src/lib/meta-graph.ts</code></div></li>
-      <li><strong>Campaign card</strong> shows Ready, Live or blocked, with each rule's threshold.<div class="where"><code>apps/cards/src/campaign/campaign-card-view.tsx</code></div></li>
+      <li><strong>Campaign widget</strong> shows Ready, Live or blocked, with each rule's threshold.<div class="where"><code>apps/widgets/src/campaign/campaign-widget-view.tsx</code></div></li>
     </ol>
   </section>
 
@@ -81,8 +81,8 @@
     <h2 id="route">Reference route: three stops</h2>
     <p class="note">A reference route through the code above; it wasn't toured together.</p>
     <details open>
-      <summary><strong>1. The button</strong> · <code>apps/cards/src/ad/ad-card.tsx</code>, search <code>onAdd</code></summary>
-      <p>The card calls the server tool <code>record_ad</code> directly so the choice is saved even if the chat moves on, then sends “Added the ads for design d1 to the campaign” so the skill knows to continue.</p>
+      <summary><strong>1. The button</strong> · <code>apps/widgets/src/ad/ad-widget.tsx</code>, search <code>onAdd</code></summary>
+      <p>The widget calls the server tool <code>record_ad</code> directly so the choice is saved even if the chat moves on, then sends “Added the ads for design d1 to the campaign” so the skill knows to continue.</p>
     </details>
     <details>
       <summary><strong>2. The rules tool</strong> · <code>apps/server/src/tools/campaign.ts</code>, search <code>"create_rules"</code></summary>
@@ -98,10 +98,10 @@
     <h2 id="change">To change this, start here</h2>
     <table>
       <tbody>
-        <tr><td>Default budget, rule multiples, video model</td><td><code>packages/shared/src/settings.ts</code> (also editable live on the Settings card)</td></tr>
+        <tr><td>Default budget, rule multiples, video model</td><td><code>packages/shared/src/settings.ts</code> (also editable live on the Settings widget)</td></tr>
         <tr><td>The two video scenes</td><td><code>apps/server/src/lib/video-plan.ts</code>, search <code>angles</code></td></tr>
         <tr><td>How the Meta campaign is built</td><td><code>plugin/skills/wovain-campaign/SKILL.md</code>, then <code>bun run plugin:dev</code> and a new chat</td></tr>
-        <tr><td>A card's layout or copy</td><td><code>apps/cards/src/&lt;card&gt;/*-card-view.tsx</code>; check it in Storybook first</td></tr>
+        <tr><td>A widget's layout or copy</td><td><code>apps/widgets/src/&lt;widget&gt;/*-widget-view.tsx</code>; check it in Storybook first</td></tr>
       </tbody>
     </table>
   </section>
@@ -116,8 +116,8 @@
     <ul>
       <li><code>bun install</code>, then copy <code>.env.example</code> to <code>.env</code> and fill in the keys you need.</li>
       <li><code>bun run plugin:install</code> installs the plugin in the ChatGPT desktop app, pointed at the hosted <code>/mcp</code>; restart the app.</li>
-      <li>For iteration: <code>bun run plugin:dev</code> plus <code>bun run cards:watch</code>.</li>
-      <li>See every card without ChatGPT: <code>bun run storybook</code>.</li>
+      <li>For iteration: <code>bun run plugin:dev</code> plus <code>bun run widgets:watch</code>.</li>
+      <li>See every widget without ChatGPT: <code>bun run storybook</code>.</li>
       <li>Checks: <code>bun run check</code>, <code>bun run typecheck</code>, <code>bun test</code>, <code>bun run test:stories</code>.</li>
     </ul>
     <p class="note">This map is a snapshot of commit c744d79. Paths and names can drift as the code changes.</p>

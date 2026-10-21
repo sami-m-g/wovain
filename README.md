@@ -8,10 +8,10 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 
 | Step | What you see in the chat | Status |
 | --- | --- | --- |
-| Settings | Settings card: budget, rule multiples, video model and audio | Working |
-| Design | "design a tee for: …" → design card with mockups, price, profit and margin; Approve publishes it on Fourthwall | Working |
-| Ads | Ad card with two 9:16 UGC-style videos (fal), copy and the breakeven line; Add to campaign or Skip | Working |
-| Campaign | Campaign card: one Advantage+ sales campaign built as a Meta draft, the five rules created in Meta, Launch to publish | Working (Launch needs a payment method on the ad account) |
+| Settings | Settings widget: budget, rule multiples, video model and audio | Working |
+| Design | "design a tee for: …" → design widget with mockups, price, profit and margin; Approve publishes it on Fourthwall | Working |
+| Ads | Ad widget with two 9:16 UGC-style videos (fal), copy and the breakeven line; Add to campaign or Skip | Working |
+| Campaign | Campaign widget: one Advantage+ sales campaign built as a Meta draft, the five rules created in Meta, Launch to publish | Working (Launch needs a payment method on the ad account) |
 | Trend research, optimization check-in, mock mode | — | Planned, not built (see the checklist's Revisions) |
 
 ## Requirements
@@ -58,15 +58,15 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 | Command | What it does |
 | --- | --- |
 | `bun run dev` | Next.js serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in an agent) |
-| `bun run build` | Builds the cards, then the Next.js app |
-| `bun run cards:watch` | Rebuilds cards on save; redraw a card in chat to see the change |
+| `bun run build` | Builds the widgets, then the Next.js app |
+| `bun run widgets:watch` | Rebuilds widgets on save; redraw a widget in chat to see the change |
 | `bun run db:generate` | Writes a SQL migration in `packages/db/migrations` after a schema change |
 | `bun run db:migrate` | Applies the migrations to the Neon branch in `DATABASE_URL` |
-| `bun run storybook` | Every card state, light and dark, at ChatGPT widths, without ChatGPT |
+| `bun run storybook` | Every widget state, light and dark, at ChatGPT widths, without ChatGPT |
 | `bun run check` / `bun run fix` | Lint and format (Ultracite: oxlint + oxfmt) |
 | `bun run typecheck` | TypeScript, strictest settings |
 | `bun test` | Server, web and shared tests (on PGlite, no database needed) |
-| `bun run test:stories` | Card stories as tests (Playwright) |
+| `bun run test:stories` | Widget stories as tests (Playwright) |
 | `bun run knip` | Unused files, exports and dependencies |
 | `bun run skills:restore` | Restores the course skills listed in `skills-lock.json` |
 
@@ -76,7 +76,7 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 
 | Stage | What runs |
 | --- | --- |
-| verify | Build, lint, typecheck, knip, tests, card stories |
+| verify | Build, lint, typecheck, knip, tests, widget stories |
 | test | GitLab SAST, Secret Detection and Dependency Scanning |
 | deploy | Merge requests: a Vercel preview on its own Neon branch `mr-<iid>`, removed when the review environment stops. `main`: https://wovain.vercel.app |
 | monitor | A smoke test of the live OAuth chain |
@@ -94,9 +94,9 @@ Releases come from conventional commits. semantic-release (`.releaserc.json`) pi
 | --- | --- |
 | `apps/server/` | The MCP server library: tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client, store (Neon Postgres through Drizzle) |
 | `apps/web/` | Next.js app on Vercel that serves the MCP server at `/mcp` |
-| `apps/cards/` | The React cards (MCP Apps) and their Storybook stories |
+| `apps/widgets/` | The React widgets (MCP Apps) and their Storybook stories |
 | `packages/db/` | Drizzle schema (wovain's records and Better Auth's tables), client and migrations |
-| `packages/shared/` | Schemas, economics and rule thresholds shared by server and cards |
+| `packages/shared/` | Schemas, economics and rule thresholds shared by server and widgets |
 | `devpost/` | Planning documents and the app map |
 
 ## License

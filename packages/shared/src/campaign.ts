@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// What the campaign card shows (prd.md > Campaign launch). Products, budget and
+// What the campaign widget shows (prd.md > Campaign launch). Products, budget and
 // rule thresholds come from the store; the skill only reports Meta's state.
 
 export const campaignStatusSchema = z.enum(["ready", "live", "blocked"]);

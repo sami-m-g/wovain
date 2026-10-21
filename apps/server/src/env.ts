@@ -3,7 +3,7 @@ import path from "node:path";
 import { z } from "zod";
 
 // Keys are optional at startup: each tool checks the ones it needs and returns a
-// user-safe error when one is missing, so the Settings card works on day one.
+// user-safe error when one is missing, so the Settings widget works on day one.
 const envSchema = z.object({
   // The private Vercel Blob store for staged artwork.
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
@@ -20,14 +20,16 @@ const envSchema = z.object({
   META_PIXEL_ID: z.string().optional(),
   META_SYSTEM_USER_TOKEN: z.string().optional(),
   SERPAPI_KEY: z.string().optional(),
-  // Paths default to this repo for tests; apps/web passes its own, since a
-  // bundled route can't rely on import.meta.dirname.
-  WOVAIN_CARDS_DIR: z
-    .string()
-    .default(() => path.join(import.meta.dirname, "..", "..", "cards", "dist")),
   // The wovain logo ChatGPT shows for the connector (served by apps/web).
   WOVAIN_ICON_URL: z.url().optional(),
   WOVAIN_MOCK: z.stringbool().default(false),
+  // Paths default to this repo for tests; apps/web passes its own, since a
+  // bundled route can't rely on import.meta.dirname.
+  WOVAIN_WIDGETS_DIR: z
+    .string()
+    .default(() =>
+      path.join(import.meta.dirname, "..", "..", "widgets", "dist")
+    ),
 });
 
 export type Env = z.infer<typeof envSchema>;

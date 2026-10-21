@@ -19,5 +19,5 @@ test("the server sends the flow and serves each playbook as a tool and a prompt"
     "design",
   ]);
   const prompt = await client.getPrompt({ name: "design" });
-  expect(JSON.stringify(prompt.messages)).toContain("show_design_card");
+  expect(JSON.stringify(prompt.messages)).toContain("show_design_widget");
 });

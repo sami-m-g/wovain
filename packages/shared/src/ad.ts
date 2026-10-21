@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Everything the ad card shows (prd.md > Ad cards). Copy and videos come from
+// Everything the ad widget shows (prd.md > Ad widgets). Copy and videos come from
 // the ads playbook; economics and rules are computed by the server from the
 // design's price, so the money numbers never come from the model.
 

@@ -7,17 +7,17 @@ import {
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
-import { cardUri } from "../cards.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
 import { text } from "../lib/tool-result.ts";
 import type { Store } from "../store.ts";
+import { widgetUri } from "../widgets.ts";
 
 export const registerSettingsTools = (
   server: McpServer,
   store: Store,
   videoPricing: VideoPricing
 ) => {
-  // Every settings result carries current video prices for the card's labels.
+  // Every settings result carries current video prices for the widget's labels.
   const result = async (settings: Settings, message: string) => ({
     content: text(message),
     structuredContent: { settings, videoPrices: await videoPricing() },
@@ -38,17 +38,20 @@ export const registerSettingsTools = (
     }
   );
 
-  // Cards call this directly (Save, ⚙ quick settings), so it is visible to both.
+  // Widgets call this directly (Save, ⚙ quick settings), so it is visible to both.
   registerAppTool(
     server,
     "update_settings",
     {
       _meta: {
-        ui: { resourceUri: cardUri("settings"), visibility: ["model", "app"] },
+        ui: {
+          resourceUri: widgetUri("settings"),
+          visibility: ["model", "app"],
+        },
       },
       annotations: { idempotentHint: true },
       description:
-        "Change one or more wovain settings. Pass only the groups and fields that change; everything else keeps its value. New cards use the result right away.",
+        "Change one or more wovain settings. Pass only the groups and fields that change; everything else keeps its value. New widgets use the result right away.",
       inputSchema: z.object({ patch: settingsPatchSchema }),
       outputSchema: settingsResultSchema,
       title: "Update wovain settings",
@@ -61,18 +64,18 @@ export const registerSettingsTools = (
 
   registerAppTool(
     server,
-    "show_settings_card",
+    "show_settings_widget",
     {
-      _meta: { ui: { resourceUri: cardUri("settings") } },
+      _meta: { ui: { resourceUri: widgetUri("settings") } },
       annotations: { readOnlyHint: true },
       description:
-        "Show the wovain Settings card, where the merchant can view and edit every setting. Use when the merchant asks for wovain settings.",
+        "Show the wovain Settings widget, where the merchant can view and edit every setting. Use when the merchant asks for wovain settings.",
       outputSchema: settingsResultSchema,
       title: "Show wovain settings",
     },
     async () => {
       const settings = await store.getSettings();
-      return await result(settings, "Showing the wovain Settings card.");
+      return await result(settings, "Showing the wovain Settings widget.");
     }
   );
 };

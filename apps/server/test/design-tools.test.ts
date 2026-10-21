@@ -199,8 +199,8 @@ test("price_product prices the demo tee at $30", async () => {
   expect(result.structuredContent).toMatchObject({ quote: { price: 30 } });
 });
 
-test("a design goes draft → publishing → live, and the card can read it", async () => {
-  const shown = await call("show_design_card", design);
+test("a design goes draft → publishing → live, and the widget can read it", async () => {
+  const shown = await call("show_design_widget", design);
   expect(shown.structuredContent).toMatchObject({
     design: { id: "d1", status: "draft" },
   });
@@ -222,8 +222,8 @@ test("a design goes draft → publishing → live, and the card can read it", as
 });
 
 test("redrawing after feedback keeps the id; rejections are counted", async () => {
-  await call("show_design_card", design);
-  await call("show_design_card", {
+  await call("show_design_widget", design);
+  await call("show_design_widget", {
     ...design,
     coach: "Moved the art up.",
     id: "d1",

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": "../../node_modules/.tsbuild/apps/widgets",
+    "jsx": "react-jsx",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "bun"]
+  },
+  "include": [
+    "src",
+    "test",
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "build.ts"
+  ]
+}

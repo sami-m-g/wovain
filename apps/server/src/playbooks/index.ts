@@ -12,14 +12,14 @@ const playbooks = { ads, campaign, design } as const;
 const stepSchema = z.enum(["design", "ads", "campaign"]);
 
 // Sent on initialize, so a connecting agent knows the flow before any call.
-export const instructions = `wovain takes a print-on-demand merchant from a product idea to a live Fourthwall product and one Meta Advantage+ sales campaign, one approved card at a time. The agent also needs the Fourthwall, Meta Ads and fal MCP servers connected.
+export const instructions = `wovain takes a print-on-demand merchant from a product idea to a live Fourthwall product and one Meta Advantage+ sales campaign, one approved widget at a time. The agent also needs the Fourthwall, Meta Ads and fal MCP servers connected.
 
 Steps, each with a playbook (get_playbook, or the MCP prompt of the same name):
 ${Object.entries(playbooks)
   .map(([step, playbook]) => `- ${step}: ${playbook.description}`)
   .join("\n")}
 
-Read a step's playbook before starting it, and follow it exactly. Nothing is published or spends money without the merchant's approval on a card.`;
+Read a step's playbook before starting it, and follow it exactly. Nothing is published or spends money without the merchant's approval on a widget.`;
 
 export const registerPlaybooks = (server: McpServer) => {
   server.registerTool(
@@ -27,7 +27,7 @@ export const registerPlaybooks = (server: McpServer) => {
     {
       annotations: { readOnlyHint: true },
       description:
-        "Read the step-by-step playbook for one wovain step (design, ads or campaign). Call before starting that step or acting on its card.",
+        "Read the step-by-step playbook for one wovain step (design, ads or campaign). Call before starting that step or acting on its widget.",
       inputSchema: z.object({ step: stepSchema }),
       title: "Get a wovain playbook",
     },

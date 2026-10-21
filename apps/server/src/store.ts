@@ -136,7 +136,7 @@ export const createStore = (db: Db, media: Media, userId: string) => {
   };
 
   // Each change that reads before it writes runs in one transaction, so
-  // overlapping tool calls (a card polling while a skill writes) can't
+  // overlapping tool calls (a widget polling while a skill writes) can't
   // interleave inside it.
   const transaction = async <T>(work: (q: Db) => Promise<T>) =>
     await db.transaction(async (tx) => await work(tx));
@@ -157,12 +157,12 @@ export const createStore = (db: Db, media: Media, userId: string) => {
       }
       return bytes;
     },
-    // Records add or skip and counts the ad cards still waiting, in one step.
+    // Records add or skip and counts the ad widgets still waiting, in one step.
     recordAd: async (designId: string, status: Ad["status"]) =>
       await transaction(async (q) => {
         const current = await ads.get(designId, q);
         if (current === undefined) {
-          throw new Error(`No ad card for ${designId}`);
+          throw new Error(`No ad widget for ${designId}`);
         }
         const ad = await ads.put(designId, { ...current, status }, q);
         // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- the count must include the write above

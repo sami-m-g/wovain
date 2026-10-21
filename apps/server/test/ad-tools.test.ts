@@ -25,7 +25,7 @@ afterEach(async () => {
 const call = async (name: string, args: Record<string, unknown>) =>
   await client.callTool({ arguments: args, name });
 
-const adCard = {
+const adWidget = {
   coach: "Two try-on clips plus your mockup.",
   designId: "d1",
   headline: "Sakura Season Cat Tee",
@@ -42,8 +42,8 @@ const adCard = {
   ],
 };
 
-test("the ad card's breakeven and rules match the PRD demo tee", async () => {
-  const result = await call("show_ad_card", adCard);
+test("the ad widget's breakeven and rules match the PRD demo tee", async () => {
+  const result = await call("show_ad_widget", adWidget);
   const { ad } = z
     .object({
       ad: z.object({
@@ -62,8 +62,8 @@ test("the ad card's breakeven and rules match the PRD demo tee", async () => {
   );
 });
 
-test("record_ad counts the ad cards still waiting", async () => {
-  await call("show_ad_card", adCard);
+test("record_ad counts the ad widgets still waiting", async () => {
+  await call("show_ad_widget", adWidget);
   const result = await call("record_ad", { designId: "d1", status: "added" });
   expect(result.structuredContent).toMatchObject({
     ad: { status: "added" },

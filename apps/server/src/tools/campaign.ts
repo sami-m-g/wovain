@@ -17,18 +17,18 @@ import type { RuleLabel, RuleProduct } from "@wovain/shared/rules";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
-import { cardUri } from "../cards.ts";
 import type { Env } from "../env.ts";
 import { createMetaGraph } from "../lib/meta-graph.ts";
 import { text } from "../lib/tool-result.ts";
 import type { Store } from "../store.ts";
+import { widgetUri } from "../widgets.ts";
 
 // Each link carries the ad's ID so Fourthwall sales can be matched to the ad.
 const URL_TAGS =
   "utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}";
 
 // Added ads joined with their design's price, plus the campaign budget and the
-// rule inputs derived from them, for the plan, rules and card.
+// rule inputs derived from them, for the plan, rules and widget.
 const addedProducts = async (store: Store, settings: Settings) => {
   const all = await store.getAds();
   const ads = all.filter((ad) => ad.status === "added");
@@ -45,7 +45,7 @@ const addedProducts = async (store: Store, settings: Settings) => {
   );
   if (products.length === 0) {
     throw new Error(
-      "no ad cards were added; add at least one before launching"
+      "no ad widgets were added; add at least one before launching"
     );
   }
   return {
@@ -92,7 +92,7 @@ export const registerCampaignTools = (
         readOnlyHint: true,
       },
       description:
-        "Everything the campaign playbook needs to build the Meta campaign: the daily budget in cents, and for each added ad card its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags. Call after the last ad card is added or skipped.",
+        "Everything the campaign playbook needs to build the Meta campaign: the daily budget in cents, and for each added ad widget its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags. Call after the last ad widget is added or skipped.",
       inputSchema: z.object({}),
       title: "Campaign plan",
     },
@@ -158,7 +158,7 @@ export const registerCampaignTools = (
         });
         return {
           content: text(
-            "No rules created: add a Meta access token with ads_management to .env as META_SYSTEM_USER_TOKEN, restart the app, then call create_rules again. Show the campaign card as blocked with that fix."
+            "No rules created: add a Meta access token with ads_management to .env as META_SYSTEM_USER_TOKEN, restart the app, then call create_rules again. Show the campaign widget as blocked with that fix."
           ),
         };
       }
@@ -183,12 +183,13 @@ export const registerCampaignTools = (
 
   registerAppTool(
     server,
-    "show_campaign_card",
+    "show_campaign_widget",
     {
       _meta: {
         "openai/toolInvocation/invoked": "Campaign ready",
-        "openai/toolInvocation/invoking": "Putting the campaign card together…",
-        ui: { resourceUri: cardUri("campaign") },
+        "openai/toolInvocation/invoking":
+          "Putting the campaign widget together…",
+        ui: { resourceUri: widgetUri("campaign") },
       },
       annotations: {
         destructiveHint: false,
@@ -196,7 +197,7 @@ export const registerCampaignTools = (
         readOnlyHint: false,
       },
       description:
-        "Show the campaign card: ready (built in Meta, waiting for the merchant's Launch), live (published), or blocked (with each issue and its fix, such as a missing payment method). wovain adds the products, budget and rules itself.",
+        "Show the campaign widget: ready (built in Meta, waiting for the merchant's Launch), live (published), or blocked (with each issue and its fix, such as a missing payment method). wovain adds the products, budget and rules itself.",
       inputSchema: z.object({
         adAccountId: z
           .string()
@@ -207,7 +208,7 @@ export const registerCampaignTools = (
         status: campaignStatusSchema,
       }),
       outputSchema: campaignResultSchema,
-      title: "Show campaign card",
+      title: "Show campaign widget",
     },
     async ({ adAccountId, blockers, campaignId, status }) => {
       const [settings, saved] = await Promise.all([
@@ -248,8 +249,8 @@ export const registerCampaignTools = (
       return {
         content: text(
           status === "ready"
-            ? "Showing the campaign card. Nothing spends until the merchant presses Launch."
-            : `Showing the campaign card (${status}).`
+            ? "Showing the campaign widget. Nothing spends until the merchant presses Launch."
+            : `Showing the campaign widget (${status}).`
         ),
         structuredContent: { campaign },
       };
