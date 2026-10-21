@@ -14,6 +14,12 @@ scripts:
 # Plain values, then Secret Manager references set with
 # `firebase apphosting:secrets:set <name>`.
 env:
+  # The install skips lifecycle scripts, as CI does: the root `prepare` sets up
+  # git hooks and agent skills, which a build container doesn't need.
+  - variable: npm_config_ignore_scripts
+    value: "true"
+    availability:
+      - BUILD
   - variable: WOVAIN_BUCKET
     value: wovain-media
   - variable: WOVAIN_SITE_URL
