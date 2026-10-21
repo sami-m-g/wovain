@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 // Sign-in settings. On Vercel the site URL comes from the deployment; locally
-// it is localhost. Google sign-in stays off until both of its keys are set.
+// it is localhost. /mcp turns every caller away until AuthKit is set up.
 const authEnvSchema = z.object({
-  BETTER_AUTH_SECRET: z.string().min(32).optional(),
-  BETTER_AUTH_URL: z.url().optional(),
   DATABASE_URL: z.string().optional(),
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
   VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   VERCEL_URL: z.string().optional(),
+  // Reads each caller's email for the allowlist.
+  WORKOS_API_KEY: z.string().optional(),
+  // The AuthKit domain that signs merchants in and issues /mcp's tokens.
+  WORKOS_AUTHKIT_DOMAIN: z.url().optional(),
   // Comma-separated emails allowed to sign in. Until each merchant links their
   // own Meta and fal accounts, every signed-in user acts through the
   // operator's keys, so an empty list lets nobody in.
@@ -26,6 +26,8 @@ const authEnvSchema = z.object({
             .filter((email) => email !== "")
         )
     ),
+  // Overrides the deployment's URL, e.g. a tunnel to the local server.
+  WOVAIN_SITE_URL: z.url().optional(),
 });
 
 export type AuthEnv = z.infer<typeof authEnvSchema>;
@@ -43,8 +45,8 @@ export const loadAuthEnv = (
 // The origin ChatGPT reaches: the production domain, a preview's own URL, or
 // localhost. MCP tokens are bound to `${siteUrl}/mcp`, so it must be exact.
 export const siteUrl = (env: AuthEnv) => {
-  if (env.BETTER_AUTH_URL !== undefined) {
-    return env.BETTER_AUTH_URL.replace(/\/$/u, "");
+  if (env.WOVAIN_SITE_URL !== undefined) {
+    return env.WOVAIN_SITE_URL.replace(/\/$/u, "");
   }
   if (
     env.VERCEL_ENV === "production" &&
@@ -63,7 +65,7 @@ export interface AllowCheck {
   emailVerified: boolean;
 }
 
-// Only a verified email on the allowlist may sign in or call the tools.
+// Only a verified email on the allowlist may call the tools.
 export const isAllowed = (env: AuthEnv, user: AllowCheck | null | undefined) =>
   user !== null &&
   user !== undefined &&

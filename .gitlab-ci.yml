@@ -104,7 +104,7 @@ deploy:production:
     url: https://wovain.vercel.app
 
 # ChatGPT's first steps against the live server: /mcp asks for a token and
-# points at the metadata, which names wovain's OAuth server.
+# points at the metadata, which names AuthKit; AuthKit offers CIMD.
 smoke:production:
   stage: monitor
   extends: .on-main
@@ -117,9 +117,11 @@ smoke:production:
     - |
       status=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' "$SITE/mcp")
       test "$status" = 401 || { echo "/mcp answered $status, expected 401"; exit 1; }
-    - curl -sf "$SITE/.well-known/oauth-protected-resource/mcp" | grep -q "\"resource\":\"$SITE/mcp\""
-    - curl -sf "$SITE/.well-known/oauth-authorization-server/api/auth" | grep -q '"code_challenge_methods_supported":\["S256"\]'
-    - curl -sf "$SITE/sign-in" | grep -q 'Continue with Google'
+    - curl -sf "$SITE/.well-known/oauth-protected-resource/mcp" > resource.json
+    - grep -q "\"resource\":\"$SITE/mcp\"" resource.json
+    - AUTHKIT=$(sed -n 's/.*"authorization_servers":\["\([^"]*\)".*/\1/p' resource.json)
+    - test -n "$AUTHKIT" || { echo "no authorization server in the metadata"; exit 1; }
+    - curl -sf "$AUTHKIT/.well-known/oauth-authorization-server" | grep -q '"client_id_metadata_document_supported":true'
 
 # Release only what passed the smoke test: semantic-release reads the
 # conventional commits since the last tag, writes the version and

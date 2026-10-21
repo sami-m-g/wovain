@@ -16,7 +16,7 @@ export const createRuntime = () => {
   });
   const db = createDb(env.DATABASE_URL ?? "postgres://unset.invalid/wovain");
   return {
-    auth: createAuth(authEnv, db),
+    auth: createAuth(authEnv),
     authEnv,
     env,
     storage: { db, media: blobMedia(env.BLOB_READ_WRITE_TOKEN) },

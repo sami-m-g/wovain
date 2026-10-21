@@ -70,7 +70,7 @@ Steps 1, 2, 8 and 9 moved to later by the learner's call (`checklist.md > Revisi
 | Runtime and package manager | Bun | 1.4.3 | https://bun.sh/docs |
 | MCP server | `@modelcontextprotocol/server` v2 over Streamable HTTP at `/mcp` | 2.3.1 | https://github.com/modelcontextprotocol/typescript-sdk |
 | Web server | Hono on Vercel's Bun runtime (`framework: hono`, `bunVersion: 1.4.x`): `/mcp`, OAuth endpoints and metadata, and the sign-in and consent pages | 4.13.13 | https://hono.dev |
-| Sign-in and OAuth | Better Auth (pinned) with its `mcp`, `cimd` and `jwt` plugins, on its Drizzle adapter | 1.7.7 | https://www.better-auth.com |
+| Sign-in and OAuth | WorkOS AuthKit (hosted authorization server); `@workos-inc/node` and `jose` on the server | 11.0.0, 6.2.12 | https://workos.com/docs/authkit/mcp |
 | Widget protocol | MCP Apps (`@modelcontextprotocol/ext-apps`) | 2.0.3 | https://github.com/modelcontextprotocol/ext-apps |
 | Widget UI | React 19 + `@openai/apps-sdk-ui` + Tailwind CSS 4 (its peer) | 19.3 / 0.2.2 / 4.3 | https://developers.openai.com/plugins/build/chatgpt-ui |
 | Widget build | Vite 8 + `vite-plugin-singlefile`, one HTML file per widget | 8.3 | https://vite.dev |
@@ -86,9 +86,8 @@ Steps 1, 2, 8 and 9 moved to later by the learner's call (`checklist.md > Revisi
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
 - Bun: the learner chose it over Node with Express. Official examples assume Node, so `bunfig.toml` sets `[run] bun = true` and even Storybook, Vitest and other tools with a node shebang run on Bun. No Node install is needed.
-- Hosting: wovain started as a desktop-only stdio plugin and became a hosted server, so it works on chatgpt.com and in other agents, and server or widget changes ship on deploy. One package, `apps/server`, holds the MCP server, sign-in and the database. Its entry `src/index.ts` default-exports a Hono app, which Vercel runs as one function. Hono replaced Next.js once the pages turned out to be two forms: sign-in and consent render as plain HTML (`hono/html`) and post back to the server, which calls Better Auth. `bun run build` bundles the server with `bun build` because Vercel doesn't resolve source-only workspace packages such as `@wovain/shared`.
-- `apps/server` turns off `exactOptionalPropertyTypes`, which Better Auth's types don't satisfy; `apps/widgets` and `packages/shared` keep it.
-- Sign-in is self-hosted Better Auth, so its tables sit in the same Neon database and the same migrations as wovain's. Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the `@neondatabase/auth` 0.6.0-beta code).
+- Hosting: wovain started as a desktop-only stdio plugin and became a hosted server, so it works on chatgpt.com and in other agents, and server or widget changes ship on deploy. One package, `apps/server`, holds the MCP server, the token check and the database. Its entry `src/index.ts` default-exports a Hono app, which Vercel runs as one function. Hono replaced Next.js once the pages turned out to be two forms, and those went too when AuthKit took over sign-in and consent; only the home page is left (`hono/html`). `bun run build` bundles the server with `bun build` because Vercel doesn't resolve source-only workspace packages such as `@wovain/shared`.
+- Sign-in is WorkOS AuthKit: it registers agents, hosts sign-in and consent, and issues the tokens, so no auth tables live in Neon. It replaced self-hosted Better Auth 1.7.7, which needed four plugins, generated tables and our own sign-in and consent pages (free up to 1M monthly active users; WorkOS lists no separate price for MCP auth). Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the `@neondatabase/auth` 0.6.0-beta code).
 - Ultracite with oxlint and oxfmt: the learner's choice (`ultracite init --linter oxlint`).
 - React 19: both `@openai/apps-sdk-ui` and `ext-apps` support it; OpenAI's docs still show 18.
 
@@ -109,20 +108,18 @@ How sign-in works:
 
 | Piece | Behavior |
 |---|---|
-| Discovery | `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names `/api/auth` as the authorization server. Its metadata at `/.well-known/oauth-authorization-server/api/auth` offers PKCE S256, CIMD, and dynamic registration at `/api/auth/oauth2/register` |
-| Sign-in page | `/sign-in` (Google for now): a plain form that posts back to the server, which calls Better Auth and redirects with its cookies. `hono/csrf` only accepts posts from the site's own origin |
-| Consent page | `/consent`: approve or deny, the same way. It trusts an app's own name only when its redirect is exactly `https://chatgpt.com/connector_platform_oauth_redirect` (or the same path on `chat.openai.com`, with no port or user info); any other app is labeled unverified, with the host it returns to |
-| Token check | `/mcp` checks each token with `requireMcpAuth` |
-| Site URL | From Vercel (the production domain, or a preview's `VERCEL_URL`) or localhost; `BETTER_AUTH_URL` overrides it |
-| Google client | Redirect URIs `https://wovain.vercel.app/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google` |
-| Allowlist | Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked when an account or session is created and on every `/mcp` call, so taking an email off it cuts off tokens already issued; an empty list lets nobody in |
+| Discovery | `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names the AuthKit domain (`WORKOS_AUTHKIT_DOMAIN`) as the authorization server. AuthKit's own metadata offers PKCE S256, CIMD and dynamic registration; both are switched on in the WorkOS dashboard under Connect → Configuration |
+| Sign-in and consent | AuthKit's hosted pages (Google, plus the methods enabled in WorkOS). Its consent screen names the registering app |
+| Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS: `http://localhost:3000/mcp` on Staging, `https://wovain.vercel.app/mcp` on Production. Without both WorkOS keys every call gets a 401 |
+| Site URL | From Vercel (the production domain, or a preview's `VERCEL_URL`) or localhost; `WOVAIN_SITE_URL` overrides it |
+| Allowlist | Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked on every `/mcp` call against the user's verified email in WorkOS, so taking an email off it cuts off tokens already issued; an empty list lets nobody in |
 | Static files | `apps/server/public/` (icon, favicon), served by Vercel's CDN; `bun run dev` serves them from the app |
 
 | Need | Value |
 |---|---|
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Vercel (Bun 1.4 runtime); Bun 1.4 locally for development |
-| Keys in `apps/server/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `SERPAPI_KEY`, `ETSY_API_KEY`, `MARKER_API_TOKEN`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `BETTER_AUTH_SECRET` (signs sessions and OAuth state), `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (Google sign-in), `WOVAIN_ALLOWED_EMAILS` (who may sign in), `DATABASE_URL` (Neon: the `dev` branch locally) and `BLOB_READ_WRITE_TOKEN` (the private Blob store); on Vercel the Neon and Blob integrations set the last two |
+| Keys in `apps/server/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `SERPAPI_KEY`, `ETSY_API_KEY`, `MARKER_API_TOKEN`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `DATABASE_URL` (Neon: the `dev` branch locally) and `BLOB_READ_WRITE_TOKEN` (the private Blob store); on Vercel the Neon and Blob integrations set the last two |
 | Rehearsal | Later: `WOVAIN_MOCK=1` (`bun run mock`) is meant to answer wovain's outside calls from fixtures and skip publish and launch steps; the flag is read but nothing uses it yet |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
@@ -182,7 +179,7 @@ Each playbook starts Fourthwall calls with `get-instructions`, `ecommerce_get-cu
 
 ### wovain server
 
-What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/mcp`, `/api/auth/*` (Better Auth), `/.well-known/*` (OAuth metadata), `/` (a short page with the connect URL), `/sign-in` and `/consent`. `src/routes/mcp.ts` checks the token and the allowlist, then hands the request to the MCP handler (`src/http.ts`): Streamable HTTP with a fresh server per request, and the widget files as `ui://` resources. Finished clips stay at the public `fal.media` URLs fal returns. Each tool file registers one step's tools, with zod input and output schemas from `packages/shared`. Tools return user-safe errors and never pass raw upstream errors through.
+What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/mcp`, `/.well-known/oauth-protected-resource[/mcp]` (the metadata naming AuthKit) and `/` (a short page with the connect URL). `src/routes/mcp.ts` checks the token and the allowlist, then hands the request to the MCP handler (`src/http.ts`): Streamable HTTP with a fresh server per request, and the widget files as `ui://` resources. Finished clips stay at the public `fal.media` URLs fal returns. Each tool file registers one step's tools, with zod input and output schemas from `packages/shared`. Tools return user-safe errors and never pass raw upstream errors through.
 
 | Tool | Does | Talks to |
 |---|---|---|
@@ -256,7 +253,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | GitLab Observability (`apps/server/src/telemetry.ts`, `@vercel/otel` 2.1.3) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration). `/mcp` adds an `mcp.request` span with the MCP method, tool and status, no user ids or arguments. Next.js's per-request spans went with Next.js. Unset means no telemetry |
 | GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. With the Developer role we can run the developer flow (issue to MR), "Fix pipeline with Duo" on a failed pipeline, and code review (the MR template assigns `@GitLabDuo` as reviewer). SAST false-positive detection and SAST vulnerability resolution need a Maintainer to switch on; that request goes to GitLab contributor-success |
 | semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
-| Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot |
+| Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
 | Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the widgets), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
@@ -345,7 +342,7 @@ Scripts in the root `package.json`:
 
 ## Data Model
 
-One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their Better Auth user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The Drizzle schema lives in `apps/server/src/db`: `records` keeps each record in a `jsonb` column, and Better Auth's tables come from `bunx auth@1.7.7 generate`. drizzle-kit writes SQL migrations to `apps/server/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, each merge request preview gets its own branch `mr-<iid>` (deleted when the review environment stops), and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
+One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their WorkOS user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The Drizzle schema lives in `apps/server/src/db`: `records` keeps each record in a `jsonb` column, and there are no auth tables, since accounts live in WorkOS. drizzle-kit writes SQL migrations to `apps/server/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, each merge request preview gets its own branch `mr-<iid>` (deleted when the review environment stops), and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
 
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
@@ -366,8 +363,8 @@ wovain/
 │   ├── server/                  # the one deployed package: Hono app with MCP, OAuth and database
 │   │   ├── src/
 │   │   │   ├── index.ts         # entry: default-exports the Hono app (Vercel and bun run dev)
-│   │   │   ├── app.ts           # routes: /mcp, /api/auth/*, /.well-known/*, /, /sign-in, /consent
-│   │   │   ├── runtime.ts       # env, Neon client, Better Auth and Blob from process.env
+│   │   │   ├── app.ts           # routes: /mcp, /.well-known/oauth-protected-resource, /
+│   │   │   ├── runtime.ts       # env, Neon client, AuthKit token check and Blob from process.env
 │   │   │   ├── routes/mcp.ts    # requireMcpAuth, allowlist check, mcp.request span
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── server.ts        # McpServer: instructions, tools, widgets, playbooks
@@ -376,9 +373,9 @@ wovain/
 │   │   │   ├── widgets.ts         # registers the ui:// widget resources
 │   │   │   ├── env.ts           # zod-checked server keys
 │   │   │   ├── store.ts         # records through Drizzle, artwork on Blob
-│   │   │   ├── auth/            # auth.ts (Better Auth), env.ts (site URL, allowlist), oauth-query.ts
-│   │   │   ├── pages/           # sign-in, consent and base page as hono/html; styles.ts
-│   │   │   ├── db/              # app-schema (records, counters), auth-schema (generated), client, migrate, testing (PGlite)
+│   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
+│   │   │   ├── pages/           # the home page as hono/html; styles.ts
+│   │   │   ├── db/              # app-schema (records, counters), client, migrate, testing (PGlite)
 │   │   │   ├── telemetry.ts     # @vercel/otel, on when the OTLP endpoint is set
 │   │   │   └── lib/             # fal pricing and usage, image checks, artwork loading, meta-graph, video-plan
 │   │   ├── test/                # tools, playbooks, app routes, auth chain, economics, store; fixtures/
@@ -429,8 +426,8 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 
 ## Important Failure Modes
 
-- **Google sign-in isn't configured, or the agent stalls at consent** → the sign-in page says so; add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on Vercel, and check the redirect URIs on the Google client.
-- **Google sign-in fails off production** → Google only accepts exact redirect URIs, so test sign-in on production or localhost.
+- **The agent can't register or sign in** → check that CIMD and DCR are on in WorkOS (Connect → Configuration) and that `WORKOS_AUTHKIT_DOMAIN` and `WORKOS_API_KEY` are set on Vercel.
+- **Signed in, but every `/mcp` call is a 401** → the token's audience doesn't match `<site>/mcp`; add that URL as a resource indicator in the matching WorkOS environment.
 - **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
 - **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
 - **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#7).
@@ -445,7 +442,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 - **Print fidelity checked by eye** in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.
 - **Trademark screening via Marker** instead of an official USPTO search API: none exists. Labeled screening, not legal advice.
 - **One table of JSON records** instead of a table per entity: each record is checked by its zod schema on read, and Drizzle runs the same schema and migrations on Neon and, for tests, on PGlite.
-- **Google-only sign-in** for now: email codes need a sending domain, then Resend from the Vercel Marketplace.
+- **Hosted sign-in and consent (WorkOS AuthKit)** instead of our own pages: less code and no auth tables, at the cost of AuthKit's generic consent screen and a WorkOS dependency for every account.
 - **Server-rendered forms for sign-in and consent** instead of a React front end: two pages don't need one.
 
 ## Decisions and Open Issues
@@ -486,7 +483,7 @@ Verify early in the build, in this order:
 | 7 | Bun resolves the TS 6/7 npm aliases; `bunx tsc` runs 7.0 | Pin TS 6 only and skip type-aware lint |
 | 8 | Ultracite's Claude hook merges cleanly with the Impeccable hooks in `.claude/settings.json` | Merge the hooks by hand |
 | 9 | Storybook renders the widgets with the mocked host bridge | Use a plain Vite gallery page |
-| 10 | An agent completes the OAuth flow (discovery, registration, Google sign-in, consent) against the hosted `/mcp`; a widget renders on chatgpt.com | Check the 401 challenge and metadata URLs, then the Google redirect URIs |
+| 10 | An agent completes the OAuth flow (discovery, AuthKit registration, sign-in, consent) against the hosted `/mcp`; a widget renders on chatgpt.com | Check the 401 challenge and metadata URLs, then the WorkOS resource indicators |
 | 11 | A connected agent reads wovain's `instructions` and calls `get_playbook` before a step, without the old plugin skills | Tell the agent to start with "read the wovain design playbook", or use the MCP prompt |
 
 Carried from `prd.md > Open Questions` (still open, before the demo): Meta payment method, shop set live, Meta pixel and Conversions API connected in Fourthwall. Voice: tools work in Live voice since 2026-09-23; whether widgets render in voice is unverified, so voice stays a bonus.
