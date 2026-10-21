@@ -1,3 +1,21 @@
+# [0.15.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.14.0...v0.15.0) (2026-10-21)
+
+
+### Bug Fixes
+
+* **ci:** restore the github mirror job and deploy over its ssh key ([aa5bf96](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/aa5bf964d5e8246bf260fcc5a2a71b6174980059))
+* **hosting:** skip lifecycle scripts in the app hosting install ([02cadc5](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/02cadc5c1ea3d7d0218edcdece00271785b02e5d))
+* **hosting:** use the pnpm config prefix to skip install scripts ([605939a](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/605939abe02772e434f77762f1f19f0918fede27))
+* **infra:** let the app hosting account read secret metadata ([85c0528](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/85c0528bffd5821199c32c317822b86fcad6c7fc))
+* **infra:** trust each ci account only from its gitlab environment ([14d53ac](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/14d53acaa833c8f7e6cb60ae19c481d1f6f0ed65))
+
+
+### Features
+
+* **deploy:** upload app hosting source from gitlab ci instead of github ([1980ef8](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/1980ef8599e81228f1069bce695552faed481209))
+* **infra:** manage secret values as kms-encrypted pulumi config ([e61b6f9](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e61b6f92da386a7f17b08c2471b30d0f36d03f08))
+* move hosting to firebase, switch to pnpm and add pulumi infra ([86bea32](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/86bea329b5793b30e0a604874fe6b0bdbb055674))
+
 # [0.14.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.13.1...v0.14.0) (2026-10-21)
 
 
