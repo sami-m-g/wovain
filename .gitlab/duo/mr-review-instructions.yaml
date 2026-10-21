@@ -1,0 +1,38 @@
+# Project review rules for GitLab Duo Code Review. They add to Duo's
+# standard review; they're guidance, not enforced policy.
+instructions:
+  - name: Spending money
+    fileFilters:
+      - "apps/server/src/tools/**/*.ts"
+      - "apps/server/src/playbooks/**/*.ts"
+      - "apps/server/src/lib/**/*.ts"
+    instructions: |
+      1. Flag any path that starts Meta ad spend, publishes a Fourthwall product
+         or starts a paid fal generation without the merchant's explicit
+         approval from a widget. Campaigns must be created paused or as drafts.
+      2. Flag new Meta, Fourthwall or fal calls whose errors are swallowed
+         instead of returned to the agent.
+
+  - name: Tool inputs and outputs
+    fileFilters:
+      - "apps/server/src/tools/**/*.ts"
+      - "packages/shared/src/**/*.ts"
+    instructions: |
+      1. Tool inputs and responses from external APIs are parsed with the zod
+         schemas in packages/shared, not cast with `as`.
+      2. Every number a widget shows (price, margin, breakeven, budget) needs a
+         source link or a visible calculation.
+
+  - name: Secrets
+    instructions: |
+      Flag tokens, API keys, MCP URLs with embedded tokens, or .env files in
+      the diff. Only .env.example may be committed.
+
+  - name: Widgets
+    fileFilters:
+      - "apps/widgets/src/**/*.tsx"
+    instructions: |
+      1. Each new widget state has a Storybook story in light and dark.
+      2. ChatGPT widget rules: system fonts and colors, brand color only on
+         primary buttons, badges and icons, at most two buttons, no tabs or
+         inner scrolling.

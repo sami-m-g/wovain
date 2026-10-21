@@ -293,10 +293,13 @@ importers:
     dependencies:
       '@pulumi/gcp':
         specifier: 9.37.1
-        version: 9.37.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0)
+        version: 9.37.1(supports-color@7.2.0)(typescript@4.9.5)
+      '@pulumi/graphql':
+        specifier: file:sdks/graphql
+        version: file:infra/sdks/graphql(supports-color@7.2.0)
       '@pulumi/pulumi':
         specifier: 3.267.0
-        version: 3.267.0(@typescript/typescript6@6.0.2)(supports-color@7.2.0)
+        version: 3.267.0(supports-color@7.2.0)(typescript@4.9.5)
 
   packages/shared:
     dependencies:
@@ -2296,6 +2299,9 @@ packages:
   '@pulumi/gcp@9.37.1':
     resolution: {integrity: sha512-KDUykcf1CYwn4/QQ+/TcfU2qhKPhYyENtPcQq6+5x4pIc3FyycuhfMXDybERmONQMiqo3tG5LNkMlgtSKJHo9A==}
 
+  '@pulumi/graphql@file:infra/sdks/graphql':
+    resolution: {directory: infra/sdks/graphql, type: directory}
+
   '@pulumi/pulumi@3.267.0':
     resolution: {integrity: sha512-dd/K3sxqNKqiYAvcg14TtEL7ZYqSyphMQMuqDeZvooX7jIKaa0t6QeNBnu6KeyH4bqKqNzmta07a/tgmUkw8/w==}
     engines: {node: '>=22'}
@@ -3512,6 +3518,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/node@20.19.43':
+    resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
 
   '@types/node@24.19.2':
     resolution: {integrity: sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==}
@@ -7856,6 +7865,11 @@ packages:
   typedarray-to-buffer@3.1.5:
     resolution: {integrity: sha512-zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==}
 
+  typescript@4.9.5:
+    resolution: {integrity: sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==}
+    engines: {node: '>=4.2.0'}
+    hasBin: true
+
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
@@ -7902,6 +7916,9 @@ packages:
   unbash@6.0.1:
     resolution: {integrity: sha512-0db9eS5iqybux41zLkX69nk90KTci7F7eZ+gXzEG/Q7E0tAqEBhRh5fkZvk1N7jT7QkGWqq34i8SFGPFEe1V8A==}
     engines: {node: '>=14'}
+
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
@@ -10121,16 +10138,25 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
-  '@pulumi/gcp@9.37.1(@typescript/typescript6@6.0.2)(supports-color@7.2.0)':
+  '@pulumi/gcp@9.37.1(supports-color@7.2.0)(typescript@4.9.5)':
     dependencies:
-      '@pulumi/pulumi': 3.267.0(@typescript/typescript6@6.0.2)(supports-color@7.2.0)
+      '@pulumi/pulumi': 3.267.0(supports-color@7.2.0)(typescript@4.9.5)
       '@types/express': 4.17.25
     transitivePeerDependencies:
       - supports-color
       - ts-node
       - typescript
 
-  '@pulumi/pulumi@3.267.0(@typescript/typescript6@6.0.2)(supports-color@7.2.0)':
+  '@pulumi/graphql@file:infra/sdks/graphql(supports-color@7.2.0)':
+    dependencies:
+      '@pulumi/pulumi': 3.267.0(supports-color@7.2.0)(typescript@4.9.5)
+      '@types/node': 20.19.43
+      typescript: 4.9.5
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+
+  '@pulumi/pulumi@3.267.0(supports-color@7.2.0)(typescript@4.9.5)':
     dependencies:
       '@grpc/grpc-js': 1.14.6
       '@logdna/tail-file': 2.2.0
@@ -10158,7 +10184,7 @@ snapshots:
       source-map-support: 0.5.21
       upath: 1.2.0
     optionalDependencies:
-      typescript: '@typescript/typescript6@6.0.2'
+      typescript: 4.9.5
     transitivePeerDependencies:
       - supports-color
 
@@ -11446,6 +11472,10 @@ snapshots:
   '@types/mime@1.3.5': {}
 
   '@types/ms@2.1.0': {}
+
+  '@types/node@20.19.43':
+    dependencies:
+      undici-types: 6.21.0
 
   '@types/node@24.19.2':
     dependencies:
@@ -16553,6 +16583,8 @@ snapshots:
     dependencies:
       is-typedarray: 1.0.0
 
+  typescript@4.9.5: {}
+
   typescript@6.0.3: {}
 
   typescript@7.0.2:
@@ -16609,6 +16641,8 @@ snapshots:
       oxlint: 1.88.0(oxlint-tsgolint@7.0.2004)
 
   unbash@6.0.1: {}
+
+  undici-types@6.21.0: {}
 
   undici-types@7.24.6: {}
 

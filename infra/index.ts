@@ -1,3 +1,4 @@
+import "./duo.ts";
 import { readFileSync } from "node:fs";
 
 import * as gcp from "@pulumi/gcp";

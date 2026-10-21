@@ -6,6 +6,7 @@
   "main": "index.ts",
   "dependencies": {
     "@pulumi/gcp": "9.37.1",
+    "@pulumi/graphql": "file:sdks/graphql",
     "@pulumi/pulumi": "3.267.0"
   }
 }

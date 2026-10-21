@@ -8,5 +8,14 @@ runtime:
     # Node 24 runs index.ts itself (type stripping), so no ts-node.
     typescript: false
     packagemanager: pnpm
+# Generated SDK in sdks/graphql (`pulumi package add terraform-provider
+# sullivtr/graphql`): the Duo flow triggers in duo.ts. GitLab's own provider has
+# no resource for them.
+packages:
+  graphql:
+    source: terraform-provider
+    version: 1.5.0
+    parameters:
+      - sullivtr/graphql
 backend:
   url: gs://wovain-pulumi-state

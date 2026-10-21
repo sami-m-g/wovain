@@ -7,6 +7,8 @@ packages:
 # speed-up for the Firebase CLI's hosting emulator, which wovain doesn't use.
 allowBuilds:
   "@firebase/util": false
+  # Pulumi's generated GraphQL provider SDK compiles itself on install.
+  "@pulumi/graphql@file:infra/sdks/graphql": true
   esbuild: true
   lefthook: true
   protobufjs: false
