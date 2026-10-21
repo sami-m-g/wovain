@@ -4,6 +4,7 @@ import { registerCards } from "./cards.ts";
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import type { VideoPricing } from "./lib/fal-pricing.ts";
+import { instructions, registerPlaybooks } from "./playbooks/index.ts";
 import type { Store } from "./store.ts";
 import { registerAdTools } from "./tools/ads.ts";
 import { registerCampaignTools } from "./tools/campaign.ts";
@@ -34,12 +35,13 @@ export const createServer = (
       title: "wovain",
       version: "0.1.0",
     },
-    { capabilities: { resources: {}, tools: {} } }
+    { capabilities: { prompts: {}, resources: {}, tools: {} }, instructions }
   );
   registerCards(server, env.WOVAIN_CARDS_DIR);
   registerSettingsTools(server, store, videoPricing);
   registerDesignTools(server, store);
   registerAdTools(server, store, env, videoPricing);
   registerCampaignTools(server, store, env);
+  registerPlaybooks(server);
   return server;
 };

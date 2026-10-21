@@ -1,6 +1,5 @@
 // semantic-release's prepare step: `bun scripts/set-version.ts 0.2.0` writes
-// the release version into the root package.json and the plugin manifest, so
-// ChatGPT sees a new plugin version and refreshes its cached copy.
+// the release version into the root package.json.
 import path from "node:path";
 
 const version = process.argv.at(2);
@@ -20,7 +19,5 @@ const setVersion = async (file: string) => {
   await Bun.write(target, `${JSON.stringify({ ...json, version }, null, 2)}\n`);
 };
 
-await Promise.all(["package.json", "plugin/plugin.json"].map(setVersion));
-console.info(
-  `Version ${version} written to package.json and plugin/plugin.json`
-);
+await setVersion("package.json");
+console.info(`Version ${version} written to package.json`);

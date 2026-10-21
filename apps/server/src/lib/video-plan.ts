@@ -9,7 +9,7 @@ import {
 import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
 
 // Turns settings and a design into ready-to-submit fal requests, one per clip,
-// so the wovain-ads skill passes them to fal's submit_jobs unchanged.
+// so the ads playbook passes them to fal's submit_jobs unchanged.
 
 const MMAUDIO = "fal-ai/mmaudio-v2";
 const MMAUDIO_USD_PER_SECOND = 0.001;

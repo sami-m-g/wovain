@@ -5,7 +5,7 @@ import { say, useCard } from "../lib/bridge.ts";
 import { CampaignCardView } from "./campaign-card-view.tsx";
 import type { CampaignCardActions } from "./campaign-card-view.tsx";
 
-// Launch and re-check go through chat, where the wovain-campaign skill holds
+// Launch and re-check go through chat, where the campaign playbook holds
 // the Meta tools; the card never publishes anything itself.
 const actionsFor = (app: App): CampaignCardActions => ({
   onLaunch: async () => {

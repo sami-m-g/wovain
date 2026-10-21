@@ -1,24 +1,24 @@
 # wovain
 
-A ChatGPT plugin for print-on-demand sellers, with its MCP server hosted on Vercel. In one chat it designs a product, publishes it to a Fourthwall shop, makes two short video ads for it, and builds one Meta Advantage+ sales campaign with five automated rules.
+An MCP server for print-on-demand sellers, hosted on Vercel, that any agent (ChatGPT, Claude, …) can connect to. In one chat it designs a product, publishes it to a Fourthwall shop, makes two short video ads for it, and builds one Meta Advantage+ sales campaign with five automated rules.
 
 Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/) with the Devpost Learn skill pack. The planning documents are in [`devpost/`](devpost/): [scope](devpost/scope.md), [PRD](devpost/prd.md), [spec](devpost/spec.md), [build checklist](devpost/checklist.md) and an [app map](devpost/app-map.html) of the code.
 
 ## What works
 
-| Step | What you see in ChatGPT | Status |
+| Step | What you see in the chat | Status |
 | --- | --- | --- |
 | Settings | Settings card: budget, rule multiples, video model and audio | Working |
-| Design | "@wovain design a tee for: …" → design card with mockups, price, profit and margin; Approve publishes it on Fourthwall | Working |
+| Design | "design a tee for: …" → design card with mockups, price, profit and margin; Approve publishes it on Fourthwall | Working |
 | Ads | Ad card with two 9:16 UGC-style videos (fal), copy and the breakeven line; Add to campaign or Skip | Working |
 | Campaign | Campaign card: one Advantage+ sales campaign built as a Meta draft, the five rules created in Meta, Launch to publish | Working (Launch needs a payment method on the ad account) |
 | Trend research, optimization check-in, mock mode | — | Planned, not built (see the checklist's Revisions) |
 
 ## Requirements
 
-- ChatGPT on the web or the [desktop app](https://openai.com/chatgpt/desktop/); the plugin with its skills installs in the desktop app
+- An agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (developer mode) or Claude
 - [Bun](https://bun.sh) 1.4.2 or newer
-- In the ChatGPT app, these connectors signed in: **Fourthwall**, **Meta Ads** and **fal**
+- In the same agent, these MCP servers connected and signed in: **Fourthwall**, **Meta Ads** and **fal**
 - A Fourthwall shop, a Meta ad account with a Facebook Page and a pixel, and fal credit (about $1.20 per 15-second clip at fal's actual billing)
 
 ## Setup
@@ -47,19 +47,17 @@ Fill in `apps/web/.env` (empty values count as unset; on Vercel, set them in the
 
 The other keys in `.env.example` aren't used yet.
 
-## Install in ChatGPT
+## Connect an agent
 
-```bash
-bun run plugin:install
-```
+Add `https://wovain.vercel.app/mcp` as a remote MCP server (streamable HTTP) in your agent, or `https://<tunnel>/mcp` for a local server. It carries no credentials: the first time you use wovain, the agent sends you to sign in with Google and approve access. Then try "show my wovain settings". Run `bun run db:migrate` once before the first local sign-in.
 
-This copies `plugin/` into your personal plugin marketplace, pointed at the hosted `/mcp` (pass `--url https://<tunnel>/mcp` for a local server). It carries no credentials: the first time you use wovain, ChatGPT sends you to sign in with Google and approve access. Quit and reopen the ChatGPT app, then try "@wovain show my settings". Run `bun run db:migrate` once before the first local sign-in.
+The server tells the agent the flow in its MCP `instructions`, and serves a playbook per step (`design`, `ads`, `campaign`) through the `get_playbook` tool and as MCP prompts.
 
 ## Develop
 
 | Command | What it does |
 | --- | --- |
-| `bun run dev` | Next.js serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in ChatGPT) |
+| `bun run dev` | Next.js serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in an agent) |
 | `bun run build` | Builds the cards, then the Next.js app |
 | `bun run cards:watch` | Rebuilds cards on save; redraw a card in chat to see the change |
 | `bun run db:generate` | Writes a SQL migration in `packages/db/migrations` after a schema change |
@@ -80,7 +78,6 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 | --- | --- |
 | verify | Build, lint, typecheck, knip, tests, card stories |
 | test | GitLab SAST, Secret Detection and Dependency Scanning |
-| package | The ChatGPT plugin as a zip artifact |
 | deploy | Merge requests: a Vercel preview on its own Neon branch `mr-<iid>`, removed when the review environment stops. `main`: https://wovain.vercel.app |
 | monitor | A smoke test of the live OAuth chain |
 | release | semantic-release, after the smoke test passes |
@@ -89,14 +86,13 @@ It needs the CI variables `VERCEL_TOKEN`, `NEON_API_KEY`, `GITLAB_TOKEN`, `RENOV
 
 ## Releases
 
-Releases come from conventional commits. semantic-release (`.releaserc.json`) picks the version, writes `CHANGELOG.md`, sets the version in `package.json` and `plugin/plugin.json`, commits that as `chore(release): x [skip ci]`, tags it, and publishes a GitLab release with the plugin zip as the generic package `wovain-plugin`. The tag `v0.1.0` on the first commit is its baseline. Renovate opens dependency update merge requests every Monday from a pipeline schedule (`renovate.json`: updates wait 7 days, minor and patch are grouped).
+Releases come from conventional commits. semantic-release (`.releaserc.json`) picks the version, writes `CHANGELOG.md`, sets the version in `package.json`, commits that as `chore(release): x [skip ci]`, tags it, and publishes a GitLab release. The tag `v0.1.0` on the first commit is its baseline. Renovate opens dependency update merge requests every Monday from a pipeline schedule (`renovate.json`: updates wait 7 days, minor and patch are grouped).
 
 ## Layout
 
 | Path | What's there |
 | --- | --- |
-| `plugin/` | The plugin manifest, `mcp.json` and the skills ChatGPT follows (`wovain-design`, `wovain-ads`, `wovain-campaign`) |
-| `apps/server/` | The MCP server library: tools, Fourthwall and fal helpers, Meta rules client, store (Neon Postgres through Drizzle) |
+| `apps/server/` | The MCP server library: tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client, store (Neon Postgres through Drizzle) |
 | `apps/web/` | Next.js app on Vercel that serves the MCP server at `/mcp` |
 | `apps/cards/` | The React cards (MCP Apps) and their Storybook stories |
 | `packages/db/` | Drizzle schema (wovain's records and Better Auth's tables), client and migrations |

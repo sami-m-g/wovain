@@ -15,7 +15,7 @@ const record = async (app: App, ad: Ad, status: AdStatus) => {
 };
 
 // Add and Skip are recorded by wovain directly; the chat message tells the
-// wovain-ads skill, which launches the campaign after the last ad card.
+// ads playbook, which launches the campaign after the last ad card.
 const actionsFor = (app: App): AdCardActions => ({
   onAdd: async (ad) => {
     const saved = await record(app, ad, "added");

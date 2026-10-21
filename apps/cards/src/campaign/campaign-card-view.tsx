@@ -5,7 +5,7 @@ import { money } from "@wovain/shared/economics";
 import { useId, useState } from "react";
 
 export interface CampaignCardActions {
-  // Asks the wovain-campaign skill to publish; nothing spends before this.
+  // Asks the campaign playbook to publish; nothing spends before this.
   onLaunch: (campaign: Campaign) => Promise<void>;
   onOpen: (url: string) => Promise<void>;
   onRecheck: (campaign: Campaign) => Promise<void>;

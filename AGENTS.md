@@ -1,6 +1,6 @@
 # AGENTS.md
 
-wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: MCP server library in `apps/server`, hosted by Next.js in `apps/web` on Vercel, cards in `apps/cards`.
+wovain: an MCP server for print-on-demand sellers, used by any agent (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: MCP server library in `apps/server`, hosted by Next.js in `apps/web` on Vercel, cards in `apps/cards`.
 
 ## Workflow
 
@@ -19,7 +19,7 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 - Types: `feat`, `fix`, `docs` (planning docs), `chore` (config, skills, hooks), `refactor`, `test`.
 - Create commits with the `commit-commands:commit` skill (`/commit`).
 - The primary repo is GitLab (gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, Developer role). `origin` pushes to GitLab and to the GitHub mirror (github.com/sami-m-g/wovain) in one `git push`, since GitLab push mirrors need Maintainer. CI/CD is `.gitlab-ci.yml`; there are no GitHub Actions or Dependabot (Renovate replaces it).
-- Commit types drive releases: semantic-release turns `feat` into a minor and `fix` into a patch release after production passes its smoke test. Don't edit `CHANGELOG.md` or the versions in `package.json` and `plugin/plugin.json` by hand. Pull before pushing, because the release commit lands on GitLab first.
+- Commit types drive releases: semantic-release turns `feat` into a minor and `fix` into a patch release after production passes its smoke test. Don't edit `CHANGELOG.md` or the version in `package.json` by hand. Pull before pushing, because the release commit lands on GitLab first.
 
 ## Writing
 
@@ -59,5 +59,5 @@ wovain: a ChatGPT plugin for print-on-demand sellers (trend → Fourthwall produ
 - Course skills aren't committed: run `bun run skills:restore` after cloning (it fetches them from `skills-lock.json`).
 - See a card without ChatGPT: `bun run storybook` (one story per card state, light and dark).
 - Run the server: `bun run dev` (Next.js in `apps/web` serves `/mcp` on localhost:3000; keys live in `apps/web/.env`; `/mcp` needs a Better Auth access token, and sign-in needs `BETTER_AUTH_SECRET` plus the Google keys). `DATABASE_URL` points at the Neon `dev` branch and `BLOB_READ_WRITE_TOKEN` at the private Blob store; there is no SQLite or offline mode. After a schema change in `packages/db`, run `bun run db:generate`, then `bun run db:migrate` (after changing Better Auth plugins, regenerate `packages/db/src/auth-schema.ts` with `bunx auth@1.7.7 generate` first). Tests run on PGlite and need no database. Infrastructure is code: `neon.ts` (Neon branches and services, `bunx neon@8.8.0 config plan`/`apply`) and `apps/web/vercel.json` (Vercel project config; keep it JSON, since `vercel.ts` makes Vercel install on Bun 1.3, which ignores `bun.lock`). Run `bun run cards:watch` beside it; a card edit shows on the next redraw ("redraw design d1").
-- Try it in ChatGPT: `bun run plugin:install` installs `plugin/` pointed at the hosted `/mcp`; `--url https://<tunnel>/mcp` points it at your local server instead. Skill edits need `plugin:install` again (skills are copied at install), then an app restart.
+- Try it in an agent: add the hosted `/mcp` (or `https://<tunnel>/mcp` for your local server) as a remote MCP server. The step playbooks agents follow live in `apps/server/src/playbooks/` and ship with each deploy (MCP `instructions`, `get_playbook`, prompts).
 - Next.js 16 differs from older versions: read `apps/web/node_modules/next/dist/docs/` before writing Next code. `apps/web/oxlint.config.ts` extends the root Ultracite config with the Next presets.

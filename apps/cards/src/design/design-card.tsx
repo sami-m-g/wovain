@@ -19,7 +19,7 @@ import type { PricingValues } from "./pricing-settings.tsx";
 const widgetSchema = z.object({ feedback: z.string() });
 
 // Card buttons can only call wovain, so Fourthwall steps go through the chat:
-// the card posts a short message and the wovain-design skill does the rest.
+// the card posts a short message and the design playbook does the rest.
 const actionsFor = (app: App): DesignCardActions => ({
   onApprove: async (design) => {
     await callTool(app, designResultSchema, "record_design", {

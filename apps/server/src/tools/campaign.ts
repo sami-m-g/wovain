@@ -92,7 +92,7 @@ export const registerCampaignTools = (
         readOnlyHint: true,
       },
       description:
-        "Everything the wovain-campaign skill needs to build the Meta campaign: the daily budget in cents, and for each added ad card its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags. Call after the last ad card is added or skipped.",
+        "Everything the campaign playbook needs to build the Meta campaign: the daily budget in cents, and for each added ad card its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags. Call after the last ad card is added or skipped.",
       inputSchema: z.object({}),
       title: "Campaign plan",
     },

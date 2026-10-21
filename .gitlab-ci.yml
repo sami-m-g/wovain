@@ -1,11 +1,10 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
 #   verify    build, lint, types, dead code, tests, card stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   package   the ChatGPT plugin zip
 #   deploy    merge requests: a Vercel preview on its own Neon branch;
 #             main: production
 #   monitor   smoke-test the live OAuth chain
-#   release   semantic-release: version, CHANGELOG, GitLab release + plugin zip
+#   release   semantic-release: version, CHANGELOG, GitLab release
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
 # CI variables: VERCEL_TOKEN, NEON_API_KEY, GITLAB_TOKEN, RENOVATE_TOKEN
 # (all masked), VERCEL_ORG_ID, VERCEL_PROJECT_ID, NEON_PROJECT_ID.
@@ -25,7 +24,6 @@ include:
 stages:
   - verify
   - test
-  - package
   - deploy
   - monitor
   - release
@@ -82,22 +80,6 @@ stories:
   script:
     - bunx playwright install --with-deps chromium
     - bun run test:stories
-
-# Package: the plugin (skills, manifest, logo, mcp.json pointing at
-# production) as a zip artifact. The release job builds the versioned zip
-# and publishes it to the package registry.
-package:plugin:
-  stage: package
-  extends: .on-changes
-  needs: [verify]
-  script:
-    - apt-get update -qq && apt-get install -y -qq zip >/dev/null
-    - VERSION=$(bun -e 'console.log((await Bun.file("plugin/plugin.json").json()).version)')
-    - (cd plugin && zip -qr "../wovain-plugin-$VERSION.zip" .)
-  artifacts:
-    name: wovain-plugin
-    paths: [wovain-plugin-*.zip]
-    expire_in: 30 days
 
 # Node for the Vercel and Neon CLIs, plus Bun for migrations. Lifecycle
 # scripts are skipped: prepare installs git hooks, which CI doesn't need.
@@ -183,7 +165,7 @@ smoke:production:
 # Release only what passed the smoke test: semantic-release reads the
 # conventional commits since the last tag, writes the version and
 # CHANGELOG.md back to main ([skip ci]), tags, and publishes a GitLab
-# release with the plugin zip in the package registry.
+# release.
 release:
   stage: release
   extends: .on-main
@@ -193,7 +175,7 @@ release:
   variables:
     GIT_DEPTH: 0
   before_script:
-    - apt-get update -qq && apt-get install -y -qq git zip >/dev/null
+    - apt-get update -qq && apt-get install -y -qq git >/dev/null
     - npm install -g --silent "bun@$BUN_VERSION"
     - bun install --frozen-lockfile --ignore-scripts
   script:

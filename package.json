@@ -16,7 +16,6 @@
     "test": "bun test",
     "mock": "WOVAIN_MOCK=1 bun run dev",
     "prepare": "bun run scripts/prepare.ts",
-    "plugin:install": "bun run scripts/plugin-install.ts",
     "knip": "knip",
     "skills:restore": "skills experimental_install -y",
     "storybook": "bun run --filter @wovain/cards storybook",
