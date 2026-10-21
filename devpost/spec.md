@@ -322,7 +322,7 @@ Scripts in the root `package.json`:
 "typecheck:6": "tsc6 -b --noEmit",
 "test": "bun test",
 "mock": "WOVAIN_MOCK=1 bun run dev",
-"prepare": "lefthook install && skills add https://github.com/challengepost/learn-ai-basics/tree/a0f065781873e8a7ed9a9a705a8dafa6a0810439 --skill 1-start 2-scope 3-prd 4-spec 5-build 6-ship -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
+"prepare": "lefthook install && skills experimental_install -y && rm -rf .claude/skills/{1-start,2-scope,3-prd,4-spec,5-build,6-ship} && mkdir -p .claude/skills && cp -R .agents/skills/[1-6]-* .claude/skills/ && rm -rf .agents && skills experimental_sync -y -a claude-code --copy",
 "knip": "knip",
 "storybook": "bun run --filter @wovain/widgets storybook",
 "test:stories": "bun run --filter @wovain/widgets test:stories",
