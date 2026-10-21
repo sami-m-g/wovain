@@ -8,7 +8,7 @@
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
 # CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY (all masked),
 # FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
-# GCP_DEPLOY_SERVICE_ACCOUNT, PULUMI_CONFIG_PASSPHRASE, SITE_URL
+# GCP_DEPLOY_SERVICE_ACCOUNT, SITE_URL
 # (values: `pulumi stack output` in infra/).
 
 workflow:

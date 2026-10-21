@@ -119,7 +119,7 @@ How sign-in works:
 | --- | --- |
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Firebase App Hosting (Node 24, Cloud Run underneath; 0 to 2 instances); Node 24, pnpm and Java 21 (emulators) locally |
-| Keys in `apps/server/.env` (`apphosting.yaml` in production, secrets through `firebase apphosting:secrets:set`) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
+| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
 | Rehearsal | Later: `WOVAIN_MOCK=1` (`pnpm mock`) is meant to answer wovain's outside calls from fixtures and skip publish and launch steps; the flag is read but nothing uses it yet |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
@@ -264,7 +264,7 @@ GitLab CI/CD stages (`.gitlab-ci.yml` includes one file per stage from `.gitlab/
 
 Only CI pushes to the GitHub mirror, and nothing builds from it: it's a read-only copy.
 
-CI variables: `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked; the deploy key is protected too), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider's full resource name), `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `PULUMI_CONFIG_PASSPHRASE`, `SITE_URL` (the App Hosting URL); values come from `pulumi stack output` in `infra/`.
+CI variables: `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked; the deploy key is protected too), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider's full resource name), `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `SITE_URL` (the App Hosting URL); values come from `pulumi stack output` in `infra/`.
 
 ### Ultracite, TypeScript and Lefthook setup
 

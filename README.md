@@ -31,7 +31,7 @@ pnpm install
 cp apps/server/.env.example apps/server/.env
 ```
 
-Fill in `apps/server/.env` (empty values count as unset; in production they come from `apphosting.yaml`, with secrets set by `firebase apphosting:secrets:set <name>`):
+Fill in `apps/server/.env` (empty values count as unset; in production they come from `apphosting.yaml`, with secrets set by `pulumi config set --secret <name>` in `infra/` (encrypted with a KMS key, applied by `pnpm infra:up`)):
 
 | Key | Needed for | Where to get it |
 | --- | --- | --- |
@@ -81,7 +81,7 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 | monitor | A smoke test of the live OAuth chain |
 | release | semantic-release, after the smoke test passes, then push the release commit and tags to GitHub |
 
-It needs the CI variables `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked; a GitHub deploy key), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT` (Workload Identity Federation, so no Google key is stored), `PULUMI_CONFIG_PASSPHRASE` and `SITE_URL` (the App Hosting URL); `pulumi stack output` in `infra/` prints their values.
+It needs the CI variables `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked; a GitHub deploy key), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT` (Workload Identity Federation, so no Google key is stored) and `SITE_URL` (the App Hosting URL); `pulumi stack output` in `infra/` prints their values.
 
 ## Releases
 
