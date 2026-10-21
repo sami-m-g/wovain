@@ -10,13 +10,13 @@ import { breakeven } from "@wovain/shared/economics";
 import { ruleThresholds } from "@wovain/shared/rules";
 import { z } from "zod";
 
-import { cardUri } from "../cards.ts";
 import type { Env } from "../env.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
 import { fetchSpend } from "../lib/fal-usage.ts";
 import { text } from "../lib/tool-result.ts";
 import { planVideos } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
+import { widgetUri } from "../widgets.ts";
 
 export const registerAdTools = (
   server: McpServer,
@@ -80,12 +80,12 @@ export const registerAdTools = (
 
   registerAppTool(
     server,
-    "show_ad_card",
+    "show_ad_widget",
     {
       _meta: {
         "openai/toolInvocation/invoked": "Ads ready",
-        "openai/toolInvocation/invoking": "Putting the ad card together…",
-        ui: { resourceUri: cardUri("ad") },
+        "openai/toolInvocation/invoking": "Putting the ad widget together…",
+        ui: { resourceUri: widgetUri("ad") },
       },
       annotations: {
         destructiveHint: false,
@@ -93,7 +93,7 @@ export const registerAdTools = (
         readOnlyHint: false,
       },
       description:
-        "Show the ad card for a live design: its finished videos (a failed clip as status failed), headline (short, product-led), primary text (2 to 3 lines) and one coach line. wovain adds the static mockup, the breakeven math and the rule thresholds itself. Redraw with the same designId after feedback.",
+        "Show the ad widget for a live design: its finished videos (a failed clip as status failed), headline (short, product-led), primary text (2 to 3 lines) and one coach line. wovain adds the static mockup, the breakeven math and the rule thresholds itself. Redraw with the same designId after feedback.",
       inputSchema: z.object({
         coach: z.string().min(1).max(160),
         designId: z.string(),
@@ -102,7 +102,7 @@ export const registerAdTools = (
         videos: z.array(adVideoSchema).min(1).max(4),
       }),
       outputSchema: adResultSchema,
-      title: "Show ad card",
+      title: "Show ad widget",
     },
     async ({ coach, designId, headline, primaryText, videos }) => {
       const [design, settings] = await Promise.all([
@@ -141,7 +141,7 @@ export const registerAdTools = (
       const saved = await store.saveAd(ad);
       return {
         content: text(
-          `Showing the ad card for ${designId}. Wait for the merchant to add it to the campaign, skip it or give feedback.`
+          `Showing the ad widget for ${designId}. Wait for the merchant to add it to the campaign, skip it or give feedback.`
         ),
         structuredContent: { ad: saved },
       };
@@ -153,7 +153,7 @@ export const registerAdTools = (
     "record_ad",
     {
       _meta: {
-        ui: { resourceUri: cardUri("ad"), visibility: ["model", "app"] },
+        ui: { resourceUri: widgetUri("ad"), visibility: ["model", "app"] },
       },
       annotations: {
         destructiveHint: false,
@@ -161,7 +161,7 @@ export const registerAdTools = (
         readOnlyHint: false,
       },
       description:
-        "Record the merchant's choice on an ad card: added to the campaign or skipped. Returns how many ad cards are still waiting, so the campaign launches after the last one.",
+        "Record the merchant's choice on an ad widget: added to the campaign or skipped. Returns how many ad widgets are still waiting, so the campaign launches after the last one.",
       inputSchema: z.object({ designId: z.string(), status: adStatusSchema }),
       outputSchema: adResultSchema.extend({ waiting: z.int() }),
       title: "Record ad choice",
@@ -170,7 +170,7 @@ export const registerAdTools = (
       const { ad: saved, waiting } = await store.recordAd(designId, status);
       return {
         content: text(
-          `Design ${designId} ads ${status}. ${waiting} ad card(s) still waiting.`
+          `Design ${designId} ads ${status}. ${waiting} ad widget(s) still waiting.`
         ),
         structuredContent: { ad: saved, waiting },
       };

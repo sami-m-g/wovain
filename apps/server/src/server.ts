@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
 
-import { registerCards } from "./cards.ts";
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import type { VideoPricing } from "./lib/fal-pricing.ts";
@@ -10,6 +9,7 @@ import { registerAdTools } from "./tools/ads.ts";
 import { registerCampaignTools } from "./tools/campaign.ts";
 import { registerDesignTools } from "./tools/design.ts";
 import { registerSettingsTools } from "./tools/settings.ts";
+import { registerWidgets } from "./widgets.ts";
 
 // HTTP mode builds a server per request, so it passes one shared price cache.
 export const createServer = (
@@ -37,7 +37,7 @@ export const createServer = (
     },
     { capabilities: { prompts: {}, resources: {}, tools: {} }, instructions }
   );
-  registerCards(server, env.WOVAIN_CARDS_DIR);
+  registerWidgets(server, env.WOVAIN_WIDGETS_DIR);
   registerSettingsTools(server, store, videoPricing);
   registerDesignTools(server, store);
   registerAdTools(server, store, env, videoPricing);

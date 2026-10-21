@@ -5,7 +5,7 @@ import react from "ultracite/oxlint/react";
 
 const jsPlugins = selectJsPlugins(["react-doctor"]);
 
-// One config for the repo: server tests run on `bun test`, and the cards have
+// One config for the repo: server tests run on `bun test`, and the widgets have
 // no unit tests, so no Vitest rules.
 export default defineConfig({
   env: core.env,

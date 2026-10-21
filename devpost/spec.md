@@ -5,7 +5,7 @@ status: approved
 
 # wovain technical spec
 
-A ChatGPT plugin that is mostly wiring: skills tell ChatGPT what to do, three existing MCP servers (Fourthwall, Meta Ads, fal) do the heavy lifting, and one small wovain server draws the cards and fills the gaps no MCP covers.
+A ChatGPT plugin that is mostly wiring: skills tell ChatGPT what to do, three existing MCP servers (Fourthwall, Meta Ads, fal) do the heavy lifting, and one small wovain server draws the widgets and fills the gaps no MCP covers.
 
 Implements `prd.md` (all of **Features and Behavior**). Scope source: `scope.md > The POC boundary`.
 
@@ -19,12 +19,12 @@ wovain is a plugin you install in ChatGPT (Plus works). A plugin is a folder wit
 | Fourthwall MCP | Fourthwall's official server | Blanks, mockups, prices, publishing |
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
 | fal MCP | fal's official server | Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal |
-| wovain server | Our small Next.js server, hosted on Vercel and reached over HTTPS | Draws the cards, does the margin math, trend lookups, Meta rules, settings |
-| Cards | Small web pages ChatGPT shows inline | Trend, design, ad, campaign, optimization and settings cards |
+| wovain server | Our small Next.js server, hosted on Vercel and reached over HTTPS | Draws the widgets, does the margin math, trend lookups, Meta rules, settings |
+| Widgets | Small web pages ChatGPT shows inline | Trend, design, ad, campaign, optimization and settings widgets |
 
-Why a wovain server at all: ChatGPT can only show a card that an MCP server serves, a card's buttons can only call its own server, and two jobs have no MCP (Meta automated rules, trend APIs). Everything else goes through the official servers.
+Why a wovain server at all: ChatGPT can only show a widget that an MCP server serves, a widget's buttons can only call its own server, and two jobs have no MCP (Meta automated rules, trend APIs). Everything else goes through the official servers.
 
-How a click works: you press Approve on a card. The card posts a short message ("Approve design d2") into the chat. ChatGPT follows the skill and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the card as live. One click, one extra model turn.
+How a click works: you press Approve on a widget. The widget posts a short message ("Approve design d2") into the chat. ChatGPT follows the skill and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the widget as live. One click, one extra model turn.
 
 Where things are kept: Neon Postgres keeps settings and the state of each run, one set of rows per user, so a new chat picks up where you left off. Staged artwork waits in a private Vercel Blob store until it is uploaded to Fourthwall.
 
@@ -44,19 +44,19 @@ flowchart LR
   W --> SA[SerpApi, Etsy, Marker]
   W --> G[Meta Graph API: rules]
   W --> J[(Neon Postgres + Blob)]
-  W --> C[Cards in chat]
+  W --> C[Widgets in chat]
 ```
 
 | # | You do | What happens | You see |
 |---|---|---|---|
-| 1 | Ask for trending designs | `wovain-trends` skill: web search for candidates, `trends_evidence` (SerpApi, Etsy, Marker), Meta ad library search for ad counts | Trend card |
-| 2 | Tick 2 or 3, click "Design the ones I picked" | The card posts the picks; skipped if you bring your own idea | Next step starts |
-| 3 | Wait | `wovain-design` skill: ChatGPT generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design card per idea |
-| 4 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design card shows Live with a link |
-| 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed | Ad card per product |
-| 6 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last card, the campaign step starts | Next ad card, or the campaign card |
-| 7 | Wait | `wovain-campaign` skill: checks payment method and pixel; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign card: Live, or Ready, blocked |
-| 8 | Later: "How's my campaign?" | `wovain-optimize` skill: `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization card per fired rule |
+| 1 | Ask for trending designs | `wovain-trends` skill: web search for candidates, `trends_evidence` (SerpApi, Etsy, Marker), Meta ad library search for ad counts | Trend widget |
+| 2 | Tick 2 or 3, click "Design the ones I picked" | The widget posts the picks; skipped if you bring your own idea | Next step starts |
+| 3 | Wait | `wovain-design` skill: ChatGPT generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design widget per idea |
+| 4 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design widget shows Live with a link |
+| 5 | Wait | `wovain-ads` skill: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed | Ad widget per product |
+| 6 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last widget, the campaign step starts | Next ad widget, or the campaign widget |
+| 7 | Wait | `wovain-campaign` skill: checks payment method and pixel; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign widget: Live, or Ready, blocked |
+| 8 | Later: "How's my campaign?" | `wovain-optimize` skill: `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization widget per fired rule |
 | 9 | Apply the fix or Dismiss | The fix runs through the same tools (new video, new hook, price test) | Updated ad, campaign keeps running |
 
 ## Stack
@@ -65,28 +65,28 @@ flowchart LR
 |---|---|---|---|
 | Runtime and package manager | Bun | 1.4.3 | https://bun.sh/docs |
 | MCP server | `@modelcontextprotocol/server` v2 over Streamable HTTP at `/mcp`, mounted in Next.js 16 on Vercel's Bun runtime | 2.3.1 | https://github.com/modelcontextprotocol/typescript-sdk |
-| Card protocol | MCP Apps (`@modelcontextprotocol/ext-apps`) | 2.0.3 | https://github.com/modelcontextprotocol/ext-apps |
-| Card UI | React 19 + `@openai/apps-sdk-ui` + Tailwind CSS 4 (its peer) | 19.3 / 0.2.2 / 4.x | https://developers.openai.com/plugins/build/chatgpt-ui |
-| Card build | Vite 8 + `vite-plugin-singlefile`, one HTML file per card | 8.x | https://vite.dev |
-| Schemas | zod 4 (required by `ext-apps`), shared by tools and cards | 4.2 | https://zod.dev |
+| Widget protocol | MCP Apps (`@modelcontextprotocol/ext-apps`) | 2.0.3 | https://github.com/modelcontextprotocol/ext-apps |
+| Widget UI | React 19 + `@openai/apps-sdk-ui` + Tailwind CSS 4 (its peer) | 19.3 / 0.2.2 / 4.x | https://developers.openai.com/plugins/build/chatgpt-ui |
+| Widget build | Vite 8 + `vite-plugin-singlefile`, one HTML file per widget | 8.x | https://vite.dev |
+| Schemas | zod 4 (required by `ext-apps`), shared by tools and widgets | 4.2 | https://zod.dev |
 | Lint and format | Ultracite with oxlint (type-aware via oxlint-tsgolint) and oxfmt (sorts imports and Tailwind classes) | 8.0.1 / 1.88 / 0.73 / tsgolint 7.0 | https://www.ultracite.ai |
 | TypeScript | Official dual setup: `typescript` aliased to `@typescript/typescript6` (6.0 API for tools), `@typescript/native` aliased to `typescript@7` (`tsc` 7.0 for type checking) | 6.0.2 / 7.0.2 | https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/ |
 | Git hooks | Lefthook | 2.2.2 | https://lefthook.dev |
-| Tests | `bun test` for the server; Vitest 5 with `@vitest/coverage-v8` for cards; MSW 3 mocks shared by tests, mock mode and Storybook | 1.4 / 5.0 / 3.x | https://vitest.dev |
-| Card states | Storybook 10 (`@storybook/react-vite` with the a11y, docs, themes and vitest addons, plus `msw-storybook-addon`) | 10.6 | https://storybook.js.org |
+| Tests | `bun test` for the server; Vitest 5 with `@vitest/coverage-v8` for widgets; MSW 3 mocks shared by tests, mock mode and Storybook | 1.4 / 5.0 / 3.x | https://vitest.dev |
+| Widget states | Storybook 10 (`@storybook/react-vite` with the a11y, docs, themes and vitest addons, plus `msw-storybook-addon`) | 10.6 | https://storybook.js.org |
 | Commits and dead code | commitlint (conventional commits) and knip | 21.x / 6.x | https://commitlint.js.org |
 | Database | Neon Postgres through Drizzle ORM (`drizzle-orm/bun-sql` on `Bun.SQL`), migrations by drizzle-kit; PGlite (Postgres in WASM, in-process) for tests | 0.45.4 / 0.31.11 / 0.5.8 | https://orm.drizzle.team |
 | Infrastructure as code | `neon.ts` (`@neon/config`) for the Neon project's branches and services; a static `apps/web/vercel.json` for the Vercel project (`vercel.ts` was tried and dropped: Vercel installs dependencies on Bun 1.3 to compile it, which ignores our lockfile) | 1.8.7 | https://neon.com/docs |
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
 - Bun: the learner chose it over Node with Express. The tradeoff is that official examples assume Node, so `bunfig.toml` sets `[run] bun = true` and even Storybook, Vitest and other tools with a node shebang run on Bun; no Node install is needed.
-- Hosting: the learner moved wovain from a desktop-only stdio plugin to a hosted server, so it works on chatgpt.com and server or card changes ship on deploy. Next.js (`apps/web`) mounts the MCP handler from `apps/server` at `/mcp`; it was picked over a bare `Bun.serve()` because full OAuth needs real pages (sign-in, consent, Meta linking, privacy policy), and it matches the learner's other project. `apps/web` turns off `exactOptionalPropertyTypes`, which Better Auth's types don't satisfy; the other packages keep it. Sign-in is self-hosted Better Auth 1.7.7 (pinned) in `apps/web` with its `mcp`, `cimd` and `jwt` plugins, on its Drizzle adapter, so its tables sit in the same Neon database and the same migrations as wovain's. Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the `@neondatabase/auth` 0.6.0-beta code).
+- Hosting: the learner moved wovain from a desktop-only stdio plugin to a hosted server, so it works on chatgpt.com and server or widget changes ship on deploy. Next.js (`apps/web`) mounts the MCP handler from `apps/server` at `/mcp`; it was picked over a bare `Bun.serve()` because full OAuth needs real pages (sign-in, consent, Meta linking, privacy policy), and it matches the learner's other project. `apps/web` turns off `exactOptionalPropertyTypes`, which Better Auth's types don't satisfy; the other packages keep it. Sign-in is self-hosted Better Auth 1.7.7 (pinned) in `apps/web` with its `mcp`, `cimd` and `jwt` plugins, on its Drizzle adapter, so its tables sit in the same Neon database and the same migrations as wovain's. Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the `@neondatabase/auth` 0.6.0-beta code).
 - Ultracite with oxlint and oxfmt: the learner's choice (`ultracite init --linter oxlint`).
 - React 19: both `@openai/apps-sdk-ui` and `ext-apps` support it; OpenAI's docs still show 18.
 
 ## Where It Runs and How Someone Tries It
 
-wovain is a hosted MCP server: a Next.js app (`apps/web`) on Vercel serves Streamable HTTP at `/mcp`, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus `mcp.json` pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and cards but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store and private Blob media (done), 3 OAuth 2.1 sign-in so anyone can install (done; the Google keys are still to add), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace. ChatGPT finds the sign-in on its own: `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names `/api/auth` as the authorization server (metadata at `/.well-known/oauth-authorization-server/api/auth`: PKCE S256, CIMD, and dynamic registration at `/api/auth/oauth2/register`). The merchant signs in at `/sign-in` (Google for now), approves at `/consent`, and `/mcp` checks each token with `requireMcpAuth`. The site URL comes from Vercel (the production domain, or a preview's `VERCEL_URL`) or is localhost; `BETTER_AUTH_URL` overrides it. Google sign-in waits on a Google OAuth web client with redirect URIs `https://wovain.vercel.app/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`. Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked when an account or session is created and on every `/mcp` call, so taking an email off it cuts off tokens already issued; an empty list lets nobody in. The consent page trusts an app's own name only when its redirect is exactly `https://chatgpt.com/connector_platform_oauth_redirect` (or the same path on `chat.openai.com`, with no port or user info); any other app is labeled unverified, with the host it returns to.
+wovain is a hosted MCP server: a Next.js app (`apps/web`) on Vercel serves Streamable HTTP at `/mcp`, so it works in ChatGPT on the web and in the desktop app. The plugin (skills, plus `mcp.json` pointing at that URL) installs in the desktop app; on chatgpt.com you can add the server URL alone, which brings the tools and widgets but not the skills, since ChatGPT never fetches skills from the server. Source: https://developers.openai.com/plugins/build/plugins. Hosting is built in steps: 1 hosted HTTP server (done), 2 Neon Postgres store and private Blob media (done), 3 OAuth 2.1 sign-in so anyone can install (done; the Google keys are still to add), 4 each user's own Meta account, 5 install from this repo as a plugin marketplace. ChatGPT finds the sign-in on its own: `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names `/api/auth` as the authorization server (metadata at `/.well-known/oauth-authorization-server/api/auth`: PKCE S256, CIMD, and dynamic registration at `/api/auth/oauth2/register`). The merchant signs in at `/sign-in` (Google for now), approves at `/consent`, and `/mcp` checks each token with `requireMcpAuth`. The site URL comes from Vercel (the production domain, or a preview's `VERCEL_URL`) or is localhost; `BETTER_AUTH_URL` overrides it. Google sign-in waits on a Google OAuth web client with redirect URIs `https://wovain.vercel.app/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`. Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked when an account or session is created and on every `/mcp` call, so taking an email off it cuts off tokens already issued; an empty list lets nobody in. The consent page trusts an app's own name only when its redirect is exactly `https://chatgpt.com/connector_platform_oauth_redirect` (or the same path on `chat.openai.com`, with no port or user info); any other app is labeled unverified, with the host it returns to.
 
 | Need | Value |
 |---|---|
@@ -103,7 +103,7 @@ bun install
 bun run skills:restore          # course skills from skills-lock.json
 cp apps/web/.env.example apps/web/.env   # fill in keys (optional until a tool needs one)
 bun run db:migrate              # applies packages/db/migrations to DATABASE_URL
-bun run build                   # builds the cards, then the Next.js app
+bun run build                   # builds the widgets, then the Next.js app
 bun run dev                     # serves /mcp on localhost:3000
 bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (--url for a tunnel)
 ```
@@ -116,38 +116,38 @@ Demo recording: in ChatGPT (the desktop app or chatgpt.com), follow `scope.md > 
 
 Carried from `prd.md > Look and Feel`.
 
-- Cards use `@openai/apps-sdk-ui` components and ChatGPT's system fonts, text, background and divider colors. Light and dark follow the host theme.
+- Widgets use `@openai/apps-sdk-ui` components and ChatGPT's system fonts, text, background and divider colors. Light and dark follow the host theme.
 - One token, `--wovain-accent: #3B4CCA`, used only on primary buttons, badges and icons.
 - Status colors stay semantic: green Live, amber Ready-blocked, red Paused.
-- Each card opens with one coach line, then the numbers. Money cards lead with breakeven cost per sale; return on ad spend comes second. At most 2 buttons; the ⚙ quick-settings menu is an icon, not a button. No tabs or inner scrolling.
-- Images use fixed aspect ratios and alt text. Videos are muted, tap to play, and the ⛶ control calls ChatGPT's full-screen view (`requestDisplayMode`), since the card can't go full screen itself.
+- Each widget opens with one coach line, then the numbers. Money widgets lead with breakeven cost per sale; return on ad spend comes second. At most 2 buttons; the ⚙ quick-settings menu is an icon, not a button. No tabs or inner scrolling.
+- Images use fixed aspect ratios and alt text. Videos are muted, tap to play, and the ⛶ control calls ChatGPT's full-screen view (`requestDisplayMode`), since the widget can't go full screen itself.
 - No shadcn: ChatGPT requires its own design system, and `@openai/apps-sdk-ui` is the official kit.
 
 ## Components
 
 ### Plugin package
 
-What it does: tells ChatGPT what wovain is and where its server is. `plugin.json` holds name, version, description and display info, per the Agent Plugins 1.0.0 schema. `mcp.json` lists one Streamable HTTP server, wovain, at the hosted `/mcp` URL; the cards come from the server, not the package. Fourthwall (`https://mcp.fourthwall.com/app`), Meta Ads (`https://mcp.facebook.com/ads`) and fal (`https://mcp.fal.ai/mcp-relay`) are connected in the app instead. It holds no secret, so it is committed as is: ChatGPT signs in through wovain's OAuth instead of carrying a key.
+What it does: tells ChatGPT what wovain is and where its server is. `plugin.json` holds name, version, description and display info, per the Agent Plugins 1.0.0 schema. `mcp.json` lists one Streamable HTTP server, wovain, at the hosted `/mcp` URL; the widgets come from the server, not the package. Fourthwall (`https://mcp.fourthwall.com/app`), Meta Ads (`https://mcp.facebook.com/ads`) and fal (`https://mcp.fal.ai/mcp-relay`) are connected in the app instead. It holds no secret, so it is committed as is: ChatGPT signs in through wovain's OAuth instead of carrying a key.
 
 PRD ref: `prd.md > Screens and Layout`.
 
 ### Skills
 
-Five skills (ChatGPT's limit). Each one names the tools to call in order and the card to finish with.
+Five skills (ChatGPT's limit). Each one names the tools to call in order and the widget to finish with.
 
 | Skill | Steps | PRD ref |
 |---|---|---|
-| `wovain-trends` | Web search for candidates, `trends_evidence`, Meta ad library counts, `show_trend_card` | `prd.md > Trend research` |
-| `wovain-design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_card`; on approve, publish and `record_design` | `prd.md > Design cards`, `prd.md > Pricing and economics` |
-| `wovain-ads` | `video_plan`, fal video ×2, fal MMAudio, copy, `show_ad_card`, `record_ad` | `prd.md > Ad cards` |
-| `wovain-campaign` | Payment and pixel checks, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_card` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
-| `wovain-optimize` | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_card`, apply the fix or turn an ad back on | `prd.md > Optimization` |
+| `wovain-trends` | Web search for candidates, `trends_evidence`, Meta ad library counts, `show_trend_widget` | `prd.md > Trend research` |
+| `wovain-design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_widget`; on approve, publish and `record_design` | `prd.md > Design widgets`, `prd.md > Pricing and economics` |
+| `wovain-ads` | `video_plan`, fal video ×2, fal MMAudio, copy, `show_ad_widget`, `record_ad` | `prd.md > Ad widgets` |
+| `wovain-campaign` | Payment and pixel checks, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_widget` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
+| `wovain-optimize` | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_widget`, apply the fix or turn an ad back on | `prd.md > Optimization` |
 
 Each skill starts Fourthwall calls with `get-instructions`, `ecommerce_get-current-shop` and `load-skills`, as Fourthwall requires.
 
 ### wovain server
 
-What it does: the MCP server as a library (`apps/server`), mounted by the Next.js route `apps/web/app/mcp/route.ts`: Streamable HTTP with a fresh server per request, and the card files as `ui://` resources. Finished clips stay at the public `fal.media` URLs fal returns. Each tool is one file with a zod input and output schema from `packages/shared`. Tools return user-safe errors and never pass raw upstream errors through.
+What it does: the MCP server as a library (`apps/server`), mounted by the Next.js route `apps/web/app/mcp/route.ts`: Streamable HTTP with a fresh server per request, and the widget files as `ui://` resources. Finished clips stay at the public `fal.media` URLs fal returns. Each tool is one file with a zod input and output schema from `packages/shared`. Tools return user-safe errors and never pass raw upstream errors through.
 
 | Tool | Does | Talks to |
 |---|---|---|
@@ -155,36 +155,36 @@ What it does: the MCP server as a library (`apps/server`), mounted by the Next.j
 | `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | records, Blob media |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
-| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the card follow it while publishing | records |
+| `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the widget follow it while publishing | records |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
 | `record_ad` | Saves ad choices and copy | records |
 | `create_rules` | Creates the five rules per the PRD | Meta Graph API |
 | `campaign_check` | Reads rule history and campaign results | Meta Graph API |
 | `get_settings`, `update_settings` | Read and change any setting | records |
-| `show_*_card` (6) | Return card data and attach the card | Cards |
+| `show_*_widget` (6) | Return widget data and attach the widget | Widgets |
 
 PRD ref: `prd.md > Features and Behavior`.
 
-### Cards
+### Widgets
 
-One React component per card, each built into a single HTML file. Buttons use `callTool` for wovain tools and `sendFollowUpMessage` for steps that need Fourthwall or Meta. Each card keeps its in-progress state (ticked ideas, typed feedback) with `setWidgetState`.
+One React component per widget, each built into a single HTML file. Buttons use `callTool` for wovain tools and `sendFollowUpMessage` for steps that need Fourthwall or Meta. Each widget keeps its in-progress state (ticked ideas, typed feedback) with `setWidgetState`.
 
-| Card | Buttons | Feedback | PRD ref |
+| Widget | Buttons | Feedback | PRD ref |
 |---|---|---|---|
 | Trend | Design the ones I picked (enabled at 2 or 3) | Chat | `prd.md > Trend research` |
-| Design | Approve, Skip | Field and chat; regenerates the card | `prd.md > Design cards` |
-| Ad | Add to campaign, Skip | Field and chat; regenerates the card | `prd.md > Ad cards` |
+| Design | Approve, Skip | Field and chat; regenerates the widget | `prd.md > Design widgets` |
+| Ad | Add to campaign, Skip | Field and chat; regenerates the widget | `prd.md > Ad widgets` |
 | Campaign | Open in Ads Manager | Chat | `prd.md > Campaign launch` |
 | Optimization | Apply the fix, Dismiss | Chat | `prd.md > Optimization` |
 | Settings | Save | Fields | `prd.md > Screens and Layout` |
 
 Approve and Add to campaign disable themselves while their action runs, so nothing is published or added twice (`prd.md > States and Boundaries`).
 
-Each card state from `prd.md > States and Boundaries` has a Storybook story with a mocked `window.openai` bridge; accessibility and interaction tests run through Vitest.
+Each widget state from `prd.md > States and Boundaries` has a Storybook story with a mocked `window.openai` bridge; accessibility and interaction tests run through Vitest.
 
 ### Settings
 
-Every value in the PRD is a setting, edited in the Settings card or a card's ⚙ menu, saved in the merchant's records, and used by the next card without a redeploy.
+Every value in the PRD is a setting, edited in the Settings widget or a widget's ⚙ menu, saved in the merchant's records, and used by the next widget without a redeploy.
 
 | Group | Settings (defaults) |
 |---|---|
@@ -204,15 +204,15 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | Tool | Type | What it does |
 |---|---|---|
 | fal MCP (`https://mcp.fal.ai/mcp-relay`) in `.mcp.json` | MCP | Lets Claude try Kling prompts, elements and MMAudio during the build, not only inside ChatGPT |
-| `/new-tool` | Project skill | Scaffolds one wovain tool: zod schema in `packages/shared`, tool file, card stub, fixture and test |
-| `/demo-check` | Project skill, user-only | Preflight before recording: plugin loaded and `/mcp` reachable, cards build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account |
+| `/new-tool` | Project skill | Scaffolds one wovain tool: zod schema in `packages/shared`, tool file, widget stub, fixture and test |
+| `/demo-check` | Project skill, user-only | Preflight before recording: plugin loaded and `/mcp` reachable, widgets build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account |
 | claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance seeds the `wovain-optimize` skill; claude-ads is MIT-licensed, and `wovain-optimize` credits it in a NOTICE file |
 | `ultracite fix` after each edit | Hook (from `ultracite init --hooks claude`) | Lint and format every edit |
 | GitLab Secret Detection (CI template) | CI | Flags secrets and tokens in every push and merge request; replaced the local gitleaks hook |
 | Lefthook | Git hooks | Ultracite fix and type check before commits; commitlint on commit messages; knip, tests and story tests before pushes |
 | commitlint | Commit check | Enforces conventional commits locally and on pull requests |
 | knip | Dead-code check | Finds unused files, exports and dependencies before pushes and in CI |
-| Storybook | Card workshop | One story per card state with a mocked `window.openai`; a11y and interaction tests |
+| Storybook | Widget workshop | One story per widget state with a mocked `window.openai`; a11y and interaction tests |
 | MSW mock mode | Rehearsal | `bun run mock` answers wovain's outside calls from `packages/mocks`, so the demo can be rehearsed without spending |
 | GitLab CI/CD (`.gitlab-ci.yml`) | CI/CD | Stages verify, test, package, deploy, monitor, release: `verify` (build, check, typecheck, knip, test on `oven/bun:1.4.2`) and `stories` (Playwright); `test` runs GitLab's SAST, Secret Detection and Dependency Scanning templates; `package:plugin` zips the plugin as an artifact; `deploy:preview` gives each merge request its own Neon branch `mr-<iid>` (created from `dev`, which has the schema but no production data, with neonctl 8.8.0, migrated with `bun run db:migrate`) and a Vercel preview that uses it through `--env DATABASE_URL`, tracked as the review environment `review/<MR iid>` (auto-stops after a week; `stop:preview` deletes the branch); `deploy:production` runs `vercel deploy --prod` from `main` (environment production, https://wovain.vercel.app); `smoke:production` curls the live OAuth chain (`/mcp` 401, both metadata documents, the sign-in page); `release` runs semantic-release only after the smoke test passes. Renovate runs on the pipeline schedule "Renovate dependency updates" (Mondays 06:00 UTC). CI variables: `VERCEL_TOKEN`, `NEON_API_KEY` (scoped to the wovain Neon project), `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `NEON_PROJECT_ID`. Google sign-in doesn't work on preview URLs (Google needs exact redirect URIs), so previews are for checks that don't need a login |
 | GitLab Observability (`apps/web/instrumentation.ts`, `@vercel/otel` 2.1.3) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration); Next.js adds a span per request and `/mcp` adds an `mcp.request` span with the MCP method and tool, no user ids. Unset means no telemetry |
@@ -221,7 +221,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
-| Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the cards), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
+| Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the widgets), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
 
 ### Ultracite, TypeScript and Lefthook setup
 
@@ -229,7 +229,7 @@ Setup command (run once at the repo root):
 
 ```bash
 bunx ultracite init --pm bun --linter oxlint --frameworks react vitest \
-  --workspace-framework apps/cards=react --editors vscode --agents claude codex \
+  --workspace-framework apps/widgets=react --editors vscode --agents claude codex \
   --hooks claude --integrations lefthook --type-aware --js-plugins oxlint-plugin-react-doctor --install-skill
 ```
 
@@ -279,13 +279,13 @@ Scripts in the root `package.json`:
 "typecheck:6": "tsc6 -b --noEmit",
 "knip": "knip",
 "test": "bun test",
-"test:cards": "vitest run",
+"test:widgets": "vitest run",
 "test:coverage": "vitest run --coverage",
 "storybook": "storybook dev -p 6006",
 "test:stories": "vitest run --project storybook",
 "dev": "bun run --filter @wovain/web dev",
 "mock": "WOVAIN_MOCK=1 bun run dev",
-"prepare": "lefthook install && skills experimental_sync -y -a claude-code --copy && msw init apps/cards/.storybook/public"
+"prepare": "lefthook install && skills experimental_sync -y -a claude-code --copy && msw init apps/widgets/.storybook/public"
 ```
 
 ## Data Model
@@ -295,13 +295,13 @@ One `records` table in Neon Postgres, keyed by user, kind and id, read and writt
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
 | Settings | `settings` | `update_settings` | Same values |
-| Ideas | `runs[runId].ideas` | `show_trend_card` | Trend card can be redrawn |
+| Ideas | `runs[runId].ideas` | `show_trend_widget` | Trend widget can be redrawn |
 | Designs | `designs` and `artworks` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `runs[runId].ads` (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
 | Campaign | `runs[runId].campaign` (campaign, ad set, ad and rule IDs, status) | `create_rules`, campaign step | Optimization reads it |
 | Media | Staged artwork in the private Blob store; public copies in Fourthwall's media library; clips at fal's own URLs | `stage_artwork` | Files stay until deleted |
 
-Card state inside a chat (ticks, typed feedback) lives in the card's widget state; ChatGPT keeps it with the message.
+State inside a widget (ticks, typed feedback) lives in its widget state; ChatGPT keeps it with the message.
 
 ## File Structure
 
@@ -318,14 +318,14 @@ wovain/
 │   │   └── wovain-optimize/SKILL.md
 │   └── assets/logo.svg, logo.png   # source and the PNG ChatGPT shows
 ├── apps/
-│   ├── server/                  # MCP server library: tools, cards, store
+│   ├── server/                  # MCP server library: tools, widgets, store
 │   │   ├── src/
 │   │   │   ├── index.ts         # exports createMcpFetch, loadEnv, blobMedia
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── env.ts           # zod-checked environment
 │   │   │   ├── store.ts         # records through Drizzle, artwork on Blob
 │   │   │   ├── tools/           # one file per tool
-│   │   │   ├── cards.ts         # registers the ui:// card resources
+│   │   │   ├── widgets.ts         # registers the ui:// widget resources
 │   │   │   └── lib/             # serpapi, etsy, marker, meta-graph, economics, rules
 │   │   └── test/                # economics, rules, tool schemas, fixtures/
 │   ├── web/                     # Next.js on Vercel (Bun runtime)
@@ -335,17 +335,17 @@ wovain/
 │   │   ├── app/sign-in/, app/consent/   # the pages ChatGPT sends merchants to
 │   │   ├── lib/                 # auth.ts, auth-client.ts, env.ts, server.ts
 │   │   ├── test/auth.test.ts    # the OAuth discovery chain
-│   │   ├── next.config.ts       # traces the built cards into the function
+│   │   ├── next.config.ts       # traces the built widgets into the function
 │   │   ├── vercel.json          # Vercel project config: Bun 1.4 runtime, Next.js
 │   │   └── .env.example         # server keys (apps/web/.env, gitignored)
-│   └── cards/                   # React cards, Vite single-file builds
+│   └── widgets/                   # React widgets, Vite single-file builds
 │       ├── src/
 │       │   ├── trend/ design/ ad/ campaign/ optimization/ settings/   # each with *.stories.tsx
 │       │   └── lib/             # bridge.ts (window.openai feature checks), QuickSettings.tsx
 │       ├── .storybook/          # config, mocked window.openai bridge
 │       ├── test/
 │       └── vite.config.ts
-├── packages/shared/             # zod schemas and types for tools and cards
+├── packages/shared/             # zod schemas and types for tools and widgets
 ├── packages/db/                 # Drizzle schema, client and migrations
 │   ├── src/app-schema.ts        # records (jsonb) and counters
 │   ├── src/auth-schema.ts       # Better Auth's tables (generated)
@@ -392,17 +392,17 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 
 - **Google sign-in isn't configured, or ChatGPT stalls at consent** → the sign-in page says so; add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on Vercel, and check the redirect URIs on the Google client.
 - **Google sign-in fails on preview URLs** → Google only accepts exact redirect URIs, so test sign-in on production; each preview still has its own Neon branch, so previews never touch production data.
-- **ChatGPT's image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the card shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
-- **Fourthwall rejects the publish** → card keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
-- **A video or its audio fails** → the ad card shows the failed slot with Retry, or image only (#7).
-- **Meta blocks launch (no payment method or no purchase events)** → campaign card shows Ready, blocked with the fix (#8, #9).
+- **ChatGPT's image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
+- **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
+- **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#7).
+- **Meta blocks launch (no payment method or no purchase events)** → campaign widget shows Ready, blocked with the fix (#8, #9).
 - **Etsy key not approved yet** → the Etsy field shows a search link instead of a count, labeled.
 
 ## What Was Simplified and Why
 
 - **Official MCPs for Fourthwall, Meta and video** instead of our own API clients: least code. The fuller version would proxy every call through the wovain server for true one-step clicks.
-- **Card buttons post a chat message** for Fourthwall and Meta steps instead of calling them directly: ChatGPT only lets a card call its own server. Costs one model turn per click.
-- **Optimization card on check-in** instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.
+- **Widget buttons post a chat message** for Fourthwall and Meta steps instead of calling them directly: ChatGPT only lets a widget call its own server. Costs one model turn per click.
+- **Optimization widget on check-in** instead of a pushed alert: ChatGPT can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.
 - **Print fidelity checked by eye** in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.
 - **Trademark screening via Marker** instead of an official USPTO search API: none exists. Labeled screening, not legal advice.
 - **One table of JSON records** instead of a table per entity: each record is checked by its zod schema on read, and Drizzle runs the same schema and migrations on Neon and, for tests, on PGlite.
@@ -413,10 +413,10 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Decision | Chosen by | Why | Tradeoff accepted |
 |---|---|---|---|
 | Plugin with child MCPs plus a thin wovain server | Learner | Reuse Fourthwall, Meta and fal; code only what's missing | One extra model turn per click |
-| Auto-approve for Fourthwall, Meta and fal tools | Learner | One click per card | Fewer safety prompts; cards stay the approval point |
+| Auto-approve for Fourthwall, Meta and fal tools | Learner | One click per widget | Fewer safety prompts; widgets stay the approval point |
 | Video: MiniMax H3 Max Reference on fal by default (mockup and artwork as references) | Learner | Kept the print on-model in the first real test at $0.75 a clip, cheaper than Kling v3 ($2.10) after fal's price change | Newer model with less track record; Kling one setting away |
 | Audio: fal MMAudio, configurable | Learner | Meta's music skips video ads; 42× cheaper than Kling audio | Generic background music |
-| Every value in Settings and per-card ⚙ | Learner | Tune without redeploys | A bigger settings schema |
+| Every value in Settings and per-widget ⚙ | Learner | Tune without redeploys | A bigger settings schema |
 | Trend data: free bundle | Learner | $0 a month | Etsy approval wait; Marker unverified |
 | Bun, Vite, React 19, Ultracite with oxlint, TypeScript | Learner | Fast tooling and their preference | Official examples assume Node |
 | Hosted Next.js server on Vercel (Bun runtime), Streamable HTTP | Learner | Works on chatgpt.com, ships on deploy, real pages for OAuth | A host and an OAuth server to run |
@@ -425,16 +425,16 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Kill at 3× breakeven every 30 min; shop sales by UTM cross-check | Learner | Fewer false kills; the shop is the source of truth for sales | One ad can spend up to about $31 before it's paused |
 | Design-level kill at 4×; breakeven on priciest size, size-weighted optional | Learner | Matches print-on-demand: the design is the test, sizes cost differently | Slightly stricter kills |
 | TypeScript 6 + 7 dual setup, Ultracite with oxlint, oxfmt, Lefthook, Ultracite skill and hooks | Learner | Official setup; fast type checks and lint on every edit and commit | Two TypeScript versions to keep in step |
-| DX set from the sister wovain repo: commitlint, knip, Lefthook with type check on commit, MSW with mock mode, Storybook, CI, Dependabot, release-please, plus modern-web-guidance, security-guidance and hookify; no shadcn | Learner | Same habits as their main project; rehearse without spending; check card states outside ChatGPT | About an hour more setup |
+| DX set from the sister wovain repo: commitlint, knip, Lefthook with type check on commit, MSW with mock mode, Storybook, CI, Dependabot, release-please, plus modern-web-guidance, security-guidance and hookify; no shadcn | Learner | Same habits as their main project; rehearse without spending; check widget states outside ChatGPT | About an hour more setup |
 | JSON-record store on Neon, optimization on check-in | Derived | Follow from the choices above | See What Was Simplified |
 
-Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" It was clarified by three platform facts: cards must be served by our own MCP server, card buttons can only call that server, and Meta rules and trend APIs have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
+Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" It was clarified by three platform facts: widgets must be served by our own MCP server, widget buttons can only call that server, and Meta rules and trend APIs have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
 
 Verify early in the build, in this order:
 
 | # | Check | If it fails |
 |---|---|---|
-| 1 | Desktop-only plugin installs from the local folder on Plus; the app starts the stdio server; a card renders; a card button's message triggers a Fourthwall tool with auto-approve | HTTP mode + ngrok on chatgpt.com |
+| 1 | Desktop-only plugin installs from the local folder on Plus; the app starts the stdio server; a widget renders; a widget button's message triggers a Fourthwall tool with auto-approve | HTTP mode + ngrok on chatgpt.com |
 | 2 | `openai/fileParams` delivers a ChatGPT image with a fetchable URL in the desktop app (build step 2: it doesn't; image generation returns a `data:` URL, which `stage_artwork` accepts) | Ask the merchant to upload the image |
 | 3 | A fal video model keeps the print readable on-model; MMAudio adds audio (build step 3: MiniMax H3 Max Reference passed with the mockup and artwork as references) | Switch models in Settings |
 | 4 | Meta accepts a fal.media video URL; one NOTIFICATION rule created with the system user token; rule filters match per-product ads by name | Upload from file; adjust filters |
@@ -442,9 +442,9 @@ Verify early in the build, in this order:
 | 6 | Marker API is alive; Etsy app approved | Show labeled search links |
 | 7 | Bun resolves the TS 6/7 npm aliases; `bunx tsc` runs 7.0 | Pin TS 6 only and skip type-aware lint |
 | 8 | Ultracite's Claude hook merges cleanly with sync-plan and Impeccable hooks in `.claude/settings.json` | Merge the hooks by hand |
-| 9 | Storybook renders the cards with the mocked `window.openai` bridge | Use a plain Vite gallery page |
-| 10 | ChatGPT completes the OAuth flow (discovery, registration, Google sign-in, consent) against the hosted `/mcp`; a card renders on chatgpt.com | Check the 401 challenge and metadata URLs, then the Google redirect URIs |
+| 9 | Storybook renders the widgets with the mocked `window.openai` bridge | Use a plain Vite gallery page |
+| 10 | ChatGPT completes the OAuth flow (discovery, registration, Google sign-in, consent) against the hosted `/mcp`; a widget renders on chatgpt.com | Check the 401 challenge and metadata URLs, then the Google redirect URIs |
 
-Carried from `prd.md > Open Questions` (still open, before the demo): Meta payment method, shop set live, Meta pixel and Conversions API connected in Fourthwall. Voice: tools work in Live voice since 2026-09-23; whether cards render in voice is unverified, so voice stays a bonus.
+Carried from `prd.md > Open Questions` (still open, before the demo): Meta payment method, shop set live, Meta pixel and Conversions API connected in Fourthwall. Voice: tools work in Live voice since 2026-09-23; whether widgets render in voice is unverified, so voice stays a bonus.
 
 Not decided by the learner and flagged for review: the `self_ai_disclosure` value on Meta creatives (default on) and the Meta API version pin (v26.0, given Meta's removals on 2026-10-27).

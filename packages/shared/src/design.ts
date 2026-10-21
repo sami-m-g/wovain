@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { sizeCostSchema } from "./economics.ts";
 
-// Everything the design card shows (prd.md > Design cards), shared by the
-// server tools that write it and the card that renders it.
+// Everything the design widget shows (prd.md > Design widgets), shared by the
+// server tools that write it and the widget that renders it.
 
 export const designStatusSchema = z.enum([
   "draft",
@@ -81,6 +81,6 @@ export type Design = z.infer<typeof designSchema>;
 export const designResultSchema = z.object({ design: designSchema });
 export const quoteResultSchema = z.object({ quote: quoteSchema });
 
-// Print quality the card shows next to the artwork's pixel width.
+// Print quality the widget shows next to the artwork's pixel width.
 export const printQuality = (artwork: Design["artwork"]) =>
   artwork.widthPx >= artwork.requiredPx ? "high" : "low";

@@ -14,8 +14,8 @@ const apps = path.join(/* turbopackIgnore: true */ process.cwd(), "..");
 export const authEnv = loadAuthEnv();
 
 export const env = loadEnv({
-  WOVAIN_CARDS_DIR: path.join(apps, "cards", "dist"),
   WOVAIN_ICON_URL: `${siteUrl(authEnv)}/icon.png`,
+  WOVAIN_WIDGETS_DIR: path.join(apps, "widgets", "dist"),
   ...process.env,
 });
 

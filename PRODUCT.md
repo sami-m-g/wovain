@@ -8,11 +8,11 @@ web
 
 ## Stack
 
-Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` + `@modelcontextprotocol/ext-apps`) serving React 19 cards built on OpenAI's `@openai/apps-sdk-ui`, bundled with Vite into single-file `ui://` resources. `devpost/spec.md` (`4-spec`) confirms or overrides it.
+Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` + `@modelcontextprotocol/ext-apps`) serving React 19 widgets built on OpenAI's `@openai/apps-sdk-ui`, bundled with Vite into single-file `ui://` resources. `devpost/spec.md` (`4-spec`) confirms or overrides it.
 
 ## Users
 
-A solo print-on-demand merchant: the learner first, then any solo POD seller who wants AI to run more of their process. They work inside ChatGPT; voice is a nice-to-have, since card support in ChatGPT Voice is unverified. Their job: go from a trend to live products and a running Meta campaign without switching between five tools.
+A solo print-on-demand merchant: the learner first, then any solo POD seller who wants AI to run more of their process. They work inside ChatGPT; voice is a nice-to-have, since widget support in ChatGPT Voice is unverified. Their job: go from a trend to live products and a running Meta campaign without switching between five tools.
 
 ## Product Purpose
 
@@ -20,19 +20,19 @@ wovain is a ChatGPT plugin that researches trends, designs products for the merc
 
 ## Positioning
 
-Every step ends in an approval card built from real Fourthwall products, placements, sizes and prices, and from each product's real margin and breakeven. Nothing else is manual.
+Every step ends in an approval widget built from real Fourthwall products, placements, sizes and prices, and from each product's real margin and breakeven. Nothing else is manual.
 
 ## Operating Context
 
-- Lives inside a ChatGPT conversation; cards appear inline in journey order (trend, design, ad, campaign, optimization). See `devpost/prd.md > Screens and Layout`.
+- Lives inside a ChatGPT conversation; widgets appear inline in journey order (trend, design, ad, campaign, optimization). See `devpost/prd.md > Screens and Layout`.
 - Connected services: Fourthwall (products, publishing, reports) and Meta Ads (campaigns, creatives, insights).
-- Merchant gives feedback by typing in chat or with the card's own controls; feedback regenerates the whole card.
+- Merchant gives feedback by typing in chat or with the widget's own controls; feedback regenerates the whole widget.
 
 ## Capabilities and Constraints
 
-- Defined in `devpost/prd.md`: card fields, pricing rule, breakeven math, campaign rules, and 10 failure states with copy.
-- Every number shown on a card has a source link or a visible calculation.
-- ChatGPT plugin rules: system fonts and colors, brand color only on primary buttons, badges and icons, at most 2 buttons per card, no tabs or inner scrolling.
+- Defined in `devpost/prd.md`: widget fields, pricing rule, breakeven math, campaign rules, and 10 failure states with copy.
+- Every number shown on a widget has a source link or a visible calculation.
+- ChatGPT plugin rules: system fonts and colors, brand color only on primary buttons, badges and icons, at most 2 buttons per widget, no tabs or inner scrolling.
 - No API starts ChatGPT image generation from a plugin; a wovain skill asks ChatGPT to generate and hand the image to wovain's tool (to verify in `4-spec`).
 
 ## Brand Commitments
@@ -49,7 +49,7 @@ Every step ends in an approval card built from real Fourthwall products, placeme
 
 ## Product Principles
 
-1. Approve, don't operate: the merchant decides at cards; wovain does the clicking.
+1. Approve, don't operate: the merchant decides at widgets; wovain does the clicking.
 2. Show the evidence: trends, prices and margins come with sources or math.
-3. Real over mock: cards use real Fourthwall products, prices and stock.
+3. Real over mock: widgets use real Fourthwall products, prices and stock.
 4. Reuse, don't rebuild: Fourthwall, Meta Advantage+ and ChatGPT's own capabilities do the heavy lifting.

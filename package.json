@@ -18,9 +18,9 @@
     "prepare": "bun run scripts/prepare.ts",
     "knip": "knip",
     "skills:restore": "skills experimental_install -y",
-    "storybook": "bun run --filter @wovain/cards storybook",
-    "test:stories": "bun run --filter @wovain/cards test:stories",
-    "cards:watch": "bun run apps/cards/build.ts --watch",
+    "storybook": "bun run --filter @wovain/widgets storybook",
+    "test:stories": "bun run --filter @wovain/widgets test:stories",
+    "widgets:watch": "bun run apps/widgets/build.ts --watch",
     "dev": "bun run --filter @wovain/web dev",
     "db:generate": "bun run --filter @wovain/db generate",
     "db:migrate": "bun run --filter @wovain/db migrate"

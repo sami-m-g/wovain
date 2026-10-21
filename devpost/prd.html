@@ -16,7 +16,7 @@
     border-radius: 50%; background: var(--node); text-align: center; font-size: 13px; line-height: 23px; font-weight: 600; }
   ol.journey li.win { border-color: var(--ok); background: var(--ok-soft); }
   ol.journey li.win::before { background: var(--ok); color: var(--surface); }
-  .diagram .card rect { fill: var(--accent-soft); stroke: var(--accent); }
+  .diagram .widget rect { fill: var(--accent-soft); stroke: var(--accent); }
   .diagram .later { stroke-dasharray: 2 4; }
   .split { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
   @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
@@ -70,12 +70,12 @@
 <main>
   <div class="top"><span class="tag">PRD · approved</span><button class="theme" id="theme">Toggle theme</button></div>
   <h1>wovain product requirements</h1>
-  <p class="lede">A ChatGPT plugin that takes a solo print-on-demand merchant from "make trending designs" to live Fourthwall products and a running Meta Advantage+ campaign, one approved card at a time.</p>
+  <p class="lede">A ChatGPT plugin that takes a solo print-on-demand merchant from "make trending designs" to live Fourthwall products and a running Meta Advantage+ campaign, one approved widget at a time.</p>
   <p class="src">Source: <code>scope.md &gt; The unique kernel</code>, <code>scope.md &gt; The core loop</code>.</p>
 
   <h2>The core journey</h2>
   <p class="src">Source: <code>scope.md &gt; What "working" looks like</code>.</p>
-  <div class="diagram" role="img" aria-label="Ask for trending designs, or bring your own idea. The trend card shows 5 ideas; pick 2 or 3. A design card per idea, with a feedback loop. Approve publishes the product. An ad card per product, with a feedback loop. After the last ad card is added or skipped, the campaign card launches the campaign and its rules. When a rule fires, an optimization card suggests a fix, and applying it updates the live campaign. Later, campaign results feed back into trend research.">
+  <div class="diagram" role="img" aria-label="Ask for trending designs, or bring your own idea. The trend widget shows 5 ideas; pick 2 or 3. A design widget per idea, with a feedback loop. Approve publishes the product. An ad widget per product, with a feedback loop. After the last ad widget is added or skipped, the campaign widget launches the campaign and its rules. When a rule fires, an optimization widget suggests a fix, and applying it updates the live campaign. Later, campaign results feed back into trend research.">
     <svg viewBox="0 0 1000 340" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted);stroke:none"/></marker>
@@ -83,13 +83,13 @@
       </defs>
       <g><rect x="20" y="60" width="140" height="50" rx="10"/><text x="90" y="82" text-anchor="middle">Ask: make</text><text x="90" y="98" text-anchor="middle">trending designs</text></g>
       <g><rect x="20" y="150" width="140" height="40" rx="10"/><text x="90" y="175" text-anchor="middle">Own idea</text></g>
-      <g class="card"><rect x="215" y="60" width="140" height="50" rx="10"/><text x="285" y="82" text-anchor="middle">Trend card</text><text x="285" y="98" text-anchor="middle">5 ideas</text></g>
-      <g class="card"><rect x="410" y="60" width="140" height="50" rx="10"/><text x="480" y="82" text-anchor="middle">Design card</text><text x="480" y="98" text-anchor="middle">per idea</text></g>
+      <g class="widget"><rect x="215" y="60" width="140" height="50" rx="10"/><text x="285" y="82" text-anchor="middle">Trend widget</text><text x="285" y="98" text-anchor="middle">5 ideas</text></g>
+      <g class="widget"><rect x="410" y="60" width="140" height="50" rx="10"/><text x="480" y="82" text-anchor="middle">Design widget</text><text x="480" y="98" text-anchor="middle">per idea</text></g>
       <g class="done"><rect x="605" y="60" width="140" height="50" rx="10"/><text x="675" y="82" text-anchor="middle">Product</text><text x="675" y="98" text-anchor="middle">published</text></g>
-      <g class="card"><rect x="800" y="60" width="170" height="50" rx="10"/><text x="885" y="82" text-anchor="middle">Ad card</text><text x="885" y="98" text-anchor="middle">per product</text></g>
-      <g class="card"><rect x="800" y="240" width="170" height="50" rx="10"/><text x="885" y="262" text-anchor="middle">Campaign card</text><text x="885" y="278" text-anchor="middle">launch + rules</text></g>
+      <g class="widget"><rect x="800" y="60" width="170" height="50" rx="10"/><text x="885" y="82" text-anchor="middle">Ad widget</text><text x="885" y="98" text-anchor="middle">per product</text></g>
+      <g class="widget"><rect x="800" y="240" width="170" height="50" rx="10"/><text x="885" y="262" text-anchor="middle">Campaign widget</text><text x="885" y="278" text-anchor="middle">launch + rules</text></g>
       <g class="done"><rect x="605" y="240" width="140" height="50" rx="10"/><text x="675" y="270" text-anchor="middle">Live campaign</text></g>
-      <g class="card"><rect x="380" y="240" width="170" height="50" rx="10"/><text x="465" y="262" text-anchor="middle">Optimization card</text><text x="465" y="278" text-anchor="middle">suggested fix</text></g>
+      <g class="widget"><rect x="380" y="240" width="170" height="50" rx="10"/><text x="465" y="262" text-anchor="middle">Optimization widget</text><text x="465" y="278" text-anchor="middle">suggested fix</text></g>
       <path d="M160 85H213" marker-end="url(#ar)"/>
       <path d="M355 85H408" marker-end="url(#ar)"/><text class="lbl" x="382" y="77" text-anchor="middle">pick 2 or 3</text>
       <path d="M160 170H480V112" marker-end="url(#ar)"/>
@@ -97,7 +97,7 @@
       <path d="M745 85H798" marker-end="url(#ar)"/>
       <path class="fb" d="M515 60V36H445V58" marker-end="url(#arA)"/><text class="lbl" x="480" y="28" text-anchor="middle">feedback</text>
       <path class="fb" d="M920 60V36H850V58" marker-end="url(#arA)"/><text class="lbl" x="885" y="28" text-anchor="middle">feedback</text>
-      <path d="M885 110V238" marker-end="url(#ar)"/><text class="lbl" x="875" y="180" text-anchor="end">last card added</text>
+      <path d="M885 110V238" marker-end="url(#ar)"/><text class="lbl" x="875" y="180" text-anchor="end">last widget added</text>
       <path d="M800 265H747" marker-end="url(#ar)"/>
       <path class="fb" d="M550 265H603" marker-end="url(#arA)"/><text class="lbl" x="577" y="257" text-anchor="middle">apply fix</text>
       <path class="later" d="M675 290V314H465V292" marker-end="url(#ar)"/><text class="lbl" x="570" y="330" text-anchor="middle">rule fires</text>
@@ -106,44 +106,44 @@
   </div>
   <ol class="journey">
     <li>The merchant opens wovain in ChatGPT and asks for trending designs. If they bring their own idea, wovain skips to step 4.</li>
-    <li>A trend card shows 5 ideas, each backed by evidence with links.</li>
+    <li>A trend widget shows 5 ideas, each backed by evidence with links.</li>
     <li>The merchant ticks 2 or 3 ideas and clicks "Design the ones I picked".</li>
-    <li>One design card per idea shows the design on a Fourthwall blank, with the listing and the price.</li>
-    <li>The merchant approves, skips, or gives feedback on each design card. Feedback regenerates the whole card. Approve publishes that product to Fourthwall right away.</li>
-    <li>Right after a product is published, its ad card shows 2 videos, 1 static image, ad copy, and the margin math.</li>
-    <li>The merchant adds each ad card to the campaign, skips it, or gives feedback.</li>
-    <li>When the last ad card is added or skipped, the campaign card launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.</li>
+    <li>One design widget per idea shows the design on a Fourthwall blank, with the listing and the price.</li>
+    <li>The merchant approves, skips, or gives feedback on each design widget. Feedback regenerates the whole widget. Approve publishes that product to Fourthwall right away.</li>
+    <li>Right after a product is published, its ad widget shows 2 videos, 1 static image, ad copy, and the margin math.</li>
+    <li>The merchant adds each ad widget to the campaign, skips it, or gives feedback.</li>
+    <li>When the last ad widget is added or skipped, the campaign widget launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.</li>
     <li class="win">Success: Meta Ads Manager shows the live campaign and its rules, and the products are live in the Fourthwall shop.</li>
-    <li>Later, when a rule has fired, the next time the merchant checks in, an optimization card reports what happened and suggests a fix to approve.</li>
+    <li>Later, when a rule has fired, the next time the merchant checks in, an optimization widget reports what happened and suggests a fix to approve.</li>
   </ol>
 
   <h2>Screens and layout</h2>
-  <p>Everything happens inside the ChatGPT conversation. Cards appear inline in the order of the journey, with no separate app or dashboard.</p>
+  <p>Everything happens inside the ChatGPT conversation. Widgets appear inline in the order of the journey, with no separate app or dashboard.</p>
   <div class="wrap"><table>
     <tr><th>Surface</th><th>When it appears</th><th>Count</th></tr>
-    <tr><td>Trend card</td><td>After asking for trending designs</td><td>1 per request</td></tr>
-    <tr><td>Design card</td><td>After picking ideas, or after giving your own idea</td><td>1 per idea (2 or 3)</td></tr>
-    <tr><td>Ad card</td><td>Right after its product is published</td><td>1 per published product</td></tr>
-    <tr><td>Campaign card</td><td>After the last ad card is added or skipped</td><td>1</td></tr>
-    <tr><td>Optimization card</td><td>When a campaign rule fires</td><td>1 per event</td></tr>
-    <tr><td>Settings card</td><td>When the merchant asks for wovain settings</td><td>1 per request</td></tr>
+    <tr><td>Trend widget</td><td>After asking for trending designs</td><td>1 per request</td></tr>
+    <tr><td>Design widget</td><td>After picking ideas, or after giving your own idea</td><td>1 per idea (2 or 3)</td></tr>
+    <tr><td>Ad widget</td><td>Right after its product is published</td><td>1 per published product</td></tr>
+    <tr><td>Campaign widget</td><td>After the last ad widget is added or skipped</td><td>1</td></tr>
+    <tr><td>Optimization widget</td><td>When a campaign rule fires</td><td>1 per event</td></tr>
+    <tr><td>Settings widget</td><td>When the merchant asks for wovain settings</td><td>1 per request</td></tr>
   </table></div>
-  <p>Feedback works two ways on every card: free typing in the chat, or the card's own controls and feedback field.</p>
-  <p>Every card also has a quick-settings menu (⚙) for the values it uses; the Settings card edits all of them. Changes apply without a redeploy.</p>
+  <p>Feedback works two ways on every widget: free typing in the chat, or the widget's own controls and feedback field.</p>
+  <p>Every widget also has a quick-settings menu (⚙) for the values it uses; the Settings widget edits all of them. Changes apply without a redeploy.</p>
 
-  <h2>Cards and behavior</h2>
-  <div class="tabs" role="tablist" aria-label="Cards">
-    <button role="tab" data-k="trend" aria-selected="true">Trend card</button>
-    <button role="tab" data-k="design" aria-selected="false">Design card</button>
-    <button role="tab" data-k="ad" aria-selected="false">Ad card</button>
-    <button role="tab" data-k="campaign" aria-selected="false">Campaign card</button>
-    <button role="tab" data-k="opt" aria-selected="false">Optimization card</button>
-    <button role="tab" data-k="settings" aria-selected="false">Settings card</button>
+  <h2>Widgets and behavior</h2>
+  <div class="tabs" role="tablist" aria-label="Widgets">
+    <button role="tab" data-k="trend" aria-selected="true">Trend widget</button>
+    <button role="tab" data-k="design" aria-selected="false">Design widget</button>
+    <button role="tab" data-k="ad" aria-selected="false">Ad widget</button>
+    <button role="tab" data-k="campaign" aria-selected="false">Campaign widget</button>
+    <button role="tab" data-k="opt" aria-selected="false">Optimization widget</button>
+    <button role="tab" data-k="settings" aria-selected="false">Settings widget</button>
   </div>
 
   <section class="panel" data-k="trend" role="tabpanel">
     <div class="split">
-      <div class="wf" aria-label="Trend card wireframe">
+      <div class="wf" aria-label="Trend widget wireframe">
         <div class="wf-h"><span>Trending now · 5 ideas</span><span>Oct 19, 2026</span></div>
         <div class="wf-coach">"Two ideas stand out: rising fast with few sellers yet."</div>
         <div class="wf-idea">
@@ -166,7 +166,7 @@
       </div>
       <div>
         <p class="src">Source: <code>scope.md &gt; The POC boundary</code> (Trends).</p>
-        <p>The merchant asks for trending designs; wovain researches the web and returns 5 ideas on the trend card.</p>
+        <p>The merchant asks for trending designs; wovain researches the web and returns 5 ideas on the trend widget.</p>
         <div class="wrap"><table>
           <tr><th>Field per idea</th><th>Evidence</th></tr>
           <tr><td>Direction and % growth</td><td>Google Trends rising queries via SerpApi, linked</td></tr>
@@ -178,8 +178,8 @@
         <ul class="story">
           <li>As a merchant, I want trend ideas backed by facts so that I pick designs with real demand.
             <ul class="ac">
-              <li>The trend card shows 5 ideas, each with every field above.</li>
-              <li>Every number on the card has a source link.</li>
+              <li>The trend widget shows 5 ideas, each with every field above.</li>
+              <li>Every number on the widget has a source link.</li>
               <li>Ticking 2 or 3 ideas enables "Design the ones I picked"; 0, 1 or 4+ keeps it disabled.</li>
             </ul>
           </li>
@@ -190,7 +190,7 @@
 
   <section class="panel" data-k="design" role="tabpanel" hidden>
     <div class="split">
-      <div class="wf" aria-label="Design card wireframe">
+      <div class="wf" aria-label="Design widget wireframe">
         <div class="wf-h"><span>Japanese cat sunset</span><span>Bella+Canvas 3001 tee</span></div>
         <div class="wf-coach">"Soft bestseller tee, and the art prints sharp at this size."</div>
         <div class="wf-row">
@@ -227,9 +227,9 @@
         <ul class="story">
           <li>As a merchant, I want each design shown on a real Fourthwall product with its listing so that I approve exactly what will be sold.
             <ul class="ac">
-              <li>One design card appears per picked idea.</li>
-              <li>Feedback, typed or in the card field, regenerates the whole card with the change applied.</li>
-              <li>Approve publishes the product to Fourthwall and the card shows it as live with a link.</li>
+              <li>One design widget appears per picked idea.</li>
+              <li>Feedback, typed or in the widget field, regenerates the whole widget with the change applied.</li>
+              <li>Approve publishes the product to Fourthwall and the widget shows it as live with a link.</li>
               <li>Skip removes the design without publishing.</li>
             </ul>
           </li>
@@ -240,7 +240,7 @@
 
   <section class="panel" data-k="ad" role="tabpanel" hidden>
     <div class="split">
-      <div class="wf" aria-label="Ad card wireframe">
+      <div class="wf" aria-label="Ad widget wireframe">
         <div class="wf-h"><span>Ads · Japanese Cat Sunset Tee</span><span>3 creatives</span></div>
         <div class="wf-coach">"Two try-on clips plus your mockup. Good margin for a test."</div>
         <div class="wf-row">
@@ -274,12 +274,12 @@
         <ul class="story">
           <li>As a merchant, I want ads and margins for each product right after it goes live so that I can judge whether advertising it makes sense.
             <ul class="ac">
-              <li>An ad card appears right after each product is published.</li>
+              <li>An ad widget appears right after each product is published.</li>
               <li>It shows 2 playable videos, 1 static image, a headline and primary text.</li>
               <li>It shows the breakeven line and the rule thresholds for that product.</li>
               <li>Each video has a full-screen control that plays it at phone size over the chat.</li>
               <li>The merchant checks print fidelity in the full-screen view before adding the ad.</li>
-              <li>Feedback regenerates the whole card.</li>
+              <li>Feedback regenerates the whole widget.</li>
             </ul>
           </li>
         </ul>
@@ -289,7 +289,7 @@
 
   <section class="panel" data-k="campaign" role="tabpanel" hidden>
     <div class="split">
-      <div class="wf" aria-label="Campaign card wireframe">
+      <div class="wf" aria-label="Campaign widget wireframe">
         <div class="wf-h"><span>Campaign · wovain test</span><span>Advantage+ sales</span></div>
         <div class="wf-coach">"You're live! I'll watch the numbers and flag anything odd."</div>
         <div class="wf-m">3 products · 9 ads · $45/day · Rules: kill, scale, alert</div>
@@ -301,10 +301,10 @@
         <p class="src">Source: <code>scope.md &gt; The POC boundary</code> (Campaign).</p>
         <ul class="plain">
           <li>One Advantage+ sales campaign holds every added ad, tagged by product.</li>
-          <li>It launches once, after the last ad card is added or skipped, so learning never resets for new ads.</li>
+          <li>It launches once, after the last ad widget is added or skipped, so learning never resets for new ads.</li>
           <li>Starting budget: $15 per product per day, set for the whole campaign (for example $45 a day for 3 products).
             <ul class="ac">
-              <li>After the last ad card, the campaign card appears and shows Live with a link to Ads Manager.</li>
+              <li>After the last ad widget, the campaign widget appears and shows Live with a link to Ads Manager.</li>
               <li>Ads Manager shows one campaign containing all added ads and the rules below.</li>
             </ul>
           </li>
@@ -330,7 +330,7 @@
 
   <section class="panel" data-k="opt" role="tabpanel" hidden>
     <div class="split">
-      <div class="wf" aria-label="Optimization card wireframe">
+      <div class="wf" aria-label="Optimization widget wireframe">
         <div class="wf-h"><span>Rule fired</span><span>Japanese Cat Sunset Tee</span></div>
         <div class="wf-coach">"Video A wasn't selling, so I paused it to save budget."</div>
         <div class="badc">$30.96 spent, no sales (3× breakeven)</div>
@@ -339,11 +339,11 @@
       </div>
       <div>
         <p class="src">Source: <code>scope.md &gt; The core loop</code> (interrupt campaign: change direction).</p>
-        <p>When a rule has fired, wovain runs its optimization skills on the flagged item and shows an optimization card: what happened, and a suggested fix (for example a new hook, a new video, or a price test), using Fourthwall's conversion and visitor reports as evidence. Only the flagged ad changes; everything else keeps running. Every ad link carries <code>utm_content</code> set to the ad ID. Before showing the card, wovain cross-checks Fourthwall's sales-by-UTM report: Meta reports some purchases late and its rules can only read Meta's numbers, so if the shop shows a sale Meta missed, the card offers to turn the ad back on. ChatGPT can't start a conversation, so wovain checks rule history when the merchant asks how the campaign is doing; Meta also sends its own rule notifications.</p>
+        <p>When a rule has fired, wovain runs its optimization skills on the flagged item and shows an optimization widget: what happened, and a suggested fix (for example a new hook, a new video, or a price test), using Fourthwall's conversion and visitor reports as evidence. Only the flagged ad changes; everything else keeps running. Every ad link carries <code>utm_content</code> set to the ad ID. Before showing the widget, wovain cross-checks Fourthwall's sales-by-UTM report: Meta reports some purchases late and its rules can only read Meta's numbers, so if the shop shows a sale Meta missed, the widget offers to turn the ad back on. ChatGPT can't start a conversation, so wovain checks rule history when the merchant asks how the campaign is doing; Meta also sends its own rule notifications.</p>
         <ul class="ac">
-          <li>A fired rule produces an optimization card naming the ad, the numbers, and the rule.</li>
+          <li>A fired rule produces an optimization widget naming the ad, the numbers, and the rule.</li>
           <li>Apply the fix carries out the suggestion; Dismiss leaves the campaign as is.</li>
-          <li>If the shop shows a sale for a paused ad that Meta missed, the card offers to turn that ad back on.</li>
+          <li>If the shop shows a sale for a paused ad that Meta missed, the widget offers to turn that ad back on.</li>
         </ul>
       </div>
     </div>
@@ -351,9 +351,9 @@
 
   <section class="panel" data-k="settings" role="tabpanel" hidden>
     <div class="split">
-      <div class="wf" aria-label="Settings card wireframe">
+      <div class="wf" aria-label="Settings widget wireframe">
         <div class="wf-h"><span>wovain settings</span><span>⚙</span></div>
-        <div class="wf-coach">"Change anything here; new cards use it right away."</div>
+        <div class="wf-coach">"Change anything here; new widgets use it right away."</div>
         <div class="wf-col">
           <div><span class="wf-m">Video model</span> H3 Max Reference 768P ▾ <span class="wf-m">· $0.75 per clip</span></div>
           <div><span class="wf-m">Audio</span> MMAudio (background) ▾ <span class="wf-m">· $0.015 per clip</span></div>
@@ -372,8 +372,8 @@
     <li>Built on ChatGPT's own design system (OpenAI's apps UI kit): system fonts, system colors for text, backgrounds and dividers, light and dark themes.</li>
     <li>Accent: indigo dye #3B4CCA, only on primary buttons, badges and icons. White text on it passes WCAG AA (about 6.8:1).</li>
     <li>Status colors stay semantic: green for live, amber for blocked, red for paused.</li>
-    <li>Voice: friendly coach. Each card opens with one coach line that explains the call, with the numbers below it.</li>
-    <li>Each card has at most 2 buttons, no tabs and no scrolling inside the card (ChatGPT's rules).</li>
+    <li>Voice: friendly coach. Each widget opens with one coach line that explains the call, with the numbers below it.</li>
+    <li>Each widget has at most 2 buttons, no tabs and no scrolling inside the widget (ChatGPT's rules).</li>
     <li>Images use fixed aspect ratios and alt text. Videos are tap to play, muted, with a full-screen control that plays them at phone size over the chat.</li>
   </ul>
 
@@ -397,8 +397,8 @@
         <li>Breakeven uses the base cost of the priciest size offered by default, because 2XL and up cost more; a setting switches to a size-weighted average. The demo numbers below use the XS–XL base cost.</li>
       </ul>
       <ul class="ac">
-        <li>The design card shows price, base cost, profit and margin.</li>
-        <li>The ad card leads with breakeven cost per sale, the number the rules use, and shows the return on ad spend target second, based on the purchase value the pixel actually sends.</li>
+        <li>The design widget shows price, base cost, profit and margin.</li>
+        <li>The ad widget leads with breakeven cost per sale, the number the rules use, and shows the return on ad spend target second, based on the purchase value the pixel actually sends.</li>
       </ul>
     </div>
   </div>
@@ -413,7 +413,7 @@
   <div class="wrap"><table>
     <tr><th>POC cost</th><th>Amount</th><th>Note</th></tr>
     <tr><td>Meta test budget</td><td>$135 to $189</td><td>$45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early</td></tr>
-    <tr><td>Ad videos (6 clips)</td><td>$4.59</td><td>MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings card shows live fal prices</td></tr>
+    <tr><td>Ad videos (6 clips)</td><td>$4.59</td><td>MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings widget shows live fal prices</td></tr>
     <tr><td>Design images</td><td>$0 extra</td><td>ChatGPT's built-in image generation, included in the plan</td></tr>
     <tr><td>ChatGPT plan</td><td>Depends on your plan</td><td>Plus works: the plugin installs in the ChatGPT desktop app (verified in build step 1), and the hosted server also works on chatgpt.com</td></tr>
     <tr><td>Trend data</td><td>$0</td><td>Free tiers: SerpApi (250 searches a month), Etsy API, Marker API</td></tr>
@@ -425,16 +425,16 @@
   <h2>States and boundaries</h2>
   <div class="wrap"><table>
     <tr><th>#</th><th>When</th><th>What the merchant sees</th><th>Copy</th><th>Next action</th></tr>
-    <tr><td class="st">1</td><td>Research is running</td><td>Trend card with live progress lines</td><td>"Checking Google Trends, the Meta Ad Library and trademarks for you…"</td><td>Wait; Cancel is available</td></tr>
-    <tr><td class="st">2</td><td>No idea clears the checks</td><td>Empty trend card that explains why</td><td>"Nothing looked worth testing this time: 4 ideas were cooling off and 1 already has 30k+ ads. Want me to widen the search?"</td><td>Widen the search, or use my own idea</td></tr>
+    <tr><td class="st">1</td><td>Research is running</td><td>Trend widget with live progress lines</td><td>"Checking Google Trends, the Meta Ad Library and trademarks for you…"</td><td>Wait; Cancel is available</td></tr>
+    <tr><td class="st">2</td><td>No idea clears the checks</td><td>Empty trend widget that explains why</td><td>"Nothing looked worth testing this time: 4 ideas were cooling off and 1 already has 30k+ ads. Want me to widen the search?"</td><td>Widen the search, or use my own idea</td></tr>
     <tr><td class="st">3</td><td>Some or all ideas get a trademark flag</td><td>Flagged ideas stay selectable, with the reason shown</td><td>"Heads up: 'Fast &amp; Furious' is a registered trademark for clothing, so selling it could get the product taken down."</td><td>The merchant decides</td></tr>
     <tr><td class="st">4</td><td>Artwork too low-resolution for the placement</td><td>Print quality turns red; Approve is disabled</td><td>"This artwork is 1100 px, and this print size needs 1500 px or more, so it would print blurry."</td><td>Regenerate at higher resolution, or use a smaller placement</td></tr>
     <tr><td class="st">5</td><td>Some colors or sizes out of stock</td><td>Those variants crossed out and excluded by default</td><td>"Navy is out of 4XL and 5XL, so I left those sizes off."</td><td>None needed; the merchant can add them back</td></tr>
-    <tr><td class="st">6</td><td>Fourthwall rejects the publish</td><td>The card keeps all edits and shows the reason</td><td>"Fourthwall didn't accept this product (reason). Your edits are saved."</td><td>Try again; after 2 failures, finish in Fourthwall's designer</td></tr>
-    <tr><td class="st">7</td><td>A video fails to generate</td><td>The ad card shows the failed slot</td><td>"Video B didn't render. I can try again, or you can go with the image only."</td><td>Retry, or use the static image only</td></tr>
-    <tr><td class="st">8</td><td>Ad account has no payment method</td><td>Campaign card shows Ready, blocked; products stay live and ad cards are kept</td><td>"Your campaign is ready, but Meta needs a payment method on your ad account before it can launch."</td><td>Add payment method, then check again and launch</td></tr>
+    <tr><td class="st">6</td><td>Fourthwall rejects the publish</td><td>The widget keeps all edits and shows the reason</td><td>"Fourthwall didn't accept this product (reason). Your edits are saved."</td><td>Try again; after 2 failures, finish in Fourthwall's designer</td></tr>
+    <tr><td class="st">7</td><td>A video fails to generate</td><td>The ad widget shows the failed slot</td><td>"Video B didn't render. I can try again, or you can go with the image only."</td><td>Retry, or use the static image only</td></tr>
+    <tr><td class="st">8</td><td>Ad account has no payment method</td><td>Campaign widget shows Ready, blocked; products stay live and ad widgets are kept</td><td>"Your campaign is ready, but Meta needs a payment method on your ad account before it can launch."</td><td>Add payment method, then check again and launch</td></tr>
     <tr><td class="st">9</td><td>No purchase events from the store</td><td>Same Ready, blocked state</td><td>"Meta can't see sales from your store yet, and Advantage+ needs them to learn who buys."</td><td>Connect the Meta Pixel and Conversions API in Fourthwall, then check again and launch</td></tr>
-    <tr><td class="st">10</td><td>A rule has fired on a running campaign</td><td>Optimization card; only the flagged ad changes</td><td>"Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales (3× breakeven)."</td><td>Apply the fix, or dismiss</td></tr>
+    <tr><td class="st">10</td><td>A rule has fired on a running campaign</td><td>Optimization widget; only the flagged ad changes</td><td>"Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales (3× breakeven)."</td><td>Apply the fix, or dismiss</td></tr>
   </table></div>
   <ul class="plain">
     <li>Approve and Add to campaign are disabled while their action runs, so nothing is published or added twice.</li>
@@ -444,43 +444,43 @@
   <h2>Product decisions</h2>
   <div class="wrap"><table>
     <tr><th>Decision</th><th>Reason</th></tr>
-    <tr><td>Trend and design cards follow the research-backed fields above</td><td>The merchant wanted cards "informative backed by facts"</td></tr>
-    <tr><td>Feedback is free typing or card controls, and regenerates the whole card</td><td>A change usually affects several details on the card</td></tr>
+    <tr><td>Trend and design widgets follow the research-backed fields above</td><td>The merchant wanted widgets "informative backed by facts"</td></tr>
+    <tr><td>Feedback is free typing or widget controls, and regenerates the whole widget</td><td>A change usually affects several details on the widget</td></tr>
     <tr><td>Approve publishes each design immediately</td><td>Fewer steps; matches the scope's direct publishing</td></tr>
     <tr><td>Price: at least $10 profit or 30% margin, whichever is greater; demo tee at $30</td><td>Fourthwall's stricter guideline; $30 leaves $10.32 per sale for ads instead of $8.43</td></tr>
-    <tr><td>Every blank: the rule minimum, raised to the next clean price that leaves at least $10 breakeven per sale</td><td>Same headroom choice as the demo tee ($28 to $30); the card shows the math and flags when competitors sell far lower</td></tr>
+    <tr><td>Every blank: the rule minimum, raised to the next clean price that leaves at least $10 breakeven per sale</td><td>Same headroom choice as the demo tee ($28 to $30); the widget shows the math and flags when competitors sell far lower</td></tr>
     <tr><td>One Advantage+ campaign for all products</td><td>Meta: combining ads combines learning; at $45 a day, split campaigns would all stay Learning Limited; even combined, it may still stay Learning Limited (about 31 sales a week against Meta's ~50)</td></tr>
-    <tr><td>Launch after the last ad card</td><td>Meta: adding ads resets learning</td></tr>
+    <tr><td>Launch after the last ad widget</td><td>Meta: adding ads resets learning</td></tr>
     <tr><td>2 videos and 1 static image per product</td><td>Meta: up to 10 creatives per ad set and a mix of video and static</td></tr>
     <tr><td>$15 per product per day</td><td>Middle of the $10 to $50 practitioner range</td></tr>
     <tr><td>Kill at 3× breakeven with no sales, checked every 30 minutes; scale +20% per 48 hours</td><td>Practitioner heuristics (unverified). 3× cuts the chance of killing an ad that is really at breakeven from 13.5% to 5%, and shop sales by UTM catch purchases Meta reports late</td></tr>
     <tr><td>Test designs, not just ads: a design-level kill at 4× breakeven pauses all of a product's ads</td><td>In print-on-demand the design is what's being tested; the per-ad rule only trims weak creatives</td></tr>
     <tr><td>Breakeven on the priciest size by default, size-weighted as an option</td><td>Rules never under-protect; the weighted view is closer once real size data exists</td></tr>
     <tr><td>UGC-style video</td><td>Industry standard for apparel on Meta; Meta says native, non-ad-like creative performs better</td></tr>
-    <tr><td>The customer pays shipping; the card uses the live rate, about $5 otherwise</td><td>Fourthwall passes the true rate to the customer (US tees $4.50 to $6.50); breakeven at $30 only moves between $10.28 and $10.34</td></tr>
-    <tr><td>The campaign launches live; there is no paused option</td><td>One button keeps the campaign card simple</td></tr>
+    <tr><td>The customer pays shipping; the widget uses the live rate, about $5 otherwise</td><td>Fourthwall passes the true rate to the customer (US tees $4.50 to $6.50); breakeven at $30 only moves between $10.28 and $10.34</td></tr>
+    <tr><td>The campaign launches live; there is no paused option</td><td>One button keeps the campaign widget simple</td></tr>
     <tr><td>Shop optimization uses Fourthwall's built-in reports for now</td><td>PostHog or Clarity need custom site code and consent handling, which is outside the POC</td></tr>
     <tr><td>Look: ChatGPT's design system with an indigo dye accent</td><td>OpenAI allows brand color only on buttons, badges and icons; indigo stands apart from the status colors</td></tr>
-    <tr><td>One coach line per card in a friendly-coach voice</td><td>The merchant chose a warm voice that explains each call</td></tr>
-    <tr><td>Ad card: everything on one card; each video has a full-screen control</td><td>One glance and one decision, while full screen lets you judge videos at phone size</td></tr>
+    <tr><td>One coach line per widget in a friendly-coach voice</td><td>The merchant chose a warm voice that explains each call</td></tr>
+    <tr><td>Ad widget: everything on one widget; each video has a full-screen control</td><td>One glance and one decision, while full screen lets you judge videos at phone size</td></tr>
     <tr><td>Designs come from ChatGPT's built-in image generation, triggered by a wovain skill</td><td>ChatGPT makes better images (scope); there is no direct API, so a skill asks ChatGPT and hands the image to wovain</td></tr>
     <tr><td>A fired rule triggers optimization, not a full pause</td><td>The merchant's definition of "change direction" mid-campaign</td></tr>
     <tr><td>Video: MiniMax H3 Max Reference on fal by default, with the mockup and the design as references</td><td>On-model UGC clips that kept the print in the first real test, at $0.75 per clip; Kling v3 ($2.10) and Kling O1 Reference ($0.84, 10 s) are one setting away, and the cheaper MiniMax H3 models serve test runs</td></tr>
     <tr><td>Audio: generated background audio (MMAudio), configurable</td><td>Meta's music only works on image ads; MMAudio costs $0.015 per clip against $0.63 for Kling's own audio</td></tr>
-    <tr><td>Every value is configurable from a Settings card and per-card quick settings</td><td>The merchant tunes prices, budgets, rules and models without a redeploy</td></tr>
+    <tr><td>Every value is configurable from a Settings widget and per-widget quick settings</td><td>The merchant tunes prices, budgets, rules and models without a redeploy</td></tr>
     <tr><td>Print fidelity is checked by eye in the full-screen video view</td><td>No provider offers an automatic check; keeps the POC small</td></tr>
   </table></div>
 
   <h2>What we're building</h2>
   <ul class="ac">
-    <li>Trend card with 5 evidence-backed ideas and a 2-or-3 pick.</li>
-    <li>Design card per idea: mockup, placement, file quality, listing, price; approve, skip, feedback.</li>
+    <li>Trend widget with 5 evidence-backed ideas and a 2-or-3 pick.</li>
+    <li>Design widget per idea: mockup, placement, file quality, listing, price; approve, skip, feedback.</li>
     <li>Immediate Fourthwall publishing on approve.</li>
-    <li>Ad card per product: 2 UGC-style videos, 1 static image, copy, breakeven math.</li>
-    <li>One Advantage+ sales campaign launched after the last ad card, at $15 per product per day.</li>
+    <li>Ad widget per product: 2 UGC-style videos, 1 static image, copy, breakeven math.</li>
+    <li>One Advantage+ sales campaign launched after the last ad widget, at $15 per product per day.</li>
     <li>Five Meta automated rules: kill (no sales), kill (design), kill (too expensive), scale, alert.</li>
-    <li>Optimization card when a rule fires.</li>
-    <li>Settings card and per-card quick settings for every value.</li>
+    <li>Optimization widget when a rule fires.</li>
+    <li>Settings widget and per-widget quick settings for every value.</li>
     <li>The 10 states in States and Boundaries.</li>
   </ul>
 
@@ -490,7 +490,7 @@
     <tr><td>Moving a winning product into its own campaign</td><td>Needs real results first</td></tr>
     <tr><td>Bundles and 2-pack offers</td><td>Adds a promotion step to the flow</td></tr>
     <tr><td>Per-product budgets</td><td>Advantage+ manages budget for the whole campaign</td></tr>
-    <tr><td>Campaign results card in chat</td><td>Needs spend data first (<code>scope.md &gt; Later</code>)</td></tr>
+    <tr><td>Campaign results widget in chat</td><td>Needs spend data first (<code>scope.md &gt; Later</code>)</td></tr>
     <tr><td>Results feeding back into trend research</td><td>Needs real results first (<code>scope.md &gt; Later</code>)</td></tr>
   </table></div>
 
@@ -524,9 +524,9 @@
     <tr><td>Can Etsy listing counts and USPTO checks be reached reliably?</td><td>Resolved in <code>spec.md</code></td></tr>
     <tr><td>Does ChatGPT hand its generated image to wovain's tool when a wovain skill asks for it?</td><td>Resolved in <code>spec.md</code></td></tr>
     <tr><td>Does your ChatGPT plan allow custom plugins? (Plus confirmed: 'Add custom MCP server' is available)</td><td>Resolved in <code>spec.md</code></td></tr>
-    <tr><td>Can a card's video go full screen itself, or does it need ChatGPT's full-screen view?</td><td>Resolved in <code>spec.md</code></td></tr>
+    <tr><td>Can a widget's video go full screen itself, or does it need ChatGPT's full-screen view?</td><td>Resolved in <code>spec.md</code></td></tr>
     <tr><td>A published plugin must own its Fourthwall and Meta connections; the demo can use the existing ones</td><td>Resolved in <code>spec.md</code></td></tr>
-    <tr><td>Do ChatGPT app cards work in Live voice?</td><td>Resolved in <code>spec.md</code></td></tr>
+    <tr><td>Do ChatGPT app widgets work in Live voice?</td><td>Resolved in <code>spec.md</code></td></tr>
   </table></div>
 </main>
 <script>

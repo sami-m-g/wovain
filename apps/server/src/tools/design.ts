@@ -12,12 +12,12 @@ import type { Design, DesignQuote } from "@wovain/shared/design";
 import { priceProduct, sizeCostSchema } from "@wovain/shared/economics";
 import { z } from "zod";
 
-import { cardUri } from "../cards.ts";
 import { assertUploadUrl } from "../lib/fetch-image.ts";
 import { readImageInfo } from "../lib/image.ts";
 import { loadArtwork } from "../lib/load-artwork.ts";
 import { text } from "../lib/tool-result.ts";
 import type { Store } from "../store.ts";
+import { widgetUri } from "../widgets.ts";
 
 // ChatGPT passes a generated or uploaded image as a file object
 // (developers.openai.com/plugins/build/chatgpt-ui, "openai/fileParams").
@@ -69,7 +69,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         readOnlyHint: false,
       },
       description:
-        "Stage design artwork and measure it. Pass exactly one: `url` for image generation's result (a data:image/... URL) or a public https image (fal's result, a Fourthwall CDN image), or `artwork` for a file the merchant attached (a ChatGPT file object). Returns pixel size, transparency and byte size, which request-media-upload-link and the design card need.",
+        "Stage design artwork and measure it. Pass exactly one: `url` for image generation's result (a data:image/... URL) or a public https image (fal's result, a Fourthwall CDN image), or `artwork` for a file the merchant attached (a ChatGPT file object). Returns pixel size, transparency and byte size, which request-media-upload-link and the design widget need.",
       inputSchema: z.object({
         artwork: fileParamSchema.optional(),
         url: z.string().optional(),
@@ -194,12 +194,12 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
 
   registerAppTool(
     server,
-    "show_design_card",
+    "show_design_widget",
     {
       _meta: {
         "openai/toolInvocation/invoked": "Design ready",
-        "openai/toolInvocation/invoking": "Laying out the design card…",
-        ui: { resourceUri: cardUri("design") },
+        "openai/toolInvocation/invoking": "Laying out the design widget…",
+        ui: { resourceUri: widgetUri("design") },
       },
       annotations: {
         destructiveHint: false,
@@ -207,16 +207,16 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         readOnlyHint: false,
       },
       description:
-        "Show one design card: the design on a Fourthwall blank with mockups, colors, placement, file quality, sizes, listing and the price from price_product. Omit id for a new design; pass the id to redraw a design after feedback. Publishing happens only after the merchant approves on the card.",
+        "Show one design widget: the design on a Fourthwall blank with mockups, colors, placement, file quality, sizes, listing and the price from price_product. Omit id for a new design; pass the id to redraw a design after feedback. Publishing happens only after the merchant approves on the widget.",
       inputSchema: designSchema.omit({ status: true }).partial({ id: true }),
       outputSchema: designResultSchema,
-      title: "Show design card",
+      title: "Show design widget",
     },
     async (input) => {
       const design = await store.saveDesign({ ...input, status: "draft" });
       return {
         content: text(
-          `Showing design ${design.id}. Wait for the merchant to approve, skip or give feedback on the card.`
+          `Showing design ${design.id}. Wait for the merchant to approve, skip or give feedback on the widget.`
         ),
         structuredContent: { design },
       };
@@ -228,7 +228,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
     "record_design",
     {
       _meta: {
-        ui: { resourceUri: cardUri("design"), visibility: ["model", "app"] },
+        ui: { resourceUri: widgetUri("design"), visibility: ["model", "app"] },
       },
       annotations: {
         destructiveHint: false,
@@ -236,7 +236,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         readOnlyHint: false,
       },
       description:
-        "Record a design's state: publishing when you start the Fourthwall publish, live with productId and productUrl once it is public, rejected with the reason if Fourthwall refuses, skipped when the merchant skips. The design card updates itself from this.",
+        "Record a design's state: publishing when you start the Fourthwall publish, live with productId and productUrl once it is public, rejected with the reason if Fourthwall refuses, skipped when the merchant skips. The design widget updates itself from this.",
       inputSchema: z.object({
         id: z.string(),
         productId: z.string().optional(),
@@ -272,14 +272,14 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
     server,
     "get_design",
     {
-      _meta: { ui: { resourceUri: cardUri("design"), visibility: ["app"] } },
+      _meta: { ui: { resourceUri: widgetUri("design"), visibility: ["app"] } },
       annotations: {
         destructiveHint: false,
         openWorldHint: false,
         readOnlyHint: true,
       },
       description:
-        "Read a design's current state (used by the design card to follow publishing).",
+        "Read a design's current state (used by the design widget to follow publishing).",
       inputSchema: z.object({ id: z.string() }),
       outputSchema: designResultSchema,
       title: "Get design",
