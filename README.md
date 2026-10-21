@@ -37,10 +37,11 @@ Fill in `apps/server/.env` (empty values count as unset; on Vercel, set them in 
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
 | `FAL_BILLING_KEY` | Optional: what fal actually charged (`video_spend`) | fal API key with the Billing preset |
 | `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
-| `BETTER_AUTH_SECRET` | Signs sessions and OAuth state for sign-in | `openssl rand -hex 32` |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in, the page ChatGPT sends merchants to | Google Cloud OAuth web client; redirect URI `<site>/api/auth/callback/google` |
-| `WOVAIN_ALLOWED_EMAILS` | Who may sign in (comma-separated verified emails; empty lets nobody in) | Your Google account email |
-| `DATABASE_URL` | Required: records and sign-in data in Neon Postgres | Neon `dev` branch's pooled URL (production uses `main`) |
+| `WORKOS_AUTHKIT_DOMAIN` | Sign-in: the AuthKit domain that issues `/mcp`'s tokens | WorkOS dashboard (e.g. `https://<name>.authkit.app`) |
+| `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
+| `WOVAIN_ALLOWED_EMAILS` | Who may use `/mcp` (comma-separated verified emails; empty lets nobody in) | The email you sign in to AuthKit with |
+| `WOVAIN_SITE_URL` | Optional: overrides the site URL, e.g. a tunnel to your local server | Your tunnel's URL |
+| `DATABASE_URL` | Required: records in Neon Postgres | Neon `dev` branch's pooled URL (production uses `main`) |
 | `BLOB_READ_WRITE_TOKEN` | Required: staged artwork in the private Blob store | `vercel env pull` (the Blob integration sets it) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional: send traces to GitLab Observability (unset sends nothing) | GitLab group → Observe → Observability configuration |
 | `OTEL_EXPORTER_OTLP_HEADERS` | Optional: the auth header for that endpoint, as `key=value` | Same page |
@@ -82,7 +83,7 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 | monitor | A smoke test of the live OAuth chain                            |
 | release | semantic-release, after the smoke test passes                   |
 
-It needs the CI variables `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`. Google sign-in only works on production, because Google needs exact redirect URIs.
+It needs the CI variables `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
 
 ## Releases
 

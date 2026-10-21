@@ -5,7 +5,7 @@ import { styles } from "./styles.ts";
 
 export type Html = HtmlEscapedString | Promise<HtmlEscapedString>;
 
-// The shell around wovain's few pages: sign-in, consent and the home page.
+// The shell around wovain's home page; AuthKit hosts sign-in and consent.
 export const page = (title: string, body: Html): Html =>
   html`<!doctype html>
     <html lang="en">
@@ -26,6 +26,3 @@ export const page = (title: string, body: Html): Html =>
         ${body}
       </body>
     </html>`;
-
-export const alert = (message: string | undefined): Html | "" =>
-  message === undefined ? "" : html`<p role="alert">${message}</p>`;

@@ -1,116 +1,113 @@
 import { describe, expect, test } from "bun:test";
 
-import { requireMcpAuth } from "@better-auth/mcp";
-import { z } from "zod";
+import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
 
-import { createAuth } from "../src/auth/auth.ts";
+import { createAuth, requireMcpAuth } from "../src/auth/auth.ts";
 import { loadAuthEnv } from "../src/auth/env.ts";
-import { createTestDb } from "../src/db/testing.ts";
 
 const site = "http://localhost:3000";
-const redirectUri = "https://chatgpt.com/connector_platform_oauth_redirect";
+const issuer = "https://wovain.authkit.app";
+
+// AuthKit's signing key and users, stood in for locally.
+const { privateKey, publicKey } = await generateKeyPair("RS256");
+const users = new Map([
+  ["user_owner", { email: "owner@example.com", emailVerified: true }],
+  ["user_stranger", { email: "stranger@example.com", emailVerified: true }],
+  ["user_unverified", { email: "owner@example.com", emailVerified: false }],
+]);
 
 const auth = createAuth(
   loadAuthEnv({
-    BETTER_AUTH_SECRET: "s".repeat(32),
-    BETTER_AUTH_URL: site,
+    WORKOS_AUTHKIT_DOMAIN: issuer,
     WOVAIN_ALLOWED_EMAILS: "Owner@Example.com",
+    WOVAIN_SITE_URL: site,
   }),
-  await createTestDb()
+  {
+    findUser: async (userId) =>
+      await Promise.resolve(users.get(userId) ?? null),
+    keys: createLocalJWKSet({
+      keys: [{ ...(await exportJWK(publicKey)), alg: "RS256" }],
+    }),
+  }
 );
 
-const get = async (pathname: string) =>
-  await auth.handler(new Request(`${site}${pathname}`));
+const guarded = requireMcpAuth(
+  auth,
+  (_request, caller) => new Response(caller.userId)
+);
 
-const json = async (response: Response) =>
-  z.record(z.string(), z.unknown()).parse(await response.json());
+const tokenFor = async (
+  sub: string,
+  { audience = `${site}/mcp`, from = issuer } = {}
+) =>
+  await new SignJWT({ scope: "openid email" })
+    .setProtectedHeader({ alg: "RS256" })
+    .setSubject(sub)
+    .setIssuer(from)
+    .setAudience(audience)
+    .setExpirationTime("5m")
+    .sign(privateKey);
+
+const call = async (token?: string) =>
+  await guarded(
+    new Request(`${site}/mcp`, {
+      headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+      method: "POST",
+    })
+  );
+
+const statusOf = async (token: string) => {
+  const response = await call(token);
+  return response.status;
+};
 
 // The discovery chain ChatGPT follows (developers.openai.com/plugins/build/auth).
 describe("OAuth for ChatGPT", () => {
   test("/mcp without a token points at the resource metadata", async () => {
-    const guarded = requireMcpAuth(auth, () => new Response("tools"), {
-      resource: `${site}/mcp`,
-    });
-    const response = await guarded(
-      new Request(`${site}/mcp`, { method: "POST" })
-    );
+    const response = await call();
     expect(response.status).toBe(401);
-    expect(response.headers.get("www-authenticate")).toContain(
-      `resource_metadata="${site}/.well-known/oauth-protected-resource/mcp"`
+    expect(response.headers.get("www-authenticate")).toBe(
+      `Bearer resource_metadata="${site}/.well-known/oauth-protected-resource/mcp"`
     );
   });
 
-  test("resource metadata names this server as the authorization server", async () => {
-    const metadata = await json(
-      await get("/.well-known/oauth-protected-resource/mcp")
-    );
-    expect(metadata["resource"]).toBe(`${site}/mcp`);
-    expect(metadata["authorization_servers"]).toEqual([`${site}/api/auth`]);
-  });
-
-  test("authorization server metadata offers PKCE S256, CIMD and registration", async () => {
-    const metadata = await json(
-      await get("/.well-known/oauth-authorization-server/api/auth")
-    );
-    expect(metadata["code_challenge_methods_supported"]).toEqual(["S256"]);
-    expect(metadata["client_id_metadata_document_supported"]).toBe(true);
-    expect(metadata["registration_endpoint"]).toBe(
-      `${site}/api/auth/oauth2/register`
-    );
-  });
-
-  test("a registered client is sent to /sign-in with a signed query", async () => {
-    const registered = await json(
-      await auth.handler(
-        new Request(`${site}/api/auth/oauth2/register`, {
-          body: JSON.stringify({
-            client_name: "ChatGPT",
-            grant_types: ["authorization_code", "refresh_token"],
-            redirect_uris: [redirectUri],
-            response_types: ["code"],
-            token_endpoint_auth_method: "none",
-          }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        })
-      )
-    );
-    const clientId = z.string().parse(registered["client_id"]);
-    const query = new URLSearchParams({
-      client_id: clientId,
-      code_challenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
-      code_challenge_method: "S256",
-      redirect_uri: redirectUri,
+  test("resource metadata names AuthKit as the authorization server", () => {
+    expect(auth.metadata).toEqual({
+      authorization_servers: [issuer],
+      bearer_methods_supported: ["header"],
       resource: `${site}/mcp`,
-      response_type: "code",
-      scope: "openid offline_access",
-      state: "s1",
     });
-    const response = await get(`/api/auth/oauth2/authorize?${query}`);
-    const location = new URL(response.headers.get("location") ?? "", site);
-    expect(location.pathname).toBe("/sign-in");
-    expect(location.searchParams.get("client_id")).toBe(clientId);
-    expect(location.searchParams.has("sig")).toBe(true);
+  });
+
+  test("a token for /mcp reaches the tools as its user", async () => {
+    const response = await call(await tokenFor("user_owner"));
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("user_owner");
+  });
+
+  test("refuses tokens for another resource or issuer", async () => {
+    const wrongAudience = await tokenFor("user_owner", {
+      audience: "https://elsewhere.example/mcp",
+    });
+    const wrongIssuer = await tokenFor("user_owner", {
+      from: "https://evil.authkit.app",
+    });
+    expect(await statusOf(wrongAudience)).toBe(401);
+    expect(await statusOf(wrongIssuer)).toBe(401);
   });
 });
 
-const createUser = async (email: string) => {
-  const { internalAdapter } = await auth.$context;
-  return await internalAdapter
-    .createUser(
-      { email, emailVerified: true, name: "Test" },
-      { method: "admin" }
-    )
-    .catch(() => null);
-};
-
 // Everyone signed in acts through the operator's Meta and fal keys for now.
-describe("sign-in allowlist", () => {
-  test("lets a listed email create an account, ignoring case", async () => {
-    expect(await createUser("owner@example.com")).not.toBeNull();
+describe("allowlist", () => {
+  test("refuses a signed-in email that isn't listed", async () => {
+    expect(await statusOf(await tokenFor("user_stranger"))).toBe(403);
   });
 
-  test("creates no account for anyone else", async () => {
-    expect(await createUser("stranger@example.com")).toBeNull();
+  test("refuses a listed email that isn't verified", async () => {
+    expect(await statusOf(await tokenFor("user_unverified"))).toBe(403);
+  });
+
+  test("refuses a user WorkOS doesn't know", async () => {
+    expect(await statusOf(await tokenFor("user_gone"))).toBe(403);
   });
 });

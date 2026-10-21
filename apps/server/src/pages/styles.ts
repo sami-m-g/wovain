@@ -58,47 +58,4 @@ body {
   margin: 0 0 24px;
   color: var(--wovain-muted);
 }
-
-.panel [role="alert"] {
-  margin: 16px 0 0;
-  color: var(--wovain-danger);
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-}
-
-button {
-  min-height: 44px;
-  padding: 0 20px;
-  border: 1px solid var(--wovain-border);
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-button.primary {
-  width: 100%;
-  border-color: var(--wovain-accent);
-  background: var(--wovain-accent);
-  color: var(--wovain-accent-text);
-}
-
-.actions button {
-  flex: 1;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--wovain-accent);
-  outline-offset: 2px;
-}
 `;
