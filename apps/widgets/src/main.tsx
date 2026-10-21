@@ -1,14 +1,14 @@
-import "../styles.css";
+import "./styles.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-
-import { DesignWidget } from "./design-widget.tsx";
+// vite.config.ts points this at the WIDGET being built.
+import { Widget } from "virtual:widget";
 
 const root = document.querySelector("#root");
 if (root !== null) {
   createRoot(root).render(
     <StrictMode>
-      <DesignWidget />
+      <Widget />
     </StrictMode>
   );
 }
