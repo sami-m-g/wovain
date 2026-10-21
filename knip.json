@@ -1,6 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
+    ".": {
+      "entry": ["duo.ts"]
+    },
     "apps/widgets": {
       "entry": ["src/*/*-widget.tsx"]
     }
