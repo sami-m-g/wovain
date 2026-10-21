@@ -1,3 +1,10 @@
+# [0.14.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.13.1...v0.14.0) (2026-10-21)
+
+
+### Features
+
+* **server:** move sign-in to workos authkit ([c41af55](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/c41af55b552e6df3cf97e43a24df6531ed8c121e))
+
 ## [0.13.1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.13.0...v0.13.1) (2026-10-21)
 
 
