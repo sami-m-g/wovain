@@ -82,7 +82,7 @@ Steps 1, 2, 8 and 9 moved to later by the learner's call (`checklist.md > Revisi
 | Widget states | Storybook 10 (`@storybook/react-vite` with the a11y, docs, themes and vitest addons) | 10.6 | https://storybook.js.org |
 | Commits and dead code | commitlint (conventional commits) and knip | 21.x / 6.x | https://commitlint.js.org |
 | Database | Neon Postgres through Drizzle ORM (`drizzle-orm/bun-sql` on `Bun.SQL`), migrations by drizzle-kit; PGlite (Postgres in WASM, in-process) for tests | 0.45.4 / 0.31.11 / 0.5.8 | https://orm.drizzle.team |
-| Infrastructure as code | `neon.ts` (`@neon/config`) for the Neon project's branches and services; a static `apps/server/vercel.json` for the Vercel project (`vercel.ts` was tried and dropped: Vercel installs dependencies on Bun 1.3 to compile it, which ignores our lockfile) | 1.8.7 | https://neon.com/docs |
+| Infrastructure as code | A static `apps/server/vercel.json` for the Vercel project; the Neon project (branches `main` and `dev`, Neon Auth off) is set up once in Neon, with no config file (`vercel.ts` was tried and dropped: Vercel installs dependencies on Bun 1.3 to compile it, which ignores our lockfile) | — | https://vercel.com/docs/project-configuration |
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
 - Bun: the learner chose it over Node with Express. Official examples assume Node, so `bunfig.toml` sets `[run] bun = true` and even Storybook, Vitest and other tools with a node shebang run on Bun. No Node install is needed.
@@ -408,7 +408,6 @@ wovain/
 ├── commitlint.config.ts         # conventional commits
 ├── knip.json                    # dead-code check
 ├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
-├── neon.ts                      # Neon policy: Neon Auth off, dev kept, other branches expire in 7 days
 ├── package.json                 # bun workspaces (apps/server, apps/widgets, packages/shared) and scripts
 ├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
 └── devpost/                     # planning docs (Markdown), app-map.html and plan.css
