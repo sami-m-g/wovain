@@ -5,7 +5,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (trend → 
 ## Workflow
 
 - Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `devpost/*.md`.
-- Planning docs are Markdown only; the `.md` in `devpost/` is the source of truth. The one HTML page is `devpost/app-map.html` (the code map), styled by `devpost/plan.css`.
+- Planning docs are Markdown only; the `.md` in `devpost/` is the source of truth. The one HTML page is `devpost/app-map.html` (the code map), with its CSS inline.
 
 ## Commits
 
