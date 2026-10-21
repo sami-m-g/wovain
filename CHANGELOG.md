@@ -1,3 +1,10 @@
+# [0.13.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.12.2...v0.13.0) (2026-10-21)
+
+
+### Features
+
+* **server:** serve the step playbooks over mcp and remove the chatgpt plugin ([cc507b4](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/cc507b4fbdae60ad089eb098a41dc7b493e368ab))
+
 ## [0.12.2](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.12.1...v0.12.2) (2026-10-20)
 
 ### Bug Fixes
