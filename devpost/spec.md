@@ -15,14 +15,14 @@ wovain is a hosted MCP server. You add its URL to an agent that speaks MCP over 
 
 | Piece | What it is | What it does in wovain |
 |---|---|---|
-| Playbooks | Step-by-step instructions the wovain server hands the agent | The playbook for each step: design, ads, campaign (research and optimization come later) |
+| Playbooks | Step-by-step instructions the wovain server hands the agent | The playbook for each step: design, ads, campaign (optimization comes later) |
 | Fourthwall MCP | Fourthwall's official server | Blanks, mockups, prices, publishing |
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
 | fal MCP | fal's official server | Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal |
-| wovain server | Our Hono server, hosted on Vercel and reached over HTTPS | Serves the playbooks and widgets, does the margin math, trend lookups, Meta rules, settings |
-| Widgets | Small web pages the agent shows inline (MCP Apps) | Trend, design, ad, campaign, optimization and settings widgets |
+| wovain server | Our Hono server, hosted on Vercel and reached over HTTPS | Serves the playbooks and widgets, does the margin math, Meta rules, settings |
+| Widgets | Small web pages the agent shows inline (MCP Apps) | Design, ad, campaign, optimization and settings widgets |
 
-Why a wovain server at all: an agent can only show a widget that an MCP server serves, a widget's buttons can only call its own server, and two jobs have no MCP (Meta automated rules, trend APIs). Everything else goes through the official servers.
+Why a wovain server at all: an agent can only show a widget that an MCP server serves, a widget's buttons can only call its own server, and Meta automated rules have no MCP. Everything else goes through the official servers.
 
 How the agent learns the flow: when it connects, wovain's MCP `instructions` list the steps. Before each step the agent reads that step's playbook, either with the `get_playbook` tool or as the MCP prompt of the same name. Nothing has to be installed on the agent's side.
 
@@ -43,7 +43,6 @@ flowchart LR
   P --> FW[Fourthwall MCP]
   P --> MA[Meta Ads MCP]
   P --> FAL[fal MCP]
-  W --> SA[SerpApi, Etsy, Marker]
   W --> G[Meta Graph API: rules]
   W --> J[(Neon Postgres + Blob)]
   W --> C[Widgets in chat]
@@ -51,17 +50,16 @@ flowchart LR
 
 | # | You do | What happens | You see |
 |---|---|---|---|
-| 1 | Ask for trending designs | `trends` playbook (later): web search for candidates, `trends_evidence` (SerpApi, Etsy, Marker), Meta ad library search for ad counts | Trend widget |
-| 2 | Tick 2 or 3, click "Design the ones I picked" | The widget posts the picks; skipped if you bring your own idea | Next step starts |
-| 3 | Wait | `design` playbook: the agent generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design widget per idea |
-| 4 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design widget shows Live with a link |
-| 5 | Wait | `ads` playbook: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed | Ad widget per product |
-| 6 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last widget, the campaign step starts | Next ad widget, or the campaign widget |
-| 7 | Wait | `campaign` playbook: checks payment method and pixel; `campaign_plan` gives the budget, ad names and links; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign widget: Live, or Ready, blocked |
-| 8 | Later: "How's my campaign?" | `optimize` playbook (later): `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization widget per fired rule |
-| 9 | Apply the fix or Dismiss | The fix runs through the same tools (new video, new hook, price test) | Updated ad, campaign keeps running |
+| 1 | Give 2 or 3 product ideas | The agent starts the `design` playbook | Next step starts |
+| 2 | Wait | `design` playbook: the agent generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design widget per idea |
+| 3 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design widget shows Live with a link |
+| 4 | Wait | `ads` playbook: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed | Ad widget per product |
+| 5 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last widget, the campaign step starts | Next ad widget, or the campaign widget |
+| 6 | Wait | `campaign` playbook: checks payment method and pixel; `campaign_plan` gives the budget, ad names and links; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign widget: Live, or Ready, blocked |
+| 7 | Later: "How's my campaign?" | `optimize` playbook (later): `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization widget per fired rule |
+| 8 | Apply the fix or Dismiss | The fix runs through the same tools (new video, new hook, price test) | Updated ad, campaign keeps running |
 
-Steps 1, 2, 8 and 9 moved to later by the learner's call (`checklist.md > Revisions`); the own-idea path starts at step 3.
+Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 
 ## Stack
 
@@ -119,7 +117,7 @@ How sign-in works:
 |---|---|
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Vercel (Bun 1.4 runtime); Bun 1.4 locally for development |
-| Keys in `apps/server/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `SERPAPI_KEY`, `ETSY_API_KEY`, `MARKER_API_TOKEN`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `DATABASE_URL` (Neon: the `dev` branch locally) and `BLOB_READ_WRITE_TOKEN` (the private Blob store); on Vercel the Neon and Blob integrations set the last two |
+| Keys in `apps/server/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `DATABASE_URL` (Neon: the `dev` branch locally) and `BLOB_READ_WRITE_TOKEN` (the private Blob store); on Vercel the Neon and Blob integrations set the last two |
 | Rehearsal | Later: `WOVAIN_MOCK=1` (`bun run mock`) is meant to answer wovain's outside calls from fixtures and skip publish and launch steps; the flag is read but nothing uses it yet |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
@@ -169,7 +167,6 @@ One playbook per step in `apps/server/src/playbooks/`. Each has a description (w
 
 | Playbook | Steps | PRD ref |
 |---|---|---|
-| `trends` (later) | Web search for candidates, `trends_evidence`, Meta ad library counts, `show_trend_widget` | `prd.md > Trend research` |
 | `design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_widget`; on approve, publish and `record_design` | `prd.md > Design widgets`, `prd.md > Pricing and economics` |
 | `ads` | `video_plan`, fal video ×2, fal MMAudio, copy, `show_ad_widget`, `record_ad` | `prd.md > Ad widgets` |
 | `campaign` | Payment and pixel checks, `campaign_plan`, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_widget` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
@@ -184,7 +181,6 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | Tool | Does | Talks to |
 |---|---|---|
 | `get_playbook` | Returns one step's playbook (read-only) | Playbooks |
-| `trends_evidence` (later) | Growth, seasonality, Etsy count and trademark screen per idea | SerpApi, Etsy API, Marker API |
 | `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | records, Blob media |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
@@ -196,17 +192,16 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | `create_rules` | Creates the five rules per the PRD | Meta Graph API |
 | `campaign_check` (later) | Reads rule history and campaign results | Meta Graph API |
 | `get_settings`, `update_settings` | Read and change any setting | records |
-| `show_*_widget` | Return widget data and attach the widget: settings, design, ad and campaign now; trend and optimization later | Widgets |
+| `show_*_widget` | Return widget data and attach the widget: settings, design, ad and campaign now; optimization later | Widgets |
 
 PRD ref: `prd.md > Features and Behavior`.
 
 ### Widgets
 
-One React component per widget, each built into a single HTML file. Buttons use `callTool` for wovain tools and `sendFollowUpMessage` for steps that need Fourthwall or Meta. Each widget keeps its in-progress state (ticked ideas, typed feedback) with `setWidgetState`.
+One React component per widget, each built into a single HTML file. Buttons use `callTool` for wovain tools and `sendFollowUpMessage` for steps that need Fourthwall or Meta. Each widget keeps its in-progress state (typed feedback, chosen variants) with `setWidgetState`.
 
 | Widget | Buttons | Feedback | PRD ref |
 |---|---|---|---|
-| Trend (later) | Design the ones I picked (enabled at 2 or 3) | Chat | `prd.md > Trend research` |
 | Design | Approve, Skip | Field and chat; regenerates the widget | `prd.md > Design widgets` |
 | Ad | Add to campaign, Skip | Field and chat; regenerates the widget | `prd.md > Ad widgets` |
 | Campaign | Open in Ads Manager | Chat | `prd.md > Campaign launch` |
@@ -223,7 +218,6 @@ Every value in the PRD is a setting, edited in the Settings widget or a widget's
 
 | Group | Settings (defaults) |
 |---|---|
-| Trends | ideas 5, pick 2 to 3 |
 | Pricing | min profit $10, min margin 30%, round up to a clean price |
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
 | Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
@@ -240,7 +234,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 |---|---|---|
 | Fourthwall, Meta Ads and fal MCPs in `.mcp.json` | MCP | Lets Claude try Fourthwall calls, Kling prompts, elements and MMAudio during the build, outside a chat with wovain |
 | `/new-tool` (later) | Project skill | Scaffolds one wovain tool: zod schema in `packages/shared`, tool file, widget stub, fixture and test |
-| `/demo-check` (later) | Project skill, user-only | Preflight before recording: `/mcp` reachable, widgets build, shop live, Meta payment method and pixel, fal credit, Etsy and Marker keys, and a claude-ads Meta audit of the ad account |
+| `/demo-check` (later) | Project skill, user-only | Preflight before recording: `/mcp` reachable, widgets build, shop live, Meta payment method and pixel, fal credit, and a claude-ads Meta audit of the ad account |
 | claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance will seed the `optimize` playbook; claude-ads is MIT-licensed, and that playbook will credit it in a NOTICE file |
 | `ultracite fix` after each edit | Hook (from `ultracite init --hooks claude`) | Lint and format every edit |
 | GitLab Secret Detection (CI template) | CI | Flags secrets and tokens in every push and merge request; replaced the local gitleaks hook |
@@ -349,7 +343,6 @@ One `records` table in Neon Postgres, keyed by user, kind and id, read and writt
 | Data | Lives in | Updated by | When you come back |
 |---|---|---|---|
 | Settings | `settings` | `update_settings` | Same values |
-| Ideas | `runs[runId].ideas` | `show_trend_widget` (later) | Trend widget can be redrawn |
 | Designs | `designs` and `artworks` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `runs[runId].ads` (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
 | Campaign | `runs[runId].campaign` (campaign, ad set, ad and rule IDs, status) | `create_rules`, campaign step | Optimization reads it |
@@ -417,24 +410,20 @@ wovain/
 | Service | Calls | Auth | Cost | Docs |
 |---|---|---|---|---|
 | Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews`, `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-conversion-rates-report`, `get-visitors-report` | OAuth in the agent | $0 | https://docs.fourthwall.com/ai/mcp.md |
-| Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_library_search`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in the agent | Ad spend only | https://developers.facebook.com/docs/marketing-api |
+| Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in the agent | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
 | fal MCP | `submit_jobs` / `wait_for_jobs` for `minimax/h3-max/reference-to-video` (references = mockup and artwork; Kling endpoints when chosen), `fal-ai/mmaudio-v2`, background removal, upscaler; live prices (`FAL_KEY`) | OAuth in the agent; `FAL_KEY` on the server | Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY) | https://fal.ai/docs/model-apis/mcp |
-| SerpApi | `engine=google_trends` (timeseries, related queries) | API key | Free 250 searches a month | https://serpapi.com/google-trends-api |
-| Etsy Open API v3 | `GET /v3/application/listings/active?keywords=` (`count`, prices, links) | `x-api-key` | Free; app approval takes days to weeks | https://developers.etsy.com/documentation |
-| Marker API | Trademark word search, filtered to class 025 | Token | Free tier (unverified) | https://markerapi.com |
 
-POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling; trend data free.
+POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling.
 
 ## Important Failure Modes
 
 - **The agent can't register or sign in** → check that CIMD and DCR are on in WorkOS (Connect → Configuration) and that `WORKOS_AUTHKIT_DOMAIN` and `WORKOS_API_KEY` are set on Vercel.
 - **Signed in, but every `/mcp` call is a 401** → the token's audience doesn't match `<site>/mcp`; add that URL as a resource indicator in WorkOS Staging.
-- **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
-- **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
-- **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#7).
-- **Meta blocks launch (no payment method or no purchase events)** → campaign widget shows Ready, blocked with the fix (#8, #9).
-- **Etsy key not approved yet** → the Etsy field shows a search link instead of a count, labeled.
+- **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #1).
+- **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#3).
+- **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#4).
+- **Meta blocks launch (no payment method or no purchase events)** → campaign widget shows Ready, blocked with the fix (#5, #6).
 
 ## What Was Simplified and Why
 
@@ -442,7 +431,6 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 - **Widget buttons post a chat message** for Fourthwall and Meta steps instead of calling them directly: a widget can only call its own server. Costs one model turn per click.
 - **Optimization widget on check-in** instead of a pushed alert: the agent can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.
 - **Print fidelity checked by eye** in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.
-- **Trademark screening via Marker** instead of an official USPTO search API: none exists. Labeled screening, not legal advice.
 - **One table of JSON records** instead of a table per entity: each record is checked by its zod schema on read, and Drizzle runs the same schema and migrations on Neon and, for tests, on PGlite.
 - **Hosted sign-in and consent (WorkOS AuthKit)** instead of our own pages: less code and no auth tables, at the cost of AuthKit's generic consent screen and a WorkOS dependency for every account.
 - **Server-rendered forms for sign-in and consent** instead of a React front end: two pages don't need one.
@@ -457,7 +445,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Video: MiniMax H3 Max Reference on fal by default (mockup and artwork as references) | Learner | Kept the print on-model in the first real test at $0.75 a clip, cheaper than Kling v3 ($2.10) after fal's price change | Newer model with less track record; Kling one setting away |
 | Audio: fal MMAudio, configurable | Learner | Meta's music skips video ads; 42× cheaper than Kling audio | Generic background music |
 | Every value in Settings and per-widget ⚙ | Learner | Tune without redeploys | A bigger settings schema |
-| Trend data: free bundle | Learner | $0 a month | Etsy approval wait; Marker unverified |
+| No trend research: the merchant brings the ideas (was: SerpApi, Etsy and Marker evidence on a trend widget) | Learner | Nothing in the code used it, and own ideas prove the loop | No research help before designing |
 | Bun, Vite, React 19, Ultracite with oxlint, TypeScript | Learner | Fast tooling and their preference | Official examples assume Node |
 | Hosted server on Vercel (Bun runtime), Streamable HTTP | Learner | Works on chatgpt.com and in other agents, ships on deploy | A host and an OAuth server to run |
 | One Hono package `apps/server` (was: Next.js `apps/web` plus `packages/db` around the server library) | Learner | Sign-in and consent are two forms, so Next.js was more than needed; one package holds MCP, auth and database | Server pre-bundled with `bun build`, since Vercel doesn't resolve source-only workspace packages; Next.js's per-request trace spans are gone |
@@ -470,7 +458,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | DX set from the sister wovain repo: commitlint, knip, Lefthook with type check on commit, MSW with mock mode, Storybook, CI, Dependabot, release-please, plus modern-web-guidance, security-guidance and hookify; no shadcn | Learner | Same habits as their main project; rehearse without spending; check widget states outside a chat | About an hour more setup. Since then GitLab CI/CD, Renovate and semantic-release replaced the GitHub pieces, and MSW mock mode moved to later |
 | JSON-record store on Neon, optimization on check-in | Derived | Follow from the choices above | See What Was Simplified |
 
-Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" Three platform facts answered it: widgets must be served by our own MCP server, widget buttons can only call that server, and Meta rules and trend APIs have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
+Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" Three platform facts answered it: widgets must be served by our own MCP server, widget buttons can only call that server, and Meta rules have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
 
 Verify early in the build, in this order:
 
@@ -481,7 +469,7 @@ Verify early in the build, in this order:
 | 3 | A fal video model keeps the print readable on-model; MMAudio adds audio (build step 3: MiniMax H3 Max Reference passed with the mockup and artwork as references) | Switch models in Settings |
 | 4 | Meta accepts a fal.media video URL; one NOTIFICATION rule created with the system user token; rule filters match per-product ads by name | Upload from file; adjust filters |
 | 5 | Meta MCP campaign gets `ADVANTAGE_PLUS_SALES` state | Set fields through the Graph API |
-| 6 | Marker API is alive; Etsy app approved | Show labeled search links |
+| 6 | Dropped with trend research | — |
 | 7 | Bun resolves the TS 6/7 npm aliases; `bunx tsc` runs 7.0 | Pin TS 6 only and skip type-aware lint |
 | 8 | Ultracite's Claude hook merges cleanly with the Impeccable hooks in `.claude/settings.json` | Merge the hooks by hand |
 | 9 | Storybook renders the widgets with the mocked host bridge | Use a plain Vite gallery page |

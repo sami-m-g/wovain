@@ -9,17 +9,14 @@ const envSchema = z.object({
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
   // Neon Postgres (pooled): main in production, the dev branch locally.
   DATABASE_URL: z.string().optional(),
-  ETSY_API_KEY: z.string().optional(),
   // Optional: a fal key with the Billing preset, only for reading what fal
   // actually charged (video_spend). FAL_KEY stays without billing access.
   FAL_BILLING_KEY: z.string().optional(),
   FAL_KEY: z.string().optional(),
-  MARKER_API_TOKEN: z.string().optional(),
   META_AD_ACCOUNT_ID: z.string().optional(),
   META_PAGE_ID: z.string().optional(),
   META_PIXEL_ID: z.string().optional(),
   META_SYSTEM_USER_TOKEN: z.string().optional(),
-  SERPAPI_KEY: z.string().optional(),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
   WOVAIN_MOCK: z.stringbool().default(false),

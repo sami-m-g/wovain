@@ -12,11 +12,11 @@ Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` +
 
 ## Users
 
-A solo print-on-demand merchant: the learner first, then any solo POD seller who wants AI to run more of their process. They work inside ChatGPT; voice is a nice-to-have, since widget support in ChatGPT Voice is unverified. Their job: go from a trend to live products and a running Meta campaign without switching between five tools.
+A solo print-on-demand merchant: the learner first, then any solo POD seller who wants AI to run more of their process. They work inside ChatGPT; voice is a nice-to-have, since widget support in ChatGPT Voice is unverified. Their job: go from a product idea to live products and a running Meta campaign without switching between five tools.
 
 ## Product Purpose
 
-wovain is a ChatGPT plugin that researches trends, designs products for the merchant's Fourthwall catalog, publishes them, and launches and manages their Meta Advantage+ ads from one conversation. Success: real Fourthwall products and a live Advantage+ campaign with automated rules exist, and the merchant only talked and approved.
+wovain is a ChatGPT plugin that designs products from the merchant's ideas for the merchant's Fourthwall catalog, publishes them, and launches and manages their Meta Advantage+ ads from one conversation. Success: real Fourthwall products and a live Advantage+ campaign with automated rules exist, and the merchant only talked and approved.
 
 ## Positioning
 
@@ -24,7 +24,7 @@ Every step ends in an approval widget built from real Fourthwall products, place
 
 ## Operating Context
 
-- Lives inside a ChatGPT conversation; widgets appear inline in journey order (trend, design, ad, campaign, optimization). See `devpost/prd.md > Screens and Layout`.
+- Lives inside a ChatGPT conversation; widgets appear inline in journey order (design, ad, campaign, optimization). See `devpost/prd.md > Screens and Layout`.
 - Connected services: Fourthwall (products, publishing, reports) and Meta Ads (campaigns, creatives, insights).
 - Merchant gives feedback by typing in chat or with the widget's own controls; feedback regenerates the whole widget.
 
@@ -50,6 +50,6 @@ Every step ends in an approval widget built from real Fourthwall products, place
 ## Product Principles
 
 1. Approve, don't operate: the merchant decides at widgets; wovain does the clicking.
-2. Show the evidence: trends, prices and margins come with sources or math.
+2. Show the evidence: prices and margins come with sources or math.
 3. Real over mock: widgets use real Fourthwall products, prices and stock.
 4. Reuse, don't rebuild: Fourthwall, Meta Advantage+ and ChatGPT's own capabilities do the heavy lifting.
