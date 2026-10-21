@@ -1,7 +1,7 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
 #   verify    build; lint, types, dead code, tests; widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   deploy    main: production; Duo flow triggers and settings (duo.ts)
+#   deploy    main: production; Duo flow triggers (.gitlab/duo.json)
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
@@ -167,34 +167,22 @@ mirror:github:
     - git fetch -q origin main --tags
     - git push git@github.com:sami-m-g/wovain.git refs/remotes/origin/main:refs/heads/main --tags
 
-# Configure: Duo flow triggers and settings from duo.ts. Merge requests that
-# touch it show the plan; main applies it. Node runs the .ts file directly,
-# and the script has no dependencies, so there's no install step.
-.duo:
+# Configure: write the Duo flow triggers in .gitlab/duo.json to GitLab when
+# it or duo.ts changes on main. Node runs the .ts file directly and the script
+# has no dependencies, so there's no install step.
+duo:
+  stage: deploy
   image: node:24-slim
+  interruptible: false
   variables:
     GIT_DEPTH: 1
-
-duo:plan:
-  extends: .duo
-  stage: verify
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes: [duo.ts]
-  script:
-    - node duo.ts plan
-
-duo:apply:
-  extends: .duo
-  stage: deploy
-  interruptible: false
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      changes: [duo.ts]
+      changes: [duo.ts, .gitlab/duo.json]
   script:
-    - node duo.ts apply
+    - node duo.ts
 
 # Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
 renovate:

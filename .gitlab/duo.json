@@ -1,0 +1,47 @@
+{
+  "project": "gitlab-ai-hackathon/transcend-october-2026/43085639/showcase",
+  "triggers": [
+    {
+      "description": "Foundational flow trigger for Developer",
+      "flow": "developer/v1",
+      "serviceAccount": "duo-developer-gitlab-ai-hackathon",
+      "events": ["assign", "mention"]
+    },
+    {
+      "description": "Fix CI/CD on failed pipeline",
+      "flow": "fix_pipeline/v1",
+      "serviceAccount": "duo-fix-ci-cd-pipeline-gitlab-ai-hackathon",
+      "events": ["pipeline_hooks"],
+      "filter": {
+        "pipeline_hooks": {
+          "match": "all",
+          "rules": [
+            {
+              "field": "object_attributes.status",
+              "operator": "in",
+              "value": ["failed"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": "Code review on new or ready MR",
+      "flow": "code_review/v1",
+      "serviceAccount": "duo-code-review-gitlab-ai-hackathon",
+      "events": ["merge_request", "merge_request_ready"],
+      "filter": {
+        "merge_request": {
+          "match": "all",
+          "rules": [
+            {
+              "field": "action",
+              "operator": "in",
+              "value": ["created"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
