@@ -1,3 +1,10 @@
+## [0.13.1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.13.0...v0.13.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **server:** keep one widgets dir env key after the rebase ([fc58ac3](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/fc58ac3e7c2b11d11aaeaae4ca28a9a17e2c379d))
+
 # [0.13.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.12.2...v0.13.0) (2026-10-21)
 
 ### Features
