@@ -144,12 +144,19 @@ new gcp.storage.BucketIAMMember("runner-media", {
   member: runner.member,
   role: "roles/storage.objectAdmin",
 });
+// The build resolves each secret's latest version, so it reads the secret's
+// metadata as well as its value (what `firebase apphosting:secrets:grantaccess`
+// grants).
 for (const [index, secret] of secrets.entries()) {
-  new gcp.secretmanager.SecretIamMember(`runner-${secretNames[index]}`, {
-    member: runner.member,
-    role: "roles/secretmanager.secretAccessor",
-    secretId: secret.id,
-  });
+  for (const role of [
+    "roles/secretmanager.secretAccessor",
+    "roles/secretmanager.viewer",
+  ]) {
+    new gcp.secretmanager.SecretIamMember(
+      `runner-${secretNames[index]}${role.endsWith("viewer") ? "-viewer" : ""}`,
+      { member: runner.member, role, secretId: secret.id }
+    );
+  }
 }
 
 // App Hosting builds from source that GitLab CI uploads (`firebase deploy
