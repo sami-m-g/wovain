@@ -1,0 +1,11 @@
+{
+  "name": "@wovain/infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "@pulumi/gcp": "9.37.1",
+    "@pulumi/pulumi": "3.267.0"
+  }
+}

@@ -1,12 +1,9 @@
 import { z } from "zod";
 
-// Sign-in settings. On Vercel the site URL comes from the deployment; locally
-// it is localhost. /mcp turns every caller away until AuthKit is set up.
+// Sign-in settings. The site URL comes from WOVAIN_SITE_URL (apphosting.yaml
+// sets it in production); locally it is localhost. /mcp turns every caller
+// away until AuthKit is set up.
 const authEnvSchema = z.object({
-  DATABASE_URL: z.string().optional(),
-  VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
-  VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
-  VERCEL_URL: z.string().optional(),
   // Reads each caller's email for the allowlist.
   WORKOS_API_KEY: z.string().optional(),
   // The AuthKit domain that signs merchants in and issues /mcp's tokens.
@@ -26,7 +23,7 @@ const authEnvSchema = z.object({
             .filter((email) => email !== "")
         )
     ),
-  // Overrides the deployment's URL, e.g. a tunnel to the local server.
+  // The public origin: the App Hosting URL, or a tunnel to the local server.
   WOVAIN_SITE_URL: z.url().optional(),
 });
 
@@ -42,23 +39,10 @@ export const loadAuthEnv = (
     )
   );
 
-// The origin ChatGPT reaches: the production domain, a preview's own URL, or
-// localhost. MCP tokens are bound to `${siteUrl}/mcp`, so it must be exact.
-export const siteUrl = (env: AuthEnv) => {
-  if (env.WOVAIN_SITE_URL !== undefined) {
-    return env.WOVAIN_SITE_URL.replace(/\/$/u, "");
-  }
-  if (
-    env.VERCEL_ENV === "production" &&
-    env.VERCEL_PROJECT_PRODUCTION_URL !== undefined
-  ) {
-    return `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  }
-  if (env.VERCEL_URL !== undefined) {
-    return `https://${env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-};
+// The origin ChatGPT reaches: the deployed URL or localhost. MCP tokens are
+// bound to `${siteUrl}/mcp`, so it must be exact.
+export const siteUrl = (env: AuthEnv) =>
+  env.WOVAIN_SITE_URL?.replace(/\/$/u, "") ?? "http://localhost:3000";
 
 export interface AllowCheck {
   email: string;

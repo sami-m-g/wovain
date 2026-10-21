@@ -1,0 +1,54 @@
+build:
+  stage: verify
+  extends: [.pnpm-install, .on-changes]
+  script:
+    - pnpm build
+
+verify:
+  stage: verify
+  extends: [.pnpm-install, .on-changes]
+  script:
+    - pnpm check
+    - pnpm typecheck
+    - pnpm knip
+    - pnpm test
+
+# The store and tool tests run on the Firestore and Storage emulators, which
+# need Java 21 (Debian trixie ships it; bookworm stops at 17).
+integration:
+  stage: verify
+  extends: [.pnpm-install, .on-changes]
+  image: node:24-trixie
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq openjdk-21-jre-headless >/dev/null
+    - !reference [.pnpm-install, before_script]
+  script:
+    - pnpm test:integration
+
+# Playwright's image ships Chromium and its system libraries; its tag must
+# match the playwright version in apps/widgets (Renovate bumps them together).
+stories:
+  stage: verify
+  extends: [.pnpm-install, .on-changes]
+  image: mcr.microsoft.com/playwright:v1.64.1-noble
+  script:
+    - pnpm test:stories
+
+# Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
+renovate:
+  stage: verify
+  image:
+    name: renovate/renovate:44.138.0
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "Renovate dependency updates"
+  variables:
+    GIT_STRATEGY: none
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: $CI_API_V4_URL
+    RENOVATE_REPOSITORIES: $CI_PROJECT_PATH
+    RENOVATE_ONBOARDING: "false"
+    RENOVATE_REQUIRE_CONFIG: required
+    LOG_LEVEL: info
+  script:
+    - renovate

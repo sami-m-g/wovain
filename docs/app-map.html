@@ -204,8 +204,8 @@
             <tr>
               <td>HTTP app</td>
               <td>
-                One Hono app on Vercel's Bun runtime. Serves <code>/mcp</code>,
-                the OAuth metadata that names AuthKit
+                One Hono app on Node, run by Firebase App Hosting. Serves
+                <code>/mcp</code>, the OAuth metadata that names AuthKit
                 (<code>/.well-known/oauth-protected-resource</code>) and the
                 home page.
               </td>
@@ -226,13 +226,15 @@
             <tr>
               <td>Storage</td>
               <td>
-                Neon Postgres through Drizzle for settings, designs and ads; the
-                private Vercel Blob store for artwork bytes.
+                Firestore (through <code>firebase-admin</code>) for settings,
+                designs and ads; a private Cloud Storage bucket for artwork
+                bytes. Rules deny every client; only the server reads and
+                writes.
               </td>
               <td>
-                <code>apps/server/src/db/</code>,
-                <code>apps/server/migrations/</code>,
-                <code>apps/server/src/store.ts</code>
+                <code>apps/server/src/firebase.ts</code>,
+                <code>apps/server/src/store.ts</code>,
+                <code>apps/server/firestore.rules</code>
               </td>
             </tr>
             <tr>
@@ -254,12 +256,13 @@
             <tr>
               <td>Deploy and telemetry</td>
               <td>
-                Vercel bundles the server with <code>bun build</code> into
-                <code>dist/</code> and includes the built widgets. Traces go to
+                App Hosting builds the widgets with <code>pnpm build</code> and
+                runs <code>node apps/server/src/index.ts</code>; GitLab CI
+                pushes to the GitHub mirror and starts the rollout. Traces go to
                 GitLab Observability when an OTLP endpoint is set.
               </td>
               <td>
-                <code>apps/server/vercel.json</code>,
+                <code>apphosting.yaml</code>, <code>infra/index.ts</code>, <code>.gitlab/ci/deploy.yml</code>,
                 <code>apps/server/src/telemetry.ts</code>
               </td>
             </tr>
@@ -415,7 +418,7 @@
               <td>
                 <code>apps/server/src/playbooks/campaign.ts</code>; the change
                 reaches agents with the next deploy, or right away against
-                <code>bun run dev</code> in a new chat
+                <code>pnpm dev</code> in a new chat
               </td>
             </tr>
             <tr>
@@ -426,11 +429,11 @@
               </td>
             </tr>
             <tr>
-              <td>A table or column</td>
+              <td>A stored record's shape</td>
               <td>
-                <code>apps/server/src/db/app-schema.ts</code>, then
-                <code>bun run db:generate</code> and
-                <code>bun run db:migrate</code>
+                Its zod schema in <code>packages/shared/src/</code> or
+                <code>apps/server/src/store.ts</code>; Firestore has no
+                migrations, so records already saved must still parse
               </td>
             </tr>
             <tr>
@@ -466,27 +469,29 @@
         <h2 id="run">Run it again</h2>
         <ul>
           <li>
-            <code>bun install</code>, then copy
-            <code>apps/server/.env.example</code> to
+            <code>pnpm install</code> (Node 24, plus Java 21 for the emulators),
+            then copy <code>apps/server/.env.example</code> to
             <code>apps/server/.env</code> and fill in the keys you need.
           </li>
           <li>
             In ChatGPT (developer mode) or Claude, add
-            <code>https://wovain.vercel.app/mcp</code> as a remote MCP server,
-            then sign in with Google and approve access when the agent asks.
+            <code>https://app--wovain.us-central1.hosted.app/mcp</code> as a
+            remote MCP server, then sign in and approve access when AuthKit
+            asks.
           </li>
           <li>
-            Locally: <code>bun run db:migrate</code> once, then
-            <code>bun run dev</code> (serves <code>/mcp</code> on
-            localhost:3000) plus <code>bun run widgets:watch</code>, and connect
-            the agent to <code>https://&lt;tunnel&gt;/mcp</code>.
+            Locally: <code>pnpm dev</code> (starts the Firestore and Storage
+            emulators and serves <code>/mcp</code> on localhost:3000) plus
+            <code>pnpm widgets:watch</code>, and connect the agent to
+            <code>https://&lt;tunnel&gt;/mcp</code>.
           </li>
           <li>
-            See every widget without an agent: <code>bun run storybook</code>.
+            See every widget without an agent: <code>pnpm storybook</code>.
           </li>
           <li>
-            Checks: <code>bun run check</code>, <code>bun run typecheck</code>,
-            <code>bun test</code>, <code>bun run test:stories</code>.
+            Checks: <code>pnpm check</code>, <code>pnpm typecheck</code>,
+            <code>pnpm test</code>, <code>pnpm test:integration</code>,
+            <code>pnpm test:stories</code>.
           </li>
         </ul>
         <p class="note">Paths and names can drift as the code changes.</p>

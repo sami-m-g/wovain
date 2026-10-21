@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun run build.ts",
+    "build": "node build.ts",
     "storybook": "storybook dev -p 6006",
     "test:stories": "vitest run --project storybook"
   },

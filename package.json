@@ -2,27 +2,25 @@
   "name": "wovain",
   "version": "0.14.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "type": "module",
   "scripts": {
-    "build": "bun run --filter @wovain/server build",
+    "build": "pnpm --filter @wovain/widgets build",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "typecheck": "tsc -b --noEmit",
     "typecheck:6": "tsc6 -b --noEmit",
-    "test": "bun test",
-    "mock": "WOVAIN_MOCK=1 bun run dev",
+    "test": "pnpm --filter @wovain/server test",
+    "test:integration": "pnpm --filter @wovain/server test:integration",
+    "mock": "WOVAIN_MOCK=1 pnpm dev",
     "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
     "knip": "knip --config .config/knip.json",
-    "storybook": "bun run --filter @wovain/widgets storybook",
-    "test:stories": "bun run --filter @wovain/widgets test:stories",
-    "widgets:watch": "bun run apps/widgets/build.ts --watch",
-    "dev": "bun run --filter @wovain/server dev",
-    "db:generate": "bun run --filter @wovain/server generate",
-    "db:migrate": "bun run --filter @wovain/server migrate"
+    "storybook": "pnpm --filter @wovain/widgets storybook",
+    "test:stories": "pnpm --filter @wovain/widgets test:stories",
+    "widgets:watch": "pnpm --filter @wovain/widgets build --watch",
+    "dev": "pnpm --filter @wovain/server dev",
+    "start": "node apps/server/src/index.ts",
+    "infra:preview": "pulumi preview --cwd infra --stack prod",
+    "infra:up": "pulumi up --cwd infra --stack prod"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
@@ -32,7 +30,7 @@
     "@semantic-release/exec": "7.1.0",
     "@semantic-release/git": "11.0.1",
     "@semantic-release/gitlab": "13.3.3",
-    "@types/bun": "^1.4.3",
+    "@types/node": "24.19.2",
     "@typescript/native": "npm:typescript@7.0.2",
     "knip": "6.42.0",
     "lefthook": "2.2.2",
@@ -44,5 +42,9 @@
     "skills": "1.7.2",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "ultracite": "8.0.1"
-  }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.3.4"
 }

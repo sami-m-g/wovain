@@ -10,18 +10,18 @@
 
 - [ ]
 - [ ]
-- [ ] `bun run check`, `bun run typecheck`, `bun run knip`, `bun run test` and `bun run build` pass
+- [ ] `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm test`, `pnpm test:integration` and `pnpm build` pass
 
 ## Files likely involved
 
-<!-- Paths or packages, e.g. apps/server/src/tools/design.ts, apps/server/src/db/app-schema.ts. -->
+<!-- Paths or packages, e.g. apps/server/src/tools/design.ts, apps/server/src/store.ts. -->
 
 -
 
 ## Constraints
 
 - Follow AGENTS.md (TypeScript only, Ultracite style, Conventional Commit titles).
-- Schema changes go through `bun run db:generate`; never edit applied migrations.
+- Record shapes are zod schemas (`packages/shared`, `apps/server/src/store.ts`); Firestore has no migrations, so old records must still parse.
 - Planning docs (`docs/*.md`) change wherever the fact appears.
 
 ## Out of scope

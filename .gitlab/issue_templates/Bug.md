@@ -13,12 +13,12 @@
 ## Where
 
 - Surface: <!-- ChatGPT web / ChatGPT desktop plugin / widget (which one) / AuthKit sign-in or consent / CI -->
-- Deployment: <!-- production (wovain.vercel.app), a review environment URL, or local `bun run dev` -->
+- Deployment: <!-- production (the App Hosting URL), or local `pnpm dev` -->
 - Time it happened (UTC):
 
 ## Debug info
 
-<!-- Error text, the widget state, pipeline or job link, Vercel request id. Never paste tokens, keys or customer data. -->
+<!-- Error text, the widget state, pipeline or job link, App Hosting rollout or Cloud Logging trace id. Never paste tokens, keys or customer data. -->
 
 <details><summary>Logs</summary>
 

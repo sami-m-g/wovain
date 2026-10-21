@@ -1,0 +1,8 @@
+config:
+  gcp:project: wovain
+  gcp:region: us-central1
+  wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
+  wovain:githubRepo: https://github.com/sami-m-g/wovain.git
+  gcp:billingProject: wovain
+  gcp:userProjectOverride: "true"
+encryptionsalt: v1:fDbDXvSsMbY=:v1:KalXiIPgNL3+MYN7:Xnk/a7NE+EEQM3XA49HLJ0u7BOGVAg==

@@ -1,0 +1,36 @@
+# Infrastructure first: `pulumi up` applies infra/ (state in
+# gs://wovain-pulumi-state) as gitlab-infra.
+infra:production:
+  extends: [.pnpm-install, .gcp-auth, .on-main]
+  stage: deploy
+  interruptible: false
+  resource_group: infra
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
+    PULUMI_VERSION: 3.259.0
+  script:
+    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
+    - export PATH="$HOME/.pulumi/bin:$PATH"
+    - pnpm infra:up --yes --non-interactive
+
+# App Hosting builds from the GitHub mirror, and its automatic rollouts stay
+# off: this job pushes the merged commit there, then rolls out that exact
+# commit as GCP_DEPLOY_SERVICE_ACCOUNT.
+deploy:production:
+  extends: [.pnpm-install, .gcp-auth, .on-main]
+  stage: deploy
+  interruptible: false
+  resource_group: production
+  needs: [infra:production]
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
+    GIT_DEPTH: 0
+  script:
+    - git push "https://x-access-token:$GITHUB_TOKEN@github.com/sami-m-g/wovain.git" "$CI_COMMIT_SHA:refs/heads/main"
+    # Unverified: that the Firebase CLI accepts external_account credentials,
+    # and that the command waits for the rollout to finish before it exits.
+    - cd apps/server
+    - pnpm exec firebase apphosting:rollouts:create app --git-commit "$CI_COMMIT_SHA" --project "$FIREBASE_PROJECT_ID" --force
+  environment:
+    name: production
+    url: $SITE_URL

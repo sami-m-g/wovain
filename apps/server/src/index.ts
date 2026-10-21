@@ -1,19 +1,20 @@
-import path from "node:path";
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 
 import { createApp } from "./app.ts";
 import { createRuntime } from "./runtime.ts";
 import { registerTelemetry } from "./telemetry.ts";
 
-// The deployed server: Vercel serves this Hono app's default export, and
-// `bun run dev` serves it on localhost:3000.
+// The deployed server on Node: App Hosting sets PORT, and `pnpm dev` serves it
+// on localhost:3000.
 registerTelemetry();
 
 const app = createApp(createRuntime());
 
-// public/ (the logo) for `bun run dev`; on Vercel the CDN serves it first.
-const publicDir = path.join(import.meta.dirname, "..", "public");
-for (const file of ["icon.png", "favicon.ico"]) {
-  app.get(`/${file}`, () => new Response(Bun.file(path.join(publicDir, file))));
-}
+// public/ (the logo and favicon).
+app.use(
+  "/*",
+  serveStatic({ root: new URL("../public", import.meta.url).pathname })
+);
 
-export default app;
+serve({ fetch: app.fetch, port: Number(process.env["PORT"] ?? 3000) });

@@ -5,10 +5,6 @@ import { z } from "zod";
 // Keys are optional at startup: each tool checks the ones it needs and returns a
 // user-safe error when one is missing, so the Settings widget works on day one.
 const envSchema = z.object({
-  // The private Vercel Blob store for staged artwork.
-  BLOB_READ_WRITE_TOKEN: z.string().optional(),
-  // Neon Postgres (pooled): main in production, the dev branch locally.
-  DATABASE_URL: z.string().optional(),
   // Optional: a fal key with the Billing preset, only for reading what fal
   // actually charged (video_spend). FAL_KEY stays without billing access.
   FAL_BILLING_KEY: z.string().optional(),

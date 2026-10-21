@@ -1,0 +1,20 @@
+# Release only what passed the smoke test: semantic-release reads the
+# conventional commits since the last tag, writes the version and
+# CHANGELOG.md back to main ([skip ci]), tags, and publishes a GitLab
+# release. Then GitLab's main and tags go to the GitHub mirror, since the
+# [skip ci] release commit gets no pipeline of its own.
+release:
+  stage: release
+  extends: .on-main
+  image: node:24-slim
+  interruptible: false
+  needs: [smoke:production]
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git >/dev/null
+    - !reference [.pnpm-install, before_script]
+  script:
+    - pnpm exec semantic-release
+    - git fetch -q origin main --tags
+    - git push "https://x-access-token:$GITHUB_TOKEN@github.com/sami-m-g/wovain.git" refs/remotes/origin/main:refs/heads/main --tags

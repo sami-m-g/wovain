@@ -1,6 +1,6 @@
 # wovain
 
-An MCP server for print-on-demand sellers, hosted on Vercel, that any agent (ChatGPT, Claude, …) can connect to. In one chat it designs a product, publishes it to a Fourthwall shop, makes two short video ads for it, and builds one Meta Advantage+ sales campaign with five automated rules.
+An MCP server for print-on-demand sellers, hosted on Firebase App Hosting, that any agent (ChatGPT, Claude, …) can connect to. In one chat it designs a product, publishes it to a Fourthwall shop, makes two short video ads for it, and builds one Meta Advantage+ sales campaign with five automated rules.
 
 Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/) with the Devpost Learn skill pack. The planning documents are in [`docs/`](docs/): [scope](docs/scope.md), [PRD](docs/prd.md), [spec](docs/spec.md), [build checklist](docs/checklist.md) and an [app map](docs/app-map.html) of the code.
 
@@ -17,7 +17,8 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 ## Requirements
 
 - An agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (developer mode) or Claude
-- [Bun](https://bun.sh) 1.4.2 or newer
+- [Node.js](https://nodejs.org) 24 and [pnpm](https://pnpm.io) 12.3.4 (`corepack enable` picks it up from `packageManager`)
+- Java 21, for the Firestore and Storage emulators that `pnpm dev` and `pnpm test:integration` run on
 - In the same agent, these MCP servers connected and signed in: **Fourthwall**, **Meta Ads** and **fal**
 - A Fourthwall shop, a Meta ad account with a Facebook Page and a pixel, and fal credit (about $1.20 per 15-second clip at fal's actual billing)
 
@@ -26,11 +27,11 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 ```bash
 git clone https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase.git wovain
 cd wovain
-bun install
+pnpm install
 cp apps/server/.env.example apps/server/.env
 ```
 
-Fill in `apps/server/.env` (empty values count as unset; on Vercel, set them in the project's settings):
+Fill in `apps/server/.env` (empty values count as unset; in production they come from `apphosting.yaml`, with secrets set by `firebase apphosting:secrets:set <name>`):
 
 | Key | Needed for | Where to get it |
 | --- | --- | --- |
@@ -41,16 +42,14 @@ Fill in `apps/server/.env` (empty values count as unset; on Vercel, set them in 
 | `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
 | `WOVAIN_ALLOWED_EMAILS` | Who may use `/mcp` (comma-separated verified emails; empty lets nobody in) | The email you sign in to AuthKit with |
 | `WOVAIN_SITE_URL` | Optional: overrides the site URL, e.g. a tunnel to your local server | Your tunnel's URL |
-| `DATABASE_URL` | Required: records in Neon Postgres | Neon `dev` branch's pooled URL (production uses `main`) |
-| `BLOB_READ_WRITE_TOKEN` | Required: staged artwork in the private Blob store | `vercel env pull` (the Blob integration sets it) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional: send traces to GitLab Observability (unset sends nothing) | GitLab group → Observe → Observability configuration |
 | `OTEL_EXPORTER_OTLP_HEADERS` | Optional: the auth header for that endpoint, as `key=value` | Same page |
 
-The other keys in `.env.example` aren't used yet.
+The other keys in `.env.example` aren't used yet. Storage needs no keys: locally `pnpm dev` starts the Firestore and Storage emulators, and on App Hosting the server finds its Firebase project and bucket on its own.
 
 ## Connect an agent
 
-Add `https://wovain.vercel.app/mcp` as a remote MCP server (streamable HTTP) in your agent, or `https://<tunnel>/mcp` for a local server. It carries no credentials: the first time you use wovain, the agent sends you to sign in with Google and approve access. Then try "show my wovain settings". Run `bun run db:migrate` once before the first local sign-in.
+Add `<App Hosting URL>/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`) as a remote MCP server (streamable HTTP) in your agent, or `https://<tunnel>/mcp` for a local server. It carries no credentials: the first time you use wovain, the agent sends you to sign in with Google and approve access. Then try "show my wovain settings".
 
 The server tells the agent the flow in its MCP `instructions`, and serves a playbook per step (`design`, `ads`, `campaign`) through the `get_playbook` tool and as MCP prompts.
 
@@ -58,31 +57,31 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 
 | Command | What it does |
 | --- | --- |
-| `bun run dev` | The server serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in an agent) |
-| `bun run build` | Builds the widgets, then bundles the server into `apps/server/dist` |
-| `bun run widgets:watch` | Rebuilds widgets on save; redraw a widget in chat to see the change |
-| `bun run db:generate` | Writes a SQL migration in `apps/server/migrations` after a schema change |
-| `bun run db:migrate` | Applies the migrations to the Neon branch in `DATABASE_URL` |
-| `bun run storybook` | Every widget state, light and dark, at ChatGPT widths, without ChatGPT |
-| `bun run check` / `bun run fix` | Lint and format (Ultracite: oxlint + oxfmt) |
-| `bun run typecheck` | TypeScript, strictest settings |
-| `bun test` | Server, web and shared tests (on PGlite, no database needed) |
-| `bun run test:stories` | Widget stories as tests (Playwright) |
-| `bun run knip` | Unused files, exports and dependencies |
+| `pnpm dev` | Starts the Firestore and Storage emulators and serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in an agent) |
+| `pnpm build` | Builds the widgets; Node runs the server's TypeScript as is |
+| `pnpm start` | Runs the server the way App Hosting does (`node apps/server/src/index.ts`) |
+| `pnpm widgets:watch` | Rebuilds widgets on save; redraw a widget in chat to see the change |
+| `pnpm storybook` | Every widget state, light and dark, at ChatGPT widths, without ChatGPT |
+| `pnpm check` / `pnpm fix` | Lint and format (Ultracite: oxlint + oxfmt) |
+| `pnpm typecheck` | TypeScript, strictest settings |
+| `pnpm test` | Server unit tests (Vitest): pure logic, no services |
+| `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
+| `pnpm test:stories` | Widget stories as tests (Playwright) |
+| `pnpm knip` | Unused files, exports and dependencies |
 
 Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
 
-The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror that CI updates after every `main` pipeline. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
+The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror that CI keeps on `main`; App Hosting builds from the mirror. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
 
-| Stage   | What runs                                                       |
-| ------- | --------------------------------------------------------------- |
-| verify  | Build, lint, typecheck, knip, tests, card stories (in parallel) |
-| test    | GitLab SAST, Secret Detection and Dependency Scanning           |
-| deploy  | `main` only: https://wovain.vercel.app                          |
-| monitor | A smoke test of the live OAuth chain                            |
-| release | semantic-release, after the smoke test passes                   |
+| Stage | What runs |
+| --- | --- |
+| verify | Build, lint, typecheck, knip, tests, card stories (in parallel) |
+| test | GitLab SAST, Secret Detection and Dependency Scanning |
+| deploy | `main` only: push to GitHub, then an App Hosting rollout of that commit |
+| monitor | A smoke test of the live OAuth chain |
+| release | semantic-release, after the smoke test passes, then push the release commit and tags to GitHub |
 
-It needs the CI variables `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
+It needs the CI variables `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_TOKEN` (all masked), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT` (Workload Identity Federation, so no Google key is stored), `PULUMI_CONFIG_PASSPHRASE` and `SITE_URL` (the App Hosting URL); `pulumi stack output` in `infra/` prints their values.
 
 ## Releases
 
@@ -92,7 +91,8 @@ Releases come from conventional commits. semantic-release (`.config/releaserc.js
 
 | Path | What's there |
 | --- | --- |
-| `apps/server/` | The Hono server on Vercel: `/mcp` (tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client), Better Auth's OAuth with the sign-in and consent pages, and the Drizzle schema, client and migrations for Neon Postgres (`src/db`, `migrations/`) |
+| `apps/server/` | The Hono server on Node: `/mcp` (tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client), the AuthKit token check, and the Firestore and Cloud Storage store (`src/store.ts`, `src/firebase.ts`); `firebase.json` and the deny-all `firestore.rules` and `storage.rules` |
+| `apphosting.yaml` | How App Hosting builds and runs the server, and which secrets it reads |
 | `apps/widgets/` | The React widgets (MCP Apps) and their Storybook stories |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and widgets |
 | `docs/` | Planning documents and the app map |

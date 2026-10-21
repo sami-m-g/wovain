@@ -19,7 +19,7 @@ wovain is a hosted MCP server. You add its URL to an agent that speaks MCP over 
 | Fourthwall MCP | Fourthwall's official server | Blanks, mockups, prices, publishing |
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
 | fal MCP | fal's official server | Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal |
-| wovain server | Our Hono server, hosted on Vercel and reached over HTTPS | Serves the playbooks and widgets, does the margin math, Meta rules, settings |
+| wovain server | Our Hono server, hosted on Firebase App Hosting and reached over HTTPS | Serves the playbooks and widgets, does the margin math, Meta rules, settings |
 | Widgets | Small web pages the agent shows inline (MCP Apps) | Design, ad, campaign, optimization and settings widgets |
 
 Why a wovain server at all: an agent can only show a widget that an MCP server serves, a widget's buttons can only call its own server, and Meta automated rules have no MCP. Everything else goes through the official servers.
@@ -28,9 +28,9 @@ How the agent learns the flow: when it connects, wovain's MCP `instructions` lis
 
 How a click works: you press Approve on a widget. The widget posts a short message ("Approve design d2") into the chat. The agent follows the playbook and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the widget as live. One click, one extra model turn.
 
-Where things are kept: Neon Postgres keeps settings and the state of each run, one set of rows per user, so a new chat picks up where you left off. Staged artwork waits in a private Vercel Blob store until it is uploaded to Fourthwall.
+Where things are kept: Firestore keeps settings and the state of each run, one set of documents per user, so a new chat picks up where you left off. Staged artwork waits in a private Cloud Storage bucket until it is uploaded to Fourthwall.
 
-Where you use it: in any agent that can reach `https://wovain.vercel.app/mcp`. ChatGPT works on chatgpt.com and in the desktop app, because the server is hosted rather than started on your Mac.
+Where you use it: in any agent that can reach the App Hosting URL's `/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`). ChatGPT works on chatgpt.com and in the desktop app, because the server is hosted rather than started on your Mac.
 
 ## The Core Journey Through the System
 
@@ -44,7 +44,7 @@ flowchart LR
   P --> MA[Meta Ads MCP]
   P --> FAL[fal MCP]
   W --> G[Meta Graph API: rules]
-  W --> J[(Neon Postgres + Blob)]
+  W --> J[(Firestore + Cloud Storage)]
   W --> C[Widgets in chat]
 ```
 
@@ -65,9 +65,9 @@ Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 
 | Layer | Choice | Version | Docs |
 | --- | --- | --- | --- |
-| Runtime and package manager | Bun | 1.4.3 | https://bun.sh/docs |
+| Runtime and package manager | Node 24 (runs `.ts` by type stripping, no bundle step) and pnpm workspaces | 24 / 12.3.4 | https://nodejs.org/api/typescript.html, https://pnpm.io |
 | MCP server | `@modelcontextprotocol/server` v2 over Streamable HTTP at `/mcp` | 2.3.1 | https://github.com/modelcontextprotocol/typescript-sdk |
-| Web server | Hono on Vercel's Bun runtime (`framework: hono`, `bunVersion: 1.4.x`): `/mcp`, OAuth endpoints and metadata, and the sign-in and consent pages | 4.13.13 | https://hono.dev |
+| Web server | Hono on Node through `@hono/node-server`: `/mcp`, the OAuth metadata, the home page and `public/` | 4.13.13 / 2.1.5 | https://hono.dev |
 | Sign-in and OAuth | WorkOS AuthKit (hosted authorization server); `@workos-inc/node` and `jose` on the server | 11.0.0, 6.2.12 | https://workos.com/docs/authkit/mcp |
 | Widget protocol | MCP Apps (`@modelcontextprotocol/ext-apps`) | 2.0.3 | https://github.com/modelcontextprotocol/ext-apps |
 | Widget UI | React 19 + `@openai/apps-sdk-ui` + Tailwind CSS 4 (its peer) | 19.3 / 0.2.2 / 4.3 | https://developers.openai.com/plugins/build/chatgpt-ui |
@@ -76,31 +76,33 @@ Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 | Lint and format | Ultracite with oxlint (type-aware via oxlint-tsgolint) and oxfmt (sorts imports and Tailwind classes) | 8.0.1 / 1.88 / 0.73 / tsgolint 7.0 | https://www.ultracite.ai |
 | TypeScript | Official dual setup: `typescript` aliased to `@typescript/typescript6` (6.0 API for tools), `@typescript/native` aliased to `typescript@7` (`tsc` 7.0 for type checking) | 6.0.2 / 7.0.2 | https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/ |
 | Git hooks | Lefthook | 2.2.2 | https://lefthook.dev |
-| Tests | `bun test` for the server and shared code; Vitest 5 with Playwright for widget stories | 1.4 / 5.0 | https://vitest.dev |
+| Tests | Vitest 5 for the server in two projects: `unit` (pure logic, `pnpm test`, also on pre-push) and `integration` (the store and MCP tools on the Firestore and Storage emulators through `firebase emulators:exec`, needs Java 21, `pnpm test:integration`, CI only); Vitest 5 with Playwright for widget stories | 5.0 | https://vitest.dev |
 | Widget states | Storybook 10 (`@storybook/react-vite` with the a11y, docs, themes and vitest addons) | 10.6 | https://storybook.js.org |
 | Commits and dead code | commitlint (conventional commits) and knip | 21.x / 6.x | https://commitlint.js.org |
-| Database | Neon Postgres through Drizzle ORM (`drizzle-orm/bun-sql` on `Bun.SQL`), migrations by drizzle-kit; PGlite (Postgres in WASM, in-process) for tests | 0.45.4 / 0.31.11 / 0.5.8 | https://orm.drizzle.team |
-| Infrastructure as code | A static `apps/server/vercel.json` for the Vercel project; the Neon project (branches `main` and `dev`, Neon Auth off) is set up once in Neon, with no config file (`vercel.ts` was tried and dropped: Vercel installs dependencies on Bun 1.3 to compile it, which ignores our lockfile) | — | https://vercel.com/docs/project-configuration |
+| Database and files | Firestore and a private Cloud Storage bucket through `firebase-admin`; the Firebase CLI (`firebase-tools`) runs the emulators and rollouts | 14.5.0 / 15.34.0 | https://firebase.google.com/docs/admin/setup |
+| Hosting and infrastructure as code | Firebase App Hosting: `apphosting.yaml` (build and run commands, instance limits, env and Secret Manager references); `apps/server/firebase.json` (emulators, rules files) with deny-all `firestore.rules` and `storage.rules` | — | https://firebase.google.com/docs/app-hosting/configure |
+| Telemetry | OpenTelemetry Node tracer with the OTLP/HTTP exporter, to GitLab Observability | sdk-trace-node 2.11.0 / exporter 0.222.0 | https://opentelemetry.io/docs/languages/js/ |
+| Agent framework | Genkit (was Mastra); not used in the code yet | — | https://genkit.dev |
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
-- Bun: the learner chose it over Node with Express. Official examples assume Node, so `bunfig.toml` sets `[run] bun = true` and even Storybook, Vitest and other tools with a node shebang run on Bun. No Node install is needed.
-- Hosting: wovain started as a desktop-only stdio plugin and became a hosted server, so it works on chatgpt.com and in other agents, and server or widget changes ship on deploy. One package, `apps/server`, holds the MCP server, the token check and the database. Its entry `src/index.ts` default-exports a Hono app, which Vercel runs as one function. Hono replaced Next.js once the pages turned out to be two forms, and those went too when AuthKit took over sign-in and consent; only the home page is left (`hono/html`). `bun run build` bundles the server with `bun build` because Vercel doesn't resolve source-only workspace packages such as `@wovain/shared`.
-- Sign-in is WorkOS AuthKit: it registers agents, hosts sign-in and consent, and issues the tokens, so no auth tables live in Neon. It replaced self-hosted Better Auth 1.7.7, which needed four plugins, generated tables and our own sign-in and consent pages (free up to 1M monthly active users; WorkOS lists no separate price for MCP auth). Neon Auth was ruled out: its package only proxies to Neon's hosted auth server and has no OAuth-provider or MCP plugin (checked in the `@neondatabase/auth` 0.6.0-beta code).
+- pnpm and Node 24: replaced Bun once the server moved to Firebase, whose App Hosting runs Node. Node 24 strips TypeScript types itself, so the server runs from `src/` with no bundle step, and `.ts` imports keep their extensions. pnpm's `allowBuilds` (in `pnpm-workspace.yaml`) lists the few packages allowed to run install scripts.
+- Hosting: wovain started as a desktop-only stdio plugin and became a hosted server, so it works on chatgpt.com and in other agents, and server or widget changes ship on deploy. One package, `apps/server`, holds the MCP server, the token check and the store. Firebase App Hosting runs it with `pnpm start` (`node apps/server/src/index.ts`, which serves the Hono app with `@hono/node-server` on `PORT`) after `pnpm build` builds the widgets. It replaced Vercel with Neon Postgres and Vercel Blob: one Google project now holds the host, the database and the files. Hono replaced Next.js once the pages turned out to be two forms, and those went too when AuthKit took over sign-in and consent; only the home page is left (`hono/html`).
+- Sign-in is WorkOS AuthKit: it registers agents, hosts sign-in and consent, and issues the tokens, so no accounts live in Firestore. It replaced self-hosted Better Auth 1.7.7, which needed four plugins, generated tables and our own sign-in and consent pages (free up to 1M monthly active users; WorkOS lists no separate price for MCP auth). Firebase Auth was ruled out: it signs users in but can't act as the OAuth authorization server that ChatGPT registers with (Neon Auth was ruled out earlier for the same reason).
 - Ultracite with oxlint and oxfmt: the learner's choice (`ultracite init --linter oxlint`).
 - React 19: both `@openai/apps-sdk-ui` and `ext-apps` support it; OpenAI's docs still show 18.
 
 ## Where It Runs and How Someone Tries It
 
-wovain is a hosted MCP server. A Hono app (`apps/server`) on Vercel serves Streamable HTTP at `/mcp`, and any agent that supports remote MCP servers with OAuth can connect to it: ChatGPT on the web or in the desktop app, Claude, and others. The agent gets everything from the server: the tools, the widgets as `ui://` resources, the flow in the MCP `instructions`, and each step's playbook through `get_playbook` or as an MCP prompt.
+wovain is a hosted MCP server. A Hono app (`apps/server`) on Firebase App Hosting serves Streamable HTTP at `/mcp`, and any agent that supports remote MCP servers with OAuth can connect to it: ChatGPT on the web or in the desktop app, Claude, and others. The agent gets everything from the server: the tools, the widgets as `ui://` resources, the flow in the MCP `instructions`, and each step's playbook through `get_playbook` or as an MCP prompt.
 
 Hosting was built in steps:
 
-| #   | Step                                       | State |
-| --- | ------------------------------------------ | ----- |
-| 1   | Hosted HTTP server                         | Done  |
-| 2   | Neon Postgres store and private Blob media | Done  |
-| 3   | OAuth 2.1 sign-in so anyone can connect    | Done  |
-| 4   | Each user's own Meta account               | Later |
+| # | Step | State |
+| --- | --- | --- |
+| 1 | Hosted HTTP server | Done |
+| 2 | Records and private media store (Neon and Vercel Blob, now Firestore and Cloud Storage) | Done |
+| 3 | OAuth 2.1 sign-in so anyone can connect | Done |
+| 4 | Each user's own Meta account | Later |
 
 How sign-in works:
 
@@ -108,32 +110,31 @@ How sign-in works:
 | --- | --- |
 | Discovery | `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names the AuthKit domain (`WORKOS_AUTHKIT_DOMAIN`) as the authorization server. AuthKit's own metadata offers PKCE S256, CIMD and dynamic registration; both are switched on in the WorkOS dashboard under Connect → Configuration |
 | Sign-in and consent | AuthKit's hosted pages (Google, plus the methods enabled in WorkOS). Its consent screen names the registering app |
-| Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS. For now production and local development share the WorkOS Staging environment, with `https://wovain.vercel.app/mcp` (the default) and `http://localhost:3000/mcp`. Without both WorkOS keys every call gets a 401 |
-| Site URL | From Vercel (the production domain, or a preview's `VERCEL_URL`) or localhost; `WOVAIN_SITE_URL` overrides it |
+| Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS. For now production and local development share the WorkOS Staging environment, with the App Hosting URL's `/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`) and `http://localhost:3000/mcp`. Without both WorkOS keys every call gets a 401 |
+| Site URL | `WOVAIN_SITE_URL` (`apphosting.yaml` sets the App Hosting URL), or `http://localhost:3000` when unset |
 | Allowlist | Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked on every `/mcp` call against the user's verified email in WorkOS, so taking an email off it cuts off tokens already issued; an empty list lets nobody in |
-| Static files | `apps/server/public/` (icon, favicon), served by Vercel's CDN; `bun run dev` serves them from the app |
+| Static files | `apps/server/public/` (icon, favicon), served by the app (`serveStatic` in `src/index.ts`) |
 
 | Need | Value |
 | --- | --- |
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
-| Host | Vercel (Bun 1.4 runtime); Bun 1.4 locally for development |
-| Keys in `apps/server/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `DATABASE_URL` (Neon: the `dev` branch locally) and `BLOB_READ_WRITE_TOKEN` (the private Blob store); on Vercel the Neon and Blob integrations set the last two |
-| Rehearsal | Later: `WOVAIN_MOCK=1` (`bun run mock`) is meant to answer wovain's outside calls from fixtures and skip publish and launch steps; the flag is read but nothing uses it yet |
+| Host | Firebase App Hosting (Node 24, Cloud Run underneath; 0 to 2 instances); Node 24, pnpm and Java 21 (emulators) locally |
+| Keys in `apps/server/.env` (`apphosting.yaml` in production, secrets through `firebase apphosting:secrets:set`) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
+| Rehearsal | Later: `WOVAIN_MOCK=1` (`pnpm mock`) is meant to answer wovain's outside calls from fixtures and skip publish and launch steps; the flag is read but nothing uses it yet |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
 Start it:
 
 ```bash
-bun install                     # prepare copies the course and ultracite skills into .claude/skills
+pnpm install                    # prepare copies the course and ultracite skills into .claude/skills
 cp apps/server/.env.example apps/server/.env   # fill in keys (optional until a tool needs one)
-bun run db:migrate              # applies apps/server/migrations to DATABASE_URL
-bun run build                   # builds the widgets, then bundles the server into apps/server/dist
-bun run dev                     # serves /mcp on localhost:3000
+pnpm build                      # builds the widgets
+pnpm dev                        # starts the Firestore and Storage emulators, serves /mcp on localhost:3000
 ```
 
-Connect it: add `https://wovain.vercel.app/mcp` as a remote MCP server (streamable HTTP) in the agent, or `https://<tunnel>/mcp` for a local `bun run dev`. The URL carries no credentials; the first call sends you to sign in with Google and approve access. Fourthwall, Meta Ads and fal are connected in the same agent as their own servers.
+Connect it: add the App Hosting URL's `/mcp` as a remote MCP server (streamable HTTP) in the agent, or `https://<tunnel>/mcp` for a local `pnpm dev`. The URL carries no credentials; the first call sends you to sign in with Google and approve access. Fourthwall, Meta Ads and fal are connected in the same agent as their own servers.
 
-Demo recording: in a connected agent, follow `scope.md > What "working" looks like` in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and the public GitLab repo (https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, mirrored to https://github.com/sami-m-g/wovain); the hosted server on Vercel is the deployment.
+Demo recording: in a connected agent, follow `scope.md > What "working" looks like` in one chat, then open Ads Manager and the Fourthwall shop. Submission needs the video and the public GitLab repo (https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, mirrored to https://github.com/sami-m-g/wovain); the hosted server on Firebase App Hosting is the deployment.
 
 ## Look and Feel
 
@@ -241,36 +242,36 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | commitlint | Commit check | Enforces conventional commits locally |
 | knip | Dead-code check | Finds unused files, exports and dependencies before pushes and in CI |
 | Storybook | Widget workshop | One story per widget state with a mocked host bridge; a11y and interaction tests |
-| Mock mode (later) | Rehearsal | `bun run mock` sets `WOVAIN_MOCK=1`; the fixtures that would answer wovain's outside calls aren't built yet |
-| GitLab CI/CD (`.gitlab-ci.yml`) | CI/CD | See the stage table below |
-| GitLab Observability (`apps/server/src/telemetry.ts`, `@vercel/otel` 2.1.3) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration). `/mcp` adds an `mcp.request` span with the MCP method, tool and status, no user ids or arguments. Next.js's per-request spans went with Next.js. Unset means no telemetry |
+| Mock mode (later) | Rehearsal | `pnpm mock` sets `WOVAIN_MOCK=1`; the fixtures that would answer wovain's outside calls aren't built yet |
+| GitLab CI/CD (`.gitlab-ci.yml`, jobs in `.gitlab/ci/`) | CI/CD | See the stage table below |
+| GitLab Observability (`apps/server/src/telemetry.ts`, `@opentelemetry/sdk-trace-node` 2.11.0 with `@opentelemetry/exporter-trace-otlp-http` 0.222.0) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration). `/mcp` adds an `mcp.request` span with the MCP method, tool and status, no user ids or arguments. Next.js's per-request spans went with Next.js. Unset means no telemetry |
 | GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. With the Developer role we can run the developer flow (issue to MR), "Fix pipeline with Duo" on a failed pipeline, and code review (the MR template assigns `@GitLabDuo` as reviewer). SAST false-positive detection and SAST vulnerability resolution need a Maintainer to switch on; that request goes to GitLab contributor-success |
-| semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.config/releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
+| semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.config/releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`npm pkg set version=…` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The same job then pushes the release commit and tag to the GitHub mirror |
 | Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies the course skills (GitHub) and package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
 | Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the widgets), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
 
-GitLab CI/CD stages (`.gitlab-ci.yml`, image `oven/bun:1.4.2`):
+GitLab CI/CD stages (`.gitlab-ci.yml` includes one file per stage from `.gitlab/ci/`, image `node:24` with pnpm 12.3.4 installed by npm):
 
 | Stage | Jobs | What runs |
 | --- | --- | --- |
-| verify | `build`, `verify`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip and tests; widget stories on Playwright's image. Installs use `--ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
+| verify | `build`, `verify`, `integration`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip and unit tests; integration tests on the emulators (`node:24-trixie` with `openjdk-21-jre-headless`); widget stories on Playwright's image. Installs use `pnpm install --frozen-lockfile --ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
 | test | GitLab templates | SAST, Secret Detection and Dependency Scanning, on merge requests too; the scanners start at once (`needs: []`) |
-| deploy | `deploy:production` | `main` only: `vercel deploy --prod` (environment production, https://wovain.vercel.app). Merge requests get no preview deploy |
-| monitor | `smoke:production` | Curls the live OAuth chain: `/mcp` 401, both metadata documents, the sign-in page |
-| release | `release` | semantic-release, only after the smoke test passes |
+| deploy | `infra:production`, `deploy:production` | `main` only: `pnpm infra:up` applies `infra/` (Pulumi) as `GCP_INFRA_SERVICE_ACCOUNT`; then the deploy job pushes the merged commit to the GitHub mirror (`GITHUB_TOKEN`), which App Hosting builds from, then `firebase apphosting:rollouts:create app --git-commit $CI_COMMIT_SHA --force` rolls out that exact commit. Google access is Workload Identity Federation (GitLab `id_tokens` → an `external_account` credentials file → `GCP_DEPLOY_SERVICE_ACCOUNT`, or `GCP_INFRA_SERVICE_ACCOUNT` for Pulumi), so no Google key is stored; only the protected `main` branch is trusted. Automatic rollouts stay off on the backend. Merge requests get no preview deploy |
+| monitor | `smoke:production` | Curls the live OAuth chain at `SITE_URL`: `/mcp` 401, both metadata documents |
+| release | `release` | semantic-release, only after the smoke test passes; then pushes GitLab's `main` and tags to the GitHub mirror (`GITHUB_TOKEN`), which carries the `[skip ci]` release commit that lands after the deploy |
 
-After every `main` pipeline, `mirror:github` (in `.post`, even when an earlier job failed) pushes GitLab's `main` and tags to the GitHub mirror with a write deploy key.
+Only CI pushes to the GitHub mirror. A pipeline that fails before deploy leaves the mirror behind until the next good one catches it up; App Hosting only builds commits the deploy job pushed, so that's harmless.
 
-CI variables: `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+CI variables: `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_TOKEN` (all masked), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider's full resource name), `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `PULUMI_CONFIG_PASSPHRASE`, `SITE_URL` (the App Hosting URL); values come from `pulumi stack output` in `infra/`.
 
 ### Ultracite, TypeScript and Lefthook setup
 
 Setup command (run once at the repo root):
 
 ```bash
-bunx ultracite init --pm bun --linter oxlint --frameworks react vitest \
+pnpm dlx ultracite init --pm pnpm --linter oxlint --frameworks react vitest \
   --workspace-framework apps/widgets=react --editors vscode --agents claude codex \
   --hooks claude --integrations lefthook --type-aware --js-plugins oxlint-plugin-react-doctor --install-skill
 ```
@@ -291,60 +292,59 @@ bunx ultracite init --pm bun --linter oxlint --frameworks react vitest \
 pre-commit:
   parallel: true
   jobs:
-    - run: bunx ultracite fix {staged_files}
+    - run: pnpm exec ultracite fix {staged_files}
       glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
       exclude: [".claude/skills/**"]
       stage_fixed: true
     - name: typecheck
-      run: bun run typecheck
+      run: pnpm typecheck
 commit-msg:
   jobs:
     - name: commitlint
-      run: bunx commitlint --config .config/commitlint.config.ts --edit {1}
+      run: pnpm exec commitlint --config .config/commitlint.config.ts --edit {1}
 pre-push:
   parallel: true
   jobs:
     - name: test
-      run: bun run test
+      run: pnpm test
     - name: knip
-      run: bun run knip
+      run: pnpm knip
     - name: stories
-      run: bun run test:stories
+      run: pnpm test:stories
 ```
 
 Scripts in the root `package.json`:
 
 ```json
-"build": "bun run --filter @wovain/server build",
+"build": "pnpm --filter @wovain/widgets build",
 "check": "ultracite check",
 "fix": "ultracite fix",
 "typecheck": "tsc -b --noEmit",
 "typecheck:6": "tsc6 -b --noEmit",
-"test": "bun test",
-"mock": "WOVAIN_MOCK=1 bun run dev",
+"test": "pnpm --filter @wovain/server test",
+"mock": "WOVAIN_MOCK=1 pnpm dev",
 "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
-"knip": "knip --config .config/knip.json",
-"storybook": "bun run --filter @wovain/widgets storybook",
-"test:stories": "bun run --filter @wovain/widgets test:stories",
-"widgets:watch": "bun run apps/widgets/build.ts --watch",
-"dev": "bun run --filter @wovain/server dev",
-"db:generate": "bun run --filter @wovain/server generate",
-"db:migrate": "bun run --filter @wovain/server migrate"
+"knip": "knip",
+"storybook": "pnpm --filter @wovain/widgets storybook",
+"test:stories": "pnpm --filter @wovain/widgets test:stories",
+"widgets:watch": "pnpm --filter @wovain/widgets build --watch",
+"dev": "pnpm --filter @wovain/server dev",
+"start": "node apps/server/src/index.ts"
 ```
 
-`prepare` installs the Lefthook hooks and copies the course and package-shipped skills; Vercel skips it with `bun install --ignore-scripts`. In `apps/server`, `dev` is `bun --hot src/index.ts` and `build` is the widgets build followed by `bun build src/index.ts --target bun --format esm --outdir dist --external hono`.
+`prepare` installs the Lefthook hooks and copies the course and package-shipped skills; CI skips it with `pnpm install --ignore-scripts`. In `apps/server`, `dev` is `firebase emulators:exec --only firestore,storage --project demo-wovain "node --env-file-if-exists=.env --watch src/index.ts"` and `test` runs `vitest run` the same way. App Hosting runs `pnpm build` (the widgets) and `pnpm start`; nothing bundles the server.
 
 ## Data Model
 
-One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their WorkOS user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The Drizzle schema lives in `apps/server/src/db`: `records` keeps each record in a `jsonb` column, and there are no auth tables, since accounts live in WorkOS. drizzle-kit writes SQL migrations to `apps/server/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, each merge request preview gets its own branch `mr-<iid>` (deleted when the review environment stops), and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
+Records live in Firestore, read and written by the server only through `firebase-admin`; `firestore.rules` and `storage.rules` deny every client. The user is the `sub` of the merchant's access token (their WorkOS user id). Each record is one document at `users/{userId}/{kind}/{id}`, checked against its zod schema on every read, and a counter per kind (`users/{userId}/counters/{kind}`, bumped in a transaction) hands out ids, so two saves at once never share one. There are no auth collections, since accounts live in WorkOS, and no migrations: a schema change must still parse the documents already saved. Staged artwork bytes go to the project's default Cloud Storage bucket, which only the server's credentials can read. Local development and tests use the Firestore and Storage emulators (project `demo-wovain`), so nothing touches the real project and CI needs no Google credentials to test.
 
 | Data | Lives in | Updated by | When you come back |
 | --- | --- | --- | --- |
-| Settings | `settings` | `update_settings` | Same values |
-| Designs | `designs` and `artworks` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
-| Ads | `runs[runId].ads` (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
-| Campaign | `runs[runId].campaign` (campaign, ad set, ad and rule IDs, status) | `create_rules`, campaign step | Optimization reads it |
-| Media | Staged artwork in the private Blob store; public copies in Fourthwall's media library; clips at fal's own URLs | `stage_artwork` | Files stay until deleted |
+| Settings | `settings/current` | `update_settings` | Same values |
+| Designs | `design/{id}` and `artwork/{id}` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
+| Ads | `ad/{designId}`, one ad set per design (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
+| Campaign | `campaign/current` (ad account, campaign ID, rules created in Meta) | `create_rules`, campaign step | Optimization reads it |
+| Media | Staged artwork in the private Cloud Storage bucket; public copies in Fourthwall's media library; clips at fal's own URLs | `stage_artwork` | Files stay until deleted |
 
 Widget state inside a chat (ticks, typed feedback) lives in the widget's widget state; the host keeps it with the message.
 
@@ -353,11 +353,12 @@ Widget state inside a chat (ticks, typed feedback) lives in the widget's widget 
 ```
 wovain/
 ├── apps/
-│   ├── server/                  # the one deployed package: Hono app with MCP, OAuth and database
+│   ├── server/                  # the one deployed package: Hono app with MCP, the token check and the store
 │   │   ├── src/
-│   │   │   ├── index.ts         # entry: default-exports the Hono app (Vercel and bun run dev)
+│   │   │   ├── index.ts         # entry: serves the Hono app on Node (App Hosting and pnpm dev)
 │   │   │   ├── app.ts           # routes: /mcp, /.well-known/oauth-protected-resource, /
-│   │   │   ├── runtime.ts       # env, Neon client, AuthKit token check and Blob from process.env
+│   │   │   ├── runtime.ts       # env, AuthKit token check and the Firebase store from process.env
+│   │   │   ├── firebase.ts      # firebase-admin app: Firestore and the private Storage bucket
 │   │   │   ├── routes/mcp.ts    # requireMcpAuth, allowlist check, mcp.request span
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── server.ts        # McpServer: instructions, tools, widgets, playbooks
@@ -365,17 +366,16 @@ wovain/
 │   │   │   ├── tools/           # settings.ts, design.ts, ads.ts, campaign.ts
 │   │   │   ├── widgets.ts         # registers the ui:// widget resources
 │   │   │   ├── env.ts           # zod-checked server keys
-│   │   │   ├── store.ts         # records through Drizzle, artwork on Blob
+│   │   │   ├── store.ts         # records in Firestore, artwork in Cloud Storage
 │   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
 │   │   │   ├── pages/           # the home page as hono/html; styles.ts
-│   │   │   ├── db/              # app-schema (records, counters), client, migrate, testing (PGlite)
-│   │   │   ├── telemetry.ts     # @vercel/otel, on when the OTLP endpoint is set
+│   │   │   ├── telemetry.ts     # OpenTelemetry Node tracer, on when the OTLP endpoint is set
 │   │   │   └── lib/             # fal pricing and usage, image checks, artwork loading, meta-graph, video-plan
-│   │   ├── test/                # tools, playbooks, app routes, auth chain, economics, store; fixtures/
-│   │   ├── migrations/          # SQL from drizzle-kit (bun run db:generate)
-│   │   ├── public/              # icon.png, favicon.ico (Vercel's CDN)
-│   │   ├── drizzle.config.ts
-│   │   ├── vercel.json          # framework hono, Bun 1.4.x, build to dist, ships ../widgets/dist/*.html
+│   │   ├── test/                # unit/ (auth chain, economics, images, fal), integration/ (store, tools, routes on the emulators), fixtures/
+│   │   ├── public/              # icon.png, favicon.ico
+│   │   ├── firebase.json        # emulators (Firestore 8080, Storage 9199) and rules files
+│   │   ├── firestore.rules, storage.rules   # deny all clients; only the Admin SDK reads and writes
+│   │   ├── vitest.config.ts
 │   │   └── .env.example         # server keys (apps/server/.env, gitignored)
 │   └── widgets/                   # React widgets, Vite single-file builds
 │       ├── src/
@@ -386,17 +386,18 @@ wovain/
 │       ├── vite.config.ts
 │       └── vitest.config.ts
 ├── packages/shared/             # zod schemas, economics and rule thresholds for server and widgets
-├── .gitlab-ci.yml               # verify, test (security), deploy (production), monitor, release
+├── .gitlab-ci.yml               # stages, defaults and includes; jobs in .gitlab/ci/ (verify, secure, deploy, monitor, release, templates)
 ├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
 ├── .config/                     # lefthook.yml (git hooks), releaserc.json (semantic-release), commitlint.config.ts (conventional commits), knip.json (dead-code check)
 ├── .vscode/                     # settings.json, extensions.json
-├── .claude/skills/              # course and ultracite skills, copied by bun install (gitignored)
+├── .claude/skills/              # course and ultracite skills, copied by pnpm install (gitignored)
 ├── scripts/                     # prepare.ts (hooks, skills sync), set-version.ts (release version)
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
-├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
-├── package.json                 # bun workspaces (apps/server, apps/widgets, packages/shared) and scripts
-├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
+├── apphosting.yaml              # App Hosting: build and run commands, instances, env and secrets
+├── pnpm-workspace.yaml          # workspaces (apps/*, packages/*) and allowBuilds
+├── package.json                 # scripts, packageManager pnpm@12.3.4, engines node >=24
+├── tsconfig.base.json           # strict, erasableSyntaxOnly (Node type stripping), moduleResolution bundler, no baseUrl (TS 7)
 └── docs/                        # planning docs (Markdown), app-map.html and plan.css
 ```
 
@@ -413,7 +414,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 
 ## Important Failure Modes
 
-- **The agent can't register or sign in** → check that CIMD and DCR are on in WorkOS (Connect → Configuration) and that `WORKOS_AUTHKIT_DOMAIN` and `WORKOS_API_KEY` are set on Vercel.
+- **The agent can't register or sign in** → check that CIMD and DCR are on in WorkOS (Connect → Configuration) and that `WORKOS_AUTHKIT_DOMAIN` and the `workos-api-key` secret are set in `apphosting.yaml`.
 - **Signed in, but every `/mcp` call is a 401** → the token's audience doesn't match `<site>/mcp`; add that URL as a resource indicator in WorkOS Staging.
 - **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #1).
 - **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#3).
@@ -426,7 +427,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 - **Widget buttons post a chat message** for Fourthwall and Meta steps instead of calling them directly: a widget can only call its own server. Costs one model turn per click.
 - **Optimization widget on check-in** instead of a pushed alert: the agent can't start a conversation. Meta's own rule notifications cover the gap. The fuller version would need a notification channel.
 - **Print fidelity checked by eye** in the full-screen view instead of an automatic check: no provider offers one. The fuller version would compare video frames to the mockup with a vision model.
-- **One table of JSON records** instead of a table per entity: each record is checked by its zod schema on read, and Drizzle runs the same schema and migrations on Neon and, for tests, on PGlite.
+- **Schemaless documents checked on read** instead of typed tables and migrations: each Firestore document is checked by its zod schema on read, and tests run on the emulators rather than a mock.
 - **Hosted sign-in and consent (WorkOS AuthKit)** instead of our own pages: less code and no auth tables, at the cost of AuthKit's generic consent screen and a WorkOS dependency for every account.
 - **Server-rendered forms for sign-in and consent** instead of a React front end: two pages don't need one.
 
@@ -441,9 +442,13 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Audio: fal MMAudio, configurable | Learner | Meta's music skips video ads; 42× cheaper than Kling audio | Generic background music |
 | Every value in Settings and per-widget ⚙ | Learner | Tune without redeploys | A bigger settings schema |
 | No trend research: the merchant brings the ideas (was: SerpApi, Etsy and Marker evidence on a trend widget) | Learner | Nothing in the code used it, and own ideas prove the loop | No research help before designing |
-| Bun, Vite, React 19, Ultracite with oxlint, TypeScript | Learner | Fast tooling and their preference | Official examples assume Node |
-| Hosted server on Vercel (Bun runtime), Streamable HTTP | Learner | Works on chatgpt.com and in other agents, ships on deploy | A host and an OAuth server to run |
-| One Hono package `apps/server` (was: Next.js `apps/web` plus `packages/db` around the server library) | Learner | Sign-in and consent are two forms, so Next.js was more than needed; one package holds MCP, auth and database | Server pre-bundled with `bun build`, since Vercel doesn't resolve source-only workspace packages; Next.js's per-request trace spans are gone |
+| Vite, React 19, Ultracite with oxlint, TypeScript (Bun at first) | Learner | Fast tooling and their preference | — |
+| pnpm 12 and Node 24 instead of Bun (2026-10-21) | Learner | App Hosting runs Node; Node 24 runs `.ts` directly, so no bundle step and no second runtime | Install scripts must be allowed one by one (`allowBuilds`); TypeScript limited to erasable syntax |
+| Hosted server, Streamable HTTP (on Vercel at first) | Learner | Works on chatgpt.com and in other agents, ships on deploy | A host and an OAuth server to run |
+| Firebase: App Hosting, Firestore and a private Cloud Storage bucket instead of Vercel, Neon and Vercel Blob (2026-10-21) | Learner | One Google project for host, data and files; the emulators make tests and local runs offline-capable | No migrations or SQL; Java 21 for the emulators; App Hosting builds from GitHub, so CI pushes the mirror before each rollout |
+| Deploys from GitLab CI: push to GitHub, then `apphosting:rollouts:create` for that commit, with Workload Identity Federation | Learner | GitLab stays primary and merges there; no Google key in CI | Automatic rollouts off; the rollout depends on the mirror push |
+| Genkit as the agent framework (was Mastra), decided with the move to Firebase | Learner | Learner's call | Not used in the code yet |
+| One Hono package `apps/server` (was: Next.js `apps/web` plus `packages/db` around the server library) | Learner | Sign-in and consent are two forms, so Next.js was more than needed; one package holds MCP, auth and database | Next.js's per-request trace spans are gone |
 | Planning docs in Markdown only (was: `.md` plus `.html` review pages kept in sync by `sync-plan`, `scripts/plan-sync.ts` and a Stop hook) | Learner | One copy to keep current | No styled review page per doc; `app-map.html` stays |
 | Fidelity by eye | Learner | Smallest POC | Relies on attention |
 | Superpowers plugin skipped | Learner | It would override the course skills | Revisit for `5-build` |
@@ -451,7 +456,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Design-level kill at 4×; breakeven on priciest size, size-weighted optional | Learner | Matches print-on-demand: the design is the test, sizes cost differently | Slightly stricter kills |
 | TypeScript 6 + 7 dual setup, Ultracite with oxlint, oxfmt, Lefthook, Ultracite skill and hooks | Learner | Official setup; fast type checks and lint on every edit and commit | Two TypeScript versions to keep in step |
 | DX set from the sister wovain repo: commitlint, knip, Lefthook with type check on commit, MSW with mock mode, Storybook, CI, Dependabot, release-please, plus modern-web-guidance, security-guidance and hookify; no shadcn | Learner | Same habits as their main project; rehearse without spending; check widget states outside a chat | About an hour more setup. Since then GitLab CI/CD, Renovate and semantic-release replaced the GitHub pieces, and MSW mock mode moved to later |
-| JSON-record store on Neon, optimization on check-in | Derived | Follow from the choices above | See What Was Simplified |
+| JSON-document store on Firestore, optimization on check-in | Derived | Follow from the choices above | See What Was Simplified |
 
 Learning moment: the learner asked "why even a server, not a plain plugin with child MCP servers?" Three platform facts answered it: widgets must be served by our own MCP server, widget buttons can only call that server, and Meta rules have no MCP. The learner then picked the thinnest server. A second question, "what is elements, and can't we support it ourselves?", was clarified: it is reference-image conditioning inside the model, so only a provider that exposes it can offer it; our side can only add checks.
 
@@ -465,7 +470,7 @@ Verify early in the build, in this order:
 | 4 | Meta accepts a fal.media video URL; one NOTIFICATION rule created with the system user token; rule filters match per-product ads by name | Upload from file; adjust filters |
 | 5 | Meta MCP campaign gets `ADVANTAGE_PLUS_SALES` state | Set fields through the Graph API |
 | 6 | Dropped with trend research | — |
-| 7 | Bun resolves the TS 6/7 npm aliases; `bunx tsc` runs 7.0 | Pin TS 6 only and skip type-aware lint |
+| 7 | The package manager resolves the TS 6/7 npm aliases; `tsc` runs 7.0 (checked on Bun, then pnpm) | Pin TS 6 only and skip type-aware lint |
 | 8 | Ultracite's Claude hook merges cleanly with the Impeccable hooks in `.claude/settings.json` | Merge the hooks by hand |
 | 9 | Storybook renders the widgets with the mocked host bridge | Use a plain Vite gallery page |
 | 10 | An agent completes the OAuth flow (discovery, AuthKit registration, sign-in, consent) against the hosted `/mcp`; a widget renders on chatgpt.com | Check the 401 challenge and metadata URLs, then the WorkOS resource indicators |

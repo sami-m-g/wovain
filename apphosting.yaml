@@ -1,0 +1,40 @@
+# Firebase App Hosting: how the wovain server builds and runs. The backend's
+# root directory is the repo root, so pnpm installs the whole workspace.
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 80
+
+scripts:
+  buildCommand: pnpm build
+  runCommand: pnpm start
+
+# Plain values, then Secret Manager references set with
+# `firebase apphosting:secrets:set <name>`.
+env:
+  - variable: WOVAIN_BUCKET
+    value: wovain-media
+  - variable: WOVAIN_SITE_URL
+    value: https://app--wovain.us-central1.hosted.app
+  - variable: WORKOS_AUTHKIT_DOMAIN
+    value: https://AUTHKIT_DOMAIN.authkit.app
+  - variable: WORKOS_API_KEY
+    secret: workos-api-key
+  - variable: WOVAIN_ALLOWED_EMAILS
+    secret: wovain-allowed-emails
+  - variable: META_SYSTEM_USER_TOKEN
+    secret: meta-system-user-token
+  - variable: META_AD_ACCOUNT_ID
+    secret: meta-ad-account-id
+  - variable: META_PAGE_ID
+    secret: meta-page-id
+  - variable: META_PIXEL_ID
+    secret: meta-pixel-id
+  - variable: FAL_KEY
+    secret: fal-key
+  - variable: OTEL_EXPORTER_OTLP_ENDPOINT
+    secret: otel-exporter-otlp-endpoint
+  - variable: OTEL_EXPORTER_OTLP_HEADERS
+    secret: otel-exporter-otlp-headers
