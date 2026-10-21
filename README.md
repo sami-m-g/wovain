@@ -2,7 +2,7 @@
 
 An MCP server for print-on-demand sellers, hosted on Vercel, that any agent (ChatGPT, Claude, …) can connect to. In one chat it designs a product, publishes it to a Fourthwall shop, makes two short video ads for it, and builds one Meta Advantage+ sales campaign with five automated rules.
 
-Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/) with the Devpost Learn skill pack. The planning documents are in [`devpost/`](devpost/): [scope](devpost/scope.md), [PRD](devpost/prd.md), [spec](devpost/spec.md), [build checklist](devpost/checklist.md) and an [app map](devpost/app-map.html) of the code.
+Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/) with the Devpost Learn skill pack. The planning documents are in [`docs/`](docs/): [scope](docs/scope.md), [PRD](docs/prd.md), [spec](docs/spec.md), [build checklist](docs/checklist.md) and an [app map](docs/app-map.html) of the code.
 
 ## What works
 
@@ -95,7 +95,7 @@ Releases come from conventional commits. semantic-release (`.releaserc.json`) pi
 | `apps/server/` | The Hono server on Vercel: `/mcp` (tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client), Better Auth's OAuth with the sign-in and consent pages, and the Drizzle schema, client and migrations for Neon Postgres (`src/db`, `migrations/`) |
 | `apps/widgets/` | The React widgets (MCP Apps) and their Storybook stories |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and widgets |
-| `devpost/` | Planning documents and the app map |
+| `docs/` | Planning documents and the app map |
 
 ## License
 

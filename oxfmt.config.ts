@@ -4,7 +4,7 @@ import ultracite from "ultracite/oxfmt";
 // Owned elsewhere: planning docs and course skills (upstream), and
 // CHANGELOG.md (written by semantic-release).
 const owned = [
-  "devpost/**",
+  "docs/**",
   ".agents/skills/**",
   ".claude/skills/**",
   "CHANGELOG.md",

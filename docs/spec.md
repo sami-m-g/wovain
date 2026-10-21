@@ -293,7 +293,7 @@ pre-commit:
   jobs:
     - run: bunx ultracite fix {staged_files}
       glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
-      exclude: ["devpost/**", ".claude/skills/**"]
+      exclude: ["docs/**", ".claude/skills/**"]
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck
@@ -400,7 +400,7 @@ wovain/
 ├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
 ├── package.json                 # bun workspaces (apps/server, apps/widgets, packages/shared) and scripts
 ├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
-└── devpost/                     # planning docs (Markdown), app-map.html and plan.css
+└── docs/                        # planning docs (Markdown), app-map.html and plan.css
 ```
 
 ## External Services and Dependencies
