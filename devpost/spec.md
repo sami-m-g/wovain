@@ -110,7 +110,7 @@ How sign-in works:
 |---|---|
 | Discovery | `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names the AuthKit domain (`WORKOS_AUTHKIT_DOMAIN`) as the authorization server. AuthKit's own metadata offers PKCE S256, CIMD and dynamic registration; both are switched on in the WorkOS dashboard under Connect → Configuration |
 | Sign-in and consent | AuthKit's hosted pages (Google, plus the methods enabled in WorkOS). Its consent screen names the registering app |
-| Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS: `http://localhost:3000/mcp` on Staging, `https://wovain.vercel.app/mcp` on Production. Without both WorkOS keys every call gets a 401 |
+| Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS. For now production and local development share the WorkOS Staging environment, with `https://wovain.vercel.app/mcp` (the default) and `http://localhost:3000/mcp`. Without both WorkOS keys every call gets a 401 |
 | Site URL | From Vercel (the production domain, or a preview's `VERCEL_URL`) or localhost; `WOVAIN_SITE_URL` overrides it |
 | Allowlist | Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked on every `/mcp` call against the user's verified email in WorkOS, so taking an email off it cuts off tokens already issued; an empty list lets nobody in |
 | Static files | `apps/server/public/` (icon, favicon), served by Vercel's CDN; `bun run dev` serves them from the app |
@@ -427,7 +427,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 ## Important Failure Modes
 
 - **The agent can't register or sign in** → check that CIMD and DCR are on in WorkOS (Connect → Configuration) and that `WORKOS_AUTHKIT_DOMAIN` and `WORKOS_API_KEY` are set on Vercel.
-- **Signed in, but every `/mcp` call is a 401** → the token's audience doesn't match `<site>/mcp`; add that URL as a resource indicator in the matching WorkOS environment.
+- **Signed in, but every `/mcp` call is a 401** → the token's audience doesn't match `<site>/mcp`; add that URL as a resource indicator in WorkOS Staging.
 - **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
 - **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
 - **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#7).
