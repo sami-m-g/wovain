@@ -14,9 +14,6 @@
       "path": "apps/cards"
     },
     {
-      "path": "scripts"
-    },
-    {
       "path": "apps/web"
     }
   ],
