@@ -21,6 +21,7 @@ const { billingAccount, number: projectNumber } =
 const apis = [
   "artifactregistry",
   "billingbudgets",
+  "cloudkms",
   "cloudbilling",
   "cloudbuild",
   "firebase",
@@ -88,8 +89,10 @@ const media = new gcp.storage.Bucket(
   afterApis
 );
 
-// Values are set outside code: `firebase apphosting:secrets:set <name>`.
-// The names match apphosting.yaml.
+// The names match apphosting.yaml. Each value is stack config encrypted with
+// the KMS key in Pulumi.prod.yaml: `pulumi config set --secret <name>`; a
+// secret without a value gets no version (App Hosting won't build until it has
+// one).
 const secretNames = [
   "fal-key",
   "meta-ad-account-id",
@@ -109,6 +112,16 @@ const secrets = secretNames.map(
       afterApis
     )
 );
+for (const [index, secret] of secrets.entries()) {
+  const name = secretNames[index] ?? "";
+  const value = config.getSecret(name);
+  if (value !== undefined) {
+    new gcp.secretmanager.SecretVersion(name, {
+      secret: secret.id,
+      secretData: value,
+    });
+  }
+}
 
 // The identity the server builds and runs as.
 const runner = new gcp.serviceaccount.Account(
@@ -274,6 +287,14 @@ new gcp.billing.Budget(
   },
   afterApis
 );
+
+// Stack secrets are encrypted with this key (created once with gcloud, like
+// the state bucket), so the infra job decrypts with it.
+new gcp.kms.CryptoKeyIAMMember("infra-stack-secrets", {
+  cryptoKeyId: `projects/${project}/locations/${region}/keyRings/pulumi/cryptoKeys/stack-secrets`,
+  member: infra.member,
+  role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+});
 
 // Budgets live on the billing account, so the infra account needs a role there.
 new gcp.billing.AccountIamMember("infra-budgets", {

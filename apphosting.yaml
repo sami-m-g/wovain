@@ -12,7 +12,10 @@ scripts:
   runCommand: pnpm start
 
 # Plain values, then Secret Manager references set with
-# `firebase apphosting:secrets:set <name>`.
+# `pulumi config set --secret <name>` in infra/ (see infra/index.ts). Only
+# secrets with a value are listed: App Hosting won't build with an empty one.
+# META_AD_ACCOUNT_ID, META_PAGE_ID, META_PIXEL_ID and the OTEL_* pair come back
+# once they have values.
 env:
   # The install skips lifecycle scripts, as CI does: the root `prepare` sets up
   # git hooks and agent skills, which a build container doesn't need.
@@ -25,22 +28,12 @@ env:
   - variable: WOVAIN_SITE_URL
     value: https://app--wovain.us-central1.hosted.app
   - variable: WORKOS_AUTHKIT_DOMAIN
-    value: https://AUTHKIT_DOMAIN.authkit.app
+    value: https://prosperous-skill-12-staging.authkit.app
   - variable: WORKOS_API_KEY
     secret: workos-api-key
   - variable: WOVAIN_ALLOWED_EMAILS
     secret: wovain-allowed-emails
   - variable: META_SYSTEM_USER_TOKEN
     secret: meta-system-user-token
-  - variable: META_AD_ACCOUNT_ID
-    secret: meta-ad-account-id
-  - variable: META_PAGE_ID
-    secret: meta-page-id
-  - variable: META_PIXEL_ID
-    secret: meta-pixel-id
   - variable: FAL_KEY
     secret: fal-key
-  - variable: OTEL_EXPORTER_OTLP_ENDPOINT
-    secret: otel-exporter-otlp-endpoint
-  - variable: OTEL_EXPORTER_OTLP_HEADERS
-    secret: otel-exporter-otlp-headers

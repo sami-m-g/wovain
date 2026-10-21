@@ -4,4 +4,13 @@ config:
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
   gcp:billingProject: wovain
   gcp:userProjectOverride: "true"
-encryptionsalt: v1:fDbDXvSsMbY=:v1:KalXiIPgNL3+MYN7:Xnk/a7NE+EEQM3XA49HLJ0u7BOGVAg==
+  wovain:workos-api-key:
+    secure: v1:GkJevW0f0siZ/dXe:Rb9jTdS6z1EOfGI99TAwMR3th9vBOBw/dj5symnyMlGvFBv51sIj6dcl/XQZHh85ViDFhHDOzMG/l/H2SnQQFhag6FIGlEgHjUiFUk+0ZF6ai7KIANvxbNRZdQsWx2xQQCdA
+  wovain:wovain-allowed-emails:
+    secure: v1:ybkw5nQlPPOMzB+3:Ljnv1xNy+T3GCCbXf5AarPTrjVpj2/nDiOGKBzi/TI7007A6dA==
+  wovain:meta-system-user-token:
+    secure: v1:+KPRNVhwx4iXir9B:JqM6cR28JTGe9Sj55qOwqedXMaRnVVrD0NbPJvPxzwxxFM/5UuKna8i3hA6b9cuKW6u9C/SiS1cSkakq1SLDpqCAQk/pzVexaAI8zYkxxkc/MQZkGxWQVageyUe+QjMtr5HAQm0F5WYSp3ixXHgQjb0pY2DYofZnIU2x5jsWxVHxZpHwA1Bf5p4SN6ym8lSFoqO24ZhxmnYT9AOre2VSqcOU3V6GvRTizjae2CeUV1yxPrm9liXtDPNELLwPTXH1yFBlTOPGV3D7V5tuBtqxJAfaqKtYjaM7TiVii2obDTPpfEX144/lN1PQbVZBSIbbjz6/xnkzeT1xIqtM67Rs8cnh6bqO+RTpaOJ0rkuZj7YtjX2VyIicUWhyWTGldtPLr9aYYojSeAqF0T8tp9SyhegocmhCMIgeAA==
+  wovain:fal-key:
+    secure: v1:ph5MIlC4FggQ1Fla:xVrax4Zu6mqdLmmrVN1KKBR7X+DKHg5gaowigcGj7pRlEQKOUGJ/5GIC21xxw6UzP351HcKZyGqk4enRHRQNYMsrFMCVMBg0gtX7tAHNXGipVEMSl8psng==
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
+encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
