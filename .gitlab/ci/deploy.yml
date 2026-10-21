@@ -17,9 +17,9 @@ infra:production:
     name: infrastructure
     deployment_tier: other
 
-# App Hosting builds from the GitHub mirror, and its automatic rollouts stay
-# off: this job pushes the merged commit there, then rolls out that exact
-# commit as GCP_DEPLOY_SERVICE_ACCOUNT.
+# App Hosting builds from source this job uploads: `firebase deploy` zips the
+# repo (firebase.json lists what to leave out), uploads it and rolls it out
+# as GCP_DEPLOY_SERVICE_ACCOUNT. No GitHub involved.
 deploy:production:
   extends: [.pnpm-install, .gcp-auth, .on-main]
   stage: deploy
@@ -28,14 +28,10 @@ deploy:production:
   needs: [infra:production]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
-    GIT_DEPTH: 0
   script:
-    - !reference [.github-ssh, before_script]
-    - git push git@github.com:sami-m-g/wovain.git "$CI_COMMIT_SHA:refs/heads/main"
-    # Unverified: that the Firebase CLI accepts external_account credentials,
-    # and that the command waits for the rollout to finish before it exits.
-    - cd apps/server
-    - pnpm exec firebase apphosting:rollouts:create app --git-commit "$CI_COMMIT_SHA" --project "$FIREBASE_PROJECT_ID" --force
+    # Unverified until the first run: that the Firebase CLI accepts
+    # external_account credentials.
+    - pnpm --filter @wovain/server exec firebase deploy --only apphosting --project "$FIREBASE_PROJECT_ID" --non-interactive --force
   environment:
     name: production
     url: $SITE_URL

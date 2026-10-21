@@ -11,17 +11,18 @@ const gcpConfig = new pulumi.Config("gcp");
 const project = gcpConfig.require("project");
 const region = gcpConfig.require("region");
 const gitlabProject = config.require("gitlabProject");
-// Set to true once the GitHub app is installed from the connection's link
-// (`pulumi stack output githubSetup`); the repository link and the backend's
-// codebase wait for it.
-const githubAuthorized = config.getBoolean("githubAuthorized") ?? false;
+
+// The billing account is read from the project, so its ID stays out of git.
+const { billingAccount, number: projectNumber } =
+  await gcp.organizations.getProject({
+    projectId: project,
+  });
 
 const apis = [
   "artifactregistry",
   "billingbudgets",
   "cloudbilling",
   "cloudbuild",
-  "developerconnect",
   "firebase",
   "firebaseapphosting",
   "firebaserules",
@@ -138,45 +139,21 @@ for (const [index, secret] of secrets.entries()) {
   });
 }
 
-// App Hosting builds from the GitHub mirror through Developer Connect. The
-// first `pulumi up` creates the connection; open the link in githubSetup to
-// install the Firebase GitHub app, then set githubAuthorized.
-const developerConnect = new gcp.projects.ServiceIdentity(
-  "developerconnect-agent",
-  { service: "developerconnect.googleapis.com" },
+// App Hosting builds from source that GitLab CI uploads (`firebase deploy
+// --only apphosting`, firebase.json), so the backend has no linked repository.
+// The CLI keeps uploads in this bucket; it finds it by its label.
+const sources = new gcp.storage.Bucket(
+  "apphosting-sources",
+  {
+    labels: { [`apphosting-source-${region}`]: "true" },
+    lifecycleRules: [{ action: { type: "Delete" }, condition: { age: 30 } }],
+    location: region.toUpperCase(),
+    name: `firebaseapphosting-sources-${projectNumber}-${region}`,
+    publicAccessPrevention: "enforced",
+    uniformBucketLevelAccess: true,
+  },
   afterApis
 );
-const connectionAccess = new gcp.projects.IAMMember(
-  "developerconnect-secrets",
-  {
-    member: developerConnect.member,
-    project,
-    role: "roles/secretmanager.admin",
-  }
-);
-const github = new gcp.developerconnect.Connection(
-  "github",
-  {
-    connectionId: "github",
-    githubConfig: { githubApp: "FIREBASE" },
-    location: region,
-  },
-  {
-    dependsOn: [connectionAccess],
-    ignoreChanges: [
-      "githubConfig.appInstallationId",
-      "githubConfig.authorizerCredential",
-    ],
-  }
-);
-const repository = githubAuthorized
-  ? new gcp.developerconnect.GitRepositoryLink("wovain", {
-      cloneUri: config.require("githubRepo"),
-      gitRepositoryLinkId: "wovain",
-      location: region,
-      parentConnection: github.connectionId,
-    })
-  : undefined;
 
 const webApp = new gcp.firebase.WebApp(
   "wovain",
@@ -186,9 +163,6 @@ const webApp = new gcp.firebase.WebApp(
 const backend = new gcp.firebase.AppHostingBackend("app", {
   appId: webApp.appId,
   backendId: "app",
-  ...(repository === undefined
-    ? {}
-    : { codebase: { repository: repository.name, rootDirectory: "/" } }),
   location: region,
   serviceAccount: runner.email,
   servingLocality: "GLOBAL_ACCESS",
@@ -238,6 +212,17 @@ for (const role of [
     role,
   });
 }
+// The CLI lists buckets to find the sources bucket, then uploads to it.
+new gcp.projects.IAMMember("deployer-bucketViewer", {
+  member: deployer.member,
+  project,
+  role: "roles/storage.bucketViewer",
+});
+new gcp.storage.BucketIAMMember("deployer-sources", {
+  bucket: sources.name,
+  member: deployer.member,
+  role: "roles/storage.objectAdmin",
+});
 new gcp.serviceaccount.IAMMember("deployer-acts-as-runner", {
   member: deployer.member,
   role: "roles/iam.serviceAccountUser",
@@ -260,7 +245,6 @@ new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
   serviceAccountId: infra.name,
 });
 for (const role of [
-  "roles/developerconnect.admin",
   "roles/editor",
   "roles/firebase.admin",
   "roles/iam.serviceAccountAdmin",
@@ -277,11 +261,6 @@ for (const role of [
 }
 
 // Email alerts at 50%, 90% and 100% of $5 a month.
-// The billing account is read from the project, so its ID stays out of git.
-const { billingAccount, number: projectNumber } =
-  await gcp.organizations.getProject({
-    projectId: project,
-  });
 new gcp.billing.Budget(
   "monthly",
   {
@@ -307,6 +286,5 @@ new gcp.billing.AccountIamMember("infra-budgets", {
 export const bucket = media.name;
 export const infraServiceAccount = infra.email;
 export const deployServiceAccount = deployer.email;
-export const githubSetup = github.installationStates;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
 export const workloadIdentityProvider = provider.name;

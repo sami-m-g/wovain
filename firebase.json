@@ -1,0 +1,24 @@
+{
+  "apphosting": {
+    "backendId": "app",
+    "rootDir": ".",
+    "alwaysDeployFromSource": true,
+    "ignore": [
+      ".git",
+      "node_modules",
+      "**/node_modules",
+      ".claude",
+      ".gitlab",
+      "docs",
+      "*-debug.log"
+    ]
+  },
+  "firestore": { "rules": "apps/server/firestore.rules" },
+  "storage": { "rules": "apps/server/storage.rules" },
+  "emulators": {
+    "firestore": { "port": 8080 },
+    "storage": { "port": 9199 },
+    "ui": { "enabled": false },
+    "singleProjectMode": false
+  }
+}

@@ -258,8 +258,8 @@
               <td>
                 App Hosting builds the widgets with <code>pnpm build</code> and
                 runs <code>node apps/server/src/index.ts</code>; GitLab CI
-                pushes to the GitHub mirror and starts the rollout. Traces go to
-                GitLab Observability when an OTLP endpoint is set.
+                uploads the source with <code>firebase deploy</code>. Traces go
+                to GitLab Observability when an OTLP endpoint is set.
               </td>
               <td>
                 <code>apphosting.yaml</code>, <code>infra/index.ts</code>,

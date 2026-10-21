@@ -80,7 +80,7 @@ Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 | Widget states | Storybook 10 (`@storybook/react-vite` with the a11y, docs, themes and vitest addons) | 10.6 | https://storybook.js.org |
 | Commits and dead code | commitlint (conventional commits) and knip | 21.x / 6.x | https://commitlint.js.org |
 | Database and files | Firestore and a private Cloud Storage bucket through `firebase-admin`; the Firebase CLI (`firebase-tools`) runs the emulators and rollouts | 14.5.0 / 15.34.0 | https://firebase.google.com/docs/admin/setup |
-| Hosting and infrastructure as code | Firebase App Hosting: `apphosting.yaml` (build and run commands, instance limits, env and Secret Manager references); `apps/server/firebase.json` (emulators, rules files) with deny-all `firestore.rules` and `storage.rules` | — | https://firebase.google.com/docs/app-hosting/configure |
+| Hosting and infrastructure as code | Firebase App Hosting: `apphosting.yaml` (build and run commands, instance limits, env and Secret Manager references); `firebase.json` at the root (the App Hosting source upload, emulators and rules files; the upload is the folder holding it, so it sits at the workspace root) with deny-all `apps/server/firestore.rules` and `storage.rules`; `infra/` (Pulumi) for the Google project itself | — | https://firebase.google.com/docs/app-hosting/configure |
 | Telemetry | OpenTelemetry Node tracer with the OTLP/HTTP exporter, to GitLab Observability | sdk-trace-node 2.11.0 / exporter 0.222.0 | https://opentelemetry.io/docs/languages/js/ |
 | Agent framework | Genkit (was Mastra); not used in the code yet | — | https://genkit.dev |
 
@@ -258,11 +258,11 @@ GitLab CI/CD stages (`.gitlab-ci.yml` includes one file per stage from `.gitlab/
 | --- | --- | --- |
 | verify | `build`, `verify`, `integration`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip and unit tests; integration tests on the emulators (`node:24-trixie` with `openjdk-21-jre-headless`); widget stories on Playwright's image. Installs use `pnpm install --frozen-lockfile --ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
 | test | GitLab templates | SAST, Secret Detection and Dependency Scanning, on merge requests too; the scanners start at once (`needs: []`) |
-| deploy | `infra:production`, `deploy:production` | `main` only: `pnpm infra:up` applies `infra/` (Pulumi) as `GCP_INFRA_SERVICE_ACCOUNT`; then the deploy job pushes the merged commit to the GitHub mirror (SSH deploy key `GITHUB_MIRROR_KEY`), which App Hosting builds from, then `firebase apphosting:rollouts:create app --git-commit $CI_COMMIT_SHA --force` rolls out that exact commit. Google access is Workload Identity Federation (GitLab `id_tokens` → an `external_account` credentials file → `GCP_DEPLOY_SERVICE_ACCOUNT`, or `GCP_INFRA_SERVICE_ACCOUNT` for Pulumi), so no Google key is stored; only the protected `main` branch, in the job's GitLab environment (`infrastructure` or `production`), is trusted. Automatic rollouts stay off on the backend. Merge requests get no preview deploy |
+| deploy | `infra:production`, `deploy:production` | `main` only: `pnpm infra:up` applies `infra/` (Pulumi) as `GCP_INFRA_SERVICE_ACCOUNT`; then `firebase deploy --only apphosting` zips the workspace (minus `firebase.json`'s ignore list and gitignored files), uploads it to the App Hosting sources bucket and rolls it out. Google access is Workload Identity Federation (GitLab `id_tokens` → an `external_account` credentials file → `GCP_DEPLOY_SERVICE_ACCOUNT`, or `GCP_INFRA_SERVICE_ACCOUNT` for Pulumi), so no Google key is stored; only the protected `main` branch, in the job's GitLab environment (`infrastructure` or `production`), is trusted. The backend has no linked repository. Merge requests get no preview deploy |
 | monitor | `smoke:production` | Curls the live OAuth chain at `SITE_URL`: `/mcp` 401, both metadata documents |
 | release | `release`, `mirror:github` | semantic-release, only after the smoke test passes; then `mirror:github` (`.post`, runs even after a failure) pushes GitLab's `main` and tags to the GitHub mirror with `GITHUB_MIRROR_KEY`, which carries the `[skip ci]` release commit that lands after the deploy |
 
-Only CI pushes to the GitHub mirror. A pipeline that fails before deploy leaves the mirror behind until the next good one catches it up; App Hosting only builds commits the deploy job pushed, so that's harmless.
+Only CI pushes to the GitHub mirror, and nothing builds from it: it's a read-only copy.
 
 CI variables: `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked; the deploy key is protected too), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider's full resource name), `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `PULUMI_CONFIG_PASSPHRASE`, `SITE_URL` (the App Hosting URL); values come from `pulumi stack output` in `infra/`.
 
@@ -373,7 +373,6 @@ wovain/
 │   │   │   └── lib/             # fal pricing and usage, image checks, artwork loading, meta-graph, video-plan
 │   │   ├── test/                # unit/ (auth chain, economics, images, fal), integration/ (store, tools, routes on the emulators), fixtures/
 │   │   ├── public/              # icon.png, favicon.ico
-│   │   ├── firebase.json        # emulators (Firestore 8080, Storage 9199) and rules files
 │   │   ├── firestore.rules, storage.rules   # deny all clients; only the Admin SDK reads and writes
 │   │   ├── vitest.config.ts
 │   │   └── .env.example         # server keys (apps/server/.env, gitignored)
@@ -395,6 +394,7 @@ wovain/
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
 ├── apphosting.yaml              # App Hosting: build and run commands, instances, env and secrets
+├── firebase.json                # App Hosting source upload (backend app, ignore list), emulators, rules files
 ├── pnpm-workspace.yaml          # workspaces (apps/*, packages/*) and allowBuilds
 ├── package.json                 # scripts, packageManager pnpm@12.3.4, engines node >=24
 ├── tsconfig.base.json           # strict, erasableSyntaxOnly (Node type stripping), moduleResolution bundler, no baseUrl (TS 7)
@@ -446,7 +446,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | pnpm 12 and Node 24 instead of Bun (2026-10-21) | Learner | App Hosting runs Node; Node 24 runs `.ts` directly, so no bundle step and no second runtime | Install scripts must be allowed one by one (`allowBuilds`); TypeScript limited to erasable syntax |
 | Hosted server, Streamable HTTP (on Vercel at first) | Learner | Works on chatgpt.com and in other agents, ships on deploy | A host and an OAuth server to run |
 | Firebase: App Hosting, Firestore and a private Cloud Storage bucket instead of Vercel, Neon and Vercel Blob (2026-10-21) | Learner | One Google project for host, data and files; the emulators make tests and local runs offline-capable | No migrations or SQL; Java 21 for the emulators; App Hosting builds from GitHub, so CI pushes the mirror before each rollout |
-| Deploys from GitLab CI: push to GitHub, then `apphosting:rollouts:create` for that commit, with Workload Identity Federation | Learner | GitLab stays primary and merges there; no Google key in CI | Automatic rollouts off; the rollout depends on the mirror push |
+| Deploys from GitLab CI: `firebase deploy --only apphosting` uploads the source, with Workload Identity Federation (was: push to GitHub and roll out from there) | Learner | GitLab stays primary and nothing depends on GitHub; no Google key in CI | `firebase.json` sits at the root, since the upload is its folder |
 | Genkit as the agent framework (was Mastra), decided with the move to Firebase | Learner | Learner's call | Not used in the code yet |
 | One Hono package `apps/server` (was: Next.js `apps/web` plus `packages/db` around the server library) | Learner | Sign-in and consent are two forms, so Next.js was more than needed; one package holds MCP, auth and database | Next.js's per-request trace spans are gone |
 | Planning docs in Markdown only (was: `.md` plus `.html` review pages kept in sync by `sync-plan`, `scripts/plan-sync.ts` and a Stop hook) | Learner | One copy to keep current | No styled review page per doc; `app-map.html` stays |
