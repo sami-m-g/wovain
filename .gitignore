@@ -11,8 +11,8 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# course skills: `bun run skills:restore` (from skills-lock.json); ultracite: `bun run prepare` (node_modules)
-/.agents/skills/
+# copied by `bun install` (prepare): course skills from GitHub, ultracite from node_modules
+/.claude/skills/[1-6]-*/
 /.claude/skills/ultracite/
 
 # per-developer overrides

@@ -124,8 +124,7 @@ How sign-in works:
 Start it:
 
 ```bash
-bun install
-bun run skills:restore          # course skills from skills-lock.json
+bun install                     # prepare copies the course and ultracite skills into .claude/skills
 cp apps/server/.env.example apps/server/.env   # fill in keys (optional until a tool needs one)
 bun run db:migrate              # applies apps/server/migrations to DATABASE_URL
 bun run build                   # builds the widgets, then bundles the server into apps/server/dist
@@ -248,7 +247,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. With the Developer role we can run the developer flow (issue to MR), "Fix pipeline with Duo" on a failed pipeline, and code review (the MR template assigns `@GitLabDuo` as reviewer). SAST false-positive detection and SAST vulnerability resolution need a Maintainer to switch on; that request goes to GitLab contributor-success |
 | semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
 | Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates. It replaces Dependabot |
-| `skills` CLI | Skills sync | `prepare` copies package-shipped skills (ultracite) into `.claude/skills` |
+| `skills` CLI | Skills sync | `prepare` copies the course skills (GitHub) and package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
 | Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the widgets), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
 
@@ -294,7 +293,7 @@ pre-commit:
   jobs:
     - run: bunx ultracite fix {staged_files}
       glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
-      exclude: ["devpost/**", ".claude/skills/**", ".agents/skills/**"]
+      exclude: ["devpost/**", ".claude/skills/**"]
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck
@@ -323,9 +322,8 @@ Scripts in the root `package.json`:
 "typecheck:6": "tsc6 -b --noEmit",
 "test": "bun test",
 "mock": "WOVAIN_MOCK=1 bun run dev",
-"prepare": "lefthook install && skills experimental_sync -y -a claude-code --copy",
+"prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
 "knip": "knip",
-"skills:restore": "skills experimental_install -y",
 "storybook": "bun run --filter @wovain/widgets storybook",
 "test:stories": "bun run --filter @wovain/widgets test:stories",
 "widgets:watch": "bun run apps/widgets/build.ts --watch",
@@ -334,7 +332,7 @@ Scripts in the root `package.json`:
 "db:migrate": "bun run --filter @wovain/server migrate"
 ```
 
-`prepare` installs the Lefthook hooks and syncs package-shipped skills; Vercel skips it with `bun install --ignore-scripts`. In `apps/server`, `dev` is `bun --hot src/index.ts` and `build` is the widgets build followed by `bun build src/index.ts --target bun --format esm --outdir dist --external hono`.
+`prepare` installs the Lefthook hooks and copies the course and package-shipped skills; Vercel skips it with `bun install --ignore-scripts`. In `apps/server`, `dev` is `bun --hot src/index.ts` and `build` is the widgets build followed by `bun build src/index.ts --target bun --format esm --outdir dist --external hono`.
 
 ## Data Model
 
@@ -392,7 +390,7 @@ wovain/
 ├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
 ├── .releaserc.json              # semantic-release plugins
 ├── .vscode/                     # settings.json, extensions.json
-├── .claude/skills/              # course skills (bun run skills:restore) and the ultracite skill
+├── .claude/skills/              # course and ultracite skills, copied by bun install (gitignored)
 ├── scripts/                     # prepare.ts (hooks, skills sync), set-version.ts (release version)
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
