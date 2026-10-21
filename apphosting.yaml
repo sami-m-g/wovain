@@ -17,9 +17,10 @@ scripts:
 # META_AD_ACCOUNT_ID, META_PAGE_ID, META_PIXEL_ID and the OTEL_* pair come back
 # once they have values.
 env:
-  # The install skips lifecycle scripts, as CI does: the root `prepare` sets up
+  # The install skips lifecycle scripts, as CI does (pnpm 12 reads only the
+  # pnpm_config_ prefix): the root `prepare` sets up
   # git hooks and agent skills, which a build container doesn't need.
-  - variable: npm_config_ignore_scripts
+  - variable: pnpm_config_ignore_scripts
     value: "true"
     availability:
       - BUILD
