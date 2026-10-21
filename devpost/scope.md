@@ -51,7 +51,7 @@ You steer every step, and Meta runs the campaign once you approve.
 |---|---|
 | Talk to it | Voice in ChatGPT if the widgets work there; speech-to-text otherwise |
 | Reuse, don't rebuild | Fourthwall and Meta Ads MCPs, fal's video models, Meta's Advantage+ and automated rules for optimization |
-| Use all of ChatGPT | Inline widgets for the UI (side panels and viewers are Work and desktop only), plus built-in image generation through a skill, web search, and voice where it supports widgets, instead of rebuilding any of them |
+| Use all of ChatGPT | Inline widgets for the UI (side panels and viewers are Work and desktop only), plus built-in image generation through the design playbook, web search, and voice where it supports widgets, instead of rebuilding any of them |
 
 ## Why this matters to the learner
 They want a working project "created with minimal code" that they can show, a first step toward "making profit in print on demand," and a test of how far ChatGPT's own capabilities go in a build of four hours at most.
@@ -71,7 +71,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 
 | Area | In the POC |
 |---|---|
-| Host | ChatGPT plugin: skills, an MCP server, and plugin extensions for the UI (the MCP server is hosted on Vercel, so wovain works on chatgpt.com and in the desktop app) |
+| Host | A remote MCP server on Vercel that any agent connects to with OAuth (ChatGPT on chatgpt.com and the desktop app first, Claude too). It serves the tools, the widgets, and a playbook per step that tells the agent the flow |
 | Trends | Web research when the merchant asks for it or for trending designs; skipped when they bring their own idea |
 | Design | 2 or 3 designs generated in ChatGPT, each fitted to a Fourthwall product |
 | Listing | Title, description, variants, and price for each product, on the design widget |
@@ -86,7 +86,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 
 | Item | Why later |
 |---|---|
-| Claude version | Built as a Claude mod; ChatGPT comes first because it generates better images |
+| Claude version | Claude can already connect to the same MCP server; ChatGPT comes first because it generates better images, and the widgets are tested there |
 | The learner's own trend tools | Web research is enough to prove the loop |
 | Campaign results widget in chat | Needs spend data first |
 | Campaign results feeding back into trend research | Needs real spend and results first |

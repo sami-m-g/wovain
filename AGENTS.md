@@ -1,11 +1,11 @@
 # AGENTS.md
 
-wovain: an MCP server for print-on-demand sellers, used by any agent (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: MCP server library in `apps/server`, hosted by Next.js in `apps/web` on Vercel, widgets in `apps/widgets`.
+wovain: an MCP server for print-on-demand sellers, used by any agent (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: one Hono server in `apps/server` (MCP, OAuth, database) on Vercel, widgets in `apps/widgets`, shared schemas in `packages/shared`.
 
 ## Workflow
 
 - Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `devpost/*.md`.
-- Planning docs are Markdown only; the `.md` in `devpost/` is the source of truth. The one HTML page is `devpost/app-map.html` (the code map), with its CSS inline.
+- The planning docs are the Markdown files in `devpost/` (`scope.md`, `prd.md`, `spec.md`, `checklist.md`). When a fact changes, update every doc that states it. `devpost/app-map.html` (CSS inline) maps the code.
 
 ## Commits
 
@@ -52,6 +52,5 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (trend → 
 - Lefthook runs fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
 - Course skills aren't committed: run `bun run skills:restore` after cloning (it fetches them from `skills-lock.json`).
 - See a widget without ChatGPT: `bun run storybook` (one story per widget state, light and dark).
-- Run the server: `bun run dev` (Next.js in `apps/web` serves `/mcp` on localhost:3000; keys live in `apps/web/.env`; `/mcp` needs a Better Auth access token, and sign-in needs `BETTER_AUTH_SECRET` plus the Google keys). `DATABASE_URL` points at the Neon `dev` branch and `BLOB_READ_WRITE_TOKEN` at the private Blob store; there is no SQLite or offline mode. After a schema change in `packages/db`, run `bun run db:generate`, then `bun run db:migrate` (after changing Better Auth plugins, regenerate `packages/db/src/auth-schema.ts` with `bunx auth@1.7.7 generate` first). Tests run on PGlite and need no database. Infrastructure is code: `neon.ts` (Neon branches and services, `bunx neon@8.8.0 config plan`/`apply`) and `apps/web/vercel.json` (Vercel project config; keep it JSON, since `vercel.ts` makes Vercel install on Bun 1.3, which ignores `bun.lock`). Run `bun run widgets:watch` beside it; a widget edit shows on the next redraw ("redraw design d1").
+- Run the server: `bun run dev` (Hono in `apps/server` serves `/mcp`, sign-in and consent on localhost:3000; keys live in `apps/server/.env`; `/mcp` needs a Better Auth access token, and sign-in needs `BETTER_AUTH_SECRET` plus the Google keys). `DATABASE_URL` points at the Neon `dev` branch and `BLOB_READ_WRITE_TOKEN` at the private Blob store; there is no SQLite or offline mode. After a schema change in `apps/server/src/db`, run `bun run db:generate`, then `bun run db:migrate` (after changing Better Auth plugins, regenerate `apps/server/src/db/auth-schema.ts` with `bunx auth@1.7.7 generate` first). Tests run on PGlite and need no database. Infrastructure is code: `neon.ts` (Neon branches and services, `bunx neon@8.8.0 config plan`/`apply`) and `apps/server/vercel.json` (Vercel project config; keep it JSON, since `vercel.ts` makes Vercel install on Bun 1.3, which ignores `bun.lock`). Vercel runs `bun run build`, which builds the widgets and bundles `src/index.ts` into `dist/` with `bun build`, because Vercel doesn't resolve source-only workspace packages like `@wovain/shared`; the bundle skips type-checking, so CI and Lefthook do it. Run `bun run widgets:watch` beside it; a widget edit shows on the next redraw ("redraw design d1").
 - Try it in an agent: add the hosted `/mcp` (or `https://<tunnel>/mcp` for your local server) as a remote MCP server. The step playbooks agents follow live in `apps/server/src/playbooks/` and ship with each deploy (MCP `instructions`, `get_playbook`, prompts).
-- Next.js 16 differs from older versions: read `apps/web/node_modules/next/dist/docs/` before writing Next code. `apps/web/oxlint.config.ts` extends the root Ultracite config with the Next presets.
