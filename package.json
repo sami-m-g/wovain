@@ -16,7 +16,7 @@
     "test": "bun test",
     "mock": "WOVAIN_MOCK=1 bun run dev",
     "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
-    "knip": "knip",
+    "knip": "knip --config .config/knip.json",
     "storybook": "bun run --filter @wovain/widgets storybook",
     "test:stories": "bun run --filter @wovain/widgets test:stories",
     "widgets:watch": "bun run apps/widgets/build.ts --watch",
