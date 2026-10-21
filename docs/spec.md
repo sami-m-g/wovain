@@ -245,7 +245,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | GitLab CI/CD (`.gitlab-ci.yml`) | CI/CD | See the stage table below |
 | GitLab Observability (`apps/server/src/telemetry.ts`, `@vercel/otel` 2.1.3) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration). `/mcp` adds an `mcp.request` span with the MCP method, tool and status, no user ids or arguments. Next.js's per-request spans went with Next.js. Unset means no telemetry |
 | GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. With the Developer role we can run the developer flow (issue to MR), "Fix pipeline with Duo" on a failed pipeline, and code review (the MR template assigns `@GitLabDuo` as reviewer). SAST false-positive detection and SAST vulnerability resolution need a Maintainer to switch on; that request goes to GitLab contributor-success |
-| semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
+| semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.config/releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
 | Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies the course skills (GitHub) and package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
@@ -285,7 +285,7 @@ bunx ultracite init --pm bun --linter oxlint --frameworks react vitest \
 | oxlint plugins | eslint, typescript, unicorn, oxc, import, promise, node, react (rules of hooks), react-perf, jsx-a11y, vitest |
 | VS Code `TypeScriptTeam.native-preview` | Switches the editor's language server between TS 7 and 6 |
 
-`lefthook.yml`:
+`.config/lefthook.yml`:
 
 ```yaml
 pre-commit:
@@ -300,7 +300,7 @@ pre-commit:
 commit-msg:
   jobs:
     - name: commitlint
-      run: bunx commitlint --edit {1}
+      run: bunx commitlint --config .config/commitlint.config.ts --edit {1}
 pre-push:
   parallel: true
   jobs:
@@ -323,7 +323,7 @@ Scripts in the root `package.json`:
 "test": "bun test",
 "mock": "WOVAIN_MOCK=1 bun run dev",
 "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
-"knip": "knip",
+"knip": "knip --config .config/knip.json",
 "storybook": "bun run --filter @wovain/widgets storybook",
 "test:stories": "bun run --filter @wovain/widgets test:stories",
 "widgets:watch": "bun run apps/widgets/build.ts --watch",
@@ -388,15 +388,12 @@ wovain/
 ├── packages/shared/             # zod schemas, economics and rule thresholds for server and widgets
 ├── .gitlab-ci.yml               # verify, test (security), deploy (production), monitor, release
 ├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
-├── .releaserc.json              # semantic-release plugins
+├── .config/                     # lefthook.yml (git hooks), releaserc.json (semantic-release), commitlint.config.ts (conventional commits), knip.json (dead-code check)
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course and ultracite skills, copied by bun install (gitignored)
 ├── scripts/                     # prepare.ts (hooks, skills sync), set-version.ts (release version)
 ├── .mcp.json                    # dev MCPs: Fourthwall, Meta Ads, fal
 ├── oxlint.config.ts, oxfmt.config.ts   # from Ultracite
-├── lefthook.yml                 # pre-commit, commit-msg, pre-push
-├── commitlint.config.ts         # conventional commits
-├── knip.json                    # dead-code check
 ├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
 ├── package.json                 # bun workspaces (apps/server, apps/widgets, packages/shared) and scripts
 ├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
