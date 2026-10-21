@@ -1,6 +1,6 @@
 # AGENTS.md
 
-wovain: an MCP server for print-on-demand sellers, used by any agent (trend → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: one Hono server in `apps/server` (MCP, OAuth, database) on Vercel, widgets in `apps/widgets`, shared schemas in `packages/shared`.
+wovain: an MCP server for print-on-demand sellers, used by any agent (product idea → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: one Hono server in `apps/server` (MCP, OAuth, database) on Vercel, widgets in `apps/widgets`, shared schemas in `packages/shared`.
 
 ## Workflow
 

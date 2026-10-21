@@ -15,7 +15,7 @@ export const page = (title: string, body: Html): Html =>
         <title>${title}</title>
         <meta
           name="description"
-          content="From trend to live Fourthwall products and a Meta Advantage+ campaign, one approved widget at a time."
+          content="From a product idea to live Fourthwall products and a Meta Advantage+ campaign, one approved widget at a time."
         />
         <link rel="icon" href="/favicon.ico" />
         <style>

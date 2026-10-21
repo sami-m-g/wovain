@@ -1,7 +1,7 @@
 // The design step, as the agent follows it. Served by get_playbook and as an MCP prompt.
 export const design = {
   description:
-    'Design print-on-demand products for the merchant\'s Fourthwall shop and publish them only after approval. Use when the merchant gives a product idea ("design a tee for …"), picks ideas from the trend widget, gives feedback on a design widget, or a chat message says "Approve design dN", "Feedback on design dN" or "Open design dN in Fourthwall\'s designer".',
+    'Design print-on-demand products for the merchant\'s Fourthwall shop and publish them only after approval. Use when the merchant gives a product idea ("design a tee for …"), gives feedback on a design widget, or a chat message says "Approve design dN", "Feedback on design dN" or "Open design dN in Fourthwall\'s designer".',
   text: `One design widget per idea: the merchant's design on a real Fourthwall blank, with its listing and price. Nothing is published until the merchant presses Approve on the widget.
 
 ## Before any Fourthwall call

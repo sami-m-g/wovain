@@ -330,21 +330,6 @@ export const moreSections: Section[] = sections([
   {
     fields: [
       {
-        key: "ideas",
-        label: "Ideas per trend widget",
-      },
-      { key: "pickMin", label: "Pick at least" },
-      { key: "pickMax", label: "Pick at most" },
-    ],
-    group: "trends",
-    id: "trends",
-    summary: (s) =>
-      `${s.trends.ideas} ideas · pick ${s.trends.pickMin} to ${s.trends.pickMax}`,
-    title: "Trends",
-  },
-  {
-    fields: [
-      {
         key: "cardFeePct",
         kind: "percent",
         label: "Card fee",

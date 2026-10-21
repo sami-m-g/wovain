@@ -5,7 +5,7 @@ status: approved
 
 # wovain product requirements
 
-An MCP server, used from ChatGPT or any other agent, that takes a solo print-on-demand merchant from "make trending designs" to live Fourthwall products and a running Meta Advantage+ campaign, one approved widget at a time.
+An MCP server, used from ChatGPT or any other agent, that takes a solo print-on-demand merchant from a product idea to live Fourthwall products and a running Meta Advantage+ campaign, one approved widget at a time.
 
 Source: `scope.md > The unique kernel`, `scope.md > The core loop`.
 
@@ -13,22 +13,18 @@ Source: `scope.md > The unique kernel`, `scope.md > The core loop`.
 
 Source: `scope.md > What "working" looks like`.
 
-1. The merchant opens wovain in ChatGPT and asks for trending designs. If they bring their own idea, wovain skips to step 4.
-2. A trend widget shows 5 ideas, each backed by evidence with links.
-3. The merchant ticks 2 or 3 ideas and clicks "Design the ones I picked".
-4. One design widget per idea shows the design on a Fourthwall blank, with the listing and the price.
-5. The merchant approves, skips, or gives feedback on each design widget. Feedback regenerates the whole widget. Approve publishes that product to Fourthwall right away.
-6. Right after a product is published, its ad widget shows 2 videos, 1 static image, ad copy, and the margin math.
-7. The merchant adds each ad widget to the campaign, skips it, or gives feedback.
-8. When the last ad widget is added or skipped, the campaign widget launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.
-9. Success: Meta Ads Manager shows the live campaign and its rules, and the products are live in the Fourthwall shop.
-10. Later, when a rule has fired, the next time the merchant checks in, an optimization widget reports what happened and suggests a fix to approve.
+1. The merchant opens wovain in ChatGPT and gives 2 or 3 product ideas.
+2. One design widget per idea shows the design on a Fourthwall blank, with the listing and the price.
+3. The merchant approves, skips, or gives feedback on each design widget. Feedback regenerates the whole widget. Approve publishes that product to Fourthwall right away.
+4. Right after a product is published, its ad widget shows 2 videos, 1 static image, ad copy, and the margin math.
+5. The merchant adds each ad widget to the campaign, skips it, or gives feedback.
+6. When the last ad widget is added or skipped, the campaign widget launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.
+7. Success: Meta Ads Manager shows the live campaign and its rules, and the products are live in the Fourthwall shop.
+8. Later, when a rule has fired, the next time the merchant checks in, an optimization widget reports what happened and suggests a fix to approve.
 
 ```mermaid
 flowchart LR
-  A[Ask: make trending designs] --> B[Trend widget: 5 ideas]
-  A2[Own idea] --> D
-  B -- pick 2 or 3 --> D[Design widget per idea]
+  A[Own ideas: 2 or 3] --> D[Design widget per idea]
   D -- feedback --> D
   D -- approve --> P[Product published]
   P --> E[Ad widget per product]
@@ -37,7 +33,6 @@ flowchart LR
   C --> L[Live campaign]
   L -. rule fires .-> O[Optimization widget]
   O -- apply fix --> L
-  L -. later: results data .-> A
 ```
 
 ## Screens and Layout
@@ -46,8 +41,7 @@ Everything happens inside the ChatGPT conversation. Widgets appear inline in the
 
 | Surface | When it appears | Count |
 |---|---|---|
-| Trend widget | After asking for trending designs | 1 per request |
-| Design widget | After picking ideas, or after giving your own idea | 1 per idea (2 or 3) |
+| Design widget | After the merchant gives their ideas | 1 per idea (2 or 3) |
 | Ad widget | Right after its product is published | 1 per published product |
 | Campaign widget | After the last ad widget is added or skipped | 1 |
 | Optimization widget | When a campaign rule fires | 1 per event |
@@ -56,23 +50,6 @@ Everything happens inside the ChatGPT conversation. Widgets appear inline in the
 Feedback works two ways on every widget: free typing in the chat, or the widget's own controls and feedback field.
 
 Every widget also has a quick-settings menu (⚙) for the values it uses; the Settings widget edits all of them. Changes apply without a redeploy.
-
-### Trend widget wireframe
-
-```
-┌─ Trending now · 5 ideas · Oct 19, 2026 ──────────────────────┐
-│ "Two ideas stand out: rising fast with few sellers yet."     │
-│ ☐ Japanese cat sunset         ▲ Rising  +240% (Google Trends)│
-│   Cat lovers, Japan fans · Peaks Mar–Apr (sakura)            │
-│   Competition: ~1,200 active Meta ads · Etsy ~8k listings    │
-│   Sells for $24–32 · 3 example listings ↗                    │
-│   ⚠ Trademark: clear (USPTO class 025 checked ↗)             │
-├──────────────────────────────────────────────────────────────┤
-│ ☐ Meal prep humor             ■ Stable   ...                 │
-├──────────────────────────────────────────────────────────────┤
-│ Sources ↗ ↗ ↗              [ Design the ones I picked ]      │
-└──────────────────────────────────────────────────────────────┘
-```
 
 ### Design widget wireframe
 
@@ -158,25 +135,6 @@ Every widget also has a quick-settings menu (⚙) for the values it uses; the Se
 
 ## Features and Behavior
 
-### Trend research
-
-Source: `scope.md > The POC boundary` (Trends).
-
-The merchant asks for trending designs; wovain researches the web and returns 5 ideas on the trend widget.
-
-| Field per idea | Evidence |
-|---|---|
-| Direction and % growth | Google Trends rising queries via SerpApi, linked |
-| Audience and seasonality | Google Trends 5-year view via SerpApi |
-| Competition | Active ad count from Meta's ad library search, plus Etsy listing count from the Etsy API |
-| Price range and example listings | Public listings, linked |
-| Trademark flag | Trademark screening on USPTO data (clothing class 025) via Marker API. Warns only; the merchant decides; not legal advice. |
-
-- As a merchant, I want trend ideas backed by facts so that I pick designs with real demand.
-  - The trend widget shows 5 ideas, each with every field above.
-  - Every number on the widget has a source link.
-  - Ticking 2 or 3 ideas enables "Design the ones I picked"; 0, 1 or 4+ keeps it disabled.
-
 ### Design widgets
 
 Source: `scope.md > The POC boundary` (Design, Listing).
@@ -193,7 +151,7 @@ Source: `scope.md > The POC boundary` (Design, Listing).
 | Price | Price, base cost, profit and margin |
 
 - As a merchant, I want each design shown on a real Fourthwall product with its listing so that I approve exactly what will be sold.
-  - One design widget appears per picked idea.
+  - One design widget appears per idea.
   - Feedback, typed or in the widget field, regenerates the whole widget with the change applied.
   - Approve publishes the product to Fourthwall and the widget shows it as live with a link.
   - Skip removes the design without publishing.
@@ -235,7 +193,6 @@ Costs of running the proof of concept, on top of per-sale costs:
 | Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings widget shows live fal prices |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
 | ChatGPT plan | Depends on your plan | Plus works: the merchant adds wovain's hosted `/mcp` as a connector, on chatgpt.com or in the desktop app |
-| Trend data | $0 | Free tiers: SerpApi (250 searches a month), Etsy API, Marker API |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
 | Server hosting | $0 | Vercel Hobby and Neon's free plan to start (unverified; Hobby is for non-commercial use, so Vercel Pro at $20 a month once others rely on it) |
 | Total for the test | $140 to $194 | Ad spend plus $4.59 of video |
@@ -302,16 +259,13 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 
 | # | When | What the merchant sees | Copy | Next action |
 |---|---|---|---|---|
-| 1 | Research is running | Trend widget with live progress lines | "Checking Google Trends, the Meta Ad Library and trademarks for you…" | Wait; Cancel is available |
-| 2 | No idea clears the checks | Empty trend widget that explains why | "Nothing looked worth testing this time: 4 ideas were cooling off and 1 already has 30k+ ads. Want me to widen the search?" | Widen the search, or use my own idea |
-| 3 | Some or all ideas get a trademark flag | Flagged ideas stay selectable, with the reason shown | "Heads up: 'Fast & Furious' is a registered trademark for clothing, so selling it could get the product taken down." | The merchant decides |
-| 4 | Artwork too low-resolution for the placement | Print quality turns red; Approve is disabled | "This artwork is 1100 px, and this print size needs 1500 px or more, so it would print blurry." | Regenerate at higher resolution, or use a smaller placement |
-| 5 | Some colors or sizes out of stock | Those variants crossed out and excluded by default | "Navy is out of 4XL and 5XL, so I left those sizes off." | None needed; the merchant can add them back |
-| 6 | Fourthwall rejects the publish | The widget keeps all edits and shows the reason | "Fourthwall didn't accept this product (reason). Your edits are saved." | Try again; after 2 failures, finish in Fourthwall's designer |
-| 7 | A video fails to generate | The ad widget shows the failed slot | "Video B didn't render. I can try again, or you can go with the image only." | Retry, or use the static image only |
-| 8 | Ad account has no payment method | Campaign widget shows Ready, blocked; products stay live and ad widgets are kept | "Your campaign is ready, but Meta needs a payment method on your ad account before it can launch." | Add payment method, then check again and launch |
-| 9 | No purchase events from the store | Same Ready, blocked state | "Meta can't see sales from your store yet, and Advantage+ needs them to learn who buys." | Connect the Meta Pixel and Conversions API in Fourthwall, then check again and launch |
-| 10 | A rule has fired on a running campaign | Optimization widget; only the flagged ad changes | "Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales (3× breakeven)." | Apply the fix, or dismiss |
+| 1 | Artwork too low-resolution for the placement | Print quality turns red; Approve is disabled | "This artwork is 1100 px, and this print size needs 1500 px or more, so it would print blurry." | Regenerate at higher resolution, or use a smaller placement |
+| 2 | Some colors or sizes out of stock | Those variants crossed out and excluded by default | "Navy is out of 4XL and 5XL, so I left those sizes off." | None needed; the merchant can add them back |
+| 3 | Fourthwall rejects the publish | The widget keeps all edits and shows the reason | "Fourthwall didn't accept this product (reason). Your edits are saved." | Try again; after 2 failures, finish in Fourthwall's designer |
+| 4 | A video fails to generate | The ad widget shows the failed slot | "Video B didn't render. I can try again, or you can go with the image only." | Retry, or use the static image only |
+| 5 | Ad account has no payment method | Campaign widget shows Ready, blocked; products stay live and ad widgets are kept | "Your campaign is ready, but Meta needs a payment method on your ad account before it can launch." | Add payment method, then check again and launch |
+| 6 | No purchase events from the store | Same Ready, blocked state | "Meta can't see sales from your store yet, and Advantage+ needs them to learn who buys." | Connect the Meta Pixel and Conversions API in Fourthwall, then check again and launch |
+| 7 | A rule has fired on a running campaign | Optimization widget; only the flagged ad changes | "Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales (3× breakeven)." | Apply the fix, or dismiss |
 
 - Approve and Add to campaign are disabled while their action runs, so nothing is published or added twice.
 - Published products stay live whatever happens later in the flow.
@@ -320,7 +274,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 
 | Decision | Reason |
 |---|---|
-| Trend and design widgets follow the research-backed fields above | The merchant wanted widgets "informative backed by facts" |
+| Design widgets follow the research-backed fields above | The merchant wanted widgets "informative backed by facts" |
 | Feedback is free typing or widget controls, and regenerates the whole widget | A change usually affects several details on the widget |
 | Approve publishes each design immediately | Fewer steps; matches the scope's direct publishing |
 | Price: at least $10 profit or 30% margin, whichever is greater; demo tee at $30 | Fourthwall's stricter guideline; $30 leaves $10.32 per sale for ads instead of $8.43 |
@@ -349,7 +303,6 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 
 ## What We're Building
 
-- Trend widget with 5 evidence-backed ideas and a 2-or-3 pick.
 - Design widget per idea: mockup, placement, file quality, listing, price; approve, skip, feedback.
 - Immediate Fourthwall publishing on approve.
 - Ad widget per product: 2 UGC-style videos, 1 static image, copy, breakeven math.
@@ -357,7 +310,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 - Five Meta automated rules: kill (no sales), kill (design), kill (too expensive), scale, alert.
 - Optimization widget when a rule fires.
 - Settings widget and per-widget quick settings for every value.
-- The 10 states in States and Boundaries.
+- The 7 states in States and Boundaries.
 
 ## Deferred From the POC
 
@@ -367,21 +320,19 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 | Bundles and 2-pack offers | Adds a promotion step to the flow |
 | Per-product budgets | Advantage+ manages budget for the whole campaign |
 | Campaign results widget in chat | Needs spend data first (`scope.md > Later`) |
-| Results feeding back into trend research | Needs real results first (`scope.md > Later`) |
 
 ## Possible Later Enhancements
 
 - A Claude-first experience (`scope.md > Later`); Claude can already connect to the MCP server.
 - TikTok Shop and TikTok ads, possibly through TikTok Agentic Hub skills.
 - Larger design batches beyond 2 or 3.
-- The merchant's own trend tools as extra evidence.
 - Shop optimization with PostHog or Clarity: heatmaps, session recordings and funnels on the storefront.
 
 ## Non-Goals
 
 | Non-goal | Reason |
 |---|---|
-| A custom trend engine | Search already provides trend data |
+| Trend research | The merchant brings their own ideas |
 | A custom video or image model | The goal is minimal code |
 | A custom media-buying engine | Advantage+ and Meta rules already optimize campaigns |
 | Draft or hidden products | Publishing directly takes fewer steps |
@@ -396,7 +347,6 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 | Connect the Meta Pixel and Conversions API in Fourthwall (built in, no code) | The demo |
 | Which video tool: Modal, Creatify or HeyGen? (Kling v3 on fal chosen) | Resolved in `spec.md` |
 | Rules need Meta's Marketing API; Meta's Ads plugin can't create them | Resolved in `spec.md` |
-| Can Etsy listing counts and USPTO checks be reached reliably? | Resolved in `spec.md` |
 | Does ChatGPT hand its generated image to wovain's tool when a wovain skill asks for it? | Resolved in `spec.md` |
 | Does your ChatGPT plan allow custom plugins? (Plus confirmed: 'Add custom MCP server' is available) | Resolved in `spec.md` |
 | Can a widget's video go full screen itself, or does it need ChatGPT's full-screen view? | Resolved in `spec.md` |

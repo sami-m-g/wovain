@@ -4,12 +4,6 @@ import { videoModelIds, videoPricesSchema } from "./video-models.ts";
 
 // Every value the PRD names is a setting. Defaults come from spec.md > Settings.
 
-export const trendsSettings = z.object({
-  ideas: z.int().min(1).max(10).default(5),
-  pickMax: z.int().min(1).default(3),
-  pickMin: z.int().min(1).default(2),
-});
-
 export const pricingSettings = z.object({
   minMarginPct: z.number().min(0).max(95).default(30),
   minProfit: z.number().min(0).default(10),
@@ -75,7 +69,6 @@ export const settingsSchema = z.object({
   meta: metaSettings.prefault({}),
   pricing: pricingSettings.prefault({}),
   rules: rulesSettings.prefault({}),
-  trends: trendsSettings.prefault({}),
   video: videoSettings.prefault({}),
 });
 
@@ -97,7 +90,6 @@ export const settingsPatchSchema = z.object({
   meta: metaSettings.partial().optional(),
   pricing: pricingSettings.partial().optional(),
   rules: rulesSettings.partial().optional(),
-  trends: trendsSettings.partial().optional(),
   video: videoSettings.partial().optional(),
 });
 

@@ -7,7 +7,6 @@ import {
   SettingsSlider,
   ShieldCheck,
   Tag,
-  Trending,
   Video,
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
@@ -35,7 +34,6 @@ const icons: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   meta: SettingsSlider,
   pricing: Tag,
   rules: ShieldCheck,
-  trends: Trending,
   video: Video,
 };
 
