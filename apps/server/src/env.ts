@@ -20,7 +20,12 @@ const envSchema = z.object({
   META_PIXEL_ID: z.string().optional(),
   META_SYSTEM_USER_TOKEN: z.string().optional(),
   SERPAPI_KEY: z.string().optional(),
-  // The wovain logo ChatGPT shows for the connector (served by apps/web).
+  // The built widgets beside this package: src/ in development and tests,
+  // dist/ once bundled (vercel.json ships apps/widgets/dist with the function).
+  WOVAIN_WIDGETS_DIR: z
+    .string()
+    .default(() => path.join(import.meta.dirname, "..", "..", "widgets", "dist")),
+  // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
   WOVAIN_MOCK: z.stringbool().default(false),
   // Paths default to this repo for tests; apps/web passes its own, since a

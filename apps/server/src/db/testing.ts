@@ -7,7 +7,12 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 import type { Db } from "./client.ts";
 import { schema } from "./schema.ts";
 
-const migrationsFolder = path.join(import.meta.dirname, "..", "migrations");
+const migrationsFolder = path.join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "migrations"
+);
 
 // A fresh in-memory Postgres with every migration applied, so tests run the
 // same SQL as Neon without a network or credentials.

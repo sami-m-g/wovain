@@ -1,3 +1,5 @@
+// The sign-in and consent pages' styles, inlined into each page.
+export const styles = `
 :root {
   --wovain-accent: #3b4cca;
   --wovain-accent-text: #ffffff;
@@ -99,3 +101,4 @@ button:focus-visible {
   outline: 2px solid var(--wovain-accent);
   outline-offset: 2px;
 }
+`;

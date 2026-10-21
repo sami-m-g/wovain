@@ -8,7 +8,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "bun run --filter @wovain/web build",
+    "build": "bun run --filter @wovain/server build",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "typecheck": "tsc -b --noEmit",
@@ -21,9 +21,9 @@
     "storybook": "bun run --filter @wovain/widgets storybook",
     "test:stories": "bun run --filter @wovain/widgets test:stories",
     "widgets:watch": "bun run apps/widgets/build.ts --watch",
-    "dev": "bun run --filter @wovain/web dev",
-    "db:generate": "bun run --filter @wovain/db generate",
-    "db:migrate": "bun run --filter @wovain/db migrate"
+    "dev": "bun run --filter @wovain/server dev",
+    "db:generate": "bun run --filter @wovain/server generate",
+    "db:migrate": "bun run --filter @wovain/server migrate"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",

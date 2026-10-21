@@ -1,13 +1,15 @@
 import { get as getBlob, put as putBlob } from "@vercel/blob";
-import { and, counters, eq, records, sql } from "@wovain/db";
-import type { Db } from "@wovain/db";
 import { adSchema } from "@wovain/shared/ad";
 import type { Ad } from "@wovain/shared/ad";
 import { designSchema } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
 import type { Settings, SettingsPatch } from "@wovain/shared/settings";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
+
+import type { Db } from "./db/client.ts";
+import { counters, records } from "./db/schema.ts";
 
 // Staged artwork: the bytes live in media under `key`, the record in Neon.
 const artworkSchema = z.object({

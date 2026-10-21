@@ -27,10 +27,10 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 git clone https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase.git wovain
 cd wovain
 bun install
-cp apps/web/.env.example apps/web/.env
+cp apps/server/.env.example apps/server/.env
 ```
 
-Fill in `apps/web/.env` (empty values count as unset; on Vercel, set them in the project's settings):
+Fill in `apps/server/.env` (empty values count as unset; on Vercel, set them in the project's settings):
 
 | Key | Needed for | Where to get it |
 | --- | --- | --- |
@@ -57,10 +57,10 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 
 | Command | What it does |
 | --- | --- |
-| `bun run dev` | Next.js serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in an agent) |
-| `bun run build` | Builds the widgets, then the Next.js app |
+| `bun run dev` | The server serves `/mcp` on localhost:3000 (expose it with a tunnel to try it in an agent) |
+| `bun run build` | Builds the widgets, then bundles the server into `apps/server/dist` |
 | `bun run widgets:watch` | Rebuilds widgets on save; redraw a widget in chat to see the change |
-| `bun run db:generate` | Writes a SQL migration in `packages/db/migrations` after a schema change |
+| `bun run db:generate` | Writes a SQL migration in `apps/server/migrations` after a schema change |
 | `bun run db:migrate` | Applies the migrations to the Neon branch in `DATABASE_URL` |
 | `bun run storybook` | Every widget state, light and dark, at ChatGPT widths, without ChatGPT |
 | `bun run check` / `bun run fix` | Lint and format (Ultracite: oxlint + oxfmt) |
@@ -86,16 +86,14 @@ It needs the CI variables `VERCEL_TOKEN`, `NEON_API_KEY`, `GITLAB_TOKEN`, `RENOV
 
 ## Releases
 
-Releases come from conventional commits. semantic-release (`.releaserc.json`) picks the version, writes `CHANGELOG.md`, sets the version in `package.json`, commits that as `chore(release): x [skip ci]`, tags it, and publishes a GitLab release. The tag `v0.1.0` on the first commit is its baseline. Renovate opens dependency update merge requests every Monday from a pipeline schedule (`renovate.json`: updates wait 7 days, minor and patch are grouped).
+Releases come from conventional commits. semantic-release (`.releaserc.json`) picks the version, writes `CHANGELOG.md`, sets the version in `package.json`, commits that as `chore(release): x [skip ci]`, tags it, and publishes a GitLab release. The tag `v0.1.0` on the first commit is its baseline. Renovate opens dependency update merge requests every Monday from a pipeline schedule (`.gitlab/renovate.json`: updates wait 7 days, minor and patch are grouped).
 
 ## Layout
 
 | Path | What's there |
 | --- | --- |
-| `apps/server/` | The MCP server library: tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client, store (Neon Postgres through Drizzle) |
-| `apps/web/` | Next.js app on Vercel that serves the MCP server at `/mcp` |
+| `apps/server/` | The Hono server on Vercel: `/mcp` (tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client), Better Auth's OAuth with the sign-in and consent pages, and the Drizzle schema, client and migrations for Neon Postgres (`src/db`, `migrations/`) |
 | `apps/widgets/` | The React widgets (MCP Apps) and their Storybook stories |
-| `packages/db/` | Drizzle schema (wovain's records and Better Auth's tables), client and migrations |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and widgets |
 | `devpost/` | Planning documents and the app map |
 

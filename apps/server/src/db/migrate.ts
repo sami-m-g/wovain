@@ -4,7 +4,7 @@ import { SQL } from "bun";
 import { drizzle } from "drizzle-orm/bun-sql";
 import { migrate } from "drizzle-orm/bun-sql/migrator";
 
-// Applies packages/db/migrations to the Neon branch in DATABASE_URL:
+// Applies apps/server/migrations to the Neon branch in DATABASE_URL:
 // `bun run db:migrate` (production: point DATABASE_URL at main).
 const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined || databaseUrl === "") {
@@ -13,7 +13,7 @@ if (databaseUrl === undefined || databaseUrl === "") {
 }
 const client = new SQL(databaseUrl);
 await migrate(drizzle({ client }), {
-  migrationsFolder: path.join(import.meta.dirname, "..", "migrations"),
+  migrationsFolder: path.join(import.meta.dirname, "..", "..", "migrations"),
 });
 await client.close();
 console.info("Migrations applied.");

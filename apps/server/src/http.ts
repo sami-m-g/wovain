@@ -1,13 +1,13 @@
 import { createMcpHandler } from "@modelcontextprotocol/server";
-import type { Db } from "@wovain/db";
 
+import type { Db } from "./db/client.ts";
 import type { Env } from "./env.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import { createServer } from "./server.ts";
 import { createStore } from "./store.ts";
 import type { Media } from "./store.ts";
 
-// Who the verified access token belongs to; apps/web checks the token first.
+// Who the verified access token belongs to; routes/mcp.ts checks the token first.
 export interface Caller {
   clientId: string;
   scopes: string[];
