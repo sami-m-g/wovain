@@ -1,9 +1,9 @@
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
-import type { Db } from "@wovain/db";
-import { createTestDb } from "@wovain/db/testing";
 import type { Design } from "@wovain/shared/design";
 
+import type { Db } from "../src/db/client.ts";
+import { createTestDb } from "../src/db/testing.ts";
 import { loadEnv } from "../src/env.ts";
 import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";

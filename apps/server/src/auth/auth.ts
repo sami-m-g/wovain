@@ -1,18 +1,17 @@
 import { cimd } from "@better-auth/cimd";
 import { fetchClientMetadataResource } from "@better-auth/cimd/node";
 import { mcp } from "@better-auth/mcp";
-import { schema } from "@wovain/db";
-import type { Db } from "@wovain/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { nextCookies } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins";
 
+import type { Db } from "../db/client.ts";
+import { schema } from "../db/schema.ts";
 import { isAllowed, siteUrl } from "./env.ts";
 import type { AllowCheck, AuthEnv } from "./env.ts";
 
-// wovain is ChatGPT's OAuth server (developers.openai.com/plugins/build/auth):
-// ChatGPT registers itself (CIMD, or DCR as a fallback), sends the merchant to
+// wovain is the OAuth server for the agents that connect to /mcp: an agent
+// registers itself (CIMD, or DCR as a fallback), sends the merchant to
 // /sign-in and /consent, then calls /mcp with a token bound to that URL.
 export const createAuth = (env: AuthEnv, db: Db) => {
   const baseURL = siteUrl(env);
@@ -28,7 +27,7 @@ export const createAuth = (env: AuthEnv, db: Db) => {
   const allowed = (user: AllowCheck | null | undefined) => isAllowed(env, user);
   return betterAuth({
     baseURL,
-    // Its tables live in packages/db beside wovain's records.
+    // Its tables live in src/db beside wovain's records.
     database: drizzleAdapter(db, { provider: "pg", schema }),
     // Sign-in is closed to anyone off the allowlist (env.ts explains why):
     // no account is created for them, and a removed user gets no new session.
@@ -62,8 +61,6 @@ export const createAuth = (env: AuthEnv, db: Db) => {
         fetchClientMetadataResource,
         metadataProfile: "mcp-2026-07-28",
       }),
-      // Last, so sign-in responses set their cookies through Next.js.
-      nextCookies(),
     ],
     ...(env.BETTER_AUTH_SECRET === undefined
       ? {}
@@ -72,3 +69,5 @@ export const createAuth = (env: AuthEnv, db: Db) => {
     telemetry: { enabled: false },
   });
 };
+
+export type Auth = ReturnType<typeof createAuth>;

@@ -1,11 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // Better Auth 1.7 types declare optional fields as `?: undefined`, which
+    // this flag rejects; the widgets and shared packages keep it on.
+    "exactOptionalPropertyTypes": false,
     "composite": true,
     "emitDeclarationOnly": true,
     "noEmit": false,
     "outDir": "../../node_modules/.tsbuild/apps/server",
     "types": ["bun"]
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "drizzle.config.ts"]
 }

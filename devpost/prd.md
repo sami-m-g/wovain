@@ -5,7 +5,7 @@ status: approved
 
 # wovain product requirements
 
-A ChatGPT plugin that takes a solo print-on-demand merchant from "make trending designs" to live Fourthwall products and a running Meta Advantage+ campaign, one approved widget at a time.
+An MCP server, used from ChatGPT or any other agent, that takes a solo print-on-demand merchant from "make trending designs" to live Fourthwall products and a running Meta Advantage+ campaign, one approved widget at a time.
 
 Source: `scope.md > The unique kernel`, `scope.md > The core loop`.
 
@@ -234,7 +234,7 @@ Costs of running the proof of concept, on top of per-sale costs:
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
 | Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings widget shows live fal prices |
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
-| ChatGPT plan | Depends on your plan | Plus works: the plugin installs in the ChatGPT desktop app (verified in build step 1), and the hosted server also works on chatgpt.com |
+| ChatGPT plan | Depends on your plan | Plus works: the merchant adds wovain's hosted `/mcp` as a connector, on chatgpt.com or in the desktop app |
 | Trend data | $0 | Free tiers: SerpApi (250 searches a month), Etsy API, Marker API |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
 | Server hosting | $0 | Vercel Hobby and Neon's free plan to start (unverified; Hobby is for non-commercial use, so Vercel Pro at $20 a month once others rely on it) |
@@ -292,7 +292,7 @@ Source: `scope.md > The POC boundary` (Management).
 
 Source: `scope.md > The core loop` (interrupt campaign: change direction).
 
-When a rule has fired, wovain runs its optimization skills on the flagged item and shows an optimization widget: what happened, and a suggested fix (for example a new hook, a new video, or a price test), using Fourthwall's conversion and visitor reports as evidence. Only the flagged ad changes; everything else keeps running. Every ad link carries `utm_content` set to the ad ID. Before showing the widget, wovain cross-checks Fourthwall's sales-by-UTM report: Meta reports some purchases late and its rules can only read Meta's numbers, so if the shop shows a sale Meta missed, the widget offers to turn the ad back on. ChatGPT can't start a conversation, so wovain checks rule history when the merchant asks how the campaign is doing; Meta also sends its own rule notifications.
+When a rule has fired, wovain runs its optimization step on the flagged item and shows an optimization widget: what happened, and a suggested fix (for example a new hook, a new video, or a price test), using Fourthwall's conversion and visitor reports as evidence. Only the flagged ad changes; everything else keeps running. Every ad link carries `utm_content` set to the ad ID. Before showing the widget, wovain cross-checks Fourthwall's sales-by-UTM report: Meta reports some purchases late and its rules can only read Meta's numbers, so if the shop shows a sale Meta missed, the widget offers to turn the ad back on. ChatGPT can't start a conversation, so wovain checks rule history when the merchant asks how the campaign is doing; Meta also sends its own rule notifications.
 
 - A fired rule produces an optimization widget naming the ad, the numbers, and the rule.
 - Apply the fix carries out the suggestion; Dismiss leaves the campaign as is.
@@ -339,7 +339,7 @@ When a rule has fired, wovain runs its optimization skills on the flagged item a
 | Look: ChatGPT's design system with an indigo dye accent | OpenAI allows brand color only on buttons, badges and icons; indigo stands apart from the status colors |
 | One coach line per widget in a friendly-coach voice | The merchant chose a warm voice that explains each call |
 | Ad widget: everything on one widget; each video has a full-screen control | One glance and one decision, while full screen lets you judge videos at phone size |
-| Designs come from ChatGPT's built-in image generation, triggered by a wovain skill | ChatGPT makes better images (scope); there is no direct API, so a skill asks ChatGPT and hands the image to wovain |
+| Designs come from ChatGPT's built-in image generation, triggered by wovain's design playbook | ChatGPT makes better images (scope); there is no direct API, so the playbook asks the agent to make the image and hand it to wovain |
 | A fired rule triggers optimization, not a full pause | The merchant's definition of "change direction" mid-campaign |
 | Video: MiniMax H3 Max Reference on fal by default, with the mockup and the design as references | On-model UGC clips that kept the print in the first real test, at $0.75 per clip; Kling v3 ($2.10) and Kling O1 Reference ($0.84, 10 s) are one setting away, and the cheaper MiniMax H3 models serve test runs |
 | Audio: generated background audio (MMAudio), configurable | Meta's music only works on image ads; MMAudio costs $0.015 per clip against $0.63 for Kling's own audio |
@@ -371,7 +371,7 @@ When a rule has fired, wovain runs its optimization skills on the flagged item a
 
 ## Possible Later Enhancements
 
-- A Claude version of the plugin (`scope.md > Later`).
+- A Claude-first experience (`scope.md > Later`); Claude can already connect to the MCP server.
 - TikTok Shop and TikTok ads, possibly through TikTok Agentic Hub skills.
 - Larger design batches beyond 2 or 3.
 - The merchant's own trend tools as extra evidence.

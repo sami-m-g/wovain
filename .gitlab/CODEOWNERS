@@ -6,15 +6,14 @@
 * @sami-m-g
 
 [Auth] @sami-m-g
-/apps/web/lib/
-/apps/web/app/api/auth/
-/apps/web/app/.well-known/
-/apps/web/app/mcp/
-/apps/web/app/sign-in/
-/apps/web/app/consent/
+/apps/server/src/auth/
+/apps/server/src/routes/
+/apps/server/src/pages/
+/apps/server/src/app.ts
 
 [Database] @sami-m-g
-/packages/db/
+/apps/server/src/db/
+/apps/server/migrations/
 
 [Pipeline] @sami-m-g
 /.gitlab-ci.yml

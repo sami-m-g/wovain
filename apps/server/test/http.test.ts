@@ -26,7 +26,7 @@ const mcpFetch = createMcpFetch(
   await testStorage()
 );
 
-// apps/web verifies the OAuth token first and passes who it belongs to.
+// routes/mcp.ts verifies the OAuth token first and passes who it belongs to.
 const caller = (userId: string) => ({
   clientId: "chatgpt",
   scopes: [],

@@ -23,7 +23,7 @@ Closes #
 
 - [ ] Title is a Conventional Commit (`type(scope): summary`, lowercase, imperative)
 - [ ] Pipeline is green (verify, stories, deploy:preview)
-- [ ] Planning docs updated if a fact changed
+- [ ] Planning docs (`devpost/*.md`) updated if a fact changed
 - [ ] Migrations generated with `bun run db:generate` if the schema changed
 - [ ] No secrets, tokens or `.env` files in the diff
 

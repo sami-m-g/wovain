@@ -4,7 +4,7 @@ import { defineConfig } from "@neon/config/v1";
 // integration). Preview it with `bunx neon@8.8.0 config plan` and apply it
 // with `bunx neon@8.8.0 config apply`; both need a Neon API key.
 export default defineConfig({
-  // Sign-in runs on Better Auth in apps/web (Neon Auth can't be ChatGPT's
+  // Sign-in runs on Better Auth in apps/server (Neon Auth can't be ChatGPT's
   // OAuth server), so Neon's managed auth stays off.
   auth: false,
   branch: (branch) => {

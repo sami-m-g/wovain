@@ -46,20 +46,24 @@
 </head>
 <body>
 <main>
-  <p class="tag">App map · snapshot of commit c744d79 (Oct 19, 2026)</p>
+  <p class="tag">App map · updated Oct 21, 2026 for the one-server layout (after 0.13.0)</p>
   <h1>wovain app map</h1>
-  <p class="lede">wovain is a ChatGPT plugin for print-on-demand sellers, served from a hosted MCP server. Inside one chat it turns an idea into a live Fourthwall product, makes video ads for it, and builds one Meta Advantage+ sales campaign guarded by five automated rules.</p>
+  <p class="lede">wovain is a hosted MCP server for print-on-demand sellers. Any agent that speaks MCP with OAuth, such as ChatGPT or Claude, connects to it remotely. Inside one chat it turns an idea into a live Fourthwall product, makes video ads for it, and builds one Meta Advantage+ sales campaign guarded by five automated rules.</p>
 
   <section aria-labelledby="pieces">
     <h2 id="pieces">The main pieces</h2>
     <table>
       <thead><tr><th>Piece</th><th>What it does</th><th>Where</th></tr></thead>
       <tbody>
-        <tr><td>Skills</td><td>Tell ChatGPT the steps for each stage: design, ads, campaign.</td><td><code>plugin/skills/wovain-*/SKILL.md</code></td></tr>
-        <tr><td>wovain server</td><td>MCP tools that do the math, image and video work, storage and the Meta rules call. Money numbers are computed here, never by the model.</td><td><code>apps/server/src/tools/</code>, <code>apps/server/src/lib/</code></td></tr>
-        <tr><td>Widgets</td><td>The interactive widgets in the chat: Settings, Design, Ad, Campaign.</td><td><code>apps/widgets/src/&lt;widget&gt;/</code></td></tr>
+        <tr><td>Playbooks</td><td>Tell the agent the steps for each stage: design, ads, campaign. Sent as the server's MCP <code>instructions</code>, through the <code>get_playbook({ step })</code> tool and as the MCP prompts <code>design</code>, <code>ads</code> and <code>campaign</code>.</td><td><code>apps/server/src/playbooks/</code></td></tr>
+        <tr><td>MCP server</td><td>Tools that do the math, image and video work, storage and the Meta rules call. Money numbers are computed here, never by the model.</td><td><code>apps/server/src/server.ts</code>, <code>apps/server/src/tools/</code>, <code>apps/server/src/lib/</code></td></tr>
+        <tr><td>HTTP app</td><td>One Hono app on Vercel's Bun runtime. Serves <code>/mcp</code>, Better Auth's OAuth (<code>/api/auth/*</code>, <code>/.well-known/*</code>) and the home, sign-in and consent pages.</td><td><code>apps/server/src/index.ts</code>, <code>src/app.ts</code>, <code>src/routes/mcp.ts</code></td></tr>
+        <tr><td>Sign-in</td><td>Better Auth with Google sign-in and an OAuth provider for agents. The pages are server-rendered forms that only accept posts from this site.</td><td><code>apps/server/src/auth/</code>, <code>apps/server/src/pages/</code></td></tr>
+        <tr><td>Storage</td><td>Neon Postgres through Drizzle for settings, designs and ads; the private Vercel Blob store for artwork bytes.</td><td><code>apps/server/src/db/</code>, <code>apps/server/migrations/</code>, <code>apps/server/src/store.ts</code></td></tr>
+        <tr><td>Widgets</td><td>The interactive widgets in the chat: Settings, Design, Ad, Campaign. Built to single HTML files that the server ships.</td><td><code>apps/widgets/src/&lt;widget&gt;/</code></td></tr>
         <tr><td>Shared rules</td><td>Schemas, breakeven economics and rule thresholds used by both server and widgets.</td><td><code>packages/shared/src/</code></td></tr>
-        <tr><td>Connected services</td><td>Fourthwall (products), fal (videos) and Meta Ads (campaign) are connected in the ChatGPT app; wovain calls Meta's API only for rules.</td><td>ChatGPT app connectors, <code>apps/server/src/lib/meta-graph.ts</code></td></tr>
+        <tr><td>Deploy and telemetry</td><td>Vercel bundles the server with <code>bun build</code> into <code>dist/</code> and includes the built widgets. Traces go to GitLab Observability when an OTLP endpoint is set.</td><td><code>apps/server/vercel.json</code>, <code>apps/server/src/telemetry.ts</code></td></tr>
+        <tr><td>Connected services</td><td>Fourthwall (products), fal (videos) and Meta Ads (campaign) are connected in the same agent; wovain calls Meta's API only for rules.</td><td>The agent's MCP connectors, <code>apps/server/src/lib/meta-graph.ts</code></td></tr>
       </tbody>
     </table>
   </section>
@@ -69,9 +73,10 @@
     <p>What happens between pressing <strong>Add to campaign</strong> on the ad widget and seeing the campaign widget with its rules.</p>
     <ol class="flow">
       <li><strong>Ad widget button</strong> records the choice, then posts a chat message.<div class="where"><code>apps/widgets/src/ad/ad-widget.tsx</code> · <code>onAdd</code> → tool <code>record_ad</code></div></li>
-      <li><strong>Skill</strong> sees the message and starts the campaign steps.<div class="where"><code>plugin/skills/wovain-campaign/SKILL.md</code></div></li>
+      <li><strong>Request</strong> reaches <code>/mcp</code> with the merchant's OAuth token, which is checked before any tool runs.<div class="where"><code>apps/server/src/app.ts</code> → <code>apps/server/src/routes/mcp.ts</code></div></li>
+      <li><strong>Ads playbook</strong> tells the agent that once no ad widgets are waiting, it starts the campaign step.<div class="where"><code>apps/server/src/playbooks/ads.ts</code> → <code>apps/server/src/playbooks/campaign.ts</code></div></li>
       <li><strong>Plan</strong>: budget in cents, ad names, product links with UTM tags.<div class="where"><code>apps/server/src/tools/campaign.ts</code> · <code>campaign_plan</code></div></li>
-      <li class="ext"><strong>Meta Ads connector</strong> builds the draft campaign, ad set and video ads.<div class="where">ChatGPT's Meta Ads connector (outside this repo)</div></li>
+      <li class="ext"><strong>Meta Ads connector</strong> builds the draft campaign, ad set and video ads.<div class="where">The agent's Meta Ads connector (outside this repo)</div></li>
       <li><strong>Rules</strong>: five payloads in cents, posted to Meta's rules API.<div class="where"><code>apps/server/src/tools/campaign.ts</code> · <code>create_rules</code> → <code>packages/shared/src/rules.ts</code> · <code>metaRules</code> → <code>apps/server/src/lib/meta-graph.ts</code></div></li>
       <li><strong>Campaign widget</strong> shows Ready, Live or blocked, with each rule's threshold.<div class="where"><code>apps/widgets/src/campaign/campaign-widget-view.tsx</code></div></li>
     </ol>
@@ -82,7 +87,7 @@
     <p class="note">A reference route through the code above; it wasn't toured together.</p>
     <details open>
       <summary><strong>1. The button</strong> · <code>apps/widgets/src/ad/ad-widget.tsx</code>, search <code>onAdd</code></summary>
-      <p>The widget calls the server tool <code>record_ad</code> directly so the choice is saved even if the chat moves on, then sends “Added the ads for design d1 to the campaign” so the skill knows to continue.</p>
+      <p>The widget calls the server tool <code>record_ad</code> directly so the choice is saved even if the chat moves on, then sends “Added the ads for design d1 to the campaign” so the agent continues with the playbook.</p>
     </details>
     <details>
       <summary><strong>2. The rules tool</strong> · <code>apps/server/src/tools/campaign.ts</code>, search <code>"create_rules"</code></summary>
@@ -100,7 +105,9 @@
       <tbody>
         <tr><td>Default budget, rule multiples, video model</td><td><code>packages/shared/src/settings.ts</code> (also editable live on the Settings widget)</td></tr>
         <tr><td>The two video scenes</td><td><code>apps/server/src/lib/video-plan.ts</code>, search <code>angles</code></td></tr>
-        <tr><td>How the Meta campaign is built</td><td><code>plugin/skills/wovain-campaign/SKILL.md</code>, then <code>bun run plugin:dev</code> and a new chat</td></tr>
+        <tr><td>How the Meta campaign is built</td><td><code>apps/server/src/playbooks/campaign.ts</code>; the change reaches agents with the next deploy, or right away against <code>bun run dev</code> in a new chat</td></tr>
+        <tr><td>A route, the sign-in or consent page</td><td><code>apps/server/src/app.ts</code> and <code>apps/server/src/pages/</code></td></tr>
+        <tr><td>A table or column</td><td><code>apps/server/src/db/app-schema.ts</code>, then <code>bun run db:generate</code> and <code>bun run db:migrate</code></td></tr>
         <tr><td>A widget's layout or copy</td><td><code>apps/widgets/src/&lt;widget&gt;/*-widget-view.tsx</code>; check it in Storybook first</td></tr>
       </tbody>
     </table>
@@ -108,19 +115,19 @@
 
   <section aria-labelledby="practice">
     <h2 id="practice">A practice to reuse</h2>
-    <p><strong>Keep money math out of the model, and pin it with a test.</strong> The skills pass copy and choices; prices, breakeven and rule thresholds are computed by the server from stored data (<code>packages/shared/src/ad.ts</code> says so at the top), and <code>campaign-tools.test.ts</code> checks the exact cents Meta receives. When the first live run sent the rules to Meta, the thresholds matched without a fix. On any agent-built app that moves money, compute the numbers in code the model calls, and write one test with a worked example from the spec.</p>
+    <p><strong>Keep money math out of the model, and pin it with a test.</strong> The playbooks pass copy and choices; prices, breakeven and rule thresholds are computed by the server from stored data (<code>packages/shared/src/ad.ts</code> says so at the top), and <code>campaign-tools.test.ts</code> checks the exact cents Meta receives. When the first live run sent the rules to Meta, the thresholds matched without a fix. On any agent-built app that moves money, compute the numbers in code the model calls, and write one test with a worked example from the spec.</p>
   </section>
 
   <section aria-labelledby="run">
     <h2 id="run">Run it again</h2>
     <ul>
-      <li><code>bun install</code>, then copy <code>.env.example</code> to <code>.env</code> and fill in the keys you need.</li>
-      <li><code>bun run plugin:install</code> installs the plugin in the ChatGPT desktop app, pointed at the hosted <code>/mcp</code>; restart the app.</li>
-      <li>For iteration: <code>bun run plugin:dev</code> plus <code>bun run widgets:watch</code>.</li>
-      <li>See every widget without ChatGPT: <code>bun run storybook</code>.</li>
+      <li><code>bun install</code>, then copy <code>apps/server/.env.example</code> to <code>apps/server/.env</code> and fill in the keys you need.</li>
+      <li>In ChatGPT (developer mode) or Claude, add <code>https://wovain.vercel.app/mcp</code> as a remote MCP server, then sign in with Google and approve access when the agent asks.</li>
+      <li>Locally: <code>bun run db:migrate</code> once, then <code>bun run dev</code> (serves <code>/mcp</code> on localhost:3000) plus <code>bun run widgets:watch</code>, and connect the agent to <code>https://&lt;tunnel&gt;/mcp</code>.</li>
+      <li>See every widget without an agent: <code>bun run storybook</code>.</li>
       <li>Checks: <code>bun run check</code>, <code>bun run typecheck</code>, <code>bun test</code>, <code>bun run test:stories</code>.</li>
     </ul>
-    <p class="note">This map is a snapshot of commit c744d79. Paths and names can drift as the code changes.</p>
+    <p class="note">Paths and names can drift as the code changes.</p>
   </section>
 </main>
 </body>

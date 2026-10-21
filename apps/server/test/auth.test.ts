@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
 import { requireMcpAuth } from "@better-auth/mcp";
-import { createTestDb } from "@wovain/db/testing";
 import { z } from "zod";
 
-import { createAuth } from "../lib/auth.ts";
-import { loadAuthEnv } from "../lib/env.ts";
+import { createAuth } from "../src/auth/auth.ts";
+import { loadAuthEnv } from "../src/auth/env.ts";
+import { createTestDb } from "../src/db/testing.ts";
 
 const site = "http://localhost:3000";
 const redirectUri = "https://chatgpt.com/connector_platform_oauth_redirect";

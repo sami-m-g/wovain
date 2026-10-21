@@ -3,8 +3,8 @@ import { registerOTel } from "@vercel/otel";
 // Traces go to GitLab Observability over OTLP/HTTP when
 // OTEL_EXPORTER_OTLP_ENDPOINT (and OTEL_EXPORTER_OTLP_HEADERS for its token)
 // are set; without them nothing is registered, so builds and tests need
-// no collector. Next.js then adds its own spans for every request.
-export const register = () => {
+// no collector.
+export const registerTelemetry = () => {
   const endpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"];
   if (endpoint === undefined || endpoint === "") {
     return;
