@@ -14,7 +14,7 @@
 
 ## Files likely involved
 
-<!-- Paths or packages, e.g. apps/server/src/tools/design.ts, packages/db/src/app-schema.ts. -->
+<!-- Paths or packages, e.g. apps/server/src/tools/design.ts, apps/server/src/db/app-schema.ts. -->
 
 -
 
@@ -22,6 +22,7 @@
 
 - Follow AGENTS.md (TypeScript only, Ultracite style, Conventional Commit titles).
 - Schema changes go through `bun run db:generate`; never edit applied migrations.
+- Planning docs (`devpost/*.md`) change wherever the fact appears.
 
 ## Out of scope
 
