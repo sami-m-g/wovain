@@ -663,7 +663,7 @@ bun run plugin:install          # installs plugin/ pointed at the hosted /mcp (-
 <tr>
 <td>Renovate</td>
 <td>Dependencies</td>
-<td>renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; <code>renovate.json</code> extends <code>config:recommended</code> with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot</td>
+<td>renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; <code>.gitlab/renovate.json</code> extends <code>config:recommended</code> with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot</td>
 </tr>
 <tr>
 <td><code>skills</code> CLI</td>
@@ -867,9 +867,8 @@ pre-push:
 │   └── drizzle.config.ts
 ├── packages/mocks/              # MSW handlers: tests, mock mode, Storybook
 ├── .gitlab-ci.yml               # verify, test (security), package, deploy (preview + Neon branch / production), monitor, release
-├── .gitlab/                     # issue and MR templates, CODEOWNERS
+├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
 ├── .releaserc.json              # semantic-release plugins
-├── renovate.json                # Renovate dependency updates
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course skills (bun run skills:restore), plus new-tool/ and demo-check/
 ├── scripts/                     # plugin-install.ts, plan-sync.ts, prepare.ts, set-version.ts (release versions)

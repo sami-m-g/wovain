@@ -218,7 +218,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | GitLab Observability (`apps/web/instrumentation.ts`, `@vercel/otel` 2.1.3) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration); Next.js adds a span per request and `/mcp` adds an `mcp.request` span with the MCP method and tool, no user ids. Unset means no telemetry |
 | GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. With the Developer role we can run the developer flow (issue to MR), "Fix pipeline with Duo" on a failed pipeline, and code review (the MR template assigns `@GitLabDuo` as reviewer). SAST false-positive detection and SAST vulnerability resolution need a Maintainer to switch on; that request goes to GitLab contributor-success |
 | semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`scripts/set-version.ts` writes the version to `package.json` and `plugin/plugin.json`, then zips the plugin), git (commits `CHANGELOG.md` and the versions as `chore(release): x [skip ci]`) and gitlab (a GitLab release with the plugin zip as the generic package `wovain-plugin`). The tag `v0.1.0` on the first commit is the baseline, so the first release covers the whole history. It replaces release-please, whose config files are gone. That release commit lands only on GitLab until the next local push sends it to the GitHub mirror |
-| Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot |
+| Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates, and keeps the Better Auth packages together. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
 | Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the cards), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
@@ -356,9 +356,8 @@ wovain/
 │   └── drizzle.config.ts
 ├── packages/mocks/              # MSW handlers: tests, mock mode, Storybook
 ├── .gitlab-ci.yml               # verify, test (security), package, deploy (preview + Neon branch / production), monitor, release
-├── .gitlab/                     # issue and MR templates, CODEOWNERS
+├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
 ├── .releaserc.json              # semantic-release plugins
-├── renovate.json                # Renovate dependency updates
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course skills (bun run skills:restore), plus new-tool/ and demo-check/
 ├── scripts/                     # plugin-install.ts, plan-sync.ts, prepare.ts, set-version.ts (release versions)
