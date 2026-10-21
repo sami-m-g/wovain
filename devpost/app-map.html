@@ -4,18 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>wovain app map</title>
-<link rel="stylesheet" href="plan.css">
 <style>
+  :root {
+    --bg: #f6f5f1; --surface: #ffffff; --text: #1c1c1a; --muted: #6a6862;
+    --line: #e3e1d9; --node: #f0eee7; --accent: #c2410c; --accent-soft: #fde9dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151513; --surface: #1e1e1b; --text: #ecebe6; --muted: #a19f97;
+      --line: #35342f; --node: #282723; --accent: #fb923c; --accent-soft: #3a2416;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 72px; }
+  h1 { font-size: 36px; line-height: 1.1; margin: 14px 0 8px; }
+  h2 { font-size: 21px; margin: 46px 0 12px; }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  code { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--node); padding: 1px 5px; border-radius: 4px; }
+  section { margin-top: 32px; }
+  .lede { font-size: 18px; color: var(--muted); margin: 0 0 6px; max-width: 70ch; }
+  .note { color: var(--muted); font-size: 15px; margin-top: 10px; }
+  .tag { font-size: 13px; color: var(--accent); background: var(--accent-soft); padding: 3px 10px; border-radius: 999px; }
+  @media (max-width: 600px) { h1 { font-size: 29px; } }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 15px;
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  th { background: var(--node); font-weight: 600; }
+
   .flow { display: grid; gap: 8px; margin: 16px 0; padding: 0; list-style: none; }
   .flow li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
   .flow li::after { content: "↓"; display: block; color: var(--muted); text-align: center; margin-top: 6px; }
   .flow li:last-child::after { content: none; }
   .flow .where { color: var(--muted); font-size: 14px; }
   .ext { border-left: 4px solid var(--accent); }
-  code { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--node); padding: 1px 5px; border-radius: 4px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  section { margin-top: 32px; }
 </style>
 </head>
 <body>
