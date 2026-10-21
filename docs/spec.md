@@ -14,7 +14,7 @@ Implements `prd.md` (all of **Features and Behavior**). Scope source: `scope.md 
 wovain is a hosted MCP server. You add its URL to an agent that speaks MCP over streamable HTTP with OAuth (ChatGPT, Claude and others), sign in once, and the agent can use it.
 
 | Piece | What it is | What it does in wovain |
-|---|---|---|
+| --- | --- | --- |
 | Playbooks | Step-by-step instructions the wovain server hands the agent | The playbook for each step: design, ads, campaign (optimization comes later) |
 | Fourthwall MCP | Fourthwall's official server | Blanks, mockups, prices, publishing |
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
@@ -49,7 +49,7 @@ flowchart LR
 ```
 
 | # | You do | What happens | You see |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | Give 2 or 3 product ideas | The agent starts the `design` playbook | Next step starts |
 | 2 | Wait | `design` playbook: the agent generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design widget per idea |
 | 3 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design widget shows Live with a link |
@@ -64,7 +64,7 @@ Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 ## Stack
 
 | Layer | Choice | Version | Docs |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Runtime and package manager | Bun | 1.4.3 | https://bun.sh/docs |
 | MCP server | `@modelcontextprotocol/server` v2 over Streamable HTTP at `/mcp` | 2.3.1 | https://github.com/modelcontextprotocol/typescript-sdk |
 | Web server | Hono on Vercel's Bun runtime (`framework: hono`, `bunVersion: 1.4.x`): `/mcp`, OAuth endpoints and metadata, and the sign-in and consent pages | 4.13.13 | https://hono.dev |
@@ -95,17 +95,17 @@ wovain is a hosted MCP server. A Hono app (`apps/server`) on Vercel serves Strea
 
 Hosting was built in steps:
 
-| # | Step | State |
-|---|---|---|
-| 1 | Hosted HTTP server | Done |
-| 2 | Neon Postgres store and private Blob media | Done |
-| 3 | OAuth 2.1 sign-in so anyone can connect | Done |
-| 4 | Each user's own Meta account | Later |
+| #   | Step                                       | State |
+| --- | ------------------------------------------ | ----- |
+| 1   | Hosted HTTP server                         | Done  |
+| 2   | Neon Postgres store and private Blob media | Done  |
+| 3   | OAuth 2.1 sign-in so anyone can connect    | Done  |
+| 4   | Each user's own Meta account               | Later |
 
 How sign-in works:
 
 | Piece | Behavior |
-|---|---|
+| --- | --- |
 | Discovery | `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names the AuthKit domain (`WORKOS_AUTHKIT_DOMAIN`) as the authorization server. AuthKit's own metadata offers PKCE S256, CIMD and dynamic registration; both are switched on in the WorkOS dashboard under Connect → Configuration |
 | Sign-in and consent | AuthKit's hosted pages (Google, plus the methods enabled in WorkOS). Its consent screen names the registering app |
 | Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS. For now production and local development share the WorkOS Staging environment, with `https://wovain.vercel.app/mcp` (the default) and `http://localhost:3000/mcp`. Without both WorkOS keys every call gets a 401 |
@@ -114,7 +114,7 @@ How sign-in works:
 | Static files | `apps/server/public/` (icon, favicon), served by Vercel's CDN; `bun run dev` serves them from the app |
 
 | Need | Value |
-|---|---|
+| --- | --- |
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Vercel (Bun 1.4 runtime); Bun 1.4 locally for development |
 | Keys in `apps/server/.env` (project settings on Vercel) | `META_SYSTEM_USER_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `DATABASE_URL` (Neon: the `dev` branch locally) and `BLOB_READ_WRITE_TOKEN` (the private Blob store); on Vercel the Neon and Blob integrations set the last two |
@@ -159,13 +159,13 @@ PRD ref: `prd.md > Screens and Layout`.
 One playbook per step in `apps/server/src/playbooks/`. Each has a description (when to use it) and a text that names the tools to call in order and the widget to finish with. The agent gets them three ways:
 
 | Way | What the agent sees |
-|---|---|
+| --- | --- |
 | MCP `instructions` | The list of steps with each playbook's description, on initialize |
 | `get_playbook({ step })` | A read-only tool that returns one playbook's text |
 | MCP prompts `design`, `ads`, `campaign` | The same text as a user message |
 
 | Playbook | Steps | PRD ref |
-|---|---|---|
+| --- | --- | --- |
 | `design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_widget`; on approve, publish and `record_design` | `prd.md > Design widgets`, `prd.md > Pricing and economics` |
 | `ads` | `video_plan`, fal video ×2, fal MMAudio, copy, `show_ad_widget`, `record_ad` | `prd.md > Ad widgets` |
 | `campaign` | Payment and pixel checks, `campaign_plan`, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_widget` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
@@ -178,7 +178,7 @@ Each playbook starts Fourthwall calls with `get-instructions`, `ecommerce_get-cu
 What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/mcp`, `/.well-known/oauth-protected-resource[/mcp]` (the metadata naming AuthKit) and `/` (a short page with the connect URL). `src/routes/mcp.ts` checks the token and the allowlist, then hands the request to the MCP handler (`src/http.ts`): Streamable HTTP with a fresh server per request, and the widget files as `ui://` resources. Finished clips stay at the public `fal.media` URLs fal returns. Each tool file registers one step's tools, with zod input and output schemas from `packages/shared`. Tools return user-safe errors and never pass raw upstream errors through.
 
 | Tool | Does | Talks to |
-|---|---|---|
+| --- | --- | --- |
 | `get_playbook` | Returns one step's playbook (read-only) | Playbooks |
 | `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | records, Blob media |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
@@ -200,7 +200,7 @@ PRD ref: `prd.md > Features and Behavior`.
 One React component per widget, each built into a single HTML file. Buttons use `callTool` for wovain tools and `sendFollowUpMessage` for steps that need Fourthwall or Meta. Each widget keeps its in-progress state (typed feedback, chosen variants) with `setWidgetState`.
 
 | Widget | Buttons | Feedback | PRD ref |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Design | Approve, Skip | Field and chat; regenerates the widget | `prd.md > Design widgets` |
 | Ad | Add to campaign, Skip | Field and chat; regenerates the widget | `prd.md > Ad widgets` |
 | Campaign | Open in Ads Manager | Chat | `prd.md > Campaign launch` |
@@ -216,7 +216,7 @@ Each widget state from `prd.md > States and Boundaries` has a Storybook story wi
 Every value in the PRD is a setting, edited in the Settings widget or a widget's ⚙ menu, saved in the merchant's records, and used by the next widget without a redeploy.
 
 | Group | Settings (defaults) |
-|---|---|
+| --- | --- |
 | Pricing | min profit $10, min margin 30%, round up to a clean price |
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
 | Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
@@ -230,7 +230,7 @@ Every value in the PRD is a setting, edited in the Settings widget or a widget's
 Claude Code setup for building wovain, added in the first build step. Nothing here ships with the server.
 
 | Tool | Type | What it does |
-|---|---|---|
+| --- | --- | --- |
 | Fourthwall, Meta Ads and fal MCPs in `.mcp.json` | MCP | Lets Claude try Fourthwall calls, Kling prompts, elements and MMAudio during the build, outside a chat with wovain |
 | `/new-tool` (later) | Project skill | Scaffolds one wovain tool: zod schema in `packages/shared`, tool file, widget stub, fixture and test |
 | `/demo-check` (later) | Project skill, user-only | Preflight before recording: `/mcp` reachable, widgets build, shop live, Meta payment method and pixel, fal credit, and a claude-ads Meta audit of the ad account |
@@ -254,7 +254,7 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 GitLab CI/CD stages (`.gitlab-ci.yml`, image `oven/bun:1.4.2`):
 
 | Stage | Jobs | What runs |
-|---|---|---|
+| --- | --- | --- |
 | verify | `build`, `verify`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip and tests; widget stories on Playwright's image. Installs use `--ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
 | test | GitLab templates | SAST, Secret Detection and Dependency Scanning, on merge requests too; the scanners start at once (`needs: []`) |
 | deploy | `deploy:production` | `main` only: `vercel deploy --prod` (environment production, https://wovain.vercel.app). Merge requests get no preview deploy |
@@ -276,7 +276,7 @@ bunx ultracite init --pm bun --linter oxlint --frameworks react vitest \
 ```
 
 | Piece | What it does |
-|---|---|
+| --- | --- |
 | `--type-aware` | Type-aware lint rules through tsgolint (needs TS 7) |
 | `--hooks claude` | Claude Code PostToolUse hook runs `ultracite fix` after every edit; merged with the Impeccable hooks |
 | `--agents claude codex` | Writes lint rules for agents; point them at AGENTS.md, not a new CLAUDE.md |
@@ -293,7 +293,7 @@ pre-commit:
   jobs:
     - run: bunx ultracite fix {staged_files}
       glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
-      exclude: ["devpost/**", ".claude/skills/**"]
+      exclude: [".claude/skills/**"]
       stage_fixed: true
     - name: typecheck
       run: bun run typecheck
@@ -339,7 +339,7 @@ Scripts in the root `package.json`:
 One `records` table in Neon Postgres, keyed by user, kind and id, read and written by the server only; the user is the `sub` of the merchant's access token (their WorkOS user id). Each record is one JSON row, checked against its zod schema on every read, and a `counters` table hands out ids, so two saves at once never share one. The Drizzle schema lives in `apps/server/src/db`: `records` keeps each record in a `jsonb` column, and there are no auth tables, since accounts live in WorkOS. drizzle-kit writes SQL migrations to `apps/server/migrations` (`bun run db:generate`), and `bun run db:migrate` applies them to the Neon branch in `DATABASE_URL`. Local development uses the Neon `dev` branch, each merge request preview gets its own branch `mr-<iid>` (deleted when the review environment stops), and tests run the same migrations on PGlite, so nothing needs a network in CI and there is no SQLite path. Staged artwork bytes go to the private Blob store `wovain-media`; local development uses it too, so there is no offline fallback.
 
 | Data | Lives in | Updated by | When you come back |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Settings | `settings` | `update_settings` | Same values |
 | Designs | `designs` and `artworks` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `runs[runId].ads` (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
@@ -400,13 +400,13 @@ wovain/
 ├── bunfig.toml                  # [run] bun = true: tools run on Bun, not Node
 ├── package.json                 # bun workspaces (apps/server, apps/widgets, packages/shared) and scripts
 ├── tsconfig.base.json           # strict, moduleResolution bundler, types ["bun"], no baseUrl (TS 7)
-└── devpost/                     # planning docs (Markdown), app-map.html and plan.css
+└── docs/                        # planning docs (Markdown), app-map.html and plan.css
 ```
 
 ## External Services and Dependencies
 
 | Service | Calls | Auth | Cost | Docs |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews`, `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-conversion-rates-report`, `get-visitors-report` | OAuth in the agent | $0 | https://docs.fourthwall.com/ai/mcp.md |
 | Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in the agent | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
@@ -436,7 +436,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 ## Decisions and Open Issues
 
 | Decision | Chosen by | Why | Tradeoff accepted |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | One MCP server with playbooks, beside the Fourthwall, Meta and fal MCPs (was: a ChatGPT plugin with child MCPs) | Learner | Any agent can connect with just a URL; reuse Fourthwall, Meta and fal; code only what's missing | One extra model turn per click; the agent must read the playbook before each step |
 | Playbooks served by the server (MCP `instructions`, `get_playbook`, prompts `design`, `ads`, `campaign`) instead of plugin skills | Learner | Skills only reached ChatGPT through an installed plugin, and never through a server URL alone | Depends on the agent reading the instructions or calling `get_playbook` |
 | Auto-approve for Fourthwall, Meta and fal tools | Learner | One click per widget | Fewer safety prompts; widgets stay the approval point |
@@ -461,7 +461,7 @@ Learning moment: the learner asked "why even a server, not a plain plugin with c
 Verify early in the build, in this order:
 
 | # | Check | If it fails |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Desktop-only plugin installs from the local folder on Plus; the app starts the stdio server; a widget renders; a widget button's message triggers a Fourthwall tool with auto-approve (passed in build step 1; the plugin has since been replaced by the hosted server, see #10) | HTTP mode + ngrok on chatgpt.com |
 | 2 | `openai/fileParams` delivers a ChatGPT image with a fetchable URL in the desktop app (build step 2: it doesn't; image generation returns a `data:` URL, which `stage_artwork` accepts) | Ask the merchant to upload the image |
 | 3 | A fal video model keeps the print readable on-model; MMAudio adds audio (build step 3: MiniMax H3 Max Reference passed with the mockup and artwork as references) | Switch models in Settings |

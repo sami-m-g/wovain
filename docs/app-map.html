@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>wovain app map</title>
+    <style>
+      :root {
+        --bg: #f6f5f1;
+        --surface: #ffffff;
+        --text: #1c1c1a;
+        --muted: #6a6862;
+        --line: #e3e1d9;
+        --node: #f0eee7;
+        --accent: #c2410c;
+        --accent-soft: #fde9dd;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #151513;
+          --surface: #1e1e1b;
+          --text: #ecebe6;
+          --muted: #a19f97;
+          --line: #35342f;
+          --node: #282723;
+          --accent: #fb923c;
+          --accent-soft: #3a2416;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 16px 72px;
+      }
+      h1 {
+        font-size: 36px;
+        line-height: 1.1;
+        margin: 14px 0 8px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 46px 0 12px;
+      }
+      p {
+        margin: 0 0 12px;
+        max-width: 72ch;
+      }
+      code {
+        font:
+          14px ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        background: var(--node);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      section {
+        margin-top: 32px;
+      }
+      .lede {
+        font-size: 18px;
+        color: var(--muted);
+        margin: 0 0 6px;
+        max-width: 70ch;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 15px;
+        margin-top: 10px;
+      }
+      .tag {
+        font-size: 13px;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 3px 10px;
+        border-radius: 999px;
+      }
+      @media (max-width: 600px) {
+        h1 {
+          font-size: 29px;
+        }
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface);
+        font-size: 15px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        background: var(--node);
+        font-weight: 600;
+      }
+
+      .flow {
+        display: grid;
+        gap: 8px;
+        margin: 16px 0;
+        padding: 0;
+        list-style: none;
+      }
+      .flow li {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 14px;
+      }
+      .flow li::after {
+        content: "↓";
+        display: block;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 6px;
+      }
+      .flow li:last-child::after {
+        content: none;
+      }
+      .flow .where {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .ext {
+        border-left: 4px solid var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="tag">
+        App map · updated Oct 21, 2026 for the one-server layout (after 0.13.0)
+      </p>
+      <h1>wovain app map</h1>
+      <p class="lede">
+        wovain is a hosted MCP server for print-on-demand sellers. Any agent
+        that speaks MCP with OAuth, such as ChatGPT or Claude, connects to it
+        remotely. Inside one chat it turns an idea into a live Fourthwall
+        product, makes video ads for it, and builds one Meta Advantage+ sales
+        campaign guarded by five automated rules.
+      </p>
+
+      <section aria-labelledby="pieces">
+        <h2 id="pieces">The main pieces</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Piece</th>
+              <th>What it does</th>
+              <th>Where</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Playbooks</td>
+              <td>
+                Tell the agent the steps for each stage: design, ads, campaign.
+                Sent as the server's MCP <code>instructions</code>, through the
+                <code>get_playbook({ step })</code> tool and as the MCP prompts
+                <code>design</code>, <code>ads</code> and <code>campaign</code>.
+              </td>
+              <td><code>apps/server/src/playbooks/</code></td>
+            </tr>
+            <tr>
+              <td>MCP server</td>
+              <td>
+                Tools that do the math, image and video work, storage and the
+                Meta rules call. Money numbers are computed here, never by the
+                model.
+              </td>
+              <td>
+                <code>apps/server/src/server.ts</code>,
+                <code>apps/server/src/tools/</code>,
+                <code>apps/server/src/lib/</code>
+              </td>
+            </tr>
+            <tr>
+              <td>HTTP app</td>
+              <td>
+                One Hono app on Vercel's Bun runtime. Serves <code>/mcp</code>,
+                the OAuth metadata that names AuthKit
+                (<code>/.well-known/oauth-protected-resource</code>) and the
+                home page.
+              </td>
+              <td>
+                <code>apps/server/src/index.ts</code>, <code>src/app.ts</code>,
+                <code>src/routes/mcp.ts</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Sign-in</td>
+              <td>
+                WorkOS AuthKit registers agents (CIMD or DCR), hosts sign-in and
+                consent, and issues tokens; the server checks each token and the
+                email allowlist.
+              </td>
+              <td><code>apps/server/src/auth/</code></td>
+            </tr>
+            <tr>
+              <td>Storage</td>
+              <td>
+                Neon Postgres through Drizzle for settings, designs and ads; the
+                private Vercel Blob store for artwork bytes.
+              </td>
+              <td>
+                <code>apps/server/src/db/</code>,
+                <code>apps/server/migrations/</code>,
+                <code>apps/server/src/store.ts</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Widgets</td>
+              <td>
+                The interactive widgets in the chat: Settings, Design, Ad,
+                Campaign. Built to single HTML files that the server ships.
+              </td>
+              <td><code>apps/widgets/src/&lt;widget&gt;/</code></td>
+            </tr>
+            <tr>
+              <td>Shared rules</td>
+              <td>
+                Schemas, breakeven economics and rule thresholds used by both
+                server and widgets.
+              </td>
+              <td><code>packages/shared/src/</code></td>
+            </tr>
+            <tr>
+              <td>Deploy and telemetry</td>
+              <td>
+                Vercel bundles the server with <code>bun build</code> into
+                <code>dist/</code> and includes the built widgets. Traces go to
+                GitLab Observability when an OTLP endpoint is set.
+              </td>
+              <td>
+                <code>apps/server/vercel.json</code>,
+                <code>apps/server/src/telemetry.ts</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Connected services</td>
+              <td>
+                Fourthwall (products), fal (videos) and Meta Ads (campaign) are
+                connected in the same agent; wovain calls Meta's API only for
+                rules.
+              </td>
+              <td>
+                The agent's MCP connectors,
+                <code>apps/server/src/lib/meta-graph.ts</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="action">
+        <h2 id="action">One action, end to end: “Add to campaign”</h2>
+        <p>
+          What happens between pressing <strong>Add to campaign</strong> on the
+          ad widget and seeing the campaign widget with its rules.
+        </p>
+        <ol class="flow">
+          <li>
+            <strong>Ad widget button</strong> records the choice, then posts a
+            chat message.
+            <div class="where">
+              <code>apps/widgets/src/ad/ad-widget.tsx</code> ·
+              <code>onAdd</code> → tool <code>record_ad</code>
+            </div>
+          </li>
+          <li>
+            <strong>Request</strong> reaches <code>/mcp</code> with the
+            merchant's OAuth token, which is checked before any tool runs.
+            <div class="where">
+              <code>apps/server/src/app.ts</code> →
+              <code>apps/server/src/routes/mcp.ts</code>
+            </div>
+          </li>
+          <li>
+            <strong>Ads playbook</strong> tells the agent that once no ad
+            widgets are waiting, it starts the campaign step.
+            <div class="where">
+              <code>apps/server/src/playbooks/ads.ts</code> →
+              <code>apps/server/src/playbooks/campaign.ts</code>
+            </div>
+          </li>
+          <li>
+            <strong>Plan</strong>: budget in cents, ad names, product links with
+            UTM tags.
+            <div class="where">
+              <code>apps/server/src/tools/campaign.ts</code> ·
+              <code>campaign_plan</code>
+            </div>
+          </li>
+          <li class="ext">
+            <strong>Meta Ads connector</strong> builds the draft campaign, ad
+            set and video ads.
+            <div class="where">
+              The agent's Meta Ads connector (outside this repo)
+            </div>
+          </li>
+          <li>
+            <strong>Rules</strong>: five payloads in cents, posted to Meta's
+            rules API.
+            <div class="where">
+              <code>apps/server/src/tools/campaign.ts</code> ·
+              <code>create_rules</code> →
+              <code>packages/shared/src/rules.ts</code> ·
+              <code>metaRules</code> →
+              <code>apps/server/src/lib/meta-graph.ts</code>
+            </div>
+          </li>
+          <li>
+            <strong>Campaign widget</strong> shows Ready, Live or blocked, with
+            each rule's threshold.
+            <div class="where">
+              <code>apps/widgets/src/campaign/campaign-widget-view.tsx</code>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section aria-labelledby="route">
+        <h2 id="route">Reference route: three stops</h2>
+        <p class="note">
+          A reference route through the code above; it wasn't toured together.
+        </p>
+        <details open>
+          <summary>
+            <strong>1. The button</strong> ·
+            <code>apps/widgets/src/ad/ad-widget.tsx</code>, search
+            <code>onAdd</code>
+          </summary>
+          <p>
+            The widget calls the server tool <code>record_ad</code> directly so
+            the choice is saved even if the chat moves on, then sends “Added the
+            ads for design d1 to the campaign” so the agent continues with the
+            playbook.
+          </p>
+        </details>
+        <details>
+          <summary>
+            <strong>2. The rules tool</strong> ·
+            <code>apps/server/src/tools/campaign.ts</code>, search
+            <code>"create_rules"</code>
+          </summary>
+          <p>
+            Reads the added ads and each product's breakeven from the store,
+            builds the five rules, skips any that already exist in Meta, and
+            records which ones are in place. Without a Meta token it creates
+            nothing and returns the fix instead.
+          </p>
+        </details>
+        <details>
+          <summary>
+            <strong>3. The thresholds</strong> ·
+            <code>packages/shared/src/rules.ts</code>, search
+            <code>metaRules</code>
+          </summary>
+          <p>
+            Turns breakeven × your Settings multiples into Meta filters in
+            cents: for example 3 × breakeven spend with no sales pauses an ad.
+            The test <code>apps/server/test/campaign-tools.test.ts</code> pins
+            the PRD demo tee's numbers ($30.96 kill, $8.26 scale).
+          </p>
+        </details>
+      </section>
+
+      <section aria-labelledby="change">
+        <h2 id="change">To change this, start here</h2>
+        <table>
+          <tbody>
+            <tr>
+              <td>Default budget, rule multiples, video model</td>
+              <td>
+                <code>packages/shared/src/settings.ts</code> (also editable live
+                on the Settings widget)
+              </td>
+            </tr>
+            <tr>
+              <td>The two video scenes</td>
+              <td>
+                <code>apps/server/src/lib/video-plan.ts</code>, search
+                <code>angles</code>
+              </td>
+            </tr>
+            <tr>
+              <td>How the Meta campaign is built</td>
+              <td>
+                <code>apps/server/src/playbooks/campaign.ts</code>; the change
+                reaches agents with the next deploy, or right away against
+                <code>bun run dev</code> in a new chat
+              </td>
+            </tr>
+            <tr>
+              <td>A route, the sign-in or consent page</td>
+              <td>
+                <code>apps/server/src/app.ts</code> and
+                <code>apps/server/src/pages/</code>
+              </td>
+            </tr>
+            <tr>
+              <td>A table or column</td>
+              <td>
+                <code>apps/server/src/db/app-schema.ts</code>, then
+                <code>bun run db:generate</code> and
+                <code>bun run db:migrate</code>
+              </td>
+            </tr>
+            <tr>
+              <td>A widget's layout or copy</td>
+              <td>
+                <code>apps/widgets/src/&lt;widget&gt;/*-widget-view.tsx</code>;
+                check it in Storybook first
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="practice">
+        <h2 id="practice">A practice to reuse</h2>
+        <p>
+          <strong
+            >Keep money math out of the model, and pin it with a test.</strong
+          >
+          The playbooks pass copy and choices; prices, breakeven and rule
+          thresholds are computed by the server from stored data (<code
+            >packages/shared/src/ad.ts</code
+          >
+          says so at the top), and <code>campaign-tools.test.ts</code> checks
+          the exact cents Meta receives. When the first live run sent the rules
+          to Meta, the thresholds matched without a fix. On any agent-built app
+          that moves money, compute the numbers in code the model calls, and
+          write one test with a worked example from the spec.
+        </p>
+      </section>
+
+      <section aria-labelledby="run">
+        <h2 id="run">Run it again</h2>
+        <ul>
+          <li>
+            <code>bun install</code>, then copy
+            <code>apps/server/.env.example</code> to
+            <code>apps/server/.env</code> and fill in the keys you need.
+          </li>
+          <li>
+            In ChatGPT (developer mode) or Claude, add
+            <code>https://wovain.vercel.app/mcp</code> as a remote MCP server,
+            then sign in with Google and approve access when the agent asks.
+          </li>
+          <li>
+            Locally: <code>bun run db:migrate</code> once, then
+            <code>bun run dev</code> (serves <code>/mcp</code> on
+            localhost:3000) plus <code>bun run widgets:watch</code>, and connect
+            the agent to <code>https://&lt;tunnel&gt;/mcp</code>.
+          </li>
+          <li>
+            See every widget without an agent: <code>bun run storybook</code>.
+          </li>
+          <li>
+            Checks: <code>bun run check</code>, <code>bun run typecheck</code>,
+            <code>bun test</code>, <code>bun run test:stories</code>.
+          </li>
+        </ul>
+        <p class="note">Paths and names can drift as the code changes.</p>
+      </section>
+    </main>
+  </body>
+</html>

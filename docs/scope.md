@@ -8,13 +8,15 @@ status: approved
 An AI assistant for print-on-demand sellers that designs products from your ideas for your Fourthwall catalog, publishes them, and launches and manages their Meta ads from one conversation.
 
 ## The unique kernel
+
 Each step ends with a widget you approve, and nothing else is manual. The design starts from Fourthwall's real products, placements, sizes, and prices, and the campaign's rules start from each product's real margin.
 
 ## Who it's for
+
 A solo print-on-demand merchant, starting with the learner. Today one product takes five tools:
 
 | Step | Today | With wovain |
-|---|---|---|
+| --- | --- | --- |
 | Design and tech pack | Long back-and-forth in ChatGPT | Designed in chat for a specific Fourthwall product |
 | List the product | Manual upload to Fourthwall | One approval |
 | Make ads | A separate video tool | Videos and ad copy generated and reviewed in chat |
@@ -45,15 +47,17 @@ You steer every step, and Meta runs the campaign once you approve.
 ## Inspiration and identity
 
 | Principle | In practice |
-|---|---|
+| --- | --- |
 | Talk to it | Voice in ChatGPT if the widgets work there; speech-to-text otherwise |
 | Reuse, don't rebuild | Fourthwall and Meta Ads MCPs, fal's video models, Meta's Advantage+ and automated rules for optimization |
 | Use all of ChatGPT | Inline widgets for the UI (side panels and viewers are Work and desktop only), plus built-in image generation through the design playbook and voice where it supports widgets, instead of rebuilding any of them |
 
 ## Why this matters to the learner
+
 They want a working project "created with minimal code" that they can show, a first step toward "making profit in print on demand," and a test of how far ChatGPT's own capabilities go in a build of four hours at most.
 
 ## What "working" looks like
+
 A one-minute recording of this script:
 
 1. Give ChatGPT 2 or 3 product ideas.
@@ -66,7 +70,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 ## The POC boundary
 
 | Area | In the POC |
-|---|---|
+| --- | --- |
 | Host | A remote MCP server on Vercel that any agent connects to with OAuth (ChatGPT on chatgpt.com and the desktop app first, Claude too). It serves the tools, the widgets, and a playbook per step that tells the agent the flow |
 | Design | 2 or 3 designs generated in ChatGPT, each fitted to a Fourthwall product |
 | Listing | Title, description, variants, and price for each product, on the design widget |
@@ -80,7 +84,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 ## Later
 
 | Item | Why later |
-|---|---|
+| --- | --- |
 | Claude version | Claude can already connect to the same MCP server; ChatGPT comes first because it generates better images, and the widgets are tested there |
 | Campaign results widget in chat | Needs spend data first |
 | TikTok Shop and TikTok ads, possibly through TikTok Agentic Hub skills | A second sales channel |
@@ -89,7 +93,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 ## Explicitly cut
 
 | Item | Reason |
-|---|---|
+| --- | --- |
 | Trend research | The merchant brings their own ideas, which proves the loop |
 | A custom video or image model | The goal is minimal code |
 | A custom media-buying engine | Advantage+ and Meta rules already optimize campaigns |
@@ -98,7 +102,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 ## Open questions for later phases
 
 | Question | Phase |
-|---|---|
+| --- | --- |
 | Exact kill and scale thresholds, and how breakeven is calculated (fees, shipping) | Resolved in `prd.md` |
 | Can a plugin extension use ChatGPT's built-in image generation, or must designs come through the MCP server? | Resolved in `spec.md` |
 | Which video generator? | Resolved in `spec.md` |

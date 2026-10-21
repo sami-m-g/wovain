@@ -1,11 +1,12 @@
 # AGENTS.md
 
-wovain: an MCP server for print-on-demand sellers, used by any agent (product idea → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `devpost/spec.md`: one Hono server in `apps/server` (MCP, OAuth, database) on Vercel, widgets in `apps/widgets`, shared schemas in `packages/shared`.
+wovain: an MCP server for print-on-demand sellers, used by any agent (product idea → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `docs/spec.md`: one Hono server in `apps/server` (MCP, OAuth, database) on Vercel, widgets in `apps/widgets`, shared schemas in `packages/shared`.
 
 ## Workflow
 
-- Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `devpost/*.md`.
-- The planning docs are the Markdown files in `devpost/` (`scope.md`, `prd.md`, `spec.md`, `checklist.md`). When a fact changes, update every doc that states it. `devpost/app-map.html` (CSS inline) maps the code.
+- Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `docs/*.md`.
+- The planning docs are the Markdown files in `docs/` (`PRODUCT.md`, `scope.md`, `prd.md`, `spec.md`, `checklist.md`). When a fact changes, update every doc that states it. `docs/app-map.html` (CSS inline) maps the code.
+- `docs/` replaces the course's `devpost/` folder. When a course skill (`1-start` to `6-ship`) or any other skill or plugin names a file in `devpost/`, read and write the file with the same name in `docs/`. For example, `devpost/prd.md` means `docs/prd.md` and `devpost/learner-profile.md` means `docs/learner-profile.md`. Never create `devpost/`.
 
 ## Commits
 
@@ -17,7 +18,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (product id
 
 ## Writing
 
-- Follow the learner's preferences in `devpost/learner-profile.md` (Collaboration and Communication Preferences): format, question pacing, wireframes.
+- Follow the learner's preferences in `docs/learner-profile.md` (Collaboration and Communication Preferences): format, question pacing, wireframes.
 - Run the `humanizer` skill on prose for docs and UI copy.
 
 ## Connected services
@@ -40,7 +41,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (product id
 
 ## Gotchas
 
-- `devpost/learner-profile.md` is gitignored on purpose; never commit it.
+- `docs/learner-profile.md` is gitignored on purpose; never commit it.
 - Never commit `.env*` (only `.env.example`) or MCP URLs that embed tokens (e.g. the Modal video connector).
 - Before installing a third-party plugin, check it for `hooks.json` and `.mcp.json`; install with `claude plugin install <plugin>@<marketplace> --scope project -y`.
 - Shell is zsh: unquoted `$var` doesn't word-split. Build multi-word arguments with arrays.

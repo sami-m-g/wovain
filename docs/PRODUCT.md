@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` + `@modelcontextprotocol/ext-apps`) serving React 19 widgets built on OpenAI's `@openai/apps-sdk-ui`, bundled with Vite into single-file `ui://` resources. `devpost/spec.md` (`4-spec`) confirms or overrides it.
+Delegated during `3-prd`: a TypeScript MCP server (`@modelcontextprotocol/sdk` + `@modelcontextprotocol/ext-apps`) serving React 19 widgets built on OpenAI's `@openai/apps-sdk-ui`, bundled with Vite into single-file `ui://` resources. `docs/spec.md` (`4-spec`) confirms or overrides it.
 
 ## Users
 
@@ -24,13 +24,13 @@ Every step ends in an approval widget built from real Fourthwall products, place
 
 ## Operating Context
 
-- Lives inside a ChatGPT conversation; widgets appear inline in journey order (design, ad, campaign, optimization). See `devpost/prd.md > Screens and Layout`.
+- Lives inside a ChatGPT conversation; widgets appear inline in journey order (design, ad, campaign, optimization). See `docs/prd.md > Screens and Layout`.
 - Connected services: Fourthwall (products, publishing, reports) and Meta Ads (campaigns, creatives, insights).
 - Merchant gives feedback by typing in chat or with the widget's own controls; feedback regenerates the whole widget.
 
 ## Capabilities and Constraints
 
-- Defined in `devpost/prd.md`: widget fields, pricing rule, breakeven math, campaign rules, and 10 failure states with copy.
+- Defined in `docs/prd.md`: widget fields, pricing rule, breakeven math, campaign rules, and 10 failure states with copy.
 - Every number shown on a widget has a source link or a visible calculation.
 - ChatGPT plugin rules: system fonts and colors, brand color only on primary buttons, badges and icons, at most 2 buttons per widget, no tabs or inner scrolling.
 - No API starts ChatGPT image generation from a plugin; a wovain skill asks ChatGPT to generate and hand the image to wovain's tool (to verify in `4-spec`).
