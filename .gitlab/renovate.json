@@ -17,6 +17,11 @@
         "auth"
       ],
       "groupName": "better auth"
+    },
+    {
+      "description": "The stories job's Playwright image must match the playwright package",
+      "matchPackageNames": ["playwright", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
     }
   ]
 }

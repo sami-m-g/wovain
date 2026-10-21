@@ -74,15 +74,15 @@ Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message,
 
 The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
 
-| Stage | What runs |
-| --- | --- |
-| verify | Build, lint, typecheck, knip, tests, widget stories |
-| test | GitLab SAST, Secret Detection and Dependency Scanning |
-| deploy | Merge requests: a Vercel preview on its own Neon branch `mr-<iid>`, removed when the review environment stops. `main`: https://wovain.vercel.app |
-| monitor | A smoke test of the live OAuth chain |
-| release | semantic-release, after the smoke test passes |
+| Stage   | What runs                                                       |
+| ------- | --------------------------------------------------------------- |
+| verify  | Build, lint, typecheck, knip, tests, card stories (in parallel) |
+| test    | GitLab SAST, Secret Detection and Dependency Scanning           |
+| deploy  | `main` only: https://wovain.vercel.app                          |
+| monitor | A smoke test of the live OAuth chain                            |
+| release | semantic-release, after the smoke test passes                   |
 
-It needs the CI variables `VERCEL_TOKEN`, `NEON_API_KEY`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` and `NEON_PROJECT_ID`. Google sign-in only works on production, because Google needs exact redirect URIs.
+It needs the CI variables `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`. Google sign-in only works on production, because Google needs exact redirect URIs.
 
 ## Releases
 

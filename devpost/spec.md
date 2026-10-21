@@ -265,13 +265,13 @@ GitLab CI/CD stages (`.gitlab-ci.yml`, image `oven/bun:1.4.2`):
 
 | Stage | Jobs | What runs |
 |---|---|---|
-| verify | `verify`, `stories`, `renovate` | Build, check, typecheck, knip and tests; widget stories in Playwright; Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
-| test | GitLab templates | SAST, Secret Detection and Dependency Scanning, on merge requests too |
-| deploy | `deploy:preview`, `stop:preview`, `deploy:production` | Each merge request gets its own Neon branch `mr-<iid>` (parent and 7-day expiry from `neon.ts`; `dev` has the schema but no production data), migrated with `bun run db:migrate`, and a Vercel preview that uses it through `--env DATABASE_URL`, tracked as the review environment `review/<MR iid>` (auto-stops after a week; `stop:preview` deletes the branch). `main` runs `vercel deploy --prod` (environment production, https://wovain.vercel.app) |
+| verify | `build`, `verify`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip and tests; widget stories on Playwright's image. Installs use `--ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
+| test | GitLab templates | SAST, Secret Detection and Dependency Scanning, on merge requests too; the scanners start at once (`needs: []`) |
+| deploy | `deploy:production` | `main` only: `vercel deploy --prod` (environment production, https://wovain.vercel.app). Merge requests get no preview deploy |
 | monitor | `smoke:production` | Curls the live OAuth chain: `/mcp` 401, both metadata documents, the sign-in page |
 | release | `release` | semantic-release, only after the smoke test passes |
 
-CI variables: `VERCEL_TOKEN`, `NEON_API_KEY` (scoped to the wovain Neon project), `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `NEON_PROJECT_ID`. Google sign-in doesn't work on preview URLs (Google needs exact redirect URIs), so previews are for checks that don't need a login.
+CI variables: `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 
 ### Ultracite, TypeScript and Lefthook setup
 
@@ -396,7 +396,7 @@ wovain/
 │       ├── vite.config.ts
 │       └── vitest.config.ts
 ├── packages/shared/             # zod schemas, economics and rule thresholds for server and widgets
-├── .gitlab-ci.yml               # verify, test (security), deploy (preview + Neon branch / production), monitor, release
+├── .gitlab-ci.yml               # verify, test (security), deploy (production), monitor, release
 ├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
 ├── .releaserc.json              # semantic-release plugins
 ├── .vscode/                     # settings.json, extensions.json
@@ -431,7 +431,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 ## Important Failure Modes
 
 - **Google sign-in isn't configured, or the agent stalls at consent** → the sign-in page says so; add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on Vercel, and check the redirect URIs on the Google client.
-- **Google sign-in fails on preview URLs** → Google only accepts exact redirect URIs, so test sign-in on production; each preview still has its own Neon branch, so previews never touch production data.
+- **Google sign-in fails off production** → Google only accepts exact redirect URIs, so test sign-in on production or localhost.
 - **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #4).
 - **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#6).
 - **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#7).

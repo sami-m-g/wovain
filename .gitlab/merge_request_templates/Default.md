@@ -16,13 +16,12 @@ Closes #
 
 <!-- What you ran or clicked, and what you did not check. Agents: list only what you actually ran; don't claim manual testing. -->
 
-- Preview: <!-- the review environment link the pipeline posts (review/!<iid>) -->
 -
 
 ## Checklist
 
 - [ ] Title is a Conventional Commit (`type(scope): summary`, lowercase, imperative)
-- [ ] Pipeline is green (verify, stories, deploy:preview)
+- [ ] Pipeline is green (build, verify, stories)
 - [ ] Planning docs (`devpost/*.md`) updated if a fact changed
 - [ ] Migrations generated with `bun run db:generate` if the schema changed
 - [ ] No secrets, tokens or `.env` files in the diff

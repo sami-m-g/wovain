@@ -1,13 +1,12 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
-#   verify    build, lint, types, dead code, tests, widget stories
+#   verify    build; lint, types, dead code, tests; widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   deploy    merge requests: a Vercel preview on its own Neon branch;
-#             main: production
+#   deploy    main: production
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
-# CI variables: VERCEL_TOKEN, NEON_API_KEY, GITLAB_TOKEN, RENOVATE_TOKEN
-# (all masked), VERCEL_ORG_ID, VERCEL_PROJECT_ID, NEON_PROJECT_ID.
+# CI variables: VERCEL_TOKEN, GITLAB_TOKEN, RENOVATE_TOKEN (all masked),
+# VERCEL_ORG_ID, VERCEL_PROJECT_ID.
 
 workflow:
   rules:
@@ -36,7 +35,6 @@ variables:
   # Run SAST and Secret Detection on merge requests too, not only on main.
   AST_ENABLE_MR_PIPELINES: "true"
   BUN_VERSION: 1.4.2
-  NEONCTL: neonctl@8.8.0
   VERCEL_CLI: vercel@64.0.2
 
 # Every push and merge request, but not the Renovate schedule.
@@ -52,92 +50,53 @@ variables:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# A cold install takes about 10s, less than restoring and saving a cache.
+# Lifecycle scripts are skipped: prepare installs git hooks and agent
+# skills, which CI doesn't need.
 .bun-install:
-  cache:
-    key:
-      prefix: bun-node-modules
-      files: [bun.lock]
-    paths: [node_modules/.cache/bun/]
-  variables:
-    BUN_INSTALL_CACHE_DIR: node_modules/.cache/bun
   before_script:
-    - apt-get update -qq && apt-get install -y -qq git >/dev/null
-    - bun install --frozen-lockfile
+    - bun install --frozen-lockfile --ignore-scripts
+
+build:
+  stage: verify
+  extends: [.bun-install, .on-changes]
+  script:
+    - bun run build
 
 verify:
   stage: verify
   extends: [.bun-install, .on-changes]
   script:
-    - bun run build
     - bun run check
     - bun run typecheck
     - bun run knip
     - bun run test
 
+# Playwright's image ships Chromium and its system libraries; its tag must
+# match the playwright version in apps/widgets (Renovate bumps them together).
 stories:
   stage: verify
-  extends: [.bun-install, .on-changes]
+  extends: .on-changes
+  image: mcr.microsoft.com/playwright:v1.64.1-noble
+  before_script:
+    - npm install -g --silent "bun@$BUN_VERSION"
+    - bun install --frozen-lockfile --ignore-scripts
   script:
-    - bunx playwright install --with-deps chromium
     - bun run test:stories
 
-# Node for the Vercel and Neon CLIs, plus Bun for migrations. Lifecycle
-# scripts are skipped: prepare installs git hooks, which CI doesn't need.
-.deploy:
-  image: node:24-slim
-  stage: deploy
-  interruptible: false
-  before_script:
-    - npm install -g --silent "bun@$BUN_VERSION" "$NEONCTL"
+# The scanners don't use anything verify makes, so they start right away.
+semgrep-sast:
+  needs: []
 
-deploy:preview:
-  extends: .deploy
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  variables:
-    NEON_BRANCH: mr-$CI_MERGE_REQUEST_IID
-  script:
-    # Each merge request gets its own Neon branch; neon.ts sets its parent
-    # (dev: schema, no production users or tokens) and 7-day expiry. The
-    # MR's migrations are applied on top.
-    - bun install --frozen-lockfile --ignore-scripts
-    - neon checkout "$NEON_BRANCH" --create --no-env-pull --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"
-    - export DATABASE_URL="$(neonctl connection-string "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --pooled --api-key "$NEON_API_KEY")"
-    - bun run db:migrate
-    - npx --yes "$VERCEL_CLI" deploy --yes --token "$VERCEL_TOKEN" --env DATABASE_URL="$DATABASE_URL" > deploy-url.txt
-    - echo "DEPLOY_URL=$(cat deploy-url.txt)" > deploy.env
-  artifacts:
-    reports:
-      dotenv: deploy.env
-  environment:
-    name: review/$CI_MERGE_REQUEST_IID
-    url: $DEPLOY_URL
-    on_stop: stop:preview
-    auto_stop_in: 1 week
-
-# Runs when the merge request closes or the environment is stopped: the
-# Neon branch goes; Vercel keeps the deployment until it expires.
-stop:preview:
-  extends: .deploy
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
-      allow_failure: true
-  variables:
-    GIT_STRATEGY: none
-    NEON_BRANCH: mr-$CI_MERGE_REQUEST_IID
-  before_script:
-    - npm install -g --silent "$NEONCTL"
-  script:
-    - neonctl branches delete "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || echo "No Neon branch $NEON_BRANCH"
-  environment:
-    name: review/$CI_MERGE_REQUEST_IID
-    action: stop
+secret_detection:
+  needs: []
 
 deploy:production:
-  extends: [.deploy, .on-main]
+  extends: .on-main
+  stage: deploy
+  image: node:24-slim
+  interruptible: false
   resource_group: production
-  before_script: []
   script:
     - npx --yes "$VERCEL_CLI" deploy --prod --yes --token "$VERCEL_TOKEN"
   environment:
