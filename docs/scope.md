@@ -71,7 +71,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 
 | Area | In the POC |
 | --- | --- |
-| Host | A remote MCP server on Vercel that any agent connects to with OAuth (ChatGPT on chatgpt.com and the desktop app first, Claude too). It serves the tools, the widgets, and a playbook per step that tells the agent the flow |
+| Host | A remote MCP server on Firebase App Hosting that any agent connects to with OAuth (ChatGPT on chatgpt.com and the desktop app first, Claude too). It serves the tools, the widgets, and a playbook per step that tells the agent the flow |
 | Design | 2 or 3 designs generated in ChatGPT, each fitted to a Fourthwall product |
 | Listing | Title, description, variants, and price for each product, on the design widget |
 | Publishing | Fourthwall products published after widget approval |

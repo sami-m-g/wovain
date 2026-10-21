@@ -1,12 +1,15 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
 #   verify    build; lint, types, dead code, tests; widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   deploy    main: production
+#   deploy    main: pulumi up (infra/), then push to the GitHub mirror and
+#             roll out on Firebase App Hosting
 #   monitor   smoke-test the live OAuth chain
-#   release   semantic-release: version, CHANGELOG, GitLab release
+#   release   semantic-release: version, CHANGELOG, GitLab release; GitHub mirror
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
-# CI variables: VERCEL_TOKEN, GITLAB_TOKEN, RENOVATE_TOKEN,
-# GITHUB_MIRROR_KEY (all masked), VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY (all masked),
+# FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
+# GCP_DEPLOY_SERVICE_ACCOUNT, PULUMI_CONFIG_PASSPHRASE, SITE_URL
+# (values: `pulumi stack output` in infra/).
 
 workflow:
   rules:
@@ -15,10 +18,17 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH
 
+# Jobs live in .gitlab/ci/, one file per stage plus the shared templates.
 include:
   - template: Jobs/SAST.gitlab-ci.yml
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  - local: .gitlab/ci/templates.yml
+  - local: .gitlab/ci/verify.yml
+  - local: .gitlab/ci/secure.yml
+  - local: .gitlab/ci/deploy.yml
+  - local: .gitlab/ci/monitor.yml
+  - local: .gitlab/ci/release.yml
 
 stages:
   - verify
@@ -28,160 +38,10 @@ stages:
   - release
 
 default:
-  image: oven/bun:1.4.2
+  image: node:24
   interruptible: true
 
 variables:
   # Run SAST and Secret Detection on merge requests too, not only on main.
   AST_ENABLE_MR_PIPELINES: "true"
-  BUN_VERSION: 1.4.2
-  VERCEL_CLI: vercel@64.0.2
-
-# Every push and merge request, but not the Renovate schedule.
-.on-changes:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - when: on_success
-
-.on-main:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-# A cold install takes about 10s, less than restoring and saving a cache.
-# Lifecycle scripts are skipped: prepare installs git hooks and agent
-# skills, which CI doesn't need.
-.bun-install:
-  before_script:
-    - bun install --frozen-lockfile --ignore-scripts
-
-build:
-  stage: verify
-  extends: [.bun-install, .on-changes]
-  script:
-    - bun run build
-
-verify:
-  stage: verify
-  extends: [.bun-install, .on-changes]
-  script:
-    - bun run check
-    - bun run typecheck
-    - bun run knip
-    - bun run test
-
-# Playwright's image ships Chromium and its system libraries; its tag must
-# match the playwright version in apps/widgets (Renovate bumps them together).
-stories:
-  stage: verify
-  extends: .on-changes
-  image: mcr.microsoft.com/playwright:v1.64.1-noble
-  before_script:
-    - npm install -g --silent "bun@$BUN_VERSION"
-    - bun install --frozen-lockfile --ignore-scripts
-  script:
-    - bun run test:stories
-
-# The scanners don't use anything verify makes, so they start right away.
-semgrep-sast:
-  needs: []
-
-secret_detection:
-  needs: []
-
-deploy:production:
-  extends: .on-main
-  stage: deploy
-  image: node:24-slim
-  interruptible: false
-  resource_group: production
-  script:
-    - npx --yes "$VERCEL_CLI" deploy --prod --yes --token "$VERCEL_TOKEN"
-  environment:
-    name: production
-    url: https://wovain.vercel.app
-
-# ChatGPT's first steps against the live server: /mcp asks for a token and
-# points at the metadata, which names AuthKit; AuthKit offers CIMD.
-smoke:production:
-  stage: monitor
-  extends: .on-main
-  image: curlimages/curl:8.11.1
-  needs: [deploy:production]
-  variables:
-    GIT_STRATEGY: none
-    SITE: https://wovain.vercel.app
-  script:
-    - |
-      status=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' "$SITE/mcp")
-      test "$status" = 401 || { echo "/mcp answered $status, expected 401"; exit 1; }
-    - curl -sf "$SITE/.well-known/oauth-protected-resource/mcp" > resource.json
-    - grep -q "\"resource\":\"$SITE/mcp\"" resource.json
-    - AUTHKIT=$(sed -n 's/.*"authorization_servers":\["\([^"]*\)".*/\1/p' resource.json)
-    - test -n "$AUTHKIT" || { echo "no authorization server in the metadata"; exit 1; }
-    - curl -sf "$AUTHKIT/.well-known/oauth-authorization-server" | grep -q '"client_id_metadata_document_supported":true'
-
-# Release only what passed the smoke test: semantic-release reads the
-# conventional commits since the last tag, writes the version and
-# CHANGELOG.md back to main ([skip ci]), tags, and publishes a GitLab
-# release.
-release:
-  stage: release
-  extends: .on-main
-  image: node:24-slim
-  interruptible: false
-  needs: [smoke:production]
-  variables:
-    GIT_DEPTH: 0
-  before_script:
-    - apt-get update -qq && apt-get install -y -qq git >/dev/null
-    - npm install -g --silent "bun@$BUN_VERSION"
-    - bun install --frozen-lockfile --ignore-scripts
-  script:
-    - npx semantic-release
-
-# Keep the GitHub mirror on GitLab's main, including the [skip ci] release
-# commit and its tag, which land after this pipeline started. Runs even when
-# an earlier job failed, since the mirror should match GitLab either way.
-# GITHUB_MIRROR_KEY is a base64 write deploy key for sami-m-g/wovain.
-mirror:github:
-  stage: .post
-  image: alpine:3.21
-  interruptible: false
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: always
-  variables:
-    GIT_DEPTH: 0
-  before_script:
-    - apk add --no-cache -q git openssh-client
-    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
-    - echo "$GITHUB_MIRROR_KEY" | base64 -d > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
-    # GitHub's published host key (docs.github.com, "GitHub's SSH key fingerprints").
-    - echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > ~/.ssh/known_hosts
-  script:
-    - git fetch -q origin main --tags
-    - git push git@github.com:sami-m-g/wovain.git refs/remotes/origin/main:refs/heads/main --tags
-
-# Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
-renovate:
-  stage: verify
-  image:
-    name: renovate/renovate:44.138.0
-    entrypoint: [""]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "Renovate dependency updates"
-  variables:
-    GIT_STRATEGY: none
-    RENOVATE_PLATFORM: gitlab
-    RENOVATE_ENDPOINT: $CI_API_V4_URL
-    RENOVATE_REPOSITORIES: $CI_PROJECT_PATH
-    RENOVATE_ONBOARDING: "false"
-    RENOVATE_REQUIRE_CONFIG: required
-    LOG_LEVEL: info
-  script:
-    - renovate
+  PNPM_VERSION: 12.3.4

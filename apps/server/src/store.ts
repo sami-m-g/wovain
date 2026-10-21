@@ -1,17 +1,20 @@
-import { get as getBlob, put as putBlob } from "@vercel/blob";
 import { adSchema } from "@wovain/shared/ad";
 import type { Ad } from "@wovain/shared/ad";
 import { designSchema } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
 import type { Settings, SettingsPatch } from "@wovain/shared/settings";
-import { and, eq, sql } from "drizzle-orm";
+import type {
+  DocumentData,
+  Firestore,
+  Transaction,
+} from "firebase-admin/firestore";
+import type { Storage } from "firebase-admin/storage";
 import { z } from "zod";
 
-import type { Db } from "./db/client.ts";
-import { counters, records } from "./db/schema.ts";
+type Bucket = ReturnType<Storage["bucket"]>;
 
-// Staged artwork: the bytes live in media under `key`, the record in Neon.
+// Staged artwork: the bytes live in media under `key`, the record in Firestore.
 const artworkSchema = z.object({
   bytes: z.int().positive(),
   contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
@@ -45,78 +48,55 @@ export interface Media {
   put: (key: string, bytes: Uint8Array, contentType: string) => Promise<void>;
 }
 
-const requireToken = (token: string | undefined) => {
-  if (token === undefined) {
-    throw new Error(
-      "BLOB_READ_WRITE_TOKEN is not set, so artwork can't be staged"
-    );
-  }
-  return token;
-};
-
-// The private Blob store: the bytes are only readable with the project's token.
-export const blobMedia = (token: string | undefined): Media => ({
+// The project's private Cloud Storage bucket: readable only with the
+// server's credentials.
+export const bucketMedia = (bucket: Bucket): Media => ({
   get: async (key) => {
-    const result = await getBlob(key, {
-      access: "private",
-      token: requireToken(token),
-    });
-    const bytes =
-      result?.statusCode === 200
-        ? new Uint8Array(await new Response(result.stream).arrayBuffer())
-        : undefined;
-    return bytes;
+    const file = bucket.file(key);
+    const [exists] = await file.exists();
+    const [bytes] = exists ? await file.download() : [];
+    return bytes === undefined ? undefined : new Uint8Array(bytes);
   },
   put: async (key, bytes, contentType) => {
-    await putBlob(key, Buffer.from(bytes), {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType,
-      token: requireToken(token),
-    });
+    await bucket
+      .file(key)
+      .save(Buffer.from(bytes), { contentType, resumable: false });
   },
 });
 
-const selectData = (q: Db) =>
-  q.select({ data: records.data }).from(records).$dynamic();
-
 // One merchant's records (spec.md > Data Model): settings, staged artwork,
-// designs, ads (one ad set per design, keyed by design id) and the campaign.
-// Each row is one record as JSON, checked against its schema on every read.
-export const createStore = (db: Db, media: Media, userId: string) => {
-  const table = <T>(kind: Kind, schema: z.ZodType<T>) => {
-    const mine = and(eq(records.userId, userId), eq(records.kind, kind));
+// designs, ads (one ad set per design, keyed by design id) and the campaign,
+// as Firestore documents under users/{userId}/{kind}/{id}, each checked
+// against its schema on every read.
+export const createStore = (db: Firestore, media: Media, userId: string) => {
+  const user = db.collection("users").doc(userId);
+  const table = <T extends DocumentData>(kind: Kind, schema: z.ZodType<T>) => {
+    const collection = user.collection(kind);
     return {
-      all: async (q: Db = db): Promise<T[]> => {
-        const rows = await selectData(q).where(mine);
-        return rows.map((row) => schema.parse(row.data));
+      all: async (tx?: Transaction): Promise<T[]> => {
+        const snapshot = await (tx?.get(collection) ?? collection.get());
+        return snapshot.docs.map((doc) => schema.parse(doc.data()));
       },
-      get: async (id: string, q: Db = db): Promise<T | undefined> => {
-        const [row] = await selectData(q).where(and(mine, eq(records.id, id)));
-        return row === undefined ? undefined : schema.parse(row.data);
+      get: async (id: string, tx?: Transaction): Promise<T | undefined> => {
+        const ref = collection.doc(id);
+        const doc = await (tx?.get(ref) ?? ref.get());
+        return doc.exists ? schema.parse(doc.data()) : undefined;
       },
       // Counters make ids unique even when two tool calls save at once.
-      nextId: async (prefix: string, q: Db = db) => {
-        const [row] = await q
-          .insert(counters)
-          .values({ kind, n: 1, userId })
-          .onConflictDoUpdate({
-            set: { n: sql`${counters.n} + 1` },
-            target: [counters.userId, counters.kind],
-          })
-          .returning({ n: counters.n });
-        return `${prefix}${row?.n ?? 1}`;
+      nextId: async (prefix: string, tx: Transaction) => {
+        const ref = user.collection("counters").doc(kind);
+        const doc = await tx.get(ref);
+        const { n: last } = doc.exists
+          ? z.object({ n: z.int() }).parse(doc.data())
+          : { n: 0 };
+        const n = last + 1;
+        tx.set(ref, { n });
+        return `${prefix}${n}`;
       },
-      put: async (id: string, value: T, q: Db = db): Promise<T> => {
+      put: async (id: string, value: T, tx?: Transaction): Promise<T> => {
         const saved = schema.parse(value);
-        await q
-          .insert(records)
-          .values({ data: saved, id, kind, userId })
-          .onConflictDoUpdate({
-            set: { data: saved },
-            target: [records.userId, records.kind, records.id],
-          });
+        const ref = collection.doc(id);
+        await (tx === undefined ? ref.set(saved) : tx.set(ref, saved));
         return saved;
       },
     };
@@ -129,8 +109,8 @@ export const createStore = (db: Db, media: Media, userId: string) => {
 
   const settings = async () =>
     (await settingsTable.get(ONLY)) ?? settingsSchema.parse({});
-  const requireDesign = async (id: string, q: Db = db) => {
-    const design = await designs.get(id, q);
+  const requireDesign = async (id: string, tx?: Transaction) => {
+    const design = await designs.get(id, tx);
     if (design === undefined) {
       throw new Error(`No design ${id}`);
     }
@@ -139,9 +119,9 @@ export const createStore = (db: Db, media: Media, userId: string) => {
 
   // Each change that reads before it writes runs in one transaction, so
   // overlapping tool calls (a widget polling while a skill writes) can't
-  // interleave inside it.
-  const transaction = async <T>(work: (q: Db) => Promise<T>) =>
-    await db.transaction(async (tx) => await work(tx));
+  // interleave inside it. Firestore wants every read before the first write.
+  const transaction = async <T>(work: (tx: Transaction) => Promise<T>) =>
+    await db.runTransaction(work, { maxAttempts: 10 });
 
   return {
     getAds: async (): Promise<Ad[]> => await ads.all(),
@@ -161,16 +141,17 @@ export const createStore = (db: Db, media: Media, userId: string) => {
     },
     // Records add or skip and counts the ad widgets still waiting, in one step.
     recordAd: async (designId: string, status: Ad["status"]) =>
-      await transaction(async (q) => {
-        const current = await ads.get(designId, q);
+      await transaction(async (tx) => {
+        const all = await ads.all(tx);
+        const current = all.find((item) => item.designId === designId);
         if (current === undefined) {
           throw new Error(`No ad widget for ${designId}`);
         }
-        const ad = await ads.put(designId, { ...current, status }, q);
-        // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- the count must include the write above
-        const all = await ads.all(q);
-        const waiting = all.filter((item) => item.status === "draft").length;
-        return { ad, waiting };
+        const ad = await ads.put(designId, { ...current, status }, tx);
+        const waiting = all.filter(
+          (item) => item.designId !== designId && item.status === "draft"
+        ).length;
+        return { ad, waiting: ad.status === "draft" ? waiting + 1 : waiting };
       }),
     requireDesign: async (id: string): Promise<Design> =>
       await requireDesign(id),
@@ -183,9 +164,9 @@ export const createStore = (db: Db, media: Media, userId: string) => {
     ): Promise<Artwork> => {
       const key = `${userId}/${fileName}`;
       await media.put(key, bytes, artwork.contentType);
-      return await transaction(async (q) => {
-        const id = await artworks.nextId("a", q);
-        return await artworks.put(id, { ...artwork, id, key }, q);
+      return await transaction(async (tx) => {
+        const id = await artworks.nextId("a", tx);
+        return await artworks.put(id, { ...artwork, id, key }, tx);
       });
     },
     saveCampaign: async (campaign: SavedCampaign) =>
@@ -195,18 +176,22 @@ export const createStore = (db: Db, media: Media, userId: string) => {
     saveDesign: async (
       design: Omit<Design, "id"> & { id?: string | undefined }
     ) =>
-      await transaction(async (q) => {
-        const id = design.id ?? (await designs.nextId("d", q));
-        const current = await designs.get(id, q);
-        return await designs.put(id, { ...current, ...design, id }, q);
+      await transaction(async (tx) => {
+        // A new id has no stored copy, so its read is skipped.
+        const current =
+          design.id === undefined
+            ? undefined
+            : await designs.get(design.id, tx);
+        const id = design.id ?? (await designs.nextId("d", tx));
+        return await designs.put(id, { ...current, ...design, id }, tx);
       }),
     updateDesign: async (id: string, patch: Partial<Design>) =>
       await transaction(
-        async (q) =>
+        async (tx) =>
           await designs.put(
             id,
-            { ...(await requireDesign(id, q)), ...patch, id },
-            q
+            { ...(await requireDesign(id, tx)), ...patch, id },
+            tx
           )
       ),
     updateSettings: async (patch: SettingsPatch): Promise<Settings> =>

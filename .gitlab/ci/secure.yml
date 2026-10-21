@@ -1,0 +1,6 @@
+# The scanners don't use anything verify makes, so they start right away.
+semgrep-sast:
+  needs: []
+
+secret_detection:
+  needs: []

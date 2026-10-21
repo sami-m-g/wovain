@@ -1,0 +1,37 @@
+# Infrastructure first: `pulumi up` applies infra/ (state in
+# gs://wovain-pulumi-state) as gitlab-infra.
+infra:production:
+  extends: [.pnpm-install, .gcp-auth, .on-main]
+  stage: deploy
+  interruptible: false
+  resource_group: infra
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
+    PULUMI_VERSION: 3.259.0
+  script:
+    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
+    - export PATH="$HOME/.pulumi/bin:$PATH"
+    - pnpm infra:up --yes --non-interactive
+  # Google trusts gitlab-infra only for jobs in this environment.
+  environment:
+    name: infrastructure
+    deployment_tier: other
+
+# App Hosting builds from source this job uploads: `firebase deploy` zips the
+# repo (firebase.json lists what to leave out), uploads it and rolls it out
+# as GCP_DEPLOY_SERVICE_ACCOUNT. No GitHub involved.
+deploy:production:
+  extends: [.pnpm-install, .gcp-auth, .on-main]
+  stage: deploy
+  interruptible: false
+  resource_group: production
+  needs: [infra:production]
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
+  script:
+    # Unverified until the first run: that the Firebase CLI accepts
+    # external_account credentials.
+    - pnpm --filter @wovain/server exec firebase deploy --only apphosting --project "$FIREBASE_PROJECT_ID" --non-interactive --force
+  environment:
+    name: production
+    url: $SITE_URL

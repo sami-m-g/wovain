@@ -1,0 +1,12 @@
+# wovain's Google Cloud setup: `pnpm infra:preview`, then `pnpm infra:up`.
+# State lives in a Cloud Storage bucket in the project (see README).
+name: wovain
+description: Firebase App Hosting, Firestore, media bucket, secrets and CI access for wovain
+runtime:
+  name: nodejs
+  options:
+    # Node 24 runs index.ts itself (type stripping), so no ts-node.
+    typescript: false
+    packagemanager: pnpm
+backend:
+  url: gs://wovain-pulumi-state

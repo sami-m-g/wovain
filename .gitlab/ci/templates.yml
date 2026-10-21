@@ -1,0 +1,57 @@
+# Shared job blocks, used with `extends:` and `!reference`.
+
+# Every push and merge request, but not the Renovate schedule.
+.on-changes:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+.on-main:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Lifecycle scripts are skipped: prepare installs git hooks and agent
+# skills, which CI doesn't need.
+.pnpm-install:
+  before_script:
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm install --frozen-lockfile --ignore-scripts
+
+# Google Cloud access is Workload Identity Federation: GitLab's OIDC token is
+# exchanged for a service account's, so no Google key is stored, and only the
+# protected main branch is trusted (infra/index.ts). GCP_WORKLOAD_IDENTITY_PROVIDER
+# is the provider's full name, projects/<number>/locations/global/
+# workloadIdentityPools/gitlab/providers/gitlab; each job sets GCP_SERVICE_ACCOUNT.
+.gcp-auth:
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://iam.googleapis.com/$GCP_WORKLOAD_IDENTITY_PROVIDER
+  before_script:
+    - !reference [.pnpm-install, before_script]
+    # The external_account file that `gcloud iam workload-identity-pools
+    # create-cred-config` writes, so the image needs no gcloud.
+    - echo "$GITLAB_OIDC_TOKEN" > /tmp/oidc-token
+    - |
+      cat > /tmp/gcp-credentials.json <<EOF
+      {
+        "type": "external_account",
+        "audience": "//iam.googleapis.com/$GCP_WORKLOAD_IDENTITY_PROVIDER",
+        "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+        "token_url": "https://sts.googleapis.com/v1/token",
+        "credential_source": { "file": "/tmp/oidc-token" },
+        "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/$GCP_SERVICE_ACCOUNT:generateAccessToken"
+      }
+      EOF
+    - export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-credentials.json
+
+# Push access to the GitHub mirror: GITHUB_MIRROR_KEY is a base64 write deploy
+# key for sami-m-g/wovain (a protected variable, so main only).
+.github-ssh:
+  before_script:
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$GITHUB_MIRROR_KEY" | base64 -d > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+    # GitHub's published host key (docs.github.com, "GitHub's SSH key fingerprints").
+    - echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > ~/.ssh/known_hosts

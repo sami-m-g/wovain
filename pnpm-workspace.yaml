@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+  - infra
+
+# Which dependencies may run install scripts. re2 is an optional native
+# speed-up for the Firebase CLI's hosting emulator, which wovain doesn't use.
+allowBuilds:
+  "@firebase/util": false
+  esbuild: true
+  lefthook: true
+  protobufjs: false
+  re2: false

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bunx ultracite fix --hook"
+            "command": "pnpm exec ultracite fix --hook"
           }
         ]
       }
@@ -25,8 +25,7 @@
     "modern-web-guidance@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
-    "vercel@claude-plugins-official": true,
-    "neon@claude-plugins-official": true
+    "firebase@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ai-marketing-hub-claude-ads": {
@@ -53,8 +52,5 @@
         "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
       }
     }
-  },
-  "env": {
-    "VERCEL_PLUGIN_TELEMETRY": "off"
   }
 }

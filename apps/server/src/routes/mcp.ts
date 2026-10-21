@@ -2,10 +2,9 @@ import { SpanStatusCode, trace } from "@opentelemetry/api";
 
 import { requireMcpAuth } from "../auth/auth.ts";
 import type { Auth } from "../auth/auth.ts";
-import type { Db } from "../db/client.ts";
 import type { Env } from "../env.ts";
+import type { Storage } from "../firebase.ts";
 import { createMcpFetch } from "../http.ts";
-import type { Media } from "../store.ts";
 
 const stringOf = (claim: unknown) => (typeof claim === "string" ? claim : "");
 
@@ -43,7 +42,7 @@ const rpcOf = async (request: Request) => {
 export const createMcpRoute = (deps: {
   auth: Auth;
   env: Env;
-  storage: { db: Db; media: Media };
+  storage: Storage;
 }) => {
   const { auth, env, storage } = deps;
   const mcpFetch = createMcpFetch(env, storage);

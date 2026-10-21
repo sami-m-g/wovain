@@ -194,7 +194,7 @@ Costs of running the proof of concept, on top of per-sale costs:
 | Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
 | ChatGPT plan | Depends on your plan | Plus works: the merchant adds wovain's hosted `/mcp` as a connector, on chatgpt.com or in the desktop app |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
-| Server hosting | $0 | Vercel Hobby and Neon's free plan to start (unverified; Hobby is for non-commercial use, so Vercel Pro at $20 a month once others rely on it) |
+| Server hosting | $0 | Firebase App Hosting, Firestore and Cloud Storage within their no-cost quotas to start (unverified; App Hosting needs the pay-as-you-go Blaze plan with a billing account, so usage past the quotas is billed) |
 | Total for the test | $140 to $194 | Ad spend plus $4.59 of video |
 
 ### Ad widgets

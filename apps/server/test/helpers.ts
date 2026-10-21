@@ -1,36 +1,28 @@
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import type { Design } from "@wovain/shared/design";
+import { vi } from "vitest";
 
-import type { Db } from "../src/db/client.ts";
-import { createTestDb } from "../src/db/testing.ts";
 import { loadEnv } from "../src/env.ts";
+import { createStorage } from "../src/firebase.ts";
+import type { Storage } from "../src/firebase.ts";
 import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
-import type { Media, Store } from "../src/store.ts";
+import type { Store } from "../src/store.ts";
 
-// Blob stand-in: bytes kept in memory for the test's lifetime.
-const memoryMedia = (): Media => {
-  const blobs = new Map<string, Uint8Array<ArrayBuffer>>();
-  return {
-    get: async (key) => await Promise.resolve(blobs.get(key)),
-    put: async (key, bytes) => {
-      blobs.set(key, new Uint8Array(bytes));
-      await Promise.resolve();
-    },
-  };
+// A fresh, empty Firestore and bucket on the Firebase emulators (`pnpm test`
+// starts them): each call gets its own demo project, which the
+// emulators keep apart and which needs no credentials.
+export const testStorage = (): Storage => {
+  const projectId = `demo-${crypto.randomUUID()}`;
+  return createStorage(
+    { projectId, storageBucket: `${projectId}.appspot.com` },
+    projectId
+  );
 };
 
-// In-memory Postgres (PGlite) with every migration applied, plus memory media.
-export const testStorage = async (): Promise<{ db: Db; media: Media }> => ({
-  db: await createTestDb(),
-  media: memoryMedia(),
-});
-
-export const testStore = async (storage?: { db: Db; media: Media }) => {
-  const { db, media } = storage ?? (await testStorage());
-  return createStore(db, media, "test");
-};
+export const testStore = (storage: Storage = testStorage()) =>
+  createStore(storage.db, storage.media, "test");
 
 // A client talking to a fresh wovain server over an in-memory transport.
 export const connectClient = async (
@@ -47,18 +39,25 @@ export const connectClient = async (
 
 const realFetch = globalThis.fetch;
 
-// Stands in for the network until restoreFetch; Bun's fetch type also wants
-// preconnect, so the real one is carried over.
+// Calls to the local Firebase emulators, which the store reaches over fetch.
+const isEmulator = (input: string | URL | Request) => {
+  const url = new URL(input instanceof Request ? input.url : input);
+  return url.hostname === "127.0.0.1" || url.hostname === "localhost";
+};
+
+// Stands in for the network until restoreFetch, except for the emulators.
 export const stubFetch = (
   impl: (input: string | URL | Request, init?: RequestInit) => Promise<Response>
 ) => {
-  globalThis.fetch = Object.assign(impl, {
-    preconnect: realFetch.preconnect,
-  });
+  vi.stubGlobal(
+    "fetch",
+    async (input: string | URL | Request, init?: RequestInit) =>
+      await (isEmulator(input) ? realFetch(input, init) : impl(input, init))
+  );
 };
 
 export const restoreFetch = () => {
-  globalThis.fetch = realFetch;
+  vi.unstubAllGlobals();
 };
 
 // The PRD's demo tee: $30 on a $17.70 blank (prd.md > Pricing and economics).

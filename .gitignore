@@ -11,7 +11,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# copied by `bun install` (prepare): course skills from GitHub, ultracite from node_modules
+# copied by `pnpm install` (prepare): course skills from GitHub, ultracite from node_modules
 /.claude/skills/[1-6]-*/
 /.claude/skills/ultracite/
 
@@ -19,6 +19,7 @@ dist/
 /.claude/settings.local.json
 /lefthook-local.yml
 
-# Vercel and Neon CLI state
-.vercel/
-.neon
+# Firebase CLI state and emulator logs
+.firebase/
+*-debug.log
+*-debug.*.log

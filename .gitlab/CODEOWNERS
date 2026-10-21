@@ -11,9 +11,15 @@
 /apps/server/src/pages/
 /apps/server/src/app.ts
 
-[Database] @sami-m-g
-/apps/server/src/db/
-/apps/server/migrations/
+[Data] @sami-m-g
+/apps/server/src/firebase.ts
+/apps/server/src/store.ts
+/apps/server/firestore.rules
+/apps/server/storage.rules
+
+[Infrastructure] @sami-m-g
+/infra/
+/apphosting.yaml
 
 [Pipeline] @sami-m-g
 /.gitlab-ci.yml
