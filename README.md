@@ -72,7 +72,7 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 
 Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
 
-The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
+The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror that CI updates after every `main` pipeline. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
 
 | Stage   | What runs                                                       |
 | ------- | --------------------------------------------------------------- |

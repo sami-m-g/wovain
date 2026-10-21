@@ -271,7 +271,9 @@ GitLab CI/CD stages (`.gitlab-ci.yml`, image `oven/bun:1.4.2`):
 | monitor | `smoke:production` | Curls the live OAuth chain: `/mcp` 401, both metadata documents, the sign-in page |
 | release | `release` | semantic-release, only after the smoke test passes |
 
-CI variables: `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+After every `main` pipeline, `mirror:github` (in `.post`, even when an earlier job failed) pushes GitLab's `main` and tags to the GitHub mirror with a write deploy key.
+
+CI variables: `VERCEL_TOKEN`, `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 
 ### Ultracite, TypeScript and Lefthook setup
 
