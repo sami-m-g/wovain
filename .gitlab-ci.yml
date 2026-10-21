@@ -6,7 +6,7 @@
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release; GitHub mirror
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
-# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_TOKEN (all masked),
+# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY (all masked),
 # FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
 # GCP_DEPLOY_SERVICE_ACCOUNT, PULUMI_CONFIG_PASSPHRASE, SITE_URL
 # (values: `pulumi stack output` in infra/).

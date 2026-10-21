@@ -30,7 +30,8 @@ deploy:production:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     GIT_DEPTH: 0
   script:
-    - git push "https://x-access-token:$GITHUB_TOKEN@github.com/sami-m-g/wovain.git" "$CI_COMMIT_SHA:refs/heads/main"
+    - !reference [.github-ssh, before_script]
+    - git push git@github.com:sami-m-g/wovain.git "$CI_COMMIT_SHA:refs/heads/main"
     # Unverified: that the Firebase CLI accepts external_account credentials,
     # and that the command waits for the rollout to finish before it exits.
     - cd apps/server
