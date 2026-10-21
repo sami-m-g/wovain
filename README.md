@@ -69,7 +69,6 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 | `bun test` | Server, web and shared tests (on PGlite, no database needed) |
 | `bun run test:stories` | Widget stories as tests (Playwright) |
 | `bun run knip` | Unused files, exports and dependencies |
-| `bun run skills:restore` | Restores the course skills listed in `skills-lock.json` |
 
 Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
 
