@@ -43,5 +43,15 @@
         }
       }
     }
+  ],
+  "customFlows": [
+    {
+      "name": "wovain scout",
+      "events": ["scheduled"],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "timezone": "UTC"
+      }
+    }
   ]
 }

@@ -1,7 +1,8 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
 #   verify    build; lint, types, dead code, tests; widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   deploy    main: production; Duo flow triggers (.gitlab/duo.json)
+#   deploy    main: production; Duo custom flows (ai-catalog component) and
+#             triggers (.gitlab/duo.json)
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
@@ -19,6 +20,21 @@ include:
   - template: Jobs/SAST.gitlab-ci.yml
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  # Custom Duo flows in .gitlab/duo/catalog: validated on every change, synced
+  # to the AI Catalog on main (see catalog-sync below).
+  - component: $CI_SERVER_FQDN/components/ai-catalog/catalog-sync@0.0.32
+    inputs:
+      agent_directory: .gitlab/duo/catalog/agents
+      flow_directory: .gitlab/duo/catalog/flows
+      mapping_file: .gitlab/duo/catalog/mapping.json
+      gitlab_token: $GITLAB_TOKEN
+      # Our role can't enable flows in the top-level group, which the
+      # component does first; duo.ts enables them in the project instead.
+      enable_in_project: "false"
+      public: "false"
+      # A version label in the mapping file. Release tags carry [skip ci], so
+      # the component's tag-only sync would never run; it runs on main.
+      version: $CI_COMMIT_SHORT_SHA
 
 stages:
   - verify
@@ -167,20 +183,40 @@ mirror:github:
     - git fetch -q origin main --tags
     - git push git@github.com:sami-m-g/wovain.git refs/remotes/origin/main:refs/heads/main --tags
 
-# Configure: write the Duo flow triggers in .gitlab/duo.json to GitLab when
-# it or duo.ts changes on main. Node runs the .ts file directly and the script
-# has no dependencies, so there's no install step.
+.on-duo-catalog:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - changes: [.gitlab/duo/catalog/**/*]
+
+validate-items:
+  extends: .on-duo-catalog
+
+catalog-sync:
+  interruptible: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: [.gitlab/duo/catalog/**/*]
+
+# Configure: write .gitlab/duo.json to GitLab (built-in flow triggers, and
+# enabling and scheduling the custom flows catalog-sync just synced). Node runs
+# the .ts file directly and the script has no dependencies.
 duo:
   stage: deploy
   image: node:24-slim
   interruptible: false
+  needs:
+    - job: catalog-sync
+      optional: true
   variables:
     GIT_DEPTH: 1
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      changes: [duo.ts, .gitlab/duo.json]
+      changes: [duo.ts, .gitlab/duo.json, .gitlab/duo/catalog/**/*]
   script:
     - node duo.ts
 

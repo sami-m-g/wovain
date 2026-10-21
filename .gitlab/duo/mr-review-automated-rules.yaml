@@ -1,0 +1,6 @@
+# Merge requests Duo skips for automatic review (a manual review still works).
+# Renovate bumps are covered by the pipeline; reviewing each one spends
+# credits for no findings.
+exclude:
+  source_branches:
+    - "renovate/*"
