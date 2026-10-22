@@ -18,19 +18,31 @@ const ideaChoiceSchema = z.object({
   reason: z.string().max(400),
 });
 
-// D1: research the run's idea (Tavily), drop every theme the trademark
-// screen flags or can't check, and let Nemotron pick from the rest.
+// D1: research the run's idea (Qloo and Tavily, ranked in code), drop every
+// theme that names a Qloo-matched brand or that the trademark screen flags or
+// can't check, and let Nemotron pick from the rest.
 export const decideIdea = async (
   { ai, model, research }: AutopilotDeps,
   store: Store,
   runId: string
 ) => {
-  const run = await runningRun(store, runId);
-  const found = await research.research({ seed: run.idea });
+  const [run, settings] = await Promise.all([
+    runningRun(store, runId),
+    store.getSettings(),
+  ]);
+  const found = await research.research(
+    { seed: run.idea },
+    settings,
+    store.userId
+  );
   const screened = await Promise.all(
     found.ideas.map(async (idea) => {
+      // A theme naming a brand, artist or title Qloo matched never goes on.
+      if (idea.signals.ipSafety === 0) {
+        return [];
+      }
       // An idea the screen can't check counts as flagged.
-      const clear = await research.screen(idea.idea).then(
+      const clear = await research.screen(idea.theme).then(
         (hits) => hits.length === 0,
         () => false
       );
@@ -39,7 +51,7 @@ export const decideIdea = async (
   );
   const ideas = screened.flat();
   const limits = [
-    `${found.ideas.length - ideas.length} idea(s) removed: trademark hits or unscreened`,
+    `${found.ideas.length - ideas.length} idea(s) removed: trademark hits, Qloo-matched names or unscreened`,
   ];
   const [top] = ideas;
   if (top === undefined) {
@@ -60,11 +72,13 @@ export const decideIdea = async (
   const reply = await generateObject(ai, {
     model: model ?? models.autopilot,
     prompt: JSON.stringify({
-      ideas: ideas.map(({ angle, idea, rank, why }) => ({
-        angle,
-        idea,
+      ideas: ideas.map(({ answer, moment, rank, score, taste, theme }) => ({
+        answer,
+        moment,
         rank,
-        why,
+        score,
+        taste,
+        theme,
       })),
       merchantIdea: run.idea,
       task: "Pick the one idea most likely to sell this week as a tee and its matching products: real demand, a timely moment, room in the market, no brand or person's name. Give its rank and a one-line reason.",
@@ -80,7 +94,7 @@ export const decideIdea = async (
       store,
       runId,
       decisionOf({
-        choice: idea.idea,
+        choice: idea.theme,
         limits:
           picked === undefined
             ? [

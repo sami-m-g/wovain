@@ -32,10 +32,13 @@ const judgment = (verdict: DesignJudgment["verdict"]): DesignJudgment => ({
   verdict,
 });
 
-const idea = (rank: number, name: string) => ({
-  idea: name,
+// A code-ranked theme; ipSafety 0 means it names a Qloo-matched brand.
+const idea = (rank: number, name: string, ipSafety = 1) => ({
   rank,
+  score: 1 - rank / 10,
+  signals: { ipSafety },
   sources: [{ title: "News", url: "https://news.example/1" }],
+  theme: name,
 });
 
 const designIdOf = (structured: unknown) =>
@@ -109,8 +112,8 @@ const depsWith = ({
             idea(1, "Mickey cat parody"),
             idea(2, "Sakura cat club"),
             idea(3, "Retro cat sunset"),
+            idea(4, "Neko Atsume cats", 0),
           ],
-          ranker: "nemotron",
         })
     ),
     // A brand-name idea always has a hit; the rest get `hits`.
@@ -214,7 +217,9 @@ describe("idea", () => {
     const { decision } = await decideIdea(depsWith().deps, store, run.id);
     expect(decision).toMatchObject({
       choice: "Sakura cat club",
-      limits: ["1 idea(s) removed: trademark hits or unscreened"],
+      limits: [
+        "2 idea(s) removed: trademark hits, Qloo-matched names or unscreened",
+      ],
       point: "idea",
     });
   });

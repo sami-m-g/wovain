@@ -51,12 +51,17 @@ const adMediaSchema = z.object({
 });
 type AdMedia = z.infer<typeof adMediaSchema>;
 
+// A niche brief this merchant started (Tavily Research's request ID), so
+// get_niche_brief answers only its owner.
+const briefSchema = z.object({ id: z.string().max(100) });
+
 type Kind =
   | "ad"
   | "ad-media"
   | "artwork"
   | "autopilotConsent"
   | "autopilotRun"
+  | "brief"
   | "campaign"
   | "design"
   | "settings";
@@ -232,6 +237,7 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
   const table = tableIn(user);
   const ads = table("ad", storedAdSchema);
   const adMedia = table("ad-media", adMediaSchema);
+  const briefs = table("brief", briefSchema);
   const artworks = table("artwork", artworkSchema);
   const campaigns = table("campaign", campaignSchema);
   const designs = table("design", designSchema);
@@ -304,6 +310,7 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     getDesign: async (id: string): Promise<Design | undefined> =>
       await designs.get(id),
     getSettings: async (): Promise<Settings> => await settings(),
+    ownsBrief: async (id: string) => (await briefs.get(id)) !== undefined,
     readArtworkBytes: async (artwork: Artwork) => {
       const bytes = await media.get(artwork.key);
       if (bytes === undefined) {
@@ -370,6 +377,7 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
         return await artworks.put(id, { ...artwork, id, key }, tx);
       });
     },
+    saveBrief: async (id: string) => await briefs.put(id, { id }),
     saveCampaign: async (campaign: SavedCampaign) =>
       await campaigns.put(ONLY, campaign),
     // Adds or revises concepts on a product's ads; the rest keep their choice.

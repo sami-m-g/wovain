@@ -6,6 +6,7 @@ import { autopilotFor } from "./lib/autopilot-decide.ts";
 import type { BrowserConfirm } from "./lib/browser-confirm.ts";
 import { designJudgeFor } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
+import { qlooFor } from "./lib/qloo.ts";
 import { trendResearchFor } from "./lib/trends.ts";
 import type { Upstream } from "./lib/upstream.ts";
 import { instructions, registerPlaybooks } from "./playbooks/index.ts";
@@ -34,7 +35,8 @@ export const createDeps = (
 ) => {
   const ai = createAi(env.NEBIUS_API_KEY);
   const designJudge = designJudgeFor(ai);
-  const trendResearch = trendResearchFor(env.TAVILY_API_KEY, ai);
+  const qloo = qlooFor(env.QLOO_API_KEY);
+  const trendResearch = trendResearchFor(env.TAVILY_API_KEY, qloo);
   return {
     autopilot: {
       deps: autopilotFor({
@@ -47,6 +49,7 @@ export const createDeps = (
     },
     confirm,
     designJudge,
+    qloo,
     trendResearch,
     upstream,
     videoPricing: createVideoPricing(env.FAL_KEY),
@@ -61,6 +64,7 @@ export const createServer = (
     autopilot,
     confirm,
     designJudge,
+    qloo,
     trendResearch,
     upstream,
     videoPricing,
@@ -92,7 +96,7 @@ export const createServer = (
   registerArtTools(server, store, { autopilotOn: autopilot.on, upstream });
   registerPublishTools(server, store, { confirm, upstream });
   registerJudgeTools(server, designJudge);
-  registerResearchTools(server, trendResearch);
+  registerResearchTools(server, store, trendResearch, qloo);
   registerAdTools(server, store, {
     autopilotOn: autopilot.on,
     upstream,

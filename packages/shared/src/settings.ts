@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { webUrlSchema } from "./trends.ts";
 import { videoModelIds, videoPricesSchema } from "./video-models.ts";
 
 // Every value the PRD names is a setting. Defaults come from spec.md > Settings.
@@ -73,12 +74,31 @@ export const optimizerSettings = z.object({
   shopSettleMinutes: z.int().min(0).max(1440).default(60),
 });
 
+// research_trends: what one run may spend on Tavily and where it looks.
+export const researchSettings = z.object({
+  // A typical tee's base cost, for the margin against competitor prices.
+  baseCost: z.number().min(1).max(100).default(12),
+  // As Tavily names countries.
+  market: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2)
+    .max(60)
+    .default("united states"),
+  // The niche brief is skipped when it doesn't fit.
+  maxCredits: z.int().min(10).max(150).default(50),
+  // The merchant's Fourthwall shop, mapped so ideas skip its products.
+  shopUrl: webUrlSchema.optional(),
+});
+
 export const settingsSchema = z.object({
   audio: audioSettings.prefault({}),
   campaign: campaignSettings.prefault({}),
   economics: economicsSettings.prefault({}),
   optimizer: optimizerSettings.prefault({}),
   pricing: pricingSettings.prefault({}),
+  research: researchSettings.prefault({}),
   rules: rulesSettings.prefault({}),
   video: videoSettings.prefault({}),
 });
@@ -100,6 +120,7 @@ export const settingsPatchSchema = z.object({
   economics: economicsSettings.partial().optional(),
   optimizer: optimizerSettings.partial().optional(),
   pricing: pricingSettings.partial().optional(),
+  research: researchSettings.partial().optional(),
   rules: rulesSettings.partial().optional(),
   video: videoSettings.partial().optional(),
 });
