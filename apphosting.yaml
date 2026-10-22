@@ -14,8 +14,9 @@ scripts:
 # Plain values, then Secret Manager references set with
 # `pulumi config set --secret <name>` in infra/ (see infra/index.ts). Only
 # secrets with a value are listed: App Hosting won't build with an empty one.
-# The OTEL_* pair and QLOO_API_KEY (qloo-api-key) are listed once they have
-# values.
+# The OTEL_* pair, QLOO_API_KEY (qloo-api-key) and wovain's Meta app,
+# META_APP_ID (meta-app-id) and META_APP_SECRET (meta-app-secret), are listed
+# once they have values.
 env:
   # The install skips lifecycle scripts, as CI does (pnpm 12 reads only the
   # pnpm_config_ prefix): the root `prepare` sets up
@@ -37,8 +38,6 @@ env:
     secret: workos-api-key
   - variable: WOVAIN_ALLOWED_EMAILS
     secret: wovain-allowed-emails
-  - variable: META_SYSTEM_USER_TOKEN
-    secret: meta-system-user-token
   - variable: FAL_KEY
     secret: fal-key
   - variable: NEBIUS_API_KEY

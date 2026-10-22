@@ -9,6 +9,7 @@ const campaign: Campaign = {
   blockers: [],
   campaignId: "120200000000000",
   dailyBudget: 15,
+  launchVia: "chat",
   products: [{ ads: 2, designId: "d1", title: "Japanese Cat Sunset Tee" }],
   rules: [
     {

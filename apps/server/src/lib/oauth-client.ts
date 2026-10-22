@@ -7,7 +7,7 @@ import type {
 } from "@modelcontextprotocol/client";
 import { z } from "zod";
 
-import { providerSchema } from "./connections.ts";
+import { providers, providerSchema } from "./connections.ts";
 import type { Connections, Flow, Grant, ProviderId } from "./connections.ts";
 
 // wovain's client identity, a Client ID Metadata Document: the URL it's
@@ -23,10 +23,12 @@ export const clientMetadata = (site: string): OAuthClientMetadata => ({
   client_uri: site,
   grant_types: ["authorization_code", "refresh_token"],
   logo_uri: `${site}/icon.png`,
+  // Providers with a hand-registered client (Meta) never read this document.
   redirect_uris: [
-    ...[...providerSchema.options, "wovain" as const].map((provider) =>
-      callbackUrl(site, provider)
-    ),
+    ...[
+      ...providerSchema.options.filter((id) => !providers[id].manualClient),
+      "wovain" as const,
+    ].map((provider) => callbackUrl(site, provider)),
     confirmCallbackUrl(site),
   ],
   response_types: ["code"],
@@ -43,6 +45,9 @@ const discoverySchema = z.custom<OAuthDiscoveryState>(
 );
 
 interface Options {
+  // A client registered with the provider by hand (Meta's app ID), used
+  // instead of wovain's CIMD identity.
+  client?: StoredOAuthClientInformation | undefined;
   // The callback leg: the flow doc is already deleted, so nothing is saved.
   callback?: boolean;
   connections: Connections;
@@ -93,7 +98,10 @@ export class FirestoreOAuthProvider implements OAuthClientProvider {
   }
 
   clientInformation(): StoredOAuthClientInformation {
-    return { client_id: this.clientMetadataUrl };
+    const { client, signIn } = this.#options;
+    return signIn !== true && client !== undefined
+      ? client
+      : { client_id: this.clientMetadataUrl };
   }
 
   codeVerifier() {

@@ -31,6 +31,15 @@ const json = async (response: Response) =>
   z.record(z.string(), z.unknown()).parse(await response.json());
 
 describe("routes", () => {
+  test.each([
+    ["/privacy", "Privacy policy"],
+    ["/data-deletion", "Delete your data"],
+  ])("serves %s for Meta's App Review", async (path, heading) => {
+    const response = await request(path);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain(`<h1>${heading}</h1>`);
+  });
+
   test("/mcp without a token points at the resource metadata", async () => {
     const response = await request("/mcp", { method: "POST" });
     expect(response.status).toBe(401);

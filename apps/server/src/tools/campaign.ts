@@ -6,57 +6,27 @@ import {
   campaignStatusSchema,
 } from "@wovain/shared/campaign";
 import type { Campaign } from "@wovain/shared/campaign";
-import { breakeven, money } from "@wovain/shared/economics";
+import { money } from "@wovain/shared/economics";
 import {
   adName,
   activeRuleLabels,
   metaRules,
   ruleThresholds,
 } from "@wovain/shared/rules";
-import type { RuleLabel, RuleProduct } from "@wovain/shared/rules";
+import type { MetaRule, RuleLabel, RuleProduct } from "@wovain/shared/rules";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
-import type { Env } from "../env.ts";
+import { addedProducts, URL_TAGS } from "../lib/campaign-plan.ts";
 import { createMetaGraph } from "../lib/meta-graph.ts";
-import { text } from "../lib/tool-result.ts";
+import { text, userSafe } from "../lib/tool-result.ts";
+import { canReach, connectReply, unreachable } from "../lib/upstream.ts";
+import type { Upstream } from "../lib/upstream.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
-// Each link carries the ad's ID so Fourthwall sales can be matched to the ad.
-const URL_TAGS =
-  "utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}";
-
-// Added ads joined with their design's price, plus the campaign budget and the
-// rule inputs derived from them, for the plan, rules and widget.
-const addedProducts = async (store: Store, settings: Settings) => {
-  const all = await store.getAds();
-  const ads = all.filter((ad) => ad.status === "added");
-  const products = await Promise.all(
-    ads.map(async (ad) => {
-      const design = await store.requireDesign(ad.designId);
-      const math = breakeven(
-        design.quote.price,
-        design.quote.baseCost,
-        settings.economics
-      );
-      return { ad, breakevenPerSale: math.perSale, design };
-    })
-  );
-  if (products.length === 0) {
-    throw new Error(
-      "no ad widgets were added; add at least one before launching"
-    );
-  }
-  return {
-    dailyBudget: settings.campaign.dailyBudgetPerProduct * products.length,
-    products,
-    ruleProducts: products.map(({ ad, breakevenPerSale }) => ({
-      breakevenPerSale,
-      designId: ad.designId,
-    })),
-  };
-};
+// An ad account ID without Meta's "act_" prefix.
+const bareAccount = (id: string) => id.replace(/^act_/u, "");
 
 const ruleDetails = (
   products: RuleProduct[],
@@ -78,10 +48,33 @@ const ruleDetails = (
   };
 };
 
+interface MetaDeps {
+  // wovain's Meta app secret, for appsecret_proof on Graph calls.
+  metaAppSecret?: string | undefined;
+  upstream?: Upstream | undefined;
+}
+
+// Creates the rules that don't exist yet with the merchant's own token, so
+// Graph only lets them touch ad accounts they manage.
+const createMissingRules = async (
+  token: string,
+  adAccountId: string,
+  rules: MetaRule[],
+  appSecret: string | undefined
+) => {
+  const graph = createMetaGraph(token, adAccountId, appSecret);
+  const existing = new Set(await graph.listRuleNames());
+  await Promise.all(
+    rules.flatMap((rule) =>
+      existing.has(rule.name) ? [] : [graph.createRule(rule)]
+    )
+  );
+};
+
 export const registerCampaignTools = (
   server: McpServer,
   store: Store,
-  env: Env
+  { metaAppSecret, upstream }: MetaDeps
 ) => {
   server.registerTool(
     "campaign_plan",
@@ -131,7 +124,7 @@ export const registerCampaignTools = (
         readOnlyHint: false,
       },
       description:
-        "Create the five wovain automated rules for the campaign in Meta (the Meta Ads MCP has no rules tool). Safe to call again: rules that already exist are skipped. Needs META_SYSTEM_USER_TOKEN in .env; without it, says so and creates nothing.",
+        "Create the five wovain automated rules in Meta (the Meta Ads MCP has no rules tool) for the campaign wovain staged with campaign_draft, with the merchant's own Meta account connected to wovain. Safe to call again: rules that already exist are skipped. Without a Meta connection, the result has needsConnection and a link to show the merchant.",
       inputSchema: z.object({
         adAccountId: z.string().regex(/^(?:act_)?\d+$/u),
         campaignId: z.string().regex(/^\d+$/u),
@@ -150,31 +143,39 @@ export const registerCampaignTools = (
         products: ruleProducts,
         rules: settings.rules,
       });
-      if (env.META_SYSTEM_USER_TOKEN === undefined) {
-        await store.saveCampaign({
-          adAccountId,
-          campaignId,
-          rulesCreated: [],
-        });
-        return {
-          content: text(
-            "No rules created: add a Meta access token with ads_management to .env as META_SYSTEM_USER_TOKEN, restart the app, then call create_rules again. Show the campaign widget as blocked with that fix."
-          ),
-        };
+      // Only the campaign wovain staged through campaign_draft, in its own ad
+      // account, gets rules.
+      const saved = await store.getCampaign();
+      if (
+        saved?.campaignId !== campaignId ||
+        bareAccount(saved.adAccountId) !== bareAccount(adAccountId)
+      ) {
+        throw new Error(
+          "Rules go only on the campaign wovain staged with campaign_draft (its campaign and ad account IDs)."
+        );
       }
-      const graph = createMetaGraph(env.META_SYSTEM_USER_TOKEN, adAccountId);
-      const existing = new Set(await graph.listRuleNames());
-      await Promise.all(
-        rules.flatMap((rule) =>
-          existing.has(rule.name) ? [] : [graph.createRule(rule)]
-        )
+      const record = async (created: string[]) => {
+        await store.saveCampaign({ ...saved, rulesCreated: created });
+      };
+      if (!canReach(upstream, "meta")) {
+        return unreachable(upstream, "meta");
+      }
+      const token = await userSafe(
+        "meta token failed:",
+        "Couldn't reach the merchant's Meta account. Try again in a minute.",
+        async () => await upstream.accessToken(store.userId, "meta")
+      );
+      if (token.kind === "connect") {
+        return connectReply(token.connect);
+      }
+      await createMissingRules(
+        token.accessToken,
+        adAccountId,
+        rules,
+        metaAppSecret
       );
       const created = [...new Set(rules.map((rule) => rule.label))];
-      await store.saveCampaign({
-        adAccountId,
-        campaignId,
-        rulesCreated: created,
-      });
+      await record(created);
       return {
         content: text(`Rules in place: ${created.join(", ")}.`),
       };
@@ -226,6 +227,11 @@ export const registerCampaignTools = (
       );
       const id = campaignId ?? saved?.campaignId;
       const inMeta = new Set(saved?.rulesCreated);
+      const launchVia =
+        canReach(upstream, "meta") &&
+        (await upstream.connected(store.userId, "meta"))
+          ? "wovain"
+          : "chat";
       const campaign: Campaign = {
         ...(account !== undefined &&
           id !== undefined && {
@@ -234,6 +240,7 @@ export const registerCampaignTools = (
         blockers: blockers ?? [],
         ...(id !== undefined && { campaignId: id }),
         dailyBudget,
+        launchVia,
         products: products.map(({ ad }) => ({
           ads: ad.videos.filter((video) => video.status === "ready").length,
           designId: ad.designId,

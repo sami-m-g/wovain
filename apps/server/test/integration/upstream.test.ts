@@ -6,6 +6,7 @@ import { localCipher } from "../../src/lib/cipher.ts";
 import { createConnections, nonceHashOf } from "../../src/lib/connections.ts";
 import type { ProviderId } from "../../src/lib/connections.ts";
 import { createUpstream } from "../../src/lib/upstream.ts";
+import type { Clients } from "../../src/lib/upstream.ts";
 import { connectWith, fakeUpstream } from "../fake-upstream.ts";
 import { testStorage } from "../helpers.ts";
 
@@ -162,6 +163,78 @@ describe("connected calls", () => {
     const outcome = await env.a.call({ ...shop, id: env.id });
     expect(outcome).toMatchObject({
       connect: { reconnect: true },
+      kind: "connect",
+    });
+  });
+});
+
+// wovain's client on a fake Meta, which has no CIMD or DCR: the app ID is
+// the client.
+const META_APP = { meta: { client_id: "1234567890" } };
+const metaUpstream = (clients: Clients = META_APP) => {
+  const fake = fakeUpstream("meta");
+  const upstream = createUpstream({
+    clients,
+    connections: createConnections(testStorage().db, localCipher()),
+    fetch: fake.fetch,
+    site,
+  });
+  return { fake, upstream };
+};
+const accounts = {
+  args: {},
+  id: "meta" as const,
+  tool: "ads_get_ad_accounts",
+  userId: "u1",
+};
+
+describe("Meta, a hand-registered client", () => {
+  test("connects with the app ID and asks only for wovain's scopes", async () => {
+    const { fake, upstream } = metaUpstream();
+    const { authorizationUrl, connected } = await connectWith(
+      upstream,
+      fake,
+      "u1",
+      "meta"
+    );
+    expect(connected).toBe(true);
+    expect(authorizationUrl.searchParams.get("client_id")).toBe("1234567890");
+    expect(authorizationUrl.searchParams.get("redirect_uri")).toBe(
+      `${site}/oauth/callback/meta`
+    );
+    expect(authorizationUrl.searchParams.get("scope")).toBe(
+      "ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads"
+    );
+    expect(fake.tokenClients).toEqual(["1234567890"]);
+    await expect(upstream.call(accounts)).resolves.toMatchObject({
+      kind: "result",
+    });
+    const token = await upstream.accessToken("u1", "meta");
+    expect(token.kind === "token" && token.accessToken).toMatch(/^at-/u);
+  });
+
+  test("without the app ID, Meta can't be connected", async () => {
+    const { upstream } = metaUpstream({});
+    expect(upstream.configured("meta")).toBe(false);
+    expect(upstream.configured("fal")).toBe(true);
+    await expect(
+      upstream.authorize("u1", "meta", nonceHashOf("this-browser"))
+    ).rejects.toThrow("No meta client configured");
+  });
+
+  test("without a grant, the token is a connect link", async () => {
+    const { upstream } = metaUpstream();
+    await expect(upstream.accessToken("u1", "meta")).resolves.toMatchObject({
+      connect: { needsConnection: "meta", reconnect: false },
+      kind: "connect",
+    });
+  });
+
+  test("disconnect forgets the grant", async () => {
+    const { fake, upstream } = metaUpstream();
+    await connectWith(upstream, fake, "u1", "meta");
+    await expect(upstream.disconnect("u1", "meta")).resolves.toBe(true);
+    await expect(upstream.call(accounts)).resolves.toMatchObject({
       kind: "connect",
     });
   });

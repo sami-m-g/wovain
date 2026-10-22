@@ -10,17 +10,36 @@ import type {
 import { z } from "zod";
 
 import type { Cipher } from "./cipher.ts";
+import { createLaunchApprovals } from "./launch-approvals.ts";
+import { createStagedObjects } from "./meta-staged.ts";
+
+interface Provider {
+  // Registered by hand (no CIMD or DCR): needs the client ID from config.
+  manualClient?: true;
+  // Asked for instead of every scope the server advertises.
+  scope?: string;
+  serverUrl: string;
+  title: string;
+}
 
 // The upstream MCP servers wovain connects to for a merchant, each with the
-// merchant's own OAuth grant.
-export const providers = {
+// merchant's own OAuth grant. Meta advertises nine scopes; wovain asks only
+// for the ones its tools and App Review submission cover.
+export const providers: Record<"fal" | "fourthwall" | "meta", Provider> = {
   fal: { serverUrl: "https://mcp.fal.ai/mcp-relay", title: "fal" },
   fourthwall: {
     serverUrl: "https://mcp.fourthwall.com/app",
     title: "Fourthwall",
   },
-} as const;
-export const providerSchema = z.enum(["fourthwall", "fal"]);
+  meta: {
+    manualClient: true,
+    scope:
+      "ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads",
+    serverUrl: "https://mcp.facebook.com/ads",
+    title: "Meta",
+  },
+};
+export const providerSchema = z.enum(["fourthwall", "fal", "meta"]);
 export type ProviderId = z.infer<typeof providerSchema>;
 
 // users/{uid}/connections/{provider}. The grant itself is only in
@@ -64,6 +83,9 @@ const flowSchema = z.object({
   codeVerifier: z.string().optional(),
   discoveryState: z.string().optional(),
   expiresAt: z.instanceof(Timestamp),
+  // A sign-in for the launch confirm page (launchRequests/{id}) rather than
+  // a connect link.
+  launch: z.string().optional(),
   nonceHash: z.string(),
   provider: providerSchema,
   purpose: z.enum(["signin", "connect"]),
@@ -138,7 +160,10 @@ export const createConnections = (
       }),
 
     createFlow: async (
-      flow: Pick<Flow, "nonceHash" | "provider" | "purpose" | "userId">
+      flow: Pick<
+        Flow,
+        "launch" | "nonceHash" | "provider" | "purpose" | "userId"
+      >
     ) => {
       const state = newId();
       await flows
@@ -154,6 +179,9 @@ export const createConnections = (
         .set({ expiresAt: expiry(TICKET_MS), provider, userId });
       return id;
     },
+
+    // The merchant's confirmations of a campaign launch.
+    launches: createLaunchApprovals(db, now),
 
     read: async (
       userId: string,
@@ -217,6 +245,9 @@ export const createConnections = (
         tx.set(ref, connectionSchema.parse(record));
       });
     },
+
+    // Every object wovain staged in each merchant's Meta draft.
+    staged: createStagedObjects(db),
 
     // Loads a pending flow for the browser holding its nonce and deletes it,
     // so a code is exchanged once. Another browser's request leaves the flow

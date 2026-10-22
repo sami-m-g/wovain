@@ -135,7 +135,8 @@ new gcp.firebaserules.Release("storage-release", {
 // one).
 const secretNames = [
   "fal-key",
-  "meta-system-user-token",
+  "meta-app-id",
+  "meta-app-secret",
   "nebius-api-key",
   "otel-exporter-otlp-endpoint",
   "otel-exporter-otlp-headers",
@@ -351,9 +352,14 @@ new gcp.kms.CryptoKeyIAMMember(
   { dependsOn: infraRoles }
 );
 
-// Pending connect links and OAuth flows expire after 10 minutes; Firestore
-// deletes the leftovers by their expiresAt timestamp.
-for (const collection of ["connectTickets", "oauthFlows"]) {
+// Pending connect links, launch confirmations and OAuth flows expire within 10
+// minutes; Firestore deletes the leftovers by their expiresAt timestamp.
+for (const collection of [
+  "connectTickets",
+  "launchApprovals",
+  "launchRequests",
+  "oauthFlows",
+]) {
   new gcp.firestore.Field(`ttl-${collection}`, {
     collection,
     database: database.name,

@@ -5,6 +5,7 @@ import { siteUrl } from "./auth/env.ts";
 import { createConfirmRoutes } from "./routes/confirm.ts";
 import { createConnectRoutes } from "./routes/connect.ts";
 import { createMcpRoute } from "./routes/mcp.ts";
+import { createPolicyPages } from "./routes/pages.ts";
 import type { Runtime } from "./runtime.ts";
 import { createStore } from "./store.ts";
 
@@ -19,7 +20,9 @@ export const createApp = (runtime: Runtime) => {
 
   app.all("/mcp", async (c) => await mcp(c.req.raw));
 
-  // Merchants connect their Fourthwall and fal accounts here.
+  app.route("/", createPolicyPages());
+
+  // Merchants connect their Fourthwall, fal and Meta accounts here.
   if (connect !== undefined) {
     app.route("/", createConnectRoutes({ ...connect, site }));
   }

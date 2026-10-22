@@ -36,7 +36,7 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | Key | Needed for | Where to get it |
 | --- | --- | --- |
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
-| `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
+| `META_APP_ID`, `META_APP_SECRET` | Optional: merchants connecting Meta to wovain (Meta's Ads MCP has no dynamic registration, so wovain's own Meta app is the OAuth client). Without them, merchants use their host's Meta Ads connector and rules aren't created | Your Business-type Meta app (Ads MCP use case) → App settings → Basic. See [Meta app](#meta-app) |
 | `NEBIUS_API_KEY` | Optional: the design check (`judge_design`, Nemotron on Nebius Token Factory); without it the check is skipped | Nebius Token Factory → API keys |
 | `QLOO_API_KEY` | Optional: Qloo's Taste API | Qloo developer portal |
 | `TAVILY_API_KEY` | Optional: trend research and the trademark screen (`research_trends`, `screen_trademark`); without it both say they aren't set up | Tavily dashboard → API keys |
@@ -136,7 +136,7 @@ The course skills and `ultracite` are copied into `.claude/skills/` by `pnpm ins
 
 `infra/` (Pulumi, `pnpm infra:preview` then `pnpm infra:up`, which CI runs on `main`) declares:
 
-- **Google Cloud and Firebase**: APIs, Firestore and its rules (plus TTL on pending connect links and OAuth flows), the media bucket and its Storage rules, the `wovain/connections` KMS key that encrypts merchants' Fourthwall and fal grants, Secret Manager, App Hosting, service accounts and IAM, Workload Identity Federation for CI (no Google key is stored), and the budget (`infra/index.ts`).
+- **Google Cloud and Firebase**: APIs, Firestore and its rules (plus TTL on pending connect links and OAuth flows), the media bucket and its Storage rules, the `wovain/connections` KMS key that encrypts merchants' Fourthwall, fal and Meta grants, Secret Manager, App Hosting, service accounts and IAM, Workload Identity Federation for CI (no Google key is stored), and the budget (`infra/index.ts`).
 - **GitLab** (`infra/gitlab.ts`, `infra/duo.ts`): every CI/CD variable, the `production` and `infrastructure` environments, the Renovate schedule, the issue labels and the Workflow board, and the Duo flow triggers and custom flows.
 - **The GitHub mirror** (`infra/github.ts`): repository settings, the deploy key CI pushes with (a generated key pair, which also becomes `GITHUB_MIRROR_KEY`), and a ruleset that lets only that key change `main`.
 - **WorkOS AuthKit** (`infra/workos.ts`): the redirect URIs in `wovain:workosRedirectUris` (`Pulumi.prod.yaml`). It uses the community `osodevops/workos` Terraform provider, which `pulumi install` generates into `infra/sdks/workos`. It signs in with the `workos-api-key` stack secret. Entries made by hand are adopted by their WorkOS id (`import`). The MCP resource indicators in `wovain:workosResourceIndicators` go through WorkOS's `authkit_oauth_resources` API with the generic `magodo/restful` Terraform provider (generated into `infra/sdks/restful`), since `osodevops/workos` has no resource for them. That API has no update, so a changed URI or `default` replaces the entry, and the default one is created first.
@@ -152,6 +152,20 @@ Still set by hand, since no API or provider covers them (or the role can't reach
 | GitLab Observability (group) | The `o11y-api-key` the self-healing loop reads errors, traces and logs with. A group Owner opens the group, Observe → API Keys, and copies the key (the docs allow Developer and up, but Developer+ has no observability or access-token permission here); then `pulumi config set --secret o11y-api-key` in `infra/`. The docs describe no API or token scope for it and `@pulumi/gitlab` has no resource for it |
 | Google Cloud, once | The Pulumi state bucket `wovain-pulumi-state` and the `pulumi/stack-secrets` KMS key, which this stack needs before it can run |
 | Meta, Fourthwall, fal, Nebius, Qloo, Tavily | The accounts, Page, pixel, payment method and API keys (keys go in as stack secrets) |
+| Meta app dashboard | wovain's Meta app: its use case, Facebook Login for Business redirect URI, roles, privacy and data-deletion URLs, Business Verification and App Review. Meta's Graph API can set a few app fields (such as `privacy_policy_url`) but not the redirect URIs, roles or review, so the app stays manual. See [Meta app](#meta-app) |
+
+## Meta app
+
+Merchants connect Meta through wovain's own Meta app, because Meta's Ads MCP (`https://mcp.facebook.com/ads`) refuses dynamic client registration. The app ID is the OAuth client ID.
+
+1. At [developers.facebook.com/apps](https://developers.facebook.com/apps), create a Business-type app with the "Create & manage ads with ads MCP server" use case, in a business portfolio you control.
+2. In Facebook Login for Business settings, add `https://app--wovain.us-central1.hosted.app/oauth/callback/meta` to the Valid OAuth Redirect URIs.
+3. In App settings → Basic, set the Privacy Policy URL to `https://app--wovain.us-central1.hosted.app/privacy` and User data deletion to `https://app--wovain.us-central1.hosted.app/data-deletion`, plus an icon, category and contact email.
+4. Put the app ID and secret into the stack: `pulumi config set --secret meta-app-id` and `pulumi config set --secret meta-app-secret` in `infra/`, then list `META_APP_ID` and `META_APP_SECRET` in `apphosting.yaml`.
+5. Add testers under App roles. Until App Review grants Advanced Access, only people with a role on the app can connect.
+6. For everyone else: Business Verification, then App Review for `ads_mcp_management`, `ads_management`, `ads_read`, `business_management`, `pages_show_list`, `pages_manage_ads` and `public_profile`, each with a screencast.
+
+wovain asks Meta only for those scopes. `create_rules` uses the merchant's own token on Graph `adrules_library`, with `appsecret_proof`.
 
 ## Releases
 

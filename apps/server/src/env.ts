@@ -6,7 +6,12 @@ import { z } from "zod";
 // user-safe error when one is missing, so the Settings widget works on day one.
 const envSchema = z.object({
   FAL_KEY: z.string().optional(),
-  META_SYSTEM_USER_TOKEN: z.string().optional(),
+  // Optional: wovain's own Meta app (Business type, Ads MCP use case), the
+  // client merchants connect Meta through. Meta has no DCR or CIMD for its
+  // Ads MCP, so the app ID is the OAuth client ID; the secret signs Graph
+  // calls (appsecret_proof). Without the ID, Meta can't be connected.
+  META_APP_ID: z.string().regex(/^\d+$/u).optional(),
+  META_APP_SECRET: z.string().optional(),
   // Optional: Nebius Token Factory, for judge_design (Genkit, Nemotron);
   // without it the tool says the check isn't set up.
   NEBIUS_API_KEY: z.string().optional(),
