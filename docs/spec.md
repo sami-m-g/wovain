@@ -238,25 +238,27 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance will seed the `optimize` playbook; claude-ads is MIT-licensed, and that playbook will credit it in a NOTICE file |
 | `ultracite fix` after each edit | Hook (from `ultracite init --hooks claude`) | Lint and format every edit |
 | GitLab Secret Detection (CI template) | CI | Flags secrets and tokens in every push and merge request; replaced the local gitleaks hook |
-| Lefthook | Git hooks | Ultracite fix and type check before commits; commitlint on commit messages; tests, knip and story tests before pushes |
+| Lefthook | Git hooks | Ultracite fix and type check before commits; commitlint on commit messages; tests, knip, arch, dupes and story tests before pushes |
 | commitlint | Commit check | Enforces conventional commits locally |
 | knip | Dead-code check | Finds unused files, exports and dependencies before pushes and in CI |
+| dependency-cruiser 18.7.0 | Architecture check | `pnpm arch` enforces layer and cycle rules from `.config/dependency-cruiser.json` before pushes and in CI |
+| jscpd 5.4.2 | Duplication check | `pnpm dupes` fails on any clone of 40 tokens or more (`.config/jscpd.json`) before pushes and in CI |
 | Storybook | Widget workshop | One story per widget state with a mocked host bridge; a11y and interaction tests |
 | Mock mode (later) | Rehearsal | `pnpm mock` sets `WOVAIN_MOCK=1`; the fixtures that would answer wovain's outside calls aren't built yet |
 | GitLab CI/CD (`.gitlab-ci.yml`, jobs in `.gitlab/ci/`) | CI/CD | See the stage table below |
 | GitLab Observability (`apps/server/src/telemetry.ts`, `@opentelemetry/sdk-trace-node` 2.11.0 with `@opentelemetry/exporter-trace-otlp-http` 0.222.0) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration). `/mcp` adds an `mcp.request` span with the MCP method, tool and status, no user ids or arguments. Next.js's per-request spans went with Next.js. Unset means no telemetry |
-| GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. The hackathon's Developer+ role can manage flow triggers, create AI Catalog flows and enable them in our project, but not in the top-level group, and it can't change project settings. `infra/Pulumi.prod.yaml` declares the triggers and `infra/duo.ts` (Pulumi) applies them, each limited to a human action or a red main to save credits: Developer flow on assign or mention, Fix CI/CD Pipeline on a failed push pipeline on main, Code Review when Duo is requested as reviewer or an MR is marked ready (project rules in `.gitlab/duo/mr-review-instructions.yaml`). Custom flows live in `.gitlab/duo/catalog/flows/` and GitLab's `ai-catalog` component syncs them on main; the first is the scout, which is meant to check the main pipeline and production smoke test daily at 07:00 UTC, open one confidential `scout` issue per confirmed new failure, and comment a daily digest (shipped, waiting for review or test, in progress) on the confidential `digest` issue. The component can't enable flows for us, so `infra/duo.ts` enables and schedules them. Since 2026-10-22 every trigger is inactive and no custom flow is enabled, so no Duo credits are spent; enabling the scout at project level created no flow trigger (it likely needs a group-level consumer first). Labels and the Workflow board (`status::todo` → `doing` → `review` → `test`) are Pulumi resources in `infra/gitlab.ts`. Flows run as service accounts and bill the hackathon group's credit pool, not the personal 500 (Chat and Code Suggestions); triggers don't fire for MRs or pipelines a flow made. Automatic Duo review, SAST false-positive detection and SAST vulnerability resolution need a Maintainer; that request goes to GitLab contributor-success |
+| GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. The hackathon's Developer+ role can manage flow triggers, create AI Catalog flows and enable them in our project, but not in the top-level group, and it can't change project settings. `infra/Pulumi.prod.yaml` declares the triggers and `infra/duo.ts` (Pulumi) applies them, each limited to a human action or a red main to save credits: Developer flow on assign or mention, Fix CI/CD Pipeline on a failed push pipeline on main, Code Review when Duo is requested as reviewer or an MR is marked ready (project rules in `.gitlab/duo/mr-review-instructions.yaml`). Custom flows live in `.gitlab/duo/catalog/flows/` and GitLab's `ai-catalog` component syncs them on main; the first is the scout, which is meant to check the main pipeline and production smoke test daily at 07:00 UTC, open one confidential `scout` issue per confirmed new failure, and comment a daily digest (shipped, waiting for review or test, in progress) on the confidential `digest` issue. The component can't enable flows for us, so `infra/duo.ts` enables and schedules them. Since 2026-10-22 every trigger is inactive and no custom flow is enabled, so no Duo credits are spent; enabling the scout at project level created no flow trigger (it likely needs a group-level consumer first). Labels and the Workflow board (`status::intent` → `todo` → `spec` → `plan` → `doing` → `review` → `test`, following the intent, spec and plan stages of Anthropic's AI-native SDLC playbook) are Pulumi resources in `infra/gitlab.ts`. Flows run as service accounts and bill the hackathon group's credit pool, not the personal 500 (Chat and Code Suggestions); triggers don't fire for MRs or pipelines a flow made. Automatic Duo review, SAST false-positive detection and SAST vulnerability resolution need a Maintainer; that request goes to GitLab contributor-success |
 | semantic-release | Releases | semantic-release 25.0.9 in the `release` job (`.config/releaserc.json`): commit-analyzer, release-notes-generator, changelog, exec (`npm pkg set version=…` writes the version to the root `package.json`), git (commits `CHANGELOG.md` and `package.json` as `chore(release): x [skip ci]`) and gitlab (a GitLab release). The tag `v0.1.0` on the first commit is the baseline. It replaces release-please. The same job then pushes the release commit and tag to the GitHub mirror |
 | Renovate | Dependencies | renovate/renovate:44.138.0 on the weekly pipeline schedule opens update merge requests; `.gitlab/renovate.json` extends `config:recommended` with semantic commits, waits 7 days before taking a release, groups minor and patch updates. It replaces Dependabot |
 | `skills` CLI | Skills sync | `prepare` copies the course skills (GitHub) and package-shipped skills (ultracite) into `.claude/skills` |
 | VS Code settings | Editor | oxc formatter on save and fix-all; recommends `oxc.oxc-vscode` and `TypeScriptTeam.native-preview` |
-| Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the widgets), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
+| Claude Code plugins (project scope) | Plugins | modern-web-guidance (web best practices for the widgets), security-guidance (warnings on edits and a background review on commit, push and stop), hookify (custom hook rules in `.local.md` files); pr-review-toolkit (code-simplifier and silent-failure-hunter run before each MR) and feature-dev (code-architect designs the change first); also claude-ads, impeccable, ui-ux-pro-max, humanizer, context7 and commit-commands |
 
 GitLab CI/CD stages (`.gitlab-ci.yml` includes one file per stage from `.gitlab/ci/`, image `node:24` with pnpm 12.3.4 installed by npm):
 
 | Stage | Jobs | What runs |
 | --- | --- | --- |
-| verify | `build`, `verify`, `integration`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip and unit tests; integration tests on the emulators (`node:24-trixie` with `openjdk-21-jre-headless`); widget stories on Playwright's image. Installs use `pnpm install --frozen-lockfile --ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
+| verify | `build`, `verify`, `integration`, `stories`, `renovate` | In parallel: the build; check, typecheck, knip, arch, dupes and unit tests; integration tests on the emulators (`node:24-trixie` with `openjdk-21-jre-headless`); widget stories on Playwright's image. Installs use `pnpm install --frozen-lockfile --ignore-scripts` and no cache. Renovate only on its schedule ("Renovate dependency updates", Mondays 06:00 UTC) |
 | test | GitLab templates | SAST, Secret Detection and Dependency Scanning, on merge requests too; the scanners start at once (`needs: []`) |
 | deploy | `infra:production`, `deploy:production` | `main` only: `pnpm infra:up` applies `infra/` (Pulumi) as `GCP_INFRA_SERVICE_ACCOUNT`; then `firebase deploy --only apphosting` zips the workspace (minus `firebase.json`'s ignore list and gitignored files), uploads it to the App Hosting sources bucket and rolls it out. Google access is Workload Identity Federation (GitLab `id_tokens` → an `external_account` credentials file → `GCP_DEPLOY_SERVICE_ACCOUNT`, or `GCP_INFRA_SERVICE_ACCOUNT` for Pulumi), so no Google key is stored; only the protected `main` branch, in the job's GitLab environment (`infrastructure` or `production`), is trusted. The backend has no linked repository. Merge requests get no preview deploy |
 | monitor | `smoke:production` | Curls the live OAuth chain at `SITE_URL`: `/mcp` 401, both metadata documents |
@@ -309,6 +311,10 @@ pre-push:
       run: pnpm test
     - name: knip
       run: pnpm knip
+    - name: arch
+      run: pnpm arch
+    - name: dupes
+      run: pnpm dupes
     - name: stories
       run: pnpm test:stories
 ```
@@ -325,6 +331,8 @@ Scripts in the root `package.json`:
 "mock": "WOVAIN_MOCK=1 pnpm dev",
 "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
 "knip": "knip",
+"arch": "depcruise --config .config/dependency-cruiser.json apps packages",
+"dupes": "jscpd --config .config/jscpd.json",
 "storybook": "pnpm --filter @wovain/widgets storybook",
 "test:stories": "pnpm --filter @wovain/widgets test:stories",
 "widgets:watch": "pnpm --filter @wovain/widgets build --watch",
@@ -387,7 +395,7 @@ wovain/
 ├── packages/shared/             # zod schemas, economics and rule thresholds for server and widgets
 ├── .gitlab-ci.yml               # stages, defaults and includes; jobs in .gitlab/ci/ (verify, secure, deploy, monitor, release, templates)
 ├── .gitlab/                     # issue and MR templates, CODEOWNERS, renovate.json
-├── .config/                     # lefthook.yml (git hooks), releaserc.json (semantic-release), commitlint.config.ts (conventional commits), knip.json (dead-code check)
+├── .config/                     # lefthook.yml (git hooks), releaserc.json (semantic-release), commitlint.config.ts (conventional commits), knip.json (dead-code check), dependency-cruiser.json (architecture rules), jscpd.json (duplication check)
 ├── .vscode/                     # settings.json, extensions.json
 ├── .claude/skills/              # course and ultracite skills, copied by pnpm install (gitignored)
 ├── scripts/                     # prepare.ts (hooks, skills sync), set-version.ts (release version)
@@ -399,6 +407,7 @@ wovain/
 ├── package.json                 # scripts, packageManager pnpm@12.3.4, engines node >=24
 ├── tsconfig.base.json           # strict, erasableSyntaxOnly (Node type stripping), moduleResolution bundler, no baseUrl (TS 7)
 └── docs/                        # planning docs (Markdown), app-map.html and plan.css
+    └── changes/<issue>-<slug>/  # per-change intent.md, spec.md, plan.md, verify.md (templates in _template/)
 ```
 
 ## External Services and Dependencies

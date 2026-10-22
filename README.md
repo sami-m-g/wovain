@@ -68,14 +68,16 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 | `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
 | `pnpm test:stories` | Widget stories as tests (Playwright) |
 | `pnpm knip` | Unused files, exports and dependencies |
+| `pnpm arch` | Architecture rules (dependency-cruiser): layers, cycles, orphans |
+| `pnpm dupes` | Copy-paste detection (jscpd); any clone fails |
 
-Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
+Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip, arch, dupes and story tests on push.
 
 The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a read-only mirror that CI keeps on `main`; nothing builds from it. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
 
 | Stage | What runs |
 | --- | --- |
-| verify | Build, lint, typecheck, knip, tests, card stories (in parallel) |
+| verify | Build, lint, typecheck, knip, arch, dupes, tests, card stories (in parallel) |
 | test | GitLab SAST, Secret Detection and Dependency Scanning |
 | deploy | `main` only: `pulumi up` (`infra/`), then upload the source to App Hosting and roll it out |
 | monitor | A smoke test of the live OAuth chain |
@@ -83,12 +85,13 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 
 ### How work moves
 
-Each idea or bug is a GitLab issue (template `Agent task` or `Bug`) on the **Workflow** board:
+Each idea or bug is a GitLab issue (template `Intent`, `Agent task` or `Bug`) on the **Workflow** board:
 
-1. `status::todo`: ready to pick up.
-2. `status::doing`: an agent took it. In Claude Code, `/issue <n>` works it in its own worktree on your Claude subscription; run two or three at once. Assigning or mentioning Duo's Developer flow works it on GitLab instead.
-3. `status::review`: the MR is open. Duo's Code Review flow reviews it when requested as reviewer.
-4. `status::test`: your turn. Try it, then comment what to change or merge.
+1. `status::intent`: proposed (template `Intent`). You accept it by moving it to todo.
+2. `status::todo`: accepted, ready to pick up. The agent turns it into `intent.md`, `spec.md` and `plan.md` in `docs/changes/<issue>-<slug>/`, moving the issue through `status::spec` and `status::plan`, and comments a summary with links. For a risky change (auth, infra, CI config, money-spending paths, stored record shapes, a `priority::1` feature) it waits at `status::plan` until you approve the plan in a comment.
+3. `status::doing`: an agent took it. In Claude Code, `/issue <n>` works it in its own worktree on your Claude subscription; run two or three at once. Assigning or mentioning Duo's Developer flow works it on GitLab instead.
+4. `status::review`: the MR is open. Duo's Code Review flow reviews it when requested as reviewer.
+5. `status::test`: your turn. Try it, then comment what to change or merge. `verify.md` in the change folder says how it was proven.
 
 The scout flow's daily comment on the `digest` issue lists what shipped and what waits for you. Duo triggers and the scout schedule are paused while Duo credits are paused (`infra/Pulumi.prod.yaml`).
 
