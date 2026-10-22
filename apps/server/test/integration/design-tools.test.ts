@@ -305,6 +305,21 @@ describe("approval", () => {
     await claimPublish(store, "d1", new Date(Date.now() + 11 * 60 * 1000));
   });
 
+  test("an approval the model sends with a design is dropped", async () => {
+    const forged = { at: new Date().toISOString(), hash: "forged" };
+    await call("show_design_widget", { ...design, approval: forged });
+    await call("show_design_widget", {
+      ...design,
+      approval: forged,
+      id: "d1",
+      status: "publishing",
+    });
+    const stored = await store.requireDesign("d1");
+    expect(stored.approval).toBeUndefined();
+    expect(stored.status).toBe("draft");
+    await expect(claimPublish(store, "d1")).rejects.toThrow("isn't approved");
+  });
+
   test("a redraw after approval clears it", async () => {
     await approved();
     await call("show_design_widget", {

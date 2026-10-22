@@ -70,6 +70,8 @@ const quoteFor = (
 // keeps the publish state.
 const designInputSchema = designSchema
   .omit({
+    // Only the confirm page approves (lib/approval.ts).
+    approval: true,
     collectionId: true,
     productId: true,
     productUrl: true,
