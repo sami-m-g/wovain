@@ -1,6 +1,5 @@
 import { createAuth } from "./auth/auth.ts";
 import type { Auth } from "./auth/auth.ts";
-import { loadAuthEnv, siteUrl } from "./auth/env.ts";
 import { loadEnv } from "./env.ts";
 import type { Env } from "./env.ts";
 import { createStorage } from "./firebase.ts";
@@ -83,14 +82,12 @@ const connectFor = (
 // project it runs in: Firestore and the private Storage bucket. Nothing
 // connects until the first request.
 export const createRuntime = () => {
-  const authEnv = loadAuthEnv();
-  const site = siteUrl(authEnv);
-  const env = loadEnv({ WOVAIN_ICON_URL: `${site}/icon.png`, ...process.env });
-  const auth = createAuth(authEnv);
+  const env = loadEnv();
+  const site = env.WOVAIN_SITE_URL;
+  const auth = createAuth(env);
   const storage = createStorage();
   return {
     auth,
-    authEnv,
     // Merchants confirm approvals in the browser (routes/confirm.ts).
     confirm: createBrowserConfirm({
       db: storage.db,

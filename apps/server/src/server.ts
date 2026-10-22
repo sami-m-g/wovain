@@ -73,17 +73,9 @@ export const createServer = (
   const server = new McpServer(
     {
       // The logo ChatGPT shows for the connector.
-      ...(env.WOVAIN_ICON_URL === undefined
-        ? {}
-        : {
-            icons: [
-              {
-                mimeType: "image/png",
-                sizes: ["512x512"],
-                src: env.WOVAIN_ICON_URL,
-              },
-            ],
-          }),
+      icons: [
+        { mimeType: "image/png", sizes: ["512x512"], src: env.WOVAIN_ICON_URL },
+      ],
       name: "wovain",
       title: "wovain",
       version: "0.1.0",

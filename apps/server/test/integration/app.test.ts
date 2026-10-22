@@ -3,24 +3,22 @@ import { z } from "zod";
 
 import { createApp } from "../../src/app.ts";
 import { createAuth } from "../../src/auth/auth.ts";
-import { loadAuthEnv } from "../../src/auth/env.ts";
 import { loadEnv } from "../../src/env.ts";
 import { testStorage } from "../helpers.ts";
 
 const site = "http://localhost:3000";
 const issuer = "https://wovain.authkit.app";
 
-const authEnv = loadAuthEnv({
+const env = loadEnv({
   WORKOS_API_KEY: "sk_test",
   WORKOS_AUTHKIT_DOMAIN: issuer,
   WOVAIN_ALLOWED_EMAILS: "owner@example.com",
   WOVAIN_SITE_URL: site,
 });
 const app = createApp({
-  auth: createAuth(authEnv),
-  authEnv,
+  auth: createAuth(env),
   connect: undefined,
-  env: loadEnv({}),
+  env,
   storage: testStorage(),
 });
 

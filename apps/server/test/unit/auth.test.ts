@@ -7,7 +7,7 @@ import {
   orNullIfMissing,
   requireMcpAuth,
 } from "../../src/auth/auth.ts";
-import { loadAuthEnv } from "../../src/auth/env.ts";
+import { loadEnv } from "../../src/env.ts";
 
 const site = "http://localhost:3000";
 const issuer = "https://wovain.authkit.app";
@@ -20,7 +20,7 @@ const users = new Map([
   ["user_unverified", { email: "owner@example.com", emailVerified: false }],
 ]);
 
-const authEnv = loadAuthEnv({
+const env = loadEnv({
   WORKOS_AUTHKIT_DOMAIN: issuer,
   WOVAIN_ALLOWED_EMAILS: "Owner@Example.com",
   WOVAIN_SITE_URL: site,
@@ -29,7 +29,7 @@ const keys = createLocalJWKSet({
   keys: [{ ...(await exportJWK(publicKey)), alg: "RS256" }],
 });
 
-const auth = createAuth(authEnv, {
+const auth = createAuth(env, {
   findUser: async (userId) => {
     if (userId === "user_outage") {
       throw new Error("WorkOS is down");
@@ -120,7 +120,7 @@ describe("OAuth for ChatGPT", () => {
 
   test("answers 500 when AuthKit's keys can't be fetched", async () => {
     const unreachable = requireMcpAuth(
-      createAuth(authEnv, {
+      createAuth(env, {
         findUser: async () => await Promise.resolve(null),
         keys: async () => await Promise.reject(new TypeError("fetch failed")),
       }),
@@ -131,7 +131,7 @@ describe("OAuth for ChatGPT", () => {
 
   test("refuses every token while sign-in is off", async () => {
     const off = requireMcpAuth(
-      createAuth(loadAuthEnv({ WOVAIN_SITE_URL: site })),
+      createAuth(loadEnv({ WOVAIN_SITE_URL: site })),
       reached
     );
     expect(await statusOf(await tokenFor("user_owner"), off)).toBe(401);
@@ -156,6 +156,32 @@ describe("allowlist", () => {
     await expect(statusOf(await tokenFor("user_outage"))).rejects.toThrow(
       "WorkOS is down"
     );
+  });
+});
+
+describe("loadEnv", () => {
+  test("derives the site and icon URLs", () => {
+    expect(loadEnv({})).toMatchObject({
+      WOVAIN_ICON_URL: `${site}/icon.png`,
+      WOVAIN_SITE_URL: site,
+    });
+    expect(loadEnv({ WOVAIN_SITE_URL: "https://w.example/" })).toMatchObject({
+      WOVAIN_ICON_URL: "https://w.example/icon.png",
+      WOVAIN_SITE_URL: "https://w.example",
+    });
+    const icon = "https://cdn.example/i.png";
+    expect(loadEnv({ WOVAIN_ICON_URL: icon }).WOVAIN_ICON_URL).toBe(icon);
+  });
+
+  test("treats empty values as unset and normalizes the allowlist", () => {
+    const loaded = loadEnv({
+      WOVAIN_ALLOWED_EMAILS: " A@x.com, ,b@x.com",
+      WOVAIN_SITE_URL: "",
+    });
+    expect(loaded.WOVAIN_ALLOWED_EMAILS).toEqual(
+      new Set(["a@x.com", "b@x.com"])
+    );
+    expect(loaded.WOVAIN_SITE_URL).toBe(site);
   });
 });
 

@@ -399,9 +399,9 @@ wovain/
 │   │   │   ├── playbooks/       # design.ts, ads.ts, campaign.ts; index.ts: instructions, get_playbook, prompts
 │   │   │   ├── tools/           # settings.ts, design.ts, art.ts, publish.ts, judge.ts, research.ts, ads.ts, campaign.ts
 │   │   │   ├── widgets.ts         # registers the ui:// widget resources
-│   │   │   ├── env.ts           # zod-checked server keys
+│   │   │   ├── env.ts           # zod-checked keys, site URL, allowlist
 │   │   │   ├── store.ts         # records in Firestore, artwork in Cloud Storage
-│   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
+│   │   │   ├── auth/            # auth.ts (AuthKit token check, allowlist)
 │   │   │   ├── telemetry.ts     # OpenTelemetry Node tracer, on when the OTLP endpoint is set
 │   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan, art-plan (fal request per art piece), publish-design (the drop publish on Fourthwall), ai (Genkit on Nebius), design-judge, tavily (Tavily SDK calls, credit meter), trends (trend research, trademark screen), score (the ranking formula), market (listings, own shop, competitor crawl), niche-brief (Tavily Research), qloo
 │   │   ├── test/                # unit/ (auth chain, economics, images, fal, design judge, trends, telemetry), integration/ (store, tools, routes on the emulators), live/ (real Nemotron and Tavily calls, opt-in), fixtures/

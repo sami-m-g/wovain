@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { createApp } from "../../src/app.ts";
 import { createAuth } from "../../src/auth/auth.ts";
-import { loadAuthEnv } from "../../src/auth/env.ts";
 import { loadEnv } from "../../src/env.ts";
 import { createBrowserSignIn } from "../../src/lib/browser-sign-in.ts";
 import { localCipher } from "../../src/lib/cipher.ts";
@@ -21,7 +20,7 @@ const setup = () => {
   const storage = testStorage();
   const fake = fakeUpstream("fourthwall");
   const connections = createConnections(storage.db, localCipher());
-  const authEnv = loadAuthEnv({
+  const env = loadEnv({
     WORKOS_AUTHKIT_DOMAIN: "https://auth.upstream.test",
     WOVAIN_SITE_URL: site,
   });
@@ -41,10 +40,9 @@ const setup = () => {
     userOf: fake.ownerOf,
   });
   routes.app = createApp({
-    auth: createAuth(authEnv),
-    authEnv,
+    auth: createAuth(env),
     connect: { signIn, upstream },
-    env: loadEnv({}),
+    env,
     storage,
   });
   const { app } = routes;
