@@ -2,20 +2,26 @@
 // auto-merge it. GitLab still waits for a green pipeline; these are the
 // limits on top of that. Anything that fails stays for a human.
 
-// Auto-merge may only touch application source and its tests. Everything
-// else (the loop itself, infra, CI, config, dependencies, agent instructions,
-// docs) always needs a human.
+// Auto-merge may only touch low-risk application source and its tests: the
+// server's helpers and tools, the widgets and the shared schemas. Everything
+// else (the loop itself, infra, CI, config, dependencies, agent instructions
+// and playbooks, docs, the server's entry points) always needs a human.
 const ALLOWED: RegExp[] = [
-  /^apps\/server\/src\//u,
+  /^apps\/server\/src\/(?:lib|tools)\//u,
   /^apps\/server\/test\/(?:unit|integration)\//u,
   /^apps\/widgets\/src\//u,
   /^packages\/shared\/src\//u,
 ];
-// Inside the allowed trees: sign-in, routes, storage and any config file.
+// Inside the allowed trees: anything that signs in, holds credentials, spends
+// money or launches ads, what the scout reads (request-errors, tool-result),
+// network guards, and any config file.
 const DENIED: RegExp[] = [
-  /^apps\/server\/src\/auth\//u,
-  /^apps\/server\/src\/routes\//u,
-  /^apps\/server\/src\/(?:app|firebase|store)\.ts$/u,
+  /^apps\/server\/src\/(?:auth|routes)\//u,
+  /^apps\/server\/src\/lib\/(?:launch-approvals|connections|cipher|oauth-client|upstream|approval|request-errors|tool-result|fetch-[^/]+)\.ts$/u,
+  /^apps\/server\/src\/lib\/(?:meta|browser|autopilot)-[^/]+$/u,
+  /^apps\/server\/src\/lib\/(?:optimizer|autopilot)\//u,
+  /^apps\/server\/src\/tools\/(?:meta|connections|campaign|publish|autopilot)\.ts$/u,
+  /^packages\/shared\/src\/optimizer\//u,
   /(?:^|\/)\.[^/]+/u,
   /\.config\.[cm]?[jt]sx?$/u,
   /(?:^|\/)tsconfig[^/]*\.json$/u,
@@ -26,8 +32,10 @@ const DENIED: RegExp[] = [
 export const autoMergeable = (path: string) =>
   ALLOWED.some((re) => re.test(path)) && !DENIED.some((re) => re.test(path));
 
+// Every MR the loop shepherds fixes a scout issue, so these are the scout's
+// limits.
 export const MAX_FILES = 10;
-export const MAX_LINES = 300;
+export const MAX_LINES = 100;
 
 export interface Candidate {
   // Changed paths, old and new (a rename counts twice).
@@ -43,8 +51,10 @@ export interface Candidate {
   reviewedSha: string | undefined;
   // Duo Code Review's state in the reviewers API.
   reviewerState: string | undefined;
-  // Review threads that are still open, from every discussion page.
+  // Duo Code Review's threads that are still open, from every page.
   unresolved: number;
+  // People other than Duo and the loop who wrote on the MR.
+  outsiders: string[];
   // Why the MR isn't provably the loop's own work; empty when it is.
   provenance: string[];
 }
@@ -54,12 +64,43 @@ const DONE = new Set(["reviewed", "approved", "requested_changes"]);
 export const reviewDone = (state: string | undefined) =>
   state !== undefined && DONE.has(state);
 
-// Discussions with a resolvable note that isn't resolved.
+interface ThreadNote {
+  author: { username: string };
+  resolvable: boolean;
+  resolved: boolean;
+  system: boolean;
+}
+
+// Duo Code Review's discussions with a resolvable note that isn't resolved.
+// Threads anyone else starts never steer the Developer flow; they stop
+// auto-merge through outsiders() instead.
 export const openThreads = (
-  discussions: { notes: { resolvable: boolean; resolved: boolean }[] }[]
+  discussions: { notes: ThreadNote[] }[],
+  reviewer: string
 ) =>
-  discussions.filter((d) => d.notes.some((n) => n.resolvable && !n.resolved))
-    .length;
+  discussions.filter(
+    (d) =>
+      d.notes[0]?.author.username === reviewer &&
+      d.notes.some((n) => n.resolvable && !n.resolved)
+  ).length;
+
+// Who wrote a note on the MR besides Duo Code Review, the Developer flow and
+// the loop. GitLab's own system notes don't count.
+export const outsiders = (
+  discussions: { notes: ThreadNote[] }[],
+  allowed: string[]
+) => {
+  const known = new Set(allowed);
+  return [
+    ...new Set(
+      discussions.flatMap((d) =>
+        d.notes.flatMap((n) =>
+          n.system || known.has(n.author.username) ? [] : [n.author.username]
+        )
+      )
+    ),
+  ];
+};
 
 // Every reason the MR can't be auto-merged yet; empty means go.
 export const blockers = (mr: Candidate): string[] => {
@@ -87,7 +128,12 @@ export const blockers = (mr: Candidate): string[] => {
     reasons.push("Duo Code Review hasn't reviewed the head commit");
   }
   if (mr.unresolved > 0) {
-    reasons.push(`${mr.unresolved} unresolved review thread(s)`);
+    reasons.push(`${mr.unresolved} unresolved Duo review thread(s)`);
+  }
+  if (mr.outsiders.length > 0) {
+    reasons.push(
+      `has notes from outside the loop: ${mr.outsiders.map((u) => `@${u}`).join(", ")}`
+    );
   }
   return reasons;
 };

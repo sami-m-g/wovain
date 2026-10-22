@@ -3,12 +3,20 @@ import { REQUESTS } from "./google.ts";
 import type { Google, Range } from "./google.ts";
 import type { O11y } from "./o11y.ts";
 import { fingerprintIn, issueBody, marker, verdictNote } from "./report.ts";
-import { decideVerification, groupSignals } from "./signals.ts";
+import {
+  decideVerification,
+  groupSignals,
+  humanReasons,
+  titleOf,
+} from "./signals.ts";
 import type { Problem, Window } from "./signals.ts";
 
 // The scout: reads production's errors, files one intent per new problem for
 // the Duo Developer flow, and after a fix ships checks that the error rate
-// dropped. Credits are spent only by the Developer flow, so the scout files
+// dropped. Issues are built only from allowlisted, server-controlled fields
+// (signals.ts); a problem that fails the allowlist, or that only GitLab
+// Observability saw, is filed as status::intent for a human and never handed
+// to Duo. Credits are spent only by the Developer flow, so the scout files
 // at most one issue a run and keeps at most MAX_ACTIVE problems with Duo.
 
 export const DEVELOPER = "duo-developer-gitlab-ai-hackathon";
@@ -63,7 +71,12 @@ const scoutIssues = async (gitlab: GitLab) =>
 // runs the "assign" trigger for a human's assignment (the token's owner).
 // The marker note records the assignment, so the shepherd can tell that the
 // Duo session behind an MR started from it.
-const handToDuo = async (gitlab: GitLab, issue: number) => {
+type Filer = Pick<
+  GitLab,
+  "createIssue" | "noteOnIssue" | "updateIssue" | "userId"
+>;
+
+const handToDuo = async (gitlab: Filer, issue: number) => {
   const id = await gitlab.userId(DEVELOPER);
   await gitlab.noteOnIssue(
     issue,
@@ -73,23 +86,32 @@ const handToDuo = async (gitlab: GitLab, issue: number) => {
   await gitlab.updateIssue(issue, { assignee_ids: [id] });
 };
 
-const fileProblem = async (
-  gitlab: GitLab,
+const statusOf = (forHuman: string[], withDuo: boolean) => {
+  if (forHuman.length > 0) {
+    return "status::intent";
+  }
+  return withDuo ? "status::doing" : "status::todo";
+};
+
+export const fileProblem = async (
+  gitlab: Filer,
   problem: Problem,
   range: Range,
   active: number
 ) => {
-  const withDuo = active < MAX_ACTIVE;
+  const forHuman = humanReasons(problem);
+  const withDuo = forHuman.length === 0 && active < MAX_ACTIVE;
+  const status = statusOf(forHuman, withDuo);
   const issue = await gitlab.createIssue({
-    description: issueBody(problem, range),
+    description: issueBody(problem, range, forHuman),
     labels: [
       "scout",
       "type::bug",
       "stage::monitor",
-      withDuo ? "status::doing" : "status::todo",
+      status,
       ...(withDuo ? ["agent::duo"] : []),
     ].join(","),
-    title: `scout: ${problem.title}`,
+    title: titleOf(problem),
   });
   if (withDuo) {
     await handToDuo(gitlab, issue.iid);
@@ -143,7 +165,8 @@ const regress = async (gitlab: GitLab, issue: Issue, note: string) => {
   // Duo's first try plus each retry; this regression counts too.
   const tries =
     notes.filter((n) => n.body.includes(marker("regressed"))).length + 1;
-  const retry = tries < MAX_ATTEMPTS;
+  // Only an issue the scout gave Duo goes back to Duo.
+  const retry = tries < MAX_ATTEMPTS && issue.labels.includes("agent::duo");
   await gitlab.noteOnIssue(issue.iid, note);
   await gitlab.updateIssue(issue.iid, {
     state_event: "reopen",

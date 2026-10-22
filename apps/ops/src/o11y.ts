@@ -1,5 +1,5 @@
 import type { Range } from "./google.ts";
-import { normalize, tally } from "./signals.ts";
+import { tally } from "./signals.ts";
 import type { Signal } from "./signals.ts";
 
 // GitLab Observability, which runs SigNoz: the server's traces arrive over
@@ -7,6 +7,12 @@ import type { Signal } from "./signals.ts";
 // API key in SIGNOZ-API-KEY (docs.gitlab.com, operations/observability/
 // api_access). The v5 query shape follows SigNoz's search-traces docs; the
 // response is read loosely, since SigNoz documents no response schema.
+//
+// The OTLP endpoint takes anyone's data until token enforcement is on
+// (docs/transcend.md), so resource attributes here prove nothing. The scout
+// reads no text from it: only the error.type and status of the server's own
+// mcp.request span, each checked against an allowlist, and a problem only
+// GitLab Observability saw goes to a human, never to Duo (signals.ts).
 
 const LIMIT = 500;
 
@@ -32,20 +38,10 @@ const rowsOf = (value: unknown): Record<string, unknown>[] => {
   return Object.values(record).flatMap(rowsOf);
 };
 
-const text = (row: Record<string, unknown>, ...keys: string[]) => {
-  for (const key of keys) {
-    const value = row[key];
-    if (typeof value === "string" && value !== "") {
-      return value;
-    }
-  }
-  return "";
-};
-
 export const createO11y = (url: string, apiKey: string) => {
   const raw = async (
     range: Range,
-    signal: "logs" | "traces",
+    signal: "traces",
     expression: string,
     fields: string[]
   ) => {
@@ -84,48 +80,24 @@ export const createO11y = (url: string, apiKey: string) => {
   };
 
   return {
-    // Spans with an error status: the MCP request span names the tool, and
-    // error.type is the error's class (routes/mcp.ts records only that).
+    // Error spans from the server's mcp.request span (routes/mcp.ts), which
+    // only /mcp records. error.type is set when the handler threw, and Hono
+    // then answers 500.
     errors: async (range: Range): Promise<Signal[]> => {
-      const [spans, logs] = await Promise.all([
-        raw(range, "traces", "service.name = 'wovain' AND has_error = true", [
-          "name",
-          "mcp.tool",
-          "error.type",
-        ]),
-        raw(
-          range,
-          "logs",
-          "service.name = 'wovain' AND severity_text IN ('ERROR', 'FATAL')",
-          ["body"]
-        ),
-      ]);
-      return [
-        ...tally(
-          "GitLab Observability traces",
-          spans.map((row) => {
-            const what = [
-              text(row, "name"),
-              text(row, "mcp.tool"),
-              text(row, "error.type"),
-            ]
-              .filter((part) => part !== "")
-              .join(" ");
-            return {
-              key: `span ${normalize(what)}`,
-              sample: what,
-              title: `Error span: ${what}`,
-            };
-          })
-        ),
-        ...tally(
-          "GitLab Observability logs",
-          logs.map((row) => {
-            const body = text(row, "body");
-            return { key: `log ${normalize(body)}`, sample: body, title: body };
-          })
-        ),
-      ];
+      const spans = await raw(
+        range,
+        "traces",
+        "service.name = 'wovain' AND deployment.environment.name = 'production' AND name = 'mcp.request' AND has_error = true",
+        ["name", "error.type", "http.response.status_code"]
+      );
+      return tally(
+        "GitLab Observability traces",
+        spans.map((row) => ({
+          errorClass: row["error.type"],
+          route: row["name"] === "mcp.request" ? "ALL /mcp" : undefined,
+          status: Number(row["http.response.status_code"] ?? 500),
+        }))
+      );
     },
   };
 };
