@@ -1,4 +1,5 @@
 import "./duo.ts";
+import "./workos.ts";
 import { readFileSync } from "node:fs";
 
 import * as gcp from "@pulumi/gcp";
@@ -136,8 +137,11 @@ const secretNames = [
   "fal-billing-key",
   "fal-key",
   "meta-system-user-token",
+  "nebius-api-key",
   "otel-exporter-otlp-endpoint",
   "otel-exporter-otlp-headers",
+  "qloo-api-key",
+  "tavily-api-key",
   "workos-api-key",
   "wovain-allowed-emails",
 ];

@@ -10,6 +10,11 @@ const envSchema = z.object({
   FAL_BILLING_KEY: z.string().optional(),
   FAL_KEY: z.string().optional(),
   META_SYSTEM_USER_TOKEN: z.string().optional(),
+  // Optional until the tools that call them land: Nebius AI Studio, Qloo's
+  // Taste API and Tavily search.
+  NEBIUS_API_KEY: z.string().optional(),
+  QLOO_API_KEY: z.string().optional(),
+  TAVILY_API_KEY: z.string().optional(),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
   // The built widgets beside this package: src/ in development and tests,
