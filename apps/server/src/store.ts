@@ -199,6 +199,7 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
         ONLY,
         applySettingsPatch(await settings(), patch)
       ),
+    userId,
   };
 };
 

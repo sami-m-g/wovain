@@ -21,6 +21,7 @@ const app = createApp({
   authEnv,
   env: loadEnv({}),
   storage: testStorage(),
+  upstream: undefined,
 });
 
 const request = async (pathname: string, init?: RequestInit) =>
