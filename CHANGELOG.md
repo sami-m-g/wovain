@@ -1,3 +1,10 @@
+# [0.24.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.23.0...v0.24.0) (2026-10-22)
+
+
+### Features
+
+* **ops:** gate duo fix ci/cd and code review on real need ([692af76](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/692af766804e542c4737141d473c06e9dae98501))
+
 # [0.23.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.22.0...v0.23.0) (2026-10-22)
 
 
