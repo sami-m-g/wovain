@@ -71,6 +71,7 @@ Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 | Runtime and package manager | Node 24 (runs `.ts` by type stripping, no bundle step) and pnpm workspaces | 24 / 12.3.4 | https://nodejs.org/api/typescript.html, https://pnpm.io |
 | MCP server | `@modelcontextprotocol/server` v2 over Streamable HTTP at `/mcp` | 2.3.1 | https://github.com/modelcontextprotocol/typescript-sdk |
 | Web server | Hono on Node through `@hono/node-server`: `/mcp`, the OAuth metadata, the home page and `public/` | 4.13.13 / 2.1.5 | https://hono.dev |
+| Image headers | `sharp` (libvips, prebuilt per platform): format, size and alpha of uploaded artwork, with every loader but PNG, JPEG and WebP blocked | 0.35.5 | https://sharp.pixelplumbing.com/api-input#metadata |
 | Sign-in and OAuth | WorkOS AuthKit (hosted authorization server); `@workos-inc/node` and `jose` on the server | 11.0.0, 6.2.12 | https://workos.com/docs/authkit/mcp |
 | Widget protocol | MCP Apps (`@modelcontextprotocol/ext-apps`) | 2.0.3 | https://github.com/modelcontextprotocol/ext-apps |
 | Widget UI | React 19 + `@openai/apps-sdk-ui` + Tailwind CSS 4 (its peer) | 19.3 / 0.2.2 / 4.3 | https://developers.openai.com/plugins/build/chatgpt-ui |

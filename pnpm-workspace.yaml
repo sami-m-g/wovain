@@ -12,3 +12,8 @@ allowBuilds:
   lefthook: true
   protobufjs: false
   re2: false
+  # Image headers (apps/server/src/lib/image.ts). Its prebuilt libvips comes
+  # as an optional @img/sharp-<os>-<cpu> package that pnpm picks per machine
+  # from the lockfile, so App Hosting's Linux build gets linux-x64. Allowed in
+  # case a future version builds from source.
+  sharp: true

@@ -200,7 +200,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         fileUrl: artwork?.download_url,
         url,
       });
-      const info = readImageInfo(bytes);
+      const info = await readImageInfo(bytes);
       if (info === undefined) {
         throw new Error("the image isn't a PNG, JPEG or WebP");
       }
