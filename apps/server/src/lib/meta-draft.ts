@@ -1,8 +1,10 @@
 import { randomBytes } from "node:crypto";
 
+import { adCtaSchema } from "@wovain/shared/ad";
 import { z } from "zod";
 
 import type { DraftPlan } from "./campaign-plan.ts";
+import { creativeMedia } from "./meta-staged.ts";
 import type { Staged } from "./meta-staged.ts";
 
 // What wovain lets the agent send to Meta's Ads MCP for the campaign draft:
@@ -50,6 +52,72 @@ const jsonSpec = <T extends z.ZodType>(schema: T) =>
     }, schema)
     .transform((value) => JSON.stringify(value));
 
+// Creatives, one strict shape each (the Meta Ads MCP's ads_create_creative,
+// which maps them to the Marketing API's object_story_spec and
+// asset_feed_spec). Media only by the image hash or video ID of an upload
+// wovain recorded, never image_url (Meta would fetch any URL into the
+// account). Placement asset customization, catalog, boosted-post and
+// partnership shapes aren't wovain's and are refused. Text limits are the
+// concept's.
+const imageHash = z.string().regex(/^[\da-f]{32}$/iu);
+const headline = z.string().min(1).max(40);
+const primaryText = z.string().min(1).max(500);
+const creativeBase = {
+  ...common,
+  call_to_action_type: adCtaSchema,
+  instagram_user_id: id.optional(),
+  link_url: httpsUrl,
+  name: name.optional(),
+  page_id: id,
+  self_ai_disclosure: z.enum(["OPT_IN", "OPT_OUT"]),
+};
+const creativeShapes = z.union([
+  // One video, with an uploaded image as its thumbnail. The headline rides
+  // in the message: the connector maps a video headline to Meta's retired
+  // call-to-action link title.
+  z.strictObject({
+    ...creativeBase,
+    image_hash: imageHash,
+    message: z.string().min(1).max(2000),
+    video_id: id,
+  }),
+  // One image (object_story_spec.link_data).
+  z.strictObject({
+    ...creativeBase,
+    headline,
+    image_hash: imageHash,
+    message: primaryText,
+  }),
+  // Multi-media (asset_feed_spec): 2 to 10 uploaded visuals and up to 5
+  // texts and headlines; Meta picks per placement.
+  z.strictObject({
+    ...creativeBase,
+    headlines: z.array(headline).min(1).max(5),
+    multi_media: z
+      .array(
+        z.union([
+          z.strictObject({ image_hash: imageHash }),
+          z.strictObject({ video_id: id }),
+        ])
+      )
+      .min(2)
+      .max(10),
+    primary_texts: z.array(primaryText).min(1).max(5),
+  }),
+  // Static carousel (link_data.child_attachments): 2 to 10 image cards, each
+  // with its own product link.
+  z.strictObject({
+    ...creativeBase,
+    cards: z
+      .array(
+        z.strictObject({ headline, image_hash: imageHash, link: httpsUrl })
+      )
+      .min(2)
+      .max(10),
+    message: primaryText,
+  }),
+]);
+
 const drafts = {
   ads_create_ad: z.strictObject({
     ...common,
@@ -88,18 +156,7 @@ const drafts = {
     objective: z.literal("OUTCOME_SALES"),
     special_ad_categories: jsonSpec(z.tuple([])).optional(),
   }),
-  ads_create_creative: z.strictObject({
-    ...common,
-    call_to_action_type: z.literal("SHOP_NOW"),
-    image_hash: z.string().regex(/^[\da-f]{32}$/iu),
-    instagram_user_id: id.optional(),
-    link_url: httpsUrl,
-    message: z.string().min(1).max(2000),
-    name: name.optional(),
-    page_id: id,
-    self_ai_disclosure: z.enum(["OPT_IN", "OPT_OUT"]),
-    video_id: id,
-  }),
+  ads_create_creative: creativeShapes,
   ads_creative_upload_media: z.strictObject({
     ...common,
     media_type: z.enum(["IMAGE", "VIDEO"]),
@@ -126,8 +183,9 @@ const has = (list: readonly string[], value: unknown) =>
   new Set(list).has(String(value));
 
 // Plan checks the schemas can't make alone, per tool. An empty string means
-// the arguments fit: uploads only of the added ads' media; creatives only
-// with an added product's link and media wovain uploaded; ad sets only under
+// the arguments fit: uploads only of the approved concepts' media; creatives,
+// whatever their shape, only with added products' links and media wovain
+// uploaded; ad sets only under
 // the staged campaign; ads only joining a staged ad set and a creative
 // wovain made.
 const planChecks: Record<DraftTool, (args: Args, plan: Plan) => string> = {
@@ -148,20 +206,25 @@ const planChecks: Record<DraftTool, (args: Args, plan: Plan) => string> = {
       : "campaign_id isn't the campaign wovain staged",
   ads_create_campaign: () => "",
   ads_create_creative: (args, { linkUrls, staged }) => {
-    if (!has(linkUrls, args["link_url"])) {
-      return "link_url isn't an added product's link (with the plan's URL tags)";
+    const media = creativeMedia(args);
+    if (!media.links.every((link) => has(linkUrls, link))) {
+      return "a link isn't an added product's link (with the plan's URL tags)";
     }
-    if (!has(staged?.videos ?? [], args["video_id"])) {
-      return "video_id isn't a video wovain uploaded";
+    if (!media.videoIds.every((video) => has(staged?.videos ?? [], video))) {
+      return "a video_id isn't a video wovain uploaded";
     }
-    return has(staged?.images ?? [], args["image_hash"])
-      ? ""
-      : "image_hash isn't an image wovain uploaded";
+    if (!media.imageHashes.every((hash) => has(staged?.images ?? [], hash))) {
+      return "an image_hash isn't an image wovain uploaded";
+    }
+    const pool = [...media.imageHashes, ...media.videoIds];
+    return new Set(pool).size < pool.length && "multi_media" in args
+      ? "multi_media repeats a visual"
+      : "";
   },
   ads_creative_upload_media: (args, { mediaUrls }) =>
     has(mediaUrls, args["media_url"])
       ? ""
-      : "media_url isn't one of the added ads' images or videos",
+      : "media_url isn't one of the approved ads' images or videos",
 };
 
 // The arguments wovain sends for one draft call, or an error naming what it

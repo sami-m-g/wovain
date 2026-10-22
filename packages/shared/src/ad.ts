@@ -31,7 +31,7 @@ const carouselCardSchema = z.object({
 });
 
 // Shopping CTAs Meta accepts on a sales ad.
-const adCtaSchema = z.enum([
+export const adCtaSchema = z.enum([
   "SHOP_NOW",
   "BUY_NOW",
   "ORDER_NOW",

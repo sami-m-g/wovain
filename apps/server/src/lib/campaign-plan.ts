@@ -2,6 +2,7 @@ import { breakeven } from "@wovain/shared/economics";
 import type { Settings } from "@wovain/shared/settings";
 
 import type { Store } from "../store.ts";
+import { approvedAds } from "./ad-plan.ts";
 
 // Each link carries the ad's ID so Fourthwall sales can be matched to the ad.
 export const URL_TAGS =
@@ -43,34 +44,53 @@ export const addedProducts = async (store: Store, settings: Settings) => {
 const tagged = (link: string) => [`${link}?${URL_TAGS}`, `${link}&${URL_TAGS}`];
 
 // What a campaign draft may contain, from the plan: the budget in cents, the
-// product links (each also with the URL tags when the merchant keeps them on),
-// the media URLs of the added ads, and the campaign wovain staged, if any.
+// product links (the added products' and their carousel cards', each also
+// with the URL tags when the merchant keeps them on), the media URLs of the
+// approved concepts (visuals, carousel cards and the static image), the
+// approved ads themselves (the launch approval covers them), and the campaign
+// wovain staged, if any.
 export const draftPlan = async (store: Store, settings: Settings) => {
   const [{ dailyBudget, products }, saved] = await Promise.all([
     addedProducts(store, settings),
     store.getCampaign(),
   ]);
-  const links = products.flatMap(({ design }) =>
-    design.productUrl === undefined ? [] : [design.productUrl]
+  const loaded = new Map(products.map(({ design }) => [design.id, design]));
+  const ads = await Promise.all(
+    products.map(async ({ ad }) => ({
+      ads: await approvedAds(store, ad, loaded),
+      designId: ad.designId,
+    }))
   );
+  const metaAds = ads.flatMap((product) => product.ads);
+  const links = [
+    ...new Set([
+      ...products.flatMap(({ design }) =>
+        design.productUrl === undefined ? [] : [design.productUrl]
+      ),
+      ...metaAds.flatMap((ad) =>
+        (ad.cards ?? []).flatMap((card) =>
+          card.link === undefined ? [] : [card.link]
+        )
+      ),
+    ]),
+  ];
   return {
+    ads,
     campaignId: saved?.campaignId,
     dailyBudgetCents: Math.round(dailyBudget * 100),
     linkUrls: settings.rules.tagUtmContent
       ? [...links, ...links.flatMap((link) => tagged(link))]
       : links,
-    mediaUrls: products.flatMap(({ ad }) => [
-      ad.staticImage.url,
-      ...ad.concepts.flatMap((concept) =>
-        concept.status === "approved"
-          ? concept.assets.flatMap((asset) =>
-              asset.status === "ready" && asset.url !== undefined
-                ? [asset.url]
-                : []
-            )
-          : []
-      ),
-    ]),
+    mediaUrls: [
+      ...new Set([
+        ...products.map(({ ad }) => ad.staticImage.url),
+        ...metaAds.flatMap((ad) => [
+          ...ad.images.map((image) => image.url),
+          ...ad.videos.map((video) => video.url),
+          ...(ad.cards ?? []).map((card) => card.imageUrl),
+        ]),
+      ]),
+    ],
   };
 };
 export type DraftPlan = Awaited<ReturnType<typeof draftPlan>>;

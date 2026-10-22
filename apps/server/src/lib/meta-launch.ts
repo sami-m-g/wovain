@@ -1,5 +1,7 @@
+import { z } from "zod";
+
 import { canonicalJson } from "./meta-staged.ts";
-import type { Staged } from "./meta-staged.ts";
+import type { Staged, StagedCreative } from "./meta-staged.ts";
 
 // launch_campaign's last check before spending: the staged draft and its
 // creatives read back from Meta must hold exactly what wovain recorded, and
@@ -58,11 +60,16 @@ export const CHECKED_FIELDS = [
   ...new Set([...DAILY, ...CAMPAIGN_CAPS, ...AD_SET_SPEND]),
 ];
 
-// The fields it reads for the creatives.
+// The fields it reads for the creatives (all in the Meta Ads MCP's
+// ads_get_creatives list): `images` and `child_attachments` carry a
+// multi-media pool's and a carousel's media and links.
 export const CREATIVE_FIELDS = [
   "link_url",
   "video_id",
   "image_hash",
+  "images",
+  "child_attachments",
+  "call_to_action_type",
   "object_story_id",
   "effective_object_story_id",
 ];
@@ -170,8 +177,91 @@ export const checkDraft = (
   };
 };
 
+// Every string under one of `keys` anywhere in a read-back creative, so a
+// value is found whether Meta returns it flat, in object_story_spec
+// (link_data, video_data, child_attachments) or in asset_feed_spec (images
+// `hash`, videos, link_urls `website_url`).
+const valuesUnder = (value: unknown, keys: ReadonlySet<string>): string[] => {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => valuesUnder(item, keys));
+  }
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+  return Object.entries(value).flatMap(([key, item]) => [
+    ...(keys.has(key) && (typeof item === "string" || typeof item === "number")
+      ? [String(item)]
+      : []),
+    ...valuesUnder(item, keys),
+  ]);
+};
+
+const HASH_KEYS = new Set(["image_hash", "hash", "thumbnail_hash"]);
+const VIDEO_KEYS = new Set(["video_id"]);
+const LINK_KEYS = new Set(["link_url", "link", "website_url"]);
+const CTA_KEYS = new Set(["call_to_action_type"]);
+
+// A call_to_action object's `type`, wherever it sits.
+const ctaTypes = (entity: Entity) =>
+  objectsWith(entity, "call_to_action").flatMap((item) => {
+    const cta = item["call_to_action"];
+    return typeof cta === "object" && cta !== null && "type" in cta
+      ? [text(cta.type)]
+      : [];
+  });
+
+const all = (values: readonly string[], within: ReadonlySet<string>) =>
+  values.every((value) => within.has(value));
+
+// What the creative's shape must show on its own: the single video or
+// image, every visual of a multi-media pool, every carousel card in order.
+const shapeFits = (entity: Entity, creative: StagedCreative) => {
+  const hashes = new Set(valuesUnder(entity, HASH_KEYS));
+  const videos = new Set(valuesUnder(entity, VIDEO_KEYS));
+  switch (creative.shape) {
+    case "video": {
+      const image = entity["image_hash"];
+      return (
+        text(entity["link_url"]) === creative.linkUrl &&
+        text(entity["video_id"]) === creative.videoIds[0] &&
+        (image === undefined || text(image) === creative.imageHashes[0])
+      );
+    }
+    case "image": {
+      return (
+        text(entity["link_url"]) === creative.linkUrl &&
+        text(entity["image_hash"]) === creative.imageHashes[0]
+      );
+    }
+    case "multi_media": {
+      return (
+        all(creative.imageHashes, hashes) && all(creative.videoIds, videos)
+      );
+    }
+    case "carousel": {
+      const children = z
+        .array(z.looseObject({ image_hash: z.unknown(), link: z.unknown() }))
+        .safeParse(entity["child_attachments"]).data;
+      return (
+        children !== undefined &&
+        children.length === creative.cards.length &&
+        creative.cards.every(
+          (card, index) =>
+            text(children[index]?.link) === card.link &&
+            text(children[index]?.image_hash) === card.imageHash
+        )
+      );
+    }
+    default: {
+      return false;
+    }
+  }
+};
+
 // The creatives read back (ads_get_creatives): each one wovain made must
-// still have its product link, video, thumbnail and Page.
+// still have its shape's media, only media wovain uploaded for it, only its
+// own product links (each an allowed one), its CTA and its Page. A value
+// the read-back doesn't show fails closed.
 export const checkCreatives = (
   reply: unknown,
   staged: Staged,
@@ -189,14 +279,22 @@ export const checkCreatives = (
     const story = text(
       entity["object_story_id"] ?? entity["effective_object_story_id"]
     );
-    const link = text(entity["link_url"]);
-    const image = entity["image_hash"];
+    const links = valuesUnder(entity, LINK_KEYS);
+    const ownLinks = new Set([
+      creative.linkUrl,
+      ...creative.cards.map((card) => card.link),
+    ]);
+    const ctas = [...valuesUnder(entity, CTA_KEYS), ...ctaTypes(entity)];
     const fits =
-      link === creative.linkUrl &&
-      allowed.has(link) &&
-      text(entity["video_id"]) === creative.videoId &&
-      (image === undefined || text(image) === creative.imageHash) &&
-      (story === "" || story.split("_")[0] === creative.pageId);
+      links.length > 0 &&
+      all(links, ownLinks) &&
+      all(links, allowed) &&
+      all(valuesUnder(entity, HASH_KEYS), new Set(creative.imageHashes)) &&
+      all(valuesUnder(entity, VIDEO_KEYS), new Set(creative.videoIds)) &&
+      ctas.length > 0 &&
+      all(ctas, new Set([creative.cta])) &&
+      (story === "" || story.split("_")[0] === creative.pageId) &&
+      shapeFits(entity, creative);
     return fits ? [] : [`creative ${creative.id} changed`];
   });
 };
