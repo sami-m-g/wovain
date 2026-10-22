@@ -12,10 +12,33 @@ import type {
 } from "@opentelemetry/sdk-trace-node";
 
 // Genkit writes each action's input and output (the design brief, the
-// prompt, the model's reply) onto its spans as genkit:input, genkit:output
-// and genkit:init. Genkit has no switch for it, so they're dropped before
-// export, like the user ids and emails the mcp.request span leaves out.
-const PAYLOAD_ATTRIBUTE = /^genkit:(?:input|output|init)$/u;
+// prompt, the model's reply) onto its spans, and its error message and stack
+// into the span's status and exception events. Genkit has no switch for it,
+// so a Genkit span exports only the attributes below, its exception events
+// without their text, and its status code without the message, like the user
+// ids and emails the mcp.request span leaves out.
+const GENKIT_ATTRIBUTES = new Set([
+  "genkit:isFailureSource",
+  "genkit:isRoot",
+  "genkit:metadata:subtype",
+  "genkit:name",
+  "genkit:path",
+  "genkit:state",
+  "genkit:type",
+]);
+
+const isGenkitSpan = (span: ReadableSpan) =>
+  "genkit:name" in span.attributes || "genkit:type" in span.attributes;
+
+const redacted = (span: ReadableSpan): Partial<ReadableSpan> => ({
+  attributes: Object.fromEntries(
+    Object.entries(span.attributes).filter(([key]) =>
+      GENKIT_ATTRIBUTES.has(key)
+    )
+  ),
+  events: span.events.map(({ name, time }) => ({ name, time })),
+  status: { code: span.status.code },
+});
 
 export class RedactingSpanProcessor implements SpanProcessor {
   readonly #inner: SpanProcessor;
@@ -29,18 +52,18 @@ export class RedactingSpanProcessor implements SpanProcessor {
   }
 
   onEnd(span: ReadableSpan): void {
-    const attributes = Object.fromEntries(
-      Object.entries(span.attributes).filter(
-        ([key]) => !PAYLOAD_ATTRIBUTE.test(key)
-      )
-    );
-    // The same span with only `attributes` swapped; everything else reads
-    // through to it.
+    if (!isGenkitSpan(span)) {
+      this.#inner.onEnd(span);
+      return;
+    }
+    // The same span with attributes, events and status swapped; everything
+    // else reads through to it.
+    const swapped = redacted(span);
     this.#inner.onEnd(
       new Proxy(span, {
         get: (target, property): unknown =>
-          property === "attributes"
-            ? attributes
+          Object.hasOwn(swapped, property)
+            ? Reflect.get(swapped, property)
             : Reflect.get(target, property, target),
       })
     );

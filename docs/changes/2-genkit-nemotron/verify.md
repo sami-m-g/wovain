@@ -10,7 +10,11 @@
   - A reply that breaks the schema throws, and so does a model error.
   - `createAi()` without a key gives no Genkit instance.
   - The brief schema rejects an oversized idea, more than 20 colors, an over-long placement, blank name or title.
-- `apps/server/test/unit/telemetry.test.ts`: a real Genkit call with a mock model, traced through `RedactingSpanProcessor` into an in-memory exporter. Genkit spans arrive with their other attributes and a valid span context, but without `genkit:input` or `genkit:output`, and the brief and the reply appear nowhere in the exported attributes. Without the processor the same test fails: the exported attributes contain the brief.
+- `apps/server/test/unit/telemetry.test.ts`: real Genkit calls with a mock model, traced through `RedactingSpanProcessor` into an in-memory exporter.
+  - On success, Genkit spans arrive with a valid span context but without `genkit:input` or `genkit:output`. The brief and the reply appear nowhere in their attributes, events or status.
+  - On a model error whose message echoes the brief, the failed Genkit spans keep the ERROR code and their exception events. The events carry no attributes, the status has no message, and the brief text appears nowhere.
+  - A span that isn't Genkit's (`mcp.request`) passes through unchanged.
+  - Without the processor, the first two tests fail.
 - `apps/server/test/integration/judge-tools.test.ts`: `judge_design` over the real MCP client.
   - Without a judge it answers `{ configured: false }` and names `NEBIUS_API_KEY`.
   - With a mocked judge it returns a judgment that passes `judgeResultSchema` with 6 checks.
@@ -28,8 +32,8 @@ All pass on the final tree:
 | `pnpm knip`             | clean                      |
 | `pnpm arch`             | no violations (97 modules) |
 | `pnpm dupes`            | 0 clones                   |
-| `pnpm test`             | 71 passed (9 files)        |
-| `pnpm test:integration` | 43 passed (8 files)        |
+| `pnpm test`             | 77 passed (10 files)       |
+| `pnpm test:integration` | 44 passed (8 files)        |
 | `pnpm test:live`        | 1 skipped (no key yet)     |
 | `pnpm build`            | ok                         |
 
@@ -60,7 +64,7 @@ The modules also load under plain Node (`node` on `src/lib/design-judge.ts`), wh
 
 Security review (automated, on the pushed commits):
 
-- **Genkit span payloads.** Genkit writes each action's input and output (the brief, the prompt, the reply) as `genkit:input`, `genkit:output` and `genkit:init` attributes, and Genkit 1.42 has no setting to turn that off. Those spans went to wovain's tracer and on to GitLab Observability. Fixed: `telemetry.ts` wraps the batch processor in `RedactingSpanProcessor`, which drops those attributes before export. `telemetry.test.ts` covers it.
+- **Genkit span payloads.** Genkit writes each action's input and output (the brief, the prompt, the reply) as `genkit:input`, `genkit:output` and `genkit:init` attributes, and Genkit 1.42 has no setting to turn that off. Those spans went to wovain's tracer and on to GitLab Observability. A second pass found the same text in exception events (`exception.message`, `exception.stacktrace`) and in `status.message` on failed spans. Fixed: `telemetry.ts` wraps the batch processor in `RedactingSpanProcessor`. For Genkit spans (those with `genkit:name` or `genkit:type`) it exports only an allowlist of attributes (name, type, path, state, root and failure flags, subtype). Events go out as name and time only, and the status as its code only. Other spans pass through untouched. `telemetry.test.ts` covers the success path, the error path and pass-through.
 - **Unbounded input to a paid model.** Fixed: `designBriefSchema` bounds every string (idea 500; blank, placement and color names 120; artwork URL 2048; description 300; the existing title cap of 120 and coach cap of 160) and allows at most 20 colors. The bounds live on the brief schema, not on `designSchema`, so stored designs still parse. No per-user rate limit: nothing installed makes it trivial, and every call already sits behind sign-in and the allowlist.
 
 The `pr-review-toolkit` agents (code-simplifier, silent-failure-hunter) aren't installed in this session. The silent-failure pass was done by hand:
