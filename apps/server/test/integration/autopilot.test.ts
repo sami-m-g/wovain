@@ -1,3 +1,4 @@
+import type { ConceptRevision } from "@wovain/shared/ad";
 import { AUTOPILOT_TERMS } from "@wovain/shared/autopilot";
 import { designResultSchema } from "@wovain/shared/design";
 import type { DesignJudgment } from "@wovain/shared/judge";
@@ -241,7 +242,15 @@ const concept = (id: string, angle: string, hook: string) => ({
   primaryTexts: ["A calico watches the sun go down."],
 });
 
-const saveConcepts = async (designId: string) =>
+const saveConcepts = async (
+  designId: string,
+  concepts: ConceptRevision[] = [
+    concept("c1", "Gift", "The friend who has every cat mug"),
+    concept("c2", "Gift", "Another gift for cat friends"),
+    concept("c3", "Moment", "Cat Tee, 20% off today"),
+    concept("c4", "Identity", "For the quiet cat person"),
+  ]
+) =>
   await store.saveConcepts(
     {
       coach: "Three angles.",
@@ -269,12 +278,7 @@ const saveConcepts = async (designId: string) =>
         url: "https://cdn.fourthwall.com/x.webp",
       },
     },
-    [
-      concept("c1", "Gift", "The friend who has every cat mug"),
-      concept("c2", "Gift", "Another gift for cat friends"),
-      concept("c3", "Moment", "Cat Tee, 20% off today"),
-      concept("c4", "Identity", "For the quiet cat person"),
-    ]
+    concepts
   );
 
 describe("ads", () => {
@@ -301,6 +305,92 @@ describe("ads", () => {
       "approved",
     ]);
     expect(ad?.status).toBe("added");
+  });
+
+  test("risky words anywhere in a concept, and carousels showing other designs or images, are never approved", async () => {
+    const ids = await begin();
+    const other = await store.saveDesign(artDesign);
+    const { deps } = depsWith({
+      reply: {
+        concepts: ["c1", "c2", "c3", "c4"].map((id) => ({
+          approve: true,
+          id,
+          reason: "Clear hook.",
+        })),
+      },
+    });
+    await decide(deps, ids);
+    const mockup = demoDesign.mockups[0]?.url ?? "";
+    const carousel = (
+      id: string,
+      angle: string,
+      cards: { designId: string; imageUrl: string }[]
+    ) => ({
+      ...concept(id, angle, "The whole cat club"),
+      assets: [],
+      cards: cards.map((card) => ({ ...card, headline: "Cat Club" })),
+    });
+    await saveConcepts(ids.designId, [
+      // A price in the name, a discount on a card.
+      { ...concept("c1", "Gift", "For cat friends"), name: "Only $19" },
+      {
+        ...carousel("c2", "Set", [
+          { designId: ids.designId, imageUrl: mockup },
+          { designId: ids.designId, imageUrl: mockup },
+        ]),
+        cards: [
+          {
+            designId: ids.designId,
+            headline: "50% off today",
+            imageUrl: mockup,
+          },
+          { designId: ids.designId, headline: "Cat Club", imageUrl: mockup },
+        ],
+      },
+      // A design the run never approved, and an image the design doesn't have.
+      carousel("c3", "Collection", [
+        { designId: ids.designId, imageUrl: mockup },
+        { designId: other.id, imageUrl: mockup },
+      ]),
+      carousel("c4", "Bundle", [
+        { designId: ids.designId, imageUrl: mockup },
+        {
+          designId: ids.designId,
+          imageUrl: "https://v3.fal.media/files/other.png",
+        },
+      ]),
+    ]);
+    const { approved } = await decideAds(deps, store, ids.run.id, ids.designId);
+    expect(approved).toEqual([]);
+  });
+
+  test("a carousel of approved designs and their own images is approved", async () => {
+    const ids = await begin();
+    const { deps } = depsWith({
+      reply: { concepts: [{ approve: true, id: "c1", reason: "One set." }] },
+    });
+    await decide(deps, ids);
+    const mockup = demoDesign.mockups[0]?.url ?? "";
+    await saveConcepts(ids.designId, [
+      {
+        ...concept("c1", "Set", "The whole cat club"),
+        assets: [],
+        cards: [
+          {
+            designId: ids.designId,
+            headline: "Cat Club Tee",
+            imageUrl: mockup,
+          },
+          {
+            designId: ids.designId,
+            headline: "Cat Club Mug",
+            imageUrl: mockup,
+          },
+        ],
+      },
+    ]);
+    const { approved } = await decideAds(deps, store, ids.run.id, ids.designId);
+    expect(approved).toEqual(["c1"]);
   });
 
   test("a design the run didn't decide can't have its ads approved", async () => {

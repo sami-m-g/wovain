@@ -1,4 +1,5 @@
 import type { AdConcept } from "@wovain/shared/ad";
+import type { AutopilotRun } from "@wovain/shared/autopilot";
 import { z } from "zod";
 
 import type { Store } from "../store.ts";
@@ -115,21 +116,65 @@ const conceptChoiceSchema = z.object({
     .max(6),
 });
 
+// Every piece of a concept's text that can reach Meta or the merchant's ad.
 const copyOf = (concept: AdConcept) =>
-  [concept.hook, ...concept.headlines, ...concept.primaryTexts].join(" ");
+  [
+    concept.name,
+    concept.angle,
+    concept.audience,
+    concept.hook,
+    concept.gap ?? "",
+    concept.whyNow ?? "",
+    ...concept.headlines,
+    ...concept.primaryTexts,
+    ...(concept.cards ?? []).map((card) => card.headline),
+  ].join(" ");
 
-// Concepts the model may approve: ready media (or carousel cards) and copy
-// that passes the code check.
-const eligible = (concepts: AdConcept[]) =>
-  new Map(
-    concepts.flatMap((concept) =>
-      (concept.cards !== undefined ||
-        concept.assets.some((asset) => asset.status === "ready")) &&
-      !RISKY_COPY.test(copyOf(concept))
-        ? [[concept.id, concept] as const]
-        : []
-    )
+// A carousel's cards may show only designs this run approved, each with an
+// image that design really has: a mockup, or ad media collected for it.
+const cardsOk = async (store: Store, run: AutopilotRun, concept: AdConcept) => {
+  const cards = concept.cards ?? [];
+  const dropped = new Set(run.dropped);
+  const checks = await Promise.all(
+    cards.map(async (card) => {
+      if (
+        run.designs[card.designId] === undefined ||
+        dropped.has(card.designId)
+      ) {
+        return false;
+      }
+      const [design, media] = await Promise.all([
+        store.getDesign(card.designId),
+        store.getAdMedia(card.designId),
+      ]);
+      const images = new Set([
+        ...(design?.mockups.map((mockup) => mockup.url) ?? []),
+        ...media.urls,
+      ]);
+      return design?.approval?.run === run.id && images.has(card.imageUrl);
+    })
   );
+  return checks.every(Boolean);
+};
+
+// Concepts the model may approve: ready media or valid carousel cards, and
+// copy that passes the code check.
+const eligible = async (
+  store: Store,
+  run: AutopilotRun,
+  concepts: AdConcept[]
+) => {
+  const checked = await Promise.all(
+    concepts.map(async (concept) => {
+      const media =
+        concept.cards === undefined
+          ? concept.assets.some((asset) => asset.status === "ready")
+          : await cardsOk(store, run, concept);
+      return media && !RISKY_COPY.test(copyOf(concept)) ? [concept] : [];
+    })
+  );
+  return new Map(checked.flat().map((concept) => [concept.id, concept]));
+};
 
 // Up to three of the model's picks, one per angle.
 const varied = (
@@ -172,7 +217,7 @@ export const decideAds = async (
   if (ad === undefined) {
     throw new AutopilotRefusedError(`No ad concepts for ${designId} yet.`);
   }
-  const usable = eligible(ad.concepts);
+  const usable = await eligible(store, run, ad.concepts);
   const reply = await generateObject(ai, {
     model: model ?? models.autopilot,
     prompt: JSON.stringify({
