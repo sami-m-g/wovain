@@ -4,8 +4,8 @@
 # the Duo Developer flow, and moves Duo's merge requests through Duo Code
 # Review to GitLab's auto-merge. It reads Google Cloud as gitlab-ops (logs
 # and metrics only), which trusts only jobs in the operations environment.
-# The schedule turns off the security scanners (its variables), since an
-# hourly scan of an unchanged main adds CI minutes and nothing else.
+# The scanners stay on for it, as for every pipeline: schedule variables need
+# a role we don't have.
 loop:
   extends: .ops-job
   resource_group: loop
