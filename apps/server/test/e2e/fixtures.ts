@@ -33,6 +33,33 @@ export const fourthwallTools: Tools = {
   "ecommerce_get-offers-by-ids": (args) => ({
     offers: ids(args["offerIds"]).map((id) => ({ id, slug: `slug-${id}` })),
   }),
+  // Four weeks of the drop selling, a third of it from Meta ads.
+  "ecommerce_get-sales-by-utm-report": () => ({
+    rows: [
+      {
+        contributions: 7,
+        total_sales: 210,
+        utm_content: "777",
+        utm_source: "facebook",
+      },
+      { contributions: 4, total_sales: 120, utm_source: "instagram" },
+      { contributions: 3, total_sales: 90, utm_source: "newsletter" },
+    ],
+  }),
+  "ecommerce_get-sales-over-time-report": () => ({
+    rows: [3, 5, 4, 6, 2, 8, 7, 9, 5, 6, 10, 12, 8, 9].map((orders, index) => ({
+      contributions: orders,
+      date: `2026-10-${String(index + 1).padStart(2, "0")}`,
+      net_profit: orders * 9.5,
+      total_sales: orders * 30,
+    })),
+  }),
+  "ecommerce_get-top-products-by-units-sold-report": () => ({
+    rows: [
+      { net_sales: 1680, product: "Japanese Cat Sunset Tee", units_sold: 56 },
+      { net_sales: 360, product: "Japanese Cat Sunset Mug", units_sold: 18 },
+    ],
+  }),
   "ecommerce_update-collection-state": () => ({
     collection: {
       id: "cltn_1",
@@ -179,6 +206,28 @@ export const metaTools: Tools = {
   }),
   ads_get_ad_accounts: () => ({
     data: [{ account_id: "42", currency: "USD", name: "Cat Club ads" }],
+  }),
+  ads_get_ad_entities: () => ({
+    ad_entities: [
+      {
+        amount_spent: "70",
+        campaign_id: "555",
+        campaign_name: "wovain launch",
+        id: "777",
+        name: "wovain d1 · c1",
+        omni_purchase: "8",
+        omni_purchase_values: "240",
+      },
+      {
+        amount_spent: "35",
+        campaign_id: "555",
+        campaign_name: "wovain launch",
+        id: "778",
+        name: "wovain d1 · c2",
+        omni_purchase: "3",
+        omni_purchase_values: "90",
+      },
+    ],
   }),
 };
 

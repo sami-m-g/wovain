@@ -2,10 +2,8 @@
 // they produced. Replies are untrusted data: only fields with the right shape
 // are kept, and only https URLs on fal's media CDN.
 
-interface Reply {
-  content?: unknown;
-  structuredContent?: unknown;
-}
+import { replyRoots } from "./reply-json.ts";
+import type { Reply } from "./reply-json.ts";
 
 export interface FalJob {
   endpointId: string;
@@ -23,27 +21,6 @@ export const isFalMedia = (value: string) => {
   );
 };
 
-const parsed = (text: string): unknown => {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-};
-
-// The structured result, plus any JSON the text blocks carry.
-const roots = ({ content, structuredContent }: Reply): unknown[] => [
-  structuredContent,
-  ...(Array.isArray(content) ? content : []).map((block: unknown) =>
-    typeof block === "object" &&
-    block !== null &&
-    "text" in block &&
-    typeof block.text === "string"
-      ? parsed(block.text)
-      : undefined
-  ),
-];
-
 const walk = (value: unknown, visit: (node: unknown) => void) => {
   visit(value);
   if (typeof value === "object" && value !== null) {
@@ -55,7 +32,7 @@ const walk = (value: unknown, visit: (node: unknown) => void) => {
 
 const collect = <T>(reply: Reply, pick: (node: unknown) => T | undefined) => {
   const found: T[] = [];
-  for (const root of roots(reply)) {
+  for (const root of replyRoots(reply)) {
     walk(root, (node) => {
       const value = pick(node);
       if (value !== undefined) {

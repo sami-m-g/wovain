@@ -4,6 +4,7 @@ import type { Env } from "./env.ts";
 import { createAi } from "./lib/ai.ts";
 import { autopilotFor } from "./lib/autopilot-decide.ts";
 import type { BrowserConfirm } from "./lib/browser-confirm.ts";
+import { createDashboardCache } from "./lib/dashboard.ts";
 import { designJudgeFor } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import { qlooFor } from "./lib/qloo.ts";
@@ -16,6 +17,7 @@ import { registerArtTools } from "./tools/art.ts";
 import { registerAutopilotTools } from "./tools/autopilot.ts";
 import { registerCampaignTools } from "./tools/campaign.ts";
 import { registerConnectionTools } from "./tools/connections.ts";
+import { registerDashboardTools } from "./tools/dashboard.ts";
 import { registerDesignTools } from "./tools/design.ts";
 import { registerJudgeTools } from "./tools/judge.ts";
 import { registerMetaCampaignTools } from "./tools/meta.ts";
@@ -48,6 +50,8 @@ export const createDeps = (
       on: env.WOVAIN_AUTOPILOT === "on",
     },
     confirm,
+    // One per process: the server is built per request.
+    dashboardCache: createDashboardCache(),
     designJudge,
     qloo,
     trendResearch,
@@ -63,6 +67,7 @@ export const createServer = (
   {
     autopilot,
     confirm,
+    dashboardCache,
     designJudge,
     qloo,
     trendResearch,
@@ -101,6 +106,7 @@ export const createServer = (
   registerMetaCampaignTools(server, store, upstream);
   registerConnectionTools(server, store, upstream);
   registerAutopilotTools(server, store, { autopilot, confirm });
+  registerDashboardTools(server, store, { cache: dashboardCache, upstream });
   registerPlaybooks(server);
   return server;
 };
