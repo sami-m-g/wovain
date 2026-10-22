@@ -1,11 +1,18 @@
 import { adStatusOf, mergeConcepts, storedAdSchema } from "@wovain/shared/ad";
 import type { Ad, ConceptRevision, Decision } from "@wovain/shared/ad";
+import {
+  AUTOPILOT_TERMS,
+  autopilotConsentSchema,
+  autopilotRunSchema,
+} from "@wovain/shared/autopilot";
+import type { AutopilotConsent, AutopilotRun } from "@wovain/shared/autopilot";
 import { designSchema } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
 import type { Settings, SettingsPatch } from "@wovain/shared/settings";
 import type {
   DocumentData,
+  DocumentReference,
   Firestore,
   Transaction,
 } from "firebase-admin/firestore";
@@ -44,7 +51,15 @@ const adMediaSchema = z.object({
 });
 type AdMedia = z.infer<typeof adMediaSchema>;
 
-type Kind = "ad" | "ad-media" | "artwork" | "campaign" | "design" | "settings";
+type Kind =
+  | "ad"
+  | "ad-media"
+  | "artwork"
+  | "autopilotConsent"
+  | "autopilotRun"
+  | "campaign"
+  | "design"
+  | "settings";
 
 // Settings and the campaign are single records.
 const ONLY = "current";
@@ -72,13 +87,10 @@ export const bucketMedia = (bucket: Bucket): Media => ({
   },
 });
 
-// One merchant's records (spec.md > Data Model): settings, staged artwork,
-// designs, ads (one ad set per design, keyed by design id) and the campaign,
-// as Firestore documents under users/{userId}/{kind}/{id}, each checked
-// against its schema on every read.
-export const createStore = (db: Firestore, media: Media, userId: string) => {
-  const user = db.collection("users").doc(userId);
-  const table = <T extends DocumentData>(kind: Kind, schema: z.ZodType<T>) => {
+// One kind of record under users/{userId}, checked against its schema.
+const tableIn =
+  (user: DocumentReference) =>
+  <T extends DocumentData>(kind: Kind, schema: z.ZodType<T>) => {
     const collection = user.collection(kind);
     return {
       all: async (tx?: Transaction): Promise<T[]> => {
@@ -109,12 +121,123 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       },
     };
   };
+
+interface Table<T> {
+  all: (tx?: Transaction) => Promise<T[]>;
+  get: (id: string, tx?: Transaction) => Promise<T | undefined>;
+  put: (id: string, value: T, tx?: Transaction) => Promise<T>;
+}
+
+// One merchant's autopilot records: the opt-in the confirm page writes and
+// the runs, plus the transactions that check them.
+const autopilotRecords = ({
+  consents,
+  designs,
+  requireDesign,
+  runs,
+  transaction,
+}: {
+  consents: Table<AutopilotConsent>;
+  designs: Table<Design>;
+  requireDesign: (id: string, tx: Transaction) => Promise<Design>;
+  runs: Table<AutopilotRun>;
+  transaction: <T>(work: (tx: Transaction) => Promise<T>) => Promise<T>;
+}) => {
+  const runningIn = async (tx: Transaction) => {
+    const all = await runs.all(tx);
+    return all.find((run) => run.status === "running");
+  };
+
+  // Changes the running autopilot run in one transaction; undefined when
+  // none is running.
+  const changeRunningRun = async (
+    change: (run: AutopilotRun) => AutopilotRun
+  ) =>
+    await transaction(async (tx) => {
+      const running = await runningIn(tx);
+      return running === undefined
+        ? undefined
+        : await runs.put(running.id, change(running), tx);
+    });
+
+  return {
+    changeRun: async (
+      id: string,
+      change: (run: AutopilotRun) => AutopilotRun
+    ) =>
+      await transaction(async (tx) => {
+        const run = await runs.get(id, tx);
+        if (run === undefined) {
+          throw new Error(`No autopilot run ${id}`);
+        }
+        return await runs.put(id, change(run), tx);
+      }),
+    changeRunningRun,
+    getAutopilotConsent: async (): Promise<AutopilotConsent | undefined> =>
+      await consents.get(ONLY),
+    getAutopilotRuns: async (): Promise<AutopilotRun[]> => await runs.all(),
+    // replaceDesign for an autopilot approval: in the same transaction, the
+    // run must still be running and the merchant's opt-in still current.
+    replaceDesignInRun: async (
+      id: string,
+      runId: string,
+      change: (current: Design) => Omit<Design, "id">
+    ) =>
+      await transaction(async (tx) => {
+        const [run, consent, current] = await Promise.all([
+          runs.get(runId, tx),
+          consents.get(ONLY, tx),
+          requireDesign(id, tx),
+        ]);
+        if (run?.status !== "running") {
+          throw new Error(`Autopilot run ${runId} isn't running.`);
+        }
+        if (
+          consent?.version !== AUTOPILOT_TERMS.version ||
+          consent.revokedAt !== undefined
+        ) {
+          throw new Error("Autopilot is off for this merchant.");
+        }
+        return await designs.put(id, { ...change(current), id }, tx);
+      }),
+    runningIn,
+    saveAutopilotConsent: async (consent: AutopilotConsent) =>
+      await consents.put(ONLY, consent),
+    // Creates the run unless one with its id exists (the same runKey returns
+    // that run); refuses while another run is still running.
+    startRun: async (run: AutopilotRun) =>
+      await transaction(async (tx) => {
+        const all = await runs.all(tx);
+        const same = all.find((item) => item.id === run.id);
+        if (same !== undefined) {
+          return same;
+        }
+        const running = all.find((item) => item.status === "running");
+        if (running !== undefined) {
+          throw new Error(
+            `Autopilot run ${running.id} is still running: stop it with autopilot_stop first.`
+          );
+        }
+        return await runs.put(run.id, run, tx);
+      }),
+  };
+};
+
+// One merchant's records (spec.md > Data Model): settings, staged artwork,
+// designs, ads (one ad set per design, keyed by design id) and the campaign,
+// as Firestore documents under users/{userId}/{kind}/{id}, each checked
+// against its schema on every read.
+export const createStore = (db: Firestore, media: Media, userId: string) => {
+  const user = db.collection("users").doc(userId);
+  const table = tableIn(user);
   const ads = table("ad", storedAdSchema);
   const adMedia = table("ad-media", adMediaSchema);
   const artworks = table("artwork", artworkSchema);
   const campaigns = table("campaign", campaignSchema);
   const designs = table("design", designSchema);
   const settingsTable = table("settings", settingsSchema);
+  const consents = table("autopilotConsent", autopilotConsentSchema);
+  const runs = table("autopilotRun", autopilotRunSchema);
 
   const settings = async () =>
     (await settingsTable.get(ONLY)) ?? settingsSchema.parse({});
@@ -132,7 +255,45 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
   const transaction = async <T>(work: (tx: Transaction) => Promise<T>) =>
     await db.runTransaction(work, { maxAttempts: 10 });
 
+  // Records approve or skip on a product's concepts and counts the ad widgets
+  // still waiting, in one step.
+  const recordConcepts = async (
+    designId: string,
+    statuses: Record<string, Decision>
+  ) =>
+    await transaction(async (tx) => {
+      const all = await ads.all(tx);
+      const current = all.find((item) => item.designId === designId);
+      const known = new Set(current?.concepts.map((concept) => concept.id));
+      const unknown = Object.keys(statuses).find((id) => !known.has(id));
+      if (current === undefined || unknown !== undefined) {
+        throw new Error(`No ad ${unknown ?? ""} for ${designId}`);
+      }
+      const concepts = current.concepts.map((concept) => {
+        const status = statuses[concept.id];
+        return status === undefined ? concept : { ...concept, status };
+      });
+      const ad = await ads.put(
+        designId,
+        { ...current, concepts, status: adStatusOf(concepts) },
+        tx
+      );
+      const waiting = all.filter(
+        (item) => item.designId !== designId && item.status === "draft"
+      ).length;
+      return { ad, waiting: ad.status === "draft" ? waiting + 1 : waiting };
+    });
+
+  const { runningIn, ...autopilot } = autopilotRecords({
+    consents,
+    designs,
+    requireDesign,
+    runs,
+    transaction,
+  });
+
   return {
+    ...autopilot,
     getAdMedia: async (designId: string): Promise<AdMedia> =>
       (await adMedia.get(designId)) ?? { jobs: [], urls: [] },
     getAds: async (): Promise<Ad[]> => await ads.all(),
@@ -176,28 +337,9 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       designId: string,
       conceptId: string,
       status: Decision
-    ) =>
-      await transaction(async (tx) => {
-        const all = await ads.all(tx);
-        const current = all.find((item) => item.designId === designId);
-        if (
-          current?.concepts.some((concept) => concept.id === conceptId) !== true
-        ) {
-          throw new Error(`No ad ${conceptId} for ${designId}`);
-        }
-        const concepts = current.concepts.map((concept) =>
-          concept.id === conceptId ? { ...concept, status } : concept
-        );
-        const ad = await ads.put(
-          designId,
-          { ...current, concepts, status: adStatusOf(concepts) },
-          tx
-        );
-        const waiting = all.filter(
-          (item) => item.designId !== designId && item.status === "draft"
-        ).length;
-        return { ad, waiting: ad.status === "draft" ? waiting + 1 : waiting };
-      }),
+    ) => await recordConcepts(designId, { [conceptId]: status }),
+    // Several concepts' choices in one step (autopilot decides them together).
+    recordConcepts,
     // Reads and replaces a design in one transaction: `change` sees the
     // stored copy, may throw to refuse, and returns the whole new design
     // (fields it leaves out are removed).
@@ -250,13 +392,25 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       design: Omit<Design, "id"> & { id?: string | undefined }
     ) =>
       await transaction(async (tx) => {
-        // A new id has no stored copy, so its read is skipped.
+        // A new id has no stored copy, so its read is skipped. A new design
+        // made while an autopilot run is running belongs to that run.
         const current =
           design.id === undefined
             ? undefined
             : await designs.get(design.id, tx);
+        const running = current === undefined ? await runningIn(tx) : undefined;
         const id = design.id ?? (await designs.nextId("d", tx));
-        return await designs.put(id, { ...current, ...design, id }, tx);
+        const { run: _ignored, ...fields } = design;
+        return await designs.put(
+          id,
+          {
+            ...current,
+            ...fields,
+            ...(running === undefined ? {} : { run: running.id }),
+            id,
+          },
+          tx
+        );
       }),
     updateDesign: async (id: string, patch: Partial<Design>) =>
       await transaction(

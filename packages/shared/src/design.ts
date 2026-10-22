@@ -104,6 +104,9 @@ const approvalSchema = z.object({
   at: z.iso.datetime(),
   claimedAt: z.iso.datetime().optional(),
   hash: z.string().min(1),
+  // Set when autopilot approved it in this run (the merchant opted in on
+  // wovain's confirm page): the products publish hidden.
+  run: z.string().optional(),
 });
 export type Approval = z.infer<typeof approvalSchema>;
 
@@ -115,6 +118,9 @@ export const designSchema = z.object({
   collectionId: z.string().optional(),
   // The drop's name on Fourthwall; the idea when omitted.
   dropName: z.string().min(1).max(80).optional(),
+  // Created on Fourthwall but hidden from shoppers: autopilot made it, and
+  // the merchant's confirmed launch makes it public.
+  hidden: z.boolean().optional(),
   id: z.string().regex(/^d\d+$/u),
   idea: z.string().min(1),
   productId: z.string().optional(),
@@ -123,6 +129,9 @@ export const designSchema = z.object({
   range: z.array(rangeProductSchema).max(MAX_RANGE).default([]),
   rejectCount: z.int().min(0).default(0),
   rejectReason: z.string().optional(),
+  // The autopilot run that was running when the design was made: only that
+  // run may decide it.
+  run: z.string().optional(),
   status: designStatusSchema.default("draft"),
 });
 export type Design = z.infer<typeof designSchema>;

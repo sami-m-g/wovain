@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
 import {
+  goLive,
   publishDesign,
   PublishRefusedError,
 } from "../../src/lib/publish-design.ts";
@@ -199,5 +200,55 @@ describe("publishDesign", () => {
       "shop's address"
     );
     expect(calls).toEqual(["ecommerce_get-current-shop"]);
+  });
+});
+
+describe("autopilot", () => {
+  const byRun: Design = {
+    ...hero,
+    approval: { at: "2026-10-22T00:00:00.000Z", hash: "h", run: "r1" },
+    dropName: "Cat Club",
+    range: [mug],
+  };
+
+  test("an autopilot approval creates the products hidden", async () => {
+    const { call, calls } = fakeFourthwall();
+    const patch = await publishDesign(byRun, { call, save });
+    const tools = calls.map((item) => item.tool);
+    expect(tools).not.toContain("ecommerce_update-offer-status");
+    expect(tools).not.toContain("ecommerce_update-collection-state");
+    expect(tools).toContain("ecommerce_create-collection");
+    expect(patch).toMatchObject({ collectionId: "cltn_1", hidden: true });
+  });
+
+  test("go live makes every product and the collection public", async () => {
+    const { call, calls } = fakeFourthwall();
+    await goLive(
+      {
+        ...byRun,
+        collectionId: "cltn_1",
+        productId: "off_cus_1",
+        range: [{ ...mug, offerId: "off_cus_mug" }],
+      },
+      { call, save }
+    );
+    expect(calls.map((item) => [item.tool, item.args])).toEqual([
+      [
+        "ecommerce_update-offer-status",
+        { offerId: "off_cus_1", status: "PUBLIC" },
+      ],
+      [
+        "ecommerce_update-offer-status",
+        { offerId: "off_cus_mug", status: "PUBLIC" },
+      ],
+      [
+        "ecommerce_update-collection-state",
+        {
+          collectionId: "cltn_1",
+          shouldUpdateOffersStatus: false,
+          state: "PUBLIC",
+        },
+      ],
+    ]);
   });
 });

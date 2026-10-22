@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
 import { createAi } from "./lib/ai.ts";
+import { autopilotFor } from "./lib/autopilot-decide.ts";
 import type { BrowserConfirm } from "./lib/browser-confirm.ts";
 import { designJudgeFor } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
@@ -11,6 +12,7 @@ import { instructions, registerPlaybooks } from "./playbooks/index.ts";
 import type { Store } from "./store.ts";
 import { registerAdTools } from "./tools/ads.ts";
 import { registerArtTools } from "./tools/art.ts";
+import { registerAutopilotTools } from "./tools/autopilot.ts";
 import { registerCampaignTools } from "./tools/campaign.ts";
 import { registerConnectionTools } from "./tools/connections.ts";
 import { registerDesignTools } from "./tools/design.ts";
@@ -31,10 +33,21 @@ export const createDeps = (
   confirm?: BrowserConfirm
 ) => {
   const ai = createAi(env.NEBIUS_API_KEY);
+  const designJudge = designJudgeFor(ai);
+  const trendResearch = trendResearchFor(env.TAVILY_API_KEY, ai);
   return {
+    autopilot: {
+      deps: autopilotFor({
+        ai,
+        judge: designJudge,
+        research: trendResearch,
+        upstream,
+      }),
+      on: env.WOVAIN_AUTOPILOT === "on",
+    },
     confirm,
-    designJudge: designJudgeFor(ai),
-    trendResearch: trendResearchFor(env.TAVILY_API_KEY, ai),
+    designJudge,
+    trendResearch,
     upstream,
     videoPricing: createVideoPricing(env.FAL_KEY),
   };
@@ -44,7 +57,14 @@ export type Deps = ReturnType<typeof createDeps>;
 export const createServer = (
   env: Env,
   store: Store,
-  { confirm, designJudge, trendResearch, upstream, videoPricing }: Deps
+  {
+    autopilot,
+    confirm,
+    designJudge,
+    trendResearch,
+    upstream,
+    videoPricing,
+  }: Deps
 ) => {
   const server = new McpServer(
     {
@@ -69,17 +89,22 @@ export const createServer = (
   registerWidgets(server, env.WOVAIN_WIDGETS_DIR);
   registerSettingsTools(server, store, videoPricing);
   registerDesignTools(server, store);
-  registerArtTools(server, store, upstream);
+  registerArtTools(server, store, { autopilotOn: autopilot.on, upstream });
   registerPublishTools(server, store, { confirm, upstream });
   registerJudgeTools(server, designJudge);
   registerResearchTools(server, trendResearch);
-  registerAdTools(server, store, videoPricing, upstream);
+  registerAdTools(server, store, {
+    autopilotOn: autopilot.on,
+    upstream,
+    videoPricing,
+  });
   registerCampaignTools(server, store, {
     metaAppSecret: env.META_APP_SECRET,
     upstream,
   });
   registerMetaCampaignTools(server, store, upstream);
   registerConnectionTools(server, store, upstream);
+  registerAutopilotTools(server, store, { autopilot, confirm });
   registerPlaybooks(server);
   return server;
 };

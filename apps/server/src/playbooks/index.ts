@@ -3,13 +3,15 @@ import { z } from "zod";
 
 import { text } from "../lib/tool-result.ts";
 import { ads } from "./ads.ts";
+import { autopilot } from "./autopilot.ts";
 import { campaign } from "./campaign.ts";
 import { design } from "./design.ts";
 
-// The journey's steps, in order. Each playbook names the wovain, Fourthwall,
-// Meta Ads and fal calls the agent makes, so any MCP client can run the flow.
-const playbooks = { ads, campaign, design } as const;
-const stepSchema = z.enum(["design", "ads", "campaign"]);
+// The journey's steps, in order, then autopilot, which runs them all. Each
+// playbook names the wovain, Fourthwall, Meta Ads and fal calls the agent
+// makes, so any MCP client can run the flow.
+const playbooks = { ads, autopilot, campaign, design } as const;
+const stepSchema = z.enum(["design", "ads", "campaign", "autopilot"]);
 
 // Sent on initialize, so a connecting agent knows the flow before any call.
 export const instructions = `wovain takes a print-on-demand merchant from a product idea to a live Fourthwall drop (a set of matching products) and one Meta Advantage+ sales campaign, one approved widget at a time.
@@ -21,7 +23,7 @@ ${Object.entries(playbooks)
   .map(([step, playbook]) => `- ${step}: ${playbook.description}`)
   .join("\n")}
 
-Read a step's playbook before starting it, and follow it exactly. Nothing is published or spends money without the merchant's approval on a widget.`;
+Read a step's playbook before starting it, and follow it exactly. Nothing is published or spends money without the merchant's approval on a widget, except in autopilot, which the merchant turns on themselves on wovain's confirm page: then products stay hidden and the campaign paused until they confirm the launch.`;
 
 export const registerPlaybooks = (server: McpServer) => {
   server.registerTool(
@@ -29,7 +31,7 @@ export const registerPlaybooks = (server: McpServer) => {
     {
       annotations: { readOnlyHint: true },
       description:
-        "Read the step-by-step playbook for one wovain step (design, ads or campaign). Call before starting that step or acting on its widget.",
+        "Read the step-by-step playbook for one wovain step (design, ads or campaign), or autopilot, which runs them all. Call before starting that step or acting on its widget.",
       inputSchema: z.object({ step: stepSchema }),
       title: "Get a wovain playbook",
     },

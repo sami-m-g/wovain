@@ -15,6 +15,7 @@ test("the server sends the flow and serves each playbook as a tool and a prompt"
   const { prompts } = await client.listPrompts();
   expect(prompts.map((prompt) => prompt.name).toSorted()).toEqual([
     "ads",
+    "autopilot",
     "campaign",
     "design",
   ]);

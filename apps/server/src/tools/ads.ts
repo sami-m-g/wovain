@@ -16,6 +16,8 @@ import {
   adImageInputs,
 } from "../lib/ad-images.ts";
 import { checkConcepts } from "../lib/ad-media.ts";
+import { chargeRun } from "../lib/autopilot.ts";
+import type { Spend } from "../lib/autopilot.ts";
 import { isFalMedia, jobHandles, mediaUrls } from "../lib/fal-media.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
 import { text } from "../lib/tool-result.ts";
@@ -48,7 +50,7 @@ const spends = {
 };
 
 // wovain's calls on the merchant's own fal account.
-const falClient = (store: Store, upstream: Upstream | undefined) => {
+const falClient = (store: Store, { autopilotOn, upstream }: AdToolDeps) => {
   const fal = async (tool: string, args: Record<string, unknown>) =>
     await upstreamReply(upstream, {
       args,
@@ -60,11 +62,14 @@ const falClient = (store: Store, upstream: Upstream | undefined) => {
   // The merchant's own fal account runs requests wovain builds: the agent
   // picks the design and the scene, never the model or the references.
   // wovain keeps the accepted job handles, so collect_ad_media can fetch
-  // only results of jobs it submitted.
+  // only results of jobs it submitted. An autopilot run is charged first,
+  // so a request over its cap is never sent.
   const submit = async (
     designId: string,
-    requests: Record<string, unknown>[]
+    requests: Record<string, unknown>[],
+    cost: { usd: number; what: Spend }
   ) => {
+    await chargeRun(store, { on: autopilotOn, ...cost });
     const reply = await fal("submit_jobs", { requests });
     const jobs = jobHandles(reply);
     if (jobs.length > 0) {
@@ -122,13 +127,15 @@ const registerVideoTools = (
     },
     async ({ designId }) => {
       const plan = await planFor(designId);
+      const audioUsd = (plan.audio?.usdPerClip ?? 0) * plan.clips.length;
       return await submit(
         designId,
         plan.clips.map((clip, index) => ({
           endpoint_id: clip.endpointId,
           index,
           input: clip.input,
-        }))
+        })),
+        { usd: plan.estimate.usd - audioUsd, what: "video" }
       );
     }
   );
@@ -169,20 +176,28 @@ const registerVideoTools = (
           endpoint_id: audio.endpointId,
           index,
           input: { ...audio.perClip, video_url: url },
-        }))
+        })),
+        { usd: audio.usdPerClip * videoUrls.length, what: "audio" }
       );
     }
   );
 };
 
+// During an autopilot run, every paid fal request counts against the run's
+// cap before it's sent (lib/autopilot.ts chargeRun).
+interface AdToolDeps {
+  autopilotOn: boolean;
+  upstream?: Upstream | undefined;
+  videoPricing: VideoPricing;
+}
+
 export const registerAdTools = (
   server: McpServer,
   store: Store,
-  videoPricing: VideoPricing,
-  upstream: Upstream | undefined
+  deps: AdToolDeps
 ) => {
-  const { fal, submit } = falClient(store, upstream);
-  registerVideoTools(server, store, videoPricing, submit);
+  const { fal, submit } = falClient(store, deps);
+  registerVideoTools(server, store, deps.videoPricing, submit);
 
   server.registerTool(
     "generate_ad_images",
@@ -200,7 +215,8 @@ export const registerAdTools = (
           endpoint_id: AD_IMAGE_ENDPOINT,
           index,
           input,
-        }))
+        })),
+        { usd: images.length * AD_IMAGE_USD, what: "image" }
       );
     }
   );

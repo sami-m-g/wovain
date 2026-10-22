@@ -20,6 +20,9 @@ const envSchema = z.object({
   // Optional: Tavily search, for research_trends and screen_trademark;
   // without it both tools say they aren't set up.
   TAVILY_API_KEY: z.string().optional(),
+  // The operator's kill switch for autopilot: "off" refuses new runs and
+  // decisions and stops a running run at its next paid job.
+  WOVAIN_AUTOPILOT: z.enum(["on", "off"]).default("on"),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
   // The Cloud KMS key that encrypts merchants' Fourthwall and fal grants

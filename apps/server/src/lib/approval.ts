@@ -9,22 +9,44 @@ import type { Store } from "../store.ts";
 // over (the retry reuses every product already created).
 const CLAIM_TTL_MS = 10 * 60 * 1000;
 
-// What the merchant approved: every product's customization, price and
-// listing, and the drop's name. Any redraw that changes them changes this.
-export const designHash = (design: Design) =>
+type Product = ReturnType<typeof dropProducts>[number];
+
+// A hash of the drop's name and the fields `pick` takes from each product.
+const dropHash = (design: Design, pick: (product: Product) => unknown[]) =>
   createHash("sha256")
     .update(
       JSON.stringify({
         dropName: design.dropName ?? null,
-        products: dropProducts(design).map((product) => [
-          product.customizationId,
-          product.quote.price,
-          product.listing.title,
-          product.listing.description,
-        ]),
+        products: dropProducts(design).map(pick),
       })
     )
     .digest("hex");
+
+// What the merchant approved: every product's customization, price and
+// listing, and the drop's name. Any redraw that changes them changes this.
+export const designHash = (design: Design) =>
+  dropHash(design, (product) => [
+    product.customizationId,
+    product.quote.price,
+    product.listing.title,
+    product.listing.description,
+  ]);
+
+// Everything autopilot judged and screened: every product's art, blank,
+// colors, placements, sizes, listing and price, and the drop's name. An
+// autopilot approval holds only if this is unchanged when it's written.
+export const judgedHash = (design: Design) =>
+  dropHash(design, (product) => [
+    product.artwork,
+    product.blank,
+    product.colors,
+    product.customizationId,
+    product.extraPlacements,
+    product.listing,
+    product.placement,
+    product.quote.price,
+    product.sizes,
+  ]);
 
 const withoutApproval = ({ approval: _approval, ...design }: Design) => design;
 
@@ -40,28 +62,46 @@ export const notApprovable = (design: Design) => {
 
 // Records the merchant's approval of the exact content `hash` names.
 // Server-side only: the confirm page calls it after the merchant signed in
-// in the browser and pressed Confirm (a later autopilot can call it the same
-// way). No tool reaches it.
+// in the browser and pressed Confirm, and autopilot (lib/autopilot-decide.ts)
+// calls it with the run's id once its checks pass, for a merchant who opted
+// in on that page. No tool takes an approval as input.
 export const approveDesign = async (
   store: Store,
   id: string,
   hash: string,
-  now = new Date()
-) =>
-  await store.replaceDesign(id, (design) => {
+  {
+    judged,
+    now = new Date(),
+    run,
+  }: { judged?: string; now?: Date; run?: string } = {}
+) => {
+  const approve = (design: Design) => {
     const refused = notApprovable(design);
     if (refused !== undefined) {
       throw new Error(refused);
+    }
+    if (judged !== undefined && judgedHash(design) !== judged) {
+      throw new Error(`Design ${id} changed while autopilot judged it.`);
     }
     if (designHash(design) !== hash) {
       throw new Error(`Design ${id} changed after the link was made.`);
     }
     return {
       ...design,
-      approval: { at: now.toISOString(), hash },
-      status: "publishing",
+      approval: {
+        at: now.toISOString(),
+        hash,
+        ...(run === undefined ? {} : { run }),
+      },
+      status: "publishing" as const,
     };
-  });
+  };
+  // An autopilot approval also rechecks, in the same transaction, that the
+  // run is still running and the merchant hasn't turned autopilot off.
+  return run === undefined
+    ? await store.replaceDesign(id, approve)
+    : await store.replaceDesignInRun(id, run, approve);
+};
 
 // Takes the approval for one publish, in one transaction: the design must be
 // approved exactly as it is now, and no other publish may hold it. Returns
