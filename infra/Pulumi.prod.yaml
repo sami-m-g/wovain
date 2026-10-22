@@ -1,6 +1,10 @@
 config:
   # GitLab Duo flow triggers on GitLab's built-in flows (infra/duo.ts). flow is
   # the flow's foundationalFlowReference; events use GitLab's EVENT_TYPES names.
+  # Filters only accept the fields in ALLOWED_FILTER_FIELDS
+  # (ee/app/models/ai/flow_trigger.rb): merge requests by action, pipelines by
+  # status, source, ref and default_branch. Each trigger fires only on a human
+  # action or a red main, so Duo credits go where they matter.
   wovain:duoTriggers:
     - name: duo-developer
       description: Developer flow on assign or mention
@@ -9,11 +13,13 @@ config:
       events: [assign, mention]
       active: false # off: no Duo credits until turned back on
     - name: duo-fix-pipeline
-      description: Fix CI/CD on failed pipeline
+      description: Fix CI/CD on a failed push pipeline on main
       flow: fix_pipeline/v1
       serviceAccount: duo-fix-ci-cd-pipeline-gitlab-ai-hackathon
       events: [pipeline_hooks]
-      active: false # off for now
+      active: false # off: no Duo credits until turned back on
+      # Main only: on work-in-progress branches it opened draft MRs nobody
+      # wanted (!19, !20). Mention it on an MR to fix a branch by hand.
       filter:
         pipeline_hooks:
           match: all
@@ -21,19 +27,20 @@ config:
             - field: object_attributes.status
               operator: in
               value: [failed]
+            - field: object_attributes.default_branch
+              operator: in
+              value: [true]
+            - field: object_attributes.source
+              operator: in
+              value: [push]
     - name: duo-code-review
-      description: Code review on new or ready MR
+      description: Code review when Duo is asked to review or an MR is marked ready
       flow: code_review/v1
       serviceAccount: duo-code-review-gitlab-ai-hackathon
-      events: [merge_request, merge_request_ready]
-      active: false # off for now
-      filter:
-        merge_request:
-          match: all
-          rules:
-            - field: action
-              operator: in
-              value: [created]
+      # Human actions only, so Renovate's MRs and drafts cost nothing; the
+      # /issue skill requests this reviewer when it opens an MR.
+      events: [assign_reviewer, merge_request_ready]
+      active: false # off: no Duo credits until turned back on
   # Custom flows from .gitlab/duo/catalog/flows, enabled once synced.
   # Off: enabling a custom flow at project level created no flow trigger (it
   # likely needs a group-level consumer first), and no Duo credits until turned
