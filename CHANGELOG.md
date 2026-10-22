@@ -1,3 +1,23 @@
+# [0.21.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.20.0...v0.21.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **campaign:** bind meta launch approval to a frozen draft snapshot ([d499168](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/d499168351f47e1874a4070dd46c31c9a2233ee5))
+* **campaign:** bind meta launch to the widget and allowlist draft arguments ([8c6ffdc](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/8c6ffdc9153fcfdf43646dc1644bb3ca6e471470))
+* **campaign:** confirm meta launches on wovain's page and pin drafts to the plan ([c7c2298](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/c7c2298bd72b497f9821e6b5beb8ccda8c8efa62))
+* **campaign:** refuse a launch when a recorded meta object isn't read back ([ef2bd80](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/ef2bd800961801a096b6b15400d4159b0fb9967f))
+* **campaign:** stage and launch only the meta objects wovain recorded ([e3a62fb](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e3a62fbf30a9d0e6698680a228e8d098ec3fb1e8))
+* **design:** confirm approvals in the browser and harden publishing ([c1c5af1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/c1c5af1108b27524103922980b15bfc0c1f20161))
+* **design:** drop an approval sent with a design ([3a665e0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/3a665e0b4ea5a5e160f053b4b4ed4c88b50a344f))
+
+
+### Features
+
+* **connections:** connect meta through wovain's own meta app ([8af6f04](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/8af6f04604497a9d8f958e226cda5aa848bb7636))
+* **design:** turn one idea into a priced multi-product drop ([6ea6214](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/6ea621423163bb0d3c8c64561ceaff4b5a50dc8b))
+* **optimizer:** add shared schemas, rules and math for the optimizer ([0ec61da](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/0ec61dac0d2690ef1701978b11d35b1bdcacd7d6))
+
 # [0.20.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.19.1...v0.20.0) (2026-10-22)
 
 
