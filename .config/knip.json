@@ -8,7 +8,7 @@
       "entry": ["src/loop.ts", "src/weekly.ts", "src/sci-report.ts"]
     },
     "apps/widgets": {
-      "entry": ["src/*/*-widget.tsx"]
+      "entry": ["src/*/*-widget.tsx", "proof/host.ts"]
     }
   },
   "ignore": ["infra/**"]

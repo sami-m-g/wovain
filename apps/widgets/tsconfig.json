@@ -12,6 +12,7 @@
   "include": [
     "src",
     "test",
+    "proof",
     ".storybook/*.ts",
     ".storybook/*.tsx",
     "vite.config.ts",

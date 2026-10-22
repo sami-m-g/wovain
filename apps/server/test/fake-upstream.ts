@@ -15,11 +15,20 @@ import type { Upstream } from "../src/lib/upstream.ts";
 // token. The SDK's real client code runs against it.
 export const fakeUpstream = (
   id: ProviderId,
-  options: { expiresIn?: number } = {}
+  options: {
+    expiresIn?: number;
+    // Its own authorization server, when several fakes share one fetch.
+    issuer?: string;
+    // More tools, each answering with structured content from its arguments.
+    tools?: Record<
+      string,
+      (args: Record<string, unknown>) => Record<string, unknown>
+    >;
+  } = {}
 ) => {
   const cimd = id !== "meta";
   const server = new URL(providers[id].serverUrl);
-  const issuer = "https://auth.upstream.test";
+  const issuer = options.issuer ?? "https://auth.upstream.test";
   const codes = new Map<string, { challenge: string; user: string }>();
   // Each access token's owner, for the browser sign-in tests.
   const accessTokens = new Map<string, string>();
@@ -49,7 +58,7 @@ export const fakeUpstream = (
 
   const mcpServer = () => {
     const mcp = new McpServer({ name: "fake", version: "0" });
-    for (const name of [
+    for (const name of new Set([
       "ecommerce_get-current-shop",
       "check_account_status",
       "submit_jobs",
@@ -62,7 +71,8 @@ export const fakeUpstream = (
       "ads_creative_upload_media",
       "ads_create_ad",
       "ads_get_creatives",
-    ]) {
+      ...Object.keys(options.tools ?? {}),
+    ])) {
       mcp.registerTool(
         name,
         { inputSchema: z.looseObject({}) },
@@ -76,7 +86,8 @@ export const fakeUpstream = (
               }
             : {
                 content: [{ text: `${name} ok`, type: "text" as const }],
-                structuredContent: replies.get(name) ?? { ok: true },
+                structuredContent: options.tools?.[name]?.(args) ??
+                  replies.get(name) ?? { ok: true },
               };
         }
       );

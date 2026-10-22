@@ -23,6 +23,14 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          include: ["test/e2e/**/*.test.ts"],
+          name: "e2e",
+          testTimeout: 120_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
           include: ["test/live/**/*.test.ts"],
           name: "live",
           testTimeout: 120_000,

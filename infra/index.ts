@@ -505,13 +505,21 @@ ciVariables({
     protected: true,
     value: config.requireSecret("gitlab-ci-token"),
   },
+  // The nightly live e2e journey's design judge (.gitlab/ci/proof.yml).
+  NEBIUS_API_KEY: {
+    created: true,
+    masked: true,
+    protected: true,
+    value: config.requireSecret("nebius-api-key"),
+  },
   RENOVATE_TOKEN: {
     masked: true,
     protected: true,
     value: config.requireSecret("renovate-token"),
   },
   SITE_URL: { protected: true, value: siteUrl },
-  // The weekly market scout's competitor searches (3 Tavily credits).
+  // The weekly market scout's competitor searches (3 Tavily credits) and the
+  // nightly live e2e journey's research.
   TAVILY_API_KEY: {
     created: true,
     masked: true,
