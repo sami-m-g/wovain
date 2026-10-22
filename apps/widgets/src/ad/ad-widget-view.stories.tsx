@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";
 import { AdWidgetView } from "./ad-widget-view.tsx";
+import type { AdWidgetActions } from "./ad-widget-view.tsx";
 
 // Synthetic ad for Storybook: the PRD's demo tee; videos and mockup are placeholders.
 const ad: Ad = {
@@ -165,5 +166,25 @@ export const SendsFeedback = meta.story({
       "Shorter headline{Enter}"
     );
     await expect(args.onFeedback).toHaveBeenCalledWith(ad, "Shorter headline");
+  },
+});
+
+export const AddFails = meta.story({
+  args: {
+    onAdd: fn<AdWidgetActions["onAdd"]>(
+      async () => await Promise.reject(new Error("record_ad failed"))
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Add to campaign" })
+    );
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "That didn’t go through"
+    );
+    await expect(
+      canvas.getByRole("button", { name: "Add to campaign" })
+    ).toBeEnabled();
   },
 });

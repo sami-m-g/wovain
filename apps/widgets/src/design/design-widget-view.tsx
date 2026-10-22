@@ -11,6 +11,8 @@ import type { Design } from "@wovain/shared/design";
 import { money } from "@wovain/shared/economics";
 import { useEffect, useId, useState } from "react";
 
+import { useAction } from "../lib/use-action.ts";
+import { ActionError } from "../lib/widget-shell.tsx";
 import { PricingSettings } from "./pricing-settings.tsx";
 import type { PricingValues } from "./pricing-settings.tsx";
 
@@ -360,7 +362,7 @@ export const DesignWidgetView = ({
   const [design, setDesign] = useState(initialDesign);
   const [color, setColor] = useState(() => firstInStock(initialDesign));
   const [feedback, setFeedback] = useState(initialFeedback ?? "");
-  const [busy, setBusy] = useState<Busy>(null);
+  const { busy, failed, run: act } = useAction<NonNullable<Busy>>();
 
   // While Fourthwall publishes in the chat, follow the stored state.
   useEffect(() => {
@@ -380,13 +382,9 @@ export const DesignWidgetView = ({
   // Runs one widget action; a failure returns the widget to where it was.
   const run = async (kind: Busy, action: () => Promise<void>) => {
     const before = design;
-    setBusy(kind);
-    try {
-      await action();
-    } catch {
+    return await act(kind, action, () => {
       setDesign(before);
-    }
-    setBusy(null);
+    });
   };
 
   const done = design.status === "live" || design.status === "skipped";
@@ -451,6 +449,7 @@ export const DesignWidgetView = ({
           }}
         />
       )}
+      <ActionError failed={failed} />
     </article>
   );
 };

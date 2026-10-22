@@ -4,6 +4,9 @@ import type { Campaign } from "@wovain/shared/campaign";
 import { money } from "@wovain/shared/economics";
 import { useId, useState } from "react";
 
+import { useAction } from "../lib/use-action.ts";
+import { ActionError } from "../lib/widget-shell.tsx";
+
 export interface CampaignWidgetActions {
   // Asks the campaign playbook to publish; nothing spends before this.
   onLaunch: (campaign: Campaign) => Promise<void>;
@@ -36,19 +39,14 @@ export const CampaignWidgetView = ({
   onRecheck,
 }: CampaignWidgetViewProps) => {
   const titleId = useId();
-  const [busy, setBusy] = useState(false);
+  const { failed, pending, run } = useAction<"go">();
   const [sent, setSent] = useState(false);
   const ads = campaign.products.reduce((sum, p) => sum + p.ads, 0);
 
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true);
-    try {
-      await action();
+  const send = async (action: () => Promise<void>) => {
+    if (await run("go", action)) {
       setSent(true);
-    } catch {
-      // The widget stays as it was so the merchant can try again.
     }
-    setBusy(false);
   };
 
   return (
@@ -127,10 +125,10 @@ export const CampaignWidgetView = ({
           <Button
             className="wovain-accent"
             color="primary"
-            disabled={busy || sent}
-            loading={busy}
+            disabled={pending || sent}
+            loading={pending}
             onClick={() => {
-              void run(async () => {
+              void send(async () => {
                 await onLaunch(campaign);
               });
             }}
@@ -143,10 +141,10 @@ export const CampaignWidgetView = ({
         {campaign.status === "blocked" ? (
           <Button
             color="secondary"
-            disabled={busy || sent}
-            loading={busy}
+            disabled={pending || sent}
+            loading={pending}
             onClick={() => {
-              void run(async () => {
+              void send(async () => {
                 await onRecheck(campaign);
               });
             }}
@@ -167,6 +165,7 @@ export const CampaignWidgetView = ({
           </Button>
         )}
       </div>
+      <ActionError failed={failed} />
     </article>
   );
 };

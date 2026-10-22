@@ -3,6 +3,7 @@ import { adResultSchema } from "@wovain/shared/ad";
 import type { Ad, AdStatus } from "@wovain/shared/ad";
 
 import { callTool, say, useWidget } from "../lib/bridge.ts";
+import { WidgetShell } from "../lib/widget-shell.tsx";
 import { AdWidgetView } from "./ad-widget-view.tsx";
 import type { AdWidgetActions } from "./ad-widget-view.tsx";
 
@@ -42,19 +43,10 @@ const actionsFor = (app: App): AdWidgetActions => ({
 });
 
 export const AdWidget = () => {
-  const { app, data, error } = useWidget("ad", adResultSchema);
-
-  if (error !== null) {
-    return (
-      <p className="text-danger p-4 text-sm">
-        The ad widget couldn’t connect. Ask again to reload it.
-      </p>
-    );
-  }
-  if (app === null || data === undefined) {
-    return (
-      <p className="text-secondary p-4 text-sm">Putting the ads together…</p>
-    );
-  }
-  return <AdWidgetView ad={data.ad} {...actionsFor(app)} />;
+  const widget = useWidget("ad", adResultSchema);
+  return (
+    <WidgetShell loading="Putting the ads together…" name="ad" widget={widget}>
+      {({ app, data }) => <AdWidgetView ad={data.ad} {...actionsFor(app)} />}
+    </WidgetShell>
+  );
 };

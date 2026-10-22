@@ -27,10 +27,19 @@ const applyTheme = (context: Partial<McpUiHostContext> | undefined) => {
   }
 };
 
-// Connects the widget to the host and returns the tool result it was opened with,
-// checked against the same zod schema the server uses.
-export const useWidget = <T>(name: string, schema: z.ZodType<T>) => {
+// Connects the widget to the host. Its state is "ready" with the tool result it
+// was opened with, checked against the same zod schema the server uses.
+export type WidgetState<T> =
+  | { state: "error" }
+  | { state: "loading" }
+  | { app: App; data: T; state: "ready" };
+
+export const useWidget = <T>(
+  name: string,
+  schema: z.ZodType<T>
+): WidgetState<T> => {
   const [data, setData] = useState<T | undefined>();
+  const [invalid, setInvalid] = useState(false);
   const { app, error } = useApp({
     appInfo: { name: `wovain-${name}`, version: "0.1.0" },
     capabilities: {},
@@ -40,6 +49,7 @@ export const useWidget = <T>(name: string, schema: z.ZodType<T>) => {
       // oxlint-disable-next-line react-doctor/effect-needs-cleanup
       created.addEventListener("toolresult", (result) => {
         const parsed = schema.safeParse(result.structuredContent);
+        setInvalid(!parsed.success);
         if (parsed.success) {
           setData(parsed.data);
         }
@@ -52,7 +62,13 @@ export const useWidget = <T>(name: string, schema: z.ZodType<T>) => {
     applyTheme(app?.getHostContext());
   }, [app]);
 
-  return { app, data, error };
+  if (error !== null || invalid) {
+    return { state: "error" };
+  }
+  if (app === null || data === undefined) {
+    return { state: "loading" };
+  }
+  return { app, data, state: "ready" };
 };
 
 // Calls a wovain tool and checks its result against the shared schema.

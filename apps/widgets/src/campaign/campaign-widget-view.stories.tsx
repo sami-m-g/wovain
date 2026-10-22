@@ -120,3 +120,23 @@ export const Blocked = meta.story({
     await expect(args.onRecheck).toHaveBeenCalled();
   },
 });
+
+export const LaunchFails = meta.story({
+  args: {
+    onLaunch: fn(async () => {
+      await Promise.reject(new Error("say failed"));
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Launch at $15.00 a day" })
+    );
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "That didn’t go through"
+    );
+    await expect(
+      canvas.getByRole("button", { name: "Launch at $15.00 a day" })
+    ).toBeEnabled();
+  },
+});

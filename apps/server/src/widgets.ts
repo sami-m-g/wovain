@@ -6,10 +6,8 @@ import {
   registerAppResource,
 } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
-
-// Each widget is one self-contained HTML file built by apps/widgets (Vite single-file).
-const widgetNames = ["settings", "design", "ad", "campaign"] as const;
-export type WidgetName = (typeof widgetNames)[number];
+import { widgetNames } from "@wovain/shared/widgets";
+import type { WidgetName } from "@wovain/shared/widgets";
 
 // The URI is the host's cache key: bump the version when a widget changes shape.
 export const widgetUri = (name: WidgetName) => `ui://wovain/${name}-v3.html`;
@@ -31,6 +29,7 @@ const ui = {
   prefersBorder: true,
 };
 
+// Each widget is one self-contained HTML file built by apps/widgets (Vite single-file).
 export const registerWidgets = (server: McpServer, widgetsDir: string) => {
   for (const name of widgetNames) {
     const uri = widgetUri(name);

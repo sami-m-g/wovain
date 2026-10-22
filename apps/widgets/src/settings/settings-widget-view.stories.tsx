@@ -57,7 +57,7 @@ export const Saves = meta.story({
     await expect(args.onSave).toHaveBeenCalledWith(
       expect.objectContaining({ campaign: { dailyBudgetPerProduct: 20 } })
     );
-    await expect(canvas.getByText("$20 per product per day")).toBeVisible();
+    await expect(canvas.getByText("$20.00 per product per day")).toBeVisible();
   },
 });
 
