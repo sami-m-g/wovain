@@ -34,10 +34,10 @@ Use the `EnterWorktree` tool, on a branch named `<type>/<n>-<slug>` cut from `or
 - Open the MR. `--fill` doesn't work together with `-R`, so pass every input explicitly:
 
   ```
-  glab mr create -R <project> --source-branch <branch> --target-branch main --related-issue <n> --title "<conventional title>" --description "<body>" --reviewer duo-code-review-gitlab-ai-hackathon --remove-source-branch --yes
+  glab mr create -R <project> --source-branch <branch> --target-branch main --related-issue <n> --title "<conventional title>" --description "<body>" --remove-source-branch --yes
   ```
 
-  Requesting the Duo reviewer starts the Code Review flow when its trigger is on (`infra/Pulumi.prod.yaml`).
+  Add `--reviewer duo-code-review-gitlab-ai-hackathon` only when the `duo-code-review` trigger in `infra/Pulumi.prod.yaml` is active. Requesting that reviewer starts a Code Review run, which spends Duo credits.
 
   The description says:
   - what changed
