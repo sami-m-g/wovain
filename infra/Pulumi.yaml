@@ -15,7 +15,9 @@ packages:
   graphql:
     source: terraform-provider
     version: 1.5.0
+    # Pin the provider too: pulumi install regenerates the SDK on every run.
     parameters:
       - sullivtr/graphql
+      - 2.6.2
 backend:
   url: gs://wovain-pulumi-state
