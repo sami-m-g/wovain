@@ -91,6 +91,8 @@ Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm t
 | `pnpm typecheck` | TypeScript, strictest settings |
 | `pnpm test` | Server unit tests (Vitest): pure logic, no services |
 | `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
+| `pnpm test:e2e` | The whole journey as an agent drives it, on the emulators with recorded Fourthwall, fal, Meta, Tavily, Qloo and Nebius replies; writes a proof report with each step's redacted input and output, timing and widget screenshot to `e2e-report/index.html` (needs Java 21). `E2E_LIVE=1` swaps in real Tavily and Nebius calls when their keys are set |
+| `pnpm demo` | After `pnpm test:e2e`: a narrated video of the run, `e2e-report/demo.mp4`, under 3 minutes (`/demo`) |
 | `pnpm test:live` | Opt-in: one real Nemotron call on Nebius and one real Tavily research; each is skipped without its key (`NEBIUS_API_KEY`, `TAVILY_API_KEY`) |
 | `pnpm test:stories` | Widget stories as tests (Playwright) |
 | `pnpm knip` | Unused files, exports and dependencies |
@@ -123,7 +125,7 @@ Production errors skip the first two steps. The hourly **self-healing loop** ([d
 
 ### Agent skills
 
-The project's own skills (`/issue`, `/capture`) are written once, in `.agents/skills/<name>/SKILL.md`. Each agent finds them there:
+The project's own skills (`/issue`, `/capture`, `/demo`) are written once, in `.agents/skills/<name>/SKILL.md`. Each agent finds them there:
 
 | Agent | How it reads them |
 | --- | --- |

@@ -7,6 +7,8 @@ packages:
 allowBuilds:
   "@firebase/util": false
   esbuild: true
+  # The demo video's ffmpeg binary (apps/widgets/proof/demo.ts).
+  ffmpeg-static: true
   lefthook: true
   protobufjs: false
   re2: false
