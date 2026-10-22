@@ -2,6 +2,8 @@
 name: capture
 description: Turn the user's feedback (text plus optional screenshots) into GitLab work items. Use when the user says "/capture", pastes feedback, a bug, a complaint or an idea, or shares a screenshot with a comment.
 argument-hint: "[feedback text and screenshot paths]"
+metadata:
+  slash-command: enabled
 ---
 
 # Capture feedback as work items

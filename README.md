@@ -113,6 +113,17 @@ Each idea or bug is a GitLab issue (template `Intent`, `Agent task` or `Bug`) on
 
 The scout flow's daily comment on the `digest` issue lists what shipped and what waits for you. Duo triggers and the scout schedule are paused while Duo credits are paused (`infra/Pulumi.prod.yaml`).
 
+### Agent skills
+
+The project's own skills (`/issue`, `/capture`) are written once, in `.agents/skills/<name>/SKILL.md`. Each agent finds them there:
+
+| Agent | How it reads them |
+| --- | --- |
+| GitLab Duo | Reads `.agents/skills/` directly: Duo Chat in VS Code or the Duo CLI, and every flow except Code Review ([docs](https://docs.gitlab.com/user/duo_agent_platform/customize/agent_skills/)). Chat in the GitLab UI doesn't load skills, and a custom flow needs the `workspace_agent_skills` input |
+| Claude Code | Through `.claude/skills/<name>`, a committed symlink to the same folder |
+
+The course skills and `ultracite` are copied into `.claude/skills/` by `pnpm install` and stay out of git, so only Claude Code sees them. Plugins from `.claude/settings.json` are Claude Code only too: a headless `claude` run in CI loads them only after `claude plugin install <plugin>@<marketplace> --scope project`.
+
 ## Infrastructure as code
 
 `infra/` (Pulumi, `pnpm infra:preview` then `pnpm infra:up`, which CI runs on `main`) declares:
@@ -146,6 +157,7 @@ Releases come from conventional commits. semantic-release (`.config/releaserc.js
 | `apps/widgets/` | The React widgets (MCP Apps) and their Storybook stories |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and widgets |
 | `docs/` | Planning documents and the app map |
+| `.agents/skills/` | Project skills for Claude Code and GitLab Duo (see [Agent skills](#agent-skills)) |
 
 ## License
 

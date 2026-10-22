@@ -2,6 +2,8 @@
 name: issue
 description: Work one GitLab issue end to end in its own worktree and open a merge request for it. Use when the user says "/issue 42", "work issue 42" or "pick up the next todo issue". Run several sessions at once for parallel work.
 argument-hint: "[issue number, or empty for the top status::todo issue]"
+metadata:
+  slash-command: enabled
 ---
 
 # Work a GitLab issue
@@ -53,9 +55,11 @@ The change keeps its artifacts in `docs/changes/<n>-<slug>/` (see `docs/changes/
   - how to test it in the review app
   - what wasn't done
   - `Closes #<n>`
+
 - Move the issue: `--label status::review --unlabel status::doing`.
 
 ## 5. Report back
 
 Give the user the MR link and the test steps. The human moves intent → todo before you start, and test → merge at the end. When they've tried the review app, they move the issue to `status::test` or comment on what to change. Never merge your own MR.
+
 - Agents never create new labels; only labels declared in `infra/gitlab.ts` may be used.
