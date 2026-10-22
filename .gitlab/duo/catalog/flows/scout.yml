@@ -52,11 +52,17 @@ definition:
              A failure fixed by a newer passing pipeline is not a problem.
           4. Search open issues labeled "scout" for the same failing job. If one
              exists, note "known: <issue link>" and go to step 6.
-          5. Otherwise create one confidential issue labeled "scout" with: the
-             failing job and pipeline link, the log lines that show the cause
-             (redact anything that looks like a token, key or password), the
-             likely cause, and a suggested fix. Title:
-             "scout: <job> fails: <cause>".
+          5. Otherwise create one confidential issue labeled "scout" and
+             "status::intent" whose body follows the Intent template, with these sections:
+             - Problem: the failing job and pipeline link, and the log lines
+               that show the cause (redact anything that looks like a token,
+               key or password).
+             - Desired outcome: the job passes and production stays healthy.
+             - Constraints: what limits the fix, such as the likely cause and
+               a suggested fix, labeled as a suggestion.
+             - Open questions: what the logs don't settle.
+             Title: "scout: <job> fails: <cause>". A human reads it and
+             accepts the intent.
 
           6. Post the digest. Find the open, confidential issue labeled
              "digest" (if none exists, create one, confidential, titled
