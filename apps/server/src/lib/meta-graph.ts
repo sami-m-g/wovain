@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 import type { MetaRule } from "@wovain/shared/rules";
 import { z } from "zod";
 
@@ -14,9 +16,26 @@ const createdSchema = z.object({ id: z.string() });
 
 const meta = { label: "Meta", timeoutMs: 20_000 };
 
-export const createMetaGraph = (token: string, adAccountId: string) => {
+// Graph calls made with the merchant's own token from their Meta connection.
+// With the app secret set, each call carries appsecret_proof, which Meta
+// requires when the app has "Require App Secret" on
+// (developers.facebook.com/docs/graph-api/securing-requests).
+export const createMetaGraph = (
+  token: string,
+  adAccountId: string,
+  appSecret?: string
+) => {
   const account = `${GRAPH}/act_${adAccountId.replace(/^act_/u, "")}`;
   const auth = { authorization: `Bearer ${token}` };
+  const withProof = (url: URL) => {
+    if (appSecret !== undefined) {
+      url.searchParams.set(
+        "appsecret_proof",
+        createHmac("sha256", appSecret).update(token).digest("hex")
+      );
+    }
+    return url;
+  };
   return {
     createRule: async ({ label: _label, ...rule }: MetaRule) => {
       const form = new URLSearchParams({
@@ -26,14 +45,14 @@ export const createMetaGraph = (token: string, adAccountId: string) => {
         schedule_spec: JSON.stringify(rule.schedule_spec),
       });
       const created = await fetchJson(
-        `${account}/adrules_library`,
+        withProof(new URL(`${account}/adrules_library`)),
         createdSchema,
         { ...meta, body: form, headers: auth, method: "POST" }
       );
       return created.id;
     },
     listRuleNames: async () => {
-      const url = new URL(`${account}/adrules_library`);
+      const url = withProof(new URL(`${account}/adrules_library`));
       url.searchParams.set("fields", "name");
       url.searchParams.set("limit", "200");
       const list = await fetchJson(url, listSchema, { ...meta, headers: auth });

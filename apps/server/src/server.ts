@@ -22,7 +22,7 @@ import { registerWidgets } from "./widgets.ts";
 
 // What the tools call upstream, built once per process: HTTP mode builds a
 // server per request. One Genkit instance serves every model call. The
-// upstream client reaches each merchant's own Fourthwall and fal; confirm
+// upstream client reaches each merchant's own Fourthwall, fal and Meta; confirm
 // makes the browser links merchants approve designs through.
 export const createDeps = (
   env: Env,
@@ -73,7 +73,10 @@ export const createServer = (
   registerJudgeTools(server, designJudge);
   registerResearchTools(server, trendResearch);
   registerAdTools(server, store, videoPricing, upstream);
-  registerCampaignTools(server, store, env);
+  registerCampaignTools(server, store, {
+    metaAppSecret: env.META_APP_SECRET,
+    upstream,
+  });
   registerConnectionTools(server, store, upstream);
   registerPlaybooks(server);
   return server;

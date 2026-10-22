@@ -135,7 +135,8 @@ new gcp.firebaserules.Release("storage-release", {
 // one).
 const secretNames = [
   "fal-key",
-  "meta-system-user-token",
+  "meta-app-id",
+  "meta-app-secret",
   "nebius-api-key",
   "otel-exporter-otlp-endpoint",
   "otel-exporter-otlp-headers",

@@ -8,15 +8,16 @@ import { nonceHashOf, providers } from "../src/lib/connections.ts";
 import type { ProviderId } from "../src/lib/connections.ts";
 import type { Upstream } from "../src/lib/upstream.ts";
 
-// A stand-in for Fourthwall's or fal's MCP server and its authorization
-// server, reached through an injected fetch: protected-resource and AS
-// metadata (with CIMD), a token endpoint that checks PKCE and rotates refresh
-// tokens, and an MCP endpoint that wants a bearer token. The SDK's real
-// client code runs against it.
+// A stand-in for Fourthwall's, fal's or Meta's MCP server and its
+// authorization server, reached through an injected fetch: protected-resource
+// and AS metadata (with CIMD, except Meta's), a token endpoint that checks
+// PKCE and rotates refresh tokens, and an MCP endpoint that wants a bearer
+// token. The SDK's real client code runs against it.
 export const fakeUpstream = (
   id: ProviderId,
   options: { expiresIn?: number } = {}
 ) => {
+  const cimd = id !== "meta";
   const server = new URL(providers[id].serverUrl);
   const issuer = "https://auth.upstream.test";
   const codes = new Map<string, { challenge: string; user: string }>();
@@ -24,6 +25,8 @@ export const fakeUpstream = (
   const accessTokens = new Map<string, string>();
   const refreshTokens = new Set<string>();
   const calls: { name: string; arguments: unknown }[] = [];
+  // The client_id each token request came with.
+  const tokenClients: string[] = [];
   const stats = { refreshes: 0 };
   const mode = { loginNeeded: false };
 
@@ -48,6 +51,10 @@ export const fakeUpstream = (
       "ecommerce_get-current-shop",
       "check_account_status",
       "submit_jobs",
+      "ads_get_ad_accounts",
+      "ads_create_campaign",
+      "ads_create_ad_set",
+      "ads_activate_entity",
     ]) {
       mcp.registerTool(
         name,
@@ -86,12 +93,12 @@ export const fakeUpstream = (
   app.get("/.well-known/oauth-authorization-server", (c) =>
     c.json({
       authorization_endpoint: `${issuer}/authorize`,
-      client_id_metadata_document_supported: true,
+      client_id_metadata_document_supported: cimd,
       code_challenge_methods_supported: ["S256"],
       grant_types_supported: ["authorization_code", "refresh_token"],
       issuer,
       response_types_supported: ["code"],
-      scopes_supported: ["openid", "offline_access"],
+      scopes_supported: cimd ? ["openid", "offline_access"] : ["ads_read"],
       token_endpoint: `${issuer}/token`,
       token_endpoint_auth_methods_supported: ["none"],
     })
@@ -102,6 +109,7 @@ export const fakeUpstream = (
       const value = form.get(name);
       return typeof value === "string" ? value : "";
     };
+    tokenClients.push(field("client_id"));
     if (field("grant_type") === "authorization_code") {
       const granted = codes.get(field("code"));
       const verified =
@@ -156,6 +164,7 @@ export const fakeUpstream = (
       mode.loginNeeded = value;
     },
     stats,
+    tokenClients,
   };
 };
 

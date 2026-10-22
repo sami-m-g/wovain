@@ -2,6 +2,7 @@ import { createAuth } from "./auth/auth.ts";
 import type { Auth } from "./auth/auth.ts";
 import { loadAuthEnv, siteUrl } from "./auth/env.ts";
 import { loadEnv } from "./env.ts";
+import type { Env } from "./env.ts";
 import { createStorage } from "./firebase.ts";
 import type { Storage } from "./firebase.ts";
 import { createBrowserConfirm } from "./lib/browser-confirm.ts";
@@ -11,7 +12,7 @@ import type { BrowserSignIn } from "./lib/browser-sign-in.ts";
 import { kmsCipher, localCipher } from "./lib/cipher.ts";
 import { createConnections } from "./lib/connections.ts";
 import { createUpstream } from "./lib/upstream.ts";
-import type { Upstream } from "./lib/upstream.ts";
+import type { Clients, Upstream } from "./lib/upstream.ts";
 
 // Merchant connections need the KMS key, except on the emulators (`pnpm
 // dev`), where an in-memory key stands in. Without either they're off.
@@ -35,18 +36,31 @@ const userOfFor = (auth: Auth, site: string) => async (accessToken: string) => {
   return allowed ? userId : undefined;
 };
 
+// Meta's Ads MCP takes no CIMD or DCR: wovain's Meta app is its client.
+const clientsFor = ({ META_APP_ID, META_APP_SECRET }: Env): Clients =>
+  META_APP_ID === undefined
+    ? {}
+    : {
+        meta: {
+          client_id: META_APP_ID,
+          ...(META_APP_SECRET === undefined
+            ? {}
+            : { client_secret: META_APP_SECRET }),
+        },
+      };
+
 export interface Connect {
   signIn: BrowserSignIn;
   upstream: Upstream;
 }
 
 const connectFor = (
-  keyName: string | undefined,
+  env: Env,
   storage: Storage,
   auth: Auth,
   site: string
 ): Connect | undefined => {
-  const cipher = cipherFor(keyName);
+  const cipher = cipherFor(env.WOVAIN_KMS_KEY);
   if (cipher === undefined) {
     return undefined;
   }
@@ -57,7 +71,11 @@ const connectFor = (
       site,
       userOf: userOfFor(auth, site),
     }),
-    upstream: createUpstream({ connections, site }),
+    upstream: createUpstream({
+      clients: clientsFor(env),
+      connections,
+      site,
+    }),
   };
 };
 
@@ -79,7 +97,7 @@ export const createRuntime = () => {
       site,
       userOf: userOfFor(auth, site),
     }),
-    connect: connectFor(env.WOVAIN_KMS_KEY, storage, auth, site),
+    connect: connectFor(env, storage, auth, site),
     env,
     storage,
   };

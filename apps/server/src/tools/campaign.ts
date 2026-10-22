@@ -13,13 +13,20 @@ import {
   metaRules,
   ruleThresholds,
 } from "@wovain/shared/rules";
-import type { RuleLabel, RuleProduct } from "@wovain/shared/rules";
+import type { MetaRule, RuleLabel, RuleProduct } from "@wovain/shared/rules";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
-import type { Env } from "../env.ts";
+import { draftArgs, draftToolSchema } from "../lib/meta-draft.ts";
 import { createMetaGraph } from "../lib/meta-graph.ts";
-import { text } from "../lib/tool-result.ts";
+import { text, userSafe } from "../lib/tool-result.ts";
+import {
+  canReach,
+  connectReply,
+  unreachable,
+  upstreamReply,
+} from "../lib/upstream.ts";
+import type { Upstream } from "../lib/upstream.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
@@ -78,11 +85,127 @@ const ruleDetails = (
   };
 };
 
+interface MetaDeps {
+  // wovain's Meta app secret, for appsecret_proof on Graph calls.
+  metaAppSecret?: string | undefined;
+  upstream?: Upstream | undefined;
+}
+
+// Meta Ads calls wovain makes for the campaign playbook. The agent passes
+// client_conversation_id; advertiser_job is always the launch job.
+const ADVERTISER_JOB = "create_and_launch_new_ads";
+const conversationSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9]{20}$/u)
+  .describe("The client_conversation_id of this chat's Meta Ads calls.");
+
+// Builds the draft and launches it on the merchant's own Meta grant. Every
+// object is staged paused; only launch_campaign publishes.
+const registerMetaCampaignTools = (
+  server: McpServer,
+  store: Store,
+  upstream: Upstream | undefined
+) => {
+  server.registerTool(
+    "campaign_draft",
+    {
+      annotations: {
+        destructiveHint: false,
+        openWorldHint: true,
+        readOnlyHint: false,
+      },
+      description:
+        "Stage one object of the merchant's campaign in their Meta ad account's draft, on the Meta account they connected to wovain: upload a video or image by URL, or create the campaign, the ad set, a creative or an ad. Pass the Meta tool name and its arguments as Meta documents them, with advertiser_job and client_conversation_id. Meta stages every object paused, so nothing spends until launch_campaign. wovain sets the campaign's daily budget from campaign_plan and leaves budgets off the ad set. Needs at least one added ad widget.",
+      inputSchema: z.object({
+        arguments: z.record(z.string(), z.unknown()),
+        tool: draftToolSchema,
+      }),
+      title: "Stage the Meta campaign draft",
+    },
+    async ({ arguments: args, tool }) => {
+      const settings = await store.getSettings();
+      const { dailyBudget } = await addedProducts(store, settings);
+      return await upstreamReply(upstream, {
+        args: draftArgs(tool, args, Math.round(dailyBudget * 100)),
+        id: "meta",
+        tool,
+        userId: store.userId,
+      });
+    }
+  );
+
+  server.registerTool(
+    "launch_campaign",
+    {
+      annotations: {
+        destructiveHint: false,
+        openWorldHint: true,
+        readOnlyHint: false,
+      },
+      description:
+        'Publish the wovain campaign in Meta, which starts spending. Call only when the merchant pressed Launch on the campaign widget (the chat says "Launch the wovain campaign"), never on your own. Publishes the campaign create_rules recorded, with its ad set and ads, on the merchant\'s connected Meta account.',
+      inputSchema: z.object({
+        clientConversationId: conversationSchema,
+        objectIds: z
+          .array(z.string().regex(/^\d+$/u))
+          .max(200)
+          .default([])
+          .describe(
+            "The draft's ad set and ad IDs (ad_object_id from ads_get_ad_entities with object_state draft and the campaign ID). The campaign itself is added."
+          ),
+      }),
+      title: "Launch the campaign",
+    },
+    async ({ clientConversationId, objectIds }) => {
+      const saved = await store.getCampaign();
+      if (saved === undefined) {
+        throw new Error(
+          "No campaign recorded yet: build the draft and call create_rules first."
+        );
+      }
+      return await upstreamReply(upstream, {
+        args: {
+          ad_account_id: saved.adAccountId.replace(/^act_/u, ""),
+          advertiser_job: ADVERTISER_JOB,
+          client_conversation_id: clientConversationId,
+          entity_id: saved.campaignId,
+          entity_type: "campaign",
+          hide_ui: true,
+          object_ids: [...new Set([saved.campaignId, ...objectIds])],
+          publish_as_active: true,
+        },
+        id: "meta",
+        tool: "ads_activate_entity",
+        userId: store.userId,
+      });
+    }
+  );
+};
+
+// Creates the rules that don't exist yet with the merchant's own token, so
+// Graph only lets them touch ad accounts they manage.
+const createMissingRules = async (
+  token: string,
+  adAccountId: string,
+  rules: MetaRule[],
+  appSecret: string | undefined
+) => {
+  const graph = createMetaGraph(token, adAccountId, appSecret);
+  const existing = new Set(await graph.listRuleNames());
+  await Promise.all(
+    rules.flatMap((rule) =>
+      existing.has(rule.name) ? [] : [graph.createRule(rule)]
+    )
+  );
+};
+
 export const registerCampaignTools = (
   server: McpServer,
   store: Store,
-  env: Env
+  { metaAppSecret, upstream }: MetaDeps
 ) => {
+  registerMetaCampaignTools(server, store, upstream);
+
   server.registerTool(
     "campaign_plan",
     {
@@ -131,7 +254,7 @@ export const registerCampaignTools = (
         readOnlyHint: false,
       },
       description:
-        "Create the five wovain automated rules for the campaign in Meta (the Meta Ads MCP has no rules tool). Safe to call again: rules that already exist are skipped. Needs META_SYSTEM_USER_TOKEN in .env; without it, says so and creates nothing.",
+        "Create the five wovain automated rules for the campaign in Meta (the Meta Ads MCP has no rules tool), with the merchant's own Meta account connected to wovain, and record the campaign for launch_campaign. Safe to call again: rules that already exist are skipped. Without a Meta connection, the result has needsConnection and a link to show the merchant.",
       inputSchema: z.object({
         adAccountId: z.string().regex(/^(?:act_)?\d+$/u),
         campaignId: z.string().regex(/^\d+$/u),
@@ -150,31 +273,34 @@ export const registerCampaignTools = (
         products: ruleProducts,
         rules: settings.rules,
       });
-      if (env.META_SYSTEM_USER_TOKEN === undefined) {
+      const record = async (created: string[]) => {
         await store.saveCampaign({
           adAccountId,
           campaignId,
-          rulesCreated: [],
+          rulesCreated: created,
         });
-        return {
-          content: text(
-            "No rules created: add a Meta access token with ads_management to .env as META_SYSTEM_USER_TOKEN, restart the app, then call create_rules again. Show the campaign widget as blocked with that fix."
-          ),
-        };
+      };
+      if (!canReach(upstream, "meta")) {
+        await record([]);
+        return unreachable(upstream, "meta");
       }
-      const graph = createMetaGraph(env.META_SYSTEM_USER_TOKEN, adAccountId);
-      const existing = new Set(await graph.listRuleNames());
-      await Promise.all(
-        rules.flatMap((rule) =>
-          existing.has(rule.name) ? [] : [graph.createRule(rule)]
-        )
+      const token = await userSafe(
+        "meta token failed:",
+        "Couldn't reach the merchant's Meta account. Try again in a minute.",
+        async () => await upstream.accessToken(store.userId, "meta")
+      );
+      if (token.kind === "connect") {
+        await record([]);
+        return connectReply(token.connect);
+      }
+      await createMissingRules(
+        token.accessToken,
+        adAccountId,
+        rules,
+        metaAppSecret
       );
       const created = [...new Set(rules.map((rule) => rule.label))];
-      await store.saveCampaign({
-        adAccountId,
-        campaignId,
-        rulesCreated: created,
-      });
+      await record(created);
       return {
         content: text(`Rules in place: ${created.join(", ")}.`),
       };
