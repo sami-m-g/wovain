@@ -349,12 +349,12 @@ for (const role of ["roles/logging.viewer", "roles/monitoring.viewer"]) {
   });
 }
 
-// The weekly analysis (apps/ops/src/weekly.ts) and the sci job are the only
-// jobs that read merchants' records, for funnel counts and clips' GPU
-// seconds, so they share an account trusted only from the analytics
+// The weekly analysis (apps/ops/src/weekly.ts) is the only job that reads
+// merchants' records, for funnel counts and one aggregate of fal clips' GPU
+// seconds, so it has its own account, trusted only from its own analytics
 // environment. records.ts reads statuses and fal job timings through field
 // masks; the grants stay KMS-encrypted and this account can't use the key.
-// The loop job never gets Firestore access.
+// The loop and sci jobs never get Firestore access.
 const analytics = new gcp.serviceaccount.Account(
   "gitlab-analytics",
   {

@@ -9,7 +9,7 @@ We measure wovain with the Green Software Foundation's [Software Carbon Intensit
 - **I, grid intensity:** location-based, from Google Cloud's 2025 region table: 432 gCO2e/kWh in us-central1 (App Hosting) and 579 in us-east1 (GitLab's hosted Linux runners run in us-east1 and us-east5; we take the dirtier one). Google's 88% carbon-free energy in us-central1 is a market-based figure, which SCI leaves out, so we don't credit it.
 - **M, embodied emissions:** a server's share per vCPU-hour, following Cloud Carbon Footprint's method (about 0.71 g per vCPU-hour; estimate).
 
-The `sci` job recomputes it on every `main` pipeline (`apps/ops/src/sci.ts`, `.gitlab/ci/loop.yml`) from the last 7 days, plus the GPU seconds fal reported for every clip merchants generated (Firestore, read as `gitlab-analytics`), and publishes `sci-report.md` as a job artifact. The latest report is at [`/-/jobs/artifacts/main/raw/sci-report.md?job=sci`](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/-/jobs/artifacts/main/raw/sci-report.md?job=sci). It's also a GitLab metrics report (`sci_gco2e_per_run`), so a merge request shows how the number moves.
+The `sci` job recomputes it on every `main` pipeline (`apps/ops/src/sci.ts`, `.gitlab/ci/loop.yml`) from the last 7 days, plus one aggregate of fal clips' GPU seconds, and publishes `sci-report.md` as a job artifact. The latest report is at [`/-/jobs/artifacts/main/raw/sci-report.md?job=sci`](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/-/jobs/artifacts/main/raw/sci-report.md?job=sci). It's also a GitLab metrics report (`sci_gco2e_per_run`), so a merge request shows how the number moves.
 
 ## Baseline (2026-10-22)
 
@@ -28,7 +28,7 @@ Energy coefficients: Cloud Carbon Footprint's Google Cloud figures (0.71–4.26 
 
 | Number | Status | Source |
 | --- | --- | --- |
-| GPU seconds per clip | **Measured** once recorded | fal's own figure for each job: `timings.inference` in the job result (H3 routes: DiT denoising on the GPU) or the queue's `metrics.inference_time`. `collect_ad_media` stores it on the job in `ad-media/{designId}`; the `sci` job uses the median over all recorded clips |
+| GPU seconds per clip | **Measured** once recorded | fal's own figure for each job: `timings.inference` in the job result (H3 routes: DiT denoising on the GPU) or the queue's `metrics.inference_time`. `collect_ad_media` stores it with a timestamp on the job in `ad-media/{designId}`. The `weekly` job, the only one that reads merchants' records (as `gitlab-analytics`), publishes just the count, median and p90 over the last 30 days as its `fal-clips.json` artifact; the `sci` job reads that artifact, never Firestore, and uses the median. No per-merchant or per-clip value reaches `sci.json` |
 | GPU type and power | Estimate | fal names no GPU in results, request history or billing, so each GPU second is taken at an H100's 700 W TDP with PUE 1.1 |
 | Fallback | Estimate | One H100-minute per clip when no clip has recorded GPU seconds |
 | Grid intensity for fal | Estimate | us-central1's 432 g/kWh; fal doesn't say where a job ran |

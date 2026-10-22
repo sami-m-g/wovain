@@ -45,12 +45,15 @@ type SavedCampaign = z.infer<typeof campaignSchema>;
 
 // The fal jobs wovain submitted for one design's ads and the media URLs their
 // results held: the only fal URLs an ad may use. gpuSeconds is the GPU time
-// fal reported for a finished job (the sci job's measured video energy).
+// fal reported for a finished job; the weekly job turns them into one
+// aggregate (count, median, p90) for the sci job's video energy.
 const adMediaSchema = z.object({
   jobs: z.array(
     z.object({
       endpointId: z.string(),
       gpuSeconds: z.number().nonnegative().optional(),
+      // When collect_ad_media read gpuSeconds, so aggregates can use a window.
+      measuredAt: z.iso.datetime().optional(),
       requestId: z.string(),
     })
   ),

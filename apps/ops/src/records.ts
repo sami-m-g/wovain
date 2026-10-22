@@ -5,7 +5,8 @@ import { z } from "zod";
 // (datastore.viewer). Field masks keep the read to the fields the funnel
 // needs: statuses, video states, the rules list and the GPU seconds fal
 // reported for each generated clip. Nothing about a merchant leaves this
-// module except counts and those seconds.
+// module except counts and those clip timings, which weekly.ts only
+// publishes as one aggregate (count, median, p90).
 
 const MAX_USERS = 500;
 
@@ -30,8 +31,13 @@ export interface MerchantRecords {
   ads: { status: string; videosReady: number }[];
   campaigns: { rules: number }[];
   // GPU seconds fal reported per generated clip (ad-media jobs on an
-  // image- or reference-to-video endpoint), for the sci job.
-  clipGpuSeconds: number[];
+  // image- or reference-to-video endpoint) and when they were read.
+  clips: ClipSample[];
+}
+
+export interface ClipSample {
+  at: string;
+  gpuSeconds: number;
 }
 
 const readyVideos = (videos: unknown[]) =>
@@ -51,20 +57,23 @@ const falJobSchema = z.object({
           integerValue: z.coerce.number().optional(),
         })
         .optional(),
+      measuredAt: z.object({ stringValue: z.string() }).optional(),
     }),
   }),
 });
 const CLIP_ENDPOINT = /(?:image|reference)-to-video$/u;
 
-const clipSeconds = (jobs: unknown[]) =>
+const clipSamples = (jobs: unknown[]): ClipSample[] =>
   jobs.flatMap((job) => {
     const parsed = falJobSchema.safeParse(job);
     const fields = parsed.success ? parsed.data.mapValue.fields : undefined;
-    const seconds =
+    const gpuSeconds =
       fields?.gpuSeconds?.doubleValue ?? fields?.gpuSeconds?.integerValue;
-    return seconds !== undefined &&
+    const at = fields?.measuredAt?.stringValue;
+    return gpuSeconds !== undefined &&
+      at !== undefined &&
       CLIP_ENDPOINT.test(fields?.endpointId.stringValue ?? "")
-      ? [seconds]
+      ? [{ at, gpuSeconds }]
       : [];
   });
 
@@ -110,8 +119,8 @@ export const readRecords = async (
         campaigns: campaigns.map((c) => ({
           rules: c.fields["rulesCreated"]?.arrayValue?.values.length ?? 0,
         })),
-        clipGpuSeconds: media.flatMap((m) =>
-          clipSeconds(m.fields["jobs"]?.arrayValue?.values ?? [])
+        clips: media.flatMap((m) =>
+          clipSamples(m.fields["jobs"]?.arrayValue?.values ?? [])
         ),
         connections: connections.length,
         designs: designs.map((d) => d.fields["status"]?.stringValue ?? "draft"),

@@ -378,13 +378,13 @@ test("collect_ad_media keeps the GPU time fal reports", async () => {
     name: "collect_ad_media",
   });
   const media = await store.getAdMedia("d1");
-  expect(media.jobs).toEqual([
-    {
-      endpointId: "minimax/h3-max-turbo/image-to-video",
-      gpuSeconds: 6.5,
-      requestId: "r1",
-    },
-  ]);
+  expect(media.jobs).toHaveLength(1);
+  expect(media.jobs[0]).toMatchObject({
+    endpointId: "minimax/h3-max-turbo/image-to-video",
+    gpuSeconds: 6.5,
+    requestId: "r1",
+  });
+  expect(media.jobs[0]?.measuredAt).toBeTypeOf("string");
   expect(media.urls).toContain("https://v3b.fal.media/files/b/x/clip.mp4");
 });
 

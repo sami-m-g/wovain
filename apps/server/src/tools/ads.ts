@@ -297,11 +297,14 @@ export const registerAdTools = (
         const seconds = gpuSeconds(reply);
         return {
           ...job,
-          ...(seconds !== undefined && { gpuSeconds: seconds }),
+          ...(seconds !== undefined && {
+            gpuSeconds: seconds,
+            measuredAt: job.measuredAt ?? new Date().toISOString(),
+          }),
           urls: mediaUrls(reply),
         };
       });
-      // The GPU time fal reported is kept for the sci job (docs/sustainability.md).
+      // The GPU time fal reported feeds the weekly aggregate (docs/sustainability.md).
       await store.recordAdMedia(designId, {
         jobs: results.map(({ urls: _urls, ...job }) => job),
         urls: results.flatMap((result) => result.urls),
