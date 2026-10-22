@@ -1,8 +1,12 @@
-<!-- Something in wovain isn't working as expected. Fill in what you can; "unknown" is a fine answer. -->
+<!-- Something in wovain isn't working as expected. Fill in what you can; "unknown" is a fine answer. What happened plus the steps to reproduce is the intent; add the expected behavior. See docs/changes/README.md. -->
 
 ## What happened
 
 <!-- One or two sentences: what you did, what you expected, what you got instead. -->
+
+## Expected behavior
+
+<!-- What should happen instead. -->
 
 ## Steps to reproduce
 

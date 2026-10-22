@@ -1,4 +1,4 @@
-<!-- A task written for the Duo developer flow (issue → merge request). Be concrete: the agent only knows what is written here and in the repo. -->
+<!-- A task written for the Duo developer flow (issue → merge request). Be concrete: the agent only knows what is written here and in the repo. Once accepted, the agent turns it into docs/changes/<n>-<slug>/ (see docs/changes/README.md); Goal is the problem, Acceptance criteria the desired outcome. -->
 
 ## Goal
 

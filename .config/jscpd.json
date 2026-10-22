@@ -1,0 +1,8 @@
+{
+  "path": ["../apps/server/src", "../apps/widgets/src", "../packages"],
+  "format": ["typescript", "tsx"],
+  "minTokens": 40,
+  "threshold": 0,
+  "ignore": ["**/*.stories.tsx", "**/dist/**", "**/node_modules/**"],
+  "reporters": ["console"]
+}

@@ -154,10 +154,22 @@ const labels: Record<
     description: "An agent or person is on it",
     id: 54_799_201,
   },
+  "status::intent": {
+    color: "#7f8c8d",
+    description: "Proposed, waiting for a human to accept the intent",
+  },
+  "status::plan": {
+    color: "#e84393",
+    description: "plan.md is being written, before any code",
+  },
   "status::review": {
     color: "#8E44AD",
     description: "MR open, waiting for review",
     id: 54_799_202,
+  },
+  "status::spec": {
+    color: "#00b8d9",
+    description: "spec.md is being written from the accepted intent",
   },
   "status::test": {
     color: "#16a085",
@@ -196,13 +208,16 @@ const labelIds = new Map(
   ])
 );
 
-// The board you watch: todo → doing → review (MR open) → test (your turn in
-// the review app). Closed issues land in the board's built-in Closed list.
+// The board you watch: intent (proposed) → todo (accepted) → spec → plan →
+// doing → review (MR open) → test (your turn in the review app). Closed issues land in the board's built-in Closed list.
 new gitlab.ProjectIssueBoard(
   "workflow",
   {
     lists: [
+      "status::intent",
       "status::todo",
+      "status::spec",
+      "status::plan",
       "status::doing",
       "status::review",
       "status::test",
