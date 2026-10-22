@@ -81,12 +81,23 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 | monitor | A smoke test of the live OAuth chain |
 | release | semantic-release, after the smoke test passes; then `main` and its tags are pushed to GitHub, even if an earlier job failed |
 
+### How work moves
+
+Each idea or bug is a GitLab issue (template `Agent task` or `Bug`) on the **Workflow** board:
+
+1. `status::todo`: ready to pick up.
+2. `status::doing`: an agent took it. In Claude Code, `/issue <n>` works it in its own worktree on your Claude subscription; run two or three at once. Assigning or mentioning Duo's Developer flow works it on GitLab instead.
+3. `status::review`: the MR is open. Duo's Code Review flow reviews it when requested as reviewer.
+4. `status::test`: your turn. Try it, then comment what to change or merge.
+
+The scout flow's daily comment on the `digest` issue lists what shipped and what waits for you. Duo triggers and the scout schedule are paused while Duo credits are paused (`infra/Pulumi.prod.yaml`).
+
 ## Infrastructure as code
 
 `infra/` (Pulumi, `pnpm infra:preview` then `pnpm infra:up`, which CI runs on `main`) declares:
 
 - **Google Cloud and Firebase**: APIs, Firestore and its rules, the media bucket and its Storage rules, Secret Manager, App Hosting, service accounts and IAM, Workload Identity Federation for CI (no Google key is stored), and the budget (`infra/index.ts`).
-- **GitLab** (`infra/gitlab.ts`, `infra/duo.ts`): every CI/CD variable, the `production` and `infrastructure` environments, the Renovate schedule, and the Duo flow triggers and custom flows.
+- **GitLab** (`infra/gitlab.ts`, `infra/duo.ts`): every CI/CD variable, the `production` and `infrastructure` environments, the Renovate schedule, the issue labels and the Workflow board, and the Duo flow triggers and custom flows.
 - **The GitHub mirror** (`infra/github.ts`): repository settings, the deploy key CI pushes with (a generated key pair, which also becomes `GITHUB_MIRROR_KEY`), and a ruleset that lets only that key change `main`.
 
 The tokens are stack secrets, encrypted with the KMS key (`pulumi config set --secret <name>` in `infra/`): `gitlab:token` (Pulumi's GitLab access, `api`), `github:token` (a fine-grained token for the mirror repository: Administration read/write), `gitlab-ci-token` (`GITLAB_TOKEN` for semantic-release and the AI Catalog sync) and `renovate-token` (`RENOVATE_TOKEN`). Each is a separate personal access token, since the Developer+ role can't create project access tokens.

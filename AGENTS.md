@@ -6,6 +6,8 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (product id
 
 - Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `docs/*.md`.
 - The planning docs are the Markdown files in `docs/` (`PRODUCT.md`, `scope.md`, `prd.md`, `spec.md`, `checklist.md`). When a fact changes, update every doc that states it. `docs/app-map.html` (CSS inline) maps the code.
+- Work runs through GitLab issues (template `Agent task`) on the Workflow board: `status::todo` → `doing` → `review` (MR open) → `test` (a human tries it) → closed by the merge. Claude Code works an issue with `/issue <n>` in its own worktree; Duo's Developer flow works one when assigned or mentioned. The agent that wrote an MR never approves or merges it.
+- Don't hand-roll: before writing a helper, check installed dependencies, well-known libraries, the connected MCP servers and this repo's helpers, and name what you checked in the MR. A bug fix starts with a test that fails.
 - `docs/` replaces the course's `devpost/` folder. When a course skill (`1-start` to `6-ship`) or any other skill or plugin names a file in `devpost/`, read and write the file with the same name in `docs/`. For example, `devpost/prd.md` means `docs/prd.md` and `devpost/learner-profile.md` means `docs/learner-profile.md`. Never create `devpost/`.
 
 ## Commits
