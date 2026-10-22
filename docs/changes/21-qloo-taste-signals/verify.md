@@ -1,83 +1,50 @@
 # Verify: Qloo taste signals drive trend research and Meta targeting
 
+## Owner decisions (2026-10-22)
+
+1. **No Nemotron in idea ranking.** A code formula ranks themes from Tavily's per-result score and answer, recency, Qloo affinity and velocity, competitor saturation, IP safety and margin. The agent phrases the ideas through the design playbook. The ranking and copy prompts, their reply schemas, `models.trends`, `lib/taste.ts` and the `ranker` field are gone. Nebius stays only for `judge_design`.
+2. **Tavily to the max.** Five SDK endpoints: `search` (news with answer and images; marketplace listings with domains and country; exact-match trademark), `extract`, `map`, `research` (polled with `getResearch`) and `crawl`. Every call sends `include_usage`, and a run stays under `research.maxCredits`.
+
 ## Tests added
 
-- `apps/server/test/unit/taste.test.ts`:
-  - Requests go to `https://hackathon.api.qloo.com` with `X-Api-Key`.
-  - The taste graph keeps tag IDs only, sorts them by affinity and takes the last velocity. A failed trending call only drops velocity, and the seed never reaches the logs.
-  - The score formula, including the hype discount and the ad boost.
-  - Ideas are scored and sorted in code, with `taste`, `moment`, competitors and a price taken from the snippet.
-  - A re-run with `adCounts` re-scores without new Tavily or Qloo calls.
-  - Nemotron writes copy but can't change the order, and copy that names a Qloo entity is dropped.
-  - `not_configured`, `failed` and `no_match` fall back to the news path. Themes with no hits drop out before any model call.
-  - Audience parsing, and bounded inputs.
-- `apps/server/test/integration/research-tools.test.ts`:
-  - `suggest_audience` without a key, with a fake Qloo, and after a Qloo failure (the error reaches the user safely).
-  - `research_trends` with Qloo over MCP, and its `qloo: "not_configured"` without a key.
-- `apps/server/test/live/qloo.test.ts`: one real taste and audience lookup (5 Qloo calls, no Tavily credits). It skips without `QLOO_API_KEY`.
-- `apps/server/test/helpers.ts`: `fakeQloo` and the `qlooTaste` fixture.
+- `apps/server/test/unit/trends.test.ts`:
+  - The formula: weights add up to 1, the hype discount, the ad boost, saturation, the own-shop halving, margin, recency and median.
+  - Without Qloo, the seed is the one theme. Each endpoint gets the options the spec names, and credits add up (3 for 2 searches and the extract).
+  - With Qloo, themes are ranked in code, a theme that names a Qloo entity gets IP safety 0, and a re-run with `adCounts` makes no new Tavily calls and reports 0 credits.
+  - The cap skips the niche brief when it doesn't fit.
+  - The merchant's shop map demotes a matching theme, and script URLs are dropped.
+  - A failed Qloo lookup, extract or brief degrades, and the seed never reaches the logs.
+  - The brief is polled, parsed leniently and keeps http and https sources only.
+  - The competitor crawl's options, clipping and URL filter.
+  - Bounded inputs and http-only results.
+- `apps/server/test/integration/research-tools.test.ts`: every Tavily tool over MCP without a key, with a fake client, with an unbounded input (rejected before any call) and after a failure (user-safe, nothing logged). Also `research_trends` with Qloo, and `suggest_audience`.
+- `apps/server/test/live/tavily.test.ts`: one real research capped at 10 credits (about 3), skipped without `TAVILY_API_KEY`. `test/live/qloo.test.ts` is unchanged.
 
 ## Checks run
 
-All of these passed after rebasing on `main` (the #19 connections merge):
+All passed after rebasing on `main` (0.20.0):
 
 - `pnpm check`
 - `pnpm typecheck`
 - `pnpm knip`
 - `pnpm arch`
 - `pnpm dupes` (0 clones)
-- `pnpm test` (99 tests)
-- `pnpm test:integration` (85 tests)
+- `pnpm test` (90 tests)
+- `pnpm test:integration` (90 tests, 1 skipped)
 - `pnpm build`
 
-`pnpm test:live` skipped all 3 files: there are no keys in this worktree.
-
-## Review findings
-
-`/simplify` ran four reviewers.
-
-- **Reuse.** Fixed:
-  - The tag regex is now shared as `isQlooTag`.
-  - The age, gender and point schemas are shared between parsing and output.
-  - `promptHit` and `ranked` are shared by the news path and the taste path.
-
-  Skipped: rewording `AUDIENCE_NOTE` to reuse `UNTRUSTED`, because `UNTRUSTED` talks about web results and Qloo data isn't from the web.
-
-- **Simplification.** Fixed:
-  - Dropped the `ranker: "qloo"` value, which duplicated `qloo: "used"`.
-  - Deleted the unused `AudienceInput` type.
-
-  Kept:
-  - `taste`, because the owner asked for each idea to show "taste: …".
-  - `tags` as an array, so it can take more than one tag later.
-  - The `id`/`tag_id` fallbacks, until a real key confirms which one Qloo sends.
-
-- **Efficiency.** Fixed:
-  - No model call when no theme has hits.
-  - Avoid-names are lowercased once.
-  - A re-run with `adCounts` re-scores the cached searches: 15 minutes, up to 50 seeds per instance.
-- **Altitude.** Fixed:
-  - `createTrendResearch(client, { ai, model, qloo })` takes an options object.
-  - `ranker` is back to describing the news path only.
-
-  Skipped: a discriminated union for Qloo ideas against news ideas, which would complicate the MCP output schema for little gain.
-
-I checked silent failures myself, because the `pr-review-toolkit` agents aren't installed in this session:
-
-- Every Qloo or model failure is logged by class and reported as `qloo: "failed"`, as a missing `velocity`, or as theme-name copy.
-- Ad counts whose theme matches no idea are ignored. They show up as no `activeAds` in that idea's `signals`.
+`pnpm test:live` wasn't run: there are no keys in this worktree.
 
 ## Try it
 
-1. Put the hackathon key in `apps/server/.env` as `QLOO_API_KEY`, next to `TAVILY_API_KEY`.
-2. Run `pnpm test:live` (5 Qloo calls) to confirm the host and the response shapes.
-3. Run `pnpm dev`, then ask the agent "what should I sell to synthwave fans?". Each idea shows taste, moment, score and competitors, and the result has `qloo: "used"`.
-4. Pick an idea and start the campaign. The playbook calls `suggest_audience` with the idea's tags.
-5. In production, run `pulumi config set --secret qloo-api-key` in `infra/`, then add `QLOO_API_KEY` (secret `qloo-api-key`) to `apphosting.yaml`. App Hosting won't build with an empty secret, so this MR doesn't list it yet.
+1. Put `TAVILY_API_KEY` (and `QLOO_API_KEY` when it arrives) in `apps/server/.env`, then run `pnpm test:live`.
+2. Run `pnpm dev` and ask the agent "what should I sell to synthwave fans?". The result shows ranked themes with score, signals, competitors, answer, references and `credits`, and a `briefId`. After you pick, the agent calls `get_niche_brief`.
+3. Save your shop: "set my research shop URL to https://<shop>.fourthwall.com". The next research says `shop: "checked"` and marks themes you already sell.
+4. In the ads step, the agent may call `scan_competitor_site` on a competitor listing before writing the copy.
 
 ## Departures from the plan
 
-- The Qloo path lives in `lib/taste.ts`, not `lib/trends.ts`, to keep both files small. `UNTRUSTED`, `sourceOf` and `promptHit` moved to `lib/tavily.ts` to avoid an import cycle.
-- Added a 15-minute re-score cache so the Ad Library step costs no extra credits.
-- The campaign step names the top places in its summary but keeps the country targeting, so the plan's country rule still holds.
-- Unit tests live in `taste.test.ts`, not a separate `qloo.test.ts`.
+- `country` goes on the competitor search, not the news search: Tavily applies it to `topic: general` only.
+- The shop URL is a setting (`research.shopUrl`), because Fourthwall connections don't store it and the connections code is out of scope here. The settings widget doesn't show the `research` group yet (widgets are out of scope); `update_settings` sets it.
+- The brief's cost isn't known until it finishes, so the cap reserves 25 credits for it and `get_niche_brief` reports the real cost.
+- The source grew. Against the previous branch it's +993 / −549 lines in `apps/server/src` and `packages/shared/src`, because the change adds two tools and four endpoints. The Nemotron path's deletions don't cover that.

@@ -38,8 +38,8 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
 | `META_APP_ID`, `META_APP_SECRET` | Optional: merchants connecting Meta to wovain (Meta's Ads MCP has no dynamic registration, so wovain's own Meta app is the OAuth client). Without them, merchants use their host's Meta Ads connector and rules aren't created | Your Business-type Meta app (Ads MCP use case) → App settings → Basic. See [Meta app](#meta-app) |
 | `NEBIUS_API_KEY` | Optional: the design check (`judge_design`, Nemotron on Nebius Token Factory); without it the check is skipped | Nebius Token Factory → API keys |
-| `QLOO_API_KEY` | Optional: Qloo's Taste API, for the taste graph under `research_trends` and for `suggest_audience`; without it research uses the news alone | The hackathon's event key (it works only on `hackathon.api.qloo.com`) |
-| `TAVILY_API_KEY` | Optional: trend research and the trademark screen (`research_trends`, `screen_trademark`); without it both say they aren't set up | Tavily dashboard → API keys |
+| `QLOO_API_KEY` | Optional: Qloo's Taste API, for the taste graph under `research_trends` and for `suggest_audience`; without it research uses the seed as its one theme | The hackathon's event key (it works only on `hackathon.api.qloo.com`) |
+| `TAVILY_API_KEY` | Optional: trend research, the niche brief, the competitor scan and the trademark screen (`research_trends`, `get_niche_brief`, `scan_competitor_site`, `screen_trademark`); without it each says it isn't set up | Tavily dashboard → API keys |
 | `WORKOS_AUTHKIT_DOMAIN` | Sign-in: the AuthKit domain that issues `/mcp`'s tokens | WorkOS dashboard (e.g. `https://<name>.authkit.app`) |
 | `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
 | `WOVAIN_ALLOWED_EMAILS` | Who may use `/mcp` (comma-separated verified emails; empty lets nobody in) | The email you sign in to AuthKit with |
@@ -62,7 +62,6 @@ wovain makes its own model calls through [Genkit](https://genkit.dev), with the 
 | Call | When | What it does |
 | --- | --- | --- |
 | `judge_design` | The design playbook calls it before every design widget | Scores the design brief (idea, blank, placement, colors, artwork size and transparency, listing, coach line) against wovain's print and listing rules. Returns a verdict, one check per rule, up to 5 fixes and a coach line, checked by a zod schema. Code decides print size, transparency, title length and color count itself, and those results override the model. |
-| `research_trends` | When the merchant has no idea yet, after the Tavily searches | Turns this week's news into 3 to 5 tee ideas. It cites results by number, and code turns the numbers into Tavily's links, so every link is real. Without the key, the ideas are Tavily's most relevant results, one link each. |
 
 To run it:
 
@@ -72,15 +71,29 @@ To run it:
 
 ## Tavily
 
-`research_trends` searches Tavily twice (news from the past week) for a niche, audience or seed idea and returns 3 to 5 ranked tee ideas, each with its source links. `screen_trademark` searches once for a phrase plus "trademark" before publishing. Both use the official `@tavily/core` SDK at basic depth: 1 credit per search, so $0.016 per research and $0.008 per screen at pay-as-you-go prices, with 1,000 free credits a month. Neither logs the query or the results.
+How wovain uses Tavily, through the official `@tavily/core` SDK at runtime (no hand-rolled HTTP). Every call asks for `include_usage`, and `research_trends` returns what the run cost as `credits`.
+
+| Endpoint | Where | What it does |
+| --- | --- | --- |
+| `search` (news) | `research_trends`, per theme | This week's news (`topic: news`, `time_range: week`) for timing hooks, with Tavily's `answer` (`include_answer: advanced`) and reference images with descriptions (`include_images`, `include_image_descriptions`) for the mood board. Per-result `score` and dates feed the ranking. |
+| `search` (listings) | `research_trends`, per theme | Etsy, Redbubble and Fourthwall listings (`include_domains`, `time_range: year`, `country` from the merchant's market) for saturation and competitor prices |
+| `extract` | `research_trends` | One call with a `query` over the top 3 listings per theme: price, review count and best-seller badge, which feed saturation and the margin signal |
+| `map` | `research_trends` | The merchant's own Fourthwall shop (`research.shopUrl` in settings, `/products/` pages), so a theme the shop already sells is marked and loses half its score |
+| `research` | `research_trends` starts it, `get_niche_brief` polls it | A cited niche brief (model `mini`, `output_schema`: audience, price band, angles, risks, sources), so the MCP call never waits for it |
+| `crawl` | `scan_competitor_site` | Up to 5 pages of a competitor's site for the ads flow's angles and offers |
+| `search` (exact) | `screen_trademark` | The phrase plus "trademark" before publishing |
+
+No model ranks ideas. Code scores each theme with fixed weights (`SCORE_WEIGHTS` in `apps/server/src/lib/score.ts`): demand (Qloo affinity, plus active Meta ads when the agent passes `adCounts`), momentum (news, discounted when Qloo's velocity doesn't confirm it), Tavily relevance, recency, openness (few listings and best sellers), margin (competitor prices against the merchant's own price floor) and IP safety (no Qloo brand, artist or title names). The host agent (ChatGPT, through the design playbook) phrases the ideas and why from that evidence.
+
+A full run with Qloo costs about 35 to 50 credits: 6 searches, 2 for the extract, up to 4 for the map, and the niche brief, which Tavily prices at 4 to 110 credits (wovain reserves 25 and asks for a short report). `research.maxCredits` (default 50) caps it: the searches always run, then the brief, the extract and the map run in that order of priority while their worst case still fits. The brief's real cost is known only when it finishes, so `get_niche_brief` reports it. Without Qloo the seed is the one theme. A re-run with the same seed within 15 minutes only re-scores and costs nothing. Nothing about queries or results is logged, every URL is http or https, and every result says its text is untrusted.
 
 The weekly market scout (`apps/ops/src/weekly.ts`) uses the same key from CI for 3 news searches about competing print-on-demand AI tools, and files one `status::intent` issue with what it found and the funnel's biggest drop-off.
 
-Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm test:live` runs one real research (2 credits) and is skipped without the key. In production the key is the `tavily-api-key` stack secret, listed in `apphosting.yaml`.
+Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm test:live` runs one real research capped at 10 credits (about 3) and is skipped without the key. In production the key is the `tavily-api-key` stack secret, listed in `apphosting.yaml`.
 
 ## Qloo
 
-Taste × moment: Qloo says who loves the seed and what else they love; Tavily says why now. With `QLOO_API_KEY`, `research_trends` looks the seed up on Qloo (`/search`), takes the cross-domain taste tags its fans share (`/v2/insights`) and the seed's velocity (`/v2/trending`), then runs two Tavily searches for each of the top 3 tags: this week's news, and Etsy, Redbubble and Amazon listings. Code scores each idea on demand, momentum (news, halved when Qloo's velocity doesn't confirm it) and low saturation, with fixed weights (`SCORE_WEIGHTS` in `apps/server/src/lib/taste.ts`); Nemotron only writes the name, angle and why. A research with Qloo costs 6 Tavily credits ($0.048); the same seed again within 15 minutes (say, with `adCounts` from the agent's Ad Library search) is only re-scored. `suggest_audience` turns a picked idea's tags into age bands, gender and top places (`urn:demographics`, `urn:heatmap`) for the campaign.
+Taste × moment: Qloo says who loves the seed and what else they love; Tavily says why now. With `QLOO_API_KEY`, `research_trends` looks the seed up on Qloo (`/search`), takes the cross-domain taste tags its fans share (`/v2/insights`) and the seed's velocity (`/v2/trending`), then researches each of the top 3 tags on Tavily (above). Their affinity and the seed's velocity go into the score; the same seed again within 15 minutes (say, with `adCounts` from the agent's Ad Library search) is only re-scored. `suggest_audience` turns a picked idea's tags into age bands, gender and top places (`urn:demographics`, `urn:heatmap`) for the campaign.
 
 wovain calls Qloo's REST API itself: the hackathon kit's `@qloo/qloo-harness` is a CLI and stdio MCP server that doesn't export its client. Hackathon keys work only on `https://hackathon.api.qloo.com`, with the `X-Api-Key` header. Put the key in `apps/server/.env` as `QLOO_API_KEY`; `pnpm test:live` then makes 5 real Qloo calls. In production, set the `qloo-api-key` stack secret and add `QLOO_API_KEY` to `apphosting.yaml` once it has a value.
 
@@ -99,7 +112,7 @@ wovain calls Qloo's REST API itself: the hackathon kit's `@qloo/qloo-harness` is
 | `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
 | `pnpm test:e2e` | The whole journey as an agent drives it, on the emulators with recorded Fourthwall, fal, Meta, Tavily, Qloo and Nebius replies; writes a proof report with each step's redacted input and output, timing and widget screenshot to `e2e-report/index.html` (needs Java 21). `E2E_LIVE=1` swaps in real Tavily and Nebius calls when their keys are set |
 | `pnpm demo` | After `pnpm test:e2e`: a narrated video of the run, `e2e-report/demo.mp4`, under 3 minutes (`/demo`) |
-| `pnpm test:live` | Opt-in: one real Nemotron call on Nebius, one real Tavily research and one Qloo taste and audience lookup; each is skipped without its key (`NEBIUS_API_KEY`, `TAVILY_API_KEY`, `QLOO_API_KEY`) |
+| `pnpm test:live` | Opt-in: one real Nemotron design check on Nebius, one real Tavily research (about 3 credits) and one Qloo taste and audience lookup; each is skipped without its key (`NEBIUS_API_KEY`, `TAVILY_API_KEY`, `QLOO_API_KEY`) |
 | `pnpm test:stories` | Widget stories as tests (Playwright) |
 | `pnpm knip` | Unused files, exports and dependencies |
 | `pnpm arch` | Architecture rules (dependency-cruiser): layers, cycles, orphans |

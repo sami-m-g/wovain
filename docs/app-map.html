@@ -226,16 +226,18 @@
                 <code>judge_design</code>, which checks a design brief against
                 the print and listing rules before the widget shows it. Without
                 <code>NEBIUS_API_KEY</code> the check is skipped.
-                <code>research_trends</code> searches Tavily for this week's
-                news in a niche and returns ranked tee ideas with their links
-                (Nemotron ranks them when the key is set), and
+                <code>research_trends</code> researches each theme on Tavily
+                (news, listings, an extract of their prices, a map of the
+                merchant's shop) and ranks the themes with a code formula; the
+                agent phrases the ideas. It starts a cited niche brief that
+                <code>get_niche_brief</code> polls,
+                <code>scan_competitor_site</code>
+                crawls a competitor for the ads flow, and
                 <code>screen_trademark</code> searches a phrase before
-                publishing. Without <code>TAVILY_API_KEY</code> both are
-                skipped. With <code>QLOO_API_KEY</code>, research starts from
-                the seed's Qloo taste graph and scores each idea in code on
-                demand, momentum and low saturation (Nemotron only writes the
-                copy), and <code>suggest_audience</code> returns the theme's
-                demographics and top places for Meta.
+                publishing. Without <code>TAVILY_API_KEY</code> they are
+                skipped. With <code>QLOO_API_KEY</code>, the themes are the
+                seed's Qloo taste tags, and <code>suggest_audience</code>
+                returns a theme's demographics and top places for Meta.
               </td>
               <td>
                 <code>apps/server/src/lib/ai.ts</code>,
@@ -243,7 +245,9 @@
                 <code>apps/server/src/tools/judge.ts</code>,
                 <code>apps/server/src/lib/tavily.ts</code>,
                 <code>apps/server/src/lib/qloo.ts</code>,
-                <code>apps/server/src/lib/taste.ts</code>,
+                <code>apps/server/src/lib/score.ts</code>,
+                <code>apps/server/src/lib/market.ts</code>,
+                <code>apps/server/src/lib/niche-brief.ts</code>,
                 <code>apps/server/src/lib/trends.ts</code>,
                 <code>apps/server/src/tools/research.ts</code>
               </td>
