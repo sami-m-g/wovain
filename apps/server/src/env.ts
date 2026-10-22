@@ -9,15 +9,12 @@ const envSchema = z.object({
   // actually charged (video_spend). FAL_KEY stays without billing access.
   FAL_BILLING_KEY: z.string().optional(),
   FAL_KEY: z.string().optional(),
-  META_AD_ACCOUNT_ID: z.string().optional(),
-  META_PAGE_ID: z.string().optional(),
-  META_PIXEL_ID: z.string().optional(),
   META_SYSTEM_USER_TOKEN: z.string().optional(),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
   WOVAIN_MOCK: z.stringbool().default(false),
   // The built widgets beside this package: src/ in development and tests,
-  // dist/ once bundled (vercel.json ships apps/widgets/dist with the function).
+  // dist/ once built (`pnpm build`, which App Hosting runs before start).
   WOVAIN_WIDGETS_DIR: z
     .string()
     .default(() =>

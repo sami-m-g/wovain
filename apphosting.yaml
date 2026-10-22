@@ -14,8 +14,7 @@ scripts:
 # Plain values, then Secret Manager references set with
 # `pulumi config set --secret <name>` in infra/ (see infra/index.ts). Only
 # secrets with a value are listed: App Hosting won't build with an empty one.
-# META_AD_ACCOUNT_ID, META_PAGE_ID, META_PIXEL_ID and the OTEL_* pair come back
-# once they have values.
+# FAL_BILLING_KEY and the OTEL_* pair are listed once they have values.
 env:
   # The install skips lifecycle scripts, as CI does (pnpm 12 reads only the
   # pnpm_config_ prefix): the root `prepare` sets up

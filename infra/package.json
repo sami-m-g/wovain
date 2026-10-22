@@ -6,7 +6,10 @@
   "main": "index.ts",
   "dependencies": {
     "@pulumi/gcp": "9.37.1",
+    "@pulumi/github": "6.15.0",
+    "@pulumi/gitlab": "10.4.0",
     "@pulumi/graphql": "file:sdks/graphql",
-    "@pulumi/pulumi": "3.267.0"
+    "@pulumi/pulumi": "3.267.0",
+    "@pulumi/tls": "5.6.2"
   }
 }

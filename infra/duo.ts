@@ -3,7 +3,8 @@
 // Pulumi.prod.yaml). No GitLab provider has a resource for these, so each is a
 // graphql.Mutation (sullivtr/graphql; `pulumi install` generates sdks/graphql),
 // which creates, updates, deletes and checks drift from the GraphQL below.
-// Needs GITLAB_TOKEN (api scope); the hackathon's Developer+ role is enough.
+// Needs the `gitlab:token` stack secret (api scope); the hackathon's
+// Developer+ role is enough.
 import { existsSync, readFileSync } from "node:fs";
 
 import * as graphql from "@pulumi/graphql";
@@ -34,12 +35,10 @@ const projectPath = config.require("gitlabProject");
 const triggers = config.requireObject<Trigger[]>("duoTriggers");
 const customFlows = config.getObject<CustomFlow[]>("duoCustomFlows") ?? [];
 
-const token = process.env["GITLAB_TOKEN"];
-if (token === undefined || token === "") {
-  throw new Error("GITLAB_TOKEN is not set");
-}
+// The same token as the GitLab provider (infra/gitlab.ts).
+const token = new pulumi.Config("gitlab").requireSecret("token");
 const provider = new graphql.Provider("gitlab-graphql", {
-  headers: { Authorization: pulumi.secret(`Bearer ${token}`) },
+  headers: { Authorization: pulumi.interpolate`Bearer ${token}` },
   url: "https://gitlab.com/api/graphql",
 });
 
