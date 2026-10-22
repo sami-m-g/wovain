@@ -1,3 +1,17 @@
+# [0.20.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.19.1...v0.20.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **connections:** bind connect links to the merchant's browser sign-in ([c9bcce7](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/c9bcce7f5fdc3d775876994d8a894f633ad4076f))
+
+
+### Features
+
+* **ads:** generate videos on the merchant's own fal account ([e69ef0a](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e69ef0a3563abd98d58b7507ce8b35c0b8cff1f0))
+* **connections:** connect fourthwall and fal through wovain ([68e7453](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/68e7453ffb73f879d8262d2a535a0372131c6664))
+* **connections:** store merchant grants encrypted with cloud kms ([a323ffc](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/a323ffcba22bf49abd011e5e701c556e52157956))
+
 ## [0.19.1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.19.0...v0.19.1) (2026-10-22)
 
 
