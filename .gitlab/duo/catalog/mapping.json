@@ -1,6 +1,21 @@
 {
   "schema_version": "1.0",
-  "agents": {},
+  "agents": {
+    ".gitlab/duo/catalog/agents/explain.yml": {
+      "catalog_id": "gid://gitlab/Ai::Catalog::Item/1019259",
+      "name": "wovain explain",
+      "created_at": "2026-10-22T17:19:22.564Z",
+      "item_consumers": {
+        "additional": []
+      },
+      "latest_sync": {
+        "git_tag": "50f02320",
+        "catalog_version": "1.0.0",
+        "synced_at": "2026-10-22T17:19:22.564Z",
+        "definition_hash": "968dc6e875886c41"
+      }
+    }
+  },
   "flows": {
     ".gitlab/duo/catalog/flows/scout.yml": {
       "catalog_id": "gid://gitlab/Ai::Catalog::Item/1019188",
