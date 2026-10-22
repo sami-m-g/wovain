@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { html } from "hono/html";
 
 import { siteUrl } from "./auth/env.ts";
-import { page } from "./pages/page.ts";
 import { createMcpRoute } from "./routes/mcp.ts";
 import type { Runtime } from "./runtime.ts";
 
@@ -33,16 +32,60 @@ export const createApp = (runtime: Runtime) => {
     "/",
     async (c) =>
       await c.html(
-        page(
-          "wovain",
-          html`<main class="panel">
-            <h1>wovain</h1>
-            <p>
-              An MCP server for print-on-demand sellers. Connect your agent to
-              <code>${site}/mcp</code>.
-            </p>
-          </main>`
-        )
+        html`<!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta
+                name="viewport"
+                content="width=device-width, initial-scale=1"
+              />
+              <title>wovain</title>
+              <meta
+                name="description"
+                content="From a product idea to live Fourthwall products and a Meta Advantage+ campaign, one approved widget at a time."
+              />
+              <link rel="icon" href="/favicon.ico" />
+              <style>
+                :root {
+                  color-scheme: light dark;
+                }
+                body {
+                  margin: 0;
+                  min-height: 100dvh;
+                  display: grid;
+                  place-items: center;
+                  padding: 16px;
+                  font:
+                    16px/1.5 system-ui,
+                    sans-serif;
+                }
+                main {
+                  width: min(100%, 26rem);
+                  padding: 32px;
+                  border: 1px solid #8884;
+                  border-radius: 16px;
+                }
+                h1 {
+                  margin: 0 0 8px;
+                  font-size: 1.375rem;
+                }
+                p {
+                  margin: 0;
+                  opacity: 0.7;
+                }
+              </style>
+            </head>
+            <body>
+              <main>
+                <h1>wovain</h1>
+                <p>
+                  An MCP server for print-on-demand sellers. Connect your agent
+                  to <code>${site}/mcp</code>.
+                </p>
+              </main>
+            </body>
+          </html>`
       )
   );
 

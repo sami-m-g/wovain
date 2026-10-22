@@ -41,7 +41,7 @@
       "comment": "apps/server/src/lib is the layer under the MCP tools and playbooks; it never reaches up into them.",
       "severity": "error",
       "from": { "path": "^apps/server/src/lib/" },
-      "to": { "path": "^apps/server/src/(tools|playbooks|routes|pages)/" }
+      "to": { "path": "^apps/server/src/(tools|playbooks|routes)/" }
     },
     {
       "name": "tools-dont-import-tools",

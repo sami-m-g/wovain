@@ -8,7 +8,6 @@
 [Auth] @sami-m-g
 /apps/server/src/auth/
 /apps/server/src/routes/
-/apps/server/src/pages/
 /apps/server/src/app.ts
 
 [Data] @sami-m-g

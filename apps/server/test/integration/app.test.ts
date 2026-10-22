@@ -59,6 +59,14 @@ describe("routes", () => {
     }
   });
 
+  test("the home page names the MCP url", async () => {
+    const response = await request("/");
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    expect(body).toContain("<title>wovain</title>");
+    expect(body).toContain(`<code>${site}/mcp</code>`);
+  });
+
   test("no longer serves its own sign-in or consent", async () => {
     const responses = await Promise.all(
       ["/sign-in", "/consent", "/api/auth/ok"].map(
