@@ -58,3 +58,4 @@ The change keeps its artifacts in `docs/changes/<n>-<slug>/` (see `docs/changes/
 ## 5. Report back
 
 Give the user the MR link and the test steps. The human moves intent → todo before you start, and test → merge at the end. When they've tried the review app, they move the issue to `status::test` or comment on what to change. Never merge your own MR.
+- Agents never create new labels; only labels declared in `infra/gitlab.ts` may be used.

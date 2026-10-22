@@ -86,6 +86,7 @@ const labels: Record<
   "agent::claude": {
     color: "#d97757",
     description: "Worked by Claude Code (the /issue skill)",
+    id: 54_839_408,
   },
   "agent::duo": {
     color: "#fc6d26",
@@ -161,6 +162,7 @@ const labels: Record<
   "status::plan": {
     color: "#e84393",
     description: "plan.md is being written, before any code",
+    id: 54_840_662,
   },
   "status::review": {
     color: "#8E44AD",
@@ -170,6 +172,7 @@ const labels: Record<
   "status::spec": {
     color: "#00b8d9",
     description: "spec.md is being written from the accepted intent",
+    id: 54_840_634,
   },
   "status::test": {
     color: "#16a085",

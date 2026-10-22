@@ -43,6 +43,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (product id
 
 ## Gotchas
 
+- Agents never create new labels; only labels declared in `infra/gitlab.ts` may be used.
 - `docs/learner-profile.md` is gitignored on purpose; never commit it.
 - Never commit `.env*` (only `.env.example`) or MCP URLs that embed tokens (e.g. the Modal video connector).
 - Before installing a third-party plugin, check it for `hooks.json` and `.mcp.json`; install with `claude plugin install <plugin>@<marketplace> --scope project -y`.
