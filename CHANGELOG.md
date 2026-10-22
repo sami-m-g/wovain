@@ -1,3 +1,10 @@
+## [0.19.1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.19.0...v0.19.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **research:** number trend results from 1 and drop hand-rolled ranking ([6e05bfa](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/6e05bfaa7baddcbe01d1891703c64700f5fed196)), closes [#20](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/20)
+
 # [0.19.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.18.0...v0.19.0) (2026-10-22)
 
 
