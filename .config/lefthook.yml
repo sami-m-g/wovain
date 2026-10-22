@@ -3,7 +3,12 @@ pre-commit:
   jobs:
     - run: pnpm exec ultracite fix {staged_files}
       glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
-      exclude: [".claude/skills/**"]
+      exclude:
+        [
+          ".claude/skills/**",
+          ".agents/skills/ads/**",
+          ".agents/skills/ads-*/**",
+        ]
       stage_fixed: true
     - name: typecheck
       run: pnpm typecheck

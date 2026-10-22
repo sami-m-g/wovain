@@ -128,6 +128,8 @@ The project's own skills (`/issue`, `/capture`) are written once, in `.agents/sk
 | GitLab Duo | Reads `.agents/skills/` directly: Duo Chat in VS Code or the Duo CLI, and every flow except Code Review ([docs](https://docs.gitlab.com/user/duo_agent_platform/customize/agent_skills/)). Chat in the GitLab UI doesn't load skills, and a custom flow needs the `workspace_agent_skills` input |
 | Claude Code | Through `.claude/skills/<name>`, a committed symlink to the same folder |
 
+`.agents/skills/` also holds ten [claude-ads](https://github.com/AgriciDaniel/claude-ads) skills (`ads` and `ads-*`, MIT, credited in `NOTICE`) for the optimizer. They're vendored unchanged with `pnpm skills add AgriciDaniel/claude-ads --skill <names> -a universal -y --copy` and pinned by hash in `skills-lock.json`; `pnpm check` runs `pnpm skills:check`, which fails if any vendored file changes. Update them only by running `skills add` again. wovain's print-on-demand rules live in its own overlay, `.agents/skills/wovain-pod-ads/`, which says to read the matching claude-ads skill first.
+
 The course skills and `ultracite` are copied into `.claude/skills/` by `pnpm install` and stay out of git, so only Claude Code sees them. Plugins from `.claude/settings.json` are Claude Code only too: a headless `claude` run in CI loads them only after `claude plugin install <plugin>@<marketplace> --scope project`.
 
 ## Infrastructure as code
