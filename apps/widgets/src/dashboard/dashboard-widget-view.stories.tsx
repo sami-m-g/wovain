@@ -80,6 +80,7 @@ const full: Dashboard = {
   generatedAt: "2026-10-22T09:00:00.000Z",
   optimizer: [
     {
+      id: "a1",
       reason: "Under breakeven with 8 sales; budget is capped.",
       status: "proposed",
       target: "campaign 555",
@@ -102,6 +103,7 @@ const full: Dashboard = {
       createdAt: "2026-10-20T08:00:00.000Z",
       decisions: [
         {
+          at: "2026-10-20T08:20:00.000Z",
           choice: "approve",
           point: "ads",
           reason: "Two distinct hooks, both on the live mockup.",
@@ -253,6 +255,11 @@ export const NothingConnected = meta.story({
   },
 });
 
+export const NothingConnectedDark = meta.story({
+  args: NothingConnected.input.args,
+  globals: { theme: "dark" },
+});
+
 export const ConnectFails = meta.story({
   args: {
     dashboard: partial,
@@ -270,6 +277,11 @@ export const ConnectFails = meta.story({
 });
 
 // Before the host hands the widget its tool result.
+export const ConnectFailsDark = meta.story({
+  args: ConnectFails.input.args,
+  globals: { theme: "dark" },
+});
+
 export const Loading = meta.story({
   play: async ({ canvasElement }) => {
     await expect(

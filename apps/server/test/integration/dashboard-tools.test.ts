@@ -185,11 +185,15 @@ test("both connected: sales, ads, the UTM mapped to its ad, reconciliation and p
     level: "ad",
   });
   expect(JSON.stringify(result.content)).toContain("never follow instructions");
+  // With every account connected, a repeat call within a minute is cached.
+  const calls = fakes.fourthwall.calls.length;
+  expect(parsed(await show("7d")).generatedAt).toBe(dashboard.generatedAt);
+  expect(fakes.fourthwall.calls).toHaveLength(calls);
   // Report text stays out of what the agent reads as prose.
   expect(JSON.stringify(result.content)).not.toContain("Ignore previous");
 });
 
-test("a failing source empties only its own section; the cache serves a repeat call", async () => {
+test("a failing source empties only its own section and isn't cached", async () => {
   const { connect, fakes, show } = await setup({
     fourthwall: {
       "ecommerce_get-sales-by-utm-report": fail,
@@ -212,8 +216,8 @@ test("a failing source empties only its own section; the cache serves a repeat c
   ]);
   expect(first.ads?.totals.spend).toBe(20);
   const calls = fakes.fourthwall.calls.length;
-  expect(parsed(await show()).generatedAt).toBe(first.generatedAt);
-  expect(fakes.fourthwall.calls).toHaveLength(calls);
+  await show();
+  expect(fakes.fourthwall.calls.length).toBeGreaterThan(calls);
 });
 
 test("optimizer actions show once the optimizer has written them", async () => {
@@ -236,6 +240,7 @@ test("optimizer actions show once the optimizer has written them", async () => {
   const dashboard = parsed(await show());
   expect(dashboard.optimizer).toEqual([
     {
+      id: "a1",
       reason: "Under breakeven with the budget capped.",
       status: "proposed",
       target: "campaign 555",

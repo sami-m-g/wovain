@@ -128,6 +128,7 @@ const runSchema = z.object({
   decisions: z
     .array(
       z.object({
+        at: z.iso.datetime(),
         choice: label,
         point: z.string().max(20),
         reason: z.string().max(200),
@@ -142,6 +143,7 @@ const runSchema = z.object({
 });
 
 const optimizerActionSchema = z.object({
+  id: z.string().max(64),
   reason: z.string().max(200).optional(),
   status: z.string().max(20),
   target: label,

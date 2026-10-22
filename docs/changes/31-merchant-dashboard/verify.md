@@ -58,3 +58,13 @@ In the review app (or a local server with Fourthwall and Meta connected), ask th
 
 - The gatherer is split in two files (`lib/dashboard.ts` for reads and the cache, `lib/dashboard-sections.ts` for the pure shaping) to stay under the file-length cap.
 - `README.md` lists no tools, so it didn't change.
+
+## Duo Code Review (MR !68)
+
+All five recommendations fixed:
+
+- Orders from Meta links are counted on every UTM row before the section's top-8 cap (`metaOrdersFrom`), so R1 and cost per sale don't undercount; a unit test has 12 rows above the Meta one.
+- A dashboard where Fourthwall or Meta is missing or failed isn't cached, so asking again right after connecting reads fresh; the integration tests check both sides.
+- The agent's text says when Fourthwall or Meta couldn't be read, so it doesn't read the gap as zero.
+- `NothingConnectedDark` and `ConnectFailsDark` stories.
+- Run decisions are keyed by their time and optimizer actions by their id (both now in the schema), so keys can't repeat.

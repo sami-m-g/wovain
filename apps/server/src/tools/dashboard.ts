@@ -51,9 +51,13 @@ const summary = (dashboard: Dashboard) => {
     );
   }
   for (const { provider, state } of connections) {
+    const { title } = providers[provider];
     if (state === "missing" && isConnectPrompt(provider)) {
+      lines.push(`${title} isn't connected: offer connect_account.`);
+    }
+    if (state === "error") {
       lines.push(
-        `${providers[provider].title} isn't connected: offer connect_account.`
+        `${title} couldn't be read just now: say so, and don't read its missing numbers as zero.`
       );
     }
   }

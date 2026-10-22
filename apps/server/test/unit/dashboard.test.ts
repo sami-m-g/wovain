@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   adsFrom,
   metaAds,
+  metaOrdersFrom,
   reconcile,
   salesFrom,
 } from "../../src/lib/dashboard-sections.ts";
@@ -126,7 +127,19 @@ test("sales total the series, map utm_content to the Meta ad and compare with Me
   });
   expect(sales?.utm[0]).toMatchObject({ ad: "wovain d1 · c1", orders: 2 });
   // 2 shop orders from Meta links vs 8 Meta purchases: R1 fails.
-  expect(reconcile(sales, adsFrom(ads), 30)).toEqual({
+  // Counted on every UTM row, not just the 8 the section shows.
+  const utm = Array.from({ length: 12 }, (_, index) => ({
+    contributions: 1,
+    total_sales: 100 - index,
+    utm_content: `other-${String(index)}`,
+    utm_source: "newsletter",
+  }));
+  const shown = [...utm, { contributions: 2, utm_source: "facebook" }];
+  expect(
+    salesFrom({ overTime: [], top: [], utm: shown }, new Map())?.utm
+  ).toHaveLength(8);
+  expect(metaOrdersFrom(shown)).toBe(2);
+  expect(reconcile(2, adsFrom(ads), 30)).toEqual({
     metaPurchases: 8,
     shopOrders: 2,
     status: "fail",

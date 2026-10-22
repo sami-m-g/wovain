@@ -184,7 +184,7 @@ export const RunList = ({ runs }: { runs: Dashboard["runs"] }) => (
           </p>
           <ul className="text-secondary m-0 mt-1 grid list-none gap-0.5 p-0 text-xs">
             {run.decisions.map((decision) => (
-              <li key={`${decision.point}-${decision.subject}`}>
+              <li key={decision.at}>
                 {`${decision.point}: ${decision.choice} ${decision.subject}. ${decision.reason}`}
               </li>
             ))}
@@ -203,7 +203,7 @@ export const OptimizerList = ({
   <Section title="Optimizer">
     <ul className="m-0 mt-2 grid list-none gap-1.5 p-0 text-sm">
       {actions.map((action) => (
-        <li key={`${action.type}-${action.target}`}>
+        <li key={action.id}>
           <span>{`${action.type.replaceAll("_", " ")} · ${action.target} `}</span>
           <Badge color={action.status === "proposed" ? "info" : "secondary"}>
             {action.status === "proposed" ? "Recommended" : action.status}

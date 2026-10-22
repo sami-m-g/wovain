@@ -1,4 +1,8 @@
-import { dashboardSchema, rangeDays } from "@wovain/shared/dashboard";
+import {
+  dashboardSchema,
+  isConnectPrompt,
+  rangeDays,
+} from "@wovain/shared/dashboard";
 import type {
   Dashboard,
   DashboardConnection,
@@ -11,6 +15,7 @@ import {
   adsFrom,
   breakevenOf,
   costPerSaleOf,
+  metaOrdersFrom,
   metaAds,
   optimizerFrom,
   productsFrom,
@@ -184,7 +189,7 @@ export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
   const ads = adsFrom(adRows);
   const sales = salesFrom(shop, new Map(adRows.map((ad) => [ad.id, ad.name])));
   const reconciliation = reconcile(
-    sales,
+    sales === undefined ? undefined : metaOrdersFrom(shop.utm),
     ads,
     settings.optimizer.disagreementPct
   );
@@ -212,7 +217,9 @@ export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
 
 // One minute per merchant and range, in this process. The key is the signed-in
 // merchant's id, so one merchant's numbers never answer another's request.
-// Concurrent calls share one gather; a failed gather isn't kept.
+// Concurrent calls share one gather. A failed gather isn't kept, nor one
+// where Fourthwall or Meta is missing or failed: the merchant may be
+// connecting it right now.
 export const createDashboardCache = ({
   max = 200,
   now = Date.now,
@@ -240,8 +247,22 @@ export const createDashboardCache = ({
       }
       entries.delete(oldKey);
     }
+    const drop = () => {
+      if (entries.get(key) === entry) {
+        entries.delete(key);
+      }
+    };
     try {
-      return await entry.value;
+      const dashboard = await entry.value;
+      if (
+        dashboard.connections.some(
+          ({ provider, state }) =>
+            isConnectPrompt(provider) && state !== "connected"
+        )
+      ) {
+        drop();
+      }
+      return dashboard;
     } catch (error) {
       if (entries.get(key) === entry) {
         entries.delete(key);

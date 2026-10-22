@@ -217,19 +217,23 @@ export const salesFrom = (
 
 const META_SOURCES = /^(?:facebook|fb|meta|instagram|ig)$/iu;
 
-// Fourthwall orders from Meta links next to the purchases Meta reports (R1).
+// Fourthwall orders from Meta links, over every UTM row (the section shows
+// only the top 8).
+export const metaOrdersFrom = (utm: Row[]) =>
+  sum(
+    utm.filter((row) => META_SOURCES.test(str(row, "utm_source") ?? "")),
+    (row) => num(row, "contributions", "orders")
+  );
+
+// Those orders next to the purchases Meta reports (R1).
 export const reconcile = (
-  sales: Sales | undefined,
+  shopOrders: number | undefined,
   ads: Ads | undefined,
   disagreementPct: number
 ): Reconciliation | undefined => {
-  if (sales === undefined || ads === undefined) {
+  if (shopOrders === undefined || ads === undefined) {
     return undefined;
   }
-  const shopOrders = sum(
-    sales.utm.filter((row) => META_SOURCES.test(row.source)),
-    (row) => row.orders
-  );
   const metaPurchases = ads.totals.purchases;
   const { status } = checkPurchases({
     disagreementPct,
@@ -291,6 +295,7 @@ export const runsFrom = (runs: AutopilotRun[]): Dashboard["runs"] =>
         .slice(-3)
         .toReversed()
         .map((decision) => ({
+          at: decision.at,
           choice: cut(decision.choice),
           point: decision.point,
           reason: cut(decision.reason, 200),
@@ -304,6 +309,7 @@ export const runsFrom = (runs: AutopilotRun[]): Dashboard["runs"] =>
 
 export const optimizerFrom = (actions: ActionRecord[]) =>
   actions.map((action) => ({
+    id: action.id,
     status: action.status,
     target: cut(`${action.target.kind} ${action.target.id}`),
     type: action.type,
