@@ -1,5 +1,5 @@
-import { adSchema } from "@wovain/shared/ad";
-import type { Ad } from "@wovain/shared/ad";
+import { adSchema, adStatusOf, mergeConcepts } from "@wovain/shared/ad";
+import type { Ad, ConceptInput, ConceptStatus } from "@wovain/shared/ad";
 import { designSchema } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
@@ -139,15 +139,29 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       }
       return bytes;
     },
-    // Records add or skip and counts the ad widgets still waiting, in one step.
-    recordAd: async (designId: string, status: Ad["status"]) =>
+    // Records one concept's approve or skip, sets the product's status from
+    // all its concepts and counts the ad widgets still waiting, in one step.
+    recordConcept: async (
+      designId: string,
+      conceptId: string,
+      status: Exclude<ConceptStatus, "draft">
+    ) =>
       await transaction(async (tx) => {
         const all = await ads.all(tx);
         const current = all.find((item) => item.designId === designId);
-        if (current === undefined) {
-          throw new Error(`No ad widget for ${designId}`);
+        if (
+          current?.concepts.some((concept) => concept.id === conceptId) !== true
+        ) {
+          throw new Error(`No ad ${conceptId} for ${designId}`);
         }
-        const ad = await ads.put(designId, { ...current, status }, tx);
+        const concepts = current.concepts.map((concept) =>
+          concept.id === conceptId ? { ...concept, status } : concept
+        );
+        const ad = await ads.put(
+          designId,
+          { ...current, concepts, status: adStatusOf(concepts) },
+          tx
+        );
         const waiting = all.filter(
           (item) => item.designId !== designId && item.status === "draft"
         ).length;
@@ -186,6 +200,20 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     },
     saveCampaign: async (campaign: SavedCampaign) =>
       await campaigns.put(ONLY, campaign),
+    // Adds or revises concepts on a product's ads; the rest keep their choice.
+    saveConcepts: async (
+      ad: Omit<Ad, "concepts" | "status">,
+      concepts: (ConceptInput & { feedback?: string | undefined })[]
+    ) =>
+      await transaction(async (tx) => {
+        const current = await ads.get(ad.designId, tx);
+        const merged = mergeConcepts(current?.concepts ?? [], concepts);
+        return await ads.put(
+          ad.designId,
+          { ...ad, concepts: merged, status: adStatusOf(merged) },
+          tx
+        );
+      }),
     // A design without an id is new; one with an id replaces the stored copy,
     // keeping its publish state unless the caller sets it.
     saveDesign: async (

@@ -61,8 +61,14 @@ export const draftPlan = async (store: Store, settings: Settings) => {
       : links,
     mediaUrls: products.flatMap(({ ad }) => [
       ad.staticImage.url,
-      ...ad.videos.flatMap((video) =>
-        video.status === "ready" && video.url !== undefined ? [video.url] : []
+      ...ad.concepts.flatMap((concept) =>
+        concept.status === "approved"
+          ? concept.assets.flatMap((asset) =>
+              asset.status === "ready" && asset.url !== undefined
+                ? [asset.url]
+                : []
+            )
+          : []
       ),
     ]),
   };

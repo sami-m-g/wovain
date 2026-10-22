@@ -62,6 +62,60 @@ beforeEach(async () => {
   });
   await store.saveAd({
     coach: "Two clips.",
+    concepts: [
+      {
+        angle: "UGC try-on",
+        assets: [
+          {
+            alt: "Try-on clip",
+            kind: "video",
+            ratio: "9:16",
+            source: "fal",
+            status: "ready",
+            url: "https://v3b.fal.media/a.mp4",
+          },
+          {
+            alt: "Black tee",
+            kind: "image",
+            ratio: "1:1",
+            source: "fourthwall",
+            status: "ready",
+            url: "https://cdn.fourthwall.com/x.webp",
+          },
+        ],
+        audience: "Cat people",
+        cta: "SHOP_NOW",
+        headlines: ["Sakura Season Cat Tee", "The cat tee for spring"],
+        hook: "A calico watches the sun go down.",
+        id: "c1",
+        name: "Try-on",
+        primaryTexts: ["A calico watches the sun go down."],
+        revision: 1,
+        status: "approved",
+      },
+      {
+        angle: "Gift",
+        assets: [
+          {
+            alt: "Black tee",
+            kind: "image",
+            ratio: "1:1",
+            source: "fourthwall",
+            status: "ready",
+            url: "https://cdn.fourthwall.com/x.webp",
+          },
+        ],
+        audience: "Gift buyers",
+        cta: "SHOP_NOW",
+        headlines: ["A gift for cat people"],
+        hook: "For the friend whose cat runs the house.",
+        id: "c2",
+        name: "Gift",
+        primaryTexts: ["For the friend whose cat runs the house."],
+        revision: 1,
+        status: "skipped",
+      },
+    ],
     designId: "d1",
     economics: {
       baseCost: 17.7,
@@ -72,8 +126,6 @@ beforeEach(async () => {
       roas: 2.9,
       roasOnOrderValue: 3.6,
     },
-    headline: "Sakura Season Cat Tee",
-    primaryText: "A calico watches the sun go down.",
     productTitle: "Japanese Cat Sunset Tee",
     rules: {
       alertAbove: 10.32,
@@ -85,22 +137,6 @@ beforeEach(async () => {
     },
     staticImage: { alt: "Black tee", url: "https://cdn.fourthwall.com/x.webp" },
     status: "added",
-    videos: [
-      {
-        angle: "UGC on-model",
-        seconds: 15,
-        slot: "A",
-        status: "ready",
-        url: "https://v3b.fal.media/a.mp4",
-      },
-      {
-        angle: "UGC styling",
-        seconds: 15,
-        slot: "B",
-        status: "ready",
-        url: "https://v3b.fal.media/b.mp4",
-      },
-    ],
   });
 });
 
@@ -440,6 +476,9 @@ test("create_rules uses the merchant's own Meta token, skips existing rules and 
   const { campaign } = campaignResultSchema.parse(widget.structuredContent);
   expect(campaign.dailyBudget).toBe(15);
   expect(campaign.launchVia).toBe("wovain");
+  expect(campaign.products).toEqual([
+    { ads: 1, designId: "d1", title: "Japanese Cat Sunset Tee" },
+  ]);
   expect(campaign.rules.every((rule) => rule.created)).toBe(true);
   expect(campaign.adsManagerUrl).toContain("act=42&selected_campaign_ids=555");
   await client.close();
@@ -481,7 +520,9 @@ test("without wovain's Meta app, campaign_draft says so and the plan still works
   const plan = await client.callTool({ arguments: {}, name: "campaign_plan" });
   const text = JSON.stringify(plan.content);
   expect(text).toContain("1500");
-  expect(text).toContain("wovain d1 · A");
+  expect(text).toContain("wovain d1 · c1");
+  expect(text).not.toContain("wovain d1 · c2");
+  expect(text).toMatch(/aiMade\\+":true/u);
   expect(text).toContain("utm_content={{ad.id}}");
   await client.close();
 });

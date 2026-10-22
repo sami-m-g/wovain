@@ -1,15 +1,21 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 import {
+  adRatioSchema,
   adResultSchema,
-  adStatusSchema,
-  adVideoSchema,
+  conceptInputSchema,
 } from "@wovain/shared/ad";
-import type { Ad } from "@wovain/shared/ad";
+import type { ConceptInput } from "@wovain/shared/ad";
+import type { Design } from "@wovain/shared/design";
 import { breakeven } from "@wovain/shared/economics";
 import { ruleThresholds } from "@wovain/shared/rules";
 import { z } from "zod";
 
+import {
+  AD_IMAGE_ENDPOINT,
+  AD_IMAGE_USD,
+  adImageInputs,
+} from "../lib/ad-images.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
 import { text } from "../lib/tool-result.ts";
 import { upstreamReply } from "../lib/upstream.ts";
@@ -18,14 +24,75 @@ import { planVideos } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
-// A clip URL fal returned: https on fal's media CDN only.
-const falMediaUrl = z.url().refine((value) => {
+// A URL fal returned: https on fal's media CDN only.
+const isFalMedia = (value: string) => {
   const { hostname, protocol } = new URL(value);
   return (
     protocol === "https:" &&
     (hostname === "fal.media" || hostname.endsWith(".fal.media"))
   );
-}, "a clip URL on fal.media");
+};
+const falMediaUrl = z.url().refine(isFalMedia, "a clip URL on fal.media");
+
+// Ad visuals are fal output or the design's own Fourthwall images, never an
+// arbitrary link that would end up in a Meta ad.
+const ownMedia = (design: Design, url: string) =>
+  isFalMedia(url) ||
+  url === design.artwork.url ||
+  design.mockups.some((mockup) => mockup.url === url);
+
+const checkConcepts = async (
+  store: Store,
+  design: Design,
+  concepts: ConceptInput[]
+) => {
+  const foreign = concepts.find((concept) =>
+    concept.assets.some(
+      (asset) => asset.url !== undefined && !ownMedia(design, asset.url)
+    )
+  );
+  if (foreign !== undefined) {
+    throw new Error(
+      `${foreign.id}: visuals must come from fal or this design's mockups`
+    );
+  }
+  const cards = concepts.flatMap((concept) => concept.cards ?? []);
+  const cardDesigns = await Promise.all(
+    cards.map(async (card) => await store.requireDesign(card.designId))
+  );
+  const badCard = cards.find((card, index) => {
+    const cardDesign = cardDesigns[index];
+    return (
+      cardDesign?.status !== "live" || !ownMedia(cardDesign, card.imageUrl)
+    );
+  });
+  if (badCard !== undefined) {
+    throw new Error(
+      `carousel card ${badCard.designId}: needs a live design and its own images`
+    );
+  }
+};
+
+const conceptsInput = z
+  .array(
+    conceptInputSchema.extend({
+      feedback: z.string().min(1).max(300).optional(),
+    })
+  )
+  .min(1)
+  .max(6);
+
+const imagesInput = z
+  .array(
+    z.object({
+      color: z.string().optional(),
+      ratio: adRatioSchema,
+      // The lifestyle or studio scene: people, place, light and mood.
+      scene: z.string().min(10).max(1200),
+    })
+  )
+  .min(1)
+  .max(8);
 
 export const registerAdTools = (
   server: McpServer,
@@ -61,8 +128,8 @@ export const registerAdTools = (
     }
   );
 
-  // The merchant's own fal account runs exactly the planned requests: the
-  // agent picks the design, never the inputs.
+  // The merchant's own fal account runs requests wovain builds: the agent
+  // picks the design and the scene, never the model or the references.
   const submit = async (requests: Record<string, unknown>[]) =>
     await upstreamReply(upstream, {
       args: { requests },
@@ -128,13 +195,33 @@ export const registerAdTools = (
     }
   );
 
+  server.registerTool(
+    "generate_ad_images",
+    {
+      annotations: spends,
+      description: `Generate ad images for a live design on the merchant's own fal account. Each one edits the design's Fourthwall mockup (pick the color by name) into the scene you write, at Meta's ratio (1:1 or 4:5 for Feed, 9:16 for Stories and Reels), and keeps the print. About $${AD_IMAGE_USD.toFixed(2)} per image at fal's list price: say the total first. Returns job handles for the fal tool's wait_for_jobs. If the merchant hasn't connected fal, the result has needsConnection and a link to show them.`,
+      inputSchema: z.object({ designId: z.string(), images: imagesInput }),
+      title: "Generate ad images",
+    },
+    async ({ designId, images }) => {
+      const design = await store.requireDesign(designId);
+      return await submit(
+        adImageInputs(design, images).map((input, index) => ({
+          endpoint_id: AD_IMAGE_ENDPOINT,
+          index,
+          input,
+        }))
+      );
+    }
+  );
+
   registerAppTool(
     server,
     "show_ad_widget",
     {
       _meta: {
         "openai/toolInvocation/invoked": "Ads ready",
-        "openai/toolInvocation/invoking": "Putting the ad widget together…",
+        "openai/toolInvocation/invoking": "Putting the ad concepts together…",
         ui: { resourceUri: widgetUri("ad") },
       },
       annotations: {
@@ -143,57 +230,54 @@ export const registerAdTools = (
         readOnlyHint: false,
       },
       description:
-        "Show the ad widget for a live design: its finished videos (a failed clip as status failed), headline (short, product-led), primary text (2 to 3 lines) and one coach line. wovain adds the static mockup, the breakeven math and the rule thresholds itself. Redraw with the same designId after feedback.",
+        "Show the ad widget for a live design: its ad concepts (each with a hook, angle, audience, signals, visuals per ratio, up to 5 primary texts and 5 headlines, and a CTA) and one coach line. After feedback, pass only the revised or new concepts, each with the merchant's feedback: wovain keeps the others and their choices, bumps the revision and redraws. Visuals must be fal output or this design's mockups; carousel cards must be live designs. wovain adds the breakeven math and the rule thresholds itself.",
       inputSchema: z.object({
         coach: z.string().min(1).max(160),
+        concepts: conceptsInput,
         designId: z.string(),
-        headline: z.string().min(1).max(60),
-        primaryText: z.string().min(1).max(500),
-        videos: z.array(adVideoSchema).min(1).max(4),
       }),
       outputSchema: adResultSchema,
       title: "Show ad widget",
     },
-    async ({ coach, designId, headline, primaryText, videos }) => {
+    async ({ coach, concepts, designId }) => {
       const [design, settings] = await Promise.all([
         store.requireDesign(designId),
         store.getSettings(),
       ]);
+      await checkConcepts(store, design, concepts);
       const { baseCost, price } = design.quote;
       const math = breakeven(price, baseCost, settings.economics);
       const [mockup] = design.mockups;
-      const ad: Ad = {
-        coach,
-        designId,
-        economics: {
-          baseCost,
-          breakevenPerSale: math.perSale,
-          cardFees: math.cardFees,
-          price,
-          refundReserve: math.refundReserve,
-          roas: math.roas,
-          roasOnOrderValue: math.roasOnOrderValue,
+      const ad = await store.saveConcepts(
+        {
+          coach,
+          designId,
+          economics: {
+            baseCost,
+            breakevenPerSale: math.perSale,
+            cardFees: math.cardFees,
+            price,
+            refundReserve: math.refundReserve,
+            roas: math.roas,
+            roasOnOrderValue: math.roasOnOrderValue,
+          },
+          productTitle: design.listing.title,
+          rules: {
+            ...ruleThresholds(math.perSale, settings.rules),
+            scaleStepPct: settings.rules.scaleStepPct,
+          },
+          staticImage: {
+            alt: mockup?.alt ?? design.listing.title,
+            url: mockup?.url ?? design.artwork.url,
+          },
         },
-        headline,
-        primaryText,
-        productTitle: design.listing.title,
-        rules: {
-          ...ruleThresholds(math.perSale, settings.rules),
-          scaleStepPct: settings.rules.scaleStepPct,
-        },
-        staticImage: {
-          alt: mockup?.alt ?? design.listing.title,
-          url: mockup?.url ?? design.artwork.url,
-        },
-        status: "draft",
-        videos,
-      };
-      const saved = await store.saveAd(ad);
+        concepts
+      );
       return {
         content: text(
-          `Showing the ad widget for ${designId}. Wait for the merchant to add it to the campaign, skip it or give feedback.`
+          `Showing ${ad.concepts.length} ad concept(s) for ${designId}. Wait for the merchant to approve, skip or give feedback on each.`
         ),
-        structuredContent: { ad: saved },
+        structuredContent: { ad },
       };
     }
   );
@@ -211,18 +295,26 @@ export const registerAdTools = (
         readOnlyHint: false,
       },
       description:
-        "Record the merchant's choice on an ad widget: added to the campaign or skipped. Returns how many ad widgets are still waiting, so the campaign launches after the last one.",
-      inputSchema: z.object({ designId: z.string(), status: adStatusSchema }),
+        "Record the merchant's choice on one ad concept: approved for the campaign or skipped. Returns the product's ads and how many ad widgets still have undecided concepts.",
+      inputSchema: z.object({
+        conceptId: z.string(),
+        designId: z.string(),
+        status: z.enum(["approved", "skipped"]),
+      }),
       outputSchema: adResultSchema.extend({ waiting: z.int() }),
       title: "Record ad choice",
     },
-    async ({ designId, status }) => {
-      const { ad: saved, waiting } = await store.recordAd(designId, status);
+    async ({ conceptId, designId, status }) => {
+      const { ad, waiting } = await store.recordConcept(
+        designId,
+        conceptId,
+        status
+      );
       return {
         content: text(
-          `Design ${designId} ads ${status}. ${waiting} ad widget(s) still waiting.`
+          `Ad ${conceptId} for design ${designId} ${status}. ${waiting} ad widget(s) still waiting.`
         ),
-        structuredContent: { ad: saved, waiting },
+        structuredContent: { ad, waiting },
       };
     }
   );
