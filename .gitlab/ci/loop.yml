@@ -1,0 +1,22 @@
+# The self-healing loop (docs/loop.md), hourly on the "wovain loop" pipeline
+# schedule (infra/gitlab.ts). apps/ops/src/loop.ts verifies merged fixes
+# against production's error rate, files new production errors as issues for
+# the Duo Developer flow, and moves Duo's merge requests through Duo Code
+# Review to GitLab's auto-merge. It reads Google Cloud as gitlab-ops (logs
+# and metrics only), which trusts only jobs in the operations environment.
+# The schedule turns off the security scanners (its variables), since an
+# hourly scan of an unchanged main adds CI minutes and nothing else.
+loop:
+  stage: monitor
+  extends: [.gcp-auth]
+  interruptible: false
+  resource_group: loop
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain loop"
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_OPS_SERVICE_ACCOUNT
+  script:
+    - node apps/ops/src/loop.ts
+  environment:
+    name: operations
+    action: verify

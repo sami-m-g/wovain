@@ -14,9 +14,9 @@ scripts:
 # Plain values, then Secret Manager references set with
 # `pulumi config set --secret <name>` in infra/ (see infra/index.ts). Only
 # secrets with a value are listed: App Hosting won't build with an empty one.
-# The OTEL_* pair, QLOO_API_KEY (qloo-api-key) and wovain's Meta app,
-# META_APP_ID (meta-app-id) and META_APP_SECRET (meta-app-secret), are listed
-# once they have values.
+# QLOO_API_KEY (qloo-api-key) and wovain's Meta app, META_APP_ID
+# (meta-app-id) and META_APP_SECRET (meta-app-secret), are listed once they
+# have values.
 env:
   # The install skips lifecycle scripts, as CI does (pnpm 12 reads only the
   # pnpm_config_ prefix): the root `prepare` sets up
@@ -30,6 +30,12 @@ env:
   # The KMS key that encrypts merchants' Fourthwall and fal grants (infra/).
   - variable: WOVAIN_KMS_KEY
     value: projects/wovain/locations/us-central1/keyRings/wovain/cryptoKeys/connections
+  # Traces go to the group's GitLab Observability (apps/server/src/telemetry.ts),
+  # which the self-healing loop reads. Its OTLP endpoint takes data without a
+  # token until enforcement is turned on (docs.gitlab.com, operations/
+  # observability/ci_cd); then OTEL_EXPORTER_OTLP_HEADERS becomes a secret.
+  - variable: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: https://144066465.otel.gitlab-o11y.com:14318
   - variable: WOVAIN_SITE_URL
     value: https://app--wovain.us-central1.hosted.app
   - variable: WORKOS_AUTHKIT_DOMAIN

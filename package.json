@@ -10,7 +10,7 @@
     "fix": "ultracite fix",
     "typecheck": "tsc -b --noEmit",
     "typecheck:6": "tsc6 -b --noEmit",
-    "test": "pnpm --filter @wovain/server test",
+    "test": "pnpm --filter @wovain/server --filter @wovain/ops test",
     "test:integration": "pnpm --filter @wovain/server test:integration",
     "test:live": "pnpm --filter @wovain/server test:live",
     "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",

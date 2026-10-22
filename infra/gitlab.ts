@@ -20,6 +20,8 @@ export type CiVariables = Record<
     // Only pipelines on protected refs (main) get it.
     protected: boolean;
     masked?: boolean;
+    // A variable Pulumi creates; the others were made by hand and adopted.
+    created?: boolean;
   }
 >;
 
@@ -36,7 +38,10 @@ export const ciVariables = (variables: CiVariables) => {
         value: v.value,
       },
       // Secret in state and diffs, including the value read on import.
-      { ...adopt(`${key}:*`), additionalSecretOutputs: ["value"] }
+      {
+        ...(v.created === true ? {} : adopt(`${key}:*`)),
+        additionalSecretOutputs: ["value"],
+      }
     );
   }
 };
@@ -59,6 +64,13 @@ export const environments = (siteUrl: pulumi.Input<string>) => {
     { name: "infrastructure", project: projectId, tier: "other" },
     adopt("41825171")
   );
+  // The self-healing loop's job (.gitlab/ci/loop.yml): it deploys nothing
+  // (action: verify), and Google trusts gitlab-ops only from here.
+  new gitlab.ProjectEnvironment("operations", {
+    name: "operations",
+    project: projectId,
+    tier: "other",
+  });
 };
 
 // The renovate job runs only on this schedule (.gitlab/ci/verify.yml matches
@@ -76,8 +88,33 @@ new gitlab.PipelineSchedule(
   adopt("4502115")
 );
 
+// The self-healing loop (.gitlab/ci/loop.yml), hourly. Its pipeline runs only
+// the loop job, so the scanners are off for it: main's own pipelines scan
+// every change already.
+const loop = new gitlab.PipelineSchedule("loop", {
+  active: true,
+  cron: "17 * * * *",
+  cronTimezone: "UTC",
+  description: "wovain loop",
+  project: projectId,
+  ref: "refs/heads/main",
+});
+for (const key of [
+  "SAST_DISABLED",
+  "SECRET_DETECTION_DISABLED",
+  "DEPENDENCY_SCANNING_DISABLED",
+]) {
+  new gitlab.PipelineScheduleVariable(`loop-${key.toLowerCase()}`, {
+    key,
+    pipelineScheduleId: loop.pipelineScheduleId,
+    project: projectId,
+    value: "true",
+  });
+}
+
 // Issue labels: status drives the Workflow board, agent says who works it,
-// scout and digest are the scout flow's (.gitlab/duo/catalog/flows/scout.yml).
+// scout and digest are the self-healing loop's (apps/ops), and verified marks
+// a scout issue whose fix production confirmed.
 // An id adopts a label made by hand before.
 const labels: Record<
   string,
@@ -197,6 +234,10 @@ const labels: Record<
     color: "#428bca",
     description: "New capability or improvement",
     id: 54_770_187,
+  },
+  verified: {
+    color: "#2da160",
+    description: "The scout confirmed the fix in production",
   },
 };
 

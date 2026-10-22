@@ -44,8 +44,8 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
 | `WOVAIN_ALLOWED_EMAILS` | Who may use `/mcp` (comma-separated verified emails; empty lets nobody in) | The email you sign in to AuthKit with |
 | `WOVAIN_SITE_URL` | Optional: overrides the site URL, e.g. a tunnel to your local server | Your tunnel's URL |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional: send traces to GitLab Observability (unset sends nothing) | GitLab group → Observe → Observability configuration |
-| `OTEL_EXPORTER_OTLP_HEADERS` | Optional: the auth header for that endpoint, as `key=value` | Same page |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional: send traces to GitLab Observability (unset sends nothing; production sends to the group's endpoint, set in `apphosting.yaml`) | GitLab group → Observe → Setup |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Optional: the auth header for that endpoint, as `key=value`, once the endpoint enforces a token | Group → Observe → API Keys |
 
 Storage needs no keys: locally `pnpm dev` starts the Firestore and Storage emulators, and on App Hosting the server finds its Firebase project and bucket on its own.
 
@@ -104,7 +104,7 @@ The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-octo
 | verify | Build, lint, typecheck, knip, arch, dupes, tests, card stories (in parallel) |
 | test | GitLab SAST, Secret Detection and Dependency Scanning |
 | deploy | `main` only: `pulumi up` (`infra/`), then upload the source to App Hosting and roll it out |
-| monitor | A smoke test of the live OAuth chain |
+| monitor | A smoke test of the live OAuth chain; hourly on the `wovain loop` schedule, the self-healing loop ([docs/loop.md](docs/loop.md)) |
 | release | semantic-release, after the smoke test passes; then `main` and its tags are pushed to GitHub, even if an earlier job failed |
 
 ### How work moves
@@ -117,7 +117,7 @@ Each idea or bug is a GitLab issue (template `Intent`, `Agent task` or `Bug`) on
 4. `status::review`: the MR is open. Duo's Code Review flow reviews it when requested as reviewer.
 5. `status::test`: your turn. Try it, then comment what to change or merge. `verify.md` in the change folder says how it was proven.
 
-The scout flow's daily comment on the `digest` issue lists what shipped and what waits for you. Duo triggers and the scout schedule are paused while Duo credits are paused (`infra/Pulumi.prod.yaml`).
+Production errors skip the first two steps. The hourly **self-healing loop** ([docs/loop.md](docs/loop.md), `apps/ops`) reads Cloud Logging, Cloud Monitoring and GitLab Observability, files each new error as a `scout` issue assigned to Duo's Developer flow, takes Duo's merge request through Duo Code Review to GitLab's auto-merge when it passes the guardrails, and after the deploy checks that the error rate dropped: it closes the issue with the numbers, or reopens it. Its daily comment on the `digest` issue says what it found, fixed and handed back. The Duo triggers it relies on are in `infra/Pulumi.prod.yaml`.
 
 ### Agent skills
 
@@ -148,7 +148,7 @@ Still set by hand, since no API or provider covers them (or the role can't reach
 | Where | What |
 | --- | --- |
 | WorkOS dashboard | CIMD and dynamic client registration (Connect → Configuration), and sign-in methods. WorkOS documents no API for these, so no provider covers them. `smoke:production` fails if CIMD or registration is off |
-| GitLab, Maintainer only | Protected branches, tags and environments, merge request settings (such as merging only after the pipeline passes), Duo's automatic review and SAST flows |
+| GitLab, Maintainer only | Protected branches, tags and environments, merge request settings (such as merging only after the pipeline passes), Duo's automatic review and SAST flows, error tracking, and enabling custom Duo flows in the top-level group |
 | GitLab Observability (group) | The `o11y-api-key` the self-healing loop reads errors, traces and logs with. A group Owner opens the group, Observe → API Keys, and copies the key (the docs allow Developer and up, but Developer+ has no observability or access-token permission here); then `pulumi config set --secret o11y-api-key` in `infra/`. The docs describe no API or token scope for it and `@pulumi/gitlab` has no resource for it |
 | Google Cloud, once | The Pulumi state bucket `wovain-pulumi-state` and the `pulumi/stack-secrets` KMS key, which this stack needs before it can run |
 | Meta, Fourthwall, fal, Nebius, Qloo, Tavily | The accounts, Page, pixel, payment method and API keys (keys go in as stack secrets) |
@@ -178,6 +178,7 @@ Releases come from conventional commits. semantic-release (`.config/releaserc.js
 | `apps/server/` | The Hono server on Node: `/mcp` (tools, the step playbooks agents follow, Fourthwall and fal helpers, Meta rules client), the AuthKit token check, and the Firestore and Cloud Storage store (`src/store.ts`, `src/firebase.ts`); `firebase.json` and the deny-all `firestore.rules` and `storage.rules` |
 | `apphosting.yaml` | How App Hosting builds and runs the server, and which secrets it reads |
 | `apps/widgets/` | The React widgets (MCP Apps) and their Storybook stories |
+| `apps/ops/` | The self-healing loop's CI job: scout, verify and the auto-merge shepherd ([docs/loop.md](docs/loop.md)) |
 | `packages/shared/` | Schemas, economics and rule thresholds shared by server and widgets |
 | `docs/` | Planning documents and the app map |
 | `.agents/skills/` | Project skills for Claude Code and GitLab Duo (see [Agent skills](#agent-skills)) |
