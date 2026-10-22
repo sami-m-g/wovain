@@ -10,7 +10,8 @@ runtime:
     packagemanager: pnpm
 # Generated SDK in sdks/graphql (`pulumi package add terraform-provider
 # sullivtr/graphql`): the Duo flow triggers in duo.ts. GitLab's own provider has
-# no resource for them.
+# no resource for them. sdks/workos (osodevops/workos) holds the AuthKit
+# redirect URIs in workos.ts; WorkOS has no official provider.
 packages:
   graphql:
     source: terraform-provider
@@ -19,5 +20,11 @@ packages:
     parameters:
       - sullivtr/graphql
       - 2.6.2
+  workos:
+    source: terraform-provider
+    version: 1.5.0
+    parameters:
+      - osodevops/workos
+      - 2.5.0
 backend:
   url: gs://wovain-pulumi-state

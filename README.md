@@ -38,6 +38,9 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
 | `FAL_BILLING_KEY` | Optional: what fal actually charged (`video_spend`) | fal API key with the Billing preset |
 | `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
+| `NEBIUS_API_KEY` | Optional: Nebius AI Studio | Nebius AI Studio → API keys |
+| `QLOO_API_KEY` | Optional: Qloo's Taste API | Qloo developer portal |
+| `TAVILY_API_KEY` | Optional: Tavily search | Tavily dashboard → API keys |
 | `WORKOS_AUTHKIT_DOMAIN` | Sign-in: the AuthKit domain that issues `/mcp`'s tokens | WorkOS dashboard (e.g. `https://<name>.authkit.app`) |
 | `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
 | `WOVAIN_ALLOWED_EMAILS` | Who may use `/mcp` (comma-separated verified emails; empty lets nobody in) | The email you sign in to AuthKit with |
@@ -102,6 +105,7 @@ The scout flow's daily comment on the `digest` issue lists what shipped and what
 - **Google Cloud and Firebase**: APIs, Firestore and its rules, the media bucket and its Storage rules, Secret Manager, App Hosting, service accounts and IAM, Workload Identity Federation for CI (no Google key is stored), and the budget (`infra/index.ts`).
 - **GitLab** (`infra/gitlab.ts`, `infra/duo.ts`): every CI/CD variable, the `production` and `infrastructure` environments, the Renovate schedule, the issue labels and the Workflow board, and the Duo flow triggers and custom flows.
 - **The GitHub mirror** (`infra/github.ts`): repository settings, the deploy key CI pushes with (a generated key pair, which also becomes `GITHUB_MIRROR_KEY`), and a ruleset that lets only that key change `main`.
+- **WorkOS AuthKit** (`infra/workos.ts`): the redirect URIs in `wovain:workosRedirectUris` (`Pulumi.prod.yaml`). It uses the community `osodevops/workos` Terraform provider, which `pulumi install` generates into `infra/sdks/workos`. It signs in with the `workos-api-key` stack secret. Entries made by hand are adopted by their WorkOS id (`import`).
 
 The tokens are stack secrets, encrypted with the KMS key (`pulumi config set --secret <name>` in `infra/`): `gitlab:token` (Pulumi's GitLab access, `api`), `github:token` (a fine-grained token for the mirror repository: Administration read/write), `gitlab-ci-token` (`GITLAB_TOKEN` for semantic-release and the AI Catalog sync) and `renovate-token` (`RENOVATE_TOKEN`). Each is a separate personal access token, since the Developer+ role can't create project access tokens.
 
@@ -109,10 +113,10 @@ Still set by hand, since no API or provider covers them (or the role can't reach
 
 | Where | What |
 | --- | --- |
-| WorkOS dashboard | CIMD, dynamic client registration and the `<site>/mcp` resource indicator (Connect → Configuration), sign-in methods. `smoke:production` fails if CIMD or registration is off |
+| WorkOS dashboard | CIMD, dynamic client registration and the `<site>/mcp` resource indicator (Connect → Configuration), and sign-in methods. WorkOS documents no API for these, so no provider covers them. `smoke:production` fails if CIMD or registration is off |
 | GitLab, Maintainer only | Protected branches, tags and environments, merge request settings (such as merging only after the pipeline passes), Duo's automatic review and SAST flows |
 | Google Cloud, once | The Pulumi state bucket `wovain-pulumi-state` and the `pulumi/stack-secrets` KMS key, which this stack needs before it can run |
-| Meta, Fourthwall, fal | The accounts, Page, pixel, payment method and API keys (keys go in as stack secrets) |
+| Meta, Fourthwall, fal, Nebius, Qloo, Tavily | The accounts, Page, pixel, payment method and API keys (keys go in as stack secrets) |
 
 ## Releases
 

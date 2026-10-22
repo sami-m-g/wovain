@@ -53,6 +53,15 @@ config:
   #       cron: "0 7 * * *"
   #       timezone: UTC
   #       description: wovain scout, daily
+  # AuthKit redirect URIs (infra/workos.ts). import adopts an entry made by
+  # hand, by its WorkOS id.
+  wovain:workosRedirectUris:
+    - name: hosted
+      uri: https://app--wovain.us-central1.hosted.app/mcp
+      import: redir_01M5HQD3PBAXJ69NRBS31CK0VP
+    - name: localhost
+      uri: http://localhost:3000/mcp
+      import: redir_01M5HQD44DBG42CHS3W7XWB68J
   gcp:project: wovain
   gcp:region: us-central1
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
