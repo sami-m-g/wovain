@@ -2,19 +2,25 @@ import { Hono } from "hono";
 import { html } from "hono/html";
 
 import { siteUrl } from "./auth/env.ts";
+import { createConnectRoutes } from "./routes/connect.ts";
 import { createMcpRoute } from "./routes/mcp.ts";
 import type { Runtime } from "./runtime.ts";
 
 // Every route wovain serves: /mcp for agents, the metadata naming AuthKit as
 // its sign-in, and the home page. AuthKit hosts sign-in and consent.
 export const createApp = (runtime: Runtime) => {
-  const { auth, authEnv } = runtime;
+  const { auth, authEnv, connect } = runtime;
   const site = siteUrl(authEnv);
   const mcp = createMcpRoute(runtime);
 
   const app = new Hono();
 
   app.all("/mcp", async (c) => await mcp(c.req.raw));
+
+  // Merchants connect their Fourthwall and fal accounts here.
+  if (connect !== undefined) {
+    app.route("/", createConnectRoutes({ ...connect, site }));
+  }
 
   // Agents look for /mcp's metadata at
   // /.well-known/oauth-protected-resource/mcp (some try the bare path).

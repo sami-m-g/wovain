@@ -5,10 +5,12 @@ import { createAi } from "./lib/ai.ts";
 import { designJudgeFor } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import { trendResearchFor } from "./lib/trends.ts";
+import type { Upstream } from "./lib/upstream.ts";
 import { instructions, registerPlaybooks } from "./playbooks/index.ts";
 import type { Store } from "./store.ts";
 import { registerAdTools } from "./tools/ads.ts";
 import { registerCampaignTools } from "./tools/campaign.ts";
+import { registerConnectionTools } from "./tools/connections.ts";
 import { registerDesignTools } from "./tools/design.ts";
 import { registerJudgeTools } from "./tools/judge.ts";
 import { registerResearchTools } from "./tools/research.ts";
@@ -16,12 +18,14 @@ import { registerSettingsTools } from "./tools/settings.ts";
 import { registerWidgets } from "./widgets.ts";
 
 // What the tools call upstream, built once per process: HTTP mode builds a
-// server per request. One Genkit instance serves every model call.
-export const createDeps = (env: Env) => {
+// server per request. One Genkit instance serves every model call. The
+// upstream client reaches each merchant's own Fourthwall and fal.
+export const createDeps = (env: Env, upstream?: Upstream) => {
   const ai = createAi(env.NEBIUS_API_KEY);
   return {
     designJudge: designJudgeFor(ai),
     trendResearch: trendResearchFor(env.TAVILY_API_KEY, ai),
+    upstream,
     videoPricing: createVideoPricing(env.FAL_KEY),
   };
 };
@@ -30,7 +34,7 @@ export type Deps = ReturnType<typeof createDeps>;
 export const createServer = (
   env: Env,
   store: Store,
-  { designJudge, trendResearch, videoPricing }: Deps
+  { designJudge, trendResearch, upstream, videoPricing }: Deps
 ) => {
   const server = new McpServer(
     {
@@ -57,8 +61,9 @@ export const createServer = (
   registerDesignTools(server, store);
   registerJudgeTools(server, designJudge);
   registerResearchTools(server, trendResearch);
-  registerAdTools(server, store, env, videoPricing);
+  registerAdTools(server, store, videoPricing, upstream);
   registerCampaignTools(server, store, env);
+  registerConnectionTools(server, store, upstream);
   registerPlaybooks(server);
   return server;
 };

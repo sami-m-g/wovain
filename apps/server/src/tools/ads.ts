@@ -10,20 +10,38 @@ import { breakeven } from "@wovain/shared/economics";
 import { ruleThresholds } from "@wovain/shared/rules";
 import { z } from "zod";
 
-import type { Env } from "../env.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
-import { fetchSpend } from "../lib/fal-usage.ts";
 import { text } from "../lib/tool-result.ts";
+import { upstreamReply } from "../lib/upstream.ts";
+import type { Upstream } from "../lib/upstream.ts";
 import { planVideos } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
+// A clip URL fal returned: https on fal's media CDN only.
+const falMediaUrl = z.url().refine((value) => {
+  const { hostname, protocol } = new URL(value);
+  return (
+    protocol === "https:" &&
+    (hostname === "fal.media" || hostname.endsWith(".fal.media"))
+  );
+}, "a clip URL on fal.media");
+
 export const registerAdTools = (
   server: McpServer,
   store: Store,
-  env: Env,
-  videoPricing: VideoPricing
+  videoPricing: VideoPricing,
+  upstream: Upstream | undefined
 ) => {
+  const planFor = async (designId: string) => {
+    const [design, settings, prices] = await Promise.all([
+      store.requireDesign(designId),
+      store.getSettings(),
+      videoPricing(),
+    ]);
+    return planVideos(design, settings, prices);
+  };
+
   server.registerTool(
     "video_plan",
     {
@@ -33,48 +51,80 @@ export const registerAdTools = (
         readOnlyHint: true,
       },
       description:
-        "Plan the ad videos for a live design from wovain's settings: one ready fal request per clip (submit each with fal's submit_jobs exactly as given), plus the background-audio request to run on each finished clip, and the estimated cost.",
+        "Plan the ad videos for a live design from wovain's settings: one fal request per clip, the background-audio request for each finished clip, and the estimated cost. Say the estimate, then run the clips with generate_videos and the audio with add_video_audio.",
       inputSchema: z.object({ designId: z.string() }),
       title: "Plan ad videos",
     },
     async ({ designId }) => {
-      const [design, settings, prices] = await Promise.all([
-        store.requireDesign(designId),
-        store.getSettings(),
-        videoPricing(),
-      ]);
-      const plan = planVideos(design, settings, prices);
+      const plan = await planFor(designId);
       return { content: text(JSON.stringify(plan)) };
     }
   );
 
+  // The merchant's own fal account runs exactly the planned requests: the
+  // agent picks the design, never the inputs.
+  const submit = async (requests: Record<string, unknown>[]) =>
+    await upstreamReply(upstream, {
+      args: { requests },
+      id: "fal",
+      tool: "submit_jobs",
+      userId: store.userId,
+    });
+  const spends = {
+    destructiveHint: false,
+    openWorldHint: true,
+    readOnlyHint: false,
+  };
+
   server.registerTool(
-    "video_spend",
+    "generate_videos",
     {
-      annotations: {
-        destructiveHint: false,
-        openWorldHint: true,
-        readOnlyHint: true,
-      },
+      annotations: spends,
       description:
-        "Report what fal actually charged since a time (default: the last 2 hours), by endpoint, so the merchant sees the real cost next to video_plan's list-price estimate. Needs FAL_BILLING_KEY; without it, says it isn't set up.",
-      inputSchema: z.object({ since: z.iso.datetime().optional() }),
-      title: "fal spend",
+        "Generate a live design's ad clips on the merchant's own fal account, exactly as video_plan planned them (fal submit_jobs). Spends the merchant's fal credits: say video_plan's estimate first. Returns the job handles; wait for them with the fal tool's wait_for_jobs and don't call this again for the same clips. If the merchant hasn't connected fal, the result has needsConnection and a link to show them.",
+      inputSchema: z.object({ designId: z.string() }),
+      title: "Generate ad videos",
     },
-    async ({ since }) => {
-      if (env.FAL_BILLING_KEY === undefined) {
+    async ({ designId }) => {
+      const plan = await planFor(designId);
+      return await submit(
+        plan.clips.map((clip, index) => ({
+          endpoint_id: clip.endpointId,
+          index,
+          input: clip.input,
+        }))
+      );
+    }
+  );
+
+  server.registerTool(
+    "add_video_audio",
+    {
+      annotations: spends,
+      description:
+        "Add the plan's background audio to finished clips on the merchant's own fal account (fal submit_jobs, one job per clip). Pass the clip URLs fal returned. Spends a little of the merchant's fal credits. Returns the job handles for the fal tool's wait_for_jobs. Says so when the plan has no audio step.",
+      inputSchema: z.object({
+        designId: z.string(),
+        videoUrls: z.array(falMediaUrl).min(1).max(4),
+      }),
+      title: "Add background audio",
+    },
+    async ({ designId, videoUrls }) => {
+      const { audio } = await planFor(designId);
+      if (audio === undefined) {
         return {
           content: text(
-            "Actual fal spend isn't set up: add a fal key with the Billing preset to .env as FAL_BILLING_KEY. Until then, only list-price estimates are available."
+            "This plan has no separate audio step: use the clips as they are."
           ),
         };
       }
-      const start =
-        since === undefined
-          ? new Date(Date.now() - 2 * 60 * 60 * 1000)
-          : new Date(since);
-      const spend = await fetchSpend(env.FAL_BILLING_KEY, start);
-      return { content: text(JSON.stringify(spend)) };
+      return await submit(
+        videoUrls.map((url, index) => ({
+          endpoint_id: audio.endpointId,
+          index,
+          input: { ...audio.perClip, video_url: url },
+        }))
+      );
     }
   );
 

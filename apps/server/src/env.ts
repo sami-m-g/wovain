@@ -5,9 +5,6 @@ import { z } from "zod";
 // Keys are optional at startup: each tool checks the ones it needs and returns a
 // user-safe error when one is missing, so the Settings widget works on day one.
 const envSchema = z.object({
-  // Optional: a fal key with the Billing preset, only for reading what fal
-  // actually charged (video_spend). FAL_KEY stays without billing access.
-  FAL_BILLING_KEY: z.string().optional(),
   FAL_KEY: z.string().optional(),
   META_SYSTEM_USER_TOKEN: z.string().optional(),
   // Optional: Nebius Token Factory, for judge_design (Genkit, Nemotron);
@@ -20,6 +17,10 @@ const envSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
+  // The Cloud KMS key that encrypts merchants' Fourthwall and fal grants
+  // (infra/index.ts). Without it, connections work only on the emulators,
+  // with a key that lives in memory.
+  WOVAIN_KMS_KEY: z.string().optional(),
   // The built widgets beside this package: src/ in development and tests,
   // dist/ once built (`pnpm build`, which App Hosting runs before start).
   WOVAIN_WIDGETS_DIR: z

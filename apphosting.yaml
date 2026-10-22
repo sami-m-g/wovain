@@ -14,8 +14,8 @@ scripts:
 # Plain values, then Secret Manager references set with
 # `pulumi config set --secret <name>` in infra/ (see infra/index.ts). Only
 # secrets with a value are listed: App Hosting won't build with an empty one.
-# FAL_BILLING_KEY, the OTEL_* pair and QLOO_API_KEY (qloo-api-key) are listed
-# once they have values.
+# The OTEL_* pair and QLOO_API_KEY (qloo-api-key) are listed once they have
+# values.
 env:
   # The install skips lifecycle scripts, as CI does (pnpm 12 reads only the
   # pnpm_config_ prefix): the root `prepare` sets up
@@ -26,6 +26,9 @@ env:
       - BUILD
   - variable: WOVAIN_BUCKET
     value: wovain-media
+  # The KMS key that encrypts merchants' Fourthwall and fal grants (infra/).
+  - variable: WOVAIN_KMS_KEY
+    value: projects/wovain/locations/us-central1/keyRings/wovain/cryptoKeys/connections
   - variable: WOVAIN_SITE_URL
     value: https://app--wovain.us-central1.hosted.app
   - variable: WORKOS_AUTHKIT_DOMAIN

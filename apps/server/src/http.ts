@@ -3,14 +3,19 @@ import type { AuthInfo } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
 import type { Storage } from "./firebase.ts";
+import type { Upstream } from "./lib/upstream.ts";
 import { createDeps, createServer } from "./server.ts";
 import { createStore } from "./store.ts";
 
 // Streamable HTTP, one server per request, scoped to the caller's records.
 // routes/mcp.ts verifies the token first; a request without a signed-in
 // merchant is refused.
-export const createMcpFetch = (env: Env, storage: Storage) => {
-  const deps = createDeps(env);
+export const createMcpFetch = (
+  env: Env,
+  storage: Storage,
+  upstream?: Upstream
+) => {
+  const deps = createDeps(env, upstream);
   const handler = createMcpHandler(({ authInfo }) => {
     const userId = authInfo?.extra?.["userId"];
     if (typeof userId !== "string" || userId === "") {

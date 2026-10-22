@@ -121,7 +121,7 @@ How sign-in works:
 | --- | --- |
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Firebase App Hosting (Node 24, Cloud Run underneath; 0 to 2 instances); Node 24, pnpm and Java 21 (emulators) locally |
-| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `NEBIUS_API_KEY` (optional: `judge_design`, skipped without it), `TAVILY_API_KEY` (optional: `research_trends` and `screen_trademark`, which say they aren't set up without it), `QLOO_API_KEY` (optional until a tool uses it), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
+| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `NEBIUS_API_KEY` (optional: `judge_design`, skipped without it), `TAVILY_API_KEY` (optional: `research_trends` and `screen_trademark`, which say they aren't set up without it), `QLOO_API_KEY` (optional until a tool uses it), `WOVAIN_KMS_KEY` (the Cloud KMS key that encrypts merchants' Fourthwall and fal grants; without it connections work only on the emulators), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
 Start it:
@@ -190,7 +190,9 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | `screen_trademark` | Before publishing: one Tavily search for the exact phrase plus "trademark". Returns possible hits to check on USPTO or EUIPO; never blocks | Tavily |
 | `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the widget follow it while publishing | records |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
-| `video_spend` | Reports what fal actually charged, when `FAL_BILLING_KEY` is set | fal billing API |
+| `generate_videos` | Runs exactly the clips `video_plan` priced (fal `submit_jobs`) on the merchant's own fal account and returns the job handles. Spends the merchant's fal credits | fal MCP, merchant's grant |
+| `add_video_audio` | Runs the plan's background-audio request on finished clips (fal.media URLs only) on the merchant's fal account | fal MCP, merchant's grant |
+| `fourthwall`, `fal` | Proxy one allowlisted read-only or reversible upstream tool on the merchant's own account (`tool` is an enum; publishing, pricing, orders and paid generation are left out). Without a grant they answer `needsConnection` and a personal connect link | Fourthwall MCP, fal MCP |
 | `record_ad` | Saves ad choices and copy | records |
 | `campaign_plan` | Returns the daily budget and, per added ad, the product link, copy, static image, finished videos, ad names (rules find ads by name) and URL tags for the Meta build | records, Settings |
 | `create_rules` | Creates the five rules per the PRD | Meta Graph API |
@@ -353,6 +355,8 @@ Records live in Firestore, read and written by the server only through `firebase
 | Designs | `design/{id}` and `artwork/{id}` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `ad/{designId}`, one ad set per design (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
 | Campaign | `campaign/current` (ad account, campaign ID, rules created in Meta) | `create_rules`, campaign step | Optimization reads it |
+| Connections | `connections/{provider}` for `fourthwall` and `fal`: the merchant's OAuth grant, encrypted with Cloud KMS (the document path is the additional authenticated data), plus `connectedAt`, `refreshedAt`, `expiresAt`, a `version` bumped on every write and a refresh lease | Connect flow, token refresh | Calls keep working; a revoked grant gives a reconnect link |
+| Pending connects | Top-level `connectTickets/{id}` (single use, 5 minutes) and `oauthFlows/{state}` (10 minutes, bound to the browser's nonce cookie); Firestore TTL deletes leftovers | `/connect/:provider`, the callbacks | Gone |
 | Media | Staged artwork in the private Cloud Storage bucket; public copies in Fourthwall's media library; clips at fal's own URLs | `stage_artwork` | Files stay until deleted |
 
 Widget state inside a chat (ticks, typed feedback) lives in the widget's widget state; the host keeps it with the message.
@@ -449,6 +453,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | One MCP server with playbooks, beside the Fourthwall, Meta and fal MCPs (was: a ChatGPT plugin with child MCPs) | Learner | Any agent can connect with just a URL; reuse Fourthwall, Meta and fal; code only what's missing | One extra model turn per click; the agent must read the playbook before each step |
 | Playbooks served by the server (MCP `instructions`, `get_playbook`, prompts `design`, `ads`, `campaign`) instead of plugin skills | Learner | Skills only reached ChatGPT through an installed plugin, and never through a server URL alone | Depends on the agent reading the instructions or calling `get_playbook` |
 | Auto-approve for Fourthwall, Meta and fal tools | Learner | One click per widget | Fewer safety prompts; widgets stay the approval point |
+| wovain connects to the merchant's Fourthwall and fal itself (MCP client, one OAuth grant per merchant per provider) instead of the merchant adding those connectors (#19) | Owner | The merchant installs only wovain, and no operator key acts on a merchant's account | Grants stored encrypted (Cloud KMS) in Firestore; a connect link needs a browser sign-in to wovain and works once for 5 minutes; three more tools for the host model |
 | Video: MiniMax H3 Max Reference on fal by default (mockup and artwork as references) | Learner | Kept the print on-model in the first real test at $0.75 a clip, cheaper than Kling v3 ($2.10) after fal's price change | Newer model with less track record; Kling one setting away |
 | Audio: fal MMAudio, configurable | Learner | Meta's music skips video ads; 42× cheaper than Kling audio | Generic background music |
 | Every value in Settings and per-widget ⚙ | Learner | Tune without redeploys | A bigger settings schema |

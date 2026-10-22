@@ -134,7 +134,6 @@ new gcp.firebaserules.Release("storage-release", {
 // secret without a value gets no version (App Hosting won't build until it has
 // one).
 const secretNames = [
-  "fal-billing-key",
   "fal-key",
   "meta-system-user-token",
   "nebius-api-key",
@@ -305,7 +304,8 @@ new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: infra.name,
 });
-for (const role of [
+const infraRoles = [
+  "roles/cloudkms.admin",
   "roles/editor",
   "roles/firebase.admin",
   "roles/iam.serviceAccountAdmin",
@@ -313,11 +313,53 @@ for (const role of [
   "roles/resourcemanager.projectIamAdmin",
   "roles/secretmanager.admin",
   "roles/serviceusage.serviceUsageAdmin",
-]) {
-  new gcp.projects.IAMMember(`infra-${role.split("/")[1]}`, {
-    member: infra.member,
-    project,
-    role,
+].map(
+  (role) =>
+    new gcp.projects.IAMMember(`infra-${role.split("/")[1]}`, {
+      member: infra.member,
+      project,
+      role,
+    })
+);
+
+// Merchants' Fourthwall and fal grants are encrypted with this key
+// (apps/server/src/lib/cipher.ts, WOVAIN_KMS_KEY in apphosting.yaml), and
+// only the runner may use it. Key rings and keys can't be deleted in KMS.
+const keyRing = new gcp.kms.KeyRing(
+  "wovain",
+  { location: region, name: "wovain" },
+  { ...afterApis, protect: true }
+);
+const connectionsKey = new gcp.kms.CryptoKey(
+  "connections",
+  {
+    keyRing: keyRing.id,
+    name: "connections",
+    purpose: "ENCRYPT_DECRYPT",
+    rotationPeriod: "7776000s",
+  },
+  { protect: true }
+);
+// Setting a key's IAM needs cloudkms.admin, granted to the infra account above.
+new gcp.kms.CryptoKeyIAMMember(
+  "runner-connections",
+  {
+    cryptoKeyId: connectionsKey.id,
+    member: runner.member,
+    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+  },
+  { dependsOn: infraRoles }
+);
+
+// Pending connect links and OAuth flows expire after 10 minutes; Firestore
+// deletes the leftovers by their expiresAt timestamp.
+for (const collection of ["connectTickets", "oauthFlows"]) {
+  new gcp.firestore.Field(`ttl-${collection}`, {
+    collection,
+    database: database.name,
+    field: "expiresAt",
+    indexConfig: {},
+    ttlConfig: {},
   });
 }
 
@@ -352,6 +394,7 @@ new gcp.billing.AccountIamMember("infra-budgets", {
 });
 
 export const bucket = media.name;
+export const connectionsKeyName = connectionsKey.id;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
 
 // What the pipeline reads. The tokens are stack secrets
