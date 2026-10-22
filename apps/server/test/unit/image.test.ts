@@ -37,11 +37,15 @@ test.each<[string, ImageInfo]>([
     { format: "webp", height: 32, transparent: true, width: 64 },
   ],
 ])("reads %s", async (name, expected) => {
-  expect(readImageInfo(await fixture(name))).toEqual(expected);
+  expect(await readImageInfo(await fixture(name))).toEqual(expected);
 });
 
-test("returns undefined for anything that isn't an image", () => {
-  expect(
-    readImageInfo(new TextEncoder().encode("<html>nope</html>"))
-  ).toBeUndefined();
+test.each([
+  ["HTML", "<html>nope</html>"],
+  [
+    "an SVG, whose loader is blocked",
+    '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>',
+  ],
+])("returns undefined for %s", async (_, body) => {
+  expect(await readImageInfo(new TextEncoder().encode(body))).toBeUndefined();
 });
