@@ -3,6 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";
 import { DesignWidgetView } from "./design-widget-view.tsx";
+import type { DesignWidgetActions } from "./design-widget-view.tsx";
 
 // Synthetic design for Storybook: the PRD's demo tee, mockups are placeholder SVGs.
 const design: Design = {
@@ -273,5 +274,21 @@ export const RawBadgeCodes = meta.story({
     await expect(
       within(canvasElement).getByText("Our pick · Bestseller")
     ).toBeVisible();
+  },
+});
+
+export const SkipFails = meta.story({
+  args: {
+    onSkip: fn<DesignWidgetActions["onSkip"]>(
+      async () => await Promise.reject(new Error("record_design failed"))
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Skip" }));
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      "That didn’t go through"
+    );
+    await expect(canvas.getByRole("button", { name: "Approve" })).toBeEnabled();
   },
 });

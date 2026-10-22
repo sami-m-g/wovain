@@ -1,11 +1,19 @@
 import { Button } from "@openai/apps-sdk-ui/components/Button";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
+import { pricingSettings } from "@wovain/shared/settings";
 import { useId, useState } from "react";
+import type { z } from "zod";
 
-export interface PricingValues {
-  minMarginPct: number;
-  minProfit: number;
-}
+import { useAction } from "../lib/use-action.ts";
+import { ActionError } from "../lib/widget-shell.tsx";
+
+// Only the two bounds the quick settings edit; the schema is the server's.
+const pricingValues = pricingSettings.pick({
+  minMarginPct: true,
+  minProfit: true,
+});
+
+export type PricingValues = z.infer<typeof pricingValues>;
 
 // The widget's ⚙ quick settings: the values this widget's price depends on.
 // Saving updates wovain's settings, so later widgets use them too.
@@ -19,24 +27,22 @@ export const PricingSettings = ({
   const id = useId();
   const [minProfit, setMinProfit] = useState(String(values.minProfit));
   const [minMarginPct, setMinMarginPct] = useState(String(values.minMarginPct));
-  const [saving, setSaving] = useState(false);
-  const profit = Number(minProfit);
-  const margin = Number(minMarginPct);
-  const valid =
-    minProfit !== "" &&
-    minMarginPct !== "" &&
-    profit >= 0 &&
-    margin >= 0 &&
-    margin <= 95;
+  const { failed, pending, run } = useAction<"save">();
+  // Number("") is 0, which the schema accepts, so empty fields don't parse.
+  const parsed =
+    minProfit === "" || minMarginPct === ""
+      ? undefined
+      : pricingValues.safeParse({
+          minMarginPct: Number(minMarginPct),
+          minProfit: Number(minProfit),
+        });
 
   const save = async () => {
-    setSaving(true);
-    try {
-      await onSave({ minMarginPct: margin, minProfit: profit });
-    } catch {
-      // The widget keeps the form open so the merchant can try again.
+    if (parsed?.success === true) {
+      await run("save", async () => {
+        await onSave(parsed.data);
+      });
     }
-    setSaving(false);
   };
 
   return (
@@ -82,13 +88,14 @@ export const PricingSettings = ({
       </div>
       <Button
         color="secondary"
-        disabled={!valid || saving}
-        loading={saving}
+        disabled={parsed?.success !== true || pending}
+        loading={pending}
         type="submit"
         variant="soft"
       >
         Reprice
       </Button>
+      <ActionError failed={failed} />
     </form>
   );
 };

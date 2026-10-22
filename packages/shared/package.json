@@ -10,7 +10,8 @@
     "./video-models": "./src/video-models.ts",
     "./ad": "./src/ad.ts",
     "./rules": "./src/rules.ts",
-    "./campaign": "./src/campaign.ts"
+    "./campaign": "./src/campaign.ts",
+    "./widgets": "./src/widgets.ts"
   },
   "dependencies": {
     "zod": "4.6.7"

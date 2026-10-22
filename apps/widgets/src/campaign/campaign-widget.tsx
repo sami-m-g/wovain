@@ -2,6 +2,7 @@ import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { campaignResultSchema } from "@wovain/shared/campaign";
 
 import { say, useWidget } from "../lib/bridge.ts";
+import { WidgetShell } from "../lib/widget-shell.tsx";
 import { CampaignWidgetView } from "./campaign-widget-view.tsx";
 import type { CampaignWidgetActions } from "./campaign-widget-view.tsx";
 
@@ -20,21 +21,16 @@ const actionsFor = (app: App): CampaignWidgetActions => ({
 });
 
 export const CampaignWidget = () => {
-  const { app, data, error } = useWidget("campaign", campaignResultSchema);
-
-  if (error !== null) {
-    return (
-      <p className="text-danger p-4 text-sm">
-        The campaign widget couldn’t connect. Ask again to reload it.
-      </p>
-    );
-  }
-  if (app === null || data === undefined) {
-    return (
-      <p className="text-secondary p-4 text-sm">
-        Putting the campaign together…
-      </p>
-    );
-  }
-  return <CampaignWidgetView campaign={data.campaign} {...actionsFor(app)} />;
+  const widget = useWidget("campaign", campaignResultSchema);
+  return (
+    <WidgetShell
+      loading="Putting the campaign together…"
+      name="campaign"
+      widget={widget}
+    >
+      {({ app, data }) => (
+        <CampaignWidgetView campaign={data.campaign} {...actionsFor(app)} />
+      )}
+    </WidgetShell>
+  );
 };

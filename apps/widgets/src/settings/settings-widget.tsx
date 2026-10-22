@@ -7,43 +7,36 @@ import {
   useWidget,
   writeWidgetState,
 } from "../lib/bridge.ts";
+import { WidgetShell } from "../lib/widget-shell.tsx";
 import { SettingsWidgetView } from "./settings-widget-view.tsx";
 import { widgetSchema } from "./state.ts";
 
 // Wires the view to ChatGPT: the tool result opens it, Save calls update_settings.
 export const SettingsWidget = () => {
-  const { app, data, error } = useWidget("settings", settingsResultSchema);
-
-  if (error !== null) {
-    return (
-      <p className="text-danger p-4 text-sm">
-        The settings widget couldn’t connect. Ask again to reload it.
-      </p>
-    );
-  }
-  if (app === null || data === undefined) {
-    return <p className="text-secondary p-4 text-sm">Loading your settings…</p>;
-  }
-
-  const save = async (settings: Settings) => {
-    const result = await callTool(
-      app,
-      settingsResultSchema,
-      "update_settings",
-      {
-        patch: settings,
-      }
-    );
-    return result.settings;
-  };
-
+  const widget = useWidget("settings", settingsResultSchema);
   return (
-    <SettingsWidgetView
-      initialState={readWidgetState(widgetSchema)}
-      onRemember={writeWidgetState}
-      onSave={save}
-      settings={data.settings}
-      videoPrices={data.videoPrices}
-    />
+    <WidgetShell
+      loading="Loading your settings…"
+      name="settings"
+      widget={widget}
+    >
+      {({ app, data }) => (
+        <SettingsWidgetView
+          initialState={readWidgetState(widgetSchema)}
+          onRemember={writeWidgetState}
+          onSave={async (settings: Settings) => {
+            const saved = await callTool(
+              app,
+              settingsResultSchema,
+              "update_settings",
+              { patch: settings }
+            );
+            return saved.settings;
+          }}
+          settings={data.settings}
+          videoPrices={data.videoPrices}
+        />
+      )}
+    </WidgetShell>
   );
 };

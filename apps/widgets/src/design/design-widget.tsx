@@ -12,6 +12,7 @@ import {
   useWidget,
   writeWidgetState,
 } from "../lib/bridge.ts";
+import { WidgetShell } from "../lib/widget-shell.tsx";
 import { DesignWidgetView } from "./design-widget-view.tsx";
 import type { DesignWidgetActions } from "./design-widget-view.tsx";
 import type { PricingValues } from "./pricing-settings.tsx";
@@ -77,41 +78,28 @@ const actionsFor = (app: App): DesignWidgetActions => ({
   },
 });
 
-export const DesignWidget = () => {
-  const { app, data, error } = useWidget("design", designResultSchema);
+// Loads the merchant's pricing settings once the host has connected.
+const DesignReady = ({ app, design }: { app: App; design: Design }) => {
   const [pricing, setPricing] = useState<PricingValues>(
     () => defaultSettings().pricing
   );
 
   useEffect(() => {
     const load = async () => {
-      if (app !== null) {
-        const { settings } = await callTool(
-          app,
-          settingsResultSchema,
-          "get_settings",
-          {}
-        );
-        setPricing(settings.pricing);
-      }
+      const { settings } = await callTool(
+        app,
+        settingsResultSchema,
+        "get_settings",
+        {}
+      );
+      setPricing(settings.pricing);
     };
     void load();
   }, [app]);
 
-  if (error !== null) {
-    return (
-      <p className="text-danger p-4 text-sm">
-        The design widget couldn’t connect. Ask again to reload it.
-      </p>
-    );
-  }
-  if (app === null || data === undefined) {
-    return <p className="text-secondary p-4 text-sm">Laying out the design…</p>;
-  }
-
   return (
     <DesignWidgetView
-      design={data.design}
+      design={design}
       initialFeedback={readWidgetState(widgetSchema)?.feedback}
       onFeedbackDraft={(feedback) => {
         writeWidgetState({ feedback });
@@ -119,5 +107,14 @@ export const DesignWidget = () => {
       pricing={pricing}
       {...actionsFor(app)}
     />
+  );
+};
+
+export const DesignWidget = () => {
+  const widget = useWidget("design", designResultSchema);
+  return (
+    <WidgetShell loading="Laying out the design…" name="design" widget={widget}>
+      {({ app, data }) => <DesignReady app={app} design={data.design} />}
+    </WidgetShell>
   );
 };

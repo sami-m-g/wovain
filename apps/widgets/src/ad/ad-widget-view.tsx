@@ -10,6 +10,9 @@ import type { Ad, AdSlot, AdVideo } from "@wovain/shared/ad";
 import { money } from "@wovain/shared/economics";
 import { useId, useRef, useState } from "react";
 
+import { useAction } from "../lib/use-action.ts";
+import { ActionError } from "../lib/widget-shell.tsx";
+
 export interface AdWidgetActions {
   // Records the choice, then posts a message so the campaign step can start
   // after the last ad widget.
@@ -142,20 +145,10 @@ export const AdWidgetView = ({
   const titleId = useId();
   const feedbackId = useId();
   const [ad, setAd] = useState(initialAd);
-  const [busy, setBusy] = useState<Busy>(null);
+  const { busy, failed, run } = useAction<NonNullable<Busy>>();
   const [feedback, setFeedback] = useState("");
   const [focused, setFocused] = useState<AdVideo | null>(null);
   const done = ad.status !== "draft";
-
-  const run = async (kind: Busy, action: () => Promise<void>) => {
-    setBusy(kind);
-    try {
-      await action();
-    } catch {
-      // The widget stays as it was so the merchant can try again.
-    }
-    setBusy(null);
-  };
 
   const expand = async (video: AdVideo) => {
     setFocused(video);
@@ -328,6 +321,7 @@ export const AdWidgetView = ({
           </form>
         </div>
       )}
+      <ActionError failed={failed} />
     </article>
   );
 };

@@ -1,3 +1,4 @@
+import { money } from "@wovain/shared/economics";
 import { settingsSchema } from "@wovain/shared/settings";
 import type { Settings } from "@wovain/shared/settings";
 import {
@@ -122,8 +123,6 @@ const sections = (inputs: SectionInput[]): Section[] =>
     ...input,
     fields: input.fields.map((item) => field(input.group, item)),
   }));
-
-const money = (value: number) => `$${value.toFixed(value % 1 === 0 ? 0 : 2)}`;
 
 const audioCost: Record<Settings["audio"]["source"], number> = {
   "kling-native": 0.63,
