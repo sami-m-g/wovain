@@ -134,6 +134,20 @@ The project's own skills (`/issue`, `/capture`) are written once, in `.agents/sk
 
 The course skills and `ultracite` are copied into `.claude/skills/` by `pnpm install` and stay out of git, so only Claude Code sees them. Plugins from `.claude/settings.json` are Claude Code only too: a headless `claude` run in CI loads them only after `claude plugin install <plugin>@<marketplace> --scope project`.
 
+## Sustainability (SCI)
+
+wovain emits about **14.27 gCO2e per run** (one idea-to-paused-campaign run), measured with the Green Software Foundation's SCI method: ((E × I) + M) per R, with us-central1's location-based grid intensity (432 gCO2e/kWh), measured server and CI time, and estimated model and video energy. The `sci` job recomputes it on every `main` pipeline and publishes [the latest report](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/-/jobs/artifacts/main/raw/sci-report.md?job=sci). Method, sources and caveats: [docs/sustainability.md](docs/sustainability.md).
+
+| Choice | Gain |
+| --- | --- |
+| Scale to zero on App Hosting | About 334 gCO2e a week avoided against one always-on instance (measured instance time; estimate coefficients), more than a whole run emits |
+| Scanners off on scheduled pipelines | About 262 CI minutes and 29 gCO2e a week avoided (measured scanner durations) |
+| Filtered Duo triggers | Flows only on a person's action or a red `main`; about 3 credits a flow run measured before the filters |
+| Deterministic code before models | The loop, verification and market scout make no model calls; the design check decides print rules in code |
+| Checks before credits | The shepherd hands an MR to a person before it spends a Duo review on it |
+
+Estimates are labeled in the report. Video generation (fal) is most of the number and the least certain part.
+
 ## Infrastructure as code
 
 `infra/` (Pulumi, `pnpm infra:preview` then `pnpm infra:up`, which CI runs on `main`) declares:

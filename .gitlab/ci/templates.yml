@@ -40,6 +40,26 @@
       aud: https://iam.googleapis.com/$GCP_WORKLOAD_IDENTITY_PROVIDER
   before_script:
     - !reference [.pnpm-install, before_script]
+    - !reference [.gcp-credentials, before_script]
+
+# The ops jobs (apps/ops: loop, weekly, sci) install only that package and
+# its dependencies, which keeps each hourly run short.
+.ops-job:
+  extends: .gcp-auth
+  stage: monitor
+  interruptible: false
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_OPS_SERVICE_ACCOUNT
+  environment:
+    name: operations
+    action: verify
+  before_script:
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm install --frozen-lockfile --ignore-scripts --filter @wovain/ops
+    - !reference [.gcp-credentials, before_script]
+
+.gcp-credentials:
+  before_script:
     # The external_account file that `gcloud iam workload-identity-pools
     # create-cred-config` writes, so the image needs no gcloud.
     - echo "$GITLAB_OIDC_TOKEN" > /tmp/oidc-token
