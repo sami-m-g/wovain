@@ -134,6 +134,30 @@ The project's own skills (`/issue`, `/capture`) are written once, in `.agents/sk
 
 The course skills and `ultracite` are copied into `.claude/skills/` by `pnpm install` and stay out of git, so only Claude Code sees them. Plugins from `.claude/settings.json` are Claude Code only too: a headless `claude` run in CI loads them only after `claude plugin install <plugin>@<marketplace> --scope project`.
 
+## Architecture and data
+
+- [docs/architecture.md](docs/architecture.md): C4-style context and container views, and how a change moves from an idea to production.
+- [docs/data-model.md](docs/data-model.md): every Firestore collection and the media bucket, who writes and reads each, and how long it lives.
+- [docs/loop.md](docs/loop.md): the self-healing loop. [docs/transcend.md](docs/transcend.md): how wovain answers the GitLab Transcend prizes.
+
+## DevSecOps stages
+
+Every stage runs on its own after a merge, with GitLab features, Duo flows or the project's own CI jobs. Built-in flows and deterministic CI code come first. The only custom agent, **wovain explain**, is read-only: it has no write tools.
+
+| Stage | Automated by | Where |
+| --- | --- | --- |
+| Plan | Issues on the Workflow board (`status::intent` → `test`), intent templates, `/capture`, the weekly market scout's intents, and the hourly scout's issues (code, not a model: it files redacted evidence as intents) | `infra/gitlab.ts`, `.gitlab/issue_templates/`, `.agents/skills/capture`, `apps/ops/src/scout.ts`, `apps/ops/src/weekly.ts` |
+| Create | **Duo Developer** flow (assign or mention, and the loop's assignments), Claude Code `/issue`, project agent skills | `infra/Pulumi.prod.yaml`, `.agents/skills/` |
+| Verify | CI verify stage (lint, types, knip, arch, dupes, unit, integration and story tests), **Duo Code Review** with project rules, **Duo Fix CI/CD** on a red `main`, and the read-only **wovain explain** chat agent for failures | `.gitlab/ci/verify.yml`, `.gitlab/duo/mr-review-*.yaml`, `.gitlab/duo/catalog/agents/explain.yml` |
+| Package | App Hosting builds the container from the source CI uploads; semantic-release versions it | `.gitlab/ci/deploy.yml`, `apphosting.yaml`, `.config/releaserc.json` |
+| Secure | GitLab SAST, Secret Detection and Dependency Scanning on every MR and `main`; Renovate; CODEOWNERS; Duo Code Review's secrets rule | `.gitlab-ci.yml`, `.gitlab/ci/secure.yml`, `.gitlab/renovate.json`, `.gitlab/CODEOWNERS`, `.gitlab/duo/mr-review-instructions.yaml` |
+| Release | semantic-release (version, changelog, GitLab release) after the smoke test; **auto-merge** for the loop's own fixes | `.gitlab/ci/release.yml`, `apps/ops/src/shepherd.ts` |
+| Configure | Pulumi applies Google Cloud, GitLab (variables, environments, schedules, labels, board, Duo triggers), the GitHub mirror and WorkOS on every `main` | `infra/`, `.gitlab/ci/deploy.yml` |
+| Monitor | Smoke test; GitLab Observability (traces, the funnel metric, CI pipeline telemetry); the hourly scout and verify; the weekly data analysis; SCI on every `main` | `.gitlab/ci/monitor.yml`, `.gitlab/ci/loop.yml`, `apps/ops` |
+| Govern | Auto-merge guardrails (allowlist, provenance, review of the head commit), CODEOWNERS, Duo review rules, Workload Identity Federation with one account per environment, a $5 budget alert | `apps/ops/src/guardrails.ts`, `infra/index.ts` |
+
+Blocked by Maintainer-only settings (see [docs/transcend.md](docs/transcend.md)): automatic Duo review, SAST false-positive detection and Resolve SAST flows, "Pipelines must succeed", code owner approval, error tracking, and enabling custom flows and agents in the top-level group.
+
 ## Sustainability (SCI)
 
 wovain emits about **14.27 gCO2e per run** (one idea-to-paused-campaign run), measured with the Green Software Foundation's SCI method: ((E × I) + M) per R, with us-central1's location-based grid intensity (432 gCO2e/kWh), measured server and CI time, and estimated model and video energy. The `sci` job recomputes it on every `main` pipeline and publishes [the latest report](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/-/jobs/artifacts/main/raw/sci-report.md?job=sci). Method, sources and caveats: [docs/sustainability.md](docs/sustainability.md).
