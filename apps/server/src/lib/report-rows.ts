@@ -1,5 +1,3 @@
-import { LABEL_CHARS } from "@wovain/shared/dashboard";
-
 import { replyRoots } from "./reply-json.ts";
 import type { Reply } from "./reply-json.ts";
 
@@ -12,6 +10,8 @@ import type { Reply } from "./reply-json.ts";
 export type Row = Record<string, unknown>;
 
 const MAX_ROWS = 1000;
+// A bound on any one cell's text; callers cut to what they display.
+const MAX_TEXT = 500;
 
 const isRow = (value: unknown): value is Row =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -93,12 +93,12 @@ export const num = (row: Row, ...names: string[]) =>
   toNumber(cell(row, names)) ?? 0;
 
 // The first of `names` as display text: control characters removed, trimmed
-// and cut to the dashboard's label length. Undefined when empty.
+// and bounded. Undefined when empty.
 const clean = (value: string) =>
   value
     .replaceAll(/\p{Cc}/gu, " ")
     .trim()
-    .slice(0, LABEL_CHARS);
+    .slice(0, MAX_TEXT);
 
 export const str = (row: Row, ...names: string[]) => {
   const value = cell(row, names);

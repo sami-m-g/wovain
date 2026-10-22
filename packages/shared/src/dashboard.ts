@@ -10,6 +10,11 @@ import { runStatusSchema } from "./autopilot.ts";
 export const dashboardRanges = ["7d", "28d", "90d"] as const;
 export const dashboardRangeSchema = z.enum(dashboardRanges);
 export type DashboardRange = z.infer<typeof dashboardRangeSchema>;
+export const rangeDays: Record<DashboardRange, number> = {
+  "28d": 28,
+  "7d": 7,
+  "90d": 90,
+};
 
 export const dashboardInputSchema = z.object({
   range: dashboardRangeSchema.default("28d"),
@@ -28,6 +33,11 @@ export const connectionStates = [
   "error",
 ] as const;
 export const dashboardProviders = ["fourthwall", "fal", "meta"] as const;
+// The accounts the dashboard reads; fal only shows its state.
+export const connectPrompts = ["fourthwall", "meta"] as const;
+export type ConnectPrompt = (typeof connectPrompts)[number];
+export const isConnectPrompt = (provider: string): provider is ConnectPrompt =>
+  (connectPrompts as readonly string[]).includes(provider);
 
 const connectionSchema = z.object({
   provider: z.enum(dashboardProviders),
@@ -144,6 +154,9 @@ export const dashboardSchema = z.object({
   // CPA is read against.
   breakevenPerSale: amount.optional(),
   connections: z.array(connectionSchema).max(dashboardProviders.length),
+  // Ad spend per sale: on Fourthwall's orders from Meta links when there are
+  // any (shop first), else on the purchases Meta reports.
+  costPerSale: amount.optional(),
   generatedAt: z.iso.datetime(),
   // Present only once the optimizer has written actions.
   optimizer: z.array(optimizerActionSchema).max(6).optional(),

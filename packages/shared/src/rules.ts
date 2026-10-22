@@ -69,6 +69,15 @@ export interface RuleProduct {
 export const adName = (designId: string, slot: string) =>
   `wovain ${designId} · ${slot}`;
 
+// The design and slot back from an ad's name; undefined for other ads.
+export const parseAdName = (name: string) => {
+  const groups = /^wovain (?<designId>d\d+) · (?<slot>.+)$/u.exec(name)?.groups;
+  const { designId, slot } = groups ?? {};
+  return designId === undefined || slot === undefined
+    ? undefined
+    : { designId, slot };
+};
+
 const cents = (dollars: number) => Math.round(dollars * 100);
 const is = (field: string, value: unknown, operator = "EQUAL"): Filter => ({
   field,

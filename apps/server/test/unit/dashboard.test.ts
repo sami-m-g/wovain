@@ -42,9 +42,9 @@ test("columns match by name in any case; numbers accept strings and money object
   expect(num(row, "missing")).toBe(0);
 });
 
-test("upstream text loses control characters and is cut to the label length", () => {
+test("upstream text loses control characters and is bounded", () => {
   expect(str({ name: "Cat\u0007 Tee\n" }, "name")).toBe("Cat  Tee");
-  expect(str({ name: "x".repeat(500) }, "name")).toHaveLength(80);
+  expect(str({ name: "x".repeat(900) }, "name")).toHaveLength(500);
   expect(str({ name: { nested: true } }, "name")).toBeUndefined();
   expect(str({ name: "  " }, "name")).toBeUndefined();
 });

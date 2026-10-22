@@ -1,6 +1,4 @@
-import { randomBytes } from "node:crypto";
-
-import { dashboardSchema } from "@wovain/shared/dashboard";
+import { dashboardSchema, rangeDays } from "@wovain/shared/dashboard";
 import type {
   Dashboard,
   DashboardConnection,
@@ -12,6 +10,7 @@ import type { ProviderId } from "./connections.ts";
 import {
   adsFrom,
   breakevenOf,
+  costPerSaleOf,
   metaAds,
   optimizerFrom,
   productsFrom,
@@ -19,6 +18,7 @@ import {
   runsFrom,
   salesFrom,
 } from "./dashboard-sections.ts";
+import { newConversationId } from "./meta-draft.ts";
 import { reportRows, str } from "./report-rows.ts";
 import type { Row } from "./report-rows.ts";
 import { canReach } from "./upstream.ts";
@@ -30,7 +30,6 @@ import type { Upstream } from "./upstream.ts";
 // empties its own section. Nothing from a reply is logged.
 
 const DAY = 86_400_000;
-const days: Record<DashboardRange, number> = { "28d": 28, "7d": 7, "90d": 90 };
 
 type Read = { kind: "rows"; rows: Row[] } | { kind: "missing" | "error" };
 type State = DashboardConnection["state"];
@@ -44,10 +43,6 @@ const stateOf = (reads: Read[]): State => {
 
 const rowsOf = (read: Read | undefined) =>
   read?.kind === "rows" ? read.rows : [];
-
-// Meta wants a 20-character id per conversation; each gather is one.
-const conversationId = () =>
-  randomBytes(15).toString("base64url").replaceAll(/[-_]/gu, "x").slice(0, 20);
 
 interface Gather {
   now?: () => number;
@@ -88,14 +83,14 @@ const sourcesFor = ({ now = Date.now, range, store, upstream }: Gather) => {
   const fourthwall = async () => {
     const state = await connected("fourthwall");
     if (state !== "connected") {
-      return { reads: [], state };
+      return { overTime: [], state, top: [], utm: [] };
     }
     const window = {
-      from: new Date(at - days[range] * DAY).toISOString(),
+      from: new Date(at - rangeDays[range] * DAY).toISOString(),
       to: new Date(at).toISOString(),
     };
     const precision = range === "90d" ? "WEEK" : "DAY";
-    const reads = await Promise.all([
+    const [overTime, top, utm] = await Promise.all([
       read("fourthwall", "ecommerce_get-sales-over-time-report", {
         ...window,
         aggregationPrecision: precision,
@@ -110,21 +105,28 @@ const sourcesFor = ({ now = Date.now, range, store, upstream }: Gather) => {
         aggregationPrecision: precision,
       }),
     ]);
-    return { reads, state: stateOf(reads) };
+    return {
+      overTime: rowsOf(overTime),
+      state: stateOf([overTime, top, utm]),
+      top: rowsOf(top),
+      utm: rowsOf(utm),
+    };
   };
 
   // Ad-level results on wovain's campaign's ad account, else the merchant's
   // first one.
   const meta = async (): Promise<{ rows: Row[]; state: State }> => {
-    const state = await connected("meta");
+    const [state, campaign] = await Promise.all([
+      connected("meta"),
+      store.getCampaign(),
+    ]);
     if (state !== "connected") {
       return { rows: [], state };
     }
     const base = {
       advertiser_job: "report_measure_or_look_up",
-      client_conversation_id: conversationId(),
+      client_conversation_id: newConversationId(),
     };
-    const campaign = await store.getCampaign();
     const accounts =
       campaign === undefined
         ? await read("meta", "ads_get_ad_accounts", base)
@@ -165,9 +167,6 @@ const sourcesFor = ({ now = Date.now, range, store, upstream }: Gather) => {
 export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
   const { range, store } = gather;
   const { at, connected, fourthwall, meta } = sourcesFor(gather);
-  // The optimizer may not exist yet: its records are optional.
-  const optimizerActions = async () =>
-    await store.getOptimizerActions(6).catch(() => []);
 
   const [shop, metaRead, fal, designs, runs, settings, actions] =
     await Promise.all([
@@ -177,22 +176,20 @@ export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
       store.getDesigns(),
       store.getAutopilotRuns(),
       store.getSettings(),
-      optimizerActions(),
+      // The optimizer may not exist yet: its records are optional.
+      store.getOptimizerActions(6).catch(() => []),
     ]);
 
   const adRows = metaAds(metaRead.rows);
   const ads = adsFrom(adRows);
-  const [overTime, top, utm] = shop.reads.map(rowsOf);
-  const sales = salesFrom(
-    { overTime: overTime ?? [], top: top ?? [], utm: utm ?? [] },
-    new Map(adRows.map((ad) => [ad.id, ad.name]))
-  );
+  const sales = salesFrom(shop, new Map(adRows.map((ad) => [ad.id, ad.name])));
   const reconciliation = reconcile(
     sales,
     ads,
     settings.optimizer.disagreementPct
   );
   const breakevenPerSale = breakevenOf(designs);
+  const costPerSale = costPerSaleOf(ads, reconciliation);
 
   return dashboardSchema.parse({
     connections: [
@@ -206,6 +203,7 @@ export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
     runs: runsFrom(runs),
     ...(ads === undefined ? {} : { ads }),
     ...(breakevenPerSale === undefined ? {} : { breakevenPerSale }),
+    ...(costPerSale === undefined ? {} : { costPerSale }),
     ...(actions.length === 0 ? {} : { optimizer: optimizerFrom(actions) }),
     ...(reconciliation === undefined ? {} : { reconciliation }),
     ...(sales === undefined ? {} : { sales }),
@@ -234,11 +232,13 @@ export const createDashboardCache = ({
     const entry = { at: now(), value: load() };
     entries.delete(key);
     entries.set(key, entry);
-    for (const oldest of entries.keys()) {
-      if (entries.size <= max) {
+    // Insertion order is age order: drop expired entries, then the oldest
+    // past the cap.
+    for (const [oldKey, old] of entries) {
+      if (entries.size <= max && now() - old.at < ttlMs) {
         break;
       }
-      entries.delete(oldest);
+      entries.delete(oldKey);
     }
     try {
       return await entry.value;

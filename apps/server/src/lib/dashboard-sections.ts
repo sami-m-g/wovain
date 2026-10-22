@@ -11,6 +11,7 @@ import type { Design } from "@wovain/shared/design";
 import { cpa, ratio, roas } from "@wovain/shared/optimizer/math";
 import { checkPurchases } from "@wovain/shared/optimizer/reconcile";
 import type { ActionRecord } from "@wovain/shared/optimizer/records";
+import { parseAdName } from "@wovain/shared/rules";
 
 import { num, str } from "./report-rows.ts";
 import type { Row } from "./report-rows.ts";
@@ -49,10 +50,10 @@ interface MetaAd {
 }
 
 const conceptOf = (name: string) => {
-  const groups = /^wovain (?<design>d\d+) · (?<slot>.+)$/u.exec(name)?.groups;
-  return groups === undefined
+  const parsed = parseAdName(name);
+  return parsed === undefined
     ? undefined
-    : `${groups["design"] ?? ""} · ${groups["slot"] ?? ""}`;
+    : `${parsed.designId} · ${parsed.slot}`;
 };
 
 // Meta's ad rows (ads_get_ad_entities at ad level), without the ones that
@@ -161,9 +162,9 @@ const utmFrom = (rows: Row[], adNames: Map<string, string>): UtmRow[] => {
     const current = groups.get(key) ?? {
       orders: 0,
       revenue: 0,
-      source,
-      ...(content === undefined ? {} : { content }),
-      ...(ad === undefined ? {} : { ad }),
+      source: cut(source),
+      ...(content === undefined ? {} : { content: cut(content) }),
+      ...(ad === undefined ? {} : { ad: cut(ad) }),
     };
     groups.set(key, {
       ...current,
@@ -186,7 +187,7 @@ export const salesFrom = (
     return undefined;
   }
   const series = overTime.slice(-31).map((row) => ({
-    date: str(row, "date", "period") ?? "",
+    date: cut(str(row, "date", "period") ?? ""),
     orders: num(row, "contributions", "orders", "total_orders"),
     profit: num(row, "net_profit", "profit"),
     revenue: num(row, "total_sales", "net_sales", "gross_sales"),
@@ -198,7 +199,7 @@ export const salesFrom = (
     series,
     topProducts: top
       .map((row) => ({
-        name: str(row, "product", "product_name", "name") ?? "Product",
+        name: cut(str(row, "product", "product_name", "name") ?? "Product"),
         revenue: num(row, "net_sales", "gross_sales"),
         units: num(row, "units_sold", "units"),
       }))
@@ -238,6 +239,18 @@ export const reconcile = (
     settled: true,
   });
   return { metaPurchases, shopOrders, status };
+};
+
+// Ad spend per sale, shop first: on Fourthwall's orders from Meta links when
+// there are any, else on the purchases Meta reports.
+export const costPerSaleOf = (
+  ads: Ads | undefined,
+  reconciliation: Reconciliation | undefined
+) => {
+  const shopOrders = reconciliation?.shopOrders ?? 0;
+  return ads !== undefined && shopOrders > 0
+    ? ads.totals.spend / shopOrders
+    : ads?.totals.cpa;
 };
 
 const designNumber = (design: Design) => Number(design.id.slice(1));

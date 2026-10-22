@@ -170,6 +170,7 @@ test("both connected: sales, ads, the UTM mapped to its ad, reconciliation and p
     status: "pass",
   });
   expect(dashboard.products[0]?.status).toBe("hidden");
+  expect(dashboard.costPerSale).toBe(10);
   expect(dashboard.breakevenPerSale).toBeCloseTo(
     demoDesign.quote.breakevenPerSale
   );

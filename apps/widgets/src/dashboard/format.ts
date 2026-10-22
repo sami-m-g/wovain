@@ -6,3 +6,6 @@ export const ratioText = (value: number | undefined) =>
 
 export const moneyText = (value: number | undefined) =>
   value === undefined ? "–" : money(value);
+
+// Provider names as merchants know them.
+export const titles = { fal: "fal", fourthwall: "Fourthwall", meta: "Meta" };

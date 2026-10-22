@@ -3,10 +3,13 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   dashboardInputSchema,
   dashboardResultSchema,
+  isConnectPrompt,
+  rangeDays,
 } from "@wovain/shared/dashboard";
 import type { Dashboard } from "@wovain/shared/dashboard";
 import { money } from "@wovain/shared/economics";
 
+import { providers } from "../lib/connections.ts";
 import { gatherDashboard } from "../lib/dashboard.ts";
 import type { DashboardCache } from "../lib/dashboard.ts";
 import { text } from "../lib/tool-result.ts";
@@ -17,9 +20,16 @@ import { widgetUri } from "../widgets.ts";
 
 // What the agent reads: the headline numbers and which accounts to connect.
 // Names from the merchant's accounts stay in structuredContent, marked as data.
+const agreement = {
+  fail: "disagree: trust Fourthwall's count",
+  pass: "agree",
+  unknown: "too few sales to compare",
+};
+
 const summary = (dashboard: Dashboard) => {
-  const { ads, connections, range, reconciliation, sales } = dashboard;
-  const lines = [`wovain dashboard, last ${range.replace("d", " days")}.`];
+  const { ads, breakevenPerSale, connections, costPerSale, range } = dashboard;
+  const { reconciliation, sales } = dashboard;
+  const lines = [`wovain dashboard, last ${String(rangeDays[range])} days.`];
   if (sales !== undefined) {
     lines.push(
       `Fourthwall: ${money(sales.totals.revenue)} revenue, ${String(sales.totals.orders)} orders, ${money(sales.totals.profit)} profit.`
@@ -30,17 +40,22 @@ const summary = (dashboard: Dashboard) => {
       `Meta: ${money(ads.totals.spend)} spent, ${String(ads.totals.purchases)} purchases reported.`
     );
   }
-  if (reconciliation !== undefined) {
+  if (costPerSale !== undefined && breakevenPerSale !== undefined) {
     lines.push(
-      `Orders from Meta links on Fourthwall: ${String(reconciliation.shopOrders)} (sources ${reconciliation.status === "fail" ? "disagree" : "agree"}).`
+      `Ad spend per sale ${money(costPerSale)} against a ${money(breakevenPerSale)} breakeven.`
     );
   }
-  const missing = connections.filter(
-    (connection) =>
-      connection.provider !== "fal" && connection.state === "missing"
-  );
-  for (const { provider } of missing) {
-    lines.push(`${provider} isn't connected: offer connect_account.`);
+  if (reconciliation !== undefined) {
+    lines.push(
+      `Orders from Meta links on Fourthwall: ${String(reconciliation.shopOrders)}; the sources ${agreement[reconciliation.status]}.`
+    );
+  }
+  for (const { provider, state } of connections) {
+    if (state === "missing" && isConnectPrompt(provider)) {
+      lines.push(
+        `${providers[provider].title} isn't connected: offer connect_account.`
+      );
+    }
   }
   return [...lines, UNTRUSTED].join("\n");
 };

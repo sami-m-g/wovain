@@ -1,18 +1,18 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { dashboardResultSchema } from "@wovain/shared/dashboard";
+import type { ConnectPrompt } from "@wovain/shared/dashboard";
 import { z } from "zod";
 
 import { callTool, say, useWidget } from "../lib/bridge.ts";
 import { WidgetShell } from "../lib/widget-shell.tsx";
 import { DashboardWidgetView } from "./dashboard-widget-view.tsx";
-import type { ConnectProvider } from "./dashboard-widget-view.tsx";
+import { titles } from "./format.ts";
 
 const connectSchema = z.object({ connectUrl: z.url() });
-const titles = { fourthwall: "Fourthwall", meta: "Meta" };
 
 // Connect opens the merchant's personal, single-use link in their browser;
 // the agent shows the dashboard again once they say they're done.
-const connect = async (app: App, provider: ConnectProvider) => {
+const connect = async (app: App, provider: ConnectPrompt) => {
   const { connectUrl } = await callTool(app, connectSchema, "connect_account", {
     provider,
   });

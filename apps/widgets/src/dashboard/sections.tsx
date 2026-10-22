@@ -125,7 +125,21 @@ export const ReconciliationLine = ({
   );
 };
 
-const statusBadge = (status: Dashboard["products"][number]["status"]) => {
+type ProductStatus = Dashboard["products"][number]["status"];
+const productBadges: Record<
+  Exclude<ProductStatus, "live">,
+  { color: "danger" | "secondary"; label: string }
+> = {
+  draft: { color: "secondary", label: "Draft" },
+  hidden: { color: "secondary", label: "Hidden" },
+  publishing: { color: "secondary", label: "Publishing" },
+  rejected: { color: "danger", label: "Rejected" },
+  skipped: { color: "secondary", label: "Skipped" },
+};
+
+// Live keeps the campaign widget's green pill (the kit's success badge falls
+// under 4.5:1 at this size).
+const statusBadge = (status: ProductStatus) => {
   if (status === "live") {
     return (
       <span className="wovain-status-live rounded-full px-2 py-0.5 text-xs font-medium">
@@ -133,16 +147,8 @@ const statusBadge = (status: Dashboard["products"][number]["status"]) => {
       </span>
     );
   }
-  if (status === "rejected") {
-    return <Badge color="danger">Rejected</Badge>;
-  }
-  const labels = {
-    draft: "Draft",
-    hidden: "Hidden",
-    publishing: "Publishing",
-    skipped: "Skipped",
-  } as const;
-  return <Badge color="secondary">{labels[status]}</Badge>;
+  const { color, label } = productBadges[status];
+  return <Badge color={color}>{label}</Badge>;
 };
 
 export const ProductList = ({

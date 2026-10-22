@@ -76,6 +76,7 @@ const full: Dashboard = {
     { provider: "fal", state: "connected" },
     { provider: "meta", state: "connected" },
   ],
+  costPerSale: 10.5,
   generatedAt: "2026-10-22T09:00:00.000Z",
   optimizer: [
     {
@@ -177,6 +178,7 @@ export const FullDataDark = meta.story({ globals: { theme: "dark" } });
 // Fourthwall connected, Meta not: one Connect card, the shop's numbers only.
 const {
   ads: _ads,
+  costPerSale: _costPerSale,
   optimizer: _optimizer,
   reconciliation: _reconciliation,
   ...shopOnly

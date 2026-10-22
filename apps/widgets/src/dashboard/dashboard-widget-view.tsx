@@ -1,11 +1,12 @@
 import { Button } from "@openai/apps-sdk-ui/components/Button";
-import type { Dashboard } from "@wovain/shared/dashboard";
+import { isConnectPrompt, rangeDays } from "@wovain/shared/dashboard";
+import type { ConnectPrompt, Dashboard } from "@wovain/shared/dashboard";
 import { money } from "@wovain/shared/economics";
 import { useId } from "react";
 
 import { useAction } from "../lib/use-action.ts";
 import { ActionError } from "../lib/widget-shell.tsx";
-import { moneyText, ratioText } from "./format.ts";
+import { moneyText, ratioText, titles } from "./format.ts";
 import { SalesChart } from "./sales-chart.tsx";
 import {
   AdTable,
@@ -17,18 +18,15 @@ import {
   Table,
 } from "./sections.tsx";
 
-export type ConnectProvider = "fourthwall" | "meta";
-
 interface DashboardWidgetActions {
   // Gets the merchant's personal connect link (connect_account) and opens it.
-  onConnect: (provider: ConnectProvider) => Promise<void>;
+  onConnect: (provider: ConnectPrompt) => Promise<void>;
 }
 
 export interface DashboardWidgetViewProps extends DashboardWidgetActions {
   dashboard: Dashboard;
 }
 
-const titles = { fal: "fal", fourthwall: "Fourthwall", meta: "Meta" };
 const stateText = {
   connected: "connected",
   error: "couldn’t be read",
@@ -40,18 +38,8 @@ const connectWhy = {
   meta: "to see ad spend, ROAS and cost per sale.",
 };
 
-// Shop first: cost per sale on Fourthwall's orders from Meta links when there
-// are any, else on the purchases Meta reports.
-const costPerSale = ({ ads, reconciliation }: Dashboard) => {
-  const shopOrders = reconciliation?.shopOrders ?? 0;
-  return ads !== undefined && shopOrders > 0
-    ? ads.totals.spend / shopOrders
-    : ads?.totals.cpa;
-};
-
 const coachLine = (dashboard: Dashboard, days: string) => {
-  const { ads, breakevenPerSale, sales } = dashboard;
-  const cost = costPerSale(dashboard);
+  const { ads, breakevenPerSale, costPerSale: cost, sales } = dashboard;
   if (cost !== undefined && breakevenPerSale !== undefined) {
     return cost <= breakevenPerSale
       ? `Each sale from ads costs ${money(cost)}, under your ${money(breakevenPerSale)} breakeven: the ads pay for themselves.`
@@ -78,16 +66,14 @@ export const DashboardWidgetView = ({
   onConnect,
 }: DashboardWidgetViewProps) => {
   const titleId = useId();
-  const { busy, failed, pending, run } = useAction<ConnectProvider>();
+  const { busy, failed, pending, run } = useAction<ConnectPrompt>();
   const { ads, connections, optimizer, products, reconciliation, runs, sales } =
     dashboard;
-  const days = dashboard.range.replace("d", " days");
-  const toConnect = connections.filter(
-    (
-      connection
-    ): connection is typeof connection & {
-      provider: ConnectProvider;
-    } => connection.provider !== "fal" && connection.state !== "connected"
+  const days = `${String(rangeDays[dashboard.range])} days`;
+  const toConnect = connections.flatMap(({ provider, state }) =>
+    isConnectPrompt(provider) && state !== "connected"
+      ? [{ provider, state }]
+      : []
   );
 
   return (
@@ -141,7 +127,7 @@ export const DashboardWidgetView = ({
           <>
             <Kpi
               label="Cost per sale"
-              value={moneyText(costPerSale(dashboard))}
+              value={moneyText(dashboard.costPerSale)}
             />
             <Kpi label="Ad spend" value={money(ads.totals.spend)} />
             <Kpi label="ROAS (Meta)" value={ratioText(ads.totals.roas)} />
