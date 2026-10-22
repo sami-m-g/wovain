@@ -49,7 +49,7 @@ flowchart TD
 
 GitLab starts a flow only for a person's action. `RunService` refuses non-human users (`ee/app/services/ai/flow_triggers/run_service.rb`, "cannot be triggered by non-human users"), and the event workers skip events a flow caused unless the `ai_flow_trigger_chaining` feature flag is on (`ee/app/workers/concerns/ai/cloud_events_flow_trigger_worker.rb`). So the Developer flow opening an MR never starts Code Review by itself. The loop job acts with `GITLAB_TOKEN`, a person's access token, so its assignment, ready and reviewer requests are human actions and each starts the next flow. The Developer flow supports only the `assign` and `mention` triggers (`ee/app/models/ai/catalog/foundational_flow/developer/definition.rb`), which is why the job assigns instead of relying on an issue-created trigger.
 
-The scheduled custom scout flow (`.gitlab/duo/catalog/flows/scout.yml`) stays synced but disabled: enabling a custom flow in a project needs it enabled in the top-level group first, which our role can't do.
+The custom scout flow (`.gitlab/duo/catalog/flows/scout.yml`) is enabled in the project with a pipeline trigger (`wovain:duoCustomFlows`, `infra/duo.ts`) that fires only on a successful child pipeline on `main`. Only the weekly schedule's `scout:duo` job creates one (`.gitlab/ci/scout-signal.yml`), so the Duo scout checks `main` and production once a week. Its prompt is fixed text, so no comment or pipeline field reaches it. A `mention` trigger would let anyone who comments steer it. It can't have its own schedule: a `scheduled` trigger runs as a service account GitLab creates in the project, and that needs `create_service_account`, which our role doesn't have.
 
 ## Guardrails
 

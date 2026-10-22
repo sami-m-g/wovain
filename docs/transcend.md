@@ -15,7 +15,7 @@ It follows the shape of Anthropic's AI-native SDLC: every change carries its **i
 | Three built-in flow triggers, declared as code and filtered to human actions or a red `main`: Developer (assign, mention), Code Review (reviewer requested, ready), Fix CI/CD (failed push pipeline on `main`) | `infra/Pulumi.prod.yaml`, `infra/duo.ts` |
 | The loop chains them: it assigns scout issues to the Developer flow, marks Duo's MRs ready or requests Duo Code Review, and asks the Developer flow to address review threads | `apps/ops/src/scout.ts`, `apps/ops/src/shepherd.ts`, [loop.md](loop.md) |
 | Code Review reads project rules (spending, tool inputs, no hand-rolling, secrets, widgets) | `.gitlab/duo/mr-review-instructions.yaml` |
-| A custom flow and a custom agent in the AI Catalog, validated and synced by GitLab's `ai-catalog` component: the scout flow and the read-only **wovain explain** agent (explains pipeline and MR failures; no write tools) | `.gitlab/duo/catalog/` |
+| A custom flow and a custom agent in the AI Catalog, validated and synced by GitLab's `ai-catalog` component, then enabled as code: the scout flow (a pipeline trigger only the weekly schedule's child pipeline fires, with a fixed prompt) and the read-only **wovain explain** agent (explains pipeline and MR failures; no write tools) | `.gitlab/duo/catalog/`, `wovain:duoCustomFlows` and `wovain:duoCustomAgents` in `infra/Pulumi.prod.yaml` |
 | Agent skills every Duo flow reads | `.agents/skills/` |
 
 ## Path B "Hands-off": an autonomous post-code lifecycle
@@ -53,15 +53,17 @@ Evidence: !51, [architecture.md](architecture.md).
 
 ## Blocked by Maintainer-only settings
 
-Our hackathon role is Developer. These need a Maintainer or Owner; wovain works around each, and turning any of them on makes it stronger:
+Our hackathon role is Developer+, a custom role that can manage merge request settings, AI Catalog items and their consumers, flow triggers, CI/CD variables, webhooks and Terraform state. Everything it can reach through an API is in `infra/`. These still need a Maintainer or Owner, or have no API for our role; wovain works around each, and turning any of them on makes it stronger:
 
 | Setting | Effect today | Workaround |
 | --- | --- | --- |
-| Enable custom flows and agents in the top-level group | The scout flow and the explain agent are synced to the AI Catalog but can't be enabled in the project | The hourly CI job does the scout's work; the explain agent is ready once enabled |
+| Enable flows in the top-level group | Custom flows and agents can be enabled in the project (GitLab adds the group consumer), but not configured for the whole group | The scout flow and the explain agent are enabled in the project from `infra/` |
+| A Duo schedule for the scout flow | A `scheduled` trigger runs as a service account GitLab creates in the project, which needs `create_service_account` | The weekly schedule starts a one-job child pipeline whose success is the scout's trigger; the hourly CI job does the scout's work in between, without credits |
 | Automatic Duo review, SAST false-positive detection, Resolve SAST | Off. The SAST AI flows aren't available to our role, and we don't replace them with a custom agent | The loop requests Code Review; scanners run on every MR and a person triages findings |
-| "Pipelines must succeed" | Off | Auto-merge waits for the pipeline, and the loop never sets it on a failed head pipeline |
+| "Pipelines must succeed", "All threads must be resolved" | Our role can tick them in the UI, but `PUT /projects/:id` needs `admin_project` and GraphQL has no mutation for them, so they can't be code | Auto-merge waits for the pipeline, the loop never sets it on a failed head pipeline, and it counts open threads across every discussion page |
 | "Require approval from code owners" | CODEOWNERS only requests reviewers | The guardrails keep every non-application path away from auto-merge |
-| "All threads must be resolved" | Off | The loop counts open threads across every discussion page |
+| Approval rules | Not set: a required human approval would stop the loop's auto-merge on Duo's MRs | The guardrails and Duo Code Review gate auto-merge |
+| Protected branches and environments | Managed in the UI | `main` takes only merges; deploy jobs run in their environments |
 | Error tracking | Off | Errors come from Cloud Logging and GitLab Observability |
 
 Also manual, with no API for our role: the GitLab Observability API key (group → Observe → API Keys, then `pulumi config set --secret o11y-api-key` in `infra/`).

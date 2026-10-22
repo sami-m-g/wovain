@@ -1,7 +1,9 @@
 // wovain's GitLab project settings that the hackathon's Developer+ role can
 // manage: CI/CD variables, environments and the Renovate schedule. Branch and
-// environment protection, deploy keys, merge request settings and the other
-// general settings need Maintainer, so they stay in the project UI (README).
+// environment protection, deploy keys and the general settings need
+// Maintainer. Merge request settings are open to the role in the UI only:
+// PUT /projects/:id, which gitlab.Project uses, needs admin_project (README).
+// No approval rules: a required approval would stop the loop's auto-merge.
 // The provider authenticates with the `gitlab:token` stack secret.
 import * as gitlab from "@pulumi/gitlab";
 import * as pulumi from "@pulumi/pulumi";

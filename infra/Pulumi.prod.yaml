@@ -46,21 +46,37 @@ config:
       # /issue skill requests this reviewer when it opens an MR.
       events: [assign_reviewer, merge_request_ready]
       active: true
-  # Custom flows from .gitlab/duo/catalog/flows, enabled once synced.
-  # Off: enabling a custom flow at project level created no flow trigger. A
-  # project consumer needs the flow enabled in the top-level group first, which
-  # our role can't do, and a scheduled trigger needs GitLab to provision an
-  # autonomous service account. The hourly "wovain loop" pipeline schedule
-  # (apps/ops) does the scout's job instead, without Duo credits. The consumer
-  # GitLab already has stays, unmanaged and idle.
-  wovain:duoCustomFlows: []
-  #   - name: duo-scout
-  #     file: .gitlab/duo/catalog/flows/scout.yml
-  #     events: [scheduled]
-  #     schedule:
-  #       cron: "0 7 * * *"
-  #       timezone: UTC
-  #       description: wovain scout, daily
+  # Custom flows from .gitlab/duo/catalog/flows: a trigger for the consumer
+  # the project already has (infra/duo.ts). The scout starts on a successful
+  # child pipeline on main, which only the weekly schedule's scout:duo job
+  # creates (.gitlab/ci/loop.yml); its prompt is fixed text. No mention
+  # trigger: anyone who comments could steer it. No scheduled trigger: GitLab
+  # gives it a service account created in the project, which needs
+  # create_service_account (Maintainer).
+  wovain:duoCustomFlows:
+    - name: duo-scout
+      file: .gitlab/duo/catalog/flows/scout.yml
+      description: wovain scout, weekly from the scout child pipeline
+      events: [pipeline_hooks]
+      active: true
+      filter:
+        pipeline_hooks:
+          match: all
+          rules:
+            - field: object_attributes.status
+              operator: in
+              value: [success]
+            - field: object_attributes.default_branch
+              operator: in
+              value: [true]
+            - field: object_attributes.source
+              operator: in
+              value: [parent_pipeline]
+  # Custom agents from .gitlab/duo/catalog/agents, enabled in the project once
+  # synced (mapping.json).
+  wovain:duoCustomAgents:
+    - name: duo-explain
+      file: .gitlab/duo/catalog/agents/explain.yml
   # AuthKit redirect URIs (infra/workos.ts). import adopts an entry made by
   # hand, by its WorkOS id.
   wovain:workosRedirectUris:
