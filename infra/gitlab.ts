@@ -68,17 +68,17 @@ export const environments = (siteUrl: pulumi.Input<string>) => {
   );
   // The self-healing loop's job (.gitlab/ci/loop.yml): it deploys nothing
   // (action: verify), and Google trusts gitlab-ops only from here.
-  new gitlab.ProjectEnvironment("operations", {
-    name: "operations",
-    project: projectId,
-    tier: "other",
-  });
+  new gitlab.ProjectEnvironment(
+    "operations",
+    { name: "operations", project: projectId, tier: "other" },
+    adopt("41884145")
+  );
   // The weekly analysis job; Google trusts gitlab-analytics only from here.
-  new gitlab.ProjectEnvironment("analytics", {
-    name: "analytics",
-    project: projectId,
-    tier: "other",
-  });
+  new gitlab.ProjectEnvironment(
+    "analytics",
+    { name: "analytics", project: projectId, tier: "other" },
+    adopt("41884343")
+  );
 };
 
 // The renovate job runs only on this schedule (.gitlab/ci/verify.yml matches
