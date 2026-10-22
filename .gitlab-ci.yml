@@ -60,3 +60,4 @@ variables:
   # Run SAST and Secret Detection on merge requests too, not only on main.
   AST_ENABLE_MR_PIPELINES: "true"
   PNPM_VERSION: 12.3.4
+  PULUMI_VERSION: 3.259.0

@@ -7,10 +7,10 @@ infra:production:
   resource_group: infra
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
-    PULUMI_VERSION: 3.259.0
   script:
     - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
     - export PATH="$HOME/.pulumi/bin:$PATH"
+    - pnpm infra:install
     - pnpm infra:up --yes --non-interactive
   # Google trusts gitlab-infra only for jobs in this environment.
   environment:

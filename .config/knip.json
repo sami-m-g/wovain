@@ -8,5 +8,5 @@
       "entry": ["src/*/*-widget.tsx"]
     }
   },
-  "ignore": ["infra/sdks/**"]
+  "ignore": ["infra/**"]
 }

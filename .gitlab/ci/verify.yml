@@ -4,9 +4,10 @@ build:
   script:
     - pnpm build
 
+# Typecheck and lint cover infra/, so it installs that too.
 verify:
   stage: verify
-  extends: [.pnpm-install, .on-changes]
+  extends: [.pulumi-install, .on-changes]
   script:
     - pnpm check
     - pnpm typecheck

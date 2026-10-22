@@ -1,94 +1,112 @@
-// GitLab Duo flow triggers for wovain's GitLab project. Neither the GitLab
-// Terraform provider nor @pulumi/gitlab has a resource for them, so each one
-// is a graphql.Mutation (sullivtr/graphql, generated into sdks/graphql), which
-// creates, updates, deletes and checks drift from the GraphQL strings below.
+// GitLab Duo flow triggers and custom flows for wovain's GitLab project, from
+// the stack config (wovain:duoTriggers, wovain:duoCustomFlows in
+// Pulumi.prod.yaml). No GitLab provider has a resource for these, so each is a
+// graphql.Mutation (sullivtr/graphql; `pulumi install` generates sdks/graphql),
+// which creates, updates, deletes and checks drift from the GraphQL below.
 // Needs GITLAB_TOKEN (api scope); the hackathon's Developer+ role is enough.
 import { existsSync, readFileSync } from "node:fs";
 
 import * as graphql from "@pulumi/graphql";
 import * as pulumi from "@pulumi/pulumi";
 
-const projectPath = new pulumi.Config().require("gitlabProject");
+interface Trigger {
+  name: string;
+  description: string;
+  // A built-in flow's foundationalFlowReference, e.g. developer/v1.
+  flow: string;
+  serviceAccount: string;
+  events: string[];
+  filter?: object;
+  // An inactive trigger stays configured but doesn't run.
+  active?: boolean;
+}
+
+interface CustomFlow {
+  name: string;
+  // The flow's YAML, as the ai-catalog component records it in mapping.json.
+  file: string;
+  events: string[];
+  schedule?: { cron: string; timezone: string; description: string };
+}
+
+const config = new pulumi.Config();
+const projectPath = config.require("gitlabProject");
+const triggers = config.requireObject<Trigger[]>("duoTriggers");
+const customFlows = config.getObject<CustomFlow[]>("duoCustomFlows") ?? [];
+
 const token = process.env["GITLAB_TOKEN"];
 if (token === undefined || token === "") {
   throw new Error("GITLAB_TOKEN is not set");
 }
-
 const provider = new graphql.Provider("gitlab-graphql", {
   headers: { Authorization: pulumi.secret(`Bearer ${token}`) },
   url: "https://gitlab.com/api/graphql",
 });
 
-// Event type ids from GitLab's ee/app/models/ai/flow_trigger.rb (EVENT_TYPES).
-const EVENT = {
+// GitLab's trigger event ids (ee/app/models/ai/flow_trigger.rb, EVENT_TYPES).
+const EVENT_IDS: Record<string, number> = {
   assign: 1,
+  assign_reviewer: 2,
+  commit_to_default_branch: 8,
   mention: 0,
-  mergeRequest: 6,
-  mergeRequestReady: 4,
-  pipeline: 3,
+  merge_request: 6,
+  merge_request_code_conflict: 5,
+  merge_request_ready: 4,
+  pipeline_hooks: 3,
+  scheduled: 9,
+  work_item: 7,
 };
 
-// The project's enablements of GitLab's built-in flows (aiCatalogConfiguredItems).
-const FLOW = {
-  codeReview: "gid://gitlab/Ai::Catalog::ItemConsumer/12267624",
-  developer: "gid://gitlab/Ai::Catalog::ItemConsumer/12267627",
-  fixPipeline: "gid://gitlab/Ai::Catalog::ItemConsumer/12267628",
-};
+// The shape of each response is fixed by its query text.
+const query = <T>(
+  text: string,
+  variables: Record<string, pulumi.Input<string>>
+) =>
+  graphql
+    .getQueryOutput({ query: text, queryVariables: variables }, { provider })
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- see above
+    .apply((r) => JSON.parse(r.queryResponse).data as T);
 
-// The project's id and the flows' service accounts, looked up by name.
-const lookup = graphql
-  .getQueryOutput(
-    {
-      query:
-        "query($path: ID!, $names: [String!]) { project(fullPath: $path) { id } users(usernames: $names) { nodes { id username } } }",
-      queryVariables: {
-        names: JSON.stringify([
-          "duo-code-review-gitlab-ai-hackathon",
-          "duo-developer-gitlab-ai-hackathon",
-          "duo-fix-ci-cd-pipeline-gitlab-ai-hackathon",
-        ]),
-        path: projectPath,
-      },
-    },
-    { provider }
-  )
-  .apply((result) => {
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- the GraphQL response shape is fixed by the query above
-    const {
-      data,
-    }: {
-      data: {
-        project: { id: string };
-        users: { nodes: { id: string; username: string }[] };
-      };
-    } = JSON.parse(result.queryResponse);
-    return {
-      projectId: data.project.id,
-      users: Object.fromEntries(
-        data.users.nodes.map((u) => [u.username, u.id])
-      ),
-    };
-  });
+// Ids by name: the project, the service accounts, the built-in flows.
+const lookup = query<{
+  project: { id: string };
+  users: { nodes: { id: string; username: string }[] };
+}>(
+  "query($path: ID!, $names: [String!]) { project(fullPath: $path) { id } users(usernames: $names) { nodes { id username } } }",
+  {
+    names: JSON.stringify(triggers.map((t) => t.serviceAccount)),
+    path: projectPath,
+  }
+);
+const projectId = lookup.apply((d) => d.project.id);
+const userIds = lookup.apply(
+  (d) => new Map(d.users.nodes.map((u) => [u.username, u.id]))
+);
+const flowIds = query<{
+  aiCatalogConfiguredItems: {
+    nodes: { id: string; item: { foundationalFlowReference: string } }[];
+  };
+}>(
+  "query($id: ProjectID!) { aiCatalogConfiguredItems(projectId: $id, includeInherited: true, includeFoundationalConsumers: true) { nodes { id item { foundationalFlowReference } } } }",
+  { id: projectId }
+).apply(
+  (d) =>
+    new Map(
+      d.aiCatalogConfiguredItems.nodes.map((n) => [
+        n.item.foundationalFlowReference,
+        n.id,
+      ])
+    )
+);
 
 const VARS =
   "$description: String!, $eventTypes: [Int!]!, $filter: JSON, $userId: UserID, $aiCatalogItemConsumerId: AiCatalogItemConsumerID, $active: Boolean";
 const INPUT =
   "description: $description, eventTypes: $eventTypes, filter: $filter, userId: $userId, aiCatalogItemConsumerId: $aiCatalogItemConsumerId, active: $active";
 
-const flowTrigger = (
-  name: string,
-  args: {
-    description: string;
-    flow: string;
-    serviceAccount: string;
-    events: number[];
-    filter?: object;
-    // An inactive trigger stays configured but doesn't run.
-    active?: boolean;
-  }
-) =>
+for (const t of triggers) {
   new graphql.Mutation(
-    name,
+    t.name,
     {
       computeFromCreate: true,
       computeMutationKeys: { id: "aiFlowTriggerCreate.aiFlowTrigger.id" },
@@ -96,13 +114,13 @@ const flowTrigger = (
       deleteMutation:
         "mutation($id: AiFlowTriggerID!) { aiFlowTriggerDelete(input: { id: $id }) { errors } }",
       mutationVariables: {
-        active: String(args.active ?? true),
-        aiCatalogItemConsumerId: args.flow,
-        description: args.description,
-        eventTypes: JSON.stringify(args.events),
-        filter: JSON.stringify(args.filter ?? {}),
+        active: String(t.active ?? true),
+        aiCatalogItemConsumerId: flowIds.apply((ids) => ids.get(t.flow) ?? ""),
+        description: t.description,
+        eventTypes: JSON.stringify(t.events.map((e) => EVENT_IDS[e])),
+        filter: JSON.stringify(t.filter ?? {}),
         projectPath,
-        userId: lookup.apply((l) => l.users[args.serviceAccount] ?? ""),
+        userId: userIds.apply((ids) => ids.get(t.serviceAccount) ?? ""),
       },
       // Returns every mutation variable, so the provider can see drift.
       readQuery:
@@ -112,53 +130,10 @@ const flowTrigger = (
     },
     { provider }
   );
+}
 
-flowTrigger("duo-developer", {
-  description: "Developer flow on assign or mention",
-  events: [EVENT.assign, EVENT.mention],
-  flow: FLOW.developer,
-  serviceAccount: "duo-developer-gitlab-ai-hackathon",
-});
-
-flowTrigger("duo-fix-pipeline", {
-  // Off for now.
-  active: false,
-  description: "Fix CI/CD on failed pipeline",
-  events: [EVENT.pipeline],
-  filter: {
-    pipeline_hooks: {
-      match: "all",
-      rules: [
-        {
-          field: "object_attributes.status",
-          operator: "in",
-          value: ["failed"],
-        },
-      ],
-    },
-  },
-  flow: FLOW.fixPipeline,
-  serviceAccount: "duo-fix-ci-cd-pipeline-gitlab-ai-hackathon",
-});
-
-flowTrigger("duo-code-review", {
-  // Off for now.
-  active: false,
-  description: "Code review on new or ready MR",
-  events: [EVENT.mergeRequest, EVENT.mergeRequestReady],
-  filter: {
-    merge_request: {
-      match: "all",
-      rules: [{ field: "action", operator: "in", value: ["created"] }],
-    },
-  },
-  flow: FLOW.codeReview,
-  serviceAccount: "duo-code-review-gitlab-ai-hackathon",
-});
-
-// Custom flows: the ai-catalog component syncs them from
-// .gitlab/duo/catalog/flows and records their catalog ids in mapping.json
-// (committed back to main), so they're enabled from the first run after that.
+// Custom flows are enabled once the ai-catalog component has synced them and
+// recorded their catalog ids in mapping.json (committed back to main).
 const mappingFile = new URL(
   "../.gitlab/duo/catalog/mapping.json",
   import.meta.url
@@ -170,61 +145,64 @@ const mapping: { flows?: Record<string, { catalog_id: string }> } = existsSync(
   ? JSON.parse(readFileSync(mappingFile, "utf-8"))
   : {};
 
-const scoutId =
-  mapping.flows?.[".gitlab/duo/catalog/flows/scout.yml"]?.catalog_id;
-if (scoutId !== undefined) {
-  // Enabling a flow in the project creates its trigger and service account.
-  // The trigger type is inline: the read query returns event ids, not names.
-  const createConsumer =
-    'mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { aiCatalogItemConsumerCreate(input: { itemId: $itemId, target: { projectId: $projectId }, triggerTypes: ["scheduled"] }) { errors itemConsumer { id flowTrigger { id } } } }';
-  const scout = new graphql.Mutation(
-    "duo-scout",
+const SCHEDULE =
+  "$description: String!, $cron: String!, $cronTimezone: String!";
+const SCHEDULE_INPUT =
+  "description: $description, cron: $cron, cronTimezone: $cronTimezone";
+
+for (const f of customFlows) {
+  const itemId = mapping.flows?.[f.file]?.catalog_id;
+  if (itemId === undefined) {
+    continue;
+  }
+  // Enabling a flow creates its trigger and service account. The trigger types
+  // are inline because the read query returns event ids, not names.
+  const create = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { aiCatalogItemConsumerCreate(input: { itemId: $itemId, target: { projectId: $projectId }, triggerTypes: ${JSON.stringify(f.events)} }) { errors itemConsumer { id flowTrigger { id } } } }`;
+  const enabled = new graphql.Mutation(
+    f.name,
     {
       computeFromCreate: true,
       computeMutationKeys: {
         id: "aiCatalogItemConsumerCreate.itemConsumer.id",
         triggerId: "aiCatalogItemConsumerCreate.itemConsumer.flowTrigger.id",
       },
-      createMutation: createConsumer,
+      createMutation: create,
       deleteMutation:
         "mutation($id: AiCatalogItemConsumerID!) { aiCatalogItemConsumerDelete(input: { id: $id }) { errors } }",
       forceReplace: true,
-      mutationVariables: {
-        itemId: scoutId,
-        projectId: lookup.apply((l) => l.projectId),
-      },
+      mutationVariables: { itemId, projectId },
       readQuery:
         "query($id: AiCatalogItemConsumerID!) { aiCatalogItemConsumer(id: $id) { id item { id } project { id } } }",
       readQueryVariables: {},
-      updateMutation: createConsumer,
+      updateMutation: create,
     },
     { provider }
   );
 
-  const flowTriggerId = scout.computedUpdateOperationVariables.apply(
-    (v) => v?.["triggerId"] ?? ""
-  );
-  const SCHEDULE =
-    "$description: String!, $cron: String!, $cronTimezone: String!";
-  new graphql.Mutation(
-    "duo-scout-schedule",
-    {
-      computeFromCreate: true,
-      computeMutationKeys: { id: "aiFlowScheduleCreate.aiFlowSchedule.id" },
-      createMutation: `mutation($flowTriggerId: AiFlowTriggerID!, ${SCHEDULE}) { aiFlowScheduleCreate(input: { flowTriggerId: $flowTriggerId, description: $description, cron: $cron, cronTimezone: $cronTimezone }) { errors aiFlowSchedule { id } } }`,
-      deleteMutation:
-        "mutation($id: AiFlowScheduleID!) { aiFlowScheduleDelete(input: { id: $id }) { errors } }",
-      mutationVariables: {
-        cron: "0 7 * * *",
-        cronTimezone: "UTC",
-        description: "wovain scout, daily",
-        flowTriggerId,
+  if (f.schedule !== undefined) {
+    const flowTriggerId = enabled.computedUpdateOperationVariables.apply(
+      (v) => v?.["triggerId"] ?? ""
+    );
+    new graphql.Mutation(
+      `${f.name}-schedule`,
+      {
+        computeFromCreate: true,
+        computeMutationKeys: { id: "aiFlowScheduleCreate.aiFlowSchedule.id" },
+        createMutation: `mutation($flowTriggerId: AiFlowTriggerID!, ${SCHEDULE}) { aiFlowScheduleCreate(input: { flowTriggerId: $flowTriggerId, ${SCHEDULE_INPUT} }) { errors aiFlowSchedule { id } } }`,
+        deleteMutation:
+          "mutation($id: AiFlowScheduleID!) { aiFlowScheduleDelete(input: { id: $id }) { errors } }",
+        mutationVariables: {
+          cron: f.schedule.cron,
+          cronTimezone: f.schedule.timezone,
+          description: f.schedule.description,
+          flowTriggerId,
+        },
+        readQuery:
+          "query($path: ID!, $flowTriggerId: AiFlowTriggerID!) { project(fullPath: $path) { aiFlowTriggers(ids: [$flowTriggerId]) { nodes { id flowSchedules { nodes { id description cron cronTimezone } } } } } }",
+        readQueryVariables: { flowTriggerId, path: projectPath },
+        updateMutation: `mutation($id: AiFlowScheduleID!, ${SCHEDULE}) { aiFlowScheduleUpdate(input: { id: $id, ${SCHEDULE_INPUT} }) { errors aiFlowSchedule { id } } }`,
       },
-      readQuery:
-        "query($path: ID!, $flowTriggerId: AiFlowTriggerID!) { project(fullPath: $path) { aiFlowTriggers(ids: [$flowTriggerId]) { nodes { id flowSchedules { nodes { id description cron cronTimezone } } } } } }",
-      readQueryVariables: { flowTriggerId, path: projectPath },
-      updateMutation: `mutation($id: AiFlowScheduleID!, ${SCHEDULE}) { aiFlowScheduleUpdate(input: { id: $id, description: $description, cron: $cron, cronTimezone: $cronTimezone }) { errors aiFlowSchedule { id } } }`,
-    },
-    { provider }
-  );
+      { provider }
+    );
+  }
 }
