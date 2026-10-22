@@ -295,6 +295,18 @@
               <td><code>packages/shared/src/</code></td>
             </tr>
             <tr>
+              <td>Self-healing loop</td>
+              <td>
+                An hourly CI job reads production errors, files them for Duo's
+                Developer flow, moves Duo's merge requests through Code Review
+                to auto-merge, and checks each fix in production.
+              </td>
+              <td>
+                <code>apps/ops/src/</code>, <code>.gitlab/ci/loop.yml</code>,
+                <code>docs/loop.md</code>
+              </td>
+            </tr>
+            <tr>
               <td>Deploy and telemetry</td>
               <td>
                 App Hosting builds the widgets with <code>pnpm build</code> and

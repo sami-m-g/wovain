@@ -26,3 +26,26 @@
 
 [Planning docs] @sami-m-g
 /docs/
+
+# What the self-healing loop never auto-merges (apps/ops/src/guardrails.ts
+# allows only application source and tests). Listing it here requests a
+# human owner on any merge request that touches it.
+[Self-healing loop] @sami-m-g
+/apps/ops/
+/docs/loop.md
+
+[Config and dependencies] @sami-m-g
+/.config/
+/.agents/
+/.claude/
+/AGENTS.md
+/package.json
+/pnpm-lock.yaml
+/pnpm-workspace.yaml
+/tsconfig*.json
+/oxlint.config.ts
+/oxfmt.config.ts
+/firebase.json
+**/package.json
+**/tsconfig*.json
+**/*.config.ts

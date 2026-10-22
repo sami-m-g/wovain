@@ -4,14 +4,18 @@
 #   deploy    main: sync custom Duo flows to the AI Catalog, pulumi up
 #             (infra/), then upload the source to Firebase App Hosting and
 #             roll it out
-#   monitor   smoke-test the live OAuth chain
+#   monitor   smoke-test the live OAuth chain; hourly, the self-healing loop
+#             (scout, verify, shepherd Duo's merge requests to auto-merge)
 #   release   semantic-release: version, CHANGELOG, GitLab release; then
 #             push main and tags to the GitHub mirror
-# Renovate runs on the "Renovate dependency updates" pipeline schedule.
+# Renovate runs on the "Renovate dependency updates" pipeline schedule, the
+# loop on "wovain loop".
 # CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY,
 # FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
-# GCP_DEPLOY_SERVICE_ACCOUNT, SITE_URL, GITLAB_OBSERVABILITY_EXPORT. Pulumi sets
-# them all (infra/index.ts); don't edit them in the UI.
+# GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, SITE_URL,
+# GITLAB_OBSERVABILITY_EXPORT, GITLAB_O11Y_URL and (once its stack secret is
+# set) GITLAB_O11Y_API_KEY. Pulumi sets them all (infra/index.ts); don't edit
+# them in the UI.
 
 workflow:
   rules:
@@ -45,6 +49,7 @@ include:
   - local: .gitlab/ci/monitor.yml
   - local: .gitlab/ci/release.yml
   - local: .gitlab/ci/duo.yml
+  - local: .gitlab/ci/loop.yml
 
 stages:
   - verify

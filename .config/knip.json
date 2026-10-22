@@ -4,6 +4,9 @@
     "config": [".config/commitlint.config.ts"]
   },
   "workspaces": {
+    "apps/ops": {
+      "entry": ["src/loop.ts"]
+    },
     "apps/widgets": {
       "entry": ["src/*/*-widget.tsx"]
     }

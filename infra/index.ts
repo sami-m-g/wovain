@@ -36,6 +36,8 @@ const apis = [
   "firestore",
   "iam",
   "iamcredentials",
+  "logging",
+  "monitoring",
   "run",
   "secretmanager",
   "storage",
@@ -323,6 +325,30 @@ const infraRoles = [
     })
 );
 
+// The self-healing loop (.gitlab/ci/loop.yml) reads production's logs and
+// metrics as this account, from the operations environment only. It can't
+// read records, secrets or change anything.
+const ops = new gcp.serviceaccount.Account(
+  "gitlab-ops",
+  {
+    accountId: "gitlab-ops",
+    displayName: "GitLab CI operations (self-healing loop)",
+  },
+  afterApis
+);
+new gcp.serviceaccount.IAMMember("ops-from-gitlab", {
+  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.environment/operations`,
+  role: "roles/iam.workloadIdentityUser",
+  serviceAccountId: ops.name,
+});
+for (const role of ["roles/logging.viewer", "roles/monitoring.viewer"]) {
+  new gcp.projects.IAMMember(`ops-${role.split("/")[1]}`, {
+    member: ops.member,
+    project,
+    role,
+  });
+}
+
 // Merchants' Fourthwall and fal grants are encrypted with this key
 // (apps/server/src/lib/cipher.ts, WOVAIN_KMS_KEY in apphosting.yaml), and
 // only the runner may use it. Key rings and keys can't be deleted in KMS.
@@ -403,12 +429,18 @@ export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
 
+// GitLab Observability is enabled on the project's group; its id names the
+// instance (docs.gitlab.com, operations/observability/api_access).
+const o11yGroupId = config.require("o11yGroupId");
+const o11yApiKey = config.getSecret("o11y-api-key");
+
 // What the pipeline reads. The tokens are stack secrets
 // (`pulumi config set --secret <name>`); everything else comes from above.
 ciVariables({
   FIREBASE_PROJECT_ID: { protected: true, value: project },
   GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
   GCP_INFRA_SERVICE_ACCOUNT: { protected: true, value: infra.email },
+  GCP_OPS_SERVICE_ACCOUNT: { created: true, protected: true, value: ops.email },
   GCP_WORKLOAD_IDENTITY_PROVIDER: { protected: true, value: provider.name },
   GITHUB_MIRROR_KEY: { masked: true, protected: true, value: mirrorPrivateKey },
   // GitLab's CI observability export (pipeline metrics, logs and traces).
@@ -416,7 +448,27 @@ ciVariables({
     protected: false,
     value: "metrics,logs,traces",
   },
-  // semantic-release and the ai-catalog sync, both on main.
+  // The group's GitLab Observability (SigNoz) query API, which the loop reads
+  // with an API key made in the group's Observe > API Keys. Until the
+  // `o11y-api-key` stack secret is set, the loop reads Google Cloud only.
+  ...(o11yApiKey === undefined
+    ? {}
+    : {
+        GITLAB_O11Y_API_KEY: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: o11yApiKey,
+        },
+      }),
+  GITLAB_O11Y_URL: {
+    created: true,
+    protected: true,
+    value: `https://${o11yGroupId}.gitlab-o11y.com`,
+  },
+  // semantic-release, the ai-catalog sync and the loop, all on main. It's a
+  // person's token, so the loop's assignments count as a human's and start
+  // Duo flows (GitLab skips triggers for bot and flow actions).
   GITLAB_TOKEN: {
     masked: true,
     protected: true,

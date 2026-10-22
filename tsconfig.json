@@ -11,6 +11,9 @@
       "path": "apps/widgets"
     },
     {
+      "path": "apps/ops"
+    },
+    {
       "path": "infra"
     },
     {
