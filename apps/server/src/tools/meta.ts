@@ -3,7 +3,7 @@ import { launchRequestSchema } from "@wovain/shared/campaign";
 import { money } from "@wovain/shared/economics";
 import { z } from "zod";
 
-import { addedProducts, draftPlan } from "../lib/campaign-plan.ts";
+import { draftPlan } from "../lib/campaign-plan.ts";
 import {
   ADVERTISER_JOB,
   draftArgs,
@@ -53,7 +53,7 @@ const registerDraftTool = (
         readOnlyHint: false,
       },
       description:
-        "Stage one object of the merchant's campaign in their Meta ad account's draft, on the Meta account they connected to wovain: upload one of the added ads' videos or images by URL, or create the campaign, the ad set, a creative or an ad. Pass the Meta tool name and only the arguments the campaign playbook lists, with client_conversation_id; anything else is refused. Meta stages every object paused, so nothing spends until the merchant confirms the launch. wovain sets the campaign's daily budget from campaign_plan and records the campaign it creates. Needs at least one added ad widget.",
+        "Stage one object of the merchant's campaign in their Meta ad account's draft, on the Meta account they connected to wovain: upload one of the approved ads' images or videos by URL, or create the campaign, the ad set, a creative (single video, single image, multi_media or carousel cards, with only image hashes and video IDs wovain uploaded and only the plan's product links) or an ad. Pass the Meta tool name and only the arguments the campaign playbook lists, with client_conversation_id; anything else is refused. Meta stages every object paused, so nothing spends until the merchant confirms the launch. wovain sets the campaign's daily budget from campaign_plan and records the campaign it creates. Needs at least one approved ad concept.",
       inputSchema: z.object({
         arguments: z.record(z.string(), z.unknown()),
         tool: draftToolSchema,
@@ -144,10 +144,10 @@ const registerLaunchTools = (
         return unreachable(upstream, "meta");
       }
       const settings = await store.getSettings();
-      const [saved, staged, { dailyBudget }] = await Promise.all([
+      const [saved, staged, plan] = await Promise.all([
         recordedCampaign(store),
         upstream.staged.get(store.userId),
-        addedProducts(store, settings),
+        draftPlan(store, settings),
       ]);
       if (staged?.campaignId !== saved.campaignId) {
         throw new Error("wovain has no record of this campaign's draft.");
@@ -162,8 +162,8 @@ const registerLaunchTools = (
       const pages = [...new Set(staged.creatives.map((item) => item.pageId))];
       const confirmUrl = await upstream.confirmLaunchUrl(store.userId, {
         campaignId: saved.campaignId,
-        snapshot: snapshotOf(frozen),
-        summary: `Campaign ${staged.campaignId}: ${staged.adSets.length} ad ${staged.adSets.length === 1 ? "set" : "sets"} in ${countries.join(", ")}, ${staged.ads.length} ${staged.ads.length === 1 ? "ad" : "ads"} from ${staged.creatives.length} ${staged.creatives.length === 1 ? "creative" : "creatives"} on Page ${pages.join(", ")}. Budget: ${money(dailyBudget)} a day.`,
+        snapshot: snapshotOf(frozen, plan.ads),
+        summary: `Campaign ${staged.campaignId}: ${staged.adSets.length} ad ${staged.adSets.length === 1 ? "set" : "sets"} in ${countries.join(", ")}, ${staged.ads.length} ${staged.ads.length === 1 ? "ad" : "ads"} from ${staged.creatives.length} ${staged.creatives.length === 1 ? "creative" : "creatives"} on Page ${pages.join(", ")}. Budget: ${money(plan.dailyBudgetCents / 100)} a day.`,
       });
       return {
         content: text(
@@ -183,7 +183,7 @@ const registerLaunchTools = (
         readOnlyHint: false,
       },
       description:
-        "Publish the staged campaign in Meta, which starts spending, after the merchant confirmed it on wovain's confirm page (request_launch). Without that confirmation it refuses. It publishes only the objects wovain staged, after reading the draft and its creatives back: it stops on any object wovain didn't stage, or any budget, objective, cap, bid, targeting, link, media or Page that differs from what wovain staged.",
+        "Publish the staged campaign in Meta, which starts spending, after the merchant confirmed it on wovain's confirm page (request_launch). Without that confirmation it refuses. It publishes only the objects wovain staged, after reading the draft and its creatives back: it stops on any object wovain didn't stage, or any budget, objective, cap, bid, targeting, link, image hash, video, carousel card, call to action or Page that differs from what wovain staged.",
       inputSchema: z.object({}),
       title: "Launch the campaign",
     },
@@ -198,17 +198,18 @@ const registerLaunchTools = (
       if (staged?.campaignId !== saved.campaignId) {
         throw new Error("Not launched: wovain has no record of this draft.");
       }
+      // The plan now, so a concept changed since the confirmation stops it.
+      const plan = await draftPlan(store, await store.getSettings());
       const approved = await upstream.launches.consume(
         store.userId,
         saved.campaignId,
-        snapshotOf(staged)
+        snapshotOf(staged, plan.ads)
       );
       if (!approved) {
         throw new Error(
           "Not launched: the merchant hasn't confirmed this draft on wovain's confirm page (or it changed since). Call request_launch and show them the link."
         );
       }
-      const plan = await draftPlan(store, await store.getSettings());
       const meta = {
         ad_account_id: staged.adAccountId.replace(/^act_/u, ""),
         advertiser_job: ADVERTISER_JOB,

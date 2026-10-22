@@ -339,18 +339,19 @@
       </section>
 
       <section aria-labelledby="action">
-        <h2 id="action">One action, end to end: “Add to campaign”</h2>
+        <h2 id="action">One action, end to end: “Create campaign”</h2>
         <p>
-          What happens between pressing <strong>Add to campaign</strong> on the
-          ad widget and seeing the campaign widget with its rules.
+          What happens between approving ad concepts and pressing
+          <strong>Create campaign</strong> on the ad widget, and seeing the
+          campaign widget with its rules.
         </p>
         <ol class="flow">
           <li>
-            <strong>Ad widget button</strong> records the choice, then posts a
-            chat message.
+            <strong>Ad widget buttons</strong>: Approve records each concept's
+            choice; Create campaign posts “Create the campaign”.
             <div class="where">
               <code>apps/widgets/src/ad/ad-widget.tsx</code> ·
-              <code>onAdd</code> → tool <code>record_ad</code>
+              <code>onDecide</code> → tool <code>record_ad</code>
             </div>
           </li>
           <li>
@@ -362,24 +363,24 @@
             </div>
           </li>
           <li>
-            <strong>Ads playbook</strong> tells the agent that once no ad
-            widgets are waiting, it starts the campaign step.
+            <strong>Ads playbook</strong> tells the agent that “Create the
+            campaign” (or “Run it”) starts the campaign step.
             <div class="where">
               <code>apps/server/src/playbooks/ads.ts</code> →
               <code>apps/server/src/playbooks/campaign.ts</code>
             </div>
           </li>
           <li>
-            <strong>Plan</strong>: budget in cents, ad names, product links with
-            UTM tags.
+            <strong>Plan</strong>: budget in cents, one ad per approved concept
+            (visuals, text variants, CTA, ad name), product links with UTM tags.
             <div class="where">
               <code>apps/server/src/tools/campaign.ts</code> ·
               <code>campaign_plan</code>
             </div>
           </li>
           <li class="ext">
-            <strong>Meta Ads connector</strong> builds the draft campaign, ad
-            set and video ads.
+            <strong>Meta Ads connector</strong> builds the paused (draft)
+            campaign, ad set and one ad per concept.
             <div class="where">
               The agent's Meta Ads connector (outside this repo)
             </div>
@@ -414,13 +415,13 @@
           <summary>
             <strong>1. The button</strong> ·
             <code>apps/widgets/src/ad/ad-widget.tsx</code>, search
-            <code>onAdd</code>
+            <code>onDecide</code>
           </summary>
           <p>
             The widget calls the server tool <code>record_ad</code> directly so
-            the choice is saved even if the chat moves on, then sends “Added the
-            ads for design d1 to the campaign” so the agent continues with the
-            playbook.
+            the choice is saved even if the chat moves on, then sends “Approved
+            ad c1 for design d1” so the agent knows. Create campaign sends
+            “Create the campaign”, and the agent continues with the playbook.
           </p>
         </details>
         <details>

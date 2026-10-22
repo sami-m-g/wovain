@@ -16,9 +16,9 @@ Source: `scope.md > What "working" looks like`.
 1. The merchant opens wovain in ChatGPT and gives 2 or 3 product ideas.
 2. One design widget per idea shows a drop: a hero product plus 3 to 6 matching products (hoodie, mug, poster, sticker…) from the merchant's Fourthwall catalog, each with its placements, listing and price.
 3. The merchant approves, skips, or gives feedback on each design widget. Feedback regenerates the whole widget. Approve publishes every product of the drop to Fourthwall right away, grouped in one collection.
-4. Right after a product is published, its ad widget shows 2 videos, 1 static image, ad copy, and the margin math.
-5. The merchant adds each ad widget to the campaign, skips it, or gives feedback.
-6. When the last ad widget is added or skipped, the campaign widget launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.
+4. Right after a product is published, its ad widget shows 2 to 4 distinct ad concepts (hook, angle, audience, why now), each with Feed and Stories visuals, text variants and a call to action, plus the margin math. With 2 or more products live, one concept is a carousel across the set.
+5. The merchant approves, skips, or gives feedback on each concept. Feedback revises only that concept.
+6. When the merchant says "Run it" (or presses Create campaign), wovain builds one Advantage+ sales campaign as a Meta draft, with every approved concept and the kill, scale and alert rules. The campaign widget's Launch, confirmed on wovain's page in the merchant's browser, is the go-ahead to spend.
 7. Success: Meta Ads Manager shows the live campaign and its rules, and the products are live in the Fourthwall shop.
 8. Later, when a rule has fired, the next time the merchant checks in, an optimization widget reports what happened and suggests a fix to approve.
 
@@ -29,7 +29,7 @@ flowchart LR
   D -- approve --> P[Product published]
   P --> E[Ad widget per product]
   E -- feedback --> E
-  E -- add or skip, last widget --> C[Campaign widget: launch + rules]
+  E -- approve or skip each concept, Run it --> C[Campaign widget: paused campaign + rules, Launch]
   C --> L[Live campaign]
   L -. rule fires .-> O[Optimization widget]
   O -- apply fix --> L
@@ -43,7 +43,7 @@ Everything happens inside the ChatGPT conversation. Widgets appear inline in the
 | --- | --- | --- |
 | Design widget | After the merchant gives their ideas | 1 per idea (2 or 3) |
 | Ad widget | Right after its product is published | 1 per published product |
-| Campaign widget | After the last ad widget is added or skipped | 1 |
+| Campaign widget | When the merchant says "Run it" or presses Create campaign | 1 |
 | Optimization widget | When a campaign rule fires | 1 per event |
 | Settings widget | When the merchant asks for wovain settings | 1 per request |
 
@@ -82,19 +82,31 @@ Every widget also has a quick-settings menu (⚙) for the values it uses; the Se
 ### Ad widget wireframe
 
 ```
-┌─ Ads · Japanese Cat Sunset Tee ──────────────────────────────┐
-│ "Two try-on clips plus your mockup. Good margin for a test." │
-│ ┌──────┐ ┌──────┐ ┌──────┐  A · 15s · 9:16 · UGC on-model    │
-│ │ ▶ A ⛶│ │ ▶ B ⛶│ │ img  │  B · 15s · 9:16 · UGC styling     │
-│ └──────┘ └──────┘ └──────┘  Static · Fourthwall mockup       │
-│ Headline      Sakura Season Cat Tee                          │
-│ Primary text  2–3 lines…                                     │
-│ ─────────────────────────────────────────────────────────────│
+┌─ Ads · Japanese Cat Sunset Tee   3 ad concepts · 1 approved ─┐
+│ "Three angles: a gift, the print and the set."               │
+│ ┌─ The gift · Gift for the cat person who has everything ──┐ │
+│ │ For the friend whose cat runs the house.                 │ │
+│ │ Who      Cat owners who collect Japanese prints          │ │
+│ │ Why now  Cherry blossom forecasts are out this week      │ │
+│ │ Gap      Rival cat tees all lead with jokes              │ │
+│ │ ┌────┐ ┌──┐                                              │ │
+│ │ │ 4:5│ │9:│  Feed 4:5 · AI   Stories and Reels 9:16 · AI │ │
+│ │ └────┘ └──┘                                              │ │
+│ │ Headlines · 2 for Meta to test       1. …  2. …          │ │
+│ │ Primary text · 2 for Meta to test    1. …  2. …          │ │
+│ │ Button: Shop now                                         │ │
+│ │ [ Approve ] [ Skip ]  More playful, use the back print…  │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ ┌─ Print up close ─────────────────────────────── Approved ┐ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ ┌─ The set · Carousel across your products ────────────────┐ │
+│ └──────────────────────────────────────────────────────────┘ │
 │ $30 − $17.70 base − $1.38 fees − $0.60 reserve = $10.32      │
 │ Breakeven: $10.32 per sale · 2.9× return on ad spend         │
 │ Rules: off at $30.96 with no sales · budget +20% under $8.26 │
 │ ─────────────────────────────────────────────────────────────│
-│ [ Add to campaign ]  [ Skip ]   Feedback: ________________   │
+│ [ Create campaign ]  Built paused in Meta. Nothing spends    │
+│                      until you press Launch.                 │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -218,34 +230,38 @@ Costs of running the proof of concept, on top of per-sale costs:
 
 ### Ad widgets
 
-Source: `scope.md > The POC boundary` (Ads).
+Source: `scope.md > The POC boundary` (Ads); issue #23.
 
-| Creative | Spec |
+Each product gets 2 to 4 ad concepts. A concept is a different reason to buy, not a resize or a reworded copy: a different buyer, promise or moment. The ads playbook builds them from the research signals (Qloo taste for who, Tavily news for why now, the Meta Ad Library for what competing ads already say) and proposes its own when the merchant gives no ad idea.
+
+| Part | Spec |
 | --- | --- |
-| Video A | UGC-style, on-model, 9:16, 15 seconds or less, background audio; no text burned in, since Meta shows the Page name and picture on every ad and the primary text carries the message |
-| Video B | UGC-style, a second angle or styling, same spec |
-| Static | The Fourthwall mockup image |
-| Headline | Short, product-led |
-| Primary text | 2 to 3 lines |
+| Hook | The first line in Feed, under 125 characters, specific to the design |
+| Audience, why now, gap | Who it's for (Qloo taste), the timely hook (Tavily), what competitors miss; why now and gap only when real |
+| Visuals | One Feed visual (4:5, or 1:1 for the mockup) and one Stories and Reels visual (9:16): lifestyle images edited from the mockup on the merchant's fal account (Nano Banana Pro, print kept), the Fourthwall mockup, and optional 9:16 UGC video (MiniMax H3 Max Reference with background audio). No text burned in; the top and bottom 14% stay clear for Stories |
+| Primary text | 3 to 5 variants; the first 125 characters must work alone (Meta's recommended length before truncation) |
+| Headline | 3 to 5 variants, 40 characters or less (Meta's recommendation) |
+| Call to action | Shop now by default; Buy now or Order now for a gift or deadline angle |
+| Carousel | With 2 or more products live: one concept with a card per product (2 to 10 cards, 1:1), each card with its own headline and link |
 
-Videos come from MiniMax H3 Max Reference on fal with the mockup and the design as references, so the print stays the same; background audio is generated separately. Model and audio are switchable in Settings.
+Approved concepts become one Meta ad each: a multi-media creative when it has 2 or more visuals (Meta picks the visual per placement and tests up to 5 primary texts and 5 headlines), a single image or video ad otherwise, and a static carousel for the set. Visuals made on fal are AI-made; the campaign step asks the merchant whether to turn on Meta's AI label, since that choice is theirs.
 
-- As a merchant, I want ads and margins for each product right after it goes live so that I can judge whether advertising it makes sense.
-  - An ad widget appears right after each product is published.
-  - It shows 2 playable videos, 1 static image, a headline and primary text.
+- As a merchant, I want ads that sell for each product right after it goes live, so that I can judge whether advertising it makes sense.
+  - An ad widget appears right after each product is published, with 2 to 4 concepts.
+  - Each concept shows its hook, who it's for, why now and the gap when known, its visuals with placement labels (AI-made visuals marked), the headline and primary-text variants and the button.
   - It shows the breakeven line and the rule thresholds for that product.
-  - Each video has a full-screen control that plays it at phone size over the chat.
-  - The merchant checks print fidelity in the full-screen view before adding the ad.
-  - Feedback regenerates the whole widget.
+  - Each visual has a full-screen control, so the merchant checks the print before approving.
+  - Approve, Skip and feedback work per concept. Feedback ("more playful", "use the back print") revises only that concept, which comes back as a new revision; the others keep their choice.
+  - When every concept is decided and at least one is approved, Create campaign builds the campaign paused.
 
 ### Campaign launch
 
 Source: `scope.md > The POC boundary` (Campaign).
 
 - One Advantage+ sales campaign holds every added ad, tagged by product.
-- It launches once, after the last ad widget is added or skipped, so learning never resets for new ads.
+- It's built once, paused, when the merchant says "Run it", and launches when they press Launch, so learning never resets for new ads.
 - Starting budget: $15 per product per day, set for the whole campaign (for example $45 a day for 3 products).
-  - After the last ad widget, the campaign widget appears and shows Live with a link to Ads Manager.
+  - After "Run it", the campaign widget shows Ready; after Launch it shows Live with a link to Ads Manager.
   - Ads Manager shows one campaign containing all added ads and the rules below.
 
 ### Campaign rules
@@ -281,7 +297,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 | 1 | Artwork too low-resolution for the placement | Print quality turns red; Approve is disabled | "This artwork is 1100 px, and this print size needs 1500 px or more, so it would print blurry." | Regenerate at higher resolution, or use a smaller placement |
 | 2 | Some colors or sizes out of stock | Those variants crossed out and excluded by default | "Navy is out of 4XL and 5XL, so I left those sizes off." | None needed; the merchant can add them back |
 | 3 | Fourthwall rejects the publish | The widget keeps all edits and shows the reason | "Fourthwall didn't accept this product (reason). Your edits are saved." | Try again; after 2 failures, finish in Fourthwall's designer |
-| 4 | A video fails to generate | The ad widget shows the failed slot | "Video B didn't render. I can try again, or you can go with the image only." | Retry, or use the static image only |
+| 4 | A visual fails to generate | The concept shows the failed visual | "Stories and Reels 9:16 didn't render." | Retry, or approve the concept with the visuals it has |
 | 5 | Ad account has no payment method | Campaign widget shows Ready, blocked; products stay live and ad widgets are kept | "Your campaign is ready, but Meta needs a payment method on your ad account before it can launch." | Add payment method, then check again and launch |
 | 6 | No purchase events from the store | Same Ready, blocked state | "Meta can't see sales from your store yet, and Advantage+ needs them to learn who buys." | Connect the Meta Pixel and Conversions API in Fourthwall, then check again and launch |
 | 7 | A rule has fired on a running campaign | Optimization widget; only the flagged ad changes | "Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales (3× breakeven)." | Apply the fix, or dismiss |
@@ -299,19 +315,19 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 | Price: at least $10 profit or 30% margin, whichever is greater; demo tee at $30 | Fourthwall's stricter guideline; $30 leaves $10.32 per sale for ads instead of $8.43 |
 | Every blank: the rule minimum, raised to the next clean price that leaves at least $10 breakeven per sale | Same headroom choice as the demo tee ($28 to $30); the widget shows the math and flags when competitors sell far lower |
 | One Advantage+ campaign for all products | Meta: combining ads combines learning; at $45 a day, split campaigns would all stay Learning Limited; even combined, it may still stay Learning Limited (about 31 sales a week against Meta's ~50) |
-| Launch after the last ad widget | Meta: adding ads resets learning |
-| 2 videos and 1 static image per product | Meta: up to 10 creatives per ad set and a mix of video and static |
+| Build after every ad concept is decided | Meta: adding ads resets learning |
+| 2 to 4 distinct concepts per product, each with a Feed (4:5 or 1:1) and a Stories and Reels (9:16) visual and up to 5 primary texts and 5 headlines | Meta: up to 10 creatives per ad set; multi-media creatives let Meta pick the visual per placement and test up to 5 text options per field. claude-ads: cosmetic resizes aren't distinct concepts |
 | $15 per product per day | Middle of the $10 to $50 practitioner range |
 | Kill at 3× breakeven with no sales, checked every 30 minutes; scale +20% per 48 hours | Practitioner heuristics (unverified). 3× cuts the chance of killing an ad that is really at breakeven from 13.5% to 5%, and shop sales by UTM catch purchases Meta reports late |
 | Test designs, not just ads: a design-level kill at 4× breakeven pauses all of a product's ads | In print-on-demand the design is what's being tested; the per-ad rule only trims weak creatives |
 | Breakeven on the priciest size by default, size-weighted as an option | Rules never under-protect; the weighted view is closer once real size data exists |
 | UGC-style video | Industry standard for apparel on Meta; Meta says native, non-ad-like creative performs better |
 | The customer pays shipping; the widget uses the live rate, about $5 otherwise | Fourthwall passes the true rate to the customer (US tees $4.50 to $6.50); breakeven at $30 only moves between $10.28 and $10.34 |
-| The campaign launches live; there is no paused option | One button keeps the campaign widget simple |
+| The campaign is built paused; Launch on the campaign widget publishes it | Nothing spends without the merchant's go-ahead, and they can check every ad in Ads Manager first |
 | Shop optimization uses Fourthwall's built-in reports for now | PostHog or Clarity need custom site code and consent handling, which is outside the POC |
 | Look: ChatGPT's design system with an indigo dye accent | OpenAI allows brand color only on buttons, badges and icons; indigo stands apart from the status colors |
 | One coach line per widget in a friendly-coach voice | The merchant chose a warm voice that explains each call |
-| Ad widget: everything on one widget; each video has a full-screen control | One glance and one decision, while full screen lets you judge videos at phone size |
+| Ad widget: every concept on one widget, each with its own Approve, Skip and feedback; each visual has a full-screen control | One product, one widget, but a decision per ad; full screen lets you judge the print at phone size |
 | Designs come from ChatGPT's built-in image generation, triggered by wovain's design playbook | ChatGPT makes better images (scope); there is no direct API, so the playbook asks the agent to make the image and hand it to wovain |
 | A fired rule triggers optimization, not a full pause | The merchant's definition of "change direction" mid-campaign |
 | Video: MiniMax H3 Max Reference on fal by default, with the mockup and the design as references | On-model UGC clips that kept the print in the first real test, at $0.75 per clip; Kling v3 ($2.10) and Kling O1 Reference ($0.84, 10 s) are one setting away, and the cheaper MiniMax H3 models serve test runs |
@@ -323,8 +339,8 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 
 - Design widget per idea: mockup, placement, file quality, listing, price; approve, skip, feedback.
 - Immediate Fourthwall publishing on approve.
-- Ad widget per product: 2 UGC-style videos, 1 static image, copy, breakeven math.
-- One Advantage+ sales campaign launched after the last ad widget, at $15 per product per day.
+- Ad widget per product: 2 to 4 ad concepts with Feed and Stories visuals (fal images, the Fourthwall mockup, optional video), text variants and a CTA, a carousel across the set, and the breakeven math.
+- One Advantage+ sales campaign built paused on "Run it" and launched on the merchant's Launch, at $15 per product per day.
 - Five Meta automated rules: kill (no sales), kill (design), kill (too expensive), scale, alert.
 - Optimization widget when a rule fires.
 - Settings widget and per-widget quick settings for every value.

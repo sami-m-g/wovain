@@ -1,5 +1,5 @@
-import { adSchema } from "@wovain/shared/ad";
-import type { Ad } from "@wovain/shared/ad";
+import { adStatusOf, mergeConcepts, storedAdSchema } from "@wovain/shared/ad";
+import type { Ad, ConceptRevision, Decision } from "@wovain/shared/ad";
 import { designSchema } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
@@ -36,7 +36,15 @@ const campaignSchema = z.object({
 });
 type SavedCampaign = z.infer<typeof campaignSchema>;
 
-type Kind = "ad" | "artwork" | "campaign" | "design" | "settings";
+// The fal jobs wovain submitted for one design's ads and the media URLs their
+// results held: the only fal URLs an ad may use.
+const adMediaSchema = z.object({
+  jobs: z.array(z.object({ endpointId: z.string(), requestId: z.string() })),
+  urls: z.array(z.url()),
+});
+type AdMedia = z.infer<typeof adMediaSchema>;
+
+type Kind = "ad" | "ad-media" | "artwork" | "campaign" | "design" | "settings";
 
 // Settings and the campaign are single records.
 const ONLY = "current";
@@ -101,7 +109,8 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       },
     };
   };
-  const ads = table("ad", adSchema);
+  const ads = table("ad", storedAdSchema);
+  const adMedia = table("ad-media", adMediaSchema);
   const artworks = table("artwork", artworkSchema);
   const campaigns = table("campaign", campaignSchema);
   const designs = table("design", designSchema);
@@ -124,6 +133,8 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     await db.runTransaction(work, { maxAttempts: 10 });
 
   return {
+    getAdMedia: async (designId: string): Promise<AdMedia> =>
+      (await adMedia.get(designId)) ?? { jobs: [], urls: [] },
     getAds: async (): Promise<Ad[]> => await ads.all(),
     getArtwork: async (id: string): Promise<Artwork | undefined> =>
       await artworks.get(id),
@@ -139,15 +150,49 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       }
       return bytes;
     },
-    // Records add or skip and counts the ad widgets still waiting, in one step.
-    recordAd: async (designId: string, status: Ad["status"]) =>
+    // Adds submitted jobs or collected URLs to a design's ad media.
+    recordAdMedia: async (designId: string, added: Partial<AdMedia>) =>
+      await transaction(async (tx) => {
+        const current = (await adMedia.get(designId, tx)) ?? {
+          jobs: [],
+          urls: [],
+        };
+        const known = new Set(current.jobs.map((job) => job.requestId));
+        return await adMedia.put(
+          designId,
+          {
+            jobs: [
+              ...current.jobs,
+              ...(added.jobs ?? []).filter((job) => !known.has(job.requestId)),
+            ],
+            urls: [...new Set([...current.urls, ...(added.urls ?? [])])],
+          },
+          tx
+        );
+      }),
+    // Records one concept's approve or skip, sets the product's status from
+    // all its concepts and counts the ad widgets still waiting, in one step.
+    recordConcept: async (
+      designId: string,
+      conceptId: string,
+      status: Decision
+    ) =>
       await transaction(async (tx) => {
         const all = await ads.all(tx);
         const current = all.find((item) => item.designId === designId);
-        if (current === undefined) {
-          throw new Error(`No ad widget for ${designId}`);
+        if (
+          current?.concepts.some((concept) => concept.id === conceptId) !== true
+        ) {
+          throw new Error(`No ad ${conceptId} for ${designId}`);
         }
-        const ad = await ads.put(designId, { ...current, status }, tx);
+        const concepts = current.concepts.map((concept) =>
+          concept.id === conceptId ? { ...concept, status } : concept
+        );
+        const ad = await ads.put(
+          designId,
+          { ...current, concepts, status: adStatusOf(concepts) },
+          tx
+        );
         const waiting = all.filter(
           (item) => item.designId !== designId && item.status === "draft"
         ).length;
@@ -170,7 +215,6 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       ),
     requireDesign: async (id: string): Promise<Design> =>
       await requireDesign(id),
-    saveAd: async (ad: Ad) => await ads.put(ad.designId, ad),
     // Bytes go to media first, so a record never points at missing bytes.
     saveArtwork: async (
       artwork: Omit<Artwork, "id" | "key">,
@@ -186,6 +230,20 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     },
     saveCampaign: async (campaign: SavedCampaign) =>
       await campaigns.put(ONLY, campaign),
+    // Adds or revises concepts on a product's ads; the rest keep their choice.
+    saveConcepts: async (
+      ad: Omit<Ad, "concepts" | "status">,
+      concepts: ConceptRevision[]
+    ) =>
+      await transaction(async (tx) => {
+        const current = await ads.get(ad.designId, tx);
+        const merged = mergeConcepts(current?.concepts ?? [], concepts);
+        return await ads.put(
+          ad.designId,
+          { ...ad, concepts: merged, status: adStatusOf(merged) },
+          tx
+        );
+      }),
     // A design without an id is new; one with an id replaces the stored copy,
     // keeping its publish state unless the caller sets it.
     saveDesign: async (

@@ -3,6 +3,77 @@ import { createHash } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
 
+type Args = Record<string, unknown>;
+
+// Every link, image hash and video ID a creative's arguments name: at the
+// top, in multi_media or on carousel cards.
+export const creativeMedia = (args: Args) => {
+  const entries =
+    z
+      .array(z.record(z.string(), z.unknown()))
+      .safeParse(args["multi_media"] ?? args["cards"] ?? []).data ?? [];
+  const strings = (key: string) =>
+    [args, ...entries].flatMap((entry) => {
+      const value = entry[key];
+      return typeof value === "string" ? [value] : [];
+    });
+  return {
+    imageHashes: strings("image_hash"),
+    links: [...strings("link_url"), ...strings("link")],
+    videoIds: strings("video_id"),
+  };
+};
+
+// One creative as wovain sent it: its shape, Page, CTA, links, uploaded
+// media (image hashes and video IDs from Meta's upload replies), carousel
+// cards in order, and its text and AI label as canonical JSON. Records from
+// before the shapes (one video with a thumbnail) read as a video creative.
+const creativeSchema = z.preprocess(
+  (value) => {
+    const legacy = z
+      .object({
+        id: z.string(),
+        imageHash: z.string(),
+        linkUrl: z.string(),
+        pageId: z.string(),
+        shape: z.never().optional(),
+        videoId: z.string(),
+      })
+      .safeParse(value);
+    return legacy.success
+      ? {
+          cards: [],
+          copy: "",
+          cta: "SHOP_NOW",
+          id: legacy.data.id,
+          imageHashes: [legacy.data.imageHash],
+          linkUrl: legacy.data.linkUrl,
+          pageId: legacy.data.pageId,
+          shape: "video",
+          videoIds: [legacy.data.videoId],
+        }
+      : value;
+  },
+  z.object({
+    cards: z.array(
+      z.object({
+        headline: z.string(),
+        imageHash: z.string(),
+        link: z.string(),
+      })
+    ),
+    copy: z.string(),
+    cta: z.string(),
+    id: z.string(),
+    imageHashes: z.array(z.string()),
+    linkUrl: z.string(),
+    pageId: z.string(),
+    shape: z.enum(["video", "image", "multi_media", "carousel"]),
+    videoIds: z.array(z.string()),
+  })
+);
+export type StagedCreative = z.infer<typeof creativeSchema>;
+
 // metaDrafts/{userId}: every object wovain staged in the merchant's Meta
 // draft through campaign_draft, from Meta's own replies. Later draft calls
 // may only build on these, and launch_campaign publishes only these.
@@ -23,15 +94,7 @@ const stagedSchema = z.object({
     z.object({ adSetId: z.string(), creativeId: z.string(), id: z.string() })
   ),
   campaignId: z.string(),
-  creatives: z.array(
-    z.object({
-      id: z.string(),
-      imageHash: z.string(),
-      linkUrl: z.string(),
-      pageId: z.string(),
-      videoId: z.string(),
-    })
-  ),
+  creatives: z.array(creativeSchema),
   // Set once the merchant is asked to confirm the launch: the draft can't
   // change after that.
   frozen: z.boolean().default(false),
@@ -39,7 +102,6 @@ const stagedSchema = z.object({
   videos: z.array(z.string()),
 });
 export type Staged = z.infer<typeof stagedSchema>;
-type Args = Record<string, unknown>;
 
 // The first value under one of `keys` anywhere in a Meta reply ("id" only
 // at the top, where it can't be a nested object's).
@@ -91,9 +153,17 @@ export const canonicalJson = (value: unknown): string => {
   return JSON.stringify(sorted(parsed ?? null));
 };
 
-// The staged record the merchant approves: a hash of everything in it.
-export const snapshotOf = ({ frozen: _frozen, ...staged }: Staged) =>
-  createHash("sha256").update(canonicalJson(staged)).digest("base64url");
+// What the merchant approves: a hash of everything in the staged record
+// (every creative with its shape, media, links, cards, CTA and text, and
+// every ad) and of every approved concept in the plan, so a concept revised
+// after the confirmation also stops the launch.
+export const snapshotOf = (
+  { frozen: _frozen, ...staged }: Staged,
+  concepts: unknown
+) =>
+  createHash("sha256")
+    .update(canonicalJson({ concepts, staged }))
+    .digest("base64url");
 
 const countriesOf = (targeting: unknown) =>
   z
@@ -107,6 +177,53 @@ const creativeIdOf = (creative: unknown) =>
     .object({ creative_id: z.string() })
     .safeParse(typeof creative === "string" ? JSON.parse(creative) : creative)
     .data?.creative_id ?? "";
+
+const cardsOf = (cards: unknown) =>
+  z
+    .array(
+      z.object({
+        headline: z.string(),
+        image_hash: z.string(),
+        link: z.string(),
+      })
+    )
+    .safeParse(cards)
+    .data?.map((card) => ({
+      headline: card.headline,
+      imageHash: card.image_hash,
+      link: card.link,
+    })) ?? [];
+
+const shapeOf = (sent: Args): StagedCreative["shape"] => {
+  if ("cards" in sent) {
+    return "carousel";
+  }
+  if ("multi_media" in sent) {
+    return "multi_media";
+  }
+  return "video_id" in sent ? "video" : "image";
+};
+
+// A creative as campaign_draft sent it (already checked by meta-draft.ts).
+const stagedCreative = (sent: Args): Omit<StagedCreative, "id"> => {
+  const media = creativeMedia(sent);
+  return {
+    cards: cardsOf(sent["cards"]),
+    copy: canonicalJson({
+      headline: sent["headline"],
+      headlines: sent["headlines"],
+      message: sent["message"],
+      primary_texts: sent["primary_texts"],
+      self_ai_disclosure: sent["self_ai_disclosure"],
+    }),
+    cta: String(sent["call_to_action_type"]),
+    imageHashes: media.imageHashes,
+    linkUrl: String(sent["link_url"]),
+    pageId: String(sent["page_id"]),
+    shape: shapeOf(sent),
+    videoIds: media.videoIds,
+  };
+};
 
 // What one successful draft call adds to the record, from the arguments
 // wovain sent and Meta's reply; undefined when the reply has no ID.
@@ -148,17 +265,7 @@ const additions: Record<
     const id = idIn(reply, new Set(["creative_id", "id"]));
     return id === undefined
       ? undefined
-      : {
-          creatives: [
-            {
-              id,
-              imageHash: String(sent["image_hash"]),
-              linkUrl: String(sent["link_url"]),
-              pageId: String(sent["page_id"]),
-              videoId: String(sent["video_id"]),
-            },
-          ],
-        };
+      : { creatives: [{ ...stagedCreative(sent), id }] };
   },
   ads_creative_upload_media: (sent, reply) => {
     if (sent["media_type"] === "VIDEO") {

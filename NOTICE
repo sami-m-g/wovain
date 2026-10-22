@@ -26,6 +26,10 @@ wovain files that adapt it:
   apps/server/src/optimizer/guidance.ts (planned: the optimizer's condensed
     system prompt)
   packages/shared/src/optimizer/math.ts (planned: formulas ported from ads-math)
+  apps/server/src/playbooks/ads.ts (the ad-concept rules: distinct concepts
+    rather than resizes or rewordings; hook, promise, proof and call to action
+    per concept; no invented testimonials, scarcity, prices or claims, adapted
+    from ads-create, ads-creative and the Meta creative-spec guidance)
 
 MIT License
 

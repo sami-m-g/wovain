@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 
+import type { Ad, ConceptRevision } from "@wovain/shared/ad";
 import {
   campaignResultSchema,
   launchRequestSchema,
@@ -12,6 +13,7 @@ import { z } from "zod";
 
 import { localCipher } from "../../src/lib/cipher.ts";
 import { createConnections } from "../../src/lib/connections.ts";
+import { createStagedObjects } from "../../src/lib/meta-staged.ts";
 import { createUpstream } from "../../src/lib/upstream.ts";
 import type { Store } from "../../src/store.ts";
 import { connectWith, fakeUpstream } from "../fake-upstream.ts";
@@ -23,6 +25,10 @@ import {
   testStorage,
   testStore,
 } from "../helpers.ts";
+
+type AdFixture = Omit<Ad, "concepts" | "status"> & {
+  concepts: ConceptRevision[];
+};
 
 let store: Store;
 let graphCalls: {
@@ -60,8 +66,58 @@ beforeEach(async () => {
     ...demoDesign,
     productUrl: "https://shop.example/products/cat-tee",
   });
-  await store.saveAd({
+  const { concepts, ...ad }: AdFixture = {
     coach: "Two clips.",
+    concepts: [
+      {
+        angle: "UGC try-on",
+        assets: [
+          {
+            alt: "Try-on clip",
+            kind: "video",
+            ratio: "9:16",
+            source: "fal",
+            status: "ready",
+            url: "https://v3b.fal.media/a.mp4",
+          },
+          {
+            alt: "Black tee",
+            kind: "image",
+            ratio: "1:1",
+            source: "fourthwall",
+            status: "ready",
+            url: "https://cdn.fourthwall.com/x.webp",
+          },
+        ],
+        audience: "Cat people",
+        cta: "SHOP_NOW",
+        headlines: ["Sakura Season Cat Tee", "The cat tee for spring"],
+        hook: "A calico watches the sun go down.",
+        id: "c1",
+        name: "Try-on",
+        primaryTexts: ["A calico watches the sun go down."],
+      },
+      {
+        angle: "Gift",
+        assets: [
+          {
+            alt: "Black tee",
+            kind: "image",
+            ratio: "1:1",
+            source: "fourthwall",
+            status: "ready",
+            url: "https://cdn.fourthwall.com/x.webp",
+          },
+        ],
+        audience: "Gift buyers",
+        cta: "SHOP_NOW",
+        headlines: ["A gift for cat people"],
+        hook: "For the friend whose cat runs the house.",
+        id: "c2",
+        name: "Gift",
+        primaryTexts: ["For the friend whose cat runs the house."],
+      },
+    ],
     designId: "d1",
     economics: {
       baseCost: 17.7,
@@ -72,8 +128,6 @@ beforeEach(async () => {
       roas: 2.9,
       roasOnOrderValue: 3.6,
     },
-    headline: "Sakura Season Cat Tee",
-    primaryText: "A calico watches the sun go down.",
     productTitle: "Japanese Cat Sunset Tee",
     rules: {
       alertAbove: 10.32,
@@ -84,24 +138,10 @@ beforeEach(async () => {
       scaleUnder: 8.26,
     },
     staticImage: { alt: "Black tee", url: "https://cdn.fourthwall.com/x.webp" },
-    status: "added",
-    videos: [
-      {
-        angle: "UGC on-model",
-        seconds: 15,
-        slot: "A",
-        status: "ready",
-        url: "https://v3b.fal.media/a.mp4",
-      },
-      {
-        angle: "UGC styling",
-        seconds: 15,
-        slot: "B",
-        status: "ready",
-        url: "https://v3b.fal.media/b.mp4",
-      },
-    ],
-  });
+  };
+  await store.saveConcepts(ad, concepts);
+  await store.recordConcept("d1", "c1", "approved");
+  await store.recordConcept("d1", "c2", "skipped");
 });
 
 afterEach(() => {
@@ -270,16 +310,22 @@ const adArgs = {
 
 // A merchant with Meta connected, campaign 555, ad set 666 and both
 // uploads staged; with `full`, also creative 901 and ad 777.
-const staged = async (full = false) => {
+const staged = async (
+  full = false,
+  creative: Record<string, unknown> = creativeArgs,
+  uploads: Record<string, unknown>[] = [videoArgs, imageArgs]
+) => {
   const env = await connectedMeta();
   const steps: [string, Record<string, unknown>][] = [
     ["ads_create_campaign", campaignArgs],
     ["ads_create_ad_set", adSetArgs],
-    ["ads_creative_upload_media", videoArgs],
-    ["ads_creative_upload_media", imageArgs],
+    ...uploads.map((upload): [string, Record<string, unknown>] => [
+      "ads_creative_upload_media",
+      upload,
+    ]),
     ...(full
       ? ([
-          ["ads_create_creative", creativeArgs],
+          ["ads_create_creative", creative],
           ["ads_create_ad", adArgs],
         ] as [string, Record<string, unknown>][])
       : []),
@@ -440,6 +486,9 @@ test("create_rules uses the merchant's own Meta token, skips existing rules and 
   const { campaign } = campaignResultSchema.parse(widget.structuredContent);
   expect(campaign.dailyBudget).toBe(15);
   expect(campaign.launchVia).toBe("wovain");
+  expect(campaign.products).toEqual([
+    { ads: 1, designId: "d1", title: "Japanese Cat Sunset Tee" },
+  ]);
   expect(campaign.rules.every((rule) => rule.created)).toBe(true);
   expect(campaign.adsManagerUrl).toContain("act=42&selected_campaign_ids=555");
   await client.close();
@@ -481,7 +530,9 @@ test("without wovain's Meta app, campaign_draft says so and the plan still works
   const plan = await client.callTool({ arguments: {}, name: "campaign_plan" });
   const text = JSON.stringify(plan.content);
   expect(text).toContain("1500");
-  expect(text).toContain("wovain d1 · A");
+  expect(text).toContain("wovain d1 · c1");
+  expect(text).not.toContain("wovain d1 · c2");
+  expect(text).toMatch(/aiMade\\+":true/u);
   expect(text).toContain("utm_content={{ad.id}}");
   await client.close();
 });
@@ -504,6 +555,8 @@ interface ReadBack {
   adSet?: Record<string, unknown>;
   campaign?: Record<string, unknown>;
   creative?: Record<string, unknown>;
+  // Replaces the whole read-back creative (the other shapes).
+  creativeEntity?: Record<string, unknown>;
   extra?: Record<string, unknown>[];
   withoutAd?: boolean;
 }
@@ -539,7 +592,8 @@ const readBack = (fake: ReturnType<typeof fakeUpstream>, over: ReadBack) => {
   });
   fake.reply("ads_get_creatives", {
     data: [
-      {
+      over.creativeEntity ?? {
+        call_to_action_type: "SHOP_NOW",
         id: "901",
         image_hash: imageHash,
         link_url: taggedLink,
@@ -554,8 +608,12 @@ const readBack = (fake: ReturnType<typeof fakeUpstream>, over: ReadBack) => {
 // A fully staged campaign, Meta's read-back, and the merchant's confirmation
 // through the confirm page's own steps (prepare shows the page, confirm is
 // the POST).
-const launchable = async (over: ReadBack = {}) => {
-  const env = await staged(true);
+const launchable = async (
+  over: ReadBack = {},
+  creative: Record<string, unknown> = creativeArgs,
+  uploads?: Record<string, unknown>[]
+) => {
+  const env = await staged(true, creative, uploads);
   readBack(env.fake, over);
   const confirmByMerchant = async () => {
     const request = await env.client.callTool({
@@ -653,6 +711,8 @@ test.each<[string, ReadBack]>([
   ],
   ["a changed creative video", { creative: { video_id: "99" } }],
   ["a changed creative Page", { creative: { object_story_id: "70_100" } }],
+  ["a changed creative CTA", { creative: { call_to_action_type: "SIGN_UP" } }],
+  ["a creative without its CTA", { creative: { call_to_action_type: null } }],
 ])("launch_campaign stops when the read-back has %s", async (_label, over) => {
   const { activations, client, confirmByMerchant, launch } =
     await launchable(over);
@@ -702,4 +762,389 @@ test("a draft that changed after the merchant confirmed isn't launched", async (
   expect(result.isError).toBe(true);
   expect(env.activations()).toEqual([]);
   await env.client.close();
+});
+
+// The other creative shapes an approved concept becomes: one image, a
+// multi-media pool, and a carousel across d1 and d2 (a live mug).
+const mugUrl = "https://shop.example/products/cat-mug";
+const mugImage = "https://cdn.fourthwall.com/mug.webp";
+const taggedMug = taggedLink.replace(productUrl, mugUrl);
+const foreignHash = "ffffffffffffffffffffffffffffffff";
+const mugUpload = { ...imageArgs, media_url: mugImage };
+const shapeBase = {
+  ...base,
+  call_to_action_type: "SHOP_NOW",
+  link_url: taggedLink,
+  name: "wovain d1 · c1",
+  page_id: "7",
+  self_ai_disclosure: "OPT_IN",
+};
+const imageCreative = {
+  ...shapeBase,
+  headline: "Sakura Season Cat Tee",
+  image_hash: imageHash,
+  message: "A calico watches the sun go down.",
+};
+const multiMediaCreative = {
+  ...shapeBase,
+  headlines: ["Sakura Season Cat Tee", "The cat tee for spring"],
+  multi_media: [{ image_hash: imageHash }, { video_id: "8" }],
+  primary_texts: ["A calico watches the sun go down."],
+};
+const cards = [
+  { headline: "Cat tee", image_hash: imageHash, link: taggedLink },
+  { headline: "Cat mug", image_hash: imageHash, link: taggedMug },
+];
+const carouselCreative = {
+  ...shapeBase,
+  cards,
+  message: "The cat set.",
+  name: "wovain d1 · c3",
+  self_ai_disclosure: "OPT_OUT",
+};
+
+// What Meta reads back for each shape when nothing changed.
+const story = { call_to_action_type: "SHOP_NOW", id: "901" };
+const imageEntity = {
+  ...story,
+  image_hash: imageHash,
+  link_url: taggedLink,
+  object_story_id: "7_100",
+};
+const multiMediaEntity = {
+  ...story,
+  images: [{ hash: imageHash }],
+  link_url: taggedLink,
+  object_story_id: "7_100",
+  video_id: "8",
+};
+const carouselEntity = {
+  ...story,
+  child_attachments: cards.map(({ headline, ...card }) => ({
+    ...card,
+    name: headline,
+  })),
+  link_url: taggedLink,
+  object_story_id: "7_100",
+};
+
+// d2 (the mug, live) and an approved carousel concept on d1 across both.
+const withCarousel = async () => {
+  await store.saveDesign({ ...demoDesign, productUrl: mugUrl });
+  const [current] = await store.getAds();
+  if (current === undefined) {
+    throw new Error("no ad");
+  }
+  const { concepts: _concepts, status: _status, ...ad } = current;
+  await store.saveConcepts(ad, [
+    {
+      angle: "The set",
+      assets: [],
+      audience: "Cat people",
+      cards: [
+        {
+          designId: "d1",
+          headline: "Cat tee",
+          imageUrl: "https://cdn.fourthwall.com/x.webp",
+        },
+        { designId: "d2", headline: "Cat mug", imageUrl: mugImage },
+      ],
+      cta: "SHOP_NOW",
+      headlines: ["The cat set"],
+      hook: "One cat, every room.",
+      id: "c3",
+      name: "Set",
+      primaryTexts: ["The cat set."],
+    },
+  ]);
+  await store.recordConcept("d1", "c3", "approved");
+};
+
+const uploads = [videoArgs, imageArgs, mugUpload];
+const shapes = [
+  ["single image", "image", imageCreative, imageEntity],
+  ["multi-media", "multi_media", multiMediaCreative, multiMediaEntity],
+  ["carousel", "carousel", carouselCreative, carouselEntity],
+] as const;
+
+test.each(shapes)(
+  "a %s creative is staged with its media and launched when the read-back matches",
+  async (_label, shape, creative, creativeEntity) => {
+    await withCarousel();
+    const env = await launchable({ creativeEntity }, creative, uploads);
+    const record = await env.upstream.staged.get("test");
+    expect(record?.creatives).toEqual([
+      expect.objectContaining({ cta: "SHOP_NOW", id: "901", shape }),
+    ]);
+    await expect(env.confirmByMerchant()).resolves.toBe(true);
+    const result = await env.launch();
+    expect(result.isError).toBeFalsy();
+    expect(env.activations()).toHaveLength(1);
+    await env.client.close();
+  }
+);
+
+test("a carousel records its cards in order", async () => {
+  await withCarousel();
+  const env = await staged(true, carouselCreative, uploads);
+  const record = await env.upstream.staged.get("test");
+  expect(record?.creatives[0]?.cards).toEqual([
+    { headline: "Cat tee", imageHash, link: taggedLink },
+    { headline: "Cat mug", imageHash, link: taggedMug },
+  ]);
+  await env.client.close();
+});
+
+const shapeRefusals: [string, Record<string, unknown>][] = [
+  [
+    "a single image with a foreign image_hash",
+    { ...imageCreative, image_hash: foreignHash },
+  ],
+  [
+    "a single image with a foreign link",
+    { ...imageCreative, link_url: "https://evil.example/tee" },
+  ],
+  [
+    "a single image by image_url",
+    { ...imageCreative, image_url: "https://evil.example/x.png" },
+  ],
+  [
+    "a CTA that isn't a shopping one",
+    { ...imageCreative, call_to_action_type: "WHATSAPP_MESSAGE" },
+  ],
+  [
+    "placement asset customization",
+    {
+      ...imageCreative,
+      placement_customizations: [{ image_hash: imageHash }, { video_id: "8" }],
+    },
+  ],
+  [
+    "multi-media with a foreign image_hash",
+    {
+      ...multiMediaCreative,
+      multi_media: [{ image_hash: foreignHash }, { video_id: "8" }],
+    },
+  ],
+  [
+    "multi-media with a foreign video",
+    {
+      ...multiMediaCreative,
+      multi_media: [{ image_hash: imageHash }, { video_id: "99" }],
+    },
+  ],
+  [
+    "multi-media by image_url",
+    {
+      ...multiMediaCreative,
+      multi_media: [
+        { image_url: "https://evil.example/x.png" },
+        { video_id: "8" },
+      ],
+    },
+  ],
+  [
+    "multi-media repeating a visual",
+    {
+      ...multiMediaCreative,
+      multi_media: [{ video_id: "8" }, { video_id: "8" }],
+    },
+  ],
+  [
+    "multi-media with a foreign link",
+    { ...multiMediaCreative, link_url: "https://evil.example/tee" },
+  ],
+  [
+    "a carousel card with a foreign link",
+    {
+      ...carouselCreative,
+      cards: [cards[0], { ...cards[1], link: "https://evil.example/mug" }],
+    },
+  ],
+  [
+    "a carousel card with a foreign image_hash",
+    {
+      ...carouselCreative,
+      cards: [cards[0], { ...cards[1], image_hash: foreignHash }],
+    },
+  ],
+  [
+    "a carousel card with an extra key",
+    { ...carouselCreative, cards: [cards[0], { ...cards[1], video_id: "8" }] },
+  ],
+  ["a carousel of one card", { ...carouselCreative, cards: [cards[0]] }],
+];
+
+test.each(shapeRefusals)(
+  "campaign_draft refuses %s",
+  async (_label, creative) => {
+    await withCarousel();
+    const env = await staged(false, creativeArgs, uploads);
+    const before = env.fake.calls.length;
+    const result = await env.draft("ads_create_creative", creative);
+    expect(result.isError).toBe(true);
+    expect(env.fake.calls).toHaveLength(before);
+    await env.client.close();
+  }
+);
+
+const readBackRefusals: [
+  string,
+  Record<string, unknown>,
+  Record<string, unknown>,
+][] = [
+  [
+    "a single image's hash",
+    imageCreative,
+    { ...imageEntity, image_hash: foreignHash },
+  ],
+  [
+    "a single image's link",
+    imageCreative,
+    { ...imageEntity, link_url: "https://evil.example" },
+  ],
+  [
+    "a single image's CTA",
+    imageCreative,
+    { ...imageEntity, call_to_action_type: "SIGN_UP" },
+  ],
+  [
+    "a multi-media pool without its video",
+    multiMediaCreative,
+    { ...multiMediaEntity, video_id: undefined },
+  ],
+  [
+    "a multi-media pool with a foreign image",
+    multiMediaCreative,
+    {
+      ...multiMediaEntity,
+      images: [{ hash: imageHash }, { hash: foreignHash }],
+    },
+  ],
+  [
+    "a multi-media pool with a foreign link",
+    multiMediaCreative,
+    {
+      ...multiMediaEntity,
+      link_urls: [{ website_url: "https://evil.example" }],
+    },
+  ],
+  [
+    "a carousel card's link",
+    carouselCreative,
+    {
+      ...carouselEntity,
+      child_attachments: [
+        carouselEntity.child_attachments[0],
+        {
+          ...carouselEntity.child_attachments[1],
+          link: "https://evil.example",
+        },
+      ],
+    },
+  ],
+  [
+    "a carousel card's image",
+    carouselCreative,
+    {
+      ...carouselEntity,
+      child_attachments: [
+        carouselEntity.child_attachments[0],
+        { ...carouselEntity.child_attachments[1], image_hash: foreignHash },
+      ],
+    },
+  ],
+  [
+    "a carousel missing a card",
+    carouselCreative,
+    {
+      ...carouselEntity,
+      child_attachments: [carouselEntity.child_attachments[0]],
+    },
+  ],
+  [
+    "carousel cards in another order",
+    carouselCreative,
+    {
+      ...carouselEntity,
+      child_attachments: carouselEntity.child_attachments.toReversed(),
+    },
+  ],
+];
+
+test.each(readBackRefusals)(
+  "launch_campaign stops when the read-back changes %s",
+  async (_label, creative, creativeEntity) => {
+    await withCarousel();
+    const env = await launchable({ creativeEntity }, creative, uploads);
+    await env.confirmByMerchant();
+    const result = await env.launch();
+    expect(result.isError).toBe(true);
+    expect(env.activations()).toEqual([]);
+    await env.client.close();
+  }
+);
+
+test.each(shapes)(
+  "a %s ad whose concept changed after the merchant confirmed isn't launched",
+  async (_label, _shape, creative, creativeEntity) => {
+    await withCarousel();
+    const env = await launchable({ creativeEntity }, creative, uploads);
+    await expect(env.confirmByMerchant()).resolves.toBe(true);
+    const [current] = await store.getAds();
+    const concept = current?.concepts.find(
+      (item) => item.id === (creative === carouselCreative ? "c3" : "c1")
+    );
+    if (current === undefined || concept === undefined) {
+      throw new Error("no concept");
+    }
+    const { concepts: _concepts, status: _status, ...ad } = current;
+    const { revision: _revision, status: _conceptStatus, ...input } = concept;
+    await store.saveConcepts(ad, [
+      { ...input, headlines: ["A different headline"] },
+    ]);
+    await store.recordConcept("d1", concept.id, "approved");
+    const result = await env.launch();
+    expect(result.isError).toBe(true);
+    expect(env.activations()).toEqual([]);
+    await env.client.close();
+  }
+);
+
+test("a staged video creative recorded before the shapes still reads", async () => {
+  const { db } = testStorage();
+  const legacy = {
+    id: "901",
+    imageHash,
+    linkUrl: taggedLink,
+    pageId: "7",
+    videoId: "8",
+  };
+  await db
+    .collection("metaDrafts")
+    .doc("old")
+    .set({
+      adAccountId: "42",
+      adSets: [],
+      ads: [],
+      campaignId: "555",
+      creatives: [legacy],
+      frozen: false,
+      images: [imageHash],
+      videos: ["8"],
+    });
+  const record = await createStagedObjects(db).get("old");
+  expect(record?.creatives).toEqual([
+    {
+      cards: [],
+      copy: "",
+      cta: "SHOP_NOW",
+      id: "901",
+      imageHashes: [imageHash],
+      linkUrl: taggedLink,
+      pageId: "7",
+      shape: "video",
+      videoIds: ["8"],
+    },
+  ]);
 });

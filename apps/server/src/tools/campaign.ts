@@ -1,5 +1,6 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
+import { approvedConcepts } from "@wovain/shared/ad";
 import {
   blockerSchema,
   campaignResultSchema,
@@ -8,7 +9,6 @@ import {
 import type { Campaign } from "@wovain/shared/campaign";
 import { money } from "@wovain/shared/economics";
 import {
-  adName,
   activeRuleLabels,
   metaRules,
   ruleThresholds,
@@ -17,6 +17,7 @@ import type { MetaRule, RuleLabel, RuleProduct } from "@wovain/shared/rules";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
+import { approvedAds } from "../lib/ad-plan.ts";
 import { addedProducts, URL_TAGS } from "../lib/campaign-plan.ts";
 import { createMetaGraph } from "../lib/meta-graph.ts";
 import { text, userSafe } from "../lib/tool-result.ts";
@@ -85,29 +86,26 @@ export const registerCampaignTools = (
         readOnlyHint: true,
       },
       description:
-        "Everything the campaign playbook needs to build the Meta campaign: the daily budget in cents, and for each added ad widget its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags (unless the merchant turned them off). Call after the last ad widget is added or skipped.",
+        "Everything the campaign playbook needs to build the paused Meta campaign: the daily budget in cents, the URL tags (unless the merchant turned them off), and per product its link, static image and one ad per approved concept: visuals by ratio, primary text and headline variants, CTA, whether fal made it, carousel cards, and the ad name (rules find ads by these names). Call when the merchant says Run it.",
       inputSchema: z.object({}),
       title: "Campaign plan",
     },
     async () => {
       const settings = await store.getSettings();
       const { dailyBudget, products } = await addedProducts(store, settings);
+      const loaded = new Map(products.map(({ design }) => [design.id, design]));
       const plan = {
         campaignName: `wovain · ${new Date().toISOString().slice(0, 10)}`,
         dailyBudgetCents: Math.round(dailyBudget * 100),
-        products: products.map(({ ad, design }) => ({
-          designId: ad.designId,
-          headline: ad.headline,
-          primaryText: ad.primaryText,
-          productUrl: design.productUrl,
-          staticImageUrl: ad.staticImage.url,
-          title: ad.productTitle,
-          videos: ad.videos.flatMap((video) =>
-            video.status === "ready"
-              ? [{ adName: adName(ad.designId, video.slot), url: video.url }]
-              : []
-          ),
-        })),
+        products: await Promise.all(
+          products.map(async ({ ad, design }) => ({
+            ads: await approvedAds(store, ad, loaded),
+            designId: ad.designId,
+            productUrl: design.productUrl,
+            staticImageUrl: ad.staticImage.url,
+            title: ad.productTitle,
+          }))
+        ),
         ...(settings.rules.tagUtmContent && { urlTags: URL_TAGS }),
       };
       return { content: text(JSON.stringify(plan)) };
@@ -242,7 +240,7 @@ export const registerCampaignTools = (
         dailyBudget,
         launchVia,
         products: products.map(({ ad }) => ({
-          ads: ad.videos.filter((video) => video.status === "ready").length,
+          ads: approvedConcepts(ad).length,
           designId: ad.designId,
           title: ad.productTitle,
         })),

@@ -55,8 +55,8 @@ flowchart LR
 | 1 | Give 2 or 3 product ideas | The agent starts the `design` playbook | Next step starts |
 | 2 | Wait | `design` playbook: the agent plans a drop from your Fourthwall catalog (a hero product plus 3 to 6 matching products, with placements per product); `generate_art` draws each art piece on your fal account; `stage_artwork` measures it; wovain uploads it to Fourthwall; Fourthwall renders every product's mockups in one call and gives per-size costs; `show_design_widget` prices each product | Design widget per idea, with the whole drop |
 | 3 | Approve, Skip or give feedback | Approve posts "Approve design dN"; `publish_design` creates every product, sets prices, makes them public and groups the drop in one collection | Design widget shows Live with a link to the drop |
-| 4 | Wait | `ads` playbook: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed | Ad widget per product |
-| 5 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last widget, the campaign step starts | Next ad widget, or the campaign widget |
+| 4 | Wait | `ads` playbook: the host model writes 2 to 4 concepts from the research signals; `generate_ad_images` edits the mockup into Feed and Stories scenes on the merchant's fal (optional video through `video_plan` and `generate_videos`); margins are computed | Ad widget per product |
+| 5 | Approve, Skip or give feedback per concept, then "Run it" | `record_ad` saves each choice; feedback redraws only that concept; "Run it" starts the campaign step, which builds the campaign as a Meta draft | Revised concept, or the campaign widget |
 | 6 | Wait | `campaign` playbook: checks payment method and pixel; `campaign_plan` gives the budget, ad names and links; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign widget: Live, or Ready, blocked |
 | 7 | Later: "How's my campaign?" | `optimize` playbook (later): `campaign_check` reads rule history and results; Fourthwall reports and sales by UTM add evidence | Optimization widget per fired rule |
 | 8 | Apply the fix or Dismiss | The fix runs through the same tools (new video, new hook, price test) | Updated ad, campaign keeps running |
@@ -169,7 +169,7 @@ One playbook per step in `apps/server/src/playbooks/`. Each has a description (w
 | Playbook | Steps | PRD ref |
 | --- | --- | --- |
 | `design` | Plan the drop (blanks, placements, palette), `generate_art` per piece, `stage_artwork`, Fourthwall upload (`put_artwork`), mockups for every product in one call, costs, `show_design_widget` (wovain prices); on approve, `screen_trademark` and `publish_design` | `prd.md > Design widgets`, `prd.md > Pricing and economics` |
-| `ads` | `video_plan`, fal video ×2, fal MMAudio, copy, `show_ad_widget`, `record_ad` | `prd.md > Ad widgets` |
+| `ads` | concepts from research signals, `generate_ad_images`, optional `video_plan` + `generate_videos` + `add_video_audio`, `show_ad_widget`, `record_ad` | `prd.md > Ad widgets` |
 | `campaign` | Payment and pixel checks, `campaign_plan`, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_widget` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
 | `optimize` (later) | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_widget`, apply the fix or turn an ad back on | `prd.md > Optimization` |
 
@@ -198,11 +198,14 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | `add_video_audio` | Runs the plan's background-audio request on finished clips (fal.media URLs only) on the merchant's fal account | fal MCP, merchant's grant |
 | `fourthwall`, `fal`, `meta_ads` | Proxy one allowlisted read-only or reversible upstream tool on the merchant's own account (`tool` is an enum; publishing, pricing, orders, paid generation and every Meta write are left out). Without a grant they answer `needsConnection` and a personal connect link | Fourthwall MCP, fal MCP, Meta Ads MCP |
 | `disconnect` | Deletes wovain's stored grant for one provider | records |
-| `record_ad` | Saves ad choices and copy | records |
-| `campaign_plan` | Returns the daily budget and, per added ad, the product link, copy, static image, finished videos, ad names (rules find ads by name) and URL tags for the Meta build | records, Settings |
-| `campaign_draft` | Stages one draft object (upload by URL, campaign, ad set, creative, ad) on the merchant's Meta account. Each tool has a strict allowlist of argument keys, nested specs checked too; budgets other than the plan's, bids and status are refused. Uploads must be the added ads' media, creative links the added products' links (with the plan's URL tags), and every object must build on what wovain staged: ad sets under its campaign, creatives with its uploaded video and thumbnail, ads joining its ad sets and creatives. Each ID comes from Meta's reply and is recorded in `metaDrafts/{userId}`. Meta stages each object paused | Meta Ads MCP, merchant's grant |
+| `generate_ad_images` | Edits the design's mockup (with the artwork as a second reference) into the scenes the playbook writes, at 1:1, 4:5 or 9:16, on the merchant's fal account (Nano Banana Pro, about $0.15 an image at list price) | fal MCP, merchant's grant |
+| `collect_ad_media` | After `wait_for_jobs`, fetches the results of the fal jobs wovain submitted for a design (fal `get_job_result` on the merchant's grant) and keeps their media URLs: the only fal URLs an ad or `add_video_audio` accepts | fal MCP, merchant's grant |
+| `show_ad_widget` | Saves new or revised concepts (visuals only from `collect_ad_media` or the design's own images; carousel cards only for live designs), keeps the others' choices, adds the breakeven math and draws the ad widget | records |
+| `record_ad` | Saves one concept's approve or skip and the product's status | records |
+| `campaign_plan` | Returns the daily budget, URL tags and, per product, one ad per approved concept: visuals by ratio, text variants, CTA, AI-made flag, carousel cards with links, and the ad name (rules find ads by name) | records, Settings |
+| `campaign_draft` | Stages one draft object (upload by URL, campaign, ad set, creative, ad) on the merchant's Meta account. Each tool has a strict allowlist of argument keys, nested specs checked too; budgets other than the plan's, bids and status are refused. A creative is exactly one of four shapes (single video with thumbnail, single image, `multi_media` with 2 to 10 visuals and up to 5 texts and headlines, or a static carousel of 2 to 10 image cards); placement asset customization, `image_url`, catalog, boosted-post and partnership shapes are refused. Uploads must be the approved concepts' media, every link (creative and card) an added product's link (with the plan's URL tags), every image hash and video ID one wovain uploaded, and every object must build on what wovain staged: ad sets under its campaign, ads joining its ad sets and creatives. Each ID comes from Meta's reply and is recorded in `metaDrafts/{userId}` with the creative's shape, Page, CTA, links, media, cards and text. Meta stages each object paused | Meta Ads MCP, merchant's grant |
 | `create_rules` | Creates the five rules per the PRD with the merchant's own Meta token (plus `appsecret_proof`), only on the campaign `campaign_draft` staged | Meta Graph API, merchant's grant |
-| `request_launch`, `launch_campaign` | `request_launch` makes the link to wovain's confirm page (`/confirm/launch/:id`, `launchRequests/{id}`). The merchant signs in there through AuthKit in their own browser (nonce cookie, same wovain user), sees the campaign and budget, and presses Confirm (a POST with a CSRF token, a SameSite=Strict cookie and an Origin check). Only that POST writes `launchApprovals/{userId}`. `launch_campaign` consumes the approval once, reads the draft and its creatives back, and stops on any object wovain didn't stage or any recorded one missing, and on any changed objective, budget, cap, bid, full targeting, promoted object, optimization goal, ad wiring, link, media or Page. The approval is bound to a hash of the staged record, which `request_launch` freezes. It publishes only the recorded objects. No tool result can approve a launch | Meta Ads MCP, merchant's grant |
+| `request_launch`, `launch_campaign` | `request_launch` makes the link to wovain's confirm page (`/confirm/launch/:id`, `launchRequests/{id}`). The merchant signs in there through AuthKit in their own browser (nonce cookie, same wovain user), sees the campaign and budget, and presses Confirm (a POST with a CSRF token, a SameSite=Strict cookie and an Origin check). Only that POST writes `launchApprovals/{userId}`. `launch_campaign` consumes the approval once, reads the draft and its creatives back, and stops on any object wovain didn't stage or any recorded one missing, and on any changed objective, budget, cap, bid, full targeting, promoted object, optimization goal, ad wiring, link, image hash, video, carousel card, CTA or Page. The approval is bound to a hash of the staged record plus every approved concept, which `request_launch` freezes. It publishes only the recorded objects. No tool result can approve a launch | Meta Ads MCP, merchant's grant |
 | `campaign_check` (later) | Reads rule history and campaign results | Meta Graph API |
 | `get_settings`, `update_settings` | Read and change any setting | records |
 | `show_*_widget` | Return widget data and attach the widget: settings, design, ad and campaign now; optimization later | Widgets |
@@ -216,7 +219,7 @@ One React component per widget, each built into a single HTML file. Buttons use 
 | Widget | Buttons | Feedback | PRD ref |
 | --- | --- | --- | --- |
 | Design | Approve, Skip | Field and chat; regenerates the widget | `prd.md > Design widgets` |
-| Ad | Add to campaign, Skip | Field and chat; regenerates the widget | `prd.md > Ad widgets` |
+| Ad | Approve, Skip and feedback per concept; Create campaign | Field per concept and chat; revises that concept | `prd.md > Ad widgets` |
 | Campaign | Open in Ads Manager | Chat | `prd.md > Campaign launch` |
 | Optimization (later) | Apply the fix, Dismiss | Chat | `prd.md > Optimization` |
 | Settings | Save | Fields | `prd.md > Screens and Layout` |
@@ -361,7 +364,8 @@ Records live in Firestore, read and written by the server only through `firebase
 | --- | --- | --- | --- |
 | Settings | `settings/current` | `update_settings` | Same values |
 | Designs | `design/{id}` and `artwork/{id}` (hero product and `range` of drop products, each with art URLs per placement, customization ID, offer ID, quote; drop name, collection ID, status; staged artwork size and file) | `stage_artwork`, `show_design_widget`, `publish_design`, `record_design` | Approved products stay live; pending ones can be redrawn |
-| Ads | `ad/{designId}`, one ad set per design (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
+| Ads | `ad/{designId}`, one per design: its concepts (hook, signals, visuals, text variants, CTA, revision, status), static URL, economics, status. Records from before concepts read as one concept | `show_ad_widget`, `record_ad` | Choices kept |
+| Ad media | `ad-media/{designId}`: the fal jobs wovain submitted for the design's ads and the media URLs collected from them | `generate_ad_images`, `generate_videos`, `add_video_audio`, `collect_ad_media` | Kept |
 | Campaign | `campaign/current` (ad account, campaign ID, rules created in Meta) | `create_rules`, campaign step | Optimization reads it |
 | Connections | `connections/{provider}` for `fourthwall` and `fal`: the merchant's OAuth grant, encrypted with Cloud KMS (the document path is the additional authenticated data), plus `connectedAt`, `refreshedAt`, `expiresAt`, a `version` bumped on every write and a refresh lease | Connect flow, token refresh | Calls keep working; a revoked grant gives a reconnect link |
 | Pending connects | Top-level `connectTickets/{id}` (single use, 5 minutes) and `oauthFlows/{state}` (10 minutes, bound to the browser's nonce cookie); Firestore TTL deletes leftovers | `/connect/:provider`, the callbacks | Gone |
@@ -441,7 +445,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 - **Signed in, but every `/mcp` call is a 401** → the token's audience doesn't match `<site>/mcp`; add that URL to `wovain:workosResourceIndicators` in `infra/Pulumi.prod.yaml`.
 - **The generated image is too small or not transparent** → fal removes the background and upscales; if still under the print size, the widget shows print quality red and Approve disabled (`prd.md > States and Boundaries` #1).
 - **Fourthwall rejects the publish** → widget keeps edits and shows the reason; after 2 failures it links to Fourthwall's designer (#3).
-- **A video or its audio fails** → the ad widget shows the failed slot with Retry, or image only (#4).
+- **A visual, video or its audio fails** → the concept shows the failed visual with Retry; the merchant can approve it with the visuals it has (#4).
 - **Meta blocks launch (no payment method or no purchase events)** → campaign widget shows Ready, blocked with the fix (#5, #6).
 
 ## What Was Simplified and Why
