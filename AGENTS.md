@@ -29,6 +29,7 @@ wovain: an MCP server for print-on-demand sellers, used by any agent (product id
 - Fourthwall MCP: call `get-instructions` → `ecommerce_get-current-shop` → `load-skills` before any other Fourthwall tool.
 - Meta Ads MCP: every call needs `advertiser_job` and `client_conversation_id`. It has no automated-rules tool; rules need the Marketing API (`adrules_library`).
 - Research: prefer first-party sources (Meta help via `ads_get_help_article`, Fourthwall `omni_knowledge`); label blog or vendor figures as unverified.
+- Tavily MCP (OAuth, https://mcp.tavily.com/mcp/) for research; not yet in Duo until its OAuth is confirmed.
 
 ## Design and ads skills
 
