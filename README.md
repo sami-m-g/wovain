@@ -40,7 +40,7 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
 | `NEBIUS_API_KEY` | Optional: the design check (`judge_design`, Nemotron on Nebius Token Factory); without it the check is skipped | Nebius Token Factory → API keys |
 | `QLOO_API_KEY` | Optional: Qloo's Taste API | Qloo developer portal |
-| `TAVILY_API_KEY` | Optional: Tavily search | Tavily dashboard → API keys |
+| `TAVILY_API_KEY` | Optional: trend research and the trademark screen (`research_trends`, `screen_trademark`); without it both say they aren't set up | Tavily dashboard → API keys |
 | `WORKOS_AUTHKIT_DOMAIN` | Sign-in: the AuthKit domain that issues `/mcp`'s tokens | WorkOS dashboard (e.g. `https://<name>.authkit.app`) |
 | `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
 | `WOVAIN_ALLOWED_EMAILS` | Who may use `/mcp` (comma-separated verified emails; empty lets nobody in) | The email you sign in to AuthKit with |
@@ -63,12 +63,19 @@ wovain makes its own model calls through [Genkit](https://genkit.dev), with the 
 | Call | When | What it does |
 | --- | --- | --- |
 | `judge_design` | The design playbook calls it before every design widget | Scores the design brief (idea, blank, placement, colors, artwork size and transparency, listing, coach line) against wovain's print and listing rules. Returns a verdict, one check per rule, up to 5 fixes and a coach line, checked by a zod schema. Code decides print size, transparency, title length and color count itself, and those results override the model. |
+| `research_trends` | When the merchant has no idea yet, after the Tavily searches | Turns this week's news into 3 to 5 tee ideas. It cites results by number, and code turns the numbers into Tavily's links, so every link is real. Without the key, code ranks the trends itself. |
 
 To run it:
 
 1. Put a Token Factory key in `apps/server/.env` as `NEBIUS_API_KEY` and run `pnpm dev`. Without the key, `judge_design` answers `configured: false` and the agent skips the check.
 2. `pnpm test:live` makes one real call with the demo brief and checks the reply against the schema (a fraction of a cent). It's skipped without the key. `pnpm test` and `pnpm test:integration` use Genkit's mock model and never call Nebius.
 3. In production, set the secret (`pulumi config set --secret nebius-api-key` in `infra/`) and list `NEBIUS_API_KEY` in `apphosting.yaml`.
+
+## Tavily
+
+`research_trends` searches Tavily twice (news from the past week) for a niche, audience or seed idea and returns 3 to 5 ranked tee ideas, each with its source links. `screen_trademark` searches once for a phrase plus "trademark" before publishing. Both use the official `@tavily/core` SDK at basic depth: 1 credit per search, so $0.016 per research and $0.008 per screen at pay-as-you-go prices, with 1,000 free credits a month. Neither logs the query or the results.
+
+Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm test:live` runs one real research (2 credits) and is skipped without the key. In production the key is the `tavily-api-key` stack secret, listed in `apphosting.yaml`.
 
 ## Develop
 
@@ -83,7 +90,7 @@ To run it:
 | `pnpm typecheck` | TypeScript, strictest settings |
 | `pnpm test` | Server unit tests (Vitest): pure logic, no services |
 | `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
-| `pnpm test:live` | Opt-in: one real Nemotron call on Nebius; skipped without `NEBIUS_API_KEY` |
+| `pnpm test:live` | Opt-in: one real Nemotron call on Nebius and one real Tavily research; each is skipped without its key (`NEBIUS_API_KEY`, `TAVILY_API_KEY`) |
 | `pnpm test:stories` | Widget stories as tests (Playwright) |
 | `pnpm knip` | Unused files, exports and dependencies |
 | `pnpm arch` | Architecture rules (dependency-cruiser): layers, cycles, orphans |

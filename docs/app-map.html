@@ -209,11 +209,20 @@
                 <code>judge_design</code>, which checks a design brief against
                 the print and listing rules before the widget shows it. Without
                 <code>NEBIUS_API_KEY</code> the check is skipped.
+                <code>research_trends</code> searches Tavily for this week's
+                news in a niche and returns ranked tee ideas with their links
+                (Nemotron ranks them when the key is set), and
+                <code>screen_trademark</code> searches a phrase before
+                publishing. Without <code>TAVILY_API_KEY</code> both are
+                skipped.
               </td>
               <td>
                 <code>apps/server/src/lib/ai.ts</code>,
                 <code>apps/server/src/lib/design-judge.ts</code>,
-                <code>apps/server/src/tools/judge.ts</code>
+                <code>apps/server/src/tools/judge.ts</code>,
+                <code>apps/server/src/lib/tavily.ts</code>,
+                <code>apps/server/src/lib/trends.ts</code>,
+                <code>apps/server/src/tools/research.ts</code>
               </td>
             </tr>
             <tr>

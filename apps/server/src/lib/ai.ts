@@ -13,6 +13,8 @@ const NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/";
 export const models = {
   // NVIDIA Nemotron 3 Super (120B, 12B active).
   judge: "nebius/nvidia/nemotron-3-super-120b-a12b",
+  // Ranks and phrases research_trends' ideas.
+  trends: "nebius/nvidia/nemotron-3-super-120b-a12b",
 } as const;
 
 // Without a key there is no Genkit instance, and each feature says it isn't

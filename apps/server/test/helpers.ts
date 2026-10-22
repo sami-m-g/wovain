@@ -9,6 +9,7 @@ import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
 import type { DesignJudge } from "../src/lib/design-judge.ts";
+import type { TrendResearch } from "../src/lib/trends.ts";
 import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
@@ -31,9 +32,13 @@ export const testStore = (storage: Storage = testStorage()) =>
 export const connectClient = async (
   env: Record<string, string>,
   store: Store,
-  designJudge?: DesignJudge
+  designJudge?: DesignJudge,
+  trendResearch?: TrendResearch
 ) => {
-  const server = createServer(loadEnv(env), store, { designJudge });
+  const server = createServer(loadEnv(env), store, {
+    designJudge,
+    trendResearch,
+  });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await server.connect(serverSide);
   const client = new Client({ name: "test", version: "0" });
