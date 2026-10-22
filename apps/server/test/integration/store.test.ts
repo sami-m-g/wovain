@@ -62,7 +62,7 @@ describe("settings store", () => {
       roundToCleanPrice: true,
     });
     expect(settings.rules.killNoSalesMultiple).toBe(3);
-    expect(settings.video.model).toBe("h3-max-reference");
+    expect(settings.video.model).toBe("h3-max-turbo");
     expect(settings.audio.source).toBe("mmaudio");
   });
 

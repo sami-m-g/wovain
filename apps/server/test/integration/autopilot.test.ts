@@ -693,9 +693,18 @@ describe("paid fal tools during a run", () => {
       },
       name: "add_video_audio",
     });
-    await mcp.close();
     const [afterAudio] = await store.getAutopilotRuns();
     expect(afterAudio?.spentUsd).toBeGreaterThan(afterVideos?.spentUsd ?? 0);
+    await mcp.callTool({
+      arguments: {
+        designId,
+        videoUrls: ["https://v3.fal.media/files/clip.mp4"],
+      },
+      name: "reframe_videos",
+    });
+    await mcp.close();
+    const [afterCrops] = await store.getAutopilotRuns();
+    expect(afterCrops?.spentUsd).toBeGreaterThan(afterAudio?.spentUsd ?? 0);
   });
 });
 

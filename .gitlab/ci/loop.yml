@@ -19,7 +19,9 @@ loop:
 # market scout files one intent from competitors' news and the biggest
 # funnel drop-off (apps/ops/src/weekly.ts). 3 Tavily searches, no model call.
 # It's the only job that reads merchants' records (counts only), so it signs
-# in as gitlab-analytics from its own environment; loop and sci can't.
+# in as gitlab-analytics from its own environment; loop and sci can't. It
+# publishes fal clips' GPU seconds only as one aggregate (fal-clips.json:
+# count, median, p90 over 30 days), which the sci job reads.
 weekly:
   extends: .ops-job
   rules:
@@ -31,6 +33,9 @@ weekly:
   environment:
     name: analytics
     action: verify
+  artifacts:
+    paths: [fal-clips.json]
+    expire_in: 90 days
 
 # Starts the Duo scout flow once a week. Its flow trigger (infra/duo.ts,
 # wovain:duoCustomFlows) fires only on a successful parent_pipeline pipeline
@@ -47,7 +52,9 @@ scout:duo:
 
 # Software Carbon Intensity on every main pipeline (apps/ops/src/sci.ts,
 # docs/sustainability.md): the last 7 days of Cloud Run instance time and
-# requests and of main pipelines' CI time. The report is a job artifact
+# requests and of main pipelines' CI time, and the weekly job's aggregate of
+# fal clips' GPU seconds (its fal-clips.json artifact, read through the
+# GitLab API; sci never reads Firestore). The report is a job artifact
 # (latest: /-/jobs/artifacts/main/raw/sci-report.md?job=sci) and a GitLab
 # metrics report.
 sci:

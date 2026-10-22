@@ -23,6 +23,12 @@ test("the cheaper production models keep the print", () => {
   expect(videoModels["kling-o1-reference"].keepsPrint).toBe(true);
 });
 
-test("the default model is one that keeps the print", () => {
-  expect(videoModels[defaultSettings().video.model].keepsPrint).toBe(true);
+test("the default is one short clip from the fast model", () => {
+  const { video } = defaultSettings();
+  expect(video).toMatchObject({
+    clipsPerProduct: 1,
+    model: "h3-max-turbo",
+    seconds: 5,
+  });
+  expect(clipCost(video.model, video.seconds)).toBeCloseTo(0.08, 2);
 });

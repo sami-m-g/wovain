@@ -1,4 +1,5 @@
-import type { AdSlot } from "@wovain/shared/ad";
+import { adRatioSchema } from "@wovain/shared/ad";
+import type { AdRatio, AdSlot } from "@wovain/shared/ad";
 import type { Design } from "@wovain/shared/design";
 import type { Settings } from "@wovain/shared/settings";
 import {
@@ -13,6 +14,25 @@ import type { VideoModelId, VideoPrices } from "@wovain/shared/video-models";
 
 const MMAUDIO = "fal-ai/mmaudio-v2";
 const MMAUDIO_USD_PER_SECOND = 0.001;
+
+// Every ratio Meta places comes from the one clip: fal's ffmpeg scale-video
+// scales it to cover each frame and center-crops, so no clip is generated
+// twice. fal bills $0.001 per compute second (get_pricing, Oct 22, 2026);
+// its p50 run is 31 s, so about $0.03 per ratio.
+const REFRAME_ENDPOINT = "fal-ai/workflow-utilities/scale-video";
+export const REFRAME_USD = 0.03;
+const frames: Record<AdRatio, { height: number; width: number }> = {
+  "1:1": { height: 720, width: 720 },
+  "4:5": { height: 900, width: 720 },
+  "9:16": { height: 1280, width: 720 },
+};
+
+export const reframeRequests = (videoUrl: string) =>
+  adRatioSchema.options.map((ratio) => ({
+    endpointId: REFRAME_ENDPOINT,
+    input: { ...frames[ratio], mode: "crop", video_url: videoUrl },
+    ratio,
+  }));
 
 // Two UGC angles per product (prd.md > Ad widgets: Video A and Video B).
 const angles: Record<AdSlot, { angle: string; scene: string }> = {
@@ -40,12 +60,16 @@ const buildInput = (
   model: VideoModelId,
   design: Design,
   settings: Settings,
-  slot: AdSlot
+  { slot, start }: { slot: AdSlot; start: string | undefined }
 ): Input => {
-  const mockup = design.mockups[0]?.url ?? design.artwork.url;
+  const mockup = start ?? design.mockups[0]?.url ?? design.artwork.url;
   const artwork = design.artwork.url;
   const seconds = clipSeconds(model, settings.video.seconds);
-  const { scene } = angles[slot];
+  // A start image already sets the scene: keep it and only bring it to life.
+  const scene =
+    start === undefined
+      ? angles[slot].scene
+      : "Bring this photo to life as a short handheld phone video: the same person, place and light, with natural, subtle movement.";
   switch (model) {
     case "h3-max-reference": {
       return {
@@ -107,12 +131,16 @@ export interface VideoPlan {
   estimate: { basis: string; note: string; usd: number };
   keepsPrint: boolean;
   model: string;
+  reframe: { endpointId: string; ratios: AdRatio[]; usdPerClip: number };
 }
 
+// `start` replaces the mockup as the first frame: a 9:16 ad image wovain
+// collected for this design, so the clip starts on-model and vertical.
 export const planVideos = (
   design: Design,
   settings: Settings,
-  prices: VideoPrices
+  prices: VideoPrices,
+  start?: string
 ): VideoPlan => {
   const { model } = settings.video;
   const slots = (["A", "B"] as const).slice(0, settings.video.clipsPerProduct);
@@ -129,12 +157,17 @@ export const planVideos = (
       }
     : undefined;
   const perClip = clipCost(model, settings.video.seconds, prices);
+  const reframe = {
+    endpointId: REFRAME_ENDPOINT,
+    ratios: [...adRatioSchema.options],
+    usdPerClip: adRatioSchema.options.length * REFRAME_USD,
+  };
   return {
     audio,
     clips: slots.map((slot) => ({
       angle: angles[slot].angle,
       endpointId: videoModels[model].endpointId,
-      input: buildInput(model, design, settings, slot),
+      input: buildInput(model, design, settings, { slot, start }),
       slot,
     })),
     estimate: {
@@ -143,9 +176,12 @@ export const planVideos = (
           ? "live fal list price"
           : "fal list price",
       note: "List price; fal may bill more for resolution, audio and provider rules. The merchant's fal request history shows the actual charge.",
-      usd: slots.length * (perClip + (audio?.usdPerClip ?? 0)),
+      usd:
+        slots.length *
+        (perClip + (audio?.usdPerClip ?? 0) + reframe.usdPerClip),
     },
     keepsPrint: videoModels[model].keepsPrint,
     model: videoModels[model].label,
+    reframe,
   };
 };

@@ -137,7 +137,7 @@ Every widget also has a quick-settings menu (⚙) for the values it uses; the Se
 ```
 ┌─ wovain settings ────────────────────────────────────────────┐
 │ "Change anything here; new widgets use it right away."         │
-│ Video model   H3 Max Reference 768P ▾  $0.75 per clip        │
+│ Video model   H3 Max Turbo 768P ▾      $0.08 per clip        │
 │ Audio         MMAudio (background) ▾    $0.015 per clip      │
 │ Pricing       ≥ $10 profit or 30% margin                     │
 │ Budget        $15 per product per day                        │
@@ -221,12 +221,12 @@ Costs of running the proof of concept, on top of per-sale costs:
 | POC cost | Amount | Note |
 | --- | --- | --- |
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
-| Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings widget shows live fal prices |
+| Ad videos (3 clips) | $0.53 | One 5-second MiniMax H3 Max Turbo clip per product at $0.08, $0.005 of background audio and three crops (1:1, 4:5, 9:16) at about $0.03 each, so about $0.18 per ad video; switchable in Settings (H3 Max Reference $0.25 for 5 s, Kling v3 Standard $0.70, Kling O1 Reference $0.42). Prices are fal list prices (Oct 22, 2026); the Settings widget shows live fal prices |
 | Design images | A few dollars per drop (unverified) | GPT Image 2.5 on the merchant's fal account, 2 to 5 pieces per drop, billed by fal per token at high quality; the agent quotes fal's `estimate_cost` first. ChatGPT's built-in image generation is the free fallback |
 | ChatGPT plan | Depends on your plan | Plus works: the merchant adds wovain's hosted `/mcp` as a connector, on chatgpt.com or in the desktop app |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
 | Server hosting | $0 | Firebase App Hosting, Firestore and Cloud Storage within their no-cost quotas to start (unverified; App Hosting needs the pay-as-you-go Blaze plan with a billing account, so usage past the quotas is billed) |
-| Total for the test | $140 to $194 | Ad spend plus $4.59 of video, plus the design art on fal |
+| Total for the test | $136 to $190 | Ad spend plus $0.53 of video, plus the design art on fal |
 
 ### Ad widgets
 
@@ -339,7 +339,7 @@ The merchant can also run the whole journey with no approvals: "create a t-shirt
 | Ad widget: every concept on one widget, each with its own Approve, Skip and feedback; each visual has a full-screen control | One product, one widget, but a decision per ad; full screen lets you judge the print at phone size |
 | Designs come from ChatGPT's built-in image generation, triggered by wovain's design playbook | ChatGPT makes better images (scope); there is no direct API, so the playbook asks the agent to make the image and hand it to wovain |
 | A fired rule triggers optimization, not a full pause | The merchant's definition of "change direction" mid-campaign |
-| Video: MiniMax H3 Max Reference on fal by default, with the mockup and the design as references | On-model UGC clips that kept the print in the first real test, at $0.75 per clip; Kling v3 ($2.10) and Kling O1 Reference ($0.84, 10 s) are one setting away, and the cheaper MiniMax H3 models serve test runs |
+| Video: one 5-second MiniMax H3 Max Turbo clip on fal by default, started from the concept's 9:16 ad image and cropped to 1:1, 4:5 and 9:16 | The ad image already keeps the print (Nano Banana Pro with the artwork as reference), and H3 Max Turbo is fal's throughput-tuned H3 Max, so the clip costs about $0.08 instead of $0.75 and one clip covers every placement; H3 Max Reference (print kept from references), Kling v3 and Kling O1 Reference are one setting away (docs/sustainability.md compares the candidates) |
 | Audio: generated background audio (MMAudio), configurable | Meta's music only works on image ads; MMAudio costs $0.015 per clip against $0.63 for Kling's own audio |
 | Every value is configurable from a Settings widget and per-widget quick settings | The merchant tunes prices, budgets, rules and models without a redeploy |
 | Print fidelity is checked by eye in the full-screen video view | No provider offers an automatic check; keeps the POC small |

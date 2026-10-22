@@ -39,7 +39,7 @@ Evidence: README, !50, !51 (Monitor: funnel metric, weekly analysis, market scou
 
 ## Most Environmentally Impactful
 
-**14.27 gCO2e per idea-to-paused-campaign run** (Green Software Foundation SCI, ((E × I) + M) per R, us-central1 at 432 gCO2e/kWh location-based), recomputed by the `sci` job on every `main` pipeline. Gains: scale to zero avoids about 334 gCO2e a week against an always-on instance, scheduled pipelines skip the scanners (about 262 CI minutes and 29 gCO2e a week), Duo triggers are filtered to human actions, the loop and the market scout make no model calls, and the shepherd checks paths, size and provenance before it spends a review. Every estimate is labeled.
+**8.73 gCO2e per idea-to-paused-campaign run** (down from 14.27: one 5-second clip cropped to every ratio instead of two 15-second clips; video GPU seconds measured from fal once clips are recorded) (Green Software Foundation SCI, ((E × I) + M) per R, us-central1 at 432 gCO2e/kWh location-based), recomputed by the `sci` job on every `main` pipeline. Gains: scale to zero avoids about 334 gCO2e a week against an always-on instance, scheduled pipelines skip the scanners (about 262 CI minutes and 29 gCO2e a week), Duo triggers are filtered to human actions, the loop and the market scout make no model calls, and the shepherd checks paths, size and provenance before it spends a review. Every estimate is labeled.
 
 Evidence: [sustainability.md](sustainability.md), README "Sustainability (SCI)", !53, the `sci` job's "SCI report" artifact.
 

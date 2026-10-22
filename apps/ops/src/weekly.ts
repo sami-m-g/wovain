@@ -1,9 +1,12 @@
+import { writeFile } from "node:fs/promises";
+
 import { tavily } from "@tavily/core";
 import { z } from "zod";
 
 import { analysisReport, funnelOf, marketIntent } from "./analysis.ts";
 import type { Finding } from "./analysis.ts";
 import { ciContext } from "./ci.ts";
+import { clipStats } from "./clip-stats.ts";
 import { REQUESTS } from "./google.ts";
 import { readRecords } from "./records.ts";
 import { marker } from "./report.ts";
@@ -12,7 +15,9 @@ import { marker } from "./report.ts";
 // analysis (funnel, usage, costs) goes to the digest issue, and the market
 // scout files one intent from competitors' news and the funnel's biggest
 // drop-off. No model call: the intent is assembled from the data, so the
-// ranking is deterministic and costs nothing to run.
+// ranking is deterministic and costs nothing to run. It also writes
+// fal-clips.json, the only form in which clips' GPU seconds leave merchants'
+// records: one aggregate (count, median, p90) that the sci job reads.
 
 const { env: ci, gitlab, google } = ciContext();
 const env = {
@@ -77,6 +82,13 @@ const [merchants, requests, instanceSeconds, credits, findings] =
     creditsOrNothing(),
     search(),
   ]);
+const clips = clipStats(
+  merchants.flatMap((m) => m.clips),
+  now
+);
+if (clips !== undefined) {
+  await writeFile("fal-clips.json", `${JSON.stringify(clips, null, 2)}\n`);
+}
 const funnel = funnelOf(merchants);
 const report = analysisReport(funnel, {
   duoCredits: credits,

@@ -14,6 +14,7 @@ import type { MerchantRecords } from "../src/records.ts";
 const merchant = (m: Partial<MerchantRecords>): MerchantRecords => ({
   ads: [],
   campaigns: [],
+  clips: [],
   connections: 0,
   designs: [],
   ...m,

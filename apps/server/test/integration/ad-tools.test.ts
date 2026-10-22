@@ -217,9 +217,28 @@ test("video plans fit each model's inputs", () => {
   const stored = { ...demoDesign, id: "d1" };
   const prices = listVideoPrices();
 
+  const start = "https://v3b.fal.media/files/b/x/a.jpg";
+  const turbo = planVideos(stored, settings, prices, start);
+  expect(turbo.clips).toHaveLength(1);
+  expect(turbo.clips[0]).toMatchObject({
+    endpointId: "minimax/h3-max-turbo/image-to-video",
+    input: { duration: 5, image_url: start },
+  });
+  expect(turbo.reframe.ratios).toEqual(["1:1", "4:5", "9:16"]);
+  // 5 s × $0.01625, MMAudio 5 s × $0.001 and three crops × $0.03.
+  expect(turbo.estimate.usd).toBeCloseTo(0.08125 + 0.005 + 0.09, 3);
+
   const reference = planVideos(
     stored,
-    { ...settings, video: { ...settings.video, model: "h3-max-reference" } },
+    {
+      ...settings,
+      video: {
+        ...settings.video,
+        clipsPerProduct: 2,
+        model: "h3-max-reference",
+        seconds: 15,
+      },
+    },
     prices
   );
   expect(reference.clips).toHaveLength(2);
@@ -229,12 +248,15 @@ test("video plans fit each model's inputs", () => {
     reference_image_urls: [demoDesign.mockups[0]?.url, demoDesign.artwork.url],
   });
   expect(reference.audio?.endpointId).toBe("fal-ai/mmaudio-v2");
-  expect(reference.estimate.usd).toBeCloseTo(2 * (0.75 + 0.015), 2);
+  expect(reference.estimate.usd).toBeCloseTo(2 * (0.75 + 0.015 + 0.09), 2);
   expect(reference.estimate.note).toContain("fal may bill more");
 
   const klingO1 = planVideos(
     stored,
-    { ...settings, video: { ...settings.video, model: "kling-o1-reference" } },
+    {
+      ...settings,
+      video: { ...settings.video, model: "kling-o1-reference", seconds: 15 },
+    },
     prices
   );
   expect(klingO1.clips[0]?.input).toMatchObject({ duration: "10" });
@@ -253,7 +275,17 @@ test("video plans fit each model's inputs", () => {
 
 // wovain's client on a fake fal, with the merchant ("test") connected.
 const connectedFal = async () => {
-  const fake = fakeUpstream("fal");
+  // A finished clip as fal's get_job_result returns it (H3 reports timings).
+  const fake = fakeUpstream("fal", {
+    tools: {
+      get_job_result: () => ({
+        result: {
+          timings: { inference: 6.5 },
+          video: { url: "https://v3b.fal.media/files/b/x/clip.mp4" },
+        },
+      }),
+    },
+  });
   const upstream = createUpstream({
     connections: createConnections(testStorage().db, localCipher()),
     fetch: fake.fetch,
@@ -288,6 +320,72 @@ test("generate_videos submits exactly the planned clips on the merchant's fal", 
       name: "submit_jobs",
     },
   ]);
+});
+
+test("generate_videos starts only from an image wovain collected", async () => {
+  const { fake, falClient } = await connectedFal();
+  const refused = await falClient.callTool({
+    arguments: {
+      designId: "d1",
+      startImageUrl: "https://v3b.fal.media/files/b/x/elsewhere.jpg",
+    },
+    name: "generate_videos",
+  });
+  expect(refused.isError).toBe(true);
+  expect(fake.calls).toEqual([]);
+});
+
+test("reframe_videos crops a collected clip to every ratio", async () => {
+  const { fake, falClient } = await connectedFal();
+  const clip = "https://v3b.fal.media/files/b/x/c.jpg";
+  const refused = await falClient.callTool({
+    arguments: { designId: "d1", videoUrls: ["https://evil.example/a.mp4"] },
+    name: "reframe_videos",
+  });
+  expect(refused.isError).toBe(true);
+  const result = await falClient.callTool({
+    arguments: { designId: "d1", videoUrls: [clip] },
+    name: "reframe_videos",
+  });
+  expect(result.isError).toBeFalsy();
+  expect(fake.calls).toEqual([
+    {
+      arguments: {
+        requests: [
+          { height: 720, width: 720 },
+          { height: 900, width: 720 },
+          { height: 1280, width: 720 },
+        ].map((frame, index) => ({
+          endpoint_id: "fal-ai/workflow-utilities/scale-video",
+          index,
+          input: { ...frame, mode: "crop", video_url: clip },
+        })),
+      },
+      name: "submit_jobs",
+    },
+  ]);
+});
+
+test("collect_ad_media keeps the GPU time fal reports", async () => {
+  const { falClient } = await connectedFal();
+  await store.recordAdMedia("d1", {
+    jobs: [
+      { endpointId: "minimax/h3-max-turbo/image-to-video", requestId: "r1" },
+    ],
+  });
+  await falClient.callTool({
+    arguments: { designId: "d1" },
+    name: "collect_ad_media",
+  });
+  const media = await store.getAdMedia("d1");
+  expect(media.jobs).toHaveLength(1);
+  expect(media.jobs[0]).toMatchObject({
+    endpointId: "minimax/h3-max-turbo/image-to-video",
+    gpuSeconds: 6.5,
+    requestId: "r1",
+  });
+  expect(media.jobs[0]?.measuredAt).toBeTypeOf("string");
+  expect(media.urls).toContain("https://v3b.fal.media/files/b/x/clip.mp4");
 });
 
 test("add_video_audio takes only fal clip URLs", async () => {

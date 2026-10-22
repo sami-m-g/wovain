@@ -239,6 +239,8 @@ export const createGitLab = (env: {
       ),
     discussions: async (mr: number) =>
       await allPages(discussionSchema, `merge_requests/${mr}/discussions`),
+    // Any project call, e.g. the latest main artifact of a job.
+    inProject,
     issue: async (iid: number) =>
       await inProject(issueSchema, "GET", `issues/${iid}`),
     issueNotes: async (issue: number) => await notes(`issues/${issue}/notes`),
