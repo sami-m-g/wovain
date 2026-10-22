@@ -4,6 +4,7 @@ import path from "node:path";
 import type { CallToolResult } from "@modelcontextprotocol/client";
 import { adResultSchema } from "@wovain/shared/ad";
 import { campaignResultSchema } from "@wovain/shared/campaign";
+import { dashboardResultSchema } from "@wovain/shared/dashboard";
 import { designResultSchema } from "@wovain/shared/design";
 import { judgeResultSchema } from "@wovain/shared/judge";
 import {
@@ -662,6 +663,35 @@ test("a paused Meta campaign", async () => {
       expect(campaign.campaignId).toBe("555");
       expect(campaign.rules.every((rule) => rule.created)).toBe(true);
       return ["Campaign 555 is staged and paused", "Every rule is in place"];
+    }
+  );
+});
+
+test("the merchant dashboard", async () => {
+  await journey.call(
+    {
+      say: "Weeks later, one dashboard shows how the drop sells on Fourthwall, what each ad and concept costs on Meta, and whether the two agree.",
+      title: "Dashboard",
+    },
+    "show_dashboard",
+    { range: "28d" },
+    (result) => {
+      const { dashboard } = dashboardResultSchema.parse(data(result));
+      expect(dashboard.connections.map((item) => item.state)).toEqual([
+        "connected",
+        "connected",
+        "connected",
+      ]);
+      expect(dashboard.sales?.totals.orders).toBe(94);
+      expect(dashboard.ads?.concepts).toHaveLength(2);
+      expect(dashboard.sales?.utm[0]?.ad).toBe("wovain d1 · c1");
+      expect(dashboard.reconciliation?.status).toBe("pass");
+      expect(dashboard.products[0]?.status).toBe("live");
+      return [
+        `${String(dashboard.sales?.totals.orders)} Fourthwall orders over 28 days, from the merchant's own reports`,
+        "Meta spend, ROAS and CPA per campaign, concept and ad",
+        "Fourthwall's orders from Meta links agree with Meta's purchases",
+      ];
     }
   );
 });

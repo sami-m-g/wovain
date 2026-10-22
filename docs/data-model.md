@@ -140,10 +140,12 @@ Outside wovain: published products and their images live in Fourthwall, video cl
 
 ## Who else reads it
 
+- The dashboard (`dashboard_data`, `show_dashboard`) reads one merchant's designs, autopilot runs, campaign and settings, plus the six newest documents in `users/{uid}/optimization/state/actions` when the optimizer has written any (invalid ones are skipped). It writes nothing; its numbers come from the merchant's own Fourthwall and Meta and live only in a one-minute in-process cache.
+
 - The weekly job (`apps/ops/src/records.ts`) reads statuses, video states and rule counts through field masks as `gitlab-analytics` (`datastore.viewer`), an account only that job uses, trusted only from the `analytics` environment, and reports counts only. Neither account can decrypt connections: only the App Hosting runner may use the KMS key.
 - Nothing else: CI tests run on the emulators (project `demo-wovain`).
 
 ## Indexes and TTL
 
-- Single-field indexes only (Firestore's defaults); the server reads by document path, never by query.
+- Single-field indexes only (Firestore's defaults); the server reads by document path or whole collection, except the dashboard's newest-optimizer-actions read (`orderBy("createdAt")` with a limit), which the default single-field index serves.
 - TTL on `expiresAt` in `connectTickets`, `oauthFlows`, `launchRequests` and `launchApprovals` (`infra/index.ts`).

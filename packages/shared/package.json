@@ -15,6 +15,7 @@
     "./rules": "./src/rules.ts",
     "./optimizer/*": "./src/optimizer/*.ts",
     "./campaign": "./src/campaign.ts",
+    "./dashboard": "./src/dashboard.ts",
     "./widgets": "./src/widgets.ts"
   },
   "dependencies": {
