@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
+import { providerSchema } from "../lib/connections.ts";
 import type { ProviderId } from "../lib/connections.ts";
 import { UNTRUSTED, upstreamReply } from "../lib/upstream.ts";
 import type { Upstream } from "../lib/upstream.ts";
@@ -53,7 +54,7 @@ export const registerConnectionTools = (
   store: Store,
   upstream: Upstream | undefined
 ) => {
-  for (const id of ["fourthwall", "fal"] as const) {
+  for (const id of providerSchema.options) {
     server.registerTool(
       id,
       {

@@ -42,6 +42,12 @@ Tests:
 - `test/integration/connect-routes.test.ts`: client.json, bad ticket 400, ticket to 302 with `state`, `code_challenge` and `resource`, callback stores encrypted tokens (no token text in the doc), wrong-provider callback refused.
 - `test/integration/ad-tools.test.ts`: `generate_videos` sends the planned inputs only; `add_video_audio` rejects non-fal URLs; both return the connect link without a grant. The `video_spend` test goes.
 
+Changed in review (security):
+
+- `apps/server/src/lib/browser-sign-in.ts` (new): the merchant signs in to wovain in the browser (wovain as a CIMD client of its own `/mcp`) before any provider sees them; only the ticket's user goes on.
+- `lib/connections.ts`: flows carry `purpose` and the browser nonce's hash; tickets last 5 minutes; `takeFlow` only takes a flow for its own browser.
+- `routes/connect.ts`: the nonce cookie (`hono/cookie`) and `/oauth/callback/wovain`; `runtime.ts` builds the sign-in with the `/mcp` token check.
+
 ## Order of work
 
 1. Plan commit (this file, intent, spec), labels to `status::doing`.

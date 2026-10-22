@@ -68,18 +68,13 @@ describe("grants", () => {
   test("one lease at a time, and none on a changed grant", async () => {
     const { clock, connections } = setup();
     await connections.save("u1", "fal", tokens);
-    const first = await connections.acquireLease("u1", "fal", 1);
-    expect(first.status).toBe("held");
-    await expect(connections.acquireLease("u1", "fal", 1)).resolves.toEqual({
-      status: "busy",
-    });
+    await expect(connections.acquireLease("u1", "fal", 1)).resolves.toBe(true);
+    await expect(connections.acquireLease("u1", "fal", 1)).resolves.toBe(false);
     clock.now += 30_000;
-    const later = await connections.acquireLease("u1", "fal", 1);
-    expect(later.status).toBe("held");
+    await expect(connections.acquireLease("u1", "fal", 1)).resolves.toBe(true);
     await connections.save("u1", "fal", tokens);
-    await expect(connections.acquireLease("u1", "fal", 1)).resolves.toEqual({
-      status: "changed",
-    });
+    await expect(connections.acquireLease("u1", "fal", 1)).resolves.toBe(false);
+    await expect(connections.version("u1", "fal")).resolves.toBe(2);
   });
 });
 

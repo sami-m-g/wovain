@@ -11,7 +11,7 @@ import type { CallToolResult, FetchLike } from "@modelcontextprotocol/client";
 import { providers } from "./connections.ts";
 import type { Connections, Grant, ProviderId } from "./connections.ts";
 import { FirestoreOAuthProvider } from "./oauth-client.ts";
-import { logErrorClass, notConfigured, text } from "./tool-result.ts";
+import { notConfigured, text, userSafe } from "./tool-result.ts";
 
 // The merchant hasn't connected the provider, or has to connect it again.
 export interface NeedsConnection {
@@ -91,17 +91,21 @@ export const createUpstream = ({
     kind: "connect",
   });
 
+  // Polls the grant's version (no decrypt) until another instance writes a
+  // newer one, then reads it.
   const waitForNewer = async (
     request: UpstreamRequest,
     version: number,
     steps = WAIT_STEPS
   ): Promise<Grant | undefined> => {
-    const latest = await connections.read(request.userId, request.id);
-    if (latest?.record.version !== version || steps === 0) {
-      return latest;
+    const latest = await connections.version(request.userId, request.id);
+    if (latest === version && steps > 0) {
+      await sleep(WAIT_STEP_MS);
+      return await waitForNewer(request, version, steps - 1);
     }
-    await sleep(WAIT_STEP_MS);
-    return await waitForNewer(request, version, steps - 1);
+    return latest === undefined
+      ? undefined
+      : await connections.read(request.userId, request.id);
   };
 
   // Refreshes a grant that's about to expire, one instance at a time: a
@@ -114,8 +118,7 @@ export const createUpstream = ({
     if (!due || grant.tokens.refresh_token === undefined) {
       return grant;
     }
-    const lease = await connections.acquireLease(userId, id, version);
-    if (lease.status !== "held") {
+    if (!(await connections.acquireLease(userId, id, version))) {
       return await waitForNewer(request, version);
     }
     await auth(provider(userId, id, grant), authOptions(id));
@@ -152,31 +155,34 @@ export const createUpstream = ({
       (result) => ({ result }),
       (error: unknown) => ({ error })
     );
-    if ("result" in settled) {
-      if (!loginNeeded(settled.result)) {
-        return { kind: "result", result: settled.result };
-      }
-      await connections.remove(userId, id, grant.record.version);
-      return await needs(request, true);
+    if ("result" in settled && !loginNeeded(settled.result)) {
+      return { kind: "result", result: settled.result };
     }
-    if (!(settled.error instanceof UnauthorizedError)) {
+    if ("error" in settled && !(settled.error instanceof UnauthorizedError)) {
       throw settled.error;
     }
-    const latest = await connections.read(userId, id);
-    if (
-      latest !== undefined &&
-      latest.record.version !== grant.record.version
-    ) {
-      return retry
-        ? await attempt(request, latest, false)
-        : await needs(request, true);
+    // A 401 or Fourthwall's login-needed answer: retry once with a grant
+    // another instance wrote meanwhile.
+    const latest = await connections.version(userId, id);
+    if (latest !== undefined && latest !== grant.record.version) {
+      const newer = retry ? await connections.read(userId, id) : undefined;
+      return newer === undefined
+        ? await needs(request, true)
+        : await attempt(request, newer, false);
     }
     // A network failure during re-authentication is also an
-    // UnauthorizedError; only the SDK giving up on the grant means reconnect.
-    if (!oauth.invalidated && oauth.authorizationUrl === undefined) {
+    // UnauthorizedError; only a refused grant means reconnect.
+    const refused =
+      "result" in settled ||
+      oauth.invalidated ||
+      oauth.authorizationUrl !== undefined;
+    if (!refused) {
       throw settled.error;
     }
-    await connections.remove(userId, id, grant.record.version);
+    // The SDK already removed a grant it invalidated.
+    if (!oauth.invalidated) {
+      await connections.remove(userId, id, grant.record.version);
+    }
     return await needs(request, true);
   };
 
@@ -283,13 +289,11 @@ export const upstreamReply = async (
     );
   }
   const { title } = providers[request.id];
-  const outcome = await upstream.call(request).catch((error: unknown) => {
-    logErrorClass(`${request.id} call failed:`, error);
-    throw new Error(
-      `Couldn't reach the merchant's ${title} account. Try again in a minute.`,
-      { cause: error }
-    );
-  });
+  const outcome = await userSafe(
+    `${request.id} call failed:`,
+    `Couldn't reach the merchant's ${title} account. Try again in a minute.`,
+    async () => await upstream.call(request)
+  );
   if (outcome.kind === "connect") {
     return connectReply(outcome.connect);
   }

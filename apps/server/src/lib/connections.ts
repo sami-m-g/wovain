@@ -30,7 +30,6 @@ const connectionSchema = z.object({
   ciphertext: z.string(),
   connectedAt: z.int(),
   expiresAt: z.int().optional(),
-  leaseId: z.string().optional(),
   leaseUntil: z.int().optional(),
   provider: providerSchema,
   refreshedAt: z.int(),
@@ -77,11 +76,6 @@ export interface Grant {
   tokens: StoredOAuthTokens;
 }
 
-export type Lease =
-  | { id: string; status: "held" }
-  | { status: "busy" }
-  | { status: "changed" };
-
 // Connect links work for 5 minutes and flows for 10 (Firestore's TTL policy
 // removes leftovers later); a lease lasts as long as one token refresh may
 // take.
@@ -127,24 +121,20 @@ export const createConnections = (
     });
 
   return {
-    // Takes a lease to refresh the grant read at `version`: "changed" means
-    // another instance already wrote a newer grant, "busy" that one is
-    // refreshing it now.
+    // Takes a lease to refresh the grant read at `version`; false when
+    // another instance already wrote a newer grant or is refreshing it now.
     acquireLease: async (
       userId: string,
       provider: ProviderId,
       version: number
-    ): Promise<Lease> =>
-      await withRecord(userId, provider, (tx, ref, record): Lease => {
-        if (record?.version !== version) {
-          return { status: "changed" };
+    ) =>
+      await withRecord(userId, provider, (tx, ref, record) => {
+        const free =
+          record?.version === version && (record.leaseUntil ?? 0) <= now();
+        if (free) {
+          tx.update(ref, { leaseUntil: now() + LEASE_MS });
         }
-        if ((record.leaseUntil ?? 0) > now()) {
-          return { status: "busy" };
-        }
-        const id = newId();
-        tx.update(ref, { leaseId: id, leaseUntil: now() + LEASE_MS });
-        return { id, status: "held" };
+        return free;
       }),
 
     createFlow: async (
@@ -256,6 +246,12 @@ export const createConnections = (
       patch: Pick<Partial<Flow>, "codeVerifier" | "discoveryState">
     ) => {
       await flows.doc(state).update(patch);
+    },
+
+    // The grant's version without decrypting it, for version checks.
+    version: async (userId: string, provider: ProviderId) => {
+      const doc = await connection(userId, provider).get();
+      return doc.exists ? recordOf(doc.data()).version : undefined;
     },
   };
 };
