@@ -1,8 +1,12 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 import type { StoredOAuthTokens } from "@modelcontextprotocol/client";
 import { Timestamp } from "firebase-admin/firestore";
-import type { Firestore, Transaction } from "firebase-admin/firestore";
+import type {
+  DocumentReference,
+  Firestore,
+  Transaction,
+} from "firebase-admin/firestore";
 import { z } from "zod";
 
 import type { Cipher } from "./cipher.ts";
@@ -52,13 +56,18 @@ const ticketSchema = z.object({
   userId: z.string(),
 });
 
-// oauthFlows/{state}: one pending authorization. The SDK's discovery state is
-// kept as the JSON it handed over.
+// oauthFlows/{state}: one pending authorization, either the merchant signing
+// in to wovain in the browser ("signin") or authorizing a provider
+// ("connect"). `userId` is the merchant the link was made for; `nonceHash`
+// binds the flow to the browser that opened the link (its cookie). The SDK's
+// discovery state is kept as the JSON it handed over.
 const flowSchema = z.object({
   codeVerifier: z.string().optional(),
   discoveryState: z.string().optional(),
   expiresAt: z.instanceof(Timestamp),
+  nonceHash: z.string(),
   provider: providerSchema,
+  purpose: z.enum(["signin", "connect"]),
   userId: z.string(),
 });
 export type Flow = z.infer<typeof flowSchema>;
@@ -73,14 +82,21 @@ export type Lease =
   | { status: "busy" }
   | { status: "changed" };
 
-// Tickets and flows expire after 10 minutes (and Firestore's TTL policy
-// removes them later); a lease lasts as long as one token refresh may take.
-const PENDING_MS = 10 * 60 * 1000;
+// Connect links work for 5 minutes and flows for 10 (Firestore's TTL policy
+// removes leftovers later); a lease lasts as long as one token refresh may
+// take.
+const TICKET_MS = 5 * 60 * 1000;
+const FLOW_MS = 10 * 60 * 1000;
 const LEASE_MS = 20 * 1000;
 
 const recordOf = (data: unknown) => connectionSchema.parse(data);
 
 const newId = () => randomBytes(24).toString("base64url");
+
+// The browser nonce: a random cookie value, stored only as its hash.
+export const newNonce = () => randomBytes(32).toString("base64url");
+export const nonceHashOf = (nonce: string) =>
+  createHash("sha256").update(nonce).digest("base64url");
 
 export const createConnections = (
   db: Firestore,
@@ -93,7 +109,22 @@ export const createConnections = (
   const flows = db.collection("oauthFlows");
   const transaction = async <T>(work: (tx: Transaction) => Promise<T>) =>
     await db.runTransaction(work, { maxAttempts: 10 });
-  const expiry = () => Timestamp.fromMillis(now() + PENDING_MS);
+  const expiry = (ms: number) => Timestamp.fromMillis(now() + ms);
+  // Reads one grant's record and changes it in the same transaction.
+  const withRecord = async <T>(
+    userId: string,
+    provider: ProviderId,
+    work: (
+      tx: Transaction,
+      ref: DocumentReference,
+      record: ConnectionRecord | undefined
+    ) => T
+  ) =>
+    await transaction(async (tx) => {
+      const ref = connection(userId, provider);
+      const doc = await tx.get(ref);
+      return work(tx, ref, doc.exists ? recordOf(doc.data()) : undefined);
+    });
 
   return {
     // Takes a lease to refresh the grant read at `version`: "changed" means
@@ -104,14 +135,8 @@ export const createConnections = (
       provider: ProviderId,
       version: number
     ): Promise<Lease> =>
-      await transaction(async (tx) => {
-        const ref = connection(userId, provider);
-        const doc = await tx.get(ref);
-        if (!doc.exists) {
-          return { status: "changed" };
-        }
-        const record = recordOf(doc.data());
-        if (record.version !== version) {
+      await withRecord(userId, provider, (tx, ref, record): Lease => {
+        if (record?.version !== version) {
           return { status: "changed" };
         }
         if ((record.leaseUntil ?? 0) > now()) {
@@ -122,15 +147,21 @@ export const createConnections = (
         return { id, status: "held" };
       }),
 
-    createFlow: async (userId: string, provider: ProviderId) => {
+    createFlow: async (
+      flow: Pick<Flow, "nonceHash" | "provider" | "purpose" | "userId">
+    ) => {
       const state = newId();
-      await flows.doc(state).set({ expiresAt: expiry(), provider, userId });
+      await flows
+        .doc(state)
+        .set(flowSchema.parse({ ...flow, expiresAt: expiry(FLOW_MS) }));
       return state;
     },
 
     createTicket: async (userId: string, provider: ProviderId) => {
       const id = newId();
-      await tickets.doc(id).set({ expiresAt: expiry(), provider, userId });
+      await tickets
+        .doc(id)
+        .set({ expiresAt: expiry(TICKET_MS), provider, userId });
       return id;
     },
 
@@ -163,18 +194,14 @@ export const createConnections = (
     // Deletes the grant only if it's still the one read at `version`, so a
     // newer grant from another instance survives a stale failure.
     remove: async (userId: string, provider: ProviderId, version?: number) =>
-      await transaction(async (tx) => {
-        const ref = connection(userId, provider);
-        const doc = await tx.get(ref);
-        if (!doc.exists) {
-          return false;
-        }
-        const stale =
-          version !== undefined && recordOf(doc.data()).version !== version;
-        if (!stale) {
+      await withRecord(userId, provider, (tx, ref, record) => {
+        const removable =
+          record !== undefined &&
+          (version === undefined || record.version === version);
+        if (removable) {
           tx.delete(ref);
         }
-        return !stale;
+        return removable;
       }),
 
     // Encrypts and writes a grant, bumping its version and dropping any lease.
@@ -186,9 +213,7 @@ export const createConnections = (
       const ref = connection(userId, provider);
       const ciphertext = await cipher.encrypt(JSON.stringify(tokens), ref.path);
       const at = now();
-      await transaction(async (tx) => {
-        const doc = await tx.get(ref);
-        const current = doc.exists ? recordOf(doc.data()) : undefined;
+      await withRecord(userId, provider, (tx, _ref, current) => {
         const record: ConnectionRecord = {
           ciphertext,
           connectedAt: current?.connectedAt ?? at,
@@ -203,16 +228,27 @@ export const createConnections = (
       });
     },
 
-    // Loads a pending flow and deletes it, so a code is exchanged once.
-    takeFlow: async (state: string): Promise<Flow | undefined> =>
+    // Loads a pending flow for the browser holding its nonce and deletes it,
+    // so a code is exchanged once. Another browser's request leaves the flow
+    // alone and gets nothing.
+    takeFlow: async (
+      state: string,
+      purpose: Flow["purpose"],
+      nonceHash: string
+    ): Promise<Flow | undefined> =>
       await transaction(async (tx) => {
         const ref = flows.doc(state);
         const doc = await tx.get(ref);
         const flow = doc.exists ? flowSchema.parse(doc.data()) : undefined;
-        tx.delete(ref);
-        return flow !== undefined && flow.expiresAt.toMillis() > now()
-          ? flow
-          : undefined;
+        const mine =
+          flow !== undefined &&
+          flow.purpose === purpose &&
+          flow.nonceHash.length === nonceHash.length &&
+          timingSafeEqual(Buffer.from(flow.nonceHash), Buffer.from(nonceHash));
+        if (mine) {
+          tx.delete(ref);
+        }
+        return mine && flow.expiresAt.toMillis() > now() ? flow : undefined;
       }),
 
     updateFlow: async (

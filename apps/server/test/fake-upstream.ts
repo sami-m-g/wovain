@@ -4,8 +4,9 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { providers } from "../src/lib/connections.ts";
+import { nonceHashOf, providers } from "../src/lib/connections.ts";
 import type { ProviderId } from "../src/lib/connections.ts";
+import type { Upstream } from "../src/lib/upstream.ts";
 
 // A stand-in for Fourthwall's or fal's MCP server and its authorization
 // server, reached through an injected fetch: protected-resource and AS
@@ -18,17 +19,18 @@ export const fakeUpstream = (
 ) => {
   const server = new URL(providers[id].serverUrl);
   const issuer = "https://auth.upstream.test";
-  const codes = new Map<string, string>();
-  const accessTokens = new Set<string>();
+  const codes = new Map<string, { challenge: string; user: string }>();
+  // Each access token's owner, for the browser sign-in tests.
+  const accessTokens = new Map<string, string>();
   const refreshTokens = new Set<string>();
   const calls: { name: string; arguments: unknown }[] = [];
   const stats = { refreshes: 0 };
   const mode = { loginNeeded: false };
 
-  const issue = () => {
+  const issue = (user: string) => {
     const access = `at-${randomUUID()}`;
     const refresh = `rt-${randomUUID()}`;
-    accessTokens.add(access);
+    accessTokens.set(access, user);
     refreshTokens.add(refresh);
     return {
       access_token: access,
@@ -101,13 +103,13 @@ export const fakeUpstream = (
       return typeof value === "string" ? value : "";
     };
     if (field("grant_type") === "authorization_code") {
-      const challenge = codes.get(field("code"));
+      const granted = codes.get(field("code"));
       const verified =
-        challenge ===
+        granted?.challenge ===
         createHash("sha256").update(field("code_verifier")).digest("base64url");
       codes.delete(field("code"));
       return verified
-        ? c.json(issue())
+        ? c.json(issue(granted.user))
         : c.json({ error: "invalid_grant" }, 400);
     }
     stats.refreshes += 1;
@@ -115,7 +117,7 @@ export const fakeUpstream = (
     if (!refreshTokens.delete(refresh)) {
       return c.json({ error: "invalid_grant" }, 400);
     }
-    return c.json(issue());
+    return c.json(issue("u1"));
   });
   app.all(server.pathname, async (c) => {
     const token = c.req.header("authorization")?.replace(/^Bearer /u, "");
@@ -128,14 +130,14 @@ export const fakeUpstream = (
   });
 
   return {
-    // The merchant approving on the consent page: a code bound to the
+    // Someone approving on the consent page as `user`: a code bound to the
     // authorization URL's PKCE challenge.
-    approve: (authorizationUrl: URL) => {
+    approve: (authorizationUrl: URL, user = "u1") => {
       const code = `code-${randomUUID()}`;
-      codes.set(
-        code,
-        authorizationUrl.searchParams.get("code_challenge") ?? ""
-      );
+      codes.set(code, {
+        challenge: authorizationUrl.searchParams.get("code_challenge") ?? "",
+        user,
+      });
       return code;
     },
     calls,
@@ -144,6 +146,8 @@ export const fakeUpstream = (
     },
     fetch: async (input: string | URL | Request, init?: RequestInit) =>
       await app.fetch(new Request(input, init)),
+    ownerOf: async (token: string) =>
+      await Promise.resolve(accessTokens.get(token)),
     revokeAll: () => {
       accessTokens.clear();
       refreshTokens.clear();
@@ -153,4 +157,27 @@ export const fakeUpstream = (
     },
     stats,
   };
+};
+
+type Fake = ReturnType<typeof fakeUpstream>;
+
+// A merchant who already signed in to wovain in this browser authorizes the
+// provider: the provider half of the connect flow.
+export const connectWith = async (
+  upstream: Upstream,
+  fake: Fake,
+  userId: string,
+  id: ProviderId
+) => {
+  const nonceHash = nonceHashOf("this-browser");
+  const authorizationUrl = await upstream.authorize(userId, id, nonceHash);
+  if (authorizationUrl === undefined) {
+    throw new Error("no authorization URL");
+  }
+  const connected = await upstream.finishConnect(id, {
+    code: fake.approve(authorizationUrl),
+    nonceHash,
+    state: authorizationUrl.searchParams.get("state") ?? "",
+  });
+  return { authorizationUrl, connected, nonceHash };
 };

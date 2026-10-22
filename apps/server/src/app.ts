@@ -9,7 +9,7 @@ import type { Runtime } from "./runtime.ts";
 // Every route wovain serves: /mcp for agents, the metadata naming AuthKit as
 // its sign-in, and the home page. AuthKit hosts sign-in and consent.
 export const createApp = (runtime: Runtime) => {
-  const { auth, authEnv, upstream } = runtime;
+  const { auth, authEnv, connect } = runtime;
   const site = siteUrl(authEnv);
   const mcp = createMcpRoute(runtime);
 
@@ -18,8 +18,8 @@ export const createApp = (runtime: Runtime) => {
   app.all("/mcp", async (c) => await mcp(c.req.raw));
 
   // Merchants connect their Fourthwall and fal accounts here.
-  if (upstream !== undefined) {
-    app.route("/", createConnectRoutes(site, upstream));
+  if (connect !== undefined) {
+    app.route("/", createConnectRoutes({ ...connect, site }));
   }
 
   // Agents look for /mcp's metadata at

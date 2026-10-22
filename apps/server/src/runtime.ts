@@ -1,11 +1,15 @@
 import { createAuth } from "./auth/auth.ts";
+import type { Auth } from "./auth/auth.ts";
 import { loadAuthEnv, siteUrl } from "./auth/env.ts";
 import { loadEnv } from "./env.ts";
 import { createStorage } from "./firebase.ts";
 import type { Storage } from "./firebase.ts";
+import { createBrowserSignIn } from "./lib/browser-sign-in.ts";
+import type { BrowserSignIn } from "./lib/browser-sign-in.ts";
 import { kmsCipher, localCipher } from "./lib/cipher.ts";
 import { createConnections } from "./lib/connections.ts";
 import { createUpstream } from "./lib/upstream.ts";
+import type { Upstream } from "./lib/upstream.ts";
 
 // Merchant connections need the KMS key, except on the emulators (`pnpm
 // dev`), where an in-memory key stands in. Without either they're off.
@@ -15,18 +19,44 @@ const cipherFor = (keyName: string | undefined) => {
   return keyName === undefined ? local : kmsCipher(keyName);
 };
 
-const upstreamFor = (
+// The wovain user an AuthKit token for /mcp belongs to, checked exactly as
+// /mcp checks it (signature, issuer, audience and the allowlist).
+const userOfFor = (auth: Auth, site: string) => async (accessToken: string) => {
+  const authInfo = await auth.gate(
+    new Request(`${site}/mcp`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    })
+  );
+  const userId =
+    authInfo instanceof Response ? undefined : authInfo.extra?.["userId"];
+  const allowed = typeof userId === "string" && (await auth.allowed(userId));
+  return allowed ? userId : undefined;
+};
+
+export interface Connect {
+  signIn: BrowserSignIn;
+  upstream: Upstream;
+}
+
+const connectFor = (
   keyName: string | undefined,
   storage: Storage,
+  auth: Auth,
   site: string
-) => {
+): Connect | undefined => {
   const cipher = cipherFor(keyName);
-  return cipher === undefined
-    ? undefined
-    : createUpstream({
-        connections: createConnections(storage.db, cipher),
-        site,
-      });
+  if (cipher === undefined) {
+    return undefined;
+  }
+  const connections = createConnections(storage.db, cipher);
+  return {
+    signIn: createBrowserSignIn({
+      connections,
+      site,
+      userOf: userOfFor(auth, site),
+    }),
+    upstream: createUpstream({ connections, site }),
+  };
 };
 
 // The deployed server's dependencies, from process.env and the Firebase
@@ -34,17 +64,16 @@ const upstreamFor = (
 // connects until the first request.
 export const createRuntime = () => {
   const authEnv = loadAuthEnv();
-  const env = loadEnv({
-    WOVAIN_ICON_URL: `${siteUrl(authEnv)}/icon.png`,
-    ...process.env,
-  });
+  const site = siteUrl(authEnv);
+  const env = loadEnv({ WOVAIN_ICON_URL: `${site}/icon.png`, ...process.env });
+  const auth = createAuth(authEnv);
   const storage = createStorage();
   return {
-    auth: createAuth(authEnv),
+    auth,
     authEnv,
+    connect: connectFor(env.WOVAIN_KMS_KEY, storage, auth, site),
     env,
     storage,
-    upstream: upstreamFor(env.WOVAIN_KMS_KEY, storage, siteUrl(authEnv)),
   };
 };
 

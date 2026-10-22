@@ -3,10 +3,10 @@ import { setImmediate as nextTick } from "node:timers/promises";
 import { describe, expect, test } from "vitest";
 
 import { localCipher } from "../../src/lib/cipher.ts";
-import { createConnections } from "../../src/lib/connections.ts";
+import { createConnections, nonceHashOf } from "../../src/lib/connections.ts";
 import type { ProviderId } from "../../src/lib/connections.ts";
 import { createUpstream } from "../../src/lib/upstream.ts";
-import { fakeUpstream } from "../fake-upstream.ts";
+import { connectWith, fakeUpstream } from "../fake-upstream.ts";
 import { testStorage } from "../helpers.ts";
 
 const site = "https://wovain.test";
@@ -31,23 +31,10 @@ const setup = (id: ProviderId = "fourthwall", expiresIn?: number) => {
   return { a: instance(), b: instance(), clock, db, fake, id };
 };
 
-const ticketOf = (connectUrl: string) =>
-  new URL(connectUrl).searchParams.get("ticket") ?? "";
-
-// The merchant follows the link and approves on the provider's page.
-const connect = async ({ a, fake, id }: ReturnType<typeof setup>) => {
-  const link = await a.connectUrl("u1", id);
-  const authorizationUrl = await a.startConnect(ticketOf(link), id);
-  if (authorizationUrl === undefined) {
-    throw new Error("no authorization URL");
-  }
-  const state = authorizationUrl.searchParams.get("state") ?? "";
-  const connected = await a.finishConnect(id, {
-    code: fake.approve(authorizationUrl),
-    state,
-  });
-  return { authorizationUrl, connected };
-};
+// The merchant, signed in to wovain in this browser, approves on the
+// provider's page.
+const connect = async ({ a, fake, id }: ReturnType<typeof setup>) =>
+  await connectWith(a, fake, "u1", id);
 
 const shop = { args: {}, tool: "ecommerce_get-current-shop", userId: "u1" };
 
@@ -94,13 +81,43 @@ describe("connected calls", () => {
 
   test("a used state can't be exchanged twice", async () => {
     const env = setup();
-    const { authorizationUrl } = await connect(env);
+    const { authorizationUrl, nonceHash } = await connect(env);
     await expect(
       env.a.finishConnect(env.id, {
         code: env.fake.approve(authorizationUrl),
+        nonceHash,
         state: authorizationUrl.searchParams.get("state") ?? "",
       })
     ).resolves.toBe(false);
+  });
+
+  test("another browser can't finish the flow", async () => {
+    const env = setup();
+    const authorizationUrl = await env.a.authorize(
+      "u1",
+      env.id,
+      nonceHashOf("victim-browser")
+    );
+    if (authorizationUrl === undefined) {
+      throw new Error("no authorization URL");
+    }
+    const state = authorizationUrl.searchParams.get("state") ?? "";
+    const code = env.fake.approve(authorizationUrl);
+    await expect(
+      env.a.finishConnect(env.id, {
+        code,
+        nonceHash: nonceHashOf("attacker-browser"),
+        state,
+      })
+    ).resolves.toBe(false);
+    // The flow survives for the browser that started it.
+    await expect(
+      env.a.finishConnect(env.id, {
+        code,
+        nonceHash: nonceHashOf("victim-browser"),
+        state,
+      })
+    ).resolves.toBe(true);
   });
 
   test("a grant near expiry is refreshed once, even by two instances", async () => {

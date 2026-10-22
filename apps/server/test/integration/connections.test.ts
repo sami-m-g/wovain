@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { localCipher } from "../../src/lib/cipher.ts";
-import { createConnections } from "../../src/lib/connections.ts";
+import { createConnections, nonceHashOf } from "../../src/lib/connections.ts";
 import { testStorage } from "../helpers.ts";
 
 const setup = () => {
@@ -108,15 +108,40 @@ describe("tickets", () => {
 });
 
 describe("flows", () => {
+  const flow = {
+    nonceHash: nonceHashOf("browser"),
+    provider: "fal",
+    purpose: "connect",
+    userId: "u1",
+  } as const;
+
   test("are taken once", async () => {
     const { connections } = setup();
-    const state = await connections.createFlow("u1", "fal");
+    const state = await connections.createFlow(flow);
     await connections.updateFlow(state, { codeVerifier: "v" });
-    await expect(connections.takeFlow(state)).resolves.toMatchObject({
+    await expect(
+      connections.takeFlow(state, "connect", flow.nonceHash)
+    ).resolves.toMatchObject({
       codeVerifier: "v",
       provider: "fal",
       userId: "u1",
     });
-    await expect(connections.takeFlow(state)).resolves.toBeUndefined();
+    await expect(
+      connections.takeFlow(state, "connect", flow.nonceHash)
+    ).resolves.toBeUndefined();
+  });
+
+  test("only open for their own browser and purpose", async () => {
+    const { connections } = setup();
+    const state = await connections.createFlow(flow);
+    await expect(
+      connections.takeFlow(state, "connect", nonceHashOf("other"))
+    ).resolves.toBeUndefined();
+    await expect(
+      connections.takeFlow(state, "signin", flow.nonceHash)
+    ).resolves.toBeUndefined();
+    await expect(
+      connections.takeFlow(state, "connect", flow.nonceHash)
+    ).resolves.toMatchObject({ userId: "u1" });
   });
 });

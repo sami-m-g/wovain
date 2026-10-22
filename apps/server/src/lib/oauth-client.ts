@@ -13,7 +13,7 @@ import type { Connections, Flow, Grant, ProviderId } from "./connections.ts";
 // wovain's client identity, a Client ID Metadata Document: the URL it's
 // served at is the client_id, so nothing is registered with the providers.
 export const clientMetadataUrl = (site: string) => `${site}/oauth/client.json`;
-export const callbackUrl = (site: string, provider: ProviderId) =>
+const callbackUrl = (site: string, provider: ProviderId | "wovain") =>
   `${site}/oauth/callback/${provider}`;
 
 export const clientMetadata = (site: string): OAuthClientMetadata => ({
@@ -21,8 +21,8 @@ export const clientMetadata = (site: string): OAuthClientMetadata => ({
   client_uri: site,
   grant_types: ["authorization_code", "refresh_token"],
   logo_uri: `${site}/icon.png`,
-  redirect_uris: providerSchema.options.map((provider) =>
-    callbackUrl(site, provider)
+  redirect_uris: [...providerSchema.options, "wovain" as const].map(
+    (provider) => callbackUrl(site, provider)
   ),
   response_types: ["code"],
   token_endpoint_auth_method: "none",
@@ -45,6 +45,9 @@ interface Options {
   flow?: Pick<Flow, "codeVerifier" | "discoveryState"> & { state: string };
   // The stored grant (a proxied call).
   grant?: Grant;
+  // Browser sign-in to wovain itself: tokens stay in memory and the
+  // redirect goes to /oauth/callback/wovain.
+  signIn?: boolean;
   provider: ProviderId;
   site: string;
   userId: string;
@@ -75,7 +78,8 @@ export class FirestoreOAuthProvider implements OAuthClientProvider {
   }
 
   get redirectUrl() {
-    return callbackUrl(this.#options.site, this.#options.provider);
+    const { provider, signIn, site } = this.#options;
+    return callbackUrl(site, signIn === true ? "wovain" : provider);
   }
 
   // The grant version this provider read, for version-checked deletes.
@@ -106,10 +110,12 @@ export class FirestoreOAuthProvider implements OAuthClientProvider {
     if (scope !== "all" && scope !== "tokens") {
       return;
     }
-    const { connections, provider, userId } = this.#options;
+    const { connections, provider, signIn, userId } = this.#options;
     this.invalidated = true;
     this.#tokens = undefined;
-    await connections.remove(userId, provider, this.version);
+    if (signIn !== true) {
+      await connections.remove(userId, provider, this.version);
+    }
   }
 
   redirectToAuthorization(authorizationUrl: URL) {
@@ -125,9 +131,11 @@ export class FirestoreOAuthProvider implements OAuthClientProvider {
   }
 
   async saveTokens(tokens: StoredOAuthTokens) {
-    const { connections, provider, userId } = this.#options;
+    const { connections, provider, signIn, userId } = this.#options;
     this.#tokens = tokens;
-    await connections.save(userId, provider, tokens);
+    if (signIn !== true) {
+      await connections.save(userId, provider, tokens);
+    }
   }
 
   // The flow id is the OAuth state; outside a connect flow no state is sent
