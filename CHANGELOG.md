@@ -1,3 +1,26 @@
+# [0.17.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.16.0...v0.17.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **ai:** redact genkit span payloads and bound the judge brief ([2017ba9](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/2017ba939a859e0bffadc169f9a99c44d4250256))
+* **duo:** keep the scout digest confidential and treat all GitLab content as untrusted ([7e47ab7](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/7e47ab7b6a38e433bcac1b7d354cb697eb4407f3))
+* **infra:** adopt the labels agents created by hand ([4988283](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/4988283ef5cbdb4f920df11b97b76f71121f2fdd))
+* **infra:** let gitlab order the workflow board lists ([6b9e649](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/6b9e649efd045dd91c00be3f671695c380292d32))
+* **settings:** honor alert and utm toggles, remove unread settings ([5383342](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/5383342ec1d4a558b0bc871828c3e2a16e1083c0)), closes [#10](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/10)
+* **skills:** request the duo reviewer only when its trigger is on ([6342bb8](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/6342bb84d7e7e7bf92d63af51a491f6e4d5760a0))
+* **telemetry:** export genkit spans with an attribute allowlist ([1b16b6e](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/1b16b6ebc0ba3c167c0f582ba75492bb60323f0a))
+
+
+### Features
+
+* **ai:** check designs with nemotron through genkit on nebius ([d1fbcc6](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/d1fbcc68df8aaa89c7738f6c066e8ba9157ab590)), closes [#2](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/2)
+* **duo:** file scout findings as intents ([c357295](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/c3572953349c5ee8de3267f2e06d65cdceeefd71))
+* **duo:** post a daily digest from the scout flow ([dd53e5b](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/dd53e5b337a8875eb576afd2c678b2b1ef4bde8f))
+* **infra:** add intent, spec and plan stages to the workflow board ([7eb49ec](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/7eb49ec3cde914b0179207704a1fdbb476e1c1cd))
+* **infra:** manage issue labels and the workflow board in code ([d0d4d71](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/d0d4d71c829544a119f9e0f4829cabed2c8de8cb))
+* **infra:** manage workos mcp resource indicators ([e09e33b](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e09e33b306145f1a811953d31c82efa6bc989078))
+
 # [0.16.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.15.0...v0.16.0) (2026-10-22)
 
 
