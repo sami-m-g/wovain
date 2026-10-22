@@ -94,5 +94,7 @@ config:
     secure: v1:DObnXNQ8bR1gRS68:V04mVs6m6ZMdEYNwTEZq+sz99pcefRxFzw6Y4QkEOdvrevI/ZSH70hst8BVEedfcXlKBJJCB6mdY/t6lVcvP8T85rf8lo2V/1HIcZEDt
   github:token:
     secure: v1:kfWUuhyMSjRr+uV5:2WLDTnEniORUTKMBTAj8e/4ygwTqshwhdaCF6CTPtj5qlz60+n6nYZQA+Vq6BkselOmvcl0E09ePrNs8yXp8/wBS0gB3fdI/gyt8gFNpLnvMUiu/j8Y2Q5J2HEKLN0Cw105ymPQzV8FIv57eWA==
+  wovain:nebius-api-key:
+    secure: v1:sIae3yg/vFm3zlFs:VdAckm6D4GiO/9hgpJghj1iANAjp2k84I3iCbYK+/x3XYLl05ERu4wrXHOGNAo3jOehjiIq6dKFvlD3wdcM664ZjHcf/Wy5A3h/33pwxpdjUnw4GXz0cDNCLl3kkpWCvB84rOLUu9fE9pQkIrn7Cgm4o6m+w1aUxGGSgWxGPBEBFP6HjxrXK2pBGvLcyOmXn9IlQnzafwaJIN+ZbhdGma28YINQdhAtBL3jQHd6xE6u1CS4y9giSsDORgsT45IayNkq6eIwWd/5WVtqEoxqVNdVrrJJaFpOq3Yux+4ZhyDOvsI/CRieDnynXcIcYcXWohCu5ZWrB4HL3CHc=
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
