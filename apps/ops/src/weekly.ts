@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { analysisReport, funnelOf, marketIntent } from "./analysis.ts";
 import type { Finding } from "./analysis.ts";
-import { createGitLab } from "./gitlab.ts";
-import { createGoogle, REQUESTS } from "./google.ts";
+import { ciContext } from "./ci.ts";
+import { REQUESTS } from "./google.ts";
 import { readRecords } from "./records.ts";
 import { marker } from "./report.ts";
 
@@ -14,17 +14,16 @@ import { marker } from "./report.ts";
 // drop-off. No model call: the intent is assembled from the data, so the
 // ranking is deterministic and costs nothing to run.
 
-const env = z
-  .object({
-    CI_API_V4_URL: z.url().default("https://gitlab.com/api/v4"),
-    CI_PROJECT_ID: z.string(),
-    CI_PROJECT_PATH: z.string(),
-    CI_PROJECT_ROOT_NAMESPACE: z.string(),
-    FIREBASE_PROJECT_ID: z.string(),
-    GITLAB_TOKEN: z.string(),
-    TAVILY_API_KEY: z.string().optional(),
-  })
-  .parse(process.env);
+const { env: ci, gitlab, google } = ciContext();
+const env = {
+  ...ci,
+  ...z
+    .object({
+      CI_PROJECT_ROOT_NAMESPACE: z.string(),
+      TAVILY_API_KEY: z.string().optional(),
+    })
+    .parse(process.env),
+};
 
 // Three basic searches a week: 3 Tavily credits.
 const QUERIES = [
@@ -36,13 +35,6 @@ const PER_QUERY = 3;
 
 const now = new Date();
 const week = { end: now, start: new Date(now.getTime() - 7 * 86_400_000) };
-const gitlab = createGitLab({
-  api: env.CI_API_V4_URL,
-  project: env.CI_PROJECT_ID,
-  projectPath: env.CI_PROJECT_PATH,
-  token: env.GITLAB_TOKEN,
-});
-const google = createGoogle(env.FIREBASE_PROJECT_ID);
 
 // Credits need the token's owner to be in the namespace; without that the
 // report says "not readable".

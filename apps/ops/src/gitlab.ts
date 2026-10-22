@@ -65,6 +65,9 @@ const discussionSchema = z.object({
   ),
 });
 
+const jobSchema = z.object({ duration: z.number().nullable() });
+const pipelineSchema = z.object({ id: z.int(), status: z.string() });
+
 const userSchema = z.object({ id: z.int(), username: z.string() });
 
 // Duo sessions (GraphQL duoWorkflowWorkflows, the query the Agent sessions
@@ -256,6 +259,14 @@ export const createGitLab = (env: {
     noteOnMergeRequest: async (mr: number, body: string) =>
       await inProject(z.unknown(), "POST", `merge_requests/${mr}/notes`, {
         body,
+      }),
+    // A pipeline's jobs; duration is null until a job has run.
+    pipelineJobs: async (pipeline: number) =>
+      await allPages(jobSchema, `pipelines/${pipeline}/jobs`),
+    pipelines: async (query: Query) =>
+      await inProject(z.array(pipelineSchema), "GET", "pipelines", {
+        per_page: 100,
+        ...query,
       }),
     relatedMergeRequests: async (issue: number) =>
       await inProject(
