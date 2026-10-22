@@ -35,9 +35,9 @@ const mcpFetch = createMcpFetch(
 // routes/mcp.ts verifies the OAuth token first and passes who it belongs to.
 const caller = (userId: string) => ({
   clientId: "chatgpt",
+  extra: { userId },
   scopes: [],
   token: "verified-upstream",
-  userId,
 });
 
 const connect = async (userId: string) => {

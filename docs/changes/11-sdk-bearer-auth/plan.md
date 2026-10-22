@@ -4,7 +4,7 @@ Spec: [spec.md](spec.md)
 
 ## Files that change
 
-- `apps/server/src/auth/auth.ts`: SDK verifier and gate, `orNullIfMissing` for WorkOS errors, `requireMcpAuth` that hands `AuthInfo` on, no `Caller` and no regex.
+- `apps/server/src/auth/auth.ts`: SDK verifier and gate, `orNullIfMissing` for WorkOS errors, `requireMcpAuth` that hands `AuthInfo` on, no `Caller` and no regex. Both outages (WorkOS lookup, AuthKit key fetch) go through one `rethrowOutage` that logs the error's class and status and rethrows. `createAuth` no longer returns `metadataUrl`, which nothing outside it reads now.
 - `apps/server/src/http.ts`: drop `Caller`; `createMcpFetch` takes `AuthInfo`.
 - `apps/server/src/routes/mcp.ts`: pass `mcpFetch` straight to `requireMcpAuth`, drop `stringOf` and the claim mapping, and make `rpcOf` use `isJSONRPCRequest`.
 - `apps/server/test/unit/auth.test.ts`: the 401 header check becomes `toContain` on `resource_metadata="..."`. New cases: an expired token gets 401, `client_id` and `scope` reach `AuthInfo`, a non-404 WorkOS error is rethrown (handler not called), and `orNullIfMissing` maps `NotFoundException` to `null` and rethrows anything else.

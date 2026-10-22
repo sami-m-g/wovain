@@ -108,9 +108,9 @@ How sign-in works:
 
 | Piece | Behavior |
 | --- | --- |
-| Discovery | `/mcp` without a token answers 401 with `resource_metadata` pointing at `/.well-known/oauth-protected-resource/mcp`, which names the AuthKit domain (`WORKOS_AUTHKIT_DOMAIN`) as the authorization server. AuthKit's own metadata offers PKCE S256, CIMD and dynamic registration; both are switched on in the WorkOS dashboard under Connect → Configuration |
+| Discovery | `/mcp` without a valid token answers 401 with an `invalid_token` Bearer challenge whose `resource_metadata` points at `/.well-known/oauth-protected-resource/mcp`, which names the AuthKit domain (`WORKOS_AUTHKIT_DOMAIN`) as the authorization server. AuthKit's own metadata offers PKCE S256, CIMD and dynamic registration; both are switched on in the WorkOS dashboard under Connect → Configuration |
 | Sign-in and consent | AuthKit's hosted pages (Google, plus the methods enabled in WorkOS). Its consent screen names the registering app |
-| Token check | `requireMcpAuth` (`src/auth/auth.ts`) checks AuthKit's signature against its JWKS, the issuer, and an audience of exactly `<site>/mcp`. The audience comes from a resource indicator in WorkOS. For now production and local development share the WorkOS Staging environment, with the App Hosting URL's `/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`) and `http://localhost:3000/mcp`. Without both WorkOS keys every call gets a 401 |
+| Token check | `requireMcpAuth` (`src/auth/auth.ts`) runs the MCP SDK's `requireBearerAuth` with a verifier that checks AuthKit's signature against its JWKS, the issuer, the expiry and an audience of exactly `<site>/mcp`, then hands the SDK's `AuthInfo` to the tools. A WorkOS or JWKS outage answers 500, not 401 or 403. The audience comes from a resource indicator in WorkOS. For now production and local development share the WorkOS Staging environment, with the App Hosting URL's `/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`) and `http://localhost:3000/mcp`. Without both WorkOS keys every call gets a 401 |
 | Site URL | `WOVAIN_SITE_URL` (`apphosting.yaml` sets the App Hosting URL), or `http://localhost:3000` when unset |
 | Allowlist | Until each merchant links their own Meta account, everyone signed in acts through the operator's Meta and fal keys, so sign-in is limited to the verified emails in `WOVAIN_ALLOWED_EMAILS`. The list is checked on every `/mcp` call against the user's verified email in WorkOS, so taking an email off it cuts off tokens already issued; an empty list lets nobody in |
 | Static files | `apps/server/public/` (icon, favicon), served by the app (`serveStatic` in `src/index.ts`) |
@@ -363,7 +363,7 @@ wovain/
 │   │   │   ├── app.ts           # routes: /mcp, /.well-known/oauth-protected-resource, /
 │   │   │   ├── runtime.ts       # env, AuthKit token check and the Firebase store from process.env
 │   │   │   ├── firebase.ts      # firebase-admin app: Firestore and the private Storage bucket
-│   │   │   ├── routes/mcp.ts    # requireMcpAuth, allowlist check, mcp.request span
+│   │   │   ├── routes/mcp.ts    # requireMcpAuth (SDK bearer gate), allowlist check, mcp.request span
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── server.ts        # McpServer: instructions, tools, widgets, playbooks
 │   │   │   ├── playbooks/       # design.ts, ads.ts, campaign.ts; index.ts: instructions, get_playbook, prompts
