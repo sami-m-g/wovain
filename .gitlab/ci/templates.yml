@@ -25,6 +25,15 @@
 # protected main branch is trusted (infra/index.ts). GCP_WORKLOAD_IDENTITY_PROVIDER
 # is the provider's full name, projects/<number>/locations/global/
 # workloadIdentityPools/gitlab/providers/gitlab; each job sets GCP_SERVICE_ACCOUNT.
+# infra/ is its own pnpm project: the Pulumi CLI's `pulumi install` installs it
+# and generates infra/sdks (gitignored) from infra/Pulumi.yaml.
+.pulumi-install:
+  before_script:
+    - !reference [.pnpm-install, before_script]
+    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
+    - export PATH="$HOME/.pulumi/bin:$PATH"
+    - pnpm infra:install
+
 .gcp-auth:
   id_tokens:
     GITLAB_OIDC_TOKEN:

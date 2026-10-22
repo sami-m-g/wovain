@@ -19,6 +19,7 @@
     "widgets:watch": "pnpm --filter @wovain/widgets build --watch",
     "dev": "pnpm --filter @wovain/server dev",
     "start": "node apps/server/src/index.ts",
+    "infra:install": "pulumi install --cwd infra",
     "infra:preview": "pulumi preview --cwd infra --stack prod",
     "infra:up": "pulumi up --cwd infra --stack prod"
   },

@@ -1,0 +1,24 @@
+# Custom Duo flows in .gitlab/duo/catalog/flows, through GitLab's ai-catalog
+# component (included in .gitlab-ci.yml). These only change its rules;
+# overriding `extends` would drop the component's image and setup.
+
+# Schema check on every change to the flows.
+validate-items:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - changes: [.gitlab/duo/catalog/**/*]
+
+# Sync to the AI Catalog on main. The component runs this on tags, but release
+# tags point at the release commit, whose pipeline is skipped, so it would
+# never run. It runs in the test stage, before infra:production (deploy), which
+# fetches the mapping.json the sync commits to main ([skip ci], so no new
+# pipeline) and enables and schedules the synced flows in the same pipeline.
+catalog-sync:
+  stage: test
+  interruptible: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: [.gitlab/duo/catalog/**/*]

@@ -1,4 +1,47 @@
 config:
+  # GitLab Duo flow triggers on GitLab's built-in flows (infra/duo.ts). flow is
+  # the flow's foundationalFlowReference; events use GitLab's EVENT_TYPES names.
+  wovain:duoTriggers:
+    - name: duo-developer
+      description: Developer flow on assign or mention
+      flow: developer/v1
+      serviceAccount: duo-developer-gitlab-ai-hackathon
+      events: [assign, mention]
+    - name: duo-fix-pipeline
+      description: Fix CI/CD on failed pipeline
+      flow: fix_pipeline/v1
+      serviceAccount: duo-fix-ci-cd-pipeline-gitlab-ai-hackathon
+      events: [pipeline_hooks]
+      active: false # off for now
+      filter:
+        pipeline_hooks:
+          match: all
+          rules:
+            - field: object_attributes.status
+              operator: in
+              value: [failed]
+    - name: duo-code-review
+      description: Code review on new or ready MR
+      flow: code_review/v1
+      serviceAccount: duo-code-review-gitlab-ai-hackathon
+      events: [merge_request, merge_request_ready]
+      active: false # off for now
+      filter:
+        merge_request:
+          match: all
+          rules:
+            - field: action
+              operator: in
+              value: [created]
+  # Custom flows from .gitlab/duo/catalog/flows, enabled once synced.
+  wovain:duoCustomFlows:
+    - name: duo-scout
+      file: .gitlab/duo/catalog/flows/scout.yml
+      events: [scheduled]
+      schedule:
+        cron: "0 7 * * *"
+        timezone: UTC
+        description: wovain scout, daily
   gcp:project: wovain
   gcp:region: us-central1
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase

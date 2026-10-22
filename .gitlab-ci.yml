@@ -1,8 +1,9 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
 #   verify    build; lint, types, dead code, tests; widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   deploy    main: pulumi up (infra/), then push to the GitHub mirror and
-#             roll out on Firebase App Hosting
+#   deploy    main: sync custom Duo flows to the AI Catalog, pulumi up
+#             (infra/), then push to the GitHub mirror and roll out on
+#             Firebase App Hosting
 #   monitor   smoke-test the live OAuth chain
 #   release   semantic-release: version, CHANGELOG, GitLab release; GitHub mirror
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
@@ -23,12 +24,26 @@ include:
   - template: Jobs/SAST.gitlab-ci.yml
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  # Custom Duo flows: validated on change, synced to the AI Catalog on main.
+  - component: $CI_SERVER_FQDN/components/ai-catalog/catalog-sync@0.0.32
+    inputs:
+      agent_directory: .gitlab/duo/catalog/agents
+      flow_directory: .gitlab/duo/catalog/flows
+      mapping_file: .gitlab/duo/catalog/mapping.json
+      gitlab_token: $GITLAB_TOKEN
+      # Our role can't enable flows in the top-level group, which the component
+      # does first, so it only syncs; infra/duo.ts enables them in the project.
+      enable_in_project: "false"
+      public: "false"
+      # Only a label in the mapping file; the sync runs on main, not on tags.
+      version: $CI_COMMIT_SHORT_SHA
   - local: .gitlab/ci/templates.yml
   - local: .gitlab/ci/verify.yml
   - local: .gitlab/ci/secure.yml
   - local: .gitlab/ci/deploy.yml
   - local: .gitlab/ci/monitor.yml
   - local: .gitlab/ci/release.yml
+  - local: .gitlab/ci/duo.yml
 
 stages:
   - verify
@@ -45,3 +60,4 @@ variables:
   # Run SAST and Secret Detection on merge requests too, not only on main.
   AST_ENABLE_MR_PIPELINES: "true"
   PNPM_VERSION: 12.3.4
+  PULUMI_VERSION: 3.259.0

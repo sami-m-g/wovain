@@ -10,15 +10,26 @@
       ".claude",
       ".gitlab",
       "docs",
-      "*-debug.log"
+      "*-debug.log",
+      "infra"
     ]
   },
-  "firestore": { "rules": "apps/server/firestore.rules" },
-  "storage": { "rules": "apps/server/storage.rules" },
+  "firestore": {
+    "rules": "apps/server/firestore.rules"
+  },
+  "storage": {
+    "rules": "apps/server/storage.rules"
+  },
   "emulators": {
-    "firestore": { "port": 8080 },
-    "storage": { "port": 9199 },
-    "ui": { "enabled": false },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": false
+    },
     "singleProjectMode": false
   }
 }

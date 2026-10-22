@@ -7,10 +7,14 @@ infra:production:
   resource_group: infra
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
-    PULUMI_VERSION: 3.259.0
   script:
     - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
     - export PATH="$HOME/.pulumi/bin:$PATH"
+    - pnpm infra:install
+    # catalog-sync (test stage) commits mapping.json to main after this
+    # pipeline's checkout; infra/duo.ts reads it to enable the synced flows.
+    - git fetch -q origin main
+    - if git cat-file -e FETCH_HEAD:.gitlab/duo/catalog/mapping.json 2>/dev/null; then git checkout FETCH_HEAD -- .gitlab/duo/catalog/mapping.json; fi
     - pnpm infra:up --yes --non-interactive
   # Google trusts gitlab-infra only for jobs in this environment.
   environment:
