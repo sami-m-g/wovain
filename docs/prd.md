@@ -290,6 +290,15 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 - Apply the fix carries out the suggestion; Dismiss leaves the campaign as is.
 - If the shop shows a sale for a paused ad that Meta missed, the widget offers to turn that ad back on.
 
+### Autopilot
+
+The merchant can also run the whole journey with no approvals: "create a t-shirt for me on autopilot".
+
+- **Opt-in, once.** The merchant turns autopilot on from a wovain page in their own browser, after signing in. The page states the terms: products created hidden, the campaign staged paused, at most $5 of their fal credit per run, at most 2 revisions per design, AI-made ads labeled. They can stop a run or turn autopilot off from the chat at any time.
+- **Nemotron decides at each approval point.** It picks the idea from research, approves, revises or drops each design (the design judge), and approves or skips each ad concept. Code holds the limits: no trademark hits on any product's text or the art's words, every price at or above the merchant's minimum, sharp prints, and the revision and design caps. Every decision is stored with its reason.
+- **Going live stays the merchant's.** Pressing Launch on the campaign widget opens the confirm page, which names the hidden products. Confirming makes exactly those public and starts the campaign together.
+- Videos are off unless the merchant asks for them; the operator can switch autopilot off for everyone.
+
 ## States and Boundaries
 
 | # | When | What the merchant sees | Copy | Next action |
@@ -369,7 +378,7 @@ When a rule has fired, wovain runs its optimization step on the flagged item and
 | Trend research | The merchant brings their own ideas |
 | A custom video or image model | The goal is minimal code |
 | A custom media-buying engine | Advantage+ and Meta rules already optimize campaigns |
-| Draft or hidden products | Publishing directly takes fewer steps |
+| Draft or hidden products (outside autopilot) | Publishing directly takes fewer steps; autopilot creates products hidden until the merchant confirms the launch |
 | Cut-and-sew tech packs (materials list, measurement specs, flat sketches) | For print-on-demand they reduce to blank, placement and file specs |
 
 ## Open Questions

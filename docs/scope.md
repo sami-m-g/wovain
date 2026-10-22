@@ -97,7 +97,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 | Trend research | The merchant brings their own ideas, which proves the loop |
 | A custom video or image model | The goal is minimal code |
 | A custom media-buying engine | Advantage+ and Meta rules already optimize campaigns |
-| Draft or hidden products | Publishing directly takes fewer steps and carries little risk |
+| Draft or hidden products (outside autopilot) | Publishing directly takes fewer steps and carries little risk; autopilot keeps its products hidden until the merchant confirms the launch |
 
 ## Open questions for later phases
 

@@ -108,3 +108,21 @@ This is a `priority::1` feature that spends money, so it stops here for a human 
   - a paused campaign visible in Ads Manager with its ads and rules;
   - the run's fal charge under `maxSpend`;
   - every decision with its reasoning in `autopilot_status`.
+
+## As built (one MR, after the owner's answers)
+
+The owner approved with these answers: products hidden; one human "go live" through the launch confirm page that publishes the products and starts the campaign together; $5 cap per run; at most 2 revisions; videos off by default; Meta AI label on; the campaign always staged paused. The owner also asked for small code on the existing tools, so this MR replaces the six-MR plan with a host-driven design:
+
+- **No Cloud Tasks runner.** The host agent runs the existing design, ads and campaign playbooks (`playbooks/autopilot.ts`). At each approval point it calls `autopilot_decide`, and Nemotron (Genkit, `models.autopilot`) decides on the server, with every limit checked in code. The model can ask for a decision but can't make one: no tool takes an approval as input.
+- **Consent:** `autopilot_opt_in` makes a confirm-page link (`browser-confirm.ts`, `kind: "autopilot"`); only that page's Confirm writes `autopilotConsent`. `autopilot_stop` with `turnOff` revokes it. `WOVAIN_AUTOPILOT=off` is the operator's switch.
+- **Runs:** `autopilotRun/{runKey}` holds:
+  - the decisions and the spend;
+  - the designs decided, and the ones dropped;
+  - each art job with its declared words and, once read, its image URL.
+
+  Same key, same run; one running run per merchant.
+
+- **Art provenance:** in a run, `generate_art` sends each piece as its own job. A design is approved only if every artwork URL is one of the run's job results. OCR on fal (`fal-ai/florence-2-large/ocr`, $0.00125 per compute second, counted as $0.01) reads each image. Words its piece didn't declare refuse approval, and the declared words are screened with the listings.
+- **Spend:** `chargeRun` runs before every paid fal call (`generate_art`, `generate_ad_images`, `generate_videos`, `add_video_audio`, the OCR read), at list price, in a transaction.
+- **Hidden products and go live:** an autopilot approval names the run, so `publish_design` creates the products and collection hidden. `request_launch` pins the exact hidden drops in the launch snapshot; `launch_campaign` makes only those public, then publishes the campaign.
+- **Not built here:** the Cloud Tasks runner, the run-status widget, the competition and Ad Library signals, and the learning loop. The ads decision uses !48's ad concepts. The idea decision uses today's `research_trends`; !46 (Qloo) hadn't merged, so its signals need a small follow-up once it lands.
