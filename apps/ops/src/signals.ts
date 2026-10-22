@@ -77,7 +77,7 @@ export const groupSignals = (signals: Signal[]): Problem[] => {
       fingerprint,
       samples: [],
       sources: [],
-      title: clip(signal.title, TITLE_MAX),
+      title: clip(redact(signal.title), TITLE_MAX),
     };
     problem.count += signal.count;
     if (!problem.sources.includes(signal.source)) {

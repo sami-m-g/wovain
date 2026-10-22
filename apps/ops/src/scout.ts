@@ -1,4 +1,4 @@
-import type { GitLab, Issue } from "./gitlab.ts";
+import type { GitLab, Issue, Note } from "./gitlab.ts";
 import { REQUESTS } from "./google.ts";
 import type { Google, Range } from "./google.ts";
 import type { O11y } from "./o11y.ts";
@@ -28,12 +28,29 @@ const problemsIn = async (
   { google, o11y }: Sources,
   range: Range
 ): Promise<Problem[]> => {
-  const signals = await Promise.all([
-    google.errors(range),
-    o11y?.errors(range) ?? Promise.resolve([]),
-  ]);
+  // GitLab Observability is optional: if its query fails, Google's signals
+  // still count, and the failure is logged without the response body.
+  const fromO11y = async () => {
+    try {
+      return (await o11y?.errors(range)) ?? [];
+    } catch (error) {
+      console.error("GitLab Observability read failed:", String(error));
+      return [];
+    }
+  };
+  const signals = await Promise.all([google.errors(range), fromO11y()]);
   return groupSignals(signals.flat());
 };
+
+// The loop's own issues carry its marker; it files them with GITLAB_TOKEN.
+export const fromLoop = (issue: Issue) =>
+  (issue.description ?? "").includes(marker("issue"));
+
+// When the loop's user last assigned the issue to Duo (newest note first).
+export const assignedAt = (notes: Note[], loopUser: string) =>
+  notes.find(
+    (n) => n.author.username === loopUser && n.body.includes(marker("assigned"))
+  )?.created_at;
 
 const scoutIssues = async (gitlab: GitLab) =>
   await gitlab.issues({
@@ -44,10 +61,16 @@ const scoutIssues = async (gitlab: GitLab) =>
 
 // Assigning the Developer service account is what starts the flow: GitLab
 // runs the "assign" trigger for a human's assignment (the token's owner).
+// The marker note records the assignment, so the shepherd can tell that the
+// Duo session behind an MR started from it.
 const handToDuo = async (gitlab: GitLab, issue: number) => {
   const id = await gitlab.userId(DEVELOPER);
-  await gitlab.updateIssue(issue, { assignee_ids: "" });
-  await gitlab.updateIssue(issue, { assignee_ids: String(id) });
+  await gitlab.noteOnIssue(
+    issue,
+    `Assigned to Duo's Developer flow by the wovain loop.\n\n${marker("assigned")}`
+  );
+  await gitlab.updateIssue(issue, { assignee_ids: [] });
+  await gitlab.updateIssue(issue, { assignee_ids: [id] });
 };
 
 const fileProblem = async (
@@ -82,8 +105,13 @@ export const scout = async (sources: Sources, now: Date) => {
   const seen = await problemsIn(sources, range);
   const problems = seen.filter((p) => p.count >= MIN_COUNT);
   const known = await scoutIssues(sources.gitlab);
+  // A verified fix that breaks again is a new problem.
   const byFingerprint = new Map(
-    known.map((issue) => [fingerprintIn(issue.description), issue])
+    known.flatMap((issue) =>
+      issue.labels.includes("verified")
+        ? []
+        : [[fingerprintIn(issue.description), issue] as const]
+    )
   );
   const active = known.filter(
     (i) => i.state === "opened" && i.labels.includes("agent::duo")
@@ -112,18 +140,21 @@ const countIn = async (
 
 const regress = async (gitlab: GitLab, issue: Issue, note: string) => {
   const notes = await gitlab.issueNotes(issue.iid);
-  const attempts = notes.filter((n) => n.body.includes(marker("regressed")));
+  // Duo's first try plus each retry; this regression counts too.
+  const tries =
+    notes.filter((n) => n.body.includes(marker("regressed"))).length + 1;
+  const retry = tries < MAX_ATTEMPTS;
   await gitlab.noteOnIssue(issue.iid, note);
   await gitlab.updateIssue(issue.iid, {
     state_event: "reopen",
-    ...(attempts.length < MAX_ATTEMPTS
+    ...(retry
       ? {}
       : {
           add_labels: "status::todo",
           remove_labels: "status::doing,agent::duo",
         }),
   });
-  if (attempts.length < MAX_ATTEMPTS) {
+  if (retry) {
     await handToDuo(gitlab, issue.iid);
   }
 };
@@ -143,9 +174,7 @@ const verifyOne = async (sources: Sources, issue: Issue, now: Date) => {
   }
   // After a regression, only a newer merge is a new fix to check.
   const notes = await sources.gitlab.issueNotes(issue.iid);
-  const lastVerdict = notes.findLast((n) =>
-    n.body.includes(marker("regressed"))
-  );
+  const lastVerdict = notes.find((n) => n.body.includes(marker("regressed")));
   if (lastVerdict !== undefined && new Date(lastVerdict.created_at) > merged) {
     return "wait";
   }
@@ -180,8 +209,16 @@ const verifyOne = async (sources: Sources, issue: Issue, now: Date) => {
 export const verify = async (sources: Sources, now: Date) => {
   const known = await scoutIssues(sources.gitlab);
   const issues = known.filter((issue) => !issue.labels.includes("verified"));
-  const verdicts = await Promise.all(
+  const verdicts = await Promise.allSettled(
     issues.map(async (issue) => await verifyOne(sources, issue, now))
   );
-  return Object.fromEntries(issues.map((issue, i) => [issue.iid, verdicts[i]]));
+  return Object.fromEntries(
+    issues.map((issue, i) => {
+      const v = verdicts[i];
+      return [
+        issue.iid,
+        v?.status === "fulfilled" ? v.value : `failed: ${String(v?.reason)}`,
+      ];
+    })
+  );
 };

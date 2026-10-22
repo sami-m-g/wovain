@@ -1,12 +1,14 @@
 import { z } from "zod";
 
-// GitLab's REST API with the token CI passes in GITLAB_TOKEN (a personal
-// access token, so the actions below are a human's: GitLab only starts Duo
-// flows for human actions, ee/app/services/ai/flow_triggers/run_service.rb).
-// Errors carry the status and path only, never the response body.
+// GitLab's REST and GraphQL APIs with the token CI passes in GITLAB_TOKEN (a
+// personal access token, so the actions below are a human's: GitLab only
+// starts Duo flows for human actions,
+// ee/app/services/ai/flow_triggers/run_service.rb). Errors carry the status
+// and path only, never the response body.
 
 const issueSchema = z.object({
   assignees: z.array(z.object({ username: z.string() })).default([]),
+  author: z.object({ username: z.string() }),
   closed_at: z.string().nullable().optional(),
   description: z.string().nullable(),
   iid: z.int(),
@@ -20,15 +22,21 @@ export type Issue = z.infer<typeof issueSchema>;
 
 const mergeRequestSchema = z.object({
   author: z.object({ username: z.string() }),
-  description: z.string().nullable().default(null),
   draft: z.boolean(),
   has_conflicts: z.boolean(),
-  head_pipeline: z.object({ status: z.string() }).nullable().optional(),
+  // Only the single-MR endpoint returns it.
+  head_pipeline: z
+    .object({ sha: z.string(), status: z.string() })
+    .nullable()
+    .optional(),
   iid: z.int(),
   merge_when_pipeline_succeeds: z.boolean(),
   merged_at: z.string().nullable().optional(),
-  reviewers: z.array(z.object({ username: z.string() })).default([]),
+  reviewers: z
+    .array(z.object({ id: z.int(), username: z.string() }))
+    .default([]),
   sha: z.string(),
+  source_branch: z.string(),
   state: z.string(),
   title: z.string(),
   updated_at: z.string(),
@@ -40,19 +48,55 @@ const noteSchema = z.object({
   author: z.object({ username: z.string() }),
   body: z.string(),
   created_at: z.string(),
+  // Diff notes name the commit they were written on.
+  position: z.object({ head_sha: z.string() }).nullable().optional(),
   resolvable: z.boolean().default(false),
   resolved: z.boolean().default(false),
   system: z.boolean(),
 });
+export type Note = z.infer<typeof noteSchema>;
 
 const userSchema = z.object({ id: z.int(), username: z.string() });
 
+// Duo sessions (GraphQL duoWorkflowWorkflows, the query the Agent sessions
+// page uses: ee/app/assets/javascripts/ai/duo_agents_platform).
+const sessionsSchema = z.object({
+  data: z.object({
+    project: z.object({
+      duoWorkflowWorkflows: z.object({
+        nodes: z.array(
+          z.object({
+            createdAt: z.string(),
+            mergeRequestLinks: z
+              .object({
+                nodes: z.array(
+                  z.object({
+                    mergeRequest: z
+                      .object({ iid: z.coerce.number() })
+                      .nullable(),
+                  })
+                ),
+              })
+              .nullable(),
+            sourceType: z.string().nullable(),
+            user: z.object({ username: z.string() }).nullable(),
+            workItem: z.object({ iid: z.coerce.number() }).nullable(),
+            workflowDefinition: z.string().nullable(),
+          })
+        ),
+      }),
+    }),
+  }),
+});
+const SESSIONS = `query($path: ID!) { project(fullPath: $path) { duoWorkflowWorkflows(projectPath: $path, first: 50) { nodes { createdAt sourceType workflowDefinition user { username } workItem { iid } mergeRequestLinks(first: 20) { nodes { mergeRequest { iid } } } } } } }`;
+
 type Method = "GET" | "POST" | "PUT";
-type Query = Record<string, string | number | boolean>;
+type Query = Record<string, string | number | boolean | number[]>;
 
 export const createGitLab = (env: {
   api: string;
   project: string;
+  projectPath: string;
   token: string;
 }) => {
   const project = `projects/${encodeURIComponent(env.project)}`;
@@ -89,6 +133,12 @@ export const createGitLab = (env: {
     path: string,
     query?: Query
   ) => await call(schema, method, `${project}/${path}`, query);
+  // Newest first, one page: the loop only needs recent notes.
+  const notes = async (path: string) =>
+    await inProject(z.array(noteSchema), "GET", path, {
+      per_page: 100,
+      sort: "desc",
+    });
 
   return {
     closesIssues: async (mr: number) =>
@@ -97,15 +147,9 @@ export const createGitLab = (env: {
         "GET",
         `merge_requests/${mr}/closes_issues`
       ),
-    // Newest first.
-    commits: async (mr: number) =>
-      await inProject(
-        z.array(z.object({ committed_date: z.string(), id: z.string() })),
-        "GET",
-        `merge_requests/${mr}/commits`
-      ),
     createIssue: async (fields: Query) =>
       await inProject(issueSchema, "POST", "issues", fields),
+    currentUser: async () => await call(userSchema, "GET", "user"),
     diffs: async (mr: number) =>
       await inProject(
         z.array(
@@ -119,26 +163,18 @@ export const createGitLab = (env: {
         `merge_requests/${mr}/diffs`,
         { per_page: 100 }
       ),
-    issueNotes: async (issue: number) =>
-      await inProject(z.array(noteSchema), "GET", `issues/${issue}/notes`, {
-        per_page: 100,
-        sort: "asc",
-      }),
+    issue: async (iid: number) =>
+      await inProject(issueSchema, "GET", `issues/${iid}`),
+    issueNotes: async (issue: number) => await notes(`issues/${issue}/notes`),
     issues: async (query: Query) =>
       await inProject(z.array(issueSchema), "GET", "issues", {
         per_page: 100,
         ...query,
       }),
+    mergeRequest: async (mr: number) =>
+      await inProject(mergeRequestSchema, "GET", `merge_requests/${mr}`),
     mergeRequestNotes: async (mr: number) =>
-      await inProject(
-        z.array(noteSchema),
-        "GET",
-        `merge_requests/${mr}/notes`,
-        {
-          per_page: 100,
-          sort: "asc",
-        }
-      ),
+      await notes(`merge_requests/${mr}/notes`),
     mergeRequests: async (query: Query) =>
       await inProject(z.array(mergeRequestSchema), "GET", "merge_requests", {
         per_page: 100,
@@ -150,24 +186,14 @@ export const createGitLab = (env: {
       await inProject(z.unknown(), "POST", `merge_requests/${mr}/notes`, {
         body,
       }),
-    pipelines: async (query: Query) =>
+    relatedMergeRequests: async (issue: number) =>
       await inProject(
         z.array(
           z.object({
-            created_at: z.string(),
-            id: z.int(),
-            source: z.string(),
-            status: z.string(),
-            web_url: z.url(),
+            iid: z.int(),
+            merged_at: z.string().nullable().optional(),
           })
         ),
-        "GET",
-        "pipelines",
-        { per_page: 20, ...query }
-      ),
-    relatedMergeRequests: async (issue: number) =>
-      await inProject(
-        z.array(mergeRequestSchema.partial().extend({ iid: z.int() })),
         "GET",
         `issues/${issue}/related_merge_requests`
       ),
@@ -183,6 +209,33 @@ export const createGitLab = (env: {
         "GET",
         `merge_requests/${mr}/reviewers`
       ),
+    sessions: async () => {
+      const response = await fetch(env.api.replace(/\/v4$/u, "/graphql"), {
+        body: JSON.stringify({
+          query: SESSIONS,
+          variables: { path: env.projectPath },
+        }),
+        headers: {
+          authorization: `Bearer ${env.token}`,
+          "content-type": "application/json",
+        },
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`GitLab GraphQL sessions: ${response.status}`);
+      }
+      const body = sessionsSchema.parse(await response.json());
+      return body.data.project.duoWorkflowWorkflows.nodes.map((s) => ({
+        createdAt: s.createdAt,
+        definition: s.workflowDefinition ?? "",
+        issue: s.workItem?.iid,
+        mergeRequests: (s.mergeRequestLinks?.nodes ?? []).flatMap((n) =>
+          n.mergeRequest === null ? [] : [n.mergeRequest.iid]
+        ),
+        sourceType: s.sourceType ?? "",
+        user: s.user?.username ?? "",
+      }));
+    },
     // GitLab merges once the pipeline passes (merge-when-pipeline-succeeds),
     // and right away if it already has. sha pins the reviewed commit.
     setAutoMerge: async (mr: number, sha: string) =>
@@ -209,6 +262,15 @@ export const createGitLab = (env: {
       }
       return user.id;
     },
+    // The MR's diff versions, newest first: which commit was head when.
+    versions: async (mr: number) =>
+      await inProject(
+        z.array(
+          z.object({ created_at: z.string(), head_commit_sha: z.string() })
+        ),
+        "GET",
+        `merge_requests/${mr}/versions`
+      ),
   };
 };
 export type GitLab = ReturnType<typeof createGitLab>;

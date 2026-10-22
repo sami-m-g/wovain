@@ -15,10 +15,10 @@ flowchart TD
   cl & o11y --> scout["scout: group by fingerprint, at least 3 in 6 h"]
   loop --> scout
   scout -->|"new problem: issue labeled scout, assigned to Duo Developer (human token)"| dev["Duo Developer flow (assign trigger)"]
-  dev -->|"draft MR: Related to #issue"| shep["shepherd (same job)"]
+  dev -->|"MR: Closes #issue, on a branch named for it"| shep["shepherd (same job)"]
   shep -->|"marks ready / requests reviewer (human token)"| cr["Duo Code Review flow (merge_request_ready, assign_reviewer triggers)"]
   cr -->|"open threads: asks Developer once (mention)"| dev
-  cr -->|"reviewed, no open threads"| guard{"Guardrails: no infra, auth, CI, deps; at most 10 files and 300 lines; closes a scout issue"}
+  cr -->|"reviewed, no open threads"| guard{"Guardrails: provenance proven, app source only, at most 10 files and 300 lines, Duo reviewed the head commit, pipeline ok"}
   guard -->|pass| am["Auto-merge set (PUT merge_requests/:iid/merge auto_merge=true, sha pinned)"]
   guard -->|fail| human["Comment: needs a human"]
   am -->|"GitLab merges when the pipeline is green"| main["main pipeline: verify, scan, pulumi up, deploy, smoke, release"]
@@ -55,10 +55,13 @@ The scheduled custom scout flow (`.gitlab/duo/catalog/flows/scout.yml`) stays sy
 
 Auto-merge is set only when all of these hold (`apps/ops/src/guardrails.ts`, tested in `apps/ops/test/guardrails.test.ts`):
 
-- The MR was opened by the Duo Developer flow and refers to an issue labeled `scout`.
-- It isn't a draft and has no conflicts; its pipeline hasn't failed.
-- Duo Code Review submitted a review after the latest commit, didn't request changes, and no review thread is open.
-- It touches at most 10 files and 300 lines, and nothing under `infra/`, `.gitlab/`, `.gitlab-ci.yml`, `.config/`, `.agents/`, `.claude/`, `apps/server/src/auth/`, `apphosting.yaml`, `firebase.json`, `*.rules`, any `package.json`, the lockfile or `AGENTS.md`.
+- **Provenance.** The issue was filed by the loop's user, carries its marker and the `scout` label, and is assigned to the Developer service account, with the loop's "assigned" marker note. The MR's author is that service account. GitLab binds the MR to the issue: `closes_issues` lists it, or the source branch carries its number. Text in the MR is never trusted. A Duo session (GraphQL `duoWorkflowWorkflows`) with definition `developer/*`, source `FLOW_TRIGGER`, started by the loop's user on that issue after the assignment, and linked to this MR (or to no MR yet) must exist.
+- **Allowlist.** Every changed path is application source or its tests: `apps/server/src/**` except `auth/`, `routes/`, `app.ts`, `firebase.ts` and `store.ts`; `apps/server/test/unit|integration/**`; `apps/widgets/src/**`; `packages/shared/src/**`. Dotfiles, `*.config.*`, `tsconfig*`, `package.json`, YAML, JSON, lockfiles and rules files are denied inside those trees too. Everything else (`apps/ops/**` itself, `infra/`, `.gitlab/`, CI files, `.agents/`, `.claude/`, `AGENTS.md`, docs) needs a human. `.gitlab/CODEOWNERS` lists the same paths, so a person is requested as reviewer.
+- **Size.** At most 10 files and 300 changed lines.
+- **Review freshness.** The commit Duo Code Review covered equals the MR's head `sha`: a diff note names it (`position.head_sha`); a general note is matched to the MR version current when it was written (`GET merge_requests/:iid/versions`). Commit dates aren't used. Duo didn't request changes and no thread is open. The loop asks for a review once per head commit and hands a review that hasn't landed in 2 hours to a person.
+- **State.** Not a draft, no conflicts, and the head pipeline (from the single-MR endpoint) is on the head `sha` and created, pending, running or successful.
+
+The path, size and provenance checks run before any review is requested, so an MR that can't be auto-merged spends no review credits.
 
 GitLab still waits for the green pipeline: auto-merge (`auto_merge=true` on the merge API, with the reviewed `sha` pinned) merges only when it passes, and a new push cancels it. The project setting "Pipelines must succeed" needs a Maintainer and is off, so the loop never sets auto-merge on an MR whose pipeline failed.
 
@@ -71,3 +74,10 @@ Only the Duo flows spend credits, and they bill the person behind `GITLAB_TOKEN`
 - Cloud Logging and Cloud Monitoring, as the `gitlab-ops` service account (logs and metrics viewer only), through Workload Identity Federation from the `operations` environment.
 - GitLab Observability's query API, once someone with the Developer role on the group creates an API key (group → Observe → API Keys) and sets it with `pulumi config set --secret o11y-api-key` in `infra/`. Until then the loop reads Google Cloud only and says so in its report. The server sends traces to the group's OTLP endpoint already (`apphosting.yaml`).
 - GitLab error tracking needs a Maintainer to turn on, so the loop doesn't use it.
+
+## Known limits
+
+- A read takes at most 5,000 Cloud Logging entries and 500 GitLab Observability rows per window, so a flood of errors is undercounted. That makes the "before" window look smaller, never the fix look better than it is, as long as the "after" window is under the cap.
+- Each unverified scout issue with a merged MR costs two Cloud Logging reads an hour, for at most 24 hours.
+- Code owner approval isn't required: "Require approval from code owners" on the protected branch needs a Maintainer. CODEOWNERS only requests the reviewer, and the guardrails keep those paths out of auto-merge.
+- Each phase (verify, scout, shepherd) runs even when another fails; failures go in the report and fail the job, so the pipeline shows them.

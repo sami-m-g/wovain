@@ -29,13 +29,13 @@ ${problem.samples.map(fence).join("\n\n")}
 
 ## Desired outcome
 
-The error stops: its rate drops by at least 80% in production after the fix deploys. The scout measures that and closes this issue, or reopens it.
+The error stops: its rate drops by at least 80% in production after the fix deploys. The scout measures that, labels this issue verified, or reopens it.
 
 ## Constraints
 
 - Start with a test that fails without the fix (AGENTS.md).
-- Keep the change under ${MAX_FILES} files and ${MAX_LINES} lines, and outside infra/, .gitlab/, apps/server/src/auth/, package.json and the lockfile; otherwise a human has to merge it.
-- Open a merge request whose description links this issue as \`Related to #N\`, with N this issue's number (not \`Closes\`): the scout closes the issue once production confirms the fix.
+- Keep the change under ${MAX_FILES} files and ${MAX_LINES} lines, and inside application source and its tests (apps/server/src outside auth/ and routes/, apps/server/test, apps/widgets/src, packages/shared/src); anything else needs a human to merge it.
+- Work on a branch whose name starts with this issue's number, and write \`Closes #N\` (N is this issue's number) in the merge request description, so GitLab links the two.
 - Auto-merge is set by the loop after Duo Code Review and a green pipeline.
 
 ## Open questions
