@@ -18,6 +18,8 @@ const requestSchema = z.object({
   confirmHash: z.string().optional(),
   csrfHash: z.string().optional(),
   expiresAt: z.instanceof(Timestamp),
+  // The staged draft the page shows (meta-staged.ts snapshotOf).
+  snapshot: z.string(),
   summary: z.string(),
   userId: z.string(),
 });
@@ -26,6 +28,7 @@ const requestSchema = z.object({
 const approvalSchema = z.object({
   campaignId: z.string(),
   expiresAt: z.instanceof(Timestamp),
+  snapshot: z.string(),
 });
 
 const REQUEST_MS = 10 * 60 * 1000;
@@ -72,13 +75,15 @@ export const createLaunchApprovals = (
           tx.set(approvals.doc(request.userId), {
             campaignId: request.campaignId,
             expiresAt: expiry(APPROVAL_MS),
+            snapshot: request.snapshot,
           });
         }
         return valid;
       }),
 
-    // Consumes the merchant's confirmation for this campaign, once.
-    consume: async (userId: string, campaignId: string) =>
+    // Consumes the merchant's confirmation for this campaign, once, and only
+    // while the staged draft is still the one they saw.
+    consume: async (userId: string, campaignId: string, snapshot: string) =>
       await db.runTransaction(async (tx) => {
         const ref = approvals.doc(userId);
         const doc = await tx.get(ref);
@@ -86,18 +91,31 @@ export const createLaunchApprovals = (
           ? approvalSchema.parse(doc.data())
           : undefined;
         const valid =
-          approval?.campaignId === campaignId && live(approval.expiresAt);
+          approval?.campaignId === campaignId &&
+          approval.snapshot === snapshot &&
+          live(approval.expiresAt);
         if (doc.exists) {
           tx.delete(ref);
         }
         return valid;
       }),
 
-    create: async (userId: string, campaignId: string, summary: string) => {
+    create: async (
+      userId: string,
+      {
+        campaignId,
+        snapshot,
+        summary,
+      }: Record<"campaignId" | "snapshot" | "summary", string>
+    ) => {
       const id = randomBytes(24).toString("base64url");
-      await requests
-        .doc(id)
-        .set({ campaignId, expiresAt: expiry(REQUEST_MS), summary, userId });
+      await requests.doc(id).set({
+        campaignId,
+        expiresAt: expiry(REQUEST_MS),
+        snapshot,
+        summary,
+        userId,
+      });
       return id;
     },
 

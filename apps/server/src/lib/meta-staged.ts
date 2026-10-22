@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
 
@@ -6,7 +8,17 @@ import { z } from "zod";
 // may only build on these, and launch_campaign publishes only these.
 const stagedSchema = z.object({
   adAccountId: z.string(),
-  adSets: z.array(z.object({ countries: z.array(z.string()), id: z.string() })),
+  // Each ad set with the targeting, promoted object and goal wovain sent,
+  // as canonical JSON.
+  adSets: z.array(
+    z.object({
+      countries: z.array(z.string()),
+      id: z.string(),
+      optimizationGoal: z.string(),
+      promotedObject: z.string(),
+      targeting: z.string(),
+    })
+  ),
   ads: z.array(
     z.object({ adSetId: z.string(), creativeId: z.string(), id: z.string() })
   ),
@@ -20,6 +32,9 @@ const stagedSchema = z.object({
       videoId: z.string(),
     })
   ),
+  // Set once the merchant is asked to confirm the launch: the draft can't
+  // change after that.
+  frozen: z.boolean().default(false),
   images: z.array(z.string()),
   videos: z.array(z.string()),
 });
@@ -47,6 +62,38 @@ const idIn = (
     .map(([, item]) => idIn(item, keys, false))
     .find((found) => found !== undefined);
 };
+
+// JSON with sorted keys, so two specs compare equal however they were
+// written. A string is parsed first (Meta takes and returns specs as JSON).
+const sorted = (item: unknown): unknown => {
+  if (Array.isArray(item)) {
+    return item.map((entry) => sorted(entry));
+  }
+  if (typeof item !== "object" || item === null) {
+    return item;
+  }
+  return Object.fromEntries(
+    Object.entries(item)
+      .toSorted(([a], [b]) => a.localeCompare(b))
+      .map(([key, entry]) => [key, sorted(entry)])
+  );
+};
+
+export const canonicalJson = (value: unknown): string => {
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      parsed = value;
+    }
+  }
+  return JSON.stringify(sorted(parsed ?? null));
+};
+
+// The staged record the merchant approves: a hash of everything in it.
+export const snapshotOf = ({ frozen: _frozen, ...staged }: Staged) =>
+  createHash("sha256").update(canonicalJson(staged)).digest("base64url");
 
 const countriesOf = (targeting: unknown) =>
   z
@@ -85,7 +132,17 @@ const additions: Record<
     const id = idIn(reply, new Set(["ad_set_id", "adset_id", "id"]));
     return id === undefined
       ? undefined
-      : { adSets: [{ countries: countriesOf(sent["targeting"]), id }] };
+      : {
+          adSets: [
+            {
+              countries: countriesOf(sent["targeting"]),
+              id,
+              optimizationGoal: String(sent["optimization_goal"]),
+              promotedObject: canonicalJson(sent["promoted_object"]),
+              targeting: canonicalJson(sent["targeting"]),
+            },
+          ],
+        };
   },
   ads_create_creative: (sent, reply) => {
     const id = idIn(reply, new Set(["creative_id", "id"]));
@@ -138,6 +195,7 @@ export const createStagedObjects = (db: Firestore) => {
           ads: [],
           campaignId,
           creatives: [],
+          frozen: false,
           images: [],
           videos: [],
         });
@@ -163,5 +221,10 @@ export const createStagedObjects = (db: Firestore) => {
     return "recorded";
   };
 
-  return { get, record };
+  // No more draft changes for this campaign: a launch confirmation exists.
+  const freeze = async (userId: string) => {
+    await doc(userId).update({ frozen: true });
+  };
+
+  return { freeze, get, record };
 };

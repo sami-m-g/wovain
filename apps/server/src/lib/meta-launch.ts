@@ -1,5 +1,4 @@
-import { z } from "zod";
-
+import { canonicalJson } from "./meta-staged.ts";
 import type { Staged } from "./meta-staged.ts";
 
 // launch_campaign's last check before spending: the staged draft and its
@@ -50,7 +49,12 @@ const AD_SET_SPEND = [
 export const CHECKED_FIELDS = [
   "objective",
   "targeting",
+  "promoted_object",
+  "optimization_goal",
   "bid_strategy",
+  "adset_id",
+  "campaign_id",
+  "creative_id",
   ...new Set([...DAILY, ...CAMPAIGN_CAPS, ...AD_SET_SPEND]),
 ];
 
@@ -62,16 +66,6 @@ export const CREATIVE_FIELDS = [
   "object_story_id",
   "effective_object_story_id",
 ];
-
-const countriesOf = (targeting: unknown) => {
-  const parsed: unknown =
-    typeof targeting === "string" ? JSON.parse(targeting) : targeting;
-  const countries =
-    z
-      .object({ geo_locations: z.object({ countries: z.array(z.string()) }) })
-      .safeParse(parsed).data?.geo_locations.countries ?? [];
-  return [...countries].toSorted().join(",");
-};
 
 const campaignProblems = (
   campaign: Entity | undefined,
@@ -93,15 +87,37 @@ const campaignProblems = (
   ];
 };
 
-const adSetProblems = (entity: Entity, countries: string) => [
-  ...(countriesOf(entity["targeting"]) === countries
+type StagedAdSet = Staged["adSets"][number];
+type StagedAd = Staged["ads"][number];
+
+// An ad set must still have exactly the targeting, promoted object and goal
+// wovain sent, and no bid strategy of its own.
+const adSetProblems = (entity: Entity, set: StagedAdSet) => {
+  const name = `ad set ${set.id}`;
+  return [
+    ...(canonicalJson(entity["targeting"]) === set.targeting
+      ? []
+      : [`${name}'s targeting changed`]),
+    ...(canonicalJson(entity["promoted_object"]) === set.promotedObject
+      ? []
+      : [`${name}'s promoted object changed`]),
+    ...(entity["optimization_goal"] === set.optimizationGoal
+      ? []
+      : [`${name}'s optimization goal changed`]),
+    ...(entity["bid_strategy"] === undefined ||
+    entity["bid_strategy"] === "LOWEST_COST_WITHOUT_CAP"
+      ? []
+      : [`${name} has a bid strategy`]),
+  ];
+};
+
+// An ad must still join the ad set and creative wovain staged it with.
+const adProblems = (entity: Entity, ad: StagedAd, campaignId: string) =>
+  text(entity["creative_id"]) === ad.creativeId &&
+  text(entity["adset_id"]) === ad.adSetId &&
+  text(entity["campaign_id"]) === campaignId
     ? []
-    : [`ad set ${text(entity["ad_object_id"])}'s targeting changed`]),
-  ...(entity["bid_strategy"] === undefined ||
-  entity["bid_strategy"] === "LOWEST_COST_WITHOUT_CAP"
-    ? []
-    : [`ad set ${text(entity["ad_object_id"])} has a bid strategy`]),
-];
+    : [`ad ${ad.id} isn't on its staged ad set or creative`];
 
 const idOf = (entity: Entity) => text(entity["ad_object_id"]);
 
@@ -114,13 +130,12 @@ export const checkDraft = (
   dailyBudgetCents: number
 ) => {
   const found = objectsWith(reply, "ad_object_id");
-  const adSets = new Map(
-    staged.adSets.map((set) => [set.id, set.countries.toSorted().join(",")])
-  );
+  const adSets = new Map(staged.adSets.map((set) => [set.id, set]));
+  const ads = new Map(staged.ads.map((ad) => [ad.id, ad]));
   const recorded = new Set([
     staged.campaignId,
     ...adSets.keys(),
-    ...staged.ads.map((ad) => ad.id),
+    ...ads.keys(),
   ]);
   const campaign = found.find((entity) => idOf(entity) === staged.campaignId);
   const readBack = new Set(found.map((entity) => idOf(entity)));
@@ -135,8 +150,12 @@ export const checkDraft = (
     ),
     ...campaignProblems(campaign, dailyBudgetCents),
     ...found.flatMap((entity) => {
-      const countries = adSets.get(idOf(entity));
-      return countries === undefined ? [] : adSetProblems(entity, countries);
+      const set = adSets.get(idOf(entity));
+      const ad = ads.get(idOf(entity));
+      return [
+        ...(set === undefined ? [] : adSetProblems(entity, set)),
+        ...(ad === undefined ? [] : adProblems(entity, ad, staged.campaignId)),
+      ];
     }),
     ...(found.some(
       (entity) => entity !== campaign && amount(entity, AD_SET_SPEND) > 0

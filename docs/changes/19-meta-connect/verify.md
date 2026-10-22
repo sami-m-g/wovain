@@ -16,12 +16,13 @@
   - `meta_ads` refuses `ads_activate_entity`.
   - The model alone can't launch: `request_launch` returns only the confirm link, and `launch_campaign` refuses without a confirmation.
   - A confirmed launch publishes only the recorded objects, once.
-  - It stops when the read-back has an object wovain didn't stage or lacks a recorded one, a different budget, objective, spend cap, ad-set targeting or bid strategy, or a changed creative link, video or Page.
+  - Asking for the launch freezes the draft, and a draft that changed after the merchant confirmed isn't launched.
+  - It stops when the read-back has an object wovain didn't stage or lacks a recorded one, an ad set whose full targeting, promoted object or optimization goal changed, an ad on another ad set or creative, a different budget, objective, spend cap, ad-set targeting or bid strategy, or a changed creative link, video or Page.
 - `test/integration/app.test.ts`: `/privacy` and `/data-deletion` answer 200.
 
 ## Checks run
 
-All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm test` (86), `pnpm test:integration` (118), `pnpm build`, `pnpm --filter @wovain/widgets test:stories` (32). No `pulumi up` or `infra:preview` was run.
+All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm test` (86), `pnpm test:integration` (125), `pnpm build`, `pnpm --filter @wovain/widgets test:stories` (32). No `pulumi up` or `infra:preview` was run.
 
 ## Review findings
 
@@ -49,11 +50,12 @@ All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`
 - Launch is a human confirmation on wovain's page (`routes/launch.ts`, `lib/launch-approvals.ts`, `request_launch`), as the security reviews asked. The campaign widget opens that page.
 - `campaign_draft` uses allowlists and plan checks instead of stripping spend keys.
 - Split out to stay under the file-length limit: `lib/campaign-plan.ts` (the added products, budget and draft plan) and `tools/meta.ts`. `packages/shared/campaign.ts` gains `launchVia` and `launchRequestSchema`.
+- Fourth security review (two MEDIUM findings): the read-back now checks each ad's creative, ad set and campaign, and each ad set's full targeting, promoted object and optimization goal. The approval is bound to a hash of the staged record, the confirm page's summary is built from that record, and `request_launch` freezes the draft.
 - Not verified live until a tester runs it:
   - whether Graph accepts the MCP grant on `adrules_library`
   - the ID keys in Meta's create replies (`campaign_id`, `ad_set_id`, `creative_id`, `ad_id`, `video_id`, `image_hash`)
   - the fields of `ads_get_ad_entities` and `ads_get_creatives`
 
-  Meta's docs say `fields` are ignored for drafts. If drafts come back without budget, objective or targeting, launch refuses every time, so the check may need adjusting after the first live run. Every one of these fails closed: the tools stop rather than spend.
+  Meta's docs say `fields` are ignored for drafts. Meta may also add defaults to targeting (such as Advantage+ audience), which the full-targeting comparison would refuse. If drafts come back without budget, objective or targeting, launch refuses every time, so the check may need adjusting after the first live run. Every one of these fails closed: the tools stop rather than spend.
 
 - MCP elicitation wasn't used: the confirm page reuses the connect flow's sign-in, and ChatGPT's elicitation support is unverified.

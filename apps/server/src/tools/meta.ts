@@ -16,6 +16,7 @@ import {
   checkDraft,
   CREATIVE_FIELDS,
 } from "../lib/meta-launch.ts";
+import { snapshotOf } from "../lib/meta-staged.ts";
 import { text } from "../lib/tool-result.ts";
 import {
   canReach,
@@ -67,6 +68,11 @@ const registerDraftTool = (
         draftPlan(store, await store.getSettings()),
         upstream.staged.get(store.userId),
       ]);
+      if (tool !== "ads_create_campaign" && staged?.frozen === true) {
+        throw new Error(
+          "This campaign's draft is frozen: the merchant was asked to confirm its launch. Start a new campaign to change it."
+        );
+      }
       const sent = draftArgs(tool, args, { ...plan, staged });
       const reply = await upstreamReply(upstream, {
         args: sent,
@@ -138,15 +144,27 @@ const registerLaunchTools = (
         return unreachable(upstream, "meta");
       }
       const settings = await store.getSettings();
-      const [saved, { dailyBudget, products }] = await Promise.all([
+      const [saved, staged, { dailyBudget }] = await Promise.all([
         recordedCampaign(store),
+        upstream.staged.get(store.userId),
         addedProducts(store, settings),
       ]);
-      const confirmUrl = await upstream.confirmLaunchUrl(
-        store.userId,
-        saved.campaignId,
-        `One Advantage+ sales campaign (${saved.campaignId}) with ${products.length} ${products.length === 1 ? "product" : "products"}: ${products.map(({ ad }) => ad.productTitle).join(", ")}. Budget: ${money(dailyBudget)} a day.`
-      );
+      if (staged?.campaignId !== saved.campaignId) {
+        throw new Error("wovain has no record of this campaign's draft.");
+      }
+      // From now on the draft can't change; the merchant approves exactly
+      // this record.
+      await upstream.staged.freeze(store.userId);
+      const frozen = { ...staged, frozen: true };
+      const countries = [
+        ...new Set(staged.adSets.flatMap((set) => set.countries)),
+      ];
+      const pages = [...new Set(staged.creatives.map((item) => item.pageId))];
+      const confirmUrl = await upstream.confirmLaunchUrl(store.userId, {
+        campaignId: saved.campaignId,
+        snapshot: snapshotOf(frozen),
+        summary: `Campaign ${staged.campaignId}: ${staged.adSets.length} ad ${staged.adSets.length === 1 ? "set" : "sets"} in ${countries.join(", ")}, ${staged.ads.length} ${staged.ads.length === 1 ? "ad" : "ads"} from ${staged.creatives.length} ${staged.creatives.length === 1 ? "creative" : "creatives"} on Page ${pages.join(", ")}. Budget: ${money(dailyBudget)} a day.`,
+      });
       return {
         content: text(
           `The merchant confirms the launch at ${confirmUrl} (it works for 10 minutes). Wait until they say they confirmed, then call launch_campaign.`
@@ -177,13 +195,18 @@ const registerLaunchTools = (
         recordedCampaign(store),
         upstream.staged.get(store.userId),
       ]);
-      if (!(await upstream.launches.consume(store.userId, saved.campaignId))) {
-        throw new Error(
-          "Not launched: the merchant hasn't confirmed this launch on wovain's confirm page. Call request_launch and show them the link."
-        );
-      }
       if (staged?.campaignId !== saved.campaignId) {
         throw new Error("Not launched: wovain has no record of this draft.");
+      }
+      const approved = await upstream.launches.consume(
+        store.userId,
+        saved.campaignId,
+        snapshotOf(staged)
+      );
+      if (!approved) {
+        throw new Error(
+          "Not launched: the merchant hasn't confirmed this draft on wovain's confirm page (or it changed since). Call request_launch and show them the link."
+        );
       }
       const plan = await draftPlan(store, await store.getSettings());
       const meta = {

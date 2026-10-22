@@ -311,10 +311,9 @@ export const createUpstream = ({
   // The page where the merchant confirms a launch in their own browser.
   const confirmLaunchUrl = async (
     userId: string,
-    campaignId: string,
-    summary: string
+    request: Parameters<typeof connections.launches.create>[1]
   ) => {
-    const id = await connections.launches.create(userId, campaignId, summary);
+    const id = await connections.launches.create(userId, request);
     return `${site}/confirm/launch/${id}`;
   };
 

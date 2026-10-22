@@ -500,6 +500,7 @@ test("meta_ads refuses tools that publish or spend", async () => {
 // What Meta reads back: the staged draft and creative, matching what wovain
 // staged unless the overrides change them.
 interface ReadBack {
+  ad?: Record<string, unknown>;
   adSet?: Record<string, unknown>;
   campaign?: Record<string, unknown>;
   creative?: Record<string, unknown>;
@@ -517,10 +518,22 @@ const readBack = (fake: ReturnType<typeof fakeUpstream>, over: ReadBack) => {
       },
       {
         ad_object_id: "666",
+        optimization_goal: "OFFSITE_CONVERSIONS",
+        promoted_object: { custom_event_type: "PURCHASE", pixel_id: "9" },
         targeting: { geo_locations: { countries: ["US"] } },
         ...over.adSet,
       },
-      ...(over.withoutAd === true ? [] : [{ ad_object_id: "777" }]),
+      ...(over.withoutAd === true
+        ? []
+        : [
+            {
+              ad_object_id: "777",
+              adset_id: "666",
+              campaign_id: "555",
+              creative_id: "901",
+              ...over.ad,
+            },
+          ]),
       ...(over.extra ?? []),
     ],
   });
@@ -545,8 +558,12 @@ const launchable = async (over: ReadBack = {}) => {
   const env = await staged(true);
   readBack(env.fake, over);
   const confirmByMerchant = async () => {
-    const url = await env.upstream.confirmLaunchUrl("test", "555", "Cat tee");
-    const id = url.split("/").at(-1) ?? "";
+    const request = await env.client.callTool({
+      arguments: {},
+      name: "request_launch",
+    });
+    const { confirmUrl } = launchRequestSchema.parse(request.structuredContent);
+    const id = confirmUrl.split("/").at(-1) ?? "";
     const hashes = { confirmHash: "cookie-hash", csrfHash: "csrf-hash" };
     await env.upstream.launches.prepare(id, "test", hashes);
     return await env.upstream.launches.confirm(
@@ -614,6 +631,23 @@ test.each<[string, ReadBack]>([
   ],
   ["an ad set bid strategy", { adSet: { bid_strategy: "COST_CAP" } }],
   [
+    "extra ad set targeting",
+    {
+      adSet: {
+        targeting: { age_max: 30, geo_locations: { countries: ["US"] } },
+      },
+    },
+  ],
+  [
+    "another promoted object",
+    {
+      adSet: { promoted_object: { custom_event_type: "LEAD", pixel_id: "9" } },
+    },
+  ],
+  ["another optimization goal", { adSet: { optimization_goal: "REACH" } }],
+  ["an ad on another creative", { ad: { creative_id: "999" } }],
+  ["an ad in another ad set", { ad: { adset_id: "999" } }],
+  [
     "a changed creative link",
     { creative: { link_url: "https://evil.example" } },
   ],
@@ -642,4 +676,30 @@ test("show_campaign_widget refuses blocker links outside Meta", async () => {
   });
   expect(result.isError).toBe(true);
   await client.close();
+});
+
+test("asking for the launch freezes the draft", async () => {
+  const { client, draft, fake } = await launchable();
+  await client.callTool({ arguments: {}, name: "request_launch" });
+  const before = fake.calls.length;
+  const result = await draft("ads_create_ad", adArgs);
+  expect(result.isError).toBe(true);
+  expect(fake.calls).toHaveLength(before);
+  await client.close();
+});
+
+test("a draft that changed after the merchant confirmed isn't launched", async () => {
+  const env = await launchable();
+  await expect(env.confirmByMerchant()).resolves.toBe(true);
+  // Something added to the record behind the frozen draft's back.
+  await env.upstream.staged.record(
+    "test",
+    "ads_create_ad",
+    { ...adArgs, creative: '{"creative_id":"901"}' },
+    { ad_id: "778" }
+  );
+  const result = await env.launch();
+  expect(result.isError).toBe(true);
+  expect(env.activations()).toEqual([]);
+  await env.client.close();
 });

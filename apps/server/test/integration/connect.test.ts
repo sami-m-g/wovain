@@ -261,11 +261,11 @@ const cookieNamed = (response: Response, name: string) =>
 // u1's launch request for campaign 555, opened in a browser and signed in
 // to wovain as `user`: the confirm page and its cookie.
 const openConfirm = async (env: Setup, user = "u1") => {
-  const url = await env.upstream.confirmLaunchUrl(
-    "u1",
-    "555",
-    "Cat tee at $15.00 a day"
-  );
+  const url = await env.upstream.confirmLaunchUrl("u1", {
+    campaignId: "555",
+    snapshot: "snap",
+    summary: "Cat tee at $15.00 a day",
+  });
   const start = await env.get(pathOf(url));
   expect(start.status).toBe(302);
   const signInUrl = locationOf(start);
@@ -314,12 +314,12 @@ describe("launch confirm page", () => {
     const confirmed = await post(env, page.action, page);
     expect(confirmed.status).toBe(200);
     expect(await confirmed.text()).toContain("Launch confirmed");
-    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
-      true
-    );
-    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
-      false
-    );
+    await expect(
+      env.upstream.launches.consume("u1", "555", "snap")
+    ).resolves.toBe(true);
+    await expect(
+      env.upstream.launches.consume("u1", "555", "snap")
+    ).resolves.toBe(false);
     const replay = await post(env, page.action, page);
     expect(replay.status).toBe(403);
   });
@@ -329,9 +329,9 @@ describe("launch confirm page", () => {
     const page = await openConfirm(env, "attacker");
     expect(page.status).toBe(403);
     expect(page.csrf).toBe("");
-    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
-      false
-    );
+    await expect(
+      env.upstream.launches.consume("u1", "555", "snap")
+    ).resolves.toBe(false);
   });
 
   test("a POST without the CSRF token, the page's cookie or this site's origin is refused", async () => {
@@ -347,9 +347,9 @@ describe("launch confirm page", () => {
       const response = await post(env, page.action, attempt);
       expect(response.status).toBe(403);
     }
-    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
-      false
-    );
+    await expect(
+      env.upstream.launches.consume("u1", "555", "snap")
+    ).resolves.toBe(false);
   });
 
   test("an unknown launch link is refused", async () => {
