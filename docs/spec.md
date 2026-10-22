@@ -244,7 +244,8 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | Fourthwall, Meta Ads and fal MCPs in `.mcp.json` | MCP | Lets Claude try Fourthwall calls, Kling prompts, elements and MMAudio during the build, outside a chat with wovain |
 | `/new-tool` (later) | Project skill | Scaffolds one wovain tool: zod schema in `packages/shared`, tool file, widget stub, fixture and test |
 | `/demo-check` (later) | Project skill, user-only | Preflight before recording: `/mcp` reachable, widgets build, shop live, Meta payment method and pixel, fal credit, and a claude-ads Meta audit of the ad account |
-| claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance will seed the `optimize` playbook; claude-ads is MIT-licensed, and that playbook will credit it in a NOTICE file |
+| claude-ads plugin (installed) | Plugin | `ads-math` and `ads-budget` check the economics, `ads-test` checks the rules, and its optimization guidance seeds the optimizer (#25) |
+| claude-ads skills (vendored) | Project skills | Ten skills (`ads`, `ads-optimize`, `ads-meta`, `ads-attribution`, `ads-creative`, `ads-math`, `ads-budget`, `ads-test`, `ads-monitor`, `ads-report`) copied unchanged into `.agents/skills/` and pinned by hash in `skills-lock.json`; `pnpm skills:check` (part of `pnpm check`) fails on any edit. wovain's print-on-demand overlay is `.agents/skills/wovain-pod-ads/`. claude-ads is MIT-licensed and credited in `NOTICE` |
 | `ultracite fix` after each edit | Hook (from `ultracite init --hooks claude`) | Lint and format every edit |
 | GitLab Secret Detection (CI template) | CI | Flags secrets and tokens in every push and merge request; replaced the local gitleaks hook |
 | Lefthook | Git hooks | Ultracite fix and type check before commits; commitlint on commit messages; tests, knip, arch, dupes and story tests before pushes |
