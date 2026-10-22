@@ -12,8 +12,8 @@ It follows the shape of Anthropic's AI-native SDLC: every change carries its **i
 
 | What | Where |
 | --- | --- |
-| Three built-in flow triggers, declared as code and filtered to human actions or a red `main`: Developer (assign, mention), Code Review (reviewer requested, ready), Fix CI/CD (failed push pipeline on `main`) | `infra/Pulumi.prod.yaml`, `infra/duo.ts` |
-| The loop chains them: it assigns scout issues to the Developer flow, marks Duo's MRs ready or requests Duo Code Review, and asks the Developer flow to address review threads | `apps/ops/src/scout.ts`, `apps/ops/src/shepherd.ts`, [loop.md](loop.md) |
+| Built-in flow triggers, declared as code and filtered to human actions: Developer (assign, mention) and Code Review (reviewer requested). Fix CI/CD's `pipeline_hooks` trigger is off; the loop starts that flow through the API only when its fix gate passes | `infra/Pulumi.prod.yaml`, `infra/duo.ts`, `apps/ops/src/gates.ts` |
+| The loop chains them: it assigns scout issues to the Developer flow, marks Duo's MRs ready and requests Duo Code Review (application code only), asks the Developer flow to address review threads, and starts Fix CI/CD for a confirmed code failure on `main` | `apps/ops/src/scout.ts`, `apps/ops/src/shepherd.ts`, [loop.md](loop.md) |
 | Code Review reads project rules (spending, tool inputs, no hand-rolling, secrets, widgets) | `.gitlab/duo/mr-review-instructions.yaml` |
 | A custom flow and a custom agent in the AI Catalog, validated and synced by GitLab's `ai-catalog` component, then enabled as code: the scout flow (a pipeline trigger only the weekly schedule's child pipeline fires, with a fixed prompt) and the read-only **wovain explain** agent (explains pipeline and MR failures; no write tools) | `.gitlab/duo/catalog/`, `wovain:duoCustomFlows` and `wovain:duoCustomAgents` in `infra/Pulumi.prod.yaml` |
 | Agent skills every Duo flow reads | `.agents/skills/` |
@@ -24,9 +24,9 @@ The hourly `wovain loop` schedule ([loop.md](loop.md), with its diagram):
 
 1. **Observe.** It reads Cloud Logging, Cloud Monitoring and GitLab Observability (error spans, once its API key is set) and groups errors by fingerprint. It reads only fields the server controls: the route template Hono matched, the error class (checked against an allowlist) and the status, never a log message or URL.
 2. **Intent.** It files each new problem as a `scout` issue titled `scout: <ErrorClass> on <ROUTE> (<status>)`. A known class on a known route that Cloud Logging saw goes to the Duo Developer flow; anything else is a `status::intent` issue for a human ([loop.md](loop.md#untrusted-input)).
-3. **Fix and review.** Duo writes the MR; the loop marks it ready or requests Duo Code Review, once per commit.
+3. **Fix and review.** Duo writes the MR; the loop marks it ready and requests Duo Code Review, once per commit, and only when it changes application code.
 4. **Merge.** GitLab's auto-merge, set by the loop only when provenance is proven (the loop filed and assigned the issue, GitLab links the MR to it, and a Developer session that assignment started produced it), every path is low-risk application source or tests (nothing that signs in, holds credentials, spends or launches ads), the change is at most 100 lines, Duo reviewed the head commit, none of its threads is open, no one else wrote on the MR and the pipeline is green. No agent merges.
-5. **Deploy.** The `main` pipeline applies infra, deploys, smoke-tests and releases; a red `main` goes to Duo Fix CI/CD.
+5. **Deploy.** The `main` pipeline applies infra, deploys, smoke-tests and releases. A red `main` goes to Duo Fix CI/CD only when the fix gate passes: a code job failed in code, the failure is new and survived a retry or a second pipeline, no Duo fix is open, and at most 1 run an hour and 3 a day. An infra, auth, quota or network failure gets one issue for a human ([loop.md](loop.md#red-main-the-fix-gate)).
 6. **Verify.** Two or more hours after the merge, it compares the error rate before and after, then closes the issue with the numbers or reopens it for another try.
 
 Evidence: !50 (loop, triggers, guardrails, tests), the `loop` job logs, and the `digest` issue's daily comments.
@@ -40,6 +40,8 @@ Evidence: README, !50, !51 (Monitor: funnel metric, weekly analysis, market scou
 ## Most Environmentally Impactful
 
 **8.73 gCO2e per idea-to-paused-campaign run** (down from 14.27: one 5-second clip cropped to every ratio instead of two 15-second clips; video GPU seconds measured from fal once clips are recorded) (Green Software Foundation SCI, ((E × I) + M) per R, us-central1 at 432 gCO2e/kWh location-based), recomputed by the `sci` job on every `main` pipeline. Gains: scale to zero avoids about 334 gCO2e a week against an always-on instance, scheduled pipelines skip the scanners (about 262 CI minutes and 29 gCO2e a week), Duo triggers are filtered to human actions, the loop and the market scout make no model calls, and the shepherd checks paths, size and provenance before it spends a review. Every estimate is labeled.
+
+Green and credit-aware: Duo runs only when a run can help. The `pipeline_hooks` Fix CI/CD trigger fired about 7 times in 30 minutes on infra 403s and an auth 404 that no code change fixes, about 18 credits in a day. It's off now. The loop's fix gate starts Fix CI/CD only for a new, confirmed failure in a code job, at most once an hour and 3 times a day, so a red `main` costs at most about 9 credits a day and usually none. Infra failures go to a person as one issue each. Code Review runs only when Duo is requested on a ready MR that changes application code, never on docs-only, lockfile-only or Renovate MRs. Every skipped run is model time and energy not spent ([loop.md](loop.md#red-main-the-fix-gate)).
 
 Evidence: [sustainability.md](sustainability.md), README "Sustainability (SCI)", !53, the `sci` job's "SCI report" artifact.
 
