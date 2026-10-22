@@ -4,6 +4,7 @@ import {
   autoMergeable,
   blockers,
   diffLines,
+  openThreads,
   provenanceGaps,
   reviewedShaOf,
 } from "../src/guardrails.ts";
@@ -17,6 +18,7 @@ const ok: Candidate = {
   pipeline: "running",
   provenance: [],
   reviewedSha: "abc",
+  reviewerState: "reviewed",
   sha: "abc",
   unresolved: 0,
 };
@@ -87,6 +89,14 @@ describe("blockers", () => {
       "Duo Code Review hasn't reviewed the head commit",
     ]);
     expect(blockers({ ...ok, reviewedSha: undefined })).toHaveLength(1);
+  });
+
+  it("treats a review as done only when Duo's reviewer state says so", () => {
+    expect(blockers({ ...ok, reviewerState: "unreviewed" })).toEqual([
+      "Duo Code Review hasn't reviewed the head commit",
+    ]);
+    expect(blockers({ ...ok, reviewerState: undefined })).toHaveLength(1);
+    expect(blockers({ ...ok, reviewerState: "approved" })).toEqual([]);
   });
 });
 
@@ -198,6 +208,16 @@ describe("provenanceGaps", () => {
     ).toHaveLength(1);
   });
 
+  it("rejects a session that isn't linked to this MR yet", () => {
+    const [session] = good.sessions;
+    if (session === undefined) {
+      throw new Error("no session");
+    }
+    expect(
+      provenanceGaps({ ...good, sessions: [{ ...session, mergeRequests: [] }] })
+    ).toHaveLength(1);
+  });
+
   it("rejects a session someone else started, or one from before the assignment", () => {
     const [session] = good.sessions;
     if (session === undefined) {
@@ -218,6 +238,17 @@ describe("provenanceGaps", () => {
         sessions: [{ ...session, mergeRequests: [8] }],
       })
     ).toHaveLength(1);
+  });
+});
+
+describe("openThreads", () => {
+  it("counts every discussion with an unresolved resolvable note", () => {
+    const open = { notes: [{ resolvable: true, resolved: false }] };
+    const done = { notes: [{ resolvable: true, resolved: true }] };
+    const chat = { notes: [{ resolvable: false, resolved: false }] };
+    // More than one page of discussions (the shepherd reads every page).
+    const many = Array.from({ length: 150 }, () => done);
+    expect(openThreads([...many, open, chat])).toBe(1);
   });
 });
 

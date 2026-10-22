@@ -8,7 +8,7 @@
 ## Checks run
 
 - `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm build`: pass.
-- `pnpm test`: 51 ops tests and 86 server tests pass.
+- `pnpm test`: 54 ops tests and 86 server tests pass.
 - `pnpm infra:preview` (read only): 14 to create (the `gitlab-ops` account and its trust and roles, the logging and monitoring APIs, the `operations` environment, the `wovain loop` schedule and its three variables, the `verified` label, two CI variables), 3 to update (the triggers turn active). No replacements or imports.
 - A local read with my own Google credentials: Cloud Logging returned no ERROR entries for the last 7 days; Cloud Monitoring counted 58 requests and 154.7 billable instance seconds.
 - Duo sessions: the GraphQL `duoWorkflowWorkflows` query returns `workflowDefinition`, `sourceType` (`FLOW_TRIGGER`), the triggering `user`, `workItem` and `mergeRequestLinks` for this project's past Code Review and Fix CI/CD runs.
@@ -25,6 +25,8 @@ A review agent read the first version and the coordinator's security review flag
 - One failing source aborted the run: GitLab Observability failures are caught, each issue and MR settles on its own, and each phase is isolated and reported.
 - Issue titles weren't redacted: they are now.
 - Retries were off by one, notes were read oldest first, and a verified problem that came back was never re-filed: all fixed.
+
+A second security review found three fail-open cases, also fixed: a Developer session must be linked to this MR (not merely to no MR), the head commit counts as reviewed only when Duo's reviewer state is reviewed, approved or requested_changes, and open threads are counted over every page of discussions instead of the newest 100 notes.
 
 Not changed, and written down in `docs/loop.md` (Known limits): read caps per window and the Cloud Logging read cost of verification.
 

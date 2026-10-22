@@ -41,11 +41,25 @@ export interface Candidate {
   // The MR's head commit, and the commit Duo Code Review last reviewed.
   sha: string;
   reviewedSha: string | undefined;
-  // Review threads that are still open.
+  // Duo Code Review's state in the reviewers API.
+  reviewerState: string | undefined;
+  // Review threads that are still open, from every discussion page.
   unresolved: number;
   // Why the MR isn't provably the loop's own work; empty when it is.
   provenance: string[];
 }
+
+// Duo submitted its review; "unreviewed" means it's still running.
+const DONE = new Set(["reviewed", "approved", "requested_changes"]);
+export const reviewDone = (state: string | undefined) =>
+  state !== undefined && DONE.has(state);
+
+// Discussions with a resolvable note that isn't resolved.
+export const openThreads = (
+  discussions: { notes: { resolvable: boolean; resolved: boolean }[] }[]
+) =>
+  discussions.filter((d) => d.notes.some((n) => n.resolvable && !n.resolved))
+    .length;
 
 // Every reason the MR can't be auto-merged yet; empty means go.
 export const blockers = (mr: Candidate): string[] => {
@@ -69,7 +83,7 @@ export const blockers = (mr: Candidate): string[] => {
   if (mr.pipeline === "failed" || mr.pipeline === "canceled") {
     reasons.push(`pipeline ${mr.pipeline}`);
   }
-  if (mr.reviewedSha !== mr.sha) {
+  if (mr.reviewedSha !== mr.sha || !reviewDone(mr.reviewerState)) {
     reasons.push("Duo Code Review hasn't reviewed the head commit");
   }
   if (mr.unresolved > 0) {
@@ -182,7 +196,7 @@ export const provenanceGaps = (p: Provenance): string[] => {
       s.issue === issue.iid &&
       issue.assignedAt !== undefined &&
       Date.parse(s.createdAt) >= Date.parse(issue.assignedAt) &&
-      (s.mergeRequests.length === 0 || s.mergeRequests.includes(mr.iid))
+      s.mergeRequests.includes(mr.iid)
   );
   if (!started) {
     gaps.push(

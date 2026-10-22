@@ -91,6 +91,7 @@ const sessionsSchema = z.object({
 const SESSIONS = `query($path: ID!) { project(fullPath: $path) { duoWorkflowWorkflows(projectPath: $path, first: 50) { nodes { createdAt sourceType workflowDefinition user { username } workItem { iid } mergeRequestLinks(first: 20) { nodes { mergeRequest { iid } } } } } } }`;
 
 type Method = "GET" | "POST" | "PUT";
+const MAX_PAGES = 20;
 type Query = Record<string, string | number | boolean | number[]>;
 
 export const createGitLab = (env: {
@@ -133,6 +134,31 @@ export const createGitLab = (env: {
     path: string,
     query?: Query
   ) => await call(schema, method, `${project}/${path}`, query);
+  // Every page of a list, following GitLab's x-next-page header (at most
+  // MAX_PAGES pages; more fails the run instead of undercounting).
+  const allPages = async <T>(schema: z.ZodType<T>, path: string) => {
+    const items: T[] = [];
+    let page = "1";
+    for (let n = 0; n < MAX_PAGES; n += 1) {
+      const url = new URL(`${env.api}/${project}/${path}`);
+      url.searchParams.set("per_page", "100");
+      url.searchParams.set("page", page);
+      // oxlint-disable-next-line eslint/no-await-in-loop -- each page needs the previous page's header
+      const response = await fetch(url, {
+        headers: { "PRIVATE-TOKEN": env.token },
+      });
+      if (!response.ok) {
+        throw new Error(`GitLab GET ${path}: ${response.status}`);
+      }
+      // oxlint-disable-next-line eslint/no-await-in-loop -- same page
+      items.push(...z.array(schema).parse(await response.json()));
+      page = response.headers.get("x-next-page") ?? "";
+      if (page === "") {
+        return items;
+      }
+    }
+    throw new Error(`GitLab GET ${path}: more than ${MAX_PAGES} pages`);
+  };
   // Newest first, one page: the loop only needs recent notes.
   const notes = async (path: string) =>
     await inProject(z.array(noteSchema), "GET", path, {
@@ -162,6 +188,18 @@ export const createGitLab = (env: {
         "GET",
         `merge_requests/${mr}/diffs`,
         { per_page: 100 }
+      ),
+    discussions: async (mr: number) =>
+      await allPages(
+        z.object({
+          notes: z.array(
+            z.object({
+              resolvable: z.boolean().default(false),
+              resolved: z.boolean().default(false),
+            })
+          ),
+        }),
+        `merge_requests/${mr}/discussions`
       ),
     issue: async (iid: number) =>
       await inProject(issueSchema, "GET", `issues/${iid}`),

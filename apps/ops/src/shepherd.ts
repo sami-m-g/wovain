@@ -2,6 +2,8 @@ import type { GitLab, Issue, MergeRequest, Note } from "./gitlab.ts";
 import {
   blockers,
   diffLines,
+  openThreads,
+  reviewDone,
   provenanceGaps,
   reviewedShaOf,
 } from "./guardrails.ts";
@@ -113,6 +115,43 @@ const requestReview = async (gitlab: GitLab, mr: MergeRequest) => {
   await gitlab.updateMergeRequest(mr.iid, { reviewer_ids: [...others, id] });
 };
 
+// The head pipeline's status, or "failed" when it isn't on the head commit
+// or is in a state auto-merge mustn't wait on.
+const pipelineOf = (mr: MergeRequest) => {
+  const pipeline = mr.head_pipeline;
+  return pipeline !== null &&
+    pipeline !== undefined &&
+    pipeline.sha === mr.sha &&
+    PIPELINE_OK.has(pipeline.status)
+    ? pipeline.status
+    : "failed";
+};
+
+// The head commit has no finished Duo review: ask once, then wait, and hand
+// a review that never lands to a person.
+const awaitReview = async (
+  gitlab: GitLab,
+  state: {
+    mr: MergeRequest;
+    asked: Note | undefined;
+    thread: { iid: number; notes: Note[] };
+    now: Date;
+  }
+) => {
+  const { asked, mr, now, thread } = state;
+  if (asked === undefined) {
+    await requestReview(gitlab, mr);
+    await gitlab.noteOnMergeRequest(
+      mr.iid,
+      `Duo Code Review requested for ${mr.sha} by the wovain loop.\n\n${marker(`review:${mr.sha}`)}`
+    );
+    return "review requested";
+  }
+  return now.getTime() - Date.parse(asked.created_at) > REVIEW_TIMEOUT_MS
+    ? await handBack(gitlab, thread, ["Duo Code Review didn't finish"])
+    : "review running";
+};
+
 const shepherdOne = async (
   gitlab: GitLab,
   listed: MergeRequest,
@@ -125,13 +164,16 @@ const shepherdOne = async (
   if (issue === undefined) {
     return "skip: not bound to a scout issue";
   }
-  const [mr, notes, diffs, versions, reviewers] = await Promise.all([
-    gitlab.mergeRequest(listed.iid),
-    gitlab.mergeRequestNotes(listed.iid),
-    gitlab.diffs(listed.iid),
-    gitlab.versions(listed.iid),
-    gitlab.reviewers(listed.iid),
-  ]);
+  const [mr, notes, diffs, versions, reviewers, discussions] =
+    await Promise.all([
+      gitlab.mergeRequest(listed.iid),
+      gitlab.mergeRequestNotes(listed.iid),
+      gitlab.diffs(listed.iid),
+      gitlab.versions(listed.iid),
+      gitlab.reviewers(listed.iid),
+      gitlab.discussions(listed.iid),
+    ]);
+  const duo = reviewers.find((r) => r.user.username === REVIEWER);
   const thread = { iid: mr.iid, notes };
   const gaps = provenanceGaps(
     await provenanceOf(gitlab, mr, issue, context.loopUser)
@@ -146,6 +188,7 @@ const shepherdOne = async (
     pipeline: undefined,
     provenance: gaps,
     reviewedSha: mr.sha,
+    reviewerState: "reviewed",
     sha: mr.sha,
     unresolved: 0,
   };
@@ -180,35 +223,17 @@ const shepherdOne = async (
     })),
     REVIEWER
   );
-  if (reviewedSha !== mr.sha) {
-    if (asked === undefined) {
-      await requestReview(gitlab, mr);
-      await gitlab.noteOnMergeRequest(
-        mr.iid,
-        `Duo Code Review requested for ${mr.sha} by the wovain loop.\n\n${marker(`review:${mr.sha}`)}`
-      );
-      return "review requested";
-    }
-    return context.now.getTime() - Date.parse(asked.created_at) >
-      REVIEW_TIMEOUT_MS
-      ? await handBack(gitlab, thread, ["Duo Code Review didn't finish"])
-      : "review running";
+  if (reviewedSha !== mr.sha || !reviewDone(duo?.state)) {
+    return await awaitReview(gitlab, { asked, mr, now: context.now, thread });
   }
-  const duo = reviewers.find((r) => r.user.username === REVIEWER);
   const unresolved =
-    notes.filter((n) => n.resolvable && !n.resolved).length +
-    (duo?.state === "requested_changes" ? 1 : 0);
-  const pipeline = mr.head_pipeline;
-  const pipelineOk =
-    pipeline !== null &&
-    pipeline !== undefined &&
-    pipeline.sha === mr.sha &&
-    PIPELINE_OK.has(pipeline.status);
+    openThreads(discussions) + (duo?.state === "requested_changes" ? 1 : 0);
   const reasons = blockers({
     ...base,
     draft: mr.draft,
-    pipeline: pipelineOk ? pipeline.status : "failed",
+    pipeline: pipelineOf(mr),
     reviewedSha,
+    reviewerState: duo?.state,
     unresolved,
   });
   if (reasons.length === 0) {
