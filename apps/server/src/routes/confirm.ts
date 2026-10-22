@@ -1,3 +1,4 @@
+import { AUTOPILOT_TERMS } from "@wovain/shared/autopilot";
 import { dropProducts, dropTotals } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { money } from "@wovain/shared/economics";
@@ -9,7 +10,7 @@ import type { HtmlEscapedString } from "hono/utils/html";
 
 import { approveDesign, designHash, notApprovable } from "../lib/approval.ts";
 import { hashOf } from "../lib/browser-confirm.ts";
-import type { BrowserConfirm } from "../lib/browser-confirm.ts";
+import type { BrowserConfirm, Subject } from "../lib/browser-confirm.ts";
 import { newNonce } from "../lib/connections.ts";
 import { logErrorClass } from "../lib/tool-result.ts";
 import type { Store } from "../store.ts";
@@ -141,6 +142,75 @@ const summary = async (design: Design, secret: string) => {
     </form>`;
 };
 
+// What the merchant agrees to when they turn autopilot on.
+const autopilotTerms = async (secret: string) =>
+  await html`<p>
+      Autopilot runs the whole journey from your chat without asking you:
+      research, designs, products, ads and the campaign. NVIDIA Nemotron decides
+      where you'd normally approve, inside these limits:
+    </p>
+    <ul>
+      <li>Products are created hidden on your Fourthwall shop.</li>
+      <li>The Meta campaign is staged paused. Nothing spends ad budget.</li>
+      <li>
+        At most ${money(AUTOPILOT_TERMS.maxSpendUsd)} of your fal credit per
+        run, and at most ${AUTOPILOT_TERMS.maxRevisions} revisions per design.
+      </li>
+      <li>Ads made with AI carry Meta's AI label.</li>
+    </ul>
+    <p>
+      You go live yourself: Launch on the campaign widget makes the products
+      public and starts the campaign, after you confirm it here. You can stop a
+      run or turn autopilot off from your chat at any time.
+    </p>
+    <form method="post" action="/confirm">
+      <input type="hidden" name="secret" value="${secret}" />
+      <button type="submit">Turn autopilot on</button>
+    </form>`;
+
+// The approval page for a signed-in merchant's subject.
+const confirmPage = async (
+  c: Context,
+  store: Store,
+  { secret, subject }: { secret: string; subject: Subject }
+) => {
+  if (subject.kind === "autopilot") {
+    return await page(c, 200, "Turn on autopilot?", autopilotTerms(secret));
+  }
+  const design = await store.getDesign(subject.id);
+  const refused =
+    design === undefined ? "The design is gone." : notApprovable(design);
+  if (design === undefined || refused !== undefined) {
+    return await page(c, 409, "Can't approve", `${refused} ${ASK_AGAIN}`);
+  }
+  if (designHash(design) !== subject.hash) {
+    return await page(
+      c,
+      409,
+      "Design changed",
+      `The design changed after you pressed Approve. ${ASK_AGAIN}`
+    );
+  }
+  return await page(c, 200, "Approve this drop?", summary(design, secret));
+};
+
+// The Confirm press: approve the design, or turn autopilot on for the terms
+// the page showed.
+const applyConfirm = async (store: Store, subject: Subject) => {
+  if (subject.kind === "autopilot") {
+    if (subject.hash !== `v${AUTOPILOT_TERMS.version}`) {
+      throw new Error("The autopilot terms changed.");
+    }
+    await store.saveAutopilotConsent({
+      at: new Date().toISOString(),
+      version: AUTOPILOT_TERMS.version,
+    });
+    return "Autopilot is on. You can close this tab and go back to your chat.";
+  }
+  await approveDesign(store, subject.id, subject.hash);
+  return "You can close this tab. wovain publishes the drop in your chat.";
+};
+
 interface Deps {
   confirm: BrowserConfirm;
   site: string;
@@ -185,28 +255,7 @@ export const createConfirmRoutes = ({ confirm, site, storeFor }: Deps) => {
           "This link was made for a different wovain account. Sign in with the account you use in your chat."
         );
       }
-      const design = await storeFor(signedIn.userId).getDesign(
-        signedIn.subject.id
-      );
-      const refused =
-        design === undefined ? "The design is gone." : notApprovable(design);
-      if (design === undefined || refused !== undefined) {
-        return await page(c, 409, "Can't approve", `${refused} ${ASK_AGAIN}`);
-      }
-      if (designHash(design) !== signedIn.subject.hash) {
-        return await page(
-          c,
-          409,
-          "Design changed",
-          `The design changed after you pressed Approve. ${ASK_AGAIN}`
-        );
-      }
-      return await page(
-        c,
-        200,
-        "Approve this drop?",
-        summary(design, signedIn.secret)
-      );
+      return await confirmPage(c, storeFor(signedIn.userId), signedIn);
     } catch (error) {
       logErrorClass("confirm sign-in failed:", error);
       return await page(c, 400, "Not confirmed", ASK_AGAIN);
@@ -228,17 +277,11 @@ export const createConfirmRoutes = ({ confirm, site, storeFor }: Deps) => {
         return await page(c, 400, "Not confirmed", ASK_AGAIN);
       }
       deleteCookie(c, NONCE_COOKIE, { path: "/confirm" });
-      await approveDesign(
+      const done = await applyConfirm(
         storeFor(session.userId),
-        session.subject.id,
-        session.subject.hash
+        session.subject
       );
-      return await page(
-        c,
-        200,
-        "Approved",
-        "You can close this tab. wovain publishes the drop in your chat."
-      );
+      return await page(c, 200, "Confirmed", done);
     } catch (error) {
       logErrorClass("confirm failed:", error);
       return await page(c, 409, "Not approved", ASK_AGAIN);

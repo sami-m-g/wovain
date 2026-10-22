@@ -1,3 +1,4 @@
+import { AUTOPILOT_TERMS } from "@wovain/shared/autopilot";
 import { describe, expect, test } from "vitest";
 
 import { createApp } from "../../src/app.ts";
@@ -68,7 +69,7 @@ const setup = async () => {
       },
       method: "POST",
     });
-  return { design, fake, get, link, post, store };
+  return { confirm, design, fake, get, link, post, store };
 };
 
 type Setup = Awaited<ReturnType<typeof setup>>;
@@ -120,6 +121,27 @@ describe("confirm routes", () => {
       { cookie, origin: site }
     );
     expect(again.status).toBe(400);
+  });
+
+  test("the merchant turns autopilot on only by confirming its terms", async () => {
+    const env = await setup();
+    const link = await env.confirm.link("u1", {
+      hash: `v${AUTOPILOT_TERMS.version}`,
+      id: "autopilot",
+      kind: "autopilot",
+    });
+    const { cookie, html, secret } = await signIn({ ...env, link });
+    expect(html).toContain("Products are created hidden");
+    expect(html).toContain("staged paused");
+    expect(await env.store.getAutopilotConsent()).toBeUndefined();
+    const confirmed = await env.post(
+      { secret: secret ?? "" },
+      { cookie, origin: site }
+    );
+    expect(confirmed.status).toBe(200);
+    expect(await env.store.getAutopilotConsent()).toMatchObject({
+      version: AUTOPILOT_TERMS.version,
+    });
   });
 
   test("a link works once", async () => {

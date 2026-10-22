@@ -11,6 +11,7 @@
     "./trends": "./src/trends.ts",
     "./video-models": "./src/video-models.ts",
     "./ad": "./src/ad.ts",
+    "./autopilot": "./src/autopilot.ts",
     "./rules": "./src/rules.ts",
     "./optimizer/*": "./src/optimizer/*.ts",
     "./campaign": "./src/campaign.ts",

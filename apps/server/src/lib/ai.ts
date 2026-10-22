@@ -11,6 +11,8 @@ const NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/";
 
 // The models wovain calls, in one place.
 export const models = {
+  // Autopilot's decisions at each approval point.
+  autopilot: "nebius/nvidia/nemotron-3-super-120b-a12b",
   // NVIDIA Nemotron 3 Super (120B, 12B active).
   judge: "nebius/nvidia/nemotron-3-super-120b-a12b",
   // Ranks and phrases research_trends' ideas.

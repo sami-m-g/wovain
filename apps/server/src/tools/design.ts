@@ -73,12 +73,16 @@ const designInputSchema = designSchema
     // Only the confirm page approves (lib/approval.ts).
     approval: true,
     collectionId: true,
+    // Set by wovain only: autopilot publishes hidden, and a design belongs
+    // to the run it was made in (store.saveDesign).
+    hidden: true,
     productId: true,
     productUrl: true,
     quote: true,
     range: true,
     rejectCount: true,
     rejectReason: true,
+    run: true,
     status: true,
   })
   .partial({ id: true })
@@ -133,9 +137,12 @@ const pricedDesign = (
     ...(sameDrop && kept.collectionId !== undefined
       ? { collectionId: kept.collectionId }
       : {}),
+    // A redraw stays in the run it was made in, and hidden stays hidden.
+    ...(stored?.hidden === undefined ? {} : { hidden: stored.hidden }),
     quote: quoteFor(input.sizes, settings),
     range,
     rejectCount: stored?.rejectCount ?? 0,
+    ...(stored?.run === undefined ? {} : { run: stored.run }),
     status: "draft" as const,
   };
 };

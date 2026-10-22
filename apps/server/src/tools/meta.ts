@@ -1,9 +1,15 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { launchRequestSchema } from "@wovain/shared/campaign";
+import type { Design } from "@wovain/shared/design";
 import { money } from "@wovain/shared/economics";
 import { z } from "zod";
 
-import { draftPlan } from "../lib/campaign-plan.ts";
+import { isRunning } from "../lib/autopilot.ts";
+import {
+  addedProducts,
+  draftPlan,
+  launchSnapshot,
+} from "../lib/campaign-plan.ts";
 import {
   ADVERTISER_JOB,
   draftArgs,
@@ -16,7 +22,11 @@ import {
   checkDraft,
   CREATIVE_FIELDS,
 } from "../lib/meta-launch.ts";
-import { snapshotOf } from "../lib/meta-staged.ts";
+import {
+  fourthwallCaller,
+  goLiveHidden,
+  PublishRefusedError,
+} from "../lib/publish-design.ts";
 import { text } from "../lib/tool-result.ts";
 import {
   canReach,
@@ -24,7 +34,7 @@ import {
   unreachable,
   upstreamReply,
 } from "../lib/upstream.ts";
-import type { Upstream } from "../lib/upstream.ts";
+import type { NeedsConnection, Upstream } from "../lib/upstream.ts";
 import type { Store } from "../store.ts";
 
 const recordedCampaign = async (store: Store) => {
@@ -73,7 +83,13 @@ const registerDraftTool = (
           "This campaign's draft is frozen: the merchant was asked to confirm its launch. Start a new campaign to change it."
         );
       }
-      const sent = draftArgs(tool, args, { ...plan, staged });
+      // An autopilot run labels its AI-made ads: the merchant agreed to it
+      // when they turned autopilot on.
+      const labeled =
+        tool === "ads_create_creative" && (await isRunning(store))
+          ? { ...args, self_ai_disclosure: "OPT_IN" }
+          : args;
+      const sent = draftArgs(tool, labeled, { ...plan, staged });
       const reply = await upstreamReply(upstream, {
         args: sent,
         id: "meta",
@@ -116,6 +132,38 @@ const registerDraftTool = (
   );
 };
 
+// What the launch page adds when autopilot made some products hidden.
+const hiddenNote = (designs: Design[]) => {
+  const hidden = designs.filter((design) => design.hidden === true);
+  return hidden.length === 0
+    ? ""
+    : ` Launching also makes ${hidden.length} hidden ${hidden.length === 1 ? "drop" : "drops"} public on your Fourthwall shop: ${hidden.map((design) => design.dropName ?? design.listing.title).join(", ")}.`;
+};
+
+// Makes every hidden product in the campaign public; `connect` when
+// Fourthwall needs connecting again.
+const showHidden = async (
+  store: Store,
+  upstream: Upstream,
+  designs: Design[]
+): Promise<{ connect?: NeedsConnection }> => {
+  try {
+    await goLiveHidden(designs, {
+      call: fourthwallCaller(upstream, store.userId),
+      save: async (id, patch) => await store.updateDesign(id, patch),
+    });
+    return {};
+  } catch (error) {
+    if (error instanceof PublishRefusedError && error.connect !== undefined) {
+      return { connect: error.connect };
+    }
+    throw new Error(
+      `Not launched: couldn't make the hidden products public (${error instanceof PublishRefusedError ? error.message : "Fourthwall didn't answer"}). Confirm the launch again to retry.`,
+      { cause: error }
+    );
+  }
+};
+
 // Launching is the merchant's call, made outside the chat: request_launch
 // opens wovain's confirm page, where they sign in and press Confirm.
 // launch_campaign publishes only with that confirmation, once, and only if
@@ -144,11 +192,13 @@ const registerLaunchTools = (
         return unreachable(upstream, "meta");
       }
       const settings = await store.getSettings();
-      const [saved, staged, plan] = await Promise.all([
+      const [saved, staged, plan, { products }] = await Promise.all([
         recordedCampaign(store),
         upstream.staged.get(store.userId),
         draftPlan(store, settings),
+        addedProducts(store, settings),
       ]);
+      const designs = products.map(({ design }) => design);
       if (staged?.campaignId !== saved.campaignId) {
         throw new Error("wovain has no record of this campaign's draft.");
       }
@@ -162,8 +212,8 @@ const registerLaunchTools = (
       const pages = [...new Set(staged.creatives.map((item) => item.pageId))];
       const confirmUrl = await upstream.confirmLaunchUrl(store.userId, {
         campaignId: saved.campaignId,
-        snapshot: snapshotOf(frozen, plan.ads),
-        summary: `Campaign ${staged.campaignId}: ${staged.adSets.length} ad ${staged.adSets.length === 1 ? "set" : "sets"} in ${countries.join(", ")}, ${staged.ads.length} ${staged.ads.length === 1 ? "ad" : "ads"} from ${staged.creatives.length} ${staged.creatives.length === 1 ? "creative" : "creatives"} on Page ${pages.join(", ")}. Budget: ${money(plan.dailyBudgetCents / 100)} a day.`,
+        snapshot: launchSnapshot(frozen, plan.ads, designs),
+        summary: `Campaign ${staged.campaignId}: ${staged.adSets.length} ad ${staged.adSets.length === 1 ? "set" : "sets"} in ${countries.join(", ")}, ${staged.ads.length} ${staged.ads.length === 1 ? "ad" : "ads"} from ${staged.creatives.length} ${staged.creatives.length === 1 ? "creative" : "creatives"} on Page ${pages.join(", ")}. Budget: ${money(plan.dailyBudgetCents / 100)} a day.${hiddenNote(designs)}`,
       });
       return {
         content: text(
@@ -191,19 +241,23 @@ const registerLaunchTools = (
       if (!canReach(upstream, "meta")) {
         return unreachable(upstream, "meta");
       }
-      const [saved, staged] = await Promise.all([
+      const [saved, staged, { products }] = await Promise.all([
         recordedCampaign(store),
         upstream.staged.get(store.userId),
+        addedProducts(store, await store.getSettings()),
       ]);
       if (staged?.campaignId !== saved.campaignId) {
         throw new Error("Not launched: wovain has no record of this draft.");
       }
-      // The plan now, so a concept changed since the confirmation stops it.
+      // The plan now, so a concept changed since the confirmation stops it,
+      // and the exact hidden drops the merchant saw: any other set of
+      // products doesn't match the confirmation.
       const plan = await draftPlan(store, await store.getSettings());
+      const designs = products.map(({ design }) => design);
       const approved = await upstream.launches.consume(
         store.userId,
         saved.campaignId,
-        snapshotOf(staged, plan.ads)
+        launchSnapshot(staged, plan.ads, designs)
       );
       if (!approved) {
         throw new Error(
@@ -254,6 +308,12 @@ const registerLaunchTools = (
       ];
       if (all.length > 0) {
         throw new Error(`Not launched: ${all.join("; ")}.`);
+      }
+      // Products autopilot made hidden go public first, so the ads never
+      // point at a page shoppers can't open.
+      const { connect } = await showHidden(store, upstream, designs);
+      if (connect !== undefined) {
+        return connectReply(connect);
       }
       return await upstreamReply(upstream, {
         args: {

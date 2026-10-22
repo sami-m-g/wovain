@@ -79,6 +79,16 @@ export const jobHandles = (reply: Reply): FalJob[] =>
       : undefined
   );
 
+// The first string under `key` anywhere in a reply (a model's text output).
+export const textField = (reply: Reply, key: string): string | undefined =>
+  collect(reply, (node) => {
+    const value: unknown =
+      typeof node === "object" && node !== null
+        ? Object.entries(node).find(([name]) => name === key)?.[1]
+        : undefined;
+    return typeof value === "string" ? value : undefined;
+  })[0];
+
 // Media URLs in a job result.
 export const mediaUrls = (reply: Reply): string[] => [
   ...new Set(

@@ -1,8 +1,14 @@
+import { createHash } from "node:crypto";
+
+import type { Design } from "@wovain/shared/design";
 import { breakeven } from "@wovain/shared/economics";
 import type { Settings } from "@wovain/shared/settings";
 
 import type { Store } from "../store.ts";
 import { approvedAds } from "./ad-plan.ts";
+import { snapshotOf } from "./meta-staged.ts";
+import type { Staged } from "./meta-staged.ts";
+import { hiddenDrops } from "./publish-design.ts";
 
 // Each link carries the ad's ID so Fourthwall sales can be matched to the ad.
 export const URL_TAGS =
@@ -94,3 +100,17 @@ export const draftPlan = async (store: Store, settings: Settings) => {
   };
 };
 export type DraftPlan = Awaited<ReturnType<typeof draftPlan>>;
+
+// What the merchant confirms on the launch page: the staged draft and, when
+// autopilot made hidden drops, exactly which designs, offers and collections
+// the launch makes public. Any other set doesn't match the confirmation.
+export const launchSnapshot = (
+  staged: Staged,
+  concepts: unknown,
+  designs: Design[]
+) => {
+  const drops = hiddenDrops(designs);
+  return drops.length === 0
+    ? snapshotOf(staged, concepts)
+    : `${snapshotOf(staged, concepts)}.${createHash("sha256").update(JSON.stringify(drops)).digest("base64url")}`;
+};

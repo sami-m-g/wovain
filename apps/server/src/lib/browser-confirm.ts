@@ -29,7 +29,9 @@ import {
 const subjectSchema = z.object({
   hash: z.string().min(1),
   id: z.string().min(1),
-  kind: z.enum(["design"]),
+  // A design's approval, or turning autopilot on (id "autopilot", the hash
+  // names the terms' version).
+  kind: z.enum(["design", "autopilot"]),
 });
 export type Subject = z.infer<typeof subjectSchema>;
 

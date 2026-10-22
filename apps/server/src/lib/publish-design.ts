@@ -190,12 +190,14 @@ const createOffers = async (
   return updated;
 };
 
-// Groups a drop in one public collection. A collection made on an earlier
-// try is reused: a redraw that changes the drop's products clears it.
+// Groups a drop in one collection, public unless `visible` is false. A
+// collection made on an earlier try is reused: a redraw that changes the
+// drop's products clears it.
 const publishCollection = async (
   design: Design,
   offerIds: string[],
-  { call, save }: Pick<PublishDeps, "call" | "save">
+  { call, save }: Pick<PublishDeps, "call" | "save">,
+  visible = true
 ) => {
   let { collectionId } = design;
   let createdSlug: string | undefined;
@@ -217,6 +219,9 @@ const publishCollection = async (
     collectionId = created.id;
     createdSlug = created.slug;
     await save({ collectionId });
+  }
+  if (!visible) {
+    return { collectionId, slug: createdSlug };
   }
   const [published] = find(
     collectionSchema,
@@ -240,13 +245,23 @@ export interface PublishDeps {
   save: (patch: Partial<Design>) => Promise<unknown>;
 }
 
+const makePublic = async (call: FourthwallCall, offerId: string) => {
+  await checkedCall(call, "ecommerce_update-offer-status", {
+    offerId,
+    status: "PUBLIC",
+  });
+};
+
 // Publishes an approved design: every product of the drop created, priced at
 // the widget's price and made public, then a drop grouped in a collection.
-// Returns the patch that makes the design live.
+// An autopilot approval keeps the products and the collection hidden until
+// the merchant confirms go live (goLive). Returns the patch that makes the
+// design live.
 export const publishDesign = async (
   approved: Design,
   { call, save }: PublishDeps
 ): Promise<Partial<Design>> => {
+  const hidden = approved.approval?.run !== undefined;
   const [shop] = find(shopSchema, await call("ecommerce_get-current-shop", {}));
   if (shop === undefined) {
     throw new PublishRefusedError("Couldn't read the shop's address.");
@@ -265,16 +280,15 @@ export const publishDesign = async (
         offerId,
         price: quote.price,
       });
-      await checkedCall(call, "ecommerce_update-offer-status", {
-        offerId,
-        status: "PUBLIC",
-      });
+      if (!hidden && offerId !== undefined) {
+        await makePublic(call, offerId);
+      }
     })
   );
   const [offers, collection] = await Promise.all([
     call("ecommerce_get-offers-by-ids", { offerIds }),
     design.range.length > 0
-      ? publishCollection(design, offerIds, { call, save })
+      ? publishCollection(design, offerIds, { call, save }, !hidden)
       : undefined,
   ]);
   const slugs = new Map(
@@ -293,6 +307,7 @@ export const publishDesign = async (
     ...(collection === undefined
       ? {}
       : { collectionId: collection.collectionId }),
+    ...(hidden ? { hidden: true } : {}),
     ...(productUrl === undefined ? {} : { productUrl }),
     range: design.range.map((product) => {
       const url = productPage(product.offerId);
@@ -300,3 +315,63 @@ export const publishDesign = async (
     }),
   };
 };
+
+// Go live for a design autopilot published hidden: every product and the
+// drop's collection made public. Runs only after the merchant confirmed the
+// launch on wovain's confirm page.
+export const goLive = async (design: Design, { call, save }: PublishDeps) => {
+  const offerIds = productsOf(design).flatMap(
+    (product) => product.offerId ?? []
+  );
+  await Promise.all(
+    offerIds.map(async (offerId) => {
+      await makePublic(call, offerId);
+    })
+  );
+  if (design.range.length > 0) {
+    await publishCollection(design, offerIds, { call, save });
+  }
+};
+
+// Makes every hidden drop in `designs` public, recording each as it goes.
+export const goLiveHidden = async (
+  designs: Design[],
+  {
+    call,
+    save,
+  }: {
+    call: FourthwallCall;
+    save: (id: string, patch: Partial<Design>) => Promise<unknown>;
+  }
+) => {
+  const showOne = async (design: Design) => {
+    const saveOne = async (patch: Partial<Design>) =>
+      await save(design.id, patch);
+    await goLive(design, { call, save: saveOne });
+    await saveOne({ hidden: false });
+  };
+  await Promise.all(
+    designs.flatMap((design) =>
+      design.hidden === true ? [showOne(design)] : []
+    )
+  );
+};
+
+// The hidden drops a launch would make public, exactly: each design with its
+// offers and collection. The launch confirm page pins this list.
+export const hiddenDrops = (designs: Design[]) =>
+  designs
+    .flatMap((design) =>
+      design.hidden === true
+        ? [
+            {
+              collectionId: design.collectionId ?? null,
+              id: design.id,
+              offerIds: productsOf(design).map(
+                (product) => product.offerId ?? null
+              ),
+            },
+          ]
+        : []
+    )
+    .toSorted((a, b) => a.id.localeCompare(b.id));
