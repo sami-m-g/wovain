@@ -41,14 +41,14 @@ describe("priceProduct", () => {
     expect(quote.price).toBe(30);
     expect(round(quote.profit)).toBe(12.3);
     expect(Math.round(quote.marginPct)).toBe(41);
-    expect(round(quote.breakeven.perSale)).toBe(10.32);
+    expect(round(quote.breakevenPerSale)).toBe(10.32);
   });
 
   test("leaves at least the minimum profit per sale for any base cost", () => {
     for (const baseCost of [8.5, 12, 17.7, 21.4, 34.99]) {
       const quote = priceProduct([{ baseCost, size: "M" }], pricing, economics);
       expect(Number.isInteger(quote.price)).toBe(true);
-      expect(quote.breakeven.perSale).toBeGreaterThanOrEqual(pricing.minProfit);
+      expect(quote.breakevenPerSale).toBeGreaterThanOrEqual(pricing.minProfit);
       expect(quote.marginPct).toBeGreaterThanOrEqual(pricing.minMarginPct);
     }
   });
@@ -68,7 +68,7 @@ describe("priceProduct", () => {
       { ...pricing, roundToCleanPrice: false },
       economics
     );
-    expect(quote.breakeven.perSale).toBeGreaterThanOrEqual(10);
+    expect(quote.breakevenPerSale).toBeGreaterThanOrEqual(10);
     expect(quote.price).toBeLessThan(30);
     expect(round(quote.price)).toBe(quote.price);
   });

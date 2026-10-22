@@ -45,3 +45,11 @@ export const campaignResultSchema = z.object({ campaign: campaignSchema });
 // request_launch's reply: wovain's page where the merchant confirms the
 // launch in their own browser.
 export const launchRequestSchema = z.object({ confirmUrl: z.url() });
+
+// The launched campaign and which of its rules exist in Meta.
+export const savedCampaignSchema = z.object({
+  adAccountId: z.string(),
+  campaignId: z.string(),
+  rulesCreated: z.array(z.string()),
+});
+export type SavedCampaign = z.infer<typeof savedCampaignSchema>;

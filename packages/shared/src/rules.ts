@@ -1,24 +1,26 @@
+import { z } from "zod";
+
 import type { Settings } from "./settings.ts";
 
 // The five campaign rules (prd.md > Campaign rules), as dollar thresholds for
 // one product. The ad widget shows them; the campaign step creates them in Meta.
-export interface RuleThresholds {
+export const ruleThresholdsSchema = z.object({
   // Alert when campaign cost per sale goes above breakeven.
-  alertAbove: number;
+  alertAbove: z.number(),
   // Pause all of a product's ads when their spend reaches this with no sales.
-  killDesignAt: number;
+  killDesignAt: z.number(),
   // Pause an ad whose cost per sale is above this once it has enough sales.
-  killExpensiveAbove: number;
+  killExpensiveAbove: z.number(),
   // Pause an ad when its spend reaches this with no sales.
-  killNoSalesAt: number;
+  killNoSalesAt: z.number(),
   // Raise the campaign budget when cost per sale stays under this.
-  scaleUnder: number;
-}
+  scaleUnder: z.number(),
+});
 
 export const ruleThresholds = (
   breakevenPerSale: number,
   rules: Settings["rules"]
-): RuleThresholds => ({
+): z.infer<typeof ruleThresholdsSchema> => ({
   alertAbove: breakevenPerSale,
   killDesignAt: breakevenPerSale * rules.killDesignMultiple,
   killExpensiveAbove: breakevenPerSale * rules.killExpensiveMultiple,

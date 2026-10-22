@@ -186,3 +186,7 @@ export const trademarkResultSchema = z.object({
   note: z.string().max(400).optional(),
   phrase: z.string().max(120).optional(),
 });
+
+// A niche brief this merchant started (Tavily Research's request ID), so
+// get_niche_brief answers only its owner.
+export const briefRecordSchema = z.object({ id: z.string().max(100) });

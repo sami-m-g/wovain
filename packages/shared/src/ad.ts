@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { breakevenSchema, quoteSchema } from "./economics.ts";
+import { ruleThresholdsSchema } from "./rules.ts";
+
 // Everything the ad widget shows (prd.md > Ad widgets). Concepts, copy and
 // visuals come from the ads playbook; economics and rules are computed by the
 // server from the design's price, so the money numbers never come from the model.
@@ -144,24 +147,11 @@ export const adSchema = z.object({
   coach: z.string().min(1).max(160),
   concepts: z.array(adConceptSchema).min(1).max(6),
   designId: z.string().regex(/^d\d+$/u),
-  economics: z.object({
-    baseCost: z.number(),
-    breakevenPerSale: z.number(),
-    cardFees: z.number(),
-    price: z.number(),
-    refundReserve: z.number(),
-    roas: z.number(),
-    roasOnOrderValue: z.number(),
-  }),
+  economics: quoteSchema
+    .omit({ marginPct: true, profit: true })
+    .extend(breakevenSchema.pick({ roasOnOrderValue: true }).shape),
   productTitle: z.string().min(1),
-  rules: z.object({
-    alertAbove: z.number(),
-    killDesignAt: z.number(),
-    killExpensiveAbove: z.number(),
-    killNoSalesAt: z.number(),
-    scaleStepPct: z.number(),
-    scaleUnder: z.number(),
-  }),
+  rules: ruleThresholdsSchema.extend({ scaleStepPct: z.number() }),
   staticImage: z.object({ alt: z.string().min(1), url: z.url() }),
   status: adStatusSchema.default("draft"),
 });
@@ -217,3 +207,21 @@ export const mergeConcepts = (
 // A ratio as the widget names it: "Feed 4:5", "Stories and Reels 9:16".
 export const ratioLabel = (ratio: AdRatio) =>
   `${ratio === "9:16" ? "Stories and Reels" : "Feed"} ${ratio}`;
+
+// The fal jobs wovain submitted for one design's ads and the media URLs their
+// results held: the only fal URLs an ad may use. gpuSeconds is the GPU time
+// fal reported for a finished job; the weekly job turns them into one
+// aggregate (count, median, p90) for the sci job's video energy.
+export const adMediaSchema = z.object({
+  jobs: z.array(
+    z.object({
+      endpointId: z.string(),
+      gpuSeconds: z.number().nonnegative().optional(),
+      // When collect_ad_media read gpuSeconds, so aggregates can use a window.
+      measuredAt: z.iso.datetime().optional(),
+      requestId: z.string(),
+    })
+  ),
+  urls: z.array(z.url()),
+});
+export type AdMedia = z.infer<typeof adMediaSchema>;

@@ -15,16 +15,29 @@ export type SizeCost = z.infer<typeof sizeCostSchema>;
 type Economics = Settings["economics"];
 type Pricing = Settings["pricing"];
 
-export interface Breakeven {
-  cardFees: number;
-  perSale: number;
-  refundReserve: number;
+export const breakevenSchema = z.object({
+  cardFees: z.number(),
+  perSale: z.number(),
+  refundReserve: z.number(),
   // Price ÷ breakeven per sale: the ROAS target on product price.
-  roas: number;
+  roas: z.number(),
   // The same target when the pixel reports price + shipping + tax.
-  roasOnOrderValue: number;
-  salesTax: number;
-}
+  roasOnOrderValue: z.number(),
+  salesTax: z.number(),
+});
+export type Breakeven = z.infer<typeof breakevenSchema>;
+
+// A priced product as designs store it: perSale is breakevenPerSale.
+export const quoteSchema = breakevenSchema
+  .pick({ cardFees: true, refundReserve: true, roas: true })
+  .extend({
+    baseCost: z.number(),
+    breakevenPerSale: z.number(),
+    marginPct: z.number(),
+    price: z.number(),
+    profit: z.number(),
+  });
+export type PriceQuote = z.infer<typeof quoteSchema>;
 
 export const money = (value: number) => `$${value.toFixed(2)}`;
 
@@ -73,14 +86,6 @@ export const basisCost = (
 
 const cents = (value: number) => Math.ceil(Math.round(value * 1e6) / 1e4) / 100;
 
-export interface PriceQuote {
-  baseCost: number;
-  breakeven: Breakeven;
-  marginPct: number;
-  price: number;
-  profit: number;
-}
-
 // At least the minimum profit or the minimum margin, whichever is greater,
 // then raised to the next clean (whole-dollar) price that still leaves the
 // minimum profit per sale after fees and reserve ($28 → $30 for the demo tee).
@@ -102,11 +107,19 @@ export const priceProduct = (
     price = cents(price + step);
   }
   const profit = price - baseCost;
+  const { cardFees, perSale, refundReserve, roas } = breakeven(
+    price,
+    baseCost,
+    economics
+  );
   return {
     baseCost,
-    breakeven: breakeven(price, baseCost, economics),
+    breakevenPerSale: perSale,
+    cardFees,
     marginPct: (profit / price) * 100,
     price,
     profit,
+    refundReserve,
+    roas,
   };
 };

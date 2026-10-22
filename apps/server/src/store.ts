@@ -1,17 +1,25 @@
-import { adStatusOf, mergeConcepts, storedAdSchema } from "@wovain/shared/ad";
-import type { Ad, ConceptRevision, Decision } from "@wovain/shared/ad";
+import {
+  adMediaSchema,
+  adStatusOf,
+  mergeConcepts,
+  storedAdSchema,
+} from "@wovain/shared/ad";
+import type { Ad, AdMedia, ConceptRevision, Decision } from "@wovain/shared/ad";
 import {
   AUTOPILOT_TERMS,
   autopilotConsentSchema,
   autopilotRunSchema,
 } from "@wovain/shared/autopilot";
 import type { AutopilotConsent, AutopilotRun } from "@wovain/shared/autopilot";
-import { designSchema } from "@wovain/shared/design";
-import type { Design } from "@wovain/shared/design";
+import { savedCampaignSchema } from "@wovain/shared/campaign";
+import type { SavedCampaign } from "@wovain/shared/campaign";
+import { designSchema, stagedArtworkSchema } from "@wovain/shared/design";
+import type { Design, StagedArtwork } from "@wovain/shared/design";
 import { actionRecordSchema } from "@wovain/shared/optimizer/records";
 import type { ActionRecord } from "@wovain/shared/optimizer/records";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
 import type { Settings, SettingsPatch } from "@wovain/shared/settings";
+import { briefRecordSchema } from "@wovain/shared/trends";
 import type {
   DocumentData,
   DocumentReference,
@@ -22,50 +30,6 @@ import type { Storage } from "firebase-admin/storage";
 import { z } from "zod";
 
 type Bucket = ReturnType<Storage["bucket"]>;
-
-// Staged artwork: the bytes live in media under `key`, the record in Firestore.
-const artworkSchema = z.object({
-  bytes: z.int().positive(),
-  contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
-  height: z.int().positive(),
-  id: z.string().regex(/^a\d+$/u),
-  key: z.string(),
-  // Absent for data URLs, which have no public URL.
-  sourceUrl: z.url().optional(),
-  transparent: z.boolean(),
-  width: z.int().positive(),
-});
-export type Artwork = z.infer<typeof artworkSchema>;
-
-// The launched campaign and which of its rules exist in Meta.
-const campaignSchema = z.object({
-  adAccountId: z.string(),
-  campaignId: z.string(),
-  rulesCreated: z.array(z.string()),
-});
-type SavedCampaign = z.infer<typeof campaignSchema>;
-
-// The fal jobs wovain submitted for one design's ads and the media URLs their
-// results held: the only fal URLs an ad may use. gpuSeconds is the GPU time
-// fal reported for a finished job; the weekly job turns them into one
-// aggregate (count, median, p90) for the sci job's video energy.
-const adMediaSchema = z.object({
-  jobs: z.array(
-    z.object({
-      endpointId: z.string(),
-      gpuSeconds: z.number().nonnegative().optional(),
-      // When collect_ad_media read gpuSeconds, so aggregates can use a window.
-      measuredAt: z.iso.datetime().optional(),
-      requestId: z.string(),
-    })
-  ),
-  urls: z.array(z.url()),
-});
-type AdMedia = z.infer<typeof adMediaSchema>;
-
-// A niche brief this merchant started (Tavily Research's request ID), so
-// get_niche_brief answers only its owner.
-const briefSchema = z.object({ id: z.string().max(100) });
 
 type Kind =
   | "ad"
@@ -249,9 +213,9 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
   const table = tableIn(user);
   const ads = table("ad", storedAdSchema);
   const adMedia = table("ad-media", adMediaSchema);
-  const briefs = table("brief", briefSchema);
-  const artworks = table("artwork", artworkSchema);
-  const campaigns = table("campaign", campaignSchema);
+  const briefs = table("brief", briefRecordSchema);
+  const artworks = table("artwork", stagedArtworkSchema);
+  const campaigns = table("campaign", savedCampaignSchema);
   const designs = table("design", designSchema);
   const settingsTable = table("settings", settingsSchema);
   const consents = table("autopilotConsent", autopilotConsentSchema);
@@ -315,7 +279,7 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     getAdMedia: async (designId: string): Promise<AdMedia> =>
       (await adMedia.get(designId)) ?? { jobs: [], urls: [] },
     getAds: async (): Promise<Ad[]> => await ads.all(),
-    getArtwork: async (id: string): Promise<Artwork | undefined> =>
+    getArtwork: async (id: string): Promise<StagedArtwork | undefined> =>
       await artworks.get(id),
     getCampaign: async (): Promise<SavedCampaign | undefined> =>
       await campaigns.get(ONLY),
@@ -340,7 +304,7 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     },
     getSettings: async (): Promise<Settings> => await settings(),
     ownsBrief: async (id: string) => (await briefs.get(id)) !== undefined,
-    readArtworkBytes: async (artwork: Artwork) => {
+    readArtworkBytes: async (artwork: StagedArtwork) => {
       const bytes = await media.get(artwork.key);
       if (bytes === undefined) {
         throw new Error(`staged artwork ${artwork.id} has no bytes`);
@@ -396,10 +360,10 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       await requireDesign(id),
     // Bytes go to media first, so a record never points at missing bytes.
     saveArtwork: async (
-      artwork: Omit<Artwork, "id" | "key">,
+      artwork: Omit<StagedArtwork, "id" | "key">,
       bytes: Uint8Array,
       fileName: string
-    ): Promise<Artwork> => {
+    ): Promise<StagedArtwork> => {
       const key = `${userId}/${fileName}`;
       await media.put(key, bytes, artwork.contentType);
       return await transaction(async (tx) => {
