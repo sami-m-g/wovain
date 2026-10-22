@@ -60,6 +60,8 @@ export const fakeUpstream = (
       "ads_get_ad_entities",
       "ads_create_creative",
       "ads_creative_upload_media",
+      "ads_create_ad",
+      "ads_get_creatives",
     ]) {
       mcp.registerTool(
         name,

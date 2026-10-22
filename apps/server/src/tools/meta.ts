@@ -6,13 +6,16 @@ import { z } from "zod";
 import { addedProducts, draftPlan } from "../lib/campaign-plan.ts";
 import {
   ADVERTISER_JOB,
-  CHECKED_FIELDS,
-  checkDraft,
   draftArgs,
   draftToolSchema,
   newConversationId,
-  stagedCampaignId,
 } from "../lib/meta-draft.ts";
+import {
+  CHECKED_FIELDS,
+  checkCreatives,
+  checkDraft,
+  CREATIVE_FIELDS,
+} from "../lib/meta-launch.ts";
 import { text } from "../lib/tool-result.ts";
 import {
   canReach,
@@ -57,23 +60,48 @@ const registerDraftTool = (
       title: "Stage the Meta campaign draft",
     },
     async ({ arguments: args, tool }) => {
-      const plan = await draftPlan(store, await store.getSettings());
-      const sent = draftArgs(tool, args, plan);
+      if (!canReach(upstream, "meta")) {
+        return unreachable(upstream, "meta");
+      }
+      const [plan, staged] = await Promise.all([
+        draftPlan(store, await store.getSettings()),
+        upstream.staged.get(store.userId),
+      ]);
+      const sent = draftArgs(tool, args, { ...plan, staged });
       const reply = await upstreamReply(upstream, {
         args: sent,
         id: "meta",
         tool,
         userId: store.userId,
       });
-      const failed = "isError" in reply && reply.isError;
-      const campaignId =
-        tool === "ads_create_campaign" && !failed
-          ? stagedCampaignId(reply.structuredContent)
-          : undefined;
-      if (campaignId !== undefined) {
+      // Only a real Meta result is recorded: not an error, a connect link
+      // or "not set up".
+      const content: unknown =
+        "structuredContent" in reply ? reply.structuredContent : undefined;
+      if (
+        ("isError" in reply && reply.isError) ||
+        typeof content !== "object" ||
+        content === null ||
+        "needsConnection" in content ||
+        "configured" in content
+      ) {
+        return reply;
+      }
+      const recorded = await upstream.staged.record(
+        store.userId,
+        tool,
+        sent,
+        content
+      );
+      if (recorded === "") {
+        throw new Error(
+          `Meta staged the ${tool} object but its reply had no ID, so wovain can't use it or launch with it. Delete it in Ads Manager's drafts and try again.`
+        );
+      }
+      if (tool === "ads_create_campaign") {
         await store.saveCampaign({
           adAccountId: String(sent["ad_account_id"]),
-          campaignId,
+          campaignId: recorded,
           rulesCreated: [],
         });
       }
@@ -137,66 +165,79 @@ const registerLaunchTools = (
         readOnlyHint: false,
       },
       description:
-        "Publish the staged campaign in Meta, which starts spending, after the merchant confirmed it on wovain's confirm page (request_launch). Without that confirmation it refuses. It reads the draft back and stops if the budget, objective or caps differ from the plan. objectIds, if given, must belong to the campaign's draft.",
-      inputSchema: z.object({
-        objectIds: z.array(z.string().regex(/^\d+$/u)).max(200).default([]),
-      }),
+        "Publish the staged campaign in Meta, which starts spending, after the merchant confirmed it on wovain's confirm page (request_launch). Without that confirmation it refuses. It publishes only the objects wovain staged, after reading the draft and its creatives back: it stops on any object wovain didn't stage, or any budget, objective, cap, bid, targeting, link, media or Page that differs from what wovain staged.",
+      inputSchema: z.object({}),
       title: "Launch the campaign",
     },
-    async ({ objectIds }) => {
+    async () => {
       if (!canReach(upstream, "meta")) {
         return unreachable(upstream, "meta");
       }
-      const saved = await recordedCampaign(store);
+      const [saved, staged] = await Promise.all([
+        recordedCampaign(store),
+        upstream.staged.get(store.userId),
+      ]);
       if (!(await upstream.launches.consume(store.userId, saved.campaignId))) {
         throw new Error(
           "Not launched: the merchant hasn't confirmed this launch on wovain's confirm page. Call request_launch and show them the link."
         );
       }
+      if (staged?.campaignId !== saved.campaignId) {
+        throw new Error("Not launched: wovain has no record of this draft.");
+      }
       const plan = await draftPlan(store, await store.getSettings());
       const meta = {
-        ad_account_id: saved.adAccountId.replace(/^act_/u, ""),
+        ad_account_id: staged.adAccountId.replace(/^act_/u, ""),
         advertiser_job: ADVERTISER_JOB,
         client_conversation_id: newConversationId(),
       };
-      const draft = await upstream.call({
-        args: {
-          ...meta,
+      const read = async (tool: string, args: Record<string, unknown>) =>
+        await upstream.call({
+          args: { ...meta, ...args },
+          id: "meta",
+          tool,
+          userId: store.userId,
+        });
+      const [draft, creatives] = await Promise.all([
+        read("ads_get_ad_entities", {
           fields: CHECKED_FIELDS,
-          object_ids: [saved.campaignId],
+          object_ids: [staged.campaignId],
           object_state: "draft",
-        },
-        id: "meta",
-        tool: "ads_get_ad_entities",
-        userId: store.userId,
-      });
+        }),
+        read("ads_get_creatives", {
+          creative_ids: staged.creatives.map((creative) => creative.id),
+          fields: CREATIVE_FIELDS,
+        }),
+      ]);
       if (draft.kind === "connect") {
         return connectReply(draft.connect);
       }
-      const { ids, problems } = checkDraft(
+      if (creatives.kind === "connect") {
+        return connectReply(creatives.connect);
+      }
+      const { objectIds, problems } = checkDraft(
         draft.result.structuredContent,
-        saved.campaignId,
+        staged,
         plan.dailyBudgetCents
       );
-      const inDraft = new Set(ids);
-      const foreign = objectIds.filter((objectId) => !inDraft.has(objectId));
-      if (problems.length > 0 || foreign.length > 0) {
-        throw new Error(
-          `Not launched: ${[...problems, ...foreign.map((objectId) => `${objectId} isn't in the campaign's draft`)].join("; ")}.`
-        );
+      const all = [
+        ...problems,
+        ...checkCreatives(
+          creatives.result.structuredContent,
+          staged,
+          plan.linkUrls
+        ),
+      ];
+      if (all.length > 0) {
+        throw new Error(`Not launched: ${all.join("; ")}.`);
       }
       return await upstreamReply(upstream, {
         args: {
           ...meta,
-          entity_id: saved.campaignId,
+          entity_id: staged.campaignId,
           entity_type: "campaign",
           hide_ui: true,
-          object_ids: [
-            ...new Set([
-              saved.campaignId,
-              ...(objectIds.length > 0 ? objectIds : ids),
-            ]),
-          ],
+          object_ids: objectIds,
           publish_as_active: true,
         },
         id: "meta",

@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import type { DraftPlan } from "./campaign-plan.ts";
+import type { Staged } from "./meta-staged.ts";
 
 // What wovain lets the agent send to Meta's Ads MCP for the campaign draft:
 // an allowlist of argument keys per tool, nested JSON checked too, unknown
@@ -117,43 +118,63 @@ export const draftToolSchema = z.enum([
 ]);
 type DraftTool = z.infer<typeof draftToolSchema>;
 
-// Plan checks the schemas can't make alone: uploads only of the added ads'
-// media, links only to their products, and the ad set under the campaign
-// wovain staged. An empty string means the arguments fit the plan.
-const outsidePlan = (tool: DraftTool, args: Args, plan: DraftPlan) => {
-  if (
-    tool === "ads_creative_upload_media" &&
-    !plan.mediaUrls.includes(String(args["media_url"]))
-  ) {
-    return "media_url isn't one of the added ads' images or videos";
-  }
-  if (
-    tool === "ads_create_creative" &&
-    !plan.linkUrls.includes(String(args["link_url"]))
-  ) {
-    return "link_url isn't an added product's link (with the plan's URL tags)";
-  }
-  if (tool === "ads_create_ad_set" && args["campaign_id"] !== plan.campaignId) {
-    return "campaign_id isn't the campaign wovain staged";
-  }
-  return "";
+// What a draft call may build on: the plan, and the objects wovain already
+// staged for the plan's campaign (from Meta's replies).
+export type Plan = DraftPlan & { staged: Staged | undefined };
+
+const has = (list: readonly string[], value: unknown) =>
+  new Set(list).has(String(value));
+
+// Plan checks the schemas can't make alone, per tool. An empty string means
+// the arguments fit: uploads only of the added ads' media; creatives only
+// with an added product's link and media wovain uploaded; ad sets only under
+// the staged campaign; ads only joining a staged ad set and a creative
+// wovain made.
+const planChecks: Record<DraftTool, (args: Args, plan: Plan) => string> = {
+  ads_create_ad: (args, { staged }) => {
+    const creative = z
+      .object({ creative_id: z.string() })
+      .safeParse(JSON.parse(String(args["creative"]))).data?.creative_id;
+    if (!has(staged?.adSets.map((set) => set.id) ?? [], args["ad_set_id"])) {
+      return "ad_set_id isn't an ad set wovain staged under the campaign";
+    }
+    return has(staged?.creatives.map((item) => item.id) ?? [], creative)
+      ? ""
+      : "the creative isn't one wovain made";
+  },
+  ads_create_ad_set: (args, { campaignId, staged }) =>
+    args["campaign_id"] === campaignId && staged?.campaignId === campaignId
+      ? ""
+      : "campaign_id isn't the campaign wovain staged",
+  ads_create_campaign: () => "",
+  ads_create_creative: (args, { linkUrls, staged }) => {
+    if (!has(linkUrls, args["link_url"])) {
+      return "link_url isn't an added product's link (with the plan's URL tags)";
+    }
+    if (!has(staged?.videos ?? [], args["video_id"])) {
+      return "video_id isn't a video wovain uploaded";
+    }
+    return has(staged?.images ?? [], args["image_hash"])
+      ? ""
+      : "image_hash isn't an image wovain uploaded";
+  },
+  ads_creative_upload_media: (args, { mediaUrls }) =>
+    has(mediaUrls, args["media_url"])
+      ? ""
+      : "media_url isn't one of the added ads' images or videos",
 };
 
 // The arguments wovain sends for one draft call, or an error naming what it
 // refused. wovain sets the job, hides Meta's widgets in favor of its own,
 // uploads by URL only and puts the plan's budget on the campaign.
-export const draftArgs = (
-  tool: DraftTool,
-  args: Args,
-  plan: DraftPlan
-): Args => {
+export const draftArgs = (tool: DraftTool, args: Args, plan: Plan): Args => {
   const parsed = drafts[tool].safeParse(args);
   if (!parsed.success) {
     throw new Error(
       `campaign_draft refused these ${tool} arguments: ${z.prettifyError(parsed.error)}`
     );
   }
-  const problem = outsidePlan(tool, parsed.data, plan);
+  const problem = planChecks[tool](parsed.data, plan);
   if (problem !== "") {
     throw new Error(`campaign_draft refused ${tool}: ${problem}.`);
   }
@@ -176,96 +197,3 @@ export const newConversationId = () =>
     .replaceAll(/[^A-Za-z\d]/gu, "")
     .padEnd(20, "0")
     .slice(0, 20);
-
-// Every object in a Meta reply that has an ad_object_id, wherever it sits
-// (ads_get_ad_entities with object_state "draft").
-const entitiesIn = (value: unknown): Args[] => {
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => entitiesIn(item));
-  }
-  if (typeof value !== "object" || value === null) {
-    return [];
-  }
-  const entries = Object.entries(value);
-  const own = entries.some(([key]) => key === "ad_object_id")
-    ? [Object.fromEntries(entries)]
-    : [];
-  return [...own, ...entries.flatMap(([, item]) => entitiesIn(item))];
-};
-
-const amount = (entity: Args, keys: string[]) =>
-  keys
-    .map((key) => Number(entity[key] ?? 0))
-    .find((value) => Number.isFinite(value) && value > 0) ?? 0;
-
-const DAILY = ["daily_budget", "campaign_daily_budget"];
-const CAMPAIGN_CAPS = [
-  "lifetime_budget",
-  "campaign_lifetime_budget",
-  "spend_cap",
-  "campaign_spend_cap",
-];
-const AD_SET_SPEND = [
-  "daily_budget",
-  "lifetime_budget",
-  "daily_spend_cap",
-  "lifetime_spend_cap",
-  "bid_amount",
-];
-
-// The campaign's draft read back before publishing: its object IDs, and
-// what doesn't match the plan (objective, daily budget, no other budget,
-// cap or bid anywhere). Publishing stops on any mismatch.
-export const checkDraft = (
-  reply: unknown,
-  campaignId: string,
-  dailyBudgetCents: number
-) => {
-  const found = entitiesIn(reply);
-  const ids = [
-    ...new Set(found.map((entity) => String(entity["ad_object_id"]))),
-  ];
-  const campaign = found.find(
-    (entity) => String(entity["ad_object_id"]) === campaignId
-  );
-  const others = found.filter((entity) => entity !== campaign);
-  const problems = [
-    ...(campaign === undefined ? ["the campaign isn't in the draft"] : []),
-    ...(campaign !== undefined && campaign["objective"] !== "OUTCOME_SALES"
-      ? ["the objective isn't sales"]
-      : []),
-    ...(campaign !== undefined && amount(campaign, DAILY) !== dailyBudgetCents
-      ? ["the daily budget isn't the plan's"]
-      : []),
-    ...(campaign !== undefined && amount(campaign, CAMPAIGN_CAPS) > 0
-      ? ["the campaign has a lifetime budget or spend cap"]
-      : []),
-    ...(others.some((entity) => amount(entity, AD_SET_SPEND) > 0)
-      ? ["an ad set or ad has its own budget, cap or bid"]
-      : []),
-  ];
-  return { ids, problems };
-};
-
-// The fields launch_campaign reads back.
-export const CHECKED_FIELDS = [
-  "objective",
-  ...DAILY,
-  ...CAMPAIGN_CAPS,
-  ...AD_SET_SPEND,
-];
-
-// The campaign ID in Meta's reply to ads_create_campaign.
-export const stagedCampaignId = (reply: unknown): string | undefined => {
-  if (typeof reply !== "object" || reply === null) {
-    return undefined;
-  }
-  const entries = Object.entries(reply);
-  const own: unknown = entries.find(([key]) => key === "campaign_id")?.[1];
-  if (typeof own === "string" && /^\d+$/u.test(own)) {
-    return own;
-  }
-  return entries
-    .map(([, item]) => stagedCampaignId(item))
-    .find((found) => found !== undefined);
-};

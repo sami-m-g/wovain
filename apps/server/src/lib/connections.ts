@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import type { Cipher } from "./cipher.ts";
 import { createLaunchApprovals } from "./launch-approvals.ts";
+import { createStagedObjects } from "./meta-staged.ts";
 
 interface Provider {
   // Registered by hand (no CIMD or DCR): needs the client ID from config.
@@ -244,6 +245,9 @@ export const createConnections = (
         tx.set(ref, connectionSchema.parse(record));
       });
     },
+
+    // Every object wovain staged in each merchant's Meta draft.
+    staged: createStagedObjects(db),
 
     // Loads a pending flow for the browser holding its nonce and deletes it,
     // so a code is exchanged once. Another browser's request leaves the flow

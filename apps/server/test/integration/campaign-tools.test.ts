@@ -184,12 +184,25 @@ test("the design kill is left to the check-in when a campaign holds two products
   expect(rules).toHaveLength(6);
 });
 
+const conversation = "AbCdEfGhIj0123456789";
+const productUrl = "https://shop.example/products/cat-tee";
+const imageHash = "0123456789abcdef0123456789abcdef";
+const taggedLink = `${productUrl}?utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}`;
+
 // wovain's client on a fake Meta with wovain's Meta app configured, and the
-// merchant ("test") connected unless `connected` is false. Meta answers
-// ads_create_campaign with campaign 555.
+// merchant ("test") connected unless `connected` is false. Meta answers each
+// create with the object's ID: campaign 555, ad set 666, video 8 (and the
+// image hash), creative 901, ad 777.
 const connectedMeta = async (connected = true) => {
   const fake = fakeUpstream("meta");
   fake.reply("ads_create_campaign", { campaign_id: "555", status: "DRAFT" });
+  fake.reply("ads_create_ad_set", { ad_set_id: "666", status: "DRAFT" });
+  fake.reply("ads_creative_upload_media", {
+    image_hash: imageHash,
+    video_id: "8",
+  });
+  fake.reply("ads_create_creative", { creative_id: "901" });
+  fake.reply("ads_create_ad", { ad_id: "777", status: "DRAFT" });
   const upstream = createUpstream({
     clients: { meta: { client_id: "1234567890" } },
     connections: createConnections(testStorage().db, localCipher()),
@@ -210,57 +223,83 @@ const connectedMeta = async (connected = true) => {
   return { client, draft, fake, upstream };
 };
 
-const conversation = "AbCdEfGhIj0123456789";
-const productUrl = "https://shop.example/products/cat-tee";
-
+const base = { ad_account_id: "42", client_conversation_id: conversation };
 const campaignArgs = {
-  ad_account_id: "42",
+  ...base,
   buying_type: "AUCTION",
   campaign_daily_budget: 999_999,
   campaign_name: "wovain",
-  client_conversation_id: conversation,
   objective: "OUTCOME_SALES",
 };
 const adSetArgs = {
-  ad_account_id: "42",
+  ...base,
   ad_set_name: "wovain",
   billing_event: "IMPRESSIONS",
   campaign_id: "555",
-  client_conversation_id: conversation,
   destination_type: "WEBSITE",
   optimization_goal: "OFFSITE_CONVERSIONS",
   promoted_object: { custom_event_type: "PURCHASE", pixel_id: "9" },
   targeting: '{"geo_locations":{"countries":["US"]}}',
 };
+const videoArgs = {
+  ...base,
+  media_type: "VIDEO",
+  media_url: "https://v3b.fal.media/a.mp4",
+};
+const imageArgs = {
+  ...base,
+  media_type: "IMAGE",
+  media_url: "https://cdn.fourthwall.com/x.webp",
+};
 const creativeArgs = {
-  ad_account_id: "42",
+  ...base,
   call_to_action_type: "SHOP_NOW",
-  client_conversation_id: conversation,
-  image_hash: "0123456789abcdef0123456789abcdef",
-  link_url: `${productUrl}?utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}`,
+  image_hash: imageHash,
+  link_url: taggedLink,
   message: "Sakura Season Cat Tee\nA calico watches the sun go down.",
   page_id: "7",
   self_ai_disclosure: "OPT_IN",
   video_id: "8",
 };
+const adArgs = {
+  ...base,
+  ad_name: "wovain d1 · A",
+  ad_set_id: "666",
+  creative: { creative_id: "901" },
+};
 
-// A merchant with Meta connected and campaign 555 staged by campaign_draft.
-const staged = async () => {
+// A merchant with Meta connected, campaign 555, ad set 666 and both
+// uploads staged; with `full`, also creative 901 and ad 777.
+const staged = async (full = false) => {
   const env = await connectedMeta();
-  await env.draft("ads_create_campaign", campaignArgs);
+  const steps: [string, Record<string, unknown>][] = [
+    ["ads_create_campaign", campaignArgs],
+    ["ads_create_ad_set", adSetArgs],
+    ["ads_creative_upload_media", videoArgs],
+    ["ads_creative_upload_media", imageArgs],
+    ...(full
+      ? ([
+          ["ads_create_creative", creativeArgs],
+          ["ads_create_ad", adArgs],
+        ] as [string, Record<string, unknown>][])
+      : []),
+  ];
+  for (const [tool, args] of steps) {
+    // oxlint-disable-next-line no-await-in-loop
+    const result = await env.draft(tool, args);
+    expect(result.isError).toBeFalsy();
+  }
   return env;
 };
 
-test("campaign_draft records the campaign Meta staged and sends only allowlisted arguments", async () => {
-  const { client, draft, fake } = await connectedMeta();
-  await draft("ads_create_campaign", campaignArgs);
+test("campaign_draft records what Meta staged and sends only allowlisted arguments", async () => {
+  const { client, fake } = await staged(true);
   await expect(store.getCampaign()).resolves.toEqual({
     adAccountId: "42",
     campaignId: "555",
     rulesCreated: [],
   });
-  await draft("ads_create_ad_set", adSetArgs);
-  expect(fake.calls).toEqual([
+  expect(fake.calls.slice(0, 2)).toEqual([
     {
       arguments: {
         ...campaignArgs,
@@ -280,67 +319,99 @@ test("campaign_draft records the campaign Meta staged and sends only allowlisted
       name: "ads_create_ad_set",
     },
   ]);
+  expect(fake.calls.at(-1)).toEqual({
+    arguments: {
+      ...adArgs,
+      advertiser_job: "create_and_launch_new_ads",
+      creative: '{"creative_id":"901"}',
+      hide_ui: true,
+    },
+    name: "ads_create_ad",
+  });
   await client.close();
 });
 
-test.each([
-  ["a lifetime budget", "ads_create_campaign", { campaign_lifetime_budget: 5 }],
-  ["a spend cap", "ads_create_campaign", { campaign_spend_cap: 5 }],
-  ["a status", "ads_create_campaign", { status: "ACTIVE" }],
-  ["an ad set budget", "ads_create_ad_set", { daily_budget: 100_000 }],
+const refusals = [
+  [
+    "a lifetime budget",
+    "ads_create_campaign",
+    campaignArgs,
+    { campaign_lifetime_budget: 5 },
+  ],
+  [
+    "a spend cap",
+    "ads_create_campaign",
+    campaignArgs,
+    { campaign_spend_cap: 5 },
+  ],
+  ["a status", "ads_create_campaign", campaignArgs, { status: "ACTIVE" }],
+  [
+    "an ad set budget",
+    "ads_create_ad_set",
+    adSetArgs,
+    { daily_budget: 100_000 },
+  ],
   [
     "a nested targeting extra",
     "ads_create_ad_set",
+    adSetArgs,
     { targeting: { age_max: 30, geo_locations: { countries: ["US"] } } },
   ],
   [
     "an ad set under another campaign",
     "ads_create_ad_set",
+    adSetArgs,
     { campaign_id: "999" },
   ],
   [
     "a link that isn't an added product",
     "ads_create_creative",
+    creativeArgs,
     { link_url: "https://evil.example/cat-tee" },
+  ],
+  [
+    "a video wovain didn't upload",
+    "ads_create_creative",
+    creativeArgs,
+    { video_id: "99" },
+  ],
+  [
+    "a thumbnail wovain didn't upload",
+    "ads_create_creative",
+    creativeArgs,
+    { image_hash: "ffffffffffffffffffffffffffffffff" },
   ],
   [
     "an upload that isn't an added ad's media",
     "ads_creative_upload_media",
+    videoArgs,
     { media_url: "https://evil.example/a.mp4" },
   ],
-])("campaign_draft refuses %s", async (_label, tool, extra) => {
-  const env = await staged();
-  const base = {
-    ads_create_ad_set: adSetArgs,
-    ads_create_campaign: campaignArgs,
-    ads_create_creative: creativeArgs,
-    ads_creative_upload_media: {
-      ad_account_id: "42",
-      client_conversation_id: conversation,
-      media_type: "VIDEO",
-      media_url: "https://v3b.fal.media/a.mp4",
-    },
-  }[tool];
-  const before = env.fake.calls.length;
-  const result = await env.draft(tool, { ...base, ...extra });
-  expect(result.isError).toBe(true);
-  expect(env.fake.calls).toHaveLength(before);
-  await env.client.close();
-});
+  [
+    "an ad in an ad set wovain didn't stage",
+    "ads_create_ad",
+    adArgs,
+    { ad_set_id: "999" },
+  ],
+  [
+    "an ad with a creative wovain didn't make",
+    "ads_create_ad",
+    adArgs,
+    { creative: { creative_id: "999" } },
+  ],
+] as const;
 
-test("campaign_draft takes a product link with the plan's tags and an added ad's video", async () => {
-  const env = await staged();
-  const creative = await env.draft("ads_create_creative", creativeArgs);
-  const upload = await env.draft("ads_creative_upload_media", {
-    ad_account_id: "42",
-    client_conversation_id: conversation,
-    media_type: "VIDEO",
-    media_url: "https://v3b.fal.media/b.mp4",
-  });
-  expect(creative.isError).toBeFalsy();
-  expect(upload.isError).toBeFalsy();
-  await env.client.close();
-});
+test.each(refusals)(
+  "campaign_draft refuses %s",
+  async (_label, tool, args, extra) => {
+    const env = await staged(tool === "ads_create_ad");
+    const before = env.fake.calls.length;
+    const result = await env.draft(tool, { ...args, ...extra });
+    expect(result.isError).toBe(true);
+    expect(env.fake.calls).toHaveLength(before);
+    await env.client.close();
+  }
+);
 
 test("create_rules uses the merchant's own Meta token, skips existing rules and marks them", async () => {
   const { client } = await staged();
@@ -369,9 +440,6 @@ test("create_rules uses the merchant's own Meta token, skips existing rules and 
   const { campaign } = campaignResultSchema.parse(widget.structuredContent);
   expect(campaign.dailyBudget).toBe(15);
   expect(campaign.launchVia).toBe("wovain");
-  expect(campaign.products).toEqual([
-    { ads: 2, designId: "d1", title: "Japanese Cat Sunset Tee" },
-  ]);
   expect(campaign.rules.every((rule) => rule.created)).toBe(true);
   expect(campaign.adsManagerUrl).toContain("act=42&selected_campaign_ids=555");
   await client.close();
@@ -429,28 +497,52 @@ test("meta_ads refuses tools that publish or spend", async () => {
   await client.close();
 });
 
-// The staged campaign's draft as Meta reads it back: matching the plan
-// unless `campaign` overrides its fields.
-const draftReply = (campaign: Record<string, unknown> = {}) => ({
-  data: [
-    {
-      ad_object_id: "555",
-      daily_budget: "1500",
-      level: "campaign",
-      objective: "OUTCOME_SALES",
-      ...campaign,
-    },
-    { ad_object_id: "666", level: "ad_set" },
-    { ad_object_id: "777", level: "ad" },
-    { ad_object_id: 778, level: "ad" },
-  ],
-});
+// What Meta reads back: the staged draft and creative, matching what wovain
+// staged unless the overrides change them.
+interface ReadBack {
+  adSet?: Record<string, unknown>;
+  campaign?: Record<string, unknown>;
+  creative?: Record<string, unknown>;
+  extra?: Record<string, unknown>[];
+}
+const readBack = (fake: ReturnType<typeof fakeUpstream>, over: ReadBack) => {
+  fake.reply("ads_get_ad_entities", {
+    ad_drafts: [
+      {
+        ad_object_id: "555",
+        daily_budget: "1500",
+        objective: "OUTCOME_SALES",
+        ...over.campaign,
+      },
+      {
+        ad_object_id: "666",
+        targeting: { geo_locations: { countries: ["US"] } },
+        ...over.adSet,
+      },
+      { ad_object_id: "777" },
+      ...(over.extra ?? []),
+    ],
+  });
+  fake.reply("ads_get_creatives", {
+    data: [
+      {
+        id: "901",
+        image_hash: imageHash,
+        link_url: taggedLink,
+        object_story_id: "7_100",
+        video_id: "8",
+        ...over.creative,
+      },
+    ],
+  });
+};
 
-// A staged campaign, its draft, and the merchant's confirmation through the
-// confirm page's own steps (prepare shows the page, confirm is the POST).
-const launchable = async (campaign?: Record<string, unknown>) => {
-  const env = await staged();
-  env.fake.reply("ads_get_ad_entities", draftReply(campaign));
+// A fully staged campaign, Meta's read-back, and the merchant's confirmation
+// through the confirm page's own steps (prepare shows the page, confirm is
+// the POST).
+const launchable = async (over: ReadBack = {}) => {
+  const env = await staged(true);
+  readBack(env.fake, over);
   const confirmByMerchant = async () => {
     const url = await env.upstream.confirmLaunchUrl("test", "555", "Cat tee");
     const id = url.split("/").at(-1) ?? "";
@@ -462,11 +554,8 @@ const launchable = async (campaign?: Record<string, unknown>) => {
       hashes.csrfHash
     );
   };
-  const launch = async (objectIds?: string[]) =>
-    await env.client.callTool({
-      arguments: objectIds === undefined ? {} : { objectIds },
-      name: "launch_campaign",
-    });
+  const launch = async () =>
+    await env.client.callTool({ arguments: {}, name: "launch_campaign" });
   const activations = () =>
     env.fake.calls.filter((call) => call.name === "ads_activate_entity");
   return { ...env, activations, confirmByMerchant, launch };
@@ -487,7 +576,7 @@ test("the model alone can't launch: request_launch only makes the confirm link",
   await client.close();
 });
 
-test("a confirmed launch publishes the staged campaign and its draft, once", async () => {
+test("a confirmed launch publishes only what wovain staged, once", async () => {
   const { activations, client, confirmByMerchant, launch } = await launchable();
   await expect(confirmByMerchant()).resolves.toBe(true);
   const result = await launch();
@@ -503,7 +592,7 @@ test("a confirmed launch publishes the staged campaign and its draft, once", asy
     entity_id: "555",
     entity_type: "campaign",
     hide_ui: true,
-    object_ids: ["555", "666", "777", "778"],
+    object_ids: ["555", "666", "777"],
     publish_as_active: true,
   });
   const again = await launch();
@@ -512,22 +601,25 @@ test("a confirmed launch publishes the staged campaign and its draft, once", asy
   await client.close();
 });
 
-test("launch_campaign refuses objects outside the campaign's draft", async () => {
-  const { activations, client, confirmByMerchant, launch } = await launchable();
-  await confirmByMerchant();
-  const result = await launch(["777", "999"]);
-  expect(result.isError).toBe(true);
-  expect(activations()).toEqual([]);
-  await client.close();
-});
-
-test.each([
-  ["a budget that isn't the plan's", { daily_budget: "999999" }],
-  ["another objective", { objective: "OUTCOME_TRAFFIC" }],
-  ["a spend cap", { spend_cap: "100000" }],
-])("launch_campaign stops when the draft has %s", async (_label, campaign) => {
+test.each<[string, ReadBack]>([
+  ["an object wovain didn't stage", { extra: [{ ad_object_id: "999" }] }],
+  ["a budget that isn't the plan's", { campaign: { daily_budget: "999999" } }],
+  ["another objective", { campaign: { objective: "OUTCOME_TRAFFIC" } }],
+  ["a spend cap", { campaign: { spend_cap: "100000" } }],
+  [
+    "other ad set targeting",
+    { adSet: { targeting: { geo_locations: { countries: ["CA"] } } } },
+  ],
+  ["an ad set bid strategy", { adSet: { bid_strategy: "COST_CAP" } }],
+  [
+    "a changed creative link",
+    { creative: { link_url: "https://evil.example" } },
+  ],
+  ["a changed creative video", { creative: { video_id: "99" } }],
+  ["a changed creative Page", { creative: { object_story_id: "70_100" } }],
+])("launch_campaign stops when the read-back has %s", async (_label, over) => {
   const { activations, client, confirmByMerchant, launch } =
-    await launchable(campaign);
+    await launchable(over);
   await confirmByMerchant();
   const result = await launch();
   expect(result.isError).toBe(true);

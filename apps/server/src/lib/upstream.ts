@@ -329,6 +329,7 @@ export const createUpstream = ({
     disconnect,
     finishConnect,
     launches: connections.launches,
+    staged: connections.staged,
   };
 };
 

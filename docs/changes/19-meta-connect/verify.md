@@ -9,18 +9,19 @@
   - A POST is refused without the CSRF token, with a guessed token, without the page's cookie, or from another Origin.
   - An unknown link gets 400.
 - `test/integration/campaign-tools.test.ts`:
-  - `campaign_draft` records the campaign Meta staged and sends only allowlisted arguments with the plan's budget. It refuses a lifetime budget, a spend cap, a status, an ad-set budget, a nested targeting extra, an ad set under another campaign, a link that isn't an added product, and an upload that isn't an added ad's media. It accepts a product link with the plan's tags and an added ad's video.
+  - `campaign_draft` records each object Meta staged and sends only allowlisted arguments with the plan's budget.
+  - It refuses: a lifetime budget, a spend cap, a status, an ad-set budget, a nested targeting extra, an ad set under another campaign, a link that isn't an added product, a video or thumbnail wovain didn't upload, an upload that isn't an added ad's media, and an ad whose ad set or creative wovain didn't stage.
   - `create_rules` uses the merchant's token with the right `appsecret_proof`, only on the staged campaign and ad account.
   - Before the merchant connects Meta there's a connect link, and without wovain's Meta app the reply is `configured: false`.
   - `meta_ads` refuses `ads_activate_entity`.
   - The model alone can't launch: `request_launch` returns only the confirm link, and `launch_campaign` refuses without a confirmation.
-  - A confirmed launch publishes the staged campaign and its draft, once.
-  - Objects outside the draft are refused, and the launch stops when the draft's budget, objective or spend cap differs from the plan.
+  - A confirmed launch publishes only the recorded objects, once.
+  - It stops when the read-back has an object wovain didn't stage, a different budget, objective, spend cap, ad-set targeting or bid strategy, or a changed creative link, video or Page.
 - `test/integration/app.test.ts`: `/privacy` and `/data-deletion` answer 200.
 
 ## Checks run
 
-All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm test` (86), `pnpm test:integration` (109), `pnpm build`, `pnpm --filter @wovain/widgets test:stories` (32). No `pulumi up` or `infra:preview` was run.
+All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm test` (86), `pnpm test:integration` (117), `pnpm build`, `pnpm --filter @wovain/widgets test:stories` (32). No `pulumi up` or `infra:preview` was run.
 
 ## Review findings
 
@@ -30,6 +31,9 @@ All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`
   - HIGH: `ui.visibility: ["app"]` isn't access control. Launch now needs the merchant's confirmation on wovain's own page. They sign in through AuthKit in their browser, bound to the browser by a nonce cookie and checked as the same user. Confirm is a POST with a CSRF token, a SameSite=Strict cookie and an Origin check. No tool returns a launch token.
   - MEDIUM: the campaign ID is recorded only from Meta's `ads_create_campaign` reply, and rules and launch refuse any other ID. The draft is read back before publishing and checked against the plan.
   - MEDIUM: links must be an added product's, and uploads an added ad's media.
+- Third security review (two MEDIUM findings):
+  - Every object ID from Meta's replies is now recorded, and ads, creatives and ad sets may only build on recorded objects.
+  - Launch publishes only recorded objects. It refuses any unrecorded object in the read-back, and checks the creatives' links, media and Page and each ad set's targeting and bid.
 - The `/simplify` skill and the `pr-review-toolkit` agents aren't installed in this environment, so they weren't run.
 
 ## Try it
@@ -45,5 +49,11 @@ All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`
 - Launch is a human confirmation on wovain's page (`routes/launch.ts`, `lib/launch-approvals.ts`, `request_launch`), as the security reviews asked. The campaign widget opens that page.
 - `campaign_draft` uses allowlists and plan checks instead of stripping spend keys.
 - Split out to stay under the file-length limit: `lib/campaign-plan.ts` (the added products, budget and draft plan) and `tools/meta.ts`. `packages/shared/campaign.ts` gains `launchVia` and `launchRequestSchema`.
-- Not verified live until a tester runs it: whether Graph accepts the MCP grant on `adrules_library`, the field names in `ads_get_ad_entities` (wovain reads `objective`, `daily_budget` or `campaign_daily_budget`, the lifetime budget, spend cap and bid fields, and `ad_object_id`), and the `campaign_id` key in Meta's `ads_create_campaign` reply. If any differs, the tools stop rather than spend.
+- Not verified live until a tester runs it:
+  - whether Graph accepts the MCP grant on `adrules_library`
+  - the ID keys in Meta's create replies (`campaign_id`, `ad_set_id`, `creative_id`, `ad_id`, `video_id`, `image_hash`)
+  - the fields of `ads_get_ad_entities` and `ads_get_creatives`
+
+  Meta's docs say `fields` are ignored for drafts. If drafts come back without budget, objective or targeting, launch refuses every time, so the check may need adjusting after the first live run. Every one of these fails closed: the tools stop rather than spend.
+
 - MCP elicitation wasn't used: the confirm page reuses the connect flow's sign-in, and ChatGPT's elicitation support is unverified.
