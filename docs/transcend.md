@@ -22,10 +22,10 @@ It follows the shape of Anthropic's AI-native SDLC: every change carries its **i
 
 The hourly `wovain loop` schedule ([loop.md](loop.md), with its diagram):
 
-1. **Observe.** It reads Cloud Logging, Cloud Monitoring and GitLab Observability (error spans and logs, once its API key is set) and groups errors by fingerprint.
-2. **Intent.** It files each new problem as a `scout` issue with redacted evidence and assigns it to the Duo Developer flow.
+1. **Observe.** It reads Cloud Logging, Cloud Monitoring and GitLab Observability (error spans, once its API key is set) and groups errors by fingerprint. It reads only fields the server controls: the route template Hono matched, the error class (checked against an allowlist) and the status, never a log message or URL.
+2. **Intent.** It files each new problem as a `scout` issue titled `scout: <ErrorClass> on <ROUTE> (<status>)`. A known class on a known route that Cloud Logging saw goes to the Duo Developer flow; anything else is a `status::intent` issue for a human ([loop.md](loop.md#untrusted-input)).
 3. **Fix and review.** Duo writes the MR; the loop marks it ready or requests Duo Code Review, once per commit.
-4. **Merge.** GitLab's auto-merge, set by the loop only when provenance is proven (the loop filed and assigned the issue, GitLab links the MR to it, and a Developer session that assignment started produced it), every path is application source or tests, the change is small, Duo reviewed the head commit, no thread is open and the pipeline is green. No agent merges.
+4. **Merge.** GitLab's auto-merge, set by the loop only when provenance is proven (the loop filed and assigned the issue, GitLab links the MR to it, and a Developer session that assignment started produced it), every path is low-risk application source or tests (nothing that signs in, holds credentials, spends or launches ads), the change is at most 100 lines, Duo reviewed the head commit, none of its threads is open, no one else wrote on the MR and the pipeline is green. No agent merges.
 5. **Deploy.** The `main` pipeline applies infra, deploys, smoke-tests and releases; a red `main` goes to Duo Fix CI/CD.
 6. **Verify.** Two or more hours after the merge, it compares the error rate before and after, then closes the issue with the numbers or reopens it for another try.
 
@@ -65,5 +65,6 @@ Our hackathon role is Developer+, a custom role that can manage merge request se
 | Approval rules | Not set: a required human approval would stop the loop's auto-merge on Duo's MRs | The guardrails and Duo Code Review gate auto-merge |
 | Protected branches and environments | Managed in the UI | `main` takes only merges; deploy jobs run in their environments |
 | Error tracking | Off | Errors come from Cloud Logging and GitLab Observability |
+| OTLP ingestion token enforcement in GitLab Observability | Off: the OTLP endpoint accepts telemetry without a token, so anyone could send spans that look like the server's. Turning it on needs Observability's Editor role or an administrator (docs.gitlab.com, operations/observability/ci_cd), which in practice is a group Owner | The scout reads no text from Observability, and a problem only Observability saw goes to a human, never to Duo |
 
 Also manual, with no API for our role: the GitLab Observability API key (group → Observe → API Keys, then `pulumi config set --secret o11y-api-key` in `infra/`).

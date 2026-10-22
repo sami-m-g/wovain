@@ -59,8 +59,10 @@ export type Note = z.infer<typeof noteSchema>;
 const discussionSchema = z.object({
   notes: z.array(
     z.object({
+      author: z.object({ username: z.string() }),
       resolvable: z.boolean().default(false),
       resolved: z.boolean().default(false),
+      system: z.boolean().default(false),
     })
   ),
 });

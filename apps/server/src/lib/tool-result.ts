@@ -1,3 +1,5 @@
+import { recordError } from "./request-errors.ts";
+
 // A thrown error needs no wrapper: the MCP server returns its message as an
 // isError result.
 export const text = (value: string) => [{ text: value, type: "text" as const }];
@@ -9,9 +11,10 @@ export const notConfigured = (message: string) => ({
 });
 
 // Logs the error class only: what the merchant sent and what the upstream
-// replied (which SDKs put in their error messages) stay out of the logs.
+// replied (which SDKs put in their error messages) stay out of the logs. The
+// request's route and status go with it (lib/request-errors.ts).
 export const logErrorClass = (label: string, error: unknown) => {
-  console.error(label, error instanceof Error ? error.name : "unknown");
+  recordError(label, error);
 };
 
 // Runs an upstream call; a failure is logged by class and rethrown as one

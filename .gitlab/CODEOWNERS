@@ -49,3 +49,25 @@
 **/package.json
 **/tsconfig*.json
 **/*.config.ts
+
+[Spend, credentials and the scout's input] @sami-m-g
+/apps/server/src/lib/launch-approvals.ts
+/apps/server/src/lib/connections.ts
+/apps/server/src/lib/cipher.ts
+/apps/server/src/lib/oauth-client.ts
+/apps/server/src/lib/upstream.ts
+/apps/server/src/lib/approval.ts
+/apps/server/src/lib/request-errors.ts
+/apps/server/src/lib/tool-result.ts
+/apps/server/src/lib/meta-*
+/apps/server/src/lib/browser-*
+/apps/server/src/lib/autopilot-*
+/apps/server/src/lib/fetch-*
+/apps/server/src/lib/optimizer/
+/apps/server/src/tools/meta.ts
+/apps/server/src/tools/connections.ts
+/apps/server/src/tools/campaign.ts
+/apps/server/src/tools/publish.ts
+/apps/server/src/tools/autopilot.ts
+/apps/server/src/playbooks/
+/packages/shared/src/optimizer/

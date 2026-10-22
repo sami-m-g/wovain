@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { html } from "hono/html";
 
 import { siteUrl } from "./auth/env.ts";
+import { requestErrors } from "./lib/request-errors.ts";
 import { createConfirmRoutes } from "./routes/confirm.ts";
 import { createConnectRoutes } from "./routes/connect.ts";
 import { createMcpRoute } from "./routes/mcp.ts";
@@ -17,6 +18,9 @@ export const createApp = (runtime: Runtime) => {
   const mcp = createMcpRoute(runtime);
 
   const app = new Hono();
+
+  // First, so every route's failures are logged by route template.
+  app.use(requestErrors);
 
   app.all("/mcp", async (c) => await mcp(c.req.raw));
 

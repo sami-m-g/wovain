@@ -1,28 +1,165 @@
 import { createHash } from "node:crypto";
 
-// One kind of production error the scout saw, from one source. Samples are
-// untrusted text (log lines can carry what a caller sent), so they are
-// redacted and clipped before they reach an issue.
+// One kind of production error the scout saw, from one source. Every field
+// is server-controlled or allowlisted: log and telemetry text can carry what
+// a caller sent (an error message, a URL, a header), and the scout's issues
+// go to the Duo Developer flow, so free text never enters them.
+export type Source = "Cloud Logging" | "GitLab Observability traces";
+
 export interface Signal {
   count: number;
-  // Stable across runs: the same error gets the same key.
-  key: string;
-  sample: string;
-  source: string;
-  title: string;
+  errorClass: string;
+  route: string;
+  status: number | undefined;
+  source: Source;
 }
 
 // The scout's grouped view: one problem, every source that saw it.
 export interface Problem {
   count: number;
+  errorClass: string;
   fingerprint: string;
-  samples: string[];
-  sources: string[];
-  title: string;
+  route: string;
+  status: number | undefined;
+  sources: Source[];
 }
 
+export const UNKNOWN_ERROR = "UnknownError";
+export const UNKNOWN_ROUTE = "UnknownRoute";
+
+// Error class names the server, its SDKs and Node throw. Anything else is
+// reported as UnknownError and goes to a human.
+const ERROR_CLASSES = new Set([
+  "AbortError",
+  "AggregateError",
+  "Error",
+  "FirebaseAppError",
+  "FirebaseError",
+  "GaxiosError",
+  "GenkitError",
+  "HTTPException",
+  "McpError",
+  "NotFoundException",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "TimeoutError",
+  "TypeError",
+  "URIError",
+  "ZodError",
+]);
+
+// The routes the server registers (apps/server/src/app.ts and routes/), as
+// lib/request-errors.ts logs them: the method Hono registered and its
+// pattern. Anything else is UnknownRoute and goes to a human.
+const ROUTES = new Set([
+  "ALL /mcp",
+  "GET /",
+  "GET /.well-known/oauth-protected-resource",
+  "GET /.well-known/oauth-protected-resource/mcp",
+  "GET /confirm/:ticket",
+  "GET /confirm/callback",
+  "GET /confirm/launch/:id",
+  "GET /connect/:provider",
+  "GET /data-deletion",
+  "GET /oauth/callback/:provider",
+  "GET /oauth/callback/wovain",
+  "GET /oauth/client.json",
+  "GET /privacy",
+  "POST /confirm",
+  "POST /confirm/launch/:id",
+]);
+
+const errorClassOf = (value: unknown) =>
+  typeof value === "string" && ERROR_CLASSES.has(value) ? value : UNKNOWN_ERROR;
+
+const routeOf = (value: unknown) =>
+  typeof value === "string" && ROUTES.has(value) ? value : UNKNOWN_ROUTE;
+
+const statusOf = (value: unknown) =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 100 &&
+  value <= 599
+    ? value
+    : undefined;
+
+const keyOf = (s: Omit<Signal, "count" | "source">) =>
+  `${s.errorClass} ${s.route} ${s.status ?? "-"}`;
+
+const fingerprintOf = (s: Omit<Signal, "count" | "source">) =>
+  `fp-${createHash("sha256").update(keyOf(s)).digest("hex").slice(0, 10)}`;
+
+// Counts raw fields by kind; each field passes its allowlist first, so
+// nothing else from the entry survives.
+export const tally = (
+  source: Source,
+  entries: { errorClass: unknown; route: unknown; status: unknown }[]
+): Signal[] => {
+  const byKey = new Map<string, Signal>();
+  for (const entry of entries) {
+    const signal: Signal = {
+      count: 1,
+      errorClass: errorClassOf(entry.errorClass),
+      route: routeOf(entry.route),
+      source,
+      status: statusOf(entry.status),
+    };
+    const seen = byKey.get(keyOf(signal));
+    if (seen === undefined) {
+      byKey.set(keyOf(signal), signal);
+    } else {
+      seen.count += 1;
+    }
+  }
+  return [...byKey.values()];
+};
+
+// Merges signals of the same kind across sources, biggest first.
+export const groupSignals = (signals: Signal[]): Problem[] => {
+  const byKey = new Map<string, Problem>();
+  for (const signal of signals) {
+    const fingerprint = fingerprintOf(signal);
+    const problem = byKey.get(fingerprint) ?? {
+      count: 0,
+      errorClass: signal.errorClass,
+      fingerprint,
+      route: signal.route,
+      sources: [],
+      status: signal.status,
+    };
+    problem.count += signal.count;
+    if (!problem.sources.includes(signal.source)) {
+      problem.sources.push(signal.source);
+    }
+    byKey.set(fingerprint, problem);
+  }
+  return [...byKey.values()].toSorted((a, b) => b.count - a.count);
+};
+
+// Why a problem stays with a human instead of the Duo Developer flow. Only a
+// known class on a known route that Cloud Logging saw goes to Duo: only the
+// service writes its logs, while GitLab Observability's OTLP endpoint takes
+// anyone's data until token enforcement is on (docs/transcend.md).
+export const humanReasons = (problem: Problem): string[] => [
+  ...(problem.errorClass === UNKNOWN_ERROR
+    ? ["the error class isn't on the scout's allowlist"]
+    : []),
+  ...(problem.route === UNKNOWN_ROUTE
+    ? ["the route isn't one the server registers"]
+    : []),
+  ...(problem.sources.includes("Cloud Logging")
+    ? []
+    : ["no Cloud Logging entry corroborates it"]),
+];
+
+// The issue title, from allowlisted fields only.
+export const titleOf = (problem: Problem) =>
+  `scout: ${problem.errorClass} on ${problem.route} (${problem.status ?? "no status"})`;
+
+// Web text for the market scout (analysis.ts) is untrusted: it's redacted
+// and clipped before it reaches an issue.
 const SAMPLE_MAX = 300;
-const TITLE_MAX = 80;
 
 const clip = (value: string, max: number) =>
   value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
@@ -46,67 +183,6 @@ export const redact = (text: string) => {
     out = out.replace(pattern, to);
   }
   return clip(out, SAMPLE_MAX);
-};
-
-// Strips what changes between occurrences of the same error (ids, numbers,
-// quoted values, query strings) so they group under one key.
-export const normalize = (text: string) =>
-  (text.split("\n")[0] ?? "")
-    .replaceAll(/\?[^\s]*/gu, "")
-    .replaceAll(
-      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/giu,
-      ":id"
-    )
-    .replaceAll(/\b[0-9a-f]{12,}\b/giu, ":id")
-    .replaceAll(/(?<quote>["'`]).*?\k<quote>/gu, ":str")
-    .replaceAll(/\d+/gu, ":n")
-    .replaceAll(/\s+/gu, " ")
-    .trim()
-    .toLowerCase();
-
-const fingerprintOf = (key: string) =>
-  `fp-${createHash("sha256").update(key).digest("hex").slice(0, 10)}`;
-
-// Merges signals with the same key across sources, biggest first.
-export const groupSignals = (signals: Signal[]): Problem[] => {
-  const byKey = new Map<string, Problem>();
-  for (const signal of signals) {
-    const fingerprint = fingerprintOf(signal.key);
-    const problem = byKey.get(fingerprint) ?? {
-      count: 0,
-      fingerprint,
-      samples: [],
-      sources: [],
-      title: clip(redact(signal.title), TITLE_MAX),
-    };
-    problem.count += signal.count;
-    if (!problem.sources.includes(signal.source)) {
-      problem.sources.push(signal.source);
-    }
-    const sample = redact(signal.sample);
-    if (problem.samples.length < 3 && !problem.samples.includes(sample)) {
-      problem.samples.push(sample);
-    }
-    byKey.set(fingerprint, problem);
-  }
-  return [...byKey.values()].toSorted((a, b) => b.count - a.count);
-};
-
-// Counts occurrences by key, keeping the first sample of each.
-export const tally = (
-  source: string,
-  entries: { key: string; sample: string; title: string }[]
-): Signal[] => {
-  const byKey = new Map<string, Signal>();
-  for (const entry of entries) {
-    const seen = byKey.get(entry.key);
-    if (seen === undefined) {
-      byKey.set(entry.key, { ...entry, count: 1, source });
-    } else {
-      seen.count += 1;
-    }
-  }
-  return [...byKey.values()];
 };
 
 export type Verdict = "regressed" | "verified" | "wait";

@@ -5,6 +5,7 @@ import {
   blockers,
   diffLines,
   openThreads,
+  outsiders,
   provenanceGaps,
   reviewedShaOf,
 } from "../src/guardrails.ts";
@@ -14,6 +15,7 @@ const ok: Candidate = {
   draft: false,
   hasConflicts: false,
   lines: 40,
+  outsiders: [],
   paths: ["apps/server/src/lib/fal-pricing.ts"],
   pipeline: "running",
   provenance: [],
@@ -41,6 +43,26 @@ describe("autoMergeable (allowlist)", () => {
     "apps/server/src/auth/auth.ts",
     "apps/server/src/routes/mcp.ts",
     "apps/server/src/store.ts",
+    "apps/server/src/app.ts",
+    "apps/server/src/runtime.ts",
+    "apps/server/src/playbooks/launch.md",
+    "apps/server/src/lib/launch-approvals.ts",
+    "apps/server/src/lib/meta-launch.ts",
+    "apps/server/src/lib/connections.ts",
+    "apps/server/src/lib/cipher.ts",
+    "apps/server/src/lib/oauth-client.ts",
+    "apps/server/src/lib/upstream.ts",
+    "apps/server/src/lib/browser-confirm.ts",
+    "apps/server/src/lib/autopilot-rules.ts",
+    "apps/server/src/lib/optimizer/ledger.ts",
+    "apps/server/src/lib/request-errors.ts",
+    "apps/server/src/lib/tool-result.ts",
+    "apps/server/src/tools/meta.ts",
+    "apps/server/src/tools/connections.ts",
+    "apps/server/src/tools/campaign.ts",
+    "apps/server/src/tools/publish.ts",
+    "apps/server/src/tools/autopilot.ts",
+    "packages/shared/src/optimizer/rules.ts",
     ".gitlab-ci.yml",
     ".gitlab/ci/deploy.yml",
     ".gitlab/CODEOWNERS",
@@ -76,12 +98,22 @@ describe("blockers", () => {
       draft: true,
       hasConflicts: true,
       lines: 900,
-      paths: Array.from({ length: 12 }, (_, i) => `apps/server/src/f${i}.ts`),
+      paths: Array.from(
+        { length: 12 },
+        (_, i) => `apps/server/src/lib/f${i}.ts`
+      ),
       pipeline: "failed",
       provenance: ["no Developer session"],
       unresolved: 2,
     });
     expect(reasons).toHaveLength(7);
+  });
+
+  it("caps a scout fix at 100 changed lines", () => {
+    expect(blockers({ ...ok, lines: 100 })).toEqual([]);
+    expect(blockers({ ...ok, lines: 101 })).toEqual([
+      "changes 101 lines (limit 100)",
+    ]);
   });
 
   it("needs a review of the head commit, not an older one", () => {
@@ -241,14 +273,51 @@ describe("provenanceGaps", () => {
   });
 });
 
+const threadNote = (
+  username: string,
+  { resolvable = false, resolved = false, system = false } = {}
+) => ({ author: { username }, resolvable, resolved, system });
+
 describe("openThreads", () => {
-  it("counts every discussion with an unresolved resolvable note", () => {
-    const open = { notes: [{ resolvable: true, resolved: false }] };
-    const done = { notes: [{ resolvable: true, resolved: true }] };
-    const chat = { notes: [{ resolvable: false, resolved: false }] };
+  const R = "duo-code-review-gitlab-ai-hackathon";
+
+  it("counts Duo's discussions with an unresolved resolvable note", () => {
+    const open = { notes: [threadNote(R, { resolvable: true })] };
+    const done = {
+      notes: [threadNote(R, { resolvable: true, resolved: true })],
+    };
+    const chat = { notes: [threadNote(R)] };
     // More than one page of discussions (the shepherd reads every page).
     const many = Array.from({ length: 150 }, () => done);
-    expect(openThreads([...many, open, chat])).toBe(1);
+    expect(openThreads([...many, open, chat], R)).toBe(1);
+  });
+
+  it("ignores threads someone else started", () => {
+    const theirs = { notes: [threadNote("mallory", { resolvable: true })] };
+    expect(openThreads([theirs], R)).toBe(0);
+  });
+});
+
+describe("outsiders", () => {
+  const allowed = ["duo-code-review-gitlab-ai-hackathon", "duo-dev", "loop"];
+  it("names anyone outside Duo and the loop, and blocks auto-merge", () => {
+    const who = outsiders(
+      [
+        {
+          notes: [
+            threadNote("loop"),
+            threadNote("duo-dev"),
+            threadNote("ghost", { system: true }),
+          ],
+        },
+        { notes: [threadNote("mallory")] },
+      ],
+      allowed
+    );
+    expect(who).toEqual(["mallory"]);
+    expect(blockers({ ...ok, outsiders: who })).toEqual([
+      "has notes from outside the loop: @mallory",
+    ]);
   });
 });
 

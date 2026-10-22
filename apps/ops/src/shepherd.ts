@@ -3,6 +3,7 @@ import {
   blockers,
   diffLines,
   openThreads,
+  outsiders,
   reviewDone,
   provenanceGaps,
   reviewedShaOf,
@@ -184,6 +185,7 @@ const shepherdOne = async (
     draft: false,
     hasConflicts: mr.has_conflicts,
     lines: diffs.reduce((sum, d) => sum + diffLines(d.diff), 0),
+    outsiders: outsiders(discussions, [REVIEWER, DEVELOPER, context.loopUser]),
     paths: diffs.flatMap((d) => [d.old_path, d.new_path]),
     pipeline: undefined,
     provenance: gaps,
@@ -227,7 +229,8 @@ const shepherdOne = async (
     return await awaitReview(gitlab, { asked, mr, now: context.now, thread });
   }
   const unresolved =
-    openThreads(discussions) + (duo?.state === "requested_changes" ? 1 : 0);
+    openThreads(discussions, REVIEWER) +
+    (duo?.state === "requested_changes" ? 1 : 0);
   const reasons = blockers({
     ...base,
     draft: mr.draft,
@@ -240,11 +243,12 @@ const shepherdOne = async (
     await gitlab.setAutoMerge(mr.iid, mr.sha);
     await gitlab.noteOnMergeRequest(
       mr.iid,
-      `Auto-merge set by the wovain loop for ${mr.sha}: the loop filed and assigned #${issue.iid}, Duo's Developer flow wrote this in the session that assignment started, Duo Code Review reviewed this commit with no open threads, and the change stays inside the guardrails (apps/ops/src/guardrails.ts). GitLab merges it once the pipeline passes.\n\n${marker("auto-merge")}`
+      `Auto-merge set by the wovain loop for ${mr.sha}: the loop filed and assigned #${issue.iid}, Duo's Developer flow wrote this in the session that assignment started, Duo Code Review reviewed this commit and left no open threads, no one outside the loop wrote on it, and the change stays inside the guardrails (apps/ops/src/guardrails.ts). GitLab merges it once the pipeline passes.\n\n${marker("auto-merge")}`
     );
     return "auto-merge set";
   }
-  if (unresolved > 0) {
+  // Only Duo's own threads, and only when nothing else blocks the MR.
+  if (unresolved > 0 && reasons.every((r) => r.includes("Duo review thread"))) {
     await once(
       gitlab,
       thread,
