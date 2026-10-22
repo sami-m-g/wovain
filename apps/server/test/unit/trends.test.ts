@@ -100,7 +100,8 @@ test("without Qloo, the seed is the one theme, researched on every endpoint", as
   });
   const found = await createTrendResearch(tavily).research(
     { seed: "pickleball" },
-    settingsWith({ market: "united kingdom" })
+    settingsWith({ market: "united kingdom" }),
+    "u1"
   );
   const [news, market] = tavily.search.mock.calls;
   expect(news).toStrictEqual([
@@ -183,7 +184,11 @@ test("with Qloo, themes are scored in code, IP names lose and a re-run only re-s
     },
   });
   const research = createTrendResearch(tavily, qloo);
-  const found = await research.research({ seed: "synthwave" }, settingsWith());
+  const found = await research.research(
+    { seed: "synthwave" },
+    settingsWith(),
+    "u1"
+  );
   expect(found.qloo).toBe("used");
   expect(found.avoidNames).toStrictEqual(["Kavinsky", "Drive"]);
   expect(found.ideas.map((idea) => idea.theme)).toStrictEqual([
@@ -200,7 +205,8 @@ test("with Qloo, themes are scored in code, IP names lose and a re-run only re-s
   const searches = tavily.search.mock.calls.length;
   const again = await research.research(
     { adCounts: [{ activeAds: 40, theme: "outrun" }], seed: "Synthwave" },
-    settingsWith()
+    settingsWith(),
+    "u1"
   );
   expect(tavily.search).toHaveBeenCalledTimes(searches);
   expect(again.credits.used).toBe(0);
@@ -209,11 +215,41 @@ test("with Qloo, themes are scored in code, IP names lose and a re-run only re-s
   ).toBe(40);
 });
 
+test("the kept research is per merchant and per shaping setting", async () => {
+  const tavily = fakeTavily(hits, {
+    shop: ["https://shop.example/products/pickleball-tee"],
+  });
+  const research = createTrendResearch(tavily);
+  const shop = settingsWith({ shopUrl: "https://shop.example" });
+  const mine = await research.research({ seed: "pickleball" }, shop, "u1");
+  expect(mine.ideas[0]?.ownProducts).toHaveLength(1);
+  // Another merchant with the same seed and settings runs its own research.
+  const theirs = await research.research(
+    { seed: "pickleball" },
+    settingsWith(),
+    "u2"
+  );
+  expect(theirs.shop).toBe("not_set");
+  expect(theirs.ideas[0]?.ownProducts).toBeUndefined();
+  await research.research({ seed: "pickleball" }, shop, "u2");
+  expect(tavily.map).toHaveBeenCalledTimes(2);
+  expect(tavily.search).toHaveBeenCalledTimes(6);
+  // A changed setting runs again too; the same ones are only re-scored.
+  await research.research(
+    { seed: "pickleball" },
+    settingsWith({ market: "canada", shopUrl: "https://shop.example" }),
+    "u1"
+  );
+  await research.research({ seed: "pickleball" }, shop, "u1");
+  expect(tavily.search).toHaveBeenCalledTimes(8);
+});
+
 test("the credit cap skips the niche brief when it does not fit", async () => {
   const tavily = fakeTavily(hits);
   const found = await createTrendResearch(tavily, fakeQloo(qlooTaste)).research(
     { seed: "synthwave" },
-    settingsWith({ maxCredits: 10, shopUrl: "https://shop.example" })
+    settingsWith({ maxCredits: 10, shopUrl: "https://shop.example" }),
+    "u1"
   );
   // 2 themes × 2 searches leave 6: no brief (25), the extract (2) and the map (4).
   expect(tavily.research).not.toHaveBeenCalled();
@@ -229,7 +265,8 @@ test("the merchant's own products demote a matching theme", async () => {
   });
   const found = await createTrendResearch(tavily).research(
     { seed: "pickleball" },
-    settingsWith({ shopUrl: "https://shop.example" })
+    settingsWith({ shopUrl: "https://shop.example" }),
+    "u1"
   );
   expect(tavily.map).toHaveBeenCalledWith(
     "https://shop.example",
@@ -250,7 +287,7 @@ test("a failed Qloo lookup or optional step degrades without logging the seed", 
   const found = await createTrendResearch(
     tavily,
     fakeQloo({ "/search": new Error("pickleball secret") })
-  ).research({ seed: "pickleball" }, settingsWith());
+  ).research({ seed: "pickleball" }, settingsWith(), "u1");
   expect(found.qloo).toBe("failed");
   expect(found.briefId).toBeUndefined();
   expect(found.ideas).toHaveLength(1);

@@ -92,7 +92,12 @@ interface TrendsFound {
 
 export interface TrendResearch {
   brief: (id: string) => ReturnType<typeof brief>;
-  research: (input: TrendSeed, settings: Settings) => Promise<TrendsFound>;
+  // userId keys the cache: a shop map or brief never reaches another merchant.
+  research: (
+    input: TrendSeed,
+    settings: Settings,
+    userId: string
+  ) => Promise<TrendsFound>;
   scanSite: (
     url: string
   ) => Promise<{ credits: number; pages: { excerpt: string; url: string }[] }>;
@@ -338,11 +343,24 @@ export const createTrendResearch = (
   client: TavilyApi,
   qloo?: QlooGet
 ): TrendResearch => {
-  // A seed's searches are kept for 15 minutes, so the agent's re-run with
+  // A merchant's research is kept for 15 minutes, so the agent's re-run with
   // adCounts (after its Ad Library search) only re-scores: no new credits.
+  // It holds their shop map and brief, so the key is the merchant plus every
+  // setting that shapes the result.
   const recent = new Map<string, { at: number; gathered: Gathered }>();
-  const gatherOnce = async (seed: string, settings: Settings) => {
-    const key = seed.toLowerCase();
+  const gatherOnce = async (
+    seed: string,
+    settings: Settings,
+    userId: string
+  ) => {
+    const { market, maxCredits, shopUrl } = settings.research;
+    const key = JSON.stringify([
+      userId,
+      seed.toLowerCase(),
+      market,
+      maxCredits,
+      shopUrl ?? "",
+    ]);
     const kept = recent.get(key);
     if (kept !== undefined && Date.now() - kept.at < KEEP_MS) {
       return { ...kept.gathered, used: 0 };
@@ -358,8 +376,8 @@ export const createTrendResearch = (
   };
   return {
     brief: async (id) => await brief(client, id),
-    research: async (input, settings) =>
-      scored(await gatherOnce(input.seed, settings), input, settings),
+    research: async (input, settings, userId) =>
+      scored(await gatherOnce(input.seed, settings, userId), input, settings),
     scanSite: async (url) => await scanSite(client, url),
     screen: async (phrase) => {
       const { results } = await searchWeb(

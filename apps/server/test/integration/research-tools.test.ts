@@ -10,12 +10,14 @@ import { expect, test, vi } from "vitest";
 import type { QlooGet } from "../../src/lib/qloo.ts";
 import type { TavilyApi } from "../../src/lib/tavily.ts";
 import { createTrendResearch } from "../../src/lib/trends.ts";
+import { createStore } from "../../src/store.ts";
 import {
   connectClient,
   fakeQloo,
   fakeTavily,
   qlooTaste,
   searchResult,
+  testStorage,
   testStore,
 } from "../helpers.ts";
 
@@ -81,11 +83,36 @@ test("research_trends returns ranked themes, credits and a brief over MCP", asyn
   expect(JSON.stringify(result.content)).toContain("untrusted");
 });
 
-test("get_niche_brief and scan_competitor_site answer over MCP", async () => {
-  const brief = await call("get_niche_brief", { id: "brief-1" }, news());
-  expect(briefResultSchema.parse(brief.structuredContent)).toMatchObject({
+test("get_niche_brief answers only the merchant who started the brief", async () => {
+  const storage = testStorage();
+  const tavily = news();
+  const deps = { trendResearch: createTrendResearch(tavily) };
+  const owner = await connectClient({}, testStore(storage), deps);
+  const other = await connectClient(
+    {},
+    createStore(storage.db, storage.media, "other"),
+    deps
+  );
+  const poll = { arguments: { id: "brief-1" }, name: "get_niche_brief" };
+  const before = await owner.callTool(poll);
+  expect(before.isError).toBe(true);
+  await owner.callTool({
+    arguments: { seed: "retirees" },
+    name: "research_trends",
+  });
+  const mine = await owner.callTool(poll);
+  expect(briefResultSchema.parse(mine.structuredContent)).toMatchObject({
     status: "pending",
   });
+  const theirs = await other.callTool(poll);
+  expect(theirs.isError).toBe(true);
+  expect(JSON.stringify(theirs.content)).toContain("go on without it");
+  expect(tavily.getResearch).toHaveBeenCalledOnce();
+  await owner.close();
+  await other.close();
+});
+
+test("scan_competitor_site answers over MCP", async () => {
   const site = await call(
     "scan_competitor_site",
     { url: "https://rival.example/" },

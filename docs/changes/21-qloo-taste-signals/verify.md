@@ -12,12 +12,13 @@
   - Without Qloo, the seed is the one theme. Each endpoint gets the options the spec names, and credits add up (3 for 2 searches and the extract).
   - With Qloo, themes are ranked in code, a theme that names a Qloo entity gets IP safety 0, and a re-run with `adCounts` makes no new Tavily calls and reports 0 credits.
   - The cap skips the niche brief when it doesn't fit.
+  - The kept research is per merchant and per shaping setting: another merchant with the same seed, or a changed market, runs its own research.
   - The merchant's shop map demotes a matching theme, and script URLs are dropped.
   - A failed Qloo lookup, extract or brief degrades, and the seed never reaches the logs.
   - The brief is polled, parsed leniently and keeps http and https sources only.
   - The competitor crawl's options, clipping and URL filter.
   - Bounded inputs and http-only results.
-- `apps/server/test/integration/research-tools.test.ts`: every Tavily tool over MCP without a key, with a fake client, with an unbounded input (rejected before any call) and after a failure (user-safe, nothing logged). Also `research_trends` with Qloo, and `suggest_audience`.
+- `apps/server/test/integration/research-tools.test.ts`: `get_niche_brief` answers only the merchant who started the brief. Every Tavily tool over MCP without a key, with a fake client, with an unbounded input (rejected before any call) and after a failure (user-safe, nothing logged). Also `research_trends` with Qloo, and `suggest_audience`.
 - `apps/server/test/live/tavily.test.ts`: one real research capped at 10 credits (about 3), skipped without `TAVILY_API_KEY`. `test/live/qloo.test.ts` is unchanged.
 
 ## Checks run
@@ -29,8 +30,8 @@ All passed after rebasing on `main` (0.20.0):
 - `pnpm knip`
 - `pnpm arch`
 - `pnpm dupes` (0 clones)
-- `pnpm test` (90 tests)
-- `pnpm test:integration` (90 tests, 1 skipped)
+- `pnpm test` (91 tests)
+- `pnpm test:integration` (92 tests)
 - `pnpm build`
 
 `pnpm test:live` wasn't run: there are no keys in this worktree.

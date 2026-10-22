@@ -74,6 +74,6 @@ A full run with Qloo: about 37 reserved, 35 to 50 typical. Tavily prices the bri
 
 - **Country on news.** Tavily applies `country` only to `topic: general`, so the competitor search carries it and the timing-hook search doesn't (docs.tavily.com, search endpoint).
 - **Shop URL.** Fourthwall connections don't store the shop's URL, and the connections code is out of scope, so it's a setting. The playbook offers to save it from `ecommerce_get-current-shop`. The settings widget doesn't show the new group yet: widgets are out of scope.
-- **Brief IDs.** `get_niche_brief` polls any Tavily request ID it's given. IDs are unguessable and the brief holds only public web research.
+- **Tenancy.** `research_trends` records each brief it starts at `users/{uid}/brief/{id}`, and `get_niche_brief` refuses an ID that isn't recorded for the caller. The 15-minute cache holds a merchant's shop map and brief ID, so its key is the merchant, the seed, and the `market`, `maxCredits` and `shopUrl` settings. A security review found that a seed-only key leaked across merchants.
 - **Unverified until the Qloo key arrives:** the hackathon host accepting the key and Qloo's field names. The schemas are lenient.
 - **Page text.** Prices, reviews and badges are read with regular expressions from the first 4,000 characters of each listing; a page in another layout yields fewer signals, not errors.

@@ -72,8 +72,12 @@ export const registerResearchTools = (
       const found = await userSafe(
         "research_trends failed:",
         "Trend research failed; ask the merchant for an idea instead.",
-        async () => await research.research(input, settings)
+        async () => await research.research(input, settings, store.userId)
       );
+      // Only the merchant who started a brief may poll it.
+      if (found.briefId !== undefined) {
+        await store.saveBrief(found.briefId);
+      }
       return reply({ ...found, note: TRENDS_NOTE });
     }
   );
@@ -90,6 +94,11 @@ export const registerResearchTools = (
     async ({ id }) => {
       if (research === undefined) {
         return notConfigured(`The niche brief ${NO_TAVILY}. Skip it.`);
+      }
+      if (!(await store.ownsBrief(id))) {
+        throw new Error(
+          "No niche brief with that ID for this merchant; go on without it."
+        );
       }
       const found = await userSafe(
         "get_niche_brief failed:",

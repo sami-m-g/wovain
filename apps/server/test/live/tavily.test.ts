@@ -20,7 +20,8 @@ describe.skipIf(apiKey === undefined || apiKey === "")(
       const settings = defaultSettings();
       const found = await research.research(
         { seed: "pickleball" },
-        { ...settings, research: { ...settings.research, maxCredits: 10 } }
+        { ...settings, research: { ...settings.research, maxCredits: 10 } },
+        "live"
       );
       expect(
         trendsResultSchema.safeParse({ configured: true, ...found }).success
