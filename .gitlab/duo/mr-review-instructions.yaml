@@ -23,6 +23,18 @@ instructions:
       2. Every number a widget shows (price, margin, breakeven, budget) needs a
          source link or a visible calculation.
 
+  - name: No hand-rolling
+    fileFilters:
+      - "apps/**/*.ts"
+      - "apps/**/*.tsx"
+      - "packages/**/*.ts"
+      - "infra/**/*.ts"
+    instructions: |
+      1. Flag new code that reimplements something an installed dependency, a
+         well-known library, an existing MCP tool (Fourthwall, Meta Ads, fal)
+         or a helper already in this repo already does. Name the alternative.
+      2. A bug fix comes with a test that fails without the fix.
+
   - name: Secrets
     instructions: |
       Flag tokens, API keys, MCP URLs with embedded tokens, or .env files in
