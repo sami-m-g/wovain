@@ -1,5 +1,5 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
-import { designResultSchema, quoteResultSchema } from "@wovain/shared/design";
+import { designResultSchema } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { defaultSettings, settingsResultSchema } from "@wovain/shared/settings";
 import { useEffect, useState } from "react";
@@ -22,11 +22,19 @@ const widgetSchema = z.object({ feedback: z.string() });
 // Widget buttons can only call wovain, so Fourthwall steps go through the chat:
 // the widget posts a short message and the design playbook does the rest.
 const actionsFor = (app: App): DesignWidgetActions => ({
+  // Approve is confirmed outside the chat: the merchant signs in to wovain in
+  // a browser tab and presses Confirm there. The widget follows the design
+  // and calls onConfirmed once it's approved.
   onApprove: async (design) => {
-    await callTool(app, designResultSchema, "record_design", {
-      id: design.id,
-      status: "publishing",
-    });
+    const { confirmUrl } = await callTool(
+      app,
+      z.object({ confirmUrl: z.url() }),
+      "approval_link",
+      { id: design.id }
+    );
+    await app.openLink({ url: confirmUrl });
+  },
+  onConfirmed: async (design) => {
     await say(app, `Approve design ${design.id}`);
   },
   onFeedback: async (design, feedback) => {
@@ -42,14 +50,12 @@ const actionsFor = (app: App): DesignWidgetActions => ({
     await callTool(app, settingsResultSchema, "update_settings", {
       patch: { pricing },
     });
-    const { quote } = await callTool(app, quoteResultSchema, "price_product", {
-      sizes: design.sizes.map(({ baseCost, size }) => ({ baseCost, size })),
-    });
+    // wovain reprices every product of the drop with the new settings.
     const { design: saved } = await callTool(
       app,
       designResultSchema,
       "show_design_widget",
-      { ...design, quote, status: undefined }
+      { ...design, status: undefined }
     );
     return saved;
   },

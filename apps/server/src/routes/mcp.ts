@@ -9,6 +9,7 @@ import type { Auth } from "../auth/auth.ts";
 import type { Env } from "../env.ts";
 import type { Storage } from "../firebase.ts";
 import { createMcpFetch } from "../http.ts";
+import type { BrowserConfirm } from "../lib/browser-confirm.ts";
 import type { Connect } from "../runtime.ts";
 
 const tracer = trace.getTracer("wovain-mcp");
@@ -38,10 +39,11 @@ export const createMcpRoute = (deps: {
   auth: Auth;
   env: Env;
   storage: Storage;
+  confirm?: BrowserConfirm | undefined;
   connect?: Connect | undefined;
 }) => {
-  const { auth, connect, env, storage } = deps;
-  const mcpFetch = createMcpFetch(env, storage, connect?.upstream);
+  const { auth, confirm, connect, env, storage } = deps;
+  const mcpFetch = createMcpFetch(env, storage, connect?.upstream, confirm);
 
   const handle = requireMcpAuth(auth, mcpFetch);
 

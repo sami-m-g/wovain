@@ -91,6 +91,7 @@ describe("connect routes", () => {
         `${site}/oauth/callback/fourthwall`,
         `${site}/oauth/callback/fal`,
         `${site}/oauth/callback/wovain`,
+        `${site}/confirm/callback`,
       ],
     });
   });

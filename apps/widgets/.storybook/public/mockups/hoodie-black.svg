@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Synthetic hoodie mockup (black, back print)">
+  <!-- Synthetic placeholder for Storybook only; real mockups come from Fourthwall. -->
+  <rect width="400" height="400" fill="#f3f3f1"/>
+  <path d="M150 60 Q200 20 250 60 L330 110 L360 250 L320 260 L300 170 L300 360 L100 360 L100 170 L80 260 L40 250 L70 110 Z" fill="#1c1c1c"/>
+  <circle cx="200" cy="200" r="52" fill="#f2a65a"/>
+  <rect x="140" y="215" width="120" height="34" fill="#e0607e" opacity="0.85"/>
+  <path d="M175 185 l9 -20 l9 20 M207 185 l9 -20 l9 20" stroke="#2b2b2b" stroke-width="6" fill="none"/>
+</svg>

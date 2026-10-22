@@ -2,9 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { Client } from "@modelcontextprotocol/client";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
+import {
+  approveDesign,
+  claimPublish,
+  designHash,
+} from "../../src/lib/approval.ts";
 import { setResolver } from "../../src/lib/fetch-image.ts";
+import type { Store } from "../../src/store.ts";
 import {
   connectClient,
   restoreFetch,
@@ -17,6 +23,7 @@ const png = await readFile(
 );
 
 let client: Client;
+let store: Store;
 let puts: {
   contentType: string | null;
   lengthRange: string | null;
@@ -50,7 +57,7 @@ beforeEach(async () => {
     return await Promise.resolve(new Response(png, { status: 200 }));
   };
   stubFetch(fakeFetch);
-  const store = testStore();
+  store = testStore();
   client = await connectClient({}, store);
 });
 
@@ -200,26 +207,19 @@ test("price_product prices the demo tee at $30", async () => {
   expect(result.structuredContent).toMatchObject({ quote: { price: 30 } });
 });
 
-test("a design goes draft → publishing → live, and the widget can read it", async () => {
+test("the model can't mark a design approved or live", async () => {
   const shown = await call("show_design_widget", design);
   expect(shown.structuredContent).toMatchObject({
     design: { id: "d1", status: "draft" },
   });
-
-  await call("record_design", { id: "d1", status: "publishing" });
-  await call("record_design", {
-    id: "d1",
-    productId: "off_1",
-    productUrl: "https://wovain.fourthwall.com/products/cat",
-    status: "live",
-  });
+  const refused = await Promise.all(
+    ["publishing", "live"].map(
+      async (status) => await call("record_design", { id: "d1", status })
+    )
+  );
+  expect(refused.map((result) => result.isError)).toEqual([true, true]);
   const read = await call("get_design", { id: "d1" });
-  expect(read.structuredContent).toMatchObject({
-    design: {
-      productUrl: "https://wovain.fourthwall.com/products/cat",
-      status: "live",
-    },
-  });
+  expect(read.structuredContent).toMatchObject({ design: { status: "draft" } });
 });
 
 test("redrawing after feedback keeps the id; rejections are counted", async () => {
@@ -246,5 +246,128 @@ test("redrawing after feedback keeps the id; rejections are counted", async () =
       rejectCount: 2,
       rejectReason: "Still low",
     },
+  });
+});
+
+test("wovain prices the hero and every product of the drop itself", async () => {
+  const shown = await call("show_design_widget", {
+    ...design,
+    // A price from the agent is ignored.
+    quote: { ...quote, price: 99 },
+    range: [
+      {
+        ...design,
+        customizationId: "cus_mug",
+        kind: "Mug",
+        quote: { ...quote, price: 1 },
+        sizes: [{ baseCost: 9.6, inStock: true, size: "11 oz" }],
+      },
+    ],
+  });
+  expect(shown.isError).toBeFalsy();
+  expect(shown.structuredContent).toMatchObject({
+    design: { quote: { price: 30 }, range: [{ quote: { price: 22 } }] },
+  });
+});
+
+test("publish_design says so when connections aren't set up", async () => {
+  await call("show_design_widget", design);
+  const result = await call("publish_design", { id: "d1" });
+  expect(result.structuredContent).toEqual({ configured: false });
+});
+
+// The merchant confirms the design as shown (the confirm page's call).
+const approved = async () => {
+  await call("show_design_widget", design);
+  const shown = await store.requireDesign("d1");
+  return await approveDesign(store, "d1", designHash(shown));
+};
+
+describe("approval", () => {
+  test("is recorded only for the content it names", async () => {
+    await call("show_design_widget", design);
+    await expect(approveDesign(store, "d1", "another-hash")).rejects.toThrow(
+      "changed"
+    );
+    const design1 = await approved();
+    expect(design1).toMatchObject({ status: "publishing" });
+  });
+
+  test("publishing needs it, and only one publish holds it", async () => {
+    await call("show_design_widget", design);
+    await expect(claimPublish(store, "d1")).rejects.toThrow("isn't approved");
+    await approved();
+    await claimPublish(store, "d1");
+    await expect(claimPublish(store, "d1")).rejects.toThrow(
+      "already being published"
+    );
+    // A publish that died long ago gives way.
+    await claimPublish(store, "d1", new Date(Date.now() + 11 * 60 * 1000));
+  });
+
+  test("an approval the model sends with a design is dropped", async () => {
+    const forged = { at: new Date().toISOString(), hash: "forged" };
+    await call("show_design_widget", { ...design, approval: forged });
+    await call("show_design_widget", {
+      ...design,
+      approval: forged,
+      id: "d1",
+      status: "publishing",
+    });
+    const stored = await store.requireDesign("d1");
+    expect(stored.approval).toBeUndefined();
+    expect(stored.status).toBe("draft");
+    await expect(claimPublish(store, "d1")).rejects.toThrow("isn't approved");
+  });
+
+  test("a redraw after approval clears it", async () => {
+    await approved();
+    await call("show_design_widget", {
+      ...design,
+      coach: "A new coach line.",
+      id: "d1",
+    });
+    const redrawn = await store.requireDesign("d1");
+    expect(redrawn.status).toBe("draft");
+    expect(redrawn.approval).toBeUndefined();
+    await expect(claimPublish(store, "d1")).rejects.toThrow("isn't approved");
+  });
+
+  test("a redraw keeps offers only for unchanged products", async () => {
+    await call("show_design_widget", {
+      ...design,
+      range: [{ ...design, customizationId: "cus_mug", kind: "Mug" }],
+    });
+    await store.updateDesign("d1", {
+      collectionId: "cltn_1",
+      productId: "off_1",
+    });
+    const stored = await store.requireDesign("d1");
+    await store.updateDesign("d1", {
+      range: stored.range.map((item) => ({ ...item, offerId: "off_mug" })),
+    });
+
+    await call("show_design_widget", {
+      ...design,
+      id: "d1",
+      range: [{ ...design, customizationId: "cus_mug", kind: "Mug" }],
+    });
+    expect(await store.requireDesign("d1")).toMatchObject({
+      collectionId: "cltn_1",
+      productId: "off_1",
+      range: [{ offerId: "off_mug" }],
+    });
+
+    // New hero art: a new customization, so no offer and no collection.
+    await call("show_design_widget", {
+      ...design,
+      customizationId: "cus_new",
+      id: "d1",
+      range: [{ ...design, customizationId: "cus_mug", kind: "Mug" }],
+    });
+    const changed = await store.requireDesign("d1");
+    expect(changed.productId).toBeUndefined();
+    expect(changed.collectionId).toBeUndefined();
+    expect(changed.range[0]?.offerId).toBe("off_mug");
   });
 });

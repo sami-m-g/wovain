@@ -3,6 +3,7 @@ import type { AuthInfo } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
 import type { Storage } from "./firebase.ts";
+import type { BrowserConfirm } from "./lib/browser-confirm.ts";
 import type { Upstream } from "./lib/upstream.ts";
 import { createDeps, createServer } from "./server.ts";
 import { createStore } from "./store.ts";
@@ -13,9 +14,10 @@ import { createStore } from "./store.ts";
 export const createMcpFetch = (
   env: Env,
   storage: Storage,
-  upstream?: Upstream
+  upstream?: Upstream,
+  confirm?: BrowserConfirm
 ) => {
-  const deps = createDeps(env, upstream);
+  const deps = createDeps(env, upstream, confirm);
   const handler = createMcpHandler(({ authInfo }) => {
     const userId = authInfo?.extra?.["userId"];
     if (typeof userId !== "string" || userId === "") {

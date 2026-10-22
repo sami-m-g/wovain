@@ -4,6 +4,8 @@ import { loadAuthEnv, siteUrl } from "./auth/env.ts";
 import { loadEnv } from "./env.ts";
 import { createStorage } from "./firebase.ts";
 import type { Storage } from "./firebase.ts";
+import { createBrowserConfirm } from "./lib/browser-confirm.ts";
+import type { BrowserConfirm } from "./lib/browser-confirm.ts";
 import { createBrowserSignIn } from "./lib/browser-sign-in.ts";
 import type { BrowserSignIn } from "./lib/browser-sign-in.ts";
 import { kmsCipher, localCipher } from "./lib/cipher.ts";
@@ -71,10 +73,19 @@ export const createRuntime = () => {
   return {
     auth,
     authEnv,
+    // Merchants confirm approvals in the browser (routes/confirm.ts).
+    confirm: createBrowserConfirm({
+      db: storage.db,
+      site,
+      userOf: userOfFor(auth, site),
+    }),
     connect: connectFor(env.WOVAIN_KMS_KEY, storage, auth, site),
     env,
     storage,
   };
 };
 
-export type Runtime = ReturnType<typeof createRuntime>;
+// Approvals and connections are optional, so tests can leave them out.
+export type Runtime = Omit<ReturnType<typeof createRuntime>, "confirm"> & {
+  confirm?: BrowserConfirm | undefined;
+};

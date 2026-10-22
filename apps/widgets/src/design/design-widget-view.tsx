@@ -6,19 +6,24 @@ import {
   SettingsCog,
 } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
-import { printQuality } from "@wovain/shared/design";
+import { lowPrints, printQuality } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { money } from "@wovain/shared/economics";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import { useAction } from "../lib/use-action.ts";
 import { ActionError } from "../lib/widget-shell.tsx";
+import { DropRange, LowPrintNote, PrintLine } from "./drop-range.tsx";
 import { PricingSettings } from "./pricing-settings.tsx";
 import type { PricingValues } from "./pricing-settings.tsx";
+import { Sizes } from "./sizes.tsx";
+import { useFollow } from "./use-follow.ts";
 
 export interface DesignWidgetActions {
-  // Posts "Approve design dN" so ChatGPT runs the Fourthwall publish.
+  // Opens the browser tab where the merchant confirms the approval.
   onApprove: (design: Design) => Promise<void>;
+  // Once confirmed: posts "Approve design dN" so the chat publishes.
+  onConfirmed: (design: Design) => Promise<void>;
   onFeedback: (design: Design, feedback: string) => Promise<void>;
   // Asks ChatGPT to open the product in Fourthwall's designer.
   onOpenDesigner: (design: Design) => Promise<void>;
@@ -82,39 +87,6 @@ const Header = ({ design, titleId }: { design: Design; titleId: string }) => (
   </>
 );
 
-const splitSizes = (sizes: Design["sizes"]) => {
-  const inStock: string[] = [];
-  const outOfStock: string[] = [];
-  for (const size of sizes) {
-    (size.inStock ? inStock : outOfStock).push(size.size);
-  }
-  return { inStock, outOfStock };
-};
-
-const Sizes = ({ sizes }: { sizes: Design["sizes"] }) => {
-  const { inStock, outOfStock } = splitSizes(sizes);
-  const range =
-    inStock.length > 1
-      ? `${inStock[0]}–${inStock.at(-1)}`
-      : (inStock[0] ?? "None in stock");
-  return (
-    <dd className="m-0">
-      {range}
-      {outOfStock.length === 0 ? null : (
-        <span className="text-secondary">
-          {" · "}
-          {outOfStock.map((size) => (
-            <s className="mr-1" key={size}>
-              {size}
-            </s>
-          ))}
-          out of stock, left off
-        </span>
-      )}
-    </dd>
-  );
-};
-
 const FileQuality = ({ artwork }: { artwork: Design["artwork"] }) =>
   printQuality(artwork) === "high" ? (
     <dd className="m-0 inline-flex items-center gap-1">
@@ -172,9 +144,7 @@ const Facts = ({
           ))}
         </dd>
         <dt className="text-secondary">Print</dt>
-        <dd className="m-0">
-          {`${design.placement.area} · ${design.placement.style} · ${design.placement.printSize}`}
-        </dd>
+        <PrintLine product={design} />
         <dt className="text-secondary">File</dt>
         <FileQuality artwork={design.artwork} />
         <dt className="text-secondary">Sizes</dt>
@@ -264,7 +234,11 @@ const Actions = ({
   const id = useId();
   const publishing = design.status === "publishing";
   const locked = publishing || busy !== null;
-  const lowQuality = printQuality(design.artwork) === "low";
+  const lowQuality = lowPrints(design).length > 0;
+  const approve =
+    design.range.length > 0
+      ? `Approve ${design.range.length + 1} products`
+      : "Approve";
   const primary =
     design.rejectCount >= MAX_REJECTIONS ? (
       <Button
@@ -279,10 +253,10 @@ const Actions = ({
         className="wovain-accent"
         color="primary"
         disabled={lowQuality || locked}
-        loading={publishing}
+        loading={publishing || busy === "approve"}
         onClick={onApprove}
       >
-        {design.status === "rejected" ? "Try again" : "Approve"}
+        {design.status === "rejected" ? "Try again" : approve}
       </Button>
     );
   return (
@@ -348,6 +322,7 @@ export const DesignWidgetView = ({
   design: initialDesign,
   initialFeedback,
   onApprove,
+  onConfirmed,
   onFeedback,
   onFeedbackDraft,
   onOpenDesigner,
@@ -363,21 +338,13 @@ export const DesignWidgetView = ({
   const [color, setColor] = useState(() => firstInStock(initialDesign));
   const [feedback, setFeedback] = useState(initialFeedback ?? "");
   const { busy, failed, run: act } = useAction<NonNullable<Busy>>();
-
-  // While Fourthwall publishes in the chat, follow the stored state.
-  useEffect(() => {
-    const refresh = async () => {
-      setDesign(await poll(design));
-    };
-    const timer = setInterval(() => {
-      if (design.status === "publishing") {
-        void refresh();
-      }
-    }, pollMs);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [design, poll, pollMs]);
+  const { confirming, startConfirming } = useFollow({
+    design,
+    onConfirmed,
+    poll,
+    pollMs,
+    setDesign,
+  });
 
   // Runs one widget action; a failure returns the widget to where it was.
   const run = async (kind: Busy, action: () => Promise<void>) => {
@@ -400,6 +367,8 @@ export const DesignWidgetView = ({
         }}
         pricing={pricing}
       />
+      <DropRange design={design} />
+      <LowPrintNote design={design} />
       <Rejection design={design} />
       {design.status === "live" && design.productUrl !== undefined ? (
         <div className="border-subtle mt-4 border-t pt-4">
@@ -410,19 +379,19 @@ export const DesignWidgetView = ({
               void onOpenLink(design.productUrl ?? "");
             }}
           >
-            View in shop
+            {design.range.length > 0 ? "View the drop" : "View in shop"}
           </Button>
         </div>
       ) : null}
       {done ? null : (
         <Actions
-          busy={busy}
+          busy={confirming ? "approve" : busy}
           design={design}
           feedback={feedback}
           onApprove={() => {
             void run("approve", async () => {
-              setDesign({ ...design, status: "publishing" });
               await onApprove(design);
+              startConfirming();
             });
           }}
           onFeedback={() => {

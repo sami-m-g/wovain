@@ -12,9 +12,9 @@ const playbooks = { ads, campaign, design } as const;
 const stepSchema = z.enum(["design", "ads", "campaign"]);
 
 // Sent on initialize, so a connecting agent knows the flow before any call.
-export const instructions = `wovain takes a print-on-demand merchant from a product idea to a live Fourthwall product and one Meta Advantage+ sales campaign, one approved widget at a time.
+export const instructions = `wovain takes a print-on-demand merchant from a product idea to a live Fourthwall drop (a set of matching products) and one Meta Advantage+ sales campaign, one approved widget at a time.
 
-wovain reaches the merchant's own fal account through its \`fal\` tool and their Fourthwall shop through its \`fourthwall\` tool, each on the account the merchant connected to wovain. When a result has \`needsConnection\`, show the merchant its link, wait until they say they're done, then retry. Until the design playbook moves to wovain's \`fourthwall\` tool, the agent still needs the Fourthwall MCP server for publishing, and the Meta Ads MCP server for the campaign.
+wovain reaches the merchant's own fal account through its \`fal\` tool and their Fourthwall shop through its \`fourthwall\` tool, each on the account the merchant connected to wovain. When a result has \`needsConnection\`, show the merchant its link, wait until they say they're done, then retry. The design step runs entirely through wovain (publishing included, with \`publish_design\` after the merchant approves); the agent still needs the Meta Ads MCP server for the campaign.
 
 Steps, each with a playbook (get_playbook, or the MCP prompt of the same name):
 ${Object.entries(playbooks)
