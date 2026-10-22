@@ -75,3 +75,140 @@ new gitlab.PipelineSchedule(
   },
   adopt("4502115")
 );
+
+// Issue labels: status drives the Workflow board, agent says who works it,
+// scout and digest are the scout flow's (.gitlab/duo/catalog/flows/scout.yml).
+// An id adopts a label made by hand before.
+const labels: Record<
+  string,
+  { color: string; description: string; id?: number }
+> = {
+  "agent::claude": {
+    color: "#d97757",
+    description: "Worked by Claude Code (the /issue skill)",
+  },
+  "agent::duo": {
+    color: "#fc6d26",
+    description: "Work done or driven by a GitLab Duo agent or flow",
+    id: 54_770_224,
+  },
+  digest: { color: "#6c757d", description: "The scout's daily digest issue" },
+  "priority::1": { color: "#c0392b", description: "Do now", id: 54_770_190 },
+  "priority::2": { color: "#e67e22", description: "Do soon", id: 54_770_191 },
+  "priority::3": {
+    color: "#f1c40f",
+    description: "When there's time",
+    id: 54_770_193,
+  },
+  scout: {
+    color: "#fd7e14",
+    description: "A production problem the scout flow found",
+  },
+  "stage::configure": {
+    color: "#20c997",
+    description: "DevSecOps stage: configure",
+    id: 54_770_221,
+  },
+  "stage::create": {
+    color: "#5b4bc4",
+    description: "DevSecOps stage: create",
+    id: 54_770_198,
+  },
+  "stage::govern": {
+    color: "#343a40",
+    description: "DevSecOps stage: govern",
+    id: 54_770_223,
+  },
+  "stage::monitor": {
+    color: "#fd7e14",
+    description: "DevSecOps stage: monitor",
+    id: 54_770_222,
+  },
+  "stage::package": {
+    color: "#17a2b8",
+    description: "DevSecOps stage: package",
+    id: 54_770_213,
+  },
+  "stage::plan": {
+    color: "#6f42c1",
+    description: "DevSecOps stage: plan",
+    id: 54_770_195,
+  },
+  "stage::release": {
+    color: "#28a745",
+    description: "DevSecOps stage: release",
+    id: 54_770_220,
+  },
+  "stage::secure": {
+    color: "#c0392b",
+    description: "DevSecOps stage: secure",
+    id: 54_770_217,
+  },
+  "stage::verify": {
+    color: "#2c7be5",
+    description: "DevSecOps stage: verify",
+    id: 54_770_210,
+  },
+  "status::doing": {
+    color: "#F0AD4E",
+    description: "An agent or person is on it",
+    id: 54_799_201,
+  },
+  "status::review": {
+    color: "#8E44AD",
+    description: "MR open, waiting for review",
+    id: 54_799_202,
+  },
+  "status::test": {
+    color: "#16a085",
+    description: "In the review app, waiting for a human to try it",
+  },
+  "status::todo": {
+    color: "#428BCA",
+    description: "Ready to pick up",
+    id: 54_799_200,
+  },
+  "type::bug": {
+    color: "#d9534f",
+    description: "Something isn't working",
+    id: 54_770_186,
+  },
+  "type::chore": {
+    color: "#8e8e8e",
+    description: "Maintenance, tooling or refactors",
+    id: 54_770_188,
+  },
+  "type::feature": {
+    color: "#428bca",
+    description: "New capability or improvement",
+    id: 54_770_187,
+  },
+};
+
+const labelIds = new Map(
+  Object.entries(labels).map(([name, { color, description, id }]) => [
+    name,
+    new gitlab.ProjectLabel(
+      name.replace("::", "-"),
+      { color, description, name, project: projectId },
+      id === undefined ? {} : adopt(String(id))
+    ).labelId,
+  ])
+);
+
+// The board you watch: todo → doing → review (MR open) → test (your turn in
+// the review app). Closed issues land in the board's built-in Closed list.
+new gitlab.ProjectIssueBoard(
+  "workflow",
+  {
+    lists: [
+      "status::todo",
+      "status::doing",
+      "status::review",
+      "status::test",
+    ].map((name, position) => ({ labelId: labelIds.get(name), position })),
+    name: "Workflow",
+    project: projectId,
+  },
+  adopt("11705998")
+);
