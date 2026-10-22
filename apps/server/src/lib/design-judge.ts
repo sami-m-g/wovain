@@ -9,7 +9,7 @@ import type {
 } from "@wovain/shared/judge";
 import type { Genkit } from "genkit";
 
-import { createAi, generateObject, models } from "./ai.ts";
+import { generateObject, models } from "./ai.ts";
 
 export type DesignJudge = (brief: DesignBrief) => Promise<DesignJudgment>;
 
@@ -96,10 +96,8 @@ export const createDesignJudge =
     return applyFacts(reply, facts);
   };
 
-// The judge on Nemotron, or undefined without a Nebius key.
+// The judge on Nemotron, or undefined without Genkit (no Nebius key).
 export const designJudgeFor = (
-  apiKey: string | undefined
-): DesignJudge | undefined => {
-  const ai = createAi(apiKey);
-  return ai === undefined ? undefined : createDesignJudge(ai);
-};
+  ai: Genkit | undefined
+): DesignJudge | undefined =>
+  ai === undefined ? undefined : createDesignJudge(ai);

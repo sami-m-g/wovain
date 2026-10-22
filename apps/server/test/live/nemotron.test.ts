@@ -1,6 +1,7 @@
 import { designJudgmentSchema } from "@wovain/shared/judge";
 import { describe, expect, test } from "vitest";
 
+import { createAi } from "../../src/lib/ai.ts";
 import { designJudgeFor } from "../../src/lib/design-judge.ts";
 import { demoBrief } from "../helpers.ts";
 
@@ -10,7 +11,7 @@ const apiKey = process.env["NEBIUS_API_KEY"];
 
 describe.skipIf(apiKey === undefined || apiKey === "")("Nemotron judge", () => {
   test("judges the demo brief into the schema", async () => {
-    const judge = designJudgeFor(apiKey);
+    const judge = designJudgeFor(createAi(apiKey));
     if (judge === undefined) {
       throw new Error("expected a judge");
     }

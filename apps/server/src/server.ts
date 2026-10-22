@@ -1,12 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
+import { createAi } from "./lib/ai.ts";
 import { designJudgeFor } from "./lib/design-judge.ts";
-import type { DesignJudge } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
-import type { VideoPricing } from "./lib/fal-pricing.ts";
 import { trendResearchFor } from "./lib/trends.ts";
-import type { TrendResearch } from "./lib/trends.ts";
 import { instructions, registerPlaybooks } from "./playbooks/index.ts";
 import type { Store } from "./store.ts";
 import { registerAdTools } from "./tools/ads.ts";
@@ -17,20 +15,22 @@ import { registerResearchTools } from "./tools/research.ts";
 import { registerSettingsTools } from "./tools/settings.ts";
 import { registerWidgets } from "./widgets.ts";
 
-// HTTP mode builds a server per request, so it passes one shared price cache
-// one design judge and one trend research; anything left out is built here.
+// What the tools call upstream, built once per process: HTTP mode builds a
+// server per request. One Genkit instance serves every model call.
+export const createDeps = (env: Env) => {
+  const ai = createAi(env.NEBIUS_API_KEY);
+  return {
+    designJudge: designJudgeFor(ai),
+    trendResearch: trendResearchFor(env.TAVILY_API_KEY, ai),
+    videoPricing: createVideoPricing(env.FAL_KEY),
+  };
+};
+export type Deps = ReturnType<typeof createDeps>;
+
 export const createServer = (
   env: Env,
   store: Store,
-  {
-    designJudge = designJudgeFor(env.NEBIUS_API_KEY),
-    trendResearch = trendResearchFor(env.TAVILY_API_KEY, env.NEBIUS_API_KEY),
-    videoPricing = createVideoPricing(env.FAL_KEY),
-  }: {
-    designJudge?: DesignJudge | undefined;
-    trendResearch?: TrendResearch | undefined;
-    videoPricing?: VideoPricing;
-  } = {}
+  { designJudge, trendResearch, videoPricing }: Deps
 ) => {
   const server = new McpServer(
     {

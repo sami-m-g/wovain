@@ -26,6 +26,13 @@ Spec: [spec.md](spec.md)
 - `docs/app-map.html`: a Tavily arrow from the server.
 - `AGENTS.md`: the run-the-server bullet names `TAVILY_API_KEY` for `research_trends`.
 
+Changed in review:
+
+- `server.ts` gained `createDeps(env)`, which builds one Genkit instance for both `judge_design` and `research_trends`, the trend research and the price cache once per process. `http.ts` and the test helper use it, and `createServer` takes those deps as they are. `designJudgeFor` and `trendResearchFor` now take the Genkit instance instead of a key.
+- `lib/tool-result.ts` gained `notConfigured`, `logErrorClass` and `userSafe`. `tools/judge.ts` uses them too.
+- `test/helpers.ts` gained `mockAi`, and `connectClient` takes a deps object.
+- Security review: search results are marked untrusted in the ranking prompt (`untrustedResults`), the system prompt, the tool results (`note`), the tool descriptions and the playbook. Only http and https links pass, both in `toHits` and in the shared schemas. Titles are stripped of markup and clipped, and snippets are clipped.
+
 Not changed: `infra/index.ts` (it already creates the secret version only when a value exists), `.env.example` (already lists the key).
 
 ## Order of work

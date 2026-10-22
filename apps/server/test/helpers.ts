@@ -3,14 +3,15 @@ import { InMemoryTransport } from "@modelcontextprotocol/server";
 import type { Design } from "@wovain/shared/design";
 import { judgeRuleSchema } from "@wovain/shared/judge";
 import type { DesignBrief, JudgeReply } from "@wovain/shared/judge";
+import { genkit } from "genkit";
+import { mockModel } from "genkit/testing";
 import { vi } from "vitest";
 
 import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
-import type { DesignJudge } from "../src/lib/design-judge.ts";
-import type { TrendResearch } from "../src/lib/trends.ts";
-import { createServer } from "../src/server.ts";
+import { createDeps, createServer } from "../src/server.ts";
+import type { Deps } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
 
@@ -28,16 +29,23 @@ export const testStorage = (): Storage => {
 export const testStore = (storage: Storage = testStorage()) =>
   createStore(storage.db, storage.media, "test");
 
+// A Genkit instance whose "mockModel" answers with `respond`.
+export const mockAi = (respond: Parameters<typeof mockModel>[1]) => {
+  const ai = genkit({});
+  return { ai, model: mockModel(ai, respond) };
+};
+
 // A client talking to a fresh wovain server over an in-memory transport.
+// Services in `deps` replace the ones built from `env`.
 export const connectClient = async (
   env: Record<string, string>,
   store: Store,
-  designJudge?: DesignJudge,
-  trendResearch?: TrendResearch
+  deps: Partial<Deps> = {}
 ) => {
-  const server = createServer(loadEnv(env), store, {
-    designJudge,
-    trendResearch,
+  const loaded = loadEnv(env);
+  const server = createServer(loaded, store, {
+    ...createDeps(loaded),
+    ...deps,
   });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await server.connect(serverSide);
