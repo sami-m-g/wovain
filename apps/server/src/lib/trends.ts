@@ -6,7 +6,14 @@ import type { TrendSeed } from "@wovain/shared/trends";
 
 import { tasteOf } from "./qloo.ts";
 import type { QlooGet } from "./qloo.ts";
-import { marginOf, mean, median, recencyOf, scoreIdea } from "./score.ts";
+import {
+  ipSafetyOf,
+  marginOf,
+  mean,
+  median,
+  recencyOf,
+  scoreIdea,
+} from "./score.ts";
 import { clip, searchWeb, sourceOf, textOf, TIMEOUT_S } from "./tavily.ts";
 import type { SearchResult, TavilyApi } from "./tavily.ts";
 import { logErrorClass } from "./tool-result.ts";
@@ -155,20 +162,6 @@ const words = (text: string) =>
       .split(/[^a-z0-9]+/u)
       .filter((w) => w.length > 3)
   );
-
-// 0 when the theme names a brand, artist or title Qloo matched; 0.5 when a
-// top listing says it's officially licensed.
-const ipSafetyOf = (theme: string, names: string[], pages: string[]) => {
-  const lowered = theme.toLowerCase();
-  if (
-    names.some(
-      (name) => name.length > 2 && lowered.includes(name.toLowerCase())
-    )
-  ) {
-    return 0;
-  }
-  return pages.some((page) => /officially licensed/iu.test(page)) ? 0.5 : 1;
-};
 
 // A listing's price, reviews and badge, from its extract (reranked by the
 // extract's query).

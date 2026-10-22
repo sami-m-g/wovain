@@ -60,6 +60,20 @@ const confirmation = (velocity: number | undefined) => {
   return velocity > 0 ? 1 : 0.5;
 };
 
+// 0 when the theme names a brand, artist or title Qloo matched; 0.5 when a
+// top listing says it's officially licensed.
+export const ipSafetyOf = (theme: string, names: string[], pages: string[]) => {
+  const lowered = theme.toLowerCase();
+  if (
+    names.some(
+      (name) => name.length > 2 && lowered.includes(name.toLowerCase())
+    )
+  ) {
+    return 0;
+  }
+  return pages.some((page) => /officially licensed/iu.test(page)) ? 0.5 : 1;
+};
+
 export const scoreIdea = (signals: IdeaSignals) => {
   const fit = unit(signals.affinity ?? 0.5);
   const demand =
