@@ -1,5 +1,6 @@
 # wovain's pipeline, one job per DevSecOps stage it covers:
-#   verify    build; lint, types, dead code, tests; widget stories
+#   verify    build; lint, types, dead code, tests; widget stories; the
+#             e2e journey proof and demo video (proof.yml)
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
 #   deploy    main: sync custom Duo flows to the AI Catalog, pulumi up
 #             (infra/), then upload the source to Firebase App Hosting and
@@ -9,7 +10,7 @@
 #   release   semantic-release: version, CHANGELOG, GitLab release; then
 #             push main and tags to the GitHub mirror
 # Renovate runs on the "Renovate dependency updates" pipeline schedule, the
-# loop on "wovain loop".
+# loop on "wovain loop", the live e2e journey on "Nightly e2e".
 # CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY,
 # FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
 # GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, SITE_URL,
@@ -44,6 +45,7 @@ include:
       version: $CI_COMMIT_SHORT_SHA
   - local: .gitlab/ci/templates.yml
   - local: .gitlab/ci/verify.yml
+  - local: .gitlab/ci/proof.yml
   - local: .gitlab/ci/secure.yml
   - local: .gitlab/ci/deploy.yml
   - local: .gitlab/ci/monitor.yml

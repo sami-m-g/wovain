@@ -1,5 +1,5 @@
 // wovain's GitLab project settings that the hackathon's Developer+ role can
-// manage: CI/CD variables, environments and the Renovate schedule. Branch and
+// manage: CI/CD variables, environments and the pipeline schedules. Branch and
 // environment protection, deploy keys and the general settings need
 // Maintainer. Merge request settings are open to the role in the UI only:
 // PUT /projects/:id, which gitlab.Project uses, needs admin_project (README).
@@ -108,6 +108,15 @@ const weekly = new gitlab.PipelineSchedule("weekly", {
   project: projectId,
   ref: "refs/heads/main",
 });
+// The live e2e journey (.gitlab/ci/proof.yml matches its description).
+const nightly = new gitlab.PipelineSchedule("nightly-e2e", {
+  active: true,
+  cron: "0 3 * * *",
+  cronTimezone: "UTC",
+  description: "Nightly e2e",
+  project: projectId,
+  ref: "refs/heads/main",
+});
 const loop = new gitlab.PipelineSchedule("loop", {
   active: true,
   cron: "17 * * * *",
@@ -123,6 +132,7 @@ for (const key of [
 ]) {
   for (const [name, schedule] of [
     ["loop", loop],
+    ["nightly-e2e", nightly],
     ["weekly", weekly],
   ] as const) {
     new gitlab.PipelineScheduleVariable(`${name}-${key.toLowerCase()}`, {
