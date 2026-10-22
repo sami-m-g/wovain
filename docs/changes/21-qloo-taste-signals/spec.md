@@ -56,10 +56,8 @@ A full run with Qloo: about 37 reserved, 35 to 50 typical. Tavily prices the bri
 
 ### Code
 
-- `lib/tavily.ts`: `TavilyApi` (the SDK's search, extract, map, crawl, research and getResearch), the credit meter, `searchWeb`.
-- `lib/trends.ts`: themes, the budget, the searches, the cache and the result.
-- `lib/market.ts`: the listings extract, the shop map, competitor parsing, IP safety and the competitor crawl.
-- `lib/niche-brief.ts`: the brief's schema, start and poll.
+- `lib/tavily.ts`: `TavilyApi` (the SDK's search, extract, map, crawl, research and getResearch), `searchWeb`, clipping.
+- `lib/trends.ts`: themes, the budget, every Tavily call (searches, listings extract, shop map, brief start and poll, competitor crawl, trademark search), competitor parsing, IP safety, the per-merchant cache and the result. Credits are summed from each reply's `usage`.
 - `lib/score.ts`: `SCORE_WEIGHTS`, `scoreIdea`, margin, recency, median.
 - `tools/research.ts`: `research_trends` (reads settings), `get_niche_brief`, `scan_competitor_site`, `suggest_audience`, `screen_trademark`.
 - `packages/shared`: the result schemas, and the `research` settings group (`maxCredits`, `market`, `baseCost`, `shopUrl`).

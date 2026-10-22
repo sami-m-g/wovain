@@ -7,9 +7,9 @@ Spec: [spec.md](spec.md)
 - `packages/shared/src/trends.ts`: result, brief and site schemas; signals; no model reply schemas.
 - `packages/shared/src/settings.ts`: the `research` group.
 - `apps/server/src/lib/qloo.ts` (new): the Qloo client, `tasteOf`, `audienceOf`.
-- `apps/server/src/lib/tavily.ts`: the SDK surface wovain uses, the credit meter, `searchWeb` with answer and images.
-- `apps/server/src/lib/trends.ts`: rewritten as one path (themes, budget, searches, cache).
-- `apps/server/src/lib/market.ts`, `niche-brief.ts`, `score.ts` (new); `taste.ts` deleted.
+- `apps/server/src/lib/tavily.ts`: the SDK surface wovain uses, `searchWeb` with answer and images.
+- `apps/server/src/lib/trends.ts`: rewritten as one path (themes, budget, every Tavily call, cache).
+- `apps/server/src/lib/score.ts` (new); `taste.ts` deleted.
 - `apps/server/src/lib/ai.ts`: `models.trends` removed.
 - `apps/server/src/tools/research.ts`: settings-aware `research_trends`, new `get_niche_brief`, `scan_competitor_site`, `suggest_audience`.
 - `apps/server/src/server.ts`, `env.ts`: wiring.

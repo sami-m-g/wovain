@@ -23,7 +23,7 @@
 
 ## Checks run
 
-All passed after rebasing on `main` (0.20.0):
+All passed after rebasing on `main` (0.20.0), and again after the trim below:
 
 - `pnpm check`
 - `pnpm typecheck`
@@ -48,4 +48,27 @@ All passed after rebasing on `main` (0.20.0):
 - `country` goes on the competitor search, not the news search: Tavily applies it to `topic: general` only.
 - The shop URL is a setting (`research.shopUrl`), because Fourthwall connections don't store it and the connections code is out of scope here. The settings widget doesn't show the `research` group yet (widgets are out of scope); `update_settings` sets it.
 - The brief's cost isn't known until it finishes, so the cap reserves 25 credits for it and `get_niche_brief` reports the real cost.
-- The source grew. Against the previous branch it's +993 / −549 lines in `apps/server/src` and `packages/shared/src`, because the change adds two tools and four endpoints. The Nemotron path's deletions don't cover that.
+- The source grew, because the change adds two tools and four endpoints. The Nemotron path's deletions don't cover that.
+
+## Trim
+
+Lines added in `apps/server/src` and `packages/shared/src` against `main` (`git diff --numstat`):
+
+|                 | Added | Removed |
+| --------------- | ----- | ------- |
+| Before the trim | 1,415 | 213     |
+| After the trim  | 1,060 | 218     |
+
+The target was 800. Same tools, endpoints, scoring, credit caps, cache and security behavior. What changed:
+
+- `lib/market.ts` and `lib/niche-brief.ts` are folded into `lib/trends.ts`. The credit meter is gone: credits are summed from each Tavily reply's `usage`.
+- The server's copies of shared shapes are gone. Result types come from `ReturnType` or `z.infer`. Qloo's demographics and heatmap schemas derive from the shared `audienceSchema`, and `research.shopUrl` reuses `webUrlSchema`.
+- Tavily types and options come from `@tavily/core` (`TavilyClient`, `TavilySearchResponse["results"][number]`, the getResearch reply union) instead of a lenient re-declared reply schema.
+- Competitor price, reviews and badges are read only from the extract's chunks, which Tavily reranks by the extract's `query`. The fallback that parsed prices out of search snippets is gone.
+- The cache key is the merchant, the seed and the whole `research` settings group. Brief ownership (`saveBrief`, `ownsBrief`) is unchanged.
+- Optional fields are set to `undefined` instead of spread conditionally. The tool handlers share one user-safe reply helper.
+
+Not done:
+
+- `scan_competitor_site` stays its own tool. As an option on `research_trends`, a scan in the ads step (usually more than 15 minutes after the research) would re-run the whole research for 10 to 35 credits instead of about 3.
+- The last ~260 lines. Each of the five tools, four Qloo response shapes, the brief's output schema and the scoring signals is still needed, and the formatter wraps at 80 columns.
