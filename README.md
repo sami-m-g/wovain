@@ -149,6 +149,7 @@ Still set by hand, since no API or provider covers them (or the role can't reach
 | --- | --- |
 | WorkOS dashboard | CIMD and dynamic client registration (Connect → Configuration), and sign-in methods. WorkOS documents no API for these, so no provider covers them. `smoke:production` fails if CIMD or registration is off |
 | GitLab, Maintainer only | Protected branches, tags and environments, merge request settings (such as merging only after the pipeline passes), Duo's automatic review and SAST flows |
+| GitLab Observability (group) | The `o11y-api-key` the self-healing loop reads errors, traces and logs with. A group Owner opens the group, Observe → API Keys, and copies the key (the docs allow Developer and up, but Developer+ has no observability or access-token permission here); then `pulumi config set --secret o11y-api-key` in `infra/`. The docs describe no API or token scope for it and `@pulumi/gitlab` has no resource for it |
 | Google Cloud, once | The Pulumi state bucket `wovain-pulumi-state` and the `pulumi/stack-secrets` KMS key, which this stack needs before it can run |
 | Meta, Fourthwall, fal, Nebius, Qloo, Tavily | The accounts, Page, pixel, payment method and API keys (keys go in as stack secrets) |
 
