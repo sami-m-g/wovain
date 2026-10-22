@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --filter @wovain/widgets build",
-    "check": "ultracite check",
+    "check": "ultracite check && pnpm skills:check",
+    "skills:check": "node scripts/skills-check.ts",
     "fix": "ultracite fix",
     "typecheck": "tsc -b --noEmit",
     "typecheck:6": "tsc6 -b --noEmit",
