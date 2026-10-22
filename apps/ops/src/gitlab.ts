@@ -68,9 +68,17 @@ const discussionSchema = z.object({
 });
 
 const jobSchema = z.object({ duration: z.number().nullable() });
-const pipelineSchema = z.object({ id: z.int(), status: z.string() });
+const pipelineSchema = z.object({
+  id: z.int(),
+  status: z.string(),
+  web_url: z.url().optional(),
+});
 
 const userSchema = z.object({ id: z.int(), username: z.string() });
+const reviewerSchema = z.object({
+  state: z.string(),
+  user: z.object({ username: z.string() }),
+});
 
 // Duo sessions (GraphQL duoWorkflowWorkflows, the query the Agent sessions
 // page uses: ee/app/assets/javascripts/ai/duo_agents_platform).
@@ -93,6 +101,7 @@ const sessionsSchema = z.object({
               })
               .nullable(),
             sourceType: z.string().nullable(),
+            status: z.string().nullable().optional(),
             user: z.object({ username: z.string() }).nullable(),
             workItem: z.object({ iid: z.coerce.number() }).nullable(),
             workflowDefinition: z.string().nullable(),
@@ -102,7 +111,7 @@ const sessionsSchema = z.object({
     }),
   }),
 });
-const SESSIONS = `query($path: ID!) { project(fullPath: $path) { duoWorkflowWorkflows(projectPath: $path, first: 50) { nodes { createdAt sourceType workflowDefinition user { username } workItem { iid } mergeRequestLinks(first: 20) { nodes { mergeRequest { iid } } } } } } }`;
+const SESSIONS = `query($path: ID!) { project(fullPath: $path) { duoWorkflowWorkflows(projectPath: $path, first: 50) { nodes { createdAt status sourceType workflowDefinition user { username } workItem { iid } mergeRequestLinks(first: 20) { nodes { mergeRequest { iid } } } } } } }`;
 
 type Method = "GET" | "POST" | "PUT";
 const MAX_PAGES = 20;
@@ -286,12 +295,7 @@ export const createGitLab = (env: {
     // Each reviewer's state: unreviewed, reviewed, requested_changes, approved.
     reviewers: async (mr: number) =>
       await inProject(
-        z.array(
-          z.object({
-            state: z.string(),
-            user: z.object({ username: z.string() }),
-          })
-        ),
+        z.array(reviewerSchema),
         "GET",
         `merge_requests/${mr}/reviewers`
       ),
@@ -307,6 +311,7 @@ export const createGitLab = (env: {
           n.mergeRequest === null ? [] : [n.mergeRequest.iid]
         ),
         sourceType: s.sourceType ?? "",
+        status: s.status ?? "",
         user: s.user?.username ?? "",
       }));
     },

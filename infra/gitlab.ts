@@ -125,7 +125,7 @@ new gitlab.PipelineSchedule("loop", {
   ref: "refs/heads/main",
 });
 // Issue labels: status drives the Workflow board, agent says who works it,
-// scout and digest are the self-healing loop's (apps/ops), and verified marks
+// scout, red-main and digest are the self-healing loop's (apps/ops), and verified marks
 // a scout issue whose fix production confirmed.
 // An id adopts a label made by hand before.
 const labels: Record<
@@ -149,6 +149,11 @@ const labels: Record<
     color: "#f1c40f",
     description: "When there's time",
     id: 54_770_193,
+  },
+  "red-main": {
+    color: "#c0392b",
+    description:
+      "A failed main pipeline the loop tracks: Duo's Fix CI/CD only for a confirmed code failure",
   },
   scout: {
     color: "#fd7e14",

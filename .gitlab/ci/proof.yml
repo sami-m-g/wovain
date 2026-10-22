@@ -24,6 +24,8 @@ e2e:
     when: always
     expose_as: e2e proof report
     paths: [e2e-report/]
+    reports:
+      junit: apps/server/junit.xml
     expire_in: 30 days
 
 # Narration is espeak-ng here: CI has no fal key, and the operator's stays

@@ -7,6 +7,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    // In CI, a JUnit report too: GitLab parses it into the pipeline's test
+    // report, which the loop fingerprints a red main from (apps/ops).
+    outputFile: { junit: "junit.xml" },
     projects: [
       {
         extends: true,
@@ -37,5 +40,9 @@ export default defineConfig({
         },
       },
     ],
+    reporters:
+      process.env["GITLAB_CI"] === undefined
+        ? ["default"]
+        : ["default", "junit"],
   },
 });

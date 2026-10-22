@@ -10,6 +10,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
+    // In CI, a JUnit report for GitLab's pipeline test report too.
+    outputFile: { junit: "junit.xml" },
     projects: [
       {
         extends: true,
@@ -29,5 +31,9 @@ export default defineConfig({
         },
       },
     ],
+    reporters:
+      process.env["GITLAB_CI"] === undefined
+        ? ["default"]
+        : ["default", "junit"],
   },
 });

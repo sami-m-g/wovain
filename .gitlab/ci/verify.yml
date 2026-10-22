@@ -15,6 +15,12 @@ verify:
     - pnpm arch
     - pnpm dupes
     - pnpm test
+  # JUnit reports feed the pipeline's test report, which the loop
+  # fingerprints a red main from (apps/ops/src/red-main.ts).
+  artifacts:
+    when: always
+    reports:
+      junit: [apps/server/junit.xml, apps/ops/junit.xml]
 
 # The store and tool tests run on the Firestore and Storage emulators, which
 # need Java 21 (Debian trixie ships it; bookworm stops at 17).
@@ -27,6 +33,10 @@ integration:
     - !reference [.pnpm-install, before_script]
   script:
     - pnpm test:integration
+  artifacts:
+    when: always
+    reports:
+      junit: apps/server/junit.xml
 
 # Playwright's image ships Chromium and its system libraries; its tag must
 # match the playwright version in apps/widgets (Renovate bumps them together).
@@ -36,6 +46,10 @@ stories:
   image: mcr.microsoft.com/playwright:v1.64.1-noble
   script:
     - pnpm test:stories
+  artifacts:
+    when: always
+    reports:
+      junit: apps/widgets/junit.xml
 
 # Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
 renovate:
