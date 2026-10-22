@@ -25,7 +25,7 @@ Checked before writing anything:
 `tavily.ts`:
 
 - `type SearchClient = Pick<TavilyClient, "search">`, `type SearchResult = TavilySearchResponse["results"][number]`.
-- `searchClientFor(apiKey?)`: `undefined` without a key, otherwise `tavily({ apiKey })`.
+- `trendResearchFor(apiKey?, ai?)` in `trends.ts` builds the client: `undefined` without a key, otherwise `tavily({ apiKey })`.
 - `searchWeb(client, query, options: TavilySearchOptions)`: basic depth and a 20 s timeout, then keeps http and https results with clipped title and snippet. `plain()` goes: results only ever leave as JSON (the tool's text is `JSON.stringify` of the result, the structured content is JSON, and the prompt carries them inside a JSON string), each marked untrusted.
 
 `trends.ts`: `rankByRules`, `recency`, `keywordIndex`, `bestGroup`, the stop words and their constants go. `byRelevance(hits, count)` maps the top results to source-only ideas. `rankByModel` sends `n: index + 1` and maps `n - 1` back.

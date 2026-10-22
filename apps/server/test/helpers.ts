@@ -10,6 +10,7 @@ import { vi } from "vitest";
 import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
+import type { SearchClient, SearchResult } from "../src/lib/tavily.ts";
 import { createDeps, createServer } from "../src/server.ts";
 import type { Deps } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
@@ -34,6 +35,35 @@ export const mockAi = (respond: Parameters<typeof mockModel>[1]) => {
   const ai = genkit({});
   return { ai, model: mockModel(ai, respond) };
 };
+
+// A Tavily result, scored lower the later it's numbered.
+export const searchResult = (
+  n: number,
+  title: string,
+  more: Partial<SearchResult> = {}
+): SearchResult => ({
+  content: `Snippet ${n}`,
+  id: `r${n}`,
+  publishedDate: "",
+  score: 1 - n / 100,
+  title,
+  url: `https://news.example/${n}`,
+  ...more,
+});
+
+// A Tavily client whose every search returns `results`.
+export const fakeTavily = (results: SearchResult[]) => ({
+  search: vi.fn<SearchClient["search"]>(
+    async (query) =>
+      await Promise.resolve({
+        images: [],
+        query,
+        requestId: "test",
+        responseTime: 0,
+        results,
+      })
+  ),
+});
 
 // A client talking to a fresh wovain server over an in-memory transport.
 // Services in `deps` replace the ones built from `env`.

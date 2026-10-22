@@ -63,7 +63,7 @@ wovain makes its own model calls through [Genkit](https://genkit.dev), with the 
 | Call | When | What it does |
 | --- | --- | --- |
 | `judge_design` | The design playbook calls it before every design widget | Scores the design brief (idea, blank, placement, colors, artwork size and transparency, listing, coach line) against wovain's print and listing rules. Returns a verdict, one check per rule, up to 5 fixes and a coach line, checked by a zod schema. Code decides print size, transparency, title length and color count itself, and those results override the model. |
-| `research_trends` | When the merchant has no idea yet, after the Tavily searches | Turns this week's news into 3 to 5 tee ideas. It cites results by number, and code turns the numbers into Tavily's links, so every link is real. Without the key, code ranks the trends itself. |
+| `research_trends` | When the merchant has no idea yet, after the Tavily searches | Turns this week's news into 3 to 5 tee ideas. It cites results by number, and code turns the numbers into Tavily's links, so every link is real. Without the key, the ideas are Tavily's most relevant results, one link each. |
 
 To run it:
 
