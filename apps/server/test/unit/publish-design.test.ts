@@ -37,6 +37,7 @@ const fakeFourthwall = (options: { fail?: string[] } = {}) => {
           : { customizationId: id, offerId: `off_${id}` }
       ),
     }),
+    "ecommerce_get-current-shop": () => ({ shop: { baseUrl: shopUrl } }),
     "ecommerce_get-offers-by-ids": (args) => ({
       offers: ids(args["offerIds"]).map((id) => ({
         id,
@@ -60,15 +61,16 @@ const save = async (patch: Partial<Design>) => {
 describe("publishDesign", () => {
   test("a single product is created, priced, made public and linked", async () => {
     const { call, calls } = fakeFourthwall();
-    const patch = await publishDesign(hero, { call, save, shopUrl });
+    const patch = await publishDesign(hero, { call, save });
     expect(calls.map((item) => item.tool)).toEqual([
+      "ecommerce_get-current-shop",
       "ecommerce_create-offers-from-designs",
       "ecommerce_bulk-update-offer-variant-prices",
       "ecommerce_update-offer-status",
       "ecommerce_get-offers-by-ids",
     ]);
-    expect(calls[1]?.args).toEqual({ offerId: "off_cus_1", price: 30 });
-    expect(calls[2]?.args).toEqual({ offerId: "off_cus_1", status: "PUBLIC" });
+    expect(calls[2]?.args).toEqual({ offerId: "off_cus_1", price: 30 });
+    expect(calls[3]?.args).toEqual({ offerId: "off_cus_1", status: "PUBLIC" });
     expect(patch).toEqual({
       productUrl: `${shopUrl}/products/slug-off_cus_1`,
       range: [],
@@ -79,9 +81,9 @@ describe("publishDesign", () => {
     const { call, calls } = fakeFourthwall();
     const patch = await publishDesign(
       { ...hero, dropName: "Cat Club", range: [mug] },
-      { call, save, shopUrl }
+      { call, save }
     );
-    expect(calls[0]?.args).toEqual({
+    expect(calls[1]?.args).toEqual({
       customizationIds: ["cus_1", "cus_mug"],
       offerDescriptions: ["Two lines.", "Tea with the cat."],
       offerNames: ["Japanese Cat Sunset Tee", "Cat Sunset Mug"],
@@ -127,21 +129,21 @@ describe("publishDesign", () => {
     saved.length = 0;
     const { call, calls } = fakeFourthwall({ fail: ["cus_mug"] });
     const design = { ...hero, range: [mug] };
-    const failure = publishDesign(design, { call, save, shopUrl });
+    const failure = publishDesign(design, { call, save });
     await expect(failure).rejects.toBeInstanceOf(PublishRefusedError);
     await expect(failure).rejects.toThrow(
       "Fourthwall didn't create Cat Sunset Mug (print area missing)"
     );
     expect(saved[0]).toMatchObject({ productId: "off_cus_1" });
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
 
     // The retry creates only the mug and reuses the tee.
     const retry = fakeFourthwall();
     await publishDesign(
       { ...design, productId: "off_cus_1" },
-      { call: retry.call, save, shopUrl }
+      { call: retry.call, save }
     );
-    expect(retry.calls[0]?.args).toMatchObject({
+    expect(retry.calls[1]?.args).toMatchObject({
       customizationIds: ["cus_mug"],
     });
   });
@@ -155,11 +157,47 @@ describe("publishDesign", () => {
         productId: "off_cus_1",
         range: [{ ...mug, offerId: "off_cus_mug" }],
       },
-      { call, save, shopUrl }
+      { call, save }
     );
     const tools = calls.map((item) => item.tool);
     expect(tools).not.toContain("ecommerce_create-offers-from-designs");
     expect(tools).not.toContain("ecommerce_create-collection");
     expect(calls.at(-1)?.args).toMatchObject({ collectionId: "cltn_old" });
+  });
+
+  test("a price Fourthwall refuses per variant stops the publish", async () => {
+    const { call } = fakeFourthwall();
+    const refusing: FourthwallCall = async (tool, args) =>
+      tool === "ecommerce_bulk-update-offer-variant-prices"
+        ? await Promise.resolve({ results: [{ bulkError: "price too low" }] })
+        : await call(tool, args);
+    await expect(publishDesign(hero, { call: refusing, save })).rejects.toThrow(
+      "price too low"
+    );
+  });
+
+  test("a create reply wovain can't read stops before saving anything", async () => {
+    saved.length = 0;
+    const { call } = fakeFourthwall();
+    const odd: FourthwallCall = async (tool, args) =>
+      tool === "ecommerce_create-offers-from-designs"
+        ? await Promise.resolve({ something: "else" })
+        : await call(tool, args);
+    await expect(publishDesign(hero, { call: odd, save })).rejects.toThrow(
+      "Couldn't read Fourthwall's reply"
+    );
+    expect(saved).toEqual([]);
+  });
+
+  test("no shop address stops before creating anything", async () => {
+    const calls: string[] = [];
+    const noShop: FourthwallCall = async (tool) => {
+      calls.push(tool);
+      return await Promise.resolve({});
+    };
+    await expect(publishDesign(hero, { call: noShop, save })).rejects.toThrow(
+      "shop's address"
+    );
+    expect(calls).toEqual(["ecommerce_get-current-shop"]);
   });
 });

@@ -9,7 +9,7 @@ import { Input } from "@openai/apps-sdk-ui/components/Input";
 import { lowPrints, printQuality } from "@wovain/shared/design";
 import type { Design } from "@wovain/shared/design";
 import { money } from "@wovain/shared/economics";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import { useAction } from "../lib/use-action.ts";
 import { ActionError } from "../lib/widget-shell.tsx";
@@ -17,10 +17,13 @@ import { DropRange, LowPrintNote, PrintLine } from "./drop-range.tsx";
 import { PricingSettings } from "./pricing-settings.tsx";
 import type { PricingValues } from "./pricing-settings.tsx";
 import { Sizes } from "./sizes.tsx";
+import { useFollow } from "./use-follow.ts";
 
 export interface DesignWidgetActions {
-  // Posts "Approve design dN" so ChatGPT runs the Fourthwall publish.
+  // Opens the browser tab where the merchant confirms the approval.
   onApprove: (design: Design) => Promise<void>;
+  // Once confirmed: posts "Approve design dN" so the chat publishes.
+  onConfirmed: (design: Design) => Promise<void>;
   onFeedback: (design: Design, feedback: string) => Promise<void>;
   // Asks ChatGPT to open the product in Fourthwall's designer.
   onOpenDesigner: (design: Design) => Promise<void>;
@@ -250,7 +253,7 @@ const Actions = ({
         className="wovain-accent"
         color="primary"
         disabled={lowQuality || locked}
-        loading={publishing}
+        loading={publishing || busy === "approve"}
         onClick={onApprove}
       >
         {design.status === "rejected" ? "Try again" : approve}
@@ -319,6 +322,7 @@ export const DesignWidgetView = ({
   design: initialDesign,
   initialFeedback,
   onApprove,
+  onConfirmed,
   onFeedback,
   onFeedbackDraft,
   onOpenDesigner,
@@ -334,21 +338,13 @@ export const DesignWidgetView = ({
   const [color, setColor] = useState(() => firstInStock(initialDesign));
   const [feedback, setFeedback] = useState(initialFeedback ?? "");
   const { busy, failed, run: act } = useAction<NonNullable<Busy>>();
-
-  // While Fourthwall publishes in the chat, follow the stored state.
-  useEffect(() => {
-    const refresh = async () => {
-      setDesign(await poll(design));
-    };
-    const timer = setInterval(() => {
-      if (design.status === "publishing") {
-        void refresh();
-      }
-    }, pollMs);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [design, poll, pollMs]);
+  const { confirming, startConfirming } = useFollow({
+    design,
+    onConfirmed,
+    poll,
+    pollMs,
+    setDesign,
+  });
 
   // Runs one widget action; a failure returns the widget to where it was.
   const run = async (kind: Busy, action: () => Promise<void>) => {
@@ -389,13 +385,13 @@ export const DesignWidgetView = ({
       ) : null}
       {done ? null : (
         <Actions
-          busy={busy}
+          busy={confirming ? "approve" : busy}
           design={design}
           feedback={feedback}
           onApprove={() => {
             void run("approve", async () => {
-              setDesign({ ...design, status: "publishing" });
               await onApprove(design);
+              startConfirming();
             });
           }}
           onFeedback={() => {

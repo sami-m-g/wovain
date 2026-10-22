@@ -1,19 +1,19 @@
-import { dropTotals, lowPrints, printQuality } from "@wovain/shared/design";
+import {
+  dropTotals,
+  lowPrints,
+  printQuality,
+  printsOf,
+} from "@wovain/shared/design";
 import type { Design, RangeProduct } from "@wovain/shared/design";
 import { money } from "@wovain/shared/economics";
 import { useId } from "react";
 
 type Product = Design | RangeProduct;
 
-const placementsOf = (product: Product) => [
-  { ...product.placement, artwork: product.artwork },
-  ...product.extraPlacements,
-];
-
 // "Front · large center · 12×16 in + Back · neck mark · 3×3 in"
 export const PrintLine = ({ product }: { product: Product }) => (
   <dd className="m-0">
-    {placementsOf(product)
+    {printsOf(product)
       .map((item) => `${item.area} · ${item.style} · ${item.printSize}`)
       .join(" + ")}
   </dd>
@@ -24,7 +24,7 @@ const marginLine = ({ quote }: Product) =>
 
 const RangeCard = ({ product }: { product: RangeProduct }) => {
   const [mockup] = product.mockups;
-  const blurry = placementsOf(product).some(
+  const blurry = printsOf(product).some(
     (item) => printQuality(item.artwork) === "low"
   );
   return (
@@ -44,7 +44,7 @@ const RangeCard = ({ product }: { product: RangeProduct }) => {
           {product.blank.name}
         </p>
         <p className="text-secondary m-0 text-xs">
-          {placementsOf(product)
+          {printsOf(product)
             .map((item) => item.area)
             .join(" + ")}
         </p>
@@ -107,9 +107,7 @@ export const DropRange = ({ design }: { design: Design }) => {
 // Approve stays off while any print in the drop would come out blurry; the
 // hero's main print has its own message.
 export const LowPrintNote = ({ design }: { design: Design }) => {
-  const others = lowPrints(design).filter(
-    (item) => item.artwork !== design.artwork
-  );
+  const others = lowPrints(design).filter((item) => !item.hero);
   return others.length === 0 ? null : (
     <p className="text-danger mt-3 text-sm">
       {`Some art is too small for its print and would come out blurry: ${others

@@ -5,7 +5,6 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   designResultSchema,
   designSchema,
-  designStatusSchema,
   MAX_RANGE,
   quoteResultSchema,
   rangeProductSchema,
@@ -16,6 +15,7 @@ import type { SizeCost } from "@wovain/shared/economics";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
+import { rejectDesign } from "../lib/approval.ts";
 import { uploadArtwork } from "../lib/fetch-image.ts";
 import { readImageInfo } from "../lib/image.ts";
 import { loadArtwork } from "../lib/load-artwork.ts";
@@ -93,30 +93,67 @@ const designInputSchema = designSchema
       .default([]),
   });
 
+type DesignInput = z.output<typeof designInputSchema>;
+
+const idsOf = (items: { customizationId: string }[]) =>
+  items
+    .map((item) => item.customizationId)
+    .toSorted()
+    .join(",");
+
 // The design to save: every product priced, and a product already created
 // on an earlier try keeps its offer.
 const pricedDesign = (
-  input: z.output<typeof designInputSchema>,
+  input: DesignInput,
   settings: Settings,
-  stored: Design | undefined
+  stored?: Design
 ) => {
   const offerOf = (customizationId: string) =>
     stored?.range.find((item) => item.customizationId === customizationId)
       ?.offerId;
+  const range = input.range.map((product) => {
+    const offerId = offerOf(product.customizationId);
+    return {
+      ...product,
+      quote: quoteFor(product.sizes, settings),
+      ...(offerId === undefined ? {} : { offerId }),
+    };
+  });
+  // The hero's offer belongs to its customization, and the collection to
+  // the drop's exact products: a redraw that changes them starts afresh.
+  const kept =
+    stored?.customizationId === input.customizationId ? stored : undefined;
+  const sameDrop =
+    kept !== undefined && idsOf(kept.range) === idsOf(input.range);
   return {
     ...input,
+    ...(kept?.productId === undefined ? {} : { productId: kept.productId }),
+    ...(sameDrop && kept.collectionId !== undefined
+      ? { collectionId: kept.collectionId }
+      : {}),
     quote: quoteFor(input.sizes, settings),
-    range: input.range.map((product) => {
-      const offerId = offerOf(product.customizationId);
-      return {
-        ...product,
-        quote: quoteFor(product.sizes, settings),
-        ...(offerId === undefined ? {} : { offerId }),
-      };
-    }),
+    range,
     rejectCount: stored?.rejectCount ?? 0,
     status: "draft" as const,
   };
+};
+
+// Saves a design the agent shows: a new one, or a redraw that replaces the
+// stored design whole in one transaction (approval, links and the rejection
+// reason go; offers that still match stay).
+const saveShown = async (store: Store, input: DesignInput) => {
+  const settings = await store.getSettings();
+  if (input.id === undefined) {
+    return await store.saveDesign(pricedDesign(input, settings));
+  }
+  return await store.replaceDesign(input.id, (stored) => {
+    if (stored.approval?.claimedAt !== undefined) {
+      throw new Error(
+        `Design ${stored.id} is being published; redraw it after.`
+      );
+    }
+    return pricedDesign(input, settings, stored);
+  });
 };
 
 const artworkOutput = z.object({
@@ -276,13 +313,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       title: "Show design widget",
     },
     async (input) => {
-      const [settings, stored] = await Promise.all([
-        store.getSettings(),
-        input.id === undefined ? undefined : store.getDesign(input.id),
-      ]);
-      const design = await store.saveDesign(
-        pricedDesign(input, settings, stored)
-      );
+      const design = await saveShown(store, input);
       return {
         content: text(
           `Showing design ${design.id}. Wait for the merchant to approve, skip or give feedback on the widget.`
@@ -305,31 +336,23 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         readOnlyHint: false,
       },
       description:
-        "Record a design's state: publishing when you start the Fourthwall publish, live with productId and productUrl once it is public, rejected with the reason if Fourthwall refuses, skipped when the merchant skips. The design widget updates itself from this.",
+        "Record a design as skipped (the merchant skipped it) or rejected (Fourthwall refused it outside publish_design, with the reason). The design widget updates itself from this. Approving and publishing happen only through the widget and publish_design.",
       inputSchema: z.object({
         id: z.string(),
-        productId: z.string().optional(),
-        productUrl: z.url().optional(),
-        rejectReason: z.string().optional(),
-        status: designStatusSchema,
+        rejectReason: z.string().min(1).optional(),
+        status: z.enum(["rejected", "skipped"]),
       }),
       outputSchema: designResultSchema,
       title: "Record design state",
     },
-    async ({ id, productId, productUrl, rejectReason, status }) => {
-      const current = await store.requireDesign(id);
-      const patch: Partial<Design> = { status };
-      if (productId !== undefined) {
-        patch.productId = productId;
-      }
-      if (productUrl !== undefined) {
-        patch.productUrl = productUrl;
-      }
-      if (status === "rejected") {
-        patch.rejectCount = current.rejectCount + 1;
-        patch.rejectReason = rejectReason ?? "No reason given";
-      }
-      const design = await store.updateDesign(id, patch);
+    async ({ id, rejectReason, status }) => {
+      const design =
+        status === "rejected"
+          ? await rejectDesign(store, id, {
+              counted: true,
+              reason: rejectReason ?? "No reason given",
+            })
+          : await store.updateDesign(id, { status });
       return {
         content: text(`Design ${id} is ${status}.`),
         structuredContent: { design },

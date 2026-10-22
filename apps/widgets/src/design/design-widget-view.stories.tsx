@@ -255,6 +255,9 @@ const meta = preview.meta({
     onApprove: fn(async () => {
       await Promise.resolve();
     }),
+    onConfirmed: fn(async () => {
+      await Promise.resolve();
+    }),
     onFeedback: fn(async () => {
       await Promise.resolve();
     }),
@@ -459,6 +462,26 @@ export const SkipFails = meta.story({
       "That didn’t go through"
     );
     await expect(canvas.getByRole("button", { name: "Approve" })).toBeEnabled();
+  },
+});
+
+// Approve opens the browser confirmation; once the merchant confirms there,
+// the design turns publishing and the widget tells the chat.
+export const ApproveWaitsForConfirmation = meta.story({
+  args: {
+    poll: fn(
+      async () =>
+        await Promise.resolve({ ...design, status: "publishing" as const })
+    ),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Approve" }));
+    await expect(args.onApprove).toHaveBeenCalledOnce();
+    await waitFor(async () => {
+      await expect(args.onConfirmed).toHaveBeenCalledOnce();
+    });
+    await expect(canvas.getByText("Publishing…")).toBeVisible();
   },
 });
 

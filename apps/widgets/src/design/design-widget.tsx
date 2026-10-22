@@ -22,11 +22,19 @@ const widgetSchema = z.object({ feedback: z.string() });
 // Widget buttons can only call wovain, so Fourthwall steps go through the chat:
 // the widget posts a short message and the design playbook does the rest.
 const actionsFor = (app: App): DesignWidgetActions => ({
+  // Approve is confirmed outside the chat: the merchant signs in to wovain in
+  // a browser tab and presses Confirm there. The widget follows the design
+  // and calls onConfirmed once it's approved.
   onApprove: async (design) => {
-    await callTool(app, designResultSchema, "record_design", {
-      id: design.id,
-      status: "publishing",
-    });
+    const { confirmUrl } = await callTool(
+      app,
+      z.object({ confirmUrl: z.url() }),
+      "approval_link",
+      { id: design.id }
+    );
+    await app.openLink({ url: confirmUrl });
+  },
+  onConfirmed: async (design) => {
     await say(app, `Approve design ${design.id}`);
   },
   onFeedback: async (design, feedback) => {

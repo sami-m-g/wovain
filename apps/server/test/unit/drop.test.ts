@@ -38,5 +38,5 @@ test("a blurry print anywhere in the drop is named", () => {
       },
     ],
   });
-  expect(low).toEqual([{ area: "Back", artwork: small, product: "White mug" }]);
+  expect(low).toEqual([{ area: "Back", hero: false, product: "White mug" }]);
 });

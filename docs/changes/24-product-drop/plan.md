@@ -16,6 +16,16 @@ Spec: [spec.md](spec.md)
 - Tests: `test/unit/publish-design.test.ts`, `test/unit/art-plan.test.ts`, `test/unit/economics.test.ts` (drop totals), `test/integration/design-tools.test.ts`.
 - Docs: `docs/prd.md`, `docs/spec.md`, `docs/app-map.html` where they describe the design step.
 
+Added after the security review (see verify.md):
+
+- `apps/server/src/lib/approval.ts` (new): content hash, approve (server-side only), claim, release, reject.
+- `apps/server/src/lib/browser-confirm.ts` (new) and `apps/server/src/routes/confirm.ts` (new): the out-of-band confirmation (single-use link, AuthKit sign-in in the browser bound by a cookie, summary page, same-site Confirm POST with a single-use secret). Reusable for other confirmations.
+- `apps/server/src/tools/publish.ts`: `approval_link` and `publish_design` (moved out of `tools/design.ts`).
+- `apps/server/src/store.ts`: `replaceDesign`, a transactional read-and-replace.
+- Wiring: `runtime.ts`, `app.ts`, `http.ts`, `routes/mcp.ts`, `server.ts`; `lib/oauth-client.ts` lists `/confirm/callback` in wovain's client metadata.
+- `record_design` accepts only `rejected` and `skipped`.
+- Tests: `test/integration/confirm.test.ts`; approval tests in `design-tools.test.ts`; `connect.test.ts` expects the new redirect URI.
+
 ## Order of work
 
 1. Shared schema and helpers.

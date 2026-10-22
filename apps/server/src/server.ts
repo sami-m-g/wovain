@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
 import { createAi } from "./lib/ai.ts";
+import type { BrowserConfirm } from "./lib/browser-confirm.ts";
 import { designJudgeFor } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import { trendResearchFor } from "./lib/trends.ts";
@@ -21,10 +22,16 @@ import { registerWidgets } from "./widgets.ts";
 
 // What the tools call upstream, built once per process: HTTP mode builds a
 // server per request. One Genkit instance serves every model call. The
-// upstream client reaches each merchant's own Fourthwall and fal.
-export const createDeps = (env: Env, upstream?: Upstream) => {
+// upstream client reaches each merchant's own Fourthwall and fal; confirm
+// makes the browser links merchants approve designs through.
+export const createDeps = (
+  env: Env,
+  upstream?: Upstream,
+  confirm?: BrowserConfirm
+) => {
   const ai = createAi(env.NEBIUS_API_KEY);
   return {
+    confirm,
     designJudge: designJudgeFor(ai),
     trendResearch: trendResearchFor(env.TAVILY_API_KEY, ai),
     upstream,
@@ -36,7 +43,7 @@ export type Deps = ReturnType<typeof createDeps>;
 export const createServer = (
   env: Env,
   store: Store,
-  { designJudge, trendResearch, upstream, videoPricing }: Deps
+  { confirm, designJudge, trendResearch, upstream, videoPricing }: Deps
 ) => {
   const server = new McpServer(
     {
@@ -62,7 +69,7 @@ export const createServer = (
   registerSettingsTools(server, store, videoPricing);
   registerDesignTools(server, store);
   registerArtTools(server, store, upstream);
-  registerPublishTools(server, store, upstream);
+  registerPublishTools(server, store, { confirm, upstream });
   registerJudgeTools(server, designJudge);
   registerResearchTools(server, trendResearch);
   registerAdTools(server, store, videoPricing, upstream);

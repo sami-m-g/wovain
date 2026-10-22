@@ -2,14 +2,16 @@ import { Hono } from "hono";
 import { html } from "hono/html";
 
 import { siteUrl } from "./auth/env.ts";
+import { createConfirmRoutes } from "./routes/confirm.ts";
 import { createConnectRoutes } from "./routes/connect.ts";
 import { createMcpRoute } from "./routes/mcp.ts";
 import type { Runtime } from "./runtime.ts";
+import { createStore } from "./store.ts";
 
 // Every route wovain serves: /mcp for agents, the metadata naming AuthKit as
 // its sign-in, and the home page. AuthKit hosts sign-in and consent.
 export const createApp = (runtime: Runtime) => {
-  const { auth, authEnv, connect } = runtime;
+  const { auth, authEnv, confirm, connect, storage } = runtime;
   const site = siteUrl(authEnv);
   const mcp = createMcpRoute(runtime);
 
@@ -20,6 +22,18 @@ export const createApp = (runtime: Runtime) => {
   // Merchants connect their Fourthwall and fal accounts here.
   if (connect !== undefined) {
     app.route("/", createConnectRoutes({ ...connect, site }));
+  }
+
+  // Merchants confirm a design's approval in the browser here.
+  if (confirm !== undefined) {
+    app.route(
+      "/",
+      createConfirmRoutes({
+        confirm,
+        site,
+        storeFor: (userId) => createStore(storage.db, storage.media, userId),
+      })
+    );
   }
 
   // Agents look for /mcp's metadata at

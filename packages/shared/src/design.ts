@@ -92,11 +92,24 @@ export const rangeProductSchema = z.object({
 });
 export type RangeProduct = z.infer<typeof rangeProductSchema>;
 
-// Fourthwall's get-offers-by-ids takes 10 ids; the hero is one of them.
+// A drop is the hero plus up to 7 products: 8 offers, within the 10 ids
+// Fourthwall's get-offers-by-ids reads in one call.
 export const MAX_RANGE = 7;
+
+// The merchant's approval, confirmed in their browser after signing in to
+// wovain, tied to the exact content approved (a hash of every product's
+// customization, price and listing). Publishing claims it, so two publishes
+// can't run at once.
+const approvalSchema = z.object({
+  at: z.iso.datetime(),
+  claimedAt: z.iso.datetime().optional(),
+  hash: z.string().min(1),
+});
+export type Approval = z.infer<typeof approvalSchema>;
 
 export const designSchema = z.object({
   ...productFields,
+  approval: approvalSchema.optional(),
   coach: z.string().min(1).max(160),
   // The Fourthwall collection that groups a drop once it's published.
   collectionId: z.string().optional(),
@@ -122,17 +135,21 @@ export const printQuality = (artwork: Artwork) =>
   artwork.widthPx >= artwork.requiredPx ? "high" : "low";
 
 // Every product in the drop, the hero first.
-const dropProducts = (design: Design) => [design, ...design.range];
+export const dropProducts = (design: Design) => [design, ...design.range];
+
+// Every print on a product, its main placement first.
+export const printsOf = (product: Design | RangeProduct) => [
+  { ...product.placement, artwork: product.artwork, main: true },
+  ...product.extraPlacements.map((item) => ({ ...item, main: false })),
+];
 
 // Each print in the drop that would come out blurry, named for the widget.
+// `hero` marks the hero's main print, which the widget reports on its own.
 export const lowPrints = (design: Design) =>
-  dropProducts(design).flatMap((product) =>
-    [
-      { area: product.placement.area, artwork: product.artwork },
-      ...product.extraPlacements,
-    ].flatMap(({ area, artwork }) =>
+  dropProducts(design).flatMap((product, index) =>
+    printsOf(product).flatMap(({ area, artwork, main }) =>
       printQuality(artwork) === "low"
-        ? [{ area, artwork, product: product.blank.name }]
+        ? [{ area, hero: index === 0 && main, product: product.blank.name }]
         : []
     )
   );

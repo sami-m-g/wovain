@@ -153,6 +153,21 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
         ).length;
         return { ad, waiting: ad.status === "draft" ? waiting + 1 : waiting };
       }),
+    // Reads and replaces a design in one transaction: `change` sees the
+    // stored copy, may throw to refuse, and returns the whole new design
+    // (fields it leaves out are removed).
+    replaceDesign: async (
+      id: string,
+      change: (current: Design) => Omit<Design, "id">
+    ) =>
+      await transaction(
+        async (tx) =>
+          await designs.put(
+            id,
+            { ...change(await requireDesign(id, tx)), id },
+            tx
+          )
+      ),
     requireDesign: async (id: string): Promise<Design> =>
       await requireDesign(id),
     saveAd: async (ad: Ad) => await ads.put(ad.designId, ad),

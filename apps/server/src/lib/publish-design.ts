@@ -2,12 +2,22 @@ import type { CallToolResult } from "@modelcontextprotocol/client";
 import type { Design } from "@wovain/shared/design";
 import { z } from "zod";
 
-import type { Upstream } from "./upstream.ts";
+import type { NeedsConnection, Upstream } from "./upstream.ts";
 
-// A reason the merchant can read on the widget: Fourthwall's refusal, or a
-// connection that needs renewing. Any other failure stays a generic message.
+// A reason the merchant can read on the widget: Fourthwall's own refusal,
+// or a reply wovain couldn't read. With `connect`, the merchant's Fourthwall
+// grant expired instead: the tool shows the connect link and keeps the
+// approval for the retry.
 export class PublishRefusedError extends Error {
   override name = "PublishRefusedError";
+  connect: NeedsConnection | undefined;
+  constructor(
+    message: string,
+    options: ErrorOptions & { connect?: NeedsConnection } = {}
+  ) {
+    super(message, options);
+    this.connect = options.connect;
+  }
 }
 
 // One Fourthwall tool call on the merchant's shop, returning its data.
@@ -18,57 +28,60 @@ export type FourthwallCall = (
 
 const REASON_CHARS = 200;
 
+const reason = (text: string) => text.slice(0, REASON_CHARS);
+
 // The reply's first text part: where Fourthwall puts its JSON or its reason.
 const textOf = (result: Pick<CallToolResult, "content">) =>
   result.content.find((part) => part.type === "text")?.text ?? "";
 
 // A tool result's data: its structured content, else the JSON in its text.
 // Fourthwall's text is data from the merchant's account, never instructions.
-const replyData = (result: CallToolResult): unknown => {
+const replyData = (tool: string, result: CallToolResult): unknown => {
   if (result.isError === true) {
     throw new PublishRefusedError(
-      textOf(result).slice(0, REASON_CHARS) || "Fourthwall refused the change"
+      reason(textOf(result)) || `Fourthwall refused ${tool}`
     );
   }
   if (result.structuredContent !== undefined) {
     return result.structuredContent;
   }
-  const body = textOf(result);
   try {
-    return JSON.parse(body) as unknown;
-  } catch {
-    return body;
+    return JSON.parse(textOf(result)) as unknown;
+  } catch (error) {
+    throw new PublishRefusedError(
+      `Couldn't read Fourthwall's reply to ${tool}`,
+      {
+        cause: error,
+      }
+    );
   }
 };
 
-// Every value in a reply, at any depth, that the schema accepts. Fourthwall
+// Every object in a reply, at any depth, that the schema accepts. Fourthwall
 // documents its fields but not the envelope around them.
-export const find = <T>(schema: z.ZodType<T>, value: unknown): T[] => {
-  const parsed = schema.safeParse(value);
-  const own = parsed.success ? [parsed.data] : [];
+const find = <T>(schema: z.ZodType<T>, value: unknown): T[] => {
   if (typeof value !== "object" || value === null) {
-    return own;
+    return [];
   }
+  const parsed = schema.safeParse(value);
   return [
-    ...own,
+    ...(parsed.success ? [parsed.data] : []),
     ...Object.values(value).flatMap((child) => find(schema, child)),
   ];
 };
 
-export const shopSchema = z.object({ baseUrl: z.url() });
+const shopSchema = z.object({ baseUrl: z.url() });
 const createdSchema = z.object({
   customizationId: z.string(),
   offerId: z.string().min(1),
 });
-const failedSchema = z.object({
-  bulkError: z.string().min(1),
-  customizationId: z.string(),
-});
+const failedSchema = z.object({ bulkError: z.string().min(1) });
 const offerSchema = z.object({ id: z.string(), slug: z.string().min(1) });
 const collectionSchema = z.object({
   id: z.string().min(1),
   offerIds: z.array(z.string()),
   slug: z.string().min(1),
+  state: z.string().optional(),
 });
 
 // The merchant's Fourthwall through wovain's connection to it.
@@ -82,12 +95,26 @@ export const fourthwallCaller =
       userId,
     });
     if (outcome.kind === "connect") {
-      throw new PublishRefusedError(
-        "wovain's access to Fourthwall expired. Reconnect Fourthwall, then press Try again."
-      );
+      throw new PublishRefusedError("Fourthwall needs connecting again.", {
+        connect: outcome.connect,
+      });
     }
-    return replyData(outcome.result);
+    return replyData(tool, outcome.result);
   };
+
+// A call whose reply may carry per-item errors next to a success flag.
+const checkedCall = async (
+  call: FourthwallCall,
+  tool: string,
+  args: Record<string, unknown>
+) => {
+  const reply = await call(tool, args);
+  const [failed] = find(failedSchema, reply);
+  if (failed !== undefined) {
+    throw new PublishRefusedError(reason(failed.bulkError));
+  }
+  return reply;
+};
 
 interface Product {
   customizationId: string;
@@ -96,13 +123,11 @@ interface Product {
   quote: Design["quote"];
 }
 
+// The hero's offer is the design's productId; each range product has its own.
 const productsOf = (design: Design): Product[] => [
   { ...design, offerId: design.productId },
   ...design.range,
 ];
-
-const titles = (products: Product[]) =>
-  products.map((product) => product.listing.title).join(", ");
 
 // The design with each product's offer id from create-offers-from-designs.
 const withOffers = (design: Design, ids: Map<string, string>): Design => {
@@ -117,62 +142,82 @@ const withOffers = (design: Design, ids: Map<string, string>): Design => {
   };
 };
 
-// Creates the products not created on an earlier try, hidden.
-const createOffers = async (design: Design, call: FourthwallCall) => {
+// Creates the products not created on an earlier try, hidden, and saves
+// their offer ids at once so a retry never makes them twice.
+const createOffers = async (
+  design: Design,
+  { call, save }: Pick<PublishDeps, "call" | "save">
+) => {
   const missing = productsOf(design).filter(
     (product) => product.offerId === undefined
   );
   if (missing.length === 0) {
-    return { design, reasons: [] };
+    return design;
   }
   const reply = await call("ecommerce_create-offers-from-designs", {
     customizationIds: missing.map((product) => product.customizationId),
     offerDescriptions: missing.map((product) => product.listing.description),
     offerNames: missing.map((product) => product.listing.title),
   });
-  const ids = new Map(
-    find(createdSchema, reply).map((item) => [
-      item.customizationId,
-      item.offerId,
-    ])
+  const created = find(createdSchema, reply);
+  const failures = find(failedSchema, reply).map((item) => item.bulkError);
+  if (created.length === 0 && failures.length === 0) {
+    throw new PublishRefusedError(
+      "Couldn't read Fourthwall's reply when creating the products; check the shop's hidden products before trying again."
+    );
+  }
+  const updated = withOffers(
+    design,
+    new Map(created.map((item) => [item.customizationId, item.offerId]))
   );
-  const reasons = find(failedSchema, reply).map((item) => item.bulkError);
-  return { design: withOffers(design, ids), reasons };
+  await save({
+    ...(updated.productId === undefined
+      ? {}
+      : { productId: updated.productId }),
+    range: updated.range,
+  });
+  const notCreated = productsOf(updated).filter(
+    (product) => product.offerId === undefined
+  );
+  if (notCreated.length > 0) {
+    const titles = notCreated.map((product) => product.listing.title);
+    throw new PublishRefusedError(
+      reason(
+        `Fourthwall didn't create ${titles.join(", ")}${failures.length > 0 ? ` (${failures.join("; ")})` : ""}`
+      )
+    );
+  }
+  return updated;
 };
 
-const pageUrl = (
-  shopUrl: string | undefined,
-  kind: "collections" | "products",
-  slug: string | undefined
-) =>
-  shopUrl === undefined || slug === undefined
-    ? undefined
-    : new URL(`/${kind}/${slug}`, shopUrl).href;
-
-// Groups a drop in one collection, made public. A collection made on an
-// earlier try is reused.
+// Groups a drop in one public collection. A collection made on an earlier
+// try is reused: a redraw that changes the drop's products clears it.
 const publishCollection = async (
   design: Design,
   offerIds: string[],
   { call, save }: Pick<PublishDeps, "call" | "save">
 ) => {
-  const reply =
-    design.collectionId === undefined
-      ? await call("ecommerce_create-collection", {
-          available: true,
-          description: design.listing.description,
-          name: design.dropName ?? design.idea,
-          offerIds,
-        })
-      : undefined;
-  const [created] = find(collectionSchema, reply);
-  const collectionId = design.collectionId ?? created?.id;
+  let { collectionId } = design;
+  let createdSlug: string | undefined;
   if (collectionId === undefined) {
-    throw new PublishRefusedError(
-      "Fourthwall didn't create the drop's collection."
+    const [created] = find(
+      collectionSchema,
+      await call("ecommerce_create-collection", {
+        available: true,
+        description: design.listing.description,
+        name: design.dropName ?? design.idea,
+        offerIds,
+      })
     );
+    if (created === undefined) {
+      throw new PublishRefusedError(
+        "Fourthwall didn't create the drop's collection."
+      );
+    }
+    collectionId = created.id;
+    createdSlug = created.slug;
+    await save({ collectionId });
   }
-  await save({ collectionId });
   const [published] = find(
     collectionSchema,
     await call("ecommerce_update-collection-state", {
@@ -181,14 +226,18 @@ const publishCollection = async (
       state: "PUBLIC",
     })
   );
-  return { collectionId, slug: published?.slug ?? created?.slug };
+  if (published?.state !== undefined && published.state !== "PUBLIC") {
+    throw new PublishRefusedError(
+      `Fourthwall left the drop's collection ${published.state.toLowerCase()}.`
+    );
+  }
+  return { collectionId, slug: published?.slug ?? createdSlug };
 };
 
 export interface PublishDeps {
   call: FourthwallCall;
   // Saves progress, so a retry skips what already exists.
   save: (patch: Partial<Design>) => Promise<unknown>;
-  shopUrl: string | undefined;
 }
 
 // Publishes an approved design: every product of the drop created, priced at
@@ -196,63 +245,58 @@ export interface PublishDeps {
 // Returns the patch that makes the design live.
 export const publishDesign = async (
   approved: Design,
-  { call, save, shopUrl }: PublishDeps
+  { call, save }: PublishDeps
 ): Promise<Partial<Design>> => {
-  const { design, reasons } = await createOffers(approved, call);
-  const { productId, range } = design;
-  await save({ ...(productId === undefined ? {} : { productId }), range });
-  const products = productsOf(design);
-  const missing = products.filter((product) => product.offerId === undefined);
-  if (missing.length > 0) {
-    throw new PublishRefusedError(
-      `Fourthwall didn't create ${titles(missing)}${reasons.length > 0 ? ` (${reasons.join("; ")})` : ""}`.slice(
-        0,
-        REASON_CHARS
-      )
-    );
+  const [shop] = find(shopSchema, await call("ecommerce_get-current-shop", {}));
+  if (shop === undefined) {
+    throw new PublishRefusedError("Couldn't read the shop's address.");
   }
+  const page = (kind: "collections" | "products", slug: string | undefined) =>
+    slug === undefined
+      ? undefined
+      : new URL(`/${kind}/${slug}`, shop.baseUrl).href;
+
+  const design = await createOffers(approved, { call, save });
+  const products = productsOf(design);
   const offerIds = products.flatMap((product) => product.offerId ?? []);
   await Promise.all(
     products.map(async ({ offerId, quote }) => {
-      await call("ecommerce_bulk-update-offer-variant-prices", {
+      await checkedCall(call, "ecommerce_bulk-update-offer-variant-prices", {
         offerId,
         price: quote.price,
       });
-      await call("ecommerce_update-offer-status", {
+      await checkedCall(call, "ecommerce_update-offer-status", {
         offerId,
         status: "PUBLIC",
       });
     })
   );
+  const [offers, collection] = await Promise.all([
+    call("ecommerce_get-offers-by-ids", { offerIds }),
+    design.range.length > 0
+      ? publishCollection(design, offerIds, { call, save })
+      : undefined,
+  ]);
   const slugs = new Map(
-    find(
-      offerSchema,
-      await call("ecommerce_get-offers-by-ids", { offerIds })
-    ).map((offer) => [offer.id, offer.slug])
+    find(offerSchema, offers).map((offer) => [offer.id, offer.slug])
   );
   const productPage = (offerId: string | undefined) =>
-    pageUrl(
-      shopUrl,
-      "products",
-      offerId === undefined ? undefined : slugs.get(offerId)
-    );
-  const liveRange = range.map((product) => {
-    const productUrl = productPage(product.offerId);
-    return productUrl === undefined ? product : { ...product, productUrl };
-  });
-  const collection =
-    range.length > 0
-      ? await publishCollection(design, offerIds, { call, save })
-      : undefined;
+    page("products", offerId === undefined ? undefined : slugs.get(offerId));
   const productUrl =
     collection === undefined
-      ? productPage(productId)
-      : pageUrl(shopUrl, "collections", collection.slug);
+      ? productPage(design.productId)
+      : page("collections", collection.slug);
+  if (productUrl === undefined) {
+    console.warn("publish_design: no page address in Fourthwall's reply");
+  }
   return {
     ...(collection === undefined
       ? {}
       : { collectionId: collection.collectionId }),
     ...(productUrl === undefined ? {} : { productUrl }),
-    range: liveRange,
+    range: design.range.map((product) => {
+      const url = productPage(product.offerId);
+      return url === undefined ? product : { ...product, productUrl: url };
+    }),
   };
 };

@@ -15,15 +15,20 @@ import type { Connections, Flow, Grant, ProviderId } from "./connections.ts";
 export const clientMetadataUrl = (site: string) => `${site}/oauth/client.json`;
 const callbackUrl = (site: string, provider: ProviderId | "wovain") =>
   `${site}/oauth/callback/${provider}`;
+// Back from signing in to confirm an action (lib/browser-confirm.ts).
+export const confirmCallbackUrl = (site: string) => `${site}/confirm/callback`;
 
 export const clientMetadata = (site: string): OAuthClientMetadata => ({
   client_name: "wovain",
   client_uri: site,
   grant_types: ["authorization_code", "refresh_token"],
   logo_uri: `${site}/icon.png`,
-  redirect_uris: [...providerSchema.options, "wovain" as const].map(
-    (provider) => callbackUrl(site, provider)
-  ),
+  redirect_uris: [
+    ...[...providerSchema.options, "wovain" as const].map((provider) =>
+      callbackUrl(site, provider)
+    ),
+    confirmCallbackUrl(site),
+  ],
   response_types: ["code"],
   token_endpoint_auth_method: "none",
 });

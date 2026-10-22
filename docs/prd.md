@@ -172,7 +172,8 @@ Source: `scope.md > The POC boundary` (Design, Listing).
   - Art is generated per placement on my fal account (a hero, a back print, a small mark, a wordmark), each matched to the hero so the drop is one style, with a shared palette across garments.
   - wovain prices every product from Fourthwall's per-size costs with my pricing rule; the agent can't set a price.
   - Approve stays off while any print in the drop would come out blurry.
-  - Approve creates every product, sets its price, makes it public and groups the drop in one Fourthwall collection; nothing is created before I approve. The live link opens the collection.
+  - Approve opens a wovain page in my browser: I sign in, see every product with its price, profit and margin, and press Confirm. Only that confirms; a redraw afterwards needs a new Approve.
+  - Then wovain creates every product, sets its price, makes it public and groups the drop in one Fourthwall collection; nothing is created before I confirm. The live link opens the collection.
 
 ### Pricing and economics
 
