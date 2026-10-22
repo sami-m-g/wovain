@@ -1,0 +1,78 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sverweij/dependency-cruiser/main/src/schema/configuration.schema.json",
+  "forbidden": [
+    {
+      "name": "no-circular",
+      "comment": "A cycle means two modules are really one; merge them or move the shared part down.",
+      "severity": "error",
+      "from": {},
+      "to": { "circular": true }
+    },
+    {
+      "name": "no-unresolvable",
+      "comment": "An import the resolver can't find would slip past every other rule.",
+      "severity": "error",
+      "from": {},
+      "to": { "couldNotResolve": true, "pathNot": "^virtual:" }
+    },
+    {
+      "name": "shared-is-a-leaf",
+      "comment": "packages/shared holds the zod schemas and pure logic both apps use; it imports neither app.",
+      "severity": "error",
+      "from": { "path": "^packages/shared/" },
+      "to": { "path": "^apps/" }
+    },
+    {
+      "name": "widgets-never-import-server",
+      "comment": "Widgets run in the agent's iframe; they get data through tool results and packages/shared types, never server code.",
+      "severity": "error",
+      "from": { "path": "^apps/widgets/" },
+      "to": { "path": "^apps/server/" }
+    },
+    {
+      "name": "server-never-imports-widgets",
+      "comment": "The server serves the built widgets from disk (WOVAIN_WIDGETS_DIR); it doesn't import their source.",
+      "severity": "error",
+      "from": { "path": "^apps/server/" },
+      "to": { "path": "^apps/widgets/" }
+    },
+    {
+      "name": "lib-below-tools",
+      "comment": "apps/server/src/lib is the layer under the MCP tools and playbooks; it never reaches up into them.",
+      "severity": "error",
+      "from": { "path": "^apps/server/src/lib/" },
+      "to": { "path": "^apps/server/src/(tools|playbooks|routes|pages)/" }
+    },
+    {
+      "name": "tools-dont-import-tools",
+      "comment": "Each tool file stands alone; logic two tools share belongs in lib/ or packages/shared.",
+      "severity": "error",
+      "from": { "path": "^apps/server/src/tools/([^/]+)\\.ts$" },
+      "to": {
+        "path": "^apps/server/src/tools/",
+        "pathNot": "^apps/server/src/tools/$1\\.ts$"
+      }
+    },
+    {
+      "name": "no-test-code-in-src",
+      "comment": "Production code never imports tests, stories or mocks.",
+      "severity": "error",
+      "from": {
+        "path": "^(apps|packages)/[^/]+/src/",
+        "pathNot": "\\.(test|stories)\\.tsx?$"
+      },
+      "to": { "path": "(\\.(test|stories)\\.tsx?$|/test/|/mocks/)" }
+    }
+  ],
+  "options": {
+    "doNotFollow": { "path": "node_modules" },
+    "exclude": { "path": "(^|/)(dist|node_modules|infra/sdks)/" },
+    "tsPreCompilationDeps": true,
+    "tsConfig": { "fileName": "tsconfig.base.json" },
+    "enhancedResolveOptions": {
+      "exportsFields": ["exports"],
+      "conditionNames": ["import", "require", "node", "default", "types"],
+      "extensions": [".ts", ".tsx", ".js", ".json"]
+    }
+  }
+}

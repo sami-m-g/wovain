@@ -18,7 +18,39 @@ export default defineConfig({
   ],
   jsPlugins: jsPlugins.jsPlugins,
   options: { typeAware: true },
-  // Pulumi declares a resource by constructing it; the object isn't needed.
-  overrides: [{ files: ["infra/**"], rules: { "no-new": "off" } }],
+  overrides: [
+    // Pulumi declares a resource by constructing it; the object isn't needed.
+    { files: ["infra/**"], rules: { "no-new": "off" } },
+    // Size limits cover source only. Describe blocks, stories and resource
+    // lists grow with what they cover.
+    {
+      files: ["infra/**", "**/*.test.ts", "**/*.stories.tsx"],
+      rules: {
+        "max-lines": "off",
+        "max-lines-per-function": "off",
+        "max-params": "off",
+      },
+    },
+  ],
+  // Complexity ratchet: each limit sits at the current worst source offender,
+  // so new code can't exceed it. Lower a limit when you refactor that file; never raise one.
+  // complexity 18: widgets/settings/settings-widget-view.tsx
+  // max-depth 2: several files, e.g. server/routes/mcp.ts
+  // max-lines 428: widgets/design/design-widget-view.tsx
+  // max-lines-per-function 225: server/tools/design.ts
+  // max-params 4: widgets/lib/bridge.ts, server/tools/ads.ts, server/lib/video-plan.ts
+  rules: {
+    complexity: ["error", 18],
+    "max-depth": ["error", 2],
+    "max-lines": [
+      "error",
+      { max: 428, skipBlankLines: true, skipComments: true },
+    ],
+    "max-lines-per-function": [
+      "error",
+      { max: 225, skipBlankLines: true, skipComments: true },
+    ],
+    "max-params": ["error", 4],
+  },
   settings: jsPluginSettings,
 });

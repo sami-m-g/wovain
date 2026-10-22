@@ -12,6 +12,8 @@ verify:
     - pnpm check
     - pnpm typecheck
     - pnpm knip
+    - pnpm arch
+    - pnpm dupes
     - pnpm test
 
 # The store and tool tests run on the Firestore and Storage emulators, which
