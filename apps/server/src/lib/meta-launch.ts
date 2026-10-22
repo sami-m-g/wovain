@@ -106,7 +106,8 @@ const adSetProblems = (entity: Entity, countries: string) => [
 const idOf = (entity: Entity) => text(entity["ad_object_id"]);
 
 // The draft read back (ads_get_ad_entities, object_state "draft"): the IDs
-// to publish (only recorded ones) and what doesn't match.
+// to publish (recorded and read back) and what doesn't match, including any
+// recorded object Meta didn't return.
 export const checkDraft = (
   reply: unknown,
   staged: Staged,
@@ -122,7 +123,11 @@ export const checkDraft = (
     ...staged.ads.map((ad) => ad.id),
   ]);
   const campaign = found.find((entity) => idOf(entity) === staged.campaignId);
+  const readBack = new Set(found.map((entity) => idOf(entity)));
   const problems = [
+    ...[...recorded].flatMap((id) =>
+      readBack.has(id) ? [] : [`${id} wasn't read back`]
+    ),
     ...found.flatMap((entity) =>
       recorded.has(idOf(entity))
         ? []
@@ -139,7 +144,11 @@ export const checkDraft = (
       ? ["an ad set or ad has its own budget, cap or bid"]
       : []),
   ];
-  return { objectIds: [...recorded], problems };
+  // Only objects both recorded and read back; any gap is a problem above.
+  return {
+    objectIds: [...recorded].filter((id) => readBack.has(id)),
+    problems,
+  };
 };
 
 // The creatives read back (ads_get_creatives): each one wovain made must

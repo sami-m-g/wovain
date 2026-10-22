@@ -16,12 +16,12 @@
   - `meta_ads` refuses `ads_activate_entity`.
   - The model alone can't launch: `request_launch` returns only the confirm link, and `launch_campaign` refuses without a confirmation.
   - A confirmed launch publishes only the recorded objects, once.
-  - It stops when the read-back has an object wovain didn't stage, a different budget, objective, spend cap, ad-set targeting or bid strategy, or a changed creative link, video or Page.
+  - It stops when the read-back has an object wovain didn't stage or lacks a recorded one, a different budget, objective, spend cap, ad-set targeting or bid strategy, or a changed creative link, video or Page.
 - `test/integration/app.test.ts`: `/privacy` and `/data-deletion` answer 200.
 
 ## Checks run
 
-All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm test` (86), `pnpm test:integration` (117), `pnpm build`, `pnpm --filter @wovain/widgets test:stories` (32). No `pulumi up` or `infra:preview` was run.
+All pass: `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm test` (86), `pnpm test:integration` (118), `pnpm build`, `pnpm --filter @wovain/widgets test:stories` (32). No `pulumi up` or `infra:preview` was run.
 
 ## Review findings
 

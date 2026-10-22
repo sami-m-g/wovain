@@ -504,6 +504,7 @@ interface ReadBack {
   campaign?: Record<string, unknown>;
   creative?: Record<string, unknown>;
   extra?: Record<string, unknown>[];
+  withoutAd?: boolean;
 }
 const readBack = (fake: ReturnType<typeof fakeUpstream>, over: ReadBack) => {
   fake.reply("ads_get_ad_entities", {
@@ -519,7 +520,7 @@ const readBack = (fake: ReturnType<typeof fakeUpstream>, over: ReadBack) => {
         targeting: { geo_locations: { countries: ["US"] } },
         ...over.adSet,
       },
-      { ad_object_id: "777" },
+      ...(over.withoutAd === true ? [] : [{ ad_object_id: "777" }]),
       ...(over.extra ?? []),
     ],
   });
@@ -603,6 +604,7 @@ test("a confirmed launch publishes only what wovain staged, once", async () => {
 
 test.each<[string, ReadBack]>([
   ["an object wovain didn't stage", { extra: [{ ad_object_id: "999" }] }],
+  ["a recorded ad missing", { withoutAd: true }],
   ["a budget that isn't the plan's", { campaign: { daily_budget: "999999" } }],
   ["another objective", { campaign: { objective: "OUTCOME_TRAFFIC" } }],
   ["a spend cap", { campaign: { spend_cap: "100000" } }],
