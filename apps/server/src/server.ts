@@ -15,6 +15,7 @@ import { registerCampaignTools } from "./tools/campaign.ts";
 import { registerConnectionTools } from "./tools/connections.ts";
 import { registerDesignTools } from "./tools/design.ts";
 import { registerJudgeTools } from "./tools/judge.ts";
+import { registerMetaCampaignTools } from "./tools/meta.ts";
 import { registerPublishTools } from "./tools/publish.ts";
 import { registerResearchTools } from "./tools/research.ts";
 import { registerSettingsTools } from "./tools/settings.ts";
@@ -77,6 +78,7 @@ export const createServer = (
     metaAppSecret: env.META_APP_SECRET,
     upstream,
   });
+  registerMetaCampaignTools(server, store, upstream);
   registerConnectionTools(server, store, upstream);
   registerPlaybooks(server);
   return server;

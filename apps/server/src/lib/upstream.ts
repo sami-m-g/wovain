@@ -304,14 +304,22 @@ export const createUpstream = ({
   const disconnect = async (userId: string, id: ProviderId) =>
     await connections.remove(userId, id);
 
+  // Whether the merchant has a grant for `id` (no decrypt).
+  const connected = async (userId: string, id: ProviderId) =>
+    (await connections.version(userId, id)) !== undefined;
+
   return {
     accessToken,
+    // The merchant's press of Launch, which launch_campaign needs to spend.
+    approveLaunch: connections.createLaunchTicket,
     authorize,
     call,
     configured,
     connectUrl,
+    connected,
     disconnect,
     finishConnect,
+    redeemLaunch: connections.redeemLaunchTicket,
   };
 };
 

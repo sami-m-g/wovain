@@ -1,7 +1,7 @@
 // The campaign step, as the agent follows it. Served by get_playbook and as an MCP prompt.
 export const campaign = {
   description:
-    'Build and launch the merchant\'s one Meta Advantage+ sales campaign from the ad widgets they added, with wovain\'s five automated rules. Use after the last ad widget is added or skipped, and when a chat message says "Launch the wovain campaign" or "I fixed the campaign blockers, check again".',
+    'Build and launch the merchant\'s one Meta Advantage+ sales campaign from the ad widgets they added, with wovain\'s five automated rules. Use after the last ad widget is added or skipped, and when a chat message says "I launched the wovain campaign, check that it\'s live", "Launch the wovain campaign" or "I fixed the campaign blockers, check again".',
   text: `One Advantage+ sales campaign holds every added ad. It's built as a Meta draft, so nothing spends until the merchant presses **Launch** on the campaign widget. Every Meta Ads call needs \`advertiser_job: "create_and_launch_new_ads"\` and the same \`client_conversation_id\`.
 
 ## Which Meta tools
@@ -9,8 +9,8 @@ export const campaign = {
 wovain reaches the merchant's Meta account itself:
 
 - **Reads** (accounts, Pages, pixels, drafts, videos, previews): wovain \`meta_ads\` with \`tool\` = the Meta tool name below and \`arguments\` = its arguments.
-- **Draft objects** (uploads, campaign, ad set, creatives, ads): wovain \`campaign_draft\` with \`tool\` and \`arguments\` the same way. Meta stages each object paused; wovain sets the campaign budget from the plan and hides Meta's widgets.
-- **Publishing**: wovain \`launch_campaign\`, only after the merchant presses Launch.
+- **Draft objects** (uploads, campaign, ad set, creatives, ads): wovain \`campaign_draft\` with \`tool\` and \`arguments\` the same way, using only the arguments listed in step 4 (it refuses any other key). Meta stages each object paused; wovain sets the campaign budget from the plan and hides Meta's widgets.
+- **Publishing**: you never publish. The campaign widget's Launch button publishes through wovain itself.
 
 If \`meta_ads\` answers with \`needsConnection\`, show the merchant the link and wait until they say they're done. Until wovain's Meta app passes Meta's App Review, only people with a role on that app can connect. If the merchant can't connect, or \`meta_ads\` says wovain's Meta app isn't set up, use the host's own Meta Ads connector for every \`ads_*\` call below instead (pass \`hide_ui: true\` on its create and upload calls), and launch with its \`ads_activate_entity\` on the campaign with \`publish_as_active: true\`. Rules then need the merchant's Meta connection to wovain; without one, add a blocker for them.
 
@@ -30,13 +30,17 @@ If \`meta_ads\` answers with \`needsConnection\`, show the merchant the link and
 5. **Rules.** wovain \`create_rules\` with the ad account ID and the campaign ID. It also records the campaign for Launch. If it answers with \`needsConnection\` or says wovain's Meta app isn't set up, add that as a blocker with its fix.
 6. **Widget.** wovain \`show_campaign_widget\` with \`status: "ready"\` (or \`"blocked"\` with the blockers), the ad account ID and the campaign ID. Say one line: what's built and that nothing spends until Launch. Then stop and wait.
 
+## "I launched the wovain campaign, check that it's live"
+
+The merchant pressed Launch and wovain published the campaign. Read back with \`ads_get_ad_entities\` (live) through \`meta_ads\`. If published, wovain \`show_campaign_widget\` with \`status: "live"\`. If Meta refused (most often the payment method), \`status: "blocked"\` with Meta's reason as the issue and its fix.
+
 ## "Launch the wovain campaign"
 
-The merchant pressed Launch, which is their go-ahead to spend.
+Only when the merchant uses the host's Meta Ads connector (the widget sends this message then). The merchant pressed Launch, which is their go-ahead to spend.
 
-1. \`ads_get_ad_entities\` through \`meta_ads\` with \`object_state: "draft"\` and the campaign ID, to collect the ad set and ad IDs.
-2. wovain \`launch_campaign\` with the chat's \`client_conversation_id\` and those IDs as \`objectIds\`. It publishes the recorded campaign with them.
-3. Read back with \`ads_get_ad_entities\` (live) through \`meta_ads\`. If published, wovain \`show_campaign_widget\` with \`status: "live"\`. If Meta refuses (most often the payment method), \`status: "blocked"\` with Meta's reason as the issue and its fix.
+1. \`ads_get_ad_entities\` with \`object_state: "draft"\` and the campaign ID to collect the campaign, ad set and ad IDs.
+2. \`ads_activate_entity\` on the campaign with those \`object_ids\` and \`publish_as_active: true\`.
+3. Read back as above.
 
 ## "I fixed the campaign blockers, check again"
 

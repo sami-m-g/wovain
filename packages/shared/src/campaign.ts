@@ -23,6 +23,9 @@ export const campaignSchema = z.object({
   blockers: z.array(blockerSchema).default([]),
   campaignId: z.string().optional(),
   dailyBudget: z.number().positive(),
+  // "wovain": Launch publishes through wovain (the merchant connected Meta to
+  // wovain); "chat": the agent launches with the host's Meta Ads connector.
+  launchVia: z.enum(["wovain", "chat"]).default("chat"),
   products: z.array(
     z.object({ ads: z.int().min(0), designId: z.string(), title: z.string() })
   ),
@@ -38,3 +41,7 @@ export const campaignSchema = z.object({
 export type Campaign = z.infer<typeof campaignSchema>;
 
 export const campaignResultSchema = z.object({ campaign: campaignSchema });
+
+// approve_launch's reply: the single-use ticket the widget hands to
+// launch_campaign.
+export const launchApprovalSchema = z.object({ launchToken: z.string() });

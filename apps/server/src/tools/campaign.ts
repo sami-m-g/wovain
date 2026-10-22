@@ -6,7 +6,7 @@ import {
   campaignStatusSchema,
 } from "@wovain/shared/campaign";
 import type { Campaign } from "@wovain/shared/campaign";
-import { breakeven, money } from "@wovain/shared/economics";
+import { money } from "@wovain/shared/economics";
 import {
   adName,
   activeRuleLabels,
@@ -17,15 +17,10 @@ import type { MetaRule, RuleLabel, RuleProduct } from "@wovain/shared/rules";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
-import { draftArgs, draftToolSchema } from "../lib/meta-draft.ts";
+import { addedProducts } from "../lib/campaign-plan.ts";
 import { createMetaGraph } from "../lib/meta-graph.ts";
 import { text, userSafe } from "../lib/tool-result.ts";
-import {
-  canReach,
-  connectReply,
-  unreachable,
-  upstreamReply,
-} from "../lib/upstream.ts";
+import { canReach, connectReply, unreachable } from "../lib/upstream.ts";
 import type { Upstream } from "../lib/upstream.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
@@ -33,37 +28,6 @@ import { widgetUri } from "../widgets.ts";
 // Each link carries the ad's ID so Fourthwall sales can be matched to the ad.
 const URL_TAGS =
   "utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}";
-
-// Added ads joined with their design's price, plus the campaign budget and the
-// rule inputs derived from them, for the plan, rules and widget.
-const addedProducts = async (store: Store, settings: Settings) => {
-  const all = await store.getAds();
-  const ads = all.filter((ad) => ad.status === "added");
-  const products = await Promise.all(
-    ads.map(async (ad) => {
-      const design = await store.requireDesign(ad.designId);
-      const math = breakeven(
-        design.quote.price,
-        design.quote.baseCost,
-        settings.economics
-      );
-      return { ad, breakevenPerSale: math.perSale, design };
-    })
-  );
-  if (products.length === 0) {
-    throw new Error(
-      "no ad widgets were added; add at least one before launching"
-    );
-  }
-  return {
-    dailyBudget: settings.campaign.dailyBudgetPerProduct * products.length,
-    products,
-    ruleProducts: products.map(({ ad, breakevenPerSale }) => ({
-      breakevenPerSale,
-      designId: ad.designId,
-    })),
-  };
-};
 
 const ruleDetails = (
   products: RuleProduct[],
@@ -91,97 +55,6 @@ interface MetaDeps {
   upstream?: Upstream | undefined;
 }
 
-// Meta Ads calls wovain makes for the campaign playbook. The agent passes
-// client_conversation_id; advertiser_job is always the launch job.
-const ADVERTISER_JOB = "create_and_launch_new_ads";
-const conversationSchema = z
-  .string()
-  .regex(/^[A-Za-z0-9]{20}$/u)
-  .describe("The client_conversation_id of this chat's Meta Ads calls.");
-
-// Builds the draft and launches it on the merchant's own Meta grant. Every
-// object is staged paused; only launch_campaign publishes.
-const registerMetaCampaignTools = (
-  server: McpServer,
-  store: Store,
-  upstream: Upstream | undefined
-) => {
-  server.registerTool(
-    "campaign_draft",
-    {
-      annotations: {
-        destructiveHint: false,
-        openWorldHint: true,
-        readOnlyHint: false,
-      },
-      description:
-        "Stage one object of the merchant's campaign in their Meta ad account's draft, on the Meta account they connected to wovain: upload a video or image by URL, or create the campaign, the ad set, a creative or an ad. Pass the Meta tool name and its arguments as Meta documents them, with advertiser_job and client_conversation_id. Meta stages every object paused, so nothing spends until launch_campaign. wovain sets the campaign's daily budget from campaign_plan and leaves budgets off the ad set. Needs at least one added ad widget.",
-      inputSchema: z.object({
-        arguments: z.record(z.string(), z.unknown()),
-        tool: draftToolSchema,
-      }),
-      title: "Stage the Meta campaign draft",
-    },
-    async ({ arguments: args, tool }) => {
-      const settings = await store.getSettings();
-      const { dailyBudget } = await addedProducts(store, settings);
-      return await upstreamReply(upstream, {
-        args: draftArgs(tool, args, Math.round(dailyBudget * 100)),
-        id: "meta",
-        tool,
-        userId: store.userId,
-      });
-    }
-  );
-
-  server.registerTool(
-    "launch_campaign",
-    {
-      annotations: {
-        destructiveHint: false,
-        openWorldHint: true,
-        readOnlyHint: false,
-      },
-      description:
-        'Publish the wovain campaign in Meta, which starts spending. Call only when the merchant pressed Launch on the campaign widget (the chat says "Launch the wovain campaign"), never on your own. Publishes the campaign create_rules recorded, with its ad set and ads, on the merchant\'s connected Meta account.',
-      inputSchema: z.object({
-        clientConversationId: conversationSchema,
-        objectIds: z
-          .array(z.string().regex(/^\d+$/u))
-          .max(200)
-          .default([])
-          .describe(
-            "The draft's ad set and ad IDs (ad_object_id from ads_get_ad_entities with object_state draft and the campaign ID). The campaign itself is added."
-          ),
-      }),
-      title: "Launch the campaign",
-    },
-    async ({ clientConversationId, objectIds }) => {
-      const saved = await store.getCampaign();
-      if (saved === undefined) {
-        throw new Error(
-          "No campaign recorded yet: build the draft and call create_rules first."
-        );
-      }
-      return await upstreamReply(upstream, {
-        args: {
-          ad_account_id: saved.adAccountId.replace(/^act_/u, ""),
-          advertiser_job: ADVERTISER_JOB,
-          client_conversation_id: clientConversationId,
-          entity_id: saved.campaignId,
-          entity_type: "campaign",
-          hide_ui: true,
-          object_ids: [...new Set([saved.campaignId, ...objectIds])],
-          publish_as_active: true,
-        },
-        id: "meta",
-        tool: "ads_activate_entity",
-        userId: store.userId,
-      });
-    }
-  );
-};
-
 // Creates the rules that don't exist yet with the merchant's own token, so
 // Graph only lets them touch ad accounts they manage.
 const createMissingRules = async (
@@ -204,8 +77,6 @@ export const registerCampaignTools = (
   store: Store,
   { metaAppSecret, upstream }: MetaDeps
 ) => {
-  registerMetaCampaignTools(server, store, upstream);
-
   server.registerTool(
     "campaign_plan",
     {
@@ -280,8 +151,11 @@ export const registerCampaignTools = (
           rulesCreated: created,
         });
       };
+      // Recorded first, so Launch finds the campaign even when Meta refuses
+      // the rules; rules already in Meta for this campaign stay marked.
+      const saved = await store.getCampaign();
+      await record(saved?.campaignId === campaignId ? saved.rulesCreated : []);
       if (!canReach(upstream, "meta")) {
-        await record([]);
         return unreachable(upstream, "meta");
       }
       const token = await userSafe(
@@ -290,7 +164,6 @@ export const registerCampaignTools = (
         async () => await upstream.accessToken(store.userId, "meta")
       );
       if (token.kind === "connect") {
-        await record([]);
         return connectReply(token.connect);
       }
       await createMissingRules(
@@ -352,6 +225,11 @@ export const registerCampaignTools = (
       );
       const id = campaignId ?? saved?.campaignId;
       const inMeta = new Set(saved?.rulesCreated);
+      const launchVia =
+        canReach(upstream, "meta") &&
+        (await upstream.connected(store.userId, "meta"))
+          ? "wovain"
+          : "chat";
       const campaign: Campaign = {
         ...(account !== undefined &&
           id !== undefined && {
@@ -360,6 +238,7 @@ export const registerCampaignTools = (
         blockers: blockers ?? [],
         ...(id !== undefined && { campaignId: id }),
         dailyBudget,
+        launchVia,
         products: products.map(({ ad }) => ({
           ads: ad.videos.filter((video) => video.status === "ready").length,
           designId: ad.designId,

@@ -29,6 +29,8 @@ export const fakeUpstream = (
   const tokenClients: string[] = [];
   const stats = { refreshes: 0 };
   const mode = { loginNeeded: false };
+  // What a tool answers instead of { ok: true }.
+  const replies = new Map<string, Record<string, unknown>>();
 
   const issue = (user: string) => {
     const access = `at-${randomUUID()}`;
@@ -55,6 +57,7 @@ export const fakeUpstream = (
       "ads_create_campaign",
       "ads_create_ad_set",
       "ads_activate_entity",
+      "ads_get_ad_entities",
     ]) {
       mcp.registerTool(
         name,
@@ -69,7 +72,7 @@ export const fakeUpstream = (
               }
             : {
                 content: [{ text: `${name} ok`, type: "text" as const }],
-                structuredContent: { ok: true },
+                structuredContent: replies.get(name) ?? { ok: true },
               };
         }
       );
@@ -156,6 +159,9 @@ export const fakeUpstream = (
       await app.fetch(new Request(input, init)),
     ownerOf: async (token: string) =>
       await Promise.resolve(accessTokens.get(token)),
+    reply: (name: string, structuredContent: Record<string, unknown>) => {
+      replies.set(name, structuredContent);
+    },
     revokeAll: () => {
       accessTokens.clear();
       refreshTokens.clear();

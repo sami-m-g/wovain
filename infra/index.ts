@@ -352,9 +352,9 @@ new gcp.kms.CryptoKeyIAMMember(
   { dependsOn: infraRoles }
 );
 
-// Pending connect links and OAuth flows expire after 10 minutes; Firestore
-// deletes the leftovers by their expiresAt timestamp.
-for (const collection of ["connectTickets", "oauthFlows"]) {
+// Pending connect links, launch tickets and OAuth flows expire within 10
+// minutes; Firestore deletes the leftovers by their expiresAt timestamp.
+for (const collection of ["connectTickets", "launchTickets", "oauthFlows"]) {
   new gcp.firestore.Field(`ttl-${collection}`, {
     collection,
     database: database.name,
