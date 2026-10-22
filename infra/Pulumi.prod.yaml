@@ -35,15 +35,17 @@ config:
               operator: in
               value: [created]
   # Custom flows from .gitlab/duo/catalog/flows, enabled once synced.
-  wovain:duoCustomFlows:
-    - name: duo-scout
-      file: .gitlab/duo/catalog/flows/scout.yml
-      events: [scheduled]
-      # No schedule: no Duo credits until turned back on.
-      # schedule:
-      #   cron: "0 7 * * *"
-      #   timezone: UTC
-      #   description: wovain scout, daily
+  # Off: enabling a custom flow at project level created no flow trigger (it
+  # likely needs a group-level consumer first), and no Duo credits until turned
+  # back on. The consumer GitLab already has stays, unmanaged and idle.
+  wovain:duoCustomFlows: []
+  #   - name: duo-scout
+  #     file: .gitlab/duo/catalog/flows/scout.yml
+  #     events: [scheduled]
+  #     schedule:
+  #       cron: "0 7 * * *"
+  #       timezone: UTC
+  #       description: wovain scout, daily
   gcp:project: wovain
   gcp:region: us-central1
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
