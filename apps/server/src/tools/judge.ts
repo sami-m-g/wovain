@@ -42,7 +42,7 @@ export const registerJudgeTools = (
         // the logs.
         console.error(
           "judge_design failed:",
-          error instanceof Error ? error.name : typeof error
+          error instanceof Error ? error.name : "unknown"
         );
         throw new Error(
           "The design check failed; show the widget without it.",

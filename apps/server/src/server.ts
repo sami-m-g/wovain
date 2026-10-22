@@ -15,12 +15,14 @@ import { registerSettingsTools } from "./tools/settings.ts";
 import { registerWidgets } from "./widgets.ts";
 
 // HTTP mode builds a server per request, so it passes one shared price cache
-// and one design judge.
+// and one design judge; anything left out is built here.
 export const createServer = (
   env: Env,
   store: Store,
-  videoPricing: VideoPricing = createVideoPricing(env.FAL_KEY),
-  designJudge: DesignJudge | undefined = designJudgeFor(env.NEBIUS_API_KEY)
+  {
+    designJudge = designJudgeFor(env.NEBIUS_API_KEY),
+    videoPricing = createVideoPricing(env.FAL_KEY),
+  }: { designJudge?: DesignJudge | undefined; videoPricing?: VideoPricing } = {}
 ) => {
   const server = new McpServer(
     {

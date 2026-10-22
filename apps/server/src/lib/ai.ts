@@ -2,6 +2,7 @@ import { openAICompatible } from "@genkit-ai/compat-oai";
 import { genkit } from "genkit";
 import type { Genkit } from "genkit";
 import { disableGenkitOTelInitialization } from "genkit/tracing";
+import { z } from "zod";
 
 // Genkit is wovain's one layer for its own model calls. Models run on Nebius
 // Token Factory (OpenAI-compatible); the plugin resolves any
@@ -33,4 +34,37 @@ export const createAi = (apiKey?: string): Genkit | undefined => {
       }),
     ],
   });
+};
+
+// Genkit's schema helpers are zod 3 and wovain's schemas are zod 4, so the
+// schema crosses as JSON Schema (draft 7, which Genkit validates with) and
+// the reply is parsed with the zod 4 schema. Genkit adds the schema to the
+// prompt and to response_format itself.
+export const generateObject = async <T>(
+  ai: Genkit,
+  {
+    model,
+    prompt,
+    schema,
+    system,
+    temperature,
+  }: {
+    model: string;
+    prompt: string;
+    schema: z.ZodType<T>;
+    system: string;
+    temperature?: number;
+  }
+): Promise<T> => {
+  const { $schema: _draft, ...jsonSchema } = z.toJSONSchema(schema, {
+    target: "draft-7",
+  });
+  const response = await ai.generate({
+    config: temperature === undefined ? {} : { temperature },
+    model,
+    output: { format: "json", jsonSchema },
+    prompt,
+    system,
+  });
+  return schema.parse(response.output);
 };

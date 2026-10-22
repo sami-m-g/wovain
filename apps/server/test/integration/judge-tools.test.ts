@@ -7,7 +7,7 @@ import { createDesignJudge } from "../../src/lib/design-judge.ts";
 import {
   connectClient,
   demoBrief,
-  passingJudgment,
+  passingReply,
   testStore,
 } from "../helpers.ts";
 
@@ -36,7 +36,7 @@ test("judge_design without a Nebius key says to skip the check", async () => {
 
 test("judge_design returns the judgment over MCP", async () => {
   const result = await callJudge(
-    judgeWith({ respond: { text: JSON.stringify(passingJudgment) } })
+    judgeWith({ respond: { text: JSON.stringify(passingReply) } })
   );
   expect(result.isError).toBeFalsy();
   const { configured, judgment } = judgeResultSchema.parse(

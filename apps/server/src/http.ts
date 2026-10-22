@@ -19,12 +19,10 @@ export const createMcpFetch = (env: Env, storage: Storage) => {
     if (typeof userId !== "string" || userId === "") {
       throw new Error("no signed-in merchant");
     }
-    return createServer(
-      env,
-      createStore(storage.db, storage.media, userId),
+    return createServer(env, createStore(storage.db, storage.media, userId), {
+      designJudge,
       videoPricing,
-      designJudge
-    );
+    });
   });
   return async (request: Request, authInfo: AuthInfo): Promise<Response> =>
     await handler.fetch(request, { authInfo });

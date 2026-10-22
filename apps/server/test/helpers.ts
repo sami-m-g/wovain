@@ -2,14 +2,13 @@ import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import type { Design } from "@wovain/shared/design";
 import { judgeRuleSchema } from "@wovain/shared/judge";
-import type { DesignBrief, DesignJudgment } from "@wovain/shared/judge";
+import type { DesignBrief, JudgeReply } from "@wovain/shared/judge";
 import { vi } from "vitest";
 
 import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
 import type { DesignJudge } from "../src/lib/design-judge.ts";
-import { createVideoPricing } from "../src/lib/fal-pricing.ts";
 import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
@@ -34,13 +33,7 @@ export const connectClient = async (
   store: Store,
   designJudge?: DesignJudge
 ) => {
-  const parsed = loadEnv(env);
-  const server = createServer(
-    parsed,
-    store,
-    createVideoPricing(parsed.FAL_KEY),
-    designJudge
-  );
+  const server = createServer(loadEnv(env), store, { designJudge });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await server.connect(serverSide);
   const client = new Client({ name: "test", version: "0" });
@@ -128,8 +121,8 @@ export const demoBrief: DesignBrief = {
   placement: demoDesign.placement,
 };
 
-// A judgment that passes every rule, as the model would send it.
-export const passingJudgment: DesignJudgment = {
+// A reply that passes every rule, as the model would send it.
+export const passingReply: JudgeReply = {
   checks: judgeRuleSchema.options.map((rule) => ({
     note: "Fine.",
     pass: true,
@@ -138,5 +131,4 @@ export const passingJudgment: DesignJudgment = {
   coach: "Soft bestseller tee, and the art prints sharp at this size.",
   fixes: [],
   score: 92,
-  verdict: "ready",
 };
