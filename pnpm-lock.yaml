@@ -178,9 +178,15 @@ importers:
       '@genkit-ai/compat-oai':
         specifier: 1.42.0
         version: 1.42.0(genkit@1.42.0(@google-cloud/firestore@7.11.6(supports-color@7.2.0))(firebase-admin@14.5.0(supports-color@7.2.0))(supports-color@7.2.0))(ws@8.22.0)(zod@4.6.7)
+      '@google-cloud/kms':
+        specifier: 6.3.0
+        version: 6.3.0(supports-color@7.2.0)
       '@hono/node-server':
         specifier: 2.1.5
         version: 2.1.5(hono@4.13.13)
+      '@modelcontextprotocol/client':
+        specifier: 2.3.1
+        version: 2.3.1
       '@modelcontextprotocol/ext-apps':
         specifier: 2.0.3
         version: 2.0.3(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/core@2.3.1)(@modelcontextprotocol/server@2.3.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
@@ -224,9 +230,6 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
-      '@modelcontextprotocol/client':
-        specifier: 2.3.1
-        version: 2.3.1
       firebase-tools:
         specifier: 15.34.0
         version: 15.34.0(@cfworker/json-schema@4.1.1)(@types/node@24.19.2)(supports-color@7.2.0)
@@ -809,6 +812,10 @@ packages:
 
   '@google-cloud/firestore@9.3.1':
     resolution: {integrity: sha512-ofGTiSpfXrHrrS3KaDOmsupSzCHr4WVl1+s6Ke0F8rPBRyb/OuZSC8u1NjCKtt/fO7A1GvqASQGhdAwVsnGpQA==}
+    engines: {node: '>=22'}
+
+  '@google-cloud/kms@6.3.0':
+    resolution: {integrity: sha512-hL0J9fZ5TqGLxGH3KE1GuAEEm9Z8+jPFoqR0R46lpS3A/NmoS0p0M4BMBaE7Zev+l5xMmZfveJkNKo4lV/KLEw==}
     engines: {node: '>=22'}
 
   '@google-cloud/logging-api@0.2.0':
@@ -9376,6 +9383,12 @@ snapshots:
       - supports-color
     optional: true
 
+  '@google-cloud/kms@6.3.0(supports-color@7.2.0)':
+    dependencies:
+      google-gax: 6.12.1(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - supports-color
+
   '@google-cloud/logging-api@0.2.0(supports-color@7.2.0)':
     dependencies:
       google-gax: 5.0.8(supports-color@7.2.0)
@@ -14369,7 +14382,6 @@ snapshots:
       retry-request: 9.1.0
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   google-logging-utils@0.0.2: {}
 
@@ -16480,7 +16492,6 @@ snapshots:
   proto3-json-serializer@4.1.0:
     dependencies:
       protobufjs: 7.6.6
-    optional: true
 
   protobufjs@7.6.6:
     dependencies:
@@ -16947,7 +16958,6 @@ snapshots:
   retry-request@9.1.0:
     dependencies:
       extend: 3.0.2
-    optional: true
 
   retry@0.13.1: {}
 

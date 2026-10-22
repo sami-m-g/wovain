@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@genkit-ai/compat-oai": "1.42.0",
+    "@google-cloud/kms": "6.3.0",
     "@hono/node-server": "2.1.5",
+    "@modelcontextprotocol/client": "2.3.1",
     "@modelcontextprotocol/ext-apps": "2.0.3",
     "@modelcontextprotocol/server": "2.3.1",
     "@opentelemetry/api": "1.9.1",
@@ -28,7 +30,6 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "2.3.1",
     "firebase-tools": "15.34.0",
     "vitest": "5.0.5"
   }
