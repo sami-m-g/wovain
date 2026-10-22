@@ -1,11 +1,15 @@
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import type { Design } from "@wovain/shared/design";
+import { judgeRuleSchema } from "@wovain/shared/judge";
+import type { DesignBrief, DesignJudgment } from "@wovain/shared/judge";
 import { vi } from "vitest";
 
 import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
+import type { DesignJudge } from "../src/lib/design-judge.ts";
+import { createVideoPricing } from "../src/lib/fal-pricing.ts";
 import { createServer } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
@@ -27,9 +31,16 @@ export const testStore = (storage: Storage = testStorage()) =>
 // A client talking to a fresh wovain server over an in-memory transport.
 export const connectClient = async (
   env: Record<string, string>,
-  store: Store
+  store: Store,
+  designJudge?: DesignJudge
 ) => {
-  const server = createServer(loadEnv(env), store);
+  const parsed = loadEnv(env);
+  const server = createServer(
+    parsed,
+    store,
+    createVideoPricing(parsed.FAL_KEY),
+    designJudge
+  );
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await server.connect(serverSide);
   const client = new Client({ name: "test", version: "0" });
@@ -95,4 +106,37 @@ export const demoDesign: Omit<Design, "id"> = {
   rejectCount: 0,
   sizes: [{ baseCost: 17.7, inStock: true, size: "M" }],
   status: "live",
+};
+
+// The demo tee as judge_design's brief, with three in-stock colors.
+export const demoBrief: DesignBrief = {
+  artwork: demoDesign.artwork,
+  artworkDescription: "An orange cat silhouette against a red setting sun.",
+  blank: demoDesign.blank,
+  coach: demoDesign.coach,
+  colors: [
+    { hex: "#111111", inStock: true, name: "Black" },
+    { hex: "#1f2a44", inStock: true, name: "Navy" },
+    { hex: "#f5f5f0", inStock: true, name: "White" },
+  ],
+  idea: demoDesign.idea,
+  listing: {
+    description:
+      "A calm cat watches the sun go down over Mount Fuji. For anyone who loves cats and quiet evenings.",
+    title: "Japanese Cat Sunset Tee, Retro Mount Fuji Graphic",
+  },
+  placement: demoDesign.placement,
+};
+
+// A judgment that passes every rule, as the model would send it.
+export const passingJudgment: DesignJudgment = {
+  checks: judgeRuleSchema.options.map((rule) => ({
+    note: "Fine.",
+    pass: true,
+    rule,
+  })),
+  coach: "Soft bestseller tee, and the art prints sharp at this size.",
+  fixes: [],
+  score: 92,
+  verdict: "ready",
 };

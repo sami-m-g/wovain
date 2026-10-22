@@ -3,6 +3,7 @@ import type { AuthInfo } from "@modelcontextprotocol/server";
 
 import type { Env } from "./env.ts";
 import type { Storage } from "./firebase.ts";
+import { designJudgeFor } from "./lib/design-judge.ts";
 import { createVideoPricing } from "./lib/fal-pricing.ts";
 import { createServer } from "./server.ts";
 import { createStore } from "./store.ts";
@@ -12,6 +13,7 @@ import { createStore } from "./store.ts";
 // merchant is refused.
 export const createMcpFetch = (env: Env, storage: Storage) => {
   const videoPricing = createVideoPricing(env.FAL_KEY);
+  const designJudge = designJudgeFor(env.NEBIUS_API_KEY);
   const handler = createMcpHandler(({ authInfo }) => {
     const userId = authInfo?.extra?.["userId"];
     if (typeof userId !== "string" || userId === "") {
@@ -20,7 +22,8 @@ export const createMcpFetch = (env: Env, storage: Storage) => {
     return createServer(
       env,
       createStore(storage.db, storage.media, userId),
-      videoPricing
+      videoPricing,
+      designJudge
     );
   });
   return async (request: Request, authInfo: AuthInfo): Promise<Response> =>

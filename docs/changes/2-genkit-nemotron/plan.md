@@ -10,7 +10,7 @@ Spec: [spec.md](spec.md)
 - `packages/shared/src/judge.ts` (new): `judgeRuleSchema`, `designBriefSchema`, `designJudgmentSchema`, `judgeResultSchema` and their types.
 - `apps/server/src/lib/ai.ts` (new): `createAi(apiKey?)` (Genkit with the `nebius` plugin, Genkit's own OTel startup turned off) and `models.judge`.
 - `apps/server/src/lib/design-judge.ts` (new): `ruleFacts`, `applyFacts` and `createDesignJudge` (the `judgeDesign` flow).
-- `apps/server/src/tools/design.ts`: register `judge_design`, with an optional judge passed in.
+- `apps/server/src/tools/judge.ts` (new): registers `judge_design`, with an optional judge passed in. (Planned for `tools/design.ts`. It moved to its own file because `oxlint.config.ts` caps file and function length at today's worst file, and `design.ts` is close to that cap.) `lib/design-judge.ts` also exports `designJudgeFor(apiKey)`, which `server.ts`, `http.ts` and the live test share.
 - `apps/server/src/server.ts`, `apps/server/src/http.ts`: build the judge once per process and pass it to `registerDesignTools`.
 - `apps/server/src/playbooks/design.ts`: the new "Check" step and its rule.
 - `apps/server/src/env.ts`: `NEBIUS_API_KEY`'s comment only (the key is already optional there).
