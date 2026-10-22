@@ -54,6 +54,12 @@ export const ruleLabels = [
 ] as const;
 export type RuleLabel = (typeof ruleLabels)[number];
 
+// The rules the merchant has on: Alert is the only optional one.
+const isActive = (label: RuleLabel, rules: Settings["rules"]) =>
+  label !== "Alert" || rules.alertAboveBreakeven;
+export const activeRuleLabels = (rules: Settings["rules"]) =>
+  ruleLabels.filter((label) => isActive(label, rules));
+
 export interface RuleProduct {
   breakevenPerSale: number;
   designId: string;
@@ -167,7 +173,7 @@ export const metaRules = ({
   const lowest = Math.min(...products.map((p) => p.breakevenPerSale));
   const campaign = ruleThresholds(lowest, rules);
   const campaignFilters = [is("entity_type", "CAMPAIGN"), inCampaign];
-  return [
+  const all: MetaRule[] = [
     ...perProduct,
     ...designKill,
     {
@@ -210,4 +216,5 @@ export const metaRules = ({
       schedule_spec: { schedule_type: "DAILY" },
     },
   ];
+  return all.filter((rule) => isActive(rule.label, rules));
 };

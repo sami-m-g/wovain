@@ -9,8 +9,8 @@ import type { Campaign } from "@wovain/shared/campaign";
 import { breakeven, money } from "@wovain/shared/economics";
 import {
   adName,
+  activeRuleLabels,
   metaRules,
-  ruleLabels,
   ruleThresholds,
 } from "@wovain/shared/rules";
 import type { RuleLabel, RuleProduct } from "@wovain/shared/rules";
@@ -92,7 +92,7 @@ export const registerCampaignTools = (
         readOnlyHint: true,
       },
       description:
-        "Everything the campaign playbook needs to build the Meta campaign: the daily budget in cents, and for each added ad widget its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags. Call after the last ad widget is added or skipped.",
+        "Everything the campaign playbook needs to build the Meta campaign: the daily budget in cents, and for each added ad widget its product link, copy, static image, finished videos, the ad name for each video (rules find ads by these names) and the URL tags (unless the merchant turned them off). Call after the last ad widget is added or skipped.",
       inputSchema: z.object({}),
       title: "Campaign plan",
     },
@@ -115,7 +115,7 @@ export const registerCampaignTools = (
               : []
           ),
         })),
-        urlTags: URL_TAGS,
+        ...(settings.rules.tagUtmContent && { urlTags: URL_TAGS }),
       };
       return { content: text(JSON.stringify(plan)) };
     }
@@ -239,7 +239,7 @@ export const registerCampaignTools = (
           designId: ad.designId,
           title: ad.productTitle,
         })),
-        rules: ruleLabels.map((label) => ({
+        rules: activeRuleLabels(settings.rules).map((label) => ({
           created: inMeta.has(label),
           detail: details[label],
           label,

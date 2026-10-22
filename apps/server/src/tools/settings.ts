@@ -28,7 +28,7 @@ export const registerSettingsTools = (
     {
       annotations: { readOnlyHint: true },
       description:
-        "Read every wovain setting (pricing, economics, campaign budget, rules, video, audio, Meta). Call before any step that uses a setting.",
+        "Read every wovain setting (pricing, economics, campaign budget, rules, video, audio). Call before any step that uses a setting.",
       outputSchema: settingsResultSchema,
       title: "Get wovain settings",
     },

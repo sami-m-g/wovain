@@ -1,4 +1,4 @@
-import { defaultSettings } from "@wovain/shared/settings";
+import { defaultSettings, settingsSchema } from "@wovain/shared/settings";
 import { describe, expect, test } from "vitest";
 
 import { loadEnv } from "../../src/env.ts";
@@ -64,7 +64,13 @@ describe("settings store", () => {
     expect(settings.rules.killNoSalesMultiple).toBe(3);
     expect(settings.video.model).toBe("h3-max-reference");
     expect(settings.audio.source).toBe("mmaudio");
-    expect(settings.meta.graphApiVersion).toBe("v26.0");
+  });
+
+  test("saved settings with the removed meta group still parse", () => {
+    const parsed = settingsSchema.parse({
+      meta: { aiDisclosure: false, graphApiVersion: "v26.0" },
+    });
+    expect(parsed).toEqual(defaultSettings());
   });
 
   test("a patch changes only the named fields and survives a reload", async () => {
@@ -98,10 +104,8 @@ describe("env", () => {
     const env = loadEnv({
       FAL_BILLING_KEY: "abc",
       FAL_KEY: "",
-      WOVAIN_MOCK: "1",
     });
     expect(env.FAL_KEY).toBeUndefined();
     expect(env.FAL_BILLING_KEY).toBe("abc");
-    expect(env.WOVAIN_MOCK).toBe(true);
   });
 });

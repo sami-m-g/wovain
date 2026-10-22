@@ -122,6 +122,34 @@ test("the five rules carry the PRD thresholds in cents for the demo tee", () => 
   expect(filter(alert, "campaign.id")).toEqual(["555"]);
 });
 
+test("turning off alertAboveBreakeven creates no Alert rule", async () => {
+  const rules = metaRules({
+    campaignId: "555",
+    dailyBudget: 15,
+    products: [{ breakevenPerSale: 10.32, designId: "d1" }],
+    rules: { ...defaultSettings().rules, alertAboveBreakeven: false },
+  });
+  expect(rules.map((rule) => rule.label)).not.toContain("Alert");
+
+  await store.updateSettings({ rules: { alertAboveBreakeven: false } });
+  const client = await connect({});
+  const widget = await client.callTool({
+    arguments: { status: "ready" },
+    name: "show_campaign_widget",
+  });
+  const { campaign } = campaignResultSchema.parse(widget.structuredContent);
+  expect(campaign.rules.map((rule) => rule.label)).not.toContain("Alert");
+  await client.close();
+});
+
+test("turning off tagUtmContent leaves the URL tags out of the plan", async () => {
+  await store.updateSettings({ rules: { tagUtmContent: false } });
+  const client = await connect({});
+  const plan = await client.callTool({ arguments: {}, name: "campaign_plan" });
+  expect(JSON.stringify(plan.content)).not.toContain("utm_");
+  await client.close();
+});
+
 test("the design kill is left to the check-in when a campaign holds two products", () => {
   const rules = metaRules({
     campaignId: "555",
