@@ -2,15 +2,16 @@
 #   verify    build; lint, types, dead code, tests; widget stories
 #   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
 #   deploy    main: sync custom Duo flows to the AI Catalog, pulumi up
-#             (infra/), then push to the GitHub mirror and roll out on
-#             Firebase App Hosting
+#             (infra/), then upload the source to Firebase App Hosting and
+#             roll it out
 #   monitor   smoke-test the live OAuth chain
-#   release   semantic-release: version, CHANGELOG, GitLab release; GitHub mirror
+#   release   semantic-release: version, CHANGELOG, GitLab release; then
+#             push main and tags to the GitHub mirror
 # Renovate runs on the "Renovate dependency updates" pipeline schedule.
-# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY (all masked),
+# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY,
 # FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
-# GCP_DEPLOY_SERVICE_ACCOUNT, SITE_URL
-# (values: `pulumi stack output` in infra/).
+# GCP_DEPLOY_SERVICE_ACCOUNT, SITE_URL, GITLAB_OBSERVABILITY_EXPORT. Pulumi sets
+# them all (infra/index.ts); don't edit them in the UI.
 
 workflow:
   rules:

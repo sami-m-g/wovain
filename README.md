@@ -45,7 +45,7 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional: send traces to GitLab Observability (unset sends nothing) | GitLab group → Observe → Observability configuration |
 | `OTEL_EXPORTER_OTLP_HEADERS` | Optional: the auth header for that endpoint, as `key=value` | Same page |
 
-The other keys in `.env.example` aren't used yet. Storage needs no keys: locally `pnpm dev` starts the Firestore and Storage emulators, and on App Hosting the server finds its Firebase project and bucket on its own.
+Storage needs no keys: locally `pnpm dev` starts the Firestore and Storage emulators, and on App Hosting the server finds its Firebase project and bucket on its own.
 
 ## Connect an agent
 
@@ -71,17 +71,34 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 
 Git hooks (Lefthook) run fix and typecheck on commit, commitlint on the message, and tests, knip and story tests on push.
 
-The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a mirror that CI keeps on `main`; App Hosting builds from the mirror. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
+The code lives on [GitLab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase), with [GitHub](https://github.com/sami-m-g/wovain) as a read-only mirror that CI keeps on `main`; nothing builds from it. GitLab CI/CD (`.gitlab-ci.yml`) runs, in order:
 
 | Stage | What runs |
 | --- | --- |
 | verify | Build, lint, typecheck, knip, tests, card stories (in parallel) |
 | test | GitLab SAST, Secret Detection and Dependency Scanning |
-| deploy | `main` only: push to GitHub, then an App Hosting rollout of that commit |
+| deploy | `main` only: `pulumi up` (`infra/`), then upload the source to App Hosting and roll it out |
 | monitor | A smoke test of the live OAuth chain |
-| release | semantic-release, after the smoke test passes, then push the release commit and tags to GitHub |
+| release | semantic-release, after the smoke test passes; then `main` and its tags are pushed to GitHub, even if an earlier job failed |
 
-It needs the CI variables `GITLAB_TOKEN`, `RENOVATE_TOKEN`, `GITHUB_MIRROR_KEY` (all masked; a GitHub deploy key), `FIREBASE_PROJECT_ID`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_INFRA_SERVICE_ACCOUNT`, `GCP_DEPLOY_SERVICE_ACCOUNT` (Workload Identity Federation, so no Google key is stored) and `SITE_URL` (the App Hosting URL); `pulumi stack output` in `infra/` prints their values. `GITLAB_TOKEN` also lets `infra:production` manage the Duo flow triggers and `catalog-sync` sync the custom flows.
+## Infrastructure as code
+
+`infra/` (Pulumi, `pnpm infra:preview` then `pnpm infra:up`, which CI runs on `main`) declares:
+
+- **Google Cloud and Firebase**: APIs, Firestore and its rules, the media bucket and its Storage rules, Secret Manager, App Hosting, service accounts and IAM, Workload Identity Federation for CI (no Google key is stored), and the budget (`infra/index.ts`).
+- **GitLab** (`infra/gitlab.ts`, `infra/duo.ts`): every CI/CD variable, the `production` and `infrastructure` environments, the Renovate schedule, and the Duo flow triggers and custom flows.
+- **The GitHub mirror** (`infra/github.ts`): repository settings, the deploy key CI pushes with (a generated key pair, which also becomes `GITHUB_MIRROR_KEY`), and a ruleset that lets only that key change `main`.
+
+The tokens are stack secrets, encrypted with the KMS key (`pulumi config set --secret <name>` in `infra/`): `gitlab:token` (Pulumi's GitLab access, `api`), `github:token` (a fine-grained token for the mirror repository: Administration read/write), `gitlab-ci-token` (`GITLAB_TOKEN` for semantic-release and the AI Catalog sync) and `renovate-token` (`RENOVATE_TOKEN`). Each is a separate personal access token, since the Developer+ role can't create project access tokens.
+
+Still set by hand, since no API or provider covers them (or the role can't reach them):
+
+| Where | What |
+| --- | --- |
+| WorkOS dashboard | CIMD, dynamic client registration and the `<site>/mcp` resource indicator (Connect → Configuration), sign-in methods. `smoke:production` fails if CIMD or registration is off |
+| GitLab, Maintainer only | Protected branches, tags and environments, merge request settings (such as merging only after the pipeline passes), Duo's automatic review and SAST flows |
+| Google Cloud, once | The Pulumi state bucket `wovain-pulumi-state` and the `pulumi/stack-secrets` KMS key, which this stack needs before it can run |
+| Meta, Fourthwall, fal | The accounts, Page, pixel, payment method and API keys (keys go in as stack secrets) |
 
 ## Releases
 

@@ -4,6 +4,9 @@ import { readFileSync } from "node:fs";
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { mirrorPrivateKey } from "./github.ts";
+import { ciVariables, environments } from "./gitlab.ts";
+
 // wovain's Google Cloud project: App Hosting runs apps/server, Firestore and a
 // private bucket hold each merchant's records and artwork, Secret Manager holds
 // the keys, and GitLab CI deploys through Workload Identity Federation.
@@ -28,6 +31,7 @@ const apis = [
   "firebase",
   "firebaseapphosting",
   "firebaserules",
+  "firebasestorage",
   "firestore",
   "iam",
   "iamcredentials",
@@ -43,6 +47,13 @@ const apis = [
     })
 );
 const afterApis = { dependsOn: apis };
+
+// Firebase was added to the project by hand at first; adopted, never removed.
+const firebase = new gcp.firebase.Project(
+  "firebase",
+  { project },
+  { ...afterApis, import: project, protect: true, retainOnDelete: true }
+);
 
 // Records: one Firestore database; clients are refused by firestore.rules.
 const database = new gcp.firestore.Database(
@@ -89,16 +100,41 @@ const media = new gcp.storage.Bucket(
   },
   afterApis
 );
+// Linked to Firebase only so storage.rules applies, which refuses every client.
+const mediaLink = new gcp.firebase.StorageBucket(
+  "media",
+  { bucketId: media.name },
+  { dependsOn: [firebase, ...apis] }
+);
+const storageRules = new gcp.firebaserules.Ruleset(
+  "storage-rules",
+  {
+    source: {
+      files: [
+        {
+          content: readFileSync(
+            new URL("../apps/server/storage.rules", import.meta.url),
+            "utf-8"
+          ),
+          name: "storage.rules",
+        },
+      ],
+    },
+  },
+  { dependsOn: [mediaLink] }
+);
+new gcp.firebaserules.Release("storage-release", {
+  name: pulumi.interpolate`firebase.storage/${media.name}`,
+  rulesetName: pulumi.interpolate`projects/${project}/rulesets/${storageRules.name}`,
+});
 
 // The names match apphosting.yaml. Each value is stack config encrypted with
 // the KMS key in Pulumi.prod.yaml: `pulumi config set --secret <name>`; a
 // secret without a value gets no version (App Hosting won't build until it has
 // one).
 const secretNames = [
+  "fal-billing-key",
   "fal-key",
-  "meta-ad-account-id",
-  "meta-page-id",
-  "meta-pixel-id",
   "meta-system-user-token",
   "otel-exporter-otlp-endpoint",
   "otel-exporter-otlp-headers",
@@ -311,9 +347,33 @@ new gcp.billing.AccountIamMember("infra-budgets", {
   role: "roles/billing.costsManager",
 });
 
-// GitLab CI variables and the site URL come from these.
 export const bucket = media.name;
-export const infraServiceAccount = infra.email;
-export const deployServiceAccount = deployer.email;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
-export const workloadIdentityProvider = provider.name;
+
+// What the pipeline reads. The tokens are stack secrets
+// (`pulumi config set --secret <name>`); everything else comes from above.
+ciVariables({
+  FIREBASE_PROJECT_ID: { protected: true, value: project },
+  GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
+  GCP_INFRA_SERVICE_ACCOUNT: { protected: true, value: infra.email },
+  GCP_WORKLOAD_IDENTITY_PROVIDER: { protected: true, value: provider.name },
+  GITHUB_MIRROR_KEY: { masked: true, protected: true, value: mirrorPrivateKey },
+  // GitLab's CI observability export (pipeline metrics, logs and traces).
+  GITLAB_OBSERVABILITY_EXPORT: {
+    protected: false,
+    value: "metrics,logs,traces",
+  },
+  // semantic-release and the ai-catalog sync, both on main.
+  GITLAB_TOKEN: {
+    masked: true,
+    protected: true,
+    value: config.requireSecret("gitlab-ci-token"),
+  },
+  RENOVATE_TOKEN: {
+    masked: true,
+    protected: true,
+    value: config.requireSecret("renovate-token"),
+  },
+  SITE_URL: { protected: true, value: siteUrl },
+});
+environments(siteUrl);

@@ -95,9 +95,13 @@ describe("settings store", () => {
 
 describe("env", () => {
   test("treats empty values from .env.example as unset", () => {
-    const env = loadEnv({ FAL_KEY: "", META_PAGE_ID: "abc", WOVAIN_MOCK: "1" });
+    const env = loadEnv({
+      FAL_BILLING_KEY: "abc",
+      FAL_KEY: "",
+      WOVAIN_MOCK: "1",
+    });
     expect(env.FAL_KEY).toBeUndefined();
-    expect(env.META_PAGE_ID).toBe("abc");
+    expect(env.FAL_BILLING_KEY).toBe("abc");
     expect(env.WOVAIN_MOCK).toBe(true);
   });
 });

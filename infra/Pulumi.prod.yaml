@@ -7,6 +7,7 @@ config:
       flow: developer/v1
       serviceAccount: duo-developer-gitlab-ai-hackathon
       events: [assign, mention]
+      active: false # off: no Duo credits until turned back on
     - name: duo-fix-pipeline
       description: Fix CI/CD on failed pipeline
       flow: fix_pipeline/v1
@@ -38,10 +39,11 @@ config:
     - name: duo-scout
       file: .gitlab/duo/catalog/flows/scout.yml
       events: [scheduled]
-      schedule:
-        cron: "0 7 * * *"
-        timezone: UTC
-        description: wovain scout, daily
+      # No schedule: no Duo credits until turned back on.
+      # schedule:
+      #   cron: "0 7 * * *"
+      #   timezone: UTC
+      #   description: wovain scout, daily
   gcp:project: wovain
   gcp:region: us-central1
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
@@ -55,5 +57,15 @@ config:
     secure: v1:+KPRNVhwx4iXir9B:JqM6cR28JTGe9Sj55qOwqedXMaRnVVrD0NbPJvPxzwxxFM/5UuKna8i3hA6b9cuKW6u9C/SiS1cSkakq1SLDpqCAQk/pzVexaAI8zYkxxkc/MQZkGxWQVageyUe+QjMtr5HAQm0F5WYSp3ixXHgQjb0pY2DYofZnIU2x5jsWxVHxZpHwA1Bf5p4SN6ym8lSFoqO24ZhxmnYT9AOre2VSqcOU3V6GvRTizjae2CeUV1yxPrm9liXtDPNELLwPTXH1yFBlTOPGV3D7V5tuBtqxJAfaqKtYjaM7TiVii2obDTPpfEX144/lN1PQbVZBSIbbjz6/xnkzeT1xIqtM67Rs8cnh6bqO+RTpaOJ0rkuZj7YtjX2VyIicUWhyWTGldtPLr9aYYojSeAqF0T8tp9SyhegocmhCMIgeAA==
   wovain:fal-key:
     secure: v1:ph5MIlC4FggQ1Fla:xVrax4Zu6mqdLmmrVN1KKBR7X+DKHg5gaowigcGj7pRlEQKOUGJ/5GIC21xxw6UzP351HcKZyGqk4enRHRQNYMsrFMCVMBg0gtX7tAHNXGipVEMSl8psng==
+  wovain:gitlabProjectId: "87296573"
+  github:owner: sami-m-g
+  wovain:gitlab-ci-token:
+    secure: v1:0WdO0e7fRKNIDdr1:xt12NG6hpBEypj9HeDrMYngIgBnpyUKVxBVbfvdRN5zdV8144g4XHjHB5SFvB7GGbRywADx8S+sAzYnekl6ZjjuIxjY9YM1nyOezashH
+  gitlab:token:
+    secure: v1:5Ll6LrFV6DNaTO5F:fJ3FqeKHKOMTvj9tAWi5l4GpJMGuc63TWzwnvwpluhxcLwd9huB6gVExypQkwTWlXDT5lsRqT4Zf8WQyYaOTt3KWt4fmb6zMcfW13d1o
+  wovain:renovate-token:
+    secure: v1:DObnXNQ8bR1gRS68:V04mVs6m6ZMdEYNwTEZq+sz99pcefRxFzw6Y4QkEOdvrevI/ZSH70hst8BVEedfcXlKBJJCB6mdY/t6lVcvP8T85rf8lo2V/1HIcZEDt
+  github:token:
+    secure: v1:kfWUuhyMSjRr+uV5:2WLDTnEniORUTKMBTAj8e/4ygwTqshwhdaCF6CTPtj5qlz60+n6nYZQA+Vq6BkselOmvcl0E09ePrNs8yXp8/wBS0gB3fdI/gyt8gFNpLnvMUiu/j8Y2Q5J2HEKLN0Cw105ymPQzV8FIv57eWA==
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=

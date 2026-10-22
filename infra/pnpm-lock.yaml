@@ -11,12 +11,21 @@ importers:
       '@pulumi/gcp':
         specifier: 9.37.1
         version: 9.37.1(typescript@4.9.5)
+      '@pulumi/github':
+        specifier: 6.15.0
+        version: 6.15.0(typescript@4.9.5)
+      '@pulumi/gitlab':
+        specifier: 10.4.0
+        version: 10.4.0(typescript@4.9.5)
       '@pulumi/graphql':
         specifier: file:sdks/graphql
         version: file:sdks/graphql
       '@pulumi/pulumi':
         specifier: 3.267.0
         version: 3.267.0(typescript@4.9.5)
+      '@pulumi/tls':
+        specifier: 5.6.2
+        version: 5.6.2(typescript@4.9.5)
 
 packages:
 
@@ -257,6 +266,12 @@ packages:
   '@pulumi/gcp@9.37.1':
     resolution: {integrity: sha512-KDUykcf1CYwn4/QQ+/TcfU2qhKPhYyENtPcQq6+5x4pIc3FyycuhfMXDybERmONQMiqo3tG5LNkMlgtSKJHo9A==}
 
+  '@pulumi/github@6.15.0':
+    resolution: {integrity: sha512-U8ZxPQQcOrcTn8y8EZsWmXzMtbw0JnwWCVGmqxBZ/i2SpUlEGMYT9B+EFC/qTALZXkDf7cMiq6fZ3Gy1G23nyQ==}
+
+  '@pulumi/gitlab@10.4.0':
+    resolution: {integrity: sha512-Dzo+ASfJtAuv3kWkTUJy54fYY/dvJo+0vitv4HJRwMYyDmb//5lug1nBnStgRcqzu15TxAYoFwS60bXDd9UMDA==}
+
   '@pulumi/graphql@file:sdks/graphql':
     resolution: {directory: sdks/graphql, type: directory}
 
@@ -271,6 +286,9 @@ packages:
         optional: true
       typescript:
         optional: true
+
+  '@pulumi/tls@5.6.2':
+    resolution: {integrity: sha512-Id9iwUsVONmXamwrAo1OR+RGjlR1WXqA50v2WQJevZSF+73ZZpZvp5rmd4CinWfvmoYVcBJGNpAzrUjUnUmuZg==}
 
   '@sigstore/bundle@4.0.0':
     resolution: {integrity: sha512-NwCl5Y0V6Di0NexvkTqdoVfmjTaQwoLM236r89KEojGmq/jMls8S+zb7yOwAPdXvbwfKDlP+lmXgAL4vKSQT+A==}
@@ -1227,6 +1245,22 @@ snapshots:
       - ts-node
       - typescript
 
+  '@pulumi/github@6.15.0(typescript@4.9.5)':
+    dependencies:
+      '@pulumi/pulumi': 3.267.0(typescript@4.9.5)
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+      - typescript
+
+  '@pulumi/gitlab@10.4.0(typescript@4.9.5)':
+    dependencies:
+      '@pulumi/pulumi': 3.267.0(typescript@4.9.5)
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+      - typescript
+
   '@pulumi/graphql@file:sdks/graphql':
     dependencies:
       '@pulumi/pulumi': 3.267.0(typescript@4.9.5)
@@ -1267,6 +1301,14 @@ snapshots:
       typescript: 4.9.5
     transitivePeerDependencies:
       - supports-color
+
+  '@pulumi/tls@5.6.2(typescript@4.9.5)':
+    dependencies:
+      '@pulumi/pulumi': 3.267.0(typescript@4.9.5)
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+      - typescript
 
   '@sigstore/bundle@4.0.0':
     dependencies:

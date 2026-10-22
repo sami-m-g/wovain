@@ -1,5 +1,7 @@
 # ChatGPT's first steps against the live server: /mcp asks for a token and
-# points at the metadata, which names AuthKit; AuthKit offers CIMD.
+# points at the metadata, which names AuthKit; AuthKit offers CIMD and dynamic
+# client registration. Both are WorkOS dashboard settings with no API, so this
+# is where a change to them shows up.
 smoke:production:
   stage: monitor
   extends: .on-main
@@ -16,4 +18,6 @@ smoke:production:
     - grep -q "\"resource\":\"$SITE/mcp\"" resource.json
     - AUTHKIT=$(sed -n 's/.*"authorization_servers":\["\([^"]*\)".*/\1/p' resource.json)
     - test -n "$AUTHKIT" || { echo "no authorization server in the metadata"; exit 1; }
-    - curl -sf "$AUTHKIT/.well-known/oauth-authorization-server" | grep -q '"client_id_metadata_document_supported":true'
+    - curl -sf "$AUTHKIT/.well-known/oauth-authorization-server" > authkit.json
+    - grep -q '"client_id_metadata_document_supported":true' authkit.json || { echo "AuthKit has CIMD off"; exit 1; }
+    - grep -q '"registration_endpoint":"' authkit.json || { echo "AuthKit has dynamic client registration off"; exit 1; }
