@@ -4,6 +4,8 @@ export const design = {
     'Design print-on-demand products for the merchant\'s Fourthwall shop and publish them only after approval. One idea becomes a drop: a hero product plus matching products and placements, each priced from real costs. Use when the merchant gives a product idea ("design a tee for …") or wants ideas for a niche, gives feedback on a design widget, or a chat message says "Approve design dN", "Feedback on design dN" or "Open design dN in Fourthwall\'s designer".',
   text: `One design widget per idea, and each idea becomes a drop: a hero product plus 3 to 6 more products that look like one brand, each on a real Fourthwall blank with its own placements, listing and price. Nothing is created on Fourthwall until the merchant presses Approve on the widget.
 
+Before anything else, call wovain \`list_connections\`; for any provider this step needs that isn't connected, offer \`connect_account\` and show the merchant its link.
+
 Every Fourthwall call below goes through wovain's \`fourthwall\` tool (\`tool\` plus \`arguments\`), and fal reads through wovain's \`fal\` tool. If a result has \`needsConnection\`, show the merchant its link, wait until they say it's done, then retry.
 
 ## Before any Fourthwall call

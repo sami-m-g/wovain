@@ -334,6 +334,10 @@ export const createUpstream = ({
 
 export type Upstream = ReturnType<typeof createUpstream>;
 
+// Said with every connect link, wherever it comes from.
+export const LINK_NOTE =
+  "The link is personal to this merchant: it works once, for 5 minutes, and asks them to sign in to wovain first. Then wait until they say it's done and retry.";
+
 // The tool reply for a missing or refused grant: a link the merchant opens
 // in a browser, in any host (widgets or not).
 export const connectReply = ({
@@ -347,7 +351,7 @@ export const connectReply = ({
     : `The merchant hasn't connected ${title} to wovain yet.`;
   return {
     content: text(
-      `${why} Show the merchant this link to connect their ${title} account: ${connectUrl}\nThe link is personal to this merchant: it works once, for 5 minutes, and asks them to sign in to wovain first. Then wait until they say it's done and retry.`
+      `${why} Show the merchant this link to connect their ${title} account: ${connectUrl}\n${LINK_NOTE}`
     ),
     structuredContent: { connectUrl, needsConnection, reconnect },
   };
