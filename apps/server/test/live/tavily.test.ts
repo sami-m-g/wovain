@@ -4,8 +4,8 @@ import { describe, expect, test } from "vitest";
 import { trendResearchFor } from "../../src/lib/trends.ts";
 
 // Calls Tavily for real: 2 basic searches, 2 credits ($0.016 pay-as-you-go).
-// Runs only with TAVILY_API_KEY set: `pnpm test:live`. It ranks with rules
-// here, so it doesn't also spend a Nebius call.
+// Runs only with TAVILY_API_KEY set: `pnpm test:live`. It ranks by Tavily's
+// relevance here, so it doesn't also spend a Nebius call.
 const apiKey = process.env["TAVILY_API_KEY"];
 
 describe.skipIf(apiKey === undefined || apiKey === "")(
@@ -20,7 +20,7 @@ describe.skipIf(apiKey === undefined || apiKey === "")(
         count: 3,
         seed: "pickleball",
       });
-      expect(ranker).toBe("rules");
+      expect(ranker).toBe("tavily");
       expect(
         trendsResultSchema.safeParse({ configured: true, ideas, ranker })
           .success
