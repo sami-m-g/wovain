@@ -1,4 +1,4 @@
-import { IDEA_MAX, tasteReplySchema } from "@wovain/shared/trends";
+import { IDEA_MAX, ranked, tasteReplySchema } from "@wovain/shared/trends";
 import type {
   Competitor,
   IdeaSignals,
@@ -10,7 +10,7 @@ import type { Genkit } from "genkit";
 import { generateObject } from "./ai.ts";
 import { tasteOf } from "./qloo.ts";
 import type { QlooGet, Theme } from "./qloo.ts";
-import { clip, searchWeb, sourceOf, UNTRUSTED } from "./tavily.ts";
+import { clip, promptHit, searchWeb, sourceOf, UNTRUSTED } from "./tavily.ts";
 import type { SearchClient, SearchResult } from "./tavily.ts";
 import { logErrorClass } from "./tool-result.ts";
 
@@ -34,6 +34,8 @@ const MARKET_FULL = 10;
 const ADS_FULL = 20;
 const MARKETS = ["etsy.com", "redbubble.com", "amazon.com"];
 const PRICE = /\$\d{1,4}(?:\.\d{2})?/u;
+const KEEP_MS = 15 * 60_000;
+const KEEP_MAX = 50;
 
 const unit = (value: number) => Math.min(Math.max(value, 0), 1);
 
@@ -118,8 +120,11 @@ const writeCopy = async (
     return new Map();
   }
   const avoid = names.filter((name) => name.length >= 3);
-  const mentionsName = (text: string) =>
-    avoid.some((name) => text.toLowerCase().includes(name.toLowerCase()));
+  const lowered = avoid.map((name) => name.toLowerCase());
+  const mentionsName = (text: string) => {
+    const haystack = text.toLowerCase();
+    return lowered.some((name) => haystack.includes(name));
+  };
   try {
     const reply = await generateObject(ai, {
       model,
@@ -128,11 +133,7 @@ const writeCopy = async (
         themes: found.map(({ news, theme }, index) => ({
           n: index + 1,
           theme: theme.name,
-          untrustedHeadlines: news.map((hit) => ({
-            date: hit.publishedDate,
-            snippet: hit.content,
-            title: hit.title,
-          })),
+          untrustedHeadlines: news.map(promptHit),
         })),
         untrustedAvoid: avoid,
       }),
@@ -160,11 +161,7 @@ const ideaOf = (
   { market, news, theme }: Found,
   copy: Copy | undefined,
   signals: IdeaSignals
-): Omit<TrendIdea, "rank"> | undefined => {
-  const sources = (news.length > 0 ? news : market).slice(0, 3).map(sourceOf);
-  if (sources.length === 0) {
-    return undefined;
-  }
+): Omit<TrendIdea, "rank"> => {
   const moment = news[0]?.title;
   return {
     ...(copy ?? { idea: clip(theme.name, IDEA_MAX) }),
@@ -172,24 +169,34 @@ const ideaOf = (
     ...(moment === undefined ? {} : { moment }),
     score: scoreIdea(signals),
     signals,
-    sources,
+    // Every theme kept has news or listings.
+    sources: (news.length > 0 ? news : market).slice(0, 3).map(sourceOf),
     tags: [theme.id],
     taste: `${theme.name}: Qloo affinity ${theme.affinity.toFixed(2)} with this audience`,
     theme: theme.name,
   };
 };
 
-// Ideas from the seed's Qloo taste graph, best score first; or why there
-// are none: Qloo failed, or matched nothing the news or marketplaces cover.
-export const researchTaste = async (
-  deps: {
-    ai?: Genkit | undefined;
-    client: SearchClient;
-    model: string;
-    qloo: QlooGet;
-  },
-  { adCounts = [], count, seed }: TrendSeed
-): Promise<TrendIdea[] | "failed" | "no_match"> => {
+interface Deps {
+  ai?: Genkit | undefined;
+  client: SearchClient;
+  model: string;
+  qloo: QlooGet;
+}
+
+// Everything but the score: what a re-run with adCounts reuses.
+interface Gathered {
+  copy: Map<number, Copy>;
+  found: Found[];
+  velocity?: number | undefined;
+}
+
+// The seed's Qloo themes, their searches and their copy; or why there are
+// none: Qloo failed, or matched nothing the news or marketplaces cover.
+const gather = async (
+  deps: Deps,
+  seed: string
+): Promise<Gathered | "failed" | "no_match"> => {
   const taste = await tasteOf(deps.qloo, seed).catch((error: unknown) => {
     logErrorClass("research_trends Qloo lookup failed:", error);
     return "failed" as const;
@@ -197,28 +204,75 @@ export const researchTaste = async (
   if (taste === "failed") {
     return taste;
   }
-  const themes = taste?.themes.slice(0, THEMES) ?? [];
-  const found = await Promise.all(
-    themes.map(async (theme) => await search(deps.client, seed, theme))
+  const searched = await Promise.all(
+    (taste?.themes.slice(0, THEMES) ?? []).map(
+      async (theme) => await search(deps.client, seed, theme)
+    )
   );
+  const found = searched.filter(
+    ({ market, news }) => news.length + market.length > 0
+  );
+  if (found.length === 0) {
+    return "no_match";
+  }
   const copy = await writeCopy(deps, seed, found, taste?.names ?? []);
+  return { copy, found, velocity: taste?.velocity };
+};
+
+const scored = (
+  { copy, found, velocity }: Gathered,
+  adCounts: NonNullable<TrendSeed["adCounts"]>,
+  count: number
+): TrendIdea[] => {
   const ads = new Map(
     adCounts.map(({ activeAds, theme }) => [theme.toLowerCase(), activeAds])
   );
-  const ideas = found
-    .flatMap((item, index) => {
-      const activeAds = ads.get(item.theme.name.toLowerCase());
-      const idea = ideaOf(item, copy.get(index + 1), {
-        ...(activeAds === undefined ? {} : { activeAds }),
-        affinity: item.theme.affinity,
-        marketHits: item.market.length,
-        newsHits: item.news.length,
-        ...(taste?.velocity === undefined ? {} : { velocity: taste.velocity }),
-      });
-      return idea === undefined ? [] : [idea];
-    })
-    .toSorted((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, count)
-    .map((idea, index) => ({ ...idea, rank: index + 1 }));
-  return ideas.length === 0 ? "no_match" : ideas;
+  const ideas = found.map((item, index) => {
+    const activeAds = ads.get(item.theme.name.toLowerCase());
+    return ideaOf(item, copy.get(index + 1), {
+      ...(activeAds === undefined ? {} : { activeAds }),
+      affinity: item.theme.affinity,
+      marketHits: item.market.length,
+      newsHits: item.news.length,
+      ...(velocity === undefined ? {} : { velocity }),
+    });
+  });
+  return ranked(
+    ideas.toSorted((a, b) => (b.score ?? 0) - (a.score ?? 0)),
+    count
+  );
+};
+
+// Research on the seed's Qloo taste graph, best score first. The agent
+// re-runs research with adCounts after its Ad Library search, so a seed's
+// searches and copy are kept for 15 minutes and only re-scored.
+export const createTasteResearch = (deps: Deps) => {
+  const recent = new Map<string, { at: number; gathered: Gathered }>();
+  const gatherOnce = async (seed: string) => {
+    const key = seed.toLowerCase();
+    const kept = recent.get(key);
+    if (kept !== undefined && Date.now() - kept.at < KEEP_MS) {
+      return kept.gathered;
+    }
+    const gathered = await gather(deps, seed);
+    if (typeof gathered !== "string") {
+      recent.delete(key);
+      recent.set(key, { at: Date.now(), gathered });
+      const [oldest] = recent.keys();
+      if (recent.size > KEEP_MAX && oldest !== undefined) {
+        recent.delete(oldest);
+      }
+    }
+    return gathered;
+  };
+  return async ({
+    adCounts = [],
+    count = THEMES,
+    seed,
+  }: TrendSeed): Promise<TrendIdea[] | "failed" | "no_match"> => {
+    const gathered = await gatherOnce(seed);
+    return typeof gathered === "string"
+      ? gathered
+      : scored(gathered, adCounts, count);
+  };
 };

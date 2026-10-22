@@ -30,6 +30,13 @@ export const sourceOf = ({ publishedDate, title, url }: SearchResult) => ({
   ...(publishedDate ? { publishedDate } : {}),
 });
 
+// A result as a model sees it, inside a field named untrusted….
+export const promptHit = ({ content, publishedDate, title }: SearchResult) => ({
+  date: publishedDate,
+  snippet: content,
+  title,
+});
+
 export const clip = (value: string, max: number) =>
   value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 

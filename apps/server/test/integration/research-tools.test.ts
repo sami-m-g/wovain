@@ -26,7 +26,7 @@ const call = async (
   const research =
     tavily === undefined
       ? undefined
-      : createTrendResearch(tavily, undefined, "mockModel", qloo);
+      : createTrendResearch(tavily, { model: "mockModel", qloo });
   const client = await connectClient({}, testStore(), {
     qloo,
     trendResearch: research,
@@ -124,7 +124,7 @@ test("research_trends with Qloo returns taste × moment ideas over MCP", async (
     fakeQloo(qlooTaste)
   );
   const parsed = trendsResultSchema.parse(result.structuredContent);
-  expect(parsed).toMatchObject({ qloo: "used", ranker: "qloo" });
+  expect(parsed).toMatchObject({ qloo: "used" });
   expect(parsed.ideas?.map((idea) => idea.theme)).toStrictEqual([
     "Neon noir",
     "Outrun",

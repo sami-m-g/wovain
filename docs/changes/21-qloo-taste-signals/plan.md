@@ -4,7 +4,7 @@ Spec: [spec.md](spec.md)
 
 ## Files that change
 
-- `packages/shared/src/trends.ts`: `adCounts`, idea fields (`theme`, `taste`, `moment`, `tags`, `competitors`, `score`, `signals`), `ranker: "qloo"`, `qloo` status, audience schemas.
+- `packages/shared/src/trends.ts`: `adCounts`, idea fields (`theme`, `taste`, `moment`, `tags`, `competitors`, `score`, `signals`), `qloo` status, audience schemas, `ranked` and `isQlooTag`.
 - `apps/server/src/lib/qloo.ts` (new): the Qloo client on `fetchJson`, `tasteOf`, `audienceOf`.
 - `apps/server/src/lib/taste.ts` (new): the Qloo path, `scoreIdea`, the writing prompt.
 - `apps/server/src/lib/trends.ts`: picks the Qloo path or the news path; `apps/server/src/lib/tavily.ts` takes `UNTRUSTED` and `sourceOf`.

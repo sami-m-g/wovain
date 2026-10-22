@@ -1,7 +1,15 @@
+import {
+  agesSchema,
+  gendersSchema,
+  isQlooTag,
+  pointSchema,
+  THEME_MAX,
+} from "@wovain/shared/trends";
 import type { Audience } from "@wovain/shared/trends";
 import { z } from "zod";
 
 import { fetchJson } from "./fetch-json.ts";
+import { clip } from "./tavily.ts";
 import { logErrorClass } from "./tool-result.ts";
 
 // Qloo's Taste API over REST. The hackathon kit's one package
@@ -84,8 +92,8 @@ const demographicsSchema = z.object({
       z.object({
         query: z
           .object({
-            age: z.record(z.string().max(32), z.number()).optional(),
-            gender: z.record(z.string().max(16), z.number()).optional(),
+            age: agesSchema.optional(),
+            gender: gendersSchema.optional(),
           })
           .optional(),
       })
@@ -97,10 +105,7 @@ const heatmapSchema = z.object({
   results: z.object({
     heatmap: z.array(
       z.object({
-        location: z.object({
-          latitude: z.number().min(-90).max(90),
-          longitude: z.number().min(-180).max(180),
-        }),
+        location: pointSchema,
         query: scoreSchema,
       })
     ),
@@ -122,7 +127,6 @@ export interface Taste {
   velocity?: number;
 }
 
-const TAG_ID = /^urn:tag:[\w.:-]+$/u;
 const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10);
 
 // The seed's first entity's latest rank velocity. A failure only leaves
@@ -183,8 +187,14 @@ export const tasteOf = async (
   const themes = results.tags
     .flatMap(({ id, name, popularity, query, tag_id: tagId }) => {
       const tag = id ?? tagId ?? "";
-      return TAG_ID.test(tag)
-        ? [{ affinity: query?.affinity ?? popularity ?? 0, id: tag, name }]
+      return isQlooTag(tag)
+        ? [
+            {
+              affinity: query?.affinity ?? popularity ?? 0,
+              id: tag,
+              name: clip(name, THEME_MAX),
+            },
+          ]
         : [];
     })
     .toSorted((a, b) => b.affinity - a.affinity);

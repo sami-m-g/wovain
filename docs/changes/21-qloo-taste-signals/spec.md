@@ -40,7 +40,7 @@ The weights sit in one exported constant (`SCORE_WEIGHTS`). Every idea returns i
 ### Competitors and ads
 
 - The marketplace search returns up to 10 results from Etsy, Redbubble and Amazon. Their count is `marketHits`; the top 3 become `competitors`, with a price when the snippet shows one (`$12.99`). Tavily doesn't return prices as data, so the price is what the page text said.
-- The Meta Ad Library is the strongest "this sells" signal: someone pays to advertise it. wovain can't call Meta server-side yet (Meta app review, #19). So the design playbook asks a host agent that has the Meta Ads MCP to call `ads_library_search` for the top themes and run `research_trends` again with `adCounts`. That second run spends another 6 Tavily credits, so the playbook offers it rather than doing it every time. Once #19's Meta part lands, autopilot calls the Ad Library through the merchant's own Meta connection instead.
+- The Meta Ad Library is the strongest "this sells" signal: someone pays to advertise it. wovain can't call Meta server-side yet (Meta app review, #19). So the design playbook asks a host agent that has the Meta Ads MCP to call `ads_library_search` for the top themes and run `research_trends` again with `adCounts`. The Qloo path keeps each seed's searches and copy for 15 minutes (up to 50 seeds per server instance), so that second run only re-scores: no Tavily credits, Qloo calls or model call. Once #19's Meta part lands, autopilot calls the Ad Library through the merchant's own Meta connection instead.
 
 ### Code
 
@@ -48,7 +48,7 @@ The weights sit in one exported constant (`SCORE_WEIGHTS`). Every idea returns i
 - `apps/server/src/lib/taste.ts` (new): the Qloo path, `researchTaste`, with `scoreIdea` as a pure function and `SCORE_WEIGHTS`.
 - `apps/server/src/lib/trends.ts`: `createTrendResearch(client, ai?, model?, qloo?)` runs the Qloo path when there's a client and falls back to the existing news path. `UNTRUSTED` and `sourceOf` move to `tavily.ts` so both files share them without a cycle.
 - `apps/server/src/tools/research.ts`: `research_trends` gains `adCounts`; new `suggest_audience`.
-- `packages/shared/src/trends.ts`: `adCounts`, the per-idea Qloo fields, `ranker: "qloo"`, `qloo` status, and the audience input and result schemas.
+- `packages/shared/src/trends.ts`: `adCounts`, the per-idea Qloo fields, the `qloo` status (`ranker` stays the news path's: absent when Qloo was used), `ranked`, `isQlooTag`, and the audience input and result schemas.
 - `apps/server/src/server.ts`: `createDeps` builds `qloo` once and passes it to trend research and the research tools.
 - Playbooks: design (the Ad Library step, showing taste and moment) and campaign (offering `suggest_audience` as Advantage+ audience suggestions).
 

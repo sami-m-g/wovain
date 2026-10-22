@@ -137,15 +137,13 @@ test("the score is demand, momentum and openness, weighted in code", () => {
 
 test("with Qloo, ideas are taste × moment, scored and sorted in code", async () => {
   const tavily = tasteTavily();
-  const research = createTrendResearch(
-    tavily,
-    undefined,
-    "mockModel",
-    fakeQloo(qlooTaste)
-  );
+  const research = createTrendResearch(tavily, {
+    model: "mockModel",
+    qloo: fakeQloo(qlooTaste),
+  });
   const result = await research.research({ seed: "synthwave" });
   expect(result.qloo).toBe("used");
-  expect(result.ranker).toBe("qloo");
+  expect(result.ranker).toBeUndefined();
   // Two themes, a news and a marketplace search each.
   expect(tavily.search).toHaveBeenCalledTimes(4);
   expect(tavily.search).toHaveBeenCalledWith(
@@ -181,21 +179,32 @@ test("with Qloo, ideas are taste × moment, scored and sorted in code", async ()
   ).toBe(true);
 });
 
-test("active Meta ads raise a theme's demand", async () => {
-  const research = createTrendResearch(
-    tasteTavily(),
-    undefined,
-    "mockModel",
-    fakeQloo(qlooTaste)
-  );
+test("active Meta ads re-score the same searches without paying for them again", async () => {
+  const tavily = tasteTavily();
+  const qloo = fakeQloo(qlooTaste);
+  const research = createTrendResearch(tavily, { model: "mockModel", qloo });
+  await research.research({ seed: "synthwave" });
   const { ideas } = await research.research({
     adCounts: [{ activeAds: 40, theme: "OUTRUN" }],
-    seed: "synthwave",
+    seed: "Synthwave",
   });
+  expect(tavily.search).toHaveBeenCalledTimes(4);
+  expect(qloo.requests).toHaveBeenCalledTimes(3);
   const outrun = ideas.find((idea) => idea.theme === "Outrun");
   expect(outrun?.signals?.activeAds).toBe(40);
   // 0.42 without ads: demand goes from 0.6 to 0.72.
   expect(outrun?.score).toBe(0.474);
+});
+
+test("themes with no news and no listings drop out before any model call", async () => {
+  const { ai, model } = mockAi({ respond: { text: "{}" } });
+  const result = await createTrendResearch(fakeTavily([]), {
+    ai,
+    model: "mockModel",
+    qloo: fakeQloo(qlooTaste),
+  }).research({ seed: "synthwave" });
+  expect(result.qloo).toBe("no_match");
+  expect(model.lastRequest).toBeUndefined();
 });
 
 test("Nemotron writes the copy, never the order, and copy naming Qloo's IP is dropped", async () => {
@@ -214,12 +223,11 @@ test("Nemotron writes the copy, never the order, and copy naming Qloo's IP is dr
       }),
     },
   });
-  const research = createTrendResearch(
-    tasteTavily(),
+  const research = createTrendResearch(tasteTavily(), {
     ai,
-    "mockModel",
-    fakeQloo(qlooTaste)
-  );
+    model: "mockModel",
+    qloo: fakeQloo(qlooTaste),
+  });
   const { ideas } = await research.research({ seed: "synthwave" });
   expect(ideas.map((idea) => [idea.rank, idea.idea])).toStrictEqual([
     [1, "Neon noir"],
@@ -246,12 +254,10 @@ test.each([
     const tavily = fakeTavily([
       searchResult(0, "Synthwave night", { publishedDate: DATE }),
     ]);
-    const result = await createTrendResearch(
-      tavily,
-      undefined,
-      "mockModel",
-      qloo
-    ).research({
+    const result = await createTrendResearch(tavily, {
+      model: "mockModel",
+      qloo,
+    }).research({
       seed: "synthwave",
     });
     expect(result.qloo).toBe(status);

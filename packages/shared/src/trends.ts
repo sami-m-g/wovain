@@ -51,6 +51,8 @@ const qlooTagSchema = z
   .string()
   .max(200)
   .regex(/^urn:tag:[\w.:-]+$/u);
+export const isQlooTag = (value: string) =>
+  qlooTagSchema.safeParse(value).success;
 
 // What a Qloo-scored idea's score came from, kept so real sales can
 // recalibrate the weights later.
@@ -102,7 +104,9 @@ export const trendsResultSchema = z.object({
   note: z.string().max(400).optional(),
   // Whether Qloo's taste graph shaped the ideas, and if not, why.
   qloo: z.enum(["used", "not_configured", "no_match", "failed"]).optional(),
-  ranker: z.enum(["qloo", "nemotron", "tavily"]).optional(),
+  // How the news-only path ranked its ideas. Absent when Qloo was used: code
+  // ranks those by score.
+  ranker: z.enum(["nemotron", "tavily"]).optional(),
 });
 export type TrendRanker = NonNullable<
   z.infer<typeof trendsResultSchema>["ranker"]
@@ -110,6 +114,10 @@ export type TrendRanker = NonNullable<
 export type QlooStatus = NonNullable<
   z.infer<typeof trendsResultSchema>["qloo"]
 >;
+
+// The first `count` ideas, ranked from 1.
+export const ranked = <T extends object>(ideas: T[], count: number) =>
+  ideas.slice(0, count).map((idea, index) => ({ ...idea, rank: index + 1 }));
 
 // What Nemotron writes for each Qloo theme, by its number (from 1). It
 // never ranks: the score is computed in code.
@@ -122,21 +130,22 @@ export const audienceInputSchema = z.object({
   // Where to look for the audience: a country, region or city.
   within: z.string().trim().min(1).max(80).optional(),
 });
-export type AudienceInput = z.infer<typeof audienceInputSchema>;
+
+// Shares by age band and gender, as Qloo keys them.
+export const agesSchema = z.record(z.string().max(32), z.number());
+export const gendersSchema = z.record(z.string().max(16), z.number());
+export const pointSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+});
 
 // Qloo's aggregate audience for a theme: affinity by age band and gender,
 // and the places where the theme's affinity is highest.
 const audienceSchema = z.object({
-  ages: z.record(z.string().max(32), z.number()).optional(),
-  genders: z.record(z.string().max(16), z.number()).optional(),
+  ages: agesSchema.optional(),
+  genders: gendersSchema.optional(),
   locations: z
-    .array(
-      z.object({
-        affinity: z.number().optional(),
-        latitude: z.number().min(-90).max(90),
-        longitude: z.number().min(-180).max(180),
-      })
-    )
+    .array(pointSchema.extend({ affinity: z.number().optional() }))
     .max(MAX_ITEMS),
 });
 export type Audience = z.infer<typeof audienceSchema>;
