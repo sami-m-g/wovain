@@ -36,19 +36,19 @@ export default defineConfig({
   // so new code can't exceed it. Lower a limit when you refactor that file; never raise one.
   // complexity 18: widgets/settings/settings-widget-view.tsx
   // max-depth 2: several files, e.g. server/routes/mcp.ts
-  // max-lines 428: widgets/design/design-widget-view.tsx
-  // max-lines-per-function 225: server/tools/design.ts
+  // max-lines 402: widgets/design/design-widget-view.tsx
+  // max-lines-per-function 224: server/tools/design.ts
   // max-params 4: widgets/lib/bridge.ts, server/tools/ads.ts, server/lib/video-plan.ts
   rules: {
     complexity: ["error", 18],
     "max-depth": ["error", 2],
     "max-lines": [
       "error",
-      { max: 428, skipBlankLines: true, skipComments: true },
+      { max: 402, skipBlankLines: true, skipComments: true },
     ],
     "max-lines-per-function": [
       "error",
-      { max: 225, skipBlankLines: true, skipComments: true },
+      { max: 224, skipBlankLines: true, skipComments: true },
     ],
     "max-params": ["error", 4],
   },

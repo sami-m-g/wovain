@@ -5,11 +5,15 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   designResultSchema,
   designSchema,
-  quoteResultSchema,
   designStatusSchema,
+  MAX_RANGE,
+  quoteResultSchema,
+  rangeProductSchema,
 } from "@wovain/shared/design";
 import type { Design, DesignQuote } from "@wovain/shared/design";
 import { priceProduct, sizeCostSchema } from "@wovain/shared/economics";
+import type { SizeCost } from "@wovain/shared/economics";
+import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
 import { uploadArtwork } from "../lib/fetch-image.ts";
@@ -46,6 +50,74 @@ const toDesignQuote = (
   refundReserve: quote.breakeven.refundReserve,
   roas: quote.breakeven.roas,
 });
+
+// The offered sizes set the price; with none in stock, every size does.
+const quoteFor = (
+  sizes: (SizeCost & { inStock: boolean })[],
+  settings: Settings
+) => {
+  const offered = sizes.filter((size) => size.inStock);
+  return toDesignQuote(
+    priceProduct(
+      offered.length > 0 ? offered : sizes,
+      settings.pricing,
+      settings.economics
+    )
+  );
+};
+
+// What the agent sends for a design: wovain prices every product itself and
+// keeps the publish state.
+const designInputSchema = designSchema
+  .omit({
+    collectionId: true,
+    productId: true,
+    productUrl: true,
+    quote: true,
+    range: true,
+    rejectCount: true,
+    rejectReason: true,
+    status: true,
+  })
+  .partial({ id: true })
+  .extend({
+    range: z
+      .array(
+        rangeProductSchema.omit({
+          offerId: true,
+          productUrl: true,
+          quote: true,
+        })
+      )
+      .max(MAX_RANGE)
+      .default([]),
+  });
+
+// The design to save: every product priced, and a product already created
+// on an earlier try keeps its offer.
+const pricedDesign = (
+  input: z.output<typeof designInputSchema>,
+  settings: Settings,
+  stored: Design | undefined
+) => {
+  const offerOf = (customizationId: string) =>
+    stored?.range.find((item) => item.customizationId === customizationId)
+      ?.offerId;
+  return {
+    ...input,
+    quote: quoteFor(input.sizes, settings),
+    range: input.range.map((product) => {
+      const offerId = offerOf(product.customizationId);
+      return {
+        ...product,
+        quote: quoteFor(product.sizes, settings),
+        ...(offerId === undefined ? {} : { offerId }),
+      };
+    }),
+    rejectCount: stored?.rejectCount ?? 0,
+    status: "draft" as const,
+  };
+};
 
 const artworkOutput = z.object({
   artworkId: z.string(),
@@ -198,13 +270,19 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         readOnlyHint: false,
       },
       description:
-        "Show one design widget: the design on a Fourthwall blank with mockups, colors, placement, file quality, sizes, listing and the price from price_product. Omit id for a new design; pass the id to redraw a design after feedback. Publishing happens only after the merchant approves on the widget.",
-      inputSchema: designSchema.omit({ status: true }).partial({ id: true }),
+        "Show one design widget for an idea: the hero product on its Fourthwall blank (mockups, colors, placement and extraPlacements, file quality, sizes, listing) and the rest of the drop in `range` (up to 7 more products, each with kind, blank, placements, colors, mockups, sizes with cost and listing). wovain prices every product from its sizes' costs. Omit id for a new design; pass the id to redraw after feedback. Publishing happens only after the merchant approves on the widget.",
+      inputSchema: designInputSchema,
       outputSchema: designResultSchema,
       title: "Show design widget",
     },
     async (input) => {
-      const design = await store.saveDesign({ ...input, status: "draft" });
+      const [settings, stored] = await Promise.all([
+        store.getSettings(),
+        input.id === undefined ? undefined : store.getDesign(input.id),
+      ]);
+      const design = await store.saveDesign(
+        pricedDesign(input, settings, stored)
+      );
       return {
         content: text(
           `Showing design ${design.id}. Wait for the merchant to approve, skip or give feedback on the widget.`

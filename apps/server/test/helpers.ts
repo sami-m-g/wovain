@@ -119,6 +119,7 @@ export const demoDesign: Omit<Design, "id"> = {
   coach: "Soft bestseller tee.",
   colors: [{ hex: "#111111", inStock: true, name: "Black" }],
   customizationId: "cus_1",
+  extraPlacements: [],
   idea: "Japanese cat sunset",
   listing: { description: "Two lines.", title: "Japanese Cat Sunset Tee" },
   mockups: [
@@ -139,6 +140,7 @@ export const demoDesign: Omit<Design, "id"> = {
     refundReserve: 0.6,
     roas: 2.9,
   },
+  range: [],
   rejectCount: 0,
   sizes: [{ baseCost: 17.7, inStock: true, size: "M" }],
   status: "live",

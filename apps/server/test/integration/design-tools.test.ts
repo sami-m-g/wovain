@@ -248,3 +248,38 @@ test("redrawing after feedback keeps the id; rejections are counted", async () =
     },
   });
 });
+
+test("wovain prices the hero and every product of the drop itself", async () => {
+  const shown = await call("show_design_widget", {
+    ...design,
+    // A price from the agent is ignored.
+    quote: { ...quote, price: 99 },
+    range: [
+      {
+        ...design,
+        customizationId: "cus_mug",
+        kind: "Mug",
+        quote: { ...quote, price: 1 },
+        sizes: [{ baseCost: 9.6, inStock: true, size: "11 oz" }],
+      },
+    ],
+  });
+  expect(shown.isError).toBeFalsy();
+  expect(shown.structuredContent).toMatchObject({
+    design: { quote: { price: 30 }, range: [{ quote: { price: 22 } }] },
+  });
+});
+
+test("publish_design refuses a design the merchant hasn't approved", async () => {
+  await call("show_design_widget", design);
+  const refused = await call("publish_design", { id: "d1" });
+  expect(refused.isError).toBe(true);
+  expect(JSON.stringify(refused.content)).toContain("approved on its widget");
+});
+
+test("publish_design says so when connections aren't set up", async () => {
+  await call("show_design_widget", design);
+  await call("record_design", { id: "d1", status: "publishing" });
+  const result = await call("publish_design", { id: "d1" });
+  expect(result.structuredContent).toEqual({ configured: false });
+});
