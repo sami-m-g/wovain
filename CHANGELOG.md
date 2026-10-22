@@ -1,3 +1,15 @@
+# [0.23.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.22.0...v0.23.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **sci:** publish fal clip timings only as a weekly aggregate ([e08b53e](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e08b53e67a3d7e48d7d5b34093a76fa67c68a0bb))
+
+
+### Features
+
+* **video:** one short clip cropped to every ratio, measured fal gpu time in sci ([0ebd616](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/0ebd616144fec500bbbb477188c511f5f00d3b8e))
+
 # [0.22.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.21.0...v0.22.0) (2026-10-22)
 
 
