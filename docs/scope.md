@@ -75,7 +75,7 @@ The last step is the proof. Real products and a real campaign exist, and the lea
 | Design | 2 or 3 designs generated in ChatGPT, each fitted to a Fourthwall product |
 | Listing | Title, description, variants, and price for each product, on the design widget |
 | Publishing | Fourthwall products published after widget approval |
-| Ads | Short videos on fal (MiniMax H3 Max Reference by default; Kling one setting away) with generated background audio, plus ad copy (primary text and headline) |
+| Ads | 2 to 4 distinct ad concepts per product with Feed and Stories images made on fal from the mockup, optional short videos (MiniMax H3 Max Reference by default) with generated background audio, a carousel across the set, and primary text and headline variants |
 | Economics | Price, Fourthwall cost, margin, and breakeven per product on the ad widget |
 | Campaign | One Advantage+ campaign testing the designs, launched live |
 | Management | Meta automated rules from each product's breakeven: kill thresholds per product, scaling for the whole campaign; Advantage+ handles targeting and budget |

@@ -10,7 +10,7 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 | --- | --- | --- |
 | Settings | Settings widget: budget, rule multiples, video model and audio | Working |
 | Design | "design a tee for: …" → design widget with mockups, price, profit and margin; Approve publishes it on Fourthwall | Working |
-| Ads | Ad widget with two 9:16 UGC-style videos (fal), copy and the breakeven line; Add to campaign or Skip | Working |
+| Ads | Ad widget with 2 to 4 ad concepts per product (hook, audience, why now), Feed and Stories visuals (fal images, mockup, optional video), text variants for Advantage+, a carousel across the set and the breakeven line; Approve, Skip or feedback per concept | Working |
 | Campaign | Campaign widget: one Advantage+ sales campaign built as a Meta draft, the five rules created in Meta, Launch to publish | Working (Launch needs a payment method on the ad account) |
 | Optimization check-in, mock mode | — | Planned, not built (see the checklist's Revisions) |
 
