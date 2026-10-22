@@ -11,8 +11,9 @@ validate-items:
 
 # Sync to the AI Catalog on main. The component runs this on tags, but release
 # tags point at the release commit, whose pipeline is skipped, so it would
-# never run. It runs in the test stage, after verify, so that infra:production
-# (deploy stage) can enable and schedule the synced flows in the same pipeline.
+# never run. It runs in the test stage, before infra:production (deploy), which
+# fetches the mapping.json the sync commits to main ([skip ci], so no new
+# pipeline) and enables and schedules the synced flows in the same pipeline.
 catalog-sync:
   stage: test
   interruptible: false

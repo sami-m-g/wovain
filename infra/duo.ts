@@ -104,7 +104,17 @@ const VARS =
 const INPUT =
   "description: $description, eventTypes: $eventTypes, filter: $filter, userId: $userId, aiCatalogItemConsumerId: $aiCatalogItemConsumerId, active: $active";
 
+// A name in Pulumi.prod.yaml that GitLab doesn't know fails here, by name,
+// instead of as an opaque GraphQL error during apply.
+const must = <T>(found: T | undefined, what: string): T => {
+  if (found === undefined) {
+    throw new Error(`Unknown ${what} in wovain:duoTriggers`);
+  }
+  return found;
+};
+
 for (const t of triggers) {
+  const eventTypes = t.events.map((e) => must(EVENT_IDS[e], `event ${e}`));
   new graphql.Mutation(
     t.name,
     {
@@ -115,12 +125,16 @@ for (const t of triggers) {
         "mutation($id: AiFlowTriggerID!) { aiFlowTriggerDelete(input: { id: $id }) { errors } }",
       mutationVariables: {
         active: String(t.active ?? true),
-        aiCatalogItemConsumerId: flowIds.apply((ids) => ids.get(t.flow) ?? ""),
+        aiCatalogItemConsumerId: flowIds.apply((ids) =>
+          must(ids.get(t.flow), `flow ${t.flow} (not enabled in the project?)`)
+        ),
         description: t.description,
-        eventTypes: JSON.stringify(t.events.map((e) => EVENT_IDS[e])),
+        eventTypes: JSON.stringify(eventTypes),
         filter: JSON.stringify(t.filter ?? {}),
         projectPath,
-        userId: userIds.apply((ids) => ids.get(t.serviceAccount) ?? ""),
+        userId: userIds.apply((ids) =>
+          must(ids.get(t.serviceAccount), `service account ${t.serviceAccount}`)
+        ),
       },
       // Returns every mutation variable, so the provider can see drift.
       readQuery:
