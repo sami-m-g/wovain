@@ -224,7 +224,7 @@ new gitlab.ProjectIssueBoard(
       "status::doing",
       "status::review",
       "status::test",
-    ].map((name, position) => ({ labelId: labelIds.get(name), position })),
+    ].map((name) => ({ labelId: labelIds.get(name) })),
     name: "Workflow",
     project: projectId,
   },
