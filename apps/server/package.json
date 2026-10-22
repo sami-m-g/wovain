@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "firebase emulators:exec --only firestore,storage --project demo-wovain \"node --env-file-if-exists=.env --watch src/index.ts\"",
     "test": "vitest run --project unit",
-    "test:integration": "firebase emulators:exec --only firestore,storage --project demo-wovain \"vitest run --project integration\""
+    "test:integration": "firebase emulators:exec --only firestore,storage --project demo-wovain \"vitest run --project integration\"",
+    "test:live": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --project live"
   },
   "dependencies": {
+    "@genkit-ai/compat-oai": "1.42.0",
     "@hono/node-server": "2.1.5",
     "@modelcontextprotocol/ext-apps": "2.0.3",
     "@modelcontextprotocol/server": "2.3.1",
@@ -19,6 +21,7 @@
     "@workos-inc/node": "11.0.0",
     "@wovain/shared": "workspace:*",
     "firebase-admin": "14.5.0",
+    "genkit": "1.42.0",
     "hono": "4.13.13",
     "jose": "6.2.12",
     "zod": "4.6.7"

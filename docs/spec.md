@@ -19,7 +19,8 @@ wovain is a hosted MCP server. You add its URL to an agent that speaks MCP over 
 | Fourthwall MCP | Fourthwall's official server | Blanks, mockups, prices, publishing |
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
 | fal MCP | fal's official server | Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal |
-| wovain server | Our Hono server, hosted on Firebase App Hosting and reached over HTTPS | Serves the playbooks and widgets, does the margin math, Meta rules, settings |
+| wovain server | Our Hono server, hosted on Firebase App Hosting and reached over HTTPS | Serves the playbooks and widgets, does the margin math, Meta rules, settings, and checks each design with Nemotron |
+| Nebius Token Factory | NVIDIA Nemotron 3 Super behind an OpenAI-compatible API, called through Genkit | Scores each design brief against the print and listing rules before the widget shows it (`judge_design`) |
 | Widgets | Small web pages the agent shows inline (MCP Apps) | Design, ad, campaign, optimization and settings widgets |
 
 Why a wovain server at all: an agent can only show a widget that an MCP server serves, a widget's buttons can only call its own server, and Meta automated rules have no MCP. Everything else goes through the official servers.
@@ -82,7 +83,7 @@ Steps 7 and 8 moved to later by the learner's call (`checklist.md > Revisions`).
 | Database and files | Firestore and a private Cloud Storage bucket through `firebase-admin`; the Firebase CLI (`firebase-tools`) runs the emulators and rollouts | 14.5.0 / 15.34.0 | https://firebase.google.com/docs/admin/setup |
 | Hosting and infrastructure as code | Firebase App Hosting: `apphosting.yaml` (build and run commands, instance limits, env and Secret Manager references); `firebase.json` at the root (the App Hosting source upload, emulators and rules files; the upload is the folder holding it, so it sits at the workspace root) with deny-all `apps/server/firestore.rules` and `storage.rules`; `infra/` (Pulumi) for the Google project itself and the AuthKit redirect URIs and MCP resource indicators (`infra/workos.ts`: the community `osodevops/workos` Terraform provider, 2.5.0, and the generic `magodo/restful` one, 0.25.2, for the resource indicators) | — | https://firebase.google.com/docs/app-hosting/configure |
 | Telemetry | OpenTelemetry Node tracer with the OTLP/HTTP exporter, to GitLab Observability | sdk-trace-node 2.11.0 / exporter 0.222.0 | https://opentelemetry.io/docs/languages/js/ |
-| Agent framework | Genkit (was Mastra); not used in the code yet | — | https://genkit.dev |
+| Model calls | Genkit (was Mastra) with `@genkit-ai/compat-oai` pointed at Nebius Token Factory; model NVIDIA Nemotron 3 Super (`nvidia/nemotron-3-super-120b-a12b`), set in `src/lib/ai.ts`. Genkit is built on zod 3, so wovain's zod 4 schemas go to it as JSON Schema and replies are parsed again with zod 4. Genkit's own OpenTelemetry startup is off, so its spans join wovain's tracer, which exports only an allowlist of Genkit span attributes (never the brief, the reply or error text) | 1.42.0 / 1.42.0 | https://genkit.dev/docs/integrations/openai-compatible |
 
 - TypeScript everywhere: the learner chose it because OpenAI's examples and the ChatGPT UI kit are TypeScript.
 - pnpm and Node 24: replaced Bun once the server moved to Firebase, whose App Hosting runs Node. Node 24 strips TypeScript types itself, so the server runs from `src/` with no bundle step, and `.ts` imports keep their extensions. pnpm's `allowBuilds` (in `pnpm-workspace.yaml`) lists the few packages allowed to run install scripts.
@@ -119,7 +120,7 @@ How sign-in works:
 | --- | --- |
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Firebase App Hosting (Node 24, Cloud Run underneath; 0 to 2 instances); Node 24, pnpm and Java 21 (emulators) locally |
-| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `NEBIUS_API_KEY`, `QLOO_API_KEY` and `TAVILY_API_KEY` (optional until a tool uses them), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
+| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `NEBIUS_API_KEY` (optional: `judge_design`, skipped without it), `QLOO_API_KEY` and `TAVILY_API_KEY` (optional until a tool uses them), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
 Start it:
@@ -183,6 +184,7 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | records, Blob media |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
+| `judge_design` | Before each design widget: Nemotron scores the brief against the print and listing rules (a check per rule, fixes, coach line; zod-checked; code derives the verdict). Code decides print size, transparency and color count and overrides the model on them. Answers `configured: false` without `NEBIUS_API_KEY` | Nebius Token Factory (Genkit) |
 | `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the widget follow it while publishing | records |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
 | `video_spend` | Reports what fal actually charged, when `FAL_BILLING_KEY` is set | fal billing API |
@@ -367,14 +369,14 @@ wovain/
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── server.ts        # McpServer: instructions, tools, widgets, playbooks
 │   │   │   ├── playbooks/       # design.ts, ads.ts, campaign.ts; index.ts: instructions, get_playbook, prompts
-│   │   │   ├── tools/           # settings.ts, design.ts, ads.ts, campaign.ts
+│   │   │   ├── tools/           # settings.ts, design.ts, judge.ts, ads.ts, campaign.ts
 │   │   │   ├── widgets.ts         # registers the ui:// widget resources
 │   │   │   ├── env.ts           # zod-checked server keys
 │   │   │   ├── store.ts         # records in Firestore, artwork in Cloud Storage
 │   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
 │   │   │   ├── telemetry.ts     # OpenTelemetry Node tracer, on when the OTLP endpoint is set
-│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan
-│   │   ├── test/                # unit/ (auth chain, economics, images, fal), integration/ (store, tools, routes on the emulators), fixtures/
+│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan, ai (Genkit on Nebius), design-judge
+│   │   ├── test/                # unit/ (auth chain, economics, images, fal, design judge, telemetry), integration/ (store, tools, routes on the emulators), live/ (real Nemotron call, opt-in), fixtures/
 │   │   ├── public/              # icon.png, favicon.ico
 │   │   ├── firestore.rules, storage.rules   # deny all clients; only the Admin SDK reads and writes
 │   │   ├── vitest.config.ts
@@ -412,6 +414,7 @@ wovain/
 | Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews`, `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-conversion-rates-report`, `get-visitors-report` | OAuth in the agent | $0 | https://docs.fourthwall.com/ai/mcp.md |
 | Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in the agent | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
+| Nebius Token Factory | Chat completions with `response_format: json_schema` on `nvidia/nemotron-3-super-120b-a12b`, one per design (`judge_design`) | `NEBIUS_API_KEY` on the server | About $0.30 in and $0.90 out per million tokens (Eden AI listing, unverified), well under a cent per design | https://docs.tokenfactory.nebius.com |
 | fal MCP | `submit_jobs` / `wait_for_jobs` for `minimax/h3-max/reference-to-video` (references = mockup and artwork; Kling endpoints when chosen), `fal-ai/mmaudio-v2`, background removal, upscaler; live prices (`FAL_KEY`) | OAuth in the agent; `FAL_KEY` on the server | Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY) | https://fal.ai/docs/model-apis/mcp |
 
 POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling.
@@ -452,7 +455,7 @@ POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos w
 | Firebase: App Hosting, Firestore and a private Cloud Storage bucket instead of Vercel, Neon and Vercel Blob (2026-10-21) | Learner | One Google project for host, data and files; the emulators make tests and local runs offline-capable | No migrations or SQL; Java 21 for the emulators; App Hosting built from GitHub, so CI pushed the mirror before each rollout (replaced by the next row) |
 | Deploys from GitLab CI: `firebase deploy --only apphosting` uploads the source, with Workload Identity Federation (was: push to GitHub and roll out from there) | Learner | GitLab stays primary and nothing depends on GitHub; no Google key in CI | `firebase.json` sits at the root, since the upload is its folder |
 | Every setting a token can reach is Pulumi code: GitLab CI variables, environments and schedule (`@pulumi/gitlab`), the GitHub mirror repository, deploy key and ruleset (`@pulumi/github`, `@pulumi/tls`), Firebase and the Storage rules (2026-10-22) | Learner | One place to change and review; no copied values or hand-made keys | Four personal access tokens as stack secrets; WorkOS has no official provider, so the AuthKit redirect URIs use the community osodevops/workos provider and the MCP resource indicators the generic magodo/restful one (`infra/workos.ts`, 2026-10-22). WorkOS Connect settings (CIMD, DCR), Maintainer-only GitLab settings and the state bootstrap stay manual (no API, or not our role) |
-| Genkit as the agent framework (was Mastra), decided with the move to Firebase | Learner | Learner's call | Not used in the code yet |
+| Genkit as the one layer for wovain's own model calls (was Mastra), decided with the move to Firebase; first used by `judge_design` on Nemotron 3 Super through Nebius Token Factory (2026-10-22, #2) | Learner | Learner's call; Nemotron on Nebius for the Nebius × NVIDIA requirements | Genkit brings zod 3, express and an older OpenTelemetry SDK; schemas cross as JSON Schema |
 | One Hono package `apps/server` (was: Next.js `apps/web` plus `packages/db` around the server library) | Learner | Sign-in and consent are two forms, so Next.js was more than needed; one package holds MCP, auth and database | Next.js's per-request trace spans are gone |
 | Planning docs in Markdown only (was: `.md` plus `.html` review pages kept in sync by `sync-plan`, `scripts/plan-sync.ts` and a Stop hook) | Learner | One copy to keep current | No styled review page per doc; `app-map.html` stays |
 | Fidelity by eye | Learner | Smallest POC | Relies on attention |

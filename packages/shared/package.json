@@ -7,6 +7,7 @@
     "./settings": "./src/settings.ts",
     "./economics": "./src/economics.ts",
     "./design": "./src/design.ts",
+    "./judge": "./src/judge.ts",
     "./video-models": "./src/video-models.ts",
     "./ad": "./src/ad.ts",
     "./rules": "./src/rules.ts",

@@ -156,7 +156,7 @@
   <body>
     <main>
       <p class="tag">
-        App map · updated Oct 21, 2026 for the one-server layout (after 0.13.0)
+        App map · updated Oct 22, 2026 for Genkit and Nemotron (#2)
       </p>
       <h1>wovain app map</h1>
       <p class="lede">
@@ -199,6 +199,21 @@
                 <code>apps/server/src/server.ts</code>,
                 <code>apps/server/src/tools/</code>,
                 <code>apps/server/src/lib/</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Model calls</td>
+              <td>
+                wovain's own model calls go through Genkit to NVIDIA Nemotron 3
+                Super on Nebius Token Factory. The first is
+                <code>judge_design</code>, which checks a design brief against
+                the print and listing rules before the widget shows it. Without
+                <code>NEBIUS_API_KEY</code> the check is skipped.
+              </td>
+              <td>
+                <code>apps/server/src/lib/ai.ts</code>,
+                <code>apps/server/src/lib/design-judge.ts</code>,
+                <code>apps/server/src/tools/judge.ts</code>
               </td>
             </tr>
             <tr>

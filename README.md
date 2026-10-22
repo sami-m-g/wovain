@@ -38,7 +38,7 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
 | `FAL_BILLING_KEY` | Optional: what fal actually charged (`video_spend`) | fal API key with the Billing preset |
 | `META_SYSTEM_USER_TOKEN` | Creating the five automated rules (the Meta Ads connector has no rules tool) | A system user token, or a long-lived user token from Graph API Explorer with `ads_management` |
-| `NEBIUS_API_KEY` | Optional: Nebius AI Studio | Nebius AI Studio → API keys |
+| `NEBIUS_API_KEY` | Optional: the design check (`judge_design`, Nemotron on Nebius Token Factory); without it the check is skipped | Nebius Token Factory → API keys |
 | `QLOO_API_KEY` | Optional: Qloo's Taste API | Qloo developer portal |
 | `TAVILY_API_KEY` | Optional: Tavily search | Tavily dashboard → API keys |
 | `WORKOS_AUTHKIT_DOMAIN` | Sign-in: the AuthKit domain that issues `/mcp`'s tokens | WorkOS dashboard (e.g. `https://<name>.authkit.app`) |
@@ -56,6 +56,20 @@ Add `<App Hosting URL>/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`) a
 
 The server tells the agent the flow in its MCP `instructions`, and serves a playbook per step (`design`, `ads`, `campaign`) through the `get_playbook` tool and as MCP prompts.
 
+## Nebius and Nemotron
+
+wovain makes its own model calls through [Genkit](https://genkit.dev), with the OpenAI-compatible plugin (`@genkit-ai/compat-oai`) pointed at Nebius Token Factory (`https://api.tokenfactory.nebius.com/v1/`). The model is NVIDIA Nemotron 3 Super (`nvidia/nemotron-3-super-120b-a12b`), set once in `apps/server/src/lib/ai.ts`.
+
+| Call | When | What it does |
+| --- | --- | --- |
+| `judge_design` | The design playbook calls it before every design widget | Scores the design brief (idea, blank, placement, colors, artwork size and transparency, listing, coach line) against wovain's print and listing rules. Returns a verdict, one check per rule, up to 5 fixes and a coach line, checked by a zod schema. Code decides print size, transparency, title length and color count itself, and those results override the model. |
+
+To run it:
+
+1. Put a Token Factory key in `apps/server/.env` as `NEBIUS_API_KEY` and run `pnpm dev`. Without the key, `judge_design` answers `configured: false` and the agent skips the check.
+2. `pnpm test:live` makes one real call with the demo brief and checks the reply against the schema (a fraction of a cent). It's skipped without the key. `pnpm test` and `pnpm test:integration` use Genkit's mock model and never call Nebius.
+3. In production, set the secret (`pulumi config set --secret nebius-api-key` in `infra/`) and list `NEBIUS_API_KEY` in `apphosting.yaml`.
+
 ## Develop
 
 | Command | What it does |
@@ -69,6 +83,7 @@ The server tells the agent the flow in its MCP `instructions`, and serves a play
 | `pnpm typecheck` | TypeScript, strictest settings |
 | `pnpm test` | Server unit tests (Vitest): pure logic, no services |
 | `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
+| `pnpm test:live` | Opt-in: one real Nemotron call on Nebius; skipped without `NEBIUS_API_KEY` |
 | `pnpm test:stories` | Widget stories as tests (Playwright) |
 | `pnpm knip` | Unused files, exports and dependencies |
 | `pnpm arch` | Architecture rules (dependency-cruiser): layers, cycles, orphans |
