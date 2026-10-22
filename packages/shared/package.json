@@ -12,6 +12,7 @@
     "./video-models": "./src/video-models.ts",
     "./ad": "./src/ad.ts",
     "./rules": "./src/rules.ts",
+    "./optimizer/*": "./src/optimizer/*.ts",
     "./campaign": "./src/campaign.ts",
     "./widgets": "./src/widgets.ts"
   },

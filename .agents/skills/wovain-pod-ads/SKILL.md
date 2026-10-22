@@ -31,7 +31,7 @@ This overlay narrows claude-ads for a print-on-demand shop: the economics of a $
 
 | File | Rules |
 | --- | --- |
-| [references/economics.md](references/economics.md) | POD-E1 to POD-E6: breakeven, size mix, price room, bundles, small samples, refunds |
+| [references/economics.md](references/economics.md) | POD-E1 to POD-E6, POD-B1: breakeven, size mix, price room, bundles, small samples, refunds, capped winners |
 | [references/kills.md](references/kills.md) | POD-K1 to POD-K4: ad versus design kills, no clicks, unsettled spend |
 | [references/creative.md](references/creative.md) | POD-C1, POD-C2: fatigue on apparel, concept count |
 | [references/operations.md](references/operations.md) | POD-O1 to POD-O5: can't ship, refunds, delays, production errors, shipping and chargebacks |
@@ -50,4 +50,4 @@ This overlay narrows claude-ads for a print-on-demand shop: the economics of a $
 
 ## Where the rules live in code
 
-Each rule ID here has deterministic code in `packages/shared/src/optimizer/` (`pod.ts`, `ops.ts`, `reconcile.ts`) or a guidance line in `apps/server/src/optimizer/guidance.ts`. A unit test reads every `POD-*` and `R*` heading in `references/` and fails when an ID has neither. Add or rename an ID here and in code in the same change.
+Each rule ID here has deterministic code in `packages/shared/src/optimizer/` (`pod.ts`, `shop.ts`, `ops.ts`, `reconcile.ts`) or a guidance line in `apps/server/src/optimizer/guidance.ts`. A unit test reads every `POD-*` and `R*` heading in `references/` and fails when an ID has neither. Add or rename an ID here and in code in the same change.

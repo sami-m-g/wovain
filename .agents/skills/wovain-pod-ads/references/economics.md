@@ -25,3 +25,7 @@ Kill and scale decisions use net sales and report a downside case. With fewer th
 ### POD-E6 Refunds count
 
 Contribution subtracts refunded and charged-back orders, with Fourthwall's fees on them where the profit report shows them. A design with a good ROAS on Meta and a high refund rate isn't a winner.
+
+### POD-B1 Winner capped
+
+A campaign spending its whole daily budget, with CPA on settled net sales under `scaleUnderMultiple` × breakeven and at least `scaleMinSales` net sales, is a capped winner: propose `budget_up` by at most `maxBudgetChangePctPerDay`, never past the merchant's cap, with base and downside cases at the marginal CPA (`ads-budget`). Scaling waits while a refund spike or tracking gap is open, and stops seven days before a seasonal design's ship-by cutoff (POD-S1).
