@@ -1,4 +1,6 @@
+import { approvedConcepts } from "@wovain/shared/ad";
 import type { Ad, AdAsset, AdConcept } from "@wovain/shared/ad";
+import type { Design } from "@wovain/shared/design";
 import { adName } from "@wovain/shared/rules";
 
 import type { Store } from "../store.ts";
@@ -10,21 +12,25 @@ const ofKind = (assets: AdAsset[], kind: AdAsset["kind"]) =>
       : []
   );
 
-const metaAd = async (store: Store, designId: string, concept: AdConcept) => {
-  const cards = concept.cards ?? [];
-  const designs = await Promise.all(
-    cards.map(async (card) => await store.requireDesign(card.designId))
+const metaAd = async (
+  designId: string,
+  concept: AdConcept,
+  designOf: (id: string) => Promise<Design>
+) => {
+  const cards = await Promise.all(
+    (concept.cards ?? []).map(async (card) => {
+      const { productUrl } = await designOf(card.designId);
+      return {
+        headline: card.headline,
+        imageUrl: card.imageUrl,
+        link: productUrl,
+      };
+    })
   );
   return {
     adName: adName(designId, concept.id),
     aiMade: concept.assets.some((asset) => asset.source === "fal"),
-    ...(cards.length > 0 && {
-      cards: cards.map((card, index) => ({
-        headline: card.headline,
-        imageUrl: card.imageUrl,
-        link: designs[index]?.productUrl,
-      })),
-    }),
+    ...(cards.length > 0 && { cards }),
     cta: concept.cta,
     headlines: concept.headlines,
     images: ofKind(concept.assets, "image"),
@@ -36,11 +42,17 @@ const metaAd = async (store: Store, designId: string, concept: AdConcept) => {
 // One Meta ad per approved concept, named for the rules ("wovain d1 · c2"):
 // its ready visuals, text variants and CTA, whether fal made any of it (for
 // Meta's AI disclosure), and a carousel's cards with each product's link.
-export const approvedAds = async (store: Store, ad: Ad) => {
-  const approved = ad.concepts.filter(
-    (concept) => concept.status === "approved"
-  );
+// Designs the caller already loaded are reused for the cards.
+export const approvedAds = async (
+  store: Store,
+  ad: Ad,
+  loaded: Map<string, Design>
+) => {
+  const designOf = async (id: string) =>
+    loaded.get(id) ?? (await store.requireDesign(id));
   return await Promise.all(
-    approved.map(async (concept) => await metaAd(store, ad.designId, concept))
+    approvedConcepts(ad).map(
+      async (concept) => await metaAd(ad.designId, concept, designOf)
+    )
   );
 };

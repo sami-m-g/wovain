@@ -1,5 +1,6 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
+import { approvedConcepts } from "@wovain/shared/ad";
 import {
   blockerSchema,
   campaignResultSchema,
@@ -92,12 +93,13 @@ export const registerCampaignTools = (
     async () => {
       const settings = await store.getSettings();
       const { dailyBudget, products } = await addedProducts(store, settings);
+      const loaded = new Map(products.map(({ design }) => [design.id, design]));
       const plan = {
         campaignName: `wovain · ${new Date().toISOString().slice(0, 10)}`,
         dailyBudgetCents: Math.round(dailyBudget * 100),
         products: await Promise.all(
           products.map(async ({ ad, design }) => ({
-            ads: await approvedAds(store, ad),
+            ads: await approvedAds(store, ad, loaded),
             designId: ad.designId,
             productUrl: design.productUrl,
             staticImageUrl: ad.staticImage.url,
@@ -238,8 +240,7 @@ export const registerCampaignTools = (
         dailyBudget,
         launchVia,
         products: products.map(({ ad }) => ({
-          ads: ad.concepts.filter((concept) => concept.status === "approved")
-            .length,
+          ads: approvedConcepts(ad).length,
           designId: ad.designId,
           title: ad.productTitle,
         })),

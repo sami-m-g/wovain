@@ -1,4 +1,4 @@
-import type { Ad, AdConcept } from "@wovain/shared/ad";
+import type { Ad, AdConcept, Decision } from "@wovain/shared/ad";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import preview from "../../.storybook/preview.tsx";
@@ -134,11 +134,7 @@ const ad: Ad = {
   status: "draft",
 };
 
-const decide = (
-  current: Ad,
-  conceptId: string,
-  status: "approved" | "skipped"
-) => {
+const decide = (current: Ad, conceptId: string, status: Decision) => {
   const concepts = current.concepts.map((concept) =>
     concept.id === conceptId ? { ...concept, status } : concept
   );
@@ -152,7 +148,7 @@ const meta = preview.meta({
       await Promise.resolve();
     }),
     onDecide: fn(
-      async (current: Ad, conceptId: string, status: "approved" | "skipped") =>
+      async (current: Ad, conceptId: string, status: Decision) =>
         await Promise.resolve(decide(current, conceptId, status))
     ),
     onFeedback: fn(async () => {

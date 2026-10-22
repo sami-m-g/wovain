@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 
+import type { Ad, ConceptRevision } from "@wovain/shared/ad";
 import {
   campaignResultSchema,
   launchRequestSchema,
@@ -23,6 +24,10 @@ import {
   testStorage,
   testStore,
 } from "../helpers.ts";
+
+type AdFixture = Omit<Ad, "concepts" | "status"> & {
+  concepts: ConceptRevision[];
+};
 
 let store: Store;
 let graphCalls: {
@@ -60,7 +65,7 @@ beforeEach(async () => {
     ...demoDesign,
     productUrl: "https://shop.example/products/cat-tee",
   });
-  await store.saveAd({
+  const { concepts, ...ad }: AdFixture = {
     coach: "Two clips.",
     concepts: [
       {
@@ -90,8 +95,6 @@ beforeEach(async () => {
         id: "c1",
         name: "Try-on",
         primaryTexts: ["A calico watches the sun go down."],
-        revision: 1,
-        status: "approved",
       },
       {
         angle: "Gift",
@@ -112,8 +115,6 @@ beforeEach(async () => {
         id: "c2",
         name: "Gift",
         primaryTexts: ["For the friend whose cat runs the house."],
-        revision: 1,
-        status: "skipped",
       },
     ],
     designId: "d1",
@@ -136,8 +137,10 @@ beforeEach(async () => {
       scaleUnder: 8.26,
     },
     staticImage: { alt: "Black tee", url: "https://cdn.fourthwall.com/x.webp" },
-    status: "added",
-  });
+  };
+  await store.saveConcepts(ad, concepts);
+  await store.recordConcept("d1", "c1", "approved");
+  await store.recordConcept("d1", "c2", "skipped");
 });
 
 afterEach(() => {

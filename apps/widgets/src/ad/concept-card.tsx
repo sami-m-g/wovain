@@ -3,7 +3,7 @@ import { Button } from "@openai/apps-sdk-ui/components/Button";
 import { ArrowUp, Expand, Play } from "@openai/apps-sdk-ui/components/Icon";
 import { Input } from "@openai/apps-sdk-ui/components/Input";
 import { ratioLabel } from "@wovain/shared/ad";
-import type { AdAsset, AdConcept, AdRatio } from "@wovain/shared/ad";
+import type { AdAsset, AdConcept, AdRatio, Decision } from "@wovain/shared/ad";
 import { useId, useState } from "react";
 
 const aspect: Record<AdRatio, string> = {
@@ -13,7 +13,7 @@ const aspect: Record<AdRatio, string> = {
 };
 
 const ctaLabel = (cta: AdConcept["cta"]) =>
-  cta.charAt(0) + cta.slice(1).toLowerCase().replace("_", " ");
+  cta.charAt(0) + cta.slice(1).toLowerCase().replaceAll("_", " ");
 
 const Tile = ({
   asset,
@@ -174,8 +174,11 @@ const decided = (status: AdConcept["status"]) =>
     <Badge color="secondary">Skipped</Badge>
   );
 
-export interface ConceptActions {
-  onDecide: (status: "approved" | "skipped") => void;
+// The concept action running, if any.
+export type ConceptBusy = Decision | "feedback" | "retry";
+
+interface ConceptActions {
+  onDecide: (status: Decision) => void;
   onExpand: (asset: AdAsset) => void;
   onFeedback: (feedback: string) => Promise<boolean>;
   onRetry: (asset: AdAsset) => void;
@@ -189,7 +192,7 @@ export const ConceptCard = ({
   onFeedback,
   onRetry,
 }: ConceptActions & {
-  busy: "approved" | "skipped" | "feedback" | "retry" | null;
+  busy: ConceptBusy | null;
   concept: AdConcept;
 }) => {
   const titleId = useId();

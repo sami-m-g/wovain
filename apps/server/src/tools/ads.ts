@@ -3,10 +3,9 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import {
   adRatioSchema,
   adResultSchema,
-  conceptInputSchema,
+  conceptRevisionSchema,
+  decisionSchema,
 } from "@wovain/shared/ad";
-import type { ConceptInput } from "@wovain/shared/ad";
-import type { Design } from "@wovain/shared/design";
 import { breakeven } from "@wovain/shared/economics";
 import { ruleThresholds } from "@wovain/shared/rules";
 import { z } from "zod";
@@ -16,6 +15,8 @@ import {
   AD_IMAGE_USD,
   adImageInputs,
 } from "../lib/ad-images.ts";
+import { checkConcepts } from "../lib/ad-media.ts";
+import { isFalMedia, jobHandles, mediaUrls } from "../lib/fal-media.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
 import { text } from "../lib/tool-result.ts";
 import { upstreamReply } from "../lib/upstream.ts";
@@ -24,63 +25,9 @@ import { planVideos } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
-// A URL fal returned: https on fal's media CDN only.
-const isFalMedia = (value: string) => {
-  const { hostname, protocol } = new URL(value);
-  return (
-    protocol === "https:" &&
-    (hostname === "fal.media" || hostname.endsWith(".fal.media"))
-  );
-};
 const falMediaUrl = z.url().refine(isFalMedia, "a clip URL on fal.media");
 
-// Ad visuals are fal output or the design's own Fourthwall images, never an
-// arbitrary link that would end up in a Meta ad.
-const ownMedia = (design: Design, url: string) =>
-  isFalMedia(url) ||
-  url === design.artwork.url ||
-  design.mockups.some((mockup) => mockup.url === url);
-
-const checkConcepts = async (
-  store: Store,
-  design: Design,
-  concepts: ConceptInput[]
-) => {
-  const foreign = concepts.find((concept) =>
-    concept.assets.some(
-      (asset) => asset.url !== undefined && !ownMedia(design, asset.url)
-    )
-  );
-  if (foreign !== undefined) {
-    throw new Error(
-      `${foreign.id}: visuals must come from fal or this design's mockups`
-    );
-  }
-  const cards = concepts.flatMap((concept) => concept.cards ?? []);
-  const cardDesigns = await Promise.all(
-    cards.map(async (card) => await store.requireDesign(card.designId))
-  );
-  const badCard = cards.find((card, index) => {
-    const cardDesign = cardDesigns[index];
-    return (
-      cardDesign?.status !== "live" || !ownMedia(cardDesign, card.imageUrl)
-    );
-  });
-  if (badCard !== undefined) {
-    throw new Error(
-      `carousel card ${badCard.designId}: needs a live design and its own images`
-    );
-  }
-};
-
-const conceptsInput = z
-  .array(
-    conceptInputSchema.extend({
-      feedback: z.string().min(1).max(300).optional(),
-    })
-  )
-  .min(1)
-  .max(6);
+const conceptsInput = z.array(conceptRevisionSchema).min(1).max(6);
 
 const imagesInput = z
   .array(
@@ -94,11 +41,47 @@ const imagesInput = z
   .min(1)
   .max(8);
 
-export const registerAdTools = (
+const spends = {
+  destructiveHint: false,
+  openWorldHint: true,
+  readOnlyHint: false,
+};
+
+// wovain's calls on the merchant's own fal account.
+const falClient = (store: Store, upstream: Upstream | undefined) => {
+  const fal = async (tool: string, args: Record<string, unknown>) =>
+    await upstreamReply(upstream, {
+      args,
+      id: "fal",
+      tool,
+      userId: store.userId,
+    });
+
+  // The merchant's own fal account runs requests wovain builds: the agent
+  // picks the design and the scene, never the model or the references.
+  // wovain keeps the accepted job handles, so collect_ad_media can fetch
+  // only results of jobs it submitted.
+  const submit = async (
+    designId: string,
+    requests: Record<string, unknown>[]
+  ) => {
+    const reply = await fal("submit_jobs", { requests });
+    const jobs = jobHandles(reply);
+    if (jobs.length > 0) {
+      await store.recordAdMedia(designId, { jobs });
+    }
+    return reply;
+  };
+  return { fal, submit };
+};
+type Submit = ReturnType<typeof falClient>["submit"];
+
+// The optional UGC clips: plan, generate and add audio.
+const registerVideoTools = (
   server: McpServer,
   store: Store,
   videoPricing: VideoPricing,
-  upstream: Upstream | undefined
+  submit: Submit
 ) => {
   const planFor = async (designId: string) => {
     const [design, settings, prices] = await Promise.all([
@@ -128,21 +111,6 @@ export const registerAdTools = (
     }
   );
 
-  // The merchant's own fal account runs requests wovain builds: the agent
-  // picks the design and the scene, never the model or the references.
-  const submit = async (requests: Record<string, unknown>[]) =>
-    await upstreamReply(upstream, {
-      args: { requests },
-      id: "fal",
-      tool: "submit_jobs",
-      userId: store.userId,
-    });
-  const spends = {
-    destructiveHint: false,
-    openWorldHint: true,
-    readOnlyHint: false,
-  };
-
   server.registerTool(
     "generate_videos",
     {
@@ -155,6 +123,7 @@ export const registerAdTools = (
     async ({ designId }) => {
       const plan = await planFor(designId);
       return await submit(
+        designId,
         plan.clips.map((clip, index) => ({
           endpoint_id: clip.endpointId,
           index,
@@ -177,7 +146,16 @@ export const registerAdTools = (
       title: "Add background audio",
     },
     async ({ designId, videoUrls }) => {
-      const { audio } = await planFor(designId);
+      const [{ audio }, media] = await Promise.all([
+        planFor(designId),
+        store.getAdMedia(designId),
+      ]);
+      const collected = new Set(media.urls);
+      if (videoUrls.some((url) => !collected.has(url))) {
+        throw new Error(
+          "Pass clips collect_ad_media returned for this design."
+        );
+      }
       if (audio === undefined) {
         return {
           content: text(
@@ -186,6 +164,7 @@ export const registerAdTools = (
         };
       }
       return await submit(
+        designId,
         videoUrls.map((url, index) => ({
           endpoint_id: audio.endpointId,
           index,
@@ -194,6 +173,16 @@ export const registerAdTools = (
       );
     }
   );
+};
+
+export const registerAdTools = (
+  server: McpServer,
+  store: Store,
+  videoPricing: VideoPricing,
+  upstream: Upstream | undefined
+) => {
+  const { fal, submit } = falClient(store, upstream);
+  registerVideoTools(server, store, videoPricing, submit);
 
   server.registerTool(
     "generate_ad_images",
@@ -206,12 +195,57 @@ export const registerAdTools = (
     async ({ designId, images }) => {
       const design = await store.requireDesign(designId);
       return await submit(
+        designId,
         adImageInputs(design, images).map((input, index) => ({
           endpoint_id: AD_IMAGE_ENDPOINT,
           index,
           input,
         }))
       );
+    }
+  );
+
+  server.registerTool(
+    "collect_ad_media",
+    {
+      annotations: {
+        destructiveHint: false,
+        openWorldHint: true,
+        readOnlyHint: false,
+      },
+      description:
+        "After wait_for_jobs, fetch the results of the fal jobs wovain submitted for a design (images, clips, audio) from the merchant's account and keep their media URLs. Returns each job's URLs; only these, the design's mockups and its artwork can go in an ad. A job still running returns no URLs yet.",
+      inputSchema: z.object({ designId: z.string() }),
+      title: "Collect ad media",
+    },
+    async ({ designId }) => {
+      const { jobs } = await store.getAdMedia(designId);
+      const replies = await Promise.all(
+        jobs.map(
+          async (job) =>
+            await fal("get_job_result", {
+              endpoint_id: job.endpointId,
+              request_id: job.requestId,
+            })
+        )
+      );
+      const connect = replies.find(
+        (reply) =>
+          typeof reply.structuredContent === "object" &&
+          reply.structuredContent !== null &&
+          "needsConnection" in reply.structuredContent
+      );
+      if (connect !== undefined) {
+        return connect;
+      }
+      const results = jobs.map((job, index) => ({
+        ...job,
+        urls: mediaUrls(replies[index] ?? {}),
+      }));
+      await store.recordAdMedia(designId, {
+        urls: results.flatMap((result) => result.urls),
+      });
+      return { content: text(JSON.stringify({ jobs: results })) };
     }
   );
 
@@ -299,7 +333,7 @@ export const registerAdTools = (
       inputSchema: z.object({
         conceptId: z.string(),
         designId: z.string(),
-        status: z.enum(["approved", "skipped"]),
+        status: decisionSchema,
       }),
       outputSchema: adResultSchema.extend({ waiting: z.int() }),
       title: "Record ad choice",

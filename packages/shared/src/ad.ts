@@ -12,7 +12,7 @@ export type AdSlot = z.infer<typeof adSlotSchema>;
 export const adRatioSchema = z.enum(["1:1", "4:5", "9:16"]);
 export type AdRatio = z.infer<typeof adRatioSchema>;
 
-export const adAssetSchema = z.object({
+const adAssetSchema = z.object({
   alt: z.string().min(1).max(200),
   kind: z.enum(["image", "video"]),
   ratio: adRatioSchema,
@@ -24,15 +24,14 @@ export const adAssetSchema = z.object({
 export type AdAsset = z.infer<typeof adAssetSchema>;
 
 // One product per carousel card; the campaign plan adds each product's link.
-export const carouselCardSchema = z.object({
+const carouselCardSchema = z.object({
   designId: z.string().regex(/^d\d+$/u),
   headline: z.string().min(1).max(40),
   imageUrl: z.url(),
 });
-export type CarouselCard = z.infer<typeof carouselCardSchema>;
 
 // Shopping CTAs Meta accepts on a sales ad.
-export const adCtaSchema = z.enum([
+const adCtaSchema = z.enum([
   "SHOP_NOW",
   "BUY_NOW",
   "ORDER_NOW",
@@ -40,8 +39,10 @@ export const adCtaSchema = z.enum([
   "LEARN_MORE",
 ]);
 
-export const conceptStatusSchema = z.enum(["draft", "approved", "skipped"]);
-export type ConceptStatus = z.infer<typeof conceptStatusSchema>;
+const conceptStatusSchema = z.enum(["draft", "approved", "skipped"]);
+// The merchant's choice on one concept.
+export const decisionSchema = conceptStatusSchema.exclude(["draft"]);
+export type Decision = z.infer<typeof decisionSchema>;
 
 // What the playbook writes for one concept. Text limits follow Meta's
 // recommendation (125 characters of primary text show before "more", 40 of
@@ -65,12 +66,14 @@ export const conceptInputSchema = z.object({
   // The news or seasonal moment that makes it timely (Tavily).
   whyNow: z.string().min(1).max(160).optional(),
 });
-export type ConceptInput = z.infer<typeof conceptInputSchema>;
+// A new or revised concept: a revision carries the feedback that produced it.
+export const conceptRevisionSchema = conceptInputSchema.extend({
+  feedback: z.string().min(1).max(300).optional(),
+});
+export type ConceptRevision = z.infer<typeof conceptRevisionSchema>;
 
-export const adConceptSchema = conceptInputSchema
+const adConceptSchema = conceptRevisionSchema
   .extend({
-    // The feedback that produced this revision.
-    feedback: z.string().min(1).max(300).optional(),
     revision: z.int().min(1).default(1),
     status: conceptStatusSchema.default("draft"),
   })
@@ -80,7 +83,7 @@ export const adConceptSchema = conceptInputSchema
   );
 export type AdConcept = z.infer<typeof adConceptSchema>;
 
-export const adStatusSchema = z.enum(["draft", "added", "skipped"]);
+const adStatusSchema = z.enum(["draft", "added", "skipped"]);
 export type AdStatus = z.infer<typeof adStatusSchema>;
 
 // Before concepts, an ad was one headline, one primary text and up to two
@@ -137,37 +140,41 @@ const upgradeLegacy = (value: unknown) => {
   };
 };
 
-export const adSchema = z.preprocess(
-  upgradeLegacy,
-  z.object({
-    coach: z.string().min(1).max(160),
-    concepts: z.array(adConceptSchema).min(1).max(6),
-    designId: z.string().regex(/^d\d+$/u),
-    economics: z.object({
-      baseCost: z.number(),
-      breakevenPerSale: z.number(),
-      cardFees: z.number(),
-      price: z.number(),
-      refundReserve: z.number(),
-      roas: z.number(),
-      roasOnOrderValue: z.number(),
-    }),
-    productTitle: z.string().min(1),
-    rules: z.object({
-      alertAbove: z.number(),
-      killDesignAt: z.number(),
-      killExpensiveAbove: z.number(),
-      killNoSalesAt: z.number(),
-      scaleStepPct: z.number(),
-      scaleUnder: z.number(),
-    }),
-    staticImage: z.object({ alt: z.string().min(1), url: z.url() }),
-    status: adStatusSchema.default("draft"),
-  })
-);
+export const adSchema = z.object({
+  coach: z.string().min(1).max(160),
+  concepts: z.array(adConceptSchema).min(1).max(6),
+  designId: z.string().regex(/^d\d+$/u),
+  economics: z.object({
+    baseCost: z.number(),
+    breakevenPerSale: z.number(),
+    cardFees: z.number(),
+    price: z.number(),
+    refundReserve: z.number(),
+    roas: z.number(),
+    roasOnOrderValue: z.number(),
+  }),
+  productTitle: z.string().min(1),
+  rules: z.object({
+    alertAbove: z.number(),
+    killDesignAt: z.number(),
+    killExpensiveAbove: z.number(),
+    killNoSalesAt: z.number(),
+    scaleStepPct: z.number(),
+    scaleUnder: z.number(),
+  }),
+  staticImage: z.object({ alt: z.string().min(1), url: z.url() }),
+  status: adStatusSchema.default("draft"),
+});
 export type Ad = z.infer<typeof adSchema>;
 
+// How the store reads ads: records from before concepts are upgraded.
+export const storedAdSchema = z.preprocess(upgradeLegacy, adSchema);
+
 export const adResultSchema = z.object({ ad: adSchema });
+
+// The concepts that become Meta ads.
+export const approvedConcepts = (ad: Ad) =>
+  ad.concepts.filter((concept) => concept.status === "approved");
 
 // A product's ads are decided once every concept is approved or skipped.
 export const adStatusOf = (concepts: AdConcept[]): AdStatus => {
@@ -183,7 +190,7 @@ export const adStatusOf = (concepts: AdConcept[]): AdStatus => {
 // draft with the next revision number; the others keep their choice.
 export const mergeConcepts = (
   current: AdConcept[],
-  incoming: (ConceptInput & { feedback?: string | undefined })[]
+  incoming: ConceptRevision[]
 ): AdConcept[] => {
   const byId = new Map(incoming.map((concept) => [concept.id, concept]));
   const revise = (

@@ -12,7 +12,8 @@ The plan checkpoint was waived: the owner asked to build.
 | `apps/server/src/store.ts` | `saveConcepts`, `recordConcept` (replaces `recordAd`) |
 | `apps/server/src/lib/ad-images.ts` | New: Nano Banana Pro edit inputs |
 | `apps/server/src/lib/ad-plan.ts` | New: `approvedAds` for the campaign plan |
-| `apps/server/src/tools/ads.ts` | `generate_ad_images`; `show_ad_widget` and `record_ad` per concept; URL checks |
+| `apps/server/src/lib/fal-media.ts`, `lib/ad-media.ts` | New (after the security review): job handles and media URLs from fal replies; the concept media check against collected URLs |
+| `apps/server/src/tools/ads.ts` | `generate_ad_images`, `collect_ad_media`; job handles stored at submit; `show_ad_widget` and `record_ad` per concept |
 | `apps/server/src/tools/campaign.ts` | Plan products carry `ads`; widget counts approved concepts |
 | `apps/server/src/playbooks/ads.ts` | Rewritten: signals, concepts, visuals, feedback, "Run it" |
 | `apps/server/src/playbooks/campaign.ts` | Paused build from concepts: multi-media, single, carousel; AI label when AI-made |

@@ -1,4 +1,4 @@
-import { adSchema, adStatusOf, mergeConcepts } from "@wovain/shared/ad";
+import { adStatusOf, mergeConcepts, storedAdSchema } from "@wovain/shared/ad";
 import type { AdConcept } from "@wovain/shared/ad";
 import { expect, test } from "vitest";
 
@@ -51,7 +51,7 @@ test("merging revises the named concept and appends new ones", () => {
 });
 
 test("a stored ad from before concepts reads as one concept", () => {
-  const ad = adSchema.parse({
+  const ad = storedAdSchema.parse({
     coach: "Two clips.",
     designId: "d1",
     economics: {

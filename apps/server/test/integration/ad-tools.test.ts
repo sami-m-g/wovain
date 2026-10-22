@@ -24,6 +24,14 @@ let store: Store;
 beforeEach(async () => {
   store = testStore();
   await store.saveDesign(demoDesign);
+  // As if collect_ad_media had read these from jobs wovain submitted.
+  await store.recordAdMedia("d1", {
+    urls: [
+      "https://v3b.fal.media/files/b/x/a.jpg",
+      "https://v3b.fal.media/files/b/x/b.jpg",
+      "https://v3b.fal.media/files/b/x/c.jpg",
+    ],
+  });
   client = await connectClient({ FAL_KEY: "test-key" }, store);
 });
 
@@ -135,6 +143,22 @@ test("show_ad_widget refuses visuals from anywhere but fal and the design", asyn
   const result = await call("show_ad_widget", {
     ...adWidget,
     concepts: [concept("c1", "https://evil.example/a.jpg")],
+  });
+  expect(result.isError).toBe(true);
+});
+
+test("show_ad_widget refuses fal media wovain didn't collect for the design", async () => {
+  const result = await call("show_ad_widget", {
+    ...adWidget,
+    concepts: [concept("c1", "https://v3b.fal.media/files/someone-else.jpg")],
+  });
+  expect(result.isError).toBe(true);
+});
+
+test("add_video_audio refuses clips wovain didn't collect", async () => {
+  const result = await call("add_video_audio", {
+    designId: "d1",
+    videoUrls: ["https://v3b.fal.media/files/someone-else.mp4"],
   });
   expect(result.isError).toBe(true);
 });

@@ -1,23 +1,20 @@
 import { Button } from "@openai/apps-sdk-ui/components/Button";
 import { ChevronLeft } from "@openai/apps-sdk-ui/components/Icon";
-import { ratioLabel } from "@wovain/shared/ad";
-import type { Ad, AdAsset } from "@wovain/shared/ad";
+import { approvedConcepts, ratioLabel } from "@wovain/shared/ad";
+import type { Ad, AdAsset, Decision } from "@wovain/shared/ad";
 import { money } from "@wovain/shared/economics";
 import { useId, useState } from "react";
 
 import { useAction } from "../lib/use-action.ts";
 import { ActionError } from "../lib/widget-shell.tsx";
 import { ConceptCard } from "./concept-card.tsx";
+import type { ConceptBusy } from "./concept-card.tsx";
 
 export interface AdWidgetActions {
   // Starts the campaign step, which builds the campaign paused.
   onCreateCampaign: (ad: Ad) => Promise<void>;
   // Records the choice and returns the product's ads with it.
-  onDecide: (
-    ad: Ad,
-    conceptId: string,
-    status: "approved" | "skipped"
-  ) => Promise<Ad>;
+  onDecide: (ad: Ad, conceptId: string, status: Decision) => Promise<Ad>;
   onFeedback: (ad: Ad, conceptId: string, feedback: string) => Promise<void>;
   // Asks the host for full screen (or back to inline).
   onFullscreen: (on: boolean) => Promise<void>;
@@ -28,7 +25,7 @@ export interface AdWidgetViewProps extends AdWidgetActions {
   ad: Ad;
 }
 
-type Busy = "approved" | "skipped" | "feedback" | "retry" | "campaign";
+type Busy = ConceptBusy | "campaign";
 
 const times = (value: number) => `${value.toFixed(1)}×`;
 
@@ -99,7 +96,7 @@ const FullScreen = ({
 );
 
 const summary = (ad: Ad) => {
-  const approved = ad.concepts.filter((c) => c.status === "approved").length;
+  const approved = approvedConcepts(ad).length;
   const open = ad.concepts.filter((c) => c.status === "draft").length;
   const total = `${ad.concepts.length} ad concept${ad.concepts.length === 1 ? "" : "s"}`;
   return open > 0
