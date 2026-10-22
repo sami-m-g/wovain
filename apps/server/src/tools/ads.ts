@@ -18,16 +18,25 @@ import {
 import { checkConcepts } from "../lib/ad-media.ts";
 import { chargeRun } from "../lib/autopilot.ts";
 import type { Spend } from "../lib/autopilot.ts";
-import { isFalMedia, jobHandles, mediaUrls } from "../lib/fal-media.ts";
+import {
+  gpuSeconds,
+  isFalMedia,
+  jobHandles,
+  mediaUrls,
+} from "../lib/fal-media.ts";
 import type { VideoPricing } from "../lib/fal-pricing.ts";
 import { text } from "../lib/tool-result.ts";
 import { upstreamReply } from "../lib/upstream.ts";
 import type { Upstream } from "../lib/upstream.ts";
-import { planVideos } from "../lib/video-plan.ts";
+import { planVideos, REFRAME_USD, reframeRequests } from "../lib/video-plan.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
 const falMediaUrl = z.url().refine(isFalMedia, "a clip URL on fal.media");
+const clipsInput = z.object({
+  designId: z.string(),
+  videoUrls: z.array(falMediaUrl).min(1).max(4),
+});
 
 const conceptsInput = z.array(conceptRevisionSchema).min(1).max(6);
 
@@ -88,14 +97,27 @@ const registerVideoTools = (
   videoPricing: VideoPricing,
   submit: Submit
 ) => {
-  const planFor = async (designId: string) => {
+  // Only fal output collect_ad_media returned for this design goes back to fal.
+  const requireCollected = async (designId: string, urls: string[]) => {
+    const media = await store.getAdMedia(designId);
+    const collected = new Set(media.urls);
+    if (urls.some((url) => !collected.has(url))) {
+      throw new Error("Pass URLs collect_ad_media returned for this design.");
+    }
+  };
+  const planFor = async (designId: string, start?: string) => {
     const [design, settings, prices] = await Promise.all([
       store.requireDesign(designId),
       store.getSettings(),
       videoPricing(),
+      requireCollected(designId, start === undefined ? [] : [start]),
     ]);
-    return planVideos(design, settings, prices);
+    return planVideos(design, settings, prices, start);
   };
+  const planInput = z.object({
+    designId: z.string(),
+    startImageUrl: falMediaUrl.optional(),
+  });
 
   server.registerTool(
     "video_plan",
@@ -106,12 +128,12 @@ const registerVideoTools = (
         readOnlyHint: true,
       },
       description:
-        "Plan the ad videos for a live design from wovain's settings: one fal request per clip, the background-audio request for each finished clip, and the estimated cost. Say the estimate, then run the clips with generate_videos and the audio with add_video_audio.",
-      inputSchema: z.object({ designId: z.string() }),
+        "Plan the ad video for a live design from wovain's settings: one short fal clip, its background audio, the crops to 9:16, 4:5 and 1:1, and the estimated cost. Pass startImageUrl (a 9:16 ad image collect_ad_media returned for this design) to start the clip from it instead of the mockup. Say the estimate, then run the clip with generate_videos, the audio with add_video_audio and the crops with reframe_videos.",
+      inputSchema: planInput,
       title: "Plan ad videos",
     },
-    async ({ designId }) => {
-      const plan = await planFor(designId);
+    async ({ designId, startImageUrl }) => {
+      const plan = await planFor(designId, startImageUrl);
       return { content: text(JSON.stringify(plan)) };
     }
   );
@@ -121,13 +143,15 @@ const registerVideoTools = (
     {
       annotations: spends,
       description:
-        "Generate a live design's ad clips on the merchant's own fal account, exactly as video_plan planned them (fal submit_jobs). Spends the merchant's fal credits: say video_plan's estimate first. Returns the job handles; wait for them with the fal tool's wait_for_jobs and don't call this again for the same clips. If the merchant hasn't connected fal, the result has needsConnection and a link to show them.",
-      inputSchema: z.object({ designId: z.string() }),
+        "Generate a live design's ad clip on the merchant's own fal account, exactly as video_plan planned it with the same startImageUrl (fal submit_jobs). Spends the merchant's fal credits: say video_plan's estimate first. Returns the job handles; wait for them with the fal tool's wait_for_jobs and don't call this again for the same clip. If the merchant hasn't connected fal, the result has needsConnection and a link to show them.",
+      inputSchema: planInput,
       title: "Generate ad videos",
     },
-    async ({ designId }) => {
-      const plan = await planFor(designId);
-      const audioUsd = (plan.audio?.usdPerClip ?? 0) * plan.clips.length;
+    async ({ designId, startImageUrl }) => {
+      const plan = await planFor(designId, startImageUrl);
+      const laterUsd =
+        ((plan.audio?.usdPerClip ?? 0) + plan.reframe.usdPerClip) *
+        plan.clips.length;
       return await submit(
         designId,
         plan.clips.map((clip, index) => ({
@@ -135,7 +159,7 @@ const registerVideoTools = (
           index,
           input: clip.input,
         })),
-        { usd: plan.estimate.usd - audioUsd, what: "video" }
+        { usd: plan.estimate.usd - laterUsd, what: "video" }
       );
     }
   );
@@ -146,23 +170,14 @@ const registerVideoTools = (
       annotations: spends,
       description:
         "Add the plan's background audio to finished clips on the merchant's own fal account (fal submit_jobs, one job per clip). Pass the clip URLs fal returned. Spends a little of the merchant's fal credits. Returns the job handles for the fal tool's wait_for_jobs. Says so when the plan has no audio step.",
-      inputSchema: z.object({
-        designId: z.string(),
-        videoUrls: z.array(falMediaUrl).min(1).max(4),
-      }),
+      inputSchema: clipsInput,
       title: "Add background audio",
     },
     async ({ designId, videoUrls }) => {
-      const [{ audio }, media] = await Promise.all([
+      const [{ audio }] = await Promise.all([
         planFor(designId),
-        store.getAdMedia(designId),
+        requireCollected(designId, videoUrls),
       ]);
-      const collected = new Set(media.urls);
-      if (videoUrls.some((url) => !collected.has(url))) {
-        throw new Error(
-          "Pass clips collect_ad_media returned for this design."
-        );
-      }
       if (audio === undefined) {
         return {
           content: text(
@@ -178,6 +193,29 @@ const registerVideoTools = (
           input: { ...audio.perClip, video_url: url },
         })),
         { usd: audio.usdPerClip * videoUrls.length, what: "audio" }
+      );
+    }
+  );
+
+  server.registerTool(
+    "reframe_videos",
+    {
+      annotations: spends,
+      description: `Crop finished clips to Meta's 9:16, 4:5 and 1:1 on the merchant's own fal account (fal's ffmpeg scale-video, three jobs per clip), so one generated clip covers every placement. Pass the clip URLs collect_ad_media returned (after add_video_audio when the plan has audio). About $${(3 * REFRAME_USD).toFixed(2)} per clip. Returns the job handles for the fal tool's wait_for_jobs; the jobs for each clip come in the order 1:1, 4:5, 9:16.`,
+      inputSchema: clipsInput,
+      title: "Crop ad videos",
+    },
+    async ({ designId, videoUrls }) => {
+      await requireCollected(designId, videoUrls);
+      const requests = videoUrls.flatMap((url) => reframeRequests(url));
+      return await submit(
+        designId,
+        requests.map((request, index) => ({
+          endpoint_id: request.endpointId,
+          index,
+          input: request.input,
+        })),
+        { usd: requests.length * REFRAME_USD, what: "video" }
       );
     }
   );
@@ -254,11 +292,18 @@ export const registerAdTools = (
       if (connect !== undefined) {
         return connect;
       }
-      const results = jobs.map((job, index) => ({
-        ...job,
-        urls: mediaUrls(replies[index] ?? {}),
-      }));
+      const results = jobs.map((job, index) => {
+        const reply = replies[index] ?? {};
+        const seconds = gpuSeconds(reply);
+        return {
+          ...job,
+          ...(seconds !== undefined && { gpuSeconds: seconds }),
+          urls: mediaUrls(reply),
+        };
+      });
+      // The GPU time fal reported is kept for the sci job (docs/sustainability.md).
       await store.recordAdMedia(designId, {
+        jobs: results.map(({ urls: _urls, ...job }) => job),
         urls: results.flatMap((result) => result.urls),
       });
       return { content: text(JSON.stringify({ jobs: results })) };

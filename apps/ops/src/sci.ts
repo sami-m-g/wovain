@@ -37,15 +37,27 @@ const RUN = {
   // Assumed weekly volume for sharing CI across runs (a demo-scale shop
   // network; the report shows the CI share separately).
   runsPerWeek: 20,
-  // Two 15-second fal clips for one ad widget.
-  videoClips: 2,
+  // One 5-second fal clip per product, cropped to every ratio (reframe_videos).
+  videoClips: 1,
 };
 // About 0.3 Wh per chat-sized model call (Epoch AI's 2025 estimate for a
 // typical query): unverified estimate.
 const MODEL_CALL_KWH = 0.0003;
-// About one H100-minute at 700 W per 15-second clip, with PUE: unverified
-// estimate (fal publishes no energy data).
-const CLIP_KWH = (700 * 60 * PUE) / 3_600_000;
+// fal reports GPU seconds per clip (collect_ad_media keeps them: measured)
+// but names no GPU and publishes no energy data, so each second is taken at
+// an H100's 700 W TDP with PUE: estimate. With no recorded clip, one
+// H100-minute per clip: unverified estimate.
+const GPU_WATTS = 700;
+const FALLBACK_CLIP_GPU_SECONDS = 60;
+const gpuKwh = (seconds: number) => (seconds * GPU_WATTS * PUE) / 3_600_000;
+
+const median = (values: number[]) => {
+  const sorted = values.toSorted((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1
+    ? (sorted[mid] ?? 0)
+    : ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
+};
 
 const kwh = (seconds: number, vcpus: number, gb: number) =>
   (seconds * (vcpus * VCPU_WATTS + gb * GB_WATTS) * PUE) / 3_600_000;
@@ -59,6 +71,8 @@ export interface Measured {
   // GitLab: summed job durations of main pipelines, the last 7 days.
   ciSeconds: number;
   mainPipelines: number;
+  // Firestore ad-media: GPU seconds fal reported per generated clip.
+  clipGpuSeconds: number[];
 }
 
 interface Part {
@@ -74,6 +88,9 @@ export const sciOf = (m: Measured) => {
   const serverSeconds = secondsPerRequest * RUN.requests;
   // Hosted runner: 2 vCPU, 8 GB; a week of main pipelines over a week of runs.
   const ciSecondsPerRun = m.ciSeconds / RUN.runsPerWeek;
+  const clips = m.clipGpuSeconds.length;
+  const clipSeconds =
+    clips === 0 ? FALLBACK_CLIP_GPU_SECONDS : median(m.clipGpuSeconds);
   const parts: Part[] = [
     {
       basis: `measured ${secondsPerRequest.toFixed(2)} s of instance time per request × ${RUN.requests} requests`,
@@ -95,8 +112,11 @@ export const sciOf = (m: Measured) => {
       name: "Model calls (Nebius)",
     },
     {
-      basis: `${RUN.videoClips} clips × one H100-minute (estimate)`,
-      grams: RUN.videoClips * CLIP_KWH * GRID["us-central1"],
+      basis:
+        clips === 0
+          ? `${RUN.videoClips} clip × one H100-minute (estimate: no recorded fal clips yet)`
+          : `${RUN.videoClips} clip × median ${clipSeconds.toFixed(1)} GPU-seconds over ${clips} recorded fal clips (measured) at ${GPU_WATTS} W (estimate: fal names no GPU)`,
+      grams: RUN.videoClips * gpuKwh(clipSeconds) * GRID["us-central1"],
       name: "Video generation (fal)",
     },
   ];
@@ -115,6 +135,6 @@ export const sciReport = (m: Measured, at: Date) => {
     "| --- | --- | --- |",
     ...parts.map((p) => `| ${p.name} | ${p.grams.toFixed(3)} | ${p.basis} |`),
     "",
-    `Grid intensity (location-based, Google 2025): us-central1 ${GRID["us-central1"]}, us-east1 ${GRID["us-east1"]} gCO2e/kWh. Energy coefficients: Cloud Carbon Footprint (estimate). Model and video energy: unverified estimates. Constants and sources: apps/ops/src/sci.ts.`,
+    `Grid intensity (location-based, Google 2025): us-central1 ${GRID["us-central1"]}, us-east1 ${GRID["us-east1"]} gCO2e/kWh. Energy coefficients: Cloud Carbon Footprint (estimate). Model energy and video watts: unverified estimates; video GPU-seconds are measured when the Basis says so. Constants and sources: apps/ops/src/sci.ts.`,
   ].join("\n");
 };

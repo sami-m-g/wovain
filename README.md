@@ -20,7 +20,7 @@ Built for Devpost's [Build With AI: Basics](https://learn-ai-basics.devpost.com/
 - [Node.js](https://nodejs.org) 24 and [pnpm](https://pnpm.io) 12.3.4 (`corepack enable` picks it up from `packageManager`)
 - Java 21, for the Firestore and Storage emulators that `pnpm dev` and `pnpm test:integration` run on
 - In the same agent, these MCP servers connected and signed in: **Fourthwall**, **Meta Ads** and **fal**
-- A Fourthwall shop, a Meta ad account with a Facebook Page and a pixel, and fal credit (about $1.20 per 15-second clip at fal's actual billing)
+- A Fourthwall shop, a Meta ad account with a Facebook Page and a pixel, and fal credit (about $0.18 per ad video at fal's list prices: one 5-second H3 Max Turbo clip, its audio and three crops)
 
 ## Setup
 
@@ -181,10 +181,11 @@ Blocked for our role (see [docs/transcend.md](docs/transcend.md)): automatic Duo
 
 ## Sustainability (SCI)
 
-wovain emits about **14.27 gCO2e per run** (one idea-to-paused-campaign run), measured with the Green Software Foundation's SCI method: ((E × I) + M) per R, with us-central1's location-based grid intensity (432 gCO2e/kWh), measured server and CI time, and estimated model and video energy. The `sci` job recomputes it on every `main` pipeline and publishes [the latest report](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/-/jobs/artifacts/main/raw/sci-report.md?job=sci). Method, sources and caveats: [docs/sustainability.md](docs/sustainability.md).
+wovain emits about **8.73 gCO2e per run** (one idea-to-paused-campaign run, down from 14.27 with two 15-second clips), measured with the Green Software Foundation's SCI method: ((E × I) + M) per R, with us-central1's location-based grid intensity (432 gCO2e/kWh), measured server and CI time, estimated model energy, and video energy from the GPU seconds fal reports per clip (an estimate until merchants' clips are recorded). The `sci` job recomputes it on every `main` pipeline and publishes [the latest report](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/-/jobs/artifacts/main/raw/sci-report.md?job=sci). Method, sources and caveats: [docs/sustainability.md](docs/sustainability.md).
 
 | Choice | Gain |
 | --- | --- |
+| One short clip, cropped to every ratio | One 5-second H3 Max Turbo clip per ad instead of two 15-second H3 Max Reference clips: about $0.18 instead of $1.53 at list price, and 5.5 instead of 11.1 gCO2e per run at the fallback estimate |
 | Scale to zero on App Hosting | About 334 gCO2e a week avoided against one always-on instance (measured instance time; estimate coefficients), more than a whole run emits |
 | Scanners off on scheduled pipelines | About 262 CI minutes and 29 gCO2e a week avoided (measured scanner durations) |
 | Filtered Duo triggers | Flows only on a person's action or a red `main`; about 3 credits a flow run measured before the filters |

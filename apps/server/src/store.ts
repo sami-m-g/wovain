@@ -44,9 +44,16 @@ const campaignSchema = z.object({
 type SavedCampaign = z.infer<typeof campaignSchema>;
 
 // The fal jobs wovain submitted for one design's ads and the media URLs their
-// results held: the only fal URLs an ad may use.
+// results held: the only fal URLs an ad may use. gpuSeconds is the GPU time
+// fal reported for a finished job (the sci job's measured video energy).
 const adMediaSchema = z.object({
-  jobs: z.array(z.object({ endpointId: z.string(), requestId: z.string() })),
+  jobs: z.array(
+    z.object({
+      endpointId: z.string(),
+      gpuSeconds: z.number().nonnegative().optional(),
+      requestId: z.string(),
+    })
+  ),
   urls: z.array(z.url()),
 });
 type AdMedia = z.infer<typeof adMediaSchema>;
@@ -318,21 +325,22 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
       }
       return bytes;
     },
-    // Adds submitted jobs or collected URLs to a design's ad media.
+    // Adds submitted jobs (or their GPU time, by request ID) or collected URLs
+    // to a design's ad media.
     recordAdMedia: async (designId: string, added: Partial<AdMedia>) =>
       await transaction(async (tx) => {
         const current = (await adMedia.get(designId, tx)) ?? {
           jobs: [],
           urls: [],
         };
-        const known = new Set(current.jobs.map((job) => job.requestId));
+        const jobs = new Map(current.jobs.map((job) => [job.requestId, job]));
+        for (const job of added.jobs ?? []) {
+          jobs.set(job.requestId, { ...jobs.get(job.requestId), ...job });
+        }
         return await adMedia.put(
           designId,
           {
-            jobs: [
-              ...current.jobs,
-              ...(added.jobs ?? []).filter((job) => !known.has(job.requestId)),
-            ],
+            jobs: [...jobs.values()],
             urls: [...new Set([...current.urls, ...(added.urls ?? [])])],
           },
           tx

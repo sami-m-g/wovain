@@ -18,8 +18,9 @@ loop:
 # merchants' records, usage and costs) goes to the digest issue, and the
 # market scout files one intent from competitors' news and the biggest
 # funnel drop-off (apps/ops/src/weekly.ts). 3 Tavily searches, no model call.
-# It's the only job that reads merchants' records (counts only), so it signs
-# in as gitlab-analytics from its own environment; loop and sci can't.
+# It and sci are the only jobs that read merchants' records (counts and
+# clips' GPU seconds only), so they sign in as gitlab-analytics from its own
+# environment; loop can't.
 weekly:
   extends: .ops-job
   rules:
@@ -47,13 +48,20 @@ scout:duo:
 
 # Software Carbon Intensity on every main pipeline (apps/ops/src/sci.ts,
 # docs/sustainability.md): the last 7 days of Cloud Run instance time and
-# requests and of main pipelines' CI time. The report is a job artifact
+# requests and of main pipelines' CI time, and the GPU seconds fal reported
+# for merchants' clips (Firestore ad-media, as gitlab-analytics, which also
+# reads Cloud Monitoring). The report is a job artifact
 # (latest: /-/jobs/artifacts/main/raw/sci-report.md?job=sci) and a GitLab
 # metrics report.
 sci:
   extends: [.ops-job, .on-main]
   stage: .post
   needs: []
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_ANALYTICS_SERVICE_ACCOUNT
+  environment:
+    name: analytics
+    action: verify
   script:
     - node apps/ops/src/sci-report.ts
   artifacts:

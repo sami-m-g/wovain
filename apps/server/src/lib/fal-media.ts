@@ -89,6 +89,19 @@ export const textField = (reply: Reply, key: string): string | undefined =>
     return typeof value === "string" ? value : undefined;
   })[0];
 
+// The GPU seconds fal reports for a finished job: the queue's
+// `metrics.inference_time` or a model's own `timings.inference` (H3 routes:
+// DiT denoising on the GPU). fal names no GPU type. Undefined when absent.
+export const gpuSeconds = (reply: Reply): number | undefined =>
+  collect(reply, (node) => {
+    const entries: [string, unknown][] =
+      typeof node === "object" && node !== null ? Object.entries(node) : [];
+    const value = entries.find(
+      ([name]) => name === "inference_time" || name === "inference"
+    )?.[1];
+    return typeof value === "number" && value >= 0 ? value : undefined;
+  })[0];
+
 // Media URLs in a job result.
 export const mediaUrls = (reply: Reply): string[] => [
   ...new Set(

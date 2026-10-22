@@ -5,6 +5,7 @@ import { sciOf, sciReport } from "../src/sci.ts";
 // The week measured on 2026-10-22 (Cloud Monitoring and the GitLab API).
 const week = {
   ciSeconds: 31_335,
+  clipGpuSeconds: [],
   instanceSeconds: 154.7,
   mainPipelines: 65,
   requests: 58,
@@ -19,7 +20,16 @@ describe("sciOf", () => {
       parts.reduce((sum, p) => sum + p.grams, 0),
       10
     );
-    expect(total).toBeCloseTo(14.27, 1);
+    // One 5-second clip at the one-H100-minute fallback (no clips recorded).
+    expect(total).toBeCloseTo(8.72, 1);
+    expect(parts[3]?.basis).toContain("estimate: no recorded fal clips");
+  });
+
+  it("uses the median GPU seconds fal reported for recorded clips", () => {
+    const { parts } = sciOf({ ...week, clipGpuSeconds: [16.4, 6, 9] });
+    // 9 GPU-s × 700 W × PUE 1.1 at 432 g/kWh.
+    expect(parts[3]?.grams).toBeCloseTo((9 * 700 * 1.1 * 432) / 3_600_000, 6);
+    expect(parts[3]?.basis).toContain("over 3 recorded fal clips (measured)");
   });
 
   it("counts no server energy without traffic", () => {

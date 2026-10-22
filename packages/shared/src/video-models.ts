@@ -2,14 +2,19 @@ import { z } from "zod";
 
 // Image-to-video models on fal that wovain can use. Prices are fal's list
 // prices (get_pricing, Oct 19, 2026); the widget shows them per clip.
-// The default first: on-model clips that keep the print, at $0.75 per clip
-// (verified on the first real product; see docs/checklist.md > Revisions).
+// The default first: H3 Max Turbo, fal's throughput-tuned H3 Max ("no
+// compromises on output quality"), at about $0.08 for a 5-second clip; it
+// starts from a 9:16 ad image that already keeps the print. Compared on
+// Oct 22, 2026 (fal get_pricing and model pages): LTX-Video 13B distilled
+// ($0.04 per unit, p50 20 s, 720p max, older 0.9.7 weights) and Wan 2.2
+// Turbo ($0.10 per clip, p50 93 s, p90 327 s). H3 Max Reference ($0.75 per
+// 15-second clip) keeps the print without a start image.
 export const videoModelIds = [
+  "h3-max-turbo",
   "h3-max-reference",
   "kling-o1-reference",
   "kling-v3-standard",
   "kling-v3-pro",
-  "h3-max-turbo",
   "h3-max",
 ] as const;
 

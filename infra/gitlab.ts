@@ -73,7 +73,7 @@ export const environments = (siteUrl: pulumi.Input<string>) => {
     { name: "operations", project: projectId, tier: "other" },
     adopt("41884145")
   );
-  // The weekly analysis job; Google trusts gitlab-analytics only from here.
+  // The weekly analysis and sci jobs; Google trusts gitlab-analytics only from here.
   new gitlab.ProjectEnvironment(
     "analytics",
     { name: "analytics", project: projectId, tier: "other" },

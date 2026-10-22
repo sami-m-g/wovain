@@ -43,11 +43,12 @@ export const rulesSettings = z.object({
 });
 
 export const videoSettings = z.object({
-  clipsPerProduct: z.int().min(1).max(4).default(2),
+  // One short clip from a fast model; reframe_videos crops it to every ratio.
+  clipsPerProduct: z.int().min(1).max(4).default(1),
   elements: z.boolean().default(true),
-  model: z.enum(videoModelIds).default("h3-max-reference"),
+  model: z.enum(videoModelIds).default("h3-max-turbo"),
   resolution: z.enum(["720p", "1080p"]).default("720p"),
-  seconds: z.int().min(5).max(15).default(15),
+  seconds: z.int().min(5).max(15).default(5),
 });
 
 export const audioSettings = z.object({

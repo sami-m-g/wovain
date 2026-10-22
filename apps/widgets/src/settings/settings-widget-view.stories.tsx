@@ -84,23 +84,23 @@ export const SaveFails = meta.story({
   },
 });
 
-// Cheaper fal models for testing; the summary flags that they don't keep the print.
-export const PicksTestVideoModel = meta.story({
+// The reference model keeps the print without a start image, at a higher price.
+export const PicksReferenceVideoModel = meta.story({
   args: { initialState: { open: ["video"] } },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(
-      canvas.getByRole("radio", { name: /MiniMax H3 Max Turbo/u })
+      canvas.getByRole("radio", { name: /MiniMax H3 Max Reference/u })
     );
     await userEvent.click(canvas.getByRole("button", { name: "Save" }));
     await expect(
       await canvas.findByText(
-        /MiniMax H3 Max Turbo 720p · \$0\.24 per clip \(list price, Oct 19, 2026; actual may be higher\) · test only/u
+        /MiniMax H3 Max Reference 720p · \$0\.25 per clip \(list price, Oct 19, 2026; actual may be higher\)$/u
       )
     ).toBeVisible();
     await expect(args.onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        video: { ...settings.video, model: "h3-max-turbo" },
+        video: { ...settings.video, model: "h3-max-reference" },
       })
     );
   },
