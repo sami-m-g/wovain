@@ -114,6 +114,28 @@ export const analysisReport = (funnel: Record<Step, number>, usage: Usage) => {
   ].join("\n");
 };
 
+// Web titles become plain text on one line: no newlines, no markdown or
+// HTML control characters, no secrets.
+export const safeText = (text: string) =>
+  redact(text)
+    .replaceAll(/[\r\n\t]+/gu, " ")
+    .replaceAll(/[\\`*_[\]()<>#!|~{}]/gu, "")
+    .trim();
+
+// Only http and https links, re-serialized by URL, with the characters that
+// could end a markdown link or start HTML percent-encoded.
+const WEB = new Set(["http:", "https:"]);
+export const safeUrl = (raw: string): string | null => {
+  const url = URL.parse(raw);
+  return url === null || !WEB.has(url.protocol)
+    ? null
+    : url.href.replaceAll(
+        /[()<>\s"'`[\]]/gu,
+        (c) =>
+          `%${c.codePointAt(0)?.toString(16).toUpperCase().padStart(2, "0")}`
+      );
+};
+
 export interface Finding {
   title: string;
   url: string;
@@ -127,10 +149,12 @@ export const marketIntent = (
   funnel: Record<Step, number>
 ) => {
   const drop = biggestDropOff(funnel);
-  const lines = findings.map(
-    (f) =>
-      `- [${redact(f.title).replaceAll(/[[\]]/gu, "")}](${f.url}) (search: ${f.query})`
-  );
+  const lines = findings.flatMap((f) => {
+    const url = safeUrl(f.url);
+    return url === null
+      ? []
+      : [`- [${safeText(f.title)}](${url}) (search: ${safeText(f.query)})`];
+  });
   return `## Problem
 
 Competing print-on-demand AI tools shipped or announced the items below this week. ${drop === undefined ? "wovain has no merchant data yet, so the funnel can't point at a step." : `wovain's own funnel loses the most merchants between ${drop.from} and ${drop.to}.`}

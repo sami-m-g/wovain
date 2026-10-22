@@ -25,6 +25,8 @@ loop:
 # merchants' records, usage and costs) goes to the digest issue, and the
 # market scout files one intent from competitors' news and the biggest
 # funnel drop-off (apps/ops/src/weekly.ts). 3 Tavily searches, no model call.
+# It's the only job that reads merchants' records (counts only), so it signs
+# in as gitlab-analytics from its own environment; loop and sci can't.
 weekly:
   stage: monitor
   extends: [.gcp-auth]
@@ -32,9 +34,9 @@ weekly:
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain weekly"
   variables:
-    GCP_SERVICE_ACCOUNT: $GCP_OPS_SERVICE_ACCOUNT
+    GCP_SERVICE_ACCOUNT: $GCP_ANALYTICS_SERVICE_ACCOUNT
   script:
     - node apps/ops/src/weekly.ts
   environment:
-    name: operations
+    name: analytics
     action: verify

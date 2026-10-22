@@ -8,7 +8,7 @@
 ## Checks run
 
 - `pnpm check`, `pnpm typecheck`, `pnpm knip`, `pnpm arch`, `pnpm dupes`, `pnpm build`, `pnpm test` (60 ops, 97 server): pass.
-- `pnpm infra:preview` (read only, on top of !50): 20 to create, 3 to update; this MR adds the `weekly` schedule and its 3 variables, `ops-datastore.viewer` and `TAVILY_API_KEY`.
+- `pnpm infra:preview` (read only, on top of !50): 20 to create, 3 to update; this MR adds the `weekly` schedule and its 3 variables, the `gitlab-analytics` account, its trust, roles, `analytics` environment and `GCP_ANALYTICS_SERVICE_ACCOUNT`, and `TAVILY_API_KEY`. A security review moved Firestore access off `gitlab-ops` onto that account, and market-scout titles and links are now sanitized (`safeText`, `safeUrl`: http(s) only, link-breaking characters encoded, newlines and markdown control characters stripped), with tests.
 - The records reader against production with my own credentials: no merchant records yet (a collection-group count of `design` is 0), so the first digest will say "no merchants yet".
 - `currentUser.creditsUsage(namespacePath: "gitlab-ai-hackathon")` returned 42.885 credits for October.
 

@@ -71,6 +71,12 @@ export const environments = (siteUrl: pulumi.Input<string>) => {
     project: projectId,
     tier: "other",
   });
+  // The weekly analysis job; Google trusts gitlab-analytics only from here.
+  new gitlab.ProjectEnvironment("analytics", {
+    name: "analytics",
+    project: projectId,
+    tier: "other",
+  });
 };
 
 // The renovate job runs only on this schedule (.gitlab/ci/verify.yml matches

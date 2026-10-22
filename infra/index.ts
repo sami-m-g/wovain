@@ -341,16 +341,35 @@ new gcp.serviceaccount.IAMMember("ops-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: ops.name,
 });
-// datastore.viewer is for the weekly job's funnel counts (apps/ops/src/
-// records.ts reads statuses through field masks; merchants' grants stay
-// KMS-encrypted, and this account can't use the key).
-for (const role of [
-  "roles/datastore.viewer",
-  "roles/logging.viewer",
-  "roles/monitoring.viewer",
-]) {
+for (const role of ["roles/logging.viewer", "roles/monitoring.viewer"]) {
   new gcp.projects.IAMMember(`ops-${role.split("/")[1]}`, {
     member: ops.member,
+    project,
+    role,
+  });
+}
+
+// The weekly analysis (apps/ops/src/weekly.ts) is the only job that reads
+// merchants' records, for funnel counts, so it has its own account, trusted
+// only from its own analytics environment. records.ts reads statuses through
+// field masks; the grants stay KMS-encrypted and this account can't use the
+// key. The loop and sci jobs never get Firestore access.
+const analytics = new gcp.serviceaccount.Account(
+  "gitlab-analytics",
+  {
+    accountId: "gitlab-analytics",
+    displayName: "GitLab CI weekly analysis (funnel counts)",
+  },
+  afterApis
+);
+new gcp.serviceaccount.IAMMember("analytics-from-gitlab", {
+  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.environment/analytics`,
+  role: "roles/iam.workloadIdentityUser",
+  serviceAccountId: analytics.name,
+});
+for (const role of ["roles/datastore.viewer", "roles/monitoring.viewer"]) {
+  new gcp.projects.IAMMember(`analytics-${role.split("/")[1]}`, {
+    member: analytics.member,
     project,
     role,
   });
@@ -445,6 +464,11 @@ const o11yApiKey = config.getSecret("o11y-api-key");
 // (`pulumi config set --secret <name>`); everything else comes from above.
 ciVariables({
   FIREBASE_PROJECT_ID: { protected: true, value: project },
+  GCP_ANALYTICS_SERVICE_ACCOUNT: {
+    created: true,
+    protected: true,
+    value: analytics.email,
+  },
   GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
   GCP_INFRA_SERVICE_ACCOUNT: { protected: true, value: infra.email },
   GCP_OPS_SERVICE_ACCOUNT: { created: true, protected: true, value: ops.email },

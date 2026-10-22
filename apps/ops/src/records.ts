@@ -1,7 +1,7 @@
 import { GoogleAuth } from "google-auth-library";
 import { z } from "zod";
 
-// Merchants' records in Firestore, read through its REST API as gitlab-ops
+// Merchants' records in Firestore, read through its REST API as gitlab-analytics
 // (datastore.viewer). Field masks keep the read to the fields the funnel
 // needs: statuses, video states and the rules list. Nothing about a merchant
 // leaves this module except counts.

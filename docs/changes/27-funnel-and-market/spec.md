@@ -14,7 +14,7 @@ Intent: [intent.md](intent.md)
 - `apps/server/src/lib/funnel.ts`: `stepOf(tool, args)` maps a `tools/call` to a step; `countStep` adds to the counter through `@opentelemetry/api` (a no-op without a provider). `routes/mcp.ts` counts after a non-5xx response; `routes/connect.ts` counts a finished connection.
 - `telemetry.ts` registers a `MeterProvider` with `PeriodicExportingMetricReader` (30 s) and `OTLPMetricExporter`, sharing the trace resource, and flushes both providers on SIGTERM, since App Hosting scales to zero.
 - `apps/ops/src/records.ts` lists `users/*/{connections,design,ad,campaign}` through the Firestore REST API with field masks; `analysis.ts` turns them into merchants per step, the biggest drop-off, cost estimates and the market intent (pure, tested); `weekly.ts` wires it up with `@tavily/core` and GitLab GraphQL `currentUser.creditsUsage`.
-- Infra: `roles/datastore.viewer` for `gitlab-ops`, the `TAVILY_API_KEY` CI variable from the existing `tavily-api-key` stack secret, and the `wovain weekly` schedule with the scanners off.
+- Infra: a separate `gitlab-analytics` account (`datastore.viewer`, `monitoring.viewer`) used only by the weekly job from its own `analytics` environment, so the loop and sci jobs never read Firestore; the `TAVILY_API_KEY` CI variable from the existing `tavily-api-key` stack secret, and the `wovain weekly` schedule with the scanners off.
 
 ## Areas of concern
 

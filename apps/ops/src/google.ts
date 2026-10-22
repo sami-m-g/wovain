@@ -5,7 +5,7 @@ import { normalize, tally } from "./signals.ts";
 import type { Signal } from "./signals.ts";
 
 // Production's own logs and metrics in Google Cloud: the App Hosting backend
-// is the Cloud Run service "app". CI signs in as gitlab-ops through Workload
+// is the Cloud Run service "app". CI signs in as gitlab-ops (gitlab-analytics for the weekly job) through Workload
 // Identity Federation (.gcp-auth, GOOGLE_APPLICATION_CREDENTIALS), which may
 // only read logs and metrics (infra/index.ts).
 
