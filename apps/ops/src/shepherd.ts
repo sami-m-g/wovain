@@ -1,3 +1,4 @@
+import { reviewSkipReason } from "./gates.ts";
 import type { GitLab, Issue, MergeRequest, Note } from "./gitlab.ts";
 import {
   blockers,
@@ -16,7 +17,7 @@ import { DEVELOPER, assignedAt, fromLoop } from "./scout.ts";
 // through review to GitLab's auto-merge. Each step is a human action through
 // the token's owner, because GitLab skips flow triggers for events a flow
 // caused (ee/app/workers/concerns/ai/cloud_events_flow_trigger_worker.rb):
-//   draft → marked ready (starts Code Review: merge_request_ready)
+//   draft → marked ready and Duo Code Review requested (assign_reviewer)
 //   ready, head not reviewed → Duo Code Review requested (assign_reviewer)
 //   review threads open → Developer asked once to address them (mention)
 //   provenance, guardrails, review of the head commit, pipeline → auto-merge
@@ -179,6 +180,20 @@ const shepherdOne = async (
   const gaps = provenanceGaps(
     await provenanceOf(gitlab, mr, issue, context.loopUser)
   );
+  const paths = diffs.flatMap((d) => [d.old_path, d.new_path]);
+  // Duo Code Review only for application code: never a docs-only,
+  // lockfile-only or Renovate MR (gates.ts). The loop marks drafts ready
+  // itself, so a draft still qualifies here.
+  const skip = reviewSkipReason({
+    draft: false,
+    paths,
+    sourceBranch: mr.source_branch,
+  });
+  if (skip !== undefined) {
+    return await handBack(gitlab, thread, [
+      `no Duo Code Review for this change (${skip})`,
+    ]);
+  }
   // Checks that need no review come first, so no review credits are spent
   // on an MR that can't be auto-merged anyway.
   const base = {
@@ -186,7 +201,7 @@ const shepherdOne = async (
     hasConflicts: mr.has_conflicts,
     lines: diffs.reduce((sum, d) => sum + diffLines(d.diff), 0),
     outsiders: outsiders(discussions, [REVIEWER, DEVELOPER, context.loopUser]),
-    paths: diffs.flatMap((d) => [d.old_path, d.new_path]),
+    paths,
     pipeline: undefined,
     provenance: gaps,
     reviewedSha: mr.sha,
@@ -203,15 +218,17 @@ const shepherdOne = async (
   }
   const asked = notes.find((n) => n.body.includes(marker(`review:${mr.sha}`)));
   if (mr.draft) {
-    // Marking ready starts Code Review (merge_request_ready).
+    // The Code Review trigger listens to assign_reviewer only, so marking
+    // ready costs nothing; the review is requested next to it.
     await gitlab.updateMergeRequest(mr.iid, {
       title: mr.title.replace(/^\s*(?:\[draft\]|\(draft\)|draft:)\s*/iu, ""),
     });
+    await requestReview(gitlab, mr);
     await gitlab.noteOnMergeRequest(
       mr.iid,
-      `Marked ready for Duo Code Review by the wovain loop.\n\n${marker(`review:${mr.sha}`)}`
+      `Marked ready and Duo Code Review requested for ${mr.sha} by the wovain loop.\n\n${marker(`review:${mr.sha}`)}`
     );
-    return "marked ready";
+    return "marked ready, review requested";
   }
   const reviewedSha = reviewedShaOf(
     notes.map((n) => ({

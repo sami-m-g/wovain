@@ -1,9 +1,11 @@
 import { z } from "zod";
 
+import { createCiApi } from "./gitlab-ci.ts";
 import { createGitLab } from "./gitlab.ts";
 import type { GitLab } from "./gitlab.ts";
 import { createGoogle } from "./google.ts";
 import { createO11y } from "./o11y.ts";
+import { redMain } from "./red-main.ts";
 import { scout, verify } from "./scout.ts";
 import { shepherd } from "./shepherd.ts";
 
@@ -81,6 +83,23 @@ const { filed, problems } = await attempt(
   async () => await scout(sources, now),
   { filed: undefined, problems: [] }
 );
+// Red main: Duo's Fix CI/CD only for a confirmed, new code failure.
+const ci = await attempt(
+  "red main",
+  async () =>
+    await redMain(
+      {
+        ...gitlab,
+        ...createCiApi(gitlab, {
+          api: env.CI_API_V4_URL,
+          project: env.CI_PROJECT_ID,
+          token: env.GITLAB_TOKEN,
+        }),
+      },
+      now
+    ),
+  "not checked"
+);
 const merges = await attempt(
   "shepherd",
   async () => await shepherd(gitlab, now),
@@ -94,6 +113,7 @@ const report = [
   `- Filed: ${filed === undefined ? "none" : `#${filed.iid}`}`,
   `- Fixes checked: ${list(verdicts, "#")}`,
   `- Duo merge requests: ${list(merges, "!")}`,
+  `- Main pipeline: ${ci}`,
   `- GitLab Observability: ${sources.o11y === undefined ? "not read (no GITLAB_O11Y_API_KEY)" : "read"}`,
   `- Failures: ${failures.length === 0 ? "none" : failures.join("; ")}`,
 ];

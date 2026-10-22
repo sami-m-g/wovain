@@ -3,13 +3,14 @@ config:
   # the flow's foundationalFlowReference; events use GitLab's EVENT_TYPES names.
   # Filters only accept the fields in ALLOWED_FILTER_FIELDS
   # (ee/app/models/ai/flow_trigger.rb): merge requests by action, pipelines by
-  # status, source, ref and default_branch. Each trigger fires only on a human
-  # action or a red main, so Duo credits go where they matter. GitLab never
-  # starts a flow for a bot's or another flow's action (run_service.rb,
+  # status, source, ref and default_branch. Each trigger fires only on a
+  # human action, so Duo credits go where they matter; a red main goes
+  # through the loop's gate instead (apps/ops/src/gates.ts), since filters
+  # can't dedupe or tell job types apart. GitLab never starts a flow for a
+  # bot's or another flow's action (run_service.rb,
   # cloud_events_flow_trigger_worker.rb), so the self-healing loop
-  # (apps/ops, docs/loop.md) assigns, marks ready and requests review with
-  # GITLAB_TOKEN, a person's token: that is what chains Developer → Code
-  # Review here.
+  # (apps/ops, docs/loop.md) assigns and requests review with GITLAB_TOKEN,
+  # a person's token: that is what chains Developer → Code Review here.
   wovain:duoTriggers:
     - name: duo-developer
       description: Developer flow on assign or mention
@@ -22,9 +23,15 @@ config:
       flow: fix_pipeline/v1
       serviceAccount: duo-fix-ci-cd-pipeline-gitlab-ai-hackathon
       events: [pipeline_hooks]
-      active: true
-      # Main only: on work-in-progress branches it opened draft MRs nobody
-      # wanted (!19, !20). Mention it on an MR to fix a branch by hand.
+      # Off: replaced by the gated path in the loop job (apps/ops/src/
+      # red-main.ts, gates.ts). This trigger fired on every red push to main,
+      # infra 403s and auth 404s included (7 runs in 30 minutes), and its
+      # filters can't dedupe or tell job types apart. The loop starts the
+      # same flow through the API only for a new, confirmed code failure, at
+      # most once an hour and 3 times a day. Kept configured so it can be
+      # switched back on. On work-in-progress branches it opened draft MRs
+      # nobody wanted (!19, !20); "Fix pipeline with Duo" fixes one by hand.
+      active: false
       filter:
         pipeline_hooks:
           match: all
@@ -39,12 +46,15 @@ config:
               operator: in
               value: [push]
     - name: duo-code-review
-      description: Code review when Duo is asked to review or an MR is marked ready
+      description: Code review when Duo is asked to review
       flow: code_review/v1
       serviceAccount: duo-code-review-gitlab-ai-hackathon
-      # Human actions only, so Renovate's MRs and drafts cost nothing; the
-      # /issue skill requests this reviewer when it opens an MR.
-      events: [assign_reviewer, merge_request_ready]
+      # Only when someone requests Duo as reviewer: the loop's shepherd and
+      # the /issue skill do that only for a ready MR that changes app code
+      # (apps/ops/src/gates.ts reviewSkipReason), never for docs-only,
+      # lockfile-only or Renovate MRs. merge_request_ready is off because
+      # marking any MR ready, docs included, would start a paid review.
+      events: [assign_reviewer]
       active: true
   # Custom flows from .gitlab/duo/catalog/flows: a trigger for the consumer
   # the project already has (infra/duo.ts). The scout starts on a successful

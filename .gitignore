@@ -13,6 +13,8 @@ node_modules/
 dist/
 # pnpm test:e2e and pnpm demo
 /e2e-report/
+# Vitest's JUnit reports in CI (GITLAB_CI)
+junit.xml
 *.tsbuildinfo
 
 # copied by `pnpm install` (prepare): course skills from GitHub, ultracite from node_modules

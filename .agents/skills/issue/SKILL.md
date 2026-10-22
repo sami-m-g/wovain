@@ -48,7 +48,7 @@ The change keeps its artifacts in `docs/changes/<n>-<slug>/` (see `docs/changes/
   glab mr create -R <project> --source-branch <branch> --target-branch main --related-issue <n> --title "<conventional title>" --description "<body>" --remove-source-branch --yes
   ```
 
-  Add `--reviewer duo-code-review-gitlab-ai-hackathon` only when the `duo-code-review` trigger in `infra/Pulumi.prod.yaml` is active. Requesting that reviewer starts a Code Review run, which spends Duo credits.
+  Add `--reviewer duo-code-review-gitlab-ai-hackathon` only when the `duo-code-review` trigger in `infra/Pulumi.prod.yaml` is active, the MR isn't a draft, and it changes application code (`apps/server`, `apps/widgets` or `apps/ops` `src/` or `test/`, or `packages/shared/src`). Skip it for docs-only, lockfile-only and Renovate MRs (`reviewSkipReason` in `apps/ops/src/gates.ts`). Requesting that reviewer starts a Code Review run, which spends Duo credits; marking an MR ready doesn't.
 
   The description says:
   - what changed

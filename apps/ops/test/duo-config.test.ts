@@ -33,6 +33,13 @@ const stack = z.object({
         name: z.string(),
       })
     ),
+    "wovain:duoTriggers": z.array(
+      z.object({
+        active: z.boolean().optional(),
+        events: z.array(z.string()),
+        name: z.string(),
+      })
+    ),
   }),
 });
 const flow = z.object({
@@ -45,9 +52,27 @@ const flow = z.object({
   }),
 });
 
-const customFlows = stack.parse(read("infra/Pulumi.prod.yaml")).config[
-  "wovain:duoCustomFlows"
-];
+const { config } = stack.parse(read("infra/Pulumi.prod.yaml"));
+const customFlows = config["wovain:duoCustomFlows"];
+const triggers = config["wovain:duoTriggers"];
+
+// Paid flows start only through the loop's gates (apps/ops/src/gates.ts).
+describe("built-in Duo flow triggers", () => {
+  it("leave red main to the loop's gate, not pipeline_hooks", () => {
+    const fix = triggers.find((t) => t.name === "duo-fix-pipeline");
+    expect(fix?.active).toBe(false);
+    for (const t of triggers) {
+      if (t.active !== false) {
+        expect(t.events).not.toContain("pipeline_hooks");
+      }
+    }
+  });
+
+  it("start Code Review only when a reviewer is requested", () => {
+    const review = triggers.find((t) => t.name === "duo-code-review");
+    expect(review?.events).toStrictEqual(["assign_reviewer"]);
+  });
+});
 
 describe("custom Duo flows", () => {
   it("start only on events no comment can cause", () => {

@@ -63,7 +63,7 @@ C4Container
   Rel(ops, logs, "Reads errors and metrics (gitlab-ops)")
   Rel(ops, o11y, "Reads error spans and logs")
   Rel(ops, firestore, "Counts (weekly job only, gitlab-analytics)")
-  Rel(ops, duo, "Assigns, marks ready, requests review")
+  Rel(ops, duo, "Assigns, requests review, starts Fix CI/CD when gated")
   Rel(duo, ci, "Opens merge requests")
 ```
 
@@ -82,7 +82,7 @@ flowchart LR
   main --> prod["Production"]
   prod --> loop["Hourly loop: scout and verify"]
   loop --> issue
-  main -->|"red main"| fixci["Duo Fix CI/CD"]
+  main -->|"red main, fix gate passed (loop job)"| fixci["Duo Fix CI/CD"]
   fixci --> mr
 ```
 
