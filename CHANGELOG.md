@@ -1,3 +1,33 @@
+# [0.22.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.21.0...v0.22.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **ads:** accept only fal media collected from wovain's own jobs ([666ae6b](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/666ae6b812204ba57016af85660f4b84828a54fe))
+* **analytics:** isolate firestore reads and sanitize market links ([a93877a](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/a93877a77472d4fae8e88283ea932ae94957a250))
+* **autopilot:** pick from the code-ranked research themes ([8cd4230](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/8cd4230fb3a299f103f65017580b593281ec409c))
+* **autopilot:** screen every concept text and carousel card before approving ads ([2637808](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/2637808c873449e0e18a35e056e3007e6a608c0f))
+* **campaign:** extend the meta allowlist, record and read-back to ad concept shapes ([e448dca](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e448dcaca2013fbd39da7aef9a40b37d5cb09f6e))
+* **connections:** add connect_account and list_connections tools ([f722991](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/f7229915833ea099d0464e373f2d1a4a7025e55f))
+* **infra:** adopt the environments ci created first ([773e822](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/773e8226d5f1ca475ebaabaa0c95dde017f5f0ae))
+* **infra:** drop schedule variables our role can't set ([8e19f59](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/8e19f5970cfdd0d660059f77e04925112c855f80))
+* **ops:** bind auto-merge to the loop's own work ([4cb2876](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/4cb28768e0aebad877cc6ff0b12f5ece252752bf))
+* **ops:** build scout issues from server-controlled fields only ([83316e5](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/83316e5fe6cc829bab9f3308fd0bbc76bba98723))
+* **ops:** fail closed on session links, review state and threads ([7527fa2](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/7527fa278ba912d47f6583595c52618287be3140))
+* **research:** keep cached research and niche briefs per merchant ([d2561d0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/d2561d0491cb877566f4ea2f8d6bf3b444f76ddc))
+
+
+### Features
+
+* **ads:** make distinct ad concepts per product with per-concept feedback ([cabc739](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/cabc7395bf28cf98650bc2f1c15c3bcaab233882))
+* **analytics:** count the merchant funnel and scout the market weekly ([12ed409](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/12ed409f555ea8bd372d6d19973530e578f96bf0))
+* **autopilot:** run the journey on nemotron's decisions with hidden products and a paused campaign ([da51a34](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/da51a34ffc5d32754ba1dc8a16e312d5d4a97b44))
+* **infra:** start the scout flow from ci and enable the explain agent ([d76d31c](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/d76d31cb5c242bfa91a8b82634353b9b838e7c3f))
+* **ops:** turn duo on and run the self-healing loop ([b753aab](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/b753aab6cfea2aa6f9ac5130497c500ce71eab55))
+* **research:** drive trend research and audience suggestions with qloo taste signals ([75ae5f8](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/75ae5f85a1d8324c4eade93e776cdb4d1dd1c5ed))
+* **research:** rank ideas in code and use tavily search, extract, map, crawl and research ([b8598d3](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/b8598d31b2593b097531d64eb00f3877693fb231))
+* **sci:** measure software carbon intensity on every main pipeline ([29a71f4](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/29a71f4060fd23fc8ded3ead1c4226355da8bbea))
+
 # [0.21.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.20.0...v0.21.0) (2026-10-22)
 
 
