@@ -1,24 +1,20 @@
 import { judgeResultSchema } from "@wovain/shared/judge";
-import { genkit } from "genkit";
-import { mockModel } from "genkit/testing";
 import { expect, test } from "vitest";
 
 import { createDesignJudge } from "../../src/lib/design-judge.ts";
 import {
   connectClient,
   demoBrief,
+  mockAi,
   passingReply,
   testStore,
 } from "../helpers.ts";
 
-const judgeWith = (respond: Parameters<typeof mockModel>[1]) => {
-  const ai = genkit({});
-  mockModel(ai, respond);
-  return createDesignJudge(ai, "mockModel");
-};
+const judgeWith = (respond: Parameters<typeof mockAi>[0]) =>
+  createDesignJudge(mockAi(respond).ai, "mockModel");
 
 const callJudge = async (judge?: ReturnType<typeof judgeWith>) => {
-  const client = await connectClient({}, testStore(), judge);
+  const client = await connectClient({}, testStore(), { designJudge: judge });
   const result = await client.callTool({
     arguments: demoBrief,
     name: "judge_design",

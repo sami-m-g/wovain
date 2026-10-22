@@ -1,9 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import type { DesignJudgment } from "@wovain/shared/judge";
 import { designBriefSchema, judgeResultSchema } from "@wovain/shared/judge";
 
 import type { DesignJudge } from "../lib/design-judge.ts";
-import { text } from "../lib/tool-result.ts";
+import { notConfigured, text, userSafe } from "../lib/tool-result.ts";
 
 // judge_design: wovain's own model call (Genkit, Nemotron on Nebius). Without
 // a Nebius key the judge is undefined and the tool says to skip the check.
@@ -27,28 +26,15 @@ export const registerJudgeTools = (
     },
     async (brief) => {
       if (judge === undefined) {
-        return {
-          content: text(
-            "The design check isn't set up (NEBIUS_API_KEY). Skip it and show the widget."
-          ),
-          structuredContent: { configured: false },
-        };
-      }
-      let judgment: DesignJudgment;
-      try {
-        judgment = await judge(brief);
-      } catch (error) {
-        // The error class only: the brief and the model's reply stay out of
-        // the logs.
-        console.error(
-          "judge_design failed:",
-          error instanceof Error ? error.name : "unknown"
-        );
-        throw new Error(
-          "The design check failed; show the widget without it.",
-          { cause: error }
+        return notConfigured(
+          "The design check isn't set up (NEBIUS_API_KEY). Skip it and show the widget."
         );
       }
+      const judgment = await userSafe(
+        "judge_design failed:",
+        "The design check failed; show the widget without it.",
+        async () => await judge(brief)
+      );
       return {
         content: text(JSON.stringify(judgment)),
         structuredContent: { configured: true, judgment },

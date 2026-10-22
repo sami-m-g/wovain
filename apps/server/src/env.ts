@@ -13,9 +13,10 @@ const envSchema = z.object({
   // Optional: Nebius Token Factory, for judge_design (Genkit, Nemotron);
   // without it the tool says the check isn't set up.
   NEBIUS_API_KEY: z.string().optional(),
-  // Optional until the tools that call them land: Qloo's Taste API and
-  // Tavily search.
+  // Optional until the tool that calls it lands: Qloo's Taste API.
   QLOO_API_KEY: z.string().optional(),
+  // Optional: Tavily search, for research_trends and screen_trademark;
+  // without it both tools say they aren't set up.
   TAVILY_API_KEY: z.string().optional(),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),

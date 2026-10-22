@@ -20,7 +20,8 @@ wovain is a hosted MCP server. You add its URL to an agent that speaks MCP over 
 | Meta Ads MCP | Meta's official server | Campaign, ad set, video upload, ads, go live |
 | fal MCP | fal's official server | Ad videos (MiniMax H3 Max Reference or Kling), background audio, upscaling, background removal |
 | wovain server | Our Hono server, hosted on Firebase App Hosting and reached over HTTPS | Serves the playbooks and widgets, does the margin math, Meta rules, settings, and checks each design with Nemotron |
-| Nebius Token Factory | NVIDIA Nemotron 3 Super behind an OpenAI-compatible API, called through Genkit | Scores each design brief against the print and listing rules before the widget shows it (`judge_design`) |
+| Nebius Token Factory | NVIDIA Nemotron 3 Super behind an OpenAI-compatible API, called through Genkit | Scores each design brief against the print and listing rules before the widget shows it (`judge_design`), and ranks trend ideas (`research_trends`) |
+| Tavily | Web search API, called through its official SDK (`@tavily/core`) | Finds this week's news for a niche (`research_trends`) and screens a phrase for trademark hits before publishing (`screen_trademark`) |
 | Widgets | Small web pages the agent shows inline (MCP Apps) | Design, ad, campaign, optimization and settings widgets |
 
 Why a wovain server at all: an agent can only show a widget that an MCP server serves, a widget's buttons can only call its own server, and Meta automated rules have no MCP. Everything else goes through the official servers.
@@ -120,7 +121,7 @@ How sign-in works:
 | --- | --- |
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Firebase App Hosting (Node 24, Cloud Run underneath; 0 to 2 instances); Node 24, pnpm and Java 21 (emulators) locally |
-| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `NEBIUS_API_KEY` (optional: `judge_design`, skipped without it), `QLOO_API_KEY` and `TAVILY_API_KEY` (optional until a tool uses them), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
+| Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `NEBIUS_API_KEY` (optional: `judge_design`, skipped without it), `TAVILY_API_KEY` (optional: `research_trends` and `screen_trademark`, which say they aren't set up without it), `QLOO_API_KEY` (optional until a tool uses it), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
 Start it:
@@ -185,6 +186,8 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
 | `judge_design` | Before each design widget: Nemotron scores the brief against the print and listing rules (a check per rule, fixes, coach line; zod-checked; code derives the verdict). Code decides print size, transparency and color count and overrides the model on them. Answers `configured: false` without `NEBIUS_API_KEY` | Nebius Token Factory (Genkit) |
+| `research_trends` | When the merchant has no idea yet: two Tavily news searches from the past week for a niche, audience or seed, turned into 3 to 5 ranked tee ideas with their source links. Nemotron ranks them when `NEBIUS_API_KEY` is set, and code ranks by source count × recency otherwise. Answers `configured: false` without `TAVILY_API_KEY` | Tavily, Nebius Token Factory (Genkit) |
+| `screen_trademark` | Before publishing: one Tavily search for the exact phrase plus "trademark". Returns possible hits to check on USPTO or EUIPO; never blocks | Tavily |
 | `record_design` | Saves design status (publishing, live, rejected, skipped), product ID and link; `get_design` lets the widget follow it while publishing | records |
 | `video_plan` | Returns the fal endpoint and parameters from Settings (model, resolution, length, elements, audio) | Settings |
 | `video_spend` | Reports what fal actually charged, when `FAL_BILLING_KEY` is set | fal billing API |
@@ -369,14 +372,14 @@ wovain/
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── server.ts        # McpServer: instructions, tools, widgets, playbooks
 │   │   │   ├── playbooks/       # design.ts, ads.ts, campaign.ts; index.ts: instructions, get_playbook, prompts
-│   │   │   ├── tools/           # settings.ts, design.ts, judge.ts, ads.ts, campaign.ts
+│   │   │   ├── tools/           # settings.ts, design.ts, judge.ts, research.ts, ads.ts, campaign.ts
 │   │   │   ├── widgets.ts         # registers the ui:// widget resources
 │   │   │   ├── env.ts           # zod-checked server keys
 │   │   │   ├── store.ts         # records in Firestore, artwork in Cloud Storage
 │   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
 │   │   │   ├── telemetry.ts     # OpenTelemetry Node tracer, on when the OTLP endpoint is set
-│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan, ai (Genkit on Nebius), design-judge
-│   │   ├── test/                # unit/ (auth chain, economics, images, fal, design judge, telemetry), integration/ (store, tools, routes on the emulators), live/ (real Nemotron call, opt-in), fixtures/
+│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan, ai (Genkit on Nebius), design-judge, tavily (Tavily search), trends (trend ranking, trademark screen)
+│   │   ├── test/                # unit/ (auth chain, economics, images, fal, design judge, trends, telemetry), integration/ (store, tools, routes on the emulators), live/ (real Nemotron and Tavily calls, opt-in), fixtures/
 │   │   ├── public/              # icon.png, favicon.ico
 │   │   ├── firestore.rules, storage.rules   # deny all clients; only the Admin SDK reads and writes
 │   │   ├── vitest.config.ts
@@ -415,6 +418,7 @@ wovain/
 | Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in the agent | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
 | Nebius Token Factory | Chat completions with `response_format: json_schema` on `nvidia/nemotron-3-super-120b-a12b`, one per design (`judge_design`) | `NEBIUS_API_KEY` on the server | About $0.30 in and $0.90 out per million tokens (Eden AI listing, unverified), well under a cent per design | https://docs.tokenfactory.nebius.com |
+| Tavily | Basic-depth `search`: two per `research_trends` (topic news, past week, 10 results each), one per `screen_trademark` (exact match, 5 results) | `TAVILY_API_KEY` on the server | 1 credit per basic search, $0.008 per credit pay-as-you-go, 1,000 free credits a month: $0.016 per research, $0.008 per screen | https://docs.tavily.com |
 | fal MCP | `submit_jobs` / `wait_for_jobs` for `minimax/h3-max/reference-to-video` (references = mockup and artwork; Kling endpoints when chosen), `fal-ai/mmaudio-v2`, background removal, upscaler; live prices (`FAL_KEY`) | OAuth in the agent; `FAL_KEY` on the server | Kling v3 Standard $0.14/s ($2.10 per 15 s), H3 Max Turbo $0.01625/s ($0.24), MMAudio $0.001/s (list prices, Oct 19, 2026; the server reads live prices with FAL_KEY) | https://fal.ai/docs/model-apis/mcp |
 
 POC running cost on top of ad spend: about $4.60 for 6 H3 Max Reference videos with audio ($12.70 with Kling v3, $1.55 with H3 Max Turbo for test runs), plus a few cents for upscaling.
