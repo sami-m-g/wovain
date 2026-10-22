@@ -1,3 +1,10 @@
+# [0.18.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.17.0...v0.18.0) (2026-10-22)
+
+
+### Features
+
+* **ai:** turn on the design judge with the nebius key ([858beb9](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/858beb997b54e5359c687b1d82124fb8a0539953))
+
 # [0.17.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.16.0...v0.17.0) (2026-10-22)
 
 
