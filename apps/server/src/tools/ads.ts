@@ -350,14 +350,12 @@ export const registerAdTools = (
         {
           coach,
           designId,
+          // The store keeps the fields adSchema names and drops the rest.
           economics: {
+            ...math,
             baseCost,
             breakevenPerSale: math.perSale,
-            cardFees: math.cardFees,
             price,
-            refundReserve: math.refundReserve,
-            roas: math.roas,
-            roasOnOrderValue: math.roasOnOrderValue,
           },
           productTitle: design.listing.title,
           rules: {

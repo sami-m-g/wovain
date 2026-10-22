@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { sizeCostSchema } from "./economics.ts";
+import { quoteSchema, sizeCostSchema } from "./economics.ts";
 
 // Everything the design widget shows (prd.md > Design widgets), shared by the
 // server tools that write it and the widget that renders it. A design is one
@@ -14,18 +14,6 @@ export const designStatusSchema = z.enum([
   "skipped",
 ]);
 export type DesignStatus = z.infer<typeof designStatusSchema>;
-
-const quoteSchema = z.object({
-  baseCost: z.number(),
-  breakevenPerSale: z.number(),
-  cardFees: z.number(),
-  marginPct: z.number(),
-  price: z.number(),
-  profit: z.number(),
-  refundReserve: z.number(),
-  roas: z.number(),
-});
-export type DesignQuote = z.infer<typeof quoteSchema>;
 
 const artworkSchema = z.object({
   // Fourthwall's minimum for the chosen print size (prd.md > States #4).
@@ -176,3 +164,17 @@ export const dropTotals = (design: Design) => {
     profit,
   };
 };
+
+// Staged artwork: the bytes live in media under `key`, the record in Firestore.
+export const stagedArtworkSchema = z.object({
+  bytes: z.int().positive(),
+  contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  height: z.int().positive(),
+  id: z.string().regex(/^a\d+$/u),
+  key: z.string(),
+  // Absent for data URLs, which have no public URL.
+  sourceUrl: z.url().optional(),
+  transparent: z.boolean(),
+  width: z.int().positive(),
+});
+export type StagedArtwork = z.infer<typeof stagedArtworkSchema>;

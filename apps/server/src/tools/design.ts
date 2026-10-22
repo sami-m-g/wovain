@@ -8,8 +8,9 @@ import {
   MAX_RANGE,
   quoteResultSchema,
   rangeProductSchema,
+  stagedArtworkSchema,
 } from "@wovain/shared/design";
-import type { Design, DesignQuote } from "@wovain/shared/design";
+import type { Design } from "@wovain/shared/design";
 import { priceProduct, sizeCostSchema } from "@wovain/shared/economics";
 import type { SizeCost } from "@wovain/shared/economics";
 import type { Settings } from "@wovain/shared/settings";
@@ -38,31 +39,16 @@ const extensions = {
   "image/webp": "webp",
 };
 
-const toDesignQuote = (
-  quote: ReturnType<typeof priceProduct>
-): DesignQuote => ({
-  baseCost: quote.baseCost,
-  breakevenPerSale: quote.breakeven.perSale,
-  cardFees: quote.breakeven.cardFees,
-  marginPct: quote.marginPct,
-  price: quote.price,
-  profit: quote.profit,
-  refundReserve: quote.breakeven.refundReserve,
-  roas: quote.breakeven.roas,
-});
-
 // The offered sizes set the price; with none in stock, every size does.
 const quoteFor = (
   sizes: (SizeCost & { inStock: boolean })[],
   settings: Settings
 ) => {
   const offered = sizes.filter((size) => size.inStock);
-  return toDesignQuote(
-    priceProduct(
-      offered.length > 0 ? offered : sizes,
-      settings.pricing,
-      settings.economics
-    )
+  return priceProduct(
+    offered.length > 0 ? offered : sizes,
+    settings.pricing,
+    settings.economics
   );
 };
 
@@ -165,16 +151,13 @@ const saveShown = async (store: Store, input: DesignInput) => {
   });
 };
 
-const artworkOutput = z.object({
-  artworkId: z.string(),
-  bytes: z.int(),
-  contentType: z.string(),
-  fileName: z.string(),
-  height: z.int(),
-  transparent: z.boolean(),
-  url: z.url().optional(),
-  width: z.int(),
-});
+const artworkOutput = stagedArtworkSchema
+  .omit({ id: true, key: true, sourceUrl: true })
+  .extend({
+    artworkId: z.string(),
+    fileName: z.string(),
+    url: z.url().optional(),
+  });
 
 export const registerDesignTools = (server: McpServer, store: Store) => {
   server.registerTool(
@@ -291,9 +274,7 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
         shipping === undefined
           ? settings.economics
           : { ...settings.economics, shipping };
-      const quote = toDesignQuote(
-        priceProduct(sizes, settings.pricing, economics)
-      );
+      const quote = priceProduct(sizes, settings.pricing, economics);
       return {
         content: text(JSON.stringify(quote)),
         structuredContent: { quote },
