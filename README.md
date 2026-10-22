@@ -74,6 +74,8 @@ To run it:
 
 `research_trends` searches Tavily twice (news from the past week) for a niche, audience or seed idea and returns 3 to 5 ranked tee ideas, each with its source links. `screen_trademark` searches once for a phrase plus "trademark" before publishing. Both use the official `@tavily/core` SDK at basic depth: 1 credit per search, so $0.016 per research and $0.008 per screen at pay-as-you-go prices, with 1,000 free credits a month. Neither logs the query or the results.
 
+The weekly market scout (`apps/ops/src/weekly.ts`) uses the same key from CI for 3 news searches about competing print-on-demand AI tools, and files one `status::intent` issue with what it found and the funnel's biggest drop-off.
+
 Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm test:live` runs one real research (2 credits) and is skipped without the key. In production the key is the `tavily-api-key` stack secret, listed in `apphosting.yaml`.
 
 ## Develop
@@ -117,7 +119,7 @@ Each idea or bug is a GitLab issue (template `Intent`, `Agent task` or `Bug`) on
 4. `status::review`: the MR is open. Duo's Code Review flow reviews it when requested as reviewer.
 5. `status::test`: your turn. Try it, then comment what to change or merge. `verify.md` in the change folder says how it was proven.
 
-Production errors skip the first two steps. The hourly **self-healing loop** ([docs/loop.md](docs/loop.md), `apps/ops`) reads Cloud Logging, Cloud Monitoring and GitLab Observability, files each new error as a `scout` issue assigned to Duo's Developer flow, takes Duo's merge request through Duo Code Review to GitLab's auto-merge when it passes the guardrails, and after the deploy checks that the error rate dropped: it closes the issue with the numbers, or reopens it. Its daily comment on the `digest` issue says what it found, fixed and handed back. The Duo triggers it relies on are in `infra/Pulumi.prod.yaml`.
+Production errors skip the first two steps. The hourly **self-healing loop** ([docs/loop.md](docs/loop.md), `apps/ops`) reads Cloud Logging, Cloud Monitoring and GitLab Observability, files each new error as a `scout` issue assigned to Duo's Developer flow, takes Duo's merge request through Duo Code Review to GitLab's auto-merge when it passes the guardrails, and after the deploy checks that the error rate dropped: it closes the issue with the numbers, or reopens it. Its daily comment on the `digest` issue says what it found, fixed and handed back. On Mondays the `wovain weekly` schedule adds the data analysis there: how many merchants reached each funnel step (connect, idea, set approved, ad approved, campaign created, autopilot run), requests, instance time, Duo credits and estimated fal, Tavily and Nebius costs. The server also counts each step as the OpenTelemetry metric `wovain.funnel.events` in GitLab Observability. The Duo triggers it relies on are in `infra/Pulumi.prod.yaml`.
 
 ### Agent skills
 
