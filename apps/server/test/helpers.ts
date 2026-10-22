@@ -11,7 +11,7 @@ import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
 import type { QlooGet } from "../src/lib/qloo.ts";
-import type { SearchClient, SearchResult } from "../src/lib/tavily.ts";
+import type { SearchResult, TavilyApi } from "../src/lib/tavily.ts";
 import { createDeps, createServer } from "../src/server.ts";
 import type { Deps } from "../src/server.ts";
 import { createStore } from "../src/store.ts";
@@ -106,18 +106,75 @@ export const qlooTaste = {
 };
 
 // A Tavily client whose every search returns `results`.
-export const fakeTavily = (results: SearchResult[]) => ({
-  search: vi.fn<SearchClient["search"]>(
-    async (query) =>
-      await Promise.resolve({
-        images: [],
-        query,
-        requestId: "test",
-        responseTime: 0,
-        results,
-      })
-  ),
-});
+interface FakeTavily {
+  answer?: string;
+  // What getResearch answers.
+  brief?: Awaited<ReturnType<TavilyApi["getResearch"]>>;
+  images?: { description?: string; url: string }[];
+  // Pages extract and crawl return.
+  pages?: { rawContent: string; url: string }[];
+  // URLs map returns for the merchant's shop.
+  shop?: string[];
+}
+
+// A Tavily client whose every search returns `results`; each call reports
+// 1 credit (crawl 3).
+export const fakeTavily = (
+  results: SearchResult[],
+  { answer, brief, images = [], pages = [], shop = [] }: FakeTavily = {}
+) => {
+  const base = { requestId: "test", responseTime: 0, usage: { credits: 1 } };
+  return {
+    crawl: vi.fn<TavilyApi["crawl"]>(
+      async (url) =>
+        await Promise.resolve({
+          ...base,
+          baseUrl: url,
+          results: pages.map((page) => ({ ...page, images: [] })),
+          usage: { credits: 3 },
+        })
+    ),
+    extract: vi.fn<TavilyApi["extract"]>(
+      async () =>
+        await Promise.resolve({
+          ...base,
+          failedResults: [],
+          results: pages.map((page) => ({ ...page, title: null })),
+        })
+    ),
+    getResearch: vi.fn<TavilyApi["getResearch"]>(
+      async () =>
+        await Promise.resolve(
+          brief ?? { requestId: "brief-1", responseTime: 0, status: "pending" }
+        )
+    ),
+    map: vi.fn<TavilyApi["map"]>(
+      async (url) =>
+        await Promise.resolve({ ...base, baseUrl: url, results: shop })
+    ),
+    research: vi.fn<TavilyApi["research"]>(
+      async (input) =>
+        await Promise.resolve({
+          createdAt: "",
+          input,
+          model: "mini",
+          requestId: "brief-1",
+          responseTime: 0,
+          status: "pending",
+        })
+    ),
+    search: vi.fn<TavilyApi["search"]>(
+      async (query) =>
+        await Promise.resolve({
+          ...base,
+          ...(answer === undefined ? {} : { answer }),
+          images,
+          query,
+          results,
+        })
+    ),
+  };
+};
 
 // A client talking to a fresh wovain server over an in-memory transport.
 // Services in `deps` replace the ones built from `env`.

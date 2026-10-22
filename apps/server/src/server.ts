@@ -36,7 +36,7 @@ export const createDeps = (
   const ai = createAi(env.NEBIUS_API_KEY);
   const designJudge = designJudgeFor(ai);
   const qloo = qlooFor(env.QLOO_API_KEY);
-  const trendResearch = trendResearchFor(env.TAVILY_API_KEY, ai, qloo);
+  const trendResearch = trendResearchFor(env.TAVILY_API_KEY, qloo);
   return {
     autopilot: {
       deps: autopilotFor({
@@ -96,7 +96,7 @@ export const createServer = (
   registerArtTools(server, store, { autopilotOn: autopilot.on, upstream });
   registerPublishTools(server, store, { confirm, upstream });
   registerJudgeTools(server, designJudge);
-  registerResearchTools(server, trendResearch, qloo);
+  registerResearchTools(server, store, trendResearch, qloo);
   registerAdTools(server, store, {
     autopilotOn: autopilot.on,
     upstream,

@@ -112,7 +112,7 @@ const heatmapSchema = z.object({
   }),
 });
 
-export interface Theme {
+interface Theme {
   affinity: number;
   id: string;
   name: string;
