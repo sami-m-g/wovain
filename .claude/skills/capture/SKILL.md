@@ -21,7 +21,7 @@ Split the feedback into one item per distinct point. Classify each:
 
 ## 3. Upload screenshots
 
-`glab api projects/:id/uploads -F file=@<path>` (run it inside the repo so `:id` resolves). Embed the returned `markdown` field in the body, in "What happened" or "Problem".
+`glab api projects/:id/uploads --form "file=@<path>"` (`--form` sends the file; `-F` returns 400). Embed the returned `markdown` field in the body, in "What happened" or "Problem". For a long body, write a JSON file with `jq -n --rawfile d body.md '{title:..., labels:..., description:$d}'` and create the issue with `glab api projects/:id/issues --method POST --input <file>`.
 
 ## 4. Write the item
 
