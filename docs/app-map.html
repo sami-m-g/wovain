@@ -294,9 +294,11 @@
             <tr>
               <td>Connected services</td>
               <td>
-                Fourthwall (products), fal (videos) and Meta Ads (campaign) are
-                connected in the same agent; wovain calls Meta's API only for
-                rules.
+                wovain connects to each merchant's own Fourthwall and fal as an
+                MCP client (OAuth grants encrypted with Cloud KMS,
+                <code>apps/server/src/lib/upstream.ts</code>,
+                <code>routes/connect.ts</code>); Meta Ads stays connected in the
+                agent, and wovain calls Meta's API only for rules.
               </td>
               <td>
                 The agent's MCP connectors,
