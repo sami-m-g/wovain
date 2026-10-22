@@ -1,3 +1,20 @@
+# [0.16.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.15.0...v0.16.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **ci:** build the generated pulumi graphql sdk after install ([36af873](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/36af873dda1c5f6928c44d7be811d55e09177500))
+* **infra:** fail on unknown duo names and read the synced flow mapping ([546b868](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/546b868afc69ec492252fa8ed6b9fa896a9cfdf9))
+* **infra:** pin the graphql terraform provider version ([e4f5409](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/e4f540996326236d2655a92c098e2549094472d5))
+* **infra:** stop managing the scout custom flow ([a2d7fbf](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/a2d7fbfb2425a2ace593e80a8b5df33604699cc8))
+
+
+### Features
+
+* **infra:** manage duo flow triggers with pulumi and sync custom flows ([c771655](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/c771655a588762163f5edf39a93113f4e84b0c10))
+* **infra:** manage gitlab ci settings, the github mirror and firebase storage in code ([11e9def](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/11e9def08b52679fcc6e523107d35ad3ad13b50f))
+* **infra:** switch the code review and fix pipeline triggers off ([1389051](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/13890519e527730c957b5359707300c0803b97a8))
+
 # [0.15.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.14.0...v0.15.0) (2026-10-21)
 
 
