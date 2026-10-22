@@ -17,7 +17,7 @@ import type { MetaRule, RuleLabel, RuleProduct } from "@wovain/shared/rules";
 import type { Settings } from "@wovain/shared/settings";
 import { z } from "zod";
 
-import { addedProducts } from "../lib/campaign-plan.ts";
+import { addedProducts, URL_TAGS } from "../lib/campaign-plan.ts";
 import { createMetaGraph } from "../lib/meta-graph.ts";
 import { text, userSafe } from "../lib/tool-result.ts";
 import { canReach, connectReply, unreachable } from "../lib/upstream.ts";
@@ -25,9 +25,8 @@ import type { Upstream } from "../lib/upstream.ts";
 import type { Store } from "../store.ts";
 import { widgetUri } from "../widgets.ts";
 
-// Each link carries the ad's ID so Fourthwall sales can be matched to the ad.
-const URL_TAGS =
-  "utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}";
+// An ad account ID without Meta's "act_" prefix.
+const bareAccount = (id: string) => id.replace(/^act_/u, "");
 
 const ruleDetails = (
   products: RuleProduct[],
@@ -125,7 +124,7 @@ export const registerCampaignTools = (
         readOnlyHint: false,
       },
       description:
-        "Create the five wovain automated rules for the campaign in Meta (the Meta Ads MCP has no rules tool), with the merchant's own Meta account connected to wovain, and record the campaign for launch_campaign. Safe to call again: rules that already exist are skipped. Without a Meta connection, the result has needsConnection and a link to show the merchant.",
+        "Create the five wovain automated rules in Meta (the Meta Ads MCP has no rules tool) for the campaign wovain staged with campaign_draft, with the merchant's own Meta account connected to wovain. Safe to call again: rules that already exist are skipped. Without a Meta connection, the result has needsConnection and a link to show the merchant.",
       inputSchema: z.object({
         adAccountId: z.string().regex(/^(?:act_)?\d+$/u),
         campaignId: z.string().regex(/^\d+$/u),
@@ -144,17 +143,20 @@ export const registerCampaignTools = (
         products: ruleProducts,
         rules: settings.rules,
       });
-      const record = async (created: string[]) => {
-        await store.saveCampaign({
-          adAccountId,
-          campaignId,
-          rulesCreated: created,
-        });
-      };
-      // Recorded first, so Launch finds the campaign even when Meta refuses
-      // the rules; rules already in Meta for this campaign stay marked.
+      // Only the campaign wovain staged through campaign_draft, in its own ad
+      // account, gets rules.
       const saved = await store.getCampaign();
-      await record(saved?.campaignId === campaignId ? saved.rulesCreated : []);
+      if (
+        saved?.campaignId !== campaignId ||
+        bareAccount(saved.adAccountId) !== bareAccount(adAccountId)
+      ) {
+        throw new Error(
+          "Rules go only on the campaign wovain staged with campaign_draft (its campaign and ad account IDs)."
+        );
+      }
+      const record = async (created: string[]) => {
+        await store.saveCampaign({ ...saved, rulesCreated: created });
+      };
       if (!canReach(upstream, "meta")) {
         return unreachable(upstream, "meta");
       }

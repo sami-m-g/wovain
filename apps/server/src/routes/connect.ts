@@ -11,19 +11,13 @@ import {
 import { clientMetadata, clientMetadataUrl } from "../lib/oauth-client.ts";
 import { logErrorClass } from "../lib/tool-result.ts";
 import type { Upstream } from "../lib/upstream.ts";
+import {
+  createLaunchRoutes,
+  NONCE_COOKIE,
+  nonceCookie,
+  showLaunchConfirm,
+} from "./launch.ts";
 import { page } from "./page.ts";
-
-// The browser nonce that binds a connect flow to the tab that opened the
-// link. Lax so it rides along on the top-level redirects back from AuthKit
-// and the provider; scoped to the callbacks.
-const NONCE_COOKIE = "wovain_connect";
-const nonceCookie = (site: string) => ({
-  httpOnly: true,
-  maxAge: 600,
-  path: "/oauth/callback",
-  sameSite: "Lax" as const,
-  secure: site.startsWith("https:"),
-});
 
 const ASK_AGAIN = "Ask wovain in your chat for a new link.";
 
@@ -39,6 +33,9 @@ interface Deps {
 // account of the merchant it was made for, in the browser that opened it.
 export const createConnectRoutes = ({ signIn, site, upstream }: Deps) => {
   const app = new Hono();
+  const { launches } = upstream;
+
+  app.route("/", createLaunchRoutes({ launches, signIn, site }));
 
   app.get("/oauth/client.json", (c) => {
     c.header("cache-control", "public, max-age=3600");
@@ -105,6 +102,13 @@ export const createConnectRoutes = ({ signIn, site, upstream }: Deps) => {
           "Wrong wovain account",
           "This link was made for a different wovain account. Sign in with the account you use in your chat, then ask wovain for a new link."
         );
+      }
+      if (signedIn.launch !== undefined) {
+        return await showLaunchConfirm(c, launches, {
+          id: signedIn.launch,
+          site,
+          userId: signedIn.userId,
+        });
       }
       const url = await upstream.authorize(
         signedIn.userId,

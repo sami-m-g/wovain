@@ -308,18 +308,27 @@ export const createUpstream = ({
   const connected = async (userId: string, id: ProviderId) =>
     (await connections.version(userId, id)) !== undefined;
 
+  // The page where the merchant confirms a launch in their own browser.
+  const confirmLaunchUrl = async (
+    userId: string,
+    campaignId: string,
+    summary: string
+  ) => {
+    const id = await connections.launches.create(userId, campaignId, summary);
+    return `${site}/confirm/launch/${id}`;
+  };
+
   return {
     accessToken,
-    // The merchant's press of Launch, which launch_campaign needs to spend.
-    approveLaunch: connections.createLaunchTicket,
     authorize,
     call,
     configured,
+    confirmLaunchUrl,
     connectUrl,
     connected,
     disconnect,
     finishConnect,
-    redeemLaunch: connections.redeemLaunchTicket,
+    launches: connections.launches,
   };
 };
 

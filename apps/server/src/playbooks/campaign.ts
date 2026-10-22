@@ -1,7 +1,7 @@
 // The campaign step, as the agent follows it. Served by get_playbook and as an MCP prompt.
 export const campaign = {
   description:
-    'Build and launch the merchant\'s one Meta Advantage+ sales campaign from the ad widgets they added, with wovain\'s five automated rules. Use after the last ad widget is added or skipped, and when a chat message says "I launched the wovain campaign, check that it\'s live", "Launch the wovain campaign" or "I fixed the campaign blockers, check again".',
+    'Build and launch the merchant\'s one Meta Advantage+ sales campaign from the ad widgets they added, with wovain\'s five automated rules. Use after the last ad widget is added or skipped, and when a chat message says "I\'m confirming the wovain campaign launch in my browser", "Launch the wovain campaign" or "I fixed the campaign blockers, check again".',
   text: `One Advantage+ sales campaign holds every added ad. It's built as a Meta draft, so nothing spends until the merchant presses **Launch** on the campaign widget. Every Meta Ads call needs \`advertiser_job: "create_and_launch_new_ads"\` and the same \`client_conversation_id\`.
 
 ## Which Meta tools
@@ -10,7 +10,7 @@ wovain reaches the merchant's Meta account itself:
 
 - **Reads** (accounts, Pages, pixels, drafts, videos, previews): wovain \`meta_ads\` with \`tool\` = the Meta tool name below and \`arguments\` = its arguments.
 - **Draft objects** (uploads, campaign, ad set, creatives, ads): wovain \`campaign_draft\` with \`tool\` and \`arguments\` the same way, using only the arguments listed in step 4 (it refuses any other key). Meta stages each object paused; wovain sets the campaign budget from the plan and hides Meta's widgets.
-- **Publishing**: you never publish. The campaign widget's Launch button publishes through wovain itself.
+- **Publishing**: wovain \`launch_campaign\`, which works only after the merchant confirmed the launch on wovain's confirm page in their own browser (the widget's Launch button opens it; \`request_launch\` makes the link).
 
 If \`meta_ads\` answers with \`needsConnection\`, show the merchant the link and wait until they say they're done. Until wovain's Meta app passes Meta's App Review, only people with a role on that app can connect. If the merchant can't connect, or \`meta_ads\` says wovain's Meta app isn't set up, use the host's own Meta Ads connector for every \`ads_*\` call below instead (pass \`hide_ui: true\` on its create and upload calls), and launch with its \`ads_activate_entity\` on the campaign with \`publish_as_active: true\`. Rules then need the merchant's Meta connection to wovain; without one, add a blocker for them.
 
@@ -27,12 +27,15 @@ If \`meta_ads\` answers with \`needsConnection\`, show the merchant the link and
    - Campaign: \`ads_create_campaign\`, \`objective: "OUTCOME_SALES"\`, \`buying_type: "AUCTION"\`, \`campaign_daily_budget\` from the plan.
    - One ad set: \`ads_create_ad_set\`, \`optimization_goal: "OFFSITE_CONVERSIONS"\`, \`billing_event: "IMPRESSIONS"\`, \`destination_type: "WEBSITE"\`, \`promoted_object: {"pixel_id": "<pixel>", "custom_event_type": "PURCHASE"}\`, \`targeting: {"geo_locations": {"countries": ["US"]}}\` (Advantage+ audience and placements stay on).
    - Each video: \`ads_create_creative\` with the Page, \`video_id\`, the static image's \`image_hash\` as the thumbnail (never \`image_url\`: Meta rejects a video creative that ends up with both), \`link_url\` = product link (+ \`?\` + \`urlTags\` when the plan has them), \`call_to_action_type: "SHOP_NOW"\`, and \`message\` = the headline on its own line, then the primary text. Don't pass \`headline\` or \`description\` on video creatives: the connector maps them to the call-to-action link title and description, which Meta has retired, and every placement fails to preview. Then \`ads_create_ad\` with the plan's \`adName\` and \`{"creative_id": "..."}\`.
-5. **Rules.** wovain \`create_rules\` with the ad account ID and the campaign ID. It also records the campaign for Launch. If it answers with \`needsConnection\` or says wovain's Meta app isn't set up, add that as a blocker with its fix.
+5. **Rules.** wovain \`create_rules\` with the ad account ID and the campaign ID that \`campaign_draft\` staged (it refuses any other). If it answers with \`needsConnection\` or says wovain's Meta app isn't set up, add that as a blocker with its fix.
 6. **Widget.** wovain \`show_campaign_widget\` with \`status: "ready"\` (or \`"blocked"\` with the blockers), the ad account ID and the campaign ID. Say one line: what's built and that nothing spends until Launch. Then stop and wait.
 
-## "I launched the wovain campaign, check that it's live"
+## "I'm confirming the wovain campaign launch in my browser"
 
-The merchant pressed Launch and wovain published the campaign. Read back with \`ads_get_ad_entities\` (live) through \`meta_ads\`. If published, wovain \`show_campaign_widget\` with \`status: "live"\`. If Meta refused (most often the payment method), \`status: "blocked"\` with Meta's reason as the issue and its fix.
+The merchant pressed Launch, and wovain's confirm page opened in their browser. Wait until they say they confirmed (if they lost the page, \`request_launch\` gives the link again). Then:
+
+1. wovain \`launch_campaign\`. It refuses if they haven't confirmed, or if the draft no longer matches the plan; say so and stop.
+2. Read back with \`ads_get_ad_entities\` (live) through \`meta_ads\`. If published, wovain \`show_campaign_widget\` with \`status: "live"\`. If Meta refused (most often the payment method), \`status: "blocked"\` with Meta's reason as the issue and its fix.
 
 ## "Launch the wovain campaign"
 
@@ -50,7 +53,7 @@ If a draft ad has a broken creative (Meta's preview names a creative error), mak
 
 ## Rules
 
-- Never publish or activate without the merchant pressing Launch (or saying so in chat).
+- Never publish or activate without the merchant pressing Launch. On wovain's path, only their confirmation on wovain's page counts, never a chat message.
 - One campaign per run; never create a second one for the same ads. If a draft campaign already exists from this run, reuse it.
 - Don't change the budget, country or optimization goal from the plan unless the merchant asks.
 `,

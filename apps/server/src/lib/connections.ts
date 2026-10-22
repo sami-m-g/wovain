@@ -10,6 +10,7 @@ import type {
 import { z } from "zod";
 
 import type { Cipher } from "./cipher.ts";
+import { createLaunchApprovals } from "./launch-approvals.ts";
 
 interface Provider {
   // Registered by hand (no CIMD or DCR): needs the client ID from config.
@@ -81,20 +82,15 @@ const flowSchema = z.object({
   codeVerifier: z.string().optional(),
   discoveryState: z.string().optional(),
   expiresAt: z.instanceof(Timestamp),
+  // A sign-in for the launch confirm page (launchRequests/{id}) rather than
+  // a connect link.
+  launch: z.string().optional(),
   nonceHash: z.string(),
   provider: providerSchema,
   purpose: z.enum(["signin", "connect"]),
   userId: z.string(),
 });
 export type Flow = z.infer<typeof flowSchema>;
-
-// launchTickets/{id}: the merchant pressed Launch on the campaign widget for
-// this campaign. launch_campaign spends only with one, once.
-const launchTicketSchema = z.object({
-  campaignId: z.string(),
-  expiresAt: z.instanceof(Timestamp),
-  userId: z.string(),
-});
 
 export interface Grant {
   record: ConnectionRecord;
@@ -105,7 +101,6 @@ export interface Grant {
 // removes leftovers later); a lease lasts as long as one token refresh may
 // take.
 const TICKET_MS = 5 * 60 * 1000;
-const LAUNCH_MS = 2 * 60 * 1000;
 const FLOW_MS = 10 * 60 * 1000;
 const LEASE_MS = 20 * 1000;
 
@@ -126,7 +121,6 @@ export const createConnections = (
   const connection = (userId: string, provider: ProviderId) =>
     db.collection("users").doc(userId).collection("connections").doc(provider);
   const tickets = db.collection("connectTickets");
-  const launches = db.collection("launchTickets");
   const flows = db.collection("oauthFlows");
   const transaction = async <T>(work: (tx: Transaction) => Promise<T>) =>
     await db.runTransaction(work, { maxAttempts: 10 });
@@ -165,21 +159,16 @@ export const createConnections = (
       }),
 
     createFlow: async (
-      flow: Pick<Flow, "nonceHash" | "provider" | "purpose" | "userId">
+      flow: Pick<
+        Flow,
+        "launch" | "nonceHash" | "provider" | "purpose" | "userId"
+      >
     ) => {
       const state = newId();
       await flows
         .doc(state)
         .set(flowSchema.parse({ ...flow, expiresAt: expiry(FLOW_MS) }));
       return state;
-    },
-
-    createLaunchTicket: async (userId: string, campaignId: string) => {
-      const id = newId();
-      await launches
-        .doc(id)
-        .set({ campaignId, expiresAt: expiry(LAUNCH_MS), userId });
-      return id;
     },
 
     createTicket: async (userId: string, provider: ProviderId) => {
@@ -189,6 +178,9 @@ export const createConnections = (
         .set({ expiresAt: expiry(TICKET_MS), provider, userId });
       return id;
     },
+
+    // The merchant's confirmations of a campaign launch.
+    launches: createLaunchApprovals(db, now),
 
     read: async (
       userId: string,
@@ -203,27 +195,6 @@ export const createConnections = (
       const plain = await cipher.decrypt(record.ciphertext, ref.path);
       return { record, tokens: tokensSchema.parse(JSON.parse(plain)) };
     },
-
-    // Single use, like a connect ticket: true only for this merchant and
-    // campaign, within 2 minutes of the press.
-    redeemLaunchTicket: async (
-      id: string,
-      userId: string,
-      campaignId: string
-    ) =>
-      await transaction(async (tx) => {
-        const ref = launches.doc(id);
-        const doc = await tx.get(ref);
-        const ticket = doc.exists
-          ? launchTicketSchema.parse(doc.data())
-          : undefined;
-        tx.delete(ref);
-        return (
-          ticket?.userId === userId &&
-          ticket.campaignId === campaignId &&
-          ticket.expiresAt.toMillis() > now()
-        );
-      }),
 
     // Single use: the ticket is deleted whether or not it's still valid.
     redeemTicket: async (id: string, provider: ProviderId) =>

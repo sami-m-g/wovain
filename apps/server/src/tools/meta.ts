@@ -1,14 +1,17 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import { launchApprovalSchema } from "@wovain/shared/campaign";
+import { launchRequestSchema } from "@wovain/shared/campaign";
+import { money } from "@wovain/shared/economics";
 import { z } from "zod";
 
-import { addedProducts } from "../lib/campaign-plan.ts";
+import { addedProducts, draftPlan } from "../lib/campaign-plan.ts";
 import {
   ADVERTISER_JOB,
+  CHECKED_FIELDS,
+  checkDraft,
   draftArgs,
-  draftObjectIds,
   draftToolSchema,
   newConversationId,
+  stagedCampaignId,
 } from "../lib/meta-draft.ts";
 import { text } from "../lib/tool-result.ts";
 import {
@@ -20,12 +23,19 @@ import {
 import type { Upstream } from "../lib/upstream.ts";
 import type { Store } from "../store.ts";
 
-// Tools only the widget may call (MCP Apps visibility): hidden from the model.
-const APP_ONLY = { ui: { visibility: ["app"] } };
+const recordedCampaign = async (store: Store) => {
+  const saved = await store.getCampaign();
+  if (saved === undefined) {
+    throw new Error(
+      "No campaign staged yet: build the draft with campaign_draft first."
+    );
+  }
+  return saved;
+};
 
-// Builds the draft and launches it on the merchant's own Meta grant. Every
-// object is staged paused; only launch_campaign publishes.
-export const registerMetaCampaignTools = (
+// Stages the draft on the merchant's own Meta grant. Every object is staged
+// paused, with only the plan's budget, products and media.
+const registerDraftTool = (
   server: McpServer,
   store: Store,
   upstream: Upstream | undefined
@@ -39,7 +49,7 @@ export const registerMetaCampaignTools = (
         readOnlyHint: false,
       },
       description:
-        "Stage one object of the merchant's campaign in their Meta ad account's draft, on the Meta account they connected to wovain: upload a video or image by URL, or create the campaign, the ad set, a creative or an ad. Pass the Meta tool name and its arguments as Meta documents them, with advertiser_job and client_conversation_id. Meta stages every object paused, so nothing spends until launch_campaign. wovain sets the campaign's daily budget from campaign_plan and leaves budgets off the ad set. Needs at least one added ad widget.",
+        "Stage one object of the merchant's campaign in their Meta ad account's draft, on the Meta account they connected to wovain: upload one of the added ads' videos or images by URL, or create the campaign, the ad set, a creative or an ad. Pass the Meta tool name and only the arguments the campaign playbook lists, with client_conversation_id; anything else is refused. Meta stages every object paused, so nothing spends until the merchant confirms the launch. wovain sets the campaign's daily budget from campaign_plan and records the campaign it creates. Needs at least one added ad widget.",
       inputSchema: z.object({
         arguments: z.record(z.string(), z.unknown()),
         tool: draftToolSchema,
@@ -47,51 +57,73 @@ export const registerMetaCampaignTools = (
       title: "Stage the Meta campaign draft",
     },
     async ({ arguments: args, tool }) => {
-      const settings = await store.getSettings();
-      const { dailyBudget } = await addedProducts(store, settings);
-      return await upstreamReply(upstream, {
-        args: draftArgs(tool, args, Math.round(dailyBudget * 100)),
+      const plan = await draftPlan(store, await store.getSettings());
+      const sent = draftArgs(tool, args, plan);
+      const reply = await upstreamReply(upstream, {
+        args: sent,
         id: "meta",
         tool,
         userId: store.userId,
       });
+      const failed = "isError" in reply && reply.isError;
+      const campaignId =
+        tool === "ads_create_campaign" && !failed
+          ? stagedCampaignId(reply.structuredContent)
+          : undefined;
+      if (campaignId !== undefined) {
+        await store.saveCampaign({
+          adAccountId: String(sent["ad_account_id"]),
+          campaignId,
+          rulesCreated: [],
+        });
+      }
+      return reply;
     }
   );
+};
 
-  // Only the campaign widget calls these two (app-only visibility): the
-  // merchant's press of Launch mints a single-use launch ticket for the
-  // recorded campaign, and launch_campaign spends only with one. The agent
-  // never launches.
+// Launching is the merchant's call, made outside the chat: request_launch
+// opens wovain's confirm page, where they sign in and press Confirm.
+// launch_campaign publishes only with that confirmation, once, and only if
+// the draft read back still matches the plan.
+const registerLaunchTools = (
+  server: McpServer,
+  store: Store,
+  upstream: Upstream | undefined
+) => {
   server.registerTool(
-    "approve_launch",
+    "request_launch",
     {
-      _meta: APP_ONLY,
       annotations: {
         destructiveHint: false,
         openWorldHint: false,
         readOnlyHint: false,
       },
       description:
-        "Called by the campaign widget when the merchant presses Launch: returns a single-use launch ticket for the recorded campaign, valid for 2 minutes.",
-      inputSchema: z.object({ campaignId: z.string().regex(/^\d+$/u) }),
-      outputSchema: launchApprovalSchema,
-      title: "Approve the launch",
+        "Make the link where the merchant confirms launching the staged campaign, in their own browser (signed in to wovain). The campaign widget's Launch button opens it. Nothing launches until they press Confirm there.",
+      inputSchema: z.object({}),
+      outputSchema: launchRequestSchema,
+      title: "Ask the merchant to confirm the launch",
     },
-    async ({ campaignId }) => {
+    async () => {
       if (!canReach(upstream, "meta")) {
         return unreachable(upstream, "meta");
       }
-      const saved = await store.getCampaign();
-      if (saved?.campaignId !== campaignId) {
-        throw new Error("That isn't the recorded campaign.");
-      }
-      const launchToken = await upstream.approveLaunch(
+      const settings = await store.getSettings();
+      const [saved, { dailyBudget, products }] = await Promise.all([
+        recordedCampaign(store),
+        addedProducts(store, settings),
+      ]);
+      const confirmUrl = await upstream.confirmLaunchUrl(
         store.userId,
-        campaignId
+        saved.campaignId,
+        `One Advantage+ sales campaign (${saved.campaignId}) with ${products.length} ${products.length === 1 ? "product" : "products"}: ${products.map(({ ad }) => ad.productTitle).join(", ")}. Budget: ${money(dailyBudget)} a day.`
       );
       return {
-        content: text("Launch approved by the merchant."),
-        structuredContent: { launchToken },
+        content: text(
+          `The merchant confirms the launch at ${confirmUrl} (it works for 10 minutes). Wait until they say they confirmed, then call launch_campaign.`
+        ),
+        structuredContent: { confirmUrl },
       };
     }
   );
@@ -99,37 +131,29 @@ export const registerMetaCampaignTools = (
   server.registerTool(
     "launch_campaign",
     {
-      _meta: APP_ONLY,
       annotations: {
         destructiveHint: false,
         openWorldHint: true,
         readOnlyHint: false,
       },
       description:
-        "Called by the campaign widget after approve_launch: publishes the recorded campaign and its draft ad sets and ads in Meta, which starts spending. Needs the launch ticket; objectIds, if given, must belong to that campaign's draft.",
+        "Publish the staged campaign in Meta, which starts spending, after the merchant confirmed it on wovain's confirm page (request_launch). Without that confirmation it refuses. It reads the draft back and stops if the budget, objective or caps differ from the plan. objectIds, if given, must belong to the campaign's draft.",
       inputSchema: z.object({
-        launchToken: z.string().min(1).max(100),
         objectIds: z.array(z.string().regex(/^\d+$/u)).max(200).default([]),
       }),
       title: "Launch the campaign",
     },
-    async ({ launchToken, objectIds }) => {
-      const saved = await store.getCampaign();
+    async ({ objectIds }) => {
       if (!canReach(upstream, "meta")) {
         return unreachable(upstream, "meta");
       }
-      const approved =
-        saved !== undefined &&
-        (await upstream.redeemLaunch(
-          launchToken,
-          store.userId,
-          saved.campaignId
-        ));
-      if (!approved) {
+      const saved = await recordedCampaign(store);
+      if (!(await upstream.launches.consume(store.userId, saved.campaignId))) {
         throw new Error(
-          "Not launched: only the merchant's press of Launch on the campaign widget can launch, once."
+          "Not launched: the merchant hasn't confirmed this launch on wovain's confirm page. Call request_launch and show them the link."
         );
       }
+      const plan = await draftPlan(store, await store.getSettings());
       const meta = {
         ad_account_id: saved.adAccountId.replace(/^act_/u, ""),
         advertiser_job: ADVERTISER_JOB,
@@ -138,6 +162,7 @@ export const registerMetaCampaignTools = (
       const draft = await upstream.call({
         args: {
           ...meta,
+          fields: CHECKED_FIELDS,
           object_ids: [saved.campaignId],
           object_state: "draft",
         },
@@ -148,11 +173,16 @@ export const registerMetaCampaignTools = (
       if (draft.kind === "connect") {
         return connectReply(draft.connect);
       }
-      const inDraft = new Set(draftObjectIds(draft.result.structuredContent));
+      const { ids, problems } = checkDraft(
+        draft.result.structuredContent,
+        saved.campaignId,
+        plan.dailyBudgetCents
+      );
+      const inDraft = new Set(ids);
       const foreign = objectIds.filter((objectId) => !inDraft.has(objectId));
-      if (foreign.length > 0) {
+      if (problems.length > 0 || foreign.length > 0) {
         throw new Error(
-          `Not launched: ${foreign.join(", ")} isn't part of the recorded campaign's draft.`
+          `Not launched: ${[...problems, ...foreign.map((objectId) => `${objectId} isn't in the campaign's draft`)].join("; ")}.`
         );
       }
       return await upstreamReply(upstream, {
@@ -164,7 +194,7 @@ export const registerMetaCampaignTools = (
           object_ids: [
             ...new Set([
               saved.campaignId,
-              ...(objectIds.length > 0 ? objectIds : inDraft),
+              ...(objectIds.length > 0 ? objectIds : ids),
             ]),
           ],
           publish_as_active: true,
@@ -175,4 +205,13 @@ export const registerMetaCampaignTools = (
       });
     }
   );
+};
+
+export const registerMetaCampaignTools = (
+  server: McpServer,
+  store: Store,
+  upstream: Upstream | undefined
+) => {
+  registerDraftTool(server, store, upstream);
+  registerLaunchTools(server, store, upstream);
 };

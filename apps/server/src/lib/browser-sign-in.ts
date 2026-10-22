@@ -35,9 +35,11 @@ export const createBrowserSignIn = ({
   const begin = async (
     userId: string,
     provider: ProviderId,
-    nonceHash: string
+    nonceHash: string,
+    launch?: string
   ) => {
     const state = await connections.createFlow({
+      ...(launch === undefined ? {} : { launch }),
       nonceHash,
       provider,
       purpose: "signin",
@@ -68,6 +70,15 @@ export const createBrowserSignIn = ({
       : await begin(userId, provider, nonceHash);
   };
 
+  // /confirm/launch/:id: AuthKit's sign-in page for the merchant the launch
+  // request was made for, or undefined for an unknown or expired request.
+  const startLaunch = async (id: string, nonceHash: string) => {
+    const userId = await connections.launches.owner(id);
+    return userId === undefined
+      ? undefined
+      : await begin(userId, "meta", nonceHash, id);
+  };
+
   const check = async (flow: Flow, { code, iss, state }: Callback) => {
     const oauth = new FirestoreOAuthProvider({
       callback: true,
@@ -86,6 +97,7 @@ export const createBrowserSignIn = ({
     const token = oauth.tokens()?.access_token;
     const signedIn = token === undefined ? undefined : await userOf(token);
     return {
+      launch: flow.launch,
       matches: signedIn === flow.userId,
       provider: flow.provider,
       userId: flow.userId,
@@ -103,7 +115,7 @@ export const createBrowserSignIn = ({
     return flow === undefined ? undefined : await check(flow, redirect);
   };
 
-  return { finish, start };
+  return { finish, start, startLaunch };
 };
 
 export type BrowserSignIn = ReturnType<typeof createBrowserSignIn>;

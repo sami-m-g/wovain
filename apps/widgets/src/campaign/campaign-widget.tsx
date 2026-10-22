@@ -1,7 +1,7 @@
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import {
   campaignResultSchema,
-  launchApprovalSchema,
+  launchRequestSchema,
 } from "@wovain/shared/campaign";
 import type { Campaign } from "@wovain/shared/campaign";
 
@@ -11,29 +11,25 @@ import { CampaignWidgetView } from "./campaign-widget-view.tsx";
 import type { CampaignWidgetActions } from "./campaign-widget-view.tsx";
 
 // The merchant's press of Launch. With Meta connected to wovain, the widget
-// launches itself: approve_launch mints a single-use ticket and
-// launch_campaign spends only with it (both are hidden from the model), then
-// the chat checks the result. Otherwise the agent launches with the host's
-// Meta connector.
+// opens wovain's confirm page, where the merchant signs in and confirms in
+// their own browser; only that confirmation lets launch_campaign spend.
+// Otherwise the agent launches with the host's Meta connector.
 const launch = async (app: App, campaign: Campaign) => {
-  if (campaign.launchVia !== "wovain" || campaign.campaignId === undefined) {
+  if (campaign.launchVia !== "wovain") {
     await say(app, "Launch the wovain campaign");
     return;
   }
-  const { launchToken } = await callTool(
+  const { confirmUrl } = await callTool(
     app,
-    launchApprovalSchema,
-    "approve_launch",
-    { campaignId: campaign.campaignId }
+    launchRequestSchema,
+    "request_launch",
+    {}
   );
-  const result = await app.callServerTool({
-    arguments: { launchToken },
-    name: "launch_campaign",
-  });
-  if (result.isError === true) {
-    throw new TypeError("launch_campaign failed");
-  }
-  await say(app, "I launched the wovain campaign, check that it's live");
+  await app.openLink({ url: confirmUrl });
+  await say(
+    app,
+    "I'm confirming the wovain campaign launch in my browser. Launch it once I say I confirmed."
+  );
 };
 
 const actionsFor = (app: App): CampaignWidgetActions => ({

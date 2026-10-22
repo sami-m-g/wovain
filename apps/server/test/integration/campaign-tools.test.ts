@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 
 import {
   campaignResultSchema,
-  launchApprovalSchema,
+  launchRequestSchema,
 } from "@wovain/shared/campaign";
 import { metaRules } from "@wovain/shared/rules";
 import type { MetaRule } from "@wovain/shared/rules";
@@ -56,7 +56,10 @@ beforeEach(async () => {
     );
   });
   store = testStore();
-  await store.saveDesign(demoDesign);
+  await store.saveDesign({
+    ...demoDesign,
+    productUrl: "https://shop.example/products/cat-tee",
+  });
   await store.saveAd({
     coach: "Two clips.",
     designId: "d1",
@@ -182,9 +185,11 @@ test("the design kill is left to the check-in when a campaign holds two products
 });
 
 // wovain's client on a fake Meta with wovain's Meta app configured, and the
-// merchant ("test") connected unless `connected` is false.
+// merchant ("test") connected unless `connected` is false. Meta answers
+// ads_create_campaign with campaign 555.
 const connectedMeta = async (connected = true) => {
   const fake = fakeUpstream("meta");
+  fake.reply("ads_create_campaign", { campaign_id: "555", status: "DRAFT" });
   const upstream = createUpstream({
     clients: { meta: { client_id: "1234567890" } },
     connections: createConnections(testStorage().db, localCipher()),
@@ -197,13 +202,148 @@ const connectedMeta = async (connected = true) => {
   const client = await connectClient({ META_APP_SECRET: "app-secret" }, store, {
     upstream,
   });
-  return { client, fake };
+  const draft = async (tool: string, args: Record<string, unknown>) =>
+    await client.callTool({
+      arguments: { arguments: args, tool },
+      name: "campaign_draft",
+    });
+  return { client, draft, fake, upstream };
 };
 
 const conversation = "AbCdEfGhIj0123456789";
+const productUrl = "https://shop.example/products/cat-tee";
 
-test("create_rules uses the merchant's own Meta token, skips existing rules and records the campaign", async () => {
-  const { client } = await connectedMeta();
+const campaignArgs = {
+  ad_account_id: "42",
+  buying_type: "AUCTION",
+  campaign_daily_budget: 999_999,
+  campaign_name: "wovain",
+  client_conversation_id: conversation,
+  objective: "OUTCOME_SALES",
+};
+const adSetArgs = {
+  ad_account_id: "42",
+  ad_set_name: "wovain",
+  billing_event: "IMPRESSIONS",
+  campaign_id: "555",
+  client_conversation_id: conversation,
+  destination_type: "WEBSITE",
+  optimization_goal: "OFFSITE_CONVERSIONS",
+  promoted_object: { custom_event_type: "PURCHASE", pixel_id: "9" },
+  targeting: '{"geo_locations":{"countries":["US"]}}',
+};
+const creativeArgs = {
+  ad_account_id: "42",
+  call_to_action_type: "SHOP_NOW",
+  client_conversation_id: conversation,
+  image_hash: "0123456789abcdef0123456789abcdef",
+  link_url: `${productUrl}?utm_source=meta&utm_medium=paid&utm_campaign=wovain&utm_content={{ad.id}}`,
+  message: "Sakura Season Cat Tee\nA calico watches the sun go down.",
+  page_id: "7",
+  self_ai_disclosure: "OPT_IN",
+  video_id: "8",
+};
+
+// A merchant with Meta connected and campaign 555 staged by campaign_draft.
+const staged = async () => {
+  const env = await connectedMeta();
+  await env.draft("ads_create_campaign", campaignArgs);
+  return env;
+};
+
+test("campaign_draft records the campaign Meta staged and sends only allowlisted arguments", async () => {
+  const { client, draft, fake } = await connectedMeta();
+  await draft("ads_create_campaign", campaignArgs);
+  await expect(store.getCampaign()).resolves.toEqual({
+    adAccountId: "42",
+    campaignId: "555",
+    rulesCreated: [],
+  });
+  await draft("ads_create_ad_set", adSetArgs);
+  expect(fake.calls).toEqual([
+    {
+      arguments: {
+        ...campaignArgs,
+        advertiser_job: "create_and_launch_new_ads",
+        campaign_daily_budget: 1500,
+        hide_ui: true,
+      },
+      name: "ads_create_campaign",
+    },
+    {
+      arguments: {
+        ...adSetArgs,
+        advertiser_job: "create_and_launch_new_ads",
+        hide_ui: true,
+        promoted_object: '{"custom_event_type":"PURCHASE","pixel_id":"9"}',
+      },
+      name: "ads_create_ad_set",
+    },
+  ]);
+  await client.close();
+});
+
+test.each([
+  ["a lifetime budget", "ads_create_campaign", { campaign_lifetime_budget: 5 }],
+  ["a spend cap", "ads_create_campaign", { campaign_spend_cap: 5 }],
+  ["a status", "ads_create_campaign", { status: "ACTIVE" }],
+  ["an ad set budget", "ads_create_ad_set", { daily_budget: 100_000 }],
+  [
+    "a nested targeting extra",
+    "ads_create_ad_set",
+    { targeting: { age_max: 30, geo_locations: { countries: ["US"] } } },
+  ],
+  [
+    "an ad set under another campaign",
+    "ads_create_ad_set",
+    { campaign_id: "999" },
+  ],
+  [
+    "a link that isn't an added product",
+    "ads_create_creative",
+    { link_url: "https://evil.example/cat-tee" },
+  ],
+  [
+    "an upload that isn't an added ad's media",
+    "ads_creative_upload_media",
+    { media_url: "https://evil.example/a.mp4" },
+  ],
+])("campaign_draft refuses %s", async (_label, tool, extra) => {
+  const env = await staged();
+  const base = {
+    ads_create_ad_set: adSetArgs,
+    ads_create_campaign: campaignArgs,
+    ads_create_creative: creativeArgs,
+    ads_creative_upload_media: {
+      ad_account_id: "42",
+      client_conversation_id: conversation,
+      media_type: "VIDEO",
+      media_url: "https://v3b.fal.media/a.mp4",
+    },
+  }[tool];
+  const before = env.fake.calls.length;
+  const result = await env.draft(tool, { ...base, ...extra });
+  expect(result.isError).toBe(true);
+  expect(env.fake.calls).toHaveLength(before);
+  await env.client.close();
+});
+
+test("campaign_draft takes a product link with the plan's tags and an added ad's video", async () => {
+  const env = await staged();
+  const creative = await env.draft("ads_create_creative", creativeArgs);
+  const upload = await env.draft("ads_creative_upload_media", {
+    ad_account_id: "42",
+    client_conversation_id: conversation,
+    media_type: "VIDEO",
+    media_url: "https://v3b.fal.media/b.mp4",
+  });
+  expect(creative.isError).toBeFalsy();
+  expect(upload.isError).toBeFalsy();
+  await env.client.close();
+});
+
+test("create_rules uses the merchant's own Meta token, skips existing rules and marks them", async () => {
+  const { client } = await staged();
   const result = await client.callTool({
     arguments: { adAccountId: "act_42", campaignId: "555" },
     name: "create_rules",
@@ -228,6 +368,7 @@ test("create_rules uses the merchant's own Meta token, skips existing rules and 
   });
   const { campaign } = campaignResultSchema.parse(widget.structuredContent);
   expect(campaign.dailyBudget).toBe(15);
+  expect(campaign.launchVia).toBe("wovain");
   expect(campaign.products).toEqual([
     { ads: 2, designId: "d1", title: "Japanese Cat Sunset Tee" },
   ]);
@@ -236,138 +377,44 @@ test("create_rules uses the merchant's own Meta token, skips existing rules and 
   await client.close();
 });
 
-test("before the merchant connects Meta, create_rules gives the connect link", async () => {
-  const { client } = await connectedMeta(false);
-  const result = await client.callTool({
-    arguments: { adAccountId: "42", campaignId: "555" },
-    name: "create_rules",
-  });
-  expect(result.structuredContent).toMatchObject({ needsConnection: "meta" });
+test("create_rules refuses a campaign wovain didn't stage", async () => {
+  const { client } = await staged();
+  for (const args of [
+    { adAccountId: "42", campaignId: "777" },
+    { adAccountId: "43", campaignId: "555" },
+  ]) {
+    // oxlint-disable-next-line no-await-in-loop
+    const result = await client.callTool({
+      arguments: args,
+      name: "create_rules",
+    });
+    expect(result.isError).toBe(true);
+  }
   expect(graphCalls).toHaveLength(0);
   await client.close();
 });
 
-test("without wovain's Meta app, create_rules creates nothing and the plan still works", async () => {
+test("before the merchant connects Meta, campaign_draft gives the connect link", async () => {
+  const { client, draft, fake } = await connectedMeta(false);
+  const result = await draft("ads_create_campaign", campaignArgs);
+  expect(result.structuredContent).toMatchObject({ needsConnection: "meta" });
+  expect(fake.calls).toEqual([]);
+  await expect(store.getCampaign()).resolves.toBeUndefined();
+  await client.close();
+});
+
+test("without wovain's Meta app, campaign_draft says so and the plan still works", async () => {
   const client = await connect({});
   const result = await client.callTool({
-    arguments: { adAccountId: "42", campaignId: "555" },
-    name: "create_rules",
+    arguments: { arguments: campaignArgs, tool: "ads_create_campaign" },
+    name: "campaign_draft",
   });
   expect(result.structuredContent).toEqual({ configured: false });
-  expect(graphCalls).toHaveLength(0);
   const plan = await client.callTool({ arguments: {}, name: "campaign_plan" });
   const text = JSON.stringify(plan.content);
   expect(text).toContain("1500");
   expect(text).toContain("wovain d1 · A");
   expect(text).toContain("utm_content={{ad.id}}");
-  await client.close();
-});
-
-const campaignArgs = {
-  ad_account_id: "42",
-  buying_type: "AUCTION",
-  campaign_daily_budget: 999_999,
-  campaign_name: "wovain",
-  client_conversation_id: conversation,
-  objective: "OUTCOME_SALES",
-};
-
-test("campaign_draft sends only allowlisted arguments, with the plan's budget", async () => {
-  const { client, fake } = await connectedMeta();
-  await client.callTool({
-    arguments: { arguments: campaignArgs, tool: "ads_create_campaign" },
-    name: "campaign_draft",
-  });
-  await client.callTool({
-    arguments: {
-      arguments: {
-        ad_account_id: "42",
-        ad_set_name: "wovain",
-        billing_event: "IMPRESSIONS",
-        campaign_id: "555",
-        client_conversation_id: conversation,
-        destination_type: "WEBSITE",
-        optimization_goal: "OFFSITE_CONVERSIONS",
-        promoted_object: { custom_event_type: "PURCHASE", pixel_id: "9" },
-        targeting: '{"geo_locations":{"countries":["US"]}}',
-      },
-      tool: "ads_create_ad_set",
-    },
-    name: "campaign_draft",
-  });
-  expect(fake.calls).toEqual([
-    {
-      arguments: {
-        ...campaignArgs,
-        advertiser_job: "create_and_launch_new_ads",
-        campaign_daily_budget: 1500,
-        hide_ui: true,
-      },
-      name: "ads_create_campaign",
-    },
-    {
-      arguments: {
-        ad_account_id: "42",
-        ad_set_name: "wovain",
-        advertiser_job: "create_and_launch_new_ads",
-        billing_event: "IMPRESSIONS",
-        campaign_id: "555",
-        client_conversation_id: conversation,
-        destination_type: "WEBSITE",
-        hide_ui: true,
-        optimization_goal: "OFFSITE_CONVERSIONS",
-        promoted_object: '{"custom_event_type":"PURCHASE","pixel_id":"9"}',
-        targeting: '{"geo_locations":{"countries":["US"]}}',
-      },
-      name: "ads_create_ad_set",
-    },
-  ]);
-  await client.close();
-});
-
-test.each([
-  ["a lifetime budget", { campaign_lifetime_budget: 5 }],
-  ["a spend cap", { campaign_spend_cap: 5 }],
-  ["a status", { status: "ACTIVE" }],
-])("campaign_draft refuses %s", async (_label, extra) => {
-  const { client, fake } = await connectedMeta();
-  const result = await client.callTool({
-    arguments: {
-      arguments: { ...campaignArgs, ...extra },
-      tool: "ads_create_campaign",
-    },
-    name: "campaign_draft",
-  });
-  expect(result.isError).toBe(true);
-  expect(fake.calls).toEqual([]);
-  await client.close();
-});
-
-test("campaign_draft refuses an ad set budget and nested extras", async () => {
-  const { client, fake } = await connectedMeta();
-  const adSet = {
-    ad_account_id: "42",
-    ad_set_name: "wovain",
-    billing_event: "IMPRESSIONS",
-    campaign_id: "555",
-    client_conversation_id: conversation,
-    destination_type: "WEBSITE",
-    optimization_goal: "OFFSITE_CONVERSIONS",
-    promoted_object: { custom_event_type: "PURCHASE", pixel_id: "9" },
-    targeting: { geo_locations: { countries: ["US"] } },
-  };
-  for (const args of [
-    { ...adSet, daily_budget: 100_000 },
-    { ...adSet, targeting: { ...adSet.targeting, age_max: 30 } },
-  ]) {
-    // oxlint-disable-next-line no-await-in-loop
-    const result = await client.callTool({
-      arguments: { arguments: args, tool: "ads_create_ad_set" },
-      name: "campaign_draft",
-    });
-    expect(result.isError).toBe(true);
-  }
-  expect(fake.calls).toEqual([]);
   await client.close();
 });
 
@@ -382,53 +429,68 @@ test("meta_ads refuses tools that publish or spend", async () => {
   await client.close();
 });
 
-// A merchant with Meta connected, the campaign recorded by create_rules,
-// and a draft of one ad set and two ads under it.
-const recorded = async () => {
-  const env = await connectedMeta();
-  await env.client.callTool({
-    arguments: { adAccountId: "act_42", campaignId: "555" },
-    name: "create_rules",
-  });
-  env.fake.reply("ads_get_ad_entities", {
-    data: [
-      { ad_object_id: "555", level: "campaign" },
-      { ad_object_id: "666", level: "ad_set" },
-      { ad_object_id: "777", level: "ad" },
-      { ad_object_id: 778, level: "ad" },
-    ],
-  });
-  const approve = async (campaignId = "555") =>
+// The staged campaign's draft as Meta reads it back: matching the plan
+// unless `campaign` overrides its fields.
+const draftReply = (campaign: Record<string, unknown> = {}) => ({
+  data: [
+    {
+      ad_object_id: "555",
+      daily_budget: "1500",
+      level: "campaign",
+      objective: "OUTCOME_SALES",
+      ...campaign,
+    },
+    { ad_object_id: "666", level: "ad_set" },
+    { ad_object_id: "777", level: "ad" },
+    { ad_object_id: 778, level: "ad" },
+  ],
+});
+
+// A staged campaign, its draft, and the merchant's confirmation through the
+// confirm page's own steps (prepare shows the page, confirm is the POST).
+const launchable = async (campaign?: Record<string, unknown>) => {
+  const env = await staged();
+  env.fake.reply("ads_get_ad_entities", draftReply(campaign));
+  const confirmByMerchant = async () => {
+    const url = await env.upstream.confirmLaunchUrl("test", "555", "Cat tee");
+    const id = url.split("/").at(-1) ?? "";
+    const hashes = { confirmHash: "cookie-hash", csrfHash: "csrf-hash" };
+    await env.upstream.launches.prepare(id, "test", hashes);
+    return await env.upstream.launches.confirm(
+      id,
+      hashes.confirmHash,
+      hashes.csrfHash
+    );
+  };
+  const launch = async (objectIds?: string[]) =>
     await env.client.callTool({
-      arguments: { campaignId },
-      name: "approve_launch",
-    });
-  const launch = async (launchToken: unknown, objectIds?: string[]) =>
-    await env.client.callTool({
-      arguments: { launchToken, ...(objectIds && { objectIds }) },
+      arguments: objectIds === undefined ? {} : { objectIds },
       name: "launch_campaign",
     });
-  const tokenOf = (result: Awaited<ReturnType<typeof approve>>) =>
-    launchApprovalSchema.parse(result.structuredContent).launchToken;
   const activations = () =>
     env.fake.calls.filter((call) => call.name === "ads_activate_entity");
-  return { ...env, activations, approve, launch, tokenOf };
+  return { ...env, activations, confirmByMerchant, launch };
 };
 
-test("only the widget sees approve_launch and launch_campaign", async () => {
-  const { client } = await connectedMeta();
-  const { tools } = await client.listTools();
-  for (const name of ["approve_launch", "launch_campaign"]) {
-    expect(tools.find((tool) => tool.name === name)?._meta).toMatchObject({
-      ui: { visibility: ["app"] },
-    });
-  }
+test("the model alone can't launch: request_launch only makes the confirm link", async () => {
+  const { activations, client, launch } = await launchable();
+  const request = await client.callTool({
+    arguments: {},
+    name: "request_launch",
+  });
+  const { confirmUrl } = launchRequestSchema.parse(request.structuredContent);
+  expect(confirmUrl).toMatch(/^https:\/\/wovain\.test\/confirm\/launch\//u);
+  expect(JSON.stringify(request)).not.toMatch(/token|csrf/iu);
+  const result = await launch();
+  expect(result.isError).toBe(true);
+  expect(activations()).toEqual([]);
   await client.close();
 });
 
-test("a Launch press publishes the recorded campaign and its draft", async () => {
-  const { activations, approve, client, launch, tokenOf } = await recorded();
-  const result = await launch(tokenOf(await approve()));
+test("a confirmed launch publishes the staged campaign and its draft, once", async () => {
+  const { activations, client, confirmByMerchant, launch } = await launchable();
+  await expect(confirmByMerchant()).resolves.toBe(true);
+  const result = await launch();
   expect(result.isError).toBeFalsy();
   const [activation] = activations();
   const { client_conversation_id: conversationId, ...args } = z
@@ -444,40 +506,32 @@ test("a Launch press publishes the recorded campaign and its draft", async () =>
     object_ids: ["555", "666", "777", "778"],
     publish_as_active: true,
   });
-  expect(activations()).toHaveLength(1);
-  await client.close();
-});
-
-test("launch_campaign refuses without a launch ticket", async () => {
-  const { activations, client, launch } = await recorded();
-  const result = await launch("not-a-ticket");
-  expect(result.isError).toBe(true);
-  expect(activations()).toEqual([]);
-  await client.close();
-});
-
-test("a launch ticket works once", async () => {
-  const { activations, approve, client, launch, tokenOf } = await recorded();
-  const token = tokenOf(await approve());
-  await launch(token);
-  const again = await launch(token);
+  const again = await launch();
   expect(again.isError).toBe(true);
   expect(activations()).toHaveLength(1);
   await client.close();
 });
 
-test("launch_campaign refuses objects outside the recorded campaign's draft", async () => {
-  const { activations, approve, client, launch, tokenOf } = await recorded();
-  const result = await launch(tokenOf(await approve()), ["777", "999"]);
+test("launch_campaign refuses objects outside the campaign's draft", async () => {
+  const { activations, client, confirmByMerchant, launch } = await launchable();
+  await confirmByMerchant();
+  const result = await launch(["777", "999"]);
   expect(result.isError).toBe(true);
   expect(activations()).toEqual([]);
   await client.close();
 });
 
-test("approve_launch only approves the recorded campaign", async () => {
-  const { approve, client } = await recorded();
-  const result = await approve("12345");
+test.each([
+  ["a budget that isn't the plan's", { daily_budget: "999999" }],
+  ["another objective", { objective: "OUTCOME_TRAFFIC" }],
+  ["a spend cap", { spend_cap: "100000" }],
+])("launch_campaign stops when the draft has %s", async (_label, campaign) => {
+  const { activations, client, confirmByMerchant, launch } =
+    await launchable(campaign);
+  await confirmByMerchant();
+  const result = await launch();
   expect(result.isError).toBe(true);
+  expect(activations()).toEqual([]);
   await client.close();
 });
 

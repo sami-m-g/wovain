@@ -53,7 +53,7 @@ const setup = () => {
       redirect: "manual",
       ...(cookie === undefined ? {} : { headers: { cookie } }),
     });
-  return { fake, get, storage, upstream };
+  return { app, fake, get, storage, upstream };
 };
 
 type Setup = ReturnType<typeof setup>;
@@ -248,5 +248,113 @@ describe("proxy tools", () => {
       name: "fourthwall",
     });
     expect(result.structuredContent).toEqual({ configured: false });
+  });
+});
+
+// The cookie named `name` among a response's Set-Cookie headers.
+const cookieNamed = (response: Response, name: string) =>
+  response.headers
+    .getSetCookie()
+    .map((header) => header.split(";")[0] ?? "")
+    .find((pair) => pair.startsWith(`${name}=`)) ?? "";
+
+// u1's launch request for campaign 555, opened in a browser and signed in
+// to wovain as `user`: the confirm page and its cookie.
+const openConfirm = async (env: Setup, user = "u1") => {
+  const url = await env.upstream.confirmLaunchUrl(
+    "u1",
+    "555",
+    "Cat tee at $15.00 a day"
+  );
+  const start = await env.get(pathOf(url));
+  expect(start.status).toBe(302);
+  const signInUrl = locationOf(start);
+  const shown = await env.get(
+    backTo("wovain", env.fake.approve(signInUrl, user), signInUrl),
+    cookieOf(start)
+  );
+  const html = await shown.text();
+  return {
+    action: /action="(?<action>[^"]+)"/u.exec(html)?.groups?.["action"] ?? "",
+    cookie: cookieNamed(shown, "wovain_launch"),
+    csrf:
+      /name="csrf" value="(?<csrf>[^"]+)"/u.exec(html)?.groups?.["csrf"] ?? "",
+    html,
+    status: shown.status,
+  };
+};
+
+const post = async (
+  env: Setup,
+  action: string,
+  {
+    cookie,
+    csrf,
+    origin = site,
+  }: { cookie?: string; csrf?: string; origin?: string }
+) =>
+  await env.app.request(`${site}${action}`, {
+    body: new URLSearchParams(csrf === undefined ? {} : { csrf }),
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      origin,
+      ...(cookie === undefined ? {} : { cookie }),
+    },
+    method: "POST",
+  });
+
+describe("launch confirm page", () => {
+  test("the merchant signs in, sees the campaign and confirms it once", async () => {
+    const env = setup();
+    const page = await openConfirm(env);
+    expect(page.status).toBe(200);
+    expect(page.html).toContain("Cat tee at $15.00 a day");
+    expect(page.cookie).toMatch(/^wovain_launch=/u);
+    expect(page.csrf).not.toBe("");
+    const confirmed = await post(env, page.action, page);
+    expect(confirmed.status).toBe(200);
+    expect(await confirmed.text()).toContain("Launch confirmed");
+    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
+      true
+    );
+    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
+      false
+    );
+    const replay = await post(env, page.action, page);
+    expect(replay.status).toBe(403);
+  });
+
+  test("a different wovain account can't confirm", async () => {
+    const env = setup();
+    const page = await openConfirm(env, "attacker");
+    expect(page.status).toBe(403);
+    expect(page.csrf).toBe("");
+    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
+      false
+    );
+  });
+
+  test("a POST without the CSRF token, the page's cookie or this site's origin is refused", async () => {
+    const env = setup();
+    const page = await openConfirm(env);
+    for (const attempt of [
+      { cookie: page.cookie },
+      { cookie: page.cookie, csrf: "guessed" },
+      { csrf: page.csrf },
+      { cookie: page.cookie, csrf: page.csrf, origin: "https://evil.example" },
+    ]) {
+      // oxlint-disable-next-line no-await-in-loop
+      const response = await post(env, page.action, attempt);
+      expect(response.status).toBe(403);
+    }
+    await expect(env.upstream.launches.consume("u1", "555")).resolves.toBe(
+      false
+    );
+  });
+
+  test("an unknown launch link is refused", async () => {
+    const { get } = setup();
+    const response = await get("/confirm/launch/nope");
+    expect(response.status).toBe(400);
   });
 });

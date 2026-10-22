@@ -42,6 +42,6 @@ export type Campaign = z.infer<typeof campaignSchema>;
 
 export const campaignResultSchema = z.object({ campaign: campaignSchema });
 
-// approve_launch's reply: the single-use ticket the widget hands to
-// launch_campaign.
-export const launchApprovalSchema = z.object({ launchToken: z.string() });
+// request_launch's reply: wovain's page where the merchant confirms the
+// launch in their own browser.
+export const launchRequestSchema = z.object({ confirmUrl: z.url() });
