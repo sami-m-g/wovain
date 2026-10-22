@@ -1,3 +1,15 @@
+# [0.19.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.18.0...v0.19.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **research:** treat search results as untrusted and share one genkit ([4672c10](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/4672c10b927a9ef97103f35720cd00a8cbf7ceb1)), closes [#3](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/3)
+
+
+### Features
+
+* **research:** add tavily trend research and trademark screen ([577124d](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/577124d85fc63fef70bfc62b81a5ddf630936fc1)), closes [#3](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/3)
+
 # [0.18.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.17.0...v0.18.0) (2026-10-22)
 
 
