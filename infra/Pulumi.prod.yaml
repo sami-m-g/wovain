@@ -62,6 +62,15 @@ config:
     - name: localhost
       uri: http://localhost:3000/mcp
       import: redir_01M5HQD44DBG42CHS3W7XWB68J
+  # AuthKit MCP resource indicators (infra/workos.ts). default is the resource
+  # a client gets when it names none; import adopts an entry made by hand.
+  wovain:workosResourceIndicators:
+    - name: hosted
+      uri: https://app--wovain.us-central1.hosted.app/mcp
+      default: true
+    - name: localhost
+      uri: http://localhost:3000/mcp
+      import: authkit_oauth_resource_01M5F7QQ0HM9RZ7NDY9X1TEXWX
   gcp:project: wovain
   gcp:region: us-central1
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
