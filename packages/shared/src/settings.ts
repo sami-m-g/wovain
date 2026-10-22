@@ -54,19 +54,10 @@ export const audioSettings = z.object({
   source: z.enum(["mmaudio", "kling-native", "off"]).default("mmaudio"),
 });
 
-export const metaSettings = z.object({
-  aiDisclosure: z.boolean().default(true),
-  graphApiVersion: z
-    .string()
-    .regex(/^v\d+\.\d+$/u)
-    .default("v26.0"),
-});
-
 export const settingsSchema = z.object({
   audio: audioSettings.prefault({}),
   campaign: campaignSettings.prefault({}),
   economics: economicsSettings.prefault({}),
-  meta: metaSettings.prefault({}),
   pricing: pricingSettings.prefault({}),
   rules: rulesSettings.prefault({}),
   video: videoSettings.prefault({}),
@@ -87,7 +78,6 @@ export const settingsPatchSchema = z.object({
   audio: audioSettings.partial().optional(),
   campaign: campaignSettings.partial().optional(),
   economics: economicsSettings.partial().optional(),
-  meta: metaSettings.partial().optional(),
   pricing: pricingSettings.partial().optional(),
   rules: rulesSettings.partial().optional(),
   video: videoSettings.partial().optional(),

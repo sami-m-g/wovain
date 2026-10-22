@@ -120,7 +120,6 @@ How sign-in works:
 | Agent | Any agent that speaks MCP over streamable HTTP with OAuth, such as ChatGPT (Plus, developer mode) or Claude |
 | Host | Firebase App Hosting (Node 24, Cloud Run underneath; 0 to 2 instances); Node 24, pnpm and Java 21 (emulators) locally |
 | Keys in `apps/server/.env` (`apphosting.yaml` in production, secret values as KMS-encrypted Pulumi config, `pulumi config set --secret <name>` in `infra/`) | `META_SYSTEM_USER_TOKEN`, `FAL_KEY` (live fal prices), `FAL_BILLING_KEY` (optional: what fal actually charged), `WORKOS_AUTHKIT_DOMAIN` (the AuthKit domain that issues `/mcp`'s tokens), `WORKOS_API_KEY` (reads each caller's email), `WOVAIN_ALLOWED_EMAILS` (who may use `/mcp`), `WOVAIN_SITE_URL`, and optionally `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`. Storage needs no keys: the emulators locally, the backend's own project and bucket on App Hosting |
-| Rehearsal | Later: `WOVAIN_MOCK=1` (`pnpm mock`) is meant to answer wovain's outside calls from fixtures and skip publish and launch steps; the flag is read but nothing uses it yet |
 | Sign-ins in the agent | Fourthwall, Meta Ads and fal (OAuth, once), with auto-approve on for their tools |
 
 Start it:
@@ -221,10 +220,9 @@ Every value in the PRD is a setting, edited in the Settings widget or a widget's
 | Pricing | min profit $10, min margin 30%, round up to a clean price |
 | Economics | card fee 2.9% + $0.30, shipping $5, sales tax 7%, refund reserve 2%; breakeven basis: priciest size (default) or size-weighted mix |
 | Campaign | $15 per product per day (at most $500; the scale cap at most 5× the start) |
-| Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven; ad links tagged utm_content = ad ID |
+| Rules | kill at 3× breakeven with no sales, checked every 30 min; kill above 1.5× breakeven with 5+ sales in 7 days; scale +20% under 0.8× breakeven with 10+ sales, every 48 h, cap 2× start; kill a design at 4× breakeven with no sales across its ads; alert above breakeven (can be turned off); ad links tagged utm_content = ad ID (can be turned off) |
 | Video | model MiniMax H3 Max Reference (or with the print kept: Kling O1 Standard Reference up to 10 s, Kling v3 Standard or Pro; test runs without: MiniMax H3 Max Turbo, H3 Max), 720p, 15 s, 2 clips per product, elements on |
 | Audio | source MMAudio (or Kling native, or off), prompt "upbeat background music, no vocals" |
-| Meta | AI disclosure on, Graph API v26.0 |
 
 ## Development Tooling
 
@@ -244,7 +242,6 @@ Claude Code setup for building wovain, added in the first build step. Nothing he
 | dependency-cruiser 18.7.0 | Architecture check | `pnpm arch` enforces layer and cycle rules from `.config/dependency-cruiser.json` before pushes and in CI |
 | jscpd 5.4.2 | Duplication check | `pnpm dupes` fails on any clone of 40 tokens or more (`.config/jscpd.json`) before pushes and in CI |
 | Storybook | Widget workshop | One story per widget state with a mocked host bridge; a11y and interaction tests |
-| Mock mode (later) | Rehearsal | `pnpm mock` sets `WOVAIN_MOCK=1`; the fixtures that would answer wovain's outside calls aren't built yet |
 | GitLab CI/CD (`.gitlab-ci.yml`, jobs in `.gitlab/ci/`) | CI/CD | See the stage table below |
 | GitLab Observability (`apps/server/src/telemetry.ts`, `@opentelemetry/sdk-trace-node` 2.11.0 with `@opentelemetry/exporter-trace-otlp-http` 0.222.0) | Monitor | Sends OpenTelemetry traces over OTLP/HTTP when `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (endpoint from the group's Observe → Observability configuration). `/mcp` adds an `mcp.request` span with the MCP method, tool and status, no user ids or arguments. Next.js's per-request spans went with Next.js. Unset means no telemetry |
 | GitLab Duo Agent Platform | Agents | Provisioned in the hackathon workspace. The hackathon's Developer+ role can manage flow triggers, create AI Catalog flows and enable them in our project, but not in the top-level group, and it can't change project settings. `infra/Pulumi.prod.yaml` declares the triggers and `infra/duo.ts` (Pulumi) applies them, each limited to a human action or a red main to save credits: Developer flow on assign or mention, Fix CI/CD Pipeline on a failed push pipeline on main, Code Review when Duo is requested as reviewer or an MR is marked ready (project rules in `.gitlab/duo/mr-review-instructions.yaml`). Custom flows live in `.gitlab/duo/catalog/flows/` and GitLab's `ai-catalog` component syncs them on main; the first is the scout, which is meant to check the main pipeline and production smoke test daily at 07:00 UTC, open one confidential `scout` issue per confirmed new failure, and comment a daily digest (shipped, waiting for review or test, in progress) on the confidential `digest` issue. The component can't enable flows for us, so `infra/duo.ts` enables and schedules them. Since 2026-10-22 every trigger is inactive and no custom flow is enabled, so no Duo credits are spent; enabling the scout at project level created no flow trigger (it likely needs a group-level consumer first). Labels and the Workflow board (`status::intent` → `todo` → `spec` → `plan` → `doing` → `review` → `test`, following the intent, spec and plan stages of Anthropic's AI-native SDLC playbook) are Pulumi resources in `infra/gitlab.ts`. Flows run as service accounts and bill the hackathon group's credit pool, not the personal 500 (Chat and Code Suggestions); triggers don't fire for MRs or pipelines a flow made. Automatic Duo review, SAST false-positive detection and SAST vulnerability resolution need a Maintainer; that request goes to GitLab contributor-success |
@@ -328,7 +325,6 @@ Scripts in the root `package.json`:
 "typecheck": "tsc -b --noEmit",
 "typecheck:6": "tsc6 -b --noEmit",
 "test": "pnpm --filter @wovain/server test",
-"mock": "WOVAIN_MOCK=1 pnpm dev",
 "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
 "knip": "knip",
 "arch": "depcruise --config .config/dependency-cruiser.json apps packages",
@@ -488,4 +484,4 @@ Verify early in the build, in this order:
 
 Carried from `prd.md > Open Questions` (still open, before the demo): Meta payment method, shop set live, Meta pixel and Conversions API connected in Fourthwall. Voice: tools work in Live voice since 2026-09-23; whether widgets render in voice is unverified, so voice stays a bonus.
 
-Not decided by the learner and flagged for review: the `self_ai_disclosure` value on Meta creatives (default on) and the Meta API version pin (v26.0, given Meta's removals on 2026-10-27).
+Not decided by the learner and flagged for review: the `self_ai_disclosure` value on Meta creatives (the campaign playbook asks the merchant each time; there is no setting) and the Meta API version pin (v26.0, a constant in `lib/meta-graph.ts`, given Meta's removals on 2026-10-27).

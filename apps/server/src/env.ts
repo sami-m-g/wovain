@@ -12,7 +12,6 @@ const envSchema = z.object({
   META_SYSTEM_USER_TOKEN: z.string().optional(),
   // The wovain logo agents show for the connector (public/icon.png).
   WOVAIN_ICON_URL: z.url().optional(),
-  WOVAIN_MOCK: z.stringbool().default(false),
   // The built widgets beside this package: src/ in development and tests,
   // dist/ once built (`pnpm build`, which App Hosting runs before start).
   WOVAIN_WIDGETS_DIR: z

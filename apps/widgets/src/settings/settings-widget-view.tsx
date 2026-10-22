@@ -31,7 +31,6 @@ const icons: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   audio: Music,
   budget: DollarCircle,
   economics: BarChart,
-  meta: SettingsSlider,
   pricing: Tag,
   rules: ShieldCheck,
   video: Video,

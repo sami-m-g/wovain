@@ -11,7 +11,6 @@
     "typecheck:6": "tsc6 -b --noEmit",
     "test": "pnpm --filter @wovain/server test",
     "test:integration": "pnpm --filter @wovain/server test:integration",
-    "mock": "WOVAIN_MOCK=1 pnpm dev",
     "prepare": "lefthook install && skills add challengepost/learn-ai-basics --skill '*' -y -a claude-code --copy && skills experimental_sync -y -a claude-code --copy",
     "knip": "knip --config .config/knip.json",
     "arch": "depcruise --config .config/dependency-cruiser.json apps packages",

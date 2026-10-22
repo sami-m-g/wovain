@@ -374,15 +374,4 @@ export const moreSections: Section[] = sections([
       `Fees ${s.economics.cardFeePct}% + ${money(s.economics.cardFeeFixed)} · reserve ${s.economics.refundReservePct}%`,
     title: "Economics",
   },
-  {
-    fields: [
-      { key: "aiDisclosure", label: "Label ads as AI-made" },
-      { key: "graphApiVersion", label: "Graph API version" },
-    ],
-    group: "meta",
-    id: "meta",
-    summary: (s) =>
-      `${s.meta.aiDisclosure ? "AI label on" : "AI label off"} · ${s.meta.graphApiVersion}`,
-    title: "Meta",
-  },
 ]);
