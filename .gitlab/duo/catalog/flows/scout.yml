@@ -1,9 +1,10 @@
-# Monitor scout: on a schedule, checks whether production is healthy, opens
-# one issue per confirmed new problem, and posts the daily digest (what
-# shipped, what waits for a human) as a comment on the "digest" issue. One run
-# a day does both.
-# Synced to the AI Catalog by the ai-catalog component; infra/duo.ts enables
-# it in the project and sets its schedule.
+# Monitor scout: checks whether production is healthy, opens one issue per
+# confirmed new problem, and posts the digest (what shipped, what waits for a
+# human) as a comment on the "digest" issue. One run does both.
+# Synced to the AI Catalog by the ai-catalog component; infra/duo.ts gives it a
+# pipeline trigger that only the weekly schedule's scout child pipeline fires
+# (.gitlab/ci/loop.yml). Its prompt is fixed text, so no comment or pipeline
+# field can steer it.
 name: "wovain scout"
 description: "Checks wovain's main pipeline and production smoke test, opens an issue for each confirmed new failure, and posts the daily digest."
 public: false
@@ -78,10 +79,12 @@ definition:
                its review app link if it has a review/ environment.
              - Agents working: open issues labeled "status::doing".
 
-          Never create more than one scout issue and one digest comment per
-          run. Never change code, merge requests or pipelines.
+          Every issue you create sets confidential: true. Never create more
+          than one scout issue and one digest comment per run. Never change code, merge requests or pipelines.
+        # Fixed text: nothing from the event that started the run (pipeline
+        # data, comments) reaches the prompt.
         user: |
-          {{goal}}
+          Run the production scout and post the digest now.
         placeholder: history
       unit_primitives: []
       params:

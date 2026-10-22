@@ -2,8 +2,8 @@
 # plain words, with the files and lines to look at. It has no write tools at
 # all, so whatever it reads (job logs and MR text are untrusted) can't make it
 # change anything; it only answers in the chat that asked.
-# Synced to the AI Catalog by the ai-catalog component on main; enabling it in
-# the project needs it enabled in the top-level group first (docs/transcend.md).
+# Synced to the AI Catalog by the ai-catalog component on main; infra/duo.ts
+# enables it in the project (wovain:duoCustomAgents).
 name: "wovain explain"
 description: "Read-only: explains why a wovain pipeline or merge request failed and where to look, citing jobs, files and lines. Has no tools that write anything."
 public: false
