@@ -12,7 +12,7 @@ import type { Design, DesignQuote } from "@wovain/shared/design";
 import { priceProduct, sizeCostSchema } from "@wovain/shared/economics";
 import { z } from "zod";
 
-import { assertUploadUrl } from "../lib/fetch-image.ts";
+import { uploadArtwork } from "../lib/fetch-image.ts";
 import { readImageInfo } from "../lib/image.ts";
 import { loadArtwork } from "../lib/load-artwork.ts";
 import { text } from "../lib/tool-result.ts";
@@ -140,20 +140,11 @@ export const registerDesignTools = (server: McpServer, store: Store) => {
       if (artwork === undefined) {
         throw new Error(`no staged artwork ${artworkId}`);
       }
-      const response = await fetch(await assertUploadUrl(uploadUrl), {
-        body: await store.readArtworkBytes(artwork),
-        // Fourthwall signs the upload with its content type and a size
-        // limit; both headers must match or Google storage answers 403.
-        headers: {
-          "content-type": artwork.contentType,
-          "x-goog-content-length-range": `0,${artwork.bytes}`,
-        },
-        method: "PUT",
-        signal: AbortSignal.timeout(60_000),
-      });
-      if (!response.ok) {
-        throw new Error(`Fourthwall storage answered ${response.status}`);
-      }
+      await uploadArtwork(
+        uploadUrl,
+        await store.readArtworkBytes(artwork),
+        artwork.contentType
+      );
       const result = { bytes: artwork.bytes, uploaded: true };
       return { content: text("Uploaded."), structuredContent: result };
     }

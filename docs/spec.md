@@ -373,7 +373,7 @@ wovain/
 │   │   │   ├── store.ts         # records in Firestore, artwork in Cloud Storage
 │   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
 │   │   │   ├── telemetry.ts     # OpenTelemetry Node tracer, on when the OTLP endpoint is set
-│   │   │   └── lib/             # fal pricing and usage, image checks, artwork loading, meta-graph, video-plan
+│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan
 │   │   ├── test/                # unit/ (auth chain, economics, images, fal), integration/ (store, tools, routes on the emulators), fixtures/
 │   │   ├── public/              # icon.png, favicon.ico
 │   │   ├── firestore.rules, storage.rules   # deny all clients; only the Admin SDK reads and writes

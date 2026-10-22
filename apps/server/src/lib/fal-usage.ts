@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { fetchJson } from "./fetch-json.ts";
+
 // What fal actually billed, from its usage API (GET /v1/models/usage). It
 // needs a Billing-preset key (billing:usage:read), kept apart from FAL_KEY so
 // the server's working key never carries billing access.
@@ -56,15 +58,11 @@ export const fetchSpend = async (
       url.searchParams.set("cursor", cursor);
     }
     // oxlint-disable-next-line no-await-in-loop -- pages follow one another
-    const response = await fetch(url, {
+    const page = await fetchJson(url, usageSchema, {
       headers: { authorization: `Key ${billingKey}` },
-      signal: AbortSignal.timeout(15_000),
+      label: "fal usage",
+      timeoutMs: 15_000,
     });
-    if (!response.ok) {
-      throw new Error(`fal usage answered ${response.status}`);
-    }
-    // oxlint-disable-next-line no-await-in-loop -- pages follow one another
-    const page = usageSchema.parse(await response.json());
     for (const row of page.time_series.flatMap((bucket) => bucket.results)) {
       const current = totals.get(row.endpoint_id) ?? {
         quantity: 0,
