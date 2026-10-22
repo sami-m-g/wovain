@@ -61,7 +61,7 @@ export const createServer = (
   registerDesignTools(server, store);
   registerJudgeTools(server, designJudge);
   registerResearchTools(server, trendResearch);
-  registerAdTools(server, store, env, videoPricing);
+  registerAdTools(server, store, videoPricing, upstream);
   registerCampaignTools(server, store, env);
   registerConnectionTools(server, store, upstream);
   registerPlaybooks(server);

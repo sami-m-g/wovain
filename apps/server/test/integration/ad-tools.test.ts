@@ -4,9 +4,18 @@ import { listVideoPrices } from "@wovain/shared/video-models";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { z } from "zod";
 
+import { localCipher } from "../../src/lib/cipher.ts";
+import { createConnections } from "../../src/lib/connections.ts";
+import { createUpstream } from "../../src/lib/upstream.ts";
 import { planVideos } from "../../src/lib/video-plan.ts";
 import type { Store } from "../../src/store.ts";
-import { connectClient, demoDesign, testStore } from "../helpers.ts";
+import { connectWith, fakeUpstream } from "../fake-upstream.ts";
+import {
+  connectClient,
+  demoDesign,
+  testStorage,
+  testStore,
+} from "../helpers.ts";
 
 let client: Client;
 let store: Store;
@@ -109,8 +118,67 @@ test("video plans fit each model's inputs", () => {
   expect(kling.keepsPrint).toBe(true);
 });
 
-test("video_spend says how to set it up when there's no billing key", async () => {
-  const result = await call("video_spend", {});
+// wovain's client on a fake fal, with the merchant ("test") connected.
+const connectedFal = async () => {
+  const fake = fakeUpstream("fal");
+  const upstream = createUpstream({
+    connections: createConnections(testStorage().db, localCipher()),
+    fetch: fake.fetch,
+    site: "https://wovain.test",
+  });
+  await connectWith(upstream, fake, "test", "fal");
+  const falClient = await connectClient({}, store, { upstream });
+  return { fake, falClient };
+};
+
+test("generate_videos submits exactly the planned clips on the merchant's fal", async () => {
+  const { fake, falClient } = await connectedFal();
+  const result = await falClient.callTool({
+    arguments: { designId: "d1" },
+    name: "generate_videos",
+  });
   expect(result.isError).toBeFalsy();
-  expect(JSON.stringify(result.content)).toContain("FAL_BILLING_KEY");
+  const plan = planVideos(
+    { ...demoDesign, id: "d1" },
+    defaultSettings(),
+    listVideoPrices()
+  );
+  expect(fake.calls).toEqual([
+    {
+      arguments: {
+        requests: plan.clips.map((clip, index) => ({
+          endpoint_id: clip.endpointId,
+          index,
+          input: clip.input,
+        })),
+      },
+      name: "submit_jobs",
+    },
+  ]);
+});
+
+test("add_video_audio takes only fal clip URLs", async () => {
+  const { fake, falClient } = await connectedFal();
+  const refused = await falClient.callTool({
+    arguments: { designId: "d1", videoUrls: ["https://evil.example/a.mp4"] },
+    name: "add_video_audio",
+  });
+  expect(refused.isError).toBe(true);
+  expect(fake.calls).toEqual([]);
+});
+
+test("generate_videos gives a connect link before fal is connected", async () => {
+  const fake = fakeUpstream("fal");
+  const upstream = createUpstream({
+    connections: createConnections(testStorage().db, localCipher()),
+    fetch: fake.fetch,
+    site: "https://wovain.test",
+  });
+  const falClient = await connectClient({}, store, { upstream });
+  const result = await falClient.callTool({
+    arguments: { designId: "d1" },
+    name: "generate_videos",
+  });
+  expect(result.structuredContent).toMatchObject({ needsConnection: "fal" });
+  expect(fake.calls).toEqual([]);
 });

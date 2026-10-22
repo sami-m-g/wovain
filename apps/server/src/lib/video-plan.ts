@@ -142,7 +142,7 @@ export const planVideos = (
         prices[model].source === "fal"
           ? "live fal list price"
           : "fal list price",
-      note: "List price; fal may bill more for resolution, audio and provider rules. Run video_spend afterwards for the actual charge when it's set up.",
+      note: "List price; fal may bill more for resolution, audio and provider rules. The merchant's fal request history shows the actual charge.",
       usd: slots.length * (perClip + (audio?.usdPerClip ?? 0)),
     },
     keepsPrint: videoModels[model].keepsPrint,
