@@ -6,6 +6,8 @@ export const campaign = {
 
 ## Which Meta tools
 
+Before anything else, call wovain \`list_connections\`; for any provider this step needs that isn't connected, offer \`connect_account\` and show the merchant its link.
+
 wovain reaches the merchant's Meta account itself:
 
 - **Reads** (accounts, Pages, pixels, drafts, videos, previews): wovain \`meta_ads\` with \`tool\` = the Meta tool name below and \`arguments\` = its arguments.

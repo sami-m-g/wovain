@@ -6,6 +6,7 @@ import type { ProviderId } from "../lib/connections.ts";
 import { text } from "../lib/tool-result.ts";
 import {
   canReach,
+  LINK_NOTE,
   UNTRUSTED,
   unreachable,
   upstreamReply,
@@ -122,6 +123,73 @@ export const registerConnectionTools = (
         })
     );
   }
+
+  server.registerTool(
+    "list_connections",
+    {
+      annotations: { readOnlyHint: true },
+      description:
+        "Show which of the merchant's accounts (fourthwall, fal, meta) are connected to wovain. Call this before anything else; for any provider that isn't connected, offer connect_account.",
+      title: "List connected accounts",
+    },
+    async () => {
+      const rows = await Promise.all(
+        providerSchema.options.map(async (id) => ({
+          available: canReach(upstream, id),
+          connected: canReach(upstream, id)
+            ? await upstream.connected(store.userId, id)
+            : false,
+          provider: id,
+        }))
+      );
+      return {
+        content: text(
+          rows
+            .map(({ available, connected, provider }) => {
+              const { title } = providers[provider];
+              if (connected) {
+                return `${provider}: ${title} is connected.`;
+              }
+              return available
+                ? `${provider}: ${title} isn't connected. Offer connect_account.`
+                : `${provider}: ${title} can't be connected on this server yet.`;
+            })
+            .join("\n")
+        ),
+        structuredContent: { connections: rows },
+      };
+    }
+  );
+
+  server.registerTool(
+    "connect_account",
+    {
+      annotations: {
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+        readOnlyHint: false,
+      },
+      description:
+        "Get the link where the merchant connects their own Fourthwall shop, fal account or Meta ad account (fourthwall, fal or meta) to wovain. Use it when list_connections shows a provider isn't connected, or the merchant asks to connect or reconnect one. Show them the link, wait until they say they're done, then continue. The link is personal: single use, valid 5 minutes, and it asks them to sign in to wovain.",
+      inputSchema: z.object({ provider: providerSchema }),
+      title: "Connect an account",
+    },
+    async ({ provider }) => {
+      if (!canReach(upstream, provider)) {
+        return unreachable(upstream, provider);
+      }
+      const { title } = providers[provider];
+      const connectUrl = await upstream.connectUrl(store.userId, provider);
+      const already = await upstream.connected(store.userId, provider);
+      return {
+        content: text(
+          `${already ? `The merchant's ${title} account is already connected; this link replaces that connection. ` : ""}Show the merchant this link to connect their ${title} account: ${connectUrl}\n${LINK_NOTE}`
+        ),
+        structuredContent: { connectUrl, provider },
+      };
+    }
+  );
 
   server.registerTool(
     "disconnect",

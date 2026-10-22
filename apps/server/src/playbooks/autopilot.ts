@@ -9,6 +9,8 @@ export const autopilot = {
     'Run the whole journey for the merchant with no approvals: research, a drop of products created hidden on Fourthwall, varied ads and a paused Meta campaign. NVIDIA Nemotron decides at each approval point; going live stays the merchant\'s call. Use when the merchant asks for autopilot ("create a t-shirt for me on autopilot", "/autopilot cat tees") or says "Turn autopilot on".',
   text: `Autopilot runs the design, ads and campaign playbooks back to back without stopping for the merchant. Wherever a playbook says "wait for the merchant", call wovain \`autopilot_decide\` instead and do what it returns. You never approve anything yourself; only \`autopilot_decide\` can, and only within wovain's limits.
 
+Before anything else, call wovain \`list_connections\`; for any provider this step needs that isn't connected, offer \`connect_account\` and show the merchant its link.
+
 ## Start
 
 1. wovain \`autopilot\` with the merchant's idea or niche (\`idea\`), and \`videos: true\` only if they asked for video. If it says autopilot isn't on, call \`autopilot_opt_in\`, show the merchant its link in one line ("Turn autopilot on in your browser: <link>"), and wait until they say they confirmed; then call \`autopilot\` again. On \`configured: false\`, say so and offer the step-by-step journey instead.
