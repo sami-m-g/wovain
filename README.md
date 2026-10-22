@@ -38,7 +38,7 @@ Fill in `apps/server/.env` (empty values count as unset; in production they come
 | `FAL_KEY` | Hosting finished videos, live video prices | fal dashboard → API keys |
 | `META_APP_ID`, `META_APP_SECRET` | Optional: merchants connecting Meta to wovain (Meta's Ads MCP has no dynamic registration, so wovain's own Meta app is the OAuth client). Without them, merchants use their host's Meta Ads connector and rules aren't created | Your Business-type Meta app (Ads MCP use case) → App settings → Basic. See [Meta app](#meta-app) |
 | `NEBIUS_API_KEY` | Optional: the design check (`judge_design`, Nemotron on Nebius Token Factory); without it the check is skipped | Nebius Token Factory → API keys |
-| `QLOO_API_KEY` | Optional: Qloo's Taste API | Qloo developer portal |
+| `QLOO_API_KEY` | Optional: Qloo's Taste API, for the taste graph under `research_trends` and for `suggest_audience`; without it research uses the news alone | The hackathon's event key (it works only on `hackathon.api.qloo.com`) |
 | `TAVILY_API_KEY` | Optional: trend research and the trademark screen (`research_trends`, `screen_trademark`); without it both say they aren't set up | Tavily dashboard → API keys |
 | `WORKOS_AUTHKIT_DOMAIN` | Sign-in: the AuthKit domain that issues `/mcp`'s tokens | WorkOS dashboard (e.g. `https://<name>.authkit.app`) |
 | `WORKOS_API_KEY` | Reads each caller's email for the allowlist | WorkOS dashboard → API keys |
@@ -78,6 +78,12 @@ The weekly market scout (`apps/ops/src/weekly.ts`) uses the same key from CI for
 
 Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm test:live` runs one real research (2 credits) and is skipped without the key. In production the key is the `tavily-api-key` stack secret, listed in `apphosting.yaml`.
 
+## Qloo
+
+Taste × moment: Qloo says who loves the seed and what else they love; Tavily says why now. With `QLOO_API_KEY`, `research_trends` looks the seed up on Qloo (`/search`), takes the cross-domain taste tags its fans share (`/v2/insights`) and the seed's velocity (`/v2/trending`), then runs two Tavily searches for each of the top 3 tags: this week's news, and Etsy, Redbubble and Amazon listings. Code scores each idea on demand, momentum (news, halved when Qloo's velocity doesn't confirm it) and low saturation, with fixed weights (`SCORE_WEIGHTS` in `apps/server/src/lib/taste.ts`); Nemotron only writes the name, angle and why. A research with Qloo costs 6 Tavily credits ($0.048). `suggest_audience` turns a picked idea's tags into age bands, gender and top places (`urn:demographics`, `urn:heatmap`) for the campaign.
+
+wovain calls Qloo's REST API itself: the hackathon kit's `@qloo/qloo-harness` is a CLI and stdio MCP server that doesn't export its client. Hackathon keys work only on `https://hackathon.api.qloo.com`, with the `X-Api-Key` header. Put the key in `apps/server/.env` as `QLOO_API_KEY`; `pnpm test:live` then makes 5 real Qloo calls. In production, set the `qloo-api-key` stack secret and add `QLOO_API_KEY` to `apphosting.yaml` once it has a value.
+
 ## Develop
 
 | Command | What it does |
@@ -93,7 +99,7 @@ Put a key in `apps/server/.env` as `TAVILY_API_KEY` to try them locally. `pnpm t
 | `pnpm test:integration` | Store and MCP tool tests on the Firestore and Storage emulators (needs Java 21) |
 | `pnpm test:e2e` | The whole journey as an agent drives it, on the emulators with recorded Fourthwall, fal, Meta, Tavily, Qloo and Nebius replies; writes a proof report with each step's redacted input and output, timing and widget screenshot to `e2e-report/index.html` (needs Java 21). `E2E_LIVE=1` swaps in real Tavily and Nebius calls when their keys are set |
 | `pnpm demo` | After `pnpm test:e2e`: a narrated video of the run, `e2e-report/demo.mp4`, under 3 minutes (`/demo`) |
-| `pnpm test:live` | Opt-in: one real Nemotron call on Nebius and one real Tavily research; each is skipped without its key (`NEBIUS_API_KEY`, `TAVILY_API_KEY`) |
+| `pnpm test:live` | Opt-in: one real Nemotron call on Nebius, one real Tavily research and one Qloo taste and audience lookup; each is skipped without its key (`NEBIUS_API_KEY`, `TAVILY_API_KEY`, `QLOO_API_KEY`) |
 | `pnpm test:stories` | Widget stories as tests (Playwright) |
 | `pnpm knip` | Unused files, exports and dependencies |
 | `pnpm arch` | Architecture rules (dependency-cruiser): layers, cycles, orphans |

@@ -231,13 +231,19 @@
                 (Nemotron ranks them when the key is set), and
                 <code>screen_trademark</code> searches a phrase before
                 publishing. Without <code>TAVILY_API_KEY</code> both are
-                skipped.
+                skipped. With <code>QLOO_API_KEY</code>, research starts from
+                the seed's Qloo taste graph and scores each idea in code on
+                demand, momentum and low saturation (Nemotron only writes the
+                copy), and <code>suggest_audience</code> returns the theme's
+                demographics and top places for Meta.
               </td>
               <td>
                 <code>apps/server/src/lib/ai.ts</code>,
                 <code>apps/server/src/lib/design-judge.ts</code>,
                 <code>apps/server/src/tools/judge.ts</code>,
                 <code>apps/server/src/lib/tavily.ts</code>,
+                <code>apps/server/src/lib/qloo.ts</code>,
+                <code>apps/server/src/lib/taste.ts</code>,
                 <code>apps/server/src/lib/trends.ts</code>,
                 <code>apps/server/src/tools/research.ts</code>
               </td>

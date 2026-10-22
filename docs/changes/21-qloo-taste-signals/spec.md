@@ -45,7 +45,8 @@ The weights sit in one exported constant (`SCORE_WEIGHTS`). Every idea returns i
 ### Code
 
 - `apps/server/src/lib/qloo.ts`: `qlooFor(apiKey?)` returns a `QlooGet` (path, query, zod schema) built on `fetchJson`, or `undefined` without a key. `tasteOf(qloo, seed)` and `audienceOf(qloo, tags, within)` hold the requests and response schemas.
-- `apps/server/src/lib/trends.ts`: `createTrendResearch(client, ai?, model?, qloo?)`. The Qloo path (`researchTaste`) runs beside the existing path; `scoreIdea` is a pure function.
+- `apps/server/src/lib/taste.ts` (new): the Qloo path, `researchTaste`, with `scoreIdea` as a pure function and `SCORE_WEIGHTS`.
+- `apps/server/src/lib/trends.ts`: `createTrendResearch(client, ai?, model?, qloo?)` runs the Qloo path when there's a client and falls back to the existing news path. `UNTRUSTED` and `sourceOf` move to `tavily.ts` so both files share them without a cycle.
 - `apps/server/src/tools/research.ts`: `research_trends` gains `adCounts`; new `suggest_audience`.
 - `packages/shared/src/trends.ts`: `adCounts`, the per-idea Qloo fields, `ranker: "qloo"`, `qloo` status, and the audience input and result schemas.
 - `apps/server/src/server.ts`: `createDeps` builds `qloo` once and passes it to trend research and the research tools.

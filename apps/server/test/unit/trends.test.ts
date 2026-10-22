@@ -5,12 +5,8 @@ import {
 } from "@wovain/shared/trends";
 import { expect, test, vi } from "vitest";
 
-import { searchWeb } from "../../src/lib/tavily.ts";
-import {
-  createTrendResearch,
-  trendResearchFor,
-  UNTRUSTED,
-} from "../../src/lib/trends.ts";
+import { searchWeb, UNTRUSTED } from "../../src/lib/tavily.ts";
+import { createTrendResearch, trendResearchFor } from "../../src/lib/trends.ts";
 import { fakeTavily, mockAi, searchResult } from "../helpers.ts";
 
 const DATE = "2026-10-21T12:00:00Z";

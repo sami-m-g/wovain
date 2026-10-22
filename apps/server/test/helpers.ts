@@ -10,6 +10,7 @@ import { vi } from "vitest";
 import { loadEnv } from "../src/env.ts";
 import { createStorage } from "../src/firebase.ts";
 import type { Storage } from "../src/firebase.ts";
+import type { QlooGet } from "../src/lib/qloo.ts";
 import type { SearchClient, SearchResult } from "../src/lib/tavily.ts";
 import { createDeps, createServer } from "../src/server.ts";
 import type { Deps } from "../src/server.ts";
@@ -50,6 +51,59 @@ export const searchResult = (
   url: `https://news.example/${n}`,
   ...more,
 });
+
+// A Qloo client that answers from `responses`, keyed by the request's
+// filter.type (or its path when it has none); an Error rejects.
+// `requests` records each path and query.
+export const fakeQloo = (responses: Record<string, unknown>) => {
+  const requests =
+    vi.fn<(path: string, query: Record<string, unknown>) => void>();
+  const get: QlooGet = async (path, query, schema) => {
+    requests(path, query);
+    const answer = responses[String(query["filter.type"] ?? path)];
+    if (answer instanceof Error) {
+      throw answer;
+    }
+    return await Promise.resolve(schema.parse(answer));
+  };
+  return Object.assign(get, { requests });
+};
+
+// Qloo's taste graph for "synthwave": two entities, three tags (one not a
+// tag ID) and a rising trend.
+export const qlooTaste = {
+  "/search": {
+    results: [
+      { entity_id: "E1", name: "Kavinsky", types: ["urn:entity:artist"] },
+      { entity_id: "E2", name: "Drive", types: ["urn:entity:movie"] },
+    ],
+  },
+  "urn:entity:artist": {
+    results: {
+      trending: [
+        { population_rank_velocity: -1 },
+        { population_rank_velocity: 3 },
+      ],
+    },
+  },
+  "urn:tag": {
+    results: {
+      tags: [
+        {
+          id: "urn:tag:genre:music:outrun",
+          name: "Outrun",
+          query: { affinity: 0.6 },
+        },
+        { name: "No ID", query: { affinity: 0.99 } },
+        {
+          name: "Neon noir",
+          query: { affinity: 0.9 },
+          tag_id: "urn:tag:genre:media:neon_noir",
+        },
+      ],
+    },
+  },
+};
 
 // A Tavily client whose every search returns `results`.
 export const fakeTavily = (results: SearchResult[]) => ({

@@ -6,11 +6,12 @@ Spec: [spec.md](spec.md)
 
 - `packages/shared/src/trends.ts`: `adCounts`, idea fields (`theme`, `taste`, `moment`, `tags`, `competitors`, `score`, `signals`), `ranker: "qloo"`, `qloo` status, audience schemas.
 - `apps/server/src/lib/qloo.ts` (new): the Qloo client on `fetchJson`, `tasteOf`, `audienceOf`.
-- `apps/server/src/lib/trends.ts`: the Qloo path, `scoreIdea`, the writing prompt.
+- `apps/server/src/lib/taste.ts` (new): the Qloo path, `scoreIdea`, the writing prompt.
+- `apps/server/src/lib/trends.ts`: picks the Qloo path or the news path; `apps/server/src/lib/tavily.ts` takes `UNTRUSTED` and `sourceOf`.
 - `apps/server/src/tools/research.ts`: `adCounts` on `research_trends`, new `suggest_audience`.
 - `apps/server/src/server.ts`, `apps/server/src/env.ts`: wire `QLOO_API_KEY`.
 - `apps/server/src/playbooks/design.ts`, `campaign.ts`: the Ad Library step and the audience suggestion.
-- Tests: `test/unit/qloo.test.ts` (new), `test/unit/trends.test.ts`, `test/integration/research-tools.test.ts`, `test/live/qloo.test.ts` (new).
+- Tests: `test/unit/taste.test.ts` (new), `test/helpers.ts` (`fakeQloo`), `test/unit/trends.test.ts`, `test/integration/research-tools.test.ts`, `test/live/qloo.test.ts` (new).
 - Docs: `docs/spec.md`, `README.md`, `AGENTS.md`, `docs/app-map.html`, `apphosting.yaml` comment.
 
 ## Order of work
