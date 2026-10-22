@@ -96,11 +96,10 @@ new gitlab.PipelineSchedule(
   adopt("4502115")
 );
 
-// The self-healing loop (.gitlab/ci/loop.yml), hourly. Its pipeline runs only
-// the loop job, so the scanners are off for it: main's own pipelines scan
-// every change already.
+// The self-healing loop (.gitlab/ci/loop.yml), hourly. The jobs pick their
+// schedule by its description, since our role can't set schedule variables.
 // The weekly data analysis and market scout (.gitlab/ci/loop.yml), Mondays.
-const weekly = new gitlab.PipelineSchedule("weekly", {
+new gitlab.PipelineSchedule("weekly", {
   active: true,
   cron: "30 7 * * 1",
   cronTimezone: "UTC",
@@ -109,7 +108,7 @@ const weekly = new gitlab.PipelineSchedule("weekly", {
   ref: "refs/heads/main",
 });
 // The live e2e journey (.gitlab/ci/proof.yml matches its description).
-const nightly = new gitlab.PipelineSchedule("nightly-e2e", {
+new gitlab.PipelineSchedule("nightly-e2e", {
   active: true,
   cron: "0 3 * * *",
   cronTimezone: "UTC",
@@ -117,7 +116,7 @@ const nightly = new gitlab.PipelineSchedule("nightly-e2e", {
   project: projectId,
   ref: "refs/heads/main",
 });
-const loop = new gitlab.PipelineSchedule("loop", {
+new gitlab.PipelineSchedule("loop", {
   active: true,
   cron: "17 * * * *",
   cronTimezone: "UTC",
@@ -125,25 +124,6 @@ const loop = new gitlab.PipelineSchedule("loop", {
   project: projectId,
   ref: "refs/heads/main",
 });
-for (const key of [
-  "SAST_DISABLED",
-  "SECRET_DETECTION_DISABLED",
-  "DEPENDENCY_SCANNING_DISABLED",
-]) {
-  for (const [name, schedule] of [
-    ["loop", loop],
-    ["nightly-e2e", nightly],
-    ["weekly", weekly],
-  ] as const) {
-    new gitlab.PipelineScheduleVariable(`${name}-${key.toLowerCase()}`, {
-      key,
-      pipelineScheduleId: schedule.pipelineScheduleId,
-      project: projectId,
-      value: "true",
-    });
-  }
-}
-
 // Issue labels: status drives the Workflow board, agent says who works it,
 // scout and digest are the self-healing loop's (apps/ops), and verified marks
 // a scout issue whose fix production confirmed.
