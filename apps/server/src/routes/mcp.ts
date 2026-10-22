@@ -1,3 +1,7 @@
+import {
+  isJSONRPCNotification,
+  isJSONRPCRequest,
+} from "@modelcontextprotocol/server";
 import { SpanStatusCode, trace } from "@opentelemetry/api";
 
 import { requireMcpAuth } from "../auth/auth.ts";
@@ -5,8 +9,6 @@ import type { Auth } from "../auth/auth.ts";
 import type { Env } from "../env.ts";
 import type { Storage } from "../firebase.ts";
 import { createMcpFetch } from "../http.ts";
-
-const stringOf = (claim: unknown) => (typeof claim === "string" ? claim : "");
 
 const tracer = trace.getTracer("wovain-mcp");
 
@@ -21,21 +23,13 @@ const rpcOf = async (request: Request) => {
     .clone()
     .json()
     .catch(() => null);
-  if (typeof body !== "object" || body === null || !("method" in body)) {
+  if (!isJSONRPCRequest(body) && !isJSONRPCNotification(body)) {
     return {};
   }
-  const method = typeof body.method === "string" ? body.method : undefined;
-  const params = "params" in body ? body.params : undefined;
-  const tool =
-    typeof params === "object" &&
-    params !== null &&
-    "name" in params &&
-    typeof params.name === "string"
-      ? params.name
-      : undefined;
+  const tool = body.params?.["name"];
   return {
-    ...(method === undefined ? {} : { "mcp.method": method }),
-    ...(tool === undefined ? {} : { "mcp.tool": tool }),
+    "mcp.method": body.method,
+    ...(typeof tool === "string" ? { "mcp.tool": tool } : {}),
   };
 };
 
@@ -47,16 +41,7 @@ export const createMcpRoute = (deps: {
   const { auth, env, storage } = deps;
   const mcpFetch = createMcpFetch(env, storage);
 
-  const handle = requireMcpAuth(
-    auth,
-    async (request, { claims, token, userId }) =>
-      await mcpFetch(request, {
-        clientId: stringOf(claims["client_id"] ?? claims["azp"]),
-        scopes: stringOf(claims["scope"]).split(" ").filter(Boolean),
-        token,
-        userId,
-      })
-  );
+  const handle = requireMcpAuth(auth, mcpFetch);
 
   return async (request: Request) =>
     await tracer.startActiveSpan("mcp.request", async (span) => {
