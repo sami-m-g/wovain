@@ -140,7 +140,7 @@ export const downloadImage = async (
 // links), so a prompt can't send the merchant's artwork anywhere else.
 const FOURTHWALL_UPLOAD_PREFIX = "/popshopprod-orders-tmp/";
 
-export const assertUploadUrl = async (raw: string) => {
+const assertUploadUrl = async (raw: string) => {
   const url = await assertPublicHttps(raw);
   if (
     url.hostname !== "storage.googleapis.com" ||
@@ -149,4 +149,26 @@ export const assertUploadUrl = async (raw: string) => {
     throw new Error("Upload URL must be a Fourthwall storage link");
   }
   return url;
+};
+
+// PUTs the bytes to a signed Fourthwall upload link.
+export const uploadArtwork = async (
+  raw: string,
+  body: Uint8Array<ArrayBuffer>,
+  contentType: string
+) => {
+  const response = await fetch(await assertUploadUrl(raw), {
+    body,
+    // Fourthwall signs the upload with its content type and a size
+    // limit; both headers must match or Google storage answers 403.
+    headers: {
+      "content-type": contentType,
+      "x-goog-content-length-range": `0,${body.byteLength}`,
+    },
+    method: "PUT",
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new Error(`Fourthwall storage answered ${response.status}`);
+  }
 };

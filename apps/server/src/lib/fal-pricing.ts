@@ -6,6 +6,8 @@ import {
 import type { VideoPrices } from "@wovain/shared/video-models";
 import { z } from "zod";
 
+import { fetchJson } from "./fetch-json.ts";
+
 // fal's Platform API returns current list prices (the same data its MCP's
 // get_pricing shows). It needs FAL_KEY; without one, or if fal is unreachable,
 // the widgets fall back to the list prices recorded in video-models.ts.
@@ -28,14 +30,11 @@ const fetchLivePrices = async (falKey: string): Promise<VideoPrices> => {
   for (const id of videoModelIds) {
     url.searchParams.append("endpoint_id", videoModels[id].endpointId);
   }
-  const response = await fetch(url, {
+  const { prices } = await fetchJson(url, pricingSchema, {
     headers: { authorization: `Key ${falKey}` },
-    signal: AbortSignal.timeout(10_000),
+    label: "fal pricing",
+    timeoutMs: 10_000,
   });
-  if (!response.ok) {
-    throw new Error(`fal pricing answered ${response.status}`);
-  }
-  const { prices } = pricingSchema.parse(await response.json());
   const byEndpoint = new Map(prices.map((price) => [price.endpoint_id, price]));
   const result = listVideoPrices();
   for (const id of videoModelIds) {
