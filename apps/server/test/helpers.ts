@@ -60,7 +60,7 @@ export const fakeQloo = (responses: Record<string, unknown>) => {
     vi.fn<(path: string, query: Record<string, unknown>) => void>();
   const get: QlooGet = async (path, query, schema) => {
     requests(path, query);
-    const answer = responses[String(query["filter.type"] ?? path)];
+    const answer = responses[query["filter.type"] ?? path];
     if (answer instanceof Error) {
       throw answer;
     }

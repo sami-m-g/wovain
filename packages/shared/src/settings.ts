@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { webUrlSchema } from "./trends.ts";
 import { videoModelIds, videoPricesSchema } from "./video-models.ts";
 
 // Every value the PRD names is a setting. Defaults come from spec.md > Settings.
@@ -75,10 +76,9 @@ export const optimizerSettings = z.object({
 
 // research_trends: what one run may spend on Tavily and where it looks.
 export const researchSettings = z.object({
-  // A typical tee's base cost, for the margin signal against competitor
-  // prices.
+  // A typical tee's base cost, for the margin against competitor prices.
   baseCost: z.number().min(1).max(100).default(12),
-  // The merchant's market, as Tavily names countries ("united states").
+  // As Tavily names countries.
   market: z
     .string()
     .trim()
@@ -86,14 +86,10 @@ export const researchSettings = z.object({
     .min(2)
     .max(60)
     .default("united states"),
-  // Tavily credits one research_trends run may spend; the niche brief
-  // (Tavily Research) is skipped when it doesn't fit.
+  // The niche brief is skipped when it doesn't fit.
   maxCredits: z.int().min(10).max(150).default(50),
   // The merchant's Fourthwall shop, mapped so ideas skip its products.
-  shopUrl: z
-    .url({ protocol: /^https?$/u })
-    .max(2048)
-    .optional(),
+  shopUrl: webUrlSchema.optional(),
 });
 
 export const settingsSchema = z.object({

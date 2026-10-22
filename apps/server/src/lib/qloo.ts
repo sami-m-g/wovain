@@ -1,58 +1,40 @@
-import {
-  agesSchema,
-  gendersSchema,
-  isQlooTag,
-  pointSchema,
-  THEME_MAX,
-} from "@wovain/shared/trends";
-import type { Audience } from "@wovain/shared/trends";
+import { audienceSchema, isQlooTag, THEME_MAX } from "@wovain/shared/trends";
 import { z } from "zod";
 
 import { fetchJson } from "./fetch-json.ts";
 import { clip } from "./tavily.ts";
 import { logErrorClass } from "./tool-result.ts";
 
-// Qloo's Taste API over REST. The hackathon kit's one package
-// (@qloo/qloo-harness) is a CLI and stdio MCP server that doesn't export its
-// client, so wovain sends the same requests its workflows do (entity_tags,
-// trends, audience_demographics, where_popular). Hackathon keys work only on
-// this host. Only the seed and Qloo IDs go to Qloo, never merchant data, and
-// what comes back is aggregate taste, treated as untrusted data.
+// Qloo's Taste API over REST: the hackathon kit's @qloo/qloo-harness doesn't
+// export a client. Only the seed and Qloo IDs go to Qloo, and its answers are
+// untrusted data. Every field past the IDs is optional: a different shape
+// means fewer signals, not an error.
 const QLOO_BASE_URL = "https://hackathon.api.qloo.com";
-const TIMEOUT_MS = 15_000;
-const SEED_ENTITIES = 3;
-const TAGS = 10;
-const LOCATIONS = 5;
-const TREND_DAYS = 28;
 const DAY_MS = 86_400_000;
 
-type Query = Record<string, number | string>;
 export type QlooGet = <T extends z.ZodType>(
   path: string,
-  query: Query,
+  query: Record<string, string>,
   schema: T
 ) => Promise<z.output<T>>;
 
-// Undefined without a key: research then works without Qloo.
 export const qlooFor = (apiKey?: string): QlooGet | undefined =>
   apiKey === undefined
     ? undefined
-    : async (path, query, schema) => {
-        const url = new URL(path, QLOO_BASE_URL);
-        for (const [key, value] of Object.entries(query)) {
-          url.searchParams.set(key, String(value));
-        }
-        return await fetchJson(url, schema, {
-          headers: { Accept: "application/json", "X-Api-Key": apiKey },
-          label: "Qloo",
-          timeoutMs: TIMEOUT_MS,
-        });
-      };
+    : async (path, query, schema) =>
+        await fetchJson(
+          new URL(`${path}?${new URLSearchParams(query)}`, QLOO_BASE_URL),
+          schema,
+          {
+            headers: { Accept: "application/json", "X-Api-Key": apiKey },
+            label: "Qloo",
+            timeoutMs: 15_000,
+          }
+        );
 
-// Qloo ignores parameters it doesn't know, and the hackathon key can't be
-// tried yet, so every field past the IDs is optional: a different shape
-// means fewer signals, not an error.
-const scoreSchema = z.object({ affinity: z.number().optional() }).optional();
+const affinity = z.object({ affinity: z.number().optional() }).optional();
+const results = <T extends z.ZodType>(key: string, item: T) =>
+  z.object({ results: z.object({ [key]: z.array(item) }) });
 
 const searchSchema = z.object({
   results: z.array(
@@ -63,155 +45,108 @@ const searchSchema = z.object({
     })
   ),
 });
-
-const tagsSchema = z.object({
-  results: z.object({
-    tags: z.array(
-      z.object({
-        id: z.string().max(200).optional(),
-        name: z.string().max(200),
-        popularity: z.number().optional(),
-        query: scoreSchema,
-        tag_id: z.string().max(200).optional(),
+const tagsSchema = results(
+  "tags",
+  z.object({
+    id: z.string().max(200).optional(),
+    name: z.string().max(200),
+    popularity: z.number().optional(),
+    query: affinity,
+    tag_id: z.string().max(200).optional(),
+  })
+);
+const trendingSchema = results(
+  "trending",
+  z.object({ population_rank_velocity: z.number().optional() })
+);
+const demographicsSchema = results(
+  "demographics",
+  z.object({
+    query: z
+      .object({
+        age: audienceSchema.shape.ages,
+        gender: audienceSchema.shape.genders,
       })
-    ),
-  }),
-});
-
-const trendingSchema = z.object({
-  results: z.object({
-    trending: z.array(
-      z.object({ population_rank_velocity: z.number().optional() })
-    ),
-  }),
-});
-
-const demographicsSchema = z.object({
-  results: z.object({
-    demographics: z.array(
-      z.object({
-        query: z
-          .object({
-            age: agesSchema.optional(),
-            gender: gendersSchema.optional(),
-          })
-          .optional(),
-      })
-    ),
-  }),
-});
-
-const heatmapSchema = z.object({
-  results: z.object({
-    heatmap: z.array(
-      z.object({
-        location: pointSchema,
-        query: scoreSchema,
-      })
-    ),
-  }),
-});
-
-interface Theme {
-  affinity: number;
-  id: string;
-  name: string;
-}
-
-export interface Taste {
-  // Names of the brands, artists and titles Qloo matched: the IP ideas
-  // must never use.
-  names: string[];
-  themes: Theme[];
-  // The seed's rank velocity over the past 4 weeks, when Qloo has one.
-  velocity?: number;
-}
+      .optional(),
+  })
+);
+const heatmapSchema = results(
+  "heatmap",
+  z.object({
+    location: audienceSchema.shape.locations.element.omit({ affinity: true }),
+    query: affinity,
+  })
+);
 
 const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10);
 
-// The seed's first entity's latest rank velocity. A failure only leaves
-// velocity out.
-const velocityOf = async (
-  qloo: QlooGet,
-  entityId: string,
-  type: string
-): Promise<number | undefined> => {
+// The entity's rank velocity over the past 4 weeks; a failure leaves it out.
+const velocityOf = async (qloo: QlooGet, entityId: string, type: string) => {
   const now = Date.now();
-  const { results } = await qloo(
+  const trend = await qloo(
     "/v2/trending",
     {
       "filter.end_date": isoDay(now),
-      "filter.start_date": isoDay(now - TREND_DAYS * DAY_MS),
+      "filter.start_date": isoDay(now - 28 * DAY_MS),
       "filter.type": type,
       "signal.interests.entities": entityId,
     },
     trendingSchema
   ).catch((error: unknown) => {
-    logErrorClass("research_trends Qloo trending skipped:", error);
-    return { results: { trending: [] } };
+    logErrorClass("Qloo trending skipped:", error);
   });
-  return results.trending.at(-1)?.population_rank_velocity;
+  return trend?.results["trending"]?.at(-1)?.population_rank_velocity;
 };
 
-// The seed's taste graph: its entities, the cross-domain tags their fans
-// share (highest affinity first) and the seed's velocity. Undefined when
-// Qloo matches nothing.
-export const tasteOf = async (
-  qloo: QlooGet,
-  seed: string
-): Promise<Taste | undefined> => {
+// The seed's entities (names ideas must never use), the tags their fans
+// share (highest affinity first) and the first entity's velocity.
+export const tasteOf = async (qloo: QlooGet, seed: string) => {
   const { results: entities } = await qloo(
     "/search",
-    { query: seed, take: SEED_ENTITIES },
+    { query: seed, take: "3" },
     searchSchema
   );
   const [first] = entities;
   if (first === undefined) {
-    return undefined;
+    return { names: [], themes: [], velocity: undefined };
   }
   const type = first.types?.find((value) => value.startsWith("urn:entity:"));
-  const [{ results }, velocity] = await Promise.all([
+  const [tags, velocity] = await Promise.all([
     qloo(
       "/v2/insights",
       {
         "filter.type": "urn:tag",
-        "signal.interests.entities": entities
-          .map((entity) => entity.entity_id)
-          .join(","),
-        take: TAGS,
+        "signal.interests.entities": entities.map((e) => e.entity_id).join(","),
+        take: "10",
       },
       tagsSchema
     ),
     type === undefined ? undefined : velocityOf(qloo, first.entity_id, type),
   ]);
-  const themes = results.tags
-    .flatMap(({ id, name, popularity, query, tag_id: tagId }) => {
-      const tag = id ?? tagId ?? "";
-      return isQlooTag(tag)
-        ? [
-            {
-              affinity: query?.affinity ?? popularity ?? 0,
-              id: tag,
-              name: clip(name, THEME_MAX),
-            },
-          ]
-        : [];
-    })
-    .toSorted((a, b) => b.affinity - a.affinity);
+  const themes = (tags.results["tags"] ?? []).flatMap((tag) => {
+    const id = tag.id ?? tag.tag_id ?? "";
+    const score = tag.query?.affinity ?? tag.popularity ?? 0;
+    return isQlooTag(id)
+      ? [{ affinity: score, id, name: clip(tag.name, THEME_MAX) }]
+      : [];
+  });
   return {
     names: entities.map((entity) => entity.name),
-    themes,
-    ...(velocity === undefined ? {} : { velocity }),
+    themes: themes.toSorted((a, b) => b.affinity - a.affinity),
+    velocity,
   };
 };
 
-// Who loves a theme and where: affinity by age band and gender, and the
-// places with the highest affinity.
+const rank = (place: {
+  query?: { affinity?: number | undefined } | undefined;
+}) => place.query?.affinity ?? -Infinity;
+
+// Who loves the tags: affinity by age band and gender, and the top places.
 export const audienceOf = async (
   qloo: QlooGet,
   tags: string[],
   within: string
-): Promise<Audience> => {
+): Promise<z.infer<typeof audienceSchema>> => {
   const signal = { "signal.interests.tags": tags.join(",") };
   const [demographics, heatmap] = await Promise.all([
     qloo(
@@ -229,19 +164,16 @@ export const audienceOf = async (
       heatmapSchema
     ),
   ]);
-  const query = demographics.results.demographics[0]?.query;
+  const people = demographics.results["demographics"]?.[0]?.query;
   return {
-    ...(query?.age === undefined ? {} : { ages: query.age }),
-    ...(query?.gender === undefined ? {} : { genders: query.gender }),
-    locations: heatmap.results.heatmap
-      .toSorted(
-        (a, b) =>
-          (b.query?.affinity ?? -Infinity) - (a.query?.affinity ?? -Infinity)
-      )
-      .slice(0, LOCATIONS)
-      .map(({ location, query: score }) => ({
+    ages: people?.age,
+    genders: people?.gender,
+    locations: (heatmap.results["heatmap"] ?? [])
+      .toSorted((a, b) => rank(b) - rank(a))
+      .slice(0, 5)
+      .map(({ location, query }) => ({
         ...location,
-        ...(score?.affinity === undefined ? {} : { affinity: score.affinity }),
+        affinity: query?.affinity,
       })),
   };
 };
