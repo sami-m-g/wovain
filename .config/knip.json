@@ -5,7 +5,7 @@
   },
   "workspaces": {
     "apps/ops": {
-      "entry": ["src/loop.ts"]
+      "entry": ["src/loop.ts", "src/weekly.ts"]
     },
     "apps/widgets": {
       "entry": ["src/*/*-widget.tsx"]

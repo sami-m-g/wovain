@@ -20,3 +20,21 @@ loop:
   environment:
     name: operations
     action: verify
+
+# Weekly, on the "wovain weekly" schedule: the data analysis (funnel from
+# merchants' records, usage and costs) goes to the digest issue, and the
+# market scout files one intent from competitors' news and the biggest
+# funnel drop-off (apps/ops/src/weekly.ts). 3 Tavily searches, no model call.
+weekly:
+  stage: monitor
+  extends: [.gcp-auth]
+  interruptible: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain weekly"
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_OPS_SERVICE_ACCOUNT
+  script:
+    - node apps/ops/src/weekly.ts
+  environment:
+    name: operations
+    action: verify

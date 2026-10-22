@@ -56,6 +56,15 @@ const noteSchema = z.object({
 });
 export type Note = z.infer<typeof noteSchema>;
 
+const discussionSchema = z.object({
+  notes: z.array(
+    z.object({
+      resolvable: z.boolean().default(false),
+      resolved: z.boolean().default(false),
+    })
+  ),
+});
+
 const userSchema = z.object({ id: z.int(), username: z.string() });
 
 // Duo sessions (GraphQL duoWorkflowWorkflows, the query the Agent sessions
@@ -134,6 +143,23 @@ export const createGitLab = (env: {
     path: string,
     query?: Query
   ) => await call(schema, method, `${project}/${path}`, query);
+  const graphql = async (
+    query: string,
+    variables: Record<string, string>
+  ): Promise<unknown> => {
+    const response = await fetch(env.api.replace(/\/v4$/u, "/graphql"), {
+      body: JSON.stringify({ query, variables }),
+      headers: {
+        authorization: `Bearer ${env.token}`,
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(`GitLab GraphQL: ${response.status}`);
+    }
+    return await response.json();
+  };
   // Every page of a list, following GitLab's x-next-page header (at most
   // MAX_PAGES pages; more fails the run instead of undercounting).
   const allPages = async <T>(schema: z.ZodType<T>, path: string) => {
@@ -175,6 +201,23 @@ export const createGitLab = (env: {
       ),
     createIssue: async (fields: Query) =>
       await inProject(issueSchema, "POST", "issues", fields),
+    // Duo credits the token's owner used this month in a namespace (GraphQL
+    // currentUser.creditsUsage); flows bill the person who triggered them.
+    creditsUsed: async (namespacePath: string) => {
+      const body = await graphql(
+        "query($ns: ID!) { currentUser { creditsUsage(namespacePath: $ns) { creditsUsed } } }",
+        { ns: namespacePath }
+      );
+      return z
+        .object({
+          data: z.object({
+            currentUser: z.object({
+              creditsUsage: z.object({ creditsUsed: z.number() }),
+            }),
+          }),
+        })
+        .parse(body).data.currentUser.creditsUsage.creditsUsed;
+    },
     currentUser: async () => await call(userSchema, "GET", "user"),
     diffs: async (mr: number) =>
       await inProject(
@@ -190,17 +233,7 @@ export const createGitLab = (env: {
         { per_page: 100 }
       ),
     discussions: async (mr: number) =>
-      await allPages(
-        z.object({
-          notes: z.array(
-            z.object({
-              resolvable: z.boolean().default(false),
-              resolved: z.boolean().default(false),
-            })
-          ),
-        }),
-        `merge_requests/${mr}/discussions`
-      ),
+      await allPages(discussionSchema, `merge_requests/${mr}/discussions`),
     issue: async (iid: number) =>
       await inProject(issueSchema, "GET", `issues/${iid}`),
     issueNotes: async (issue: number) => await notes(`issues/${issue}/notes`),
@@ -248,21 +281,9 @@ export const createGitLab = (env: {
         `merge_requests/${mr}/reviewers`
       ),
     sessions: async () => {
-      const response = await fetch(env.api.replace(/\/v4$/u, "/graphql"), {
-        body: JSON.stringify({
-          query: SESSIONS,
-          variables: { path: env.projectPath },
-        }),
-        headers: {
-          authorization: `Bearer ${env.token}`,
-          "content-type": "application/json",
-        },
-        method: "POST",
-      });
-      if (!response.ok) {
-        throw new Error(`GitLab GraphQL sessions: ${response.status}`);
-      }
-      const body = sessionsSchema.parse(await response.json());
+      const body = sessionsSchema.parse(
+        await graphql(SESSIONS, { path: env.projectPath })
+      );
       return body.data.project.duoWorkflowWorkflows.nodes.map((s) => ({
         createdAt: s.createdAt,
         definition: s.workflowDefinition ?? "",

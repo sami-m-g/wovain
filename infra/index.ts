@@ -327,7 +327,7 @@ const infraRoles = [
 
 // The self-healing loop (.gitlab/ci/loop.yml) reads production's logs and
 // metrics as this account, from the operations environment only. It can't
-// read records, secrets or change anything.
+// read secrets or change anything.
 const ops = new gcp.serviceaccount.Account(
   "gitlab-ops",
   {
@@ -341,7 +341,14 @@ new gcp.serviceaccount.IAMMember("ops-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: ops.name,
 });
-for (const role of ["roles/logging.viewer", "roles/monitoring.viewer"]) {
+// datastore.viewer is for the weekly job's funnel counts (apps/ops/src/
+// records.ts reads statuses through field masks; merchants' grants stay
+// KMS-encrypted, and this account can't use the key).
+for (const role of [
+  "roles/datastore.viewer",
+  "roles/logging.viewer",
+  "roles/monitoring.viewer",
+]) {
   new gcp.projects.IAMMember(`ops-${role.split("/")[1]}`, {
     member: ops.member,
     project,
@@ -480,5 +487,12 @@ ciVariables({
     value: config.requireSecret("renovate-token"),
   },
   SITE_URL: { protected: true, value: siteUrl },
+  // The weekly market scout's competitor searches (3 Tavily credits).
+  TAVILY_API_KEY: {
+    created: true,
+    masked: true,
+    protected: true,
+    value: config.requireSecret("tavily-api-key"),
+  },
 });
 environments(siteUrl);

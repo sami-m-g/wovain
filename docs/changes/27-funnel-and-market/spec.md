@@ -5,7 +5,7 @@ Intent: [intent.md](intent.md)
 ## Requirements
 
 1. A counter `wovain.funnel.events` with one attribute, `wovain.funnel.step`, goes to GitLab Observability over OTLP/HTTP with the traces.
-2. Steps: `connect` (an OAuth connection finished), `idea` (a new design widget), `set_approved` (`record_design` publishing), `ad_approved` (`record_ad` added), `campaign_created` (`show_campaign_widget` ready or live), `autopilot_run` (`create_rules`).
+2. Steps: `connect` (an OAuth connection finished), `idea` (a new design widget), `set_approved` (`publish_design`, which runs only after the merchant approves), `ad_approved` (`record_ad` added), `campaign_created` (`show_campaign_widget` ready or live), `autopilot_run` (`create_rules`).
 3. A `wovain weekly` schedule (Mondays 07:30 UTC) runs a `weekly` job that comments the analysis on the digest issue and files at most one market intent per week.
 4. The analysis reads merchants' records (counts only), Cloud Monitoring requests and billable instance time, and the token owner's Duo credits; it labels each price as an estimate with its source.
 

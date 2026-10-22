@@ -91,6 +91,15 @@ new gitlab.PipelineSchedule(
 // The self-healing loop (.gitlab/ci/loop.yml), hourly. Its pipeline runs only
 // the loop job, so the scanners are off for it: main's own pipelines scan
 // every change already.
+// The weekly data analysis and market scout (.gitlab/ci/loop.yml), Mondays.
+const weekly = new gitlab.PipelineSchedule("weekly", {
+  active: true,
+  cron: "30 7 * * 1",
+  cronTimezone: "UTC",
+  description: "wovain weekly",
+  project: projectId,
+  ref: "refs/heads/main",
+});
 const loop = new gitlab.PipelineSchedule("loop", {
   active: true,
   cron: "17 * * * *",
@@ -104,12 +113,17 @@ for (const key of [
   "SECRET_DETECTION_DISABLED",
   "DEPENDENCY_SCANNING_DISABLED",
 ]) {
-  new gitlab.PipelineScheduleVariable(`loop-${key.toLowerCase()}`, {
-    key,
-    pipelineScheduleId: loop.pipelineScheduleId,
-    project: projectId,
-    value: "true",
-  });
+  for (const [name, schedule] of [
+    ["loop", loop],
+    ["weekly", weekly],
+  ] as const) {
+    new gitlab.PipelineScheduleVariable(`${name}-${key.toLowerCase()}`, {
+      key,
+      pipelineScheduleId: schedule.pipelineScheduleId,
+      project: projectId,
+      value: "true",
+    });
+  }
 }
 
 // Issue labels: status drives the Workflow board, agent says who works it,

@@ -8,6 +8,7 @@ import {
   providers,
   providerSchema,
 } from "../lib/connections.ts";
+import { countStep } from "../lib/funnel.ts";
 import { clientMetadata, clientMetadataUrl } from "../lib/oauth-client.ts";
 import { logErrorClass } from "../lib/tool-result.ts";
 import type { Upstream } from "../lib/upstream.ts";
@@ -153,6 +154,7 @@ export const createConnectRoutes = ({ signIn, site, upstream }: Deps) => {
         return await failed();
       }
       deleteCookie(c, NONCE_COOKIE, { path: "/oauth/callback" });
+      countStep("connect");
       return await page(
         c,
         200,
