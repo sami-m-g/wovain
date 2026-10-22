@@ -9,13 +9,17 @@ import { NotFoundException, WorkOS } from "@workos-inc/node";
 import { createRemoteJWKSet, errors, jwtVerify } from "jose";
 import type { JWTVerifyGetKey } from "jose";
 
-import { isAllowed, siteUrl } from "./env.ts";
-import type { AllowCheck, AuthEnv } from "./env.ts";
+import type { Env } from "../env.ts";
 
 // wovain is an OAuth resource server and WorkOS AuthKit is its authorization
 // server: an agent registers itself there (CIMD, or DCR as a fallback), the
 // merchant signs in and consents on AuthKit's pages, and /mcp checks the
 // access token AuthKit issued for its URL.
+interface AllowCheck {
+  email: string;
+  emailVerified: boolean;
+}
+
 export interface AuthDeps {
   findUser: (userId: string) => Promise<AllowCheck | null>;
   keys: JWTVerifyGetKey;
@@ -43,7 +47,7 @@ export const orNullIfMissing = (error: unknown): null =>
 
 // Off (every /mcp call gets a 401) until both WorkOS keys are set.
 const workosDeps = (
-  env: AuthEnv,
+  env: Env,
   issuer: string | undefined
 ): AuthDeps | undefined => {
   if (issuer === undefined || env.WORKOS_API_KEY === undefined) {
@@ -59,9 +63,8 @@ const workosDeps = (
 
 const stringOf = (claim: unknown) => (typeof claim === "string" ? claim : "");
 
-export const createAuth = (env: AuthEnv, deps?: AuthDeps) => {
-  const site = siteUrl(env);
-  const resource = new URL(`${site}/mcp`);
+export const createAuth = (env: Env, deps?: AuthDeps) => {
+  const resource = new URL(`${env.WOVAIN_SITE_URL}/mcp`);
   const issuer = env.WORKOS_AUTHKIT_DOMAIN?.replace(/\/$/u, "");
   const resolved = deps ?? workosDeps(env, issuer);
 
@@ -110,10 +113,16 @@ export const createAuth = (env: AuthEnv, deps?: AuthDeps) => {
     verifier: { verifyAccessToken },
   });
 
-  // Checked on every call, not only at sign-in, so taking an email off the
-  // allowlist cuts off tokens that were already issued.
-  const allowed = async (userId: string) =>
-    isAllowed(env, await resolved?.findUser(userId));
+  // Only a verified email on the allowlist may call the tools. Checked on
+  // every call, not only at sign-in, so taking an email off the allowlist
+  // cuts off tokens that were already issued.
+  const allowed = async (userId: string) => {
+    const user = await resolved?.findUser(userId);
+    return (
+      user?.emailVerified === true &&
+      env.WOVAIN_ALLOWED_EMAILS.has(user.email.toLowerCase())
+    );
+  };
 
   return { allowed, gate, metadata };
 };

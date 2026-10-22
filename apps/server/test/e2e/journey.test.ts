@@ -15,7 +15,6 @@ import { z } from "zod";
 
 import { createApp } from "../../src/app.ts";
 import { createAuth } from "../../src/auth/auth.ts";
-import { loadAuthEnv } from "../../src/auth/env.ts";
 import { loadEnv } from "../../src/env.ts";
 import { createBrowserConfirm } from "../../src/lib/browser-confirm.ts";
 import { localCipher } from "../../src/lib/cipher.ts";
@@ -101,7 +100,7 @@ const upstream = createUpstream({
   fetch: route,
   site,
 });
-const authEnv = loadAuthEnv({
+const env = loadEnv({
   WORKOS_AUTHKIT_DOMAIN: authkitIssuer,
   WOVAIN_SITE_URL: site,
 });
@@ -112,11 +111,10 @@ const confirm = createBrowserConfirm({
   userOf: authkit.ownerOf,
 });
 const web = createApp({
-  auth: createAuth(authEnv),
-  authEnv,
+  auth: createAuth(env),
   confirm,
   connect: undefined,
-  env: loadEnv({}),
+  env,
   storage,
 });
 app.fetch = async (request) => await web.request(request);

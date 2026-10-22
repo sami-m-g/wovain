@@ -3,7 +3,6 @@ import { describe, expect, test } from "vitest";
 
 import { createApp } from "../../src/app.ts";
 import { createAuth } from "../../src/auth/auth.ts";
-import { loadAuthEnv } from "../../src/auth/env.ts";
 import { loadEnv } from "../../src/env.ts";
 import { designHash } from "../../src/lib/approval.ts";
 import { createBrowserConfirm } from "../../src/lib/browser-confirm.ts";
@@ -19,7 +18,7 @@ const site = "https://wovain.test";
 const setup = async () => {
   const storage = testStorage();
   const fake = fakeUpstream("fourthwall");
-  const authEnv = loadAuthEnv({
+  const env = loadEnv({
     WORKOS_AUTHKIT_DOMAIN: "https://auth.upstream.test",
     WOVAIN_SITE_URL: site,
   });
@@ -37,11 +36,10 @@ const setup = async () => {
     userOf: fake.ownerOf,
   });
   routes.app = createApp({
-    auth: createAuth(authEnv),
-    authEnv,
+    auth: createAuth(env),
     confirm,
     connect: undefined,
-    env: loadEnv({}),
+    env,
     storage,
   });
   const { app } = routes;
