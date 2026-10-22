@@ -28,7 +28,7 @@ Why a wovain server at all: an agent can only show a widget that an MCP server s
 
 How the agent learns the flow: when it connects, wovain's MCP `instructions` list the steps. Before each step the agent reads that step's playbook, either with the `get_playbook` tool or as the MCP prompt of the same name. Nothing has to be installed on the agent's side.
 
-How a click works: you press Approve on a widget. The widget posts a short message ("Approve design d2") into the chat. The agent follows the playbook and calls Fourthwall's tools, which you set to auto-approve. Then it calls wovain to redraw the widget as live. One click, one extra model turn.
+How a click works: you press Approve on a widget. The widget marks the design as publishing and posts a short message ("Approve design d2") into the chat. The agent follows the playbook: for a design it screens the trademark and calls `publish_design`, which creates the whole drop on your Fourthwall shop through your connection and redraws the widget as live. One click, one extra model turn.
 
 Where things are kept: Firestore keeps settings and the state of each run, one set of documents per user, so a new chat picks up where you left off. Staged artwork waits in a private Cloud Storage bucket until it is uploaded to Fourthwall.
 
@@ -53,8 +53,8 @@ flowchart LR
 | # | You do | What happens | You see |
 | --- | --- | --- | --- |
 | 1 | Give 2 or 3 product ideas | The agent starts the `design` playbook | Next step starts |
-| 2 | Wait | `design` playbook: the agent generates the art; `stage_artwork` measures it; wovain uploads it to Fourthwall; fal removes the background and upscales from that public URL when needed; Fourthwall picks the blank and renders mockups; `price_product` sets the price | Design widget per idea |
-| 3 | Approve, Skip or give feedback | Approve posts "Approve design dN"; Fourthwall creates the product, sets prices, makes it public; `record_design` saves it | Design widget shows Live with a link |
+| 2 | Wait | `design` playbook: the agent plans a drop from your Fourthwall catalog (a hero product plus 3 to 6 matching products, with placements per product); `generate_art` draws each art piece on your fal account; `stage_artwork` measures it; wovain uploads it to Fourthwall; Fourthwall renders every product's mockups in one call and gives per-size costs; `show_design_widget` prices each product | Design widget per idea, with the whole drop |
+| 3 | Approve, Skip or give feedback | Approve posts "Approve design dN"; `publish_design` creates every product, sets prices, makes them public and groups the drop in one collection | Design widget shows Live with a link to the drop |
 | 4 | Wait | `ads` playbook: `video_plan` gives the fal request; fal renders two clips (MiniMax H3 Max Reference by default), then MMAudio; copy and margins are computed | Ad widget per product |
 | 5 | Add to campaign, Skip or give feedback | `record_ad` saves the choice; after the last widget, the campaign step starts | Next ad widget, or the campaign widget |
 | 6 | Wait | `campaign` playbook: checks payment method and pixel; `campaign_plan` gives the budget, ad names and links; Meta MCP creates campaign, ad set, uploads, ads; `create_rules` adds the five rules; Meta MCP activates | Campaign widget: Live, or Ready, blocked |
@@ -168,7 +168,7 @@ One playbook per step in `apps/server/src/playbooks/`. Each has a description (w
 
 | Playbook | Steps | PRD ref |
 | --- | --- | --- |
-| `design` | Generate art, `stage_artwork`, Fourthwall upload (`put_artwork`), fal background removal and upscale, blank and mockups, `price_product`, `show_design_widget`; on approve, publish and `record_design` | `prd.md > Design widgets`, `prd.md > Pricing and economics` |
+| `design` | Plan the drop (blanks, placements, palette), `generate_art` per piece, `stage_artwork`, Fourthwall upload (`put_artwork`), mockups for every product in one call, costs, `show_design_widget` (wovain prices); on approve, `screen_trademark` and `publish_design` | `prd.md > Design widgets`, `prd.md > Pricing and economics` |
 | `ads` | `video_plan`, fal video ×2, fal MMAudio, copy, `show_ad_widget`, `record_ad` | `prd.md > Ad widgets` |
 | `campaign` | Payment and pixel checks, `campaign_plan`, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_widget` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
 | `optimize` (later) | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_widget`, apply the fix or turn an ad back on | `prd.md > Optimization` |
@@ -185,6 +185,9 @@ What it does: one Hono app in `apps/server`. `src/app.ts` holds every route: `/m
 | `stage_artwork` | Receives the artwork (image generation's `data:` URL, a public https URL, or an `openai/fileParams` file for attachments, since a hosted server can't read files on your Mac), checks pixels and transparency, keeps the bytes for upload | records, Blob media |
 | `put_artwork` | PUTs the artwork bytes to Fourthwall's signed upload URL with the signed `Content-Type` and `x-goog-content-length-range` headers | Fourthwall upload URL |
 | `price_product` | Applies the pricing rule and returns the breakeven math (priciest size or size-weighted) | Settings |
+| `generate_art` | Generates a drop's print art, one fal job per piece (hero, back print, sleeve mark, pocket logo, mug wrap), on the merchant's fal account: GPT Image 2.5 with a transparent background at print size (square 2880 px, portrait 2400×3200, wide 3840×1920), the edit route when a piece references earlier art. Spends the merchant's fal credits | fal MCP, merchant's grant |
+| `show_design_widget` | Saves and shows one idea's drop: the hero product and up to 7 more (`range`), each with its placements, art, colors, mockups, sizes and listing. Prices every product itself from its offered sizes' costs with the pricing rule; the agent can't pass a price | records, Settings |
+| `publish_design` | Only for a design the merchant approved on its widget (status `publishing`): creates every product of the drop from its customization (`create-offers-from-designs`), sets each price (`bulk-update-offer-variant-prices`), makes them public (`update-offer-status`), reads their slugs (`get-offers-by-ids`) and groups a drop into one public collection (`create-collection`, `update-collection-state`). Saves offer and collection ids as they're created, so a retry never duplicates; a refusal records the design as rejected with Fourthwall's reason | Fourthwall MCP, merchant's grant |
 | `judge_design` | Before each design widget: Nemotron scores the brief against the print and listing rules (a check per rule, fixes, coach line; zod-checked; code derives the verdict). Code decides print size, transparency and color count and overrides the model on them. Answers `configured: false` without `NEBIUS_API_KEY` | Nebius Token Factory (Genkit) |
 | `research_trends` | When the merchant has no idea yet: two Tavily news searches from the past week for a niche, audience or seed, turned into 3 to 5 ranked tee ideas with their source links. Nemotron ranks them when `NEBIUS_API_KEY` is set; otherwise each idea is one of Tavily's most relevant results. Answers `configured: false` without `TAVILY_API_KEY` | Tavily, Nebius Token Factory (Genkit) |
 | `screen_trademark` | Before publishing: one Tavily search for the exact phrase plus "trademark". Returns possible hits to check on USPTO or EUIPO; never blocks | Tavily |
@@ -352,7 +355,7 @@ Records live in Firestore, read and written by the server only through `firebase
 | Data | Lives in | Updated by | When you come back |
 | --- | --- | --- | --- |
 | Settings | `settings/current` | `update_settings` | Same values |
-| Designs | `design/{id}` and `artwork/{id}` (art URL, customization ID, product ID, price, status; staged artwork size and file) | `stage_artwork`, `record_design` | Approved products stay live; pending ones can be redrawn |
+| Designs | `design/{id}` and `artwork/{id}` (hero product and `range` of drop products, each with art URLs per placement, customization ID, offer ID, quote; drop name, collection ID, status; staged artwork size and file) | `stage_artwork`, `show_design_widget`, `publish_design`, `record_design` | Approved products stay live; pending ones can be redrawn |
 | Ads | `ad/{designId}`, one ad set per design (video URLs, static URL, copy, status) | `record_ad` | Choices kept |
 | Campaign | `campaign/current` (ad account, campaign ID, rules created in Meta) | `create_rules`, campaign step | Optimization reads it |
 | Connections | `connections/{provider}` for `fourthwall` and `fal`: the merchant's OAuth grant, encrypted with Cloud KMS (the document path is the additional authenticated data), plus `connectedAt`, `refreshedAt`, `expiresAt`, a `version` bumped on every write and a refresh lease | Connect flow, token refresh | Calls keep working; a revoked grant gives a reconnect link |
@@ -376,13 +379,13 @@ wovain/
 │   │   │   ├── http.ts          # Streamable HTTP handler for a verified caller
 │   │   │   ├── server.ts        # McpServer: instructions, tools, widgets, playbooks
 │   │   │   ├── playbooks/       # design.ts, ads.ts, campaign.ts; index.ts: instructions, get_playbook, prompts
-│   │   │   ├── tools/           # settings.ts, design.ts, judge.ts, research.ts, ads.ts, campaign.ts
+│   │   │   ├── tools/           # settings.ts, design.ts, art.ts, publish.ts, judge.ts, research.ts, ads.ts, campaign.ts
 │   │   │   ├── widgets.ts         # registers the ui:// widget resources
 │   │   │   ├── env.ts           # zod-checked server keys
 │   │   │   ├── store.ts         # records in Firestore, artwork in Cloud Storage
 │   │   │   ├── auth/            # auth.ts (AuthKit token check), env.ts (site URL, allowlist)
 │   │   │   ├── telemetry.ts     # OpenTelemetry Node tracer, on when the OTLP endpoint is set
-│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan, ai (Genkit on Nebius), design-judge, tavily (Tavily search), trends (trend ranking, trademark screen)
+│   │   │   └── lib/             # fal pricing and usage, fetch-json (one upstream JSON call), image checks and the artwork upload, artwork loading, meta-graph, video-plan, art-plan (fal request per art piece), publish-design (the drop publish on Fourthwall), ai (Genkit on Nebius), design-judge, tavily (Tavily search), trends (trend ranking, trademark screen)
 │   │   ├── test/                # unit/ (auth chain, economics, images, fal, design judge, trends, telemetry), integration/ (store, tools, routes on the emulators), live/ (real Nemotron and Tavily calls, opt-in), fixtures/
 │   │   ├── public/              # icon.png, favicon.ico
 │   │   ├── firestore.rules, storage.rules   # deny all clients; only the Admin SDK reads and writes
@@ -418,7 +421,7 @@ wovain/
 
 | Service | Calls | Auth | Cost | Docs |
 | --- | --- | --- | --- | --- |
-| Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews`, `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-conversion-rates-report`, `get-visitors-report` | OAuth in the agent | $0 | https://docs.fourthwall.com/ai/mcp.md |
+| Fourthwall MCP | `get-catalog-products`, `get-catalog-product-details`, `request-media-upload-link`, `save-media-library-image`, `generate-product-design-previews` (every product of a drop and every placement in one call), `get-customization-pricing`, `create-offers-from-designs`, `bulk-update-offer-variant-prices`, `update-offer-status`, `get-offers-by-ids`, `create-collection`, `update-collection-state`, `get-conversion-rates-report`, `get-visitors-report` | The merchant's grant through wovain (`fourthwall` proxy for reads, `publish_design` for writes) | $0 | https://docs.fourthwall.com/ai/mcp.md |
 | Meta Ads MCP | `ads_get_ad_accounts`, `ads_get_datasets`, `ads_create_campaign` (OUTCOME_SALES, campaign budget), `ads_create_ad_set` (pixel, PURCHASE), `ads_creative_upload_media` (VIDEO by URL), `ads_create_creative`, `ads_create_ad`, `ads_activate_entity`, `ads_get_ad_entities` | OAuth in the agent | Ad spend only | https://developers.facebook.com/docs/marketing-api |
 | Meta Graph API | `POST /v26.0/act_{id}/adrules_library` (5 rules); `GET` rule history and insights | System user token, `ads_management` | $0 | https://developers.facebook.com/docs/marketing-api/ad-rules |
 | Nebius Token Factory | Chat completions with `response_format: json_schema` on `nvidia/nemotron-3-super-120b-a12b`, one per design (`judge_design`) | `NEBIUS_API_KEY` on the server | About $0.30 in and $0.90 out per million tokens (Eden AI listing, unverified), well under a cent per design | https://docs.tokenfactory.nebius.com |

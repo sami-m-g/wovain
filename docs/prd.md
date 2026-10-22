@@ -14,8 +14,8 @@ Source: `scope.md > The unique kernel`, `scope.md > The core loop`.
 Source: `scope.md > What "working" looks like`.
 
 1. The merchant opens wovain in ChatGPT and gives 2 or 3 product ideas.
-2. One design widget per idea shows the design on a Fourthwall blank, with the listing and the price.
-3. The merchant approves, skips, or gives feedback on each design widget. Feedback regenerates the whole widget. Approve publishes that product to Fourthwall right away.
+2. One design widget per idea shows a drop: a hero product plus 3 to 6 matching products (hoodie, mug, poster, sticker…) from the merchant's Fourthwall catalog, each with its placements, listing and price.
+3. The merchant approves, skips, or gives feedback on each design widget. Feedback regenerates the whole widget. Approve publishes every product of the drop to Fourthwall right away, grouped in one collection.
 4. Right after a product is published, its ad widget shows 2 videos, 1 static image, ad copy, and the margin math.
 5. The merchant adds each ad widget to the campaign, skips it, or gives feedback.
 6. When the last ad widget is added or skipped, the campaign widget launches one Advantage+ sales campaign with all added ads, plus the kill, scale and alert rules.
@@ -58,14 +58,24 @@ Every widget also has a quick-settings menu (⚙) for the values it uses; the Se
 │ "Soft bestseller tee, and the art prints sharp at this size." │
 │ ┌───────────┐  ● Black ○ Navy ○ Natural ○ Ash   (in stock)   │
 │ │  mockup   │  Front · large center · 12×16 in               │
-│ │ on model  │  File: 4500 px ✓ print quality high            │
+│ │ on model  │    + Back · neck mark · 3×3 in                 │
+│ │           │  File: 4500 px ✓ print quality high            │
 │ └───────────┘  Sizes XS–3XL  (4XL/5XL out of stock)          │
 │ ─────────────────────────────────────────────────────────────│
 │ Title  Japanese Cat Sunset Tee – Vintage Sakura Graphic      │
 │ Desc   2 short on-brand lines…                               │
 │ Price  $30   Base $17.70 → Profit $12.30 · 41% margin        │
 │ ─────────────────────────────────────────────────────────────│
-│ [ Approve ]  [ Skip ]   Feedback: _______________________    │
+│ Sakura Cat Club · 5 products                                 │
+│ One of each $140.00 → profit $63.90 · 46% margin             │
+│ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐                  │
+│ │ Hoodie │ │  Mug   │ │ Poster │ │Sticker │                  │
+│ │Front+  │ │Both    │ │Front   │ │Front   │                  │
+│ │Back    │ │sides   │ │        │ │        │                  │
+│ │$48 30% │ │$22 56% │ │$25 50% │ │$15 81% │                  │
+│ └────────┘ └────────┘ └────────┘ └────────┘                  │
+│ ─────────────────────────────────────────────────────────────│
+│ [ Approve 5 products ]  [ Skip ]   Feedback: ______________  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -149,12 +159,20 @@ Source: `scope.md > The POC boundary` (Design, Listing).
 | Title | Keyword first: main keyword, design element, style |
 | Description | 2 short on-brand lines; no garment specs (Fourthwall adds them) |
 | Price | Price, base cost, profit and margin |
+| Drop | The other products of the idea, one card each: type, blank, placements, colors, price, profit and margin, plus the total for one of each |
 
 - As a merchant, I want each design shown on a real Fourthwall product with its listing so that I approve exactly what will be sold.
   - One design widget appears per idea.
   - Feedback, typed or in the widget field, regenerates the whole widget with the change applied.
   - Approve publishes the product to Fourthwall and the widget shows it as live with a link.
   - Skip removes the design without publishing.
+- As a merchant, I want one idea to become a drop that looks like a brand, not one tee, so that fans have more to buy.
+  - The agent picks 3 to 6 more product types the idea suits from my Fourthwall catalog (Our Pick or Bestseller blanks that Fourthwall can render), and only placements those blanks print.
+  - Placements are planned per product: the hero on the tee front, the big print on the hoodie back with a chest mark, the mark on stickers and hats, both sides of a mug.
+  - Art is generated per placement on my fal account (a hero, a back print, a small mark, a wordmark), each matched to the hero so the drop is one style, with a shared palette across garments.
+  - wovain prices every product from Fourthwall's per-size costs with my pricing rule; the agent can't set a price.
+  - Approve stays off while any print in the drop would come out blurry.
+  - Approve creates every product, sets its price, makes it public and groups the drop in one Fourthwall collection; nothing is created before I approve. The live link opens the collection.
 
 ### Pricing and economics
 
@@ -191,11 +209,11 @@ Costs of running the proof of concept, on top of per-sale costs:
 | --- | --- | --- |
 | Meta test budget | $135 to $189 | $45 a day for 3 to 4 days; scaling can fire on day 3, raising day 4 to $54; kill rules stop losing ads early |
 | Ad videos (6 clips) | $4.59 | MiniMax H3 Max Reference on fal at $0.75 per 15-second clip, plus $0.015 per clip for background audio; switchable in Settings (Kling v3 Standard $2.10 per clip, Kling O1 Reference $0.84 for 10 s, MiniMax H3 Max Turbo $0.24 for test runs). Prices are fal list prices (Oct 19, 2026); the Settings widget shows live fal prices |
-| Design images | $0 extra | ChatGPT's built-in image generation, included in the plan |
+| Design images | A few dollars per drop (unverified) | GPT Image 2.5 on the merchant's fal account, 2 to 5 pieces per drop, billed by fal per token at high quality; the agent quotes fal's `estimate_cost` first. ChatGPT's built-in image generation is the free fallback |
 | ChatGPT plan | Depends on your plan | Plus works: the merchant adds wovain's hosted `/mcp` as a connector, on chatgpt.com or in the desktop app |
 | Fourthwall | $0 | No platform fee on physical products; optional samples at manufacturing cost |
 | Server hosting | $0 | Firebase App Hosting, Firestore and Cloud Storage within their no-cost quotas to start (unverified; App Hosting needs the pay-as-you-go Blaze plan with a billing account, so usage past the quotas is billed) |
-| Total for the test | $140 to $194 | Ad spend plus $4.59 of video |
+| Total for the test | $140 to $194 | Ad spend plus $4.59 of video, plus the design art on fal |
 
 ### Ad widgets
 
