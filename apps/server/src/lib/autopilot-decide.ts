@@ -24,7 +24,7 @@ import {
   withDecision,
 } from "./autopilot.ts";
 import type { DesignJudge } from "./design-judge.ts";
-import { UNTRUSTED } from "./trends.ts";
+import { UNTRUSTED } from "./tavily.ts";
 import type { TrendResearch } from "./trends.ts";
 
 // Autopilot's decisions at the journey's approval points. Nemotron (through
