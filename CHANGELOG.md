@@ -1,3 +1,15 @@
+# [0.25.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.24.0...v0.25.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **dashboard:** count meta orders before the cap and skip caching unconnected states ([171d28b](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/171d28b41acddc13b301b1a8cacb3c54b557afbd)), closes [#31](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/31)
+
+
+### Features
+
+* **dashboard:** show sales, ad results and runs in one merchant widget ([46b701a](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/46b701a6dd14547fedc1cbdba89b9fc3f9f6e183)), closes [#31](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/31)
+
 # [0.24.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.23.0...v0.24.0) (2026-10-22)
 
 
