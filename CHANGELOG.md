@@ -1,3 +1,16 @@
+# [0.28.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.27.0...v0.28.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* **ops:** give duo a locked copy of each accepted issue ([1e4b169](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/1e4b1697d9e067eb81b3a3f764dd44950bdb6618))
+* **ops:** trust duo by user id and check the accepted original ([9cc643e](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/9cc643e5e4718e49e2cce2a3f3939371a738aef3))
+
+
+### Features
+
+* **ops:** hand accepted issues to duo's developer flow ([3c09509](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/3c09509f3bb72716be6be1d334016d2092a7f356))
+
 # [0.27.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.26.0...v0.27.0) (2026-10-23)
 
 
