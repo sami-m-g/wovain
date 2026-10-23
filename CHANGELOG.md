@@ -1,3 +1,15 @@
+# [0.26.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.25.1...v0.26.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* **infra:** let the ci account manage the optimizer queue's iam ([da2b764](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/da2b7644ebc781458098b3cfa4cd286db1aeb6b0))
+
+
+### Features
+
+* **optimizer:** take signed webhooks into debounced cloud tasks ([376c790](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/376c7909f5b3242a4e1b4bf6daa5ec689f570305))
+
 ## [0.25.1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.25.0...v0.25.1) (2026-10-23)
 
 
