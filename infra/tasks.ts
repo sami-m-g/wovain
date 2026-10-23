@@ -1,4 +1,5 @@
 import * as gcp from "@pulumi/gcp";
+import type * as pulumi from "@pulumi/pulumi";
 
 // Background work for the optimizer (docs/changes/25-optimizer/spec.md,
 // section 6): the `optimizer` Cloud Tasks queue, and the tasks-invoker
@@ -6,9 +7,12 @@ import * as gcp from "@pulumi/gcp";
 // App Hosting runner) enqueues tasks and acts as tasks-invoker to sign them.
 // The scheduler jobs that poll merchants come with the poll (plan MR 4).
 export const optimizerTasks = ({
+  after,
   region,
   runner,
 }: {
+  // The CI account's roles: the queue's IAM grant needs cloudtasks.admin.
+  after: pulumi.Resource[];
   region: string;
   runner: gcp.serviceaccount.Account;
 }) => {
@@ -38,12 +42,16 @@ export const optimizerTasks = ({
     displayName: "wovain Cloud Tasks and Scheduler caller",
   });
 
-  new gcp.cloudtasks.QueueIamMember("runner-enqueues-optimizer", {
-    location: region,
-    member: runner.member,
-    name: queue.name,
-    role: "roles/cloudtasks.enqueuer",
-  });
+  new gcp.cloudtasks.QueueIamMember(
+    "runner-enqueues-optimizer",
+    {
+      location: region,
+      member: runner.member,
+      name: queue.name,
+      role: "roles/cloudtasks.enqueuer",
+    },
+    { dependsOn: after }
+  );
   // Creating a task with an OIDC token for tasks-invoker needs actAs on it.
   new gcp.serviceaccount.IAMMember("runner-acts-as-tasks-invoker", {
     member: runner.member,

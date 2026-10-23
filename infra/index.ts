@@ -323,8 +323,11 @@ new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: infra.name,
 });
+// roles/editor can create Cloud Tasks queues but not read or set their IAM
+// policy, which the queue's enqueuer grant needs (infra/tasks.ts).
 const infraRoles = [
   "roles/cloudkms.admin",
+  "roles/cloudtasks.admin",
   "roles/editor",
   "roles/firebase.admin",
   "roles/iam.serviceAccountAdmin",
@@ -448,7 +451,7 @@ new gcp.firestore.Field("ttl-optimizer-events", {
   ttlConfig: {},
 });
 
-const tasks = optimizerTasks({ region, runner });
+const tasks = optimizerTasks({ after: infraRoles, region, runner });
 
 // Email alerts at 50%, 90% and 100% of $5 a month.
 new gcp.billing.Budget(
