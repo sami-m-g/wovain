@@ -240,7 +240,7 @@ export const blockSchema = z.object({
 });
 export type Block = z.infer<typeof blockSchema>;
 
-const quotaSchema = z.object({
+export const quotaSchema = z.object({
   day: z.iso.date().optional(),
   model: z.int().default(0),
   qloo: z.int().default(0),
@@ -259,8 +259,20 @@ export const stateSchema = z.object({
   lastReviewAt: z.int().optional(),
   lastRunAt: z.int().optional(),
   leaseUntil: z.int().optional(),
+  // What the last observation read from each source, for the report.
+  observed: z
+    .record(
+      z.string(),
+      z.object({
+        at: z.int(),
+        rows: z.int().min(0).default(0),
+        state: z.enum(["connected", "missing", "error"]),
+      })
+    )
+    .default({}),
   quota: quotaSchema.prefault({}),
 });
+export type OptimizerState = z.infer<typeof stateSchema>;
 
 // hooks/{provider}: webhook registration; the secret only as ciphertext.
 export const hookSchema = z.object({
@@ -282,7 +294,7 @@ export const optimizerDueSchema = z.object({
 // fourthwallShops/{shopId}, metaAdAccounts/{actId}: webhook routing only.
 export const routeSchema = z.object({ uid: z.string() });
 
-// trendCache/{nicheKey}/{date}: shared across merchants.
+// trendCache/{nicheKey}/days/{date}: shared across merchants.
 export const trendCacheSchema = z.object({
   fetchedAt: z.int(),
   rows: z.array(trendRowSchema),

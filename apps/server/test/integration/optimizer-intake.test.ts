@@ -10,6 +10,7 @@ import { optimizerDocs } from "../../src/optimizer/docs.ts";
 import { createIntake } from "../../src/optimizer/intake.ts";
 import { createRegistrar } from "../../src/optimizer/register.ts";
 import { createRunner } from "../../src/optimizer/run.ts";
+import { createScheduler } from "../../src/optimizer/schedule.ts";
 import { createTaskRoutes } from "../../src/routes/tasks.ts";
 import { createWebhookRoutes } from "../../src/routes/webhooks.ts";
 import { testStorage } from "../helpers.ts";
@@ -31,7 +32,7 @@ const fakeFourthwall = vi.fn(async (input: string | URL | Request) => {
 // A merchant whose Fourthwall webhook is registered (through the registrar)
 // and whose Meta ad account routes to them, plus a second merchant on Meta.
 const setup = async () => {
-  const { db } = testStorage();
+  const { db, media } = testStorage();
   const cipher = localCipher();
   const tasks = memoryTasks();
   const now = vi.fn(() => NOW);
@@ -54,7 +55,7 @@ const setup = async () => {
     tasks,
   });
   const app = createWebhookRoutes({ intake, metaVerifyToken: "verify-me" });
-  return { app, db, docs, now, tasks };
+  return { app, db, docs, media, now, tasks };
 };
 
 const order = (id: string, shopId = "sh_1") =>
@@ -328,11 +329,15 @@ const taskRoutes = async (verified: boolean) => {
   const fixture = await setup();
   const runner = createRunner({
     db: fixture.db,
+    media: fixture.media,
     now: fixture.now,
+    readerFor: () => async () =>
+      await Promise.resolve({ kind: "missing" as const }),
     tasks: fixture.tasks,
   });
   const app = createTaskRoutes({
     runner,
+    scheduler: createScheduler({ db: fixture.db, tasks: fixture.tasks }),
     site: SITE,
     verify: async () => await Promise.resolve(verified),
   });
@@ -362,7 +367,7 @@ describe("/tasks/optimizer/run", () => {
     await fourthwall(app, order("1"));
     await fourthwall(app, order("2"));
     const reply = await post();
-    expect(reply.body).toEqual({ kind: "done", processed: 2 });
+    expect(reply.body).toMatchObject({ kind: "done", processed: 2 });
     const pending = docs.events("u1").where("pending", "==", true);
     await expect(count(pending)).resolves.toBe(0);
   });

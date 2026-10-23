@@ -24,8 +24,10 @@ import {
   salesFrom,
 } from "./dashboard-sections.ts";
 import { newConversationId } from "./meta-draft.ts";
-import { reportRows, str } from "./report-rows.ts";
+import { str } from "./report-rows.ts";
 import type { Row } from "./report-rows.ts";
+import { readRows } from "./upstream-rows.ts";
+import type { Read } from "./upstream-rows.ts";
 import { canReach } from "./upstream.ts";
 import type { Upstream } from "./upstream.ts";
 
@@ -36,7 +38,6 @@ import type { Upstream } from "./upstream.ts";
 
 const DAY = 86_400_000;
 
-type Read = { kind: "rows"; rows: Row[] } | { kind: "missing" | "error" };
 type State = DashboardConnection["state"];
 
 const stateOf = (reads: Read[]): State => {
@@ -64,20 +65,9 @@ const sourcesFor = ({ now = Date.now, range, store, upstream }: Gather) => {
     id: ProviderId,
     tool: string,
     args: Record<string, unknown>
-  ): Promise<Read> => {
-    try {
-      const outcome = await upstream?.call({ args, id, tool, userId });
-      if (outcome === undefined || outcome.kind === "connect") {
-        return { kind: "missing" };
-      }
-      return outcome.result.isError === true
-        ? { kind: "error" }
-        : { kind: "rows", rows: reportRows(outcome.result) };
-    } catch {
-      // The section says it failed; the reason may echo the merchant's data.
-      return { kind: "error" };
-    }
-  };
+  ): Promise<Read> =>
+    // A failed read empties its section; the reason isn't kept.
+    await readRows(upstream, { args, id, tool, userId });
   const connected = async (id: ProviderId): Promise<State> => {
     if (!canReach(upstream, id)) {
       return "unavailable";

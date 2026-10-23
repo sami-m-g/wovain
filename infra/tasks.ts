@@ -1,11 +1,10 @@
 import * as gcp from "@pulumi/gcp";
-import type * as pulumi from "@pulumi/pulumi";
+import * as pulumi from "@pulumi/pulumi";
 
 // Background work for the optimizer (docs/changes/25-optimizer/spec.md,
 // section 6): the `optimizer` Cloud Tasks queue, and the tasks-invoker
 // account whose OIDC token every task carries to /tasks/*. The server (the
 // App Hosting runner) enqueues tasks and acts as tasks-invoker to sign them.
-// The scheduler jobs that poll merchants come with the poll (plan MR 4).
 export const optimizerTasks = ({
   after,
   region,
@@ -61,3 +60,49 @@ export const optimizerTasks = ({
 
   return { invoker, queue };
 };
+
+// The two scheduler jobs (spec section 6): every 15 minutes the poll fans out
+// one run per merchant with a campaign delivering, and every hour the daily
+// sweep fans out the merchants whose review hour it is. Both call as
+// tasks-invoker with an OIDC token for their own URL.
+export const optimizerSchedules = ({
+  invoker,
+  region,
+  siteUrl,
+}: {
+  invoker: gcp.serviceaccount.Account;
+  region: string;
+  siteUrl: pulumi.Input<string>;
+}) =>
+  (
+    [
+      ["optimizer-poll", "*/15 * * * *", "poll"],
+      ["optimizer-daily", "0 * * * *", "daily"],
+    ] as const
+  ).map(([name, schedule, path]) => {
+    const uri = pulumi.interpolate`${siteUrl}/tasks/optimizer/${path}`;
+    return new gcp.cloudscheduler.Job(name, {
+      attemptDeadline: "60s",
+      httpTarget: {
+        httpMethod: "POST",
+        oidcToken: { audience: uri, serviceAccountEmail: invoker.email },
+        uri,
+      },
+      name,
+      region,
+      retryConfig: { retryCount: 1 },
+      schedule,
+      timeZone: "Etc/UTC",
+    });
+  });
+
+// The poll's query: enabled merchants whose campaign delivered within 24 hours.
+export const optimizerDueIndex = (database: gcp.firestore.Database) =>
+  new gcp.firestore.Index("optimizer-due", {
+    collection: "optimizerDue",
+    database: database.name,
+    fields: [
+      { fieldPath: "enabled", order: "ASCENDING" },
+      { fieldPath: "activeUntil", order: "ASCENDING" },
+    ],
+  });

@@ -88,6 +88,7 @@ export const createRuntime = () => {
   const site = env.WOVAIN_SITE_URL;
   const auth = createAuth(env);
   const storage = createStorage();
+  const connect = connectFor(env, storage, auth, site);
   return {
     auth,
     // Merchants confirm approvals in the browser (routes/confirm.ts).
@@ -96,10 +97,15 @@ export const createRuntime = () => {
       site,
       userOf: userOfFor(auth, site),
     }),
-    connect: connectFor(env, storage, auth, site),
+    connect,
     env,
     // Webhooks and background runs (docs/changes/25-optimizer).
-    optimizer: createOptimizer(env, storage.db, cipherFor(env.WOVAIN_KMS_KEY)),
+    optimizer: createOptimizer(
+      env,
+      storage,
+      cipherFor(env.WOVAIN_KMS_KEY),
+      connect?.upstream
+    ),
     storage,
   };
 };

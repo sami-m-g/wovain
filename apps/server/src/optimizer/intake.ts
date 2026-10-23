@@ -7,15 +7,15 @@ import {
 } from "@wovain/shared/optimizer/events";
 import type { StoredEvent } from "@wovain/shared/optimizer/events";
 import { hookSchema, routeSchema } from "@wovain/shared/optimizer/records";
-import { Timestamp } from "firebase-admin/firestore";
 import type { DocumentReference, Firestore } from "firebase-admin/firestore";
 
 import type { Cipher } from "../lib/cipher.ts";
 import { parseJson } from "../lib/reply-json.ts";
-import { isAlreadyExists, taskName } from "../lib/tasks.ts";
+import { taskName } from "../lib/tasks.ts";
 import type { TaskQueue } from "../lib/tasks.ts";
-import { AD_ACCOUNT_ID, EVENT_TTL_MS, optimizerDocs, SHOP_ID } from "./docs.ts";
+import { AD_ACCOUNT_ID, optimizerDocs, SHOP_ID } from "./docs.ts";
 import { fourthwallSigned, metaSigned } from "./signatures.ts";
+import { storeEventOnce } from "./store.ts";
 
 // Webhook intake: verify the signature on the raw body, route to a
 // merchant, store each event once, and queue one debounced run per merchant
@@ -173,25 +173,8 @@ export const createIntake = ({
     return signed ? uid : undefined;
   };
 
-  // Firestore create(): false when the key was stored before.
-  const storeOnce = async (uid: string, event: StoredEvent) => {
-    try {
-      await docs
-        .events(uid)
-        .doc(event.key)
-        .create({
-          ...event,
-          expiresAt: Timestamp.fromMillis(event.receivedAt + EVENT_TTL_MS),
-          pending: true,
-        });
-      return true;
-    } catch (error) {
-      if (isAlreadyExists(error)) {
-        return false;
-      }
-      throw error;
-    }
-  };
+  const storeOnce = async (uid: string, event: StoredEvent) =>
+    await storeEventOnce(db, uid, event);
 
   // One task per merchant per fixed window, run just after it closes.
   const scheduleRun = async (uid: string) => {
