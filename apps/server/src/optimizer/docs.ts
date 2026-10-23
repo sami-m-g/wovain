@@ -9,20 +9,34 @@ export const SHOP_ID = /^[\w-]{1,128}$/u;
 export const AD_ACCOUNT_ID = /^\d{1,32}$/u;
 export const USER_ID = /^[\w-]{1,128}$/u;
 
-// Stored events are deleted 30 days after they arrive (TTL on expiresAt).
+// Stored events and snapshots are deleted 30 days after they're written
+// (TTL on expiresAt), so refunds can still land on a month-old day.
 export const EVENT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const optimizerDocs = (db: Firestore) => {
   const state = (uid: string) =>
     db.collection("users").doc(uid).collection("optimization").doc("state");
+  const sub = (uid: string, name: string) => state(uid).collection(name);
   return {
+    actions: (uid: string) => sub(uid, "actions"),
     adAccount: (actId: string) => db.collection("metaAdAccounts").doc(actId),
+    // Analytics reports, cached an hour (spec section 2, Polling).
+    cache: (uid: string) => sub(uid, "cache"),
+    diagnoses: (uid: string) => sub(uid, "diagnoses"),
     due: (uid: string) => db.collection("optimizerDue").doc(uid),
-    events: (uid: string) => state(uid).collection("events"),
+    dues: () => db.collection("optimizerDue"),
+    events: (uid: string) => sub(uid, "events"),
+    findings: (uid: string) => sub(uid, "findings"),
     hook: (uid: string, provider: "fourthwall" | "meta") =>
       state(uid).collection("hooks").doc(provider),
+    inbox: (uid: string) => sub(uid, "inbox"),
+    runs: (uid: string) => sub(uid, "runs"),
     shop: (shopId: string) => db.collection("fourthwallShops").doc(shopId),
     shops: () => db.collection("fourthwallShops"),
+    snapshots: (uid: string) => sub(uid, "snapshots"),
     state,
+    // trendCache/{nicheKey}/days/{date}: shared across merchants, no merchant data.
+    trend: (nicheKey: string, date: string) =>
+      db.collection("trendCache").doc(nicheKey).collection("days").doc(date),
   };
 };

@@ -127,7 +127,8 @@ export const eventFieldsSchema = z.discriminatedUnion("kind", [
     status: z.string(),
     total: z.number().optional(),
     update: z.string().optional(),
-    utm: utmSchema,
+    // Firestore drops an empty map, so a stored order may have no utm.
+    utm: utmSchema.prefault({}),
   }),
   z.object({
     kind: z.literal("product"),

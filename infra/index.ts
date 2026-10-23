@@ -8,7 +8,11 @@ import * as random from "@pulumi/random";
 
 import { mirrorPrivateKey } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
-import { optimizerTasks } from "./tasks.ts";
+import {
+  optimizerDueIndex,
+  optimizerSchedules,
+  optimizerTasks,
+} from "./tasks.ts";
 
 // wovain's Google Cloud project: App Hosting runs apps/server, Firestore and a
 // private bucket hold each merchant's records and artwork, Secret Manager holds
@@ -489,6 +493,8 @@ export const connectionsKeyName = connectionsKey.id;
 export const optimizerQueue = tasks.queue.id;
 export const tasksServiceAccount = tasks.invoker.email;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
+optimizerSchedules({ invoker: tasks.invoker, region, siteUrl });
+optimizerDueIndex(database);
 
 // GitLab Observability is enabled on the project's group; its id names the
 // instance (docs.gitlab.com, operations/observability/api_access).
