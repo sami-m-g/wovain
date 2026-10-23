@@ -4,6 +4,7 @@ import { createCiApi } from "./gitlab-ci.ts";
 import { createGitLab } from "./gitlab.ts";
 import type { GitLab } from "./gitlab.ts";
 import { createGoogle } from "./google.ts";
+import { intake } from "./intake.ts";
 import { createO11y } from "./o11y.ts";
 import { redMain } from "./red-main.ts";
 import { scout, verify } from "./scout.ts";
@@ -100,6 +101,18 @@ const ci = await attempt(
     ),
   "not checked"
 );
+// Accepted issues to Duo's Developer flow, one session at a time.
+const handOff = await attempt(
+  "intake",
+  async () => {
+    const me = await gitlab.currentUser();
+    return await intake(gitlab, {
+      loopUser: me.username,
+      now,
+    });
+  },
+  "not checked"
+);
 const merges = await attempt(
   "shepherd",
   async () => await shepherd(gitlab, now),
@@ -111,6 +124,7 @@ const report = [
   "",
   `- Health: ${problems.length === 0 ? "no production errors in the last 6 hours" : problems.map((p) => `${p.count}× ${p.fingerprint}`).join(", ")}`,
   `- Filed: ${filed === undefined ? "none" : `#${filed.iid}`}`,
+  `- Intake (accepted issues to Duo): ${handOff}`,
   `- Fixes checked: ${list(verdicts, "#")}`,
   `- Duo merge requests: ${list(merges, "!")}`,
   `- Main pipeline: ${ci}`,

@@ -10,6 +10,7 @@ const issueSchema = z.object({
   assignees: z.array(z.object({ username: z.string() })).default([]),
   author: z.object({ username: z.string() }),
   closed_at: z.string().nullable().optional(),
+  created_at: z.string().optional(),
   description: z.string().nullable(),
   iid: z.int(),
   labels: z.array(z.string()),
@@ -22,6 +23,7 @@ export type Issue = z.infer<typeof issueSchema>;
 
 const mergeRequestSchema = z.object({
   author: z.object({ username: z.string() }),
+  created_at: z.string(),
   draft: z.boolean(),
   has_conflicts: z.boolean(),
   // Only the single-MR endpoint returns it.
@@ -45,7 +47,8 @@ const mergeRequestSchema = z.object({
 export type MergeRequest = z.infer<typeof mergeRequestSchema>;
 
 const noteSchema = z.object({
-  author: z.object({ username: z.string() }),
+  // id is what trust checks compare; a note without one is never trusted.
+  author: z.object({ id: z.int().optional(), username: z.string() }),
   body: z.string(),
   created_at: z.string(),
   // Diff notes name the commit they were written on.
@@ -66,6 +69,22 @@ const discussionSchema = z.object({
     })
   ),
 });
+
+// Who added or removed which label, oldest first (resource_label_events).
+const labelEventSchema = z
+  .object({
+    action: z.string(),
+    created_at: z.string(),
+    // null when the label has since been deleted.
+    label: z.object({ name: z.string() }).nullable(),
+    user: z.object({ username: z.string() }),
+  })
+  .transform((e) => ({
+    action: e.action,
+    createdAt: e.created_at,
+    label: e.label?.name,
+    user: e.user.username,
+  }));
 
 const jobSchema = z.object({ duration: z.number().nullable() });
 const pipelineSchema = z.object({
@@ -207,6 +226,9 @@ export const createGitLab = (env: {
     });
 
   return {
+    // Every page, newest first; more than MAX_PAGES fails instead of guessing.
+    allIssueNotes: async (issue: number) =>
+      await allPages(noteSchema, `issues/${issue}/notes?sort=desc`),
     closesIssues: async (mr: number) =>
       await inProject(
         z.array(issueSchema),
@@ -258,6 +280,8 @@ export const createGitLab = (env: {
         per_page: 100,
         ...query,
       }),
+    labelEvents: async (issue: number) =>
+      await allPages(labelEventSchema, `issues/${issue}/resource_label_events`),
     mergeRequest: async (mr: number) =>
       await inProject(mergeRequestSchema, "GET", `merge_requests/${mr}`),
     mergeRequestNotes: async (mr: number) =>

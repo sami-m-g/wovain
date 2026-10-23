@@ -10,6 +10,8 @@ import {
   reviewedShaOf,
 } from "./guardrails.ts";
 import type { Provenance } from "./guardrails.ts";
+import { isCopy, issueTampering, originalOf, resolveTrust } from "./intake.ts";
+import type { Trust } from "./intake.ts";
 import { marker } from "./report.ts";
 import { DEVELOPER, assignedAt, fromLoop } from "./scout.ts";
 
@@ -57,7 +59,7 @@ const handBack = async (
   return "needs a human";
 };
 
-// The scout issue GitLab binds this MR to: one it closes (closes_issues), or
+// The scout (or accepted agent::duo) issue GitLab binds this MR to: one it closes (closes_issues), or
 // one whose number its source branch carries. Text in the MR is never used.
 const boundIssue = async (
   gitlab: GitLab,
@@ -72,7 +74,9 @@ const boundIssue = async (
     )),
   ];
   return candidates.find(
-    (issue): issue is Issue => issue !== null && issue.labels.includes("scout")
+    (issue): issue is Issue =>
+      issue !== null &&
+      (issue.labels.includes("scout") || issue.labels.includes("agent::duo"))
   );
 };
 
@@ -80,22 +84,32 @@ const provenanceOf = async (
   gitlab: GitLab,
   mr: MergeRequest,
   issue: Issue,
-  loopUser: string
+  context: { loopUser: string; trust: Trust }
 ): Promise<Provenance> => {
-  const [closes, issueNotes, sessions] = await Promise.all([
+  const { loopUser, trust } = context;
+  // Every page of the issue's notes, and its accepted original for a copy.
+  const [closes, issueNotes, sessions, original] = await Promise.all([
     gitlab.closesIssues(mr.iid),
-    gitlab.issueNotes(issue.iid),
+    gitlab.allIssueNotes(issue.iid),
     gitlab.sessions(),
+    isCopy(issue) ? originalOf(gitlab, issue.iid, trust) : undefined,
   ]);
+  const assigned = assignedAt(issueNotes, loopUser);
   return {
     developer: DEVELOPER,
     issue: {
-      assignedAt: assignedAt(issueNotes, loopUser),
+      assignedAt: assigned,
       assignees: issue.assignees.map((a) => a.username),
       author: issue.author.username,
+      copy: isCopy(issue),
       fromLoop: fromLoop(issue),
       iid: issue.iid,
       labels: issue.labels,
+      tampering: issueTampering(issue, issueNotes, {
+        assignedAt: assigned,
+        original,
+        trust,
+      }),
     },
     loopUser,
     mr: {
@@ -157,7 +171,7 @@ const awaitReview = async (
 const shepherdOne = async (
   gitlab: GitLab,
   listed: MergeRequest,
-  context: { now: Date; loopUser: string }
+  context: { now: Date; loopUser: string; trust: Trust }
 ) => {
   if (listed.merge_when_pipeline_succeeds) {
     return "auto-merge already set";
@@ -177,9 +191,7 @@ const shepherdOne = async (
     ]);
   const duo = reviewers.find((r) => r.user.username === REVIEWER);
   const thread = { iid: mr.iid, notes };
-  const gaps = provenanceGaps(
-    await provenanceOf(gitlab, mr, issue, context.loopUser)
-  );
+  const gaps = provenanceGaps(await provenanceOf(gitlab, mr, issue, context));
   const paths = diffs.flatMap((d) => [d.old_path, d.new_path]);
   // Duo Code Review only for application code: never a docs-only,
   // lockfile-only or Renovate MR (gates.ts). The loop marks drafts ready
@@ -260,7 +272,7 @@ const shepherdOne = async (
     await gitlab.setAutoMerge(mr.iid, mr.sha);
     await gitlab.noteOnMergeRequest(
       mr.iid,
-      `Auto-merge set by the wovain loop for ${mr.sha}: the loop filed and assigned #${issue.iid}, Duo's Developer flow wrote this in the session that assignment started, Duo Code Review reviewed this commit and left no open threads, no one outside the loop wrote on it, and the change stays inside the guardrails (apps/ops/src/guardrails.ts). GitLab merges it once the pipeline passes.\n\n${marker("auto-merge")}`
+      `Auto-merge set by the wovain loop for ${mr.sha}: the loop assigned #${issue.iid}, Duo's Developer flow wrote this in the session that assignment started, Duo Code Review reviewed this commit and left no open threads, no one outside the loop wrote on it, and the change stays inside the guardrails (apps/ops/src/guardrails.ts). GitLab merges it once the pipeline passes.\n\n${marker("auto-merge")}`
     );
     return "auto-merge set";
   }
@@ -278,14 +290,15 @@ const shepherdOne = async (
 };
 
 export const shepherd = async (gitlab: GitLab, now: Date) => {
-  const [mrs, me] = await Promise.all([
+  const [mrs, me, trust] = await Promise.all([
     gitlab.mergeRequests({ author_username: DEVELOPER, state: "opened" }),
     gitlab.currentUser(),
+    resolveTrust(gitlab),
   ]);
   const outcomes = await Promise.allSettled(
     mrs.map(
       async (mr) =>
-        await shepherdOne(gitlab, mr, { loopUser: me.username, now })
+        await shepherdOne(gitlab, mr, { loopUser: me.username, now, trust })
     )
   );
   return Object.fromEntries(
