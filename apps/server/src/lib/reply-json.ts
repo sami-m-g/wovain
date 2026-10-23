@@ -7,7 +7,8 @@ export interface Reply {
   structuredContent?: unknown;
 }
 
-const parsed = (text: string): unknown => {
+// JSON from untrusted text, or undefined when it isn't JSON.
+export const parseJson = (text: string): unknown => {
   try {
     return JSON.parse(text);
   } catch {
@@ -25,7 +26,7 @@ export const replyRoots = ({
     block !== null &&
     "text" in block &&
     typeof block.text === "string"
-      ? parsed(block.text)
+      ? parseJson(block.text)
       : undefined
   ),
 ];

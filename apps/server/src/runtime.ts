@@ -12,6 +12,8 @@ import { kmsCipher, localCipher } from "./lib/cipher.ts";
 import { createConnections } from "./lib/connections.ts";
 import { createUpstream } from "./lib/upstream.ts";
 import type { Clients, Upstream } from "./lib/upstream.ts";
+import { createOptimizer } from "./optimizer/service.ts";
+import type { Optimizer } from "./optimizer/service.ts";
 
 // Merchant connections need the KMS key, except on the emulators (`pnpm
 // dev`), where an in-memory key stands in. Without either they're off.
@@ -96,11 +98,18 @@ export const createRuntime = () => {
     }),
     connect: connectFor(env, storage, auth, site),
     env,
+    // Webhooks and background runs (docs/changes/25-optimizer).
+    optimizer: createOptimizer(env, storage.db, cipherFor(env.WOVAIN_KMS_KEY)),
     storage,
   };
 };
 
-// Approvals and connections are optional, so tests can leave them out.
-export type Runtime = Omit<ReturnType<typeof createRuntime>, "confirm"> & {
+// Approvals, connections and the optimizer are optional, so tests can leave
+// them out.
+export type Runtime = Omit<
+  ReturnType<typeof createRuntime>,
+  "confirm" | "optimizer"
+> & {
   confirm?: BrowserConfirm | undefined;
+  optimizer?: Optimizer | undefined;
 };

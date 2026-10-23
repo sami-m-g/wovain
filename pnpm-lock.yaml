@@ -200,6 +200,9 @@ importers:
       '@google-cloud/kms':
         specifier: 6.3.0
         version: 6.3.0(supports-color@7.2.0)
+      '@google-cloud/tasks':
+        specifier: 7.3.0
+        version: 7.3.0(supports-color@7.2.0)
       '@hono/node-server':
         specifier: 2.1.5
         version: 2.1.5(hono@4.13.13)
@@ -955,6 +958,10 @@ packages:
 
   '@google-cloud/storage@8.4.0':
     resolution: {integrity: sha512-M3kA6UA2Tjp5aznCrgKcm9CzOjiQyRMnquqalqXAeS5wvkqqZxN8wpNjjHafOSYs6lQ82U7f2i8we4eTfIrpkA==}
+    engines: {node: '>=22'}
+
+  '@google-cloud/tasks@7.3.0':
+    resolution: {integrity: sha512-EPK+tFXJ6/j0x5k8TVowVX/Fl8biZX5NioeaQNCqbJVVAGV5wBl0ra0qaBSOyDDYUWiBwHGoxgekVkShQDD73w==}
     engines: {node: '>=22'}
 
   '@googleapis/sqladmin@38.1.1':
@@ -9815,6 +9822,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  '@google-cloud/tasks@7.3.0(supports-color@7.2.0)':
+    dependencies:
+      google-gax: 6.12.1(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - supports-color
 
   '@googleapis/sqladmin@38.1.1(supports-color@7.2.0)':
     dependencies:

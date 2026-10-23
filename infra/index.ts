@@ -7,6 +7,7 @@ import * as pulumi from "@pulumi/pulumi";
 
 import { mirrorPrivateKey } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
+import { optimizerTasks } from "./tasks.ts";
 
 // wovain's Google Cloud project: App Hosting runs apps/server, Firestore and a
 // private bucket hold each merchant's records and artwork, Secret Manager holds
@@ -423,6 +424,18 @@ for (const collection of [
   });
 }
 
+// The optimizer's stored webhook events (users/{uid}/optimization/state/
+// events) are deleted 30 days after they arrive, by the same field.
+new gcp.firestore.Field("ttl-optimizer-events", {
+  collection: "events",
+  database: database.name,
+  field: "expiresAt",
+  indexConfig: {},
+  ttlConfig: {},
+});
+
+const tasks = optimizerTasks({ region, runner });
+
 // Email alerts at 50%, 90% and 100% of $5 a month.
 new gcp.billing.Budget(
   "monthly",
@@ -455,6 +468,9 @@ new gcp.billing.AccountIamMember("infra-budgets", {
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
+// WOVAIN_OPTIMIZER_QUEUE and WOVAIN_TASKS_SERVICE_ACCOUNT in apphosting.yaml.
+export const optimizerQueue = tasks.queue.id;
+export const tasksServiceAccount = tasks.invoker.email;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
 
 // GitLab Observability is enabled on the project's group; its id names the
