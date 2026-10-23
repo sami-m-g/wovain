@@ -10,7 +10,7 @@ Every Fourthwall call below goes through wovain's \`fourthwall\` tool (\`tool\` 
 
 ## Before any Fourthwall call
 
-1. \`fourthwall\` \`get-instructions\`, then \`ecommerce_get-current-shop\`, then \`load-skills\` with "create a product line from my artwork". Follow the returned skills where they add detail; this playbook decides the order and the widget.
+1. \`fourthwall\` \`ecommerce_get-current-shop\`, once per conversation. Fourthwall's connector has no instructions or skills tool through wovain; this playbook is the workflow. For a how-to or policy question it doesn't answer, \`fourthwall\` \`omni_knowledge\`. If a \`fourthwall\` result names the tools it has instead, use those.
 2. wovain \`get_settings\` for pricing and economics.
 
 ## No idea yet

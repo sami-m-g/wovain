@@ -175,7 +175,7 @@ One playbook per step in `apps/server/src/playbooks/`. Each has a description (w
 | `campaign` | Payment and pixel checks, `campaign_plan`, Meta campaign build with `utm_content` = ad ID on every ad link, `create_rules`, activate, `show_campaign_widget` | `prd.md > Campaign launch`, `prd.md > Campaign rules` |
 | `optimize` (later) | `campaign_check`, Fourthwall reports and sales by UTM, `show_optimization_widget`, apply the fix or turn an ad back on | `prd.md > Optimization` |
 
-Each playbook starts Fourthwall calls with `get-instructions`, `ecommerce_get-current-shop` and `load-skills`, as Fourthwall requires.
+Each playbook starts Fourthwall calls with `ecommerce_get-current-shop`, as Fourthwall's instructions ask. The `/app` endpoint has no `get-instructions`, `load-skills` or `read-skills` tool (its instructions come in the MCP handshake), so the `fourthwall` proxy doesn't offer them, and a call to a tool the upstream lacks returns the tools it has.
 
 ### wovain server
 
