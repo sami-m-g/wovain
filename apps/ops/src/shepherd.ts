@@ -10,7 +10,7 @@ import {
   reviewedShaOf,
 } from "./guardrails.ts";
 import type { Provenance } from "./guardrails.ts";
-import { acceptedBy } from "./intake.ts";
+import { isCopy, issueTampering } from "./intake.ts";
 import { marker } from "./report.ts";
 import { DEVELOPER, assignedAt, fromLoop } from "./scout.ts";
 
@@ -85,22 +85,26 @@ const provenanceOf = async (
   issue: Issue,
   loopUser: string
 ): Promise<Provenance> => {
-  const [closes, issueNotes, sessions, events] = await Promise.all([
+  const [closes, issueNotes, sessions] = await Promise.all([
     gitlab.closesIssues(mr.iid),
     gitlab.issueNotes(issue.iid),
     gitlab.sessions(),
-    gitlab.labelEvents(issue.iid),
   ]);
+  const assigned = assignedAt(issueNotes, loopUser);
   return {
     developer: DEVELOPER,
     issue: {
-      accepted: acceptedBy(issue, events, loopUser),
-      assignedAt: assignedAt(issueNotes, loopUser),
+      assignedAt: assigned,
       assignees: issue.assignees.map((a) => a.username),
       author: issue.author.username,
+      copy: isCopy(issue),
       fromLoop: fromLoop(issue),
       iid: issue.iid,
       labels: issue.labels,
+      tampering: issueTampering(issue, issueNotes, {
+        assignedAt: assigned,
+        loopUser,
+      }),
     },
     loopUser,
     mr: {

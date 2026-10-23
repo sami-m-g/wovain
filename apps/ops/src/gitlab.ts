@@ -10,6 +10,7 @@ const issueSchema = z.object({
   assignees: z.array(z.object({ username: z.string() })).default([]),
   author: z.object({ username: z.string() }),
   closed_at: z.string().nullable().optional(),
+  created_at: z.string().optional(),
   description: z.string().nullable(),
   iid: z.int(),
   labels: z.array(z.string()),

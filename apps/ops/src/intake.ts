@@ -1,14 +1,24 @@
-import type { GitLab, Issue } from "./gitlab.ts";
+import { createHash } from "node:crypto";
+
+import { z } from "zod";
+
+import type { GitLab, Issue, Note } from "./gitlab.ts";
 import { marker } from "./report.ts";
 import { DEVELOPER, handToDuo } from "./scout.ts";
 
 // Intake: hands accepted issues (any kind, not only scout bugs) to Duo's
 // Developer flow, gated like the red-main fix gate. The loop assigns with
 // GITLAB_TOKEN, a person's token, so the assign trigger fires. An issue is
-// accepted when the owner (the loop's user) put it in status::todo. Issue
-// text is untrusted: it is only ever used to skip an issue (no acceptance
-// criteria, or it names a path only a person may change), never to pick or
-// to steer Duo.
+// accepted when the owner (the loop's user) put it in status::todo.
+//
+// Duo never works the original. Anyone with access can edit or comment on
+// it, so the loop copies the accepted title and description into a new
+// issue it files itself, locks that copy's discussion and assigns only the
+// copy. The shepherd checks that the copy still matches the hash recorded
+// here and that no one outside the loop and Duo wrote on it. An original
+// edited after it was accepted goes back to status::intent. Issue text is
+// otherwise only used to skip an issue (no acceptance criteria, or it names
+// something only a person may change), never to pick one.
 
 // One Developer session at a time, and at most this many started a day
 // (scout hand-offs included).
@@ -16,6 +26,8 @@ const MAX_DEV_IN_FLIGHT = 1;
 export const MAX_DEV_SESSIONS_PER_DAY = 4;
 const ENDED = new Set(["CANCELED", "FAILED", "FINISHED", "STOPPED"]);
 const NO_PRIORITY = 9;
+// Labels the copy keeps from the original.
+const KEPT = /^(?:type|priority|stage)::/u;
 
 // Issues that would touch what auto-merge never allows go to the owner:
 // sign-in, credentials, infra and CI, and anything that spends or launches.
@@ -26,6 +38,11 @@ const DENIED =
 // with at least one line of real content under it.
 const CRITERIA =
   /^##\s*(?:acceptance criteria|done when|expected behavior)\s*$(?<body>[\s\S]*?)(?=^##\s|(?![\s\S]))/imu;
+
+// GitLab's system notes for a title or description edit.
+const EDIT = /^changed (?:the )?(?:description|title)/iu;
+const ACCEPTED =
+  /<!-- wovain-loop:accepted:(?<hash>[0-9a-f]{16}):(?<at>\d+) -->/u;
 
 export const hasAcceptanceCriteria = (description: string | null) => {
   const body = CRITERIA.exec(description ?? "")?.groups?.["body"] ?? "";
@@ -45,26 +62,61 @@ export interface LabelEvent {
   createdAt: string;
 }
 
-// The latest time status::todo was added, the owner added it. With no event
-// (labels set at creation), the author counts.
-export const acceptedBy = (
-  issue: Pick<Issue, "author">,
+// When the owner accepted the issue: the latest time status::todo was added,
+// if they added it. With no event (labels set at creation), its creation time
+// when they filed it. undefined means it isn't accepted.
+export const acceptedAt = (
+  issue: Pick<Issue, "author" | "created_at">,
   events: LabelEvent[],
   loopUser: string
 ) => {
   const [latest] = events
     .filter((e) => e.action === "add" && e.label === "status::todo")
-    .toSorted((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  return (latest?.user ?? issue.author.username) === loopUser;
+    .toSorted((x, y) => Date.parse(y.createdAt) - Date.parse(x.createdAt));
+  if (latest !== undefined) {
+    return latest.user === loopUser ? latest.createdAt : undefined;
+  }
+  return issue.author.username === loopUser ? issue.created_at : undefined;
 };
+
+// The last edit of the title or description (system notes, newest first).
+const lastEdit = (notes: Note[]) =>
+  notes.find((n) => n.system && EDIT.test(n.body))?.created_at;
+
+export const contentHash = (issue: Pick<Issue, "description" | "title">) =>
+  createHash("sha256")
+    .update(`${issue.title}\n${issue.description ?? ""}`)
+    .digest("hex")
+    .slice(0, 16);
+
+// The copy's recorded hash and the original's acceptance time (ms), from the
+// loop's own note.
+const recordedAcceptance = (notes: Note[], loopUser: string) => {
+  const [groups] = notes.flatMap((n) => {
+    const found =
+      n.author.username === loopUser
+        ? ACCEPTED.exec(n.body)?.groups
+        : undefined;
+    return found === undefined ? [] : [found];
+  });
+  return groups?.["hash"] === undefined || groups["at"] === undefined
+    ? undefined
+    : { acceptedAt: Number(groups["at"]), hash: groups["hash"] };
+};
+
+// The copy's description: the accepted text and where it came from. The
+// copy marker lets the shepherd tell the loop's copies from other issues.
+export const copyMarker = (original: number) => marker(`copy:${original}`);
+export const isCopy = (issue: Pick<Issue, "description">) =>
+  /<!-- wovain-loop:copy:\d+ -->/u.test(issue.description ?? "");
 
 const priorityOf = (labels: string[]) => {
   const label = labels.find((l) => /^priority::\d$/u.test(l));
   return label === undefined ? NO_PRIORITY : Number(label.slice(-1));
 };
 
-// Open, accepted-looking todo issues nobody has: not an intent, unassigned,
-// and not the owner's own Claude work.
+// Open todo issues nobody has: not an intent, unassigned, and not the
+// owner's own Claude work.
 export const queued = (issues: Issue[]) =>
   issues
     .filter(
@@ -106,6 +158,7 @@ export const devGate = (sessions: Session[], now: Date) => {
 type IntakeGitLab = Pick<
   GitLab,
   | "createIssue"
+  | "inProject"
   | "issueNotes"
   | "issues"
   | "labelEvents"
@@ -115,23 +168,116 @@ type IntakeGitLab = Pick<
   | "userId"
 >;
 
-// Says why an issue waits, once per kind.
-const noteOnce = async (
+const sendBack = async (gitlab: IntakeGitLab, iid: number) => {
+  await gitlab.noteOnIssue(
+    iid,
+    `The wovain loop didn't give this to Duo: its title or description changed after it was accepted. Moved back to status::intent; move it to status::todo again to accept it as it is now.\n\n${marker("edited-after-accept")}`
+  );
+  await gitlab.updateIssue(iid, {
+    add_labels: "status::intent",
+    remove_labels: "status::todo",
+  });
+};
+
+const toOwner = async (
   gitlab: IntakeGitLab,
   iid: number,
-  kind: string,
-  body: string
+  context: { denied: string; loopUser: string }
 ) => {
-  const notes = await gitlab.issueNotes(iid);
-  if (!notes.some((n) => n.body.includes(marker(kind)))) {
-    await gitlab.noteOnIssue(iid, `${body}\n\n${marker(kind)}`);
+  const ownerId = await gitlab.userId(context.loopUser);
+  await gitlab.noteOnIssue(
+    iid,
+    `The wovain loop didn't give this to Duo: it mentions "${context.denied}", which only a person changes. Assigned to the owner.\n\n${marker("needs-owner")}`
+  );
+  await gitlab.updateIssue(iid, { assignee_ids: [ownerId] });
+};
+
+// Files the copy Duo works, records what was accepted, locks it, links it
+// to the original and assigns Duo. Locking and linking are best effort.
+const handOff = async (
+  gitlab: IntakeGitLab,
+  issue: Issue,
+  accepted: { since: string; projectId: string }
+) => {
+  const { since } = accepted;
+  const description = `${issue.description ?? ""}\n\n---\n\nCopied by the wovain loop from #${issue.iid} as the owner accepted it, so later edits there don't reach Duo.\n\n${copyMarker(issue.iid)}`;
+  const copy = await gitlab.createIssue({
+    description,
+    labels: [
+      ...issue.labels.filter((l) => KEPT.test(l)),
+      "agent::duo",
+      "status::doing",
+    ].join(","),
+    title: issue.title,
+  });
+  const hash = contentHash(copy);
+  await gitlab.noteOnIssue(
+    copy.iid,
+    `Accepted content recorded by the wovain loop (hash \`${hash}\`). An edit, or a note from anyone outside the loop and Duo, stops auto-merge.\n\n${marker(`accepted:${hash}:${Date.parse(since)}`)}`
+  );
+  await gitlab
+    .updateIssue(copy.iid, { discussion_locked: true })
+    .catch(() => null);
+  await gitlab
+    .inProject(z.unknown(), "POST", `issues/${copy.iid}/links`, {
+      target_issue_iid: issue.iid,
+      target_project_id: accepted.projectId,
+    })
+    .catch(() => null);
+  await gitlab.noteOnIssue(
+    issue.iid,
+    `Handed to Duo's Developer flow as #${copy.iid}, a copy of this issue as accepted.\n\n${marker(`handed:${copy.iid}`)}`
+  );
+  await gitlab.updateIssue(issue.iid, {
+    add_labels: "agent::duo,status::doing",
+    remove_labels: "status::todo",
+  });
+  await handToDuo(gitlab, copy.iid);
+  return `#${issue.iid} handed to ${DEVELOPER} as #${copy.iid}`;
+};
+
+// Hands one issue to Duo, or says why not; undefined means try the next.
+const considerOne = async (
+  gitlab: IntakeGitLab,
+  issue: Issue,
+  context: { loopUser: string; projectId: string }
+): Promise<string | undefined> => {
+  const { loopUser } = context;
+  const since = acceptedAt(
+    issue,
+    await gitlab.labelEvents(issue.iid),
+    loopUser
+  );
+  if (since === undefined) {
+    return undefined;
   }
+  const notes = await gitlab.issueNotes(issue.iid);
+  const edited = lastEdit(notes);
+  if (edited !== undefined && Date.parse(edited) > Date.parse(since)) {
+    await sendBack(gitlab, issue.iid);
+    return undefined;
+  }
+  const denied = deniedReason(issue);
+  if (denied !== undefined) {
+    await toOwner(gitlab, issue.iid, { denied, loopUser });
+    return undefined;
+  }
+  if (!hasAcceptanceCriteria(issue.description)) {
+    if (!notes.some((n) => n.body.includes(marker("needs-criteria")))) {
+      await gitlab.noteOnIssue(
+        issue.iid,
+        `The wovain loop will give this to Duo's Developer flow once it has acceptance criteria (an \`## Acceptance criteria\` section with at least one item).\n\n${marker("needs-criteria")}`
+      );
+    }
+    return undefined;
+  }
+  return await handOff(gitlab, issue, { projectId: context.projectId, since });
 };
 
 // One hand-off a run at most. Returns what happened, for the report.
 export const intake = async (
   gitlab: IntakeGitLab,
-  context: { loopUser: string; now: Date }
+  context: { loopUser: string; now: Date; projectId: string }
 ): Promise<string> => {
   const blocked = devGate(await gitlab.sessions(), context.now);
   if (blocked !== undefined) {
@@ -142,41 +288,52 @@ export const intake = async (
   );
   for (const issue of todo) {
     // oxlint-disable-next-line eslint/no-await-in-loop -- one issue at a time, stop at the first hand-off
-    const events = await gitlab.labelEvents(issue.iid);
-    if (!acceptedBy(issue, events, context.loopUser)) {
-      continue;
+    const outcome = await considerOne(gitlab, issue, context);
+    if (outcome !== undefined) {
+      return outcome;
     }
-    const denied = deniedReason(issue);
-    if (denied !== undefined) {
-      // oxlint-disable-next-line eslint/no-await-in-loop -- same issue
-      const ownerId = await gitlab.userId(context.loopUser);
-      // oxlint-disable-next-line eslint/no-await-in-loop -- same issue
-      await gitlab.noteOnIssue(
-        issue.iid,
-        `The wovain loop didn't give this to Duo: it mentions "${denied}", which only a person changes. Assigned to the owner.\n\n${marker("needs-owner")}`
-      );
-      // oxlint-disable-next-line eslint/no-await-in-loop -- same issue
-      await gitlab.updateIssue(issue.iid, { assignee_ids: [ownerId] });
-      continue;
-    }
-    if (!hasAcceptanceCriteria(issue.description)) {
-      // oxlint-disable-next-line eslint/no-await-in-loop -- same issue
-      await noteOnce(
-        gitlab,
-        issue.iid,
-        "needs-criteria",
-        "The wovain loop will give this to Duo's Developer flow once it has acceptance criteria (an `## Acceptance criteria` section with at least one item)."
-      );
-      continue;
-    }
-    // oxlint-disable-next-line eslint/no-await-in-loop -- the one hand-off
-    await gitlab.updateIssue(issue.iid, {
-      add_labels: "agent::duo,status::doing",
-      remove_labels: "status::todo",
-    });
-    // oxlint-disable-next-line eslint/no-await-in-loop -- the one hand-off
-    await handToDuo(gitlab, issue.iid);
-    return `#${issue.iid} assigned to ${DEVELOPER}`;
   }
   return "nothing to hand off";
+};
+
+// The loop's user (the owner) and GitLab's Duo service accounts.
+const trusted = (username: string, loopUser: string) =>
+  username === loopUser ||
+  /^duo-[a-z0-9-]+-gitlab-ai-hackathon$/u.test(username);
+
+// Why the issue Duo works may have been steered: someone outside the loop
+// and Duo wrote on it or edited it, or (for the loop's copy) its text no
+// longer matches the hash recorded at hand-off, or the owner's acceptance
+// doesn't come before the loop's assignment.
+export const issueTampering = (
+  issue: Pick<Issue, "description" | "iid" | "title">,
+  notes: Note[],
+  context: { loopUser: string; assignedAt: string | undefined }
+): string[] => {
+  const { loopUser } = context;
+  const reasons = notes.flatMap((n) => {
+    if (n.system) {
+      return EDIT.test(n.body) && n.author.username !== loopUser
+        ? [`@${n.author.username} edited #${issue.iid}`]
+        : [];
+    }
+    return trusted(n.author.username, loopUser)
+      ? []
+      : [`@${n.author.username} wrote on #${issue.iid}`];
+  });
+  if (!isCopy(issue)) {
+    return reasons;
+  }
+  const recorded = recordedAcceptance(notes, loopUser);
+  if (recorded === undefined || recorded.hash !== contentHash(issue)) {
+    reasons.push(`#${issue.iid} changed since the loop copied it`);
+  }
+  if (
+    recorded === undefined ||
+    context.assignedAt === undefined ||
+    recorded.acceptedAt >= Date.parse(context.assignedAt)
+  ) {
+    reasons.push(`#${issue.iid} wasn't accepted before the loop assigned it`);
+  }
+  return reasons;
 };

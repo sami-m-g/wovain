@@ -189,9 +189,11 @@ export interface Provenance {
     assignees: string[];
     // The loop's own marker in the description.
     fromLoop: boolean;
-    // The owner put it in status::todo (intake.ts), so the loop may hand it
-    // to Duo though someone else filed it.
-    accepted: boolean;
+    // The loop's copy of an issue the owner accepted (intake.ts).
+    copy: boolean;
+    // Outside notes or edits on the issue, or a copy that no longer matches
+    // what was accepted (intake.ts issueTampering); empty when clean.
+    tampering: string[];
     // When the loop last assigned it to Duo (its marker note), if ever.
     assignedAt: string | undefined;
   };
@@ -213,18 +215,20 @@ export interface Provenance {
   }[];
 }
 
-// Why this MR isn't provably the loop's work: the loop filed (or the owner
-// accepted) and the loop assigned the issue, the Developer flow wrote the MR in a session the loop's assignment
-// started, and the MR is bound to that issue by GitLab, not by text.
+// Why this MR isn't provably the loop's work: the loop filed the issue (a
+// scout issue, or its copy of one the owner accepted), no one else wrote on
+// or edited it, the loop assigned it, the Developer flow wrote the MR in a
+// session that assignment started, and the MR is bound to that issue by GitLab, not by text.
 export const provenanceGaps = (p: Provenance): string[] => {
   const gaps: string[] = [];
   const { issue, mr } = p;
   const filedByLoop =
     issue.author === p.loopUser &&
-    issue.fromLoop &&
-    issue.labels.includes("scout");
+    ((issue.fromLoop && issue.labels.includes("scout")) ||
+      (issue.copy && issue.labels.includes("agent::duo")));
+  gaps.push(...issue.tampering);
   if (
-    !(filedByLoop || issue.accepted) ||
+    !filedByLoop ||
     !issue.assignees.includes(p.developer) ||
     issue.assignedAt === undefined
   ) {

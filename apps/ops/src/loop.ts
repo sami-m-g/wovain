@@ -106,7 +106,11 @@ const handOff = await attempt(
   "intake",
   async () => {
     const me = await gitlab.currentUser();
-    return await intake(gitlab, { loopUser: me.username, now });
+    return await intake(gitlab, {
+      loopUser: me.username,
+      now,
+      projectId: env.CI_PROJECT_ID,
+    });
   },
   "not checked"
 );

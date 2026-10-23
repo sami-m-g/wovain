@@ -182,13 +182,14 @@ describe("provenanceGaps", () => {
   const good: Provenance = {
     developer: DEV,
     issue: {
-      accepted: false,
       assignedAt: "2026-10-22T10:00:00Z",
       assignees: [DEV],
       author: LOOP,
+      copy: false,
       fromLoop: true,
       iid: 42,
       labels: ["scout", "type::bug"],
+      tampering: [],
     },
     loopUser: LOOP,
     mr: { author: DEV, closes: [42], iid: 7, sourceBranch: "fix-error" },
@@ -226,19 +227,39 @@ describe("provenanceGaps", () => {
     ).toHaveLength(1);
   });
 
-  it("accepts an issue a person filed once the owner accepted it", () => {
+  it("accepts the loop's copy of an accepted issue", () => {
     expect(
       provenanceGaps({
         ...good,
         issue: {
           ...good.issue,
-          accepted: true,
-          author: "someone",
+          copy: true,
           fromLoop: false,
           labels: ["agent::duo"],
         },
       })
     ).toEqual([]);
+  });
+
+  it("rejects an accepted issue a person filed, and any tampering", () => {
+    expect(
+      provenanceGaps({
+        ...good,
+        issue: {
+          ...good.issue,
+          author: "someone",
+          copy: true,
+          fromLoop: false,
+          labels: ["agent::duo"],
+        },
+      })
+    ).toHaveLength(1);
+    expect(
+      provenanceGaps({
+        ...good,
+        issue: { ...good.issue, tampering: ["@mallory wrote on #42"] },
+      })
+    ).toEqual(["@mallory wrote on #42"]);
   });
 
   it("rejects an MR a person wrote", () => {
