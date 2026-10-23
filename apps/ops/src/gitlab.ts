@@ -47,7 +47,8 @@ const mergeRequestSchema = z.object({
 export type MergeRequest = z.infer<typeof mergeRequestSchema>;
 
 const noteSchema = z.object({
-  author: z.object({ username: z.string() }),
+  // id is what trust checks compare; a note without one is never trusted.
+  author: z.object({ id: z.int().optional(), username: z.string() }),
   body: z.string(),
   created_at: z.string(),
   // Diff notes name the commit they were written on.
@@ -225,6 +226,9 @@ export const createGitLab = (env: {
     });
 
   return {
+    // Every page, newest first; more than MAX_PAGES fails instead of guessing.
+    allIssueNotes: async (issue: number) =>
+      await allPages(noteSchema, `issues/${issue}/notes?sort=desc`),
     closesIssues: async (mr: number) =>
       await inProject(
         z.array(issueSchema),

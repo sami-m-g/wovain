@@ -1,7 +1,5 @@
 import { createHash } from "node:crypto";
 
-import { z } from "zod";
-
 import type { GitLab, Issue, Note } from "./gitlab.ts";
 import { marker } from "./report.ts";
 import { DEVELOPER, handToDuo } from "./scout.ts";
@@ -91,12 +89,10 @@ export const contentHash = (issue: Pick<Issue, "description" | "title">) =>
 
 // The copy's recorded hash and the original's acceptance time (ms), from the
 // loop's own note.
-const recordedAcceptance = (notes: Note[], loopUser: string) => {
+const recordedAcceptance = (notes: Note[], loopUserId: number) => {
   const [groups] = notes.flatMap((n) => {
     const found =
-      n.author.username === loopUser
-        ? ACCEPTED.exec(n.body)?.groups
-        : undefined;
+      n.author.id === loopUserId ? ACCEPTED.exec(n.body)?.groups : undefined;
     return found === undefined ? [] : [found];
   });
   return groups?.["hash"] === undefined || groups["at"] === undefined
@@ -104,11 +100,35 @@ const recordedAcceptance = (notes: Note[], loopUser: string) => {
     : { acceptedAt: Number(groups["at"]), hash: groups["hash"] };
 };
 
-// The copy's description: the accepted text and where it came from. The
-// copy marker lets the shepherd tell the loop's copies from other issues.
-export const copyMarker = (original: number) => marker(`copy:${original}`);
+// The copy's description is the accepted text plus this marker, which lets
+// the shepherd tell the loop's copies from other issues. It never names the
+// original: Duo would read that issue too. The loop keeps the mapping on the
+// original instead (its "handed" note).
+export const COPY_MARKER = marker("copy");
 export const isCopy = (issue: Pick<Issue, "description">) =>
-  /<!-- wovain-loop:copy:\d+ -->/u.test(issue.description ?? "");
+  (issue.description ?? "").includes(COPY_MARKER);
+const handedMarker = (copy: number) => marker(`handed:${copy}`);
+
+// Who may write on an issue Duo works: the loop's user and the Duo service
+// accounts the triggers run as (infra/Pulumi.prod.yaml), by user id.
+const DUO_ACCOUNTS = [
+  DEVELOPER,
+  "duo-code-review-gitlab-ai-hackathon",
+  "duo-fix-ci-cd-pipeline-gitlab-ai-hackathon",
+];
+export interface Trust {
+  loopUserId: number;
+  ids: Set<number>;
+}
+export const resolveTrust = async (
+  gitlab: Pick<GitLab, "currentUser" | "userId">
+): Promise<Trust> => {
+  const me = await gitlab.currentUser();
+  const duo = await Promise.all(
+    DUO_ACCOUNTS.map(async (name) => await gitlab.userId(name))
+  );
+  return { ids: new Set([me.id, ...duo]), loopUserId: me.id };
+};
 
 const priorityOf = (labels: string[]) => {
   const label = labels.find((l) => /^priority::\d$/u.test(l));
@@ -158,8 +178,7 @@ export const devGate = (sessions: Session[], now: Date) => {
 type IntakeGitLab = Pick<
   GitLab,
   | "createIssue"
-  | "inProject"
-  | "issueNotes"
+  | "allIssueNotes"
   | "issues"
   | "labelEvents"
   | "noteOnIssue"
@@ -192,17 +211,11 @@ const toOwner = async (
   await gitlab.updateIssue(iid, { assignee_ids: [ownerId] });
 };
 
-// Files the copy Duo works, records what was accepted, locks it, links it
-// to the original and assigns Duo. Locking and linking are best effort.
-const handOff = async (
-  gitlab: IntakeGitLab,
-  issue: Issue,
-  accepted: { since: string; projectId: string }
-) => {
-  const { since } = accepted;
-  const description = `${issue.description ?? ""}\n\n---\n\nCopied by the wovain loop from #${issue.iid} as the owner accepted it, so later edits there don't reach Duo.\n\n${copyMarker(issue.iid)}`;
+// Files the copy Duo works, records what was accepted, locks it and assigns
+// Duo. Locking is best effort. The original gets the mapping.
+const handOff = async (gitlab: IntakeGitLab, issue: Issue, since: string) => {
   const copy = await gitlab.createIssue({
-    description,
+    description: `${issue.description ?? ""}\n\n${COPY_MARKER}`,
     labels: [
       ...issue.labels.filter((l) => KEPT.test(l)),
       "agent::duo",
@@ -218,15 +231,9 @@ const handOff = async (
   await gitlab
     .updateIssue(copy.iid, { discussion_locked: true })
     .catch(() => null);
-  await gitlab
-    .inProject(z.unknown(), "POST", `issues/${copy.iid}/links`, {
-      target_issue_iid: issue.iid,
-      target_project_id: accepted.projectId,
-    })
-    .catch(() => null);
   await gitlab.noteOnIssue(
     issue.iid,
-    `Handed to Duo's Developer flow as #${copy.iid}, a copy of this issue as accepted.\n\n${marker(`handed:${copy.iid}`)}`
+    `Handed to Duo's Developer flow as #${copy.iid}, a copy of this issue as accepted.\n\n${handedMarker(copy.iid)}`
   );
   await gitlab.updateIssue(issue.iid, {
     add_labels: "agent::duo,status::doing",
@@ -240,7 +247,7 @@ const handOff = async (
 const considerOne = async (
   gitlab: IntakeGitLab,
   issue: Issue,
-  context: { loopUser: string; projectId: string }
+  context: { loopUser: string }
 ): Promise<string | undefined> => {
   const { loopUser } = context;
   const since = acceptedAt(
@@ -251,7 +258,8 @@ const considerOne = async (
   if (since === undefined) {
     return undefined;
   }
-  const notes = await gitlab.issueNotes(issue.iid);
+  // Every page: a missed edit would hand Duo text no one accepted.
+  const notes = await gitlab.allIssueNotes(issue.iid);
   const edited = lastEdit(notes);
   if (edited !== undefined && Date.parse(edited) > Date.parse(since)) {
     await sendBack(gitlab, issue.iid);
@@ -271,13 +279,13 @@ const considerOne = async (
     }
     return undefined;
   }
-  return await handOff(gitlab, issue, { projectId: context.projectId, since });
+  return await handOff(gitlab, issue, since);
 };
 
 // One hand-off a run at most. Returns what happened, for the report.
 export const intake = async (
   gitlab: IntakeGitLab,
-  context: { loopUser: string; now: Date; projectId: string }
+  context: { loopUser: string; now: Date }
 ): Promise<string> => {
   const blocked = devGate(await gitlab.sessions(), context.now);
   if (blocked !== undefined) {
@@ -296,35 +304,52 @@ export const intake = async (
   return "nothing to hand off";
 };
 
-// The loop's user (the owner) and GitLab's Duo service accounts.
-const trusted = (username: string, loopUser: string) =>
-  username === loopUser ||
-  /^duo-[a-z0-9-]+-gitlab-ai-hackathon$/u.test(username);
+// Notes and edits on an issue from outside the trusted ids, after a time if
+// given. With anyEdit, an edit by anyone counts (the original after its
+// acceptance); otherwise only an edit by someone other than the loop's user.
+const outside = (
+  issue: Pick<Issue, "iid">,
+  notes: Note[],
+  context: { trust: Trust; since?: number; anyEdit: boolean }
+) =>
+  notes.flatMap((n) => {
+    if (
+      context.since !== undefined &&
+      Date.parse(n.created_at) <= context.since
+    ) {
+      return [];
+    }
+    const who = `@${n.author.username}`;
+    if (n.system) {
+      const counts =
+        context.anyEdit || n.author.id !== context.trust.loopUserId;
+      return EDIT.test(n.body) && counts ? [`${who} edited #${issue.iid}`] : [];
+    }
+    return n.author.id !== undefined && context.trust.ids.has(n.author.id)
+      ? []
+      : [`${who} wrote on #${issue.iid}`];
+  });
 
 // Why the issue Duo works may have been steered: someone outside the loop
 // and Duo wrote on it or edited it, or (for the loop's copy) its text no
-// longer matches the hash recorded at hand-off, or the owner's acceptance
-// doesn't come before the loop's assignment.
+// longer matches the hash recorded at hand-off, the owner's acceptance
+// doesn't come before the loop's assignment, or its original was edited or
+// written on after acceptance (or can't be found).
 export const issueTampering = (
   issue: Pick<Issue, "description" | "iid" | "title">,
   notes: Note[],
-  context: { loopUser: string; assignedAt: string | undefined }
+  context: {
+    trust: Trust;
+    assignedAt: string | undefined;
+    original?: { iid: number; notes: Note[] } | undefined;
+  }
 ): string[] => {
-  const { loopUser } = context;
-  const reasons = notes.flatMap((n) => {
-    if (n.system) {
-      return EDIT.test(n.body) && n.author.username !== loopUser
-        ? [`@${n.author.username} edited #${issue.iid}`]
-        : [];
-    }
-    return trusted(n.author.username, loopUser)
-      ? []
-      : [`@${n.author.username} wrote on #${issue.iid}`];
-  });
+  const { trust } = context;
+  const reasons = outside(issue, notes, { anyEdit: false, trust });
   if (!isCopy(issue)) {
     return reasons;
   }
-  const recorded = recordedAcceptance(notes, loopUser);
+  const recorded = recordedAcceptance(notes, trust.loopUserId);
   if (recorded === undefined || recorded.hash !== contentHash(issue)) {
     reasons.push(`#${issue.iid} changed since the loop copied it`);
   }
@@ -335,5 +360,42 @@ export const issueTampering = (
   ) {
     reasons.push(`#${issue.iid} wasn't accepted before the loop assigned it`);
   }
+  if (context.original === undefined) {
+    reasons.push(`the accepted original of #${issue.iid} wasn't found`);
+  } else if (recorded !== undefined) {
+    reasons.push(
+      ...outside({ iid: context.original.iid }, context.original.notes, {
+        anyEdit: true,
+        since: recorded.acceptedAt,
+        trust,
+      })
+    );
+  }
   return reasons;
+};
+
+// The original the loop copied into this copy: the agent::duo issue whose
+// notes carry the loop's "handed" marker for it.
+export const originalOf = async (
+  gitlab: Pick<GitLab, "allIssueNotes" | "issues">,
+  copy: number,
+  trust: Trust
+) => {
+  const candidates = await gitlab.issues({
+    labels: "agent::duo",
+    state: "all",
+  });
+  const withNotes = await Promise.all(
+    candidates.flatMap((c) =>
+      isCopy(c)
+        ? []
+        : [gitlab.allIssueNotes(c.iid).then((notes) => ({ iid: c.iid, notes }))]
+    )
+  );
+  return withNotes.find((c) =>
+    c.notes.some(
+      (n) =>
+        n.author.id === trust.loopUserId && n.body.includes(handedMarker(copy))
+    )
+  );
 };

@@ -10,7 +10,8 @@ import {
   reviewedShaOf,
 } from "./guardrails.ts";
 import type { Provenance } from "./guardrails.ts";
-import { isCopy, issueTampering } from "./intake.ts";
+import { isCopy, issueTampering, originalOf, resolveTrust } from "./intake.ts";
+import type { Trust } from "./intake.ts";
 import { marker } from "./report.ts";
 import { DEVELOPER, assignedAt, fromLoop } from "./scout.ts";
 
@@ -83,12 +84,15 @@ const provenanceOf = async (
   gitlab: GitLab,
   mr: MergeRequest,
   issue: Issue,
-  loopUser: string
+  context: { loopUser: string; trust: Trust }
 ): Promise<Provenance> => {
-  const [closes, issueNotes, sessions] = await Promise.all([
+  const { loopUser, trust } = context;
+  // Every page of the issue's notes, and its accepted original for a copy.
+  const [closes, issueNotes, sessions, original] = await Promise.all([
     gitlab.closesIssues(mr.iid),
-    gitlab.issueNotes(issue.iid),
+    gitlab.allIssueNotes(issue.iid),
     gitlab.sessions(),
+    isCopy(issue) ? originalOf(gitlab, issue.iid, trust) : undefined,
   ]);
   const assigned = assignedAt(issueNotes, loopUser);
   return {
@@ -103,7 +107,8 @@ const provenanceOf = async (
       labels: issue.labels,
       tampering: issueTampering(issue, issueNotes, {
         assignedAt: assigned,
-        loopUser,
+        original,
+        trust,
       }),
     },
     loopUser,
@@ -166,7 +171,7 @@ const awaitReview = async (
 const shepherdOne = async (
   gitlab: GitLab,
   listed: MergeRequest,
-  context: { now: Date; loopUser: string }
+  context: { now: Date; loopUser: string; trust: Trust }
 ) => {
   if (listed.merge_when_pipeline_succeeds) {
     return "auto-merge already set";
@@ -186,9 +191,7 @@ const shepherdOne = async (
     ]);
   const duo = reviewers.find((r) => r.user.username === REVIEWER);
   const thread = { iid: mr.iid, notes };
-  const gaps = provenanceGaps(
-    await provenanceOf(gitlab, mr, issue, context.loopUser)
-  );
+  const gaps = provenanceGaps(await provenanceOf(gitlab, mr, issue, context));
   const paths = diffs.flatMap((d) => [d.old_path, d.new_path]);
   // Duo Code Review only for application code: never a docs-only,
   // lockfile-only or Renovate MR (gates.ts). The loop marks drafts ready
@@ -287,14 +290,15 @@ const shepherdOne = async (
 };
 
 export const shepherd = async (gitlab: GitLab, now: Date) => {
-  const [mrs, me] = await Promise.all([
+  const [mrs, me, trust] = await Promise.all([
     gitlab.mergeRequests({ author_username: DEVELOPER, state: "opened" }),
     gitlab.currentUser(),
+    resolveTrust(gitlab),
   ]);
   const outcomes = await Promise.allSettled(
     mrs.map(
       async (mr) =>
-        await shepherdOne(gitlab, mr, { loopUser: me.username, now })
+        await shepherdOne(gitlab, mr, { loopUser: me.username, now, trust })
     )
   );
   return Object.fromEntries(
