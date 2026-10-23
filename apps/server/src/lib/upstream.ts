@@ -51,6 +51,8 @@ interface Deps {
 
 // One upstream tool call for one merchant.
 export interface UpstreamRequest {
+  // The tools the caller may name; the others aren't offered on a miss.
+  allowed?: readonly string[];
   args: Record<string, unknown>;
   id: ProviderId;
   tool: string;
@@ -69,6 +71,74 @@ const loginNeeded = (result: CallToolResult) =>
   result.isError === true &&
   result._meta !== undefined &&
   "mcp/www_authenticate" in result._meta;
+
+// The upstream's tool names, every page of them.
+const toolNames = async (
+  client: Client,
+  cursor?: string
+): Promise<string[]> => {
+  const page = await client.listTools(cursor === undefined ? {} : { cursor });
+  const names = page.tools.map(({ name }) => name);
+  return page.nextCursor === undefined
+    ? names
+    : [...names, ...(await toolNames(client, page.nextCursor))];
+};
+
+// A failed call to a tool the upstream doesn't have becomes a reply that
+// names the tools the agent can call instead (those in `allowed`, when the
+// caller restricts them), so it can recover. Undefined when the tool exists
+// or the list can't be read.
+const missingTool = async (
+  client: Client,
+  { allowed, id, tool }: UpstreamRequest
+): Promise<CallToolResult | undefined> => {
+  let names: string[];
+  try {
+    names = await toolNames(client);
+  } catch {
+    return undefined;
+  }
+  if (names.includes(tool)) {
+    return undefined;
+  }
+  const offered = new Set(allowed ?? names);
+  const available = names.filter((name) => offered.has(name));
+  const { title } = providers[id];
+  return {
+    content: text(
+      `${title} has no tool named ${tool}. Call one of these instead: ${available.join(", ")}.`
+    ),
+    isError: true,
+    structuredContent: { available, missingTool: tool },
+  };
+};
+
+// One tool call on a connected client. A failure that isn't a refused grant
+// is checked against the upstream's tool list (missingTool).
+const callTool = async (
+  client: Client,
+  request: UpstreamRequest
+): Promise<CallToolResult> => {
+  const settled = await client
+    .callTool({ arguments: request.args, name: request.tool })
+    .then(
+      (result) => ({ result }),
+      (error: unknown) => ({ error })
+    );
+  // A success or a refused grant needs no tool list.
+  const settledAsIs =
+    "error" in settled
+      ? settled.error instanceof UnauthorizedError
+      : settled.result.isError !== true || loginNeeded(settled.result);
+  const missing = settledAsIs ? undefined : await missingTool(client, request);
+  if (missing !== undefined) {
+    return missing;
+  }
+  if ("error" in settled) {
+    throw settled.error;
+  }
+  return settled.result;
+};
 
 // wovain as an MCP client of the merchant's Fourthwall and fal: every call
 // uses that merchant's own OAuth grant, refreshed by the SDK.
@@ -153,16 +223,16 @@ export const createUpstream = ({
 
   const callOnce = async (
     oauth: FirestoreOAuthProvider,
-    { args, id, tool }: UpstreamRequest
+    request: UpstreamRequest
   ): Promise<CallToolResult> => {
     const client = new Client({ name: "wovain", version: "0.1.0" });
     const transport = new StreamableHTTPClientTransport(
-      new URL(providers[id].serverUrl),
+      new URL(providers[request.id].serverUrl),
       { authProvider: oauth, fetch }
     );
     await client.connect(transport);
     try {
-      return await client.callTool({ arguments: args, name: tool });
+      return await callTool(client, request);
     } finally {
       await client.close();
     }

@@ -239,6 +239,39 @@ describe("proxy tools", () => {
     expect(result.structuredContent).toEqual({ ok: true });
   });
 
+  test("name the tools the upstream has when it lacks the one called", async () => {
+    const { fake, storage, upstream } = setup();
+    await connectWith(upstream, fake, "test", "fourthwall");
+    const client = await connectClient({}, testStore(storage), { upstream });
+    // Allowlisted, but this fake Fourthwall (like a real one that dropped a
+    // tool) doesn't have it.
+    const result = await client.callTool({
+      arguments: { tool: "omni_knowledge" },
+      name: "fourthwall",
+    });
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      // Only the tools the proxy allows, not the fake's Meta or fal ones.
+      available: ["ecommerce_get-current-shop"],
+      missingTool: "omni_knowledge",
+    });
+    expect(JSON.stringify(result.content)).toContain(
+      "Fourthwall has no tool named omni_knowledge"
+    );
+  });
+
+  test("refuse get-instructions, which Fourthwall's /app endpoint doesn't have", async () => {
+    const { fake, storage, upstream } = setup();
+    await connectWith(upstream, fake, "test", "fourthwall");
+    const client = await connectClient({}, testStore(storage), { upstream });
+    const result = await client.callTool({
+      arguments: { tool: "get-instructions" },
+      name: "fourthwall",
+    });
+    expect(result.isError).toBe(true);
+    expect(fake.calls).toEqual([]);
+  });
+
   test("say connections are off without a key", async () => {
     const client = await connectClient({}, testStore());
     const result = await client.callTool({

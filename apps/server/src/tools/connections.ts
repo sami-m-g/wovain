@@ -16,8 +16,11 @@ import type { Store } from "../store.ts";
 
 // Read-only or reversible upstream tools the playbooks use. Publishing,
 // pricing, orders, paid generation and every Meta write are left out on
-// purpose: wovain runs those itself, behind the merchant's approval.
-const allowlists = {
+// purpose: wovain runs those itself, behind the merchant's approval. Each
+// name must be on the upstream's own tool list (for Fourthwall,
+// test/fixtures/fourthwall-tools.json): Fourthwall's /app endpoint has no get-instructions, load-skills or
+// read-skills, and puts its instructions in the MCP handshake instead.
+export const allowlists = {
   fal: [
     "check_account_status",
     "check_job",
@@ -37,11 +40,8 @@ const allowlists = {
     "ecommerce_get-customization-pricing",
     "ecommerce_request-media-upload-link",
     "ecommerce_save-media-library-image",
-    "get-instructions",
-    "load-skills",
     "omni_knowledge",
     "omni_search",
-    "read-skills",
   ],
   meta: [
     "ads_account_get_activity_logs",
@@ -79,7 +79,7 @@ const tools: Record<
     title: "fal (merchant's account)",
   },
   fourthwall: {
-    description: `Call a tool on the merchant's own Fourthwall shop, which they connected to wovain. Pass the Fourthwall tool name and its arguments as Fourthwall documents them; call get-instructions, then ecommerce_get-current-shop, then load-skills before anything else. Publishing and pricing tools aren't allowed here. ${UNTRUSTED} ${needsLink("Fourthwall")}`,
+    description: `Call a tool on the merchant's own Fourthwall shop, which they connected to wovain. Pass the Fourthwall tool name and its arguments as Fourthwall documents them; call ecommerce_get-current-shop before anything else. Publishing and pricing tools aren't allowed here. ${UNTRUSTED} ${needsLink("Fourthwall")}`,
     name: "fourthwall",
     title: "Fourthwall (merchant's shop)",
   },
@@ -116,6 +116,7 @@ export const registerConnectionTools = (
       },
       async ({ arguments: args, tool }) =>
         await upstreamReply(upstream, {
+          allowed: allowlists[id],
           args,
           id,
           tool,
