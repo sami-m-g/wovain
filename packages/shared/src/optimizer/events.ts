@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 import { z } from "zod";
 
@@ -197,8 +197,21 @@ export const metaChangeKey = (change: {
 export const pollEventKey = (kind: string, id: string, version: string) =>
   `poll-${sha256(JSON.stringify([kind, id, version])).slice(0, 40)}`;
 
-export const customerKeyOf = (shopId: string, email: string) =>
-  sha256(`${shopId}:${email.trim().toLowerCase()}`);
+// The server-side secret customer keys are made with. Required and non-empty:
+// a plain hash of an email can be reversed by hashing guessed emails.
+const secretOf = (secret: string) => {
+  if (secret.length === 0) {
+    throw new Error("A customer key secret is required");
+  }
+  return secret;
+};
+
+// A per-shop customer key: HMAC-SHA256 of the shop and the normalized email,
+// keyed with a server-side secret.
+export const customerKeyOf = (secret: string, shopId: string, email: string) =>
+  createHmac("sha256", secretOf(secret))
+    .update(`${shopId}:${email.trim().toLowerCase()}`)
+    .digest("hex");
 
 const utmOf = (params: Record<string, string> | undefined) => {
   const read = (snake: string, camel: string) =>
@@ -212,13 +225,16 @@ const utmOf = (params: Record<string, string> | undefined) => {
 };
 
 const orderFields = (
+  secret: string,
   shopId: string,
   order: z.infer<typeof fwOrderSchema>,
   update?: string
 ): EventFields => ({
   currency: order.amounts?.total.currency,
   customerKey:
-    order.email === undefined ? undefined : customerKeyOf(shopId, order.email),
+    order.email === undefined
+      ? undefined
+      : customerKeyOf(secret, shopId, order.email),
   items: order.offers.map(({ id, variant }) => ({
     color: variant.attributes?.color?.name,
     offerId: id,
@@ -295,13 +311,20 @@ const orderUpdateSchema = z.looseObject({
   update: z.looseObject({ type: z.string() }).optional(),
 });
 
-// One Fourthwall event's stored fields, PII dropped.
-export const fourthwallFields = (event: FourthwallEvent): EventFields => {
+// One Fourthwall event's stored fields, PII dropped. `customerSecret` keys
+// the buyer's customer key (customerKeyOf); an empty one is refused.
+export const fourthwallFields = (
+  event: FourthwallEvent,
+  customerSecret: string
+): EventFields => {
+  const secret = secretOf(customerSecret);
   const { data, shopId, type } = event;
   if (type === "ORDER_PLACED" || type === "ORDER_UPDATED") {
     const order = nested(fwOrderSchema, "order", data);
     const update = orderUpdateSchema.safeParse(data).data?.update?.type;
-    return order.success ? orderFields(shopId, order.data, update) : unparsed;
+    return order.success
+      ? orderFields(secret, shopId, order.data, update)
+      : unparsed;
   }
   if (type === "PRODUCT_CREATED" || type === "PRODUCT_UPDATED") {
     const product = nested(fwProductSchema, "product", data);

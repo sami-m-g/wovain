@@ -88,7 +88,8 @@ describe("buildMenu", () => {
     expect(up?.amount).toBe(18);
     expect(up?.expectedImpact.base).toBeCloseTo((3 / 7) * PER_SALE - 3);
     expect(up?.expectedImpact.downside).toBeCloseTo((3 / 10.5) * PER_SALE - 3);
-    expect(ops).toMatchObject({ risk: "safe", rule: "POD-O1" });
+    // Operations pauses are proposed at once but wait for approval.
+    expect(ops).toMatchObject({ risk: "risky", rule: "POD-O1" });
     expect(ops?.windowHours).toBeUndefined();
   });
 
@@ -304,8 +305,24 @@ describe("guardrails", () => {
       )
     ).toContain("unsettled");
     expect(settledFor({}, NOW, on.optimizer)).toBe(false);
-    // Operations pauses rest on stock, not sales: no settle wait.
-    expect(violations(must(opsPause), guard({ dataAt: {} }))).toEqual([]);
+    // Operations pauses rest on stock, not sales: no settle wait, but approval.
+    expect(violations(must(opsPause), guard({ dataAt: {} }))).toEqual([
+      "approval_required",
+    ]);
+    expect(canAutoApply(must(opsPause), guard())).toBe(false);
+  });
+
+  test("a kill without Meta data is unsettled unless it doesn't rest on Meta", () => {
+    const shopOnly = { fourthwall: NOW - 2 * HOUR };
+    expect(violations(must(pauseAd), guard({ dataAt: shopOnly }))).toContain(
+      "unsettled"
+    );
+    expect(
+      violations(
+        must(pauseAd),
+        guard({ dataAt: shopOnly, metaIndependent: true })
+      )
+    ).toEqual([]);
   });
 
   test("no kill under a block, and never the last ad", () => {
@@ -316,6 +333,51 @@ describe("guardrails", () => {
     expect(
       violations(must(pauseAd), guard({ activeAdsInDesign: 1 }))
     ).toContain("last_ad");
+  });
+
+  test("operations pauses share the daily cap and the cooldown", () => {
+    const pauses = Array.from({ length: 3 }, (_, i) => ({
+      at: NOW - HOUR,
+      kind: "ops_pause" as const,
+      objectId: `x${i}`,
+    }));
+    expect(violations(must(opsPause), guard({ changes: pauses }))).toContain(
+      "pauses_per_day"
+    );
+    expect(violations(must(pauseAd), guard({ changes: pauses }))).toContain(
+      "pauses_per_day"
+    );
+    const recent = [
+      { at: NOW - 10 * HOUR, kind: "ops_pause" as const, objectId: "p1" },
+    ];
+    expect(violations(must(opsPause), guard({ changes: recent }))).toContain(
+      "cooldown"
+    );
+  });
+
+  test("budget moves fail closed on a missing amount or budget", () => {
+    const { amount: _amount, ...noAmount } = must(budgetUp);
+    expect(violations(noAmount, guard({ currentBudget: 15 }))).toEqual([
+      "budget_cap",
+      "budget_step",
+    ]);
+    expect(violations(must(budgetUp), guard())).toContain("budget_step");
+    expect(violations(must(budgetUp), guard({ currentBudget: 0 }))).toContain(
+      "budget_step"
+    );
+    expect(violations(must(budgetUp), guard({ currentBudget: -5 }))).toContain(
+      "budget_step"
+    );
+    // The cap holds even when the current budget is unknown.
+    expect(violations(must(budgetUp), guard({ maxDailyBudget: 17 }))).toContain(
+      "budget_cap"
+    );
+    expect(
+      violations(
+        { ...must(budgetUp), amount: 600 },
+        guard({ currentBudget: 550, maxDailyBudget: 1000 })
+      )
+    ).toContain("budget_cap");
   });
 
   test("pauses per day and the cooldown", () => {

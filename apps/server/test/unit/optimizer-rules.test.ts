@@ -493,13 +493,19 @@ describe("operations (POD-O1 to POD-O5)", () => {
     ).toEqual([]);
   });
 
-  test("O4 counts production errors and cancellations", () => {
+  test("O4 counts production failures, never buyer cancellations", () => {
     const rows = [
       fulfillment("o1", "CANCELLED", 1),
       fulfillment("o2", "IN_PRODUCTION", 1, { productionError: true }),
       fulfillment("o3", "SHIPPED", 1),
+      fulfillment("o4", "CANCELLED", 1, { productionError: true }),
     ];
     expect(productionErrors(orders({ rows }))[0]?.facts).toEqual({ count: 2 });
+    const cancelledByBuyers = [
+      fulfillment("o5", "CANCELLED", 1),
+      fulfillment("o6", "CANCELLED", 2),
+    ];
+    expect(productionErrors(orders({ rows: cancelledByBuyers }))).toEqual([]);
     expect(
       productionErrors(
         orders({ rows: [rows[2] ?? fulfillment("x", "SHIPPED", 0)] })
@@ -536,7 +542,11 @@ describe("operations (POD-O1 to POD-O5)", () => {
       patterns(
         opsFindings(
           stock({ stock: [row("out_of_stock")] }),
-          orders({ rows: [fulfillment("o1", "CANCELLED", 1)] })
+          orders({
+            rows: [
+              fulfillment("o1", "IN_PRODUCTION", 1, { productionError: true }),
+            ],
+          })
         )
       )
     ).toEqual([

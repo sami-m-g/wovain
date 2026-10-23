@@ -140,7 +140,8 @@ const pauseProductAds = (finding: Finding): Draft => ({
     note: "Sales lost are ones that couldn't ship",
     unit: "usd_per_day",
   },
-  risk: "safe",
+  // Proposed at once (no settle wait), applied only once the merchant approves.
+  risk: "risky",
   rollback: "resume_product_ads",
   status: "ACTIVE",
   type: "pause_product_ads",
