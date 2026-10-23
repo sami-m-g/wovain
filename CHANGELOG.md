@@ -1,3 +1,10 @@
+## [0.25.1](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.25.0...v0.25.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **optimizer:** make the optimizer's guards fail closed ([b68f4e6](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/b68f4e672ebc69673005ac6a8a3377672457a964))
+
 # [0.25.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.24.0...v0.25.0) (2026-10-22)
 
 
