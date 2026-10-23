@@ -53,6 +53,8 @@ Storage needs no keys: locally `pnpm dev` starts the Firestore and Storage emula
 
 Add `<App Hosting URL>/mcp` (`https://app--wovain.us-central1.hosted.app/mcp`) as a remote MCP server (streamable HTTP) in your agent, or `https://<tunnel>/mcp` for a local server. It carries no credentials: the first time you use wovain, the agent sends you to sign in with Google and approve access. Then try "show my wovain settings".
 
+ChatGPT's connector icon must be under 10 KB; use `apps/server/public/icon-200.png` (also served at `<site>/icon-200.png`).
+
 The server tells the agent the flow in its MCP `instructions`, and serves a playbook per step (`design`, `ads`, `campaign`) through the `get_playbook` tool and as MCP prompts.
 
 ## Nebius and Nemotron
