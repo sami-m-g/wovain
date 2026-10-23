@@ -182,6 +182,7 @@ describe("provenanceGaps", () => {
   const good: Provenance = {
     developer: DEV,
     issue: {
+      accepted: false,
       assignedAt: "2026-10-22T10:00:00Z",
       assignees: [DEV],
       author: LOOP,
@@ -223,6 +224,21 @@ describe("provenanceGaps", () => {
         issue: { ...good.issue, author: "mallory", fromLoop: false },
       })
     ).toHaveLength(1);
+  });
+
+  it("accepts an issue a person filed once the owner accepted it", () => {
+    expect(
+      provenanceGaps({
+        ...good,
+        issue: {
+          ...good.issue,
+          accepted: true,
+          author: "someone",
+          fromLoop: false,
+          labels: ["agent::duo"],
+        },
+      })
+    ).toEqual([]);
   });
 
   it("rejects an MR a person wrote", () => {

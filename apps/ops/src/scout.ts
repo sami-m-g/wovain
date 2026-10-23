@@ -76,7 +76,7 @@ type Filer = Pick<
   "createIssue" | "noteOnIssue" | "updateIssue" | "userId"
 >;
 
-const handToDuo = async (gitlab: Filer, issue: number) => {
+export const handToDuo = async (gitlab: Filer, issue: number) => {
   const id = await gitlab.userId(DEVELOPER);
   await gitlab.noteOnIssue(
     issue,

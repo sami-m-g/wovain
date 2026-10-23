@@ -10,6 +10,7 @@ import {
   reviewedShaOf,
 } from "./guardrails.ts";
 import type { Provenance } from "./guardrails.ts";
+import { acceptedBy } from "./intake.ts";
 import { marker } from "./report.ts";
 import { DEVELOPER, assignedAt, fromLoop } from "./scout.ts";
 
@@ -57,7 +58,7 @@ const handBack = async (
   return "needs a human";
 };
 
-// The scout issue GitLab binds this MR to: one it closes (closes_issues), or
+// The scout (or accepted agent::duo) issue GitLab binds this MR to: one it closes (closes_issues), or
 // one whose number its source branch carries. Text in the MR is never used.
 const boundIssue = async (
   gitlab: GitLab,
@@ -72,7 +73,9 @@ const boundIssue = async (
     )),
   ];
   return candidates.find(
-    (issue): issue is Issue => issue !== null && issue.labels.includes("scout")
+    (issue): issue is Issue =>
+      issue !== null &&
+      (issue.labels.includes("scout") || issue.labels.includes("agent::duo"))
   );
 };
 
@@ -82,14 +85,16 @@ const provenanceOf = async (
   issue: Issue,
   loopUser: string
 ): Promise<Provenance> => {
-  const [closes, issueNotes, sessions] = await Promise.all([
+  const [closes, issueNotes, sessions, events] = await Promise.all([
     gitlab.closesIssues(mr.iid),
     gitlab.issueNotes(issue.iid),
     gitlab.sessions(),
+    gitlab.labelEvents(issue.iid),
   ]);
   return {
     developer: DEVELOPER,
     issue: {
+      accepted: acceptedBy(issue, events, loopUser),
       assignedAt: assignedAt(issueNotes, loopUser),
       assignees: issue.assignees.map((a) => a.username),
       author: issue.author.username,
@@ -260,7 +265,7 @@ const shepherdOne = async (
     await gitlab.setAutoMerge(mr.iid, mr.sha);
     await gitlab.noteOnMergeRequest(
       mr.iid,
-      `Auto-merge set by the wovain loop for ${mr.sha}: the loop filed and assigned #${issue.iid}, Duo's Developer flow wrote this in the session that assignment started, Duo Code Review reviewed this commit and left no open threads, no one outside the loop wrote on it, and the change stays inside the guardrails (apps/ops/src/guardrails.ts). GitLab merges it once the pipeline passes.\n\n${marker("auto-merge")}`
+      `Auto-merge set by the wovain loop for ${mr.sha}: the loop assigned #${issue.iid}, Duo's Developer flow wrote this in the session that assignment started, Duo Code Review reviewed this commit and left no open threads, no one outside the loop wrote on it, and the change stays inside the guardrails (apps/ops/src/guardrails.ts). GitLab merges it once the pipeline passes.\n\n${marker("auto-merge")}`
     );
     return "auto-merge set";
   }

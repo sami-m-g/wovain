@@ -22,6 +22,7 @@ export type Issue = z.infer<typeof issueSchema>;
 
 const mergeRequestSchema = z.object({
   author: z.object({ username: z.string() }),
+  created_at: z.string(),
   draft: z.boolean(),
   has_conflicts: z.boolean(),
   // Only the single-MR endpoint returns it.
@@ -66,6 +67,22 @@ const discussionSchema = z.object({
     })
   ),
 });
+
+// Who added or removed which label, oldest first (resource_label_events).
+const labelEventSchema = z
+  .object({
+    action: z.string(),
+    created_at: z.string(),
+    // null when the label has since been deleted.
+    label: z.object({ name: z.string() }).nullable(),
+    user: z.object({ username: z.string() }),
+  })
+  .transform((e) => ({
+    action: e.action,
+    createdAt: e.created_at,
+    label: e.label?.name,
+    user: e.user.username,
+  }));
 
 const jobSchema = z.object({ duration: z.number().nullable() });
 const pipelineSchema = z.object({
@@ -258,6 +275,8 @@ export const createGitLab = (env: {
         per_page: 100,
         ...query,
       }),
+    labelEvents: async (issue: number) =>
+      await allPages(labelEventSchema, `issues/${issue}/resource_label_events`),
     mergeRequest: async (mr: number) =>
       await inProject(mergeRequestSchema, "GET", `merge_requests/${mr}`),
     mergeRequestNotes: async (mr: number) =>
