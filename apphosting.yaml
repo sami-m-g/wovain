@@ -42,6 +42,17 @@ env:
   # a running run at its next paid job.
   - variable: WOVAIN_AUTOPILOT
     value: "on"
+  # The optimizer (docs/changes/25-optimizer): its operator switch, the
+  # Cloud Tasks queue and the account tasks call /tasks/* as (infra/tasks.ts),
+  # and the debounce window for webhook events.
+  - variable: WOVAIN_OPTIMIZER
+    value: "on"
+  - variable: WOVAIN_OPTIMIZER_QUEUE
+    value: projects/wovain/locations/us-central1/queues/optimizer
+  - variable: WOVAIN_OPTIMIZER_DEBOUNCE_SECONDS
+    value: "120"
+  - variable: WOVAIN_TASKS_SERVICE_ACCOUNT
+    value: tasks-invoker@wovain.iam.gserviceaccount.com
   - variable: WORKOS_AUTHKIT_DOMAIN
     value: https://prosperous-skill-12-staging.authkit.app
   - variable: WORKOS_API_KEY

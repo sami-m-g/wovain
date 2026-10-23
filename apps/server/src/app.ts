@@ -6,13 +6,15 @@ import { createConfirmRoutes } from "./routes/confirm.ts";
 import { createConnectRoutes } from "./routes/connect.ts";
 import { createMcpRoute } from "./routes/mcp.ts";
 import { createPolicyPages } from "./routes/pages.ts";
+import { createTaskRoutes } from "./routes/tasks.ts";
+import { createWebhookRoutes } from "./routes/webhooks.ts";
 import type { Runtime } from "./runtime.ts";
 import { createStore } from "./store.ts";
 
 // Every route wovain serves: /mcp for agents, the metadata naming AuthKit as
 // its sign-in, and the home page. AuthKit hosts sign-in and consent.
 export const createApp = (runtime: Runtime) => {
-  const { auth, confirm, connect, env, storage } = runtime;
+  const { auth, confirm, connect, env, optimizer, storage } = runtime;
   const site = env.WOVAIN_SITE_URL;
   const mcp = createMcpRoute(runtime);
 
@@ -24,6 +26,13 @@ export const createApp = (runtime: Runtime) => {
   app.all("/mcp", async (c) => await mcp(c.req.raw));
 
   app.route("/", createPolicyPages());
+
+  // Signed events from merchants' shops and ad accounts, and the Cloud
+  // Tasks they queue (docs/changes/25-optimizer).
+  if (optimizer !== undefined) {
+    app.route("/", createWebhookRoutes(optimizer));
+    app.route("/", createTaskRoutes({ ...optimizer, site }));
+  }
 
   // Merchants connect their Fourthwall, fal and Meta accounts here.
   if (connect !== undefined) {
