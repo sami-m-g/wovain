@@ -23,6 +23,9 @@ importers:
       '@pulumi/pulumi':
         specifier: 3.267.0
         version: 3.267.0(typescript@4.9.5)
+      '@pulumi/random':
+        specifier: 4.21.2
+        version: 4.21.2(typescript@4.9.5)
       '@pulumi/restful':
         specifier: file:sdks/restful
         version: file:sdks/restful
@@ -292,6 +295,9 @@ packages:
         optional: true
       typescript:
         optional: true
+
+  '@pulumi/random@4.21.2':
+    resolution: {integrity: sha512-yQVSPeQE55oqL4KHoWwKqTTTjx3jYGaJ3RCXnlUOcqmGW5zT3hmKWqAS+5nBYCtrVPA8J06UqjC1ZOrQP+Q5yg==}
 
   '@pulumi/restful@file:sdks/restful':
     resolution: {directory: sdks/restful, type: directory}
@@ -1313,6 +1319,14 @@ snapshots:
       typescript: 4.9.5
     transitivePeerDependencies:
       - supports-color
+
+  '@pulumi/random@4.21.2(typescript@4.9.5)':
+    dependencies:
+      '@pulumi/pulumi': 3.267.0(typescript@4.9.5)
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+      - typescript
 
   '@pulumi/restful@file:sdks/restful':
     dependencies:

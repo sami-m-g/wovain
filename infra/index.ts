@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
+import * as random from "@pulumi/random";
 
 import { mirrorPrivateKey } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
@@ -132,14 +133,27 @@ new gcp.firebaserules.Release("storage-release", {
   rulesetName: pulumi.interpolate`projects/${project}/rulesets/${storageRules.name}`,
 });
 
-// The names match apphosting.yaml. Each value is stack config encrypted with
-// the KMS key in Pulumi.prod.yaml: `pulumi config set --secret <name>`; a
-// secret without a value gets no version (App Hosting won't build until it has
-// one).
+// Secrets wovain makes itself, so nobody pastes them: the optimizer's HMAC key
+// for buyers' per-shop customer keys (OPTIMIZER_CUSTOMER_KEY), and the token
+// Meta echoes when it verifies the webhook URL (META_WEBHOOK_VERIFY_TOKEN).
+// 32 random bytes each, base64 (44 characters). Pulumi state keeps them
+// encrypted; replacing a resource rotates its secret.
+const generated: Record<string, pulumi.Output<string>> = Object.fromEntries(
+  ["meta-webhook-verify-token", "optimizer-customer-key"].map((name) => [
+    name,
+    pulumi.secret(new random.RandomBytes(name, { length: 32 }).base64),
+  ])
+);
+
+// The names match apphosting.yaml. Each value is generated above or is stack
+// config encrypted with the KMS key in Pulumi.prod.yaml:
+// `pulumi config set --secret <name>`; a secret without a value gets no
+// version (App Hosting won't build until it has one).
 const secretNames = [
   "fal-key",
   "meta-app-id",
   "meta-app-secret",
+  "meta-webhook-verify-token",
   "nebius-api-key",
   "optimizer-customer-key",
   "otel-exporter-otlp-endpoint",
@@ -159,7 +173,7 @@ const secrets = secretNames.map(
 );
 for (const [index, secret] of secrets.entries()) {
   const name = secretNames[index] ?? "";
-  const value = config.getSecret(name);
+  const value = generated[name] ?? config.getSecret(name);
   if (value !== undefined) {
     new gcp.secretmanager.SecretVersion(name, {
       secret: secret.id,
