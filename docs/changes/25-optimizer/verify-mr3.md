@@ -39,3 +39,24 @@ Nothing to try in the review app yet: no tool or route uses this code until MR 4
 - `ab_test` and `audience_change` are action types but the menu doesn't build them yet: they need N3, Qloo and the sample math, which are MR 10.
 - POD-O3's production days and POD-O5's carrier window are inputs, since they come from Fourthwall's help (`omni_knowledge`) in MR 4, not a table in code.
 - The stored event's 30-day TTL field is a Firestore timestamp, so the store adds it in MR 4 rather than this zod shape.
+
+## Follow-up: guards fail closed
+
+A security review of MR 3 found four medium issues. Each guard now fails closed (branch `fix/25-optimizer-guards`):
+
+1. **Budget cap.** Every `budget_up` and `budget_down` is checked against `min(maxDailyBudget, $500)`. A missing amount is a `budget_cap` violation, and a missing, zero or negative current budget is a `budget_step` violation, so neither skips the check any more.
+2. **Settle check.** A kill needs settled Meta data as well as Fourthwall's. Missing Meta data used to count as settled; now it counts only when the caller passes `metaIndependent: true`.
+3. **Customer key.** `customerKeyOf(secret, shopId, email)` is HMAC-SHA256 with a server-side secret instead of a plain SHA-256 of the email, which could be reversed by hashing guessed emails. `fourthwallFields(event, secret)` takes the secret as a required argument and refuses an empty one. The secret is `optimizer-customer-key` in `infra/index.ts` (`secretNames`) and `OPTIMIZER_CUSTOMER_KEY` (at least 32 characters) in `env.ts` and `.env.example`. It isn't in `apphosting.yaml` yet, because App Hosting won't build with a secret that has no value. No value was set.
+4. **Operations pauses.** POD-O4 counts only fulfillments Fourthwall skipped or cancelled in production (`productionError`), never an order the buyer cancelled. `pause_product_ads` is now risky, so it waits for the merchant's approval. It also counts toward `maxAutoPausesPerDay`, together with kill pauses, and respects the cooldown.
+
+**Departure from the spec.** Spec section 3 (the `pause_product_ads` row) and section 4 (POD-O1) call operations pauses "safe and immediate". They're still proposed at once with no settle wait, but they now need approval. The overlay (`references/operations.md`, and the ground rules in `SKILL.md`) says so.
+
+Tests added:
+
+- `optimizer-events.test.ts`: the HMAC key differs from the plain hash and changes with the secret and the shop; an empty secret throws.
+- `optimizer-rules.test.ts`: buyer cancellations never count as production errors.
+- `optimizer-menu.test.ts`:
+  - a budget move with a missing amount, or a missing, zero or negative budget, is refused;
+  - the cap holds without a current budget;
+  - a kill without Meta data is unsettled unless `metaIndependent` is set;
+  - operations pauses need approval and share the pause cap and the cooldown.

@@ -28,7 +28,12 @@ const ALWAYS_APPROVAL = new Set<ActionType>([
   "audience_change",
   "ab_test",
 ]);
-const PAUSES = new Set<ActionType>(["pause_ad", "pause_design"]);
+const PAUSES = new Set<ActionType>([
+  "pause_ad",
+  "pause_design",
+  "pause_product_ads",
+]);
+const BUDGETS = new Set<ActionType>(["budget_up", "budget_down"]);
 const RESUMES = new Set<ActionType>(["resume_ad", "resume_product_ads"]);
 
 export type Violation =
@@ -55,6 +60,9 @@ export interface GuardContext {
   currentBudget?: number;
   // The newest data the action rests on, per source.
   dataAt: { fourthwall?: number; meta?: number };
+  // Set only when the caller knows the action rests on no Meta numbers;
+  // otherwise a kill needs settled Meta data too.
+  metaIndependent?: boolean;
   maxDailyBudget: number;
   now: number;
   // The ad or product was paused by the optimizer (its action record says so).
@@ -75,34 +83,43 @@ export const budgetCap = (settings: Settings, products: number) =>
   );
 
 // Data the action rests on is settled: Fourthwall after shopSettleMinutes,
-// Meta after conversionLagHours. Missing data isn't settled.
+// Meta after conversionLagHours. Missing data isn't settled, and Meta data is
+// required unless the caller says the action doesn't depend on it.
 export const settledFor = (
   dataAt: GuardContext["dataAt"],
   now: number,
-  optimizer: Settings["optimizer"]
+  optimizer: Settings["optimizer"],
+  metaIndependent = false
 ) =>
   dataAt.fourthwall !== undefined &&
   isSettled(dataAt.fourthwall, now, optimizer.shopSettleMinutes * MINUTE) &&
-  (dataAt.meta === undefined ||
-    isSettled(dataAt.meta, now, optimizer.conversionLagHours * HOUR));
+  (metaIndependent ||
+    (dataAt.meta !== undefined &&
+      isSettled(dataAt.meta, now, optimizer.conversionLagHours * HOUR)));
 
 const today = (changes: Change[], now: number) =>
   changes.filter((change) => now - change.at < DAY);
 
+// Every budget move is checked against the cap, and needs a known, positive
+// current budget to measure its step: anything missing is a violation.
 const budgetViolations = (
   action: Candidate,
   context: GuardContext
 ): Violation[] => {
-  if (action.amount === undefined || context.currentBudget === undefined) {
+  if (!BUDGETS.has(action.type)) {
     return [];
   }
+  const { amount } = action;
+  const current = context.currentBudget;
+  const cap = Math.min(context.maxDailyBudget, MAX_DAILY_BUDGET);
   const found: Violation[] = [];
-  if (action.amount > Math.min(context.maxDailyBudget, MAX_DAILY_BUDGET)) {
+  if (amount === undefined || !(amount > 0 && amount <= cap)) {
     found.push("budget_cap");
   }
-  const step =
-    (Math.abs(action.amount - context.currentBudget) / context.currentBudget) *
-    100;
+  if (amount === undefined || current === undefined || !(current > 0)) {
+    return [...found, "budget_step"];
+  }
+  const step = (Math.abs(amount - current) / current) * 100;
   const moved = today(context.changes, context.now)
     .filter((c) => c.kind === "budget" && c.objectId === action.target.id)
     .reduce((total, c) => total + Math.abs(c.pct ?? 0), 0);
@@ -121,20 +138,18 @@ const killViolations = (
 ): Violation[] => {
   const { now, settings } = context;
   const found: Violation[] = [];
-  if (!settledFor(context.dataAt, now, settings.optimizer)) {
+  if (
+    !settledFor(
+      context.dataAt,
+      now,
+      settings.optimizer,
+      context.metaIndependent === true
+    )
+  ) {
     found.push("unsettled");
   }
   if (isKillBlocked(action.target, context.ancestors, context.blocks)) {
     found.push("kill_blocked");
-  }
-  const pauses = today(context.changes, now).filter(
-    (c) => c.kind === "kill_pause"
-  ).length;
-  if (
-    PAUSES.has(action.type) &&
-    pauses >= settings.optimizer.maxAutoPausesPerDay
-  ) {
-    found.push("pauses_per_day");
   }
   return found;
 };
@@ -148,9 +163,18 @@ const changeViolations = (
   const recent = context.changes.some(
     (c) => c.objectId === action.target.id && context.now - c.at < cooldownMs
   );
-  // Operations pauses act on Fourthwall facts and don't wait out a cooldown.
-  if (recent && !action.rule.startsWith("POD-O")) {
+  if (recent) {
     found.push("cooldown");
+  }
+  // Kill and operations pauses share one daily cap.
+  const pauses = today(context.changes, context.now).filter(
+    (c) => c.kind === "kill_pause" || c.kind === "ops_pause"
+  ).length;
+  if (
+    PAUSES.has(action.type) &&
+    pauses >= context.settings.optimizer.maxAutoPausesPerDay
+  ) {
+    found.push("pauses_per_day");
   }
   if (action.type === "pause_ad" && (context.activeAdsInDesign ?? 0) <= 1) {
     found.push("last_ad");

@@ -17,6 +17,7 @@ const envSchema = z
     // Optional: Nebius Token Factory, for judge_design (Genkit, Nemotron);
     // without it the tool says the check isn't set up.
     NEBIUS_API_KEY: z.string().optional(),
+    OPTIMIZER_CUSTOMER_KEY: z.string().min(32).optional(),
     // Optional: Qloo's Taste API (hackathon host), for research_trends' taste
     // graph and suggest_audience; without it research uses the news alone and
     // suggest_audience says it isn't set up.

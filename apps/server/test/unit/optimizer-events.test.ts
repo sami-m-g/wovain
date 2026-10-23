@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import {
   customerKeyOf,
   fourthwallEventKey,
@@ -9,6 +11,7 @@ import {
   pollEventKey,
   storedEventSchema,
 } from "@wovain/shared/optimizer/events";
+import type { FourthwallEvent } from "@wovain/shared/optimizer/events";
 import { describe, expect, test } from "vitest";
 
 const order = {
@@ -35,6 +38,9 @@ const order = {
   username: "ada",
 };
 
+// A test secret; production reads OPTIMIZER_CUSTOMER_KEY.
+const SECRET = "test-customer-key-0123456789abcdef";
+
 const event = (type: string, data: unknown) =>
   fourthwallEventSchema.parse({
     data,
@@ -44,12 +50,14 @@ const event = (type: string, data: unknown) =>
     type,
   });
 
+const fieldsOf = (input: FourthwallEvent) => fourthwallFields(input, SECRET);
+
 describe("fourthwallFields", () => {
   test("keeps what the rules read and drops names, emails and addresses", () => {
-    const fields = fourthwallFields(event("ORDER_PLACED", order));
+    const fields = fieldsOf(event("ORDER_PLACED", order));
     expect(fields).toEqual({
       currency: "USD",
-      customerKey: customerKeyOf("sh_1", "ada@example.com"),
+      customerKey: customerKeyOf(SECRET, "sh_1", "ada@example.com"),
       items: [
         {
           color: "Black",
@@ -75,7 +83,7 @@ describe("fourthwallFields", () => {
   });
 
   test("reads an order update wrapped in { order, update }", () => {
-    const fields = fourthwallFields(
+    const fields = fieldsOf(
       event("ORDER_UPDATED", {
         order: { ...order, status: "SHIPPED" },
         update: { type: "STATUS" },
@@ -89,7 +97,7 @@ describe("fourthwallFields", () => {
   });
 
   test("maps variant stock", () => {
-    const fields = fourthwallFields(
+    const fields = fieldsOf(
       event("PRODUCT_UPDATED", {
         product: {
           id: "p1",
@@ -113,12 +121,10 @@ describe("fourthwallFields", () => {
 
   test("covers promotions, carts and disconnects", () => {
     expect(
-      fourthwallFields(
-        event("PROMOTION_STATUS_CHANGED", { id: "pr1", status: "LIVE" })
-      )
+      fieldsOf(event("PROMOTION_STATUS_CHANGED", { id: "pr1", status: "LIVE" }))
     ).toEqual({ kind: "promotion", promotionId: "pr1", status: "LIVE" });
     expect(
-      fourthwallFields(
+      fieldsOf(
         event("CART_ABANDONED_24H", {
           cart: { items: [{ offer: { id: "off_1" }, quantity: 1 }] },
         })
@@ -128,16 +134,16 @@ describe("fourthwallFields", () => {
       items: [{ offerId: "off_1", quantity: 1 }],
       kind: "cart",
     });
-    expect(fourthwallFields(event("PLATFORM_APP_DISCONNECTED", {}))).toEqual({
+    expect(fieldsOf(event("PLATFORM_APP_DISCONNECTED", {}))).toEqual({
       kind: "disconnected",
     });
   });
 
   test("marks unknown types and payloads it can't read", () => {
-    expect(fourthwallFields(event("GIFT_PURCHASE", {}))).toEqual({
+    expect(fieldsOf(event("GIFT_PURCHASE", {}))).toEqual({
       kind: "unparsed",
     });
-    expect(fourthwallFields(event("ORDER_PLACED", { nope: 1 }))).toEqual({
+    expect(fieldsOf(event("ORDER_PLACED", { nope: 1 }))).toEqual({
       kind: "unparsed",
     });
   });
@@ -228,4 +234,26 @@ test("a stored event parses with its defaults", () => {
   });
   expect(stored.testMode).toBe(false);
   expect(stored.processedAt).toBeUndefined();
+});
+
+describe("customer keys", () => {
+  test("are an HMAC with the server's secret, never a plain hash of the email", () => {
+    const key = customerKeyOf(SECRET, "sh_1", "ada@example.com");
+    const plain = createHash("sha256")
+      .update("sh_1:ada@example.com")
+      .digest("hex");
+    expect(key).not.toBe(plain);
+    expect(key).toBe(customerKeyOf(SECRET, "sh_1", " Ada@Example.com "));
+    expect(key).not.toBe(
+      customerKeyOf(`${SECRET}x`, "sh_1", "ada@example.com")
+    );
+    expect(key).not.toBe(customerKeyOf(SECRET, "sh_2", "ada@example.com"));
+  });
+
+  test("refuse an empty secret", () => {
+    expect(() => customerKeyOf("", "sh_1", "ada@example.com")).toThrow();
+    expect(() =>
+      fourthwallFields(event("PLATFORM_APP_DISCONNECTED", {}), "")
+    ).toThrow();
+  });
 });

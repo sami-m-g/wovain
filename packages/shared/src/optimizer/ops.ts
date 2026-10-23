@@ -187,15 +187,14 @@ export const fulfillmentDelay = ({
     : [];
 };
 
-// POD-O4: skipped or cancelled fulfillments and orders cancelled after
-// confirmation. A `count` of 2 or more on one product pauses its ads.
+// POD-O4: fulfillments Fourthwall skipped or cancelled in production. An
+// order the buyer cancelled isn't a production failure and never counts. A
+// `count` of 2 or more on one product proposes pausing its ads.
 export const productionErrors = ({
   productId,
   rows,
 }: ProductOrders): Finding[] => {
-  const count = rows.filter(
-    (row) => row.productionError || row.status === "CANCELLED"
-  ).length;
+  const count = rows.filter((row) => row.productionError).length;
   return count > 0
     ? [
         finding("production_error", "POD-O4", productId, {

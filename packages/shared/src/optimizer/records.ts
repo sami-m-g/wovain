@@ -224,7 +224,7 @@ export const runSchema = z.object({
 // One change the optimizer made to a Meta object today (guardrails.ts).
 export const changeSchema = z.object({
   at: z.int(),
-  // A kill pause counts toward maxAutoPausesPerDay; an operations pause doesn't.
+  // Kill and operations pauses both count toward maxAutoPausesPerDay.
   kind: z.enum(["kill_pause", "ops_pause", "resume", "budget"]),
   objectId: z.string(),
   pct: z.number().optional(),

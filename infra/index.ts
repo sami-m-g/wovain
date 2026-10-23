@@ -140,6 +140,7 @@ const secretNames = [
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
+  "optimizer-customer-key",
   "otel-exporter-otlp-endpoint",
   "otel-exporter-otlp-headers",
   "qloo-api-key",
