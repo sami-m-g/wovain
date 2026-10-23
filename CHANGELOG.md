@@ -1,3 +1,15 @@
+# [0.27.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.26.0...v0.27.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* **connections:** stop sending the agent to fourthwall tools that don't exist ([038428c](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/038428c8e8ad25c43329fcfcac8aa9b0c70b47ea)), closes [#32](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/issues/32)
+
+
+### Features
+
+* **optimizer:** observe fourthwall and meta and triage with code ([2eaac35](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/commit/2eaac35cf68318980894d29fed8ec0082aee351e))
+
 # [0.26.0](https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase/compare/v0.25.1...v0.26.0) (2026-10-23)
 
 
