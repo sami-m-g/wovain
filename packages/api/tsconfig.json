@@ -12,6 +12,8 @@
   "references": [
     { "path": "../db" },
     { "path": "../auth" },
-    { "path": "../core" }
+    { "path": "../core" },
+    { "path": "../email" },
+    { "path": "../widgets" }
   ]
 }

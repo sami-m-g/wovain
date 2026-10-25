@@ -73,10 +73,13 @@ type JudgeRule = (typeof JUDGE_RULES)[number];
 // Square art at 150 DPI across a 19.2 in print.
 export const REQUIRED_PX = 2880;
 
+// The model writes fields in schema order: it names the rule and reasons in
+// the note before it commits to pass, or its verdicts contradict its notes.
+// oxlint-disable-next-line sort-keys
 const checkSchema = z.object({
+  rule: z.enum(JUDGE_RULES),
   note: z.string().max(200),
   pass: z.boolean(),
-  rule: z.enum(JUDGE_RULES),
 });
 type JudgeCheck = z.infer<typeof checkSchema>;
 
@@ -139,7 +142,7 @@ Rules:
 - originality: nothing names or imitates a brand, artist, character or title.
 - print_size: the facts you are given are final; repeat them.
 
-Give one check per rule (${JUDGE_RULES.join(", ")}) with a short note, up to 5 concrete fixes (most important first), a 0 to 100 score, and a one-line coach note for the merchant.`;
+Give one check per rule (${JUDGE_RULES.join(", ")}): a short note, then pass: true when the design meets the rule and false only when it breaks it. Then a one-line coach note for the merchant, up to 5 concrete fixes for failed rules (most important first, plain sentences), and a 0 to 100 score for how ready the design is to sell.`;
 
 export const judgeDesign = async (
   ask: Nemotron,

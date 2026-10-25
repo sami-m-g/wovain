@@ -8,7 +8,7 @@ import { createError } from "evlog";
 
 import { ENV } from "@/env.server";
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
-import { auth, core, db } from "@/services";
+import { auth, core, db, mailer } from "@/services";
 
 // wovain's MCP endpoint for ChatGPT. Better Auth's MCP plugin is the OAuth
 // server ChatGPT signs in with; requireMcpAuth verifies each access token
@@ -28,6 +28,7 @@ const handler = createMcpHandler(({ authInfo }) => {
       core,
       db,
       log: getRequestLogger(),
+      mailer,
       mcpUserId: userId,
       session: null,
     },

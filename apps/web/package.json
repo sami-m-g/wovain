@@ -28,6 +28,7 @@
     "@wovain/auth": "workspace:*",
     "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
+    "@wovain/email": "workspace:*",
     "@wovain/ui": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",

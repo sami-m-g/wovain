@@ -22,6 +22,10 @@
         "src/scout-collect.ts",
         "src/sci-report.ts"
       ]
+    },
+    "packages/widgets": {
+      "entry": ["src/{trends,design,product,campaign}.tsx", "src/styles.css"],
+      "ignoreDependencies": ["tailwindcss"]
     }
   },
   "ignore": [".agents/**", "infra/**"]

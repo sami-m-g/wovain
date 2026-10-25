@@ -1,4 +1,5 @@
 import { pickIdea } from "@wovain/core/autopilot";
+import { user } from "@wovain/db/schema/auth";
 import { campaign, design, idea, product, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
 import { and, desc, eq, inArray } from "drizzle-orm";
@@ -29,6 +30,40 @@ const update = async (
   patch: { error?: string; status?: RunStatus; step?: string }
 ) => {
   await actor.db.update(run).set(patch).where(eq(run.id, id));
+};
+
+// Emails the merchant when the run stops for them: a design to approve, the
+// finished run, or a failure. A failed email never fails the run.
+const notify = async (actor: Actor, runId: string) => {
+  const [row] = await actor.db
+    .select({
+      email: user.email,
+      locale: user.locale,
+      seed: run.seed,
+      status: run.status,
+    })
+    .from(run)
+    .innerJoin(user, eq(user.id, run.userId))
+    .where(eq(run.id, runId));
+  if (row === undefined || row.status === "running") {
+    return;
+  }
+  try {
+    await actor.mailer({
+      locale: row.locale,
+      message: {
+        kind: "run",
+        seed: row.seed,
+        status: row.status,
+        url: `/dashboard?run=${runId}`,
+      },
+      to: row.email,
+    });
+  } catch (error) {
+    actor.log?.set({
+      email: { failed: error instanceof Error ? error.message : String(error) },
+    });
+  }
 };
 
 const execute = async (actor: Actor, runId: string, input: RunInput) => {
@@ -136,8 +171,10 @@ export const startRun = async (actor: Actor, input: RunInput) => {
       error: error instanceof Error ? error.message : String(error),
       status: "failed",
     });
+    await notify(actor, created.id);
     throw error;
   }
+  await notify(actor, created.id);
   return await getRun(actor, created.id);
 };
 

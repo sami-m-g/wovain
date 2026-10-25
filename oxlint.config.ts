@@ -37,5 +37,10 @@ export default defineConfig({
         "no-new": "off",
       },
     },
+    // ChatGPT widgets are plain React in a sandboxed iframe, not Next.js.
+    {
+      files: ["packages/widgets/**"],
+      rules: { "nextjs/no-img-element": "off" },
+    },
   ],
 });

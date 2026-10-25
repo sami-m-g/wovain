@@ -1,15 +1,67 @@
+import { createHash } from "node:crypto";
+
+import {
+  registerAppResource,
+  registerAppTool,
+  RESOURCE_MIME_TYPE,
+} from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { ORPCError } from "@orpc/server";
 import type { RouterClient } from "@orpc/server";
 import { providerIds } from "@wovain/core/upstream";
+import { widgetHtml } from "@wovain/widgets/html";
+import { widgetNames } from "@wovain/widgets/names";
+import type { WidgetName } from "@wovain/widgets/names";
 import { z } from "zod";
 
 import type { AppRouter } from "./routers/index";
 
 // wovain's MCP server for ChatGPT: each tool is one seller-flow step, run
 // through the same oRPC procedures the website uses, as the signed-in
-// merchant. Results are plain JSON (no widgets yet).
+// merchant. Results are JSON; the main steps also open a widget (MCP Apps).
+
+// The URI is the host's cache key, so it carries a hash of the widget's HTML.
+const widgetUri = (name: WidgetName) =>
+  `ui://wovain/${name}-${createHash("sha256").update(widgetHtml[name]).digest("hex").slice(0, 8)}.html`;
+
+const widget = (name: WidgetName) => ({ ui: { resourceUri: widgetUri(name) } });
+
+// Widgets run sandboxed and only load images from these hosts: fal's art
+// and Fourthwall's mockups.
+const ui = {
+  csp: {
+    resourceDomains: [
+      "https://fal.media",
+      "https://*.fal.media",
+      "https://cdn.fourthwall.com",
+      "https://imgproxy.fourthwall.dev",
+    ],
+  },
+  prefersBorder: true,
+};
+
+const registerWidgets = (server: McpServer) => {
+  for (const name of widgetNames) {
+    const uri = widgetUri(name);
+    registerAppResource(
+      server,
+      `wovain ${name}`,
+      uri,
+      { _meta: { ui } },
+      () => ({
+        contents: [
+          {
+            _meta: { ui },
+            mimeType: RESOURCE_MIME_TYPE,
+            text: widgetHtml[name],
+            uri,
+          },
+        ],
+      })
+    );
+  }
+};
 
 const INSTRUCTIONS = `wovain turns a trend into a print-on-demand product on the merchant's Fourthwall shop and a paused Meta campaign.
 
@@ -75,6 +127,7 @@ export const createMcpServer = (
   );
   const reads = { openWorldHint: false, readOnlyHint: true };
   const writes = { destructiveHint: false, openWorldHint: true };
+  registerWidgets(server);
 
   server.registerTool(
     "list_connections",
@@ -96,9 +149,11 @@ export const createMcpServer = (
       })
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "research_trends",
     {
+      _meta: widget("trends"),
       annotations: writes,
       description:
         "Research what sells now around a seed (a fandom, hobby or niche): Qloo's taste graph names the themes its fans love, Tavily searches this week's news and the marketplaces live, and code ranks the ideas. Returns saved ideas with their evidence.",
@@ -109,9 +164,11 @@ export const createMcpServer = (
       await run(async () => await client.ideas.research({ seed }))
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "generate_design",
     {
+      _meta: widget("design"),
       annotations: writes,
       description:
         "Turn an idea into a t-shirt design: Nemotron writes the brief and listing, fal draws transparent print art, and Nemotron judges it. Show the artwork and the judge's notes, then ask the merchant to approve or reject.",
@@ -155,9 +212,11 @@ export const createMcpServer = (
       )
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "create_product",
     {
+      _meta: widget("product"),
       annotations: writes,
       description:
         "Create an approved design's product on the merchant's Fourthwall shop, hidden and priced by wovain. Without catalogProductId, wovain picks the most popular tee that renders designs.",
@@ -174,9 +233,11 @@ export const createMcpServer = (
       )
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "publish_product",
     {
+      _meta: widget("product"),
       annotations: writes,
       description:
         "Make a product public on the merchant's Fourthwall shop and return its page. Ask the merchant first.",
@@ -187,9 +248,11 @@ export const createMcpServer = (
       await run(async () => await client.products.publish({ id: productId }))
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "create_campaign",
     {
+      _meta: widget("campaign"),
       annotations: writes,
       description:
         "Stage Meta ads for a published product: Nemotron writes 2 or 3 varied ads, and wovain creates a traffic campaign with them, PAUSED. Nothing spends until the merchant starts it in Ads Manager.",
@@ -236,9 +299,11 @@ export const createMcpServer = (
       )
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "get_run",
     {
+      _meta: widget("design"),
       annotations: reads,
       description:
         "A run with its status, the step it reached and everything it made.",

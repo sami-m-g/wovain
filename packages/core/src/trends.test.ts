@@ -98,6 +98,7 @@ describe("createTrends", () => {
     const research = await trends.research("pickleball");
 
     expect(research.qloo).toBe("failed");
+    expect(research.ideas[0]?.signals.ipSafety).toBe(1);
     expect(search).toHaveBeenCalledTimes(2);
     expect(research.ideas.map((idea) => idea.theme)).toEqual(["pickleball"]);
   });

@@ -1,6 +1,7 @@
 import type { Core } from "@wovain/core/core";
 import type { Logger } from "@wovain/core/log";
 import type { Database } from "@wovain/db";
+import type { Mailer } from "@wovain/email/mailer";
 import { createError } from "evlog";
 
 // Who a flow step runs for, and with what.
@@ -8,6 +9,7 @@ export interface Actor {
   core: Core;
   db: Database;
   log?: Logger | undefined;
+  mailer: Mailer;
   userId: string;
 }
 

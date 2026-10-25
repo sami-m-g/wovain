@@ -184,17 +184,25 @@ export const createTrends = (client: TavilySearch, qloo: Qloo) => ({
         async (theme) => await searchTheme(client, seed, theme.name, log)
       )
     );
+    // Names Qloo matched never go on a product, but the merchant's own seed
+    // doesn't count against itself ("Pickleball" is also a game title).
+    const avoidNames = [...new Set(taste.names)];
+    const protectedNames = avoidNames.filter(
+      (name) => name.toLowerCase() !== seed.toLowerCase()
+    );
     const ideas = themes
       .flatMap((theme, index) => {
         const found = searched[index];
         const idea =
-          found === undefined ? undefined : ideaOf(theme, found, taste.names);
+          found === undefined
+            ? undefined
+            : ideaOf(theme, found, protectedNames);
         return idea === undefined ? [] : [idea];
       })
       .toSorted((a, b) => b.score - a.score)
       .map((idea, index) => ({ ...idea, rank: index + 1 }));
     return {
-      avoidNames: taste.names.slice(0, 3),
+      avoidNames: avoidNames.slice(0, 3),
       ideas,
       qloo: qlooStatus(taste),
     };
