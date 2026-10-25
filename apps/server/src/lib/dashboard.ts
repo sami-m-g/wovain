@@ -17,7 +17,6 @@ import {
   costPerSaleOf,
   metaOrdersFrom,
   metaAds,
-  optimizerFrom,
   productsFrom,
   reconcile,
   runsFrom,
@@ -163,25 +162,20 @@ export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
   const { range, store } = gather;
   const { at, connected, fourthwall, meta } = sourcesFor(gather);
 
-  const [shop, metaRead, fal, designs, runs, settings, actions] =
-    await Promise.all([
-      fourthwall(),
-      meta(),
-      connected("fal"),
-      store.getDesigns(),
-      store.getAutopilotRuns(),
-      store.getSettings(),
-      // The optimizer may not exist yet: its records are optional.
-      store.getOptimizerActions(6).catch(() => []),
-    ]);
+  const [shop, metaRead, fal, designs, runs] = await Promise.all([
+    fourthwall(),
+    meta(),
+    connected("fal"),
+    store.getDesigns(),
+    store.getAutopilotRuns(),
+  ]);
 
   const adRows = metaAds(metaRead.rows);
   const ads = adsFrom(adRows);
   const sales = salesFrom(shop, new Map(adRows.map((ad) => [ad.id, ad.name])));
   const reconciliation = reconcile(
     sales === undefined ? undefined : metaOrdersFrom(shop.utm),
-    ads,
-    settings.optimizer.disagreementPct
+    ads
   );
   const breakevenPerSale = breakevenOf(designs);
   const costPerSale = costPerSaleOf(ads, reconciliation);
@@ -199,7 +193,6 @@ export const gatherDashboard = async (gather: Gather): Promise<Dashboard> => {
     ...(ads === undefined ? {} : { ads }),
     ...(breakevenPerSale === undefined ? {} : { breakevenPerSale }),
     ...(costPerSale === undefined ? {} : { costPerSale }),
-    ...(actions.length === 0 ? {} : { optimizer: optimizerFrom(actions) }),
     ...(reconciliation === undefined ? {} : { reconciliation }),
     ...(sales === undefined ? {} : { sales }),
   });

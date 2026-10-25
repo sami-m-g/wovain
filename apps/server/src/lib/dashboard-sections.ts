@@ -8,9 +8,6 @@ import type {
   Sales,
 } from "@wovain/shared/dashboard";
 import type { Design } from "@wovain/shared/design";
-import { cpa, ratio, roas } from "@wovain/shared/optimizer/math";
-import { checkPurchases } from "@wovain/shared/optimizer/reconcile";
-import type { ActionRecord } from "@wovain/shared/optimizer/records";
 import { parseAdName } from "@wovain/shared/rules";
 
 import { num, str } from "./report-rows.ts";
@@ -25,11 +22,14 @@ const cut = (text: string, chars = LABEL_CHARS) => text.slice(0, chars);
 const sum = <T>(items: T[], pick: (item: T) => number) =>
   items.reduce((total, item) => total + pick(item), 0);
 
-// ROAS and CPA from the optimizer's math, which gives no number for a zero
-// denominator.
+// No number for a zero denominator.
+const ratio = (numerator: number, denominator: number) =>
+  denominator > 0 ? numerator / denominator : undefined;
+
+// CPA and ROAS per row.
 const withRatios = (row: Omit<AdRow, "cpa" | "roas">): AdRow => {
-  const costPer = cpa(row.spend, row.purchases);
-  const returned = roas(row.purchaseValue, row.spend);
+  const costPer = ratio(row.spend, row.purchases);
+  const returned = ratio(row.purchaseValue, row.spend);
   return {
     ...row,
     ...(costPer === undefined ? {} : { cpa: costPer }),
@@ -225,24 +225,21 @@ export const metaOrdersFrom = (utm: Row[]) =>
     (row) => num(row, "contributions", "orders")
   );
 
-// Those orders next to the purchases Meta reports (R1).
+// Those orders next to the purchases Meta reports. They disagree past
+// `disagreementPct` and at least 2 sales apart.
 export const reconcile = (
   shopOrders: number | undefined,
   ads: Ads | undefined,
-  disagreementPct: number
+  disagreementPct = 30
 ): Reconciliation | undefined => {
   if (shopOrders === undefined || ads === undefined) {
     return undefined;
   }
   const metaPurchases = ads.totals.purchases;
-  const { status } = checkPurchases({
-    disagreementPct,
-    entity: { id: "shop", kind: "shop" },
-    metaPurchases,
-    netSales: shopOrders,
-    settled: true,
-  });
-  return { metaPurchases, shopOrders, status };
+  const gap = Math.abs(metaPurchases - shopOrders);
+  const share = ratio(gap, Math.max(metaPurchases, shopOrders)) ?? 0;
+  const failed = gap >= 2 && share * 100 > disagreementPct;
+  return { metaPurchases, shopOrders, status: failed ? "fail" : "pass" };
 };
 
 // Ad spend per sale, shop first: on Fourthwall's orders from Meta links when
@@ -306,12 +303,3 @@ export const runsFrom = (runs: AutopilotRun[]): Dashboard["runs"] =>
       spentUsd: run.spentUsd,
       status: run.status,
     }));
-
-export const optimizerFrom = (actions: ActionRecord[]) =>
-  actions.map((action) => ({
-    id: action.id,
-    status: action.status,
-    target: cut(`${action.target.kind} ${action.target.id}`),
-    type: action.type,
-    ...(action.reason === undefined ? {} : { reason: cut(action.reason, 200) }),
-  }));

@@ -8,22 +8,15 @@ import { z } from "zod";
 const envSchema = z
   .object({
     FAL_KEY: z.string().optional(),
-    // Optional: a Fourthwall Platform App's HMAC key, for webhooks signed
-    // with X-Fourthwall-Hmac-Apps-SHA256 (docs/changes/25-optimizer).
-    FOURTHWALL_APP_HMAC_KEY: z.string().optional(),
     // Optional: wovain's own Meta app (Business type, Ads MCP use case), the
     // client merchants connect Meta through. Meta has no DCR or CIMD for its
     // Ads MCP, so the app ID is the OAuth client ID; the secret signs Graph
     // calls (appsecret_proof). Without the ID, Meta can't be connected.
     META_APP_ID: z.string().regex(/^\d+$/u).optional(),
     META_APP_SECRET: z.string().optional(),
-    // Optional: what Meta must echo to subscribe /webhooks/meta. Meta
-    // webhooks are signed with META_APP_SECRET; without it they're refused.
-    META_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
     // Optional: Nebius Token Factory, for judge_design (Genkit, Nemotron);
     // without it the tool says the check isn't set up.
     NEBIUS_API_KEY: z.string().optional(),
-    OPTIMIZER_CUSTOMER_KEY: z.string().min(32).optional(),
     // Optional: Qloo's Taste API (hackathon host), for research_trends' taste
     // graph and suggest_audience; without it research uses the news alone and
     // suggest_audience says it isn't set up.
@@ -59,19 +52,6 @@ const envSchema = z
     // (infra/index.ts). Without it, connections work only on the emulators,
     // with a key that lives in memory.
     WOVAIN_KMS_KEY: z.string().optional(),
-    // The optimizer's operator switch: "off" skips its model steps; event
-    // intake and the code rules still run.
-    WOVAIN_OPTIMIZER: z.enum(["on", "off"]).default("on"),
-    // Every event inside one window leads to one optimizer run.
-    WOVAIN_OPTIMIZER_DEBOUNCE_SECONDS: z.coerce
-      .number()
-      .int()
-      .min(10)
-      .max(3600)
-      .default(120),
-    // The Cloud Tasks queue (projects/…/queues/optimizer, infra/tasks.ts).
-    // Unset: tasks run in this process (`pnpm dev`, tests).
-    WOVAIN_OPTIMIZER_QUEUE: z.string().optional(),
     // The public origin ChatGPT reaches: the App Hosting URL (apphosting.yaml),
     // a tunnel, or localhost. MCP tokens are bound to `${site}/mcp`, so the
     // trailing slash goes.
@@ -79,9 +59,6 @@ const envSchema = z
       .url()
       .default("http://localhost:3000")
       .transform((url) => url.replace(/\/$/u, "")),
-    // The account Cloud Tasks call /tasks/* as; its OIDC token is checked.
-    // Unset: every /tasks/* call is refused.
-    WOVAIN_TASKS_SERVICE_ACCOUNT: z.email().optional(),
     // The built widgets beside this package: src/ in development and tests,
     // dist/ once built (`pnpm build`, which App Hosting runs before start).
     WOVAIN_WIDGETS_DIR: z

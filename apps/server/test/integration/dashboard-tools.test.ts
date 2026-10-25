@@ -220,35 +220,6 @@ test("a failing source empties only its own section and isn't cached", async () 
   expect(fakes.fourthwall.calls.length).toBeGreaterThan(calls);
 });
 
-test("optimizer actions show once the optimizer has written them", async () => {
-  const { show, storage } = await setup();
-  await storage.db.doc("users/test/optimization/state/actions/a1").set({
-    createdAt: 1,
-    expectedImpact: { base: 12, downside: -3, unit: "usd" },
-    id: "a1",
-    idempotencyKey: "k1",
-    reason: "Under breakeven with the budget capped.",
-    risk: "safe",
-    rule: "POD-B1",
-    target: { id: "555", kind: "campaign" },
-    type: "budget_up",
-  });
-  await storage.db.doc("users/test/optimization/state/actions/bad").set({
-    createdAt: 2,
-    type: "not an action",
-  });
-  const dashboard = parsed(await show());
-  expect(dashboard.optimizer).toEqual([
-    {
-      id: "a1",
-      reason: "Under breakeven with the budget capped.",
-      status: "proposed",
-      target: "campaign 555",
-      type: "budget_up",
-    },
-  ]);
-});
-
 test("the range is one of 7d, 28d or 90d", async () => {
   const { show } = await setup();
   const result = await show("1y");

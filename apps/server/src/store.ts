@@ -15,8 +15,6 @@ import { savedCampaignSchema } from "@wovain/shared/campaign";
 import type { SavedCampaign } from "@wovain/shared/campaign";
 import { designSchema, stagedArtworkSchema } from "@wovain/shared/design";
 import type { Design, StagedArtwork } from "@wovain/shared/design";
-import { actionRecordSchema } from "@wovain/shared/optimizer/records";
-import type { ActionRecord } from "@wovain/shared/optimizer/records";
 import { applySettingsPatch, settingsSchema } from "@wovain/shared/settings";
 import type { Settings, SettingsPatch } from "@wovain/shared/settings";
 import { briefRecordSchema } from "@wovain/shared/trends";
@@ -286,22 +284,6 @@ export const createStore = (db: Firestore, media: Media, userId: string) => {
     getDesign: async (id: string): Promise<Design | undefined> =>
       await designs.get(id),
     getDesigns: async (): Promise<Design[]> => await designs.all(),
-    // The optimizer's newest actions, when it has written any
-    // (users/{uid}/optimization/state/actions). Read only: a document that
-    // doesn't parse is skipped, so the dashboard never depends on them.
-    getOptimizerActions: async (limit: number): Promise<ActionRecord[]> => {
-      const snapshot = await user
-        .collection("optimization")
-        .doc("state")
-        .collection("actions")
-        .orderBy("createdAt", "desc")
-        .limit(limit)
-        .get();
-      return snapshot.docs.flatMap((doc) => {
-        const parsed = actionRecordSchema.safeParse(doc.data());
-        return parsed.success ? [parsed.data] : [];
-      });
-    },
     getSettings: async (): Promise<Settings> => await settings(),
     ownsBrief: async (id: string) => (await briefs.get(id)) !== undefined,
     readArtworkBytes: async (artwork: StagedArtwork) => {

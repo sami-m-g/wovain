@@ -4,15 +4,9 @@ import { readFileSync } from "node:fs";
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import * as random from "@pulumi/random";
 
 import { mirrorPrivateKey } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
-import {
-  optimizerDueIndex,
-  optimizerSchedules,
-  optimizerTasks,
-} from "./tasks.ts";
 
 // wovain's Google Cloud project: App Hosting runs apps/server, Firestore and a
 // private bucket hold each merchant's records and artwork, Secret Manager holds
@@ -137,29 +131,15 @@ new gcp.firebaserules.Release("storage-release", {
   rulesetName: pulumi.interpolate`projects/${project}/rulesets/${storageRules.name}`,
 });
 
-// Secrets wovain makes itself, so nobody pastes them: the optimizer's HMAC key
-// for buyers' per-shop customer keys (OPTIMIZER_CUSTOMER_KEY), and the token
-// Meta echoes when it verifies the webhook URL (META_WEBHOOK_VERIFY_TOKEN).
-// 32 random bytes each, base64 (44 characters). Pulumi state keeps them
-// encrypted; replacing a resource rotates its secret.
-const generated: Record<string, pulumi.Output<string>> = Object.fromEntries(
-  ["meta-webhook-verify-token", "optimizer-customer-key"].map((name) => [
-    name,
-    pulumi.secret(new random.RandomBytes(name, { length: 32 }).base64),
-  ])
-);
-
-// The names match apphosting.yaml. Each value is generated above or is stack
-// config encrypted with the KMS key in Pulumi.prod.yaml:
-// `pulumi config set --secret <name>`; a secret without a value gets no
-// version (App Hosting won't build until it has one).
+// The names match apphosting.yaml. Each value is stack config encrypted with
+// the KMS key in Pulumi.prod.yaml: `pulumi config set --secret <name>`; a
+// secret without a value gets no version (App Hosting won't build until it has
+// one).
 const secretNames = [
   "fal-key",
   "meta-app-id",
   "meta-app-secret",
-  "meta-webhook-verify-token",
   "nebius-api-key",
-  "optimizer-customer-key",
   "otel-exporter-otlp-endpoint",
   "otel-exporter-otlp-headers",
   "qloo-api-key",
@@ -177,7 +157,7 @@ const secrets = secretNames.map(
 );
 for (const [index, secret] of secrets.entries()) {
   const name = secretNames[index] ?? "";
-  const value = generated[name] ?? config.getSecret(name);
+  const value = config.getSecret(name);
   if (value !== undefined) {
     new gcp.secretmanager.SecretVersion(name, {
       secret: secret.id,
@@ -327,11 +307,8 @@ new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: infra.name,
 });
-// roles/editor can create Cloud Tasks queues but not read or set their IAM
-// policy, which the queue's enqueuer grant needs (infra/tasks.ts).
 const infraRoles = [
   "roles/cloudkms.admin",
-  "roles/cloudtasks.admin",
   "roles/editor",
   "roles/firebase.admin",
   "roles/iam.serviceAccountAdmin",
@@ -445,8 +422,9 @@ for (const collection of [
   });
 }
 
-// The optimizer's stored webhook events (users/{uid}/optimization/state/
-// events) are deleted 30 days after they arrive, by the same field.
+// The paused optimizer's stored webhook events (users/{uid}/optimization/state/
+// events) are deleted 30 days after they arrive, by the same field. Keep until
+// old optimizer data expires; remove after 2026-11-25.
 new gcp.firestore.Field("ttl-optimizer-events", {
   collection: "events",
   database: database.name,
@@ -454,8 +432,6 @@ new gcp.firestore.Field("ttl-optimizer-events", {
   indexConfig: {},
   ttlConfig: {},
 });
-
-const tasks = optimizerTasks({ after: infraRoles, region, runner });
 
 // Email alerts at 50%, 90% and 100% of $5 a month.
 new gcp.billing.Budget(
@@ -489,12 +465,7 @@ new gcp.billing.AccountIamMember("infra-budgets", {
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
-// WOVAIN_OPTIMIZER_QUEUE and WOVAIN_TASKS_SERVICE_ACCOUNT in apphosting.yaml.
-export const optimizerQueue = tasks.queue.id;
-export const tasksServiceAccount = tasks.invoker.email;
 export const siteUrl = pulumi.interpolate`https://${backend.backendId}--${project}.${region}.hosted.app`;
-optimizerSchedules({ invoker: tasks.invoker, region, siteUrl });
-optimizerDueIndex(database);
 
 // GitLab Observability is enabled on the project's group; its id names the
 // instance (docs.gitlab.com, operations/observability/api_access).

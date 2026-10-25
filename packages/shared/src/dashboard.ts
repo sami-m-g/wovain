@@ -100,7 +100,7 @@ const adsSchema = z.object({
 export type Ads = z.infer<typeof adsSchema>;
 
 // Fourthwall orders that came from Meta (by UTM) next to the purchases Meta
-// reports: compared, never added (optimizer R1).
+// reports: compared, never added.
 const reconciliationSchema = z.object({
   metaPurchases: count,
   shopOrders: count,
@@ -142,14 +142,6 @@ const runSchema = z.object({
   status: runStatusSchema,
 });
 
-const optimizerActionSchema = z.object({
-  id: z.string().max(64),
-  reason: z.string().max(200).optional(),
-  status: z.string().max(20),
-  target: label,
-  type: z.string().max(40),
-});
-
 export const dashboardSchema = z.object({
   ads: adsSchema.optional(),
   // The lowest breakeven cost per sale among live products: the line every
@@ -160,8 +152,6 @@ export const dashboardSchema = z.object({
   // any (shop first), else on the purchases Meta reports.
   costPerSale: amount.optional(),
   generatedAt: z.iso.datetime(),
-  // Present only once the optimizer has written actions.
-  optimizer: z.array(optimizerActionSchema).max(6).optional(),
   products: z.array(productSchema).max(12),
   range: dashboardRangeSchema,
   reconciliation: reconciliationSchema.optional(),

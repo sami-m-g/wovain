@@ -194,25 +194,3 @@ export const RunList = ({ runs }: { runs: Dashboard["runs"] }) => (
     </ul>
   </Section>
 );
-
-export const OptimizerList = ({
-  actions,
-}: {
-  actions: NonNullable<Dashboard["optimizer"]>;
-}) => (
-  <Section title="Optimizer">
-    <ul className="m-0 mt-2 grid list-none gap-1.5 p-0 text-sm">
-      {actions.map((action) => (
-        <li key={action.id}>
-          <span>{`${action.type.replaceAll("_", " ")} · ${action.target} `}</span>
-          <Badge color={action.status === "proposed" ? "info" : "secondary"}>
-            {action.status === "proposed" ? "Recommended" : action.status}
-          </Badge>
-          {action.reason === undefined ? null : (
-            <p className="text-secondary m-0 text-xs">{action.reason}</p>
-          )}
-        </li>
-      ))}
-    </ul>
-  </Section>
-);

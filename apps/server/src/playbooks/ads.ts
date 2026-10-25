@@ -1,7 +1,7 @@
 import { AD_IMAGE_USD } from "../lib/ad-images.ts";
 
 // The ads step, as the agent follows it. Served by get_playbook and as an MCP
-// prompt. The concept rules are adapted from claude-ads (MIT, see NOTICE).
+// prompt. The concept rules are adapted from claude-ads (MIT).
 export const ads = {
   description:
     'Make Meta ads that sell for each product the merchant published with wovain: 2 to 4 distinct ad concepts per product (hook, angle, audience, why now), Feed and Stories visuals made on the merchant\'s fal account plus the Fourthwall mockup, a carousel across the product set, and text variants for Advantage+. Use right after designs go live, when the merchant asks for ads, and when a chat message says "Approved ad cN for design dN", "Skipped ad cN for design dN", "Feedback on ad cN for design dN", "Retry the … of ad cN for design dN", "Run it" or "Create the campaign".',

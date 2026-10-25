@@ -15,9 +15,6 @@
     },
     {
       "path": "infra"
-    },
-    {
-      "path": "scripts"
     }
   ],
   "compilerOptions": {
