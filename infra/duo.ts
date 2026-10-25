@@ -228,14 +228,15 @@ for (const f of customFlows) {
   if (itemId === undefined) {
     continue;
   }
-  flowTrigger(f.name, {
-    ...f,
-    consumerId: consumerIds.apply((ids) =>
-      must(
-        ids.get(itemId),
-        `custom flow ${f.file} (not enabled in the project?)`
-      )
-    ),
+  // A flow nobody has enabled yet (Automate > AI Catalog > Flows) has no
+  // consumer; it gets its trigger on the first `pulumi up` after enabling.
+  consumerIds.apply((ids) => {
+    const consumerId = ids.get(itemId);
+    if (consumerId === undefined) {
+      pulumi.log.warn(`${f.file} isn't enabled in the project yet; no trigger`);
+      return;
+    }
+    flowTrigger(f.name, { ...f, consumerId });
   });
 }
 
