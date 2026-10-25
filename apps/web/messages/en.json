@@ -299,7 +299,10 @@
     "created": "Account created. Let's connect your shop.",
     "asideTitle": "Approve, don't operate.",
     "asideBody": "wovain does the research, the artwork, the listings and the ads. You stay the one who says yes.",
-    "forgot": "Forgot your password?"
+    "forgot": "Forgot your password?",
+    "google": "Continue with Google",
+    "googleDivider": "or use your email",
+    "googleError": "Google sign-in didn't work. Try again or use your email."
   },
   "Shell": {
     "nav": {

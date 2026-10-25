@@ -14,6 +14,8 @@ import { z } from "zod";
 import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 
+import { GoogleButton } from "./google-button";
+
 type Mode = "login" | "signUp";
 
 const MIN_NAME = 2;
@@ -33,7 +35,14 @@ const fieldError = (errors: unknown[]): string | undefined => {
     : undefined;
 };
 
-export const AuthForm = ({ mode }: { mode: Mode }) => {
+export const AuthForm = ({
+  google,
+  mode,
+}: {
+  /** Google sign-in is configured (the button is hidden otherwise). */
+  google: boolean;
+  mode: Mode;
+}) => {
   const t = useTranslations("Auth");
   const locale = useLocale();
   const router = useRouter();
@@ -43,7 +52,10 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
   // signed query back to the authorization, so the form must not navigate.
   const inOAuthFlow =
     searchParams.has("sig") || searchParams.has("oauth_query");
-  const [formError, setFormError] = useState<string>();
+  // Better Auth sends a failed Google sign-in back here with ?error=.
+  const [formError, setFormError] = useState<string | undefined>(
+    google && searchParams.has("error") ? t("googleError") : undefined
+  );
 
   const schema = z.object({
     email: z.email(t("errors.email")),
@@ -106,8 +118,20 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
 
   return (
     <div className="w-full">
+      {google ? (
+        <div className="mt-8">
+          <GoogleButton next={next} onError={setFormError} />
+          <div className="text-muted-foreground mt-6 flex items-center gap-3 text-xs">
+            <span aria-hidden="true" className="bg-border h-px flex-1" />
+            {t("googleDivider")}
+            <span aria-hidden="true" className="bg-border h-px flex-1" />
+          </div>
+        </div>
+      ) : null}
       <form
-        className="mt-8 flex flex-col gap-5"
+        className={
+          google ? "mt-6 flex flex-col gap-5" : "mt-8 flex flex-col gap-5"
+        }
         noValidate
         onSubmit={(event) => {
           event.preventDefault();

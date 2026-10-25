@@ -151,6 +151,7 @@ const secretIds = [
   "better-auth-secret",
   "fal-key",
   "gitlab-feature-flags-instance-id",
+  "google-client-secret",
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
@@ -294,6 +295,15 @@ const posthogEnv =
     ? []
     : [{ name: "NEXT_PUBLIC_POSTHOG_KEY", value: posthogKey }];
 
+// Google sign-in (apps/web/.env.schema): the OAuth client's ID is public
+// (`pulumi config set googleClientId ...`); its secret is the
+// google-client-secret stack secret above. Without the ID the button is hidden.
+const googleClientId = config.get("googleClientId");
+const googleEnv =
+  googleClientId === undefined
+    ? []
+    : [{ name: "GOOGLE_CLIENT_ID", value: googleClientId }];
+
 // Pulumi owns the service's settings; CI rolls out each image with `gcloud
 // run deploy --image`, so the image is ignored here. `pulumi up --refresh`
 // (CI's infra job) reads the live image first, so a settings change keeps it.
@@ -324,6 +334,7 @@ const service = new gcp.cloudrunv2.Service(
               value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
             },
             { name: "MCP_URL", value: mcpUrl },
+            ...googleEnv,
             ...posthogEnv,
             { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
             { name: "WOVAIN_BUCKET", value: media.name },
@@ -458,6 +469,8 @@ const dev = devEnvironment({
   connectionsKey,
   envs: [
     ...Object.entries(sharedEnvs).map(([name, value]) => ({ name, value })),
+    // The same Google OAuth client (dev.wovain.com is a registered origin).
+    ...googleEnv,
     // The same PostHog project; events say "development" by host.
     ...posthogEnv,
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },

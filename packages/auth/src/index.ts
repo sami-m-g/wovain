@@ -18,7 +18,25 @@ export interface AuthConfig {
   // The public MCP endpoint, when it lives on another host than the app
   // (https://mcp.wovain.com/api/mcp in production).
   MCP_URL?: string | undefined;
+  // Google sign-in; the provider is off unless both are set.
+  GOOGLE_CLIENT_ID?: string | undefined;
+  GOOGLE_CLIENT_SECRET?: string | undefined;
 }
+
+// Google redirects back to <BETTER_AUTH_URL>/api/auth/callback/google. Better
+// Auth marks a Google account's email verified from Google's own claim, which
+// is what the spend guard reads.
+export const socialProviders = (
+  env: Pick<AuthConfig, "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET">
+) =>
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+        },
+      }
+    : {};
 
 const MCP_SCOPES: Scope[] = ["openid", "profile", "email", "offline_access"];
 
@@ -56,6 +74,10 @@ export const createAuth = (
     }
   };
   return betterAuth({
+    // A Google sign-in joins the account with the same email, but only when
+    // Google reports that email as verified (Better Auth's default; no
+    // trustedProviders, which would skip that check).
+    account: { accountLinking: { enabled: true } },
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(database, {
       provider: "pg",
@@ -135,6 +157,7 @@ export const createAuth = (
       storage: "database",
     },
     secret: env.BETTER_AUTH_SECRET,
+    socialProviders: socialProviders(env),
     trustedOrigins: trustedOrigins(env),
     user: {
       additionalFields: {
