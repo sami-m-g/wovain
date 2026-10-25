@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { AuthForm } from "@/components/auth/auth-form";
+import { ENV } from "@/env.server";
 
 const FormFallback = ({ fields }: { fields: number }) => (
   <div aria-hidden="true" className="mt-8 flex flex-col gap-5">
@@ -22,6 +23,7 @@ const FormFallback = ({ fields }: { fields: number }) => (
  */
 export const AuthPage = async ({ mode }: { mode: "login" | "signUp" }) => {
   const t = await getTranslations("Auth");
+  const google = Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET);
   return (
     <div className="w-full max-w-sm">
       <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
@@ -31,7 +33,7 @@ export const AuthPage = async ({ mode }: { mode: "login" | "signUp" }) => {
         {mode === "signUp" ? t("signUpLead") : t("loginLead")}
       </p>
       <Suspense fallback={<FormFallback fields={mode === "signUp" ? 3 : 2} />}>
-        <AuthForm mode={mode} />
+        <AuthForm google={google} mode={mode} />
       </Suspense>
     </div>
   );

@@ -299,7 +299,10 @@
     "created": "Cuenta creada. Conectemos tu tienda.",
     "asideTitle": "Aprueba, no operes.",
     "asideBody": "wovain se encarga de la investigación, el arte, las fichas y los anuncios. Tú sigues siendo quien dice que sí.",
-    "forgot": "¿Olvidaste tu contraseña?"
+    "forgot": "¿Olvidaste tu contraseña?",
+    "google": "Continuar con Google",
+    "googleDivider": "o usa tu correo",
+    "googleError": "No se pudo iniciar sesión con Google. Inténtalo de nuevo o usa tu correo."
   },
   "Shell": {
     "nav": {

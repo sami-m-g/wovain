@@ -299,7 +299,10 @@
     "created": "Compte créé. Connectons votre boutique.",
     "asideTitle": "Validez, ne pilotez pas.",
     "asideBody": "wovain s'occupe de la veille, des visuels, des fiches et des publicités. C'est toujours vous qui dites oui.",
-    "forgot": "Mot de passe oublié ?"
+    "forgot": "Mot de passe oublié ?",
+    "google": "Continuer avec Google",
+    "googleDivider": "ou utilisez votre e-mail",
+    "googleError": "La connexion avec Google a échoué. Réessayez ou utilisez votre e-mail."
   },
   "Shell": {
     "nav": {

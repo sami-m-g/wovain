@@ -125,5 +125,8 @@ config:
     secure: v1:rZ/WZL4grzt7uxgC:j9xl8OXArr/pQBZiKVgEZTbdyaMSZp2cyJGq00KgIBl2UnU7W82lTFBP0EkaRbf3OaQRKHbYFQvYHE2ENlTwVBoO+eA=
   wovain:posthogProjectId: "687269"
   wovain:resendDomain: "true"
+  wovain:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
+  wovain:google-client-secret:
+    secure: v1:nqv2CnxFDtU9Gjcb:jhd9smV7Z5Z+eALSTk6NFf/6KJhk5XaVfXvCeLn2dFY/ByjoO/YFh9eRSmTB5jRf+7OT
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
