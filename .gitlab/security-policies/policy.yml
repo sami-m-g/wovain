@@ -7,6 +7,7 @@
 # pipeline, so Duo's merge requests are scanned like anyone's, and a merge
 # request that adds a High or Critical finding waits for a person's approval,
 # which also stops the ops job's auto-merge.
+# Findings fixed on the default branch are resolved automatically.
 scan_execution_policy:
   - name: Scanners on every pipeline
     description: SAST, Secret Detection and Dependency Scanning run on every branch, Duo's included.
@@ -34,3 +35,18 @@ approval_policy:
       - type: require_approval
         approvals_required: 1
         role_approvers: [maintainer, owner]
+
+# The declarative twin of the ops job's resolveGone phase (apps/ops): a
+# finding the default-branch scan no longer reports is set to Resolved by
+# the Security Policy Bot. Secret Detection is left out on purpose: a leaked
+# secret stays open until it's rotated, even after the code drops it.
+vulnerability_management_policy:
+  - name: Resolve findings no longer detected
+    description: SAST and Dependency Scanning findings the latest default-branch scan no longer reports are resolved.
+    enabled: true
+    rules:
+      - type: no_longer_detected
+        scanners: [sast, dependency_scanning]
+        severity_levels: [critical, high, medium, low, info, unknown]
+    actions:
+      - type: auto_resolve

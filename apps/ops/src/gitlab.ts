@@ -151,6 +151,26 @@ const VULNERABILITIES =
   "query($path: ID!) { project(fullPath: $path) { vulnerabilities(severity: [CRITICAL, HIGH], state: [DETECTED, CONFIRMED], reportType: [SAST], sort: detected_desc, first: 50) { nodes { id title severity detectedAt webUrl resolvedOnDefaultBranch mergeRequest { iid } identifiers { externalType externalId } location { ... on VulnerabilityLocationSast { file startLine } } } } } }";
 // Scanner-defined identifiers worth naming in a task: never free text.
 const NAMED_IDENTIFIERS = new Set(["cwe", "semgrep_id"]);
+// Open findings the latest default-branch scan no longer reports, the same
+// scope as the vulnerability management policy (security-policies/policy.yml).
+const NO_LONGER_DETECTED =
+  "query($path: ID!) { project(fullPath: $path) { vulnerabilities(state: [DETECTED, CONFIRMED], reportType: [SAST, DEPENDENCY_SCANNING], hasResolution: true, first: 100) { nodes { id severity webUrl resolvedOnDefaultBranch } } } }";
+const noLongerDetectedSchema = z.object({
+  data: z.object({
+    project: z.object({
+      vulnerabilities: z.object({
+        nodes: z.array(
+          z.object({
+            id: z.string(),
+            resolvedOnDefaultBranch: z.boolean(),
+            severity: z.string(),
+            webUrl: z.string(),
+          })
+        ),
+      }),
+    }),
+  }),
+});
 
 type Method = "GET" | "POST" | "PUT";
 type Query = Record<
@@ -337,6 +357,15 @@ export const createGitLab = (env: {
         per_page: 100,
         ...query,
       }),
+    // Findings fixed on the default branch that still wait in the report.
+    noLongerDetected: async () => {
+      const body = noLongerDetectedSchema.parse(
+        await graphql(NO_LONGER_DETECTED, { path: env.projectPath })
+      );
+      return body.data.project.vulnerabilities.nodes.filter(
+        (v) => v.resolvedOnDefaultBranch
+      );
+    },
     noteOnIssue: async (issue: number, body: string) =>
       await inProject(z.unknown(), "POST", `issues/${issue}/notes`, { body }),
     noteOnMergeRequest: async (mr: number, body: string) =>
@@ -363,6 +392,12 @@ export const createGitLab = (env: {
         ),
         "GET",
         `issues/${issue}/related_merge_requests`
+      ),
+    // Sets a finding to Resolved, with the reason in its history.
+    resolveFinding: async (id: string, comment: string) =>
+      await mutate(
+        "mutation($id: VulnerabilityID!, $comment: String!) { m: vulnerabilityResolve(input: { id: $id, comment: $comment }) { errors } }",
+        { comment, id }
       ),
     // Starts Duo Vulnerability Resolution, which opens a merge request.
     resolveVulnerability: async (id: string) =>
