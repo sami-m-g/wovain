@@ -61,5 +61,8 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
 
 export const config = {
   // Skip API routes and Next.js internals
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // and the brand files (icons, logos).
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|brand/).*)",
+  ],
 };

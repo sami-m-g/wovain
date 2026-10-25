@@ -33,10 +33,8 @@ export const LegalPage = async ({ doc }: { doc: keyof typeof DOCS }) => {
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:py-24">
-      <h1 className="font-expanded text-4xl font-black tracking-tight sm:text-6xl">
-        {t(title)}
-      </h1>
-      <p className="font-condensed text-muted-foreground mt-4 text-xs font-semibold tracking-widest uppercase">
+      <h1 className="font-display text-display-2 font-semibold">{t(title)}</h1>
+      <p className="text-muted-foreground mt-4 text-sm">
         {t("updated", {
           date: format.dateTime(LAST_UPDATED, { dateStyle: "long" }),
         })}
@@ -44,7 +42,7 @@ export const LegalPage = async ({ doc }: { doc: keyof typeof DOCS }) => {
       <p className="mt-8 text-lg leading-relaxed">{t(intro)}</p>
       {sections.map(([heading, body]) => (
         <section className="mt-10" key={heading}>
-          <h2 className="font-semi-expanded text-2xl font-extrabold">
+          <h2 className="font-display text-xl font-semibold tracking-[-0.02em]">
             {t(heading)}
           </h2>
           <p className="text-muted-foreground mt-3 max-w-[65ch] leading-relaxed">

@@ -28,7 +28,8 @@ export const createMailer = ({ apiKey, from, siteUrl }: MailerConfig) => {
   return async ({ locale, message, to }: Mail) => {
     const { element, subject } = compose(
       { ...message, url: new URL(message.url, siteUrl).href },
-      pickLocale(locale)
+      pickLocale(locale),
+      siteUrl
     );
     const [html, text] = await Promise.all([
       render(element),

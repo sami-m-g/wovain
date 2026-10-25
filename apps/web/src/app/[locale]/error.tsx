@@ -11,14 +11,11 @@ const ErrorPage = ({ reset }: { error: Error; reset: () => void }) => {
       id="main"
       tabIndex={-1}
     >
-      <h1 className="font-expanded text-4xl leading-[1] font-black tracking-tight sm:text-5xl">
+      <h1 className="font-display text-display-2 font-semibold">
         {t("title")}
       </h1>
       <p className="text-muted-foreground mt-5 text-lg">{t("body")}</p>
-      <Button
-        className="mt-8 h-12 w-fit px-5 text-sm font-semibold"
-        onClick={reset}
-      >
+      <Button className="mt-8 h-11 w-fit rounded-xl px-5" onClick={reset}>
         {t("retry")}
       </Button>
     </main>

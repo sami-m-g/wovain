@@ -4,7 +4,6 @@ import { Button } from "@wovain/ui/components/button";
 import { Input } from "@wovain/ui/components/input";
 import { Label } from "@wovain/ui/components/label";
 import { useLocale, useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -32,7 +31,7 @@ const Field = ({
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <Label className="text-sm font-semibold" htmlFor={id}>
+      <Label className="text-sm font-medium" htmlFor={id}>
         {label}
       </Label>
       <Input
@@ -57,15 +56,19 @@ const Field = ({
 
 /**
  * Without a token: asks for a reset link (Better Auth emails it). With the
- * `?token=` Better Auth adds to that link: sets the new password.
+ * `?token=` Better Auth adds to that link: sets the new password. The page
+ * reads the query on the server, so the form renders without a client bailout.
  */
-export const ResetForm = () => {
+export const ResetForm = ({
+  token,
+  invalid,
+}: {
+  token: string | null;
+  invalid: boolean;
+}) => {
   const t = useTranslations("Reset");
   const locale = useLocale();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const invalid = searchParams.get("error") !== null;
   const [value, setValue] = useState("");
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -112,7 +115,7 @@ export const ResetForm = () => {
 
   return (
     <div className="w-full max-w-sm">
-      <h1 className="font-expanded text-3xl leading-[1.05] font-black tracking-tight sm:text-4xl">
+      <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
         {token ? t("title") : t("requestTitle")}
       </h1>
       <p className="text-muted-foreground mt-3">
@@ -152,7 +155,7 @@ export const ResetForm = () => {
             value={value}
           />
           <Button
-            className="h-11 w-full text-sm font-semibold"
+            className="h-11 w-full text-sm font-medium"
             disabled={pending}
             type="submit"
           >
@@ -166,7 +169,10 @@ export const ResetForm = () => {
         </form>
       )}
       <p className="mt-6 text-sm">
-        <Link className="text-primary font-semibold underline" href="/login">
+        <Link
+          className="text-accent-text font-medium hover:underline"
+          href="/login"
+        >
           {t("back")}
         </Link>
       </p>

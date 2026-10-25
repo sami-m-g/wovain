@@ -5,13 +5,12 @@ import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { cn } from "@wovain/ui/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, Megaphone, Store } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
-import type { Ink } from "@/components/brand/swatch";
-import { inkField } from "@/components/brand/swatch";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { Connection, Provider } from "@/lib/flow-client";
 import {
@@ -21,10 +20,21 @@ import {
   PROVIDERS,
 } from "@/lib/flow-client";
 
-const PROVIDER_INK: Record<Provider, Ink> = {
-  fourthwall: "green",
-  meta: "indigo",
+const PROVIDER_ICON: Record<Provider, LucideIcon> = {
+  fourthwall: Store,
+  meta: Megaphone,
 };
+
+/** Connected: a filled green dot; not connected: a hollow ring. */
+const StatusDot = ({ connected }: { connected: boolean }) => (
+  <span
+    aria-hidden="true"
+    className={cn(
+      "size-2 shrink-0 rounded-full",
+      connected ? "bg-success" : "border-muted-foreground border"
+    )}
+  />
+);
 
 const connectionsQuery = {
   queryFn: () => flowClient.connections.list(),
@@ -45,7 +55,8 @@ const ProviderRow = ({
   const queryClient = useQueryClient();
   const name = t(`providers.${provider}.name`);
   const connected = connection !== undefined;
-  const actionClass = "h-10 min-w-40 px-4 text-sm font-semibold";
+  const actionClass = "h-9 min-w-36 rounded-lg px-4";
+  const Icon = PROVIDER_ICON[provider];
 
   const disconnect = useMutation({
     mutationFn: () => flowClient.connections.disconnect(provider),
@@ -59,22 +70,19 @@ const ProviderRow = ({
   });
 
   return (
-    <li className="border-border bg-card grid grid-cols-[4.5rem_1fr] border sm:grid-cols-[6rem_1fr]">
-      <div
+    <li className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:p-5">
+      <span
         aria-hidden="true"
-        className={cn(
-          connected
-            ? inkField[PROVIDER_INK[provider]]
-            : "border-input border-e border-dashed"
-        )}
-      />
-      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
+        className="bg-muted text-foreground grid size-11 shrink-0 place-items-center rounded-lg"
+      >
+        <Icon className="size-5" />
+      </span>
+      <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-semi-expanded text-lg font-extrabold">
-              {name}
-            </h2>
-            <Badge variant={connected ? "default" : "outline"}>
+            <h2 className="font-display text-base font-semibold">{name}</h2>
+            <Badge className="gap-1.5" variant="outline">
+              <StatusDot connected={connected} />
               {connected ? t("connected") : t("disconnected")}
             </Badge>
           </div>
@@ -82,7 +90,7 @@ const ProviderRow = ({
             {t(`providers.${provider}.body`)}
           </p>
           {connected ? (
-            <p className="text-sm font-medium">
+            <p className="text-muted-foreground text-xs">
               {t("since", {
                 date: format.dateTime(new Date(connection.connectedAt), {
                   dateStyle: "medium",
@@ -128,7 +136,7 @@ export const ConnectionsPanel = () => {
       <ul className="flex flex-col gap-3">
         {PROVIDERS.map((provider) => (
           <li key={provider}>
-            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-24 w-full rounded-xl" />
           </li>
         ))}
       </ul>
@@ -162,7 +170,7 @@ export const ConnectionsSummary = () => {
   const { data, isPending } = useQuery(connectionsQuery);
 
   if (isPending) {
-    return <Skeleton className="h-36 w-full" />;
+    return <Skeleton className="h-36 w-full rounded-xl" />;
   }
 
   const missing = PROVIDERS.filter(
@@ -171,21 +179,13 @@ export const ConnectionsSummary = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <ul className="divide-border border-border flex flex-col divide-y border-y">
+      <ul className="divide-border border-border bg-card flex flex-col divide-y rounded-xl border px-4">
         {PROVIDERS.map((provider) => {
           const connected = !missing.includes(provider);
           return (
             <li className="flex items-center gap-3 py-3" key={provider}>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-4 shrink-0",
-                  connected
-                    ? inkField[PROVIDER_INK[provider]]
-                    : "border-input border border-dashed"
-                )}
-              />
-              <span className="flex-1 font-semibold">
+              <StatusDot connected={connected} />
+              <span className="flex-1 text-sm font-medium">
                 {t(`providers.${provider}.name`)}
               </span>
               <span className="text-muted-foreground text-sm">
@@ -200,7 +200,7 @@ export const ConnectionsSummary = () => {
           ? dashboard("setupBody", { count: missing.length })
           : dashboard("allConnected")}{" "}
         <Link
-          className="text-primary font-semibold underline"
+          className="text-accent-text font-medium hover:underline"
           href="/dashboard/connections"
         >
           {dashboard("manage")}

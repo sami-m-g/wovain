@@ -8,7 +8,7 @@ import { Bot, UserRound } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
-import { RunStrip, stageOf } from "@/components/app/run-strip";
+import { RunTape, stageOf } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
 import type { Run } from "@/lib/flow-client";
 import { describeProblem, flowClient } from "@/lib/flow-client";
@@ -43,10 +43,12 @@ export const RunsList = ({
 
   if (isPending) {
     return (
-      <ul className="flex flex-col gap-3">
+      <ul className="border-border bg-card divide-border flex flex-col divide-y rounded-xl border">
         {[0, 1, 2].map((item) => (
-          <li key={item}>
-            <Skeleton className="h-28 w-full" />
+          <li className="flex flex-col gap-3 p-4 sm:p-5" key={item}>
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="h-1.5 w-full" />
           </li>
         ))}
       </ul>
@@ -61,10 +63,14 @@ export const RunsList = ({
 
   if (runs.length === 0) {
     return (
-      <div className="border-input flex flex-col items-start gap-4 border border-dashed p-8">
-        <p className="text-muted-foreground">{t("empty")}</p>
+      <div className="border-input flex flex-col items-start gap-4 rounded-xl border border-dashed p-8">
+        <RunTape className="w-full max-w-xs" compact stage="brief" />
+        <div className="flex flex-col gap-1">
+          <p className="font-medium">{t("emptyTitle")}</p>
+          <p className="text-muted-foreground text-sm">{t("empty")}</p>
+        </div>
         <Button
-          className="h-10 px-4 text-sm font-semibold"
+          className="h-9 rounded-lg px-4"
           nativeButton={false}
           render={<Link href="/dashboard/new" />}
         >
@@ -75,17 +81,20 @@ export const RunsList = ({
   }
 
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="border-border bg-card divide-border flex flex-col divide-y rounded-xl border">
       {runs.map((run) => (
         <li
-          className="border-border bg-card grid gap-4 border p-4 sm:p-5 md:grid-cols-[1fr_14rem] md:items-center"
+          className="hover:bg-muted/50 grid gap-4 p-4 transition-colors sm:p-5 md:grid-cols-[1fr_14rem] md:items-center"
           key={run.id}
         >
           <div className="flex min-w-0 flex-col gap-2">
-            <Badge className="w-fit" variant={STATUS_VARIANT[run.status]}>
+            <Badge
+              className="w-fit gap-1.5"
+              variant={STATUS_VARIANT[run.status]}
+            >
               {status(run.status)}
             </Badge>
-            <Heading className="text-base font-semibold text-pretty">
+            <Heading className="text-[0.95rem] font-medium text-pretty">
               <Link
                 className="hover:underline"
                 href={{ pathname: "/dashboard/new", query: { run: run.id } }}
@@ -123,7 +132,7 @@ export const RunsList = ({
               </p>
             ) : null}
           </div>
-          <RunStrip
+          <RunTape
             compact
             finished={run.status === "completed"}
             stage={stageOf(run)}

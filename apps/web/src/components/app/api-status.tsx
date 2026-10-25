@@ -16,14 +16,14 @@ export const ApiStatus = () => {
   }
 
   return (
-    <p className="text-sidebar-foreground/80 flex items-center gap-2 text-xs">
+    <p className="text-sidebar-foreground/75 flex items-center gap-2 text-xs">
       <span
         aria-hidden="true"
         className={cn(
           "size-2 rounded-full",
           health.isLoading && "bg-sidebar-foreground/40",
-          !health.isLoading && health.data && "bg-ink-green",
-          !health.isLoading && !health.data && "bg-ink-rhodamine"
+          !health.isLoading && health.data && "bg-success",
+          !health.isLoading && !health.data && "bg-destructive"
         )}
       />
       {t("apiStatus")}: {label}

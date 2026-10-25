@@ -5,6 +5,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Text,
 } from "@react-email/components";
@@ -139,22 +140,49 @@ const COPY: Record<
   },
 };
 
+// The brand: cochineal, plum ink and calico (apps/web/src/brand/brand.tsx).
+const BRAND = {
+  accent: "#b0245f",
+  ink: "#3b1530",
+  muted: "#6b5462",
+  paper: "#f7f1e8",
+};
+// public/brand/email-logo.png: the seam lockup at 2x, 188 x 36 CSS pixels.
+const LOGO = { height: 36, path: "/brand/email-logo.png", width: 188 };
+
 const Layout = ({
   copy,
   footer,
   locale,
+  logoUrl,
   url,
 }: {
   copy: Copy;
   footer: string | undefined;
   locale: Locale;
+  logoUrl: string | undefined;
   url: string;
 }) => (
   <Html lang={locale}>
     <Head />
     <Preview>{copy.heading}</Preview>
-    <Body style={{ backgroundColor: "#ffffff", fontFamily: "sans-serif" }}>
+    <Body
+      style={{
+        backgroundColor: BRAND.paper,
+        color: BRAND.ink,
+        fontFamily: "sans-serif",
+      }}
+    >
       <Container style={{ maxWidth: 480, padding: 24 }}>
+        {logoUrl === undefined ? null : (
+          <Img
+            alt="wovain"
+            height={LOGO.height}
+            src={logoUrl}
+            style={{ marginBottom: 24 }}
+            width={LOGO.width}
+          />
+        )}
         <Heading as="h1" style={{ fontSize: 22 }}>
           {copy.heading}
         </Heading>
@@ -162,15 +190,16 @@ const Layout = ({
         <Button
           href={url}
           style={{
-            backgroundColor: "#171717",
-            color: "#fafafa",
+            backgroundColor: BRAND.accent,
+            borderRadius: 10,
+            color: "#ffffff",
             padding: "10px 16px",
           }}
         >
           {copy.action}
         </Button>
         {footer !== undefined && (
-          <Text style={{ color: "#737373", fontSize: 12 }}>{footer}</Text>
+          <Text style={{ color: BRAND.muted, fontSize: 12 }}>{footer}</Text>
         )}
       </Container>
     </Body>
@@ -178,7 +207,8 @@ const Layout = ({
 );
 
 // The subject and the email itself, in the merchant's locale.
-export const compose = (message: Message, locale: Locale) => {
+// `siteUrl` makes the logo header absolute; without it the email has no logo.
+export const compose = (message: Message, locale: Locale, siteUrl?: string) => {
   const copy = COPY[locale];
   const content =
     message.kind === "run"
@@ -190,6 +220,9 @@ export const compose = (message: Message, locale: Locale) => {
         copy={content}
         footer={message.kind === "run" ? undefined : copy.ignore}
         locale={locale}
+        logoUrl={
+          siteUrl === undefined ? undefined : new URL(LOGO.path, siteUrl).href
+        }
         url={message.url}
       />
     ),

@@ -1,0 +1,94 @@
+import type { Metadata } from "next";
+import { hasLocale } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
+
+import { JsonLd } from "@/components/json-ld";
+import { container } from "@/components/marketing/section";
+import {
+  Breadcrumbs,
+  CtaBand,
+  PageHero,
+  RowLink,
+} from "@/components/marketing/seo-parts";
+import { getContent } from "@/content/load";
+import { INTEGRATION_SLUGS } from "@/content/types";
+import { routing } from "@/i18n/routing";
+import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+
+type Props = PageProps<"/[locale]/integrations">;
+
+export const generateMetadata = async ({
+  params,
+}: Props): Promise<Metadata> => {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) {
+    return {};
+  }
+  return pageMetadata({
+    descriptionKey: "integrationsDescription",
+    locale,
+    path: "/integrations",
+    titleKey: "integrationsTitle",
+  });
+};
+
+const GROUPS = ["yours", "wovain"] as const;
+
+const IntegrationsPage = async ({ params }: Props) => {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
+  setRequestLocale(locale);
+  const t = await getTranslations("Seo");
+  const content = await getContent(locale);
+  const crumbs = [
+    { name: t("home"), path: "/" },
+    { name: t("integrationsTitle"), path: "/integrations" },
+  ];
+
+  return (
+    <>
+      <JsonLd data={breadcrumbJsonLd(crumbs, locale)} />
+      <PageHero
+        crumbs={<Breadcrumbs items={crumbs} />}
+        lead={t("integrationsLead")}
+        title={t("integrationsTitle")}
+      />
+      <div className={`${container} flex flex-col gap-16 pb-24`}>
+        {GROUPS.map((group) => (
+          <section aria-labelledby={`group-${group}`} key={group}>
+            <h2
+              className="font-display text-display-3 font-semibold"
+              id={`group-${group}`}
+            >
+              {t(`${group}Group`)}
+            </h2>
+            <ul className="border-border mt-6 grid border-t md:grid-cols-2 md:gap-x-10">
+              {INTEGRATION_SLUGS.filter(
+                (slug) => content.integrations[slug].connection === group
+              ).map((slug) => (
+                <li className="border-border border-b" key={slug}>
+                  <RowLink
+                    body={content.integrations[slug].lead}
+                    href={`/integrations/${slug}`}
+                    meta={
+                      <span className="text-muted-foreground text-xs">
+                        {content.integrations[slug].category}
+                      </span>
+                    }
+                    title={content.integrations[slug].name}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+      <CtaBand />
+    </>
+  );
+};
+
+export default IntegrationsPage;

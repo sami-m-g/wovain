@@ -61,3 +61,44 @@ export const pageMetadata = async ({
     title: t(titleKey),
   };
 };
+
+/** Metadata for a page whose title and description come from content, not messages. */
+export const contentMetadata = ({
+  locale,
+  path,
+  title,
+  description,
+  type = "website",
+}: {
+  locale: Locale;
+  path: string;
+  title: string;
+  description: string;
+  type?: "website" | "article";
+}): Metadata => ({
+  alternates: alternatesFor(path, locale),
+  description,
+  openGraph: {
+    description,
+    locale,
+    title,
+    type,
+    url: localizedUrl(path, locale),
+  },
+  title,
+});
+
+/** BreadcrumbList structured data from (name, path) pairs. */
+export const breadcrumbJsonLd = (
+  items: { name: string; path: string }[],
+  locale: Locale
+) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    item: localizedUrl(item.path, locale),
+    name: item.name,
+    position: index + 1,
+  })),
+});

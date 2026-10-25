@@ -35,10 +35,10 @@ const RunsPage = async ({ params }: PageProps<"/[locale]/dashboard/runs">) => {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-expanded text-3xl leading-[1.05] font-black tracking-tight sm:text-5xl">
+        <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
           {t("title")}
         </h1>
-        <p className="text-muted-foreground mt-3 text-lg">{t("lead")}</p>
+        <p className="text-muted-foreground mt-2">{t("lead")}</p>
       </div>
       <RunsList />
     </div>

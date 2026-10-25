@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 
 import { ConnectionsSummary } from "@/components/app/connections-panel";
 import { RunsList } from "@/components/app/runs-list";
+import { SetupChecklist } from "@/components/app/setup-checklist";
 import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { pageMetadata } from "@/lib/seo";
@@ -50,16 +51,16 @@ const DashboardPage = async ({
   const t = await getTranslations("Dashboard");
 
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-expanded text-3xl leading-[1.05] font-black tracking-tight sm:text-5xl">
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
             {t("greeting", { name: session.user.name })}
           </h1>
-          <p className="text-muted-foreground mt-3 text-lg">{t("lead")}</p>
+          <p className="text-muted-foreground mt-2">{t("lead")}</p>
         </div>
         <Button
-          className="h-11 w-fit px-5 text-sm font-semibold"
+          className="h-9 w-fit rounded-lg px-4"
           nativeButton={false}
           render={<Link href="/dashboard/new" />}
         >
@@ -67,17 +68,18 @@ const DashboardPage = async ({
           {t("newDrop")}
         </Button>
       </div>
+      <SetupChecklist />
       <div className="grid gap-12 lg:grid-cols-[1fr_20rem]">
         <section aria-labelledby="recent-runs">
           <div className="mb-4 flex items-baseline justify-between gap-4">
             <h2
-              className="font-semi-expanded text-xl font-extrabold"
+              className="font-display text-lg font-semibold tracking-[-0.015em]"
               id="recent-runs"
             >
               {t("recentRuns")}
             </h2>
             <Link
-              className="text-primary text-sm font-semibold underline"
+              className="text-primary text-sm font-medium underline"
               href="/dashboard/runs"
             >
               {t("allRuns")}
@@ -87,7 +89,7 @@ const DashboardPage = async ({
         </section>
         <section aria-labelledby="connections-summary">
           <h2
-            className="font-semi-expanded mb-4 text-xl font-extrabold"
+            className="font-display mb-4 text-lg font-semibold tracking-[-0.015em]"
             id="connections-summary"
           >
             {t("connections")}

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { ResetForm } from "@/components/auth/reset-form";
 import { routing } from "@/i18n/routing";
@@ -24,17 +23,18 @@ export const generateMetadata = async ({
   });
 };
 
-const ResetPage = async ({ params }: PageProps<"/[locale]/reset">) => {
+const ResetPage = async ({
+  params,
+  searchParams,
+}: PageProps<"/[locale]/reset">) => {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
   setRequestLocale(locale);
-  return (
-    <Suspense>
-      <ResetForm />
-    </Suspense>
-  );
+  const query = await searchParams;
+  const token = typeof query.token === "string" ? query.token : null;
+  return <ResetForm invalid={query.error !== undefined} token={token} />;
 };
 
 export default ResetPage;
