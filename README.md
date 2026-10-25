@@ -14,19 +14,19 @@ Full documentation is in the Fumadocs site (`apps/fumadocs`, `pnpm run dev`, por
 
 Wovain calls **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`) on **Nebius Token Factory**, through the OpenAI-compatible endpoint `https://api.tokenfactory.nebius.com/v1/` with `NEBIUS_API_KEY`.
 
-1. **Design judge.** Before a design is shown, Nemotron receives the brief (idea, blank, placement, colors, artwork metadata, listing) and returns a Zod-validated verdict (`ready` or `revise`), a 0 to 100 score, a pass or fail per print rule and up to five fixes. Rules code can decide (print size, transparency, title length, color count) override the model.
-2. **Autopilot.** Each approval point (idea, listing and price, ad concepts, campaign budget) is a Nemotron decision. After every reply, code applies hard limits: a price floor from breakeven, a budget cap, a trademark screen, a judge pass and a maximum spend. Every decision is stored with Nemotron's reasoning and any code override.
+1. **Brief, judge and ad copy.** Nemotron writes the design brief and listing (`draftBrief`), judges the design (`judgeDesign`: a Zod-validated `ready` or `revise` verdict, a 0 to 100 score, a check for title, description, idea fit and originality, and up to five fixes) and writes up to three ad variants (`writeAdCopy`). The print-size rule is decided by code and overrides the model.
+2. **Autopilot.** Nemotron picks the idea (`pickIdea`) and approves or rejects the design (`reviewDesign`), each with a stored reason. Code gates the run: a design the judge says to revise is never approved, the price keeps at least $10 profit and a 30% margin, the daily budget stays between $1 and $500, and every Meta object is created paused. Each step is recorded on the run.
 3. **Safe by construction.** Replies that fail validation never reach the seller as raw errors, and no procedure activates a Meta object: campaigns stay paused.
 
 Details: [docs/integrations/nebius-nemotron](apps/fumadocs/content/docs/integrations/nebius-nemotron.mdx).
 
 ## How wovain uses Qloo
 
-Qloo is the first step of every run. The seed is resolved to Qloo entities, their cross-domain taste tags become the design themes, and Qloo's trending velocity confirms or discounts the news. Ideas are scored in code on demand, momentum, low saturation and IP safety. After a design is chosen, Qloo's demographics and heatmap insights become the Meta audience suggestion (age, gender, top countries). Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.mdx).
+Qloo is the first step of every run. The seed is resolved to Qloo entities (`/search`), their cross-domain taste tags (`/v2/insights`) become the design themes, and the names Qloo matched are saved as names never to print. Ideas are ranked in code with the inputs saved alongside. Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.mdx).
 
 ## How wovain uses Tavily at runtime
 
-Inside the seller flow, Tavily searches the past week's news within Qloo's themes (the "why now"), checks marketplace saturation on Etsy, Redbubble and Amazon, and screens titles and art words for trademarks in autopilot. Results keep their source links. Details: [docs/integrations/tavily](apps/fumadocs/content/docs/integrations/tavily.mdx).
+Inside the seller flow, Tavily searches the past week's news within Qloo's themes (the "why now"), and checks marketplace saturation on Etsy, Redbubble and Fourthwall. Results keep their source links. Details: [docs/integrations/tavily](apps/fumadocs/content/docs/integrations/tavily.mdx).
 
 ## GitLab Duo flows
 
@@ -44,9 +44,10 @@ Details: [docs/flows.md](docs/flows.md) and [Agent flows](apps/fumadocs/content/
 
 | Path | Role |
 | --- | --- |
-| `apps/web` | Next.js 16 app (App Router, oRPC, Better Auth, evlog) and the ChatGPT MCP server |
+| `apps/web` | Next.js 16 app (App Router, oRPC, Better Auth, evlog); the ChatGPT MCP server is `POST https://wovain.com/api/mcp` |
 | `apps/fumadocs` | Documentation site |
-| `packages/api` | oRPC routers and procedures |
+| `packages/api` | oRPC routers, seller-flow steps and the MCP server |
+| `packages/core` | Providers and rules: Qloo, Tavily, Nemotron, fal, pricing, judge, autopilot |
 | `packages/auth` | Better Auth configuration |
 | `packages/db` | Drizzle schema and client for PostgreSQL (Cloud SQL on GCP) |
 | `packages/ui` | Shared shadcn/ui components |

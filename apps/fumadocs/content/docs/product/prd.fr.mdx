@@ -3,24 +3,25 @@ title: PRD
 description: Le parcours principal, les écrans, le comportement et les limites de wovain.
 ---
 
-Une application agentique d'impression à la demande, sur le site web et dans ChatGPT, qui mène un vendeur Fourthwall indépendant d'une idée de départ à des produits et une campagne Meta en pause, une approbation à la fois. Source : `scope.md > The Unique Kernel`, `scope.md > The Core Loop`.
+Une application agentique d'impression à la demande, sur le site web et dans ChatGPT, qui mène un vendeur Fourthwall indépendant d'une idée de départ à un t-shirt et une campagne Meta en pause, une approbation à la fois. Source : `scope.md > The Unique Kernel`, `scope.md > The Core Loop`.
 
 ## Le parcours principal
 
-1. Le vendeur se connecte sur [https://wovain.com](https://wovain.com) (ou ajoute le connecteur MCP de wovain dans ChatGPT) et connecte Fourthwall, Meta et fal.
-2. Le vendeur saisit une graine. Wovain demande à Qloo les entités, les tags de goûts et la vélocité de la graine, puis à Tavily l'actualité de la semaine dans ces thèmes, et affiche des idées classées.
-3. Le vendeur choisit des idées. Wovain génère des designs pour de vrais modèles Fourthwall, avec emplacements, texte de fiche, prix, profit et marge.
-4. Nemotron évalue chaque design. Un verdict `revise` applique les corrections une fois ; le vendeur voit le résultat dans tous les cas.
-5. Le vendeur approuve, ignore ou donne un retour pour chaque design. Un retour régénère uniquement ce design.
-6. Les designs approuvés deviennent des produits Fourthwall.
-7. Wovain crée plusieurs concepts publicitaires par produit, avec visuels, variantes de texte et ligne de seuil de rentabilité.
-8. Le vendeur approuve les concepts. Wovain construit une campagne Meta, en pause, avec une suggestion d'audience issue de Qloo.
-9. Succès : les produits sont dans la boutique Fourthwall et la campagne en pause est dans le gestionnaire de publicités Meta. Le vendeur la lance quand il est prêt.
+1. Le vendeur se connecte sur [https://wovain.com](https://wovain.com) (ou ajoute le connecteur wovain dans ChatGPT) et connecte Fourthwall et Meta.
+2. Le vendeur saisit une graine. Wovain demande à Qloo les entités et thèmes de goûts de la graine, puis à Tavily l'actualité de la semaine et les annonces de places de marché dans ces thèmes, et enregistre des idées classées.
+3. Le vendeur choisit une idée. Nemotron rédige un brief de design et une fiche produit, fal dessine une illustration d'impression transparente, et le prix vient du coût de base du modèle.
+4. Nemotron évalue le design. Le code vérifie lui-même la taille d'impression ; un verdict `revise` liste les corrections.
+5. Le vendeur approuve ou rejette le design (avec une raison).
+6. Un design approuvé devient un produit Fourthwall, masqué. Le vendeur le publie dans une étape distincte.
+7. Nemotron rédige jusqu'à trois variantes de publicité (angle, titre, message) et wovain prépare une campagne, un ensemble de publicités et des publicités Meta, tous en pause, ciblés sur les pays et le budget quotidien choisis par le vendeur.
+8. Succès : le produit est dans la boutique Fourthwall et la campagne en pause est dans le gestionnaire de publicités Meta. Le vendeur la lance quand il est prêt.
+
+L'autopilot réalise les étapes 2 à 7 en une seule exécution : Nemotron choisit l'idée et approuve le design, et l'exécution s'arrête si le juge demande une révision.
 
 ```text
-Graine -> Idées (Qloo + Tavily) -> Designs -> Juge Nemotron (revise renvoie aux designs)
-  -> Approuver (un retour renvoie aux designs) -> Produits Fourthwall -> Concepts publicitaires
-  -> Approuver -> Campagne Meta en pause
+Graine -> Idées (Qloo + Tavily) -> Design : brief, illustration, prix
+  -> Juge Nemotron (revise renvoie au design) -> Approuver -> Produit Fourthwall, masqué
+  -> Publier -> Variantes de publicité -> Campagne Meta en pause
 ```
 
 ## Écrans et mise en page
@@ -28,13 +29,11 @@ Graine -> Idées (Qloo + Tavily) -> Designs -> Juge Nemotron (revise renvoie aux
 | Surface | Contenu |
 | --- | --- |
 | Connexion | E-mail et mot de passe via Better Auth |
-| Connexions | Connecter Fourthwall, Meta et fal |
-| Tendances | Saisie de la graine et idées classées avec les deux signaux et les liens de sources |
-| Designs | Une carte par design : mockup, fiche, prix, profit, marge, verdict de Nemotron, approuver, ignorer et retour |
-| Publicités | Concepts par produit : accroche, audience, visuels Feed et Stories, variantes de texte, ligne de seuil de rentabilité |
-| Campagne | La campagne en pause, son audience et un lien pour l'ouvrir dans Meta |
-| Autopilot | Démarrer, état, journal des décisions et arrêt |
-| ChatGPT | Les mêmes étapes sous forme de widgets de conversation servis par le serveur MCP |
+| Tableau de bord | Le compte du vendeur et le point d'entrée du parcours |
+| Connexions | Connecter Fourthwall et Meta (OAuth) |
+| Parcours vendeur | Procédures pour idées, designs, produits, campagnes et exécutions, utilisées par le site web |
+| ChatGPT | Les mêmes étapes sous forme d'outils MCP sur `https://wovain.com/api/mcp`, renvoyant du JSON |
+| Consentement | La page de consentement OAuth vers laquelle ChatGPT envoie le vendeur |
 | Documentation | [https://docs.wovain.com](https://docs.wovain.com) en anglais, français et espagnol |
 
 ## Style et ambiance
@@ -46,31 +45,30 @@ Voix de coach amical : chaleureuse, raisons en une phrase, chiffres d'abord. Nom
 ### Recherche de tendances
 
 - En tant que vendeur, je veux des idées accompagnées de preuves afin de faire confiance à ce que je conçois.
-  - [ ] Chaque idée affiche un signal de goût (Qloo), un signal de moment (Tavily) et ses principales annonces concurrentes.
-  - [ ] Le score de chaque idée montre les entrées qui le composent.
-  - [ ] Sans clé Qloo ou Tavily, ce signal est marqué indisponible et l'autre fonctionne quand même.
+  - [ ] Chaque idée affiche ses signaux Qloo et Tavily, ses liens de sources et les entrées de son score.
+  - [ ] Les noms que Qloo associe à la graine ne sont jamais imprimés sur un design.
+  - [ ] Une clé Qloo, Tavily ou Nebius manquante ne fait échouer que cette étape, avec une erreur nommant la variable.
 
 ### Designs et évaluation
 
-- En tant que vendeur, je veux des designs adaptés à de vrais produits afin que les marges soient réelles.
-  - [ ] Le prix n'est jamais inférieur au seuil de rentabilité du modèle plus la marge minimale.
-  - [ ] Les règles d'impression que le code peut trancher (taille d'impression, transparence, longueur du titre, nombre de couleurs) priment sur le verdict de Nemotron.
-  - [ ] Une réponse de modèle non analysable n'atteint jamais le vendeur sous forme d'erreur brute.
+- En tant que vendeur, je veux un design chiffré et vérifié avant d'approuver.
+  - [ ] Le prix garantit au moins 10 $ de profit et 30 % de marge après frais de carte, taxe de vente et réserve de remboursement.
+  - [ ] La vérification de la taille d'impression est calculée par le code et prime sur Nemotron.
+  - [ ] Le juge vérifie titre, description, adéquation à l'idée et originalité, et renvoie un verdict, un score et jusqu'à cinq corrections.
 
 ### Publication et publicités
 
 - En tant que vendeur, je veux approuver avant que quoi que ce soit soit publié ou dépensé.
-  - [ ] Les designs approuvés deviennent des produits Fourthwall ; l'autopilot les crée masqués.
-  - [ ] Chaque objet Meta est créé en pause ; aucune procédure n'en active un.
-  - [ ] La suggestion d'audience montre tranches d'âge, genre et pays issus de Qloo.
+  - [ ] Un produit est créé masqué sur Fourthwall et n'est publié que par une étape distincte.
+  - [ ] Chaque objet Meta est créé en pause ; wovain n'active jamais de dépense.
+  - [ ] Le budget quotidien est compris entre 1 $ et 500 $ et le ciblage se limite aux pays choisis.
 
 ### Autopilot
 
-- En tant que vendeur, je veux une commande qui exécute toute la boucle dans des limites.
-  - [ ] Chaque décision est enregistrée avec ses entrées, options, choix, le raisonnement de Nemotron, les limites appliquées et toute correction du code.
-  - [ ] Une étape qui dépasserait la dépense maximale ne démarre pas.
-  - [ ] Une seule exécution active par utilisateur ; une commande d'arrêt la termine avant l'étape suivante.
-  - [ ] La même clé d'exécution renvoie l'exécution existante ; une étape rejouée réutilise les ID amont déjà créés.
+- En tant que vendeur, je veux une commande qui exécute la boucle avec Nemotron aux décisions.
+  - [ ] Nemotron choisit l'idée et relit le design ; un design que le juge veut réviser n'est jamais approuvé.
+  - [ ] Chaque étape est enregistrée sur l'exécution ; une exécution échouée montre où elle s'est arrêtée et pourquoi.
+  - [ ] La raison de chaque approbation ou rejet est enregistrée sur le design.
 
 ### Après le déploiement
 
@@ -80,34 +78,32 @@ Voix de coach amical : chaleureuse, raisons en une phrase, chiffres d'abord. Nom
 
 ## États et limites
 
-- **Première utilisation** — aucune connexion encore ; le vendeur est d'abord guidé vers Connexions.
-- **Clé de fournisseur manquante** — l'étape répond « non configuré » avec une ligne expliquant comment l'activer ; le parcours continue sans elle.
-- **Panne d'un fournisseur** — l'exécution se met en pause à cette étape et peut reprendre.
-- **Compte non connecté** — l'exécution se met en pause avec un lien de connexion.
-- **Limite dépassée** — l'étape ne démarre pas et la raison est journalisée.
-- **Persistance** — utilisateurs, sessions, connexions, idées, designs, approbations, exécutions et événements de décision dans PostgreSQL.
-- **Frontière** — un vendeur ne voit que ses propres données ; les procédures protégées exigent une session.
+- **Première utilisation** — aucune connexion encore ; les outils MCP renvoient une erreur avec le lien de connexion.
+- **Clé de fournisseur manquante** — l'étape échoue avec une erreur `NOT_CONFIGURED` nommant la variable.
+- **Défaillance d'un fournisseur** — l'exécution est marquée `failed` avec son étape et son erreur.
+- **Persistance** — utilisateurs, sessions, connexions (jetons scellés), exécutions, idées, designs, produits et campagnes dans PostgreSQL.
+- **Frontière** — chaque procédure est protégée par une session (site web) ou un jeton d'accès OAuth (MCP) ; un vendeur ne voit que ses propres lignes.
 
 ## Décisions de produit
 
-- Une application sert le site web et le serveur MCP — une seule API empêche les deux surfaces de diverger.
-- Les modèles décident, le code impose — des limites strictes sont appliquées après chaque réponse de modèle.
+- Une application sert le site web et le serveur MCP — un seul jeu de procédures garde les surfaces identiques.
+- Les modèles décident, le code garde-fou — la taille d'impression, le prix plancher, la fourchette de budget et l'état en pause relèvent du code, pas du modèle.
 - En pause par défaut — le vendeur garde chaque décision de dépense.
 - Qloo d'abord — le goût décide de ce qui mérite d'être conçu avant de consulter l'actualité.
 
 ## Ce que nous construisons
 
-Tout ce qui figure dans `scope.md > The POC Boundary` : connexion et connexions, tendances Qloo et Tavily, designs avec juge Nemotron, approbations, produits Fourthwall, variantes publicitaires Meta et campagne en pause, autopilot avec piste d'audit, serveur MCP de ChatGPT, site de documentation et les trois flows Duo.
+Tout ce qui figure dans `scope.md > The POC Boundary` : connexion et connexions, tendances Qloo et Tavily, design de t-shirt avec juge Nemotron, approbation, produit Fourthwall et publication, variantes de publicité Meta et campagne en pause, autopilot, serveur MCP de ChatGPT, site de documentation et les trois flows Duo.
 
 ## Reporté après la preuve de concept
 
-- Optimiseur : nécessite d'abord des données de dépenses.
-- Résultats de campagne dans la conversation : même raison.
-- Comptes d'équipe et rôles : la cible est un vendeur indépendant.
+- Widgets dans ChatGPT : les outils renvoient du JSON pour l'instant.
+- Optimiseur et résultats de campagne : nécessitent d'abord des données de dépenses.
+- Produits autres que le t-shirt, contrôle des marques et plafond de dépense pour l'autopilot.
 
 ## Améliorations possibles plus tard
 
-TikTok Shop et publicités ; pondérations des scores d'idées recalibrées à partir de vraies ventes ; davantage de langues pour la documentation.
+TikTok Shop et publicités ; données démographiques d'audience Qloo pour le ciblage ; pondérations des scores d'idées recalibrées à partir de vraies ventes ; davantage de langues pour la documentation.
 
 ## Hors périmètre
 
@@ -117,5 +113,5 @@ TikTok Shop et publicités ; pondérations des scores d'idées recalibrées à p
 
 ## Questions ouvertes
 
-- Chemin final du connecteur MCP sur le domaine de production — peut attendre le déploiement.
 - Périmètre de la revue d'application Meta pour la création de campagnes côté serveur — à régler avant la démo en direct.
+- Résolu : l'URL du connecteur ChatGPT est `https://wovain.com/api/mcp`, avec la découverte OAuth sous `/.well-known/oauth-*`.

@@ -1,43 +1,45 @@
 ---
 title: Nebius et Nemotron
-description: Comment wovain utilise NVIDIA Nemotron sur Nebius Token Factory comme juge et décideur d'autopilot.
+description: Comment wovain utilise NVIDIA Nemotron sur Nebius Token Factory pour rédiger les briefs, évaluer les designs, écrire les textes publicitaires et décider en autopilot.
 ---
 
-Wovain appelle **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`) sur **Nebius Token Factory**. Le point d'accès est compatible OpenAI : `https://api.tokenfactory.nebius.com/v1/`, authentifié avec `NEBIUS_API_KEY`.
+Wovain appelle **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`, la constante `NEMOTRON_MODEL` dans `packages/core/src/nemotron.ts`) sur **Nebius Token Factory**. Le point d'accès est compatible OpenAI : `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` par défaut, authentifié avec `NEBIUS_API_KEY`. Chaque réponse est validée par un schéma Zod.
 
-Nemotron a deux rôles. Il ne remplace jamais les limites imposées par le code.
+Nemotron a quatre rôles. Il ne remplace jamais les contrôles faits par le code.
 
-## 1. Juge de design
+## 1. Brief de design et fiche produit
 
-Avant qu'un design soit présenté pour approbation, Nemotron reçoit le brief du design : idée, modèle, emplacement, couleurs, métadonnées de l'illustration, fiche produit et description facultative de l'illustration. Il renvoie un jugement validé par Zod :
+`draftBrief` transforme une idée en prompt d'illustration, titre, description et couleurs de vêtement. Les noms que Qloo associe à la graine sont transmis comme noms à ne jamais imprimer.
 
-- un verdict, `ready` ou `revise`
-- un score de 0 à 100
-- un contrôle réussi ou échoué par règle d'impression, avec une courte note
-- jusqu'à cinq corrections et une phrase de coaching suggérée
+## 2. Juge de design
 
-Les règles que le code peut trancher (taille d'impression, transparence, longueur du titre, nombre de couleurs) sont calculées par le code et priment sur le modèle. Si l'une échoue, le verdict est `revise`, quoi que Nemotron ait répondu. Une réponse non analysable, ou une erreur de Token Factory, devient un message sûr pour l'utilisateur et le design est présenté sans la vérification.
+`judgeDesign` reçoit le brief, la fiche et les faits sur l'illustration, et renvoie un verdict (`ready` ou `revise`), un score de 0 à 100, un contrôle réussi ou échoué pour le titre, la description, l'adéquation à l'idée et l'originalité, jusqu'à cinq corrections et une phrase de coaching.
 
-## 2. Décisions d'autopilot
+La règle de taille d'impression est tranchée par le code (`printFacts`, `applyFacts`) : une illustration de moins de 2880 px échoue quoi que dise le modèle, et le verdict devient `revise`.
 
-En autopilot, chaque point d'approbation est une décision de Nemotron : quelle idée poursuivre, la fiche produit et le prix, si le design jugé est assez bon, les concepts publicitaires et le budget de la campagne. Chaque réponse est validée par schéma, puis le code applique les limites strictes :
+## 3. Textes publicitaires
 
-| Limite | Appliquée par le code |
+`writeAdCopy` rédige jusqu'à trois variantes de publicité avec un angle, un titre et un message pour la campagne Meta.
+
+## 4. Autopilot
+
+Avec l'autopilot activé, `pickIdea` choisit l'idée classée la plus prometteuse et `reviewDesign` approuve ou rejette le design, chacun avec une raison en une ligne. Le code garde-fou l'exécution :
+
+| Garde-fou | Appliqué par le code |
 | --- | --- |
-| Prix | Pas en dessous du seuil de rentabilité du modèle plus la marge minimale |
-| Budget quotidien | Pas au-dessus du budget demandé ni du maximum des réglages |
-| Contrôle des marques | Une correspondance sur la phrase du titre ou les mots de l'illustration fait échouer l'idée |
-| Juge | Doit atteindre `ready` en un nombre maximal de révisions |
-| Coût de l'exécution | Une étape qui dépasserait la dépense maximale ne démarre pas |
-| Activation | Aucune procédure n'active un objet Meta ; les campagnes restent en pause |
+| Juge | Un design que le juge veut réviser n'est jamais approuvé, quoi que dise Nemotron |
+| Choix de l'idée | Un indice absent de la liste retombe sur l'idée la mieux classée |
+| Prix | Au moins 10 $ de profit et 30 % de marge après frais de carte, taxe de vente et réserve de remboursement (`priceFor`) |
+| Budget quotidien | Entre 1 $ et 500 $ |
+| Meta | Chaque objet est créé en pause |
 
-Chaque décision est enregistrée avec ses entrées, ses options, le choix, le raisonnement de Nemotron, les limites appliquées et si le code a corrigé le modèle, afin que le vendeur puisse auditer une exécution.
+La raison de chaque décision est enregistrée sur le design, et une exécution consigne son étape et son éventuelle erreur.
 
 ## Pourquoi Nemotron
 
-- Un second modèle avec une grille fixe et un schéma détecte ce que l'auto-relecture de l'agent hôte laisse passer.
-- Une sortie structurée et un raisonnement de type outil à faible coût par appel conviennent à de nombreuses petites décisions par exécution.
-- Faire tourner les décisions sur Token Factory les rend indépendantes de la présence de l'agent hôte dans la boucle, ce qui compte pour les longues exécutions d'autopilot.
+- Un second modèle avec une grille fixe et un schéma détecte ce que l'auto-relecture d'un agent hôte laisse passer.
+- Une sortie structurée à faible coût par appel convient à plusieurs petites décisions par exécution.
+- Faire tourner les décisions sur Token Factory les rend indépendantes de la présence d'un agent hôte dans la boucle.
 
 ## Configuration
 
@@ -45,4 +47,4 @@ Chaque décision est enregistrée avec ses entrées, ses options, le choix, le r
 NEBIUS_API_KEY=...
 ```
 
-Sans la clé, le juge répond `configured: false` et l'autopilot n'est pas disponible. Rien d'autre ne casse.
+Sans la clé, les étapes qui ont besoin de Nemotron échouent avec une erreur `NOT_CONFIGURED` nommant la variable. Rien d'autre ne casse.

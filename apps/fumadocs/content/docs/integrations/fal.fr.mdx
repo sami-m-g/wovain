@@ -1,14 +1,15 @@
 ---
 title: fal
-description: fal génère les illustrations et les visuels publicitaires.
+description: fal dessine l'illustration d'impression transparente.
 ---
 
-fal exécute les modèles d'images.
+fal exécute le modèle d'images (`TEXT_TO_IMAGE` dans `packages/core/src/fal.ts`, GPT Image sur fal).
 
-- **Illustrations.** Des illustrations prêtes à imprimer pour le modèle et l'emplacement choisis.
-- **Visuels publicitaires.** Des images Feed et Stories créées à partir du mockup du produit. La vidéo courte est facultative et désactivée par défaut en autopilot, car c'est l'étape la plus coûteuse.
-- **Maîtrise des coûts.** L'autopilot suit la dépense fal et ne démarre pas une étape qui dépasserait la dépense maximale de l'exécution.
+- **Illustration.** `createArtist` transforme le prompt d'illustration du brief en illustration d'impression carrée et transparente qui n'imprime que les mots du brief (`artInput`).
+- **Taille d'impression.** Le juge vérifie le résultat par rapport à l'exigence de 2880 px, dans le code.
 
 ```bash
 FAL_KEY=...
 ```
+
+Sans la clé, la génération du design échoue avec une erreur `NOT_CONFIGURED` nommant la variable.

@@ -1,17 +1,18 @@
 ---
 title: Tavily
-description: Runtime web search that supplies the "why now" and checks how crowded a theme is.
+description: Runtime web search that supplies the "why now" and the marketplace check.
 ---
 
-Tavily is called at **runtime**, inside the seller flow, not only during development.
+Tavily is called at **runtime**, on every trend research, not only during development.
 
 ## What it does
 
-- **Moment.** For each Qloo theme, Tavily searches the past week's news and returns sources. This is the "why now" line shown on an idea.
-- **Saturation.** Tavily checks how many matching listings exist on marketplaces such as Etsy, Redbubble and Amazon. Few matches score higher.
-- **Trademark screen.** Autopilot searches the title phrase and any words in the art before an idea may continue.
+`packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) uses Tavily to:
 
-Results are marked untrusted when they reach a model, and each idea keeps its source links so the seller can check the evidence.
+- **Moment.** For each Qloo theme, search the past week's news and return sources. This is the "why now" shown on an idea.
+- **Saturation.** Search marketplaces (etsy.com, redbubble.com, fourthwall.com) for matching listings. Few matches score higher.
+
+Web text is untrusted: the ideas carry their source links, and the model prompts tell Nemotron to treat idea text as data only.
 
 ## Configuration
 
@@ -19,4 +20,4 @@ Results are marked untrusted when they reach a model, and each idea keeps its so
 TAVILY_API_KEY=...
 ```
 
-Without the key, the trend step still works from Qloo alone and says that the moment signal is unavailable.
+Without the key, the research step fails with a `NOT_CONFIGURED` error naming the variable.
