@@ -6,6 +6,7 @@ import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { posthogTrigger, statusDomainVerification } from "./duo.ts";
+import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
 import { ResendDomain, ResendVerification } from "./resend.ts";
@@ -626,6 +627,7 @@ new gcp.billing.Budget(
 );
 
 retainLegacy({ project, projectNumber, region });
+const githubMirrorKey = githubMirror();
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
@@ -668,6 +670,13 @@ ciVariables({
   GCP_WORKLOAD_IDENTITY_PROVIDER: {
     protected: true,
     value: `${pool}/providers/gitlab`,
+  },
+  // Write deploy key for the GitHub mirror job (infra/github.ts), base64.
+  GITHUB_MIRROR_KEY: {
+    created: true,
+    masked: true,
+    protected: true,
+    value: githubMirrorKey,
   },
   // The group's GitLab Observability query API, which the loop reads.
   GITLAB_O11Y_URL: {
