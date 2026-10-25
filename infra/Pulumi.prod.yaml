@@ -118,11 +118,12 @@ config:
   wovain:qloo-api-key:
     secure: v1:vD59KeD90EsuWoDc:cxnpqqr3tSN1+KIOEq3wuT4I2W2hH6nhUGI+QAvOCe5l2M9c9lheCGZcUHeY8+HHJT7CZs5p88GwjnFVAA==
   wovain:resend-api-key:
-    secure: v1:ASXeoo1en0xnUp3s:hYDkmXc/UhCYg31N9JoCQR9r2nXxGr+AhHtT8JGO6U/LPcOfEj98eRWfPpjrVm7QCo/pmQ==
+    secure: v1:/dc0tnz3lfAPv6LF:HMIRlBi6lVuTrEMjUyvcnlEkZU+LcYYAnO7A46kLusdlDNJi4kJHhQxgLf9R7Gfe2euAYg==
   wovain:gitlab-feature-flags-instance-id:
     secure: v1:7vvbp/rU3SEHGPOk:DknbpnKBI8yQHOUj5fb/7fkHkUNJcfTzEgP76y2GRZv2a+//uZtDpYB8Cg==
   wovain:posthog-personal-api-key:
     secure: v1:rZ/WZL4grzt7uxgC:j9xl8OXArr/pQBZiKVgEZTbdyaMSZp2cyJGq00KgIBl2UnU7W82lTFBP0EkaRbf3OaQRKHbYFQvYHE2ENlTwVBoO+eA=
   wovain:posthogProjectId: "687269"
+  wovain:resendDomain: "true"
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
