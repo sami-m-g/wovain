@@ -98,7 +98,7 @@ export const registerDashboardTools = (
       ...shared,
       _meta: { ui: { visibility: ["model", "app"] } },
       description:
-        "The merchant's dashboard numbers for the last 7, 28 or 90 days: Fourthwall sales (revenue, orders, profit, AOV, top products, sales by UTM mapped to ads), Meta results per campaign, ad and concept, the two sources compared, the products wovain created, recent autopilot runs, optimizer actions and connection status. Read-only, on the merchant's own accounts; cached for a minute.",
+        "The merchant's dashboard numbers for the last 7, 28 or 90 days: Fourthwall sales (revenue, orders, profit, AOV, top products, sales by UTM mapped to ads), Meta results per campaign, ad and concept, the two sources compared, the products wovain created, recent autopilot runs and connection status. Read-only, on the merchant's own accounts; cached for a minute.",
       title: "Dashboard data",
     },
     handle

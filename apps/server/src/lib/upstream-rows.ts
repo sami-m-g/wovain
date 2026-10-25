@@ -4,8 +4,7 @@ import type { Upstream, UpstreamRequest } from "./upstream.ts";
 
 // One upstream call on the merchant's grant, as report rows. No grant (or a
 // refused one) is `missing`; an error reply or a failed call is `error`, and
-// its reason isn't kept, since it may echo the merchant's data. Shared by
-// the dashboard and the optimizer.
+// its reason isn't kept, since it may echo the merchant's data.
 
 export type Read =
   | { kind: "rows"; rows: Row[] }
@@ -27,15 +26,4 @@ export const readRows = async (
   } catch {
     return { kind: "error" };
   }
-};
-
-// Several reads of one source: missing if any found no grant, error if any
-// failed, connected otherwise.
-export const stateOfReads = (reads: Read[]) => {
-  if (reads.some((read) => read.kind === "missing")) {
-    return "missing" as const;
-  }
-  return reads.some((read) => read.kind === "error")
-    ? ("error" as const)
-    : ("connected" as const);
 };

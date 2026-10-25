@@ -10,7 +10,6 @@ import { moneyText, ratioText, titles } from "./format.ts";
 import { SalesChart } from "./sales-chart.tsx";
 import {
   AdTable,
-  OptimizerList,
   ProductList,
   ReconciliationLine,
   RunList,
@@ -67,8 +66,7 @@ export const DashboardWidgetView = ({
 }: DashboardWidgetViewProps) => {
   const titleId = useId();
   const { busy, failed, pending, run } = useAction<ConnectPrompt>();
-  const { ads, connections, optimizer, products, reconciliation, runs, sales } =
-    dashboard;
+  const { ads, connections, products, reconciliation, runs, sales } = dashboard;
   const days = `${String(rangeDays[dashboard.range])} days`;
   const toConnect = connections.flatMap(({ provider, state }) =>
     isConnectPrompt(provider) && state !== "connected"
@@ -199,7 +197,6 @@ export const DashboardWidgetView = ({
       )}
       {products.length > 0 ? <ProductList products={products} /> : null}
       {runs.length > 0 ? <RunList runs={runs} /> : null}
-      {optimizer === undefined ? null : <OptimizerList actions={optimizer} />}
 
       <p className="text-secondary border-subtle m-0 mt-4 border-t pt-3 text-xs">
         {connections

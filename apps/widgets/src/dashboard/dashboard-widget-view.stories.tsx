@@ -78,15 +78,6 @@ const full: Dashboard = {
   ],
   costPerSale: 10.5,
   generatedAt: "2026-10-22T09:00:00.000Z",
-  optimizer: [
-    {
-      id: "a1",
-      reason: "Under breakeven with 8 sales; budget is capped.",
-      status: "proposed",
-      target: "campaign 555",
-      type: "budget_up",
-    },
-  ],
   products: [
     { designId: "d2", status: "hidden", title: "Retro Ramen Cat Drop" },
     {
@@ -170,7 +161,6 @@ export const FullData = meta.story({
     await expect(canvas.getByText("facebook · wovain d1 · c1")).toBeVisible();
     await expect(canvas.getByText("Sources agree")).toBeVisible();
     await expect(canvas.getByText("Hidden")).toBeVisible();
-    await expect(canvas.getByText("Recommended")).toBeVisible();
     await expect(canvas.queryAllByRole("button")).toHaveLength(0);
   },
 });
@@ -181,7 +171,6 @@ export const FullDataDark = meta.story({ globals: { theme: "dark" } });
 const {
   ads: _ads,
   costPerSale: _costPerSale,
-  optimizer: _optimizer,
   reconciliation: _reconciliation,
   ...shopOnly
 } = full;

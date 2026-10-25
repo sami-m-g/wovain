@@ -56,25 +56,6 @@ export const audioSettings = z.object({
   source: z.enum(["mmaudio", "kling-native", "off"]).default("mmaudio"),
 });
 
-// The optimizer (docs/changes/25-optimizer/spec.md, section 7). Off and
-// `advise` until the merchant opts in; `safe` applies safe actions on its own.
-export const MAX_DAILY_BUDGET = 500;
-export const optimizerSettings = z.object({
-  approvalTtlHours: z.int().min(1).max(720).default(72),
-  autonomy: z.enum(["off", "advise", "safe"]).default("advise"),
-  conversionLagHours: z.int().min(0).max(672).default(72),
-  cooldownHours: z.int().min(0).max(720).default(72),
-  disagreementPct: z.number().min(1).max(100).default(30),
-  enabled: z.boolean().default(false),
-  maxAutoPausesPerDay: z.int().min(0).max(50).default(3),
-  maxBudgetChangePctPerDay: z.number().min(1).max(100).default(20),
-  // Unset: the campaign budget per product × products × the scale cap.
-  maxDailyBudget: z.number().min(1).max(MAX_DAILY_BUDGET).optional(),
-  refundSpikeMultiple: z.number().min(1).default(2),
-  reviewHourUtc: z.int().min(0).max(23).default(7),
-  shopSettleMinutes: z.int().min(0).max(1440).default(60),
-});
-
 // research_trends: what one run may spend on Tavily and where it looks.
 export const researchSettings = z.object({
   // A typical tee's base cost, for the margin against competitor prices.
@@ -97,7 +78,6 @@ export const settingsSchema = z.object({
   audio: audioSettings.prefault({}),
   campaign: campaignSettings.prefault({}),
   economics: economicsSettings.prefault({}),
-  optimizer: optimizerSettings.prefault({}),
   pricing: pricingSettings.prefault({}),
   research: researchSettings.prefault({}),
   rules: rulesSettings.prefault({}),
@@ -119,7 +99,6 @@ export const settingsPatchSchema = z.object({
   audio: audioSettings.partial().optional(),
   campaign: campaignSettings.partial().optional(),
   economics: economicsSettings.partial().optional(),
-  optimizer: optimizerSettings.partial().optional(),
   pricing: pricingSettings.partial().optional(),
   research: researchSettings.partial().optional(),
   rules: rulesSettings.partial().optional(),
