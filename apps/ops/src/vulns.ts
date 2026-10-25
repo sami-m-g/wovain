@@ -185,3 +185,27 @@ export const planVulnTasks = <T extends VulnFinding>(input: {
   }
   return { create, open, reopen };
 };
+
+// Auto-resolve: findings the latest default-branch scan no longer reports
+// are set to Resolved, a few per run, each logged on the vuln-fix issue. The
+// vulnerability management policy (security-policies/policy.yml) does the
+// same where Ultimate and a linked policy project allow it.
+export const MAX_AUTO_RESOLVE_PER_RUN = 10;
+export const RESOLVE_COMMENT =
+  "No longer detected on the default branch: resolved by wovain ops.";
+
+export interface GoneFinding {
+  id: string;
+  resolvedOnDefaultBranch: boolean;
+  severity: string;
+  webUrl: string;
+}
+
+// The findings to resolve now: only ones GitLab says are gone, within the cap.
+export const pickGone = <T extends GoneFinding>(vulns: T[]) =>
+  vulns
+    .filter((v) => v.resolvedOnDefaultBranch)
+    .slice(0, MAX_AUTO_RESOLVE_PER_RUN);
+
+export const resolvedNote = (v: GoneFinding) =>
+  `Resolved a ${v.severity} finding the default-branch scan no longer reports: ${v.webUrl}\n\n<!-- wovain:vuln-resolved:${v.id} -->`;

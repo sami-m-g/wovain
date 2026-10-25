@@ -3,13 +3,16 @@ import { describe, expect, it } from "vitest";
 import type { Issue, Note } from "../src/gitlab.ts";
 import { TASK_LABEL, hasAcceptanceCriteria } from "../src/intake.ts";
 import {
+  MAX_AUTO_RESOLVE_PER_RUN,
   MAX_OPEN_VULN_TASKS,
   MAX_VULN_FIXES_PER_DAY,
   VULN_LABEL,
   isUnavailable,
+  pickGone,
   pickVulns,
   planVulnTasks,
   resolutionUnavailable,
+  resolvedNote,
   startedMarker,
   startedVulns,
   taskedVulns,
@@ -174,6 +177,34 @@ describe("Vulnerability Resolution fallback", () => {
       task(2, { description: "<!-- wovain:vuln-task:gid://evil/1 -->" }),
     ]);
     expect(tasked.size).toBe(0);
+  });
+});
+
+const gone = (n: number, resolvedOnDefaultBranch = true) => ({
+  id: `gid://gitlab/Vulnerability/${n}`,
+  resolvedOnDefaultBranch,
+  severity: "HIGH",
+  webUrl: `https://gitlab.com/p/-/security/vulnerabilities/${n}`,
+});
+
+describe("auto-resolve", () => {
+  it("picks only findings GitLab no longer detects", () => {
+    expect(pickGone([gone(1), gone(2, false), gone(3)])).toStrictEqual([
+      gone(1),
+      gone(3),
+    ]);
+  });
+
+  it("resolves at most MAX_AUTO_RESOLVE_PER_RUN a run", () => {
+    const many = Array.from({ length: 25 }, (_, i) => gone(i));
+    expect(pickGone(many)).toHaveLength(MAX_AUTO_RESOLVE_PER_RUN);
+    expect(pickGone(many)[0]).toStrictEqual(gone(0));
+  });
+
+  it("logs each finding with its link and a marker", () => {
+    const body = resolvedNote(gone(7));
+    expect(body).toContain(gone(7).webUrl);
+    expect(body).toContain(`<!-- wovain:vuln-resolved:${gone(7).id} -->`);
   });
 });
 

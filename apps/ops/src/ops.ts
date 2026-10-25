@@ -43,11 +43,14 @@ import {
 } from "./signals.ts";
 import { doraOf, healthOf, renderStatus } from "./status.ts";
 import {
+  RESOLVE_COMMENT,
   VULN_LABEL,
   isUnavailable,
+  pickGone,
   pickVulns,
   planVulnTasks,
   resolutionUnavailable,
+  resolvedNote,
   startedMarker,
   startedVulns,
   unavailableNote,
@@ -66,6 +69,7 @@ import {
 //   intake   agent::task issues → checks and caps → assigned to Developer
 //   vulns    new High/Critical SAST findings → Duo Vulnerability Resolution,
 //            or, where it's unavailable, agent::task issues → Developer
+//   resolve  findings no longer detected on the default branch → Resolved
 //   shepherd Duo's MRs → ready → Duo Code Review → guardrails → auto-merge
 //   status   public/index.html for the status page (the pages job publishes it)
 //   signals  PostHog KPI alerts firing → the scout flow, at most once a day
@@ -497,6 +501,27 @@ const vulnFixes = async () => {
   return report.join("; ");
 };
 
+// Resolves findings the default-branch scan no longer reports (vulns.ts),
+// one at a time, logging each on the vuln-fix issue.
+const resolveGone = async () => {
+  const [gone, log] = await Promise.all([gitlab.noLongerDetected(), vulnLog()]);
+  const picked = pickGone(gone);
+  const results: string[] = [];
+  for (const v of picked) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- one at a time, under the cap
+    const failed = await bestEffort(`resolving ${v.id}`, async () => {
+      await gitlab.resolveFinding(v.id, RESOLVE_COMMENT);
+      await gitlab.noteOnIssue(log.iid, resolvedNote(v));
+    });
+    results.push(...failed);
+  }
+  const resolved = picked.length - results.length;
+  return [
+    `${gone.length} no longer detected; ${resolved} resolved`,
+    ...results,
+  ].join("; ");
+};
+
 const once = async (mr: number, notes: Note[], kind: string, body: string) => {
   if (!hasMarker(notes, kind)) {
     await gitlab.noteOnMergeRequest(mr, `${body}\n\n${marker(kind)}`);
@@ -848,6 +873,7 @@ const verifyKpis = async () => {
 const phases = {
   heal,
   intake,
+  resolveGone,
   shepherd,
   signals,
   statusPage,
