@@ -121,5 +121,8 @@ config:
     secure: v1:ASXeoo1en0xnUp3s:hYDkmXc/UhCYg31N9JoCQR9r2nXxGr+AhHtT8JGO6U/LPcOfEj98eRWfPpjrVm7QCo/pmQ==
   wovain:gitlab-feature-flags-instance-id:
     secure: v1:7vvbp/rU3SEHGPOk:DknbpnKBI8yQHOUj5fb/7fkHkUNJcfTzEgP76y2GRZv2a+//uZtDpYB8Cg==
+  wovain:posthog-personal-api-key:
+    secure: v1:rZ/WZL4grzt7uxgC:j9xl8OXArr/pQBZiKVgEZTbdyaMSZp2cyJGq00KgIBl2UnU7W82lTFBP0EkaRbf3OaQRKHbYFQvYHE2ENlTwVBoO+eA=
+  wovain:posthogProjectId: "687269"
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
