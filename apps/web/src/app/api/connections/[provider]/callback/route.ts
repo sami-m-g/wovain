@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
+import { redirectWithin } from "@/lib/redirect";
 import { routerClientFor } from "@/lib/router-client";
 
 // The provider's redirect back after consent. The flow only completes for
@@ -18,11 +19,13 @@ const handleCallback = async (
   const query = request.nextUrl.searchParams;
   const code = query.get("code");
   const state = query.get("state");
+  const { origin } = request.nextUrl;
   const failed = (reason: string) =>
-    Response.redirect(
-      new URL(`/dashboard?connection_error=${reason}`, request.url),
-      302
-    );
+    redirectWithin({
+      origin,
+      query: { connection_error: reason },
+      target: "/dashboard",
+    });
   if (!parsed.success || code === null || state === null) {
     return failed(query.get("error") ?? "invalid_callback");
   }
@@ -35,12 +38,11 @@ const handleCallback = async (
       state,
       ...(iss === undefined ? {} : { iss }),
     });
-    const back = new URL(returnTo, request.url);
-    back.searchParams.set(
-      connected ? "connected" : "connection_error",
-      parsed.data
-    );
-    return Response.redirect(back, 302);
+    return redirectWithin({
+      origin,
+      query: { [connected ? "connected" : "connection_error"]: parsed.data },
+      target: returnTo,
+    });
   } catch (error) {
     getRequestLogger().error(
       error instanceof Error ? error : new Error(String(error))

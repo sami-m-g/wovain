@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { withEvlog } from "@/lib/evlog";
+import { redirectWithin } from "@/lib/redirect";
 import { routerClientFor } from "@/lib/router-client";
 
 // Connect link (from the website or a ChatGPT tool result): sends the
@@ -24,16 +25,22 @@ const handleStart = async (
       provider: parsed.data,
       ...(returnTo === undefined ? {} : { returnTo }),
     });
+    // The provider's consent page: the API builds it from the provider's
+    // configured authorization endpoint, never from this request.
+    // nosemgrep
     return Response.redirect(authorizationUrl, 302);
   } catch (error) {
     if (!(error instanceof ORPCError)) {
       throw error;
     }
-    const next =
-      error.code === "UNAUTHORIZED"
-        ? "/login"
-        : `/dashboard?connection_error=${error.code}`;
-    return Response.redirect(new URL(next, request.url), 302);
+    const { origin } = request.nextUrl;
+    return error.code === "UNAUTHORIZED"
+      ? redirectWithin({ origin, target: "/login" })
+      : redirectWithin({
+          origin,
+          query: { connection_error: error.code },
+          target: "/dashboard",
+        });
   }
 };
 

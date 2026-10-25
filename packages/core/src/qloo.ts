@@ -66,6 +66,9 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       throw notConfigured("qloo", "QLOO_API_KEY");
     }
     const response = await fetch(
+      // Qloo's configured base URL; path is one of this file's literals and
+      // query is encoded, so no input picks the host.
+      // nosemgrep
       new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
       {
         headers: { Accept: "application/json", "X-Api-Key": apiKey },

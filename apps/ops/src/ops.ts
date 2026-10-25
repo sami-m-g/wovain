@@ -32,10 +32,16 @@ import { loadKpis } from "./kpis.ts";
 import { doraOf, healthOf, renderStatus } from "./status.ts";
 import {
   VULN_LABEL,
+  isUnavailable,
   pickVulns,
+  planVulnTasks,
+  resolutionUnavailable,
   startedMarker,
   startedVulns,
+  unavailableNote,
   vulnMergeRequests,
+  vulnTaskBody,
+  vulnTaskTitle,
 } from "./vulns.ts";
 
 // The ops job (.gitlab/ci/ops.yml), every 10 minutes on the "wovain ops"
@@ -46,7 +52,8 @@ import {
 //   verify   merged heal fixes → production clean? → verified, or reopened
 //            and an incident for each, closed when production confirms
 //   intake   agent::task issues → checks and caps → assigned to Developer
-//   vulns    new High/Critical SAST findings → Duo Vulnerability Resolution
+//   vulns    new High/Critical SAST findings → Duo Vulnerability Resolution,
+//            or, where it's unavailable, agent::task issues → Developer
 //   shepherd Duo's MRs → ready → Duo Code Review → guardrails → auto-merge
 //   status   public/index.html for the status page (the pages job publishes it)
 // It never merges anything itself; GitLab merges once the pipeline passes.
@@ -311,7 +318,9 @@ const intake = async () => {
 // The confidential issue whose notes record every Vulnerability Resolution
 // the ops job started (audit trail and daily cap).
 const vulnLog = async () => {
-  const [found] = await gitlab.issues({ labels: VULN_LABEL, state: "opened" });
+  const listed = await gitlab.issues({ labels: VULN_LABEL, state: "opened" });
+  // The per-finding task issues carry vuln-fix too; the log doesn't.
+  const found = listed.find((i) => !i.labels.includes(TASK_LABEL));
   if (found !== undefined) {
     return found;
   }
@@ -327,29 +336,102 @@ const vulnLog = async () => {
 const vulnState = async () => {
   const [vulns, log] = await Promise.all([gitlab.vulnerabilities(), vulnLog()]);
   const notes = await gitlab.issueNotes(log.iid);
-  return { log, started: startedVulns(notes), vulns };
+  return { log, notes, started: startedVulns(notes), vulns };
 };
 
-// Hands new High and Critical findings to Duo Vulnerability Resolution.
-const vulnFixes = async () => {
-  const { log, started, vulns } = await vulnState();
-  const picked = pickVulns(vulns, started, now);
-  const results = await Promise.all(
-    picked.map(async (v) => {
-      const failed = await bestEffort("Vulnerability Resolution", () =>
-        gitlab.resolveVulnerability(v.id)
-      );
-      if (failed.length > 0) {
-        return failed[0] ?? "failed";
+type Finding = Awaited<ReturnType<typeof gitlab.vulnerabilities>>[number];
+
+// Starts Vulnerability Resolution for each picked finding, one at a time;
+// stops at GitLab's "not available here" and records it on the log issue.
+const resolveVulns = async (log: Issue, picked: Finding[]) => {
+  const results: string[] = [];
+  for (const v of picked) {
+    try {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- stop at the first "unavailable"
+      await gitlab.resolveVulnerability(v.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      if (isUnavailable(message)) {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- once, then stop
+        await gitlab.noteOnIssue(log.iid, unavailableNote(message));
+        return { results, unavailable: true };
       }
-      await gitlab.noteOnIssue(
-        log.iid,
-        `Started Duo Vulnerability Resolution for a ${v.severity} finding: ${v.webUrl}\n\n${startedMarker(v.id)}`
-      );
-      return `started for ${v.id}`;
-    })
-  );
-  return `${vulns.length} open High/Critical SAST finding(s); ${results.length === 0 ? "none to start" : results.join("; ")}`;
+      results.push(`Vulnerability Resolution failed for ${v.id}: ${message}`);
+      continue;
+    }
+    // oxlint-disable-next-line eslint/no-await-in-loop -- same finding
+    await gitlab.noteOnIssue(
+      log.iid,
+      `Started Duo Vulnerability Resolution for a ${v.severity} finding: ${v.webUrl}\n\n${startedMarker(v.id)}`
+    );
+    results.push(`Vulnerability Resolution started for ${v.id}`);
+  }
+  return { results, unavailable: false };
+};
+
+// The fallback: one agent::task + vuln-fix issue per finding (vulns.ts),
+// which intake hands to the Developer flow.
+const fileVulnTasks = async (
+  vulns: Finding[],
+  started: Map<string, string>
+) => {
+  const tasks = await gitlab.issues({
+    labels: `${TASK_LABEL},${VULN_LABEL}`,
+    state: "all",
+  });
+  const plan = planVulnTasks({
+    now,
+    tasks,
+    vulns: vulns.filter((v) => !started.has(v.id)),
+  });
+  const filed = await Promise.all([
+    ...plan.create.map(
+      async (v) =>
+        await bestEffort(`task issue for ${v.id}`, () =>
+          gitlab.createIssue({
+            confidential: true,
+            description: vulnTaskBody(v),
+            labels: `${TASK_LABEL},${VULN_LABEL}`,
+            title: vulnTaskTitle(v),
+          })
+        )
+    ),
+    ...plan.reopen.map(
+      async ({ issue, vuln }) =>
+        await bestEffort(`reopening #${issue.iid}`, async () => {
+          await gitlab.updateIssue(issue.iid, { state_event: "reopen" });
+          await gitlab.noteOnIssue(
+            issue.iid,
+            `Reopened: the latest default-branch scan still reports ${vuln.webUrl}.`
+          );
+        })
+    ),
+  ]);
+  return [
+    `Vulnerability Resolution unavailable: ${plan.open} task issue(s) open, ${plan.create.length} to file, ${plan.reopen.length} to reopen`,
+    ...filed.flat(),
+  ];
+};
+
+// Hands new High and Critical findings to Duo Vulnerability Resolution, or,
+// where this project can't use it, to the Developer flow through task
+// issues. Each part reports its own status; neither fails the phase.
+const vulnFixes = async () => {
+  const { log, notes, started, vulns } = await vulnState();
+  const report = [`${vulns.length} open High/Critical SAST finding(s)`];
+  let unavailable = resolutionUnavailable(notes, now);
+  if (!unavailable) {
+    const picked = pickVulns(vulns, started, now);
+    const resolved = await resolveVulns(log, picked);
+    report.push(
+      ...(picked.length === 0 ? ["none to start"] : resolved.results)
+    );
+    ({ unavailable } = resolved);
+  }
+  if (unavailable) {
+    report.push(...(await fileVulnTasks(vulns, started)));
+  }
+  return report.join("; ");
 };
 
 const once = async (mr: number, notes: Note[], kind: string, body: string) => {

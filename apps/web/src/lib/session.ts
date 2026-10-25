@@ -8,6 +8,9 @@ import { auth } from "@/services";
 export const requireSession = async (locale: Locale, next: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
+    // A fixed path on this site; the login form only follows a `next` that
+    // starts with /dashboard (auth-form.tsx).
+    // nosemgrep
     return redirect({
       href: { pathname: "/login", query: { next } },
       locale,

@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import type { Note } from "../src/gitlab.ts";
+import type { Issue, Note } from "../src/gitlab.ts";
+import { TASK_LABEL, hasAcceptanceCriteria } from "../src/intake.ts";
 import {
+  MAX_OPEN_VULN_TASKS,
   MAX_VULN_FIXES_PER_DAY,
+  VULN_LABEL,
+  isUnavailable,
   pickVulns,
+  planVulnTasks,
+  resolutionUnavailable,
   startedMarker,
   startedVulns,
+  taskedVulns,
+  unavailableNote,
   vulnMergeRequests,
+  vulnTaskBody,
+  vulnTaskTitle,
 } from "../src/vulns.ts";
 
 const now = new Date("2026-10-25T12:00:00Z");
@@ -60,6 +70,110 @@ describe("pickVulns", () => {
       ])
     );
     expect(pickVulns([vuln(1)], started, now)).toStrictEqual([]);
+  });
+});
+
+const finding = (n: number, overrides = {}) => ({
+  ...vuln(n),
+  file: "apps/web/src/x.ts",
+  identifiers: ["cwe:601"],
+  line: "12",
+  title: "URL redirection to untrusted site",
+  webUrl: `https://gitlab.com/p/-/security/vulnerabilities/${n}`,
+  ...overrides,
+});
+const task = (n: number, overrides: Partial<Issue> = {}): Issue => ({
+  assignees: [],
+  author: { username: "owner" },
+  closed_at: null,
+  created_at: "2026-10-20T00:00:00Z",
+  description: vulnTaskBody(finding(n)),
+  id: 1000 + n,
+  iid: n,
+  issue_type: "issue",
+  labels: [TASK_LABEL, VULN_LABEL],
+  state: "opened",
+  title: "t",
+  web_url: `https://gitlab.com/p/-/issues/${n}`,
+  ...overrides,
+});
+
+const closed = (at: string) => task(1, { closed_at: at, state: "closed" });
+
+describe("Vulnerability Resolution fallback", () => {
+  it("recognises GitLab's 'not available' answer, not other failures", () => {
+    expect(
+      isUnavailable(
+        "GitLab GraphQL: AI features are not enabled or resource is not permitted to be sent."
+      )
+    ).toBe(true);
+    expect(isUnavailable("GitLab GraphQL: 502")).toBe(false);
+  });
+
+  it("skips Vulnerability Resolution for a week after it was unavailable", () => {
+    const body = unavailableNote("AI features are not enabled");
+    expect(
+      resolutionUnavailable([note(body, "2026-10-20T12:00:00Z")], now)
+    ).toBe(true);
+    expect(
+      resolutionUnavailable([note(body, "2026-10-10T12:00:00Z")], now)
+    ).toBe(false);
+  });
+
+  it("files one issue per finding that intake accepts", () => {
+    const body = vulnTaskBody(finding(1));
+    expect(hasAcceptanceCriteria(body)).toBe(true);
+    expect([...taskedVulns([task(1)]).keys()]).toStrictEqual([finding(1).id]);
+    expect(vulnTaskTitle(finding(1))).toBe(
+      "Fix high SAST finding: URL redirection to untrusted site in apps/web/src/x.ts"
+    );
+  });
+
+  it("deduplicates, skips findings with a fix, and caps open issues", () => {
+    const plan = planVulnTasks({
+      now,
+      tasks: [task(1)],
+      vulns: [
+        finding(1),
+        finding(2, { mergeRequest: 5 }),
+        finding(3),
+        finding(4),
+        finding(5),
+      ],
+    });
+    expect(plan.open).toBe(1);
+    expect(plan.create.map((v) => v.id)).toStrictEqual(
+      [finding(3).id, finding(4).id, finding(5).id].slice(
+        0,
+        MAX_OPEN_VULN_TASKS - 1
+      )
+    );
+    expect(plan.reopen).toStrictEqual([]);
+  });
+
+  it("reopens a closed issue whose finding is still reported, after a day", () => {
+    expect(
+      planVulnTasks({
+        now,
+        tasks: [closed("2026-10-23T00:00:00Z")],
+        vulns: [finding(1)],
+      }).reopen.map((r) => r.issue.iid)
+    ).toStrictEqual([1]);
+    expect(
+      planVulnTasks({
+        now,
+        tasks: [closed("2026-10-25T08:00:00Z")],
+        vulns: [finding(1)],
+      })
+    ).toStrictEqual({ create: [], open: 0, reopen: [] });
+  });
+
+  it("ignores issues without agent::task and markers in other text", () => {
+    const tasked = taskedVulns([
+      task(1, { labels: [VULN_LABEL] }),
+      task(2, { description: "<!-- wovain:vuln-task:gid://evil/1 -->" }),
+    ]);
+    expect(tasked.size).toBe(0);
   });
 });
 

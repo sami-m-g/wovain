@@ -124,7 +124,20 @@ const vulnerabilitiesSchema = z.object({
           z.object({
             detectedAt: z.string(),
             id: z.string(),
+            identifiers: z
+              .array(
+                z.object({ externalId: z.string(), externalType: z.string() })
+              )
+              .default([]),
+            location: z
+              .object({
+                file: z.string().nullable().optional(),
+                startLine: z.coerce.string().nullable().optional(),
+              })
+              .nullable()
+              .optional(),
             mergeRequest: z.object({ iid: z.coerce.number() }).nullable(),
+            resolvedOnDefaultBranch: z.boolean().default(false),
             severity: z.string(),
             title: z.string(),
             webUrl: z.string(),
@@ -135,7 +148,9 @@ const vulnerabilitiesSchema = z.object({
   }),
 });
 const VULNERABILITIES =
-  "query($path: ID!) { project(fullPath: $path) { vulnerabilities(severity: [CRITICAL, HIGH], state: [DETECTED, CONFIRMED], reportType: [SAST], sort: detected_desc, first: 50) { nodes { id title severity detectedAt webUrl mergeRequest { iid } } } } }";
+  "query($path: ID!) { project(fullPath: $path) { vulnerabilities(severity: [CRITICAL, HIGH], state: [DETECTED, CONFIRMED], reportType: [SAST], sort: detected_desc, first: 50) { nodes { id title severity detectedAt webUrl resolvedOnDefaultBranch mergeRequest { iid } identifiers { externalType externalId } location { ... on VulnerabilityLocationSast { file startLine } } } } } }";
+// Scanner-defined identifiers worth naming in a task: never free text.
+const NAMED_IDENTIFIERS = new Set(["cwe", "semgrep_id"]);
 
 type Method = "GET" | "POST" | "PUT";
 type Query = Record<string, string | number | boolean | number[]>;
@@ -245,7 +260,10 @@ export const createGitLab = (env: {
     createIssue: async (fields: Query) =>
       await inProject(issueSchema, "POST", "issues", fields),
     currentUser: async () => await call(userSchema, "GET", "user"),
-    // Successful production deployments since a date.
+    // Successful production deployments since a date. The Deployments API
+    // filters by date only with the matching sort: finished_after needs
+    // order_by=finished_at and status=success (updated_after would need
+    // order_by=updated_at, and answers 400 otherwise).
     deployments: async (since: Date) =>
       await inProject(
         z.array(z.object({ created_at: z.string() })),
@@ -253,11 +271,11 @@ export const createGitLab = (env: {
         "deployments",
         {
           environment: "production",
-          order_by: "created_at",
+          finished_after: since.toISOString(),
+          order_by: "finished_at",
           per_page: 100,
           sort: "desc",
           status: "success",
-          updated_after: since.toISOString(),
         }
       ),
     diffs: async (mr: number) =>
@@ -420,19 +438,28 @@ export const createGitLab = (env: {
         `merge_requests/${mr}/versions`
       ),
 
-    // High and Critical SAST findings still to triage, newest first.
+    // High and Critical SAST findings still to triage, newest first. A
+    // finding the latest default-branch scan no longer reports is fixed
+    // already and only waits for a person to resolve it.
     vulnerabilities: async () => {
       const body = vulnerabilitiesSchema.parse(
         await graphql(VULNERABILITIES, { path: env.projectPath })
       );
-      return body.data.project.vulnerabilities.nodes.map((v) => ({
-        detectedAt: v.detectedAt,
-        id: v.id,
-        mergeRequest: v.mergeRequest?.iid,
-        severity: v.severity,
-        title: v.title,
-        webUrl: v.webUrl,
-      }));
+      return body.data.project.vulnerabilities.nodes
+        .filter((v) => !v.resolvedOnDefaultBranch)
+        .map((v) => ({
+          detectedAt: v.detectedAt,
+          file: v.location?.file ?? undefined,
+          id: v.id,
+          identifiers: v.identifiers
+            .filter((i) => NAMED_IDENTIFIERS.has(i.externalType))
+            .map((i) => `${i.externalType}:${i.externalId}`),
+          line: v.location?.startLine ?? undefined,
+          mergeRequest: v.mergeRequest?.iid,
+          severity: v.severity,
+          title: v.title,
+          webUrl: v.webUrl,
+        }));
     },
   };
 };
