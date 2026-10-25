@@ -12,6 +12,9 @@
     "auth:generate": "varlock run -- pnpm dlx auth@latest generate --config src/services.ts --output ../../packages/db/src/schema/auth.ts --yes"
   },
   "dependencies": {
+    "@better-auth/mcp": "catalog:",
+    "@better-auth/oauth-provider": "catalog:",
+    "@modelcontextprotocol/server": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
@@ -22,6 +25,7 @@
     "@varlock/nextjs-integration": "catalog:",
     "@wovain/api": "workspace:*",
     "@wovain/auth": "workspace:*",
+    "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
     "@wovain/ui": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
