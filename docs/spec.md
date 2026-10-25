@@ -1,0 +1,148 @@
+---
+doc: spec
+status: approved
+---
+
+# wovain — Technical Spec
+
+## How This Works, In Plain Language
+
+One Next.js 16 app runs on Google Cloud Run at <https://wovain.com>. It serves the website, an API and an MCP server that ChatGPT connects to. The website and ChatGPT call the same API procedures, so they always do the same thing. A PostgreSQL database on Cloud SQL remembers users, ideas, designs, approvals and autopilot runs.
+
+When the seller asks for ideas, the API asks Qloo who would buy and which themes they love, and asks Tavily what is in the news inside those themes. Designs are made with fal for Fourthwall products. Nemotron, hosted on Nebius Token Factory, judges each design; code then re-checks the rules it can decide itself. On approval the API creates Fourthwall products and Meta ads, always paused. The documentation lives separately at <https://docs.wovain.com>.
+
+Why not something more elaborate: one app and one API keep the proof of concept small and keep the two surfaces consistent.
+
+## The Core Journey Through the System
+
+PRD ref: `prd.md > The Core Journey`.
+
+1. The seller signs in → Better Auth (`/api/auth`) creates a session in PostgreSQL.
+2. The seller enters a seed → the web page or the MCP tool calls an oRPC procedure at `/api/rpc` → the procedure calls Qloo, then Tavily → ranked ideas are stored and returned.
+3. The seller picks ideas → designs are generated with fal and priced from Fourthwall catalog data → stored.
+4. Each design goes to Nemotron on Nebius → the reply is checked with Zod → code applies print rules → the verdict is stored and shown.
+5. The seller approves → the procedure creates Fourthwall products using the seller's connection.
+6. Ad concepts are generated and approved → the procedure creates a Meta campaign, ad set and ads, all paused.
+7. The seller sees the result and opens Meta Ads Manager to start the campaign.
+
+## Stack
+
+| Layer | Choice | Docs |
+| --- | --- | --- |
+| App | Next.js 16, App Router, React 19 | <https://nextjs.org/docs> |
+| API | oRPC procedures in `packages/api`, mounted at `/api/rpc` | <https://orpc.dev> |
+| Auth | Better Auth in `packages/auth`, mounted at `/api/auth` | <https://better-auth.com> |
+| Data | Drizzle ORM, PostgreSQL on Cloud SQL, in `packages/db` | <https://orm.drizzle.team> |
+| Logs | evlog wide events, one per request | <https://evlog.dev> |
+| UI | shadcn/ui on Base UI, Tailwind CSS 4, in `packages/ui` | <https://ui.shadcn.com> |
+| Environment | Varlock schemas, typed `ENV` | <https://varlock.dev> |
+| Tooling | pnpm workspaces, Turborepo, Ultracite, knip, TypeScript 7 |  |
+| Docs site | Fumadocs with en, fr and es | <https://fumadocs.dev> |
+| Models | NVIDIA Nemotron 3 Super on Nebius Token Factory | <https://docs.tokenfactory.nebius.com> |
+
+Unverified and to check early: the exact MCP connector path and OAuth flow ChatGPT needs on the production domain.
+
+## Where It Runs and How Someone Tries It
+
+- **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>.
+- **Locally:** Node.js (see `.nvmrc`), pnpm and Docker for PostgreSQL.
+
+```bash
+pnpm install
+docker compose up -d
+pnpm run dev
+```
+
+Open the web app, sign up, and follow the seller flow; the docs run on port 4000. Keys go in each app's `.env.schema` values: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `FAL_KEY`. Never commit real values.
+
+Submission needs a short demo video and the public repository; deployment is additional. Video URL: to be added. Repository URL: to be added.
+
+## Look and Feel
+
+Warm, plain, numbers first; coach voice. Light and dark themes from shadcn tokens; spacious cards for approvals; one primary action per card. Works at phone width.
+
+## Components
+
+### Web app (`apps/web`)
+
+Pages, server components, `/api/rpc`, `/api/auth` and the MCP server. PRD ref: `prd.md > Screens and Layout`.
+
+### API (`packages/api`)
+
+oRPC routers. `publicProcedure` adds evlog logging; `protectedProcedure` also requires a session. PRD ref: `prd.md > Features and Behavior`.
+
+### Auth (`packages/auth`)
+
+`createAuth` builds Better Auth on the Drizzle database. PRD ref: `prd.md > States and Boundaries`.
+
+### Database (`packages/db`)
+
+Drizzle schema, relations and client. PRD ref: `prd.md > States and Boundaries`.
+
+### Decision layer
+
+Nemotron call, Zod validation, code-enforced limits, decision events. PRD ref: `prd.md > Features and Behavior` (Autopilot).
+
+### Duo flows
+
+Self-healing, scout and developer flows around the repository; definitions in `docs/flows.md`. PRD ref: `prd.md > Features and Behavior` (After deploy).
+
+## Data Model
+
+| Data | Where | Updated | On return |
+| --- | --- | --- | --- |
+| Users, sessions, accounts | Better Auth tables in `packages/db/src/schema/auth.ts` | Sign-up, sign-in | Session cookie restores the user |
+| Connections | PostgreSQL | On connect | Reused by every run |
+| Ideas, designs, approvals | PostgreSQL | Each step | A run resumes where it stopped |
+| Runs and decision events | PostgreSQL, keyed by run key | Every autopilot decision | Auditable later |
+
+Migrations are generated with `pnpm run db:generate`.
+
+## File Structure
+
+```
+wovain/
+├── apps/
+│   ├── web/              # Next.js 16: pages, /api/rpc, /api/auth, MCP server
+│   └── fumadocs/         # docs site, content/docs in en, fr, es
+├── packages/
+│   ├── api/              # oRPC routers and procedures
+│   ├── auth/             # Better Auth configuration
+│   ├── db/               # Drizzle schema, relations, client, migrations
+│   ├── ui/               # shared shadcn/ui components
+│   └── config/           # shared tsconfig
+├── docs/                 # scope, PRD, spec, app map, flows
+├── infra/                # deployment
+└── AGENTS.md
+```
+
+## External Services and Dependencies
+
+| Service | Use | Key | Notes |
+| --- | --- | --- | --- |
+| Nebius Token Factory | Nemotron judge and autopilot, OpenAI-compatible at `https://api.tokenfactory.nebius.com/v1/` | `NEBIUS_API_KEY` | Pay per token |
+| Qloo | `/search`, `/v2/insights` (tags, demographics, heatmap), `/v2/trending` at `https://hackathon.api.qloo.com`, header `X-Api-Key` | `QLOO_API_KEY` | Hackathon key |
+| Tavily | Runtime search for news, saturation and trademark screen | `TAVILY_API_KEY` | Rate limited |
+| fal | Art and ad visuals | `FAL_KEY` | Pay per image |
+| Fourthwall | Catalog and products through its MCP server | OAuth per seller |  |
+| Meta Ads | Campaign, ad set and ads, created paused | OAuth per seller | App review may be needed |
+| Cloud SQL, Cloud Run | PostgreSQL and hosting | GCP project |  |
+
+## Important Failure Modes
+
+- **A model reply does not parse** → the design is shown without the model check and the error is logged.
+- **A provider is down or unconfigured** → that step reports it and the run pauses or continues without it.
+- **A limit would be crossed** → the step does not start and the decision log says why.
+
+## What Was Simplified and Why
+
+- **One app** instead of separate API and MCP services — one API keeps surfaces consistent. Splitting would add deployment and auth plumbing.
+- **Paused campaigns** instead of live launches — removes the risk of unintended spend.
+- **No optimizer** instead of automatic tuning — needs real spend data first.
+
+## Decisions and Open Issues
+
+- Code enforces limits and Nemotron decides inside them — chosen so that a model error cannot overspend; the tradeoff is occasional overrides of a good model answer.
+- Qloo before Tavily — taste narrows the news search; the tradeoff is dependence on Qloo coverage of the seed.
+- Open: ChatGPT connector path and OAuth on the production domain (carried from `prd.md > Open Questions`); Meta app review scope.
+- Unfamiliar concept discussed: the difference between a model suggesting a price and code guaranteeing a price floor. Clarified by the rule that code-decided checks overwrite model output, to be shown with a test during the build.
