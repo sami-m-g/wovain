@@ -2,6 +2,7 @@ import { defineRelationsPart } from "drizzle-orm";
 import {
   pgTable,
   text,
+  bigint,
   timestamp,
   boolean,
   integer,
@@ -283,6 +284,13 @@ export const oauthClientAssertion = pgTable("oauth_client_assertion", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
 export const authRelations = defineRelationsPart(
   {
     user,
@@ -297,6 +305,7 @@ export const authRelations = defineRelationsPart(
     oauthAccessToken,
     oauthConsent,
     oauthClientAssertion,
+    rateLimit,
   },
   (r) => ({
     user: {

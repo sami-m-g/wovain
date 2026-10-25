@@ -94,15 +94,24 @@ export const connectUrl = (provider: Provider, returnTo: string) =>
 export type FlowProblem =
   | { kind: "not_configured"; service: string; variable?: string }
   | { kind: "not_connected"; service: string }
+  | { kind: "limit"; message: string; fix?: string }
   | { kind: "other"; message: string };
 
 const VARIABLE = /\b(?<name>[A-Z][A-Z0-9_]{2,})\b/u;
 const SERVICE_CODE =
   /^(?<service>[A-Z]+)_(?<kind>NOT_CONFIGURED|NOT_CONNECTED)$/u;
+// The spend guard's refusals; the server words them in the merchant's language.
+const LIMITS = new Set(["DAILY_LIMIT", "EMAIL_NOT_VERIFIED", "SPEND_CAP"]);
 
 /** Turns a procedure error into something a step can explain to the seller. */
 export const describeProblem = (error: unknown): FlowProblem => {
   if (error instanceof ORPCError) {
+    if (LIMITS.has(String(error.code))) {
+      const { fix } = (error.data ?? {}) as { fix?: unknown };
+      return typeof fix === "string"
+        ? { fix, kind: "limit", message: error.message }
+        : { kind: "limit", message: error.message };
+    }
     const match = SERVICE_CODE.exec(String(error.code));
     if (match?.groups) {
       const service = match.groups.service?.toLowerCase() ?? "";

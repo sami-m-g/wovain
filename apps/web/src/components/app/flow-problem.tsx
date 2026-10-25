@@ -37,6 +37,8 @@ export const FlowProblemNotice = ({ problem }: { problem: FlowProblem }) => {
     body = problem.variable
       ? t("notConfiguredVariable", { service, variable: problem.variable })
       : t("notConfigured", { service });
+  } else if (problem.kind === "limit") {
+    body = [problem.message, problem.fix].filter(Boolean).join(". ");
   } else {
     body = t("other", { message: problem.message });
   }

@@ -7,12 +7,14 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
 import { getIdea } from "./ideas";
+import { meter } from "./spend";
 
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
 // Nemotron judges it. The merchant (or autopilot) then approves or rejects.
 
 export const generateDesign = async (actor: Actor, ideaId: string) => {
   const source = await getIdea(actor, ideaId);
+  await meter(actor, "image", { runId: source.runId });
   const { artist, nemotron } = actor.core;
   const { artwork, brief, judgment } = await withLlmTrace(
     { distinctId: actor.userId, traceId: source.runId ?? ideaId },
@@ -114,6 +116,7 @@ export const autopilotDecide = async (
   current: Awaited<ReturnType<typeof getDesign>>
 ) => {
   const source = await getIdea(actor, current.ideaId);
+  await meter(actor, "llm", { runId: current.runId });
   const decision = await reviewDesign(
     actor.core.nemotron,
     {

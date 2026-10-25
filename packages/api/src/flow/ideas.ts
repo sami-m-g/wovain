@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
+import { meter } from "./spend";
 
 // Trend research (Qloo × Tavily), saved as ranked ideas.
 export const researchIdeas = async (
@@ -10,6 +11,7 @@ export const researchIdeas = async (
   seed: string,
   runId?: string
 ) => {
+  await meter(actor, "run", { runId });
   const { avoidNames, ideas, qloo } = await actor.core.trends.research(
     seed,
     actor.log
