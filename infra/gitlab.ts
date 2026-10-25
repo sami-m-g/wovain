@@ -73,12 +73,6 @@ export const environments = (siteUrl: pulumi.Input<string>) => {
     { name: "operations", project: projectId, tier: "other" },
     adopt("41884145")
   );
-  // The weekly analysis job; Google trusts gitlab-analytics only from here.
-  new gitlab.ProjectEnvironment(
-    "analytics",
-    { name: "analytics", project: projectId, tier: "other" },
-    adopt("41884343")
-  );
 };
 
 // The renovate job runs only on this schedule (.gitlab/ci/verify.yml matches
@@ -96,34 +90,6 @@ new gitlab.PipelineSchedule(
   adopt("4502115")
 );
 
-// The self-healing loop (.gitlab/ci/loop.yml), hourly. The jobs pick their
-// schedule by its description, since our role can't set schedule variables.
-// The weekly data analysis and market scout (.gitlab/ci/loop.yml), Mondays.
-new gitlab.PipelineSchedule("weekly", {
-  active: true,
-  cron: "30 7 * * 1",
-  cronTimezone: "UTC",
-  description: "wovain weekly",
-  project: projectId,
-  ref: "refs/heads/main",
-});
-// The live e2e journey (.gitlab/ci/proof.yml matches its description).
-new gitlab.PipelineSchedule("nightly-e2e", {
-  active: true,
-  cron: "0 3 * * *",
-  cronTimezone: "UTC",
-  description: "Nightly e2e",
-  project: projectId,
-  ref: "refs/heads/main",
-});
-new gitlab.PipelineSchedule("loop", {
-  active: true,
-  cron: "17 * * * *",
-  cronTimezone: "UTC",
-  description: "wovain loop",
-  project: projectId,
-  ref: "refs/heads/main",
-});
 // Issue labels: status drives the Workflow board, agent says who works it,
 // scout, red-main and digest are the self-healing loop's (apps/ops), and verified marks
 // a scout issue whose fix production confirmed.
@@ -288,3 +254,41 @@ new gitlab.ProjectIssueBoard(
   },
   adopt("11705998")
 );
+
+// Feature flags for the self-healing flow, read by apps/web through GitLab's
+// Unleash-compatible API (Deploy > Feature flags). Pulumi owns each flag's
+// existence and description; its strategies and on/off state are left to the
+// UI and the loop after creation (both are ignored), so flipping one is not
+// drift.
+const featureFlags: Record<string, { description: string; active: boolean }> = {
+  autopilot: {
+    active: false,
+    description:
+      "Autopilot: idea, product set, ads and a paused campaign without a human step",
+  },
+  "fault-injection-checkout": {
+    active: false,
+    description:
+      "Injects a checkout failure so the self-healing loop can detect, fix and verify it",
+  },
+  "trends-tavily": {
+    active: true,
+    description: "Trend research through Tavily (off falls back to no trends)",
+  },
+};
+for (const [name, { active, description }] of Object.entries(featureFlags)) {
+  new gitlab.ProjectFeatureFlag(
+    `flag-${name}`,
+    {
+      active,
+      description,
+      name,
+      project: projectId,
+      // All users, in production only.
+      strategies: [
+        { name: "default", scopes: [{ environmentScope: "production" }] },
+      ],
+    },
+    { ignoreChanges: ["active", "strategies"] }
+  );
+}

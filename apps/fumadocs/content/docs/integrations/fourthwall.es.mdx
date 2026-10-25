@@ -1,0 +1,10 @@
+---
+title: Fourthwall
+description: Wovain crea y publica productos en la tienda de Fourthwall del vendedor.
+---
+
+Fourthwall es la plataforma de impresión bajo demanda y la tienda.
+
+- **Catálogo.** `searchCatalog` en `packages/core/src/fourthwall.ts` lee modelos y costes base reales, así que el precio, el beneficio y el margen son cifras reales (`priceFor`).
+- **Productos.** `uploadArtwork`, `createProduct` y `publishProduct` pasan por el servidor MCP de Fourthwall. Un producto se crea oculto; `products.publish` (la herramienta `publish_product`) lo hace público.
+- **Conexión.** Cada vendedor conecta su propia tienda en `/api/connections/fourthwall/start`. Wovain se identifica con un documento de metadatos de cliente OAuth y guarda el acceso sellado (`packages/core/src/upstream.ts`, `sealing.ts`). Fourthwall no requiere credenciales de aplicación.

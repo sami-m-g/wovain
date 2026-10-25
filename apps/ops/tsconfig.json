@@ -1,10 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@wovain/config/tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
-    "emitDeclarationOnly": true,
-    "noEmit": false,
-    "outDir": "../../node_modules/.tsbuild/apps/ops",
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom"],
     "types": ["node"]
   },
   "include": ["src", "test", "vitest.config.ts"]

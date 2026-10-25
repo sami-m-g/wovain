@@ -1,42 +1,36 @@
 import { GoogleAuth } from "google-auth-library";
 import { z } from "zod";
 
-import { tally } from "./signals.ts";
-import type { Signal } from "./signals.ts";
+// Production's logs and metrics in Google Cloud. CI signs in through Workload
+// Identity Federation (.gcp-auth in .gitlab/ci/templates.yml sets
+// GOOGLE_APPLICATION_CREDENTIALS) as a service account that may only read
+// logs and metrics.
 
-// Production's own logs and metrics in Google Cloud: the App Hosting backend
-// is the Cloud Run service "app". CI signs in as gitlab-ops (gitlab-analytics for the weekly job) through Workload
-// Identity Federation (.gcp-auth, GOOGLE_APPLICATION_CREDENTIALS), which may
-// only read logs and metrics (infra/index.ts).
-
-const SERVICE = "app";
-const LOCATION = "us-central1";
-const MAX_PAGES = 5;
 const LOGGING = "https://logging.googleapis.com/v2/entries:list";
+const MONITORING = "https://monitoring.googleapis.com/v3/projects";
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 5;
 
 export interface Range {
   start: Date;
   end: Date;
 }
 
-// Only the structured fields apps/server/src/lib/request-errors.ts writes;
-// each is checked against an allowlist in signals.ts. The message, the
-// request URL and every other free-text field are never read.
-const entrySchema = z.object({
-  jsonPayload: z
-    .object({
-      wovain: z
-        .object({
-          errorClass: z.unknown(),
-          route: z.unknown(),
-          status: z.unknown(),
-        })
-        .optional(),
-    })
-    .optional(),
-});
+// The evlog wide event's fields, unchecked: heal.ts validates each one.
+interface ErrorEvent {
+  timestamp: string | undefined;
+  payload: Record<string, unknown>;
+}
+
 const entriesSchema = z.object({
-  entries: z.array(entrySchema).default([]),
+  entries: z
+    .array(
+      z.object({
+        jsonPayload: z.record(z.string(), z.unknown()).optional(),
+        timestamp: z.string().optional(),
+      })
+    )
+    .default([]),
   nextPageToken: z.string().optional(),
 });
 
@@ -57,11 +51,20 @@ const seriesSchema = z.object({
     .default([]),
 });
 
+const window = (range: Range) =>
+  `timestamp>="${range.start.toISOString()}" AND timestamp<"${range.end.toISOString()}"`;
+
+export interface MetricQuery {
+  filter: string;
+  aligner: string;
+  reducer: string;
+}
+
 export const createGoogle = (project: string) => {
   const auth = new GoogleAuth({
     scopes: ["https://www.googleapis.com/auth/cloud-platform"],
   });
-  const request = async (url: string, data?: object) => {
+  const request = async (url: string, data?: object): Promise<unknown> => {
     const client = await auth.getClient();
     const response = await client.request({
       method: data === undefined ? "GET" : "POST",
@@ -71,70 +74,50 @@ export const createGoogle = (project: string) => {
     return response.data;
   };
 
-  return {
-    // The service's own structured error lines. The resource labels are set
-    // by Cloud Run, not by whoever sent a request, and only the service's
-    // stdout and stderr logs are read: the request log carries raw URLs.
-    errors: async (range: Range): Promise<Signal[]> => {
-      const filter = [
-        'resource.type="cloud_run_revision"',
-        `resource.labels.project_id="${project}"`,
-        `resource.labels.location="${LOCATION}"`,
-        `resource.labels.service_name="${SERVICE}"`,
-        `resource.labels.configuration_name="${SERVICE}"`,
-        `resource.labels.revision_name=~"^${SERVICE}-"`,
-        `(logName="projects/${project}/logs/run.googleapis.com%2Fstderr" OR logName="projects/${project}/logs/run.googleapis.com%2Fstdout")`,
-        "severity>=ERROR",
-        "jsonPayload.wovain.errorClass:*",
-        `timestamp>="${range.start.toISOString()}"`,
-        `timestamp<"${range.end.toISOString()}"`,
-      ].join(" AND ");
-      const fields: { errorClass: unknown; route: unknown; status: unknown }[] =
-        [];
-      let pageToken: string | undefined;
-      for (let page = 0; page < MAX_PAGES; page += 1) {
-        const query = {
-          filter,
-          orderBy: "timestamp desc",
-          pageSize: 1000,
-          resourceNames: [`projects/${project}`],
-          ...(pageToken === undefined ? {} : { pageToken }),
-        };
-        // oxlint-disable-next-line eslint/no-await-in-loop -- each page needs the previous page's token
-        const reply = await request(LOGGING, query);
-        const body = entriesSchema.parse(reply);
-        fields.push(
-          ...body.entries.flatMap((entry) => entry.jsonPayload?.wovain ?? [])
-        );
-        pageToken = body.nextPageToken;
-        if (pageToken === undefined) {
-          break;
-        }
+  // Up to MAX_PAGES pages of entries, newest first; capped says there were more.
+  const entries = async (filter: string, range: Range) => {
+    const found: ErrorEvent[] = [];
+    let pageToken: string | undefined;
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const query = {
+        filter: `${filter} AND ${window(range)}`,
+        orderBy: "timestamp desc",
+        pageSize: PAGE_SIZE,
+        resourceNames: [`projects/${project}`],
+        ...(pageToken === undefined ? {} : { pageToken }),
+      };
+      // oxlint-disable-next-line eslint/no-await-in-loop -- each page needs the previous page's token
+      const reply = await request(LOGGING, query);
+      const body = entriesSchema.parse(reply);
+      found.push(
+        ...body.entries.map((e) => ({
+          payload: e.jsonPayload ?? {},
+          timestamp: e.timestamp,
+        }))
+      );
+      pageToken = body.nextPageToken;
+      if (pageToken === undefined) {
+        return { capped: false, entries: found };
       }
-      return tally("Cloud Logging", fields);
-    },
+    }
+    return { capped: true, entries: found };
+  };
 
-    // Sum of a Cloud Run metric over the range, e.g. requests served or
-    // billable instance seconds.
-    sum: async (metric: string, range: Range): Promise<number> => {
+  return {
+    entries,
+    // One value for the whole range: the metric aligned over the range and
+    // reduced across series (a sum, a mean, a percentile).
+    metric: async (query: MetricQuery, range: Range): Promise<number> => {
       const seconds = Math.max(
         60,
         Math.round((range.end.getTime() - range.start.getTime()) / 1000)
       );
-      const url = new URL(
-        `https://monitoring.googleapis.com/v3/projects/${project}/timeSeries`
-      );
+      const url = new URL(`${MONITORING}/${project}/timeSeries`);
       for (const [key, value] of Object.entries({
         "aggregation.alignmentPeriod": `${seconds}s`,
-        "aggregation.crossSeriesReducer": "REDUCE_SUM",
-        "aggregation.perSeriesAligner": "ALIGN_SUM",
-        filter: [
-          `metric.type="${metric}"`,
-          'resource.type="cloud_run_revision"',
-          `resource.labels.location="${LOCATION}"`,
-          `resource.labels.service_name="${SERVICE}"`,
-          `resource.labels.configuration_name="${SERVICE}"`,
-        ].join(" AND "),
+        "aggregation.crossSeriesReducer": query.reducer,
+        "aggregation.perSeriesAligner": query.aligner,
+        filter: query.filter,
         "interval.endTime": range.end.toISOString(),
         "interval.startTime": range.start.toISOString(),
       })) {
@@ -153,6 +136,3 @@ export const createGoogle = (project: string) => {
     },
   };
 };
-export type Google = ReturnType<typeof createGoogle>;
-
-export const REQUESTS = "run.googleapis.com/request_count";

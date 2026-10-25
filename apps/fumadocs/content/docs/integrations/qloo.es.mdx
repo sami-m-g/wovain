@@ -1,0 +1,35 @@
+---
+title: Qloo
+description: El grafo de gustos de Qloo decide qué temas merece la pena diseñar.
+---
+
+Qloo es el primer paso del flujo, no un añadido. Sin él, wovain solo conoce lo que sale en las noticias; con él, wovain sabe **qué temas aman los fans de la semilla**.
+
+## Gusto por momento
+
+| Señal   | Fuente | Pregunta a la que responde     |
+| ------- | ------ | ------------------------------ |
+| Gusto   | Qloo   | ¿Qué temas ama esta audiencia? |
+| Momento | Tavily | ¿Por qué ahora?                |
+
+## Qué le pide wovain a Qloo
+
+Implementado en `packages/core/src/qloo.ts` (`createQloo`):
+
+1. **Search** (`/search`) convierte la semilla en entidades de Qloo.
+2. **Insights** (`/v2/insights`) devuelven las etiquetas de gustos transversales de esas entidades. Son los temas de los diseños.
+
+## Cómo cambia el producto
+
+- **Ideas.** Tavily busca las noticias de la semana y los marketplaces solo dentro de los temas de Qloo (`packages/core/src/trends.ts`).
+- **Puntuación.** El código ordena cada idea (`packages/core/src/score.ts`) y guarda con ella los datos de su puntuación. Nemotron escribe el nombre y el enfoque.
+- **Seguridad de propiedad intelectual.** Los nombres que Qloo asocia a la semilla (marcas, artistas, títulos) se guardan en la idea como nombres que nunca se deben imprimir.
+
+## Configuración
+
+```bash
+QLOO_API_KEY=...
+QLOO_API_URL=https://hackathon.api.qloo.com
+```
+
+Las claves de hackathon solo funcionan contra el servidor de hackathon, enviadas en la cabecera `X-Api-Key`. Si falta la clave, el paso de investigación falla con un error `NOT_CONFIGURED` que nombra la variable.

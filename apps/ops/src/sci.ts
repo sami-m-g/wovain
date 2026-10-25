@@ -1,72 +1,45 @@
 // Software Carbon Intensity (Green Software Foundation, ISO/IEC 21031:2024):
-//   SCI = ((E × I) + M) per R
-// E is energy (kWh), I the location-based grid intensity (gCO2e/kWh), M the
-// embodied emissions share (gCO2e), R the functional unit: one merchant run
-// from an idea to a paused Meta campaign. Each constant below says whether it
-// is measured, published or an estimate, and where it comes from.
-
-import type { ClipStats } from "./clip-stats.ts";
+//   SCI = ((E x I) + M) per R
+// E is energy (kWh), I location-based grid intensity (gCO2e/kWh), M the
+// embodied share (gCO2e), and R the functional unit: 1,000 requests served
+// by the web app. The post-code lifecycle's own footprint (CI minutes and
+// Duo sessions) is part of E, so automating upkeep shows up in the score.
+// Each constant says whether it is published or an estimate.
 
 // Location-based grid intensity, Google Cloud's region table (2025 data,
-// cloud.google.com/sustainability/region-carbon): published.
-const GRID = {
-  // App Hosting / Cloud Run, Iowa. Google's 88% CFE is a market-based
-  // figure, which SCI excludes, so it isn't credited.
-  "us-central1": 432,
-  // GitLab.com hosted Linux runners (docs.gitlab.com, hosted runners):
-  // us-east1 and us-east5; us-east1 is the dirtier, so it's used.
-  "us-east1": 579,
-} as const;
+// cloud.google.com/sustainability/region-carbon): published. GitLab.com's
+// hosted Linux runners run in us-east1.
+const GRID = { runners: 579, service: 432 } as const;
 
-// Cloud Carbon Footprint's Google Cloud coefficients (cloudcarbonfootprint.org
-// methodology): estimate. Average vCPU draw at 50% utilization between its
-// 0.71 W minimum and 4.26 W maximum, 0.392 W per GB of memory, PUE 1.1.
+// Cloud Carbon Footprint's coefficients (cloudcarbonfootprint.org): average
+// vCPU draw at 50% utilization between 0.71 W and 4.26 W, 0.392 W per GB of
+// memory, PUE 1.1: estimate.
 const VCPU_WATTS = (0.71 + 4.26) / 2;
 const GB_WATTS = 0.392;
 const PUE = 1.1;
-// Embodied: about 1,200 kgCO2e per 48-vCPU server over 4 years, shared per
-// vCPU-hour (CCF's approach): estimate.
+// About 1,200 kgCO2e per 48-vCPU server over 4 years, per vCPU-hour: estimate.
 const EMBODIED_G_PER_VCPU_HOUR = 1_200_000 / (4 * 8760 * 48);
+// A Duo session: about 30 model calls at about 0.3 Wh each (Epoch AI's 2025
+// per-query estimate), on the service region's grid: unverified estimate.
+const DUO_SESSION_KWH = 30 * 0.0003;
 
-// One run, from the design, ads and campaign playbooks (estimates):
-const RUN = {
-  // judge_design and research_trends on Nemotron (Nebius).
-  modelCalls: 2,
-  // MCP requests: settings, research, judge, artwork, price, design widget
-  // and record, Fourthwall proxy calls, video plan, generation, ad widgets,
-  // campaign plan, rules, campaign widget.
-  requests: 40,
-  // Assumed weekly volume for sharing CI across runs (a demo-scale shop
-  // network; the report shows the CI share separately).
-  runsPerWeek: 20,
-  // One 5-second fal clip per product, cropped to every ratio (reframe_videos).
-  videoClips: 1,
-};
-// About 0.3 Wh per chat-sized model call (Epoch AI's 2025 estimate for a
-// typical query): unverified estimate.
-const MODEL_CALL_KWH = 0.0003;
-// fal reports GPU seconds per clip (collect_ad_media keeps them and the
-// weekly job publishes their median: measured) but names no GPU and publishes no energy data, so each second is taken at
-// an H100's 700 W TDP with PUE: estimate. With no recorded clip, one
-// H100-minute per clip: unverified estimate.
-const GPU_WATTS = 700;
-const FALLBACK_CLIP_GPU_SECONDS = 60;
-const gpuKwh = (seconds: number) => (seconds * GPU_WATTS * PUE) / 3_600_000;
+// Instance sizes: the web app's Cloud Run service and a hosted small runner.
+const SERVICE = { gb: 0.5, vcpus: 1 };
+const RUNNER = { gb: 8, vcpus: 2 };
 
-const kwh = (seconds: number, vcpus: number, gb: number) =>
-  (seconds * (vcpus * VCPU_WATTS + gb * GB_WATTS) * PUE) / 3_600_000;
+const kwh = (seconds: number, size: { vcpus: number; gb: number }) =>
+  (seconds * (size.vcpus * VCPU_WATTS + size.gb * GB_WATTS) * PUE) / 3_600_000;
 const embodied = (seconds: number, vcpus: number) =>
   (seconds / 3600) * vcpus * EMBODIED_G_PER_VCPU_HOUR;
 
 export interface Measured {
-  // Cloud Monitoring, the last 7 days.
+  // Cloud Monitoring, the window.
   instanceSeconds: number;
   requests: number;
-  // GitLab: summed job durations of main pipelines, the last 7 days.
+  // GitLab: summed job durations of main pipelines in the window.
   ciSeconds: number;
-  mainPipelines: number;
-  // The weekly job's aggregate of the GPU seconds fal reported per clip.
-  clips: ClipStats | null;
+  // Duo Agent Platform sessions started in the project in the window.
+  duoSessions: number;
 }
 
 interface Part {
@@ -76,64 +49,48 @@ interface Part {
 }
 
 export const sciOf = (m: Measured) => {
-  const secondsPerRequest =
-    m.requests === 0 ? 0 : m.instanceSeconds / m.requests;
-  // App Hosting: 1 vCPU, 0.5 GiB (apphosting.yaml).
-  const serverSeconds = secondsPerRequest * RUN.requests;
-  // Hosted runner: 2 vCPU, 8 GB; a week of main pipelines over a week of runs.
-  const ciSecondsPerRun = m.ciSeconds / RUN.runsPerWeek;
-  const clipSeconds = m.clips?.medianGpuSeconds ?? FALLBACK_CLIP_GPU_SECONDS;
   const parts: Part[] = [
     {
-      basis: `measured ${secondsPerRequest.toFixed(2)} s of instance time per request × ${RUN.requests} requests`,
+      basis: `measured ${Math.round(m.instanceSeconds / 3600)} instance-hours at ${SERVICE.vcpus} vCPU, ${SERVICE.gb} GB`,
       grams:
-        kwh(serverSeconds, 1, 0.5) * GRID["us-central1"] +
-        embodied(serverSeconds, 1),
-      name: "Server (App Hosting, us-central1)",
+        kwh(m.instanceSeconds, SERVICE) * GRID.service +
+        embodied(m.instanceSeconds, SERVICE.vcpus),
+      name: "Web app (Cloud Run)",
     },
     {
-      basis: `measured ${Math.round(m.ciSeconds / 60)} CI minutes over ${m.mainPipelines} main pipelines a week ÷ ${RUN.runsPerWeek} runs a week (assumed)`,
+      basis: `measured ${Math.round(m.ciSeconds / 60)} CI minutes on main`,
       grams:
-        kwh(ciSecondsPerRun, 2, 8) * GRID["us-east1"] +
-        embodied(ciSecondsPerRun, 2),
-      name: "CI (GitLab hosted runners, us-east1)",
+        kwh(m.ciSeconds, RUNNER) * GRID.runners +
+        embodied(m.ciSeconds, RUNNER.vcpus),
+      name: "CI (GitLab hosted runners)",
     },
     {
-      basis: `${RUN.modelCalls} Nemotron calls × 0.3 Wh (estimate)`,
-      grams: RUN.modelCalls * MODEL_CALL_KWH * GRID["us-central1"],
-      name: "Model calls (Nebius)",
-    },
-    {
-      basis:
-        m.clips === null
-          ? `${RUN.videoClips} clip × one H100-minute (estimate: no recorded fal clips yet)`
-          : `${RUN.videoClips} clip × median ${clipSeconds.toFixed(1)} GPU-seconds (p90 ${m.clips.p90GpuSeconds.toFixed(1)}) over ${m.clips.count} fal clips in ${m.clips.windowDays} days (measured) at ${GPU_WATTS} W (estimate: fal names no GPU)`,
-      grams: RUN.videoClips * gpuKwh(clipSeconds) * GRID["us-central1"],
-      name: "Video generation (fal)",
+      basis: `measured ${m.duoSessions} sessions x ${DUO_SESSION_KWH * 1000} Wh (estimate)`,
+      grams: m.duoSessions * DUO_SESSION_KWH * GRID.service,
+      name: "Duo flows",
     },
   ];
   const total = parts.reduce((sum, p) => sum + p.grams, 0);
-  return { parts, secondsPerRequest, total };
+  const perThousand =
+    m.requests === 0 ? undefined : (total / m.requests) * 1000;
+  return { parts, perThousand, total };
 };
 
-export const sciReport = (m: Measured, at: Date) => {
-  const { parts, total } = sciOf(m);
+export const sciReport = (m: Measured, at: Date, days: number) => {
+  const { parts, perThousand, total } = sciOf(m);
+  const headline =
+    perThousand === undefined
+      ? "no requests in the window, so no per-request score"
+      : `**${perThousand.toFixed(2)} gCO2e per 1,000 requests**`;
   return [
     `# wovain SCI, ${at.toISOString().slice(0, 10)}`,
     "",
-    `**${total.toFixed(2)} gCO2e per run** (one idea-to-paused-campaign run), SCI = ((E × I) + M) per R, Green Software Foundation.`,
+    `${headline} (${m.requests} requests, ${total.toFixed(1)} gCO2e over ${days} days). SCI = ((E x I) + M) per R, Green Software Foundation.`,
     "",
-    "| Component | gCO2e per run | Basis |",
+    "| Component | gCO2e | Basis |",
     "| --- | --- | --- |",
-    ...parts.map((p) => `| ${p.name} | ${p.grams.toFixed(3)} | ${p.basis} |`),
+    ...parts.map((p) => `| ${p.name} | ${p.grams.toFixed(2)} | ${p.basis} |`),
     "",
-    `Grid intensity (location-based, Google 2025): us-central1 ${GRID["us-central1"]}, us-east1 ${GRID["us-east1"]} gCO2e/kWh. Energy coefficients: Cloud Carbon Footprint (estimate). Model energy and video watts: unverified estimates; video GPU-seconds are measured when the Basis says so. Constants and sources: apps/ops/src/sci.ts.`,
+    `Grid intensity (location-based, Google 2025): service ${GRID.service}, runners ${GRID.runners} gCO2e/kWh. Energy coefficients: Cloud Carbon Footprint (estimate). Duo session energy: unverified estimate. Constants and sources: apps/ops/src/sci.ts.`,
   ].join("\n");
-};
-
-// sci.json: the inputs and the result. Clip timings appear only as the
-// weekly aggregate, never per merchant or per clip.
-export const sciJson = (m: Measured, at: Date) => {
-  const { parts, total } = sciOf(m);
-  return `${JSON.stringify({ at: at.toISOString(), gramsPerRun: total, measured: m, parts }, null, 2)}\n`;
 };

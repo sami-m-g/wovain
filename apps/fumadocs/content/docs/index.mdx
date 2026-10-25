@@ -1,0 +1,47 @@
+---
+title: Introduction
+description: Wovain is an agentic print-on-demand app that turns taste and trend signals into Fourthwall products and paused Meta ad campaigns.
+icon: House
+---
+
+Wovain takes a solo print-on-demand seller from "what should I sell?" to live Fourthwall products and a paused Meta ad campaign, and the seller only approves.
+
+Who is likely to buy comes from [Qloo](/docs/integrations/qloo). Why now comes from [Tavily](/docs/integrations/tavily). The judging and autopilot decisions come from [NVIDIA Nemotron on Nebius Token Factory](/docs/integrations/nebius-nemotron).
+
+## The flow
+
+1. Qloo and Tavily find trends: the audience's taste graph, then this week's news inside it.
+2. Designs are generated for real Fourthwall blanks, placements and prices.
+3. Nemotron judges each design against print rules and, in autopilot, makes the approval decisions within hard limits that code enforces.
+4. You approve, on the website or in ChatGPT.
+5. Wovain creates the Fourthwall products and several Meta ad variants.
+6. Wovain builds a Meta campaign that stays **paused** until you start it.
+
+## Where it runs
+
+One Next.js 16 app (`apps/web`) serves the website, the oRPC API and the ChatGPT MCP server. See [Architecture](/docs/architecture).
+
+After the code ships, three GitLab Duo flows keep it healthy: self-healing from production errors, a scout for KPI and UI improvements, and an issue-to-completion developer flow. See [Agent flows](/docs/agent-flows).
+
+<Callout type="warn" title="Status">
+  The monorepo was rebuilt on Next.js 16, oRPC, Better Auth and Drizzle. Auth,
+  the database and this docs site are in place. The seller flow pages describe
+  the target behavior.
+</Callout>
+
+## Where to go next
+
+<Cards>
+  <Card title="Getting started" href="/docs/getting-started">
+    Run it locally.
+  </Card>
+  <Card title="Seller guide" href="/docs/seller-guide">
+    Use it on the web or in ChatGPT.
+  </Card>
+  <Card title="Architecture" href="/docs/architecture">
+    How the pieces fit.
+  </Card>
+  <Card title="Hackathons" href="/docs/hackathons">
+    Which requirement is met where.
+  </Card>
+</Cards>

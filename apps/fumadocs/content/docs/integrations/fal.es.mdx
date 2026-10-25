@@ -1,0 +1,15 @@
+---
+title: fal
+description: fal dibuja el arte de impresión transparente.
+---
+
+fal ejecuta el modelo de imagen (`TEXT_TO_IMAGE` en `packages/core/src/fal.ts`, GPT Image en fal).
+
+- **Arte.** `createArtist` convierte el prompt de arte del brief en un arte de impresión cuadrado y transparente que imprime solo las palabras del brief (`artInput`).
+- **Tamaño de impresión.** El juez comprueba el resultado frente al requisito de 2880 px, en el código.
+
+```bash
+FAL_KEY=...
+```
+
+Sin la clave, la generación del diseño falla con un error `NOT_CONFIGURED` que nombra la variable.

@@ -21,9 +21,8 @@ Closes #
 ## Checklist
 
 - [ ] Title is a Conventional Commit (`type(scope): summary`, lowercase, imperative)
-- [ ] Pipeline is green (build, verify, stories)
-- [ ] Planning docs (`docs/*.md`) updated if a fact changed
-- [ ] Old records still parse if a record schema changed (Firestore has no migrations)
+- [ ] Pipeline is green (verify, build, security scans)
+- [ ] A Drizzle migration is included if the schema changed
 - [ ] No secrets, tokens or `.env` files in the diff
 
 <!-- Duo code review (0.25 GitLab Credits per review) is off until approved; to request one, add: /assign_reviewer @GitLabDuo -->

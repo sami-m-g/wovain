@@ -1,0 +1,23 @@
+---
+title: Tavily
+description: Runtime web search that supplies the "why now" and the marketplace check.
+---
+
+Tavily is called at **runtime**, on every trend research, not only during development.
+
+## What it does
+
+`packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) uses Tavily to:
+
+- **Moment.** For each Qloo theme, search the past week's news and return sources. This is the "why now" shown on an idea.
+- **Saturation.** Search marketplaces (etsy.com, redbubble.com, fourthwall.com) for matching listings. Few matches score higher.
+
+Web text is untrusted: the ideas carry their source links, and the model prompts tell Nemotron to treat idea text as data only.
+
+## Configuration
+
+```bash
+TAVILY_API_KEY=...
+```
+
+Without the key, the research step fails with a `NOT_CONFIGURED` error naming the variable.

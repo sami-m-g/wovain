@@ -1,64 +1,62 @@
 import { writeFile } from "node:fs/promises";
 
-import { ciContext } from "./ci.ts";
-import { clipStatsSchema } from "./clip-stats.ts";
-import { REQUESTS } from "./google.ts";
-import { sciJson, sciOf, sciReport } from "./sci.ts";
+import { opsContext } from "./env.ts";
+import { loadKpis } from "./kpis.ts";
+import { sciOf, sciReport } from "./sci.ts";
 
-// Recomputes wovain's SCI on every main pipeline (.gitlab/ci/loop.yml, sci
-// job) from the last 7 days: Cloud Run instance time and requests (Cloud
-// Monitoring), CI job time of main pipelines (GitLab) and the weekly job's
-// aggregate of fal clips' GPU seconds (its fal-clips.json artifact; this job
-// never reads merchants' records). Writes sci-report.md, sci.json and
-// metrics.txt (a GitLab metrics report) as job artifacts; the latest is at
+// The sci job (.gitlab/ci/ops.yml), on every main pipeline: the last 7 days'
+// Cloud Run instance time and requests, main pipelines' CI time and Duo
+// sessions. Writes sci-report.md, sci.json and metrics.txt (a GitLab metrics
+// report, so MRs show the change); the latest report is at
 // /-/jobs/artifacts/main/raw/sci-report.md?job=sci.
 
-const { gitlab, google } = ciContext();
-
+const DAYS = 7;
+const { gitlab, google } = opsContext();
+const { service } = await loadKpis();
 const now = new Date();
-const week = { end: now, start: new Date(now.getTime() - 7 * 86_400_000) };
+const range = { end: now, start: new Date(now.getTime() - DAYS * 86_400_000) };
 
-// No artifact yet, or no clip in its window: the video line uses the estimate.
-const clipsOrNothing = async () => {
-  try {
-    return await gitlab.inProject(
-      clipStatsSchema,
-      "GET",
-      "jobs/artifacts/main/raw/fal-clips.json",
-      { job: "weekly" }
-    );
-  } catch {
-    return null;
-  }
-};
+const metric = async (type: string) =>
+  await google.metric(
+    {
+      aligner: "ALIGN_SUM",
+      filter: `metric.type="${type}" AND ${service.metrics}`,
+      reducer: "REDUCE_SUM",
+    },
+    range
+  );
 
-const pipelines = await gitlab.pipelines({
-  ref: "main",
-  updated_after: week.start.toISOString(),
-});
-const [instanceSeconds, requests, jobSeconds, clips] = await Promise.all([
-  google.sum("run.googleapis.com/container/billable_instance_time", week),
-  google.sum(REQUESTS, week),
-  Promise.all(
-    pipelines.map(async (p) => {
-      const jobs = await gitlab.pipelineJobs(p.id);
-      return jobs.reduce((sum, job) => sum + (job.duration ?? 0), 0);
-    })
-  ),
-  clipsOrNothing(),
+const [instanceSeconds, requests, pipelines, sessions] = await Promise.all([
+  metric("run.googleapis.com/container/billable_instance_time"),
+  metric("run.googleapis.com/request_count"),
+  gitlab.pipelines({ ref: "main", updated_after: range.start.toISOString() }),
+  gitlab.sessions(),
 ]);
+const jobSeconds = await Promise.all(
+  pipelines.map(async (p) => {
+    const jobs = await gitlab.pipelineJobs(p.id);
+    return jobs.reduce((sum, job) => sum + (job.duration ?? 0), 0);
+  })
+);
 const measured = {
   ciSeconds: jobSeconds.reduce((sum, s) => sum + s, 0),
-  clips,
+  duoSessions: sessions.filter(
+    (s) => Date.parse(s.createdAt) >= range.start.getTime()
+  ).length,
   instanceSeconds,
-  mainPipelines: pipelines.length,
   requests,
 };
-const { total } = sciOf(measured);
-const report = sciReport(measured, now);
+const { perThousand, total } = sciOf(measured);
+const report = sciReport(measured, now, DAYS);
 console.log(report);
 await Promise.all([
   writeFile("sci-report.md", `${report}\n`),
-  writeFile("sci.json", sciJson(measured, now)),
-  writeFile("metrics.txt", `sci_gco2e_per_run ${total.toFixed(4)}\n`),
+  writeFile(
+    "sci.json",
+    `${JSON.stringify({ at: now.toISOString(), measured, perThousand, total }, null, 2)}\n`
+  ),
+  writeFile(
+    "metrics.txt",
+    `sci_gco2e_total_7d ${total.toFixed(3)}\n${perThousand === undefined ? "" : `sci_gco2e_per_1k_requests ${perThousand.toFixed(4)}\n`}`
+  ),
 ]);

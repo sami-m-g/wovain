@@ -4,14 +4,19 @@
   "private": true,
   "type": "module",
   "main": "index.ts",
+  "scripts": {
+    "check-types": "tsc -p ."
+  },
   "dependencies": {
     "@pulumi/gcp": "9.37.1",
     "@pulumi/github": "6.15.0",
     "@pulumi/gitlab": "10.4.0",
     "@pulumi/graphql": "file:sdks/graphql",
     "@pulumi/pulumi": "3.267.0",
-    "@pulumi/restful": "file:sdks/restful",
-    "@pulumi/tls": "5.6.2",
-    "@pulumi/workos": "file:sdks/workos"
+    "@pulumi/random": "4.21.4"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "7.0.2"
   }
 }

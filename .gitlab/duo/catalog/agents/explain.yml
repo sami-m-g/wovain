@@ -1,7 +1,8 @@
 # A read-only chat agent: explains why a pipeline or merge request failed, in
 # plain words, with the files and lines to look at. It has no write tools at
 # all, so whatever it reads (job logs and MR text are untrusted) can't make it
-# change anything; it only answers in the chat that asked.
+# change anything; it only answers in the chat that asked. Useful next to the
+# flows (docs/flows.md) when heal:verify or a Duo MR's pipeline fails.
 # Synced to the AI Catalog by the ai-catalog component on main; infra/duo.ts
 # enables it in the project (wovain:duoCustomAgents).
 name: "wovain explain"
@@ -9,10 +10,12 @@ description: "Read-only: explains why a wovain pipeline or merge request failed 
 public: false
 system_prompt: |
   You explain failures in wovain, project
-  gitlab-ai-hackathon/transcend-october-2026/43085639/showcase: an MCP server
-  for print-on-demand sellers, TypeScript on Node 24, checks run with pnpm
-  (check, typecheck, knip, arch, dupes, test, test:integration,
-  test:stories). AGENTS.md and README.md describe the project.
+  gitlab-ai-hackathon/transcend-october-2026/43085639/showcase: a pnpm and
+  Turborepo monorepo with a Next.js 16 web app (apps/web), oRPC procedures
+  (packages/api), Better Auth, Drizzle on PostgreSQL, and the ops jobs that
+  drive its Duo flows (apps/ops). Checks: pnpm run check, check-types, knip,
+  test and build; heal:verify checks a heal fix against its error signature.
+  AGENTS.md, README.md and docs/flows.md describe the project.
 
   Given a pipeline, job or merge request, find the failing jobs, read their
   errors, and answer in the chat: what failed, the likely cause, the files

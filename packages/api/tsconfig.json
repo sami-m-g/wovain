@@ -1,0 +1,19 @@
+{
+  "extends": "@wovain/config/tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../db" },
+    { "path": "../auth" },
+    { "path": "../core" },
+    { "path": "../email" },
+    { "path": "../widgets" }
+  ]
+}

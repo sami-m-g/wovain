@@ -1,0 +1,23 @@
+---
+title: Tavily
+description: La recherche web à l'exécution qui apporte le « pourquoi maintenant » et le contrôle des places de marché.
+---
+
+Tavily est appelé **à l'exécution**, à chaque recherche de tendances, et pas seulement pendant le développement.
+
+## Ce qu'il fait
+
+`packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) utilise Tavily pour :
+
+- **Moment.** Pour chaque thème Qloo, chercher l'actualité de la semaine et renvoyer des sources. C'est la ligne « pourquoi maintenant » affichée sur une idée.
+- **Saturation.** Chercher sur les places de marché (etsy.com, redbubble.com, fourthwall.com) les annonces correspondantes. Peu de correspondances donnent un meilleur score.
+
+Le texte du web n'est pas fiable : les idées gardent leurs liens de sources, et les prompts indiquent à Nemotron de traiter le texte des idées comme de simples données.
+
+## Configuration
+
+```bash
+TAVILY_API_KEY=...
+```
+
+Sans la clé, l'étape de recherche échoue avec une erreur `NOT_CONFIGURED` nommant la variable.

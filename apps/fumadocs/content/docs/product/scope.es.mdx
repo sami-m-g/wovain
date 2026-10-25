@@ -1,0 +1,74 @@
+---
+title: Alcance
+description: Para quién es wovain, qué lo distingue y dónde está el límite de la prueba de concepto.
+---
+
+Una aplicación agéntica de impresión bajo demanda: Qloo encuentra quién compraría, Tavily encuentra por qué ahora, Nemotron evalúa los diseños y el vendedor aprueba los productos de Fourthwall y una campaña de Meta en pausa.
+
+En vivo en [https://wovain.com](https://wovain.com) (sitio web y servidor MCP de ChatGPT, en Cloud Run). Documentación en [https://docs.wovain.com](https://docs.wovain.com).
+
+## El núcleo único
+
+Gusto por momento, con autonomía acotada. El grafo de gustos de Qloo dice quién compraría y qué más le gusta; la búsqueda en vivo de Tavily dice por qué ahora; Nemotron en Nebius Token Factory evalúa y, en autopilot, decide, pero solo dentro de salvaguardas que impone el código (el tamaño de impresión, un precio mínimo según el coste base del modelo, un rango de presupuesto diario, y un diseño que el juez quiere revisar nunca se aprueba). Nada gasta dinero hasta que el vendedor inicia la campaña.
+
+## Para quién es
+
+Un vendedor independiente de impresión bajo demanda con una tienda de Fourthwall. Hoy un producto requiere cinco herramientas: adivinar qué vender, un chat para los diseños, una subida manual, una herramienta de anuncios aparte y una campaña construida a mano en el Administrador de anuncios. Quiere aprobar decisiones, no manejar herramientas.
+
+## El bucle principal
+
+El vendedor da una semilla (un nicho, un fandom, un tipo de producto), en el sitio web o en ChatGPT. Wovain devuelve ideas ordenadas con su evidencia, diseña las elegidas para modelos reales de Fourthwall, hace que Nemotron las evalúe y pide aprobación. Los diseños aprobados se convierten en productos de Fourthwall, luego en variantes de anuncio y después en una campaña de Meta en pausa. Vuelve porque cada ejecución convierte una semilla nueva en una campaña lista para iniciar con una sola ronda de aprobaciones.
+
+```text
+Semilla -> Grafo de gustos de Qloo -> Tavily: por qué ahora -> Diseño de camiseta sobre un modelo de Fourthwall
+  -> Juez Nemotron (revise vuelve a los diseños)
+  -> El vendedor aprueba -> Productos de Fourthwall -> Variantes de anuncio de Meta
+  -> Campaña de Meta en pausa
+```
+
+Después de publicar el código, tres flujos de GitLab Duo lo mantienen sano: autorreparación a partir de errores de producción, un explorador de mejoras de KPI e interfaz, y un flujo de desarrollo que lleva una incidencia hasta su cierre.
+
+## Inspiración e identidad
+
+Un entrenador amigable: cálido, explica el porqué en una frase y aun así empieza por los números. Nombre: wovain, en minúsculas. Construido con servicios existentes en lugar de reconstruirlos: Fourthwall para catálogo y tienda, Meta para la entrega, Qloo y Tavily para las señales, Nemotron para el juicio.
+
+## Por qué es importante para el creador
+
+El creador quiere demostrar que un agente puede ejecutar todo el bucle de impresión bajo demanda, de la idea a la campaña, mientras el vendedor conserva cada decisión de gasto. El proyecto se construye para los hackathons Build With AI: Basics, GitLab Transcend, Nebius x NVIDIA y Qloo.
+
+## Cómo se ve «funcionando»
+
+1. Introducir una semilla en [https://wovain.com](https://wovain.com) o en ChatGPT.
+2. Ver ideas ordenadas, cada una con su señal de gusto, su señal de momento y los datos detrás de la puntuación.
+3. Ver los diseños sobre productos reales de Fourthwall con precio, beneficio y margen, y el veredicto de Nemotron.
+4. Aprobar; los productos existen en la tienda de Fourthwall.
+5. Ver las variantes de anuncio y aprobar.
+6. Abrir el Administrador de anuncios de Meta: la campaña está ahí, en pausa, dirigida a los países que eligió el vendedor. El momento «¡qué bueno!» es el paso 6 tras haber solo hablado y aprobado.
+
+## Límite de la prueba de concepto
+
+| Área | Incluido |
+| --- | --- |
+| Superficies | Sitio web Next.js 16 y servidor MCP de ChatGPT en una sola aplicación en Cloud Run |
+| Investigación | Grafo de gustos de Qloo y búsqueda web de Tavily |
+| Evaluación | Nemotron en Nebius Token Factory |
+| Publicación | Productos de Fourthwall tras la aprobación |
+| Anuncios | Hasta tres variantes de anuncio por producto y una campaña de Meta en pausa |
+| Autopilot | Ejecución de extremo a extremo donde Nemotron decide y el código pone las salvaguardas |
+| Cuentas | Inicio de sesión con Better Auth, Cloud SQL (PostgreSQL) mediante Drizzle |
+| Después del despliegue | Tres flujos de GitLab Duo |
+
+## Más adelante
+
+- Un optimizador que lea los resultados de las campañas y proponga cambios.
+- TikTok Shop y anuncios de TikTok.
+- Resultados de campaña dentro del chat, cuando haya datos de gasto.
+
+## Explícitamente fuera
+
+| Elemento | Motivo |
+| --- | --- |
+| Un modelo propio de imagen o vídeo | El objetivo es reutilizar proveedores, con un mínimo de código |
+| Un motor propio de compra de medios | La entrega y las reglas de Meta ya optimizan las campañas |
+| Activación automática del gasto publicitario | El vendedor debe mantener el control del dinero |
+| Afirmaciones sobre clientes, ventas o testimonios | Todavía no hay datos de ventas y no se inventa ninguno |

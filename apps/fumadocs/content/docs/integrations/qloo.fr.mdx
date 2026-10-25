@@ -1,0 +1,35 @@
+---
+title: Qloo
+description: Le graphe de goûts de Qloo décide quels thèmes valent d'être conçus.
+---
+
+Qloo est la première étape du parcours, pas un complément. Sans lui, wovain ne connaît que l'actualité ; avec lui, wovain sait **quels thèmes aiment les fans de la graine**.
+
+## Goût fois moment
+
+| Signal | Source | Question à laquelle il répond             |
+| ------ | ------ | ----------------------------------------- |
+| Goût   | Qloo   | Quels thèmes cette audience aime-t-elle ? |
+| Moment | Tavily | Pourquoi maintenant ?                     |
+
+## Ce que wovain demande à Qloo
+
+Implémenté dans `packages/core/src/qloo.ts` (`createQloo`) :
+
+1. **Search** (`/search`) résout la graine en entités Qloo.
+2. **Insights** (`/v2/insights`) renvoient les tags de goûts transversaux de ces entités. Ce sont les thèmes des designs.
+
+## Ce que cela change pour le produit
+
+- **Idées.** Tavily ne cherche l'actualité de la semaine et les places de marché que dans les thèmes de Qloo (`packages/core/src/trends.ts`).
+- **Scoring.** Le code classe chaque idée (`packages/core/src/score.ts`) et enregistre avec elle les entrées de son score. Nemotron rédige le nom et l'angle.
+- **Sécurité de propriété intellectuelle.** Les noms que Qloo associe à la graine (marques, artistes, titres) sont enregistrés sur l'idée comme noms à ne jamais imprimer.
+
+## Configuration
+
+```bash
+QLOO_API_KEY=...
+QLOO_API_URL=https://hackathon.api.qloo.com
+```
+
+Les clés de hackathon ne fonctionnent que sur le serveur de hackathon, envoyées dans l'en-tête `X-Api-Key`. Une clé manquante fait échouer l'étape de recherche avec une erreur `NOT_CONFIGURED` nommant la variable.

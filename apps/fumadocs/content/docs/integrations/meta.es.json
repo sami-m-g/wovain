@@ -1,0 +1,13 @@
+{
+  "title": "Integraciones",
+  "icon": "Plug",
+  "pages": [
+    "index",
+    "nebius-nemotron",
+    "qloo",
+    "tavily",
+    "fourthwall",
+    "meta-ads",
+    "fal"
+  ]
+}

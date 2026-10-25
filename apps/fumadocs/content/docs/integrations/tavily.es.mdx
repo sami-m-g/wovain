@@ -1,0 +1,23 @@
+---
+title: Tavily
+description: La búsqueda web en tiempo de ejecución que aporta el «por qué ahora» y la comprobación de marketplaces.
+---
+
+Tavily se llama **en tiempo de ejecución**, en cada investigación de tendencias, y no solo durante el desarrollo.
+
+## Qué hace
+
+`packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) usa Tavily para:
+
+- **Momento.** Para cada tema de Qloo, buscar las noticias de la semana y devolver fuentes. Es la línea «por qué ahora» que se muestra en una idea.
+- **Saturación.** Buscar en marketplaces (etsy.com, redbubble.com, fourthwall.com) anuncios coincidentes. Pocas coincidencias puntúan más alto.
+
+El texto de la web no es confiable: las ideas conservan sus enlaces de fuentes y los prompts indican a Nemotron que trate el texto de las ideas solo como datos.
+
+## Configuración
+
+```bash
+TAVILY_API_KEY=...
+```
+
+Sin la clave, el paso de investigación falla con un error `NOT_CONFIGURED` que nombra la variable.

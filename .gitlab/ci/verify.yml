@@ -1,55 +1,44 @@
-build:
-  stage: verify
-  extends: [.pnpm-install, .on-changes]
-  script:
-    - pnpm build
+# Lint and format (Ultracite), types, dead code (knip) and tests, on every
+# push and merge request.
+# Varlock validates env when Next loads its config (typegen and build), so
+# these jobs get placeholders; real values only exist at runtime (Cloud Run).
+.env-placeholders:
+  variables:
+    BETTER_AUTH_SECRET: ci-build-placeholder-never-used-at-runtime
+    BETTER_AUTH_URL: http://localhost:3001
+    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
 
-# Typecheck and lint cover infra/, so it installs that too.
 verify:
   stage: verify
+  extends: [.pnpm-install, .on-changes, .env-placeholders]
+  script:
+    - pnpm run check
+    - pnpm run check-types
+    - pnpm run knip
+    - pnpm run test
+  artifacts:
+    when: always
+    reports:
+      junit: "**/junit.xml"
+
+# infra/ type-checks against the SDKs `pulumi install` generates.
+verify:infra:
+  stage: verify
   extends: [.pulumi-install, .on-changes]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
+      when: never
+    - changes: [infra/**/*]
   script:
-    - pnpm check
-    - pnpm typecheck
-    - pnpm knip
-    - pnpm arch
-    - pnpm dupes
-    - pnpm test
-  # JUnit reports feed the pipeline's test report, which the loop
-  # fingerprints a red main from (apps/ops/src/red-main.ts).
-  artifacts:
-    when: always
-    reports:
-      junit: [apps/server/junit.xml, apps/ops/junit.xml]
+    - pnpm --dir infra run check-types
 
-# The store and tool tests run on the Firestore and Storage emulators, which
-# need Java 21 (Debian trixie ships it; bookworm stops at 17).
-integration:
+# The turbo build of every app.
+build:
   stage: verify
-  extends: [.pnpm-install, .on-changes]
-  image: node:24-trixie
-  before_script:
-    - apt-get update -qq && apt-get install -y -qq openjdk-21-jre-headless >/dev/null
-    - !reference [.pnpm-install, before_script]
+  extends: [.pnpm-install, .on-changes, .env-placeholders]
   script:
-    - pnpm test:integration
-  artifacts:
-    when: always
-    reports:
-      junit: apps/server/junit.xml
-
-# Playwright's image ships Chromium and its system libraries; its tag must
-# match the playwright version in apps/widgets (Renovate bumps them together).
-stories:
-  stage: verify
-  extends: [.pnpm-install, .on-changes]
-  image: mcr.microsoft.com/playwright:v1.64.1-noble
-  script:
-    - pnpm test:stories
-  artifacts:
-    when: always
-    reports:
-      junit: apps/widgets/junit.xml
+    - pnpm run build
 
 # Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
 renovate:

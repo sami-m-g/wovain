@@ -1,0 +1,455 @@
+{
+  "Metadata": {
+    "siteName": "wovain",
+    "defaultTitle": "wovain: print-on-demand drops, run by agents",
+    "defaultDescription": "wovain turns one brief into a launched print-on-demand drop: trend research, designs you approve, products on Fourthwall and a paused Meta ad campaign. In ChatGPT and on the web.",
+    "ogAlt": "wovain: one brief in, a print-on-demand drop out",
+    "ogTagline": "One brief in. A drop out.",
+    "ogSteps": "Trends · Designs · Approve · Fourthwall · Meta ads",
+    "privacyTitle": "Privacy",
+    "privacyDescription": "What wovain collects, why, and how to delete it.",
+    "termsTitle": "Terms",
+    "termsDescription": "The terms for using wovain.",
+    "loginTitle": "Sign in",
+    "loginDescription": "Sign in to wovain to run your next drop.",
+    "signUpTitle": "Create your account",
+    "signUpDescription": "Create a wovain account and launch your first print-on-demand drop.",
+    "dashboardTitle": "Overview",
+    "newDropTitle": "New drop",
+    "runsTitle": "Runs",
+    "connectionsTitle": "Connections",
+    "notFoundTitle": "Page not found",
+    "consentTitle": "Allow access",
+    "resetTitle": "Reset your password",
+    "resetDescription": "Choose a new password for your wovain account."
+  },
+  "Common": {
+    "skipToContent": "Skip to content",
+    "brand": "wovain",
+    "homeLabel": "wovain home",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "toggleTheme": "Change theme",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "account": "Account",
+    "loading": "Loading…",
+    "demoData": "Demo data",
+    "tryAgain": "Try again",
+    "backHome": "Back to home",
+    "primaryNav": "Main",
+    "localeNames": {
+      "en": "English",
+      "fr": "Français",
+      "es": "Español"
+    }
+  },
+  "Header": {
+    "how": "How it works",
+    "chatgpt": "ChatGPT",
+    "autopilot": "Autopilot",
+    "poweredBy": "Powered by",
+    "startDrop": "Start a drop",
+    "dashboard": "Dashboard",
+    "docs": "Docs"
+  },
+  "Footer": {
+    "tagline": "Print-on-demand drops, run by agents. You approve every step.",
+    "product": "Product",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "copyright": "© {year} wovain. Built for the GitLab Transcend and Build With AI hackathons.",
+    "docs": "Documentation",
+    "contact": "Contact"
+  },
+  "Home": {
+    "heroTitle": "One brief in. A whole drop out.",
+    "heroLead": "wovain researches what your audience wants this week, designs products for your Fourthwall catalog, and builds the Meta ads to sell them. You approve every step; the campaign launches paused.",
+    "briefLabel": "What should your next drop be about?",
+    "briefPlaceholder": "Cozy outdoorsy merch for my houseplant channel",
+    "briefHint": "One sentence is enough. You can change everything later.",
+    "briefSubmit": "Start a drop",
+    "noCard": "You connect Fourthwall and Meta after you sign up.",
+    "deckLabel": "An example drop as a fan of ink swatches",
+    "deckCaption": "A demo drop, step by step",
+    "chips": {
+      "brief": {
+        "name": "Brief",
+        "value": "Cozy merch for a plant channel"
+      },
+      "trends": {
+        "name": "Trend picks",
+        "value": "Moss and fern cottagecore · score 0.82"
+      },
+      "designs": {
+        "name": "Design",
+        "value": "Moss & Fern Supply · approved"
+      },
+      "products": {
+        "name": "Fourthwall",
+        "value": "Heavyweight tee · $32"
+      },
+      "ads": {
+        "name": "Meta ads",
+        "value": "3 variants, 3 angles"
+      },
+      "campaign": {
+        "name": "Campaign",
+        "value": "One campaign · paused"
+      }
+    },
+    "howTitle": "Five inks, one run",
+    "howLead": "Every drop goes through the same press. Each step ends with something you can see and approve, built from real Fourthwall blanks, prices and margins.",
+    "steps": {
+      "trends": {
+        "name": "Trends",
+        "body": "Qloo's taste graph finds what your fans also love; Tavily checks this week's news and the listings already out there."
+      },
+      "designs": {
+        "name": "Designs",
+        "body": "Candidate artwork for each pick, checked by NVIDIA Nemotron for print size, colors and listing rules before you see it."
+      },
+      "approve": {
+        "name": "Approve",
+        "body": "Approve, reject or say what to change. Feedback makes a new round; nothing moves on without a yes."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Approved designs become products on real blanks, priced to clear at least $10 profit per sale after fees."
+      },
+      "meta": {
+        "name": "Meta ads",
+        "body": "Nemotron writes 2 or 3 ad variants, each from a different angle. wovain builds one campaign with an ad per variant, created paused so you decide when to spend."
+      }
+    },
+    "autopilotTitle": "Autopilot runs the same press with fewer stops",
+    "autopilotLead": "Turn on autopilot and wovain takes the top picks, approves designs that pass every check, publishes and builds the campaign. It still launches paused, and every run is in your history.",
+    "autopilotManual": "With you",
+    "autopilotAuto": "Autopilot",
+    "autopilotStop": "Stops for you",
+    "autopilotSkip": "Runs on its own",
+    "surfacesTitle": "Works in ChatGPT and on the web",
+    "surfacesLead": "The same agents and the same approvals, wherever you work.",
+    "chatgptTitle": "In ChatGPT",
+    "chatgptBody": "Add wovain as an app and ask for a drop in plain words. Approvals appear as cards in the chat.",
+    "chatUser": "Make a drop for my plant channel. Cozy, outdoorsy, nothing too punny.",
+    "chatAssistant": "I found 4 picks. Moss and fern cottagecore scores highest: fans of plant channels also love slow living, and few shops sell it as type. Want designs for it?",
+    "chatCard": "Moss & Fern Supply · heavyweight tee",
+    "chatApprove": "Approve",
+    "chatChange": "Change",
+    "webTitle": "On the web",
+    "webBody": "A step-by-step wizard with run history, connections and an autopilot switch.",
+    "webStep": "Step 3 of 6 · Approve designs",
+    "poweredTitle": "Powered by",
+    "poweredLead": "wovain does the orchestration. These do the heavy lifting.",
+    "partners": {
+      "nebius": {
+        "name": "Nebius · NVIDIA Nemotron",
+        "role": "Checks every design against print and listing rules"
+      },
+      "qloo": {
+        "name": "Qloo",
+        "role": "Taste graph: what your audience also loves"
+      },
+      "tavily": {
+        "name": "Tavily",
+        "role": "This week's news, listings and competitor scans"
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "role": "Catalog, products and your shop"
+      },
+      "meta": {
+        "name": "Meta",
+        "role": "Campaigns and ads on your own ad account"
+      },
+      "gitlab": {
+        "name": "GitLab Duo",
+        "role": "The agent loop that builds and reviews wovain"
+      }
+    },
+    "ctaTitle": "Your next drop is one sentence away",
+    "ctaBody": "Create an account, connect Fourthwall and Meta, and write a brief. wovain does the clicking.",
+    "ctaButton": "Create your account",
+    "ctaSecondary": "I already have one",
+    "mcpLabel": "MCP server URL",
+    "mcpHint": "In ChatGPT: Settings → Apps → Create, then paste this URL.",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "Legal": {
+    "updated": "Last updated {date}",
+    "privacy": {
+      "title": "Privacy",
+      "intro": "wovain is a hackathon project. We keep as little as we can, and we never sell data.",
+      "collectTitle": "What we collect",
+      "collectBody": "Your name, email and password hash for your account; the briefs you write; and the runs, designs and products wovain makes for you.",
+      "connectionsTitle": "Connected services",
+      "connectionsBody": "When you connect Fourthwall, Meta or fal, we store the access they grant so wovain can act for you. You can disconnect any of them at any time from Connections.",
+      "processorsTitle": "Who processes it",
+      "processorsBody": "Briefs and designs are sent to the services that do the work: Nebius, Qloo, Tavily, fal, Fourthwall and Meta. Each handles data under its own policy.",
+      "deleteTitle": "Deleting your data",
+      "deleteBody": "Email privacy@wovain.com from your account's address and we delete your account, runs and stored connections within 30 days."
+    },
+    "terms": {
+      "title": "Terms",
+      "intro": "By using wovain you agree to these terms.",
+      "useTitle": "Using wovain",
+      "useBody": "wovain is provided as is, during a hackathon, without warranty. Features may change or stop.",
+      "contentTitle": "Your content",
+      "contentBody": "You own your briefs and the designs you approve. You are responsible for making sure what you publish does not infringe anyone's rights; wovain screens for trademarks but cannot guarantee it.",
+      "spendTitle": "Ads and spend",
+      "spendBody": "Campaigns are created paused. Any ad spend starts only when you turn a campaign on in Meta, and it is billed by Meta to your ad account.",
+      "contactTitle": "Contact",
+      "contactBody": "Questions about these terms go to hello@wovain.com."
+    }
+  },
+  "Auth": {
+    "loginTitle": "Welcome back",
+    "loginLead": "Sign in to pick up your drops where you left them.",
+    "signUpTitle": "Create your account",
+    "signUpLead": "Then connect Fourthwall and Meta, and write your first brief.",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "submitLogin": "Sign in",
+    "submitSignUp": "Create account",
+    "submitting": "One moment…",
+    "toSignUp": "New to wovain?",
+    "toSignUpLink": "Create an account",
+    "toLogin": "Already have an account?",
+    "toLoginLink": "Sign in",
+    "errors": {
+      "email": "Enter a valid email address, like you@example.com.",
+      "name": "Enter your name (at least 2 characters).",
+      "password": "Use at least 8 characters.",
+      "generic": "That didn't work. Check your details and try again.",
+      "invalidCredentials": "That email and password don't match an account.",
+      "userExists": "An account with this email already exists. Sign in instead."
+    },
+    "welcome": "Signed in. Welcome back.",
+    "created": "Account created. Let's connect your shop.",
+    "asideTitle": "Approve, don't operate.",
+    "asideBody": "wovain does the research, the artwork, the listings and the ads. You stay the one who says yes.",
+    "forgot": "Forgot your password?"
+  },
+  "Shell": {
+    "nav": {
+      "overview": "Overview",
+      "newDrop": "New drop",
+      "runs": "Runs",
+      "connections": "Connections"
+    },
+    "apiStatus": "API",
+    "apiOnline": "online",
+    "apiOffline": "offline",
+    "apiChecking": "checking"
+  },
+  "Stages": {
+    "brief": "Brief",
+    "trends": "Trends",
+    "designs": "Designs",
+    "products": "Products",
+    "ads": "Ads",
+    "campaign": "Campaign",
+    "stripLabel": "Run progress: {stage}",
+    "done": "done",
+    "current": "current",
+    "pending": "not started"
+  },
+  "Status": {
+    "running": "Running",
+    "awaiting_approval": "Needs you",
+    "completed": "Done (campaign paused)",
+    "failed": "Stopped"
+  },
+  "Dashboard": {
+    "greeting": "Hi {name}",
+    "lead": "Here's what's on the press.",
+    "newDrop": "New drop",
+    "recentRuns": "Recent runs",
+    "allRuns": "All runs",
+    "connections": "Connections",
+    "manage": "Manage",
+    "setupTitle": "Finish setting up",
+    "setupBody": "Connect {count, plural, one {# more service} other {# more services}} to run a full drop.",
+    "allConnected": "Everything is connected."
+  },
+  "Runs": {
+    "title": "Runs",
+    "lead": "Every drop wovain has run for you, newest first.",
+    "empty": "No runs yet. Your first drop will show up here.",
+    "emptyCta": "Start a drop",
+    "mode": "Mode",
+    "started": "Started",
+    "manual": "With you",
+    "autopilot": "Autopilot",
+    "stoppedAt": "Stopped: {error}"
+  },
+  "Connections": {
+    "title": "Connections",
+    "lead": "wovain acts for you through these accounts. Disconnect either one at any time.",
+    "connected": "Connected",
+    "disconnected": "Not connected",
+    "connect": "Connect {name}",
+    "disconnect": "Disconnect {name}",
+    "since": "Since {date}",
+    "connectedToast": "{name} connected.",
+    "disconnectedToast": "{name} disconnected.",
+    "failedToast": "Connecting didn't finish ({code}). Try again.",
+    "providers": {
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Your shop, catalog blanks and prices. Needed to publish products."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "Your ad account, Page and pixel. Needed to build the campaign."
+      }
+    },
+    "serverKeys": "Trend research, art and ad copy run on wovain's own keys for Nebius, Qloo, Tavily and fal."
+  },
+  "Wizard": {
+    "title": "New drop",
+    "lead": "From a sentence to a paused campaign. You approve each step.",
+    "stepsLabel": "Drop steps",
+    "stepOf": "Step {current, number} of {total, number}",
+    "autopilot": "Autopilot",
+    "autopilotHint": "Nemotron picks the idea and approves the design; wovain publishes and builds the campaign, paused.",
+    "autopilotRunning": "Autopilot is running this drop. It can take a few minutes.",
+    "back": "Back",
+    "problem": {
+      "notConfigured": "{service} isn't set up on this server yet.",
+      "notConfiguredVariable": "{service} isn't set up on this server yet: {variable} is missing.",
+      "notConnected": "Connect {service} to finish this step.",
+      "connectLink": "Go to Connections",
+      "other": "Something went wrong: {message}"
+    },
+    "brief": {
+      "title": "Write the brief",
+      "label": "What should this drop be about?",
+      "hint": "Say who it's for and the feel. wovain does the research.",
+      "placeholder": "Cozy outdoorsy merch for my houseplant channel",
+      "error": "Write at least a few words (10 characters or more).",
+      "submit": "Research trends",
+      "submitAutopilot": "Run on autopilot"
+    },
+    "trends": {
+      "title": "Pick the ideas",
+      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top idea already has a design.",
+      "score": "Score {score}",
+      "affinity": "Taste affinity",
+      "news": "News this week",
+      "listings": "Listings",
+      "sources": "Sources",
+      "hasDesign": "Design ready",
+      "error": "Pick at least one idea.",
+      "submit": "See designs"
+    },
+    "designs": {
+      "title": "Approve the designs",
+      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea.",
+      "check": "Design check",
+      "checkReady": "Ready",
+      "checkRevise": "Needs work",
+      "checkScore": "{score, number}/100",
+      "printed": "Prints: {text}",
+      "approve": "Approve",
+      "approved": "Approved",
+      "reject": "Reject",
+      "rejected": "Rejected",
+      "retry": "Make another",
+      "reasonLabel": "What should change? (optional)",
+      "reasonPlaceholder": "Make the type bolder, drop the leaves",
+      "error": "Approve at least one design.",
+      "submit": "Make products",
+      "artAlt": "Design: {title}"
+    },
+    "products": {
+      "title": "Publish the products",
+      "lead": "Real Fourthwall blanks, priced to clear at least $10 profit per sale after fees. They stay hidden until you publish.",
+      "price": "Price",
+      "hidden": "Hidden",
+      "public": "Live",
+      "view": "View on Fourthwall",
+      "error": "Publish at least one product first.",
+      "publish": "Publish to Fourthwall",
+      "submit": "Plan the campaign",
+      "mockupAlt": "{title}, product mockup"
+    },
+    "campaign": {
+      "title": "Build the campaign",
+      "lead": "One campaign per product with an ad per copy variant. It's created paused: nothing spends until you turn it on in Meta.",
+      "budgetLabel": "Daily budget (USD)",
+      "budgetHint": "Between $1 and $500 a day. You can change it in Meta.",
+      "budgetError": "Enter a daily budget from $1 to $500.",
+      "submit": "Build paused campaign"
+    },
+    "done": {
+      "title": "Your campaign is ready, paused",
+      "lead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day. Turn it on in Meta Ads Manager when you're ready to spend.",
+      "variants": "Ad variants",
+      "open": "Open in Ads Manager",
+      "another": "Start another drop",
+      "history": "See all runs",
+      "autopilotFailed": "Autopilot stopped: {error}"
+    },
+    "working": {
+      "research": "Researching trends and drafting the first design…",
+      "autopilot": "Autopilot is researching, designing, publishing and building the campaign…",
+      "designs": "Making designs…",
+      "review": "Saving your decision…",
+      "products": "Setting up products on Fourthwall…",
+      "publish": "Publishing to Fourthwall…",
+      "campaign": "Building the paused campaign on Meta…"
+    }
+  },
+  "NotFound": {
+    "title": "This page isn't in the swatch book",
+    "body": "The link may be old, or the page moved.",
+    "home": "Back to home"
+  },
+  "Error": {
+    "title": "Something smudged",
+    "body": "An unexpected error stopped this page. Try again, and if it keeps happening, sign out and back in.",
+    "retry": "Try again"
+  },
+  "Consent": {
+    "title": "Allow access to wovain?",
+    "lead": "An app such as ChatGPT wants to act on your wovain account: research trends, create designs and products, and stage paused campaigns.",
+    "scopes": "It asks for",
+    "allow": "Allow",
+    "deny": "Deny",
+    "error": "Your answer didn't go through. Try again.",
+    "note": "Campaigns are always created paused. You can revoke access by signing out of the app."
+  },
+  "Reset": {
+    "requestTitle": "Reset your password",
+    "requestLead": "Enter your account's email and we'll send you a link to choose a new password.",
+    "email": "Email",
+    "send": "Send reset link",
+    "sent": "If an account uses that email, a reset link is on its way. It works for one hour.",
+    "title": "Choose a new password",
+    "lead": "Use at least 8 characters. You'll be signed out on your other devices.",
+    "password": "New password",
+    "submit": "Save new password",
+    "submitting": "One moment…",
+    "done": "Password changed. Sign in with your new password.",
+    "invalid": "This reset link expired or was already used. Ask for a new one below.",
+    "errors": {
+      "email": "Enter a valid email address, like you@example.com.",
+      "password": "Use at least 8 characters.",
+      "generic": "That didn't work. Try again in a moment."
+    },
+    "back": "Back to sign in"
+  },
+  "Run": {
+    "loading": "Opening the run…"
+  }
+}

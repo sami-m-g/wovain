@@ -1,0 +1,35 @@
+---
+title: Qloo
+description: Qloo's taste graph decides which themes are worth designing.
+---
+
+Qloo is the first step of the flow, not an add-on. Without it wovain only knows what is in the news; with it, wovain knows **which themes the seed's fans love**.
+
+## Taste times moment
+
+| Signal | Source | Question it answers                   |
+| ------ | ------ | ------------------------------------- |
+| Taste  | Qloo   | Which themes does this audience love? |
+| Moment | Tavily | Why now?                              |
+
+## What wovain asks Qloo
+
+Implemented in `packages/core/src/qloo.ts` (`createQloo`):
+
+1. **Search** (`/search`) resolves the seed into Qloo entities.
+2. **Insights** (`/v2/insights`) return the cross-domain taste tags of those entities. These are the themes for designs.
+
+## How it changes the product
+
+- **Ideas.** Tavily searches the past week's news and marketplaces only inside Qloo's themes (`packages/core/src/trends.ts`).
+- **Scoring.** Code ranks each idea (`packages/core/src/score.ts`) and saves the inputs behind the score with the idea. Nemotron writes the name and angle.
+- **IP safety.** The names Qloo matched for the seed (brands, artists, titles) are saved on the idea as names never to print.
+
+## Configuration
+
+```bash
+QLOO_API_KEY=...
+QLOO_API_URL=https://hackathon.api.qloo.com
+```
+
+Hackathon keys work only against the hackathon server, sent as the `X-Api-Key` header. A missing key fails the research step with a `NOT_CONFIGURED` error naming the variable.

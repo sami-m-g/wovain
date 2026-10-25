@@ -1,0 +1,18 @@
+{
+  "extends": "@wovain/config/tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "exactOptionalPropertyTypes": false,
+    "noEmit": false,
+    "noUncheckedIndexedAccess": false,
+    "outDir": "dist",
+    "paths": {
+      "@wovain/ui/*": ["./src/*"]
+    },
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

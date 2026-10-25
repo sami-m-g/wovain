@@ -1,23 +1,4 @@
 {
-  "files": [],
-  "references": [
-    {
-      "path": "packages/shared"
-    },
-    {
-      "path": "apps/server"
-    },
-    {
-      "path": "apps/widgets"
-    },
-    {
-      "path": "apps/ops"
-    },
-    {
-      "path": "infra"
-    }
-  ],
-  "compilerOptions": {
-    "strictNullChecks": true
-  }
+  "extends": "@wovain/config/tsconfig.base.json",
+  "include": ["*.ts", ".config/*.ts"]
 }

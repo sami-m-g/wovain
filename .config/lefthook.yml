@@ -1,12 +1,35 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
 pre-commit:
   parallel: true
   jobs:
     - run: pnpm exec ultracite fix {staged_files}
-      glob: ["*.{ts,tsx,json,jsonc,css,md,yml}"]
-      exclude: [".claude/skills/**"]
+      glob:
+        - "*.js"
+        - "*.jsx"
+        - "*.mjs"
+        - "*.cjs"
+        - "*.ts"
+        - "*.tsx"
+        - "*.mts"
+        - "*.cts"
+        - "*.json"
+        - "*.jsonc"
+        - "*.css"
+        - "*.scss"
+        - "*.less"
+        - "*.vue"
+        - "*.svelte"
+        - "*.astro"
+        - "*.html"
+        - "*.md"
+        - "*.mdx"
+        - "*.yaml"
+        - "*.yml"
+        - "*.graphql"
+        - "*.gql"
       stage_fixed: true
-    - name: typecheck
-      run: pnpm typecheck
 
 commit-msg:
   jobs:
@@ -14,15 +37,6 @@ commit-msg:
       run: pnpm exec commitlint --config .config/commitlint.config.ts --edit {1}
 
 pre-push:
-  parallel: true
   jobs:
-    - name: test
-      run: pnpm test
     - name: knip
-      run: pnpm knip
-    - name: arch
-      run: pnpm arch
-    - name: dupes
-      run: pnpm dupes
-    - name: stories
-      run: pnpm test:stories
+      run: pnpm run knip

@@ -1,19 +1,16 @@
 # wovain's Google Cloud setup: `pnpm infra:preview`, then `pnpm infra:up`.
 # State lives in a Cloud Storage bucket in the project (see README).
 name: wovain
-description: Firebase App Hosting, Firestore, media bucket, secrets and CI access for wovain
+description: Cloud Run, Cloud SQL, media bucket, secrets and CI access for wovain
 runtime:
   name: nodejs
   options:
-    # Node 24 runs index.ts itself (type stripping), so no ts-node.
+    # Node runs index.ts itself (type stripping), so no ts-node.
     typescript: false
     packagemanager: pnpm
 # Generated SDK in sdks/graphql (`pulumi package add terraform-provider
 # sullivtr/graphql`): the Duo flow triggers in duo.ts. GitLab's own provider has
-# no resource for them. sdks/workos (osodevops/workos) holds the AuthKit
-# redirect URIs in workos.ts; WorkOS has no official provider. sdks/restful
-# (magodo/restful, a generic REST provider) holds the AuthKit resource
-# indicators, which osodevops/workos doesn't cover.
+# no resource for them.
 packages:
   graphql:
     source: terraform-provider
@@ -22,17 +19,5 @@ packages:
     parameters:
       - sullivtr/graphql
       - 2.6.2
-  workos:
-    source: terraform-provider
-    version: 1.5.0
-    parameters:
-      - osodevops/workos
-      - 2.5.0
-  restful:
-    source: terraform-provider
-    version: 1.5.0
-    parameters:
-      - magodo/restful
-      - 0.25.2
 backend:
   url: gs://wovain-pulumi-state

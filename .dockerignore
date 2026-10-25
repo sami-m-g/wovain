@@ -1,0 +1,35 @@
+**/node_modules
+.git
+
+**/dist
+**/build
+**/.next
+**/.source
+**/.turbo
+**/.alchemy
+**/.vercel
+**/*.tsbuildinfo
+**/coverage
+**/.cache
+**/.evlog
+**/*.log
+**/.DS_Store
+
+.vscode
+.idea
+.claude
+.agents
+.config
+
+Dockerfile
+**/Dockerfile
+docker-compose.yml
+
+# Env value files stay out of COPY layers; runtime env comes from compose env_file,
+# build-time configuration uses BuildKit secrets; public values use build args
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.schema
+
+.data

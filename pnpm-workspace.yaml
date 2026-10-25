@@ -1,19 +1,55 @@
 packages:
   - apps/*
   - packages/*
-
-# Which dependencies may run install scripts. re2 is an optional native
-# speed-up for the Firebase CLI's hosting emulator, which wovain doesn't use.
 allowBuilds:
-  "@firebase/util": false
   esbuild: true
-  # The demo video's ffmpeg binary (apps/widgets/proof/demo.ts).
-  ffmpeg-static: true
-  lefthook: true
-  protobufjs: false
-  re2: false
-  # Image headers (apps/server/src/lib/image.ts). Its prebuilt libvips comes
-  # as an optional @img/sharp-<os>-<cpu> package that pnpm picks per machine
-  # from the lockfile, so App Hosting's Linux build gets linux-x64. Allowed in
-  # case a future version builds from source.
   sharp: true
+  lefthook: true
+  "@parcel/watcher": false
+  "@swc/core": false
+overrides:
+  "@next/env": npm:@varlock/nextjs-integration@1.2.5
+catalog:
+  zod: ^4.5.4
+  vitest: ^5.0.5
+  typescript: npm:@typescript/typescript6@^6.0.2
+  "@typescript/native": npm:typescript@^7.0.2
+  "@types/node": ^26.4.1
+  varlock: 1.23.0
+  lucide-react: ^1.41.0
+  next-themes: ^0.4.6
+  react: ^19.2.8
+  react-dom: ^19.2.8
+  sonner: ^2.0.8
+  "@orpc/server": ^1.16.1
+  "@orpc/client": ^1.16.1
+  "@orpc/openapi": ^1.16.1
+  "@orpc/zod": ^1.16.1
+  "@orpc/tanstack-query": ^1.16.1
+  better-auth: 1.7.12
+  "@tailwindcss/postcss": ^4.3.3
+  "@types/react": ^19.2.18
+  "@types/react-dom": ^19.2.7
+  tailwindcss: ^4.3.3
+  drizzle-orm: 1.0.0-rc.5
+  evlog: ^2.33.1
+  next: ^16.4.3
+  next-intl: ^4.14.9
+  "@varlock/nextjs-integration": 1.2.5
+  drizzle-kit: 1.0.0-rc.5
+  "@better-auth/core": 1.7.12
+  "@better-auth/drizzle-adapter": 1.7.12
+  "@better-auth/oauth-provider": 1.7.12
+  "@better-auth/mcp": 1.7.12
+  "@better-auth/cimd": 1.7.12
+  "@modelcontextprotocol/client": 2.3.1
+  "@modelcontextprotocol/server": 2.3.1
+  "@modelcontextprotocol/ext-apps": 2.0.3
+  esbuild: 0.28.2
+  resend: 6.32.1
+  "@react-email/components": 1.0.12
+  "@react-email/render": 2.1.0
+  postcss: 8.5.31
+  "@fal-ai/client": 1.10.1
+  "@tavily/core": 0.7.14
+  openai: 7.32.0

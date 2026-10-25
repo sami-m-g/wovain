@@ -1,0 +1,15 @@
+---
+title: fal
+description: fal draws the transparent print art.
+---
+
+fal runs the image model (`TEXT_TO_IMAGE` in `packages/core/src/fal.ts`, GPT Image on fal).
+
+- **Art.** `createArtist` turns the design brief's art prompt into transparent, square print art that prints only the brief's words (`artInput`).
+- **Print size.** The judge checks the result against the 2880 px requirement in code.
+
+```bash
+FAL_KEY=...
+```
+
+Without the key, design generation fails with a `NOT_CONFIGURED` error naming the variable.

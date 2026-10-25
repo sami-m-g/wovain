@@ -1,4 +1,21 @@
 {
+  "permissions": {
+    "deny": [
+      "Edit(/.agents/**)",
+      "Edit(/.claude/skills/**)",
+      "Edit(/packages/ui/src/components/**)",
+      "Edit(/packages/ui/src/hooks/**)",
+      "Edit(/packages/ui/src/lib/**)",
+      "Edit(/apps/fumadocs/src/components/ai/**)",
+      "Edit(/apps/fumadocs/src/components/codeblock.tsx)",
+      "Edit(/apps/fumadocs/src/components/tabs/**)",
+      "Edit(/apps/fumadocs/src/components/ui/**)",
+      "Edit(/apps/fumadocs/src/lib/cn.ts)",
+      "Edit(/apps/fumadocs/src/lib/merge-refs.ts)",
+      "Edit(/packages/db/src/schema/auth.ts)",
+      "Edit(/packages/db/src/migrations/**)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -13,46 +30,6 @@
     ]
   },
   "enabledPlugins": {
-    "claude-ads@ai-marketing-hub-claude-ads": true,
-    "claude-code-setup@anthropic-plugin-directory": true,
-    "claude-md-management@anthropic-plugin-directory": true,
-    "commit-commands@anthropic-plugin-directory": true,
-    "context7@anthropic-plugin-directory": true,
-    "frontend-design@anthropic-plugin-directory": false,
-    "hookify@claude-plugins-official": true,
-    "humanizer@humanizer": true,
-    "impeccable@impeccable": true,
-    "modern-web-guidance@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
-    "firebase@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "feature-dev@anthropic-plugin-directory": true
-  },
-  "extraKnownMarketplaces": {
-    "ai-marketing-hub-claude-ads": {
-      "source": {
-        "source": "github",
-        "repo": "agricidaniel/claude-ads"
-      }
-    },
-    "humanizer": {
-      "source": {
-        "source": "github",
-        "repo": "blader/humanizer"
-      }
-    },
-    "impeccable": {
-      "source": {
-        "source": "github",
-        "repo": "pbakaus/impeccable"
-      }
-    },
-    "ui-ux-pro-max-skill": {
-      "source": {
-        "source": "github",
-        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
-      }
-    }
+    "context7@claude-plugins-official": true
   }
 }

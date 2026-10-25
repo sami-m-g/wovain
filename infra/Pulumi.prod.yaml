@@ -87,53 +87,39 @@ config:
   wovain:duoCustomAgents:
     - name: duo-explain
       file: .gitlab/duo/catalog/agents/explain.yml
-  # AuthKit redirect URIs (infra/workos.ts). import adopts an entry made by
-  # hand, by its WorkOS id.
-  wovain:workosRedirectUris:
-    - name: hosted
-      uri: https://app--wovain.us-central1.hosted.app/mcp
-      import: redir_01M5HQD3PBAXJ69NRBS31CK0VP
-    - name: localhost
-      uri: http://localhost:3000/mcp
-      import: redir_01M5HQD44DBG42CHS3W7XWB68J
-  # AuthKit MCP resource indicators (infra/workos.ts). default is the resource
-  # a client gets when it names none; import adopts an entry made by hand.
-  wovain:workosResourceIndicators:
-    - name: hosted
-      uri: https://app--wovain.us-central1.hosted.app/mcp
-      default: true
-    - name: localhost
-      uri: http://localhost:3000/mcp
-      import: authkit_oauth_resource_01M5F7QQ0HM9RZ7NDY9X1TEXWX
   gcp:project: wovain
   gcp:region: us-central1
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
   gcp:billingProject: wovain
   gcp:userProjectOverride: "true"
-  wovain:workos-api-key:
-    secure: v1:GkJevW0f0siZ/dXe:Rb9jTdS6z1EOfGI99TAwMR3th9vBOBw/dj5symnyMlGvFBv51sIj6dcl/XQZHh85ViDFhHDOzMG/l/H2SnQQFhag6FIGlEgHjUiFUk+0ZF6ai7KIANvxbNRZdQsWx2xQQCdA
   wovain:wovain-allowed-emails:
     secure: v1:ybkw5nQlPPOMzB+3:Ljnv1xNy+T3GCCbXf5AarPTrjVpj2/nDiOGKBzi/TI7007A6dA==
-  wovain:meta-system-user-token:
-    secure: v1:+KPRNVhwx4iXir9B:JqM6cR28JTGe9Sj55qOwqedXMaRnVVrD0NbPJvPxzwxxFM/5UuKna8i3hA6b9cuKW6u9C/SiS1cSkakq1SLDpqCAQk/pzVexaAI8zYkxxkc/MQZkGxWQVageyUe+QjMtr5HAQm0F5WYSp3ixXHgQjb0pY2DYofZnIU2x5jsWxVHxZpHwA1Bf5p4SN6ym8lSFoqO24ZhxmnYT9AOre2VSqcOU3V6GvRTizjae2CeUV1yxPrm9liXtDPNELLwPTXH1yFBlTOPGV3D7V5tuBtqxJAfaqKtYjaM7TiVii2obDTPpfEX144/lN1PQbVZBSIbbjz6/xnkzeT1xIqtM67Rs8cnh6bqO+RTpaOJ0rkuZj7YtjX2VyIicUWhyWTGldtPLr9aYYojSeAqF0T8tp9SyhegocmhCMIgeAA==
   wovain:fal-key:
     secure: v1:ph5MIlC4FggQ1Fla:xVrax4Zu6mqdLmmrVN1KKBR7X+DKHg5gaowigcGj7pRlEQKOUGJ/5GIC21xxw6UzP351HcKZyGqk4enRHRQNYMsrFMCVMBg0gtX7tAHNXGipVEMSl8psng==
   wovain:gitlabProjectId: "87296573"
   # The GitLab group with Observability enabled (gitlab-ai-hackathon/
   # transcend-october-2026/43085639); it names the OTLP and query endpoints.
   wovain:o11yGroupId: "144066465"
-  github:owner: sami-m-g
   wovain:gitlab-ci-token:
     secure: v1:0WdO0e7fRKNIDdr1:xt12NG6hpBEypj9HeDrMYngIgBnpyUKVxBVbfvdRN5zdV8144g4XHjHB5SFvB7GGbRywADx8S+sAzYnekl6ZjjuIxjY9YM1nyOezashH
+  github:owner: sami-m-g
+  github:token:
+    secure: v1:kfWUuhyMSjRr+uV5:2WLDTnEniORUTKMBTAj8e/4ygwTqshwhdaCF6CTPtj5qlz60+n6nYZQA+Vq6BkselOmvcl0E09ePrNs8yXp8/wBS0gB3fdI/gyt8gFNpLnvMUiu/j8Y2Q5J2HEKLN0Cw105ymPQzV8FIv57eWA==
+  wovain:workos-api-key:
+    secure: v1:GkJevW0f0siZ/dXe:Rb9jTdS6z1EOfGI99TAwMR3th9vBOBw/dj5symnyMlGvFBv51sIj6dcl/XQZHh85ViDFhHDOzMG/l/H2SnQQFhag6FIGlEgHjUiFUk+0ZF6ai7KIANvxbNRZdQsWx2xQQCdA
   gitlab:token:
     secure: v1:5Ll6LrFV6DNaTO5F:fJ3FqeKHKOMTvj9tAWi5l4GpJMGuc63TWzwnvwpluhxcLwd9huB6gVExypQkwTWlXDT5lsRqT4Zf8WQyYaOTt3KWt4fmb6zMcfW13d1o
   wovain:renovate-token:
     secure: v1:DObnXNQ8bR1gRS68:V04mVs6m6ZMdEYNwTEZq+sz99pcefRxFzw6Y4QkEOdvrevI/ZSH70hst8BVEedfcXlKBJJCB6mdY/t6lVcvP8T85rf8lo2V/1HIcZEDt
-  github:token:
-    secure: v1:kfWUuhyMSjRr+uV5:2WLDTnEniORUTKMBTAj8e/4ygwTqshwhdaCF6CTPtj5qlz60+n6nYZQA+Vq6BkselOmvcl0E09ePrNs8yXp8/wBS0gB3fdI/gyt8gFNpLnvMUiu/j8Y2Q5J2HEKLN0Cw105ymPQzV8FIv57eWA==
   wovain:nebius-api-key:
     secure: v1:sIae3yg/vFm3zlFs:VdAckm6D4GiO/9hgpJghj1iANAjp2k84I3iCbYK+/x3XYLl05ERu4wrXHOGNAo3jOehjiIq6dKFvlD3wdcM664ZjHcf/Wy5A3h/33pwxpdjUnw4GXz0cDNCLl3kkpWCvB84rOLUu9fE9pQkIrn7Cgm4o6m+w1aUxGGSgWxGPBEBFP6HjxrXK2pBGvLcyOmXn9IlQnzafwaJIN+ZbhdGma28YINQdhAtBL3jQHd6xE6u1CS4y9giSsDORgsT45IayNkq6eIwWd/5WVtqEoxqVNdVrrJJaFpOq3Yux+4ZhyDOvsI/CRieDnynXcIcYcXWohCu5ZWrB4HL3CHc=
   wovain:tavily-api-key:
     secure: v1:PzFsNtyPMerRsL7h:TUT6x4bGrklrVt3OuTEZCPZbUga/OozU5vf/GqGN9yeuWqWxZPA01bski5wfz6knITU+L8ZiQLEe
+  wovain:qloo-api-key:
+    secure: v1:vD59KeD90EsuWoDc:cxnpqqr3tSN1+KIOEq3wuT4I2W2hH6nhUGI+QAvOCe5l2M9c9lheCGZcUHeY8+HHJT7CZs5p88GwjnFVAA==
+  wovain:resend-api-key:
+    secure: v1:ASXeoo1en0xnUp3s:hYDkmXc/UhCYg31N9JoCQR9r2nXxGr+AhHtT8JGO6U/LPcOfEj98eRWfPpjrVm7QCo/pmQ==
+  wovain:gitlab-feature-flags-instance-id:
+    secure: v1:7vvbp/rU3SEHGPOk:DknbpnKBI8yQHOUj5fb/7fkHkUNJcfTzEgP76y2GRZv2a+//uZtDpYB8Cg==
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=

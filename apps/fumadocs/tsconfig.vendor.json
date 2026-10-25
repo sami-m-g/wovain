@@ -1,0 +1,23 @@
+{
+  "extends": "@wovain/config/tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "exactOptionalPropertyTypes": false,
+    "noEmit": false,
+    "noUncheckedIndexedAccess": false,
+    "outDir": ".vendor-types",
+    "rootDir": "src"
+  },
+  "include": [
+    "src/components/ai/**/*",
+    "src/components/codeblock.tsx",
+    "src/components/tabs/**/*",
+    "src/components/ui/**/*",
+    "src/lib/cn.ts",
+    "src/lib/merge-refs.ts",
+    "src/types/css-variables.d.ts"
+  ]
+}

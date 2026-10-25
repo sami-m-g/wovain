@@ -1,0 +1,52 @@
+---
+title: Primeros pasos
+description: Ejecuta wovain en local con pnpm, PostgreSQL en Docker y variables de entorno gestionadas con Varlock.
+icon: Rocket
+---
+
+## Requisitos
+
+- Node.js (consulta `.nvmrc`) y pnpm
+- Docker, para el PostgreSQL local (`docker-compose.yml`)
+
+## Ejecutarlo
+
+```bash
+pnpm install
+docker compose up -d      # local PostgreSQL
+pnpm run dev              # web app and docs through Turborepo
+```
+
+| Aplicación     | Ruta            | Puerto                           |
+| -------------- | --------------- | -------------------------------- |
+| Aplicación web | `apps/web`      | Predeterminado de Next.js (3000) |
+| Documentación  | `apps/fumadocs` | 4000                             |
+
+## Variables de entorno con Varlock
+
+Cada aplicación tiene su propio archivo `.env.schema`. [Varlock](https://varlock.dev) valida los valores al arrancar y genera un `src/env.ts` tipado, de modo que el código importa `ENV` en lugar de leer `process.env`.
+
+La aplicación web necesita:
+
+| Variable | Significado |
+| --- | --- |
+| `NODE_ENV` | `development`, `production` o `test` |
+| `BETTER_AUTH_SECRET` | Al menos 32 caracteres; firma las sesiones |
+| `BETTER_AUTH_URL` | URL pública de la aplicación web |
+| `DATABASE_URL` | Cadena de conexión de PostgreSQL (Cloud SQL en producción) |
+
+La aplicación de documentación tiene un par opcional, `OPENROUTER_API_KEY` y `OPENROUTER_MODEL`, para el chat con IA. Sin la clave, el endpoint del chat responde 503.
+
+Las claves de los proveedores (Nebius, Qloo, Tavily, fal) se describen en cada [página de integración](/es/docs/integrations).
+
+## Base de datos
+
+Drizzle gestiona el esquema en `packages/db`. Genera las migraciones con `pnpm run db:generate`. Las tablas de autenticación se generan con `pnpm run auth:generate`; no las edites a mano.
+
+## Antes de hacer commit
+
+```bash
+pnpm run check         # Ultracite: Oxlint and Oxfmt
+pnpm run check-types
+pnpm run knip
+```

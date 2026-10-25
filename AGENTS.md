@@ -1,70 +1,156 @@
-# AGENTS.md
+# Repository Guide
 
-wovain: an MCP server for print-on-demand sellers, used by any agent (product idea → Fourthwall product → Meta Advantage+ campaign). Devpost "Build With AI: Basics" project. The stack is in `docs/spec.md`: one Hono server in `apps/server` (MCP, OAuth checks, Firestore and Cloud Storage) on Firebase App Hosting, widgets in `apps/widgets`, shared schemas in `packages/shared`.
+## Structure
 
-## Workflow
+- `apps/web`: Next.js 16 app (App Router, oRPC, Better Auth, evlog)
+- `apps/fumadocs`: Fumadocs documentation site with OpenRouter AI chat
+- `packages/api`: oRPC routers and procedures
+- `packages/auth`: Better Auth configuration
+- `packages/db`: Drizzle schema, relations and client (PostgreSQL)
+- `packages/ui`: shared shadcn/ui components (Base UI, Tailwind CSS 4)
+- `packages/config`: shared `tsconfig.base.json`
 
-- Planning runs through the course skills in order: `1-start` → `2-scope` → `3-prd` → `4-spec` → `5-build` → `6-ship`. Each reads `status:` in the previous `docs/*.md`.
-- The planning docs are the Markdown files in `docs/` (`PRODUCT.md`, `scope.md`, `prd.md`, `spec.md`, `checklist.md`). When a fact changes, update every doc that states it. `docs/app-map.html` (CSS inline) maps the code.
-- Work runs through GitLab issues (template `Agent task`) on the Workflow board: `status::intent` (proposed) → `todo` (a human accepted it) → `spec` → `plan` → `doing` → `review` (MR open) → `test` (a human tries it) → closed by the merge. Each change keeps `intent.md`, `spec.md`, `plan.md` and `verify.md` in `docs/changes/<issue>-<slug>/` and a summary with links on the issue (see `docs/changes/README.md`). Claude Code works an issue with `/issue <n>` in its own worktree; Duo's Developer flow works one when assigned or mentioned. The agent that wrote an MR never approves or merges it.
-- Don't hand-roll: before writing a helper, check installed dependencies, well-known libraries, the connected MCP servers and this repo's helpers, and name what you checked in the MR. A bug fix starts with a test that fails.
-- Project skills (`/issue`, `/capture`, `/demo`) live once in `.agents/skills/<name>/SKILL.md`, which GitLab Duo reads; `.claude/skills/<name>` is a committed symlink to it for Claude Code. A new skill needs both, plus `metadata: slash-command: enabled` so Duo offers it as a slash command. Plugin skills stay Claude Code only.
-- `docs/` replaces the course's `devpost/` folder. When a course skill (`1-start` to `6-ship`) or any other skill or plugin names a file in `devpost/`, read and write the file with the same name in `docs/`. For example, `devpost/prd.md` means `docs/prd.md` and `devpost/learner-profile.md` means `docs/learner-profile.md`. Never create `devpost/`.
+## Tech
 
-## Commits
+- pnpm workspaces with catalog versions in `pnpm-workspace.yaml`; Turborepo for tasks
+- TypeScript 6 for tooling (`typescript` alias of `@typescript/typescript6`), TypeScript 7 for `tsc`
+- Varlock for environment: each app owns `.env.schema`; import `ENV` from the generated `src/env.ts`
+- Ultracite (Oxlint + Oxfmt) for lint and format; knip for unused code
 
-- Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, lowercase, imperative, no trailing period.
-- Types: `feat`, `fix`, `docs` (planning docs), `chore` (config, skills, hooks), `refactor`, `test`.
-- Create commits with the `commit-commands:commit` skill (`/commit`).
-- The primary repo is GitLab (gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43085639/showcase, Developer role). The GitHub mirror (github.com/sami-m-g/wovain) follows GitLab's `main`: `mirror:github` pushes `main` and tags after each pipeline, since GitLab push mirrors need Maintainer. Deploys don't use GitHub: `deploy:production` uploads the source from GitLab CI to App Hosting. Never push to GitHub by hand: only CI writes there, and a stray commit would block its pushes, which don't force. CI/CD is `.gitlab-ci.yml` with jobs in `.gitlab/ci/`; there are no GitHub Actions or Dependabot (Renovate replaces it).
-- Commit types drive releases: semantic-release turns `feat` into a minor and `fix` into a patch release after production passes its smoke test. Don't edit `CHANGELOG.md` or the version in `package.json` by hand. Pull before pushing, because the release commit lands on GitLab first.
+## Rules
 
-## Writing
+- Do not edit vendored or generated files; update them with their CLI:
+  - `packages/ui/src/{components,hooks,lib}`: shadcn CLI
+  - `apps/fumadocs/src/components/{ai,codeblock.tsx,tabs,ui}`, `apps/fumadocs/src/lib/{cn,merge-refs}.ts`: Fumadocs CLI
+  - `packages/db/src/schema/auth.ts`: `pnpm run auth:generate`
+  - `packages/db/src/migrations`: `pnpm run db:generate`
+  - `.agents/skills`: `npx skills experimental_install`
+- Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
+- Run `pnpm run check`, `pnpm run check-types` and `pnpm run knip` before committing
 
-- Follow the learner's preferences in `docs/learner-profile.md` (Collaboration and Communication Preferences): format, question pacing, wireframes.
-- Run the `humanizer` skill on prose for docs and UI copy.
+# Ultracite Code Standards
 
-## Connected services
+This project uses **Ultracite**, a zero-config preset that enforces strict code quality standards through automated formatting and linting.
 
-- Fourthwall MCP: call `ecommerce_get-current-shop` before any other Fourthwall tool, then `load-skills` only if the connector lists it. The `/app` endpoint has no `get-instructions`, `load-skills` or `read-skills` today; its instructions come in the MCP handshake. Check a tool name against the upstream's real list (`apps/server/test/fixtures/fourthwall-tools.json`) before a playbook or the `fourthwall` proxy names it.
-- Meta Ads MCP: every call needs `advertiser_job` and `client_conversation_id`. It has no automated-rules tool; rules need the Marketing API (`adrules_library`).
-- Research: prefer first-party sources (Meta help via `ads_get_help_article`, Fourthwall `omni_knowledge`); label blog or vendor figures as unverified.
-- Tavily MCP (OAuth, https://mcp.tavily.com/mcp/) for research; not yet in Duo until its OAuth is confirmed.
+## Quick Reference
 
-## Design and ads skills
+- **Format code**: `pnpm exec ultracite fix`
+- **Check for issues**: `pnpm exec ultracite check`
+- **Diagnose setup**: `pnpm exec ultracite doctor`
 
-| Need | Use |
-| --- | --- |
-| Visual direction for a new surface (planning-doc HTML, ChatGPT widgets) | `/impeccable shape`, then build |
-| Review or refine existing UI | `/impeccable critique`, `audit`, `polish`, `bolder`, `quieter` |
-| Concrete palettes, font pairings, chart types, stack-specific UI rules | `ui-ux-pro-max` (lookup only; Impeccable keeps the direction) |
-| Ad creatives and banners | `ui-ux-pro-max:banner-design` |
-| Pre-launch ad account audit, ad plans | `/claude-ads:ads` (returns `unknown` on accounts with no history) |
+Oxlint + Oxfmt (the underlying engine) provides robust linting and formatting. Most issues are automatically fixable.
 
-- Impeccable's hooks check UI files after each edit and at Stop; act on their findings.
+---
 
-## Gotchas
+## Core Principles
 
-- Agents never create new labels; only labels declared in `infra/gitlab.ts` may be used.
-- `docs/learner-profile.md` is gitignored on purpose; never commit it.
-- Never commit `.env*` (only `.env.example`) or MCP URLs that embed tokens (e.g. the Modal video connector).
-- Before installing a third-party plugin, check it for `hooks.json` and `.mcp.json`; install with `claude plugin install <plugin>@<marketplace> --scope project -y`.
-- Shell is zsh: unquoted `$var` doesn't word-split. Build multi-word arguments with arrays.
+Write code that is **accessible, performant, type-safe, and maintainable**. Focus on clarity and explicit intent over brevity.
 
-## Code standards
+### Type Safety & Explicitness
 
-- TypeScript only, strictest settings in `tsconfig.base.json`; no `.js` or `.mjs` files. pnpm 12.3.4 (`packageManager`) on Node 24, which runs `.ts` files directly by type stripping, so there is no bundle step. New packages that need install scripts go in `allowBuilds` in `pnpm-workspace.yaml`.
-- Ultracite (oxlint + oxfmt) enforces style: `pnpm check`, `pnpm fix`. A Claude hook runs `ultracite fix` after each edit; the `ultracite` skill (synced from `node_modules` by `pnpm prepare`) holds the full rules.
-- Two AI-free gates keep the architecture clean: `pnpm arch` (dependency-cruiser rules in `.config/dependency-cruiser.json`) and `pnpm dupes` (jscpd, any clone fails). `oxlint.config.ts` caps complexity, depth, parameters, function length and file length at today's worst source file: lower a limit when you refactor, never raise it.
-- Lefthook runs fix and typecheck on commit, commitlint on the message, and tests, knip, arch, dupes and story tests on push.
-- Course skills aren't committed: `pnpm install` copies them into `.claude/skills/` (the `prepare` script, from `challengepost/learn-ai-basics`).
-- See a widget without ChatGPT: `pnpm storybook` (one story per widget state, light and dark).
-- GitLab Duo setup is config: custom flows are YAML in `.gitlab/duo/catalog/flows/` (validated on change, synced to the AI Catalog on main by GitLab's `ai-catalog` component), and the flow triggers on GitLab's built-in flows, each custom flow's trigger and the custom agents to enable are `wovain:duoTriggers`, `wovain:duoCustomFlows` and `wovain:duoCustomAgents` in `infra/Pulumi.prod.yaml`, which `infra/duo.ts` applies with the rest of `infra/` (with the `gitlab:token` stack secret). No GitLab provider covers flow triggers, so it uses the `sullivtr/graphql` Terraform provider through a local SDK that `pulumi install` generates into `infra/sdks` (gitignored). Code Review reads `.gitlab/duo/mr-review-instructions.yaml` and `.gitlab/duo/mr-review-automated-rules.yaml`. Automatic Duo review and the two SAST flows are project settings only a Maintainer can turn on; they're still off.
-- `infra/` declares the Google Cloud project, GitLab's CI variables, environments and Renovate schedule (`infra/gitlab.ts`), the GitHub mirror's settings, deploy key and ruleset (`infra/github.ts`), and the WorkOS AuthKit redirect URIs and MCP resource indicators (`infra/workos.ts`, from `wovain:workosRedirectUris` through the community `osodevops/workos` Terraform provider and `wovain:workosResourceIndicators` through the generic `magodo/restful` one, both generated into `infra/sdks`). Change those there, never in a UI: the next `pulumi up` on `main` reverts hand edits. README (Infrastructure as code) lists what stays manual.
-- `infra/` is its own pnpm project, outside the root workspace, so app installs never pull Pulumi packages: run `pnpm infra:install` (`pulumi install`) once after cloning, since typecheck and lint cover it.
-- Run the server: `pnpm dev` (Hono on Node in `apps/server` serves `/mcp` on localhost:3000 against the Firestore and Storage emulators, so it needs Java 21; keys live in `apps/server/.env`; `/mcp` needs a WorkOS AuthKit access token for its URL, which needs `WORKOS_AUTHKIT_DOMAIN` and `WORKOS_API_KEY`; AuthKit hosts sign-in and consent; its redirect URIs and resource indicators are in `infra/`, while CIMD and DCR have no API and are set in the WorkOS dashboard under Connect → Configuration). Records live in Firestore under `users/{userId}/{kind}/{id}` and artwork in a private Cloud Storage bucket, both through `firebase-admin`; the rules in `apps/server/firestore.rules` and `storage.rules` deny every client. There are no migrations: each record is checked against its zod schema on read. `pnpm test` runs Vitest on the same emulators (`firebase emulators:exec`). Production is Firebase App Hosting: `apphosting.yaml` runs `pnpm build` (widgets) and `pnpm start` (`node apps/server/src/index.ts`); its secret values are KMS-encrypted Pulumi config (`pulumi config set --secret <name>` in `infra/`). Run `pnpm widgets:watch` beside `pnpm dev`; a widget edit shows on the next redraw ("redraw design d1").
-- Model calls: wovain's own go through Genkit (`apps/server/src/lib/ai.ts`) to Nemotron on Nebius Token Factory; the first is `judge_design`, which needs `NEBIUS_API_KEY` and is skipped without it. Genkit is on zod 3, so pass wovain's zod 4 schemas as `output.jsonSchema` and parse replies with zod 4. Tests use `mockModel` from `genkit/testing`; `pnpm test:live` makes the real calls.
-- Trend research: `research_trends`, `get_niche_brief`, `scan_competitor_site` and `screen_trademark` call Tavily at runtime through `@tavily/core` (search, extract, map, crawl, research; `apps/server/src/lib/tavily.ts`, `trends.ts`) and need `TAVILY_API_KEY`. Every call is paid and asks for `include_usage`; a run stays under `research.maxCredits`, inputs are bounded and nothing about queries or results is logged. Ideas are ranked by code (`lib/score.ts`, `SCORE_WEIGHTS`), never by a model; the agent phrases them. Tests pass `fakeTavily` from `test/helpers.ts`. To run the live test locally, pipe the key from `pulumi config get tavily-api-key --cwd infra -s prod` into the environment without printing it.
-- Merchant connections: wovain is an MCP client of each merchant's Fourthwall, fal and Meta (`lib/upstream.ts`, `lib/oauth-client.ts`, `routes/connect.ts`), with the SDK's `auth()` doing the OAuth and grants KMS-encrypted at `users/{uid}/connections/{provider}` (`WOVAIN_KMS_KEY`; an in-memory key on the emulators). A connect link makes the merchant sign in to wovain in the browser first and binds the flow to that browser with a cookie. Fourthwall and fal fetch `/oauth/client.json` (CIMD), so a local server needs an https tunnel to connect. Meta has no CIMD or DCR: wovain's own Meta app is its client (`META_APP_ID`, README Meta app), and until App Review only people with a role on that app can connect. Tests use `test/fake-upstream.ts`.
-- Qloo: with `QLOO_API_KEY`, `research_trends` starts from the seed's Qloo taste graph (`apps/server/src/lib/qloo.ts`, REST on `https://hackathon.api.qloo.com` with `X-Api-Key` through `fetchJson`; the hackathon kit's `@qloo/qloo-harness` doesn't export a client) and its affinity and velocity feed the score (`apps/server/src/lib/score.ts`); `suggest_audience` returns a theme's demographics and heatmap. Without the key both fall back or say they aren't set up. Tests pass `fakeQloo` from `test/helpers.ts`.
-- Try it in an agent: add the hosted `/mcp` (or `https://<tunnel>/mcp` for your local server) as a remote MCP server. The step playbooks agents follow live in `apps/server/src/playbooks/` and ship with each deploy (MCP `instructions`, `get_playbook`, prompts).
+- Use explicit types for function parameters and return values when they enhance clarity
+- Prefer `unknown` over `any` when the type is genuinely unknown
+- Use const assertions (`as const`) for immutable values and literal types
+- Leverage TypeScript's type narrowing instead of type assertions
+- Use meaningful variable names instead of magic numbers - extract constants with descriptive names
+
+### Modern JavaScript/TypeScript
+
+- Use arrow functions for callbacks and short functions
+- Prefer `for...of` loops over `.forEach()` and indexed `for` loops
+- Use optional chaining (`?.`) and nullish coalescing (`??`) for safer property access
+- Prefer template literals over string concatenation
+- Use destructuring for object and array assignments
+- Use `const` by default, `let` only when reassignment is needed, never `var`
+
+### Async & Promises
+
+- Always `await` promises in async functions - don't forget to use the return value
+- Use `async/await` syntax instead of promise chains for better readability
+- Handle errors appropriately in async code with try-catch blocks
+- Don't use async functions as Promise executors
+
+### React & JSX
+
+- Use function components over class components
+- Call hooks at the top level only, never conditionally
+- Specify all dependencies in hook dependency arrays correctly
+- Use the `key` prop for elements in iterables (prefer unique IDs over array indices)
+- Nest children between opening and closing tags instead of passing as props
+- Don't define components inside other components
+- Use semantic HTML and ARIA attributes for accessibility:
+  - Provide meaningful alt text for images
+  - Use proper heading hierarchy
+  - Add labels for form inputs
+  - Include keyboard event handlers alongside mouse events
+  - Use semantic elements (`<button>`, `<nav>`, etc.) instead of divs with roles
+
+### Error Handling & Debugging
+
+- Remove `console.log`, `debugger`, and `alert` statements from production code
+- Throw `Error` objects with descriptive messages, not strings or other values
+- Use `try-catch` blocks meaningfully - don't catch errors just to rethrow them
+- Prefer early returns over nested conditionals for error cases
+
+### Code Organization
+
+- Keep functions focused and under reasonable cognitive complexity limits
+- Extract complex conditions into well-named boolean variables
+- Use early returns to reduce nesting
+- Prefer simple conditionals over nested ternary operators
+- Group related code together and separate concerns
+
+### Security
+
+- Add `rel="noopener"` when using `target="_blank"` on links
+- Avoid `dangerouslySetInnerHTML` unless absolutely necessary
+- Don't use `eval()` or assign directly to `document.cookie`
+- Validate and sanitize user input
+
+### Performance
+
+- Avoid spread syntax in accumulators within loops
+- Use top-level regex literals instead of creating them in loops
+- Prefer specific imports over namespace imports
+- Avoid barrel files (index files that re-export everything)
+- Use proper image components (e.g., Next.js `<Image>`) over `<img>` tags
+
+### Framework-Specific Guidance
+
+**Next.js:**
+
+- Use Next.js `<Image>` component for images
+- Use `next/head` or App Router metadata API for head elements
+- Use Server Components for async data fetching instead of async Client Components
+
+**React 19+:**
+
+- Use ref as a prop instead of `React.forwardRef`
+
+**Solid/Svelte/Vue/Qwik:**
+
+- Use `class` and `for` attributes (not `className` or `htmlFor`)
+
+---
+
+## Testing
+
+- Write assertions inside `it()` or `test()` blocks
+- Avoid done callbacks in async tests - use async/await instead
+- Don't use `.only` or `.skip` in committed code
+- Keep test suites reasonably flat - avoid excessive `describe` nesting
+
+## When Oxlint + Oxfmt Can't Help
+
+Oxlint + Oxfmt will catch most mechanical issues automatically. Focus your attention on:
+
+1. **Business logic correctness** - Oxlint + Oxfmt can't validate your algorithms
+2. **Meaningful naming** - Use descriptive names for functions, variables, and types
+3. **Architecture decisions** - Component structure, data flow, and API design
+4. **Edge cases** - Handle boundary conditions and error states
+5. **User experience** - Accessibility, performance, and usability considerations
+6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
+
+---
+
+Most formatting and common issues are automatically fixed by Oxlint + Oxfmt. Run `pnpm exec ultracite fix` before committing to ensure compliance.

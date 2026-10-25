@@ -1,0 +1,59 @@
+---
+title: Architecture
+description: One Next.js app, oRPC procedures, an MCP server, Better Auth, Drizzle on Cloud SQL, and the agent loop around it.
+icon: Network
+---
+
+## Overview
+
+```text
+ Seller
+   |  website                 ChatGPT
+   v                             v
+ +--------------------------------------------------+
+ |  apps/web (Next.js 16, App Router, Cloud Run)    |
+ |   - /api/rpc    oRPC handler  -> packages/api    |
+ |   - /api/mcp    MCP server    -> packages/api    |
+ |   - /api/auth   Better Auth   -> packages/auth   |
+ |   - /.well-known/oauth-*  OAuth discovery        |
+ |   - /api/connections/[provider]  Fourthwall/Meta |
+ |   - evlog wide events                            |
+ +-----------+--------------------------------------+
+             | flow/* steps call packages/core
+             v
+   Qloo -> Tavily -> Nemotron (Nebius) -> fal -> Fourthwall -> Meta Ads
+             |
+             v  Drizzle (packages/db)
+   PostgreSQL on Cloud SQL (GCP)
+
+ After deploy (GitLab Duo flows):
+   production errors -> self-healing flow -> merge request
+   KPIs and UI       -> scout flow        -> issues
+   issue             -> developer flow    -> merge request
+```
+
+## Packages
+
+| Path | Role |
+| --- | --- |
+| `apps/web` | Next.js 16 app: pages, route handlers for RPC, MCP, auth and connections |
+| `apps/fumadocs` | This documentation site |
+| `packages/api` | oRPC routers (`routers/*`), seller-flow steps (`flow/*`) and the MCP server (`mcp.ts`) |
+| `packages/core` | Providers and rules: Qloo, Tavily, Nemotron, fal, pricing, the judge, autopilot, ads, Fourthwall, upstream OAuth, token sealing |
+| `packages/auth` | Better Auth with the MCP and JWT plugins |
+| `packages/db` | Drizzle schema (`schema/auth.ts`, `schema/seller.ts`), relations and client |
+| `packages/ui` | Shared shadcn/ui components (Base UI, Tailwind CSS 4) |
+| `packages/config` | Shared `tsconfig.base.json` |
+
+## Key decisions
+
+- **One app, one set of procedures.** The website calls them over `/api/rpc`; the MCP tools call the same router with `createRouterClient`, as the signed-in seller.
+- **Models decide, code gates.** Nemotron replies are validated with Zod; the print size, price floor, budget range and paused state are code.
+- **Paused by default.** No procedure activates a Meta object, and Fourthwall products are created hidden.
+- **Sealed tokens.** Fourthwall and Meta grants are stored encrypted with AES-256-GCM (`TOKEN_ENCRYPTION_KEY`).
+- **Structured logs.** evlog emits one wide event per request, which the self-healing flow reads.
+- **Typed environment.** Varlock schemas generate `ENV`, so a missing variable fails at start-up.
+
+## Seller flow in the API
+
+`ideas.research` → `designs.generate` → `designs.approve` or `designs.reject` → `products.create` → `products.publish` → `campaigns.create`, or `runs.start` for all of it. Each step persists its result, and a run records its current step and any error.

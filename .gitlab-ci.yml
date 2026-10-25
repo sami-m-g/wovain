@@ -1,22 +1,27 @@
-# wovain's pipeline, one job per DevSecOps stage it covers:
-#   verify    build; lint, types, dead code, tests; widget stories; the
-#             e2e journey proof and demo video (proof.yml)
-#   test      GitLab SAST, Secret Detection, Dependency Scanning (Secure)
-#   deploy    main: sync custom Duo flows to the AI Catalog, pulumi up
-#             (infra/), then upload the source to Firebase App Hosting and
-#             roll it out
-#   monitor   smoke-test the live OAuth chain; hourly, the self-healing loop
-#             (scout, verify, shepherd Duo's merge requests to auto-merge)
-#   release   semantic-release: version, CHANGELOG, GitLab release; then
-#             push main and tags to the GitHub mirror
-# Renovate runs on the "Renovate dependency updates" pipeline schedule, the
-# loop on "wovain loop", the live e2e journey on "Nightly e2e".
-# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GITHUB_MIRROR_KEY,
-# FIREBASE_PROJECT_ID, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
-# GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, SITE_URL,
-# GITLAB_OBSERVABILITY_EXPORT, GITLAB_O11Y_URL and (once its stack secret is
-# set) GITLAB_O11Y_API_KEY. Pulumi sets them all (infra/index.ts); don't edit
-# them in the UI.
+# wovain's pipeline, one stage per DevSecOps step it covers:
+#   verify   lint and format, types (apps, packages and infra/), dead code,
+#            tests and the turbo build
+#   test     GitLab SAST, IaC scanning, Secret Detection and Dependency
+#            Scanning (secure.yml)
+#   deploy   main only: pulumi up (infra/); package the web and docs images
+#            into the GitLab and Google registries, then Container Scanning;
+#            migrate Cloud SQL; roll both images out to Cloud Run
+#   monitor  smoke-test wovain.com and docs.wovain.com
+#   Duo      three flows run the post-code lifecycle (docs/flows.md):
+#            self-healing (ops job, heal flow, heal:verify), KPI scout
+#            (scout:collect, scout flow) and issue to completion (ops job,
+#            Developer flow, Duo Code Review, auto-merge)
+# Renovate runs on the "Renovate dependency updates" pipeline schedule; the
+# ops job on "wovain ops" (every 10 minutes) and the scout on "wovain scout"
+# (daily), or now with Run pipeline and OPS=1 or SCOUT=1.
+# CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GCP_PROJECT_ID, GCP_REGION,
+# GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
+# GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, GCP_IMAGE_REPOSITORY,
+# GCP_SQL_INSTANCE, SITE_URL and DOCS_SITE_URL. Pulumi sets them all
+# (infra/index.ts); don't edit them in the UI. The ops jobs also read
+# TRUSTED_USERS (who may hand issues to Duo) and, when GitLab names the Duo
+# service accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT,
+# DUO_HEAL_ACCOUNT and DUO_REVIEW_ACCOUNT.
 
 workflow:
   rules:
@@ -26,42 +31,44 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 # Jobs live in .gitlab/ci/, one file per stage plus the shared templates.
+# The Duo flows (docs/flows.md) add the catalog sync (duo.yml), heal:verify
+# (heal.yml), the ops job and SCI (ops.yml), and the KPI scout (scout.yml).
 include:
   - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
-  # Custom Duo flows: validated on change, synced to the AI Catalog on main.
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+  # Custom Duo flows and agents: validated on change, synced to the AI
+  # Catalog on main.
   - component: $CI_SERVER_FQDN/components/ai-catalog/catalog-sync@0.0.32
     inputs:
       agent_directory: .gitlab/duo/catalog/agents
       flow_directory: .gitlab/duo/catalog/flows
       mapping_file: .gitlab/duo/catalog/mapping.json
       gitlab_token: $GITLAB_TOKEN
-      # Our role can't enable flows in the top-level group, which the component
-      # does first, so it only syncs; infra/duo.ts enables them in the project.
+      # The hackathon role can't enable flows in the top-level group, which
+      # the component does first; infra/duo.ts enables them in the project.
       enable_in_project: "false"
       public: "false"
-      # Only a label in the mapping file; the sync runs on main, not on tags.
       version: $CI_COMMIT_SHORT_SHA
   - local: .gitlab/ci/templates.yml
   - local: .gitlab/ci/verify.yml
-  - local: .gitlab/ci/proof.yml
   - local: .gitlab/ci/secure.yml
   - local: .gitlab/ci/deploy.yml
-  - local: .gitlab/ci/monitor.yml
-  - local: .gitlab/ci/release.yml
   - local: .gitlab/ci/duo.yml
-  - local: .gitlab/ci/loop.yml
+  - local: .gitlab/ci/heal.yml
+  - local: .gitlab/ci/ops.yml
+  - local: .gitlab/ci/scout.yml
 
 stages:
   - verify
   - test
   - deploy
   - monitor
-  - release
 
 default:
-  image: node:24
+  image: node:26
   interruptible: true
 
 variables:

@@ -1,73 +1,26 @@
 # Who reviews what. GitLab requests these owners on merge requests that touch
-# the paths below. Making their approval required needs a Maintainer to turn
-# on "Require approval from code owners" for the protected branch; this
-# workspace grants Developer, so for now the file assigns reviewers only.
+# the paths below (required approval needs a Maintainer setting).
 
 * @sami-m-g
 
-[Auth] @sami-m-g
-/apps/server/src/auth/
-/apps/server/src/routes/
-/apps/server/src/app.ts
-
-[Data] @sami-m-g
-/apps/server/src/firebase.ts
-/apps/server/src/store.ts
-/apps/server/firestore.rules
-/apps/server/storage.rules
-
 [Infrastructure] @sami-m-g
 /infra/
-/apphosting.yaml
+/apps/web/Dockerfile
 
 [Pipeline] @sami-m-g
 /.gitlab-ci.yml
 /.gitlab/
 
-[Planning docs] @sami-m-g
-/docs/
-
-# What the self-healing loop never auto-merges (apps/ops/src/guardrails.ts
-# allows only application source and tests). Listing it here requests a
-# human owner on any merge request that touches it.
-[Self-healing loop] @sami-m-g
-/apps/ops/
-/docs/loop.md
+[Auth and data] @sami-m-g
+/packages/auth/
+/packages/db/
 
 [Config and dependencies] @sami-m-g
 /.config/
-/.agents/
-/.claude/
 /AGENTS.md
 /package.json
 /pnpm-lock.yaml
 /pnpm-workspace.yaml
-/tsconfig*.json
-/oxlint.config.ts
-/oxfmt.config.ts
-/firebase.json
+/turbo.json
 **/package.json
 **/tsconfig*.json
-**/*.config.ts
-
-[Spend, credentials and the scout's input] @sami-m-g
-/apps/server/src/lib/launch-approvals.ts
-/apps/server/src/lib/connections.ts
-/apps/server/src/lib/cipher.ts
-/apps/server/src/lib/oauth-client.ts
-/apps/server/src/lib/upstream.ts
-/apps/server/src/lib/approval.ts
-/apps/server/src/lib/request-errors.ts
-/apps/server/src/lib/tool-result.ts
-/apps/server/src/lib/meta-*
-/apps/server/src/lib/browser-*
-/apps/server/src/lib/autopilot-*
-/apps/server/src/lib/fetch-*
-/apps/server/src/lib/optimizer/
-/apps/server/src/tools/meta.ts
-/apps/server/src/tools/connections.ts
-/apps/server/src/tools/campaign.ts
-/apps/server/src/tools/publish.ts
-/apps/server/src/tools/autopilot.ts
-/apps/server/src/playbooks/
-/packages/shared/src/optimizer/

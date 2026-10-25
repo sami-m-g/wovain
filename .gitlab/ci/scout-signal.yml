@@ -1,6 +1,5 @@
-# The child pipeline scout:duo starts (.gitlab/ci/loop.yml). Its success is
-# the pipeline event that starts the Duo scout flow; the job itself does
-# nothing.
+# The child pipeline scout:duo starts (.gitlab/ci/scout.yml). Its success is
+# the pipeline event that starts the scout flow; the job itself does nothing.
 signal:
   image: busybox:1.37
   script:

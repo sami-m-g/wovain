@@ -1,20 +1,16 @@
 {
   "mcpServers": {
-    "fal": {
-      "type": "http",
-      "url": "https://mcp.fal.ai/mcp-relay"
+    "shadcn": {
+      "command": "npx",
+      "args": ["-y", "shadcn@latest", "mcp"]
     },
-    "fourthwall": {
-      "type": "http",
-      "url": "https://mcp.fourthwall.com/app"
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
     },
-    "meta-ads": {
+    "better-auth": {
       "type": "http",
-      "url": "https://mcp.facebook.com/ads"
-    },
-    "tavily": {
-      "type": "http",
-      "url": "https://mcp.tavily.com/mcp/"
+      "url": "https://mcp.better-auth.com/mcp"
     }
   }
 }

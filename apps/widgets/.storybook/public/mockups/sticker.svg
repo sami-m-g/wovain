@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Synthetic die-cut sticker mockup">
-  <!-- Synthetic placeholder for Storybook only; real mockups come from Fourthwall. -->
-  <rect width="400" height="400" fill="#f3f3f1"/>
-  <circle cx="200" cy="200" r="120" fill="#ffffff" stroke="#dcdcd8" stroke-width="4"/>
-  <circle cx="200" cy="200" r="80" fill="#f2a65a"/>
-  <path d="M168 190 l12 -28 l12 28 M210 190 l12 -28 l12 28" stroke="#2b2b2b" stroke-width="8" fill="none"/>
-</svg>

@@ -1,0 +1,59 @@
+---
+title: Arquitectura
+description: Una sola aplicación Next.js, procedimientos oRPC, un servidor MCP, Better Auth, Drizzle sobre Cloud SQL y el bucle de agentes que lo rodea.
+icon: Network
+---
+
+## Visión general
+
+```text
+ Seller
+   |  website                 ChatGPT
+   v                             v
+ +--------------------------------------------------+
+ |  apps/web (Next.js 16, App Router, Cloud Run)    |
+ |   - /api/rpc    oRPC handler  -> packages/api    |
+ |   - /api/mcp    MCP server    -> packages/api    |
+ |   - /api/auth   Better Auth   -> packages/auth   |
+ |   - /.well-known/oauth-*  OAuth discovery        |
+ |   - /api/connections/[provider]  Fourthwall/Meta |
+ |   - evlog wide events                            |
+ +-----------+--------------------------------------+
+             | flow/* steps call packages/core
+             v
+   Qloo -> Tavily -> Nemotron (Nebius) -> fal -> Fourthwall -> Meta Ads
+             |
+             v  Drizzle (packages/db)
+   PostgreSQL on Cloud SQL (GCP)
+
+ After deploy (GitLab Duo flows):
+   production errors -> self-healing flow -> merge request
+   KPIs and UI       -> scout flow        -> issues
+   issue             -> developer flow    -> merge request
+```
+
+## Paquetes
+
+| Ruta | Función |
+| --- | --- |
+| `apps/web` | Aplicación Next.js 16: páginas, manejadores de rutas para RPC, MCP, autenticación y conexiones |
+| `apps/fumadocs` | Este sitio de documentación |
+| `packages/api` | Routers oRPC (`routers/*`), pasos del flujo del vendedor (`flow/*`) y servidor MCP (`mcp.ts`) |
+| `packages/core` | Proveedores y reglas: Qloo, Tavily, Nemotron, fal, precios, juez, autopilot, anuncios, Fourthwall, OAuth de origen, sellado de tokens |
+| `packages/auth` | Better Auth con los plugins MCP y JWT |
+| `packages/db` | Esquema de Drizzle (`schema/auth.ts`, `schema/seller.ts`), relaciones y cliente |
+| `packages/ui` | Componentes compartidos de shadcn/ui (Base UI, Tailwind CSS 4) |
+| `packages/config` | `tsconfig.base.json` compartido |
+
+## Decisiones clave
+
+- **Una aplicación, un único conjunto de procedimientos.** El sitio web los llama por `/api/rpc`; las herramientas MCP llaman al mismo router con `createRouterClient`, como el vendedor que inició sesión.
+- **Los modelos deciden, el código pone las salvaguardas.** Las respuestas de Nemotron se validan con Zod; el tamaño de impresión, el precio mínimo, el rango de presupuesto y el estado en pausa son código.
+- **En pausa por defecto.** Ningún procedimiento activa un objeto de Meta y los productos de Fourthwall se crean ocultos.
+- **Tokens sellados.** Los accesos de Fourthwall y Meta se guardan cifrados con AES-256-GCM (`TOKEN_ENCRYPTION_KEY`).
+- **Registros estructurados.** evlog emite un evento amplio por solicitud, que el flujo de autorreparación lee.
+- **Entorno tipado.** Los esquemas de Varlock generan `ENV`, de modo que una variable ausente hace fallar el arranque.
+
+## El flujo del vendedor en la API
+
+`ideas.research` → `designs.generate` → `designs.approve` o `designs.reject` → `products.create` → `products.publish` → `campaigns.create`, o `runs.start` para todo. Cada paso guarda su resultado y una ejecución registra su paso actual y cualquier error.

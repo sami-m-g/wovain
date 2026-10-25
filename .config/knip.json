@@ -4,12 +4,29 @@
     "config": [".config/commitlint.config.ts"]
   },
   "workspaces": {
-    "apps/ops": {
-      "entry": ["src/loop.ts", "src/weekly.ts", "src/sci-report.ts"]
+    "apps/fumadocs": {
+      "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"],
+      "ignore": [
+        "src/components/ai/**",
+        "src/components/codeblock.tsx",
+        "src/components/ui/**"
+      ]
     },
-    "apps/widgets": {
-      "entry": ["src/*/*-widget.tsx", "proof/host.ts"]
+    "apps/web": {
+      "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"]
+    },
+    "apps/ops": {
+      "entry": [
+        "src/ops.ts",
+        "src/heal-verify.ts",
+        "src/scout-collect.ts",
+        "src/sci-report.ts"
+      ]
+    },
+    "packages/widgets": {
+      "entry": ["src/{trends,design,product,campaign}.tsx", "src/styles.css"],
+      "ignoreDependencies": ["tailwindcss"]
     }
   },
-  "ignore": ["infra/**"]
+  "ignore": [".agents/**", "infra/**"]
 }
