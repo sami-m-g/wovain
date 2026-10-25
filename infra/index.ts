@@ -442,10 +442,11 @@ const docsService = new gcp.cloudrunv2.Service(
 export const docsServiceUri = docsService.uri;
 
 // Resend sends wovain.com's mail. With the `resend-api-key` stack secret
-// set, Pulumi registers the domain with Resend and writes its records.
+// set and `resendDomain: true`, Pulumi registers the domain with Resend and
+// writes its records. Off until the dynamic provider serializes under ESM.
 const resendApiKey = config.getSecret("resend-api-key");
 const resendDomain =
-  resendApiKey === undefined
+  resendApiKey === undefined || config.getBoolean("resendDomain") !== true
     ? undefined
     : new ResendDomain("resend", {
         apiKey: resendApiKey,
