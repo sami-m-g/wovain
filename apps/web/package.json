@@ -9,7 +9,8 @@
     "check-types": "tsc -b ../../packages/api ../../packages/ui && tsc --noEmit",
     "start": "mkdir -p public && cp -R .next/static .next/standalone/apps/web/.next/ && cp -R public .next/standalone/apps/web/ && PORT=3001 node .next/standalone/apps/web/server.js",
     "env:generate": "varlock codegen",
-    "auth:generate": "varlock run -- pnpm dlx auth@latest generate --config src/services.ts --output ../../packages/db/src/schema/auth.ts --yes"
+    "auth:generate": "varlock run -- pnpm dlx auth@latest generate --config src/services.ts --output ../../packages/db/src/schema/auth.ts --yes",
+    "test": "vitest run"
   },
   "dependencies": {
     "@orpc/client": "catalog:",
@@ -33,6 +34,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
+    "unleash-client": "^6.12.2",
     "varlock": "catalog:",
     "zod": "catalog:"
   },
@@ -45,6 +47,7 @@
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

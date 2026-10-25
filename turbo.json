@@ -11,6 +11,9 @@
       "dependsOn": ["^check-types"],
       "outputs": ["dist/**", ".vendor-types/**"]
     },
+    "test": {
+      "outputs": ["junit.xml"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

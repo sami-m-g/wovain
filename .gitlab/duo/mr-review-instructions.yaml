@@ -1,0 +1,39 @@
+# Project review rules for GitLab Duo Code Review, on top of its standard
+# review. Duo's merge requests (heal flow, Developer flow) are auto-merged
+# only after this review leaves no open threads (apps/ops/src/ops.ts).
+instructions:
+  - name: Heal fixes
+    fileFilters:
+      - "apps/web/src/**/*.ts"
+      - "apps/web/test/**/*.ts"
+    instructions: |
+      1. A bug fix comes with a test that fails without the fix. For a heal
+         merge request, the test name contains "heal <fingerprint>" and
+         exercises the real code path, not a copy of it.
+      2. Flag fixes that swallow errors (empty catch, catch-and-return-null)
+         instead of handling the bad data explicitly.
+      3. Flag any change to the fault-injection harness
+         (apps/web/src/lib/feature-flags.ts, apps/web/src/lib/checkout/catalog.ts).
+
+  - name: API and data
+    fileFilters:
+      - "packages/api/src/**/*.ts"
+      - "apps/web/src/app/api/**/*.ts"
+    instructions: |
+      1. Inputs and upstream responses are parsed with zod, not cast with `as`.
+      2. Procedures that read or change a merchant's data check the session.
+      3. Errors are logged on the request's evlog wide event, not with console.
+
+  - name: No hand-rolling
+    fileFilters:
+      - "apps/**/*.ts"
+      - "apps/**/*.tsx"
+      - "packages/**/*.ts"
+    instructions: |
+      Flag new code that reimplements what an installed dependency or a
+      helper already in this repo does. Name the alternative.
+
+  - name: Secrets
+    instructions: |
+      Flag tokens, API keys, URLs with embedded credentials, or .env files in
+      the diff. Only .env.schema files may be committed.

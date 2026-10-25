@@ -1,15 +1,16 @@
 # Shared job blocks, used with `extends:` and `!reference`.
 
-# Every push and merge request, but not a scheduled pipeline.
+# Every push and merge request, but not a scheduled pipeline or a manual
+# ops run (OPS=1 or SCOUT=1, .gitlab/ci/ops.yml and scout.yml).
 .on-changes:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
       when: never
     - when: on_success
 
 .on-main:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
@@ -94,8 +95,9 @@
     - gcloud auth login --cred-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
     - gcloud config set project "$GCP_PROJECT_ID"
 
-# The self-healing loop's jobs (.gitlab/ci/loop.yml) read production's logs
-# and metrics as gitlab-ops, which trusts only the operations environment.
+# The ops jobs (.gitlab/ci/ops.yml, scout.yml; apps/ops) read production's
+# logs and metrics as gitlab-ops, which trusts only the operations
+# environment. They install only apps/ops, so each 10-minute run stays short.
 .ops-job:
   extends: .gcp-auth
   stage: monitor
@@ -106,5 +108,6 @@
     name: operations
     action: verify
   before_script:
-    - !reference [.pnpm-install, before_script]
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm install --frozen-lockfile --ignore-scripts --filter @wovain/ops
     - !reference [.gcp-credentials, before_script]

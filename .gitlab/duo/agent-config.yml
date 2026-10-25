@@ -1,0 +1,13 @@
+# How Duo flows run on CI runners (docs: Duo Agent Platform, "Configure flow
+# execution"). Read from the default branch only. The heal flow and the
+# Developer flow run tests, so the image has Node and pnpm and the setup
+# installs the workspace. A custom image has no network sandbox (SRT); the
+# flows' prompts and the ops job's merge guardrails are the limits instead.
+image: node:26-bookworm
+setup_script:
+  - npm install -g --silent pnpm@12.3.4
+  - pnpm config set store-dir .pnpm-store
+  - pnpm install --frozen-lockfile
+cache:
+  paths:
+    - .pnpm-store/

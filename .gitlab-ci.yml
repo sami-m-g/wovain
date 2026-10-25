@@ -5,12 +5,21 @@
 #   deploy   main only: pulumi up (infra/), build and push the web image,
 #            migrate Cloud SQL, roll the image out to Cloud Run
 #   monitor  smoke-test the live site
-# Renovate runs on the "Renovate dependency updates" pipeline schedule.
+#   Duo      three flows run the post-code lifecycle (docs/flows.md):
+#            self-healing (ops job, heal flow, heal:verify), KPI scout
+#            (scout:collect, scout flow) and issue to completion (ops job,
+#            Developer flow, Duo Code Review, auto-merge)
+# Renovate runs on the "Renovate dependency updates" pipeline schedule; the
+# ops job on "wovain ops" (every 10 minutes) and the scout on "wovain scout"
+# (daily), or now with Run pipeline and OPS=1 or SCOUT=1.
 # CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GCP_PROJECT_ID, GCP_REGION,
 # GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
 # GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, GCP_IMAGE_REPOSITORY,
 # GCP_SQL_INSTANCE and SITE_URL. Pulumi sets them all (infra/index.ts); don't
-# edit them in the UI.
+# edit them in the UI. The ops jobs also read TRUSTED_USERS (who may hand
+# issues to Duo) and, when GitLab names the Duo service accounts differently
+# from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT, DUO_HEAL_ACCOUNT and
+# DUO_REVIEW_ACCOUNT.
 
 workflow:
   rules:
@@ -19,26 +28,34 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH
 
-# Jobs live in .gitlab/ci/, one file per stage plus the shared templates. The
-# self-healing loop's files belong to the ops work and are included only once
-# they exist.
+# Jobs live in .gitlab/ci/, one file per stage plus the shared templates.
+# The Duo flows (docs/flows.md) add the catalog sync (duo.yml), heal:verify
+# (heal.yml), the ops job and SCI (ops.yml), and the KPI scout (scout.yml).
 include:
   - template: Jobs/SAST.gitlab-ci.yml
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  # Custom Duo flows and agents: validated on change, synced to the AI
+  # Catalog on main.
+  - component: $CI_SERVER_FQDN/components/ai-catalog/catalog-sync@0.0.32
+    inputs:
+      agent_directory: .gitlab/duo/catalog/agents
+      flow_directory: .gitlab/duo/catalog/flows
+      mapping_file: .gitlab/duo/catalog/mapping.json
+      gitlab_token: $GITLAB_TOKEN
+      # The hackathon role can't enable flows in the top-level group, which
+      # the component does first; infra/duo.ts enables them in the project.
+      enable_in_project: "false"
+      public: "false"
+      version: $CI_COMMIT_SHORT_SHA
   - local: .gitlab/ci/templates.yml
   - local: .gitlab/ci/verify.yml
   - local: .gitlab/ci/secure.yml
   - local: .gitlab/ci/deploy.yml
   - local: .gitlab/ci/duo.yml
-    rules:
-      - exists: [.gitlab/ci/duo.yml]
-  - local: .gitlab/ci/loop.yml
-    rules:
-      - exists: [.gitlab/ci/loop.yml]
-  - local: .gitlab/ci/monitor.yml
-    rules:
-      - exists: [.gitlab/ci/monitor.yml]
+  - local: .gitlab/ci/heal.yml
+  - local: .gitlab/ci/ops.yml
+  - local: .gitlab/ci/scout.yml
 
 stages:
   - verify

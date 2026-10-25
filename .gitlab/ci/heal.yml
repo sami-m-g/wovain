@@ -1,0 +1,15 @@
+# Flow 1, self-healing: on a merge request that carries a heal signature
+# (the heal flow copies it from its issue), the reproduction test must fail
+# on the target branch with the original error class and pass with the fix
+# (apps/ops/src/heal-verify.ts). Other merge requests pass right away.
+# GitLab's auto-merge waits for this job like any other.
+heal:verify:
+  stage: verify
+  extends: .pnpm-install
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  variables:
+    # The diff base must be in the clone.
+    GIT_DEPTH: "0"
+  script:
+    - node apps/ops/src/heal-verify.ts

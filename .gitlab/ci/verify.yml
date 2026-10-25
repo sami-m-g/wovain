@@ -7,14 +7,18 @@ verify:
     - pnpm run check
     - pnpm run check-types
     - pnpm run knip
-    - pnpm run --if-present test
+    - pnpm run test
+  artifacts:
+    when: always
+    reports:
+      junit: "**/junit.xml"
 
 # infra/ type-checks against the SDKs `pulumi install` generates.
 verify:infra:
   stage: verify
   extends: [.pulumi-install, .on-changes]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
       when: never
     - changes: [infra/**/*]
   script:
