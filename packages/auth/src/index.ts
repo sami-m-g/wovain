@@ -122,6 +122,18 @@ export const createAuth = (
       }),
       nextCookies(),
     ],
+    // On in every environment and kept in Postgres, so each Cloud Run
+    // instance counts the same requests, per client IP. ChatGPT registers
+    // from shared egress IPs, so client registration keeps a per-minute rule.
+    rateLimit: {
+      customRules: {
+        "/oauth2/register": { max: 5, window: 60 },
+        "/sign-in/email": { max: 5, window: 60 },
+        "/sign-up/email": { max: 10, window: 60 * 60 },
+      },
+      enabled: true,
+      storage: "database",
+    },
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: trustedOrigins(env),
     user: {

@@ -11,6 +11,7 @@ import { createProductCampaign } from "./campaigns";
 import { autopilotDecide, generateDesign } from "./designs";
 import { researchIdeas } from "./ideas";
 import { createDesignProduct, publishDesignProduct } from "./products";
+import { meter } from "./spend";
 
 // A run takes a seed through the flow. Without autopilot it stops at the
 // design for the merchant's approval; with autopilot, Nemotron picks the
@@ -77,6 +78,9 @@ const execute = async (actor: Actor, runId: string, input: RunInput) => {
       status: "failed",
     });
     return;
+  }
+  if (input.autopilot) {
+    await meter(actor, "llm", { runId });
   }
   const chosen = input.autopilot
     ? await pickIdea(
@@ -153,6 +157,8 @@ export const getRun = async (actor: Actor, id: string) => {
 };
 
 export const startRun = async (actor: Actor, input: RunInput) => {
+  // Refused before the run is saved, so a merchant over quota sees no run.
+  await meter(actor, "run", { record: false });
   const [created] = await actor.db
     .insert(run)
     .values({

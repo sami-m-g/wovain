@@ -74,12 +74,16 @@
     "QLOO_API_KEY",
     "QLOO_API_URL",
     "RESEND_API_KEY",
+    "SPEND_DAILY_CAP_USD",
+    "SPEND_IMAGES_PER_RUN",
+    "SPEND_RUNS_PER_DAY",
     "TAVILY_API_KEY",
     "TOKEN_ENCRYPTION_KEY",
     "VERCEL",
     "VERCEL_ENV",
     "VERCEL_PROJECT_PRODUCTION_URL",
     "VERCEL_URL",
+    "WOVAIN_ALLOWED_EMAILS",
     "_VARLOCK_ENV_KEY"
   ],
   "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"]

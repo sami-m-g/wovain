@@ -1,5 +1,6 @@
 import type { AdCopy } from "@wovain/core/ads";
 import type { DesignBrief, Judgment } from "@wovain/core/design";
+import type { SpendKind } from "@wovain/core/spend";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
 import {
@@ -181,4 +182,22 @@ export const campaign = pgTable(
     userId: owner(),
   },
   (table) => [index("campaign_user_idx").on(table.userId)]
+);
+
+// Each paid step a non-allowlisted merchant takes, with its estimated cost:
+// the daily quotas and the global spend cap count these.
+export const usage = pgTable(
+  "usage",
+  {
+    costUsd: real("cost_usd").notNull(),
+    createdAt: createdAt(),
+    id: id(),
+    kind: text("kind").$type<SpendKind>().notNull(),
+    runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
+    userId: owner(),
+  },
+  (table) => [
+    index("usage_created_idx").on(table.createdAt),
+    index("usage_user_created_idx").on(table.userId, table.createdAt),
+  ]
 );
