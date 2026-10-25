@@ -25,10 +25,10 @@
         "additional": []
       },
       "latest_sync": {
-        "git_tag": "eaca5859",
-        "catalog_version": "1.2.0",
-        "synced_at": "2026-10-25T13:33:30.583Z",
-        "definition_hash": "01b4f4d83342fc4c"
+        "git_tag": "cc7041d5",
+        "catalog_version": "1.3.0",
+        "synced_at": "2026-10-25T15:45:46.283Z",
+        "definition_hash": "b755808e302f9b1c"
       }
     },
     ".gitlab/duo/catalog/flows/heal.yml": {
@@ -39,10 +39,10 @@
         "additional": []
       },
       "latest_sync": {
-        "git_tag": "eaca5859",
-        "catalog_version": "1.0.0",
-        "synced_at": "2026-10-25T13:33:30.212Z",
-        "definition_hash": "3a325f0baaf9cdfc"
+        "git_tag": "cc7041d5",
+        "catalog_version": "1.1.0",
+        "synced_at": "2026-10-25T15:45:45.898Z",
+        "definition_hash": "fa0d80e34b97d300"
       }
     }
   }
