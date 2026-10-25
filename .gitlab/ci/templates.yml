@@ -1,0 +1,110 @@
+# Shared job blocks, used with `extends:` and `!reference`.
+
+# Every push and merge request, but not a scheduled pipeline.
+.on-changes:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+.on-main:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# The install runs the root postinstall, which generates each app's typed env
+# (varlock codegen). Turbo's local cache lives in .turbo, kept between runs.
+.pnpm-install:
+  cache:
+    key:
+      files: [pnpm-lock.yaml]
+    paths: [.pnpm-store, .turbo]
+  before_script:
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
+
+# infra/ is its own pnpm project: `pulumi install` installs it and generates
+# infra/sdks (gitignored) from infra/Pulumi.yaml.
+.pulumi-install:
+  before_script:
+    - !reference [.pnpm-install, before_script]
+    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
+    - export PATH="$HOME/.pulumi/bin:$PATH"
+    - pulumi install --cwd infra
+
+# Google Cloud access is Workload Identity Federation: GitLab's OIDC token is
+# exchanged for a service account's, so no Google key is stored, and only the
+# protected main branch is trusted (infra/index.ts). Each account trusts jobs
+# from one GitLab environment only. GCP_WORKLOAD_IDENTITY_PROVIDER is the
+# provider's full name; each job sets GCP_SERVICE_ACCOUNT.
+.gcp-auth:
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://iam.googleapis.com/$GCP_WORKLOAD_IDENTITY_PROVIDER
+  before_script:
+    - !reference [.gcp-credentials, before_script]
+
+.gcp-credentials:
+  before_script:
+    # The external_account file that `gcloud iam workload-identity-pools
+    # create-cred-config` writes; Google's client libraries, gcloud and
+    # cloud-sql-proxy all read it.
+    - echo "$GITLAB_OIDC_TOKEN" > /tmp/oidc-token
+    - |
+      cat > /tmp/gcp-credentials.json <<EOF
+      {
+        "type": "external_account",
+        "audience": "//iam.googleapis.com/$GCP_WORKLOAD_IDENTITY_PROVIDER",
+        "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+        "token_url": "https://sts.googleapis.com/v1/token",
+        "credential_source": { "file": "/tmp/oidc-token" },
+        "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/$GCP_SERVICE_ACCOUNT:generateAccessToken"
+      }
+      EOF
+    - export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-credentials.json
+
+# GCP_ACCESS_TOKEN for plain REST calls and docker login, by the same
+# exchange (STS, then impersonation), with only curl and sed.
+.gcp-token:
+  before_script:
+    - |
+      federated=$(curl -sf https://sts.googleapis.com/v1/token \
+        --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+        --data-urlencode "audience=//iam.googleapis.com/$GCP_WORKLOAD_IDENTITY_PROVIDER" \
+        --data-urlencode "scope=https://www.googleapis.com/auth/cloud-platform" \
+        --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:access_token" \
+        --data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:jwt" \
+        --data-urlencode "subject_token=$GITLAB_OIDC_TOKEN" \
+        | tr -d '\n' | sed -n 's/.*"access_token": *"\([^"]*\)".*/\1/p')
+      GCP_ACCESS_TOKEN=$(curl -sf -X POST \
+        -H "Authorization: Bearer $federated" -H "Content-Type: application/json" \
+        -d '{"scope":["https://www.googleapis.com/auth/cloud-platform"]}' \
+        "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/$GCP_SERVICE_ACCOUNT:generateAccessToken" \
+        | tr -d '\n' | sed -n 's/.*"accessToken": *"\([^"]*\)".*/\1/p')
+      test -n "$GCP_ACCESS_TOKEN"
+      export GCP_ACCESS_TOKEN
+
+# gcloud signed in with the same credentials file.
+.gcloud:
+  image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+  before_script:
+    - !reference [.gcp-credentials, before_script]
+    - gcloud auth login --cred-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+    - gcloud config set project "$GCP_PROJECT_ID"
+
+# The self-healing loop's jobs (.gitlab/ci/loop.yml) read production's logs
+# and metrics as gitlab-ops, which trusts only the operations environment.
+.ops-job:
+  extends: .gcp-auth
+  stage: monitor
+  interruptible: false
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_OPS_SERVICE_ACCOUNT
+  environment:
+    name: operations
+    action: verify
+  before_script:
+    - !reference [.pnpm-install, before_script]
+    - !reference [.gcp-credentials, before_script]

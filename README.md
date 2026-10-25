@@ -30,8 +30,10 @@ wovain/
 │   ├── config/       # Shared TypeScript configuration
 │   ├── db/           # Drizzle schema, relations and client
 │   └── ui/           # Shared shadcn/ui components and styles
+├── infra/            # Pulumi: Google Cloud, GitLab settings and Duo flows
 ├── .agents/skills/   # Agent skills, installed from skills-lock.json
 ├── .config/          # commitlint, knip and Lefthook configuration
+├── .gitlab/ci/       # GitLab CI jobs, one file per stage
 └── docker-compose.yml
 ```
 
@@ -77,7 +79,19 @@ Vendored code is type-checked in its own TypeScript project with relaxed flags (
 | `pnpm run db:start` / `db:stop` / `db:down` | Manage the local PostgreSQL container |
 | `pnpm run db:push` / `db:generate` / `db:migrate` / `db:studio` | Drizzle Kit commands |
 | `pnpm run docker:build` / `docker:up` / `docker:down` / `docker:logs` | Manage the Docker Compose stack |
+| `pnpm run infra:install` / `infra:check-types` / `infra:preview` / `infra:up` | Pulumi in `infra/` |
 
 ## Docker
 
 `apps/web/Dockerfile` prunes the monorepo with `turbo prune`, builds the Next.js standalone output and runs it as a non-root user. Docker Compose runs it alongside PostgreSQL and reads `apps/web/.env` through a build secret and `env_file`.
+
+## Deployment
+
+`main` deploys to Google Cloud from GitLab CI (`.gitlab/ci/deploy.yml`), with Workload Identity Federation and no stored key:
+
+1. `pulumi up` applies `infra/`: Cloud Run service `wovain-web`, Cloud SQL Postgres `wovain`, Artifact Registry, Secret Manager, service accounts, GitLab variables, labels, the Workflow board and feature flags.
+2. The image from `apps/web/Dockerfile` is pushed to Artifact Registry.
+3. `drizzle-kit migrate` runs against Cloud SQL through `cloud-sql-proxy`.
+4. `gcloud run deploy` rolls the image out at `https://wovain-web-<project number>.us-central1.run.app`.
+
+Secrets live in Secret Manager under kebab-case ids (`better-auth-secret` is `BETTER_AUTH_SECRET`). A secret gets a value from the stack config, `pulumi config set --secret <id>` in `infra/`, and Cloud Run mounts only the secrets that have one. Pulumi writes `database-url` itself. Logs are JSON lines on stdout (`apps/web/src/lib/cloud-logging.ts`): Cloud Logging parses them, and Error Reporting groups server errors under `wovain-web`.
