@@ -1,0 +1,48 @@
+---
+title: Nebius and Nemotron
+description: How wovain uses NVIDIA Nemotron on Nebius Token Factory as judge and autopilot decision-maker.
+---
+
+Wovain calls **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`) on **Nebius Token Factory**. The endpoint is OpenAI-compatible: `https://api.tokenfactory.nebius.com/v1/`, authenticated with `NEBIUS_API_KEY`.
+
+Nemotron does two jobs. It never replaces code-enforced limits.
+
+## 1. Design judge
+
+Before a design is shown for approval, Nemotron receives the design brief: idea, blank, placement, colors, artwork metadata, listing and an optional description of the artwork. It returns a Zod-validated judgment:
+
+- a verdict, `ready` or `revise`
+- a 0 to 100 score
+- one pass or fail check per print rule, each with a short note
+- up to five fixes and a suggested coach line
+
+Rules that code can decide (print size, transparency, title length, color count) are computed in code and override the model. If any fails, the verdict is `revise` whatever Nemotron said. A reply that does not parse, or a Token Factory error, becomes a user-safe message and the design is shown without the check.
+
+## 2. Autopilot decisions
+
+In autopilot every approval point is a Nemotron decision: which idea to pursue, the listing and price, whether the judged design is good enough, the ad concepts and the campaign budget. Each reply is schema-checked, then code applies the hard limits:
+
+| Limit | Enforced by code |
+| --- | --- |
+| Price | Not below the blank's breakeven plus the minimum margin |
+| Daily budget | Not above the requested budget or the settings maximum |
+| Trademark screen | A hit on the title phrase or art words fails the idea |
+| Judge | Must reach `ready` within a maximum number of revisions |
+| Run cost | A step that would cross the maximum spend does not start |
+| Activation | No procedure sets a Meta object active; campaigns stay paused |
+
+Every decision is stored with its inputs, options, choice, Nemotron's reasoning, the limits that applied and whether code overrode the model, so the seller can audit a run.
+
+## Why Nemotron
+
+- A second model with a fixed rubric and a schema catches what the host agent's self-review misses.
+- Structured output and tool-style reasoning at a low price per call suit many small decisions per run.
+- Running the decisions on Token Factory means they do not depend on the host agent staying in the loop, which matters for long autopilot runs.
+
+## Configuration
+
+```bash
+NEBIUS_API_KEY=...
+```
+
+Without the key, the judge answers `configured: false` and autopilot is unavailable. Nothing else breaks.

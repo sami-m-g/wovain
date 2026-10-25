@@ -1,0 +1,35 @@
+---
+title: Qloo
+description: Qloo's taste graph decides which ideas are worth designing and who the ads target.
+---
+
+Qloo is the first step of the flow, not an add-on. Without it wovain only knows what is in the news; with it, wovain knows **who would buy and what else they love**.
+
+## Taste times moment
+
+| Signal | Source | Question it answers                                 |
+| ------ | ------ | --------------------------------------------------- |
+| Taste  | Qloo   | Who is the audience, and which themes do they love? |
+| Moment | Tavily | Why now?                                            |
+
+## What wovain asks Qloo
+
+1. **Search** resolves the seed into Qloo entities.
+2. **Insights** (`/v2/insights`, `filter.type=urn:tag`) return the cross-domain taste tags of those entities. These are the themes for designs.
+3. **Trending** (`/v2/trending`) gives the seed's velocity, used to confirm or discount this week's news.
+4. **Audience** insights return demographics (`urn:demographics`) and top locations (`urn:heatmap`). They become the Meta audience suggestion: age bands, gender and countries.
+
+## How it changes the product
+
+- **Ideas.** Tavily searches the past week's news only inside Qloo's themes.
+- **Scoring.** Each idea is scored in code on demand (Qloo affinity), momentum (news, discounted if Qloo's velocity does not confirm it), low saturation and IP safety (no brand, artist or title names from Qloo). Nemotron only writes the name, angle and moment line.
+- **Targeting.** The campaign gets an audience suggestion built from the chosen idea's tags instead of "everyone in the US".
+- **Evidence.** Every idea shows both signals and the inputs behind its score.
+
+## Configuration
+
+```bash
+QLOO_API_KEY=...
+```
+
+Hackathon keys work only against `https://hackathon.api.qloo.com`, sent as the `X-Api-Key` header. Inputs are bounded, results are treated as untrusted, and query text is not logged.

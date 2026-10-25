@@ -1,0 +1,60 @@
+---
+title: Scope
+description: Who wovain is for, what makes it different and where the proof-of-concept boundary is.
+---
+
+## One-line scope
+
+An agentic assistant for print-on-demand sellers that finds what to sell from taste and trend signals, designs it for their Fourthwall catalog, publishes it, and prepares paused Meta ads, all from one flow where each step ends in an approval.
+
+## The unique kernel
+
+Three things set it apart:
+
+1. **Taste times moment.** Qloo says who would buy; Tavily says why now.
+2. **Real constraints.** Designs start from Fourthwall's real products, placements, sizes and prices, and campaign limits start from each product's real margin.
+3. **Bounded autonomy.** Nemotron decides inside hard limits that code applies, and nothing spends money until the seller starts the campaign.
+
+## Who it is for
+
+A solo print-on-demand seller. Today one product takes five tools:
+
+| Step | Today | With wovain |
+| --- | --- | --- |
+| Find what to sell | Guessing and browsing | Qloo and Tavily trends with evidence |
+| Design | Long back-and-forth in a chat | Designed for a specific Fourthwall product |
+| List the product | Manual upload | One approval |
+| Make ads | A separate tool | Several variants generated and reviewed |
+| Launch | Built by hand in Ads Manager | A paused campaign ready to start |
+
+## What "working" looks like
+
+1. Give a seed idea, on the website or in ChatGPT.
+2. See ranked ideas with their taste and moment evidence, then designs on the product with price and margin.
+3. Approve; the products exist on Fourthwall.
+4. See the ad variants and approve.
+5. Open Meta Ads Manager: the campaign is there, paused, with the audience from Qloo.
+
+## In scope
+
+| Area         | Included                                                 |
+| ------------ | -------------------------------------------------------- |
+| Surfaces     | Website and ChatGPT MCP server on one app                |
+| Research     | Qloo taste graph and Tavily web search                   |
+| Judging      | Nemotron on Nebius Token Factory                         |
+| Publishing   | Fourthwall products after approval                       |
+| Ads          | Multiple variants per product and a paused Meta campaign |
+| Autopilot    | End-to-end run with hard limits and an audit trail       |
+| After deploy | Three GitLab Duo flows                                   |
+
+## Later
+
+- An optimizer that reads campaign results and proposes changes.
+- TikTok Shop and TikTok ads.
+- Campaign results inside chat, once there is spend data.
+
+## Explicitly out
+
+- A custom image or video model.
+- A custom media-buying engine.
+- Any automatic activation of ad spend.

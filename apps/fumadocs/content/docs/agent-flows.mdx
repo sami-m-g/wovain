@@ -1,0 +1,21 @@
+---
+title: Agent flows
+description: Three GitLab Duo flows automate post-code DevSecOps for wovain.
+icon: Bot
+---
+
+After the code is merged, GitLab Duo agent flows handle the work around it:
+
+| Flow | Trigger | Output |
+| --- | --- | --- |
+| Self-healing | A production error, found by reading evlog wide events | A merge request with the fix and a regression test |
+| Scout | A schedule, reading KPIs and UI | Issues with evidence for the improvements worth making |
+| Developer | An issue | A merge request that takes the issue to completion |
+
+Feature-flag fault injection lets the self-healing flow be demonstrated end to end: a flag introduces a controlled failure in production, the error is logged, and the flow opens the fix.
+
+<Callout type="info" title="Details">
+  The full definitions, prompts, triggers and guardrails of each flow live in
+  `docs/flows.md` in the repository. This page is a summary and will link to
+  that content once it is published.
+</Callout>

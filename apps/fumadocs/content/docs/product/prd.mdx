@@ -1,0 +1,40 @@
+---
+title: PRD
+description: The core journey, functional requirements and failure behavior for wovain.
+---
+
+## Core journey
+
+1. The seller connects Fourthwall, Meta and fal.
+2. The seller enters a seed. Wovain returns ranked ideas, each with its taste signal (Qloo), moment signal (Tavily), top competing listings and the inputs behind the score.
+3. The seller picks ideas. Wovain generates designs for Fourthwall blanks, with placements, listing copy, price, profit and margin.
+4. Nemotron judges each design. A `revise` verdict applies the fixes once; the seller sees the result either way.
+5. The seller approves, skips or gives feedback per design. Feedback regenerates that design only.
+6. Approved designs become Fourthwall products.
+7. Wovain creates several ad concepts per product with visuals, text variants and the breakeven line.
+8. The seller approves concepts. Wovain builds one Meta campaign, paused, with an audience suggestion from Qloo.
+
+## Requirements
+
+| ID | Requirement |
+| --- | --- |
+| R1 | The same procedures serve the website and the ChatGPT MCP server |
+| R2 | Ideas show both signals and their source links |
+| R3 | Price is never below the blank's breakeven plus the minimum margin |
+| R4 | Rules code can decide override the model's judgment |
+| R5 | Every model reply is schema-validated; a failure never reaches the seller as a raw error |
+| R6 | No Meta object is created active |
+| R7 | Autopilot stores every decision with reasoning and any code override |
+| R8 | Runs are idempotent: a retried step reuses the upstream IDs it already created |
+| R9 | A missing provider key disables only its own step, with one line explaining how to enable it |
+| R10 | One active autopilot run per user, with a stop control |
+
+## Failure states
+
+| Situation | Behavior |
+| --- | --- |
+| Provider key missing | The step answers "not configured" and the flow continues without it |
+| Model reply does not parse | The step is shown without the model check |
+| Provider outage | The run pauses at that step and can resume |
+| Account not connected | The run pauses with a connect link |
+| Limit crossed | The step does not start and the reason is logged |

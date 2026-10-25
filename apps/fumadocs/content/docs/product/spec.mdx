@@ -1,0 +1,48 @@
+---
+title: Spec
+description: Technical specification of the stack, data and procedures.
+---
+
+## Stack
+
+| Layer | Choice |
+| --- | --- |
+| App | Next.js 16, App Router, React 19 |
+| API | oRPC procedures in `packages/api`, mounted at `/api/rpc` |
+| Auth | Better Auth in `packages/auth`, mounted at `/api/auth` |
+| Data | Drizzle ORM and PostgreSQL (Cloud SQL on GCP) in `packages/db` |
+| Logs | evlog wide events |
+| UI | shadcn/ui on Base UI and Tailwind CSS 4 in `packages/ui` |
+| Environment | Varlock schemas, typed `ENV` |
+| Tooling | pnpm workspaces, Turborepo, Ultracite, knip, TypeScript 7 for `tsc` |
+| Agent surface | ChatGPT MCP server served from `apps/web` |
+
+## Models and providers
+
+| Need | Provider |
+| --- | --- |
+| Judge and autopilot decisions | NVIDIA Nemotron 3 Super on Nebius Token Factory |
+| Taste graph | Qloo |
+| Web search | Tavily |
+| Art and ad visuals | fal |
+| Products | Fourthwall |
+| Ads | Meta |
+
+## Decision contract
+
+Every model call returns JSON validated against a Zod schema. After validation, code applies the limits from the [PRD](/docs/product/prd) and records whether it overrode the model. Autopilot decisions are written as events under the run, which is how a seller audits what happened.
+
+## Idempotency
+
+A run has a key. The same key returns the existing run. Each step saves the upstream IDs it created before the run advances, and a retry reads them before creating anything.
+
+## Safety
+
+- Meta objects are created paused; no activation call exists in the procedures.
+- Provider results are treated as untrusted input.
+- Inputs are bounded and query text is not logged.
+- One active autopilot run per user, with a stop control.
+
+## Operations
+
+evlog emits one structured event per request. The self-healing Duo flow reads these events and feature-flag fault injection exercises the path. See [Agent flows](/docs/agent-flows).

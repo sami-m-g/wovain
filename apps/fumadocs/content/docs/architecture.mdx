@@ -1,0 +1,57 @@
+---
+title: Architecture
+description: One Next.js app, oRPC procedures, Better Auth, Drizzle on Cloud SQL, and the agent loop around it.
+icon: Network
+---
+
+## Overview
+
+```text
+ Seller
+   |  website              ChatGPT
+   v                          v
+ +-----------------------------------------------+
+ |  apps/web (Next.js 16, App Router)            |
+ |   - pages and server components               |
+ |   - /api/rpc   oRPC handler   <- packages/api |
+ |   - /api/auth  Better Auth    <- packages/auth |
+ |   - MCP server for ChatGPT                    |
+ |   - evlog wide events                         |
+ +--------+--------------------------------------+
+          | Drizzle (packages/db)
+          v
+   PostgreSQL on Cloud SQL (GCP)
+
+ Providers called from procedures:
+   Qloo -> Tavily -> fal -> Nemotron (Nebius) -> Fourthwall -> Meta Ads
+
+ After deploy (GitLab Duo flows):
+   production errors -> self-healing flow -> merge request
+   KPIs and UI       -> scout flow        -> issues
+   issue             -> developer flow    -> merge request
+```
+
+## Packages
+
+| Path | Role |
+| --- | --- |
+| `apps/web` | Next.js 16 app: UI, API routes, MCP server |
+| `apps/fumadocs` | This documentation site |
+| `packages/api` | oRPC routers and procedures, shared by the website and the MCP server |
+| `packages/auth` | Better Auth configuration |
+| `packages/db` | Drizzle schema, relations and client for PostgreSQL |
+| `packages/ui` | Shared shadcn/ui components (Base UI, Tailwind CSS 4) |
+| `packages/config` | Shared `tsconfig.base.json` |
+
+## Key decisions
+
+- **One app, one API.** The website and the ChatGPT MCP server call the same oRPC procedures, so behavior cannot drift between surfaces.
+- **Code enforces limits, models decide within them.** Nemotron replies are validated with Zod, and price, budget, trademark and spend limits are applied in code afterward.
+- **Paused by default.** No procedure activates a Meta object.
+- **Structured logs.** evlog emits one wide event per request, which the self-healing flow reads.
+- **Typed environment.** Varlock schemas generate `ENV`, so a missing variable fails at start-up.
+- **Cloud SQL on GCP** for PostgreSQL, reached through Drizzle.
+
+## Seller flow in the API
+
+Trends, designs, judge, approve, products, ads, campaign. Each stage persists its result, so a run can resume after a failure and an approval can happen on either surface.

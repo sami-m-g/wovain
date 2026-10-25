@@ -1,0 +1,22 @@
+---
+title: Tavily
+description: Runtime web search that supplies the "why now" and checks how crowded a theme is.
+---
+
+Tavily is called at **runtime**, inside the seller flow, not only during development.
+
+## What it does
+
+- **Moment.** For each Qloo theme, Tavily searches the past week's news and returns sources. This is the "why now" line shown on an idea.
+- **Saturation.** Tavily checks how many matching listings exist on marketplaces such as Etsy, Redbubble and Amazon. Few matches score higher.
+- **Trademark screen.** Autopilot searches the title phrase and any words in the art before an idea may continue.
+
+Results are marked untrusted when they reach a model, and each idea keeps its source links so the seller can check the evidence.
+
+## Configuration
+
+```bash
+TAVILY_API_KEY=...
+```
+
+Without the key, the trend step still works from Qloo alone and says that the moment signal is unavailable.

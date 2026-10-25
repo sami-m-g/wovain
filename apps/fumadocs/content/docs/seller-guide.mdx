@@ -1,0 +1,38 @@
+---
+title: Seller guide
+description: Go from a seed idea to a paused Meta campaign on the website or in ChatGPT.
+icon: Store
+---
+
+You can run the same flow on the website or in ChatGPT. Both call the same oRPC procedures and the same database, so you can start in one and finish in the other.
+
+## Connect your accounts
+
+Sign in, then connect the services wovain acts on for you:
+
+- **Fourthwall**, where your products are created.
+- **Meta**, where the ad variants and the paused campaign are created.
+- **fal**, which generates the art and ad visuals.
+
+Wovain never spends ad budget on its own. Every Meta object is created paused.
+
+## On the website
+
+1. **Seed.** Give a seed such as a niche, a fandom or a product type.
+2. **Trends.** Wovain shows ideas ranked by taste (Qloo) and moment (Tavily), with the evidence behind each score.
+3. **Designs.** Pick ideas. Designs are generated for real Fourthwall blanks, placements and prices.
+4. **Judge.** Nemotron checks every design against print rules and either passes it or lists fixes.
+5. **Approve.** Approve, skip or send feedback per design.
+6. **Products.** Approved designs become Fourthwall products.
+7. **Ads.** You get several ad variants per product (hook, audience, visuals, copy).
+8. **Campaign.** A Meta campaign is built **paused**. You start it in Meta when you are ready.
+
+## In ChatGPT
+
+The ChatGPT MCP server is served from `apps/web`. Add it as a connector in ChatGPT developer mode, sign in, and ask the same things in chat: "find trends for retro hiking gear", "design three of these", "approve the second one". Each step returns a widget with approve and feedback controls.
+
+## Autopilot
+
+Autopilot runs the whole flow with Nemotron making each approval decision. Code applies the hard limits after every decision: a price floor from the product's breakeven, a daily budget cap, a trademark screen, a judge pass and a maximum spend. Products stay hidden and campaigns stay paused until you confirm.
+
+See [Nebius and Nemotron](/docs/integrations/nebius-nemotron) for how the decisions are made.
