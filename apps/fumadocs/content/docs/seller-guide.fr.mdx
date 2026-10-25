@@ -8,31 +8,35 @@ Vous pouvez exécuter le même parcours sur le site web ou dans ChatGPT. Les deu
 
 ## Connecter vos comptes
 
-Connectez-vous, puis reliez les services sur lesquels wovain agit pour vous :
+Connectez-vous sur [wovain.com](https://wovain.com), puis reliez les deux services sur lesquels wovain agit pour vous :
 
-- **Fourthwall**, où vos produits sont créés.
+- **Fourthwall**, où votre produit est créé et publié.
 - **Meta**, où les variantes de publicité et la campagne en pause sont créées.
-- **fal**, qui génère les visuels et les créations publicitaires.
 
-Wovain ne dépense jamais de budget publicitaire de lui-même. Chaque objet Meta est créé en pause.
+Wovain ne dépense jamais de budget publicitaire de lui-même. Chaque objet Meta est créé en pause, et un produit Fourthwall est créé masqué jusqu'à ce que vous le publiiez.
 
 ## Sur le site web
 
-1. **Graine.** Donnez une graine : une niche, un fandom ou un type de produit.
+1. **Graine.** Donnez une graine : une niche, un fandom ou un thème de produit.
 2. **Tendances.** Wovain affiche des idées classées par goût (Qloo) et par moment (Tavily), avec les preuves derrière chaque score.
-3. **Designs.** Choisissez des idées. Les designs sont générés pour de vrais modèles, emplacements et prix Fourthwall.
-4. **Juge.** Nemotron vérifie chaque design selon les règles d'impression et le valide ou liste des corrections.
-5. **Approbation.** Approuvez, ignorez ou envoyez un retour pour chaque design.
-6. **Produits.** Les designs approuvés deviennent des produits Fourthwall.
-7. **Publicités.** Vous obtenez plusieurs variantes de publicité par produit (accroche, audience, visuels, texte).
-8. **Campagne.** Une campagne Meta est construite **en pause**. Vous la lancez dans Meta quand vous êtes prêt.
+3. **Design.** Choisissez une idée. Nemotron rédige le brief et la fiche produit, fal dessine l'illustration d'impression et le prix vient du coût de base du modèle.
+4. **Juge.** Nemotron vérifie le design et le code vérifie la taille d'impression. Vous voyez le verdict, le score et les corrections.
+5. **Approbation.** Approuvez le design, ou rejetez-le en indiquant une raison.
+6. **Produit.** Le design approuvé devient un produit Fourthwall masqué. Publiez-le quand vous êtes prêt.
+7. **Campagne.** Choisissez les pays et un budget quotidien. Wovain rédige jusqu'à trois variantes de publicité et construit une campagne, un ensemble de publicités et des publicités Meta, tous **en pause**. Vous la lancez dans Meta.
 
-## Dans ChatGPT
+## Connecter wovain dans ChatGPT
 
-Le serveur MCP de ChatGPT est servi depuis `apps/web`. Ajoutez-le comme connecteur dans le mode développeur de ChatGPT, connectez-vous, puis posez les mêmes demandes dans la conversation : « trouve des tendances pour l'équipement de randonnée rétro », « conçois-en trois », « approuve la deuxième ». Chaque étape renvoie un widget avec des commandes d'approbation et de retour.
+1. Dans ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé (un serveur MCP).
+2. Saisissez l'URL du serveur : `https://wovain.com/api/mcp`. Les paramètres OAuth sont découverts automatiquement depuis `/.well-known/oauth-protected-resource` et `/.well-known/oauth-authorization-server`.
+3. Connectez-vous à wovain quand ChatGPT ouvre la page de connexion, puis accordez l'accès sur la page de consentement.
+4. Demandez à ChatGPT d'exécuter `list_connections`. Pour Fourthwall ou Meta, ouvrez le lien de connexion renvoyé et autorisez l'accès.
+5. Demandez dans la conversation : « recherche des tendances pour l'équipement de randonnée rétro ». ChatGPT appelle `research_trends`, puis `generate_design`, et vous demande avant d'appeler `approve_design`, `create_product`, `publish_product` et `create_campaign`.
+
+Les outils renvoient du JSON pour l'instant ; les widgets ne sont pas encore construits.
 
 ## Autopilot
 
-L'autopilot exécute tout le parcours, Nemotron prenant chaque décision d'approbation. Après chaque décision, le code applique des limites strictes : un prix plancher issu du seuil de rentabilité du produit, un plafond de budget quotidien, un contrôle des marques déposées, une validation par le juge et une dépense maximale. Les produits restent masqués et les campagnes en pause jusqu'à votre confirmation.
+Demandez `start_run` avec l'autopilot activé, ou lancez une exécution sur le site web avec l'option autopilot. Nemotron choisit l'idée et relit le design, et l'exécution se poursuit jusqu'au produit, à l'étape de publication et à une campagne en pause. Le code garde-fou l'exécution : un design que le juge veut réviser n'est jamais approuvé, le prix garde au moins 10 $ de profit et 30 % de marge, le budget quotidien reste entre 1 $ et 500 $, et rien n'est activé. Une exécution échouée indique son étape et son erreur.
 
 Voir [Nebius et Nemotron](/fr/docs/integrations/nebius-nemotron) pour le détail des décisions.

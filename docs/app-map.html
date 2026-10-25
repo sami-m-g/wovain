@@ -153,7 +153,7 @@
         products and a paused Meta campaign.
       </p>
       <p class="note">
-        Snapshot of source commit <code>bec50f3</code> on the
+        Snapshot of source commit <code>ce5d37c</code> on the
         <code>rebuild</code> branch. Code drifts; the repository is the source
         of truth. Live: <a href="https://wovain.com">wovain.com</a>, docs:
         <a href="https://docs.wovain.com">docs.wovain.com</a>.
@@ -192,7 +192,7 @@
         <text x="85" y="90" text-anchor="middle">Seller</text>
         <text x="85" y="110" text-anchor="middle">website or ChatGPT</text>
         <rect class="hot" x="195" y="60" width="150" height="70" rx="10" />
-        <text x="270" y="90" text-anchor="middle">/api/rpc route</text>
+        <text x="270" y="90" text-anchor="middle">/api/rpc or /api/mcp</text>
         <text x="270" y="110" text-anchor="middle">apps/web</text>
         <rect class="hot" x="380" y="60" width="150" height="70" rx="10" />
         <text x="455" y="90" text-anchor="middle">appRouter</text>
@@ -214,12 +214,12 @@
         <path class="arrow" d="M705 135 L740 105" marker-end="url(#head)" />
       </svg>
       <p class="note">
-        Today the router has a health check and a private-data procedure; the
-        seller-flow procedures (trends, designs, judge, approve, products, ads,
-        campaign) are the planned next slices.
+        The website calls <code>/api/rpc</code>; ChatGPT calls
+        <code>POST /api/mcp</code> with an OAuth access token. Both reach the
+        same <code>appRouter</code>.
       </p>
 
-      <h2>Reference route (3 stops)</h2>
+      <h2>Reference route: generate a design (3 stops)</h2>
       <p class="note">
         A reference route, not a toured one. Search for the symbol if line
         numbers have moved.
@@ -236,25 +236,32 @@
         <tbody>
           <tr>
             <td>1</td>
-            <td><code>apps/web/src/app/api/rpc/[[...rest]]/route.ts</code></td>
-            <td><code>handleRequest</code></td>
+            <td><code>packages/api/src/mcp.ts</code></td>
             <td>
-              Identifies the user, builds the context and hands the request to
-              oRPC.
+              <code>generate_design</code> in <code>createMcpServer</code>
+            </td>
+            <td>
+              The ChatGPT tool calls <code>client.designs.generate</code> as the
+              signed-in seller. (The website calls the same procedure over
+              <code>/api/rpc</code>.)
             </td>
           </tr>
           <tr>
             <td>2</td>
-            <td><code>packages/api/src/routers/index.ts</code></td>
-            <td><code>appRouter</code></td>
-            <td>Lists the procedures the website and ChatGPT can call.</td>
+            <td><code>packages/api/src/flow/designs.ts</code></td>
+            <td><code>generateDesign</code></td>
+            <td>
+              Writes the brief, draws the art, prices it, judges it and saves
+              the design as <code>pending_approval</code>.
+            </td>
           </tr>
           <tr>
             <td>3</td>
-            <td><code>packages/api/src/index.ts</code></td>
-            <td><code>protectedProcedure</code></td>
+            <td><code>packages/core/src/design.ts</code></td>
+            <td><code>judgeDesign</code>, <code>printFacts</code></td>
             <td>
-              Adds evlog logging, then rejects requests without a session.
+              Nemotron judges the design; code decides the print size and
+              overrides the model.
             </td>
           </tr>
         </tbody>
@@ -262,28 +269,51 @@
 
       <h2>To change this, start here</h2>
       <details open>
-        <summary>Add or change a procedure</summary>
+        <summary>Add or change a procedure or MCP tool</summary>
         <p>
           Edit
           <code>packages/api/src/routers/index.ts</code>
-          (<code>appRouter</code>). Use <code>protectedProcedure</code> for
-          anything that needs a signed-in seller.
+          (<code>appRouter</code>). Step logic lives in
+          <code>packages/api/src/flow/*</code>; the matching ChatGPT tool is
+          registered in <code>packages/api/src/mcp.ts</code>. Use
+          <code>protectedProcedure</code> for anything that needs a signed-in
+          seller.
         </p>
       </details>
       <details>
-        <summary>Change sign-in</summary>
+        <summary>
+          Change a provider (Qloo, Tavily, Nemotron, fal, Fourthwall, Meta)
+        </summary>
         <p>
-          <code>packages/auth/src/index.ts</code> (<code>createAuth</code>); the
-          route is <code>apps/web/src/app/api/auth/[...all]/route.ts</code>.
-          Never edit <code>packages/db/src/schema/auth.ts</code> by hand; run
+          Each has a module in
+          <code>packages/core/src</code> (<code>qloo.ts</code>,
+          <code>trends.ts</code>, <code>nemotron.ts</code>, <code>fal.ts</code>,
+          <code>fourthwall.ts</code>, <code>ads.ts</code>), wired together by
+          <code>createCore</code> in <code>packages/core/src/core.ts</code>.
+          Prices come from <code>priceFor</code> in <code>pricing.ts</code>.
+        </p>
+      </details>
+      <details>
+        <summary>Change sign-in or the ChatGPT connection</summary>
+        <p>
+          <code>packages/auth/src/index.ts</code> (<code>createAuth</code>,
+          <code>mcpResource</code>); the routes are
+          <code>apps/web/src/app/api/auth/[...all]/route.ts</code>,
+          <code>apps/web/src/app/api/mcp/route.ts</code> (MCP URL
+          <code>https://wovain.com/api/mcp</code>) and the OAuth discovery
+          routes under <code>apps/web/src/app/.well-known/</code>. Never edit
+          <code>packages/db/src/schema/auth.ts</code> by hand; run
           <code>pnpm run auth:generate</code>.
         </p>
       </details>
       <details>
         <summary>Change the database</summary>
         <p>
-          Schema and relations are in <code>packages/db/src</code>; generate a
-          migration with <code>pnpm run db:generate</code>.
+          Seller tables (<code>run</code>, <code>idea</code>,
+          <code>design</code>, <code>product</code>, <code>campaign</code>,
+          <code>connection</code>) are in
+          <code>packages/db/src/schema/seller.ts</code>; generate a migration
+          with <code>pnpm run db:generate</code>.
         </p>
       </details>
       <details>
@@ -300,11 +330,12 @@
       <h2>A practice to reuse</h2>
       <p>
         Write the limit as an observable rule before building the feature. In
-        this project, <code>docs/prd.md</code> says a price is never below the
-        blank's breakeven, and <code>docs/spec.md</code> says code-decided
-        checks overwrite the model's answer. That turns "the model should not
-        underprice" into a test you can run, and the same habit works on any
-        project that lets a model make decisions.
+        this project, <code>docs/prd.md</code> says the print-size check is
+        computed by code and overrides Nemotron, and the test "lets code decide
+        print size over the model's word" in
+        <code>packages/core/src/design.test.ts</code> proves it. That turns "the
+        model should not underprice" into a test you can run, and the same habit
+        works on any project that lets a model make decisions.
       </p>
 
       <h2>Run it again</h2>

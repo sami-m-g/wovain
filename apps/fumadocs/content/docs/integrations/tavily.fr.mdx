@@ -1,17 +1,18 @@
 ---
 title: Tavily
-description: La recherche web à l'exécution qui apporte le « pourquoi maintenant » et mesure la saturation d'un thème.
+description: La recherche web à l'exécution qui apporte le « pourquoi maintenant » et le contrôle des places de marché.
 ---
 
-Tavily est appelé **à l'exécution**, dans le parcours du vendeur, et pas seulement pendant le développement.
+Tavily est appelé **à l'exécution**, à chaque recherche de tendances, et pas seulement pendant le développement.
 
 ## Ce qu'il fait
 
-- **Moment.** Pour chaque thème Qloo, Tavily cherche l'actualité de la semaine et renvoie des sources. C'est la ligne « pourquoi maintenant » affichée sur une idée.
-- **Saturation.** Tavily vérifie combien d'annonces correspondantes existent sur des places de marché comme Etsy, Redbubble et Amazon. Peu de correspondances donnent un meilleur score.
-- **Contrôle des marques.** L'autopilot recherche la phrase du titre et les mots de l'illustration avant qu'une idée puisse continuer.
+`packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) utilise Tavily pour :
 
-Les résultats sont marqués comme non fiables lorsqu'ils atteignent un modèle, et chaque idée conserve ses liens de sources pour que le vendeur puisse vérifier les preuves.
+- **Moment.** Pour chaque thème Qloo, chercher l'actualité de la semaine et renvoyer des sources. C'est la ligne « pourquoi maintenant » affichée sur une idée.
+- **Saturation.** Chercher sur les places de marché (etsy.com, redbubble.com, fourthwall.com) les annonces correspondantes. Peu de correspondances donnent un meilleur score.
+
+Le texte du web n'est pas fiable : les idées gardent leurs liens de sources, et les prompts indiquent à Nemotron de traiter le texte des idées comme de simples données.
 
 ## Configuration
 
@@ -19,4 +20,4 @@ Les résultats sont marqués comme non fiables lorsqu'ils atteignent un modèle,
 TAVILY_API_KEY=...
 ```
 
-Sans la clé, l'étape des tendances fonctionne quand même avec Qloo seul et indique que le signal de moment n'est pas disponible.
+Sans la clé, l'étape de recherche échoue avec une erreur `NOT_CONFIGURED` nommant la variable.

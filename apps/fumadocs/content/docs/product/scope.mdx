@@ -9,7 +9,7 @@ Live at [https://wovain.com](https://wovain.com) (website and ChatGPT MCP server
 
 ## The Unique Kernel
 
-Taste times moment, with bounded autonomy. Qloo's taste graph says who would buy and what else they love; Tavily's live search says why now; Nemotron on Nebius Token Factory judges and, in autopilot, decides, but only inside limits that code enforces (price floor from breakeven, budget cap, trademark screen, maximum spend). Nothing spends money until the seller starts the campaign.
+Taste times moment, with bounded autonomy. Qloo's taste graph says who would buy and what else they love; Tavily's live search says why now; Nemotron on Nebius Token Factory judges and, in autopilot, decides, but only inside gates that code enforces (the print size, a price floor from the blank's base cost, a daily budget range, and a design the judge says to revise is never approved). Nothing spends money until the seller starts the campaign.
 
 ## Who It's For
 
@@ -20,7 +20,7 @@ A solo print-on-demand seller with a Fourthwall shop. Today one product takes fi
 The seller gives a seed (a niche, a fandom, a product type), on the website or in ChatGPT. Wovain returns ranked ideas with their evidence, designs the chosen ones for real Fourthwall blanks, has Nemotron judge them, and asks for approval. Approved designs become Fourthwall products, then ad variants, then a paused Meta campaign. They come back because each run turns a new seed into a ready-to-start campaign with one round of approvals.
 
 ```text
-Seed -> Qloo taste graph -> Tavily: why now -> Designs on Fourthwall blanks
+Seed -> Qloo taste graph -> Tavily: why now -> T-shirt design on a Fourthwall blank
   -> Nemotron judge (revise loops back to designs)
   -> Seller approves -> Fourthwall products -> Meta ad variants
   -> Paused Meta campaign
@@ -43,7 +43,7 @@ The builder wants to show that an agent can run the whole print-on-demand loop, 
 3. See designs on real Fourthwall products with price, profit and margin, and Nemotron's verdict.
 4. Approve; the products exist in the Fourthwall shop.
 5. See the ad variants and approve.
-6. Open Meta Ads Manager: the campaign is there, paused, with the audience Qloo suggested. The "oh, that's cool" beat is step 6 after only talking and approving.
+6. Open Meta Ads Manager: the campaign is there, paused, targeted at the countries the seller chose. The "oh, that's cool" beat is step 6 after only talking and approving.
 
 ## The POC Boundary
 
@@ -53,8 +53,8 @@ The builder wants to show that an agent can run the whole print-on-demand loop, 
 | Research | Qloo taste graph and Tavily web search |
 | Judging | Nemotron on Nebius Token Factory |
 | Publishing | Fourthwall products after approval |
-| Ads | Several variants per product and a paused Meta campaign |
-| Autopilot | End-to-end run with hard limits and an audit trail |
+| Ads | Up to three ad variants per product and a paused Meta campaign |
+| Autopilot | End-to-end run where Nemotron decides and code gates |
 | Accounts | Better Auth sign-in, Cloud SQL (PostgreSQL) through Drizzle |
 | After deploy | Three GitLab Duo flows |
 

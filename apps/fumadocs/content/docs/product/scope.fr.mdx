@@ -9,7 +9,7 @@ En ligne sur [https://wovain.com](https://wovain.com) (site web et serveur MCP d
 
 ## Le noyau unique
 
-Goût fois moment, avec une autonomie bornée. Le graphe de goûts de Qloo dit qui achèterait et ce que ces personnes aiment d'autre ; la recherche en direct de Tavily dit pourquoi maintenant ; Nemotron sur Nebius Token Factory évalue et, en autopilot, décide, mais seulement dans des limites que le code impose (prix plancher issu du seuil de rentabilité, plafond de budget, contrôle des marques, dépense maximale). Rien ne dépense d'argent tant que le vendeur n'a pas lancé la campagne.
+Goût fois moment, avec une autonomie bornée. Le graphe de goûts de Qloo dit qui achèterait et ce que ces personnes aiment d'autre ; la recherche en direct de Tavily dit pourquoi maintenant ; Nemotron sur Nebius Token Factory évalue et, en autopilot, décide, mais seulement dans des garde-fous que le code impose (la taille d'impression, un prix plancher issu du coût de base du modèle, une fourchette de budget quotidien, et un design que le juge veut réviser n'est jamais approuvé). Rien ne dépense d'argent tant que le vendeur n'a pas lancé la campagne.
 
 ## Pour qui
 
@@ -20,7 +20,7 @@ Un vendeur indépendant d'impression à la demande avec une boutique Fourthwall.
 Le vendeur donne une graine (une niche, un fandom, un type de produit), sur le site web ou dans ChatGPT. Wovain renvoie des idées classées avec leurs preuves, conçoit celles qui sont choisies pour de vrais modèles Fourthwall, fait évaluer les designs par Nemotron et demande l'approbation. Les designs approuvés deviennent des produits Fourthwall, puis des variantes de publicité, puis une campagne Meta en pause. Le vendeur revient parce que chaque exécution transforme une nouvelle graine en campagne prête à démarrer, avec une seule série d'approbations.
 
 ```text
-Graine -> Graphe de goûts Qloo -> Tavily : pourquoi maintenant -> Designs sur modèles Fourthwall
+Graine -> Graphe de goûts Qloo -> Tavily : pourquoi maintenant -> Design de t-shirt sur un modèle Fourthwall
   -> Juge Nemotron (revise renvoie aux designs)
   -> Le vendeur approuve -> Produits Fourthwall -> Variantes publicitaires Meta
   -> Campagne Meta en pause
@@ -43,7 +43,7 @@ Le créateur veut montrer qu'un agent peut exécuter toute la boucle d'impressio
 3. Voir les designs sur de vrais produits Fourthwall avec prix, profit et marge, et le verdict de Nemotron.
 4. Approuver ; les produits existent dans la boutique Fourthwall.
 5. Voir les variantes de publicité et approuver.
-6. Ouvrir le gestionnaire de publicités Meta : la campagne est là, en pause, avec l'audience suggérée par Qloo. Le moment « oh, c'est génial », c'est l'étape 6 après avoir seulement parlé et approuvé.
+6. Ouvrir le gestionnaire de publicités Meta : la campagne est là, en pause, ciblée sur les pays choisis par le vendeur. Le moment « oh, c'est génial », c'est l'étape 6 après avoir seulement parlé et approuvé.
 
 ## Limite de la preuve de concept
 
@@ -53,8 +53,8 @@ Le créateur veut montrer qu'un agent peut exécuter toute la boucle d'impressio
 | Recherche | Graphe de goûts Qloo et recherche web Tavily |
 | Évaluation | Nemotron sur Nebius Token Factory |
 | Publication | Produits Fourthwall après approbation |
-| Publicités | Plusieurs variantes par produit et une campagne Meta en pause |
-| Autopilot | Exécution de bout en bout avec limites strictes et piste d'audit |
+| Publicités | Jusqu'à trois variantes de publicité par produit et une campagne Meta en pause |
+| Autopilot | Exécution de bout en bout où Nemotron décide et le code garde-fou |
 | Comptes | Connexion Better Auth, Cloud SQL (PostgreSQL) via Drizzle |
 | Après le déploiement | Trois flows GitLab Duo |
 

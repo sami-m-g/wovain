@@ -11,7 +11,7 @@ Live at <https://wovain.com> (website and ChatGPT MCP server, on Cloud Run). Doc
 
 ## The Unique Kernel
 
-Taste times moment, with bounded autonomy. Qloo's taste graph says who would buy and what else they love; Tavily's live search says why now; Nemotron on Nebius Token Factory judges and, in autopilot, decides, but only inside limits that code enforces (price floor from breakeven, budget cap, trademark screen, maximum spend). Nothing spends money until the seller starts the campaign.
+Taste times moment, with bounded autonomy. Qloo's taste graph says who would buy and what else they love; Tavily's live search says why now; Nemotron on Nebius Token Factory judges and, in autopilot, decides, but only inside gates that code enforces (the print size, a price floor from the blank's base cost, a daily budget range, and a design the judge says to revise is never approved). Nothing spends money until the seller starts the campaign.
 
 ## Who It's For
 
@@ -25,7 +25,7 @@ The seller gives a seed (a niche, a fandom, a product type), on the website or i
 flowchart LR
   S[Seed] --> Q[Qloo taste graph]
   Q --> T[Tavily: why now]
-  T --> D[Designs on Fourthwall blanks]
+  T --> D[T-shirt design on a Fourthwall blank]
   D --> J{Nemotron judge}
   J -- revise --> D
   J -- ready --> A{{Seller approves}}
@@ -51,7 +51,7 @@ The builder wants to show that an agent can run the whole print-on-demand loop, 
 3. See designs on real Fourthwall products with price, profit and margin, and Nemotron's verdict.
 4. Approve; the products exist in the Fourthwall shop.
 5. See the ad variants and approve.
-6. Open Meta Ads Manager: the campaign is there, paused, with the audience Qloo suggested. The "oh, that's cool" beat is step 6 after only talking and approving.
+6. Open Meta Ads Manager: the campaign is there, paused, targeted at the countries the seller chose. The "oh, that's cool" beat is step 6 after only talking and approving.
 
 ## The POC Boundary
 
@@ -61,8 +61,8 @@ The builder wants to show that an agent can run the whole print-on-demand loop, 
 | Research | Qloo taste graph and Tavily web search |
 | Judging | Nemotron on Nebius Token Factory |
 | Publishing | Fourthwall products after approval |
-| Ads | Several variants per product and a paused Meta campaign |
-| Autopilot | End-to-end run with hard limits and an audit trail |
+| Ads | Up to three ad variants per product and a paused Meta campaign |
+| Autopilot | End-to-end run where Nemotron decides and code gates |
 | Accounts | Better Auth sign-in, Cloud SQL (PostgreSQL) through Drizzle |
 | After deploy | Three GitLab Duo flows |
 

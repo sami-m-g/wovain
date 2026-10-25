@@ -1,6 +1,6 @@
 ---
 title: Arquitectura
-description: Una sola aplicación Next.js, procedimientos oRPC, Better Auth, Drizzle sobre Cloud SQL y el bucle de agentes que lo rodea.
+description: Una sola aplicación Next.js, procedimientos oRPC, un servidor MCP, Better Auth, Drizzle sobre Cloud SQL y el bucle de agentes que lo rodea.
 icon: Network
 ---
 
@@ -8,22 +8,23 @@ icon: Network
 
 ```text
  Seller
-   |  website              ChatGPT
-   v                          v
- +-----------------------------------------------+
- |  apps/web (Next.js 16, App Router)            |
- |   - pages and server components               |
- |   - /api/rpc   oRPC handler   <- packages/api |
- |   - /api/auth  Better Auth    <- packages/auth |
- |   - MCP server for ChatGPT                    |
- |   - evlog wide events                         |
- +--------+--------------------------------------+
-          | Drizzle (packages/db)
-          v
+   |  website                 ChatGPT
+   v                             v
+ +--------------------------------------------------+
+ |  apps/web (Next.js 16, App Router, Cloud Run)    |
+ |   - /api/rpc    oRPC handler  -> packages/api    |
+ |   - /api/mcp    MCP server    -> packages/api    |
+ |   - /api/auth   Better Auth   -> packages/auth   |
+ |   - /.well-known/oauth-*  OAuth discovery        |
+ |   - /api/connections/[provider]  Fourthwall/Meta |
+ |   - evlog wide events                            |
+ +-----------+--------------------------------------+
+             | flow/* steps call packages/core
+             v
+   Qloo -> Tavily -> Nemotron (Nebius) -> fal -> Fourthwall -> Meta Ads
+             |
+             v  Drizzle (packages/db)
    PostgreSQL on Cloud SQL (GCP)
-
- Providers called from procedures:
-   Qloo -> Tavily -> fal -> Nemotron (Nebius) -> Fourthwall -> Meta Ads
 
  After deploy (GitLab Duo flows):
    production errors -> self-healing flow -> merge request
@@ -35,23 +36,24 @@ icon: Network
 
 | Ruta | Función |
 | --- | --- |
-| `apps/web` | Aplicación Next.js 16: interfaz, rutas de API, servidor MCP |
+| `apps/web` | Aplicación Next.js 16: páginas, manejadores de rutas para RPC, MCP, autenticación y conexiones |
 | `apps/fumadocs` | Este sitio de documentación |
-| `packages/api` | Routers y procedimientos oRPC, compartidos por el sitio web y el servidor MCP |
-| `packages/auth` | Configuración de Better Auth |
-| `packages/db` | Esquema de Drizzle, relaciones y cliente para PostgreSQL |
+| `packages/api` | Routers oRPC (`routers/*`), pasos del flujo del vendedor (`flow/*`) y servidor MCP (`mcp.ts`) |
+| `packages/core` | Proveedores y reglas: Qloo, Tavily, Nemotron, fal, precios, juez, autopilot, anuncios, Fourthwall, OAuth de origen, sellado de tokens |
+| `packages/auth` | Better Auth con los plugins MCP y JWT |
+| `packages/db` | Esquema de Drizzle (`schema/auth.ts`, `schema/seller.ts`), relaciones y cliente |
 | `packages/ui` | Componentes compartidos de shadcn/ui (Base UI, Tailwind CSS 4) |
 | `packages/config` | `tsconfig.base.json` compartido |
 
 ## Decisiones clave
 
-- **Una aplicación, una API.** El sitio web y el servidor MCP de ChatGPT llaman a los mismos procedimientos oRPC, así que el comportamiento no puede divergir entre superficies.
-- **El código impone los límites, los modelos deciden dentro de ellos.** Las respuestas de Nemotron se validan con Zod y después el código aplica los límites de precio, presupuesto, marcas y gasto.
-- **En pausa por defecto.** Ningún procedimiento activa un objeto de Meta.
+- **Una aplicación, un único conjunto de procedimientos.** El sitio web los llama por `/api/rpc`; las herramientas MCP llaman al mismo router con `createRouterClient`, como el vendedor que inició sesión.
+- **Los modelos deciden, el código pone las salvaguardas.** Las respuestas de Nemotron se validan con Zod; el tamaño de impresión, el precio mínimo, el rango de presupuesto y el estado en pausa son código.
+- **En pausa por defecto.** Ningún procedimiento activa un objeto de Meta y los productos de Fourthwall se crean ocultos.
+- **Tokens sellados.** Los accesos de Fourthwall y Meta se guardan cifrados con AES-256-GCM (`TOKEN_ENCRYPTION_KEY`).
 - **Registros estructurados.** evlog emite un evento amplio por solicitud, que el flujo de autorreparación lee.
 - **Entorno tipado.** Los esquemas de Varlock generan `ENV`, de modo que una variable ausente hace fallar el arranque.
-- **Cloud SQL en GCP** para PostgreSQL, accesible mediante Drizzle.
 
 ## El flujo del vendedor en la API
 
-Tendencias, diseños, juez, aprobación, productos, anuncios, campaña. Cada etapa guarda su resultado, de modo que una ejecución puede reanudarse tras un fallo y una aprobación puede hacerse en cualquiera de las dos superficies.
+`ideas.research` → `designs.generate` → `designs.approve` o `designs.reject` → `products.create` → `products.publish` → `campaigns.create`, o `runs.start` para todo. Cada paso guarda su resultado y una ejecución registra su paso actual y cualquier error.

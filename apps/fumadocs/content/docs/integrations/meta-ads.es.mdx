@@ -1,12 +1,11 @@
 ---
 title: Meta Ads
-description: Wovain crea varias variantes de anuncio por producto y una campaña que permanece en pausa.
+description: Wovain redacta hasta tres variantes de anuncio por producto y prepara una campaña que permanece en pausa.
 ---
 
 Meta es donde se publican los anuncios.
 
-- **Variantes de anuncio.** Para cada producto, wovain crea varios conceptos, cada uno con un gancho, una audiencia, visuales para Feed y Stories, variantes de texto y una llamada a la acción.
-- **Audiencia.** La sugerencia de segmentación viene de [Qloo](/es/docs/integrations/qloo).
-- **Campaña.** Se construye una campaña con todas las variantes aprobadas.
-- **En pausa por defecto.** Todos los objetos se crean en pausa y ningún procedimiento activa uno. El vendedor inicia la campaña en Meta después de revisarla.
-- **Conexión.** Cada vendedor conecta su propia cuenta publicitaria.
+- **Variantes de anuncio.** `writeAdCopy` (Nemotron) redacta hasta tres variantes, cada una con un ángulo, un titular y un mensaje.
+- **Campaña.** `stagePausedCampaign` en `packages/core/src/ads.ts` crea una campaña, un conjunto de anuncios y anuncios mediante el servidor MCP de Ads de Meta, con el presupuesto diario (de 1 $ a 500 $) y los países que eligió el vendedor.
+- **En pausa por defecto.** Todos los objetos se crean en pausa y wovain nunca activa gasto. El vendedor inicia la campaña en Meta después de revisarla.
+- **Conexión.** Cada vendedor conecta su propia cuenta publicitaria en `/api/connections/meta/start`. Requiere `META_APP_ID` y `META_APP_SECRET`, y los URI de redirección OAuth válidos de la app deben incluir `<BETTER_AUTH_URL>/api/connections/meta/callback`.
