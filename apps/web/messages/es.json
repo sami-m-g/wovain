@@ -19,7 +19,9 @@
     "runsTitle": "Ejecuciones",
     "connectionsTitle": "Conexiones",
     "notFoundTitle": "Página no encontrada",
-    "consentTitle": "Permitir acceso"
+    "consentTitle": "Permitir acceso",
+    "resetTitle": "Restablecer contraseña",
+    "resetDescription": "Elige una nueva contraseña para tu cuenta de wovain."
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -234,7 +236,8 @@
     "welcome": "Sesión iniciada. Hola de nuevo.",
     "created": "Cuenta creada. Conectemos tu tienda.",
     "asideTitle": "Aprueba, no operes.",
-    "asideBody": "wovain se encarga de la investigación, el arte, las fichas y los anuncios. Tú sigues siendo quien dice que sí."
+    "asideBody": "wovain se encarga de la investigación, el arte, las fichas y los anuncios. Tú sigues siendo quien dice que sí.",
+    "forgot": "¿Olvidaste tu contraseña?"
   },
   "Shell": {
     "nav": {
@@ -425,5 +428,28 @@
     "deny": "Denegar",
     "error": "Tu respuesta no se envió. Inténtalo de nuevo.",
     "note": "Las campañas siempre se crean en pausa. Puedes revocar el acceso cerrando sesión en la app."
+  },
+  "Reset": {
+    "requestTitle": "Restablece tu contraseña",
+    "requestLead": "Introduce el correo de tu cuenta y te enviaremos un enlace para elegir una nueva contraseña.",
+    "email": "Correo electrónico",
+    "send": "Enviar enlace",
+    "sent": "Si alguna cuenta usa ese correo, el enlace ya va en camino. Es válido durante una hora.",
+    "title": "Elige una nueva contraseña",
+    "lead": "Usa al menos 8 caracteres. Se cerrará tu sesión en otros dispositivos.",
+    "password": "Nueva contraseña",
+    "submit": "Guardar contraseña",
+    "submitting": "Un momento…",
+    "done": "Contraseña cambiada. Inicia sesión con la nueva.",
+    "invalid": "Este enlace caducó o ya se usó. Pide uno nuevo abajo.",
+    "errors": {
+      "email": "Introduce un correo válido, como tu@ejemplo.com.",
+      "password": "Usa al menos 8 caracteres.",
+      "generic": "No ha funcionado. Inténtalo de nuevo en un momento."
+    },
+    "back": "Volver a iniciar sesión"
+  },
+  "Run": {
+    "loading": "Abriendo la ejecución…"
   }
 }

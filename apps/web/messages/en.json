@@ -19,7 +19,9 @@
     "runsTitle": "Runs",
     "connectionsTitle": "Connections",
     "notFoundTitle": "Page not found",
-    "consentTitle": "Allow access"
+    "consentTitle": "Allow access",
+    "resetTitle": "Reset your password",
+    "resetDescription": "Choose a new password for your wovain account."
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -234,7 +236,8 @@
     "welcome": "Signed in. Welcome back.",
     "created": "Account created. Let's connect your shop.",
     "asideTitle": "Approve, don't operate.",
-    "asideBody": "wovain does the research, the artwork, the listings and the ads. You stay the one who says yes."
+    "asideBody": "wovain does the research, the artwork, the listings and the ads. You stay the one who says yes.",
+    "forgot": "Forgot your password?"
   },
   "Shell": {
     "nav": {
@@ -425,5 +428,28 @@
     "deny": "Deny",
     "error": "Your answer didn't go through. Try again.",
     "note": "Campaigns are always created paused. You can revoke access by signing out of the app."
+  },
+  "Reset": {
+    "requestTitle": "Reset your password",
+    "requestLead": "Enter your account's email and we'll send you a link to choose a new password.",
+    "email": "Email",
+    "send": "Send reset link",
+    "sent": "If an account uses that email, a reset link is on its way. It works for one hour.",
+    "title": "Choose a new password",
+    "lead": "Use at least 8 characters. You'll be signed out on your other devices.",
+    "password": "New password",
+    "submit": "Save new password",
+    "submitting": "One moment…",
+    "done": "Password changed. Sign in with your new password.",
+    "invalid": "This reset link expired or was already used. Ask for a new one below.",
+    "errors": {
+      "email": "Enter a valid email address, like you@example.com.",
+      "password": "Use at least 8 characters.",
+      "generic": "That didn't work. Try again in a moment."
+    },
+    "back": "Back to sign in"
+  },
+  "Run": {
+    "loading": "Opening the run…"
   }
 }

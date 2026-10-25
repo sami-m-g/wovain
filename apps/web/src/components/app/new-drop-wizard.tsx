@@ -7,7 +7,7 @@ import { Switch } from "@wovain/ui/components/switch";
 import { Bot } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import type { Stage } from "@/components/app/run-strip";
@@ -66,7 +66,13 @@ const DEFAULT_BUDGET = 15;
 const replaceById = <T extends { id: string }>(items: T[], next: T) =>
   items.map((item) => (item.id === next.id ? next : item));
 
-export const NewDropWizard = ({ initialBrief }: { initialBrief: string }) => {
+export const NewDropWizard = ({
+  initialBrief,
+  initialRunId,
+}: {
+  initialBrief: string;
+  initialRunId?: string | undefined;
+}) => {
   const t = useTranslations("Wizard");
   const stages = useTranslations("Stages");
   const queryClient = useQueryClient();
@@ -238,6 +244,31 @@ export const NewDropWizard = ({ initialBrief }: { initialBrief: string }) => {
       setStep("done");
     }
   };
+
+  // Opened from a run link (/dashboard?run=<id>): pick the run up where it stopped.
+  const openRun = async (runId: string) => {
+    const run = await perform("research", () => flowClient.runs.get(runId));
+    if (!run) {
+      return;
+    }
+    applyRun(run);
+    setBrief(run.seed);
+    setAutopilot(run.autopilot);
+    if (run.status === "completed" || run.status === "failed") {
+      setFailure(run.status === "failed" ? (run.error ?? "") : undefined);
+      setStep("done");
+      return;
+    }
+    setStep(run.designs.length > 0 ? "designs" : "ideas");
+  };
+
+  const opened = useRef(false);
+  useEffect(() => {
+    if (initialRunId && !opened.current) {
+      opened.current = true;
+      openRun(initialRunId);
+    }
+  });
 
   const restart = () => {
     setStep("brief");

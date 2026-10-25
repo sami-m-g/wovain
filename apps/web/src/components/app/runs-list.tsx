@@ -86,7 +86,12 @@ export const RunsList = ({
               {status(run.status)}
             </Badge>
             <Heading className="text-base font-semibold text-pretty">
-              {run.seed}
+              <Link
+                className="hover:underline"
+                href={{ pathname: "/dashboard/new", query: { run: run.id } }}
+              >
+                {run.seed}
+              </Link>
             </Heading>
             <dl className="text-muted-foreground flex flex-wrap gap-x-5 gap-y-1 text-sm">
               <div>

@@ -19,7 +19,9 @@
     "runsTitle": "Exécutions",
     "connectionsTitle": "Connexions",
     "notFoundTitle": "Page introuvable",
-    "consentTitle": "Autoriser l'accès"
+    "consentTitle": "Autoriser l'accès",
+    "resetTitle": "Réinitialiser le mot de passe",
+    "resetDescription": "Choisissez un nouveau mot de passe pour votre compte wovain."
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -234,7 +236,8 @@
     "welcome": "Connecté. Bon retour.",
     "created": "Compte créé. Connectons votre boutique.",
     "asideTitle": "Validez, ne pilotez pas.",
-    "asideBody": "wovain s'occupe de la veille, des visuels, des fiches et des publicités. C'est toujours vous qui dites oui."
+    "asideBody": "wovain s'occupe de la veille, des visuels, des fiches et des publicités. C'est toujours vous qui dites oui.",
+    "forgot": "Mot de passe oublié ?"
   },
   "Shell": {
     "nav": {
@@ -425,5 +428,28 @@
     "deny": "Refuser",
     "error": "Votre réponse n'a pas été transmise. Réessayez.",
     "note": "Les campagnes sont toujours créées en pause. Vous pouvez révoquer l'accès en vous déconnectant de l'app."
+  },
+  "Reset": {
+    "requestTitle": "Réinitialiser votre mot de passe",
+    "requestLead": "Saisissez l'e-mail de votre compte : nous vous enverrons un lien pour choisir un nouveau mot de passe.",
+    "email": "E-mail",
+    "send": "Envoyer le lien",
+    "sent": "Si un compte utilise cet e-mail, un lien de réinitialisation est en route. Il est valable une heure.",
+    "title": "Choisir un nouveau mot de passe",
+    "lead": "Au moins 8 caractères. Vous serez déconnecté de vos autres appareils.",
+    "password": "Nouveau mot de passe",
+    "submit": "Enregistrer le mot de passe",
+    "submitting": "Un instant…",
+    "done": "Mot de passe modifié. Connectez-vous avec le nouveau.",
+    "invalid": "Ce lien a expiré ou a déjà servi. Demandez-en un nouveau ci-dessous.",
+    "errors": {
+      "email": "Saisissez une adresse e-mail valide, par exemple vous@exemple.com.",
+      "password": "Utilisez au moins 8 caractères.",
+      "generic": "Cela n'a pas fonctionné. Réessayez dans un instant."
+    },
+    "back": "Retour à la connexion"
+  },
+  "Run": {
+    "loading": "Ouverture de l'exécution…"
   }
 }

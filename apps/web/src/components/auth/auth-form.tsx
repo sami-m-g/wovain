@@ -4,7 +4,7 @@ import { useForm } from "@tanstack/react-form";
 import { Button } from "@wovain/ui/components/button";
 import { Input } from "@wovain/ui/components/input";
 import { Label } from "@wovain/ui/components/label";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ const fieldError = (errors: unknown[]): string | undefined => {
 
 export const AuthForm = ({ mode }: { mode: Mode }) => {
   const t = useTranslations("Auth");
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get("next"));
@@ -69,6 +70,8 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
       const { error } = await (mode === "signUp"
         ? authClient.signUp.email({
             email: value.email,
+            // Saved on the user so wovain's emails match the site's language.
+            locale,
             name: value.name,
             password: value.password,
           })
@@ -210,6 +213,13 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
           {mode === "signUp" ? t("toLoginLink") : t("toSignUpLink")}
         </Link>
       </p>
+      {mode === "login" ? (
+        <p className="mt-2 text-sm">
+          <Link className="text-primary font-semibold underline" href="/reset">
+            {t("forgot")}
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 };

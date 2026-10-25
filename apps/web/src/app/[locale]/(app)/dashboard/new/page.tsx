@@ -34,15 +34,21 @@ const NewDropPage = async ({
     notFound();
   }
   setRequestLocale(locale);
-  const { brief } = await searchParams;
+  const { brief, run } = await searchParams;
+  const initialRunId = typeof run === "string" ? run : undefined;
   const initialBrief =
     typeof brief === "string" ? brief.slice(0, MAX_BRIEF) : "";
-  const next = initialBrief
+  let next = initialBrief
     ? `/dashboard/new?brief=${encodeURIComponent(initialBrief)}`
     : "/dashboard/new";
+  if (initialRunId) {
+    next = `/dashboard/new?run=${encodeURIComponent(initialRunId)}`;
+  }
   await requireSession(locale, next);
 
-  return <NewDropWizard initialBrief={initialBrief} />;
+  return (
+    <NewDropWizard initialBrief={initialBrief} initialRunId={initialRunId} />
+  );
 };
 
 export default NewDropPage;

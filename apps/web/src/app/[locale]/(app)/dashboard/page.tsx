@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 
 import { ConnectionsSummary } from "@/components/app/connections-panel";
 import { RunsList } from "@/components/app/runs-list";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
@@ -27,12 +27,25 @@ export const generateMetadata = async ({
   });
 };
 
-const DashboardPage = async ({ params }: PageProps<"/[locale]/dashboard">) => {
+const RUN_ID = /^[\w-]{1,64}$/u;
+
+const DashboardPage = async ({
+  params,
+  searchParams,
+}: PageProps<"/[locale]/dashboard">) => {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
   setRequestLocale(locale);
+  const { run } = await searchParams;
+  // Run emails link to /dashboard?run=<id>: open that run in the flow.
+  if (typeof run === "string" && RUN_ID.test(run)) {
+    redirect({
+      href: { pathname: "/dashboard/new", query: { run } },
+      locale,
+    });
+  }
   const session = await requireSession(locale, "/dashboard");
   const t = await getTranslations("Dashboard");
 
