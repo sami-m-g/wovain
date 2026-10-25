@@ -160,8 +160,8 @@
     "chatgptTitle": "También una app en ChatGPT",
     "chatgptLead": "Pide un drop con palabras de siempre. Las aprobaciones aparecen como tarjetas en el chat, las mismas que ves en la web.",
     "chatgptSteps": [
-      "En ChatGPT, abre Ajustes, luego Apps y después Crear.",
-      "Pega la URL del servidor MCP de abajo.",
+      "En ChatGPT, activa el modo desarrollador y añade un conector personalizado (un servidor MCP).",
+      "Pega abajo la URL del servidor MCP.",
       "Inicia sesión en wovain y permite el acceso."
     ],
     "chatUser": "Haz un drop para mi canal de plantas. Acogedor, de naturaleza, sin demasiados juegos de palabras.",
@@ -171,7 +171,7 @@
     "chatChange": "Cambiar",
     "chatLabel": "Conversación de ejemplo en ChatGPT",
     "mcpLabel": "URL del servidor MCP",
-    "mcpHint": "En ChatGPT: Ajustes → Apps → Crear, y pega esta URL.",
+    "mcpHint": "En ChatGPT: modo desarrollador y luego un conector personalizado con esta URL.",
     "copy": "Copiar",
     "copied": "Copiado",
     "integrationsTitle": "Hecho con herramientas que ya usas",

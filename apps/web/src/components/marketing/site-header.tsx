@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 
 import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { CtaLink } from "@/components/marketing/cta-link";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
@@ -66,7 +67,8 @@ export const SiteHeader = async () => {
           >
             {common("signIn")}
           </Link>
-          <Link
+          <CtaLink
+            cta="header-sign-up"
             className={cn(
               buttonVariants(),
               "hidden h-9 rounded-lg px-4 sm:inline-flex"
@@ -75,7 +77,7 @@ export const SiteHeader = async () => {
             prefetch={false}
           >
             {t("startDrop")}
-          </Link>
+          </CtaLink>
           <details className="group relative lg:hidden">
             <summary
               aria-label={t("menu")}

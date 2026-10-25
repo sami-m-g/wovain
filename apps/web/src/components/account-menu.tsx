@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@wovain/ui/components/dropdown-menu";
 import { useTranslations } from "next-intl";
+import { posthog } from "posthog-js";
 
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -45,6 +46,8 @@ const AccountMenu = ({
               authClient.signOut({
                 fetchOptions: {
                   onSuccess: () => {
+                    // The next visitor on this browser is anonymous again.
+                    posthog.reset();
                     router.push("/");
                   },
                 },

@@ -474,10 +474,10 @@ const content: SiteContent = {
       name: "ChatGPT",
       related: ["creator-merch", "youtube-merch", "twitch-merch", "band-merch"],
       setup:
-        "Dans ChatGPT, ouvrez Paramètres → Apps → Créer, collez https://mcp.wovain.com/api/mcp, puis connectez-vous à wovain et autorisez l'accès.",
+        "Dans ChatGPT, activez le mode développeur, ajoutez un connecteur personnalisé avec https://mcp.wovain.com/api/mcp, puis connectez-vous à wovain et autorisez l'accès.",
       steps: [
         {
-          body: "Dans ChatGPT, allez dans Paramètres → Apps → Créer et collez l'URL du serveur MCP, https://mcp.wovain.com/api/mcp.",
+          body: "Dans ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé (un serveur MCP) avec l'URL https://mcp.wovain.com/api/mcp.",
           title: "Ajouter wovain comme app",
         },
         {

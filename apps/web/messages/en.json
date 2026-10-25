@@ -160,7 +160,7 @@
     "chatgptTitle": "Also an app in ChatGPT",
     "chatgptLead": "Ask for a drop in plain words. Approvals show up as cards in the chat, the same ones you get on the web.",
     "chatgptSteps": [
-      "In ChatGPT, open Settings, then Apps, then Create.",
+      "In ChatGPT, turn on developer mode and add a custom connector (an MCP server).",
       "Paste the MCP server URL below.",
       "Sign in to wovain and allow access."
     ],
@@ -171,7 +171,7 @@
     "chatChange": "Change",
     "chatLabel": "Example conversation in ChatGPT",
     "mcpLabel": "MCP server URL",
-    "mcpHint": "In ChatGPT: Settings → Apps → Create, then paste this URL.",
+    "mcpHint": "In ChatGPT: developer mode, then a custom connector with this URL.",
     "copy": "Copy",
     "copied": "Copied",
     "integrationsTitle": "Built on tools you already use",

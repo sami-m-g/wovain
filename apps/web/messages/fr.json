@@ -160,7 +160,7 @@
     "chatgptTitle": "Aussi une app dans ChatGPT",
     "chatgptLead": "Demandez un drop en langage courant. Les validations apparaissent sous forme de cartes dans la conversation, les mêmes que sur le web.",
     "chatgptSteps": [
-      "Dans ChatGPT, ouvrez Paramètres, puis Apps, puis Créer.",
+      "Dans ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé (un serveur MCP).",
       "Collez l'URL du serveur MCP ci-dessous.",
       "Connectez-vous à wovain et autorisez l'accès."
     ],
@@ -171,7 +171,7 @@
     "chatChange": "Modifier",
     "chatLabel": "Exemple de conversation dans ChatGPT",
     "mcpLabel": "URL du serveur MCP",
-    "mcpHint": "Dans ChatGPT : Paramètres → Apps → Créer, puis collez cette URL.",
+    "mcpHint": "Dans ChatGPT : mode développeur, puis un connecteur personnalisé avec cette URL.",
     "copy": "Copier",
     "copied": "Copié",
     "integrationsTitle": "Construit sur des outils que vous connaissez déjà",

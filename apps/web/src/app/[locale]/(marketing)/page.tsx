@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/json-ld";
 import { BriefForm } from "@/components/marketing/brief-form";
 import { CopyField } from "@/components/marketing/copy-field";
+import { CtaLink } from "@/components/marketing/cta-link";
 import { FaqList, faqJsonLd } from "@/components/marketing/faq-list";
 import {
   Autopilot,
@@ -22,7 +23,6 @@ import { container, displayTitle } from "@/components/marketing/section";
 import { getContent } from "@/content/load";
 import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
-import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { localizedUrl, mcpUrl, pageMetadata, siteUrl } from "@/lib/seo";
 
@@ -130,7 +130,8 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
           </h2>
           <p className="max-w-[55ch] text-lg opacity-80">{t("ctaBody")}</p>
           <div className="flex flex-wrap items-center gap-3">
-            <Link
+            <CtaLink
+              cta="closing-sign-up"
               className={cn(
                 buttonVariants(),
                 "bg-background text-foreground hover:bg-background/90 h-12 rounded-xl px-6 text-[0.95rem]"
@@ -139,8 +140,9 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
               prefetch={false}
             >
               {t("ctaButton")}
-            </Link>
-            <Link
+            </CtaLink>
+            <CtaLink
+              cta="closing-login"
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "text-background hover:bg-background/10 hover:text-background h-12 rounded-xl px-5 text-[0.95rem] underline-offset-4 hover:underline"
@@ -149,7 +151,7 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
               prefetch={false}
             >
               {t("ctaSecondary")}
-            </Link>
+            </CtaLink>
           </div>
         </div>
       </section>
