@@ -90,6 +90,8 @@ flowchart LR
 
 GitLab links the MR to the finding (`Vulnerability.mergeRequest`), so the shepherd binds them through GitLab, never through MR text. A patch outside the auto-merge scope (a dependency bump, for one) waits for a person.
 
+Where the role or tier can't call Vulnerability Resolution ("AI features are not enabled"), the ops job notes that on the `vuln-fix` log issue, doesn't ask again for a week, and instead files one confidential `agent::task` + `vuln-fix` issue per finding still on the default branch: deduplicated by a marker, at most 3 open, reopened when a closed one's finding is still reported a day later. Intake then hands each to the Developer flow (flow 3). Findings the latest default-branch scan no longer reports are skipped.
+
 **Demo in under a minute:** Secure > Vulnerability report: show a High SAST finding. Run "wovain ops". Show the note on the `vuln-fix` issue, the Resolution MR, the review and the auto-merge.
 
 ## Status page

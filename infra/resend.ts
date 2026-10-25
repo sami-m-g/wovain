@@ -60,7 +60,11 @@ const domainProvider: pulumi.dynamic.ResourceProvider<
     };
   },
   async delete(id, props) {
-    const response = await fetch(`https://api.resend.com/domains/${id}`, {
+    // A fixed host; id is the domain id Resend returned at create, from
+    // Pulumi state, and is encoded so it stays one path segment.
+    const url = `https://api.resend.com/domains/${encodeURIComponent(id)}`;
+    // nosemgrep
+    const response = await fetch(url, {
       headers: { authorization: `Bearer ${props.apiKey}` },
       method: "DELETE",
     });

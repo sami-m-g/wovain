@@ -10,10 +10,11 @@ import {
 import { protectedProcedure } from "../index";
 
 const provider = z.enum(providerIds);
-// A path on this site to come back to, never another origin.
+// A path on this site to come back to, never another origin: browsers read
+// "//host" and "/\host" as another host, so no second slash or backslash.
 const returnTo = z
   .string()
-  .regex(/^\/(?!\/)[^\s]*$/u)
+  .regex(/^\/(?![/\\])[^\s\\]*$/u)
   .max(512)
   .default("/dashboard");
 
