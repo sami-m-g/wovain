@@ -104,12 +104,23 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
         const id = tag.id ?? tag.tag_id ?? "";
         const affinity = tag.query?.affinity ?? tag.popularity ?? 0;
         return QLOO_TAG.test(id)
-          ? [{ affinity, id, name: tag.name.slice(0, THEME_MAX) }]
+          ? [{ affinity, id, name: tag.name.trim().slice(0, THEME_MAX) }]
           : [];
       });
+      // Qloo lists spelling variants of one tag ("JPop", " J-pop"): keep the
+      // highest-affinity one.
+      const seen = new Set<string>();
+      const distinct = themes
+        .toSorted((a, b) => b.affinity - a.affinity)
+        .filter(({ name }) => {
+          const key = name.toLowerCase().replaceAll(/[^\p{L}\p{N}]/gu, "");
+          const fresh = key !== "" && !seen.has(key);
+          seen.add(key);
+          return fresh;
+        });
       return {
         names: entities.map((entity) => entity.name),
-        themes: themes.toSorted((a, b) => b.affinity - a.affinity),
+        themes: distinct,
       };
     });
 

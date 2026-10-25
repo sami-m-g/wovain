@@ -14,10 +14,20 @@ export const TEXT_TO_IMAGE = "openai/gpt-image-2.5/flare/text-to-image";
 const imageSchema = z.object({
   images: z
     .array(
+      // GPT Image on fal leaves width and height null: the size asked for
+      // is the size drawn.
       z.object({
-        height: z.int().positive(),
+        height: z
+          .int()
+          .positive()
+          .nullish()
+          .transform((value) => value ?? REQUIRED_PX),
         url: z.url({ protocol: /^https$/u }),
-        width: z.int().positive(),
+        width: z
+          .int()
+          .positive()
+          .nullish()
+          .transform((value) => value ?? REQUIRED_PX),
       })
     )
     .min(1),
