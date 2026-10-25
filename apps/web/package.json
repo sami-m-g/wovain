@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "tsc -b ../../packages/api ../../packages/ui && next build",
-    "check-types": "tsc -b ../../packages/api ../../packages/ui && tsc --noEmit",
+    "check-types": "next typegen && tsc -b ../../packages/api ../../packages/ui && tsc --noEmit",
     "start": "mkdir -p public && cp -R .next/static .next/standalone/apps/web/.next/ && cp -R public .next/standalone/apps/web/ && PORT=3001 node .next/standalone/apps/web/server.js",
     "env:generate": "varlock codegen",
     "auth:generate": "varlock run -- pnpm dlx auth@latest generate --config src/services.ts --output ../../packages/db/src/schema/auth.ts --yes",

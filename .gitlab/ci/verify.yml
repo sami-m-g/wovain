@@ -1,8 +1,17 @@
 # Lint and format (Ultracite), types, dead code (knip) and tests, on every
 # push and merge request.
+# Varlock validates env when Next loads its config (typegen and build), so
+# these jobs get placeholders; real values only exist at runtime (Cloud Run).
+.env-placeholders:
+  variables:
+    BETTER_AUTH_SECRET: ci-build-placeholder-never-used-at-runtime
+    BETTER_AUTH_URL: http://localhost:3001
+    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
+
 verify:
   stage: verify
-  extends: [.pnpm-install, .on-changes]
+  extends: [.pnpm-install, .on-changes, .env-placeholders]
   script:
     - pnpm run check
     - pnpm run check-types
@@ -24,17 +33,10 @@ verify:infra:
   script:
     - pnpm --dir infra run check-types
 
-# The turbo build of every app. Varlock validates env at build time, so the
-# build gets placeholders; real values only exist at runtime (Cloud Run).
+# The turbo build of every app.
 build:
   stage: verify
-  extends: [.pnpm-install, .on-changes]
-  variables:
-    BETTER_AUTH_SECRET: ci-build-placeholder-never-used-at-runtime
-    BETTER_AUTH_URL: http://localhost:3001
-    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-    NODE_ENV: production
-    TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
+  extends: [.pnpm-install, .on-changes, .env-placeholders]
   script:
     - pnpm run build
 
