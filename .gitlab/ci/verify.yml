@@ -118,7 +118,10 @@ image:check:
 # ancestor of GitLab's, the push is rejected and the job fails for a human.
 mirror:github:
   extends: [.on-main]
-  stage: test
+  # After deploy: infra:production creates the deploy key this job uses, and
+  # a failed mirror must never hold back a deploy.
+  stage: .post
+  allow_failure: true
   image: alpine:3.21
   interruptible: false
   resource_group: github-mirror
