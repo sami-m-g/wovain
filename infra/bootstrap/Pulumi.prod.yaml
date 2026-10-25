@@ -1,0 +1,5 @@
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
+config:
+  gcp:project: wovain
+  gcp:region: us-central1
+  wovain-bootstrap:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase

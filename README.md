@@ -76,7 +76,7 @@ See the [Hackathons page](apps/fumadocs/content/docs/hackathons.mdx) for where e
 
 `main` deploys to Google Cloud from GitLab CI (`.gitlab/ci/deploy.yml`), with Workload Identity Federation and no stored key:
 
-1. `pulumi up` applies `infra/`: Cloud Run services `wovain-web` and `wovain-docs`, Cloud SQL Postgres `wovain`, Artifact Registry, Secret Manager, the wovain.com zone's records and domain mappings, Search Console verification, Resend's sending domain, GitLab variables, labels, the Workflow board and feature flags.
+1. `pulumi up` applies `infra/` after a guarded, policy-checked preview (see [infra/README.md](infra/README.md#how-infra-changes-ship)): Cloud Run services `wovain-web` and `wovain-docs`, Cloud SQL Postgres `wovain`, Artifact Registry, Secret Manager, the wovain.com zone's records and domain mappings, Search Console verification, Resend's sending domain, GitLab variables, labels, the Workflow board and feature flags.
 2. Both images are pushed to the GitLab container registry (Container Scanning) and Artifact Registry.
 3. `drizzle-kit migrate` runs against Cloud SQL through `cloud-sql-proxy`.
 4. `gcloud run deploy` rolls the images out.

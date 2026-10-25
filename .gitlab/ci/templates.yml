@@ -35,6 +35,23 @@
     - export PATH="$HOME/.pulumi/bin:$PATH"
     - pulumi install --cwd infra
 
+# `pulumi preview` with the policy pack (infra/policy), as the merge request
+# check and right before main's `pulumi up`. infra/policy/guard.ts writes the
+# plan to preview.md, linked in the merge request widget, and fails on a
+# delete or replace of a stateful resource. PREVIEW_FLAGS adds flags.
+.pulumi-preview:
+  script:
+    - |
+      status=0
+      pulumi preview --cwd infra --stack prod --policy-pack "$CI_PROJECT_DIR/infra/policy" --json $PREVIEW_FLAGS > preview.json || status=$?
+      node infra/policy/guard.ts < preview.json > preview.md || status=1
+      cat preview.md
+      test "$status" -eq 0
+  artifacts:
+    when: always
+    expose_as: infra preview
+    paths: [preview.md]
+
 # Google Cloud access is Workload Identity Federation: GitLab's OIDC token is
 # exchanged for a service account's, so no Google key is stored, and only the
 # protected main branch is trusted (infra/index.ts). Each account trusts jobs

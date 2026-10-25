@@ -99,7 +99,10 @@ export class ResendDomain extends pulumi.dynamic.Resource {
       domainProvider,
       name,
       { ...args, records: undefined },
-      { ...opts, additionalSecretOutputs: ["apiKey"] }
+      { ...opts, additionalSecretOutputs: ["apiKey"] },
+      // Its own type, so it and its verification can share a name.
+      "resend",
+      "Domain"
     );
   }
 }
@@ -136,9 +139,13 @@ export class ResendVerification extends pulumi.dynamic.Resource {
     args: { apiKey: pulumi.Input<string>; domainId: pulumi.Input<string> },
     opts?: pulumi.CustomResourceOptions
   ) {
-    super(verifyProvider, name, args, {
-      ...opts,
-      additionalSecretOutputs: ["apiKey"],
-    });
+    super(
+      verifyProvider,
+      name,
+      args,
+      { ...opts, additionalSecretOutputs: ["apiKey"] },
+      "resend",
+      "Verification"
+    );
   }
 }

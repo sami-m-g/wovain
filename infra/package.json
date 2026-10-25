@@ -5,7 +5,8 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "check-types": "tsc -p ."
+    "check-types": "tsc -p .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@pulumi/gcp": "9.37.1",
@@ -16,7 +17,11 @@
     "@pulumi/random": "4.21.4"
   },
   "devDependencies": {
+    "@pulumi/policy": "1.21.0",
     "@types/node": "26.6.5",
-    "typescript": "7.0.2"
+    "@typescript/native": "npm:typescript@7.0.2",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vitest": "5.0.5",
+    "yaml": "2.9.1"
   }
 }
