@@ -18,7 +18,7 @@ infra:production:
     - !reference [.pulumi-install, before_script]
     - !reference [.gcp-credentials, before_script]
   script:
-    - pulumi up --cwd infra --stack prod --refresh --yes --non-interactive
+    - pulumi up --cwd infra --stack prod --refresh --yes --non-interactive --continue-on-error
   # Google trusts gitlab-infra only for jobs in this environment.
   environment:
     name: infrastructure

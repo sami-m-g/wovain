@@ -32,8 +32,9 @@ interface DomainArgs {
   routes: Route[];
   // Values a third party issues and no API hands out (Pulumi.prod.yaml).
   metaDomainVerification: string | undefined;
-  // GitLab's verification code for the status page's Pages domain.
-  statusDomainVerification: pulumi.Input<string>;
+  // GitLab's verification code for the status page's Pages domain, when
+  // the project has one (duo.ts).
+  statusDomainVerification: pulumi.Input<string> | undefined;
   dmarcRua: string | undefined;
   caaIssuers: string[];
   statusPagesTarget: string;
@@ -178,20 +179,23 @@ export const configureDomain = (args: DomainArgs) => {
   record(`_dmarc.${apex}`, "TXT", [txt(dmarc)]);
 
   // GitLab Pages: the status page and the public SCI/DORA report.
-  record(`status.${apex}`, "CNAME", [args.statusPagesTarget]);
-  record(
-    `_gitlab-pages-verification-code.status.${apex}`,
-    "TXT",
-    pulumi
-      .output(args.statusDomainVerification)
-      .apply((code) => [
-        txt(
-          code.startsWith(PAGES_VERIFICATION_PREFIX)
-            ? code
-            : `${PAGES_VERIFICATION_PREFIX}${code}`
-        ),
-      ])
-  );
+  const { statusDomainVerification } = args;
+  if (statusDomainVerification !== undefined) {
+    record(`status.${apex}`, "CNAME", [args.statusPagesTarget]);
+    record(
+      `_gitlab-pages-verification-code.status.${apex}`,
+      "TXT",
+      pulumi
+        .output(statusDomainVerification)
+        .apply((code) => [
+          txt(
+            code.startsWith(PAGES_VERIFICATION_PREFIX)
+              ? code
+              : `${PAGES_VERIFICATION_PREFIX}${code}`
+          ),
+        ])
+    );
+  }
 
   // Resend always asks for the same three records: DKIM at
   // resend._domainkey, and MX and SPF at its bounce subdomain, send.
