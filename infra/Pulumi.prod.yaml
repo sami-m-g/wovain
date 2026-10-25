@@ -115,5 +115,9 @@ config:
     secure: v1:sIae3yg/vFm3zlFs:VdAckm6D4GiO/9hgpJghj1iANAjp2k84I3iCbYK+/x3XYLl05ERu4wrXHOGNAo3jOehjiIq6dKFvlD3wdcM664ZjHcf/Wy5A3h/33pwxpdjUnw4GXz0cDNCLl3kkpWCvB84rOLUu9fE9pQkIrn7Cgm4o6m+w1aUxGGSgWxGPBEBFP6HjxrXK2pBGvLcyOmXn9IlQnzafwaJIN+ZbhdGma28YINQdhAtBL3jQHd6xE6u1CS4y9giSsDORgsT45IayNkq6eIwWd/5WVtqEoxqVNdVrrJJaFpOq3Yux+4ZhyDOvsI/CRieDnynXcIcYcXWohCu5ZWrB4HL3CHc=
   wovain:tavily-api-key:
     secure: v1:PzFsNtyPMerRsL7h:TUT6x4bGrklrVt3OuTEZCPZbUga/OozU5vf/GqGN9yeuWqWxZPA01bski5wfz6knITU+L8ZiQLEe
+  wovain:qloo-api-key:
+    secure: v1:vD59KeD90EsuWoDc:cxnpqqr3tSN1+KIOEq3wuT4I2W2hH6nhUGI+QAvOCe5l2M9c9lheCGZcUHeY8+HHJT7CZs5p88GwjnFVAA==
+  wovain:resend-api-key:
+    secure: v1:ASXeoo1en0xnUp3s:hYDkmXc/UhCYg31N9JoCQR9r2nXxGr+AhHtT8JGO6U/LPcOfEj98eRWfPpjrVm7QCo/pmQ==
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
