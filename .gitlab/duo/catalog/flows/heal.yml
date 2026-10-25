@@ -24,7 +24,6 @@ definition:
         - from: "context:inputs.user_rule"
           as: "agents_dot_md"
           optional: true
-      max_cycles: 80
       toolset:
         - get_issue
         - list_issue_notes

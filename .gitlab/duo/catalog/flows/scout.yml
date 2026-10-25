@@ -21,7 +21,6 @@ definition:
       inputs:
         - from: "context:project_id"
           as: "project_id"
-      max_cycles: 40
       toolset:
         - list_issues
         - get_issue
