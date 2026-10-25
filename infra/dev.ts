@@ -114,13 +114,16 @@ export const devEnvironment = (args: DevArgs) => {
       mounted.set(id, secret);
     }
   }
-  for (const [id, secret] of mounted) {
-    new gcp.secretmanager.SecretIamMember(`runner-dev-${id}`, {
-      member: runner.member,
-      role: "roles/secretmanager.secretAccessor",
-      secretId: secret.id,
-    });
-  }
+  // The service waits for these: Cloud Run checks access to every mounted
+  // secret when it rolls out a revision.
+  const access = [...mounted].map(
+    ([id, secret]) =>
+      new gcp.secretmanager.SecretIamMember(`runner-dev-${id}`, {
+        member: runner.member,
+        role: "roles/secretmanager.secretAccessor",
+        secretId: secret.id,
+      })
+  );
 
   const service = new gcp.cloudrunv2.Service(
     "web-dev",
@@ -169,7 +172,7 @@ export const devEnvironment = (args: DevArgs) => {
       },
     },
     {
-      dependsOn: versions,
+      dependsOn: [...versions, ...access],
       ignoreChanges: [
         "client",
         "clientVersion",
