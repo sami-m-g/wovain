@@ -1,0 +1,4 @@
+{
+  "extends": "@wovain/config/tsconfig.base.json",
+  "include": ["*.ts", ".config/*.ts"]
+}

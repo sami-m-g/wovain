@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "commitlint": {
+    "config": [".config/commitlint.config.ts"]
+  },
+  "workspaces": {
+    "apps/fumadocs": {
+      "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"],
+      "ignore": [
+        "src/components/ai/**",
+        "src/components/codeblock.tsx",
+        "src/components/ui/**"
+      ]
+    },
+    "apps/web": {
+      "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"]
+    }
+  },
+  "ignore": [".agents/**"]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "wovain",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "dev:web": "turbo run dev -F web --",
+    "db:push": "turbo run db:push -F @wovain/db --",
+    "db:studio": "turbo run db:studio -F @wovain/db --",
+    "db:generate": "turbo run db:generate -F @wovain/db --",
+    "db:migrate": "turbo run db:migrate -F @wovain/db --",
+    "db:start": "docker compose up -d postgres",
+    "db:watch": "docker compose up postgres",
+    "db:stop": "docker compose stop postgres",
+    "db:down": "docker compose down postgres",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./packages/db/",
+    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./packages/db/",
+    "auth:generate": "cd apps/web && pnpm run auth:generate",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "knip": "knip --config .config/knip.json"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@commitlint/types": "^21.2.3",
+    "@types/node": "catalog:",
+    "@wovain/config": "workspace:*",
+    "knip": "^6.43.0",
+    "lefthook": "latest",
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.86.0",
+    "turbo": "^2.11.7",
+    "typescript": "catalog:",
+    "ultracite": "8.0.0",
+    "varlock": "catalog:"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "packageManager": "pnpm@12.3.4"
+}

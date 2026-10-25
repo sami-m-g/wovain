@@ -1,0 +1,25 @@
+{
+  "name": "@wovain/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b"
+  },
+  "dependencies": {
+    "@orpc/server": "catalog:",
+    "@wovain/auth": "workspace:*",
+    "@wovain/db": "workspace:*",
+    "evlog": "catalog:"
+  },
+  "devDependencies": {
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

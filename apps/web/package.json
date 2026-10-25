@@ -1,0 +1,50 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "tsc -b ../../packages/api ../../packages/ui && next build",
+    "check-types": "tsc -b ../../packages/api ../../packages/ui && tsc --noEmit",
+    "start": "mkdir -p public && cp -R .next/static .next/standalone/apps/web/.next/ && cp -R public .next/standalone/apps/web/ && PORT=3001 node .next/standalone/apps/web/server.js",
+    "env:generate": "varlock codegen",
+    "auth:generate": "varlock run -- pnpm dlx auth@latest generate --config src/services.ts --output ../../packages/db/src/schema/auth.ts --yes"
+  },
+  "dependencies": {
+    "@orpc/client": "catalog:",
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/tanstack-query": "catalog:",
+    "@orpc/zod": "catalog:",
+    "@tanstack/react-form": "^1.33.5",
+    "@tanstack/react-query": "^5.104.2",
+    "@varlock/nextjs-integration": "catalog:",
+    "@wovain/api": "workspace:*",
+    "@wovain/auth": "workspace:*",
+    "@wovain/db": "workspace:*",
+    "@wovain/ui": "workspace:*",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "better-auth": "catalog:",
+    "evlog": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "catalog:",
+    "next-themes": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "catalog:",
+    "varlock": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
+    "@tanstack/react-query-devtools": "^5.104.2",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

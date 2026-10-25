@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(/.agents/**)",
+      "Edit(/.claude/skills/**)",
+      "Edit(/packages/ui/src/components/**)",
+      "Edit(/packages/ui/src/hooks/**)",
+      "Edit(/packages/ui/src/lib/**)",
+      "Edit(/apps/fumadocs/src/components/ai/**)",
+      "Edit(/apps/fumadocs/src/components/codeblock.tsx)",
+      "Edit(/apps/fumadocs/src/components/tabs/**)",
+      "Edit(/apps/fumadocs/src/components/ui/**)",
+      "Edit(/apps/fumadocs/src/lib/cn.ts)",
+      "Edit(/apps/fumadocs/src/lib/merge-refs.ts)",
+      "Edit(/packages/db/src/schema/auth.ts)",
+      "Edit(/packages/db/src/migrations/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec ultracite fix --hook"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true
+  }
+}
