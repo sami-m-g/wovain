@@ -25,7 +25,7 @@ container_scanning:
     CS_IMAGE: $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHA
     CS_DOCKERFILE_PATH: apps/web/Dockerfile
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 

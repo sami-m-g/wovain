@@ -28,9 +28,18 @@ export const connectionsRouter = {
         state: z.string().min(1).max(256),
       })
     )
-    .handler(
-      async ({ context, input }) => await completeConnection(context, input)
-    ),
+    .handler(async ({ context, input }) => {
+      const result = await completeConnection(context, input);
+      // A funnel step, once the provider's consent actually connected.
+      if (result.connected) {
+        context.analytics?.capture({
+          distinctId: context.userId,
+          event: "connect_provider",
+          properties: { provider: input.provider },
+        });
+      }
+      return result;
+    }),
   connect: protectedProcedure
     .input(z.object({ provider, returnTo }))
     .handler(

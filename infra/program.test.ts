@@ -24,6 +24,7 @@ const { config } = parse(read("Pulumi.prod.yaml")) as {
   config: Record<string, unknown>;
 };
 const values: Record<string, string> = {
+  "wovain:posthogTrigger": "true",
   "wovain:resendDomain": "true",
   "wovain:statusDomain": "true",
 };
@@ -104,6 +105,9 @@ test("the program registers every resource once, without throwing", async () => 
   await pulumi.runtime.disconnect();
   expect(registered).toContain("pulumi-nodejs:dynamic/resend:Domain::resend");
   expect(registered).toContain("gitlab:index/pagesDomain:PagesDomain::status");
+  expect(registered).toContain(
+    "gitlab:index/pipelineTrigger:PipelineTrigger::posthog"
+  );
   // Two resources with one type and name are one URN, which the engine refuses.
   expect(registered.filter((r, i) => registered.indexOf(r) !== i)).toEqual([]);
 });

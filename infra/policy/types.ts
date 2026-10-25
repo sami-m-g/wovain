@@ -30,6 +30,7 @@ export const MAINTAINER_ONLY = new Set([
   "gitlab:index/complianceFramework:ComplianceFramework",
   "gitlab:index/deployKey:DeployKey",
   "gitlab:index/pagesDomain:PagesDomain",
+  "gitlab:index/pipelineTrigger:PipelineTrigger",
   "gitlab:index/projectAccessToken:ProjectAccessToken",
   "gitlab:index/projectComplianceFrameworks:ProjectComplianceFrameworks",
   "gitlab:index/projectProtectedEnvironment:ProjectProtectedEnvironment",

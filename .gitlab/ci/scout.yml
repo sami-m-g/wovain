@@ -8,7 +8,7 @@ scout:collect:
   extends: .ops-job
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain scout"
-    - if: $CI_PIPELINE_SOURCE == "web" && $SCOUT
+    - if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $SCOUT
   script:
     - pnpm --filter @wovain/ops exec playwright install --with-deps chromium
     - node apps/ops/src/scout-collect.ts
@@ -26,6 +26,6 @@ scout:duo:
   needs: [scout:collect]
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain scout"
-    - if: $CI_PIPELINE_SOURCE == "web" && $SCOUT
+    - if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $SCOUT
   trigger:
     include: .gitlab/ci/scout-signal.yml

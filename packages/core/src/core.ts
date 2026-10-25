@@ -15,6 +15,8 @@ export interface CoreConfig {
   META_APP_SECRET?: string | undefined;
   NEBIUS_API_KEY?: string | undefined;
   NEBIUS_BASE_URL: string;
+  NEXT_PUBLIC_POSTHOG_HOST: string;
+  NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
   QLOO_API_URL: string;
   TAVILY_API_KEY?: string | undefined;
@@ -26,6 +28,12 @@ export const createCore = (env: CoreConfig) => ({
   nemotron: createNemotron({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,
+    environment:
+      new URL(env.BETTER_AUTH_URL).hostname === "wovain.com"
+        ? "production"
+        : "development",
+    posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,
+    posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
   }),
   sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
   trends: createTrends(

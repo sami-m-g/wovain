@@ -7,6 +7,7 @@ import { mcpResource } from "@wovain/auth";
 import { createError } from "evlog";
 
 import { ENV } from "@/env.server";
+import { analytics } from "@/lib/analytics";
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
 import { auth, core, db, mailer } from "@/services";
 
@@ -25,6 +26,7 @@ const handler = createMcpHandler(({ authInfo }) => {
   }
   const client = createRouterClient(appRouter, {
     context: {
+      analytics,
       core,
       db,
       log: getRequestLogger(),

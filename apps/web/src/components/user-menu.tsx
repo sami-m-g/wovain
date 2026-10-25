@@ -12,6 +12,7 @@ import {
 } from "@wovain/ui/components/dropdown-menu";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { useTranslations } from "next-intl";
+import { posthog } from "posthog-js";
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -61,6 +62,8 @@ const UserMenu = () => {
               authClient.signOut({
                 fetchOptions: {
                   onSuccess: () => {
+                    // The next visitor on this browser is anonymous again.
+                    posthog.reset();
                     router.push("/");
                   },
                 },

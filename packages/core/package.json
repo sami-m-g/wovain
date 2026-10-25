@@ -14,9 +14,11 @@
   "dependencies": {
     "@fal-ai/client": "catalog:",
     "@modelcontextprotocol/client": "catalog:",
+    "@posthog/ai": "catalog:",
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
     "openai": "catalog:",
+    "posthog-node": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

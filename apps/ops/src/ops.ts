@@ -25,10 +25,22 @@ import {
   incidentBody,
   newProblems,
   parseSignature,
+  posthogGroupOf,
   verdict,
 } from "./heal.ts";
+import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
 import { loadKpis } from "./kpis.ts";
+import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
+import {
+  KPI_MISSED_LABEL,
+  KPI_SCOUT_LABEL,
+  KPI_VERIFIED_LABEL,
+  firingKpis,
+  kpiOfTitle,
+  kpiVerdict,
+  scoutDue,
+} from "./signals.ts";
 import { doraOf, healthOf, renderStatus } from "./status.ts";
 import {
   VULN_LABEL,
@@ -56,6 +68,10 @@ import {
 //            or, where it's unavailable, agent::task issues → Developer
 //   shepherd Duo's MRs → ready → Duo Code Review → guardrails → auto-merge
 //   status   public/index.html for the status page (the pages job publishes it)
+//   signals  PostHog KPI alerts firing → the scout flow, at most once a day
+//   verifyKpis merged kpi-scout changes → KPI alert stopped? → verified
+// PostHog destinations also start it right away (infra/posthog/signals.tf);
+// it reads PostHog itself, so what started it never steers it.
 // It never merges anything itself; GitLab merges once the pipeline passes.
 
 const WATCH_MS = 30 * 60_000;
@@ -64,7 +80,7 @@ const SETTLE_MS = 10 * 60_000;
 const REVIEW_TIMEOUT_MS = 2 * 3_600_000;
 const DAY_MS = 86_400_000;
 
-const { env, gitlab, google } = opsContext();
+const { env, gitlab, google, posthog } = opsContext();
 const config = await loadKpis();
 const now = new Date();
 const me = await gitlab.currentUser();
@@ -127,12 +143,34 @@ const assignTo = async (issue: number, username: string) => {
   await gitlab.updateIssue(issue, { assignee_ids: [id] });
 };
 
-// Flow 1: file the most frequent new production error and hand it to the
-// heal flow, within the daily and in-flight caps.
+// Browser exceptions PostHog error tracking grouped in the watch window.
+const browserErrors = async (): Promise<ErrorGroup[]> => {
+  if (posthog === undefined) {
+    return [];
+  }
+  const rows = await posthog.rows(exceptionsQuery(WATCH_MS / 60_000));
+  return rows.flatMap((row) => posthogGroupOf(row) ?? []);
+};
+
+// Where the heal issue's error was seen: PostHog's error tracking issue (its
+// stack, sessions and replays) or the Cloud Logging query.
+const evidenceOf = ({ signature: s }: ErrorGroup) =>
+  s.posthogIssue === undefined || posthog === undefined
+    ? `[Cloud Logging](${logsUrl(`${errorFilter} AND jsonPayload.path="${s.path}"`)})`
+    : `[PostHog error tracking](${posthog.link(`error_tracking/${s.posthogIssue}`)})`;
+
+// Flow 1: file the most frequent new production error, from the server's
+// logs or PostHog's browser exceptions, and hand it to the heal flow, within
+// the daily and in-flight caps.
 const heal = async () => {
   const range = { end: now, start: new Date(now.getTime() - WATCH_MS) };
-  const { entries } = await google.entries(errorFilter, range);
-  const groups = groupErrors(entries);
+  const [{ entries }, browser] = await Promise.all([
+    google.entries(errorFilter, range),
+    browserErrors(),
+  ]);
+  const groups = [...groupErrors(entries), ...browser].toSorted(
+    (a, b) => b.count - a.count
+  );
   const issues = await gitlab.issues({
     labels: HEAL_LABEL,
     state: "all",
@@ -168,11 +206,7 @@ const heal = async () => {
   const s = problem.signature;
   const created = await gitlab.createIssue({
     confidential: true,
-    description: healBody(
-      problem,
-      "30 min",
-      logsUrl(`${errorFilter} AND jsonPayload.path="${s.path}"`)
-    ),
+    description: healBody(problem, "30 min", evidenceOf(problem)),
     labels: `${HEAL_LABEL},type::bug`,
     title: healTitle(s),
   });
@@ -200,28 +234,57 @@ const heal = async () => {
   return `filed #${created.iid} and incident #${incident.iid} for ${s.fingerprint}, assigned the heal flow${problems.length > 0 ? ` (${problems.join("; ")})` : ""}`;
 };
 
-// Flow 1, after the merge: production must stay clean of the signature.
-const verifyOne = async (issue: Issue) => {
-  const signature = parseSignature(issue.description);
-  const related = await gitlab.relatedMergeRequests(issue.iid);
+// When the latest merge request that closed an issue merged.
+const mergedAtOf = async (issue: number) => {
+  const related = await gitlab.relatedMergeRequests(issue);
   const [mergedAt] = related
     .flatMap((m) => (m.merged_at ? [Date.parse(m.merged_at)] : []))
     .toSorted((a, b) => b - a);
+  return mergedAt;
+};
+
+// Events with a heal signature since `start`: PostHog's count for its error
+// tracking issue, or the signature's count in Cloud Logging.
+const eventsSince = async (
+  signature: NonNullable<ReturnType<typeof parseSignature>>,
+  start: Date
+) => {
+  if (start >= now) {
+    return 0;
+  }
+  if (signature.posthogIssue !== undefined) {
+    if (posthog === undefined) {
+      throw new Error(
+        "PostHog isn't configured, so a browser fix can't be verified"
+      );
+    }
+    const rows = await posthog.rows(
+      issueEventsQuery(signature.posthogIssue, start)
+    );
+    return scalarOf(rows) ?? 0;
+  }
+  const { entries } = await google.entries(
+    `${errorFilter} AND jsonPayload.path="${signature.path}"`,
+    { end: now, start }
+  );
+  return (
+    groupErrors(entries).find(
+      (g) => g.signature.fingerprint === signature.fingerprint
+    )?.count ?? 0
+  );
+};
+
+// Flow 1, after the merge: production must stay clean of the signature.
+const verifyOne = async (issue: Issue) => {
+  const signature = parseSignature(issue.description);
+  const mergedAt = await mergedAtOf(issue.iid);
   if (signature === undefined || mergedAt === undefined) {
     return "skip: no signature or no merged MR";
   }
-  const start = new Date(mergedAt + DEPLOY_GRACE_MS);
-  const { entries } =
-    start < now
-      ? await google.entries(
-          `${errorFilter} AND jsonPayload.path="${signature.path}"`,
-          { end: now, start }
-        )
-      : { entries: [] };
-  const events =
-    groupErrors(entries).find(
-      (g) => g.signature.fingerprint === signature.fingerprint
-    )?.count ?? 0;
+  const events = await eventsSince(
+    signature,
+    new Date(mergedAt + DEPLOY_GRACE_MS)
+  );
   const result = verdict({
     eventsSinceDeploy: events,
     mergedAt: new Date(mergedAt),
@@ -700,7 +763,98 @@ const statusPage = async () => {
   return `${health}, ${rows.length} incident(s) in 30 days`;
 };
 
-const phases = { heal, intake, shepherd, statusPage, verifyHeals, vulnFixes };
+// The PostHog loop, Plan: KPI alerts firing in PostHog start the scout flow
+// early, at most once a day; the note on the snapshot issue is the record.
+const signals = async () => {
+  if (posthog === undefined) {
+    return "PostHog isn't configured";
+  }
+  const firing = firingKpis(await posthog.alerts());
+  if (firing.length === 0) {
+    return "no KPI alert firing";
+  }
+  const [snapshot] = await gitlab.issues({
+    labels: "kpi-snapshot",
+    state: "opened",
+  });
+  if (snapshot === undefined) {
+    return `firing: ${firing.join(", ")}; waits for the first scheduled scout`;
+  }
+  const notes = await gitlab.issueNotes(snapshot.iid);
+  const last = notes.find((n) => n.body.includes(marker("scout-started")));
+  if (!scoutDue(last ? new Date(last.created_at) : undefined, now)) {
+    return `firing: ${firing.join(", ")}; the scout already ran early today`;
+  }
+  const pipeline = await gitlab.runPipeline("main", { SCOUT: "1" });
+  await gitlab.noteOnIssue(
+    snapshot.iid,
+    `PostHog KPI alerts firing: ${firing.map((id) => `\`${id}\``).join(", ")}. Started the scout early: ${pipeline.web_url}\n\n${marker("scout-started")}`
+  );
+  return `firing: ${firing.join(", ")}; started the scout ${pipeline.web_url}`;
+};
+
+// The PostHog loop, Monitor: a kpi-scout change that merged is verified when
+// its KPI's alert stops firing, and marked missed if it still fires a week on.
+const verifyKpis = async () => {
+  if (posthog === undefined) {
+    return "PostHog isn't configured";
+  }
+  const [alerts, closed] = await Promise.all([
+    posthog.alerts(),
+    gitlab.issues({
+      labels: KPI_SCOUT_LABEL,
+      state: "closed",
+      updated_after: new Date(now.getTime() - 14 * DAY_MS).toISOString(),
+    }),
+  ]);
+  const pending = closed.filter(
+    (i) =>
+      !i.labels.includes(KPI_VERIFIED_LABEL) &&
+      !i.labels.includes(KPI_MISSED_LABEL)
+  );
+  const results = await Promise.all(
+    pending.map(async (issue) => {
+      const kpi = kpiOfTitle(issue.title);
+      const alert = alerts.find((a) => a.name === `kpi:${kpi}`);
+      const mergedAt = await mergedAtOf(issue.iid);
+      if (alert === undefined || mergedAt === undefined) {
+        return [issue.iid, "skip: no PostHog KPI alert or no merged MR"];
+      }
+      const result = kpiVerdict({ alert, mergedAt: new Date(mergedAt), now });
+      if (result === "wait") {
+        return [issue.iid, `waits: ${alert.state}`];
+      }
+      const insight = alert.insight?.short_id;
+      const link =
+        insight === undefined
+          ? ""
+          : ` ([insight](${posthog.link(`insights/${insight}`)}))`;
+      await gitlab.noteOnIssue(
+        issue.iid,
+        result === "verified"
+          ? `Verified in PostHog: \`${kpi}\` meets its target again; its alert stopped firing after the change merged${link}.`
+          : `PostHog still shows \`${kpi}\` missing its target a week after the change merged${link}. @${me.username} please decide what's next.`
+      );
+      await gitlab.updateIssue(issue.iid, {
+        add_labels:
+          result === "verified" ? KPI_VERIFIED_LABEL : KPI_MISSED_LABEL,
+      });
+      return [issue.iid, result];
+    })
+  );
+  return Object.fromEntries(results);
+};
+
+const phases = {
+  heal,
+  intake,
+  shepherd,
+  signals,
+  statusPage,
+  verifyHeals,
+  verifyKpis,
+  vulnFixes,
+};
 const results = await Promise.allSettled(
   Object.values(phases).map(async (phase) => await phase())
 );

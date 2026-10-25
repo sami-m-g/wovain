@@ -2,20 +2,23 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 import { opsContext } from "./env.ts";
 import { kpiReport, loadKpis, rank } from "./kpis.ts";
-import type { Kpi } from "./kpis.ts";
+import type { CloudSource, Kpi } from "./kpis.ts";
+import { scalarOf, tableReport, withWindow } from "./posthog.ts";
 import { inspectPages } from "./ui.ts";
 import type { PageReading } from "./ui.ts";
 
 // scout:collect (.gitlab/ci/scout.yml), daily on the "wovain scout"
 // schedule: measures every KPI in .gitlab/duo/kpis.yml (Cloud Monitoring,
-// Cloud Logging, and the live site in headless Chromium), ranks the gaps, and
-// writes the snapshot to the open "kpi-snapshot" issue, where the scout flow
-// reads it. Numbers and our own pages' accessibility trees only: no log text.
+// Cloud Logging, PostHog product analytics when its keys are set, and the
+// live site in headless Chromium), ranks the gaps, and writes the snapshot,
+// with PostHog's context tables and KPI alerts, to the open "kpi-snapshot"
+// issue, where the scout flow reads it. Numbers, page paths and our own pages' accessibility trees
+// only: no log text.
 
 const SNAPSHOT_LABEL = "kpi-snapshot";
 const OUT = "scout";
 
-const { gitlab, google } = opsContext();
+const { gitlab, google, posthog } = opsContext();
 // The live site: SITE_URL in CI, production (wovain.com) by default.
 const site = process.env["SITE_URL"] ?? "https://wovain.com";
 const config = await loadKpis();
@@ -41,10 +44,12 @@ const count = async (filter: string) => {
   return { capped: found.capped, n: found.entries.length };
 };
 
-const measure = async (
-  kpi: Kpi
-): Promise<{ value: number | undefined; approximate: boolean }> => {
-  const { source } = kpi;
+interface Measured {
+  value: number | undefined;
+  approximate: boolean;
+}
+
+const measureCloud = async (source: CloudSource): Promise<Measured> => {
   if (source.kind === "metric") {
     const value = await google.metric(
       { ...source, filter: `${source.filter} AND ${config.service.metrics}` },
@@ -52,15 +57,31 @@ const measure = async (
     );
     return { approximate: false, value: value * source.scale };
   }
-  if (source.kind === "log-ratio") {
-    const [num, den] = await Promise.all([
-      count(source.numerator),
-      count(source.denominator),
-    ]);
-    return {
-      approximate: num.capped || den.capped,
-      value: den.n === 0 ? undefined : num.n / den.n,
-    };
+  const [num, den] = await Promise.all([
+    count(source.numerator),
+    count(source.denominator),
+  ]);
+  return {
+    approximate: num.capped || den.capped,
+    value: den.n === 0 ? undefined : num.n / den.n,
+  };
+};
+
+const measure = async (kpi: Kpi): Promise<Measured> => {
+  const { source } = kpi;
+  if (source.kind === "metric" || source.kind === "log-ratio") {
+    return await measureCloud(source);
+  }
+  if (source.kind === "posthog") {
+    if (posthog !== undefined) {
+      const rows = await posthog.rows(
+        withWindow(source.query, config.windowDays)
+      );
+      return { approximate: false, value: scalarOf(rows) };
+    }
+    return source.fallback === undefined
+      ? { approximate: false, value: undefined }
+      : await measureCloud(source.fallback);
   }
   const reading = readings.find((r) => r.page === source.page);
   return { approximate: false, value: reading?.[source.measure] };
@@ -70,9 +91,33 @@ const measured = await Promise.all(
   config.kpis.map(async (kpi) => ({ kpi, ...(await measure(kpi)) }))
 );
 const ranked = rank(measured);
+// PostHog's context tables (kpis.yml) and KPI alerts (infra/posthog).
+const alerts = posthog === undefined ? [] : await posthog.alerts();
+const context =
+  posthog === undefined
+    ? []
+    : [
+        ...(await Promise.all(
+          (config.posthog?.context ?? []).map(async ({ query, title }) =>
+            tableReport(
+              `${title}, last ${config.windowDays} days`,
+              await posthog.table(withWindow(query, config.windowDays))
+            )
+          )
+        )),
+        tableReport("KPI alerts", {
+          columns: ["Alert", "State", "Last checked"],
+          results: alerts.flatMap((a) =>
+            a.name?.startsWith("kpi:") === true
+              ? [[a.name, a.state, a.last_checked_at ?? "never"]]
+              : []
+          ),
+        }),
+      ].flatMap((section) => [section, ""]);
 const report = [
   kpiReport(ranked, now, config.windowDays),
   "",
+  ...context,
   ...readings.flatMap((r) => [
     `<details><summary>Accessibility tree of ${r.page} (mobile viewport)</summary>`,
     "",

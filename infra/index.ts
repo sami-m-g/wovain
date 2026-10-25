@@ -5,7 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import { statusDomainVerification } from "./duo.ts";
+import { posthogTrigger, statusDomainVerification } from "./duo.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
 import { ResendDomain, ResendVerification } from "./resend.ts";
@@ -279,6 +279,20 @@ const sharedEnvs = {
   QLOO_API_URL: "https://hackathon.api.qloo.com",
 };
 
+// PostHog product analytics (apps/web/.env.schema). The public project token
+// (`pulumi config set posthogKey phc_...`) overrides the schema's default at
+// runtime and, through the NEXT_PUBLIC_POSTHOG_KEY CI variable below, in the
+// image build; the scout reads PostHog with a personal API key
+// (`pulumi config set --secret posthog-personal-api-key phx_...`) and the
+// project id (`pulumi config set posthogProjectId <id>`). Each is optional.
+const posthogKey = config.get("posthogKey");
+const posthogPersonalApiKey = config.getSecret("posthog-personal-api-key");
+const posthogProjectId = config.get("posthogProjectId");
+const posthogEnv =
+  posthogKey === undefined
+    ? []
+    : [{ name: "NEXT_PUBLIC_POSTHOG_KEY", value: posthogKey }];
+
 // Pulumi owns the service's settings; CI rolls out each image with `gcloud
 // run deploy --image`, so the image is ignored here. `pulumi up --refresh`
 // (CI's infra job) reads the live image first, so a settings change keeps it.
@@ -309,6 +323,7 @@ const service = new gcp.cloudrunv2.Service(
               value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
             },
             { name: "MCP_URL", value: mcpUrl },
+            ...posthogEnv,
             { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
             { name: "WOVAIN_BUCKET", value: media.name },
             { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
@@ -442,6 +457,8 @@ const dev = devEnvironment({
   connectionsKey,
   envs: [
     ...Object.entries(sharedEnvs).map(([name, value]) => ({ name, value })),
+    // The same PostHog project; events say "development" by host.
+    ...posthogEnv,
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
@@ -678,6 +695,48 @@ ciVariables({
     protected: true,
     value: config.requireSecret("nebius-api-key"),
   },
+  // The web image's public PostHog token; merge request image checks read it
+  // too, so it isn't protected.
+  ...(posthogKey === undefined
+    ? {}
+    : {
+        NEXT_PUBLIC_POSTHOG_KEY: {
+          created: true,
+          protected: false,
+          value: posthogKey,
+        },
+      }),
+  // The scout's PostHog query API access (apps/ops/src/posthog.ts).
+  ...(posthogPersonalApiKey === undefined
+    ? {}
+    : {
+        POSTHOG_PERSONAL_API_KEY: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: posthogPersonalApiKey,
+        },
+      }),
+  ...(posthogProjectId === undefined
+    ? {}
+    : {
+        POSTHOG_PROJECT_ID: {
+          created: true,
+          protected: true,
+          value: posthogProjectId,
+        },
+      }),
+  // PostHog's destinations start the ops pipeline with it (infra/posthog).
+  ...(posthogTrigger === undefined
+    ? {}
+    : {
+        POSTHOG_TRIGGER_TOKEN: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: posthogTrigger.token,
+        },
+      }),
   RENOVATE_TOKEN: {
     masked: true,
     protected: true,

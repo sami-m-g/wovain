@@ -1,5 +1,6 @@
 # Flows 1 and 3 (docs/flows.md), every 10 minutes on the "wovain ops"
-# schedule, or now with Run pipeline and OPS=1: file new production errors
+# schedule, or now with Run pipeline and OPS=1 (or a PostHog destination, via
+# the pipeline trigger infra/duo.ts creates): file new production errors
 # for the heal flow, verify merged heal fixes in production, hand agent::task
 # issues to the Developer flow, and move Duo's merge requests through Duo
 # Code Review to auto-merge, hand new High/Critical SAST findings to Duo
@@ -11,7 +12,7 @@ ops:
   resource_group: ops
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
-    - if: $CI_PIPELINE_SOURCE == "web" && $OPS
+    - if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "trigger") && $OPS
   script:
     - node apps/ops/src/ops.ts
   artifacts:
@@ -31,7 +32,7 @@ pages:
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
       when: always
-    - if: $CI_PIPELINE_SOURCE == "web" && $OPS
+    - if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "trigger") && $OPS
       when: always
   variables:
     GIT_STRATEGY: none

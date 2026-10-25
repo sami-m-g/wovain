@@ -153,7 +153,10 @@ const VULNERABILITIES =
 const NAMED_IDENTIFIERS = new Set(["cwe", "semgrep_id"]);
 
 type Method = "GET" | "POST" | "PUT";
-type Query = Record<string, string | number | boolean | number[]>;
+type Query = Record<
+  string,
+  string | number | boolean | number[] | { key: string; value: string }[]
+>;
 const MAX_PAGES = 20;
 
 export const createGitLab = (env: {
@@ -379,6 +382,15 @@ export const createGitLab = (env: {
         "GET",
         `merge_requests/${mr}/reviewers`
       ),
+    // A new pipeline on `ref` with these CI variables.
+    runPipeline: async (ref: string, variables: Record<string, string>) =>
+      await inProject(z.object({ web_url: z.string() }), "POST", "pipeline", {
+        ref,
+        variables: Object.entries(variables).map(([key, value]) => ({
+          key,
+          value,
+        })),
+      }),
     // Duo sessions in the project, newest first: their flow and start time.
     sessions: async () => {
       const body = sessionsSchema.parse(

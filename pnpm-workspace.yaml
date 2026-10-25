@@ -7,6 +7,7 @@ allowBuilds:
   lefthook: true
   "@parcel/watcher": false
   "@swc/core": false
+  core-js: false
 overrides:
   "@next/env": npm:@varlock/nextjs-integration@1.2.5
 catalog:
@@ -53,3 +54,8 @@ catalog:
   "@fal-ai/client": 1.10.1
   "@tavily/core": 0.7.14
   openai: 7.32.0
+  "@posthog/ai": ^8.16.3
+  posthog-js: ^1.438.21
+  posthog-node: ^5.57.2
+minimumReleaseAgeExclude:
+  - posthog-node@5.57.2

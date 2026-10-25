@@ -11,12 +11,35 @@ const withNextIntl = createNextIntlPlugin({
   requestConfig: "./src/i18n/request.ts",
 });
 
+// PostHog through our own domain (posthog.com/docs/advanced/proxy/nextjs),
+// so ad blockers don't drop it: /ingest goes to the ingestion host, and its
+// static and array assets to the matching assets host.
+const posthogHost =
+  process.env["NEXT_PUBLIC_POSTHOG_HOST"] ?? "https://us.i.posthog.com";
+const posthogAssets = posthogHost.replace(
+  ".i.posthog.com",
+  "-assets.i.posthog.com"
+);
+
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
   output: "standalone",
   reactCompiler: true,
+  rewrites: () => [
+    {
+      destination: `${posthogAssets}/static/:path*`,
+      source: "/ingest/static/:path*",
+    },
+    {
+      destination: `${posthogAssets}/array/:path*`,
+      source: "/ingest/array/:path*",
+    },
+    { destination: `${posthogHost}/:path*`, source: "/ingest/:path*" },
+  ],
+  // PostHog's API paths end in a slash; a redirect would drop the request.
+  skipTrailingSlashRedirect: true,
   typedRoutes: true,
 };
 

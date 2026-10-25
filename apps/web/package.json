@@ -37,6 +37,8 @@
     "next": "catalog:",
     "next-intl": "catalog:",
     "next-themes": "catalog:",
+    "posthog-js": "catalog:",
+    "posthog-node": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",

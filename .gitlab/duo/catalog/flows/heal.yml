@@ -67,6 +67,9 @@ definition:
              "Signature" row).
           2. Find the code path: the route maps to a file under
              apps/web/src/app (Next.js App Router) and the helpers it calls.
+             The method BROWSER means a browser exception that PostHog error
+             tracking grouped: the route is the page, and the code path is
+             its components and the client helpers they call.
           3. Reproduce first. Add a vitest test in the package's test/
              directory (apps/web/test/ for the web app) whose name contains
              exactly "heal F" (for example describe("heal F", ...)). It must
