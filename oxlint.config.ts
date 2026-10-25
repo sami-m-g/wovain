@@ -31,7 +31,11 @@ export default defineConfig({
     // Pulumi declares a resource by constructing it; the object isn't needed.
     {
       files: ["infra/**"],
-      rules: { "max-lines": "off", "no-new": "off" },
+      rules: {
+        "max-classes-per-file": "off",
+        "max-lines": "off",
+        "no-new": "off",
+      },
     },
   ],
 });

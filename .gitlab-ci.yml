@@ -1,10 +1,12 @@
 # wovain's pipeline, one stage per DevSecOps step it covers:
 #   verify   lint and format, types (apps, packages and infra/), dead code,
 #            tests and the turbo build
-#   test     GitLab SAST, Secret Detection and Dependency Scanning (secure.yml)
-#   deploy   main only: pulumi up (infra/), build and push the web image,
-#            migrate Cloud SQL, roll the image out to Cloud Run
-#   monitor  smoke-test the live site
+#   test     GitLab SAST, IaC scanning, Secret Detection and Dependency
+#            Scanning (secure.yml)
+#   deploy   main only: pulumi up (infra/); package the web and docs images
+#            into the GitLab and Google registries, then Container Scanning;
+#            migrate Cloud SQL; roll both images out to Cloud Run
+#   monitor  smoke-test wovain.com and docs.wovain.com
 #   Duo      three flows run the post-code lifecycle (docs/flows.md):
 #            self-healing (ops job, heal flow, heal:verify), KPI scout
 #            (scout:collect, scout flow) and issue to completion (ops job,
@@ -15,11 +17,11 @@
 # CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GCP_PROJECT_ID, GCP_REGION,
 # GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
 # GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, GCP_IMAGE_REPOSITORY,
-# GCP_SQL_INSTANCE and SITE_URL. Pulumi sets them all (infra/index.ts); don't
-# edit them in the UI. The ops jobs also read TRUSTED_USERS (who may hand
-# issues to Duo) and, when GitLab names the Duo service accounts differently
-# from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT, DUO_HEAL_ACCOUNT and
-# DUO_REVIEW_ACCOUNT.
+# GCP_SQL_INSTANCE, SITE_URL and DOCS_SITE_URL. Pulumi sets them all
+# (infra/index.ts); don't edit them in the UI. The ops jobs also read
+# TRUSTED_USERS (who may hand issues to Duo) and, when GitLab names the Duo
+# service accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT,
+# DUO_HEAL_ACCOUNT and DUO_REVIEW_ACCOUNT.
 
 workflow:
   rules:
@@ -33,8 +35,10 @@ workflow:
 # (heal.yml), the ops job and SCI (ops.yml), and the KPI scout (scout.yml).
 include:
   - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
   # Custom Duo flows and agents: validated on change, synced to the AI
   # Catalog on main.
   - component: $CI_SERVER_FQDN/components/ai-catalog/catalog-sync@0.0.32

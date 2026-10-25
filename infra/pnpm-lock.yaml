@@ -11,6 +11,9 @@ importers:
       '@pulumi/gcp':
         specifier: 9.37.1
         version: 9.37.1(typescript@7.0.2)
+      '@pulumi/github':
+        specifier: 6.15.0
+        version: 6.15.0(typescript@7.0.2)
       '@pulumi/gitlab':
         specifier: 10.4.0
         version: 10.4.0(typescript@7.0.2)
@@ -269,6 +272,9 @@ packages:
 
   '@pulumi/gcp@9.37.1':
     resolution: {integrity: sha512-KDUykcf1CYwn4/QQ+/TcfU2qhKPhYyENtPcQq6+5x4pIc3FyycuhfMXDybERmONQMiqo3tG5LNkMlgtSKJHo9A==}
+
+  '@pulumi/github@6.15.0':
+    resolution: {integrity: sha512-U8ZxPQQcOrcTn8y8EZsWmXzMtbw0JnwWCVGmqxBZ/i2SpUlEGMYT9B+EFC/qTALZXkDf7cMiq6fZ3Gy1G23nyQ==}
 
   '@pulumi/gitlab@10.4.0':
     resolution: {integrity: sha512-Dzo+ASfJtAuv3kWkTUJy54fYY/dvJo+0vitv4HJRwMYyDmb//5lug1nBnStgRcqzu15TxAYoFwS60bXDd9UMDA==}
@@ -1366,6 +1372,14 @@ snapshots:
     dependencies:
       '@pulumi/pulumi': 3.267.0(typescript@7.0.2)
       '@types/express': 4.17.25
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+      - typescript
+
+  '@pulumi/github@6.15.0(typescript@7.0.2)':
+    dependencies:
+      '@pulumi/pulumi': 3.267.0(typescript@7.0.2)
     transitivePeerDependencies:
       - supports-color
       - ts-node

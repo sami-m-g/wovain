@@ -102,6 +102,11 @@ config:
   wovain:o11yGroupId: "144066465"
   wovain:gitlab-ci-token:
     secure: v1:0WdO0e7fRKNIDdr1:xt12NG6hpBEypj9HeDrMYngIgBnpyUKVxBVbfvdRN5zdV8144g4XHjHB5SFvB7GGbRywADx8S+sAzYnekl6ZjjuIxjY9YM1nyOezashH
+  github:owner: sami-m-g
+  github:token:
+    secure: v1:kfWUuhyMSjRr+uV5:2WLDTnEniORUTKMBTAj8e/4ygwTqshwhdaCF6CTPtj5qlz60+n6nYZQA+Vq6BkselOmvcl0E09ePrNs8yXp8/wBS0gB3fdI/gyt8gFNpLnvMUiu/j8Y2Q5J2HEKLN0Cw105ymPQzV8FIv57eWA==
+  wovain:workos-api-key:
+    secure: v1:GkJevW0f0siZ/dXe:Rb9jTdS6z1EOfGI99TAwMR3th9vBOBw/dj5symnyMlGvFBv51sIj6dcl/XQZHh85ViDFhHDOzMG/l/H2SnQQFhag6FIGlEgHjUiFUk+0ZF6ai7KIANvxbNRZdQsWx2xQQCdA
   gitlab:token:
     secure: v1:5Ll6LrFV6DNaTO5F:fJ3FqeKHKOMTvj9tAWi5l4GpJMGuc63TWzwnvwpluhxcLwd9huB6gVExypQkwTWlXDT5lsRqT4Zf8WQyYaOTt3KWt4fmb6zMcfW13d1o
   wovain:renovate-token:

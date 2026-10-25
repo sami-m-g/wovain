@@ -90,25 +90,6 @@ new gitlab.PipelineSchedule(
   adopt("4502115")
 );
 
-// The self-healing loop (.gitlab/ci/loop.yml), hourly. The jobs pick their
-// schedule by its description, since our role can't set schedule variables.
-// The weekly data analysis and market scout (.gitlab/ci/loop.yml), Mondays.
-new gitlab.PipelineSchedule("weekly", {
-  active: true,
-  cron: "30 7 * * 1",
-  cronTimezone: "UTC",
-  description: "wovain weekly",
-  project: projectId,
-  ref: "refs/heads/main",
-});
-new gitlab.PipelineSchedule("loop", {
-  active: true,
-  cron: "17 * * * *",
-  cronTimezone: "UTC",
-  description: "wovain loop",
-  project: projectId,
-  ref: "refs/heads/main",
-});
 // Issue labels: status drives the Workflow board, agent says who works it,
 // scout, red-main and digest are the self-healing loop's (apps/ops), and verified marks
 // a scout issue whose fix production confirmed.

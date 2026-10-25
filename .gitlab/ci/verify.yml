@@ -34,6 +34,7 @@ build:
     BETTER_AUTH_URL: http://localhost:3001
     DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
     NODE_ENV: production
+    TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
   script:
     - pnpm run build
 

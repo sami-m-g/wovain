@@ -1,9 +1,38 @@
-# GitLab Secure: SAST (Semgrep), Secret Detection and Dependency Scanning
-# (reads pnpm-lock.yaml), from the templates in .gitlab-ci.yml. Findings show
-# in the merge request widget and the project's vulnerability report. The
-# scanners don't use anything verify makes, so they start right away.
+# GitLab Secure, from the templates in .gitlab-ci.yml. Findings show in the
+# merge request widget and the project's vulnerability report.
+#   SAST (Semgrep)        application code
+#   IaC scanning (KICS)   infra/, the Dockerfiles, docker-compose.yml and CI
+#   Secret Detection      the whole repository
+#   Dependency Scanning   pnpm-lock.yaml
+#   Container Scanning    the images deploy.yml pushes, on main
+# The source scanners don't use anything verify makes, so they start right
+# away.
 semgrep-sast:
+  needs: []
+
+kics-iac-sast:
   needs: []
 
 secret_detection:
   needs: []
+
+# Scans the web image this pipeline pushed to the GitLab container registry,
+# so it runs after the image job, on main only.
+container_scanning:
+  stage: deploy
+  needs: [image:web]
+  variables:
+    CS_IMAGE: $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHA
+    CS_DOCKERFILE_PATH: apps/web/Dockerfile
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# The same scanner on the docs image.
+container_scanning:docs:
+  extends: container_scanning
+  needs: [image:docs]
+  variables:
+    CS_IMAGE: $CI_REGISTRY_IMAGE/docs:$CI_COMMIT_SHA
+    CS_DOCKERFILE_PATH: apps/fumadocs/Dockerfile

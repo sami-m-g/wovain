@@ -1,12 +1,16 @@
-import "./duo.ts";
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
+import { configureDomain } from "./domains.ts";
+import type { ShopRecord } from "./domains.ts";
+import { statusDomainVerification } from "./duo.ts";
 import { ciVariables, environments } from "./gitlab.ts";
+import { retainLegacy } from "./legacy.ts";
+import { ResendDomain, ResendVerification } from "./resend.ts";
 
-// wovain's Google Cloud project: Cloud Run serves apps/web (the image from
-// apps/web/Dockerfile), Cloud SQL holds its Postgres database, Secret Manager
+// wovain's Google Cloud project: Cloud Run serves apps/web at wovain.com and
+// apps/fumadocs at docs.wovain.com (each from its Dockerfile), Cloud SQL holds its Postgres database, Secret Manager
 // holds the keys, and GitLab CI builds and deploys through Workload Identity
 // Federation, with no stored Google key.
 const config = new pulumi.Config();
@@ -14,6 +18,7 @@ const gcpConfig = new pulumi.Config("gcp");
 const project = gcpConfig.require("project");
 const region = gcpConfig.require("region");
 const gitlabProject = config.require("gitlabProject");
+const gitlabProjectId = config.require("gitlabProjectId");
 
 // The billing account is read from the project, so its ID stays out of git.
 const { billingAccount, number: projectNumber } =
@@ -25,6 +30,7 @@ const apis = [
   "cloudbilling",
   "clouderrorreporting",
   "cloudkms",
+  "dns",
   "firebase",
   "iam",
   "iamcredentials",
@@ -32,6 +38,7 @@ const apis = [
   "monitoring",
   "run",
   "secretmanager",
+  "siteverification",
   "sqladmin",
   "storage",
   "sts",
@@ -43,6 +50,41 @@ const apis = [
     })
 );
 const afterApis = { dependsOn: apis };
+
+// The CI `infra` job runs `pulumi up` on main as this account: it manages the
+// resources above, their IAM, the state bucket and the budget.
+const infra = new gcp.serviceaccount.Account(
+  "gitlab-infra",
+  {
+    accountId: "gitlab-infra",
+    displayName: "GitLab CI infrastructure (Pulumi)",
+  },
+  afterApis
+);
+// Resources that need one of these roles (Cloud Run's invoker setting,
+// repository IAM, Cloud SQL) wait for them: CI's first run grants them to
+// the very account it runs as.
+const infraRoles = [
+  "roles/artifactregistry.admin",
+  "roles/cloudkms.admin",
+  "roles/cloudsql.admin",
+  "roles/editor",
+  "roles/firebase.admin",
+  "roles/iam.serviceAccountAdmin",
+  "roles/iam.workloadIdentityPoolAdmin",
+  "roles/resourcemanager.projectIamAdmin",
+  "roles/run.admin",
+  "roles/secretmanager.admin",
+  "roles/serviceusage.serviceUsageAdmin",
+].map(
+  (role) =>
+    new gcp.projects.IAMMember(`infra-${role.split("/")[1]}`, {
+      member: infra.member,
+      project,
+      role,
+    })
+);
+const afterInfraRoles = { dependsOn: [...apis, ...infraRoles] };
 
 // Firebase was added to the project by hand at first; adopted, never removed.
 new gcp.firebase.Project(
@@ -63,8 +105,8 @@ const media = new gcp.storage.Bucket(
   afterApis
 );
 
-// Merchants' Fourthwall, fal and Meta grants are encrypted with this key, and
-// only the runner may use it. Key rings and keys can't be deleted in KMS.
+// main's key for merchants' grants; the app now seals tokens with
+// TOKEN_ENCRYPTION_KEY. Kept because KMS key rings and keys can't be deleted.
 const keyRing = new gcp.kms.KeyRing(
   "wovain",
   { location: region, name: "wovain" },
@@ -122,24 +164,42 @@ const dbUser = new gcp.sql.User("wovain", {
 });
 
 // Secrets the app reads, by Secret Manager id; the env variable is the id in
-// upper snake case. A secret gets a version only from its stack config value
-// (`pulumi config set --secret <id>` in infra/), and Cloud Run mounts only the
-// secrets that have one, since a revision won't start on an empty secret.
+// upper snake case. A secret gets a version from its stack config value
+// (`pulumi config set --secret <id>` in infra/) or, for the two below, a
+// generated one; Cloud Run mounts only the secrets that have a version, since
+// a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
 // wovain-allowed-emails were created by main; the others are new.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
-  "fourthwall-client-id",
-  "fourthwall-client-secret",
+  "gitlab-feature-flags-instance-id",
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
   "qloo-api-key",
+  "resend-api-key",
   "tavily-api-key",
+  "token-encryption-key",
   "wovain-allowed-emails",
 ] as const;
 const toEnvName = (id: string) => id.toUpperCase().replaceAll("-", "_");
+
+// Values Pulumi makes itself unless the stack config sets one: Better Auth's
+// secret, and TOKEN_ENCRYPTION_KEY's 32 random bytes, base64 encoded.
+const generated = new Map<string, pulumi.Output<string>>([
+  [
+    "better-auth-secret",
+    new random.RandomPassword("better-auth-secret", {
+      length: 48,
+      special: false,
+    }).result,
+  ],
+  [
+    "token-encryption-key",
+    new random.RandomBytes("token-encryption-key", { length: 32 }).base64,
+  ],
+]);
 
 const secrets = new Map<string, gcp.secretmanager.Secret>();
 const populated = new Map<string, pulumi.Resource>();
@@ -150,7 +210,7 @@ for (const id of secretIds) {
     afterApis
   );
   secrets.set(id, secret);
-  const value = config.getSecret(id);
+  const value = config.getSecret(id) ?? generated.get(id);
   if (value !== undefined) {
     populated.set(
       id,
@@ -228,10 +288,13 @@ const images = new gcp.artifactregistry.Repository(
 );
 export const imageRepository = pulumi.interpolate`${region}-docker.pkg.dev/${project}/${images.repositoryId}`;
 
-// Cloud Run's deterministic URL, known before the service exists, so the app
-// can be told its own address (BETTER_AUTH_URL) without a cycle.
+// The public addresses (domains.ts maps them to the services).
+const domain = "wovain.com";
+export const siteUrl = `https://${domain}`;
+export const docsUrl = `https://docs.${domain}`;
+// ChatGPT's connector URL; access tokens are bound to it (packages/auth).
+export const mcpUrl = `https://mcp.${domain}/api/mcp`;
 const serviceName = "wovain-web";
-export const siteUrl = `https://${serviceName}-${projectNumber}.${region}.run.app`;
 
 // Pulumi owns the service's settings; CI rolls out each image with `gcloud
 // run deploy --image`, so the image is ignored here. `pulumi up --refresh`
@@ -250,6 +313,19 @@ const service = new gcp.cloudrunv2.Service(
         {
           envs: [
             { name: "BETTER_AUTH_URL", value: siteUrl },
+            {
+              name: "NEBIUS_BASE_URL",
+              value: "https://api.tokenfactory.nebius.com/v1/",
+            },
+            {
+              name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT",
+              value: "production",
+            },
+            {
+              name: "GITLAB_FEATURE_FLAGS_URL",
+              value: `https://gitlab.com/api/v4/feature_flags/unleash/${gitlabProjectId}`,
+            },
+            { name: "MCP_URL", value: mcpUrl },
             { name: "QLOO_API_URL", value: "https://hackathon.api.qloo.com" },
             { name: "WOVAIN_BUCKET", value: media.name },
             { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
@@ -281,11 +357,138 @@ const service = new gcp.cloudrunv2.Service(
     },
   },
   {
-    dependsOn: [...populated.values()],
+    dependsOn: [...populated.values(), ...infraRoles],
     ignoreChanges: ["client", "clientVersion", "template.containers[0].image"],
   }
 );
 export const serviceUri = service.uri;
+
+// apps/fumadocs: the docs site and its OpenRouter chat. Without the
+// openrouter-api-key secret (new, empty until set) the chat answers 503.
+// SITE_URL is @public in its schema, so the image is built with it too
+// (.gitlab/ci/deploy.yml).
+const docsRunner = new gcp.serviceaccount.Account(
+  "docs-runner",
+  { accountId: "wovain-docs", displayName: "wovain docs (Cloud Run)" },
+  afterApis
+);
+new gcp.projects.IAMMember("docs-runner-logWriter", {
+  member: docsRunner.member,
+  project,
+  role: "roles/logging.logWriter",
+});
+const openrouterKey = new gcp.secretmanager.Secret(
+  "openrouter-api-key",
+  { replication: { auto: {} }, secretId: "openrouter-api-key" },
+  afterApis
+);
+new gcp.secretmanager.SecretIamMember("docs-runner-openrouter-api-key", {
+  member: docsRunner.member,
+  role: "roles/secretmanager.secretAccessor",
+  secretId: openrouterKey.id,
+});
+const openrouterValue = config.getSecret("openrouter-api-key");
+const openrouterVersion =
+  openrouterValue === undefined
+    ? undefined
+    : new gcp.secretmanager.SecretVersion("openrouter-api-key", {
+        secret: openrouterKey.id,
+        secretData: openrouterValue,
+      });
+const openrouterEnv =
+  openrouterVersion === undefined
+    ? []
+    : [
+        {
+          name: "OPENROUTER_API_KEY",
+          valueSource: {
+            secretKeyRef: { secret: "openrouter-api-key", version: "latest" },
+          },
+        },
+      ];
+const docsService = new gcp.cloudrunv2.Service(
+  "docs",
+  {
+    deletionProtection: false,
+    ingress: "INGRESS_TRAFFIC_ALL",
+    invokerIamDisabled: true,
+    location: region,
+    name: "wovain-docs",
+    template: {
+      containers: [
+        {
+          envs: [{ name: "SITE_URL", value: docsUrl }, ...openrouterEnv],
+          // The image's own port (apps/fumadocs/Dockerfile).
+          image: "us-docker.pkg.dev/cloudrun/container/hello",
+          ports: { containerPort: 4000 },
+          resources: {
+            cpuIdle: true,
+            limits: { cpu: "1", memory: "512Mi" },
+          },
+        },
+      ],
+      scaling: { maxInstanceCount: 2, minInstanceCount: 0 },
+      serviceAccount: docsRunner.email,
+    },
+  },
+  {
+    dependsOn: [
+      ...infraRoles,
+      ...(openrouterVersion === undefined ? [] : [openrouterVersion]),
+    ],
+    ignoreChanges: ["client", "clientVersion", "template.containers[0].image"],
+  }
+);
+export const docsServiceUri = docsService.uri;
+
+// Resend sends wovain.com's mail. With the `resend-api-key` stack secret
+// set, Pulumi registers the domain with Resend and writes its records.
+const resendApiKey = config.getSecret("resend-api-key");
+const resendDomain =
+  resendApiKey === undefined
+    ? undefined
+    : new ResendDomain("resend", {
+        apiKey: resendApiKey,
+        name: domain,
+        region: config.get("resendRegion") ?? "us-east-1",
+      });
+
+// wovain.com end to end (domains.ts). The few values no API hands out are
+// plain stack config keys: `pulumi config set <key> <value>` in infra/.
+const site = configureDomain({
+  after: [...apis, ...infraRoles],
+  apex: domain,
+  caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
+    "pki.goog",
+    "letsencrypt.org",
+  ],
+  dmarcRua: config.get("dmarcRua"),
+  metaDomainVerification: config.get("metaDomainVerification"),
+  project,
+  region,
+  resendRecords: resendDomain?.records,
+  routes: [
+    { host: domain, service: service.name },
+    // apps/web redirects www to the apex (src/proxy.ts).
+    { host: `www.${domain}`, service: service.name },
+    // The MCP endpoint's own host (mcpUrl): same service, its own resource.
+    { host: `mcp.${domain}`, service: service.name },
+    { host: `docs.${domain}`, service: docsService.name },
+  ],
+  shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
+  statusDomainVerification,
+  statusPagesTarget:
+    config.get("statusPagesTarget") ?? "gitlab-ai-hackathon.gitlab.io.",
+  zone: "wovain-com",
+});
+export const domainMappings = site.mappings;
+if (resendDomain !== undefined && resendApiKey !== undefined) {
+  new ResendVerification(
+    "resend",
+    { apiKey: resendApiKey, domainId: resendDomain.id },
+    { dependsOn: site.resendRecordSets }
+  );
+}
 
 new gcp.kms.CryptoKeyIAMMember("runner-connections", {
   cryptoKeyId: connectionsKey.id,
@@ -316,6 +519,12 @@ const provider = new gcp.iam.WorkloadIdentityPoolProvider("gitlab", {
   workloadIdentityPoolProviderId: "gitlab",
 });
 
+new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
+  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.environment/infrastructure`,
+  role: "roles/iam.workloadIdentityUser",
+  serviceAccountId: infra.name,
+});
+
 // Builds and pushes the image, migrates the database and rolls out the
 // revision, from jobs in the production environment only.
 const deployer = new gcp.serviceaccount.Account(
@@ -339,12 +548,16 @@ for (const role of [
     role,
   });
 }
-new gcp.artifactregistry.RepositoryIamMember("deployer-images", {
-  location: images.location,
-  member: deployer.member,
-  repository: images.name,
-  role: "roles/artifactregistry.writer",
-});
+new gcp.artifactregistry.RepositoryIamMember(
+  "deployer-images",
+  {
+    location: images.location,
+    member: deployer.member,
+    repository: images.name,
+    role: "roles/artifactregistry.writer",
+  },
+  afterInfraRoles
+);
 // The migrate job reads DATABASE_URL to run drizzle-kit through the proxy.
 new gcp.secretmanager.SecretIamMember("deployer-database-url", {
   member: deployer.member,
@@ -356,40 +569,11 @@ new gcp.serviceaccount.IAMMember("deployer-acts-as-runner", {
   role: "roles/iam.serviceAccountUser",
   serviceAccountId: runner.name,
 });
-
-// The CI `infra` job runs `pulumi up` on main as this account: it manages the
-// resources above, their IAM, the state bucket and the budget.
-const infra = new gcp.serviceaccount.Account(
-  "gitlab-infra",
-  {
-    accountId: "gitlab-infra",
-    displayName: "GitLab CI infrastructure (Pulumi)",
-  },
-  afterApis
-);
-new gcp.serviceaccount.IAMMember("infra-from-gitlab", {
-  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool.name}/attribute.environment/infrastructure`,
-  role: "roles/iam.workloadIdentityUser",
-  serviceAccountId: infra.name,
+new gcp.serviceaccount.IAMMember("deployer-acts-as-docs-runner", {
+  member: deployer.member,
+  role: "roles/iam.serviceAccountUser",
+  serviceAccountId: docsRunner.name,
 });
-for (const role of [
-  "roles/cloudkms.admin",
-  "roles/cloudsql.admin",
-  "roles/editor",
-  "roles/firebase.admin",
-  "roles/iam.serviceAccountAdmin",
-  "roles/iam.workloadIdentityPoolAdmin",
-  "roles/resourcemanager.projectIamAdmin",
-  "roles/run.admin",
-  "roles/secretmanager.admin",
-  "roles/serviceusage.serviceUsageAdmin",
-]) {
-  new gcp.projects.IAMMember(`infra-${role.split("/")[1]}`, {
-    member: infra.member,
-    project,
-    role,
-  });
-}
 
 // The self-healing loop reads production's logs, errors and metrics as this
 // account, from the operations environment only. It can't read secrets or
@@ -450,6 +634,8 @@ new gcp.billing.AccountIamMember("infra-budgets", {
   role: "roles/billing.costsManager",
 });
 
+retainLegacy({ project, projectNumber, region });
+
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
 export const sqlConnectionName = sql.connectionName;
@@ -457,6 +643,7 @@ export const sqlConnectionName = sql.connectionName;
 // What the pipeline reads. The tokens are stack secrets
 // (`pulumi config set --secret <name>`); everything else comes from above.
 ciVariables({
+  DOCS_SITE_URL: { created: true, protected: true, value: docsUrl },
   GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
   GCP_IMAGE_REPOSITORY: {
     created: true,

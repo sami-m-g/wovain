@@ -1,10 +1,12 @@
-# main only, in order: infrastructure, the image, the database schema, the
-# rollout, then a smoke test. Every Google call goes through Workload
-# Identity Federation (templates.yml); no Google key is stored.
+# main only, in order: infrastructure, the images (package), the database
+# schema, the rollout, then a smoke test. Every Google call goes through
+# Workload Identity Federation (templates.yml); no Google key is stored.
+#   wovain.com       apps/web        Cloud Run wovain-web
+#   docs.wovain.com  apps/fumadocs   Cloud Run wovain-docs
 
 # `pulumi up` applies infra/ (state in gs://wovain-pulumi-state) as
-# gitlab-infra. --refresh first reads the live Cloud Run image, which CI owns
-# and Pulumi ignores, so a settings change never rolls the image back.
+# gitlab-infra. --refresh first reads the live Cloud Run images, which CI owns
+# and Pulumi ignores, so a settings change never rolls an image back.
 infra:production:
   extends: [.gcp-auth, .on-main]
   stage: deploy
@@ -22,11 +24,14 @@ infra:production:
     name: infrastructure
     deployment_tier: other
 
-# Builds apps/web/Dockerfile (turbo prune, Next.js standalone) with BuildKit
-# and pushes it to Artifact Registry as gitlab-deploy. Varlock validates env
-# while Next builds, so the build gets placeholders as a BuildKit secret that
-# never lands in a layer; Cloud Run supplies the real values at runtime.
-image:production:
+# Package: builds an app's Dockerfile (turbo prune, Next.js standalone) with
+# BuildKit and pushes it to the GitLab container registry, where Container
+# Scanning reads it (secure.yml), and to Artifact Registry, where Cloud Run
+# pulls it, as gitlab-deploy. Varlock validates env while Next builds, so the
+# build gets an env file as a BuildKit secret that never lands in a layer:
+# placeholders for the web app's secrets (Cloud Run supplies the real ones),
+# and the docs' public SITE_URL, which is compiled in.
+.image:
   extends: [.gcp-auth, .on-main]
   stage: deploy
   image: docker:28
@@ -37,23 +42,40 @@ image:production:
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     DOCKER_TLS_CERTDIR: /certs
-    IMAGE: $GCP_IMAGE_REPOSITORY/web
   before_script:
     - apk add --no-cache curl
     - !reference [.gcp-token, before_script]
     - echo "$GCP_ACCESS_TOKEN" | docker login -u oauth2accesstoken --password-stdin "https://$GCP_REGION-docker.pkg.dev"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   script:
     - |
-      cat > /tmp/web.env <<EOF
+      cat > /tmp/web_env <<EOF
       BETTER_AUTH_SECRET=build-placeholder-never-used-at-runtime
       BETTER_AUTH_URL=$SITE_URL
       DATABASE_URL=postgresql://build:build@localhost:5432/build
+      TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
       EOF
-    - docker build -f apps/web/Dockerfile --secret id=web_env,src=/tmp/web.env -t "$IMAGE:$CI_COMMIT_SHA" -t "$IMAGE:latest" .
-    - docker push --all-tags "$IMAGE"
+      echo "SITE_URL=$DOCS_SITE_URL" > /tmp/docs_env
+    - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" -t "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:latest" .
+    - docker push "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA"
+    - docker push --all-tags "$CI_REGISTRY_IMAGE/$APP"
   environment:
     name: production
     action: prepare
+
+image:web:
+  extends: .image
+  variables:
+    APP: web
+    DOCKERFILE: apps/web/Dockerfile
+    BUILD_SECRET: web_env
+
+image:docs:
+  extends: .image
+  variables:
+    APP: docs
+    DOCKERFILE: apps/fumadocs/Dockerfile
+    BUILD_SECRET: docs_env
 
 # Applies packages/db's Drizzle migrations to Cloud SQL. cloud-sql-proxy
 # makes the same /cloudsql/<instance> socket Cloud Run mounts, so the
@@ -63,7 +85,7 @@ migrate:production:
   stage: deploy
   interruptible: false
   resource_group: production
-  needs: [image:production]
+  needs: [image:web]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     CLOUD_SQL_PROXY_VERSION: v2.14.0
@@ -87,25 +109,26 @@ migrate:production:
     name: production
     action: prepare
 
-# Rolls the image out as a new Cloud Run revision; Pulumi owns every other
-# setting of the service (infra/index.ts).
+# Rolls each image out as a new Cloud Run revision; Pulumi owns every other
+# setting of the services (infra/index.ts).
 deploy:production:
   extends: [.gcloud, .gcp-auth, .on-main]
   stage: deploy
   interruptible: false
   resource_group: production
-  needs: [image:production, migrate:production]
+  needs: [image:web, image:docs, migrate:production]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
   before_script:
     - !reference [.gcloud, before_script]
   script:
     - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
+    - gcloud run deploy wovain-docs --image "$GCP_IMAGE_REPOSITORY/docs:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
   environment:
     name: production
     url: $SITE_URL
 
-# The live site answers, and Better Auth reaches its handler.
+# The live sites answer, and Better Auth reaches its handler.
 smoke:production:
   extends: .on-main
   stage: monitor
@@ -116,3 +139,4 @@ smoke:production:
   script:
     - curl -sSf -o /dev/null "$SITE_URL/"
     - curl -sSf "$SITE_URL/api/auth/ok"
+    - curl -sSfL -o /dev/null "$DOCS_SITE_URL/"

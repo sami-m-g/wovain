@@ -12,13 +12,21 @@ import { jwt } from "better-auth/plugins";
 export interface AuthConfig {
   BETTER_AUTH_URL: string;
   BETTER_AUTH_SECRET: string;
+  // The public MCP endpoint, when it lives on another host than the app
+  // (https://mcp.wovain.com/api/mcp in production).
+  MCP_URL?: string | undefined;
 }
 
 const MCP_SCOPES: Scope[] = ["openid", "profile", "email", "offline_access"];
 
 // The MCP endpoint ChatGPT connects to: access tokens are bound to it.
 export const mcpResource = (env: AuthConfig) =>
-  `${env.BETTER_AUTH_URL}/api/mcp`;
+  env.MCP_URL ?? `${env.BETTER_AUTH_URL}/api/mcp`;
+
+// The app's origin, plus the MCP host's when it differs.
+const trustedOrigins = (env: AuthConfig) => [
+  ...new Set([env.BETTER_AUTH_URL, new URL(mcpResource(env)).origin]),
+];
 
 export const createAuth = (env: AuthConfig, database: Database) =>
   betterAuth({
@@ -52,7 +60,7 @@ export const createAuth = (env: AuthConfig, database: Database) =>
       nextCookies(),
     ],
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [env.BETTER_AUTH_URL],
+    trustedOrigins: trustedOrigins(env),
   });
 
 export type Session = ReturnType<typeof createAuth>["$Infer"]["Session"];
