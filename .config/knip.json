@@ -16,5 +16,5 @@
       "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"]
     }
   },
-  "ignore": [".agents/**"]
+  "ignore": [".agents/**", "infra/**"]
 }

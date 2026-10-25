@@ -1,0 +1,9 @@
+# GitLab Secure: SAST (Semgrep), Secret Detection and Dependency Scanning
+# (reads pnpm-lock.yaml), from the templates in .gitlab-ci.yml. Findings show
+# in the merge request widget and the project's vulnerability report. The
+# scanners don't use anything verify makes, so they start right away.
+semgrep-sast:
+  needs: []
+
+secret_detection:
+  needs: []

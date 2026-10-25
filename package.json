@@ -28,7 +28,11 @@
     "auth:generate": "cd apps/web && pnpm run auth:generate",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "knip": "knip --config .config/knip.json"
+    "knip": "knip --config .config/knip.json",
+    "infra:install": "pulumi install --cwd infra",
+    "infra:check-types": "pnpm --dir infra run check-types",
+    "infra:preview": "pulumi preview --cwd infra --stack prod --refresh",
+    "infra:up": "pulumi up --cwd infra --stack prod --refresh"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",

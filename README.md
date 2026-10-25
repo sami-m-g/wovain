@@ -70,3 +70,14 @@ See the [Hackathons page](apps/fumadocs/content/docs/hackathons.mdx) for where e
 ## License
 
 [MIT](LICENSE)
+
+## Deployment
+
+`main` deploys to Google Cloud from GitLab CI (`.gitlab/ci/deploy.yml`), with Workload Identity Federation and no stored key:
+
+1. `pulumi up` applies `infra/`: Cloud Run service `wovain-web`, Cloud SQL Postgres `wovain`, Artifact Registry, Secret Manager, service accounts, GitLab variables, labels, the Workflow board and feature flags.
+2. The image from `apps/web/Dockerfile` is pushed to Artifact Registry.
+3. `drizzle-kit migrate` runs against Cloud SQL through `cloud-sql-proxy`.
+4. `gcloud run deploy` rolls the image out at `https://wovain-web-<project number>.us-central1.run.app`.
+
+Secrets live in Secret Manager under kebab-case ids (`better-auth-secret` is `BETTER_AUTH_SECRET`). A secret gets a value from the stack config, `pulumi config set --secret <id>` in `infra/`, and Cloud Run mounts only the secrets that have one. Pulumi writes `database-url` itself. Logs are JSON lines on stdout (`apps/web/src/lib/cloud-logging.ts`): Cloud Logging parses them, and Error Reporting groups server errors under `wovain-web`.
