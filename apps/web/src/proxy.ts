@@ -1,16 +1,22 @@
 import { evlogMiddleware } from "evlog/next";
+import createIntlMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { routing } from "@/i18n/routing";
+
 const logRequest = evlogMiddleware();
+const localize = createIntlMiddleware(routing);
 
 const WWW_PREFIX = "www.";
 const PERMANENT_REDIRECT = 308;
+// Files, Next internals and OAuth metadata keep their paths; pages get a locale.
+const UNLOCALIZED = /^\/(?:_next|_vercel|\.well-known)\/|\.[^/]+$/u;
 
-// www.wovain.com reaches this app through its own Cloud Run domain mapping,
-// which can't redirect, so the app sends it to the apex: one origin for
-// cookies, Better Auth's trusted origins and the OAuth issuer.
 export const proxy = (request: NextRequest) => {
+  // www.wovain.com reaches this app through its own Cloud Run domain mapping,
+  // which can't redirect, so the app sends it to the apex: one origin for
+  // cookies, Better Auth's trusted origins and the OAuth issuer.
   const host = request.headers.get("host") ?? "";
   if (host.startsWith(WWW_PREFIX)) {
     const target = new URL(
@@ -20,10 +26,14 @@ export const proxy = (request: NextRequest) => {
     target.search = request.nextUrl.search;
     return NextResponse.redirect(target, PERMANENT_REDIRECT);
   }
-  if (request.nextUrl.pathname.startsWith("/api/")) {
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/api/")) {
     return logRequest(request);
   }
-  return NextResponse.next();
+  if (UNLOCALIZED.test(pathname)) {
+    return NextResponse.next();
+  }
+  return localize(request);
 };
 
 export const config = {

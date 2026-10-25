@@ -1,0 +1,429 @@
+{
+  "Metadata": {
+    "siteName": "wovain",
+    "defaultTitle": "wovain : des collections print-on-demand pilotées par des agents",
+    "defaultDescription": "wovain transforme un brief en collection print-on-demand lancée : veille des tendances, visuels que vous validez, produits sur Fourthwall et campagne Meta en pause. Dans ChatGPT et sur le web.",
+    "ogAlt": "wovain : un brief en entrée, une collection print-on-demand en sortie",
+    "ogTagline": "Un brief. Une collection.",
+    "ogSteps": "Tendances · Visuels · Validation · Fourthwall · Pubs Meta",
+    "privacyTitle": "Confidentialité",
+    "privacyDescription": "Ce que wovain collecte, pourquoi, et comment le supprimer.",
+    "termsTitle": "Conditions",
+    "termsDescription": "Les conditions d'utilisation de wovain.",
+    "loginTitle": "Connexion",
+    "loginDescription": "Connectez-vous à wovain pour lancer votre prochaine collection.",
+    "signUpTitle": "Créer votre compte",
+    "signUpDescription": "Créez un compte wovain et lancez votre première collection print-on-demand.",
+    "dashboardTitle": "Vue d'ensemble",
+    "newDropTitle": "Nouvelle collection",
+    "runsTitle": "Exécutions",
+    "connectionsTitle": "Connexions",
+    "notFoundTitle": "Page introuvable",
+    "consentTitle": "Autoriser l'accès"
+  },
+  "Common": {
+    "skipToContent": "Aller au contenu",
+    "brand": "wovain",
+    "homeLabel": "Accueil wovain",
+    "language": "Langue",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Système",
+    "toggleTheme": "Changer de thème",
+    "signIn": "Se connecter",
+    "signUp": "S'inscrire",
+    "signOut": "Se déconnecter",
+    "account": "Compte",
+    "loading": "Chargement…",
+    "demoData": "Données de démonstration",
+    "tryAgain": "Réessayer",
+    "backHome": "Retour à l'accueil",
+    "primaryNav": "Principal",
+    "localeNames": {
+      "en": "English",
+      "fr": "Français",
+      "es": "Español"
+    }
+  },
+  "Header": {
+    "how": "Fonctionnement",
+    "chatgpt": "ChatGPT",
+    "autopilot": "Pilote automatique",
+    "poweredBy": "Technologies",
+    "startDrop": "Lancer une collection",
+    "dashboard": "Tableau de bord",
+    "docs": "Docs"
+  },
+  "Footer": {
+    "tagline": "Des collections print-on-demand pilotées par des agents. Vous validez chaque étape.",
+    "product": "Produit",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "copyright": "© {year} wovain. Conçu pour les hackathons GitLab Transcend et Build With AI.",
+    "docs": "Documentation",
+    "contact": "Contact"
+  },
+  "Home": {
+    "heroTitle": "Un brief. Une collection entière.",
+    "heroLead": "wovain repère ce que votre audience veut cette semaine, crée des produits pour votre catalogue Fourthwall et prépare les publicités Meta pour les vendre. Vous validez chaque étape ; la campagne est créée en pause.",
+    "briefLabel": "Quel sera le thème de votre prochaine collection ?",
+    "briefPlaceholder": "Du merch nature et cosy pour ma chaîne sur les plantes",
+    "briefHint": "Une phrase suffit. Vous pourrez tout modifier ensuite.",
+    "briefSubmit": "Lancer une collection",
+    "noCard": "Vous connectez Fourthwall et Meta après l'inscription.",
+    "deckLabel": "Un exemple de collection présenté comme un nuancier",
+    "deckCaption": "Une collection de démonstration, étape par étape",
+    "chips": {
+      "brief": {
+        "name": "Brief",
+        "value": "Merch cosy pour une chaîne plantes"
+      },
+      "trends": {
+        "name": "Tendances",
+        "value": "Cottagecore mousse et fougère · score 0,82"
+      },
+      "designs": {
+        "name": "Visuel",
+        "value": "Moss & Fern Supply · validé"
+      },
+      "products": {
+        "name": "Fourthwall",
+        "value": "T-shirt épais · 32 $"
+      },
+      "ads": {
+        "name": "Pubs Meta",
+        "value": "3 variantes, 3 angles"
+      },
+      "campaign": {
+        "name": "Campagne",
+        "value": "Une campagne · en pause"
+      }
+    },
+    "howTitle": "Cinq encres, un seul tirage",
+    "howLead": "Chaque collection passe par la même presse. Chaque étape se termine par un résultat que vous voyez et validez, construit sur de vrais produits, prix et marges Fourthwall.",
+    "steps": {
+      "trends": {
+        "name": "Tendances",
+        "body": "Le graphe de goûts de Qloo trouve ce que vos fans aiment aussi ; Tavily vérifie l'actualité de la semaine et les annonces déjà en ligne."
+      },
+      "designs": {
+        "name": "Visuels",
+        "body": "Des propositions pour chaque tendance, vérifiées par NVIDIA Nemotron (taille d'impression, couleurs, règles de fiche) avant de vous être montrées."
+      },
+      "approve": {
+        "name": "Validation",
+        "body": "Validez, refusez ou dites ce qu'il faut changer. Vos retours lancent un nouveau tour ; rien n'avance sans votre accord."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Les visuels validés deviennent des produits sur de vrais supports, au prix qui garantit au moins 10 $ de bénéfice par vente après frais."
+      },
+      "meta": {
+        "name": "Pubs Meta",
+        "body": "Nemotron rédige 2 ou 3 variantes, chacune sous un angle différent. wovain crée une campagne avec une pub par variante, en pause pour que vous décidiez quand dépenser."
+      }
+    },
+    "autopilotTitle": "Le pilote automatique fait tourner la même presse, avec moins d'arrêts",
+    "autopilotLead": "Activez le pilote automatique : wovain retient les meilleures tendances, valide les visuels qui passent tous les contrôles, publie et prépare la campagne. Elle reste en pause, et chaque exécution figure dans votre historique.",
+    "autopilotManual": "Avec vous",
+    "autopilotAuto": "Pilote automatique",
+    "autopilotStop": "S'arrête pour vous",
+    "autopilotSkip": "Avance seul",
+    "surfacesTitle": "Dans ChatGPT et sur le web",
+    "surfacesLead": "Les mêmes agents et les mêmes validations, où que vous travailliez.",
+    "chatgptTitle": "Dans ChatGPT",
+    "chatgptBody": "Ajoutez wovain comme app et demandez une collection en langage courant. Les validations apparaissent sous forme de cartes dans la conversation.",
+    "chatUser": "Fais une collection pour ma chaîne plantes. Cosy, nature, pas trop de jeux de mots.",
+    "chatAssistant": "J'ai trouvé 4 tendances. Le cottagecore mousse et fougère arrive en tête : les fans de chaînes plantes aiment aussi la slow life, et peu de boutiques le proposent en typographie. Je prépare des visuels ?",
+    "chatCard": "Moss & Fern Supply · t-shirt épais",
+    "chatApprove": "Valider",
+    "chatChange": "Modifier",
+    "webTitle": "Sur le web",
+    "webBody": "Un assistant pas à pas avec historique des exécutions, connexions et interrupteur de pilote automatique.",
+    "webStep": "Étape 3 sur 6 · Valider les visuels",
+    "poweredTitle": "Technologies",
+    "poweredLead": "wovain orchestre. Ces services font le gros du travail.",
+    "partners": {
+      "nebius": {
+        "name": "Nebius · NVIDIA Nemotron",
+        "role": "Vérifie chaque visuel selon les règles d'impression et de fiche produit"
+      },
+      "qloo": {
+        "name": "Qloo",
+        "role": "Graphe de goûts : ce que votre audience aime aussi"
+      },
+      "tavily": {
+        "name": "Tavily",
+        "role": "Actualité de la semaine, annonces et analyse des concurrents"
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "role": "Catalogue, produits et votre boutique"
+      },
+      "meta": {
+        "name": "Meta",
+        "role": "Campagnes et pubs sur votre propre compte publicitaire"
+      },
+      "gitlab": {
+        "name": "GitLab Duo",
+        "role": "La boucle d'agents qui construit et relit wovain"
+      }
+    },
+    "ctaTitle": "Votre prochaine collection tient en une phrase",
+    "ctaBody": "Créez un compte, connectez Fourthwall et Meta, et écrivez un brief. wovain s'occupe des clics.",
+    "ctaButton": "Créer votre compte",
+    "ctaSecondary": "J'ai déjà un compte",
+    "mcpLabel": "URL du serveur MCP",
+    "mcpHint": "Dans ChatGPT : Paramètres → Apps → Créer, puis collez cette URL.",
+    "copy": "Copier",
+    "copied": "Copié"
+  },
+  "Legal": {
+    "updated": "Dernière mise à jour : {date}",
+    "privacy": {
+      "title": "Confidentialité",
+      "intro": "wovain est un projet de hackathon. Nous conservons le moins de données possible et ne les vendons jamais.",
+      "collectTitle": "Ce que nous collectons",
+      "collectBody": "Votre nom, votre e-mail et l'empreinte de votre mot de passe pour votre compte ; les briefs que vous écrivez ; et les exécutions, visuels et produits que wovain crée pour vous.",
+      "connectionsTitle": "Services connectés",
+      "connectionsBody": "Quand vous connectez Fourthwall, Meta ou fal, nous conservons l'accès qu'ils accordent pour que wovain agisse pour vous. Vous pouvez les déconnecter à tout moment depuis Connexions.",
+      "processorsTitle": "Qui traite vos données",
+      "processorsBody": "Les briefs et visuels sont envoyés aux services qui font le travail : Nebius, Qloo, Tavily, fal, Fourthwall et Meta. Chacun les traite selon sa propre politique.",
+      "deleteTitle": "Supprimer vos données",
+      "deleteBody": "Écrivez à privacy@wovain.com depuis l'adresse de votre compte : nous supprimons votre compte, vos exécutions et vos connexions sous 30 jours."
+    },
+    "terms": {
+      "title": "Conditions",
+      "intro": "En utilisant wovain, vous acceptez ces conditions.",
+      "useTitle": "Utiliser wovain",
+      "useBody": "wovain est fourni en l'état, pendant un hackathon, sans garantie. Les fonctionnalités peuvent changer ou s'arrêter.",
+      "contentTitle": "Votre contenu",
+      "contentBody": "Vos briefs et les visuels que vous validez vous appartiennent. Vous devez vous assurer que ce que vous publiez ne porte atteinte aux droits de personne ; wovain vérifie les marques déposées mais ne peut pas le garantir.",
+      "spendTitle": "Publicités et dépenses",
+      "spendBody": "Les campagnes sont créées en pause. Aucune dépense publicitaire ne commence avant que vous activiez une campagne dans Meta, qui la facture à votre compte publicitaire.",
+      "contactTitle": "Contact",
+      "contactBody": "Pour toute question sur ces conditions, écrivez à hello@wovain.com."
+    }
+  },
+  "Auth": {
+    "loginTitle": "Bon retour",
+    "loginLead": "Connectez-vous pour reprendre vos collections là où vous les avez laissées.",
+    "signUpTitle": "Créer votre compte",
+    "signUpLead": "Ensuite, connectez Fourthwall et Meta, et écrivez votre premier brief.",
+    "name": "Nom",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "passwordHint": "Au moins 8 caractères.",
+    "submitLogin": "Se connecter",
+    "submitSignUp": "Créer le compte",
+    "submitting": "Un instant…",
+    "toSignUp": "Nouveau sur wovain ?",
+    "toSignUpLink": "Créer un compte",
+    "toLogin": "Déjà un compte ?",
+    "toLoginLink": "Se connecter",
+    "errors": {
+      "email": "Saisissez une adresse e-mail valide, par exemple vous@exemple.com.",
+      "name": "Saisissez votre nom (au moins 2 caractères).",
+      "password": "Utilisez au moins 8 caractères.",
+      "generic": "Cela n'a pas fonctionné. Vérifiez vos informations et réessayez.",
+      "invalidCredentials": "Cet e-mail et ce mot de passe ne correspondent à aucun compte.",
+      "userExists": "Un compte existe déjà avec cet e-mail. Connectez-vous plutôt."
+    },
+    "welcome": "Connecté. Bon retour.",
+    "created": "Compte créé. Connectons votre boutique.",
+    "asideTitle": "Validez, ne pilotez pas.",
+    "asideBody": "wovain s'occupe de la veille, des visuels, des fiches et des publicités. C'est toujours vous qui dites oui."
+  },
+  "Shell": {
+    "nav": {
+      "overview": "Vue d'ensemble",
+      "newDrop": "Nouvelle collection",
+      "runs": "Exécutions",
+      "connections": "Connexions"
+    },
+    "apiStatus": "API",
+    "apiOnline": "en ligne",
+    "apiOffline": "hors ligne",
+    "apiChecking": "vérification"
+  },
+  "Stages": {
+    "brief": "Brief",
+    "trends": "Tendances",
+    "designs": "Visuels",
+    "products": "Produits",
+    "ads": "Pubs",
+    "campaign": "Campagne",
+    "stripLabel": "Progression : {stage}",
+    "done": "terminé",
+    "current": "en cours",
+    "pending": "pas commencé"
+  },
+  "Status": {
+    "running": "En cours",
+    "awaiting_approval": "À valider",
+    "completed": "Terminée (campagne en pause)",
+    "failed": "Arrêtée"
+  },
+  "Dashboard": {
+    "greeting": "Bonjour {name}",
+    "lead": "Voici ce qui est sous presse.",
+    "newDrop": "Nouvelle collection",
+    "recentRuns": "Exécutions récentes",
+    "allRuns": "Toutes les exécutions",
+    "connections": "Connexions",
+    "manage": "Gérer",
+    "setupTitle": "Terminer la configuration",
+    "setupBody": "Connectez {count, plural, one {# service de plus} other {# services de plus}} pour lancer une collection complète.",
+    "allConnected": "Tout est connecté."
+  },
+  "Runs": {
+    "title": "Exécutions",
+    "lead": "Toutes les collections que wovain a lancées pour vous, des plus récentes aux plus anciennes.",
+    "empty": "Aucune exécution pour l'instant. Votre première collection apparaîtra ici.",
+    "emptyCta": "Lancer une collection",
+    "mode": "Mode",
+    "started": "Lancée le",
+    "manual": "Avec vous",
+    "autopilot": "Pilote automatique",
+    "stoppedAt": "Arrêtée : {error}"
+  },
+  "Connections": {
+    "title": "Connexions",
+    "lead": "wovain agit pour vous via ces comptes. Vous pouvez les déconnecter à tout moment.",
+    "connected": "Connecté",
+    "disconnected": "Non connecté",
+    "connect": "Connecter {name}",
+    "disconnect": "Déconnecter {name}",
+    "since": "Depuis le {date}",
+    "connectedToast": "{name} connecté.",
+    "disconnectedToast": "{name} déconnecté.",
+    "failedToast": "La connexion n'a pas abouti ({code}). Réessayez.",
+    "providers": {
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Votre boutique, les supports du catalogue et les prix. Nécessaire pour publier des produits."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne."
+      }
+    },
+    "serverKeys": "La veille, les visuels et les textes publicitaires utilisent les clés de wovain pour Nebius, Qloo, Tavily et fal."
+  },
+  "Wizard": {
+    "title": "Nouvelle collection",
+    "lead": "D'une phrase à une campagne en pause. Vous validez chaque étape.",
+    "stepsLabel": "Étapes de la collection",
+    "stepOf": "Étape {current, number} sur {total, number}",
+    "autopilot": "Pilote automatique",
+    "autopilotHint": "Nemotron choisit l'idée et valide le visuel ; wovain publie et crée la campagne, en pause.",
+    "autopilotRunning": "Le pilote automatique gère cette collection. Cela peut prendre quelques minutes.",
+    "back": "Retour",
+    "problem": {
+      "notConfigured": "{service} n'est pas encore configuré sur ce serveur.",
+      "notConfiguredVariable": "{service} n'est pas encore configuré sur ce serveur : {variable} manque.",
+      "notConnected": "Connectez {service} pour terminer cette étape.",
+      "connectLink": "Aller aux connexions",
+      "other": "Un problème est survenu : {message}"
+    },
+    "brief": {
+      "title": "Écrire le brief",
+      "label": "Quel est le thème de cette collection ?",
+      "hint": "Dites pour qui et dans quel esprit. wovain fait la veille.",
+      "placeholder": "Du merch nature et cosy pour ma chaîne sur les plantes",
+      "error": "Écrivez au moins quelques mots (10 caractères ou plus).",
+      "submit": "Rechercher des tendances",
+      "submitAutopilot": "Lancer en pilote automatique"
+    },
+    "trends": {
+      "title": "Choisir les idées",
+      "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. La meilleure idée a déjà un visuel.",
+      "score": "Score {score}",
+      "affinity": "Affinité",
+      "news": "Actualité",
+      "listings": "Annonces",
+      "sources": "Sources",
+      "hasDesign": "Visuel prêt",
+      "error": "Choisissez au moins une idée.",
+      "submit": "Voir les visuels"
+    },
+    "designs": {
+      "title": "Valider les visuels",
+      "lead": "Validez ceux que vous vendriez. Refusez avec une note, puis créez-en un autre pour la même idée.",
+      "check": "Contrôle",
+      "checkReady": "Prêt",
+      "checkRevise": "À retravailler",
+      "checkScore": "{score, number}/100",
+      "printed": "Texte imprimé : {text}",
+      "approve": "Valider",
+      "approved": "Validé",
+      "reject": "Refuser",
+      "rejected": "Refusé",
+      "retry": "En créer un autre",
+      "reasonLabel": "Que faut-il changer ? (facultatif)",
+      "reasonPlaceholder": "Typo plus grasse, sans les feuilles",
+      "error": "Validez au moins un visuel.",
+      "submit": "Créer les produits",
+      "artAlt": "Visuel : {title}"
+    },
+    "products": {
+      "title": "Publier les produits",
+      "lead": "De vrais supports Fourthwall, au prix qui garantit au moins 10 $ de bénéfice par vente après frais. Ils restent masqués jusqu'à la publication.",
+      "price": "Prix",
+      "hidden": "Masqué",
+      "public": "En ligne",
+      "view": "Voir sur Fourthwall",
+      "error": "Publiez d'abord au moins un produit.",
+      "publish": "Publier sur Fourthwall",
+      "submit": "Préparer la campagne",
+      "mockupAlt": "{title}, maquette du produit"
+    },
+    "campaign": {
+      "title": "Créer la campagne",
+      "lead": "Une campagne par produit, avec une pub par variante de texte. Elle est créée en pause : rien n'est dépensé avant que vous l'activiez dans Meta.",
+      "budgetLabel": "Budget quotidien (USD)",
+      "budgetHint": "Entre 1 $ et 500 $ par jour. Modifiable dans Meta.",
+      "budgetError": "Saisissez un budget quotidien entre 1 $ et 500 $.",
+      "submit": "Créer la campagne en pause"
+    },
+    "done": {
+      "title": "Votre campagne est prête, en pause",
+      "lead": "{count, plural, one {# campagne} other {# campagnes}} à {budget} par jour. Activez-la dans le Gestionnaire de publicités Meta quand vous voulez dépenser.",
+      "variants": "Variantes publicitaires",
+      "open": "Ouvrir le Gestionnaire de publicités",
+      "another": "Lancer une autre collection",
+      "history": "Voir toutes les exécutions",
+      "autopilotFailed": "Le pilote automatique s'est arrêté : {error}"
+    },
+    "working": {
+      "research": "Recherche des tendances et premier visuel…",
+      "autopilot": "Le pilote automatique recherche, crée, publie et prépare la campagne…",
+      "designs": "Création des visuels…",
+      "review": "Enregistrement de votre décision…",
+      "products": "Création des produits sur Fourthwall…",
+      "publish": "Publication sur Fourthwall…",
+      "campaign": "Création de la campagne en pause sur Meta…"
+    }
+  },
+  "NotFound": {
+    "title": "Cette page n'est pas dans le nuancier",
+    "body": "Le lien est peut-être ancien, ou la page a été déplacée.",
+    "home": "Retour à l'accueil"
+  },
+  "Error": {
+    "title": "Une bavure s'est glissée",
+    "body": "Une erreur inattendue a interrompu cette page. Réessayez ; si cela continue, déconnectez-vous puis reconnectez-vous.",
+    "retry": "Réessayer"
+  },
+  "Consent": {
+    "title": "Autoriser l'accès à wovain ?",
+    "lead": "Une app comme ChatGPT souhaite agir sur votre compte wovain : rechercher des tendances, créer des visuels et des produits, et préparer des campagnes en pause.",
+    "scopes": "Elle demande",
+    "allow": "Autoriser",
+    "deny": "Refuser",
+    "error": "Votre réponse n'a pas été transmise. Réessayez.",
+    "note": "Les campagnes sont toujours créées en pause. Vous pouvez révoquer l'accès en vous déconnectant de l'app."
+  }
+}

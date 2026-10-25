@@ -41,6 +41,7 @@ const link = new RPCLink({
 });
 
 // On the server, use the router client registered by `@/lib/orpc.server`
-const client: AppRouterClient = globalThis.$client ?? createORPCClient(link);
+export const client: AppRouterClient =
+  globalThis.$client ?? createORPCClient(link);
 
 export const orpc = createTanstackQueryUtils(client);

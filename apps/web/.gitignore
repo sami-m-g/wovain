@@ -7,3 +7,6 @@ next-env.d.ts
 
 # misc
 *.pem
+
+# next-intl writes typed message declarations on dev and build
+/messages/*.d.json.ts

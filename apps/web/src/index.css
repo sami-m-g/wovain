@@ -1,1 +1,150 @@
 @import "@wovain/ui/globals.css";
+
+/*
+ * wovain brand: a printer's ink swatch book.
+ * Uncoated cool-white stock, ink-black type and four named inks.
+ * Overrides the shared shadcn tokens for the web app only.
+ */
+
+:root {
+  --ink-indigo: #3b4cca;
+  --ink-rhodamine: #c81e63;
+  --ink-yellow: #f2c230;
+  --ink-green: #0d7a51;
+  --ink-black: #14162e;
+  --ink-paper: #f6f7fb;
+
+  --background: var(--ink-paper);
+  --foreground: var(--ink-black);
+  --card: #ffffff;
+  --card-foreground: var(--ink-black);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink-black);
+  --primary: var(--ink-indigo);
+  --primary-foreground: #ffffff;
+  --secondary: #e9ebf5;
+  --secondary-foreground: #232a6e;
+  --muted: #eceef5;
+  --muted-foreground: #545a78;
+  --accent: #e3e6fa;
+  --accent-foreground: #27348f;
+  --destructive: #c4283b;
+  --border: #d7dae7;
+  --input: #c4c8da;
+  --ring: var(--ink-indigo);
+  --chart-1: var(--ink-indigo);
+  --chart-2: var(--ink-rhodamine);
+  --chart-3: var(--ink-yellow);
+  --chart-4: var(--ink-green);
+  --chart-5: #7d84b5;
+  --radius: 0.125rem;
+  --sidebar: var(--ink-black);
+  --sidebar-foreground: #e9ebf7;
+  --sidebar-primary: var(--ink-indigo);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #23264a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a2d52;
+  --sidebar-ring: var(--ink-indigo);
+}
+
+.dark {
+  --ink-indigo: #4f60dc;
+  --ink-rhodamine: #d42f6e;
+  --ink-yellow: #f2c230;
+  --ink-green: #117f55;
+  --ink-paper: #0e1020;
+
+  --background: var(--ink-paper);
+  --foreground: #eceef8;
+  --card: #161932;
+  --card-foreground: #eceef8;
+  --popover: #191c38;
+  --popover-foreground: #eceef8;
+  --primary: #8391f2;
+  --primary-foreground: #0e1020;
+  --secondary: #20233f;
+  --secondary-foreground: #dfe2f6;
+  --muted: #1c1f3a;
+  --muted-foreground: #a3a8c6;
+  --accent: #252a55;
+  --accent-foreground: #e3e6fd;
+  --destructive: #ef6b7a;
+  --border: #2a2e4f;
+  --input: #363b62;
+  --ring: #8391f2;
+  --sidebar: #0a0c19;
+  --sidebar-foreground: #e3e6f5;
+  --sidebar-accent: #1d2040;
+  --sidebar-border: #22264a;
+}
+
+@theme inline {
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --color-ink-indigo: var(--ink-indigo);
+  --color-ink-rhodamine: var(--ink-rhodamine);
+  --color-ink-yellow: var(--ink-yellow);
+  --color-ink-green: var(--ink-green);
+  --color-ink-black: var(--ink-black);
+  --color-ink-paper: var(--ink-paper);
+}
+
+/* Archivo's width axis: expanded for display, condensed for dense labels. */
+@utility font-expanded {
+  font-variation-settings: "wdth" 125;
+}
+
+@utility font-semi-expanded {
+  font-variation-settings: "wdth" 112;
+}
+
+@utility font-condensed {
+  font-variation-settings: "wdth" 82;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scrollbar-color: color-mix(in oklch, var(--foreground) 30%, transparent)
+      transparent;
+  }
+
+  body {
+    caret-color: var(--ink-indigo);
+    font-feature-settings: "ss01";
+  }
+
+  ::selection {
+    background: var(--ink-indigo);
+    color: #ffffff;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

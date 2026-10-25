@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@wovain/ui/components/button";
 import {
   DropdownMenu,
@@ -9,43 +11,52 @@ import {
   DropdownMenuTrigger,
 } from "@wovain/ui/components/dropdown-menu";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
+import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 
+/** Signed out: Sign in link. Signed in: account menu with sign out. */
 const UserMenu = () => {
   const router = useRouter();
+  const t = useTranslations("Common");
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) {
-    return <Skeleton className="h-9 w-24" />;
+    return <Skeleton className="h-10 w-24" />;
   }
 
   if (!session) {
     return (
       <Button
-        variant="outline"
+        className="h-10 px-4 text-sm"
         nativeButton={false}
         render={<Link href="/login" />}
+        variant="ghost"
       >
-        Sign In
+        {t("signIn")}
       </Button>
     );
   }
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" />}>
-        {session.user.name}
+      <DropdownMenuTrigger
+        render={
+          <Button
+            aria-label={t("account")}
+            className="h-10 max-w-48 px-3 text-sm"
+            variant="outline"
+          />
+        }
+      >
+        <span className="truncate">{session.user.name}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-card">
+      <DropdownMenuContent align="end" className="bg-card">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuLabel>{session.user.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
           <DropdownMenuItem
-            variant="destructive"
             onClick={() => {
               authClient.signOut({
                 fetchOptions: {
@@ -55,8 +66,9 @@ const UserMenu = () => {
                 },
               });
             }}
+            variant="destructive"
           >
-            Sign Out
+            {t("signOut")}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
