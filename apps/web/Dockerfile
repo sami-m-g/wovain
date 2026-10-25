@@ -22,7 +22,7 @@ RUN pnpm exec varlock codegen --path ./apps/web/ && pnpm exec varlock codegen --
 
 ENV NODE_ENV=production
 # BuildKit makes the env file available only while the build runs
-RUN --mount=type=secret,id=web_env,target=/app/apps/web/.env.local pnpm --filter web run build && rm -f apps/web/.next/standalone/.env* apps/web/.next/standalone/apps/web/.env*
+RUN --mount=type=secret,id=web_env,target=/app/apps/web/.env.local pnpm exec turbo run build --filter=web && rm -f apps/web/.next/standalone/.env* apps/web/.next/standalone/apps/web/.env*
 # standalone output excludes public/; ensure it exists so the runner copy never fails
 RUN mkdir -p apps/web/public
 
