@@ -1,0 +1,36 @@
+# Security policies as code (Govern; GitLab Ultimate). GitLab reads this file
+# from the project linked as the security policy project; infra/duo.ts links
+# this project to itself when wovain:ultimate is true (needs a Maintainer).
+# Delete this directory to drop it; nothing else depends on it.
+#
+# They fit the agent flows (docs/flows.md): the scanners run on every
+# pipeline, so Duo's merge requests are scanned like anyone's, and a merge
+# request that adds a High or Critical finding waits for a person's approval,
+# which also stops the ops job's auto-merge.
+scan_execution_policy:
+  - name: Scanners on every pipeline
+    description: SAST, Secret Detection and Dependency Scanning run on every branch, Duo's included.
+    enabled: true
+    rules:
+      - type: pipeline
+        branch_type: all
+    actions:
+      - scan: sast
+      - scan: secret_detection
+      - scan: dependency_scanning
+
+approval_policy:
+  - name: New High or Critical findings need a person
+    description: A merge request that introduces a High or Critical finding needs a Maintainer's approval, so it can't auto-merge.
+    enabled: true
+    rules:
+      - type: scan_finding
+        branch_type: protected
+        scanners: [sast, secret_detection, dependency_scanning]
+        vulnerabilities_allowed: 0
+        severity_levels: [critical, high]
+        vulnerability_states: [new_needs_triage, new_dismissed]
+    actions:
+      - type: require_approval
+        approvals_required: 1
+        role_approvers: [maintainer, owner]

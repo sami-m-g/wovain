@@ -1,0 +1,10 @@
+{
+  "extends": "@wovain/config/tsconfig.base.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom"],
+    "types": ["node"]
+  },
+  "include": ["src", "test", "vitest.config.ts"]
+}

@@ -5,8 +5,17 @@
 // which creates, updates, deletes and checks drift from the GraphQL below.
 // Needs the `gitlab:token` stack secret (api scope); the hackathon's
 // Developer+ role is enough.
+//
+// It also holds what wovain's three Duo flows need besides their triggers
+// (docs/flows.md): the heal flow's trigger, the ops and scout pipeline
+// schedules and the flows' labels. GitLab starts a flow only for a human's
+// action and trigger filters can't match labels, so only the ops job (a
+// person's token) assigns issues to the Developer and heal flows, after its
+// label, trusted-user and daily-cap checks (apps/ops). The last block holds
+// the Ultimate-only Govern pieces, off unless wovain:ultimate is true.
 import { existsSync, readFileSync } from "node:fs";
 
+import * as gitlab from "@pulumi/gitlab";
 import * as graphql from "@pulumi/graphql";
 import * as pulumi from "@pulumi/pulumi";
 
@@ -41,8 +50,24 @@ interface CustomAgent {
 
 const config = new pulumi.Config();
 const projectPath = config.require("gitlabProject");
+const projectNumber = config.require("gitlabProjectId");
 const triggers = config.requireObject<Trigger[]>("duoTriggers");
-const customFlows = config.getObject<CustomFlow[]>("duoCustomFlows") ?? [];
+
+// The heal flow (flow 1, .gitlab/duo/catalog/flows/heal.yml): the ops job
+// assigns each new heal issue to its service account; mention lets the ops
+// job ask it once to address Duo Code Review's threads. The stack config's
+// entry wins when it names the same trigger.
+const healFlow: CustomFlow = {
+  description: "wovain heal when wovain ops assigns or mentions it",
+  events: ["assign", "mention"],
+  file: ".gitlab/duo/catalog/flows/heal.yml",
+  name: "duo-heal",
+};
+const configuredFlows = config.getObject<CustomFlow[]>("duoCustomFlows") ?? [];
+const customFlows = [
+  ...configuredFlows,
+  ...[healFlow].filter((f) => !configuredFlows.some((c) => c.name === f.name)),
+];
 const customAgents = config.getObject<CustomAgent[]>("duoCustomAgents") ?? [];
 
 // The same token as the GitLab provider (infra/gitlab.ts).
@@ -244,3 +269,107 @@ for (const a of customAgents) {
     { provider, retainOnDelete: true }
   );
 }
+
+// The ops and scout jobs pick their schedule by its description
+// (.gitlab/ci/ops.yml, scout.yml), since the hackathon role can't set
+// schedule variables.
+export const opsSchedule = new gitlab.PipelineSchedule("ops", {
+  active: true,
+  cron: "*/10 * * * *",
+  cronTimezone: "UTC",
+  description: "wovain ops",
+  project: projectNumber,
+  ref: "refs/heads/main",
+});
+export const scoutSchedule = new gitlab.PipelineSchedule("scout", {
+  active: true,
+  cron: "30 6 * * *",
+  cronTimezone: "UTC",
+  description: "wovain scout",
+  project: projectNumber,
+  ref: "refs/heads/main",
+});
+
+// The flows' labels (apps/ops reads them by name).
+const flowLabels: Record<string, { color: string; description: string }> = {
+  "agent::task": {
+    color: "#fc6d26",
+    description:
+      "Accepted for Duo's Developer flow: wovain ops hands it over when a trusted user added this label",
+  },
+  heal: {
+    color: "#c0392b",
+    description: "A production error the heal flow reproduces and fixes",
+  },
+  "heal::verified": {
+    color: "#2da160",
+    description:
+      "Production confirmed the heal fix: no errors with its signature since the deploy",
+  },
+  "kpi-scout": {
+    color: "#6f42c1",
+    description:
+      "An improvement the scout flow proposed against a KPI in .gitlab/duo/kpis.yml",
+  },
+  "kpi-snapshot": {
+    color: "#6c757d",
+    description: "The daily KPI snapshot the scout flow reads",
+  },
+  "vuln-fix": {
+    color: "#8e44ad",
+    description:
+      "The audit trail of Duo Vulnerability Resolution runs wovain ops started",
+  },
+};
+export const flowLabelIds = Object.fromEntries(
+  Object.entries(flowLabels).map(([name, { color, description }]) => [
+    name,
+    new gitlab.ProjectLabel(name.replace("::", "-"), {
+      color,
+      description,
+      name,
+      project: projectNumber,
+    }).labelId,
+  ])
+);
+
+// The public status page (GitLab Pages, published by the ops schedule's
+// pages job, .gitlab/ci/ops.yml). DNS: a CNAME status.wovain.com to the
+// project's Pages host, plus the TXT record GitLab verifies with
+// (statusDomainVerification, at _gitlab-pages-verification-code.status.wovain.com).
+const statusDomain = new gitlab.PagesDomain("status", {
+  autoSslEnabled: true,
+  domain: "status.wovain.com",
+  project: projectNumber,
+});
+export const statusDomainVerification = statusDomain.verificationCode;
+
+// --- Ultimate only (Govern). Off unless `pulumi config set wovain:ultimate
+// true`; delete this block to drop it. The compliance framework needs the
+// top-level group's Owner (wovain:complianceGroup), and linking the security
+// policy project (.gitlab/security-policies/policy.yml, here this project
+// itself) needs a Maintainer.
+const ultimate = config.getBoolean("ultimate") === true;
+export const complianceFrameworkId = ultimate
+  ? new gitlab.ComplianceFramework("wovain-agentic", {
+      color: "#6f42c1",
+      default: false,
+      description:
+        "Agent-maintained project: scanners on every pipeline, Duo changes auto-merge only inside guardrails, new High or Critical findings need a person (docs/flows.md)",
+      name: "wovain agentic",
+      namespacePath: config.require("complianceGroup"),
+    }).frameworkId
+  : undefined;
+export const complianceAttachment =
+  complianceFrameworkId === undefined
+    ? undefined
+    : new gitlab.ProjectComplianceFrameworks("wovain-agentic", {
+        complianceFrameworkIds: [complianceFrameworkId],
+        project: projectNumber,
+      });
+export const policyAttachment = ultimate
+  ? new gitlab.ProjectSecurityPolicyAttachment("wovain-policies", {
+      policyProject: projectPath,
+      project: projectNumber,
+    })
+  : undefined;

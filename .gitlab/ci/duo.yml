@@ -1,0 +1,21 @@
+# The ai-catalog component's jobs (included in .gitlab-ci.yml). These only
+# change its rules; overriding `extends` would drop its image and setup.
+
+# Schema check on every change to the flows.
+validate-items:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
+      when: never
+    - changes: [.gitlab/duo/catalog/**/*]
+
+# Sync to the AI Catalog on main (the component runs it on tags). It commits
+# the catalog ids to mapping.json with [skip ci]; infra/duo.ts reads them to
+# enable the flows and create their triggers on the next `pulumi up`.
+catalog-sync:
+  stage: test
+  interruptible: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: [.gitlab/duo/catalog/**/*]

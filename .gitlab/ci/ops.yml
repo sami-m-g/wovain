@@ -1,0 +1,60 @@
+# Flows 1 and 3 (docs/flows.md), every 10 minutes on the "wovain ops"
+# schedule, or now with Run pipeline and OPS=1: file new production errors
+# for the heal flow, verify merged heal fixes in production, hand agent::task
+# issues to the Developer flow, and move Duo's merge requests through Duo
+# Code Review to auto-merge, hand new High/Critical SAST findings to Duo
+# Vulnerability Resolution, open and close incidents, and render the status
+# page (apps/ops/src/ops.ts). No model calls of its own; it acts as
+# GITLAB_TOKEN's owner, which is what starts each Duo flow.
+ops:
+  extends: .ops-job
+  resource_group: ops
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
+    - if: $CI_PIPELINE_SOURCE == "web" && $OPS
+  script:
+    - node apps/ops/src/ops.ts
+  artifacts:
+    when: always
+    paths: [public/]
+    expire_in: 1 day
+
+# The public status page at status.wovain.com (GitLab Pages; the domain is
+# in infra/duo.ts): health, incident history, DORA and SCI, rendered by the
+# ops job every 10 minutes. Publishing needs no install: it only uploads.
+pages:
+  stage: .post
+  image: busybox:1.37
+  needs:
+    - job: ops
+      artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
+      when: always
+    - if: $CI_PIPELINE_SOURCE == "web" && $OPS
+      when: always
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - test -f public/index.html
+  artifacts:
+    paths: [public/]
+
+# Software Carbon Intensity on every main pipeline (apps/ops/src/sci.ts):
+# the last 7 days of Cloud Run instance time and requests, main pipelines'
+# CI time and Duo sessions. Latest report:
+# /-/jobs/artifacts/main/raw/sci-report.md?job=sci
+sci:
+  extends: .ops-job
+  stage: .post
+  needs: []
+  rules:
+    - !reference [.on-main, rules]
+  script:
+    - node apps/ops/src/sci-report.ts
+  artifacts:
+    expose_as: SCI report
+    paths: [sci-report.md, sci.json]
+    reports:
+      metrics: metrics.txt
+    expire_in: 90 days
