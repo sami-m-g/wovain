@@ -14,6 +14,10 @@
     },
     "apps/web": {
       "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"]
+    },
+    "packages/widgets": {
+      "entry": ["src/{trends,design,product,campaign}.tsx", "src/styles.css"],
+      "ignoreDependencies": ["tailwindcss"]
     }
   },
   "ignore": [".agents/**", "infra/**"]

@@ -1,0 +1,36 @@
+{
+  "name": "@wovain/widgets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./names": "./src/names.ts",
+    "./html": {
+      "types": "./dist/html.d.ts",
+      "default": "./dist/html.js"
+    }
+  },
+  "scripts": {
+    "build": "node build.ts",
+    "check-types": "node build.ts && tsc -b"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@wovain/ui": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "esbuild": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

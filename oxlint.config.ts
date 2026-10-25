@@ -33,5 +33,10 @@ export default defineConfig({
       files: ["infra/**"],
       rules: { "max-lines": "off", "no-new": "off" },
     },
+    // ChatGPT widgets are plain React in a sandboxed iframe, not Next.js.
+    {
+      files: ["packages/widgets/**"],
+      rules: { "nextjs/no-img-element": "off" },
+    },
   ],
 });

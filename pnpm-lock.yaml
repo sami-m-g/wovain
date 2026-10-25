@@ -128,6 +128,9 @@ catalogs:
     '@modelcontextprotocol/client':
       specifier: 2.3.1
       version: 2.3.1
+    '@modelcontextprotocol/ext-apps':
+      specifier: 2.0.3
+      version: 2.0.3
     '@modelcontextprotocol/server':
       specifier: 2.3.1
       version: 2.3.1
@@ -176,6 +179,9 @@ catalogs:
     drizzle-orm:
       specifier: 1.0.0-rc.5
       version: 1.0.0-rc.5
+    esbuild:
+      specifier: 0.28.2
+      version: 0.28.2
     evlog:
       specifier: ^2.33.1
       version: 2.33.1
@@ -191,6 +197,9 @@ catalogs:
     openai:
       specifier: 7.32.0
       version: 7.32.0
+    postcss:
+      specifier: 8.5.31
+      version: 8.5.31
     react:
       specifier: ^19.2.8
       version: 19.3.1
@@ -483,6 +492,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@modelcontextprotocol/ext-apps':
+        specifier: 'catalog:'
+        version: 2.0.3(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/core@2.3.1)(@modelcontextprotocol/server@2.3.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@modelcontextprotocol/server':
         specifier: 'catalog:'
         version: 2.3.1
@@ -498,6 +510,9 @@ importers:
       '@wovain/db':
         specifier: workspace:*
         version: link:../db
+      '@wovain/widgets':
+        specifier: workspace:*
+        version: link:../widgets
       drizzle-orm:
         specifier: 'catalog:'
         version: 1.0.0-rc.5(@types/pg@8.23.1)(pg@8.23.1)(zod@4.6.7)
@@ -679,6 +694,55 @@ importers:
       '@wovain/config':
         specifier: workspace:*
         version: link:../config
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
+
+  packages/widgets:
+    dependencies:
+      '@modelcontextprotocol/ext-apps':
+        specifier: 'catalog:'
+        version: 2.0.3(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/core@2.3.1)(@modelcontextprotocol/server@2.3.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
+      '@wovain/ui':
+        specifier: workspace:*
+        version: link:../ui
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.1(react@19.3.1)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.3.3
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.5
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
+      '@wovain/config':
+        specifier: workspace:*
+        version: link:../config
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.28.2
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.31
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -1682,6 +1746,24 @@ packages:
   '@modelcontextprotocol/core@2.3.1':
     resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
     engines: {node: '>=20'}
+
+  '@modelcontextprotocol/ext-apps@2.0.3':
+    resolution: {integrity: sha512-Tn+4+cyhO4f4cQSDxNyLiIfEE+qlTTuIbWBJB8JTinEXOhDYgCT4wDTQplxD9MBYZH5pCYGC59GaxiwIT4bu8w==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@modelcontextprotocol/client': ^2.0.0
+      '@modelcontextprotocol/core': ^2.0.0
+      '@modelcontextprotocol/server': ^2.0.0
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+      zod: ^4.2.0
+    peerDependenciesMeta:
+      '@modelcontextprotocol/server':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   '@modelcontextprotocol/sdk@1.32.2':
     resolution: {integrity: sha512-SWsVtH/0vULSQStoZ6xxH2K09Li8fXYTMC64ZeogCdpZ3XSi1eCPOByV1OpuJxuI3OcmHhosDWYyii07tpPsLw==}
@@ -7268,6 +7350,17 @@ snapshots:
   '@modelcontextprotocol/core@2.3.1':
     dependencies:
       zod: 4.6.7
+
+  '@modelcontextprotocol/ext-apps@2.0.3(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/core@2.3.1)(@modelcontextprotocol/server@2.3.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
+    dependencies:
+      '@modelcontextprotocol/client': 2.3.1
+      '@modelcontextprotocol/core': 2.3.1
+      '@standard-schema/spec': 1.1.0
+      zod: 4.6.7
+    optionalDependencies:
+      '@modelcontextprotocol/server': 2.3.1
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
 
   '@modelcontextprotocol/sdk@1.32.2(zod@4.6.7)':
     dependencies:
