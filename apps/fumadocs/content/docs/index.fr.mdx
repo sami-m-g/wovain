@@ -1,0 +1,47 @@
+---
+title: Introduction
+description: Wovain est une application agentique d'impression à la demande qui transforme des signaux de goûts et de tendances en produits Fourthwall et en campagnes Meta Ads en pause.
+icon: House
+---
+
+Wovain emmène un vendeur indépendant d'impression à la demande de « que vendre ? » jusqu'à des produits Fourthwall en ligne et une campagne Meta Ads en pause, et le vendeur n'a qu'à approuver.
+
+Qui est susceptible d'acheter vient de [Qloo](/fr/docs/integrations/qloo). Pourquoi maintenant vient de [Tavily](/fr/docs/integrations/tavily). Les décisions de jugement et d'autopilot viennent de [NVIDIA Nemotron sur Nebius Token Factory](/fr/docs/integrations/nebius-nemotron).
+
+## Le parcours
+
+1. Qloo et Tavily trouvent les tendances : le graphe de goûts de l'audience, puis l'actualité de la semaine dans ce périmètre.
+2. Les designs sont générés pour de vrais modèles, emplacements et prix Fourthwall.
+3. Nemotron évalue chaque design selon les règles d'impression et, en autopilot, prend les décisions d'approbation dans des limites strictes appliquées par le code.
+4. Vous approuvez, sur le site web ou dans ChatGPT.
+5. Wovain crée les produits Fourthwall et plusieurs variantes de publicité Meta.
+6. Wovain construit une campagne Meta qui reste **en pause** jusqu'à ce que vous la lanciez.
+
+## Où elle s'exécute
+
+Une seule application Next.js 16 (`apps/web`) sert le site web, l'API oRPC et le serveur MCP de ChatGPT. Voir [Architecture](/fr/docs/architecture).
+
+Une fois le code livré, trois flows GitLab Duo assurent la suite : auto-réparation à partir des erreurs de production, un éclaireur pour les améliorations des KPI et de l'interface, et un flow développeur qui mène une issue jusqu'à son terme. Voir [Flows d'agents](/fr/docs/agent-flows).
+
+<Callout type="warn" title="État d'avancement">
+  Le monorepo a été reconstruit sur Next.js 16, oRPC, Better Auth et Drizzle.
+  L'authentification, la base de données et ce site de documentation sont en
+  place. Les pages du parcours vendeur décrivent le comportement cible.
+</Callout>
+
+## Pour aller plus loin
+
+<Cards>
+  <Card title="Démarrage" href="/fr/docs/getting-started">
+    Lancer le projet en local.
+  </Card>
+  <Card title="Guide du vendeur" href="/fr/docs/seller-guide">
+    L'utiliser sur le web ou dans ChatGPT.
+  </Card>
+  <Card title="Architecture" href="/fr/docs/architecture">
+    Comment les pièces s'assemblent.
+  </Card>
+  <Card title="Hackathons" href="/fr/docs/hackathons">
+    Quelle exigence est couverte où.
+  </Card>
+</Cards>

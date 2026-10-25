@@ -1,0 +1,38 @@
+---
+title: Guía del vendedor
+description: Pasa de una idea inicial a una campaña de Meta en pausa en el sitio web o en ChatGPT.
+icon: Store
+---
+
+Puedes ejecutar el mismo flujo en el sitio web o en ChatGPT. Ambos llaman a los mismos procedimientos oRPC y a la misma base de datos, así que puedes empezar en uno y terminar en el otro.
+
+## Conecta tus cuentas
+
+Inicia sesión y conecta los servicios en los que wovain actúa por ti:
+
+- **Fourthwall**, donde se crean tus productos.
+- **Meta**, donde se crean las variantes de anuncios y la campaña en pausa.
+- **fal**, que genera el arte y los visuales de los anuncios.
+
+Wovain nunca gasta presupuesto publicitario por su cuenta. Todos los objetos de Meta se crean en pausa.
+
+## En el sitio web
+
+1. **Semilla.** Indica una semilla, como un nicho, un fandom o un tipo de producto.
+2. **Tendencias.** Wovain muestra ideas ordenadas por gusto (Qloo) y por momento (Tavily), con la evidencia detrás de cada puntuación.
+3. **Diseños.** Elige ideas. Los diseños se generan para modelos, ubicaciones y precios reales de Fourthwall.
+4. **Juez.** Nemotron comprueba cada diseño con las reglas de impresión y lo aprueba o enumera correcciones.
+5. **Aprobación.** Aprueba, omite o envía comentarios por cada diseño.
+6. **Productos.** Los diseños aprobados se convierten en productos de Fourthwall.
+7. **Anuncios.** Obtienes varias variantes de anuncio por producto (gancho, audiencia, visuales, texto).
+8. **Campaña.** Se construye una campaña de Meta **en pausa**. La inicias en Meta cuando estés listo.
+
+## En ChatGPT
+
+El servidor MCP de ChatGPT se sirve desde `apps/web`. Añádelo como conector en el modo desarrollador de ChatGPT, inicia sesión y pide lo mismo en el chat: «busca tendencias de equipo de senderismo retro», «diseña tres de estas», «aprueba la segunda». Cada paso devuelve un widget con controles de aprobación y comentarios.
+
+## Autopilot
+
+El autopilot ejecuta todo el flujo con Nemotron tomando cada decisión de aprobación. Tras cada decisión, el código aplica límites estrictos: un precio mínimo basado en el punto de equilibrio del producto, un tope de presupuesto diario, una revisión de marcas registradas, la aprobación del juez y un gasto máximo. Los productos permanecen ocultos y las campañas en pausa hasta que tú confirmes.
+
+Consulta [Nebius y Nemotron](/es/docs/integrations/nebius-nemotron) para ver cómo se toman las decisiones.

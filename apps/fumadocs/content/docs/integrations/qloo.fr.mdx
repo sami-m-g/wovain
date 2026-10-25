@@ -1,0 +1,35 @@
+---
+title: Qloo
+description: Le graphe de goûts de Qloo décide quelles idées valent d'être conçues et qui les publicités ciblent.
+---
+
+Qloo est la première étape du parcours, pas un complément. Sans lui, wovain ne connaît que l'actualité ; avec lui, wovain sait **qui achèterait et ce que ces personnes aiment d'autre**.
+
+## Goût fois moment
+
+| Signal | Source | Question à laquelle il répond                     |
+| ------ | ------ | ------------------------------------------------- |
+| Goût   | Qloo   | Qui est l'audience, et quels thèmes aime-t-elle ? |
+| Moment | Tavily | Pourquoi maintenant ?                             |
+
+## Ce que wovain demande à Qloo
+
+1. **Search** résout la graine en entités Qloo.
+2. **Insights** (`/v2/insights`, `filter.type=urn:tag`) renvoient les tags de goûts transversaux de ces entités. Ce sont les thèmes des designs.
+3. **Trending** (`/v2/trending`) donne la vélocité de la graine, utilisée pour confirmer ou relativiser l'actualité de la semaine.
+4. **Audience** : les insights renvoient la démographie (`urn:demographics`) et les principaux lieux (`urn:heatmap`). Ils deviennent la suggestion d'audience Meta : tranches d'âge, genre et pays.
+
+## Ce que cela change pour le produit
+
+- **Idées.** Tavily ne cherche l'actualité de la semaine que dans les thèmes de Qloo.
+- **Scoring.** Chaque idée est notée par le code sur la demande (affinité Qloo), l'élan (actualité, relativisée si la vélocité de Qloo ne la confirme pas), la faible saturation et la sécurité de propriété intellectuelle (aucun nom de marque, d'artiste ou de titre issu de Qloo). Nemotron n'écrit que le nom, l'angle et la phrase sur le moment.
+- **Ciblage.** La campagne reçoit une suggestion d'audience construite à partir des tags de l'idée choisie au lieu de « tout le monde aux États-Unis ».
+- **Preuves.** Chaque idée affiche les deux signaux et les entrées derrière son score.
+
+## Configuration
+
+```bash
+QLOO_API_KEY=...
+```
+
+Les clés de hackathon ne fonctionnent que sur `https://hackathon.api.qloo.com`, envoyées dans l'en-tête `X-Api-Key`. Les entrées sont bornées, les résultats sont traités comme non fiables et le texte des requêtes n'est pas journalisé.

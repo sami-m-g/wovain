@@ -1,0 +1,22 @@
+---
+title: Tavily
+description: La recherche web à l'exécution qui apporte le « pourquoi maintenant » et mesure la saturation d'un thème.
+---
+
+Tavily est appelé **à l'exécution**, dans le parcours du vendeur, et pas seulement pendant le développement.
+
+## Ce qu'il fait
+
+- **Moment.** Pour chaque thème Qloo, Tavily cherche l'actualité de la semaine et renvoie des sources. C'est la ligne « pourquoi maintenant » affichée sur une idée.
+- **Saturation.** Tavily vérifie combien d'annonces correspondantes existent sur des places de marché comme Etsy, Redbubble et Amazon. Peu de correspondances donnent un meilleur score.
+- **Contrôle des marques.** L'autopilot recherche la phrase du titre et les mots de l'illustration avant qu'une idée puisse continuer.
+
+Les résultats sont marqués comme non fiables lorsqu'ils atteignent un modèle, et chaque idée conserve ses liens de sources pour que le vendeur puisse vérifier les preuves.
+
+## Configuration
+
+```bash
+TAVILY_API_KEY=...
+```
+
+Sans la clé, l'étape des tendances fonctionne quand même avec Qloo seul et indique que le signal de moment n'est pas disponible.

@@ -1,0 +1,48 @@
+---
+title: Spécification
+description: Spécification technique de la pile, des données et des procédures.
+---
+
+## Pile technique
+
+| Couche | Choix |
+| --- | --- |
+| Application | Next.js 16, App Router, React 19 |
+| API | Procédures oRPC dans `packages/api`, montées sur `/api/rpc` |
+| Authentification | Better Auth dans `packages/auth`, monté sur `/api/auth` |
+| Données | Drizzle ORM et PostgreSQL (Cloud SQL sur GCP) dans `packages/db` |
+| Journaux | Événements larges evlog |
+| Interface | shadcn/ui sur Base UI et Tailwind CSS 4 dans `packages/ui` |
+| Environnement | Schémas Varlock, `ENV` typé |
+| Outillage | Workspaces pnpm, Turborepo, Ultracite, knip, TypeScript 7 pour `tsc` |
+| Surface d'agent | Serveur MCP de ChatGPT servi depuis `apps/web` |
+
+## Modèles et fournisseurs
+
+| Besoin | Fournisseur |
+| --- | --- |
+| Juge et décisions d'autopilot | NVIDIA Nemotron 3 Super sur Nebius Token Factory |
+| Graphe de goûts | Qloo |
+| Recherche web | Tavily |
+| Illustrations et visuels publicitaires | fal |
+| Produits | Fourthwall |
+| Publicités | Meta |
+
+## Contrat de décision
+
+Chaque appel de modèle renvoie du JSON validé par un schéma Zod. Après validation, le code applique les limites du [PRD](/fr/docs/product/prd) et enregistre s'il a corrigé le modèle. Les décisions d'autopilot sont écrites comme événements sous l'exécution, ce qui permet au vendeur d'auditer ce qui s'est passé.
+
+## Idempotence
+
+Une exécution a une clé. La même clé renvoie l'exécution existante. Chaque étape enregistre les ID amont qu'elle a créés avant que l'exécution avance, et une nouvelle tentative les lit avant de créer quoi que ce soit.
+
+## Sécurité
+
+- Les objets Meta sont créés en pause ; aucun appel d'activation n'existe dans les procédures.
+- Les résultats des fournisseurs sont traités comme des entrées non fiables.
+- Les entrées sont bornées et le texte des requêtes n'est pas journalisé.
+- Une seule exécution d'autopilot active par utilisateur, avec une commande d'arrêt.
+
+## Exploitation
+
+evlog émet un événement structuré par requête. Le flow Duo d'auto-réparation lit ces événements et l'injection de pannes par feature flag exerce ce chemin. Voir [Flows d'agents](/fr/docs/agent-flows).

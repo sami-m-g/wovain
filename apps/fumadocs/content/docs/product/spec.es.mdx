@@ -1,0 +1,48 @@
+---
+title: Especificación
+description: Especificación técnica de la pila, los datos y los procedimientos.
+---
+
+## Pila tecnológica
+
+| Capa | Elección |
+| --- | --- |
+| Aplicación | Next.js 16, App Router, React 19 |
+| API | Procedimientos oRPC en `packages/api`, montados en `/api/rpc` |
+| Autenticación | Better Auth en `packages/auth`, montado en `/api/auth` |
+| Datos | Drizzle ORM y PostgreSQL (Cloud SQL en GCP) en `packages/db` |
+| Registros | Eventos amplios de evlog |
+| Interfaz | shadcn/ui sobre Base UI y Tailwind CSS 4 en `packages/ui` |
+| Entorno | Esquemas de Varlock, `ENV` tipado |
+| Herramientas | Workspaces de pnpm, Turborepo, Ultracite, knip, TypeScript 7 para `tsc` |
+| Superficie de agente | Servidor MCP de ChatGPT servido desde `apps/web` |
+
+## Modelos y proveedores
+
+| Necesidad | Proveedor |
+| --- | --- |
+| Juez y decisiones del autopilot | NVIDIA Nemotron 3 Super en Nebius Token Factory |
+| Grafo de gustos | Qloo |
+| Búsqueda web | Tavily |
+| Arte y visuales de anuncios | fal |
+| Productos | Fourthwall |
+| Anuncios | Meta |
+
+## Contrato de decisión
+
+Cada llamada al modelo devuelve JSON validado con un esquema de Zod. Tras la validación, el código aplica los límites del [PRD](/es/docs/product/prd) y registra si corrigió al modelo. Las decisiones del autopilot se escriben como eventos bajo la ejecución, así el vendedor puede auditar lo ocurrido.
+
+## Idempotencia
+
+Una ejecución tiene una clave. La misma clave devuelve la ejecución existente. Cada paso guarda los ID de origen que creó antes de que la ejecución avance, y un reintento los lee antes de crear nada.
+
+## Seguridad
+
+- Los objetos de Meta se crean en pausa; no existe ninguna llamada de activación en los procedimientos.
+- Los resultados de los proveedores se tratan como entrada no confiable.
+- Las entradas están acotadas y el texto de las consultas no se registra.
+- Una sola ejecución de autopilot activa por usuario, con un control para detenerla.
+
+## Operaciones
+
+evlog emite un evento estructurado por solicitud. El flujo de autorreparación de Duo lee esos eventos y la inyección de fallos mediante feature flags ejercita esa ruta. Consulta [Flujos de agentes](/es/docs/agent-flows).

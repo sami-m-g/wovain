@@ -1,0 +1,38 @@
+---
+title: Guide du vendeur
+description: Passez d'une idée de départ à une campagne Meta en pause, sur le site web ou dans ChatGPT.
+icon: Store
+---
+
+Vous pouvez exécuter le même parcours sur le site web ou dans ChatGPT. Les deux appellent les mêmes procédures oRPC et la même base de données : vous pouvez donc commencer sur l'un et terminer sur l'autre.
+
+## Connecter vos comptes
+
+Connectez-vous, puis reliez les services sur lesquels wovain agit pour vous :
+
+- **Fourthwall**, où vos produits sont créés.
+- **Meta**, où les variantes de publicité et la campagne en pause sont créées.
+- **fal**, qui génère les visuels et les créations publicitaires.
+
+Wovain ne dépense jamais de budget publicitaire de lui-même. Chaque objet Meta est créé en pause.
+
+## Sur le site web
+
+1. **Graine.** Donnez une graine : une niche, un fandom ou un type de produit.
+2. **Tendances.** Wovain affiche des idées classées par goût (Qloo) et par moment (Tavily), avec les preuves derrière chaque score.
+3. **Designs.** Choisissez des idées. Les designs sont générés pour de vrais modèles, emplacements et prix Fourthwall.
+4. **Juge.** Nemotron vérifie chaque design selon les règles d'impression et le valide ou liste des corrections.
+5. **Approbation.** Approuvez, ignorez ou envoyez un retour pour chaque design.
+6. **Produits.** Les designs approuvés deviennent des produits Fourthwall.
+7. **Publicités.** Vous obtenez plusieurs variantes de publicité par produit (accroche, audience, visuels, texte).
+8. **Campagne.** Une campagne Meta est construite **en pause**. Vous la lancez dans Meta quand vous êtes prêt.
+
+## Dans ChatGPT
+
+Le serveur MCP de ChatGPT est servi depuis `apps/web`. Ajoutez-le comme connecteur dans le mode développeur de ChatGPT, connectez-vous, puis posez les mêmes demandes dans la conversation : « trouve des tendances pour l'équipement de randonnée rétro », « conçois-en trois », « approuve la deuxième ». Chaque étape renvoie un widget avec des commandes d'approbation et de retour.
+
+## Autopilot
+
+L'autopilot exécute tout le parcours, Nemotron prenant chaque décision d'approbation. Après chaque décision, le code applique des limites strictes : un prix plancher issu du seuil de rentabilité du produit, un plafond de budget quotidien, un contrôle des marques déposées, une validation par le juge et une dépense maximale. Les produits restent masqués et les campagnes en pause jusqu'à votre confirmation.
+
+Voir [Nebius et Nemotron](/fr/docs/integrations/nebius-nemotron) pour le détail des décisions.

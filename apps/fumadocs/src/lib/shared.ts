@@ -1,5 +1,7 @@
 import { createGetUrl } from "fumadocs-core/source";
 
+import { i18n } from "./i18n";
+
 export const appName = "Wovain Docs";
 export const docsRoute = "/docs";
 const docsImageRoute = "/og/docs";
@@ -11,7 +13,7 @@ export const gitConfig = {
   user: "sami-m-g",
 };
 
-const getContentUrl = createGetUrl(docsContentRoute);
+const getContentUrl = createGetUrl(docsContentRoute, i18n);
 
 interface PageRef {
   locale?: string | undefined;
@@ -24,7 +26,7 @@ export const getPageMarkdownUrl = (page: PageRef) => {
   return { segments, url: getContentUrl(segments, page.locale) };
 };
 
-const getImageUrl = createGetUrl(docsImageRoute);
+const getImageUrl = createGetUrl(docsImageRoute, i18n);
 
 export const getPageImageUrl = (page: PageRef) => {
   const segments = [...page.slugs, "image.png"];

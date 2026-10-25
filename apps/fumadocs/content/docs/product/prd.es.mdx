@@ -1,0 +1,40 @@
+---
+title: PRD
+description: El recorrido principal, los requisitos funcionales y el comportamiento ante fallos de wovain.
+---
+
+## Recorrido principal
+
+1. El vendedor conecta Fourthwall, Meta y fal.
+2. El vendedor introduce una semilla. Wovain devuelve ideas ordenadas, cada una con su señal de gusto (Qloo), su señal de momento (Tavily), los principales anuncios competidores y los datos detrás de la puntuación.
+3. El vendedor elige ideas. Wovain genera diseños para modelos de Fourthwall, con ubicaciones, texto de la ficha, precio, beneficio y margen.
+4. Nemotron evalúa cada diseño. Un veredicto `revise` aplica las correcciones una vez; el vendedor ve el resultado en cualquier caso.
+5. El vendedor aprueba, omite o da comentarios por cada diseño. Los comentarios regeneran solo ese diseño.
+6. Los diseños aprobados se convierten en productos de Fourthwall.
+7. Wovain crea varios conceptos de anuncio por producto con visuales, variantes de texto y la línea del punto de equilibrio.
+8. El vendedor aprueba los conceptos. Wovain construye una campaña de Meta, en pausa, con una sugerencia de audiencia de Qloo.
+
+## Requisitos
+
+| ID | Requisito |
+| --- | --- |
+| R1 | Los mismos procedimientos sirven al sitio web y al servidor MCP de ChatGPT |
+| R2 | Las ideas muestran las dos señales y sus enlaces de fuentes |
+| R3 | El precio nunca es inferior al punto de equilibrio del modelo más el margen mínimo |
+| R4 | Las reglas que el código puede decidir prevalecen sobre el juicio del modelo |
+| R5 | Cada respuesta del modelo se valida con un esquema; un fallo nunca llega al vendedor como error sin procesar |
+| R6 | Ningún objeto de Meta se crea activo |
+| R7 | El autopilot guarda cada decisión con su razonamiento y cualquier corrección del código |
+| R8 | Las ejecuciones son idempotentes: un paso reintentado reutiliza los ID de origen que ya creó |
+| R9 | La falta de una clave de proveedor desactiva solo su paso, con una línea que explica cómo activarlo |
+| R10 | Una sola ejecución de autopilot activa por usuario, con un control para detenerla |
+
+## Estados de fallo
+
+| Situación | Comportamiento |
+| --- | --- |
+| Falta la clave del proveedor | El paso responde «no configurado» y el flujo continúa sin él |
+| La respuesta del modelo no se puede analizar | El paso se muestra sin la comprobación del modelo |
+| Caída de un proveedor | La ejecución se pausa en ese paso y puede reanudarse |
+| Cuenta no conectada | La ejecución se pausa con un enlace para conectar |
+| Límite superado | El paso no se inicia y se registra el motivo |

@@ -1,0 +1,15 @@
+---
+title: Intégrations
+description: Les fournisseurs appelés par wovain et le rôle de chacun dans le parcours.
+---
+
+| Fournisseur | Rôle dans wovain | Clé |
+| --- | --- | --- |
+| [Nebius Token Factory](/fr/docs/integrations/nebius-nemotron) | Héberge NVIDIA Nemotron, qui évalue les designs et prend les décisions d'autopilot | `NEBIUS_API_KEY` |
+| [Qloo](/fr/docs/integrations/qloo) | Graphe de goûts : qui achète, ce qu'ils aiment d'autre, où ils se trouvent | `QLOO_API_KEY` |
+| [Tavily](/fr/docs/integrations/tavily) | Recherche web à l'exécution : pourquoi maintenant, et à quel point un thème est saturé | `TAVILY_API_KEY` |
+| [Fourthwall](/fr/docs/integrations/fourthwall) | Catalogue, produits, prix et boutique | OAuth par vendeur |
+| [Meta Ads](/fr/docs/integrations/meta-ads) | Variantes de publicité et campagne en pause | OAuth par vendeur |
+| [fal](/fr/docs/integrations/fal) | Visuels et créations publicitaires | `FAL_KEY` |
+
+Chaque fournisseur est optionnel au démarrage. Une clé manquante fait répondre l'étape concernée « non configuré », avec une ligne expliquant comment l'activer, au lieu de faire échouer l'exécution.

@@ -1,0 +1,22 @@
+---
+title: Tavily
+description: La búsqueda web en tiempo de ejecución que aporta el «por qué ahora» y mide la saturación de un tema.
+---
+
+Tavily se llama **en tiempo de ejecución**, dentro del flujo del vendedor, y no solo durante el desarrollo.
+
+## Qué hace
+
+- **Momento.** Para cada tema de Qloo, Tavily busca las noticias de la semana y devuelve fuentes. Es la línea «por qué ahora» que se muestra en una idea.
+- **Saturación.** Tavily comprueba cuántos anuncios coincidentes existen en marketplaces como Etsy, Redbubble y Amazon. Pocas coincidencias puntúan más alto.
+- **Revisión de marcas.** El autopilot busca la frase del título y las palabras del arte antes de que una idea pueda continuar.
+
+Los resultados se marcan como no confiables cuando llegan a un modelo, y cada idea conserva sus enlaces de fuentes para que el vendedor pueda comprobar la evidencia.
+
+## Configuración
+
+```bash
+TAVILY_API_KEY=...
+```
+
+Sin la clave, el paso de tendencias sigue funcionando solo con Qloo e indica que la señal de momento no está disponible.

@@ -1,0 +1,35 @@
+---
+title: Qloo
+description: El grafo de gustos de Qloo decide qué ideas merece la pena diseñar y a quién se dirigen los anuncios.
+---
+
+Qloo es el primer paso del flujo, no un añadido. Sin él, wovain solo conoce lo que sale en las noticias; con él, wovain sabe **quién compraría y qué más le gusta**.
+
+## Gusto por momento
+
+| Señal   | Fuente | Pregunta a la que responde                    |
+| ------- | ------ | --------------------------------------------- |
+| Gusto   | Qloo   | ¿Quién es la audiencia y qué temas le gustan? |
+| Momento | Tavily | ¿Por qué ahora?                               |
+
+## Qué le pide wovain a Qloo
+
+1. **Search** convierte la semilla en entidades de Qloo.
+2. **Insights** (`/v2/insights`, `filter.type=urn:tag`) devuelven las etiquetas de gustos transversales de esas entidades. Son los temas de los diseños.
+3. **Trending** (`/v2/trending`) da la velocidad de la semilla, que sirve para confirmar o relativizar las noticias de esta semana.
+4. **Audiencia**: los insights devuelven la demografía (`urn:demographics`) y las principales ubicaciones (`urn:heatmap`). Se convierten en la sugerencia de audiencia de Meta: tramos de edad, género y países.
+
+## Cómo cambia el producto
+
+- **Ideas.** Tavily busca las noticias de la semana solo dentro de los temas de Qloo.
+- **Puntuación.** Cada idea se puntúa en el código según demanda (afinidad de Qloo), impulso (noticias, relativizado si la velocidad de Qloo no lo confirma), baja saturación y seguridad de propiedad intelectual (sin nombres de marcas, artistas o títulos de Qloo). Nemotron solo escribe el nombre, el enfoque y la frase del momento.
+- **Segmentación.** La campaña recibe una sugerencia de audiencia construida con las etiquetas de la idea elegida en lugar de «todo Estados Unidos».
+- **Evidencia.** Cada idea muestra las dos señales y los datos detrás de su puntuación.
+
+## Configuración
+
+```bash
+QLOO_API_KEY=...
+```
+
+Las claves de hackathon solo funcionan contra `https://hackathon.api.qloo.com`, enviadas en la cabecera `X-Api-Key`. Las entradas están acotadas, los resultados se tratan como no confiables y el texto de las consultas no se registra.

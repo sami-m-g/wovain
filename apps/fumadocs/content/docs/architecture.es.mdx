@@ -1,0 +1,57 @@
+---
+title: Arquitectura
+description: Una sola aplicación Next.js, procedimientos oRPC, Better Auth, Drizzle sobre Cloud SQL y el bucle de agentes que lo rodea.
+icon: Network
+---
+
+## Visión general
+
+```text
+ Seller
+   |  website              ChatGPT
+   v                          v
+ +-----------------------------------------------+
+ |  apps/web (Next.js 16, App Router)            |
+ |   - pages and server components               |
+ |   - /api/rpc   oRPC handler   <- packages/api |
+ |   - /api/auth  Better Auth    <- packages/auth |
+ |   - MCP server for ChatGPT                    |
+ |   - evlog wide events                         |
+ +--------+--------------------------------------+
+          | Drizzle (packages/db)
+          v
+   PostgreSQL on Cloud SQL (GCP)
+
+ Providers called from procedures:
+   Qloo -> Tavily -> fal -> Nemotron (Nebius) -> Fourthwall -> Meta Ads
+
+ After deploy (GitLab Duo flows):
+   production errors -> self-healing flow -> merge request
+   KPIs and UI       -> scout flow        -> issues
+   issue             -> developer flow    -> merge request
+```
+
+## Paquetes
+
+| Ruta | Función |
+| --- | --- |
+| `apps/web` | Aplicación Next.js 16: interfaz, rutas de API, servidor MCP |
+| `apps/fumadocs` | Este sitio de documentación |
+| `packages/api` | Routers y procedimientos oRPC, compartidos por el sitio web y el servidor MCP |
+| `packages/auth` | Configuración de Better Auth |
+| `packages/db` | Esquema de Drizzle, relaciones y cliente para PostgreSQL |
+| `packages/ui` | Componentes compartidos de shadcn/ui (Base UI, Tailwind CSS 4) |
+| `packages/config` | `tsconfig.base.json` compartido |
+
+## Decisiones clave
+
+- **Una aplicación, una API.** El sitio web y el servidor MCP de ChatGPT llaman a los mismos procedimientos oRPC, así que el comportamiento no puede divergir entre superficies.
+- **El código impone los límites, los modelos deciden dentro de ellos.** Las respuestas de Nemotron se validan con Zod y después el código aplica los límites de precio, presupuesto, marcas y gasto.
+- **En pausa por defecto.** Ningún procedimiento activa un objeto de Meta.
+- **Registros estructurados.** evlog emite un evento amplio por solicitud, que el flujo de autorreparación lee.
+- **Entorno tipado.** Los esquemas de Varlock generan `ENV`, de modo que una variable ausente hace fallar el arranque.
+- **Cloud SQL en GCP** para PostgreSQL, accesible mediante Drizzle.
+
+## El flujo del vendedor en la API
+
+Tendencias, diseños, juez, aprobación, productos, anuncios, campaña. Cada etapa guarda su resultado, de modo que una ejecución puede reanudarse tras un fallo y una aprobación puede hacerse en cualquiera de las dos superficies.

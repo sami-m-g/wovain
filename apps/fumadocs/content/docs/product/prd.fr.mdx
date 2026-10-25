@@ -1,0 +1,40 @@
+---
+title: PRD
+description: Le parcours principal, les exigences fonctionnelles et le comportement en cas d'échec de wovain.
+---
+
+## Parcours principal
+
+1. Le vendeur connecte Fourthwall, Meta et fal.
+2. Le vendeur saisit une graine. Wovain renvoie des idées classées, chacune avec son signal de goût (Qloo), son signal de moment (Tavily), les principales annonces concurrentes et les entrées derrière le score.
+3. Le vendeur choisit des idées. Wovain génère des designs pour des modèles Fourthwall, avec emplacements, texte de fiche, prix, profit et marge.
+4. Nemotron évalue chaque design. Un verdict `revise` applique les corrections une fois ; le vendeur voit le résultat dans tous les cas.
+5. Le vendeur approuve, ignore ou donne un retour pour chaque design. Un retour régénère uniquement ce design.
+6. Les designs approuvés deviennent des produits Fourthwall.
+7. Wovain crée plusieurs concepts publicitaires par produit avec visuels, variantes de texte et ligne de seuil de rentabilité.
+8. Le vendeur approuve les concepts. Wovain construit une campagne Meta, en pause, avec une suggestion d'audience issue de Qloo.
+
+## Exigences
+
+| ID | Exigence |
+| --- | --- |
+| R1 | Les mêmes procédures servent le site web et le serveur MCP de ChatGPT |
+| R2 | Les idées affichent les deux signaux et leurs liens de sources |
+| R3 | Le prix n'est jamais inférieur au seuil de rentabilité du modèle plus la marge minimale |
+| R4 | Les règles que le code peut trancher priment sur le jugement du modèle |
+| R5 | Chaque réponse de modèle est validée par schéma ; un échec n'atteint jamais le vendeur sous forme d'erreur brute |
+| R6 | Aucun objet Meta n'est créé actif |
+| R7 | L'autopilot enregistre chaque décision avec son raisonnement et toute correction du code |
+| R8 | Les exécutions sont idempotentes : une étape rejouée réutilise les ID amont déjà créés |
+| R9 | Une clé de fournisseur manquante ne désactive que son étape, avec une ligne expliquant comment l'activer |
+| R10 | Une seule exécution d'autopilot active par utilisateur, avec une commande d'arrêt |
+
+## États d'échec
+
+| Situation | Comportement |
+| --- | --- |
+| Clé de fournisseur manquante | L'étape répond « non configuré » et le parcours continue sans elle |
+| La réponse du modèle n'est pas analysable | L'étape est présentée sans la vérification du modèle |
+| Panne d'un fournisseur | L'exécution se met en pause à cette étape et peut reprendre |
+| Compte non connecté | L'exécution se met en pause avec un lien de connexion |
+| Limite dépassée | L'étape ne démarre pas et la raison est journalisée |

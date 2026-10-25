@@ -1,0 +1,21 @@
+---
+title: Flows d'agents
+description: Trois flows GitLab Duo automatisent le DevSecOps après le code pour wovain.
+icon: Bot
+---
+
+Une fois le code fusionné, les flows d'agents GitLab Duo prennent en charge le travail qui l'entoure :
+
+| Flow | Déclencheur | Résultat |
+| --- | --- | --- |
+| Auto-réparation | Une erreur de production, repérée dans les événements larges evlog | Une merge request avec le correctif et un test de non-régression |
+| Éclaireur | Un calendrier, en lisant les KPI et l'interface | Des issues avec preuves pour les améliorations qui valent la peine |
+| Développeur | Une issue | Une merge request qui mène l'issue jusqu'à son terme |
+
+L'injection de pannes par feature flag permet de démontrer l'auto-réparation de bout en bout : un flag provoque une défaillance contrôlée en production, l'erreur est journalisée et le flow ouvre le correctif.
+
+<Callout type="info" title="Détails">
+  Les définitions complètes, les prompts, les déclencheurs et les garde-fous de
+  chaque flow se trouvent dans `docs/flows.md` du dépôt. Cette page en est un
+  résumé et renverra vers ce contenu une fois publié.
+</Callout>
