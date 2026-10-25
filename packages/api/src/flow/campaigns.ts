@@ -1,4 +1,5 @@
 import { stagePausedCampaign, writeAdCopy } from "@wovain/core/ads";
+import { withLlmTrace } from "@wovain/core/nemotron";
 import { campaign } from "@wovain/db/schema/seller";
 import { desc, eq } from "drizzle-orm";
 
@@ -32,14 +33,18 @@ export const createProductCampaign = async (
   }
   const linkUrl = live.productUrl;
   const source = await getDesign(actor, live.designId);
-  const copy = await writeAdCopy(
-    actor.core.nemotron,
-    {
-      description: source.brief.description,
-      idea: source.brief.artPrompt,
-      title: source.brief.title,
-    },
-    actor.log
+  const copy = await withLlmTrace(
+    { distinctId: actor.userId, traceId: source.runId ?? source.id },
+    async () =>
+      await writeAdCopy(
+        actor.core.nemotron,
+        {
+          description: source.brief.description,
+          idea: source.brief.artPrompt,
+          title: source.brief.title,
+        },
+        actor.log
+      )
   );
   const dailyBudgetCents = Math.round(input.dailyBudget * 100);
   const staged = await withProvider(

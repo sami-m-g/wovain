@@ -291,6 +291,19 @@ export const scoutSchedule = new gitlab.PipelineSchedule("scout", {
   ref: "refs/heads/main",
 });
 
+// PostHog's destinations (infra/posthog/signals.tf) start the ops pipeline
+// with this token, which can only run a pipeline; the ops job then reads
+// PostHog itself. index.ts hands it to the posthog:plan job as a CI variable.
+// A trigger token needs Maintainer, so it's opt-in, applied by a Maintainer
+// (infra/README.md): `pulumi config set wovain:posthogTrigger true`.
+export const posthogTrigger =
+  config.getBoolean("posthogTrigger") === true
+    ? new gitlab.PipelineTrigger("posthog", {
+        description: "PostHog signals start wovain ops (infra/posthog)",
+        project: projectNumber,
+      })
+    : undefined;
+
 // The flows' labels (apps/ops reads them by name).
 const flowLabels: Record<string, { color: string; description: string }> = {
   "agent::task": {
@@ -315,6 +328,16 @@ const flowLabels: Record<string, { color: string; description: string }> = {
   "kpi-snapshot": {
     color: "#6c757d",
     description: "The daily KPI snapshot the scout flow reads",
+  },
+  "kpi::missed": {
+    color: "#e67e22",
+    description:
+      "A shipped kpi-scout change whose PostHog KPI alert still fires a week after the merge",
+  },
+  "kpi::verified": {
+    color: "#2da160",
+    description:
+      "PostHog confirmed the shipped kpi-scout change: its KPI alert stopped firing",
   },
   "vuln-fix": {
     color: "#8e44ad",

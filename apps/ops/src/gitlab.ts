@@ -138,7 +138,10 @@ const VULNERABILITIES =
   "query($path: ID!) { project(fullPath: $path) { vulnerabilities(severity: [CRITICAL, HIGH], state: [DETECTED, CONFIRMED], reportType: [SAST], sort: detected_desc, first: 50) { nodes { id title severity detectedAt webUrl mergeRequest { iid } } } } }";
 
 type Method = "GET" | "POST" | "PUT";
-type Query = Record<string, string | number | boolean | number[]>;
+type Query = Record<
+  string,
+  string | number | boolean | number[] | { key: string; value: string }[]
+>;
 const MAX_PAGES = 20;
 
 export const createGitLab = (env: {
@@ -361,6 +364,15 @@ export const createGitLab = (env: {
         "GET",
         `merge_requests/${mr}/reviewers`
       ),
+    // A new pipeline on `ref` with these CI variables.
+    runPipeline: async (ref: string, variables: Record<string, string>) =>
+      await inProject(z.object({ web_url: z.string() }), "POST", "pipeline", {
+        ref,
+        variables: Object.entries(variables).map(([key, value]) => ({
+          key,
+          value,
+        })),
+      }),
     // Duo sessions in the project, newest first: their flow and start time.
     sessions: async () => {
       const body = sessionsSchema.parse(

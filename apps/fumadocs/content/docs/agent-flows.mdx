@@ -1,6 +1,6 @@
 ---
 title: Agent flows
-description: Three GitLab Duo flows automate post-code DevSecOps for wovain.
+description: GitLab Duo flows automate post-code DevSecOps for wovain, with PostHog sensing and verifying.
 icon: Bot
 ---
 
@@ -8,11 +8,35 @@ After the code is merged, GitLab Duo agent flows handle the work around it:
 
 | Flow | Trigger | Output |
 | --- | --- | --- |
-| Self-healing | A production error, found by reading evlog wide events | A merge request with the fix and a regression test |
-| Scout | A schedule, reading KPIs and UI | Issues with evidence for the improvements worth making |
-| Developer | An issue | A merge request that takes the issue to completion |
+| Self-healing | A production error in the server logs, or a browser exception PostHog error tracking groups | A merge request with the fix and a regression test, verified in production |
+| Scout | A daily schedule, or a PostHog KPI alert, reading KPIs and UI | Issues with evidence for the improvements worth making |
+| Developer | An issue a trusted person accepts | A merge request that takes the issue to completion |
+| Vuln to fix | A new High or Critical SAST finding | A reviewed patch |
 
 Feature-flag fault injection lets the self-healing flow be demonstrated end to end: a flag introduces a controlled failure in production, the error is logged, and the flow opens the fix.
+
+## The PostHog loop
+
+PostHog senses, Duo acts, PostHog verifies:
+
+1. **Sense.** PostHog watches real visits: browser exceptions, the merchant funnel, rage and dead clicks, web vitals, run ratings and the cost of every Nemotron call. Each KPI has an alert that fires while it misses its target.
+2. **Nudge.** An error tracking issue or a firing KPI alert starts the ops pipeline in GitLab. Nothing from PostHog's event reaches GitLab: the ops job reads PostHog again itself.
+3. **Act.** A browser error becomes a heal issue for the self-healing flow. Firing KPI alerts start the scout, at most once a day; a trusted person hands its best proposal to the Developer flow. UX changes ship as PostHog experiments.
+4. **Verify.** After the deploy, the ops job checks PostHog again: no more exceptions for that error, or the KPI's alert has stopped firing. Then the issue and its incident close.
+
+## The nine DevSecOps stages
+
+| Stage | What covers it |
+| --- | --- |
+| Plan | The KPI file, PostHog KPI alerts and the scout's ranked issues; accepted issues for the Developer flow |
+| Create | The Developer and self-healing flows, Vulnerability Resolution, Duo Code Review |
+| Verify | Lint, types, tests, and a check that the heal fix's test fails before the fix and passes after |
+| Package | The web image built and pushed on every merged change |
+| Secure | SAST, Secret Detection, Dependency and Container Scanning; vulnerabilities fixed by Duo |
+| Release | Auto-merge, deploy to Cloud Run, GitLab feature flags for fault injection, PostHog experiments |
+| Configure | Duo triggers, schedules and labels in Pulumi; PostHog alerts, destinations and dashboard in OpenTofu |
+| Monitor | Cloud Logging, PostHog error tracking, KPI alerts, web vitals and LLM analytics, incidents, the status page |
+| Govern | Trusted people, caps, auto-merge guardrails, tool allow-lists and an audit trail |
 
 <Callout type="info" title="Details">
   The full definitions, prompts, triggers and guardrails of each flow live in

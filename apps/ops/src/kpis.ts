@@ -59,9 +59,13 @@ export type CloudSource = z.infer<typeof metricSource | typeof logRatioSource>;
 const kpiFileSchema = z.object({
   kpis: z.array(kpiSchema).min(1),
   // Product analytics context for the snapshot, read when the PostHog keys
-  // are set: the most visited pages, as HogQL returning (page, views,
-  // visitors) rows.
-  posthog: z.object({ topPages: z.string() }).optional(),
+  // are set: one table per HogQL query (top pages, frustrated clicks,
+  // experiments).
+  posthog: z
+    .object({
+      context: z.array(z.object({ query: z.string(), title: z.string() })),
+    })
+    .optional(),
   service: z.object({
     // Cloud Logging filter for the web app's own lines (evlog wide events).
     logs: z.string(),

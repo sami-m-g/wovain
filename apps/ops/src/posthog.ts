@@ -1,17 +1,33 @@
 import { z } from "zod";
 
-// wovain's product analytics in PostHog, read through its query API
-// (posthog.com/docs/api/queries) with a personal API key that has the Query
-// Read scope. scout-collect.ts uses it only when the key and project id are
-// set; without them the KPIs that need it fall back or show "no data".
+// wovain's product analytics in PostHog, read through its query and alerts
+// APIs (posthog.com/docs/api) with a personal API key that has the Query Read
+// and Alert Read scopes. The ops jobs use it only when the key and project id
+// are set; without them the KPIs that need it fall back or show "no data",
+// and the PostHog loop (signals.ts) is off.
 
 const resultSchema = z.object({
+  columns: z.array(z.string()).default([]),
   results: z.array(z.array(z.unknown())),
 });
 
+const alertSchema = z.object({
+  id: z.string(),
+  insight: z.object({ short_id: z.string() }).partial().nullish(),
+  last_checked_at: z.string().nullish(),
+  name: z.string().nullish(),
+  // "Firing", "Not firing", "Errored" or "Snoozed".
+  state: z.string(),
+});
+export type Alert = z.infer<typeof alertSchema>;
+
 export interface PostHogQuery {
-  // A HogQL query's result rows.
+  // A HogQL query's columns and result rows.
+  table: (hogql: string) => Promise<z.infer<typeof resultSchema>>;
   rows: (hogql: string) => Promise<unknown[][]>;
+  alerts: () => Promise<Alert[]>;
+  // The app's link for a path in the project, like "insights/<short id>".
+  link: (path: string) => string;
 }
 
 export const createPostHog = (options: {
@@ -22,29 +38,46 @@ export const createPostHog = (options: {
   fetch?: typeof globalThis.fetch;
 }): PostHogQuery => {
   const send = options.fetch ?? globalThis.fetch;
-  return {
-    rows: async (hogql) => {
-      const response = await send(
-        `${options.host}/api/projects/${options.projectId}/query/`,
-        {
-          body: JSON.stringify({
-            name: "wovain scout",
-            query: { kind: "HogQLQuery", query: hogql },
-          }),
-          headers: {
-            Authorization: `Bearer ${options.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        }
-      );
-      if (!response.ok) {
-        throw new Error(
-          `PostHog query failed: ${response.status} ${await response.text()}`
-        );
+  const api = async (path: string, body?: unknown) => {
+    const response = await send(
+      `${options.host}/api/projects/${options.projectId}/${path}`,
+      {
+        headers: {
+          Authorization: `Bearer ${options.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        ...(body === undefined
+          ? {}
+          : { body: JSON.stringify(body), method: "POST" }),
       }
-      return resultSchema.parse(await response.json()).results;
+    );
+    if (!response.ok) {
+      throw new Error(
+        `PostHog ${path} failed: ${response.status} ${await response.text()}`
+      );
+    }
+    return (await response.json()) as unknown;
+  };
+  const table = async (hogql: string) =>
+    resultSchema.parse(
+      await api("query/", {
+        name: "wovain ops",
+        query: { kind: "HogQLQuery", query: hogql },
+      })
+    );
+  return {
+    alerts: async () => {
+      const { results } = z
+        .object({ results: z.array(alertSchema) })
+        .parse(await api("alerts/?limit=100"));
+      return results;
     },
+    link: (path) => `${options.host}/project/${options.projectId}/${path}`,
+    rows: async (hogql) => {
+      const { results } = await table(hogql);
+      return results;
+    },
+    table,
   };
 };
 
@@ -59,19 +92,33 @@ export const scalarOf = (rows: unknown[][]): number | undefined => {
   return Number.isFinite(n) ? n : undefined;
 };
 
-// The snapshot's top pages section, from (page, views, visitors) rows.
-export const topPagesReport = (rows: unknown[][], windowDays: number) =>
+// A snapshot section from a query's columns and rows. Cells are numbers or
+// our own page paths and flag keys; pipes and backticks are dropped anyway.
+export const tableReport = (
+  title: string,
+  { columns, results }: { columns: string[]; results: unknown[][] }
+) =>
   [
-    `## Top pages (PostHog, last ${windowDays} days)`,
+    `## ${title} (PostHog)`,
     "",
-    "| Page | Views | Visitors |",
-    "| --- | --- | --- |",
-    ...rows.map(
-      ([page, views, visitors]) =>
-        `| \`${String(page)}\` | ${String(views)} | ${String(visitors)} |`
+    `| ${columns.join(" | ")} |`,
+    `| ${columns.map(() => "---").join(" | ")} |`,
+    ...results.map(
+      (row) =>
+        `| ${row.map((cell) => String(cell).replaceAll(/[|`\n]/gu, " ")).join(" | ")} |`
     ),
   ].join("\n");
 
 // HogQL in kpis.yml says {windowDays} for the measurement window.
 export const withWindow = (hogql: string, windowDays: number) =>
   hogql.replaceAll("{windowDays}", String(windowDays));
+
+// Browser exceptions in production over the last `minutes`, one row per
+// PostHog error tracking issue, most frequent first; heal.ts's posthogGroupOf
+// reads each row.
+export const exceptionsQuery = (minutes: number) =>
+  `SELECT properties.$exception_issue_id AS issue, any(JSONExtractString(properties.$exception_types, 1)) AS name, any(JSONExtractString(properties.$exception_values, 1)) AS message, any(properties.$pathname) AS path, count() AS events, toString(min(timestamp)) AS first_seen, toString(max(timestamp)) AS last_seen, any(properties.$exception_functions) AS functions, any(properties.$exception_sources) AS sources FROM events WHERE event = '$exception' AND properties.environment = 'production' AND timestamp > now() - INTERVAL ${Math.round(minutes)} MINUTE GROUP BY issue ORDER BY events DESC LIMIT 20`;
+
+// How many times one error tracking issue fired since `since`.
+export const issueEventsQuery = (issue: string, since: Date) =>
+  `SELECT count() FROM events WHERE event = '$exception' AND properties.$exception_issue_id = '${z.uuid().parse(issue)}' AND timestamp > toDateTime('${since.toISOString().slice(0, 19)}')`;

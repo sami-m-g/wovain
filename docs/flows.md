@@ -4,14 +4,15 @@ Code that has merged keeps going without anyone at the keyboard. Production erro
 
 | Flow | Starts on | Duo part | Ends with |
 | --- | --- | --- | --- |
-| 1. Self-healing | Repeated production error in Cloud Logging | Custom flow `wovain heal` | A merged fix, a closed incident and the fix verified in production |
-| 2. KPI scout | Daily schedule | Custom flow `wovain scout` | Up to three ranked issues against `.gitlab/duo/kpis.yml` |
+| 1. Self-healing | Repeated production error in Cloud Logging, or a browser exception PostHog error tracking groups | Custom flow `wovain heal` | A merged fix, a closed incident and the fix verified in production (Cloud Logging or PostHog) |
+| 2. KPI scout | Daily schedule, or a PostHog KPI alert (at most once a day) | Custom flow `wovain scout` | Up to three ranked issues against `.gitlab/duo/kpis.yml`, verified in PostHog after they ship |
 | 3. Issue to completion | A trusted person adds `agent::task` | Developer flow, then Duo Code Review | An auto-merged merge request |
 | 4. Vuln to fix | A new High or Critical SAST finding | Duo Vulnerability Resolution, then Duo Code Review | An auto-merged patch |
 
 Each flow's work is done by the same pieces:
 
-- `apps/ops/src/ops.ts`: the ops job, every 10 minutes (schedule "wovain ops"). It runs the phases `heal`, `verifyHeals`, `intake`, `vulnFixes`, `shepherd` and `statusPage`.
+- `apps/ops/src/ops.ts`: the ops job, every 10 minutes (schedule "wovain ops"). It runs the phases `heal`, `verifyHeals`, `intake`, `vulnFixes`, `shepherd`, `statusPage`, `signals` and `verifyKpis`. PostHog's destinations also start it right away (see [The PostHog loop](#the-posthog-loop)).
+- `infra/posthog/`: PostHog's alerts, destinations, dashboard and survey, as OpenTofu code with PostHog's official provider (`.gitlab/ci/posthog.yml`).
 - `.gitlab/duo/catalog/`: the custom flows and the read-only `wovain explain` agent, synced to the AI Catalog by GitLab's `ai-catalog` component (`.gitlab/ci/duo.yml`).
 - `infra/duo.ts`: flow triggers, schedules, labels, the status page domain and the Ultimate-only Govern pieces, as Pulumi code.
 
@@ -92,6 +93,63 @@ GitLab links the MR to the finding (`Vulnerability.mergeRequest`), so the shephe
 
 **Demo in under a minute:** Secure > Vulnerability report: show a High SAST finding. Run "wovain ops". Show the note on the `vuln-fix` issue, the Resolution MR, the review and the auto-merge.
 
+## The PostHog loop
+
+PostHog senses, Duo acts, PostHog verifies. PostHog sees what logs can't: real visitors' funnel, browser exceptions, rage and dead clicks, field web vitals, survey ratings and every Nemotron call's cost. GitLab Duo stays the only actor on code, inside the guardrails above.
+
+```mermaid
+flowchart LR
+  subgraph PostHog["PostHog senses"]
+    et["Error tracking: issue created, reopened, spiking"]
+    kpi["Alert kpi:&lt;id&gt; per PostHog KPI in kpis.yml"]
+  end
+  et -->|"destination: pipeline trigger, OPS=1"| ops["ops job (reads PostHog itself)"]
+  kpi -->|"destination: pipeline trigger, OPS=1"| ops
+  ops -->|"heal: browser exception as a BROWSER signature"| f1["Flow 1: heal issue, incident, heal flow"]
+  ops -->|"signals: firing KPI alerts, once a day"| f2["Flow 2: scout run, kpi-scout issues"]
+  f2 -->|"trusted person adds agent::task"| f3["Flow 3: Developer flow, Duo Code Review, auto-merge"]
+  f1 --> deploy["Deploy"]
+  f3 --> deploy
+  deploy --> v1["verifyHeals: no events for the PostHog issue since the deploy"]
+  deploy --> v2["verifyKpis: the KPI's alert stops firing, else kpi::missed after a week"]
+  v1 --> closed["heal::verified, incident closed"]
+  v2 --> verified["kpi::verified"]
+```
+
+| Who | What | Where |
+| --- | --- | --- |
+| PostHog senses | Error tracking issues and spikes from `posthog-js` exceptions; one daily alert per PostHog KPI (funnel steps, visitors, browser errors, rage and dead clicks, field LCP, run rating, Nemotron cost per run), each firing while its KPI misses the target in `kpis.yml` | `apps/web/instrumentation-client.ts`, `infra/posthog/kpis.tf` |
+| PostHog nudges GitLab | Two webhook destinations call GitLab's pipeline trigger API with a fixed body (`OPS=1`). The trigger token can only run a pipeline; nothing from the PostHog event reaches GitLab | `infra/posthog/signals.tf`, `infra/duo.ts` |
+| ops routes | `heal` reads PostHog's browser exceptions of the last 30 minutes next to Cloud Logging and files the most frequent new one; `signals` reads the alerts and starts the scout early, at most once a day | `apps/ops/src/ops.ts`, `heal.ts`, `signals.ts`, `posthog.ts` |
+| Duo acts | The heal flow fixes errors; the scout reads the snapshot (now with PostHog's top pages, frustrated clicks, experiments and alert states) and files `kpi-scout` issues; a trusted person hands one to the Developer flow | Flows 1 to 3 |
+| PostHog verifies | `verifyHeals` counts the PostHog issue's exceptions since the deploy; `verifyKpis` labels a merged `kpi-scout` issue `kpi::verified` once the KPI's alert stops firing, or `kpi::missed` if it still fires a week later | `apps/ops/src/ops.ts`, `signals.ts` |
+
+The trigger token lives only in PostHog's redacted sensitive inputs and a masked, protected CI variable. The payload is a nudge, not an input: the ops job runs every 10 minutes anyway, so a lost webhook only delays detection, and a forged one only runs the same checks early. Its caps (one heal in flight, three a day, one early scout a day) hold whatever starts it. Error tracking's own GitLab integration can also link a PostHog issue to the GitLab issue by hand (Error tracking > issue > Create issue > GitLab).
+
+**Experiments.** A UX change for signed-in merchants ships behind a PostHog flag named `exp-<KPI id>` (control and test), declared as a `posthog_experiment` in `infra/posthog`. The flag lives outside the auto-merge scope, so a person approves each experiment. The snapshot's experiments table shows exposures and runs started per variant; the scout proposes shipping a clear winner and removing the flag, or removing a loser. Experiments target signed-in merchants (identified on sign-in) because cookieless mode gives anonymous visitors no stable id.
+
+**GitLab feature flags stay for fault injection.** `fault-injection-checkout` is part of the self-healing harness, not the product: it is evaluated server-side through GitLab's Unleash endpoint, toggled from Deploy > Feature flags during the demo, and kept off-limits to Duo and auto-merge. PostHog flags are for product rollouts and experiments, where exposure analytics matter. Keeping them apart means an experiment cleanup can never switch the harness, and the demo has no PostHog dependency.
+
+**LLM analytics.** `packages/core/src/nemotron.ts` wraps the OpenAI SDK on Nebius with `@posthog/ai`: every Nemotron call is a `$ai_generation` with its step (`$ai_span_name`: `design_brief`, `design_judge`, `ad_copy`, `autopilot_*`), tokens, latency and cost at Nebius list prices ($0.30 and $0.90 per million tokens), grouped by run (`$ai_trace_id` is the run id) and merchant. The "wovain health" dashboard shows cost and model time per run and per step; `llm-cost-per-run` is a KPI with an alert.
+
+**The "wovain health" dashboard** (`infra/posthog/health.tf`): the merchant funnel, browser errors per 1,000 pageviews, field web vitals (LCP, INP, CLS at p75), rage and dead clicks by page, Nemotron per run and per step, and one tile per PostHog KPI.
+
+### PostHog's agentic features, and why wovain uses each or not
+
+As of October 2026; prices are PostHog Cloud's monthly free tier, then pay as you go.
+
+| Feature | Use here | Cost | GitLab or GitHub |
+| --- | --- | --- | --- |
+| Error tracking, issue alerts and spike alerts | Senses browser exceptions; destinations start ops | 100k exceptions free | Alerts go to any webhook; issue creation and source links work with GitLab |
+| Insight alerts | One per PostHog KPI | Included with product analytics (1M events free) | Webhook |
+| Workflows and destinations (Hog functions) | Webhook to GitLab's pipeline trigger API; a native GitLab destination (`template-gitlab`) also exists | Alert and error-tracking destinations ride on those products | Either |
+| Experiments and feature flags | `exp-<KPI id>` experiments | 1M flag requests free | Either |
+| Surveys | "Run rating" (draft until a person launches it) | Free tier of survey responses | Either |
+| LLM analytics | Nemotron cost, latency and steps | 100k LLM events free | Either |
+| Web analytics, web vitals, rage and dead clicks | KPIs and dashboard tiles | Product analytics events | Either |
+| Session replay and Replay Vision | Not used: cookieless mode ("always") records no replays, and Replay Vision scans replays | 5k recordings free; Replay Vision 2,500 credits free, then $0.01 a credit | Either |
+| Self-driving: Signals scouts, Inbox, reports, Tasks and PostHog Code, Loops | Not used to act: they open pull requests through PostHog's GitHub App only, and their external signal sources are GitHub Issues, Jira, Linear and Zendesk. wovain lives on GitLab, so Duo acts and PostHog senses | Open beta; AI credits (500 free, then $0.01 a credit; beta features are free) | GitHub only |
+
 ## Status page
 
 The ops job renders `public/index.html` every run and the `pages` job publishes it to status.wovain.com: health (incident, degraded, operational), incidents of the last 30 days with durations, DORA metrics (deployments a week, lead time from GitLab's DORA API when the tier has it, change failure rate as incidents per deployment, time to restore) and the SCI score from the latest `sci` job. Only numbers and titles the ops job wrote are shown.
@@ -122,16 +180,18 @@ The ops job renders `public/index.html` every run and the `pages` job publishes 
 
 ## DevSecOps stages
 
+The nine stages, with PostHog in Plan and Monitor:
+
 | Stage | What covers it |
 | --- | --- |
-| Plan | Agent task template, `agent::task` intake, the KPI file and the scout's ranked `kpi-scout` issues (flows 2, 3) |
+| Plan | Agent task template, `agent::task` intake, the KPI file and the scout's ranked `kpi-scout` issues (flows 2, 3); PostHog KPI alerts start the scout, and its snapshot carries PostHog's pages, frustrated clicks, experiments and alert states |
 | Create | Developer flow, heal flow, Vulnerability Resolution, Duo Code Review with project rules (flows 1, 3, 4) |
 | Verify | `verify` job (check, types, knip, tests with JUnit), `heal:verify` reproduces the production error (flow 1) |
 | Package | The web image built and pushed by `image:production` (`.gitlab/ci/deploy.yml`), deployed by every merged fix |
 | Secure | SAST, Secret Detection, Dependency Scanning; vuln to fix (flow 4); scan execution policy |
-| Release | Auto-merge to `main`, deploy to Cloud Run, GitLab feature flags (`fault-injection-checkout`) |
-| Configure | Triggers, schedules, labels, Pages domain and policies as Pulumi code (`infra/duo.ts`); `.gitlab/duo/agent-config.yml` for flow runners |
-| Monitor | Cloud Logging and Error Reporting, incidents with timelines, verify-in-production, KPI snapshot, status page with DORA and SCI (flows 1, 2) |
+| Release | Auto-merge to `main`, deploy to Cloud Run, GitLab feature flags (`fault-injection-checkout`), PostHog experiments (`exp-<KPI id>`) |
+| Configure | Triggers, schedules, labels, Pages domain, policies and the PostHog trigger token as Pulumi code (`infra/duo.ts`); PostHog alerts, destinations, dashboard and survey as OpenTofu code (`infra/posthog`); `.gitlab/duo/agent-config.yml` for flow runners |
+| Monitor | Cloud Logging and Error Reporting, PostHog error tracking, KPI alerts, web vitals and LLM analytics, incidents with timelines, verify-in-production (Cloud Logging or PostHog), `verifyKpis`, KPI snapshot, status page with DORA and SCI (flows 1, 2) |
 | Govern | Trusted-user checks, caps, guardrails, tool allow-lists, the `vuln-fix` audit issue, approval policy and compliance framework (Ultimate), SCI report |
 
 ## Setup
@@ -141,3 +201,5 @@ The ops job renders `public/index.html` every run and the `pages` job publishes 
 3. After the first main pipeline syncs `wovain heal` to the AI Catalog, enable it in the project (Automate > AI Catalog > Flows > Enable), then run `pulumi up` again so `infra/duo.ts` adds its trigger.
 4. Cloud Run needs `GITLAB_FEATURE_FLAGS_URL` and `GITLAB_FEATURE_FLAGS_INSTANCE_ID` (Deploy > Feature flags > Configure) for the fault flag to work.
 5. DNS: `status.wovain.com` CNAME to the project's Pages host, and the TXT record from the `statusDomainVerification` output.
+6. PostHog (project "wovain", id 687269, US cloud): a person creates a personal API key at Settings > Personal API keys, scoped to this project, with `query:read`, `alert:write`, `insight:write`, `dashboard:write`, `hog_function:write`, `survey:write`, `feature_flag:write` and `experiment:write`. Then `pulumi config set --secret posthog-personal-api-key phx_...` and `pulumi config set posthogProjectId 687269`; main's `pulumi up` sets the CI variables. A pipeline trigger token needs Maintainer, so it's opt-in: a Maintainer runs `pulumi config set wovain:posthogTrigger true` and `pnpm run infra:up -- --policy-pack-config policy/maintainer.json`, which creates the trigger and `POSTHOG_TRIGGER_TOKEN`. In PostHog, cookieless server hash mode, exception autocapture, web vitals, heatmaps and dead clicks are already on; turn on spike detection in Error tracking > Configuration.
+7. The next main pipeline that touches `infra/posthog` or `kpis.yml` plans the PostHog config (`posthog:plan`); a person reviews the plan and runs `posthog:apply`. Then launch the "Run rating" survey in PostHog when it should start showing.

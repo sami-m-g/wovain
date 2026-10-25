@@ -1,4 +1,5 @@
 import { pickIdea } from "@wovain/core/autopilot";
+import { withLlmTrace } from "@wovain/core/nemotron";
 import { user } from "@wovain/db/schema/auth";
 import { campaign, design, idea, product, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
@@ -165,7 +166,11 @@ export const startRun = async (actor: Actor, input: RunInput) => {
   }
   actor.log?.set({ run: { autopilot: input.autopilot, id: created.id } });
   try {
-    await execute(actor, created.id, input);
+    // One PostHog LLM trace per run: its Nemotron calls, cost and latency.
+    await withLlmTrace(
+      { distinctId: actor.userId, traceId: created.id },
+      async () => await execute(actor, created.id, input)
+    );
   } catch (error) {
     await update(actor, created.id, {
       error: error instanceof Error ? error.message : String(error),

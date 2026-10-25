@@ -19,7 +19,9 @@
 # GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, GCP_IMAGE_REPOSITORY,
 # GCP_SQL_INSTANCE, GCP_PREVIEW_SERVICE_ACCOUNT, GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER,
 # SITE_URL, DEV_SITE_URL and DOCS_SITE_URL. Pulumi sets them all
-# (infra/index.ts); don't edit them in the UI. The ops jobs also read
+# (infra/index.ts), as it does the PostHog ones (POSTHOG_PERSONAL_API_KEY,
+# POSTHOG_PROJECT_ID, POSTHOG_TRIGGER_TOKEN); don't edit them in the UI.
+# The ops jobs also read
 # TRUSTED_USERS (who may hand issues to Duo) and, when GitLab names the Duo
 # service accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT,
 # DUO_HEAL_ACCOUNT and DUO_REVIEW_ACCOUNT.
@@ -53,6 +55,16 @@ include:
       enable_in_project: "false"
       public: "false"
       version: $CI_COMMIT_SHORT_SHA
+  # OpenTofu job templates for the PostHog configuration (posthog.yml).
+  - component: $CI_SERVER_FQDN/components/opentofu/job-templates@4.9.0
+    inputs:
+      version: 4.9.0
+      opentofu_version: 1.12.6
+      root_dir: infra/posthog
+      state_name: posthog
+      stage_validate: verify
+      stage_build: test
+      stage_deploy: deploy
   - local: .gitlab/ci/templates.yml
   - local: .gitlab/ci/verify.yml
   - local: .gitlab/ci/secure.yml
@@ -61,6 +73,7 @@ include:
   - local: .gitlab/ci/heal.yml
   - local: .gitlab/ci/ops.yml
   - local: .gitlab/ci/scout.yml
+  - local: .gitlab/ci/posthog.yml
 
 stages:
   - verify

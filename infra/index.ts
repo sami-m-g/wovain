@@ -5,7 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import { statusDomainVerification } from "./duo.ts";
+import { posthogTrigger, statusDomainVerification } from "./duo.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
 import { ResendDomain, ResendVerification } from "./resend.ts";
@@ -724,6 +724,17 @@ ciVariables({
           created: true,
           protected: true,
           value: posthogProjectId,
+        },
+      }),
+  // PostHog's destinations start the ops pipeline with it (infra/posthog).
+  ...(posthogTrigger === undefined
+    ? {}
+    : {
+        POSTHOG_TRIGGER_TOKEN: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: posthogTrigger.token,
         },
       }),
   RENOVATE_TOKEN: {

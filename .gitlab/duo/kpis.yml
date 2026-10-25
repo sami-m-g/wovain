@@ -12,7 +12,11 @@
 #              viewport: lcp (ms), cls, consoleErrors
 #   posthog    a HogQL query on PostHog product analytics (the web app's
 #              funnel events, apps/web) whose first row's first column is the
-#              value; {windowDays} is the window. Needs POSTHOG_PERSONAL_API_KEY
+#              value, named `value`; {windowDays} is the window. Each one is
+#              also a PostHog insight with an alert, "kpi:<id>", that fires
+#              while it misses its target (infra/posthog/kpis.tf), which
+#              starts the scout early and verifies shipped fixes
+#              (apps/ops/src/signals.ts). Needs POSTHOG_PERSONAL_API_KEY
 #              and POSTHOG_PROJECT_ID in CI; without them the optional
 #              fallback (a metric or log-ratio source) measures it, or the KPI
 #              has no data. Count production events only.
@@ -26,11 +30,21 @@ service:
   logs: resource.type="cloud_run_revision" AND resource.labels.service_name="wovain-web" AND jsonPayload.service="wovain-web"
   metrics: resource.type="cloud_run_revision" AND resource.labels.service_name="wovain-web"
 
-# Context for the scout from PostHog, added to the snapshot when its keys are
-# set: the most visited pages as (page, views, visitors).
+# Context for the scout from PostHog, added to the snapshot as tables when
+# its keys are set (HogQL; the first row of each names the columns).
 posthog:
-  topPages: >-
-    SELECT properties.$pathname AS page, count() AS views, uniq(person_id) AS visitors FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY GROUP BY page ORDER BY views DESC LIMIT 10
+  context:
+    - title: Top pages
+      query: >-
+        SELECT properties.$pathname AS page, count() AS views, uniq(person_id) AS visitors FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY GROUP BY page ORDER BY views DESC LIMIT 10
+    - title: Rage and dead clicks by page
+      query: >-
+        SELECT properties.$pathname AS page, countIf(event = '$rageclick') AS rage_clicks, countIf(event = '$dead_click') AS dead_clicks FROM events WHERE event IN ('$rageclick', '$dead_click') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY GROUP BY page ORDER BY rage_clicks + dead_clicks DESC LIMIT 10
+    # Experiments: feature flags named exp-<kpi id> (docs/flows.md). Signed-in
+    # merchants exposed to each variant, and how many of them started a run.
+    - title: Experiments (flags named exp-*)
+      query: >-
+        SELECT properties.$feature_flag AS flag, toString(properties.$feature_flag_response) AS variant, uniq(person_id) AS exposed, uniqIf(person_id, person_id IN (SELECT person_id FROM events WHERE event = 'run_started' AND timestamp > now() - INTERVAL {windowDays} DAY)) AS started_a_run FROM events WHERE event = '$feature_flag_called' AND properties.$feature_flag LIKE 'exp-%' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY GROUP BY flag, variant ORDER BY flag, variant
 
 kpis:
   - id: weekly-visitors
@@ -43,7 +57,7 @@ kpis:
     source:
       kind: posthog
       query: >-
-        SELECT uniq(person_id) FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+        SELECT uniq(person_id) AS value FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
 
   - id: visitor-sign-up-rate
     name: Visitors who sign up
@@ -55,7 +69,7 @@ kpis:
     source:
       kind: posthog
       query: >-
-        SELECT uniqIf(person_id, event = 'sign_up') / nullIf(uniqIf(person_id, event = '$pageview'), 0) FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+        SELECT uniqIf(person_id, event = 'sign_up') / nullIf(uniqIf(person_id, event = '$pageview'), 0) AS value FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
 
   - id: sign-up-to-run
     name: Sign-ups that start a run
@@ -67,7 +81,7 @@ kpis:
     source:
       kind: posthog
       query: >-
-        SELECT uniqIf(person_id, event = 'run_started') / nullIf(uniqIf(person_id, event = 'sign_up'), 0) FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+        SELECT uniqIf(person_id, event = 'run_started') / nullIf(uniqIf(person_id, event = 'sign_up'), 0) AS value FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
       # Without PostHog: started runs per successful sign-up, from the logs.
       fallback:
         kind: log-ratio
@@ -84,7 +98,67 @@ kpis:
     source:
       kind: posthog
       query: >-
-        SELECT uniqIf(person_id, event = 'campaign_created') / nullIf(uniqIf(person_id, event = 'run_started'), 0) FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+        SELECT uniqIf(person_id, event = 'campaign_created') / nullIf(uniqIf(person_id, event = 'run_started'), 0) AS value FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: client-errors
+    name: Browser exceptions per 1,000 pageviews
+    why: An uncaught error in the browser is usually a broken screen.
+    unit: per 1k views
+    direction: down
+    target: 5
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT countIf(event = '$exception') * 1000 / nullIf(countIf(event = '$pageview'), 0) AS value FROM events WHERE event IN ('$exception', '$pageview') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: frustrated-clicks
+    name: Rage and dead clicks per 1,000 pageviews
+    why: Clicks that do nothing, or repeated in anger, mark UI that misleads.
+    unit: per 1k views
+    direction: down
+    target: 10
+    weight: 2
+    source:
+      kind: posthog
+      query: >-
+        SELECT countIf(event IN ('$rageclick', '$dead_click')) * 1000 / nullIf(countIf(event = '$pageview'), 0) AS value FROM events WHERE event IN ('$rageclick', '$dead_click', '$pageview') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: field-lcp
+    name: Largest Contentful Paint p75 from real visits
+    why: Field data, unlike home-lcp's one lab load; "good" is 2.5 s or less.
+    unit: ms
+    direction: down
+    target: 2500
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT quantile(0.75)(toFloat(properties.$web_vitals_LCP_value)) AS value FROM events WHERE event = '$web_vitals' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: merchant-rating
+    name: Run rating from merchants (1 to 5)
+    why: What merchants say about a run, from the "Run rating" survey.
+    unit: stars
+    direction: up
+    target: 4
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT avg(toFloat(properties.$survey_response_rating)) AS value FROM events WHERE event = 'survey sent' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: llm-cost-per-run
+    name: Nemotron cost per run
+    why: Model spend per run, from PostHog LLM analytics at Nebius list prices.
+    unit: USD
+    direction: down
+    target: 0.02
+    weight: 2
+    source:
+      kind: posthog
+      query: >-
+        SELECT sum(toFloat(properties.$ai_total_cost_usd)) / nullIf(uniq(properties.$ai_trace_id), 0) AS value FROM events WHERE event = '$ai_generation' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
 
   - id: server-error-rate
     name: API server error rate

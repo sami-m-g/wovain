@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { opsContext } from "./env.ts";
 import { kpiReport, loadKpis, rank } from "./kpis.ts";
 import type { CloudSource, Kpi } from "./kpis.ts";
-import { scalarOf, topPagesReport, withWindow } from "./posthog.ts";
+import { scalarOf, tableReport, withWindow } from "./posthog.ts";
 import { inspectPages } from "./ui.ts";
 import type { PageReading } from "./ui.ts";
 
@@ -11,8 +11,8 @@ import type { PageReading } from "./ui.ts";
 // schedule: measures every KPI in .gitlab/duo/kpis.yml (Cloud Monitoring,
 // Cloud Logging, PostHog product analytics when its keys are set, and the
 // live site in headless Chromium), ranks the gaps, and writes the snapshot,
-// with PostHog's top pages, to the open "kpi-snapshot" issue, where the scout
-// flow reads it. Numbers, page paths and our own pages' accessibility trees
+// with PostHog's context tables and KPI alerts, to the open "kpi-snapshot"
+// issue, where the scout flow reads it. Numbers, page paths and our own pages' accessibility trees
 // only: no log text.
 
 const SNAPSHOT_LABEL = "kpi-snapshot";
@@ -91,22 +91,33 @@ const measured = await Promise.all(
   config.kpis.map(async (kpi) => ({ kpi, ...(await measure(kpi)) }))
 );
 const ranked = rank(measured);
-const topPages =
-  posthog === undefined || config.posthog === undefined
+// PostHog's context tables (kpis.yml) and KPI alerts (infra/posthog).
+const alerts = posthog === undefined ? [] : await posthog.alerts();
+const context =
+  posthog === undefined
     ? []
     : [
-        topPagesReport(
-          await posthog.rows(
-            withWindow(config.posthog.topPages, config.windowDays)
+        ...(await Promise.all(
+          (config.posthog?.context ?? []).map(async ({ query, title }) =>
+            tableReport(
+              `${title}, last ${config.windowDays} days`,
+              await posthog.table(withWindow(query, config.windowDays))
+            )
+          )
+        )),
+        tableReport("KPI alerts", {
+          columns: ["Alert", "State", "Last checked"],
+          results: alerts.flatMap((a) =>
+            a.name?.startsWith("kpi:") === true
+              ? [[a.name, a.state, a.last_checked_at ?? "never"]]
+              : []
           ),
-          config.windowDays
-        ),
-        "",
-      ];
+        }),
+      ].flatMap((section) => [section, ""]);
 const report = [
   kpiReport(ranked, now, config.windowDays),
   "",
-  ...topPages,
+  ...context,
   ...readings.flatMap((r) => [
     `<details><summary>Accessibility tree of ${r.page} (mobile viewport)</summary>`,
     "",

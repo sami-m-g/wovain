@@ -52,7 +52,9 @@ definition:
              "kpi-snapshot" (list_issues with labels "kpi-snapshot", then
              get_issue). It ranks every KPI by weighted gap to its target
              and includes the accessibility tree of each measured page
-             and, when PostHog is connected, the most visited pages.
+             and, when PostHog is connected, tables of the most visited
+             pages, rage and dead clicks by page, experiments (flags named
+             exp-<KPI id>) and which KPI alerts fire.
           3. Pick at most three KPIs that miss their target, worst first.
              Skip KPIs with no data. For each, look at the code that drives
              it (list_repository_tree, get_repository_file,
@@ -62,7 +64,14 @@ definition:
              funnel KPIs (visitors, sign-up and activation rates), look at
              the pages and steps the funnel passes through, starting with
              the top pages, and the events in apps/web and packages/api
-             that mark each step.
+             that mark each step. Pages with many rage or dead clicks are
+             good places to look. A UX change to a page signed-in merchants
+             use ships as an experiment: ask for it behind the PostHog flag
+             exp-<KPI id> (control and test variants, posthog-js
+             getFeatureFlag), declared in infra/posthog. When the
+             experiments table shows a variant that clearly beats control
+             with enough people exposed, propose shipping it and removing
+             the flag; when it clearly loses, propose removing it.
           4. Skip a proposal when an open issue labelled "kpi-scout" already
              covers the same KPI (list_issues, gitlab_issue_search).
           5. Create one issue per proposal (create_issue), with labels

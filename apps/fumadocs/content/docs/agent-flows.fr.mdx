@@ -1,6 +1,6 @@
 ---
 title: Flows d'agents
-description: Trois flows GitLab Duo automatisent le DevSecOps après le code pour wovain.
+description: Les flows GitLab Duo automatisent le DevSecOps après le code pour wovain, PostHog détecte et vérifie.
 icon: Bot
 ---
 
@@ -8,11 +8,35 @@ Une fois le code fusionné, les flows d'agents GitLab Duo prennent en charge le 
 
 | Flow | Déclencheur | Résultat |
 | --- | --- | --- |
-| Auto-réparation | Une erreur de production, repérée dans les événements larges evlog | Une merge request avec le correctif et un test de non-régression |
-| Éclaireur | Un calendrier, en lisant les KPI et l'interface | Des issues avec preuves pour les améliorations qui valent la peine |
-| Développeur | Une issue | Une merge request qui mène l'issue jusqu'à son terme |
+| Auto-réparation | Une erreur de production dans les journaux du serveur, ou une exception navigateur regroupée par le suivi d'erreurs de PostHog | Une merge request avec le correctif et un test de non-régression, vérifiée en production |
+| Éclaireur | Un calendrier quotidien, ou une alerte KPI de PostHog, en lisant les KPI et l'interface | Des issues avec preuves pour les améliorations qui valent la peine |
+| Développeur | Une issue acceptée par une personne de confiance | Une merge request qui mène l'issue jusqu'à son terme |
+| Vulnérabilité corrigée | Une nouvelle faille SAST élevée ou critique | Un correctif relu |
 
 L'injection de pannes par feature flag permet de démontrer l'auto-réparation de bout en bout : un flag provoque une défaillance contrôlée en production, l'erreur est journalisée et le flow ouvre le correctif.
+
+## La boucle PostHog
+
+PostHog détecte, Duo agit, PostHog vérifie :
+
+1. **Détecter.** PostHog observe les vraies visites : exceptions du navigateur, entonnoir des marchands, clics de rage et clics morts, Web Vitals, notes des runs et coût de chaque appel à Nemotron. Chaque KPI a une alerte qui se déclenche tant qu'il manque sa cible.
+2. **Signaler.** Une issue du suivi d'erreurs ou une alerte KPI déclenchée lance le pipeline ops dans GitLab. Rien de l'événement PostHog n'atteint GitLab : le job ops relit PostHog lui-même.
+3. **Agir.** Une erreur navigateur devient une issue de réparation pour le flow d'auto-réparation. Les alertes KPI lancent l'éclaireur, au plus une fois par jour ; une personne de confiance confie sa meilleure proposition au flow Développeur. Les changements d'interface sortent en expériences PostHog.
+4. **Vérifier.** Après le déploiement, le job ops relit PostHog : plus d'exceptions pour cette erreur, ou l'alerte du KPI ne se déclenche plus. L'issue et son incident sont alors fermés.
+
+## Les neuf étapes DevSecOps
+
+| Étape | Ce qui la couvre |
+| --- | --- |
+| Plan | Le fichier des KPI, les alertes KPI de PostHog et les issues classées de l'éclaireur ; les issues acceptées pour le flow Développeur |
+| Create | Les flows Développeur et d'auto-réparation, Vulnerability Resolution, Duo Code Review |
+| Verify | Lint, types, tests, et la vérification que le test du correctif échoue avant le correctif et passe après |
+| Package | L'image web construite et publiée à chaque changement fusionné |
+| Secure | SAST, Secret Detection, analyse des dépendances et des conteneurs ; failles corrigées par Duo |
+| Release | Fusion automatique, déploiement sur Cloud Run, feature flags GitLab pour l'injection de pannes, expériences PostHog |
+| Configure | Déclencheurs, calendriers et labels Duo dans Pulumi ; alertes, destinations et tableau de bord PostHog dans OpenTofu |
+| Monitor | Cloud Logging, suivi d'erreurs, alertes KPI, Web Vitals et analytique LLM de PostHog, incidents, page de statut |
+| Govern | Personnes de confiance, plafonds, garde-fous de la fusion automatique, listes d'outils autorisés et journal d'audit |
 
 <Callout type="info" title="Détails">
   Les définitions complètes, les prompts, les déclencheurs et les garde-fous de

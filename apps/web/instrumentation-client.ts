@@ -20,6 +20,11 @@ if (key !== undefined) {
       }
       return event;
     },
+    // What PostHog senses for the self-driving loop (docs/flows.md): dead
+    // clicks next to rage clicks, unhandled exceptions for error tracking,
+    // and web vitals.
+    capture_dead_clicks: true,
+    capture_exceptions: true,
     capture_performance: { web_vitals: true },
     cookieless_mode: "always",
     // PostHog's recommended settings as of this date: pageviews on

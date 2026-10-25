@@ -1,5 +1,6 @@
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
+import { withLlmTrace } from "@wovain/core/nemotron";
 import { design, run } from "@wovain/db/schema/seller";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -13,16 +14,25 @@ import { getIdea } from "./ideas";
 export const generateDesign = async (actor: Actor, ideaId: string) => {
   const source = await getIdea(actor, ideaId);
   const { artist, nemotron } = actor.core;
-  const brief = await draftBrief(
-    nemotron,
-    { avoidNames: source.avoidNames, idea: source.research },
-    actor.log
-  );
-  const artwork = await artist(brief, actor.log);
-  const judgment = await judgeDesign(
-    nemotron,
-    { artwork, brief, idea: source.theme },
-    actor.log
+  const { artwork, brief, judgment } = await withLlmTrace(
+    { distinctId: actor.userId, traceId: source.runId ?? ideaId },
+    async () => {
+      const drafted = await draftBrief(
+        nemotron,
+        { avoidNames: source.avoidNames, idea: source.research },
+        actor.log
+      );
+      const art = await artist(drafted, actor.log);
+      return {
+        artwork: art,
+        brief: drafted,
+        judgment: await judgeDesign(
+          nemotron,
+          { artwork: art, brief: drafted, idea: source.theme },
+          actor.log
+        ),
+      };
+    }
   );
   const [row] = await actor.db
     .insert(design)
