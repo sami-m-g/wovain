@@ -63,7 +63,8 @@ export const environments = (
       project: projectId,
       tier: "development",
     },
-    { protect: true }
+    // GitLab creates it as soon as a pipeline names the environment.
+    { ...adopt("41982087"), protect: true }
   );
   new gitlab.ProjectEnvironment(
     "production",
