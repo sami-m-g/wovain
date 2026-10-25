@@ -15,6 +15,9 @@
       "cache": false,
       "persistent": true
     },
+    "test": {
+      "outputs": []
+    },
     "start": {
       "dependsOn": ["build"],
       "cache": false,
@@ -56,9 +59,18 @@
     "BETTER_AUTH_URL",
     "CI",
     "DATABASE_URL",
+    "FAL_KEY",
+    "META_APP_ID",
+    "META_APP_SECRET",
+    "NEBIUS_API_KEY",
+    "NEBIUS_BASE_URL",
     "NODE_ENV",
     "OPENROUTER_API_KEY",
     "OPENROUTER_MODEL",
+    "QLOO_API_KEY",
+    "QLOO_API_URL",
+    "TAVILY_API_KEY",
+    "TOKEN_ENCRYPTION_KEY",
     "VERCEL",
     "VERCEL_ENV",
     "VERCEL_PROJECT_PRODUCTION_URL",
