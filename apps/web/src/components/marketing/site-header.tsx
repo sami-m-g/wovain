@@ -1,55 +1,54 @@
-import { Button } from "@wovain/ui/components/button";
+import { buttonVariants } from "@wovain/ui/components/button";
+import { cn } from "@wovain/ui/lib/utils";
+import { Menu } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
-import { Wordmark } from "@/components/brand/wordmark";
+import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CtaLink } from "@/components/marketing/cta-link";
 import { ModeToggle } from "@/components/mode-toggle";
-import UserMenu from "@/components/user-menu";
 import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
 
-const SECTIONS = [
-  { hash: "how", key: "how" },
-  { hash: "autopilot", key: "autopilot" },
-  { hash: "chatgpt", key: "chatgpt" },
-  { hash: "powered-by", key: "poweredBy" },
+const LINKS = [
+  { href: { hash: "how", pathname: "/" }, key: "product" },
+  { href: { pathname: "/integrations" }, key: "integrations" },
+  { href: { pathname: "/use-cases" }, key: "useCases" },
+  { href: { pathname: "/guides" }, key: "guides" },
+  { href: { hash: "pricing", pathname: "/" }, key: "pricing" },
 ] as const;
+
+const linkClass =
+  "text-muted-foreground hover:text-foreground hover:bg-muted inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition-colors";
 
 export const SiteHeader = async () => {
   const t = await getTranslations("Header");
   const common = await getTranslations("Common");
 
   return (
-    <header className="border-border/70 bg-background/90 sticky top-0 z-40 border-b backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
+    <header className="border-border bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-40 border-b backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link
           aria-label={common("homeLabel")}
-          className="me-auto shrink-0 lg:me-6"
+          className="me-auto shrink-0 lg:me-4"
           href="/"
         >
-          <Wordmark />
+          <Logo />
         </Link>
         <nav
           aria-label={common("primaryNav")}
           className="me-auto hidden lg:block"
         >
-          <ul className="flex items-center gap-1">
-            {SECTIONS.map(({ hash, key }) => (
-              <li key={hash}>
-                <Link
-                  className="text-muted-foreground hover:text-foreground inline-flex h-10 items-center px-3 text-sm font-medium"
-                  href={{ hash, pathname: "/" }}
-                >
+          <ul className="flex items-center gap-0.5">
+            {LINKS.map(({ href, key }) => (
+              <li key={key}>
+                <Link className={linkClass} href={href}>
                   {t(key)}
                 </Link>
               </li>
             ))}
             <li>
-              <a
-                className="text-muted-foreground hover:text-foreground inline-flex h-10 items-center px-3 text-sm font-medium"
-                href={ENV.DOCS_URL}
-              >
+              <a className={linkClass} href={ENV.DOCS_URL}>
                 {t("docs")}
               </a>
             </li>
@@ -58,14 +57,58 @@ export const SiteHeader = async () => {
         <div className="flex items-center gap-2">
           <LocaleSwitcher className="hidden sm:flex" />
           <ModeToggle />
-          <UserMenu />
-          <Button
-            className="hidden h-10 px-4 text-sm font-semibold sm:inline-flex"
-            nativeButton={false}
-            render={<CtaLink cta="header-sign-up" href="/sign-up" />}
+          <Link
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "h-9 rounded-lg px-3 text-sm"
+            )}
+            href="/login"
+            prefetch={false}
+          >
+            {common("signIn")}
+          </Link>
+          <CtaLink
+            cta="header-sign-up"
+            className={cn(
+              buttonVariants(),
+              "hidden h-9 rounded-lg px-4 sm:inline-flex"
+            )}
+            href="/sign-up"
+            prefetch={false}
           >
             {t("startDrop")}
-          </Button>
+          </CtaLink>
+          <details className="group relative lg:hidden">
+            <summary
+              aria-label={t("menu")}
+              className="border-input hover:bg-muted grid size-10 cursor-pointer list-none place-items-center rounded-lg border [&::-webkit-details-marker]:hidden"
+            >
+              <Menu aria-hidden="true" className="size-4" />
+            </summary>
+            <nav
+              aria-label={t("menu")}
+              className="border-border bg-popover shadow-floating absolute end-0 top-12 z-50 flex w-64 flex-col gap-1 rounded-xl border p-2"
+            >
+              {LINKS.map(({ href, key }) => (
+                <Link className={linkClass} href={href} key={key}>
+                  {t(key)}
+                </Link>
+              ))}
+              <a className={linkClass} href={ENV.DOCS_URL}>
+                {t("docs")}
+              </a>
+              <div className="border-border mt-1 flex flex-col gap-2 border-t p-2 pt-3">
+                <LocaleSwitcher className="sm:hidden" />
+                <Link
+                  className={cn(buttonVariants(), "h-10 rounded-lg")}
+                  href="/sign-up"
+                  prefetch={false}
+                >
+                  {t("startDrop")}
+                </Link>
+              </div>
+            </nav>
+          </details>
         </div>
       </div>
     </header>

@@ -28,7 +28,7 @@ Wovain ne dépense jamais de budget publicitaire de lui-même. Chaque objet Meta
 ## Connecter wovain dans ChatGPT
 
 1. Dans ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé (un serveur MCP).
-2. Saisissez l'URL du serveur : `https://wovain.com/api/mcp`. Les paramètres OAuth sont découverts automatiquement depuis `/.well-known/oauth-protected-resource` et `/.well-known/oauth-authorization-server`.
+2. Saisissez l'URL du serveur : `https://mcp.wovain.com/api/mcp`. Les paramètres OAuth sont découverts automatiquement depuis `/.well-known/oauth-protected-resource` et `/.well-known/oauth-authorization-server`.
 3. Connectez-vous à wovain quand ChatGPT ouvre la page de connexion, puis accordez l'accès sur la page de consentement.
 4. Demandez à ChatGPT d'exécuter `list_connections`. Pour Fourthwall ou Meta, ouvrez le lien de connexion renvoyé et autorisez l'accès.
 5. Demandez dans la conversation : « recherche des tendances pour l'équipement de randonnée rétro ». ChatGPT appelle `research_trends`, puis `generate_design`, et vous demande avant d'appeler `approve_design`, `create_product`, `publish_product` et `create_campaign`.

@@ -44,7 +44,7 @@ Details: [docs/flows.md](docs/flows.md) and [Agent flows](apps/fumadocs/content/
 
 | Path | Role |
 | --- | --- |
-| `apps/web` | Next.js 16 app (App Router, oRPC, Better Auth, evlog); the ChatGPT MCP server is `POST https://wovain.com/api/mcp` |
+| `apps/web` | Next.js 16 app (App Router, oRPC, Better Auth, evlog); the ChatGPT MCP server is `POST https://mcp.wovain.com/api/mcp` |
 | `apps/fumadocs` | Documentation site |
 | `packages/api` | oRPC routers, seller-flow steps and the MCP server |
 | `packages/core` | Providers and rules: Qloo, Tavily, Nemotron, fal, pricing, judge, autopilot |

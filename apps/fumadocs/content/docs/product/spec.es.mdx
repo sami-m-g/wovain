@@ -42,7 +42,7 @@ Ref. PRD: `prd.md > The Core Journey`.
 ## Dónde se ejecuta y cómo probarlo
 
 - **Producción:** Cloud Run en [https://wovain.com](https://wovain.com); docs en [https://docs.wovain.com](https://docs.wovain.com).
-- **ChatGPT:** añade un conector con la URL `https://wovain.com/api/mcp`. El descubrimiento OAuth se sirve en `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server`; el vendedor inicia sesión y concede acceso en la página de consentimiento.
+- **ChatGPT:** añade un conector con la URL `https://mcp.wovain.com/api/mcp`. El descubrimiento OAuth se sirve en `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server`; el vendedor inicia sesión y concede acceso en la página de consentimiento.
 - **En local:** Node.js (consulta `.nvmrc`), pnpm y Docker para PostgreSQL.
 
 ```bash
@@ -152,6 +152,6 @@ wovain/
 
 - El código pone las salvaguardas y Nemotron decide dentro de ellas — elegido para que un error del modelo no pueda publicar un diseño sin comprobar ni gastar dinero; el coste es corregir a veces una buena respuesta del modelo.
 - Qloo antes que Tavily — el gusto acota la búsqueda de noticias; el coste es depender de la cobertura de Qloo para la semilla.
-- Resuelto: ChatGPT se conecta a `https://wovain.com/api/mcp`; el plugin MCP de Better Auth es el servidor OAuth y `requireMcpAuth` verifica cada token.
+- Resuelto: ChatGPT se conecta a `https://mcp.wovain.com/api/mcp`; el plugin MCP de Better Auth es el servidor OAuth y `requireMcpAuth` verifica cada token.
 - Abierto: alcance de la revisión de la app de Meta para crear campañas desde el servidor.
 - Concepto poco familiar tratado: la diferencia entre un modelo que sugiere un valor y un código que lo garantiza. Aclarado con la regla de que las comprobaciones decididas por el código (tamaño de impresión, precio mínimo, rango de presupuesto) no son salida del modelo, demostrado por las pruebas de `packages/core/src/design.test.ts`.

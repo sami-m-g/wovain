@@ -1,0 +1,127 @@
+/*
+ * wovain semantic tokens: colour roles, type, radius, elevation and motion.
+ *
+ * Colours read the `--brand-*` primitives that `src/brand/brand.tsx` writes
+ * into the document head, so a new palette never touches this file. Components
+ * use the roles (bg-background, text-muted-foreground, bg-primary, shadow-raised,
+ * ease-out-expo...), never raw values.
+ */
+
+:root {
+  /* shadcn roles */
+  --background: var(--brand-paper);
+  --foreground: var(--brand-ink);
+  --card: var(--brand-surface);
+  --card-foreground: var(--brand-ink);
+  --popover: var(--brand-surface);
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-accent);
+  --primary-foreground: var(--brand-on-accent);
+  --secondary: var(--brand-sunken);
+  --secondary-foreground: var(--brand-ink);
+  --muted: var(--brand-sunken);
+  --muted-foreground: var(--brand-ink-muted);
+  --accent: var(--brand-sunken);
+  --accent-foreground: var(--brand-ink);
+  --destructive: var(--brand-danger);
+  --border: var(--brand-line);
+  --input: var(--brand-line-strong);
+  --ring: var(--brand-accent);
+  --chart-1: var(--brand-accent);
+  --chart-2: var(--brand-success);
+  --chart-3: var(--brand-warning);
+  --chart-4: var(--brand-danger);
+  --chart-5: var(--brand-ink-muted);
+  --sidebar: var(--brand-rail);
+  --sidebar-foreground: var(--brand-rail-ink);
+  --sidebar-primary: var(--brand-rail-accent);
+  --sidebar-primary-foreground: var(--brand-rail);
+  --sidebar-accent: color-mix(
+    in oklab,
+    var(--brand-rail-ink) 10%,
+    var(--brand-rail)
+  );
+  --sidebar-accent-foreground: var(--brand-rail-ink);
+  --sidebar-border: color-mix(
+    in oklab,
+    var(--brand-rail-ink) 14%,
+    var(--brand-rail)
+  );
+  --sidebar-ring: var(--brand-rail-accent);
+
+  /* wovain roles */
+  --accent-soft: var(--brand-accent-soft);
+  --accent-text: var(--brand-accent-text);
+  --success: var(--brand-success);
+  --warning: var(--brand-warning);
+  --tag: var(--brand-tag);
+  --tag-ink: var(--brand-tag-ink);
+
+  /* radius: 10px controls, 14px cards and panels */
+  --radius: 0.625rem;
+
+  /* elevation: borders mark resting surfaces; shadows only mark what floats */
+  --shadow-color: 318 45% 14%;
+  --elevation-raised:
+    0 1px 2px hsl(var(--shadow-color) / 0.06),
+    0 2px 8px -2px hsl(var(--shadow-color) / 0.08);
+  --elevation-floating:
+    0 2px 4px hsl(var(--shadow-color) / 0.06),
+    0 16px 40px -12px hsl(var(--shadow-color) / 0.22);
+  --elevation-tag:
+    0 1px 1px hsl(var(--shadow-color) / 0.08),
+    0 10px 24px -8px hsl(var(--shadow-color) / 0.3);
+  /* the hang tag is clipped, so it casts a filter drop shadow, not a box shadow */
+  --elevation-tag-drop: 0 14px 22px hsl(var(--shadow-color) / 0.24);
+}
+
+.dark {
+  --shadow-color: 0 0% 0%;
+  --elevation-raised: 0 1px 2px hsl(var(--shadow-color) / 0.5);
+  --elevation-floating:
+    0 2px 4px hsl(var(--shadow-color) / 0.4),
+    0 20px 48px -12px hsl(var(--shadow-color) / 0.7);
+  --elevation-tag:
+    0 1px 1px hsl(var(--shadow-color) / 0.5),
+    0 14px 30px -8px hsl(var(--shadow-color) / 0.8);
+  --elevation-tag-drop: 0 14px 22px hsl(var(--shadow-color) / 0.6);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-familjen), var(--font-geist), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-tag: var(--tag);
+  --color-tag-ink: var(--tag-ink);
+
+  /* type scale: display steps are fluid, UI steps are fixed */
+  --text-display-1: clamp(2.6rem, 1.55rem + 4.4vw, 5rem);
+  --text-display-1--line-height: 1;
+  --text-display-1--letter-spacing: -0.035em;
+  --text-display-2: clamp(2rem, 1.45rem + 2.3vw, 3.25rem);
+  --text-display-2--line-height: 1.05;
+  --text-display-2--letter-spacing: -0.03em;
+  --text-display-3: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
+  --text-display-3--line-height: 1.15;
+  --text-display-3--letter-spacing: -0.02em;
+
+  --shadow-raised: var(--elevation-raised);
+  --shadow-floating: var(--elevation-floating);
+  --shadow-tag: var(--elevation-tag);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --animate-weave: weave 900ms var(--ease-out-expo) both;
+
+  @keyframes weave {
+    from {
+      transform: scaleX(0);
+    }
+  }
+}

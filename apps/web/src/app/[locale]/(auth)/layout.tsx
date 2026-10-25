@@ -1,37 +1,53 @@
-import { hasLocale, useTranslations } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { hasLocale } from "next-intl";
+import {
+  getFormatter,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 
-import { Wordmark } from "@/components/brand/wordmark";
+import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
+import { HangTag } from "@/components/product/hang-tag";
+import { AppToaster } from "@/components/toaster";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { priceBreakdown } from "@/lib/pricing";
 
-const STRIP = [
-  "bg-ink-black",
-  "bg-ink-yellow",
-  "bg-ink-rhodamine",
-  "bg-ink-green",
-  "bg-white/25",
-  "bg-white/25",
-] as const;
+const EXAMPLE_BASE_COST = 12;
 
-const AuthAside = () => {
-  const t = useTranslations("Auth");
+const AuthAside = async () => {
+  const t = await getTranslations("Auth");
+  const home = await getTranslations("Home");
+  const format = await getFormatter();
+  const money = (value: number) =>
+    format.number(value, { currency: "USD", style: "currency" });
+  const tag = priceBreakdown(EXAMPLE_BASE_COST);
   return (
-    <aside className="bg-ink-indigo relative hidden flex-col justify-between overflow-hidden p-10 text-white lg:flex">
-      <ol aria-hidden="true" className="grid grid-cols-6 gap-1.5">
-        {STRIP.map((fill, index) => (
-          // oxlint-disable-next-line react/no-array-index-key -- fixed, decorative strip
-          <li className={`h-24 ${fill}`} key={`${fill}-${index}`} />
-        ))}
-      </ol>
+    <aside className="bg-muted border-border relative hidden flex-col justify-between gap-12 overflow-hidden border-s p-12 lg:sticky lg:top-0 lg:flex lg:h-svh">
       <div className="flex max-w-md flex-col gap-4">
-        <p className="font-expanded text-4xl leading-[1.02] font-black tracking-tight">
+        <p className="font-display text-display-2 font-semibold">
           {t("asideTitle")}
         </p>
-        <p className="text-lg text-white/90">{t("asideBody")}</p>
+        <p className="text-muted-foreground text-lg leading-relaxed">
+          {t("asideBody")}
+        </p>
       </div>
+      <HangTag
+        className="w-72 rotate-[-3deg] self-center"
+        footer={home("tag.campaign")}
+        lines={[
+          { label: home("tag.price"), value: money(tag.price) },
+          { label: home("tag.blank"), value: `− ${money(tag.baseCost)}` },
+          {
+            emphasis: true,
+            label: home("tag.profit"),
+            value: money(tag.profit),
+          },
+        ]}
+        subtitle={home("tag.subtitle")}
+        title={home("tag.title")}
+      />
     </aside>
   );
 };
@@ -43,11 +59,11 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
   }
   const common = await getTranslations("Common");
   return (
-    <div className="grid min-h-svh lg:grid-cols-[1.1fr_1fr]">
+    <div className="bg-background grid min-h-svh lg:grid-cols-[1.1fr_1fr]">
       <div className="flex flex-col">
         <header className="flex h-16 items-center justify-between gap-3 px-4 sm:px-8">
           <Link aria-label={common("homeLabel")} href="/">
-            <Wordmark />
+            <Logo height={30} variant="seam" />
           </Link>
           <div className="flex items-center gap-2">
             <LocaleSwitcher />
@@ -63,6 +79,7 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
         </main>
       </div>
       <AuthAside />
+      <AppToaster />
     </div>
   );
 };

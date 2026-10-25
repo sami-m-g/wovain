@@ -105,14 +105,7 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
       : (["email", "password"] as const);
 
   return (
-    <div className="w-full max-w-sm">
-      <h1 className="font-expanded text-3xl leading-[1.05] font-black tracking-tight sm:text-4xl">
-        {mode === "signUp" ? t("signUpTitle") : t("loginTitle")}
-      </h1>
-      <p className="text-muted-foreground mt-3">
-        {mode === "signUp" ? t("signUpLead") : t("loginLead")}
-      </p>
-
+    <div className="w-full">
       <form
         className="mt-8 flex flex-col gap-5"
         noValidate
@@ -145,7 +138,7 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
                   .join(" ") || undefined;
               return (
                 <div className="flex flex-col gap-2">
-                  <Label className="text-sm font-semibold" htmlFor={field.name}>
+                  <Label className="text-sm font-medium" htmlFor={field.name}>
                     {t(name)}
                   </Label>
                   <Input
@@ -193,7 +186,7 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (
             <Button
-              className="h-11 w-full text-sm font-semibold"
+              className="h-11 w-full text-sm font-medium"
               disabled={isSubmitting}
               type="submit"
             >
@@ -211,7 +204,7 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
       <p className="text-muted-foreground mt-6 text-sm">
         {mode === "signUp" ? t("toLogin") : t("toSignUp")}{" "}
         <Link
-          className="text-primary font-semibold underline"
+          className="text-accent-text font-medium hover:underline"
           href={{
             pathname: mode === "signUp" ? "/login" : "/sign-up",
             query: Object.fromEntries(searchParams.entries()),
@@ -222,7 +215,10 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
       </p>
       {mode === "login" ? (
         <p className="mt-2 text-sm">
-          <Link className="text-primary font-semibold underline" href="/reset">
+          <Link
+            className="text-accent-text font-medium hover:underline"
+            href="/reset"
+          >
             {t("forgot")}
           </Link>
         </p>

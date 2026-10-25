@@ -29,7 +29,7 @@ export const StepHeader = ({
   return (
     <div className="flex flex-col gap-2">
       <h2
-        className="font-semi-expanded text-2xl font-extrabold outline-none"
+        className="font-display text-xl font-semibold tracking-[-0.02em] outline-none"
         id={STEP_TITLE_ID}
         ref={ref}
         tabIndex={-1}
@@ -56,7 +56,7 @@ export const NextButton = ({
   type?: "button" | "submit";
 }) => (
   <Button
-    className="h-11 px-5 text-sm font-semibold"
+    className="h-9 rounded-lg px-4"
     disabled={disabled}
     onClick={onClick}
     type={type}
@@ -93,7 +93,7 @@ export const StepActions = ({
       <div className="flex flex-wrap items-center justify-between gap-3">
         {onBack ? (
           <Button
-            className="h-11 px-4 text-sm"
+            className="h-9 rounded-lg px-3"
             disabled={Boolean(busyLabel)}
             onClick={onBack}
             variant="ghost"

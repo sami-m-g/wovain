@@ -40,13 +40,13 @@ export const ConsentPanel = () => {
   return (
     <div className="w-full max-w-md">
       <ShieldCheck aria-hidden="true" className="text-primary size-8" />
-      <h1 className="font-expanded mt-4 text-3xl leading-[1.05] font-black tracking-tight sm:text-4xl">
+      <h1 className="font-display mt-4 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
         {t("title")}
       </h1>
       <p className="text-muted-foreground mt-3">{t("lead")}</p>
       {scopes.length > 0 ? (
         <div className="mt-6">
-          <h2 className="font-condensed text-muted-foreground text-xs font-bold tracking-widest uppercase">
+          <h2 className="text-muted-foreground text-xs font-medium">
             {t("scopes")}
           </h2>
           <ul className="mt-2 flex flex-wrap gap-2">
@@ -71,14 +71,14 @@ export const ConsentPanel = () => {
       ) : null}
       <div className="mt-8 flex flex-wrap gap-3">
         <Button
-          className="h-11 px-6 text-sm font-semibold"
+          className="h-11 px-6 text-sm font-medium"
           disabled={pending}
           onClick={() => answer(true)}
         >
           {t("allow")}
         </Button>
         <Button
-          className="h-11 px-6 text-sm font-semibold"
+          className="h-11 px-6 text-sm font-medium"
           disabled={pending}
           onClick={() => answer(false)}
           variant="outline"

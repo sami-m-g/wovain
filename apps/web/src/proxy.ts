@@ -13,6 +13,21 @@ const PERMANENT_REDIRECT = 308;
 // Files, Next internals, OAuth metadata and the PostHog proxy (/ingest,
 // next.config.ts) keep their paths; pages get a locale.
 const UNLOCALIZED = /^\/(?:_next|_vercel|\.well-known|ingest)\/|\.[^/]+$/u;
+// A root-level file name or a .well-known document the app doesn't serve
+// would otherwise fall into the [locale] segment and fail to render: answer
+// 404 here instead. public/ keeps its files in folders (public/brand/).
+const ROOT_FILE = /^\/[^/]+\.[^/]+$/u;
+const ROOT_FILES = new Set([
+  "/apple-icon.png",
+  "/icon.svg",
+  "/llms.txt",
+  "/manifest.webmanifest",
+  "/robots.txt",
+  "/sitemap.xml",
+]);
+const UNKNOWN_WELL_KNOWN =
+  /^\/\.well-known\/(?!oauth-authorization-server|oauth-protected-resource)/u;
+const NOT_FOUND = 404;
 
 export const proxy = (request: NextRequest) => {
   // www.wovain.com reaches this app through its own Cloud Run domain mapping,
@@ -30,6 +45,12 @@ export const proxy = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
   if (pathname.startsWith("/api/")) {
     return logRequest(request);
+  }
+  const unknownFile =
+    (ROOT_FILE.test(pathname) && !ROOT_FILES.has(pathname)) ||
+    UNKNOWN_WELL_KNOWN.test(pathname);
+  if (unknownFile) {
+    return new NextResponse(null, { status: NOT_FOUND });
   }
   if (UNLOCALIZED.test(pathname)) {
     return NextResponse.next();

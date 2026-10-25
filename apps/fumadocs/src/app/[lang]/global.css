@@ -10,3 +10,12 @@ html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
 }
+
+/* wovain brand: cochineal links and highlights (apps/web/src/brand/brand.tsx). */
+:root {
+  --color-fd-primary: #b0245f;
+}
+
+.dark {
+  --color-fd-primary: #e8608f;
+}

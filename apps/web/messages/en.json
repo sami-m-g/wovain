@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "siteName": "wovain",
-    "defaultTitle": "wovain: print-on-demand drops, run by agents",
+    "defaultTitle": "wovain: merch drops researched, designed and launched by agents",
     "defaultDescription": "wovain turns one brief into a launched print-on-demand drop: trend research, designs you approve, products on Fourthwall and a paused Meta ad campaign. In ChatGPT and on the web.",
     "ogAlt": "wovain: one brief in, a print-on-demand drop out",
     "ogTagline": "One brief in. A drop out.",
@@ -21,7 +21,13 @@
     "notFoundTitle": "Page not found",
     "consentTitle": "Allow access",
     "resetTitle": "Reset your password",
-    "resetDescription": "Choose a new password for your wovain account."
+    "resetDescription": "Choose a new password for your wovain account.",
+    "integrationsTitle": "Integrations: Fourthwall, Meta, ChatGPT and more",
+    "integrationsDescription": "How wovain works with Fourthwall, Meta, Qloo, Tavily, Nebius and ChatGPT: what each one does in a run, what you connect and what is shared.",
+    "useCasesTitle": "Use cases: merch for creators, YouTubers, streamers and bands",
+    "useCasesDescription": "How creators, YouTubers, Twitch streamers and bands use wovain to research, design and launch print-on-demand merch drops with a paused Meta campaign.",
+    "guidesTitle": "Guides for selling merch",
+    "guidesDescription": "Practical guides for creators who sell merch: pricing print-on-demand products so every sale clears a profit, and launching a drop from idea to ads."
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -49,138 +55,192 @@
     }
   },
   "Header": {
-    "how": "How it works",
-    "chatgpt": "ChatGPT",
-    "autopilot": "Autopilot",
-    "poweredBy": "Powered by",
+    "product": "How it works",
+    "integrations": "Integrations",
+    "useCases": "Use cases",
+    "guides": "Guides",
+    "pricing": "Pricing",
     "startDrop": "Start a drop",
     "dashboard": "Dashboard",
-    "docs": "Docs"
+    "docs": "Docs",
+    "menu": "Menu"
   },
   "Footer": {
-    "tagline": "Print-on-demand drops, run by agents. You approve every step.",
+    "tagline": "Merch drops, researched, designed and launched by agents. You approve every step.",
+    "future": "Print-on-demand today; apparel-on-demand next.",
     "product": "Product",
+    "resources": "Resources",
+    "integrations": "Integrations",
+    "useCases": "Use cases",
     "legal": "Legal",
     "privacy": "Privacy",
     "terms": "Terms",
     "copyright": "© {year} wovain. Built for the GitLab Transcend and Build With AI hackathons.",
     "docs": "Documentation",
+    "guides": "Guides",
     "contact": "Contact"
   },
   "Home": {
-    "heroTitle": "One brief in. A whole drop out.",
-    "heroLead": "wovain researches what your audience wants this week, designs products for your Fourthwall catalog, and builds the Meta ads to sell them. You approve every step; the campaign launches paused.",
+    "heroTitle": "One brief in. A whole merch drop out.",
+    "heroLead": "wovain researches what your audience loves this week, designs products on real Fourthwall blanks and builds the Meta ads to sell them. You approve every step, and the campaign starts paused.",
     "briefLabel": "What should your next drop be about?",
     "briefPlaceholder": "Cozy outdoorsy merch for my houseplant channel",
     "briefHint": "One sentence is enough. You can change everything later.",
     "briefSubmit": "Start a drop",
-    "noCard": "You connect Fourthwall and Meta after you sign up.",
-    "deckLabel": "An example drop as a fan of ink swatches",
-    "deckCaption": "A demo drop, step by step",
-    "chips": {
+    "noCard": "Free while in beta, no card needed. You connect Fourthwall and Meta after you sign up.",
+    "windowLabel": "Example: the approval step of a run in the wovain app",
+    "windowCaption": "The approval step of a run in the wovain app, with example data.",
+    "window": {
+      "designOne": "Moss & Fern Supply",
+      "designTwo": "Repot Club",
+      "printedOne": "MOSS & FERN SUPPLY · SLOW LIVING DEPT.",
+      "printedTwo": "REPOT CLUB · EST. THIS WEEKEND",
+      "coachOne": "Reads well at 4 inches; two ink colours; no matched names.",
+      "coachTwo": "Type is thin at chest size. Try a heavier weight."
+    },
+    "tag": {
+      "title": "Heavyweight tee",
+      "subtitle": "Moss & Fern Supply · example",
+      "price": "Price",
+      "blank": "Blank (base cost)",
+      "fees": "Card fees",
+      "reserve": "Refund reserve",
+      "profit": "Your profit",
+      "margin": "Margin over blank",
+      "campaign": "Meta campaign: paused until you turn it on"
+    },
+    "howTitle": "How a drop gets made",
+    "howLead": "One run, six steps. Each ends in something you can see and approve, built from real Fourthwall blanks, prices and margins.",
+    "byLabel": "Done by",
+    "seeLabel": "What you see",
+    "steps": {
       "brief": {
         "name": "Brief",
-        "value": "Cozy merch for a plant channel"
+        "body": "Say who it's for and the feel, in one sentence.",
+        "see": "“Cozy outdoorsy merch for my plant channel”",
+        "by": "You"
       },
       "trends": {
         "name": "Trend picks",
-        "value": "Moss and fern cottagecore · score 0.82"
-      },
-      "designs": {
-        "name": "Design",
-        "value": "Moss & Fern Supply · approved"
-      },
-      "products": {
-        "name": "Fourthwall",
-        "value": "Heavyweight tee · $32"
-      },
-      "ads": {
-        "name": "Meta ads",
-        "value": "3 variants, 3 angles"
-      },
-      "campaign": {
-        "name": "Campaign",
-        "value": "One campaign · paused"
-      }
-    },
-    "howTitle": "Five inks, one run",
-    "howLead": "Every drop goes through the same press. Each step ends with something you can see and approve, built from real Fourthwall blanks, prices and margins.",
-    "steps": {
-      "trends": {
-        "name": "Trends",
-        "body": "Qloo's taste graph finds what your fans also love; Tavily checks this week's news and the listings already out there."
+        "body": "Qloo's taste graph finds what your fans also love; Tavily checks this week's news and the listings already out there.",
+        "see": "Ideas scored on taste, news and how crowded the listings are, with sources",
+        "by": "Qloo · Tavily"
       },
       "designs": {
         "name": "Designs",
-        "body": "Candidate artwork for each pick, checked by NVIDIA Nemotron for print size, colors and listing rules before you see it."
+        "body": "Print art for each pick, checked by NVIDIA Nemotron for print size, colours and listing rules before you see it.",
+        "see": "A 0 to 100 design check with what to fix",
+        "by": "fal · NVIDIA Nemotron"
       },
       "approve": {
         "name": "Approve",
-        "body": "Approve, reject or say what to change. Feedback makes a new round; nothing moves on without a yes."
+        "body": "Approve, reject or say what to change. Feedback makes a new round; nothing moves on without a yes.",
+        "see": "Approve and Change, on every design",
+        "by": "You"
       },
       "fourthwall": {
         "name": "Fourthwall",
-        "body": "Approved designs become products on real blanks, priced to clear at least $10 profit per sale after fees."
+        "body": "Approved designs become products on real blanks, created hidden until you publish them.",
+        "see": "At least $10 profit and a 30% margin per sale",
+        "by": "Fourthwall"
       },
       "meta": {
         "name": "Meta ads",
-        "body": "Nemotron writes 2 or 3 ad variants, each from a different angle. wovain builds one campaign with an ad per variant, created paused so you decide when to spend."
+        "body": "Nemotron writes two or three ad variants, each from a different angle, and wovain builds the campaign with an ad per variant.",
+        "see": "One campaign, created paused",
+        "by": "Meta"
       }
     },
-    "autopilotTitle": "Autopilot runs the same press with fewer stops",
-    "autopilotLead": "Turn on autopilot and wovain takes the top picks, approves designs that pass every check, publishes and builds the campaign. It still launches paused, and every run is in your history.",
+    "autopilotTitle": "Autopilot runs the same flow with fewer stops",
+    "autopilotLead": "Turn on autopilot and wovain takes the top pick, approves a design only if the check says it's ready, publishes and builds the campaign. It still launches paused, and every run is in your history.",
     "autopilotManual": "With you",
     "autopilotAuto": "Autopilot",
-    "autopilotStop": "Stops for you",
-    "autopilotSkip": "Runs on its own",
-    "surfacesTitle": "Works in ChatGPT and on the web",
-    "surfacesLead": "The same agents and the same approvals, wherever you work.",
-    "chatgptTitle": "In ChatGPT",
-    "chatgptBody": "Add wovain as an app and ask for a drop in plain words. Approvals appear as cards in the chat.",
+    "autopilotStop": "Stops for your yes",
+    "autopilotSkip": "Nemotron decides, with a stored reason",
+    "chatgptTitle": "Also an app in ChatGPT",
+    "chatgptLead": "Ask for a drop in plain words. Approvals show up as cards in the chat, the same ones you get on the web.",
+    "chatgptSteps": [
+      "In ChatGPT, turn on developer mode and add a custom connector (an MCP server).",
+      "Paste the MCP server URL below.",
+      "Sign in to wovain and allow access."
+    ],
     "chatUser": "Make a drop for my plant channel. Cozy, outdoorsy, nothing too punny.",
-    "chatAssistant": "I found 4 picks. Moss and fern cottagecore scores highest: fans of plant channels also love slow living, and few shops sell it as type. Want designs for it?",
-    "chatCard": "Moss & Fern Supply · heavyweight tee",
+    "chatAssistant": "I found 4 picks. Moss and fern cottagecore scores highest: fans of plant channels also love slow living, and few shops sell it as type. Here's the first design.",
+    "chatCard": "Moss & Fern Supply · heavyweight tee · $24",
     "chatApprove": "Approve",
     "chatChange": "Change",
-    "webTitle": "On the web",
-    "webBody": "A step-by-step wizard with run history, connections and an autopilot switch.",
-    "webStep": "Step 3 of 6 · Approve designs",
-    "poweredTitle": "Powered by",
-    "poweredLead": "wovain does the orchestration. These do the heavy lifting.",
-    "partners": {
-      "nebius": {
-        "name": "Nebius · NVIDIA Nemotron",
-        "role": "Checks every design against print and listing rules"
+    "chatLabel": "Example conversation in ChatGPT",
+    "mcpLabel": "MCP server URL",
+    "mcpHint": "In ChatGPT: developer mode, then a custom connector with this URL.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "integrationsTitle": "Built on tools you already use",
+    "integrationsLead": "You connect your own Fourthwall shop and Meta ad account. Research, art and ad copy run on wovain's keys, so there's nothing else to set up.",
+    "integrationsAll": "All integrations",
+    "connection": {
+      "yours": "You connect it",
+      "wovain": "Runs on wovain's keys"
+    },
+    "pricingTitle": "What it costs, line by line",
+    "pricingLead": "No hidden math. wovain prices every product so each sale clears at least $10 profit and a 30% margin over the blank, after card fees and a refund reserve.",
+    "costs": {
+      "wovain": {
+        "name": "wovain",
+        "value": "Free while in beta",
+        "body": "No plan to pick and no card to enter."
       },
-      "qloo": {
-        "name": "Qloo",
-        "role": "Taste graph: what your audience also loves"
+      "products": {
+        "name": "Products",
+        "value": "Paid from each sale",
+        "body": "Each order pays for its own Fourthwall blank. Nothing to buy up front."
       },
-      "tavily": {
-        "name": "Tavily",
-        "role": "This week's news, listings and competitor scans"
-      },
-      "fourthwall": {
-        "name": "Fourthwall",
-        "role": "Catalog, products and your shop"
-      },
-      "meta": {
-        "name": "Meta",
-        "role": "Campaigns and ads on your own ad account"
-      },
-      "gitlab": {
-        "name": "GitLab Duo",
-        "role": "The agent loop that builds and reviews wovain"
+      "ads": {
+        "name": "Ads",
+        "value": "Your budget, $1 to $500 a day",
+        "body": "Billed by Meta to your ad account, and only after you turn the campaign on."
       }
     },
+    "tableCaption": "The price wovain sets for common blank costs",
+    "tableBlank": "Blank cost",
+    "tablePrice": "Price",
+    "tableProfit": "Profit per sale",
+    "tableMargin": "Margin over blank",
+    "tableNote": "Computed with wovain's own pricing rule: card fees of 2.9% + $0.30 on the order (price, $5 shipping and 7% sales tax) and a 2% refund reserve, rounded up to a whole dollar.",
+    "pricingGuide": "Read the pricing guide",
+    "useCasesTitle": "Made for creators who sell merch",
+    "useCasesLead": "The same flow, tuned to where your audience already is.",
+    "faqTitle": "Questions, answered",
+    "faq": [
+      {
+        "question": "What does wovain cost?",
+        "answer": "Nothing while in beta. Products are paid for by each sale through Fourthwall, and ad spend is your own daily budget, billed by Meta once you turn the campaign on."
+      },
+      {
+        "question": "Will wovain spend money on ads by itself?",
+        "answer": "No. Every campaign is created paused. Spend starts only when you turn it on in Meta Ads Manager, at the daily budget you chose, from $1 to $500."
+      },
+      {
+        "question": "Do I need a Fourthwall shop and a Meta ad account?",
+        "answer": "For a full drop, yes. You connect both after you sign up, in Connections. Trend research and designs work before you connect anything."
+      },
+      {
+        "question": "How does wovain set prices?",
+        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin over the blank, after card fees, sales tax and a refund reserve, rounded up to a whole dollar."
+      },
+      {
+        "question": "What does autopilot decide on its own?",
+        "answer": "NVIDIA Nemotron picks the idea and approves a design only when the check says it's ready, and stores its reason. Code still enforces the price floor, the budget range and the paused campaign."
+      },
+      {
+        "question": "Who owns the designs?",
+        "answer": "You own your briefs and the designs you approve. wovain never prints the names Qloo matched and screens for trademarks, but you stay responsible for what you publish."
+      }
+    ],
     "ctaTitle": "Your next drop is one sentence away",
-    "ctaBody": "Create an account, connect Fourthwall and Meta, and write a brief. wovain does the clicking.",
+    "ctaBody": "Create an account, connect Fourthwall and Meta, and write a brief. wovain does the clicking; you keep the yes.",
     "ctaButton": "Create your account",
     "ctaSecondary": "I already have one",
-    "mcpLabel": "MCP server URL",
-    "mcpHint": "In ChatGPT: Settings → Apps → Create, then paste this URL.",
-    "copy": "Copy",
-    "copied": "Copied"
+    "example": "Example"
   },
   "Legal": {
     "updated": "Last updated {date}",
@@ -273,7 +333,7 @@
   },
   "Dashboard": {
     "greeting": "Hi {name}",
-    "lead": "Here's what's on the press.",
+    "lead": "Your drops and connections, at a glance.",
     "newDrop": "New drop",
     "recentRuns": "Recent runs",
     "allRuns": "All runs",
@@ -281,18 +341,36 @@
     "manage": "Manage",
     "setupTitle": "Finish setting up",
     "setupBody": "Connect {count, plural, one {# more service} other {# more services}} to run a full drop.",
-    "allConnected": "Everything is connected."
+    "allConnected": "Everything is connected.",
+    "setup": {
+      "title": "Get set up",
+      "progress": "{done, number} of {total, number} done",
+      "done": "done",
+      "fourthwall": {
+        "title": "Connect Fourthwall",
+        "body": "Your shop and its blanks, so wovain can price and publish products."
+      },
+      "meta": {
+        "title": "Connect Meta",
+        "body": "Your ad account and Page, so wovain can build the paused campaign."
+      },
+      "drop": {
+        "title": "Start your first drop",
+        "body": "One sentence about who it's for. Research and designs work right away."
+      }
+    }
   },
   "Runs": {
     "title": "Runs",
     "lead": "Every drop wovain has run for you, newest first.",
-    "empty": "No runs yet. Your first drop will show up here.",
+    "empty": "Your first drop will show up here, with every step it went through.",
     "emptyCta": "Start a drop",
     "mode": "Mode",
     "started": "Started",
     "manual": "With you",
     "autopilot": "Autopilot",
-    "stoppedAt": "Stopped: {error}"
+    "stoppedAt": "Stopped: {error}",
+    "emptyTitle": "No runs yet"
   },
   "Connections": {
     "title": "Connections",
@@ -413,12 +491,12 @@
     }
   },
   "NotFound": {
-    "title": "This page isn't in the swatch book",
+    "title": "This page isn't here",
     "body": "The link may be old, or the page moved.",
     "home": "Back to home"
   },
   "Error": {
-    "title": "Something smudged",
+    "title": "Something went wrong",
     "body": "An unexpected error stopped this page. Try again, and if it keeps happening, sign out and back in.",
     "retry": "Try again"
   },
@@ -453,5 +531,39 @@
   },
   "Run": {
     "loading": "Opening the run…"
+  },
+  "Seo": {
+    "home": "Home",
+    "breadcrumbLabel": "Breadcrumb",
+    "integrationsTitle": "Integrations",
+    "integrationsLead": "A merch drop touches a shop, an ad account and a few research and design tools. Here is what each one does in a run, who connects it and what is shared.",
+    "yoursGroup": "You connect these",
+    "wovainGroup": "These run on wovain's keys",
+    "useCasesTitle": "Use cases",
+    "useCasesLead": "The same flow from brief to paused campaign, tuned to where your audience already is.",
+    "guidesTitle": "Guides",
+    "guidesLead": "Practical, plain guides for creators who sell merch. Useful whether or not you use wovain.",
+    "label": "Label",
+    "category": "What it is",
+    "connection": "Who connects it",
+    "setup": "Setup",
+    "docs": "Technical docs",
+    "steps": "What it does in a run",
+    "data": "What's shared",
+    "faq": "Questions",
+    "relatedUseCases": "Use cases",
+    "relatedIntegrations": "Tools in this drop",
+    "situation": "Where you are",
+    "exampleBrief": "Start with a brief like this one",
+    "dropSteps": "How the drop goes",
+    "tips": "Tips that matter here",
+    "published": "Published {date}",
+    "readingTime": "{minutes, number} min read",
+    "onThisPage": "On this page",
+    "readGuide": "Read the guide",
+    "allGuides": "All guides",
+    "priceTable": "wovain's price for common blank costs",
+    "ctaTitle": "Try it with your own brief",
+    "ctaBody": "Free while in beta. You approve every step, and the campaign starts paused."
   }
 }

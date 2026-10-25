@@ -45,13 +45,13 @@ const BudgetField = ({
   const id = useId();
   return (
     <div className="flex max-w-xs flex-col gap-2">
-      <Label className="text-sm font-semibold" htmlFor={id}>
+      <Label className="text-sm font-medium" htmlFor={id}>
         {t("budgetLabel")}
       </Label>
       <Input
         aria-describedby={describedBy(`${id}-hint`, invalid && `${id}-error`)}
         aria-invalid={invalid ? true : undefined}
-        className="h-11 text-base tabular-nums md:text-sm"
+        className="h-10 rounded-lg text-base tabular-nums md:text-sm"
         id={id}
         inputMode="decimal"
         max={500}
@@ -107,13 +107,13 @@ export const BriefStep = ({
     >
       <StepHeader focusOnMount={false} title={t("title")} />
       <div className="flex flex-col gap-2">
-        <Label className="text-sm font-semibold" htmlFor={id}>
+        <Label className="text-sm font-medium" htmlFor={id}>
           {t("label")}
         </Label>
         <Textarea
           aria-describedby={describedBy(`${id}-hint`, error && `${id}-error`)}
           aria-invalid={error ? true : undefined}
-          className="min-h-28 text-base md:text-sm"
+          className="min-h-28 rounded-xl text-base md:text-sm"
           id={id}
           maxLength={200}
           onChange={(event) => onChange(event.target.value)}
@@ -181,8 +181,8 @@ export const IdeasStep = ({
           return (
             <li
               className={cn(
-                "flex flex-col gap-3 border p-4",
-                checked ? "border-ink-yellow bg-ink-yellow/10" : "border-border"
+                "flex flex-col gap-3 rounded-xl border p-4 transition-colors",
+                checked ? "border-primary bg-accent-soft" : "border-border"
               )}
               key={idea.id}
             >
@@ -195,10 +195,10 @@ export const IdeasStep = ({
                   onCheckedChange={(next) => onToggle(idea.id, next)}
                 />
                 <div className="flex flex-1 flex-col gap-1">
-                  <Label className="text-base font-bold" htmlFor={checkboxId}>
+                  <Label className="text-base font-medium" htmlFor={checkboxId}>
                     {idea.theme}
                   </Label>
-                  <span className="font-condensed text-muted-foreground flex flex-wrap gap-2 text-xs font-bold tracking-widest uppercase tabular-nums">
+                  <span className="text-muted-foreground figures flex flex-wrap items-center gap-2 text-xs font-medium">
                     {t("score", { score: decimal(idea.score) })}
                     {designed ? (
                       <Badge variant="secondary">{t("hasDesign")}</Badge>
@@ -212,7 +212,7 @@ export const IdeasStep = ({
                 </p>
               ) : null}
               <dl className="grid grid-cols-3 gap-2 text-xs">
-                <div className="bg-muted p-2">
+                <div className="bg-muted rounded-md p-2">
                   <dt className="text-muted-foreground">{t("affinity")}</dt>
                   <dd className="font-semibold tabular-nums">
                     {research.signals.affinity === undefined
@@ -220,13 +220,13 @@ export const IdeasStep = ({
                       : decimal(research.signals.affinity)}
                   </dd>
                 </div>
-                <div className="bg-muted p-2">
+                <div className="bg-muted rounded-md p-2">
                   <dt className="text-muted-foreground">{t("news")}</dt>
                   <dd className="font-semibold tabular-nums">
                     {format.number(research.signals.newsHits)}
                   </dd>
                 </div>
-                <div className="bg-muted p-2">
+                <div className="bg-muted rounded-md p-2">
                   <dt className="text-muted-foreground">{t("listings")}</dt>
                   <dd className="font-semibold tabular-nums">
                     {format.number(research.signals.marketHits)}
@@ -238,7 +238,7 @@ export const IdeasStep = ({
                   <span>{t("sources")}:</span>
                   {research.sources.slice(0, 3).map((source) => (
                     <a
-                      className="text-primary inline-flex min-h-6 max-w-56 items-center gap-1 font-semibold underline"
+                      className="text-accent-text inline-flex min-h-6 max-w-56 items-center gap-1 font-semibold underline"
                       href={source.url}
                       key={source.url}
                       rel="noopener noreferrer"
@@ -291,8 +291,8 @@ const DesignCard = ({
   return (
     <li
       className={cn(
-        "flex flex-col border",
-        approved && "border-ink-green",
+        "flex flex-col overflow-hidden rounded-xl border",
+        approved && "border-success",
         rejected && "border-input border-dashed",
         design.status === "pending_approval" && "border-border"
       )}
@@ -309,7 +309,7 @@ const DesignCard = ({
       </div>
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold">{brief.title}</h3>
+          <h3 className="font-medium">{brief.title}</h3>
           {approved ? <Badge>{t("approved")}</Badge> : null}
           {rejected ? <Badge variant="outline">{t("rejected")}</Badge> : null}
         </div>
@@ -329,7 +329,7 @@ const DesignCard = ({
         {design.status === "pending_approval" ? (
           <>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold" htmlFor={reasonId}>
+              <Label className="text-xs font-medium" htmlFor={reasonId}>
                 {t("reasonLabel")}
               </Label>
               <Textarea
@@ -343,7 +343,7 @@ const DesignCard = ({
             </div>
             <div className="mt-auto grid grid-cols-2 gap-2">
               <Button
-                className="h-10 text-sm font-semibold"
+                className="h-9 rounded-lg"
                 disabled={disabled}
                 onClick={onApprove}
               >
@@ -351,7 +351,7 @@ const DesignCard = ({
                 {t("approve")}
               </Button>
               <Button
-                className="h-10 text-sm font-semibold"
+                className="h-9 rounded-lg"
                 disabled={disabled}
                 onClick={onReject}
                 variant="outline"
@@ -364,7 +364,7 @@ const DesignCard = ({
         ) : null}
         {rejected ? (
           <Button
-            className="mt-auto h-10 text-sm font-semibold"
+            className="mt-auto h-9 rounded-lg"
             disabled={disabled}
             onClick={onRetry}
             variant="outline"
@@ -450,7 +450,10 @@ export const ProductsStep = ({
           const title = titles[product.designId] ?? "";
           const [mockup] = product.mockups;
           return (
-            <li className="border-border flex flex-col border" key={product.id}>
+            <li
+              className="border-border flex flex-col overflow-hidden rounded-xl border"
+              key={product.id}
+            >
               <div className="bg-muted relative aspect-square">
                 {mockup ? (
                   <Image
@@ -465,7 +468,7 @@ export const ProductsStep = ({
               </div>
               <div className="flex flex-1 flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold">{title}</h3>
+                  <h3 className="font-medium">{title}</h3>
                   <Badge variant={live ? "default" : "outline"}>
                     {live ? t("public") : t("hidden")}
                   </Badge>
@@ -481,7 +484,7 @@ export const ProductsStep = ({
                     <a
                       className={cn(
                         buttonVariants({ variant: "outline" }),
-                        "h-10 w-full text-sm font-semibold"
+                        "h-9 w-full rounded-lg"
                       )}
                       href={product.productUrl}
                       rel="noopener noreferrer"
@@ -492,7 +495,7 @@ export const ProductsStep = ({
                     </a>
                   ) : (
                     <Button
-                      className="h-10 w-full text-sm font-semibold"
+                      className="h-9 w-full rounded-lg"
                       disabled={Boolean(busyLabel) || live}
                       onClick={() => onPublish(product)}
                     >
@@ -569,7 +572,7 @@ export const DoneStep = ({
 }) => {
   const t = useTranslations("Wizard.done");
   const money = useMoney();
-  const size = "h-11 px-5 text-sm font-semibold";
+  const size = "h-9 rounded-lg px-4";
   const [first] = campaigns;
   return (
     <div className="flex flex-col items-start gap-6">
@@ -590,19 +593,19 @@ export const DoneStep = ({
           className="w-full"
           key={campaign.id}
         >
-          <h3 className="font-condensed text-muted-foreground text-xs font-bold tracking-widest uppercase">
+          <h3 className="text-muted-foreground text-xs font-medium">
             {t("variants")}
           </h3>
           <ul className="mt-3 grid gap-3 md:grid-cols-3">
             {campaign.copy.map((variant) => (
               <li
-                className="border-border flex flex-col gap-2 border p-4"
+                className="border-border flex flex-col gap-2 rounded-xl border p-4"
                 key={variant.headline}
               >
                 <Badge className="w-fit" variant="secondary">
                   {variant.angle}
                 </Badge>
-                <p className="font-bold">{variant.headline}</p>
+                <p className="font-medium">{variant.headline}</p>
                 <p className="text-muted-foreground text-sm">
                   {variant.message}
                 </p>

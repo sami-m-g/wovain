@@ -43,7 +43,7 @@ flowchart LR
 | Dashboard | The seller's account and entry point to the flow |
 | Connections | Connect Fourthwall and Meta (OAuth) |
 | Seller flow | Procedures for ideas, designs, products, campaigns and runs, used by the website |
-| ChatGPT | The same steps as MCP tools at `https://wovain.com/api/mcp`, returning JSON |
+| ChatGPT | The same steps as MCP tools at `https://mcp.wovain.com/api/mcp`, returning JSON |
 | Consent | The OAuth consent page ChatGPT sends the seller to |
 | Docs | <https://docs.wovain.com> in English, French and Spanish |
 
@@ -125,4 +125,4 @@ TikTok Shop and ads; Qloo audience demographics for targeting; weights for idea 
 ## Open Questions
 
 - Meta app review scope for server-side campaign creation — must be settled before the live demo.
-- Resolved: the ChatGPT connector URL is `https://wovain.com/api/mcp`, with OAuth discovery under `/.well-known/oauth-*`.
+- Resolved: the ChatGPT connector URL is `https://mcp.wovain.com/api/mcp`, with OAuth discovery under `/.well-known/oauth-*`.

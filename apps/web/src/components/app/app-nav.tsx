@@ -20,7 +20,7 @@ export const AppNav = ({ className }: { className?: string }) => {
 
   return (
     <nav aria-label={common("primaryNav")} className={className}>
-      <ul className="flex gap-1 lg:flex-col">
+      <ul className="flex gap-1 lg:flex-col lg:gap-0.5">
         {ITEMS.map(({ href, icon: Icon, key }) => {
           const active = pathname === href;
           return (
@@ -28,13 +28,18 @@ export const AppNav = ({ className }: { className?: string }) => {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground flex min-h-11 flex-col items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-sm",
-                  active &&
-                    "bg-sidebar-accent text-sidebar-foreground shadow-[inset_3px_0_0_var(--ink-indigo)] rtl:shadow-[inset_-3px_0_0_var(--ink-indigo)]"
+                  "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors lg:min-h-9 lg:flex-row lg:justify-start lg:gap-2.5 lg:px-2.5 lg:text-sm",
+                  active && "bg-sidebar-accent text-sidebar-foreground"
                 )}
                 href={href}
               >
-                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                <Icon
+                  aria-hidden="true"
+                  className={cn(
+                    "size-4 shrink-0",
+                    active && "text-sidebar-primary"
+                  )}
+                />
                 {t(key)}
               </Link>
             </li>

@@ -10,8 +10,6 @@ import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
-import type { Stage } from "@/components/app/run-strip";
-import { RunStrip } from "@/components/app/run-strip";
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
 import {
   BriefStep,
@@ -21,6 +19,8 @@ import {
   IdeasStep,
   ProductsStep,
 } from "@/components/app/wizard-steps";
+import type { Stage } from "@/components/product/run-tape";
+import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import type {
   Campaign,
   Design,
@@ -365,14 +365,12 @@ export const NewDropWizard = ({
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-expanded text-3xl leading-[1.05] font-black tracking-tight sm:text-5xl">
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
             {t("title")}
           </h1>
-          <p className="text-muted-foreground mt-3 max-w-[60ch] text-lg">
-            {t("lead")}
-          </p>
+          <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
         </div>
-        <div className="border-border bg-card flex max-w-sm items-start gap-3 border p-4">
+        <div className="border-border bg-card flex max-w-sm items-start gap-3 rounded-xl border p-4">
           <Switch
             aria-describedby={`${switchId}-hint`}
             checked={autopilot}
@@ -382,7 +380,7 @@ export const NewDropWizard = ({
             onCheckedChange={setAutopilot}
           />
           <div className="flex flex-col gap-1">
-            <Label className="text-sm font-bold" htmlFor={switchId}>
+            <Label className="text-sm font-medium" htmlFor={switchId}>
               <Bot aria-hidden="true" className="size-4" />
               {t("autopilot")}
             </Label>
@@ -397,10 +395,13 @@ export const NewDropWizard = ({
       </div>
 
       <nav aria-label={t("stepsLabel")} className="flex flex-col gap-3">
-        <p className="font-condensed text-muted-foreground text-xs font-bold tracking-widest uppercase">
-          {t("stepOf", { current: stepIndex + 1, total: STEPS.length })}
+        <p className="text-muted-foreground text-xs font-medium">
+          {t("stepOf", {
+            current: Math.min(stepIndex + 1, STAGE_COUNT),
+            total: STAGE_COUNT,
+          })}
         </p>
-        <RunStrip finished={step === "done"} stage={STEP_STAGE[step]} />
+        <RunTape finished={step === "done"} stage={STEP_STAGE[step]} />
         <ol className="sr-only">
           {STEPS.map((item, index) => (
             <li aria-current={item === step ? "step" : undefined} key={item}>
@@ -428,7 +429,7 @@ export const NewDropWizard = ({
 
       <section
         aria-labelledby={STEP_TITLE_ID}
-        className="border-border bg-card border p-5 sm:p-8"
+        className="border-border bg-card rounded-2xl border p-5 sm:p-8"
       >
         {panels[step]}
       </section>

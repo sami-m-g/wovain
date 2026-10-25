@@ -26,7 +26,7 @@ export const LocaleSwitcher = ({ className }: { className?: string }) => {
         className="text-muted-foreground pointer-events-none absolute start-2.5 size-4"
       />
       <select
-        className="border-input hover:bg-muted h-10 appearance-none border bg-transparent ps-8 pe-3 text-sm font-medium disabled:opacity-60"
+        className="border-input hover:bg-muted h-10 appearance-none rounded-lg border bg-transparent ps-8 pe-3 text-sm font-medium disabled:opacity-60"
         disabled={isPending}
         id={id}
         onChange={(event) => {

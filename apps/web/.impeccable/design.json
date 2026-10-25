@@ -1,0 +1,403 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T19:00:00Z",
+  "title": "Design System: wovain",
+  "extensions": {
+    "colorMeta": {
+      "cochineal": {
+        "role": "primary",
+        "displayName": "Cochineal",
+        "canonical": "oklch(50.7% 0.180 1.1)",
+        "tonalRamp": [
+          "oklch(15% 0.049 1)",
+          "oklch(25% 0.082 1)",
+          "oklch(36% 0.118 1)",
+          "oklch(47% 0.154 1)",
+          "oklch(58% 0.170 1)",
+          "oklch(70% 0.131 1)",
+          "oklch(82% 0.091 1)",
+          "oklch(95% 0.049 1)"
+        ]
+      },
+      "cochineal-text": {
+        "role": "primary",
+        "displayName": "Cochineal Text",
+        "canonical": "oklch(46.1% 0.162 0.8)",
+        "tonalRamp": [
+          "oklch(15% 0.044 1)",
+          "oklch(25% 0.074 1)",
+          "oklch(36% 0.106 1)",
+          "oklch(47% 0.139 1)",
+          "oklch(58% 0.153 1)",
+          "oklch(70% 0.118 1)",
+          "oklch(82% 0.083 1)",
+          "oklch(95% 0.044 1)"
+        ]
+      },
+      "cochineal-wash": {
+        "role": "primary",
+        "displayName": "Cochineal Wash",
+        "canonical": "oklch(92.0% 0.030 353.9)",
+        "tonalRamp": [
+          "oklch(15% 0.008 354)",
+          "oklch(25% 0.014 354)",
+          "oklch(36% 0.020 354)",
+          "oklch(47% 0.026 354)",
+          "oklch(58% 0.028 354)",
+          "oklch(70% 0.022 354)",
+          "oklch(82% 0.015 354)",
+          "oklch(95% 0.008 354)"
+        ]
+      },
+      "saffron": {
+        "role": "secondary",
+        "displayName": "Saffron",
+        "canonical": "oklch(80.5% 0.149 78.3)",
+        "tonalRamp": [
+          "oklch(15% 0.041 78)",
+          "oklch(25% 0.068 78)",
+          "oklch(36% 0.097 78)",
+          "oklch(47% 0.127 78)",
+          "oklch(58% 0.141 78)",
+          "oklch(70% 0.108 78)",
+          "oklch(82% 0.076 78)",
+          "oklch(95% 0.041 78)"
+        ]
+      },
+      "plum-ink": {
+        "role": "neutral",
+        "displayName": "Plum Ink",
+        "canonical": "oklch(26.5% 0.071 340.1)",
+        "tonalRamp": [
+          "oklch(15% 0.019 340)",
+          "oklch(25% 0.032 340)",
+          "oklch(36% 0.047 340)",
+          "oklch(47% 0.061 340)",
+          "oklch(58% 0.067 340)",
+          "oklch(70% 0.052 340)",
+          "oklch(82% 0.036 340)",
+          "oklch(95% 0.019 340)"
+        ]
+      },
+      "plum-muted": {
+        "role": "neutral",
+        "displayName": "Plum Muted",
+        "canonical": "oklch(47.4% 0.037 341.5)",
+        "tonalRamp": [
+          "oklch(15% 0.010 341)",
+          "oklch(25% 0.017 341)",
+          "oklch(36% 0.024 341)",
+          "oklch(47% 0.032 341)",
+          "oklch(58% 0.035 341)",
+          "oklch(70% 0.027 341)",
+          "oklch(82% 0.019 341)",
+          "oklch(95% 0.010 341)"
+        ]
+      },
+      "calico": {
+        "role": "neutral",
+        "displayName": "Calico",
+        "canonical": "oklch(96.0% 0.014 78.3)",
+        "tonalRamp": [
+          "oklch(15% 0.014 78)",
+          "oklch(25% 0.014 78)",
+          "oklch(36% 0.014 78)",
+          "oklch(47% 0.014 78)",
+          "oklch(58% 0.014 78)",
+          "oklch(70% 0.014 78)",
+          "oklch(82% 0.014 78)",
+          "oklch(95% 0.014 78)"
+        ]
+      },
+      "card-stock": {
+        "role": "neutral",
+        "displayName": "Card Stock",
+        "canonical": "oklch(99.2% 0.007 80.7)"
+      },
+      "calico-well": {
+        "role": "neutral",
+        "displayName": "Calico Well",
+        "canonical": "oklch(93.1% 0.019 80.1)"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(89.8% 0.023 78.2)"
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "oklch(62.2% 0.024 51.3)"
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Success",
+        "canonical": "oklch(47.5% 0.096 149.6)",
+        "tonalRamp": [
+          "oklch(15% 0.026 150)",
+          "oklch(25% 0.043 150)",
+          "oklch(36% 0.063 150)",
+          "oklch(47% 0.082 150)",
+          "oklch(58% 0.090 150)",
+          "oklch(70% 0.069 150)",
+          "oklch(82% 0.049 150)",
+          "oklch(95% 0.026 150)"
+        ]
+      },
+      "warning": {
+        "role": "status",
+        "displayName": "Warning",
+        "canonical": "oklch(50.8% 0.108 73.3)",
+        "tonalRamp": [
+          "oklch(15% 0.029 73)",
+          "oklch(25% 0.049 73)",
+          "oklch(36% 0.071 73)",
+          "oklch(47% 0.092 73)",
+          "oklch(58% 0.102 73)",
+          "oklch(70% 0.079 73)",
+          "oklch(82% 0.055 73)",
+          "oklch(95% 0.029 73)"
+        ]
+      },
+      "danger": {
+        "role": "status",
+        "displayName": "Danger",
+        "canonical": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "oklch(15% 0.049 29)",
+          "oklch(25% 0.081 29)",
+          "oklch(36% 0.117 29)",
+          "oklch(47% 0.152 29)",
+          "oklch(58% 0.169 29)",
+          "oklch(70% 0.130 29)",
+          "oklch(82% 0.091 29)",
+          "oklch(95% 0.049 29)"
+        ]
+      },
+      "night-plum": {
+        "role": "neutral",
+        "displayName": "Night Plum (dark ground)",
+        "canonical": "oklch(17.9% 0.030 338.1)"
+      },
+      "night-cochineal": {
+        "role": "primary",
+        "displayName": "Night Cochineal (dark accent)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing hero headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Public section titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sub-section and step titles."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "App and auth page h1s (1.5rem, 1.875rem from sm)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading text and leads, 60 to 65ch."
+      },
+      "ui": { "displayName": "UI", "purpose": "Buttons, nav, labels." },
+      "figures": {
+        "displayName": "Figures",
+        "purpose": "Money, scores, counts; tabular, slashed zero."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Codes, URLs, scopes; small print only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "raised",
+        "value": "0 1px 2px hsl(318 45% 14% / 0.06), 0 2px 8px -2px hsl(318 45% 14% / 0.08)",
+        "purpose": "A control that invites input: the landing brief field."
+      },
+      {
+        "name": "floating",
+        "value": "0 2px 4px hsl(318 45% 14% / 0.06), 0 16px 40px -12px hsl(318 45% 14% / 0.22)",
+        "purpose": "Menus, popovers, mobile nav sheet, the product window."
+      },
+      {
+        "name": "tag",
+        "value": "0 1px 1px hsl(318 45% 14% / 0.08), 0 10px 24px -8px hsl(318 45% 14% / 0.3)",
+        "purpose": "The hang tag, applied as filter: drop-shadow on its wrapper because the tag is clipped."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Default ease for entrances and the weave."
+      },
+      {
+        "name": "ease-in-out-soft",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Symmetric state changes."
+      },
+      {
+        "name": "weave",
+        "value": "900ms ease-out-expo, scaleX from 0, origin left, staggered 160ms",
+        "purpose": "One-time weaving of finished run-tape passages."
+      },
+      {
+        "name": "rise",
+        "value": "700ms ease-out-expo, opacity 0 and translateY(12px) to rest",
+        "purpose": "Entrance for revealed content."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "durations collapse to 0.01ms",
+        "purpose": "prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one cochineal action on a screen.",
+      "html": "<button class=\"ds-btn-primary\">Start a drop</button>",
+      "css": ".ds-btn-primary { background: #b0245f; color: #ffffff; height: 36px; padding: 0 16px; border: 1px solid transparent; border-radius: 10px; font: 500 0.875rem/1 Geist, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s; } .ds-btn-primary:hover { background: color-mix(in oklab, #b0245f 80%, transparent); } .ds-btn-primary:focus-visible { outline: 2px solid #b0245f; outline-offset: 2px; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions: Change, Back, Connect.",
+      "html": "<button class=\"ds-btn-outline\">Change</button>",
+      "css": ".ds-btn-outline { background: #f7f1e8; color: #3b1530; height: 36px; padding: 0 16px; border: 1px solid #e6dccd; border-radius: 10px; font: 500 0.875rem/1 Geist, ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-outline:hover { background: #efe7da; } .ds-btn-outline:focus-visible { outline: 2px solid #b0245f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Link Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Header links and quiet actions.",
+      "html": "<a class=\"ds-btn-ghost\" href=\"#\">Pricing</a>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border-radius: 10px; color: #6b5462; text-decoration: none; font: 500 0.875rem/1 Geist, ui-sans-serif, system-ui, sans-serif; transition: background 0.15s, color 0.15s; } .ds-btn-ghost:hover { background: #efe7da; color: #3b1530; } .ds-btn-ghost:focus-visible { outline: 2px solid #b0245f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Form input with a strong hairline and cochineal focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Target price\" />",
+      "css": ".ds-input { height: 40px; width: 240px; padding: 4px 10px; background: transparent; color: #3b1530; border: 1px solid #93837a; border-radius: 10px; font: 400 0.875rem Geist, ui-sans-serif, system-ui, sans-serif; outline: none; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: #6b5462; } .ds-input:focus-visible { border-color: #b0245f; box-shadow: 0 0 0 3px color-mix(in oklab, #b0245f 35%, transparent); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Resting surface: card stock, hairline, no shadow.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Fourthwall</h3><p class=\"ds-card-body\">Connected. Products publish to your shop.</p></div>",
+      "css": ".ds-card { background: #fffcf7; color: #3b1530; border: 1px solid #e6dccd; border-radius: 14px; padding: 20px; max-width: 320px; } .ds-card-title { margin: 0 0 4px; font: 600 1rem/1.3 'Familjen Grotesk', Geist, sans-serif; letter-spacing: -0.015em; } .ds-card-body { margin: 0; color: #6b5462; font: 400 0.875rem/1.5 Geist, sans-serif; }"
+    },
+    {
+      "name": "App Rail Nav",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "Plum rail with a saffron active icon.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item is-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg>Overview</a><a class=\"ds-rail-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 5v14M5 12h14\"/></svg>New drop</a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 2px; width: 15rem; padding: 20px 12px; background: #3b1530; } .ds-rail-item { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: 10px; color: color-mix(in oklab, #f7f1e8 70%, transparent); text-decoration: none; font: 500 0.875rem Geist, sans-serif; transition: background 0.15s, color 0.15s; } .ds-rail-item:hover { background: color-mix(in oklab, #f7f1e8 10%, #3b1530); color: #f7f1e8; } .ds-rail-item:focus-visible { outline: 2px solid #f3b23a; outline-offset: 2px; } .ds-rail-item.is-active { background: color-mix(in oklab, #f7f1e8 10%, #3b1530); color: #f7f1e8; } .ds-rail-item.is-active svg { color: #f3b23a; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "description": "Fully round chip with a status dot; colour never alone.",
+      "html": "<span class=\"ds-chip\"><span class=\"ds-dot\"></span>Campaign paused</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid #e6dccd; border-radius: 9999px; color: #3b1530; font: 500 0.75rem Geist, sans-serif; } .ds-dot { width: 8px; height: 8px; border-radius: 9999px; background: #8a5a00; }"
+    },
+    {
+      "name": "Hang Tag",
+      "kind": "custom",
+      "refersTo": "hang-tag",
+      "description": "The one shaped object: chamfered top, eyelet, ruled spec lines with tabular figures.",
+      "html": "<div class=\"ds-tag-wrap\"><div class=\"ds-tag\"><span class=\"ds-eyelet\"></span><p class=\"ds-tag-title\">Moss fern tee</p><p class=\"ds-tag-sub\">Example</p><dl class=\"ds-tag-lines\"><div><dt>Price</dt><dd>$32.00</dd></div><div><dt>Blank</dt><dd>$12.40</dd></div><div><dt>Fees</dt><dd>$3.10</dd></div><div class=\"is-emphasis\"><dt>Profit</dt><dd>$16.50</dd></div></dl><p class=\"ds-tag-foot\">Campaign paused</p></div></div>",
+      "css": ".ds-tag-wrap { width: 220px; filter: drop-shadow(0 1px 1px hsl(318 45% 14% / 0.08)) drop-shadow(0 10px 24px hsl(318 45% 14% / 0.3)); } .ds-tag { position: relative; background: #fffcf7; color: #3b1530; padding: 36px 20px 20px; clip-path: polygon(1.25rem 0, calc(100% - 1.25rem) 0, 100% 1.25rem, 100% 100%, 0 100%, 0 1.25rem); border-radius: 0 0 6px 6px; font-family: Geist, sans-serif; } .ds-eyelet { position: absolute; left: 50%; top: 12px; width: 14px; height: 14px; transform: translateX(-50%); border-radius: 9999px; border: 2px solid color-mix(in oklab, #3b1530 25%, transparent); background: #f7f1e8; box-sizing: border-box; } .ds-tag-title { margin: 0; font: 600 1.125rem/1.25 'Familjen Grotesk', Geist, sans-serif; letter-spacing: -0.02em; } .ds-tag-sub { margin: 4px 0 0; font-size: 0.75rem; color: color-mix(in oklab, #3b1530 70%, #fffcf7); } .ds-tag-lines { margin: 16px 0 0; font-size: 0.8rem; font-variant-numeric: tabular-nums slashed-zero; } .ds-tag-lines div { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border-top: 1px solid color-mix(in oklab, #3b1530 14%, #fffcf7); } .ds-tag-lines dd { margin: 0; } .ds-tag-lines .is-emphasis { border-top-color: color-mix(in oklab, #3b1530 60%, transparent); font-weight: 600; } .ds-tag-foot { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid color-mix(in oklab, #3b1530 14%, #fffcf7); font-size: 0.75rem; }"
+    },
+    {
+      "name": "Run Tape",
+      "kind": "custom",
+      "refersTo": "run-tape-current",
+      "description": "The run as one woven label: done solid plum, current cochineal, pending a hairline thread.",
+      "html": "<ol class=\"ds-tape\"><li class=\"done\">Brief</li><li class=\"done\">Trends</li><li class=\"current\">Designs</li><li>Products</li><li>Campaign</li></ol>",
+      "css": ".ds-tape { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin: 0; padding: 0; list-style: none; border-radius: 10px; overflow: hidden; width: 460px; font: 500 0.75rem Geist, sans-serif; } .ds-tape li { height: 36px; display: flex; align-items: center; padding: 0 12px; color: #6b5462; box-shadow: inset 0 0 0 1px #e6dccd; } .ds-tape li.done { background: #3b1530; color: #f7f1e8; box-shadow: none; animation: ds-weave 900ms cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: left; } .ds-tape li.current { background: #b0245f; color: #ffffff; box-shadow: none; } @keyframes ds-weave { from { transform: scaleX(0); } } @media (prefers-reduced-motion: reduce) { .ds-tape li.done { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Hang Tag",
+    "overview": "Every drop ships with its own label. The evidence wovain produces (price math, sources, the judge's verdict, \"paused\") is set the way a garment carries its hang tag and woven care label: compact, specified, honest. The world is a calm, warm product UI (calico ground, plum ink, one hairline weight, gently rounded surfaces) with a single shaped object hanging off it: the hang tag, with chamfered top corners, a punched eyelet and ruled spec lines.\n\nDensity is product-grade, not editorial. Public pages breathe (generous section rhythm, left-aligned headlines over working controls); the app is quiet and tabular, built around the run tape, which reads as one continuous woven label: done passages solid plum, the current passage dyed cochineal, pending passages a hairline thread. Colour marks only the edge that moves. Dark mode is deep plum, never neutral grey, and the tag stays light card stock in both themes because it is a physical object.\n\nConfirmed rejection: the earlier \"printer's ink swatch book\" world (print-only, read as a gimmick). The build also refuses the AI-gradient SaaS hero, the split hero and the row of icon cards.",
+    "keyCharacteristics": [
+      "Calico ground, plum ink, one cochineal dye rationed to what is live or chosen.",
+      "Saffron lives on the plum rail only.",
+      "One hairline weight everywhere; selection is the same line drawn heavier.",
+      "The hang tag is the only shaped object; everything else is calm rounded UI.",
+      "Familjen Grotesk speaks, Geist works, Geist Mono only for codes and money lines.",
+      "Borders mark resting surfaces; shadows mark only what floats."
+    ],
+    "rules": [
+      {
+        "name": "The One Dye Rule",
+        "body": "Cochineal marks only what is live or chosen: the primary action, the current step, the selection. If two cochineal things compete on a screen, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Saffron Thread Rule",
+        "body": "Saffron appears only on the plum rail (active icon, rail focus ring). It is a highlight, not a second accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Light Tag Rule",
+        "body": "The hang tag is card stock with plum ink in both themes. It does not invert.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Voices Rule",
+        "body": "Familjen Grotesk speaks (headlines, names, the tag title), Geist works (everything else), Geist Mono only for codes and money lines on a tag. No fourth face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lined-Up Money Rule",
+        "body": "Every number a seller compares (price, fees, profit, margin, score, count) uses the `figures` utility so columns align.",
+        "section": "typography"
+      },
+      {
+        "name": "The Border Rests, Shadow Floats Rule",
+        "body": "A card at rest has a hairline border and no shadow. Shadow means it sits above the page: a menu, the product window, the tag.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** read colour through the semantic roles (`bg-background`, `text-muted-foreground`, `bg-primary`, `bg-tag`); the only place a hex lives is `src/brand/brand.tsx`.",
+      "**Do** keep cochineal to the primary action, the current step and the selection on any screen.",
+      "**Do** put money, scores and counts in the `figures` utility.",
+      "**Do** show product evidence (price math, status, \"paused\") on the hang tag, and label example data as an example.",
+      "**Do** use the hairline for every resting border, and draw selection as the same line heavier or in cochineal.",
+      "**Do** keep motion to the expo ease-out (`cubic-bezier(0.16, 1, 0.3, 1)`) and let `prefers-reduced-motion` collapse it.",
+      "**Do** render the logo through `<Logo/>` and the files in `public/brand/`."
+    ],
+    "donts": [
+      "**Don't** return to the \"printer's ink swatch book\" world (swatches, ink chips, print-only devices).",
+      "**Don't** build an AI-gradient SaaS hero, a split hero or a row of icon cards.",
+      "**Don't** put saffron on calico or use it as a second accent.",
+      "**Don't** invert the hang tag in dark mode, or give any other object a chamfered or clipped silhouette.",
+      "**Don't** add a shadow to a resting card; shadows are for menus, popovers, the product window and the tag.",
+      "**Don't** set headings in Geist Mono or introduce a fourth typeface.",
+      "**Don't** use grey shadows or a neutral-grey dark mode; depth is plum."
+    ]
+  }
+}

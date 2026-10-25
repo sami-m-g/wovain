@@ -44,7 +44,7 @@ PRD ref: `prd.md > The Core Journey`.
 ## Where It Runs and How Someone Tries It
 
 - **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>.
-- **ChatGPT:** add a connector with the URL `https://wovain.com/api/mcp`. OAuth discovery is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`; the seller signs in and approves access on the consent page.
+- **ChatGPT:** add a connector with the URL `https://mcp.wovain.com/api/mcp`. OAuth discovery is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`; the seller signs in and approves access on the consent page.
 - **Locally:** Node.js (see `.nvmrc`), pnpm and Docker for PostgreSQL.
 
 ```bash
@@ -154,6 +154,6 @@ wovain/
 
 - Code gates and Nemotron decides inside them — chosen so a model error cannot publish an unchecked design or spend money; the tradeoff is occasional overrides of a good model answer.
 - Qloo before Tavily — taste narrows the news search; the tradeoff is dependence on Qloo coverage of the seed.
-- Resolved: ChatGPT connects to `https://wovain.com/api/mcp`; Better Auth's MCP plugin is the OAuth server and `requireMcpAuth` verifies each token.
+- Resolved: ChatGPT connects to `https://mcp.wovain.com/api/mcp`; Better Auth's MCP plugin is the OAuth server and `requireMcpAuth` verifies each token.
 - Open: Meta app review scope for server-side campaign creation.
 - Unfamiliar concept discussed: the difference between a model suggesting a value and code guaranteeing it. Clarified by the rule that code-decided checks (print size, price floor, budget range) are not model output, shown by the tests in `packages/core/src/design.test.ts`.
