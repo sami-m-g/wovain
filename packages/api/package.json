@@ -18,6 +18,7 @@
     "@wovain/auth": "workspace:*",
     "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
+    "@wovain/email": "workspace:*",
     "@wovain/widgets": "workspace:*",
     "drizzle-orm": "catalog:",
     "evlog": "catalog:",

@@ -18,8 +18,10 @@
     "@better-auth/mcp": "catalog:",
     "@better-auth/oauth-provider": "catalog:",
     "@wovain/db": "workspace:*",
+    "@wovain/email": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
+    "evlog": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

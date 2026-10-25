@@ -13,6 +13,7 @@
     { "path": "../db" },
     { "path": "../auth" },
     { "path": "../core" },
+    { "path": "../email" },
     { "path": "../widgets" }
   ]
 }
