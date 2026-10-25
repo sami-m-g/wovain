@@ -9,10 +9,10 @@
         "additional": []
       },
       "latest_sync": {
-        "git_tag": "50f02320",
-        "catalog_version": "1.0.0",
-        "synced_at": "2026-10-22T17:19:22.564Z",
-        "definition_hash": "968dc6e875886c41"
+        "git_tag": "eaca5859",
+        "catalog_version": "1.1.0",
+        "synced_at": "2026-10-25T13:33:29.540Z",
+        "definition_hash": "1df25cd525d73c65"
       }
     }
   },
@@ -25,10 +25,24 @@
         "additional": []
       },
       "latest_sync": {
-        "git_tag": "d78f44cc",
-        "catalog_version": "1.1.0",
-        "synced_at": "2026-10-22T11:55:46.318Z",
-        "definition_hash": "8609f445bcb511e6"
+        "git_tag": "eaca5859",
+        "catalog_version": "1.2.0",
+        "synced_at": "2026-10-25T13:33:30.583Z",
+        "definition_hash": "01b4f4d83342fc4c"
+      }
+    },
+    ".gitlab/duo/catalog/flows/heal.yml": {
+      "catalog_id": "gid://gitlab/Ai::Catalog::Item/1019659",
+      "name": "wovain heal",
+      "created_at": "2026-10-25T13:33:30.212Z",
+      "item_consumers": {
+        "additional": []
+      },
+      "latest_sync": {
+        "git_tag": "eaca5859",
+        "catalog_version": "1.0.0",
+        "synced_at": "2026-10-25T13:33:30.212Z",
+        "definition_hash": "3a325f0baaf9cdfc"
       }
     }
   }
