@@ -1,48 +1,146 @@
 ---
 title: Especificación
-description: Especificación técnica de la pila, los datos y los procedimientos.
+description: Especificación técnica de la pila, los datos, los servicios y los modos de fallo.
 ---
+
+## Cómo funciona, en lenguaje sencillo
+
+Una aplicación Next.js 16 se ejecuta en Google Cloud Run en [https://wovain.com](https://wovain.com). Sirve el sitio web, una API y un servidor MCP al que se conecta ChatGPT. El sitio web y ChatGPT llaman a los mismos procedimientos de la API, así que siempre hacen lo mismo. Una base de datos PostgreSQL en Cloud SQL recuerda usuarios, ideas, diseños, aprobaciones y ejecuciones de autopilot.
+
+Cuando el vendedor pide ideas, la API pregunta a Qloo quién compraría y qué temas le gustan, y pregunta a Tavily qué hay en las noticias dentro de esos temas. Los diseños se crean con fal para productos de Fourthwall. Nemotron, alojado en Nebius Token Factory, evalúa cada diseño; después el código vuelve a comprobar las reglas que puede decidir por sí mismo. Al aprobar, la API crea los productos de Fourthwall y los anuncios de Meta, siempre en pausa. La documentación vive aparte en [https://docs.wovain.com](https://docs.wovain.com).
+
+Por qué no algo más elaborado: una aplicación y una API mantienen pequeña la prueba de concepto y coherentes las dos superficies.
+
+## El recorrido principal a través del sistema
+
+Ref. PRD: `prd.md > The Core Journey`.
+
+1. El vendedor inicia sesión → Better Auth (`/api/auth`) crea una sesión en PostgreSQL.
+2. El vendedor introduce una semilla → la página web o la herramienta MCP llama a un procedimiento oRPC en `/api/rpc` → el procedimiento llama a Qloo y luego a Tavily → las ideas ordenadas se guardan y se devuelven.
+3. El vendedor elige ideas → los diseños se generan con fal y se valoran con datos del catálogo de Fourthwall → se guardan.
+4. Cada diseño va a Nemotron en Nebius → la respuesta se comprueba con Zod → el código aplica las reglas de impresión → el veredicto se guarda y se muestra.
+5. El vendedor aprueba → el procedimiento crea los productos de Fourthwall con la conexión del vendedor.
+6. Los conceptos de anuncio se generan y aprueban → el procedimiento crea una campaña, un conjunto de anuncios y anuncios de Meta, todos en pausa.
+7. El vendedor ve el resultado y abre el Administrador de anuncios de Meta para iniciar la campaña.
 
 ## Pila tecnológica
 
-| Capa | Elección |
-| --- | --- |
-| Aplicación | Next.js 16, App Router, React 19 |
-| API | Procedimientos oRPC en `packages/api`, montados en `/api/rpc` |
-| Autenticación | Better Auth en `packages/auth`, montado en `/api/auth` |
-| Datos | Drizzle ORM y PostgreSQL (Cloud SQL en GCP) en `packages/db` |
-| Registros | Eventos amplios de evlog |
-| Interfaz | shadcn/ui sobre Base UI y Tailwind CSS 4 en `packages/ui` |
-| Entorno | Esquemas de Varlock, `ENV` tipado |
-| Herramientas | Workspaces de pnpm, Turborepo, Ultracite, knip, TypeScript 7 para `tsc` |
-| Superficie de agente | Servidor MCP de ChatGPT servido desde `apps/web` |
+| Capa | Elección | Docs |
+| --- | --- | --- |
+| Aplicación | Next.js 16, App Router, React 19 | [nextjs.org/docs](https://nextjs.org/docs) |
+| API | Procedimientos oRPC en `packages/api`, montados en `/api/rpc` | [orpc.dev](https://orpc.dev) |
+| Autenticación | Better Auth en `packages/auth`, montado en `/api/auth` | [better-auth.com](https://better-auth.com) |
+| Datos | Drizzle ORM, PostgreSQL en Cloud SQL, en `packages/db` | [orm.drizzle.team](https://orm.drizzle.team) |
+| Registros | Eventos amplios de evlog, uno por solicitud | [evlog.dev](https://evlog.dev) |
+| Interfaz | shadcn/ui sobre Base UI, Tailwind CSS 4, en `packages/ui` | [ui.shadcn.com](https://ui.shadcn.com) |
+| Entorno | Esquemas de Varlock, `ENV` tipado | [varlock.dev](https://varlock.dev) |
+| Herramientas | Workspaces de pnpm, Turborepo, Ultracite, knip, TypeScript 7 |  |
+| Sitio de docs | Fumadocs con en, fr y es | [fumadocs.dev](https://fumadocs.dev) |
+| Modelos | NVIDIA Nemotron 3 Super en Nebius Token Factory | [docs.tokenfactory.nebius.com](https://docs.tokenfactory.nebius.com) |
 
-## Modelos y proveedores
+Sin verificar y para comprobar pronto: la ruta exacta del conector MCP y el flujo OAuth que necesita ChatGPT en el dominio de producción.
 
-| Necesidad | Proveedor |
-| --- | --- |
-| Juez y decisiones del autopilot | NVIDIA Nemotron 3 Super en Nebius Token Factory |
-| Grafo de gustos | Qloo |
-| Búsqueda web | Tavily |
-| Arte y visuales de anuncios | fal |
-| Productos | Fourthwall |
-| Anuncios | Meta |
+## Dónde se ejecuta y cómo probarlo
 
-## Contrato de decisión
+- **Producción:** Cloud Run en [https://wovain.com](https://wovain.com); docs en [https://docs.wovain.com](https://docs.wovain.com).
+- **En local:** Node.js (consulta `.nvmrc`), pnpm y Docker para PostgreSQL.
 
-Cada llamada al modelo devuelve JSON validado con un esquema de Zod. Tras la validación, el código aplica los límites del [PRD](/es/docs/product/prd) y registra si corrigió al modelo. Las decisiones del autopilot se escriben como eventos bajo la ejecución, así el vendedor puede auditar lo ocurrido.
+```bash
+pnpm install
+docker compose up -d
+pnpm run dev
+```
 
-## Idempotencia
+Abre la aplicación web, regístrate y sigue el flujo del vendedor; la documentación corre en el puerto 4000. Las claves van en los valores de los `.env.schema` de cada aplicación: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `FAL_KEY`. Nunca hagas commit de valores reales.
 
-Una ejecución tiene una clave. La misma clave devuelve la ejecución existente. Cada paso guarda los ID de origen que creó antes de que la ejecución avance, y un reintento los lee antes de crear nada.
+El envío requiere un vídeo de demostración corto y el repositorio público; el despliegue es adicional. URL del vídeo: por añadir. URL del repositorio: por añadir.
 
-## Seguridad
+## Aspecto y tono
 
-- Los objetos de Meta se crean en pausa; no existe ninguna llamada de activación en los procedimientos.
-- Los resultados de los proveedores se tratan como entrada no confiable.
-- Las entradas están acotadas y el texto de las consultas no se registra.
-- Una sola ejecución de autopilot activa por usuario, con un control para detenerla.
+Cálido, sencillo, números primero; voz de entrenador. Temas claro y oscuro a partir de los tokens de shadcn; tarjetas amplias para las aprobaciones; una acción principal por tarjeta. Funciona en ancho de móvil.
 
-## Operaciones
+## Componentes
 
-evlog emite un evento estructurado por solicitud. El flujo de autorreparación de Duo lee esos eventos y la inyección de fallos mediante feature flags ejercita esa ruta. Consulta [Flujos de agentes](/es/docs/agent-flows).
+### Aplicación web (`apps/web`)
+
+Páginas, componentes de servidor, `/api/rpc`, `/api/auth` y el servidor MCP. Ref. PRD: `prd.md > Screens and Layout`.
+
+### API (`packages/api`)
+
+Routers oRPC. `publicProcedure` añade el registro de evlog; `protectedProcedure` exige además una sesión. Ref. PRD: `prd.md > Features and Behavior`.
+
+### Autenticación (`packages/auth`)
+
+`createAuth` construye Better Auth sobre la base de datos de Drizzle. Ref. PRD: `prd.md > States and Boundaries`.
+
+### Base de datos (`packages/db`)
+
+Esquema de Drizzle, relaciones y cliente. Ref. PRD: `prd.md > States and Boundaries`.
+
+### Capa de decisión
+
+Llamada a Nemotron, validación con Zod, límites impuestos por el código, eventos de decisión. Ref. PRD: `prd.md > Features and Behavior` (Autopilot).
+
+### Flujos de Duo
+
+Flujos de autorreparación, explorador y desarrollo alrededor del repositorio; definiciones en `docs/flows.md`. Ref. PRD: `prd.md > Features and Behavior` (After deploy).
+
+## Modelo de datos
+
+| Dato | Dónde | Se actualiza | Al volver |
+| --- | --- | --- | --- |
+| Usuarios, sesiones, cuentas | Tablas de Better Auth en `packages/db/src/schema/auth.ts` | Registro, inicio de sesión | La cookie de sesión restaura al usuario |
+| Conexiones | PostgreSQL | Al conectar | Se reutilizan en cada ejecución |
+| Ideas, diseños, aprobaciones | PostgreSQL | En cada paso | Una ejecución se reanuda donde se detuvo |
+| Ejecuciones y eventos de decisión | PostgreSQL, por clave de ejecución | En cada decisión del autopilot | Auditables después |
+
+Las migraciones se generan con `pnpm run db:generate`.
+
+## Estructura de archivos
+
+```
+wovain/
+├── apps/
+│   ├── web/              # Next.js 16: pages, /api/rpc, /api/auth, MCP server
+│   └── fumadocs/         # docs site, content/docs in en, fr, es
+├── packages/
+│   ├── api/              # oRPC routers and procedures
+│   ├── auth/             # Better Auth configuration
+│   ├── db/               # Drizzle schema, relations, client, migrations
+│   ├── ui/               # shared shadcn/ui components
+│   └── config/           # shared tsconfig
+├── docs/                 # scope, PRD, spec, app map, flows
+├── infra/                # deployment
+└── AGENTS.md
+```
+
+## Servicios externos y dependencias
+
+| Servicio | Uso | Clave | Notas |
+| --- | --- | --- | --- |
+| Nebius Token Factory | Juez Nemotron y autopilot, compatible con OpenAI en `https://api.tokenfactory.nebius.com/v1/` | `NEBIUS_API_KEY` | Pago por token |
+| Qloo | `/search`, `/v2/insights` (etiquetas, demografía, heatmap), `/v2/trending` en `https://hackathon.api.qloo.com`, cabecera `X-Api-Key` | `QLOO_API_KEY` | Clave de hackathon |
+| Tavily | Búsqueda en tiempo de ejecución para noticias, saturación y revisión de marcas | `TAVILY_API_KEY` | Con límite de tasa |
+| fal | Arte y visuales de anuncios | `FAL_KEY` | Pago por imagen |
+| Fourthwall | Catálogo y productos mediante su servidor MCP | OAuth por vendedor |  |
+| Meta Ads | Campaña, conjunto de anuncios y anuncios, creados en pausa | OAuth por vendedor | Puede requerir revisión de la app |
+| Cloud SQL, Cloud Run | PostgreSQL y alojamiento | Proyecto de GCP |  |
+
+## Modos de fallo importantes
+
+- **Una respuesta del modelo no se puede analizar** → el diseño se muestra sin la comprobación del modelo y se registra el error.
+- **Un proveedor está caído o sin configurar** → el paso lo indica y la ejecución se pausa o continúa sin él.
+- **Un límite se superaría** → el paso no se inicia y el registro de decisiones explica por qué.
+
+## Qué se simplificó y por qué
+
+- **Una sola aplicación** en lugar de servicios separados de API y MCP — una sola API mantiene coherentes las superficies. Separarlos añadiría despliegue y autenticación.
+- **Campañas en pausa** en lugar de lanzamientos en vivo — elimina el riesgo de gasto involuntario.
+- **Sin optimizador** en lugar de ajuste automático — primero hacen falta datos reales de gasto.
+
+## Decisiones y asuntos abiertos
+
+- El código impone los límites y Nemotron decide dentro de ellos — elegido para que un error del modelo no pueda sobrepasar el presupuesto; el coste es corregir a veces una buena respuesta del modelo.
+- Qloo antes que Tavily — el gusto acota la búsqueda de noticias; el coste es depender de la cobertura de Qloo para la semilla.
+- Abierto: ruta del conector de ChatGPT y OAuth en el dominio de producción (heredado de `prd.md > Open Questions`); alcance de la revisión de la app de Meta.
+- Concepto poco familiar tratado: la diferencia entre un modelo que sugiere un precio y un código que garantiza un precio mínimo. Aclarado con la regla de que las comprobaciones decididas por el código sobrescriben la salida del modelo, que se mostrará con una prueba durante la construcción.

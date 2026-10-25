@@ -1,0 +1,133 @@
+---
+doc: prd
+status: approved
+---
+
+# wovain — Product Requirements
+
+An agentic print-on-demand app, on the website and in ChatGPT, that takes a solo Fourthwall seller from a seed idea to products and a paused Meta campaign, one approval at a time. Source: `scope.md > The Unique Kernel`, `scope.md > The Core Loop`.
+
+## The Core Journey
+
+Source: `scope.md > What "Working" Looks Like`.
+
+1. The seller signs in at <https://wovain.com> (or adds the wovain MCP connector in ChatGPT) and connects Fourthwall, Meta and fal.
+2. The seller enters a seed. Wovain asks Qloo for the seed's entities, taste tags and trending velocity, then Tavily for this week's news inside those themes, and shows ranked ideas.
+3. The seller picks ideas. Wovain generates designs for real Fourthwall blanks with placements, listing copy, price, profit and margin.
+4. Nemotron judges each design. A `revise` verdict applies the fixes once; the seller sees the result either way.
+5. The seller approves, skips or gives feedback per design. Feedback regenerates that design only.
+6. Approved designs become Fourthwall products.
+7. Wovain creates several ad concepts per product, with visuals, text variants and the breakeven line.
+8. The seller approves concepts. Wovain builds one Meta campaign, paused, with an audience suggestion from Qloo.
+9. Success: the products are in the Fourthwall shop and the paused campaign is in Meta Ads Manager. The seller starts it when ready.
+
+```mermaid
+flowchart LR
+  A[Seed] --> B[Ideas: Qloo + Tavily]
+  B --> C[Designs]
+  C --> D{Nemotron judge}
+  D -- revise --> C
+  D -- ready --> E{{Approve}}
+  E -- feedback --> C
+  E -- approve --> F[Fourthwall products]
+  F --> G[Ad concepts]
+  G --> H{{Approve}}
+  H --> I[Paused Meta campaign]
+```
+
+## Screens and Layout
+
+| Surface | What it holds |
+| --- | --- |
+| Sign in | Email and password through Better Auth |
+| Connections | Connect Fourthwall, Meta and fal |
+| Trends | Seed input and ranked ideas with both signals and source links |
+| Designs | A card per design: mockup, listing, price, profit, margin, Nemotron verdict, approve, skip and feedback |
+| Ads | Concepts per product: hook, audience, Feed and Stories visuals, text variants, breakeven line |
+| Campaign | The paused campaign, its audience and a link to open it in Meta |
+| Autopilot | Start, status, decision log and stop |
+| ChatGPT | The same steps as chat widgets served by the MCP server |
+| Docs | <https://docs.wovain.com> in English, French and Spanish |
+
+## Look and Feel
+
+Friendly coach voice: warm, one-sentence reasons, numbers first. Name in lowercase. shadcn/ui components on Base UI and Tailwind CSS 4, light and dark themes, readable on a phone. Example copy: "Video A wasn't selling, so I paused it to save budget: $30.96 spent, no sales."
+
+## Features and Behavior
+
+### Trend research
+
+- As a seller, I want ideas that come with evidence so that I trust what I design.
+  - [ ] Each idea shows a taste signal (Qloo), a moment signal (Tavily) and its top competing listings.
+  - [ ] Each idea's score shows the inputs behind it.
+  - [ ] Without a Qloo or Tavily key, that signal is marked unavailable and the other still works.
+
+### Designs and judging
+
+- As a seller, I want designs fitted to real products so that margins are real.
+  - [ ] Price is never below the blank's breakeven plus the minimum margin.
+  - [ ] Print rules code can decide (print size, transparency, title length, color count) override Nemotron's verdict.
+  - [ ] A model reply that does not parse never reaches the seller as a raw error.
+
+### Publishing and ads
+
+- As a seller, I want to approve before anything is published or spent.
+  - [ ] Approved designs become Fourthwall products; autopilot creates them hidden.
+  - [ ] Every Meta object is created paused; no procedure activates one.
+  - [ ] The audience suggestion shows age bands, gender and countries from Qloo.
+
+### Autopilot
+
+- As a seller, I want one command to run the whole loop within limits.
+  - [ ] Each decision is stored with inputs, options, choice, Nemotron's reasoning, the limits applied and any code override.
+  - [ ] A step that would cross the maximum spend does not start.
+  - [ ] One active run per user; a stop control ends it before the next step.
+  - [ ] The same run key returns the existing run; a retried step reuses the upstream IDs it already created.
+
+### After deploy
+
+- Self-healing flow: a production error read from evlog events becomes a merge request with a fix and a regression test; feature-flag fault injection demonstrates it.
+- Scout flow: KPIs and UI become evidence-backed issues.
+- Developer flow: an issue becomes a merge request.
+
+## States and Boundaries
+
+- **First use** — no connections yet; the seller is led to Connections first.
+- **Provider key missing** — that step answers "not configured" with one line on how to enable it; the flow continues without it.
+- **Provider outage** — the run pauses at that step and can resume.
+- **Account not connected** — the run pauses with a connect link.
+- **Limit crossed** — the step does not start and the reason is logged.
+- **Persists** — users, sessions, connections, ideas, designs, approvals, runs and decision events in PostgreSQL.
+- **Boundary** — a seller sees only their own data; protected procedures require a session.
+
+## Product Decisions
+
+- One app serves the website and the MCP server — a single API means the two surfaces cannot drift.
+- Models decide, code enforces — hard limits are applied after every model reply.
+- Paused by default — the seller keeps every spending decision.
+- Qloo first — taste decides what is worth designing before the news is consulted.
+
+## What We're Building
+
+Everything in `scope.md > The POC Boundary`: sign-in and connections, Qloo and Tavily trends, designs with the Nemotron judge, approvals, Fourthwall products, Meta ad variants and a paused campaign, autopilot with an audit trail, the ChatGPT MCP server, the docs site and the three Duo flows.
+
+## Deferred From the POC
+
+- Optimizer: needs spend data first.
+- Campaign results in chat: same reason.
+- Team accounts and roles: a solo seller is the target.
+
+## Possible Later Enhancements
+
+TikTok Shop and ads; weights for idea scores recalibrated from real sales; more locales for the docs.
+
+## Non-Goals
+
+- No custom media buying: Meta already optimizes delivery.
+- No automatic activation of ad spend: the seller starts campaigns.
+- No fabricated customers, sales or testimonials.
+
+## Open Questions
+
+- Final MCP connector path on the production domain — can wait until deploy.
+- Meta app review scope for server-side campaign creation — must be settled before the live demo.

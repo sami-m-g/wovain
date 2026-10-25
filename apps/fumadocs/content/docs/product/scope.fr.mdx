@@ -3,48 +3,59 @@ title: Périmètre
 description: Pour qui est wovain, ce qui le distingue et où se situe la limite de la preuve de concept.
 ---
 
-## Périmètre en une phrase
+Une application agentique d'impression à la demande : Qloo trouve qui achèterait, Tavily trouve pourquoi maintenant, Nemotron évalue les designs, et le vendeur approuve les produits Fourthwall et une campagne Meta en pause.
 
-Un assistant agentique pour vendeurs d'impression à la demande qui trouve quoi vendre à partir de signaux de goûts et de tendances, le conçoit pour leur catalogue Fourthwall, le publie et prépare des publicités Meta en pause, dans un parcours où chaque étape se termine par une approbation.
+En ligne sur [https://wovain.com](https://wovain.com) (site web et serveur MCP de ChatGPT, sur Cloud Run). Documentation sur [https://docs.wovain.com](https://docs.wovain.com).
 
 ## Le noyau unique
 
-Trois choses le distinguent :
-
-1. **Goût fois moment.** Qloo dit qui achèterait ; Tavily dit pourquoi maintenant.
-2. **Contraintes réelles.** Les designs partent des vrais produits, emplacements, tailles et prix de Fourthwall, et les limites de campagne partent de la marge réelle de chaque produit.
-3. **Autonomie bornée.** Nemotron décide dans des limites strictes appliquées par le code, et rien ne dépense d'argent tant que le vendeur n'a pas lancé la campagne.
+Goût fois moment, avec une autonomie bornée. Le graphe de goûts de Qloo dit qui achèterait et ce que ces personnes aiment d'autre ; la recherche en direct de Tavily dit pourquoi maintenant ; Nemotron sur Nebius Token Factory évalue et, en autopilot, décide, mais seulement dans des limites que le code impose (prix plancher issu du seuil de rentabilité, plafond de budget, contrôle des marques, dépense maximale). Rien ne dépense d'argent tant que le vendeur n'a pas lancé la campagne.
 
 ## Pour qui
 
-Un vendeur indépendant d'impression à la demande. Aujourd'hui, un produit demande cinq outils :
+Un vendeur indépendant d'impression à la demande avec une boutique Fourthwall. Aujourd'hui, un produit demande cinq outils : deviner quoi vendre, une conversation pour les designs, un envoi manuel, un outil publicitaire séparé et une campagne construite à la main dans le gestionnaire de publicités. Il veut approuver des décisions, pas piloter des outils.
 
-| Étape | Aujourd'hui | Avec wovain |
-| --- | --- | --- |
-| Trouver quoi vendre | Intuition et navigation | Tendances Qloo et Tavily avec preuves |
-| Concevoir | Longs allers-retours dans une conversation | Conçu pour un produit Fourthwall précis |
-| Lister le produit | Envoi manuel | Une approbation |
-| Créer les publicités | Un outil séparé | Plusieurs variantes générées et relues |
-| Lancer | Construit à la main dans le gestionnaire de publicités | Une campagne en pause prête à démarrer |
+## La boucle principale
+
+Le vendeur donne une graine (une niche, un fandom, un type de produit), sur le site web ou dans ChatGPT. Wovain renvoie des idées classées avec leurs preuves, conçoit celles qui sont choisies pour de vrais modèles Fourthwall, fait évaluer les designs par Nemotron et demande l'approbation. Les designs approuvés deviennent des produits Fourthwall, puis des variantes de publicité, puis une campagne Meta en pause. Le vendeur revient parce que chaque exécution transforme une nouvelle graine en campagne prête à démarrer, avec une seule série d'approbations.
+
+```text
+Graine -> Graphe de goûts Qloo -> Tavily : pourquoi maintenant -> Designs sur modèles Fourthwall
+  -> Juge Nemotron (revise renvoie aux designs)
+  -> Le vendeur approuve -> Produits Fourthwall -> Variantes publicitaires Meta
+  -> Campagne Meta en pause
+```
+
+Une fois le code livré, trois flows GitLab Duo le gardent en bonne santé : auto-réparation à partir des erreurs de production, un éclaireur pour les améliorations des KPI et de l'interface, et un flow développeur qui mène une issue à son terme.
+
+## Inspiration et identité
+
+Un coach amical : chaleureux, explique le pourquoi en une phrase, commence quand même par les chiffres. Nom : wovain, en minuscules. Construit à partir de services existants plutôt que reconstruit : Fourthwall pour le catalogue et la boutique, Meta pour la diffusion, Qloo et Tavily pour les signaux, Nemotron pour le jugement.
+
+## Pourquoi c'est important pour le créateur
+
+Le créateur veut montrer qu'un agent peut exécuter toute la boucle d'impression à la demande, de l'idée à la campagne, tout en laissant au vendeur chaque décision de dépense. Le projet est construit pour les hackathons Build With AI: Basics, GitLab Transcend, Nebius x NVIDIA et Qloo.
 
 ## À quoi ressemble « ça marche »
 
-1. Donner une idée de départ, sur le site web ou dans ChatGPT.
-2. Voir les idées classées avec leurs preuves de goût et de moment, puis les designs sur le produit avec prix et marge.
-3. Approuver ; les produits existent sur Fourthwall.
-4. Voir les variantes de publicité et approuver.
-5. Ouvrir le gestionnaire de publicités Meta : la campagne est là, en pause, avec l'audience issue de Qloo.
+1. Saisir une graine sur [https://wovain.com](https://wovain.com) ou dans ChatGPT.
+2. Voir les idées classées, chacune avec son signal de goût, son signal de moment et les entrées derrière le score.
+3. Voir les designs sur de vrais produits Fourthwall avec prix, profit et marge, et le verdict de Nemotron.
+4. Approuver ; les produits existent dans la boutique Fourthwall.
+5. Voir les variantes de publicité et approuver.
+6. Ouvrir le gestionnaire de publicités Meta : la campagne est là, en pause, avec l'audience suggérée par Qloo. Le moment « oh, c'est génial », c'est l'étape 6 après avoir seulement parlé et approuvé.
 
-## Inclus
+## Limite de la preuve de concept
 
 | Domaine | Inclus |
 | --- | --- |
-| Surfaces | Site web et serveur MCP de ChatGPT sur une seule application |
+| Surfaces | Site web Next.js 16 et serveur MCP de ChatGPT dans une seule application sur Cloud Run |
 | Recherche | Graphe de goûts Qloo et recherche web Tavily |
 | Évaluation | Nemotron sur Nebius Token Factory |
 | Publication | Produits Fourthwall après approbation |
 | Publicités | Plusieurs variantes par produit et une campagne Meta en pause |
 | Autopilot | Exécution de bout en bout avec limites strictes et piste d'audit |
+| Comptes | Connexion Better Auth, Cloud SQL (PostgreSQL) via Drizzle |
 | Après le déploiement | Trois flows GitLab Duo |
 
 ## Plus tard
@@ -55,6 +66,9 @@ Un vendeur indépendant d'impression à la demande. Aujourd'hui, un produit dema
 
 ## Explicitement exclu
 
-- Un modèle d'image ou de vidéo maison.
-- Un moteur d'achat média maison.
-- Toute activation automatique de dépenses publicitaires.
+| Élément | Raison |
+| --- | --- |
+| Un modèle d'image ou de vidéo maison | Le but est de réutiliser des fournisseurs, avec un minimum de code |
+| Un moteur d'achat média maison | La diffusion et les règles de Meta optimisent déjà les campagnes |
+| Activation automatique des dépenses publicitaires | Le vendeur doit garder le contrôle de l'argent |
+| Affirmations sur des clients, des ventes ou des témoignages | Il n'y a pas encore de données de ventes et aucune n'est inventée |

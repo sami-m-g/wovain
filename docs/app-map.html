@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>wovain app map</title>
+    <style>
+      :root {
+        --bg: #f6f5f1;
+        --surface: #ffffff;
+        --text: #1c1c1a;
+        --muted: #6a6862;
+        --line: #e3e1d9;
+        --node: #f0eee7;
+        --accent: #3b4cca;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #151513;
+          --surface: #1e1e1b;
+          --text: #ecebe6;
+          --muted: #a19f97;
+          --line: #35342f;
+          --node: #282723;
+          --accent: #8c99ff;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 32px 16px 72px;
+      }
+      h1 {
+        font-size: 32px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 40px 0 10px;
+      }
+      p {
+        margin: 0 0 12px;
+        max-width: 72ch;
+      }
+      code {
+        font:
+          14px ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        background: var(--node);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: 18px;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 15px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface);
+        font-size: 15px;
+        border: 1px solid var(--line);
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        background: var(--node);
+      }
+      details {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin: 8px 0;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      summary:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      a {
+        color: var(--accent);
+      }
+      svg {
+        width: 100%;
+        height: auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      svg text {
+        fill: var(--text);
+        font:
+          13px ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+      svg .box {
+        fill: var(--node);
+        stroke: var(--line);
+      }
+      svg .hot {
+        fill: var(--node);
+        stroke: var(--accent);
+        stroke-width: 2;
+      }
+      svg .arrow {
+        stroke: var(--muted);
+        stroke-width: 1.5;
+        fill: none;
+      }
+      svg .tip {
+        fill: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>wovain app map</h1>
+      <p class="lede">
+        An agentic print-on-demand app: Qloo finds who would buy, Tavily finds
+        why now, Nemotron judges the designs, and the seller approves Fourthwall
+        products and a paused Meta campaign.
+      </p>
+      <p class="note">
+        Snapshot of source commit <code>bec50f3</code> on the
+        <code>rebuild</code> branch. Code drifts; the repository is the source
+        of truth. Live: <a href="https://wovain.com">wovain.com</a>, docs:
+        <a href="https://docs.wovain.com">docs.wovain.com</a>.
+      </p>
+
+      <h2>The pieces</h2>
+      <p>
+        One Next.js 16 app (<code>apps/web</code>) serves the website, the API
+        and the ChatGPT MCP server on Cloud Run. The API is a set of oRPC
+        procedures (<code>packages/api</code>), sign-in is Better Auth
+        (<code>packages/auth</code>) and data lives in PostgreSQL through
+        Drizzle (<code>packages/db</code>). The docs are a separate Fumadocs
+        site (<code>apps/fumadocs</code>) in English, French and Spanish.
+      </p>
+
+      <h2>One action, from click to result</h2>
+      <svg
+        viewBox="0 0 860 190"
+        role="img"
+        aria-label="A request goes from the web page or ChatGPT to the oRPC route, then the router and procedures, then the database and providers, and returns a result."
+      >
+        <defs>
+          <marker
+            id="head"
+            viewBox="0 0 10 10"
+            refX="8"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto"
+          >
+            <path d="M0 0 L10 5 L0 10 z" class="tip" />
+          </marker>
+        </defs>
+        <rect class="box" x="10" y="60" width="150" height="70" rx="10" />
+        <text x="85" y="90" text-anchor="middle">Seller</text>
+        <text x="85" y="110" text-anchor="middle">website or ChatGPT</text>
+        <rect class="hot" x="195" y="60" width="150" height="70" rx="10" />
+        <text x="270" y="90" text-anchor="middle">/api/rpc route</text>
+        <text x="270" y="110" text-anchor="middle">apps/web</text>
+        <rect class="hot" x="380" y="60" width="150" height="70" rx="10" />
+        <text x="455" y="90" text-anchor="middle">appRouter</text>
+        <text x="455" y="110" text-anchor="middle">packages/api</text>
+        <rect class="box" x="565" y="20" width="140" height="60" rx="10" />
+        <text x="635" y="55" text-anchor="middle">PostgreSQL</text>
+        <rect class="box" x="565" y="110" width="140" height="60" rx="10" />
+        <text x="635" y="135" text-anchor="middle">Qloo, Tavily,</text>
+        <text x="635" y="153" text-anchor="middle">
+          Nebius, Fourthwall, Meta
+        </text>
+        <rect class="box" x="740" y="60" width="110" height="70" rx="10" />
+        <text x="795" y="100" text-anchor="middle">Result</text>
+        <path class="arrow" d="M160 95 H195" marker-end="url(#head)" />
+        <path class="arrow" d="M345 95 H380" marker-end="url(#head)" />
+        <path class="arrow" d="M530 80 L565 55" marker-end="url(#head)" />
+        <path class="arrow" d="M530 110 L565 135" marker-end="url(#head)" />
+        <path class="arrow" d="M705 55 L740 85" marker-end="url(#head)" />
+        <path class="arrow" d="M705 135 L740 105" marker-end="url(#head)" />
+      </svg>
+      <p class="note">
+        Today the router has a health check and a private-data procedure; the
+        seller-flow procedures (trends, designs, judge, approve, products, ads,
+        campaign) are the planned next slices.
+      </p>
+
+      <h2>Reference route (3 stops)</h2>
+      <p class="note">
+        A reference route, not a toured one. Search for the symbol if line
+        numbers have moved.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Stop</th>
+            <th>File</th>
+            <th>Anchor</th>
+            <th>What happens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><code>apps/web/src/app/api/rpc/[[...rest]]/route.ts</code></td>
+            <td><code>handleRequest</code></td>
+            <td>
+              Identifies the user, builds the context and hands the request to
+              oRPC.
+            </td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><code>packages/api/src/routers/index.ts</code></td>
+            <td><code>appRouter</code></td>
+            <td>Lists the procedures the website and ChatGPT can call.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><code>packages/api/src/index.ts</code></td>
+            <td><code>protectedProcedure</code></td>
+            <td>
+              Adds evlog logging, then rejects requests without a session.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>To change this, start here</h2>
+      <details open>
+        <summary>Add or change a procedure</summary>
+        <p>
+          Edit
+          <code>packages/api/src/routers/index.ts</code>
+          (<code>appRouter</code>). Use <code>protectedProcedure</code> for
+          anything that needs a signed-in seller.
+        </p>
+      </details>
+      <details>
+        <summary>Change sign-in</summary>
+        <p>
+          <code>packages/auth/src/index.ts</code> (<code>createAuth</code>); the
+          route is <code>apps/web/src/app/api/auth/[...all]/route.ts</code>.
+          Never edit <code>packages/db/src/schema/auth.ts</code> by hand; run
+          <code>pnpm run auth:generate</code>.
+        </p>
+      </details>
+      <details>
+        <summary>Change the database</summary>
+        <p>
+          Schema and relations are in <code>packages/db/src</code>; generate a
+          migration with <code>pnpm run db:generate</code>.
+        </p>
+      </details>
+      <details>
+        <summary>Change the docs or translations</summary>
+        <p>
+          Pages are in <code>apps/fumadocs/content/docs</code> with
+          <code>.fr.mdx</code> and <code>.es.mdx</code> siblings; locales are
+          set in <code>apps/fumadocs/src/lib/i18n.ts</code>. The planning
+          documents are <code>docs/scope.md</code>, <code>docs/prd.md</code> and
+          <code>docs/spec.md</code>.
+        </p>
+      </details>
+
+      <h2>A practice to reuse</h2>
+      <p>
+        Write the limit as an observable rule before building the feature. In
+        this project, <code>docs/prd.md</code> says a price is never below the
+        blank's breakeven, and <code>docs/spec.md</code> says code-decided
+        checks overwrite the model's answer. That turns "the model should not
+        underprice" into a test you can run, and the same habit works on any
+        project that lets a model make decisions.
+      </p>
+
+      <h2>Run it again</h2>
+      <p>
+        <code>pnpm install</code>, <code>docker compose up -d</code>, then
+        <code>pnpm run dev</code>. Before committing:
+        <code>pnpm run check</code>, <code>pnpm run check-types</code>,
+        <code>pnpm run knip</code>.
+      </p>
+    </main>
+  </body>
+</html>
