@@ -6,6 +6,7 @@ import { Input } from "@wovain/ui/components/input";
 import { Label } from "@wovain/ui/components/label";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { posthog } from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -67,7 +68,7 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
     defaultValues: { email: "", name: "", password: "" },
     onSubmit: async ({ value }) => {
       setFormError(undefined);
-      const { error } = await (mode === "signUp"
+      const { data, error } = await (mode === "signUp"
         ? authClient.signUp.email({
             email: value.email,
             // Saved on the user so wovain's emails match the site's language.
@@ -82,6 +83,12 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
       if (error) {
         setFormError(errorMessage(error.code));
         return;
+      }
+      // Analytics know the merchant by user id only, never the email, so
+      // server-side funnel steps (packages/api) join this browser's visit.
+      posthog.identify(data.user.id);
+      if (mode === "signUp") {
+        posthog.capture("sign_up");
       }
       toast.success(mode === "signUp" ? t("created") : t("welcome"));
       if (inOAuthFlow) {

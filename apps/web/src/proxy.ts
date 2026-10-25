@@ -10,8 +10,9 @@ const localize = createIntlMiddleware(routing);
 
 const WWW_PREFIX = "www.";
 const PERMANENT_REDIRECT = 308;
-// Files, Next internals and OAuth metadata keep their paths; pages get a locale.
-const UNLOCALIZED = /^\/(?:_next|_vercel|\.well-known)\/|\.[^/]+$/u;
+// Files, Next internals, OAuth metadata and the PostHog proxy (/ingest,
+// next.config.ts) keep their paths; pages get a locale.
+const UNLOCALIZED = /^\/(?:_next|_vercel|\.well-known|ingest)\/|\.[^/]+$/u;
 
 export const proxy = (request: NextRequest) => {
   // www.wovain.com reaches this app through its own Cloud Run domain mapping,

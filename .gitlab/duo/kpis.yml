@@ -10,6 +10,12 @@
 #              both are ANDed with service.logs
 #   ui         one page load of SITE_URL + page in headless Chromium, mobile
 #              viewport: lcp (ms), cls, consoleErrors
+#   posthog    a HogQL query on PostHog product analytics (the web app's
+#              funnel events, apps/web) whose first row's first column is the
+#              value; {windowDays} is the window. Needs POSTHOG_PERSONAL_API_KEY
+#              and POSTHOG_PROJECT_ID in CI; without them the optional
+#              fallback (a metric or log-ratio source) measures it, or the KPI
+#              has no data. Count production events only.
 # direction: down means lower is better. weight: 1 (nice) to 5 (critical).
 
 windowDays: 7
@@ -20,7 +26,66 @@ service:
   logs: resource.type="cloud_run_revision" AND resource.labels.service_name="wovain-web" AND jsonPayload.service="wovain-web"
   metrics: resource.type="cloud_run_revision" AND resource.labels.service_name="wovain-web"
 
+# Context for the scout from PostHog, added to the snapshot when its keys are
+# set: the most visited pages as (page, views, visitors).
+posthog:
+  topPages: >-
+    SELECT properties.$pathname AS page, count() AS views, uniq(person_id) AS visitors FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY GROUP BY page ORDER BY views DESC LIMIT 10
+
 kpis:
+  - id: weekly-visitors
+    name: Unique visitors to wovain.com
+    why: The top of the funnel; nothing below it grows without visitors.
+    unit: visitors
+    direction: up
+    target: 500
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniq(person_id) FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: visitor-sign-up-rate
+    name: Visitors who sign up
+    why: Whether the landing page turns visitors into merchants.
+    unit: ratio
+    direction: up
+    target: 0.05
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniqIf(person_id, event = 'sign_up') / nullIf(uniqIf(person_id, event = '$pageview'), 0) FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: sign-up-to-run
+    name: Sign-ups that start a run
+    why: Activation; a merchant who never starts a run never sells.
+    unit: ratio
+    direction: up
+    target: 0.5
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniqIf(person_id, event = 'run_started') / nullIf(uniqIf(person_id, event = 'sign_up'), 0) FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+      # Without PostHog: started runs per successful sign-up, from the logs.
+      fallback:
+        kind: log-ratio
+        numerator: jsonPayload.path="/api/rpc/runs/start" AND jsonPayload.status<400
+        denominator: jsonPayload.path="/api/auth/sign-up/email" AND jsonPayload.status<400
+
+  - id: run-to-campaign
+    name: Merchants whose run reaches a campaign
+    why: The whole flow working end to end, from run to design, product and ad.
+    unit: ratio
+    direction: up
+    target: 0.3
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniqIf(person_id, event = 'campaign_created') / nullIf(uniqIf(person_id, event = 'run_started'), 0) FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
   - id: server-error-rate
     name: API server error rate
     why: Each 5xx is a merchant whose action failed.

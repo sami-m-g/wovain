@@ -1,7 +1,7 @@
-import { ORPCError, os } from "@orpc/server";
+import { onSuccess, ORPCError, os } from "@orpc/server";
 import { evlog } from "evlog/orpc";
 
-import type { Context } from "./context";
+import type { Context, FunnelEvent } from "./context";
 
 const base = os.$context<Context>();
 
@@ -22,3 +22,18 @@ const requireAuth = base.middleware(({ context, next }) => {
 });
 
 export const protectedProcedure = publicProcedure.use(requireAuth);
+
+// A funnel step: recorded in product analytics once the procedure succeeds,
+// whether the merchant acted on the site or through ChatGPT.
+export const funnelProcedure = (event: FunnelEvent) =>
+  protectedProcedure.use(
+    onSuccess((_output, { context }) => {
+      context.analytics?.capture({
+        distinctId: context.userId,
+        event,
+        properties: {
+          via: context.mcpUserId === undefined ? "web" : "chatgpt",
+        },
+      });
+    })
+  );

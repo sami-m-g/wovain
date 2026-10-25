@@ -51,13 +51,18 @@ definition:
           2. Read today's measurements: the open issue labelled
              "kpi-snapshot" (list_issues with labels "kpi-snapshot", then
              get_issue). It ranks every KPI by weighted gap to its target
-             and includes the accessibility tree of each measured page.
+             and includes the accessibility tree of each measured page
+             and, when PostHog is connected, the most visited pages.
           3. Pick at most three KPIs that miss their target, worst first.
              Skip KPIs with no data. For each, look at the code that drives
              it (list_repository_tree, get_repository_file,
              gitlab_blob_search) and find one concrete, small change likely
              to move it: a fix, a validation, a lighter page, a clearer
-             form. For UI KPIs, use the accessibility tree.
+             form. For UI KPIs, use the accessibility tree. For PostHog
+             funnel KPIs (visitors, sign-up and activation rates), look at
+             the pages and steps the funnel passes through, starting with
+             the top pages, and the events in apps/web and packages/api
+             that mark each step.
           4. Skip a proposal when an open issue labelled "kpi-scout" already
              covers the same KPI (list_issues, gitlab_issue_search).
           5. Create one issue per proposal (create_issue), with labels

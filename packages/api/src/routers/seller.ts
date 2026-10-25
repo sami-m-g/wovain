@@ -15,7 +15,7 @@ import {
   publishDesignProduct,
 } from "../flow/products";
 import { getRun, listRuns, startRun } from "../flow/runs";
-import { protectedProcedure } from "../index";
+import { funnelProcedure, protectedProcedure } from "../index";
 
 // The seller flow, one procedure per step: research → design → approve →
 // product → publish → paused campaign, or all of it in one autopilot run.
@@ -46,7 +46,7 @@ export const ideasRouter = {
 };
 
 export const designsRouter = {
-  approve: protectedProcedure
+  approve: funnelProcedure("design_approved")
     .input(byId)
     .handler(
       async ({ context, input }) =>
@@ -91,7 +91,7 @@ export const productsRouter = {
   list: protectedProcedure.handler(
     async ({ context }) => await listProducts(context)
   ),
-  publish: protectedProcedure
+  publish: funnelProcedure("product_published")
     .input(byId)
     .handler(
       async ({ context, input }) =>
@@ -100,7 +100,7 @@ export const productsRouter = {
 };
 
 export const campaignsRouter = {
-  create: protectedProcedure
+  create: funnelProcedure("campaign_created")
     .input(
       z.object({
         adAccountId: z.string().regex(/^\d+$/u).optional(),
@@ -125,7 +125,7 @@ export const runsRouter = {
   list: protectedProcedure.handler(
     async ({ context }) => await listRuns(context)
   ),
-  start: protectedProcedure
+  start: funnelProcedure("run_started")
     .input(
       z.object({
         autopilot: z.boolean().default(false),

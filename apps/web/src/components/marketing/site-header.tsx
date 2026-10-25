@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { Wordmark } from "@/components/brand/wordmark";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { CtaLink } from "@/components/marketing/cta-link";
 import { ModeToggle } from "@/components/mode-toggle";
 import UserMenu from "@/components/user-menu";
 import { ENV } from "@/env.server";
@@ -61,7 +62,7 @@ export const SiteHeader = async () => {
           <Button
             className="hidden h-10 px-4 text-sm font-semibold sm:inline-flex"
             nativeButton={false}
-            render={<Link href="/sign-up" />}
+            render={<CtaLink cta="header-sign-up" href="/sign-up" />}
           >
             {t("startDrop")}
           </Button>

@@ -35,7 +35,9 @@ infra:production:
 # pulls it, as gitlab-deploy. Varlock validates env while Next builds, so the
 # build gets an env file as a BuildKit secret that never lands in a layer:
 # placeholders for the web app's secrets (Cloud Run supplies the real ones),
-# and the docs' public SITE_URL, which is compiled in.
+# and the public values that are compiled in: the docs' SITE_URL and, when
+# the CI variable is set, the web app's NEXT_PUBLIC_POSTHOG_KEY (otherwise
+# its .env.schema default).
 .image:
   extends: [.gcp-auth, .on-main]
   stage: deploy
@@ -59,6 +61,7 @@ infra:production:
       BETTER_AUTH_URL=$SITE_URL
       DATABASE_URL=postgresql://build:build@localhost:5432/build
       TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
+      ${NEXT_PUBLIC_POSTHOG_KEY:+NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY}
       EOF
       echo "SITE_URL=$DOCS_SITE_URL" > /tmp/docs_env
     - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" -t "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:latest" .

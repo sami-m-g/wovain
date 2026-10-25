@@ -108,6 +108,7 @@ image:check:
       BETTER_AUTH_URL=https://wovain.com
       DATABASE_URL=postgresql://build:build@localhost:5432/build
       TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
+      ${NEXT_PUBLIC_POSTHOG_KEY:+NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY}
       ENV
       echo "SITE_URL=https://docs.wovain.com" > /tmp/docs_env
     - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" .

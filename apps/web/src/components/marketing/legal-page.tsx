@@ -7,6 +7,7 @@ const DOCS = {
     intro: "privacy.intro",
     sections: [
       ["privacy.collectTitle", "privacy.collectBody"],
+      ["privacy.analyticsTitle", "privacy.analyticsBody"],
       ["privacy.connectionsTitle", "privacy.connectionsBody"],
       ["privacy.processorsTitle", "privacy.processorsBody"],
       ["privacy.deleteTitle", "privacy.deleteBody"],

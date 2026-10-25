@@ -189,6 +189,8 @@
       "intro": "wovain is a hackathon project. We keep as little as we can, and we never sell data.",
       "collectTitle": "What we collect",
       "collectBody": "Your name, email and password hash for your account; the briefs you write; and the runs, designs and products wovain makes for you.",
+      "analyticsTitle": "Analytics",
+      "analyticsBody": "We use PostHog, hosted in the US, to learn how people find and use wovain: the pages you visit, what you click, page speed and the site's language. It runs without cookies or browser storage, so it can't recognize you across visits, and there is no banner to accept. Once you sign in, these events are tied to your account's id, never your email.",
       "connectionsTitle": "Connected services",
       "connectionsBody": "When you connect Fourthwall, Meta or fal, we store the access they grant so wovain can act for you. You can disconnect any of them at any time from Connections.",
       "processorsTitle": "Who processes it",

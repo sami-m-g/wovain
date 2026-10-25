@@ -27,6 +27,16 @@ const uiSource = z.object({
   page: z.string().startsWith("/"),
 });
 
+// A HogQL query whose first row's first column is the value. Without the
+// PostHog keys, the fallback (a Cloud source) measures it instead, if any.
+const posthogSource = z.object({
+  fallback: z
+    .discriminatedUnion("kind", [metricSource, logRatioSource])
+    .optional(),
+  kind: z.literal("posthog"),
+  query: z.string(),
+});
+
 const kpiSchema = z.object({
   direction: z.enum(["up", "down"]),
   id: z.string().regex(/^[a-z0-9-]+$/u),
@@ -35,6 +45,7 @@ const kpiSchema = z.object({
     metricSource,
     logRatioSource,
     uiSource,
+    posthogSource,
   ]),
   target: z.number(),
   unit: z.string(),
@@ -43,9 +54,14 @@ const kpiSchema = z.object({
   why: z.string(),
 });
 export type Kpi = z.infer<typeof kpiSchema>;
+export type CloudSource = z.infer<typeof metricSource | typeof logRatioSource>;
 
 const kpiFileSchema = z.object({
   kpis: z.array(kpiSchema).min(1),
+  // Product analytics context for the snapshot, read when the PostHog keys
+  // are set: the most visited pages, as HogQL returning (page, views,
+  // visitors) rows.
+  posthog: z.object({ topPages: z.string() }).optional(),
   service: z.object({
     // Cloud Logging filter for the web app's own lines (evlog wide events).
     logs: z.string(),

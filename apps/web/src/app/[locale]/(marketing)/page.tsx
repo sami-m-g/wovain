@@ -11,9 +11,9 @@ import { INK_HEX, inkField, Swatch } from "@/components/brand/swatch";
 import { JsonLd } from "@/components/json-ld";
 import { BriefForm } from "@/components/marketing/brief-form";
 import { CopyField } from "@/components/marketing/copy-field";
+import { CtaLink } from "@/components/marketing/cta-link";
 import { FanDeck } from "@/components/marketing/fan-deck";
 import { ENV } from "@/env.server";
-import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { localizedUrl, mcpUrl, pageMetadata, siteUrl } from "@/lib/seo";
 
@@ -375,14 +375,14 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
             <Button
               className="text-ink-black h-12 bg-white px-6 text-sm font-semibold hover:bg-white/90"
               nativeButton={false}
-              render={<Link href="/sign-up" />}
+              render={<CtaLink cta="closing-sign-up" href="/sign-up" />}
             >
               {t("ctaButton")}
             </Button>
             <Button
               className="h-12 px-4 text-sm font-semibold text-white underline hover:bg-white/10 hover:text-white"
               nativeButton={false}
-              render={<Link href="/login" />}
+              render={<CtaLink cta="closing-login" href="/login" />}
               variant="ghost"
             >
               {t("ctaSecondary")}
