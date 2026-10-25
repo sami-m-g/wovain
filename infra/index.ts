@@ -632,13 +632,12 @@ ciVariables({
   GCP_OPS_SERVICE_ACCOUNT: { created: true, protected: true, value: ops.email },
   // The merge request preview (.gitlab/ci/verify.yml): read-only, and trusted
   // only from merge request pipelines, which don't get protected variables.
+  // Set once with the bootstrap, so the first merge request previews; adopted.
   GCP_PREVIEW_SERVICE_ACCOUNT: {
-    created: true,
     protected: false,
     value: `gitlab-preview@${project}.iam.gserviceaccount.com`,
   },
   GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER: {
-    created: true,
     protected: false,
     value: `${pools}/gitlab-mr/providers/gitlab-mr`,
   },
