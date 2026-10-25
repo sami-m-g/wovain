@@ -70,7 +70,6 @@ export const SetupChecklist = () => {
         {items.map((item, index) => (
           <li key={item.key}>
             <Link
-              aria-label={`${t(`${item.key}.title`)}${item.done ? ` (${t("done")})` : ""}`}
               className={cn(
                 "group flex h-full flex-col gap-2 rounded-xl border p-4 transition-colors",
                 item.done
@@ -95,6 +94,9 @@ export const SetupChecklist = () => {
                 )}
               >
                 {t(`${item.key}.title`)}
+                {item.done ? (
+                  <span className="sr-only"> ({t("done")})</span>
+                ) : null}
               </span>
               <span className="text-muted-foreground text-sm">
                 {t(`${item.key}.body`)}
