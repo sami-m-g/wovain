@@ -48,6 +48,9 @@ sci:
   extends: .ops-job
   stage: .post
   needs: []
+  # A report, not a gate; the first run on a fresh main precedes the CI
+  # variables that infra:production creates.
+  allow_failure: true
   rules:
     - !reference [.on-main, rules]
   script:
