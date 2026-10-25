@@ -8,5 +8,5 @@
     "moduleResolution": "nodenext",
     "types": ["node"]
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "bootstrap/*.ts", "policy/*.ts"]
 }

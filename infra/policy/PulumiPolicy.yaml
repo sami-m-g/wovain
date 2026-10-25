@@ -1,0 +1,7 @@
+name: wovain
+description: Protects stateful resources and keeps Maintainer-only GitLab resources out of CI
+runtime:
+  name: nodejs
+  options:
+    # Node runs index.ts itself (type stripping), like the program.
+    typescript: false

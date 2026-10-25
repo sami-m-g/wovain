@@ -1,13 +1,13 @@
 // Real resources main created that the rebuild no longer uses. They are
 // released, never destroyed: each is declared as before with
-// retainOnDelete, so once this has been applied, deleting a declaration here
-// only drops the resource from Pulumi's state and leaves it in place.
-// (Firestore's database already had deletionPolicy ABANDON.)
+// retainOnDelete and protect (infra/policy). To drop one from Pulumi's state
+// and leave it in place: `pulumi state unprotect <urn>`, then delete its
+// declaration here. (Firestore's database already had deletionPolicy ABANDON.)
 import * as gcp from "@pulumi/gcp";
 import * as github from "@pulumi/github";
 import * as pulumi from "@pulumi/pulumi";
 
-const retain = { retainOnDelete: true };
+const retain = { protect: true, retainOnDelete: true };
 
 export const retainLegacy = ({
   project,

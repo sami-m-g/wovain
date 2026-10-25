@@ -22,16 +22,41 @@ verify:
     reports:
       junit: "**/junit.xml"
 
-# infra/ type-checks against the SDKs `pulumi install` generates.
+# infra/ type-checks against the SDKs `pulumi install` generates, and its
+# programs run against mocks with no credentials (infra/*.test.ts): missing
+# config, code that throws and dynamic providers that don't serialize fail
+# here instead of in `pulumi up`.
 verify:infra:
   stage: verify
   extends: [.pulumi-install, .on-changes]
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
       when: never
-    - changes: [infra/**/*]
+    - changes: [infra/**/*, .gitlab/duo/catalog/**/*]
   script:
     - pnpm --dir infra run check-types
+    - pnpm --dir infra run test
+
+# The plan for a merge request, against the real stack and with the policy
+# pack, as gitlab-preview: read-only, and trusted only from this project's
+# merge request pipelines (infra/bootstrap). No --refresh, which would read
+# secret values; main's job refreshes and previews again before it applies.
+infra:preview:
+  stage: verify
+  extends: [.pulumi-install, .pulumi-preview]
+  rules:
+    # Once main has created the preview identity's variables (infra/README.md).
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GCP_PREVIEW_SERVICE_ACCOUNT
+      changes: [infra/**/*, .gitlab/duo/catalog/**/*]
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://iam.googleapis.com/$GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_PREVIEW_SERVICE_ACCOUNT
+    GCP_WORKLOAD_IDENTITY_PROVIDER: $GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER
+  before_script:
+    - !reference [.pulumi-install, before_script]
+    - !reference [.gcp-credentials, before_script]
 
 # The turbo build of every app.
 build:

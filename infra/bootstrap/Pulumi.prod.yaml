@@ -1,0 +1,8 @@
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
+config:
+  gcp:project: wovain
+  gcp:region: us-central1
+  wovain-bootstrap:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
+  wovain-bootstrap:previewUsers:
+    - sami-m-g
+encryptedkey: CiQAr5FKtQ4zTMyCeGACrbMFwFanPLxRyKEdu2VzffFIcR+BrssSSQDNTiaD0jEOgwsLUwgTMr6lbo4RD0qP+ojmUqBaWNagnLL1wKkdvb1d/XB7O1YyQoVfpYi7XGOXlU7D3dIrT6znnxt14pD86u8=

@@ -50,7 +50,21 @@ export const ciVariables = (variables: CiVariables) => {
 
 // The deploy jobs' environments: Google trusts each CI account only from its
 // own (infra/index.ts).
-export const environments = (siteUrl: pulumi.Input<string>) => {
+export const environments = (
+  siteUrl: pulumi.Input<string>,
+  devUrl: pulumi.Input<string>
+) => {
+  // dev.wovain.com (infra/dev.ts), rolled out by hand from main.
+  new gitlab.ProjectEnvironment(
+    "development",
+    {
+      externalUrl: devUrl,
+      name: "development",
+      project: projectId,
+      tier: "development",
+    },
+    { protect: true }
+  );
   new gitlab.ProjectEnvironment(
     "production",
     {
@@ -59,19 +73,19 @@ export const environments = (siteUrl: pulumi.Input<string>) => {
       project: projectId,
       tier: "production",
     },
-    adopt("41738026")
+    { ...adopt("41738026"), protect: true }
   );
   new gitlab.ProjectEnvironment(
     "infrastructure",
     { name: "infrastructure", project: projectId, tier: "other" },
-    adopt("41825171")
+    { ...adopt("41825171"), protect: true }
   );
   // The self-healing loop's job (.gitlab/ci/loop.yml): it deploys nothing
   // (action: verify), and Google trusts gitlab-ops only from here.
   new gitlab.ProjectEnvironment(
     "operations",
     { name: "operations", project: projectId, tier: "other" },
-    adopt("41884145")
+    { ...adopt("41884145"), protect: true }
   );
 };
 
@@ -257,9 +271,9 @@ new gitlab.ProjectIssueBoard(
 
 // Feature flags for the self-healing flow, read by apps/web through GitLab's
 // Unleash-compatible API (Deploy > Feature flags). Pulumi owns each flag's
-// existence and description; its strategies and on/off state are left to the
-// UI and the loop after creation (both are ignored), so flipping one is not
-// drift.
+// existence, description and environments (production and development,
+// infra/dev.ts); its on/off state is left to the UI and the loop after
+// creation (ignored), so flipping one is not drift.
 const featureFlags: Record<string, { description: string; active: boolean }> = {
   autopilot: {
     active: false,
@@ -284,11 +298,17 @@ for (const [name, { active, description }] of Object.entries(featureFlags)) {
       description,
       name,
       project: projectId,
-      // All users, in production only.
+      // All users, in production and development.
       strategies: [
-        { name: "default", scopes: [{ environmentScope: "production" }] },
+        {
+          name: "default",
+          scopes: [
+            { environmentScope: "production" },
+            { environmentScope: "development" },
+          ],
+        },
       ],
     },
-    { ignoreChanges: ["active", "strategies"] }
+    { ignoreChanges: ["active"] }
   );
 }

@@ -17,7 +17,8 @@
 # CI variables: GITLAB_TOKEN, RENOVATE_TOKEN, GCP_PROJECT_ID, GCP_REGION,
 # GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_INFRA_SERVICE_ACCOUNT,
 # GCP_DEPLOY_SERVICE_ACCOUNT, GCP_OPS_SERVICE_ACCOUNT, GCP_IMAGE_REPOSITORY,
-# GCP_SQL_INSTANCE, SITE_URL and DOCS_SITE_URL. Pulumi sets them all
+# GCP_SQL_INSTANCE, GCP_PREVIEW_SERVICE_ACCOUNT, GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER,
+# SITE_URL, DEV_SITE_URL and DOCS_SITE_URL. Pulumi sets them all
 # (infra/index.ts); don't edit them in the UI. The ops jobs also read
 # TRUSTED_USERS (who may hand issues to Duo) and, when GitLab names the Duo
 # service accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT,
