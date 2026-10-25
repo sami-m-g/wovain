@@ -97,7 +97,7 @@ export const StepRibbon = ({ steps }: { steps: Step[] }) => (
         <span
           aria-hidden="true"
           className={cn(
-            "bg-foreground w-1.5 justify-self-center",
+            "bg-foreground/40 w-px justify-self-center",
             index === 0 && "rounded-t-full",
             index === steps.length - 1 && "rounded-b-full"
           )}

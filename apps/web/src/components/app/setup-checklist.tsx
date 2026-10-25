@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -43,6 +44,7 @@ export const SetupChecklist = () => {
     { done: runs.data.length > 0, href: "/dashboard/new", key: "drop" },
   ] as const;
   const remaining = items.filter((item) => !item.done).length;
+  const firstOpen = items.findIndex((item) => !item.done);
   if (remaining === 0) {
     return null;
   }
@@ -66,31 +68,26 @@ export const SetupChecklist = () => {
           })}
         </p>
       </div>
-      <ol className="mt-4 grid gap-3 md:grid-cols-3">
+      <ol className="divide-border border-border mt-4 flex flex-col divide-y border-t">
         {items.map((item, index) => (
-          <li key={item.key}>
-            <Link
+          <li
+            className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4"
+            key={item.key}
+          >
+            <span
+              aria-hidden="true"
               className={cn(
-                "group flex h-full flex-col gap-2 rounded-xl border p-4 transition-colors",
-                item.done
-                  ? "border-border text-muted-foreground"
-                  : "border-input hover:border-primary hover:bg-accent-soft/40"
+                "figures grid size-6 shrink-0 place-items-center rounded-full text-xs font-medium",
+                item.done ? "bg-success text-white" : "border-input border"
               )}
-              href={item.href}
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "figures grid size-6 place-items-center rounded-full text-xs font-medium",
-                  item.done ? "bg-success text-white" : "border-input border"
-                )}
-              >
-                {item.done ? <Check className="size-3.5" /> : index + 1}
-              </span>
+              {item.done ? <Check className="size-3.5" /> : index + 1}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span
                 className={cn(
                   "font-medium",
-                  item.done ? "line-through" : "text-foreground"
+                  item.done && "text-muted-foreground line-through"
                 )}
               >
                 {t(`${item.key}.title`)}
@@ -101,7 +98,20 @@ export const SetupChecklist = () => {
               <span className="text-muted-foreground text-sm">
                 {t(`${item.key}.body`)}
               </span>
-            </Link>
+            </div>
+            {item.done ? null : (
+              <Link
+                className={cn(
+                  buttonVariants({
+                    variant: index === firstOpen ? "default" : "outline",
+                  }),
+                  "h-9 w-fit shrink-0 rounded-lg px-4"
+                )}
+                href={item.href}
+              >
+                {t(`${item.key}.title`)}
+              </Link>
+            )}
           </li>
         ))}
       </ol>

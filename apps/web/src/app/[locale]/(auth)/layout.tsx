@@ -24,7 +24,7 @@ const AuthAside = async () => {
     format.number(value, { currency: "USD", style: "currency" });
   const tag = priceBreakdown(EXAMPLE_BASE_COST);
   return (
-    <aside className="bg-muted border-border relative hidden flex-col justify-between gap-12 overflow-hidden border-s p-12 lg:flex">
+    <aside className="bg-muted border-border relative hidden flex-col justify-between gap-12 overflow-hidden border-s p-12 lg:sticky lg:top-0 lg:flex lg:h-svh">
       <div className="flex max-w-md flex-col gap-4">
         <p className="font-display text-display-2 font-semibold">
           {t("asideTitle")}

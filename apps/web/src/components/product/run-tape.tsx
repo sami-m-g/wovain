@@ -5,6 +5,8 @@ const STAGES = ["brief", "trends", "designs", "products", "campaign"] as const;
 
 export type Stage = (typeof STAGES)[number];
 
+export const STAGE_COUNT = STAGES.length;
+
 /** The backend's step names, mapped onto the tape. */
 const STEP_STAGE: Record<string, Stage> = {
   campaign: "campaign",
@@ -48,12 +50,14 @@ export const RunTape = ({
   const t = useTranslations("Stages");
   const current = STAGES.indexOf(stage);
 
-  return (
+  const tape = (
     <ol
       aria-label={t("stripLabel", { stage: t(stage) })}
       className={cn(
         "grid grid-cols-5 overflow-hidden",
-        compact ? "h-1.5 gap-0.5 rounded-full" : "gap-px rounded-lg",
+        compact
+          ? "h-1.5 gap-0.5 rounded-full"
+          : "gap-px rounded-full sm:rounded-lg",
         className
       )}
     >
@@ -69,7 +73,7 @@ export const RunTape = ({
           <li
             className={cn(
               "relative flex min-w-0 items-center",
-              compact ? "h-full" : "h-9 px-2.5 sm:px-3",
+              compact ? "h-full" : "h-2 sm:h-9 sm:px-3",
               !woven && fill,
               state === "pending" &&
                 !compact &&
@@ -97,7 +101,7 @@ export const RunTape = ({
               <span
                 className={cn(
                   "relative truncate text-xs font-medium",
-                  state !== "current" && "max-sm:sr-only"
+                  "max-sm:sr-only"
                 )}
               >
                 {t(item)}
@@ -108,5 +112,17 @@ export const RunTape = ({
         );
       })}
     </ol>
+  );
+  if (compact) {
+    return tape;
+  }
+  // Small screens draw a thin tape and name the current passage below it.
+  return (
+    <div className="flex flex-col gap-1.5">
+      {tape}
+      <p aria-hidden="true" className="text-xs font-medium sm:hidden">
+        {t(stage)}
+      </p>
+    </div>
   );
 };

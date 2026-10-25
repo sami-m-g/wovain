@@ -45,7 +45,7 @@ export const PriceTable = async ({ caption }: { caption: string }) => {
               <td className="px-5 py-3 text-end font-semibold">
                 {money(row.price, true)}
               </td>
-              <td className="text-success px-5 py-3 text-end font-medium">
+              <td className="px-5 py-3 text-end font-medium">
                 {money(row.profit)}
               </td>
               <td className="px-5 py-3 text-end">{row.marginPct}%</td>

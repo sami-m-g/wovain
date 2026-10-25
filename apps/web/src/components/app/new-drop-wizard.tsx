@@ -20,7 +20,7 @@ import {
   ProductsStep,
 } from "@/components/app/wizard-steps";
 import type { Stage } from "@/components/product/run-tape";
-import { RunTape } from "@/components/product/run-tape";
+import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import type {
   Campaign,
   Design,
@@ -396,7 +396,10 @@ export const NewDropWizard = ({
 
       <nav aria-label={t("stepsLabel")} className="flex flex-col gap-3">
         <p className="text-muted-foreground text-xs font-medium">
-          {t("stepOf", { current: stepIndex + 1, total: STEPS.length })}
+          {t("stepOf", {
+            current: Math.min(stepIndex + 1, STAGE_COUNT),
+            total: STAGE_COUNT,
+          })}
         </p>
         <RunTape finished={step === "done"} stage={STEP_STAGE[step]} />
         <ol className="sr-only">

@@ -64,7 +64,7 @@ export const HangTag = ({
             key={index}
           >
             <dt>{line.label}</dt>
-            <dd className="text-end">{line.value}</dd>
+            <dd className="text-end font-mono">{line.value}</dd>
           </div>
         ))}
       </dl>

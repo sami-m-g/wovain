@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/logo";
 import { MossFernArt, RepotClubArt } from "@/components/marketing/example-art";
 import { HangTag } from "@/components/product/hang-tag";
-import { RunTape } from "@/components/product/run-tape";
+import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import { priceBreakdown } from "@/lib/pricing";
 
 /** A typical tee's base cost when the catalog doesn't say (core's DEFAULT_BASE_COST). */
@@ -64,9 +64,7 @@ const DesignCard = ({
     <div className="aspect-[4/3] overflow-hidden sm:aspect-square">{art}</div>
     <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
       <p className="text-sm font-semibold">{title}</p>
-      <p className="text-muted-foreground truncate font-mono text-[0.7rem]">
-        {printed}
-      </p>
+      <p className="text-muted-foreground truncate text-xs">{printed}</p>
       <p className="text-xs leading-snug">
         <span
           className={cn(
@@ -146,7 +144,7 @@ export const ProductWindow = async () => {
                   {wizard("designs.title")}
                 </p>
                 <p className="text-muted-foreground figures text-xs">
-                  {wizard("stepOf", { current: 3, total: 6 })}
+                  {wizard("stepOf", { current: 3, total: STAGE_COUNT })}
                 </p>
               </div>
               <RunTape stage="designs" weave />

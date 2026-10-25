@@ -25,12 +25,24 @@ const STEPS = [
   "fourthwall",
   "meta",
 ] as const;
-/** Steps where the creator acts: the only passages of the ribbon dyed indigo. */
+/** The tape's own stage names; "approve" is the stop inside Designs. */
+const STAGE_OF = {
+  brief: "brief",
+  designs: "designs",
+  fourthwall: "products",
+  meta: "campaign",
+  trends: "trends",
+} as const;
+
+/** Steps where the creator acts: the only passages dyed cochineal. */
 const YOUR_STEPS = new Set<(typeof STEPS)[number]>(["brief", "approve"]);
 
 /** How a drop gets made: one continuous ribbon, a passage per step. */
 export const HowItWorks = async () => {
   const t = await getTranslations("Home");
+  const stages = await getTranslations("Stages");
+  const stepName = (key: (typeof STEPS)[number]) =>
+    key === "approve" ? t("steps.approve.name") : stages(STAGE_OF[key]);
   return (
     <section
       aria-labelledby="how-title"
@@ -64,15 +76,15 @@ export const HowItWorks = async () => {
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "w-1.5 justify-self-center",
-                    yours ? "bg-primary" : "bg-foreground",
+                    "justify-self-center",
+                    yours ? "bg-primary w-[3px]" : "bg-foreground/40 w-px",
                     index === 0 && "rounded-t-full",
                     index === STEPS.length - 1 && "rounded-b-full"
                   )}
                 />
                 <div className="border-border flex flex-col gap-3 border-b py-8 first:pt-0">
                   <h3 className="font-display text-display-3 font-semibold">
-                    {t(`steps.${key}.name`)}
+                    {stepName(key)}
                   </h3>
                   <p className="text-muted-foreground max-w-[60ch] leading-relaxed">
                     {t(`steps.${key}.body`)}
@@ -111,6 +123,9 @@ export const HowItWorks = async () => {
 /** Autopilot: the same tape twice, the approval passage marked. */
 export const Autopilot = async () => {
   const t = await getTranslations("Home");
+  const stages = await getTranslations("Stages");
+  const stepName = (key: (typeof STEPS)[number]) =>
+    key === "approve" ? t("steps.approve.name") : stages(STAGE_OF[key]);
   const rows = [
     { auto: false, label: t("autopilotManual") },
     { auto: true, label: t("autopilotAuto") },
@@ -132,7 +147,7 @@ export const Autopilot = async () => {
                 return (
                   <li
                     className={cn(
-                      "flex min-h-20 flex-col justify-between gap-2 p-3 text-sm",
+                      "flex min-h-12 flex-col justify-center gap-0.5 px-3 py-2 text-sm",
                       stop && !auto && "bg-primary text-primary-foreground",
                       stop &&
                         auto &&
@@ -141,9 +156,7 @@ export const Autopilot = async () => {
                     )}
                     key={key}
                   >
-                    <span className="font-medium">
-                      {t(`steps.${key}.name`)}
-                    </span>
+                    <span className="font-medium">{stepName(key)}</span>
                     {stop ? (
                       <span className="text-xs leading-snug">
                         {auto ? t("autopilotSkip") : t("autopilotStop")}
@@ -309,11 +322,11 @@ export const Pricing = async () => {
               className="border-border flex flex-col gap-1 border-b py-5"
               key={key}
             >
-              <dt className="text-muted-foreground text-sm">
+              <dt className="font-display text-2xl font-semibold tracking-[-0.02em]">
                 {t(`costs.${key}.name`)}
               </dt>
               <dd className="flex flex-col gap-1">
-                <span className="font-display text-2xl font-semibold tracking-[-0.02em]">
+                <span className="text-lg font-medium">
                   {t(`costs.${key}.value`)}
                 </span>
                 <span className="text-muted-foreground text-sm">
