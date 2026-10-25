@@ -58,3 +58,31 @@ renovate:
     LOG_LEVEL: info
   script:
     - renovate
+
+# The production Dockerfiles, built (not pushed) on every merge request, so an
+# image that can't build never reaches main.
+image:check:
+  stage: verify
+  image: docker:28
+  services:
+    - docker:28-dind
+  variables:
+    DOCKER_TLS_CERTDIR: /certs
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  parallel:
+    matrix:
+      - DOCKERFILE: apps/web/Dockerfile
+        BUILD_SECRET: web_env
+      - DOCKERFILE: apps/fumadocs/Dockerfile
+        BUILD_SECRET: docs_env
+  script:
+    - |
+      cat > /tmp/web_env <<ENV
+      BETTER_AUTH_SECRET=build-placeholder-never-used-at-runtime
+      BETTER_AUTH_URL=https://wovain.com
+      DATABASE_URL=postgresql://build:build@localhost:5432/build
+      TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
+      ENV
+      echo "SITE_URL=https://docs.wovain.com" > /tmp/docs_env
+    - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" .
