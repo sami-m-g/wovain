@@ -91,7 +91,8 @@ definition:
              into the default branch, titled "fix: <what changed>". Its
              description: what caused the error, what the test reproduces,
              the fix, "Closes #<IID>", and, on its own last line, the
-             issue's "<!-- wovain:signature ... -->" marker copied exactly.
+             issue's hidden comment line containing "wovain:signature",
+             copied exactly.
           8. Add a short note on the issue linking the merge request.
 
           Keep the change small: at most 10 files and 200 changed lines.
