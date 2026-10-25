@@ -21,6 +21,7 @@ export const STATEFUL = new Set([
   "github:index/repository:Repository",
   "gitlab:index/project:Project",
   "gitlab:index/projectEnvironment:ProjectEnvironment",
+  "tls:index/privateKey:PrivateKey",
 ]);
 
 // GitLab resources that need Maintainer or Owner; wovain's role is

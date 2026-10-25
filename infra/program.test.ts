@@ -89,7 +89,13 @@ await pulumi.runtime.setMocks(
       // Outputs the program reads that only the provider computes.
       return {
         id: `${name}-id`,
-        state: { records: [], verificationCode: "code", ...inputs },
+        state: {
+          privateKeyOpenssh: "private-key",
+          publicKeyOpenssh: "ssh-ed25519 public-key",
+          records: [],
+          verificationCode: "code",
+          ...inputs,
+        },
       };
     },
   },

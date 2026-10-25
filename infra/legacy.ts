@@ -4,7 +4,6 @@
 // and leave it in place: `pulumi state unprotect <urn>`, then delete its
 // declaration here. (Firestore's database already had deletionPolicy ABANDON.)
 import * as gcp from "@pulumi/gcp";
-import * as github from "@pulumi/github";
 import * as pulumi from "@pulumi/pulumi";
 
 const retain = { protect: true, retainOnDelete: true };
@@ -19,36 +18,6 @@ export const retainLegacy = ({
   region: string;
 }) => {
   const config = new pulumi.Config();
-
-  // The GitHub mirror's repository: protected and retained, so no `pulumi
-  // up` can delete it. Mirroring itself (deploy key, ruleset) is gone.
-  new github.Repository(
-    "wovain",
-    {
-      allowAutoMerge: false,
-      deleteBranchOnMerge: true,
-      description:
-        "wovain: an MCP server for print-on-demand sellers (product idea → Fourthwall product → Meta Advantage+ campaign). Mirror of GitLab.",
-      hasIssues: false,
-      hasProjects: false,
-      hasWiki: false,
-      homepageUrl: "https://learn-ai-basics.devpost.com/",
-      name: "wovain",
-      topics: [
-        "devpost",
-        "fal-ai",
-        "firebase",
-        "fourthwall",
-        "mcp",
-        "mcp-apps",
-        "meta-ads",
-        "print-on-demand",
-        "typescript",
-      ],
-      visibility: "public",
-    },
-    { import: "wovain", protect: true, retainOnDelete: true }
-  );
 
   // The App Hosting backend that served main at app--wovain.us-central1.
   // hosted.app, and the bucket holding its uploaded sources.
