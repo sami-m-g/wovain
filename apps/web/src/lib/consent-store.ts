@@ -3,8 +3,8 @@ import { posthog } from "posthog-js";
 import { consentRequired } from "@/lib/consent";
 
 // The banner's state for useSyncExternalStore. PostHog persists the choice;
-// this only tells React when it changed or when "Cookie settings" reopened
-// the banner.
+// this only tells subscribers (the banner, the dashboard's AnalyticsIdentity)
+// when it changed or when "Cookie settings" reopened the banner.
 const listeners = new Set<() => void>();
 let reopened = false;
 
@@ -34,7 +34,6 @@ export const consentBannerOpen = () => {
 };
 
 export const consentBannerOpenOnServer = () => false;
-
 export const openConsentSettings = () => {
   reopened = true;
   notify();
