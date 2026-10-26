@@ -5,10 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import {
-  duoFlowAccounts,
-  posthogTrigger,
-} from "./duo.ts";
+import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
