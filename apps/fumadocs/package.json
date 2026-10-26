@@ -9,11 +9,12 @@
     "check-types": "next typegen && tsc -b tsconfig.vendor.json && tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^2.0.87",
     "@ai-sdk/react": "^4.0.0",
     "@base-ui/react": "catalog:",
     "@fuma-translate/react": "^1.0.2",
     "@fumadocs/base-ui": "16.17.8",
-    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "@posthog/ai": "catalog:",
     "@varlock/nextjs-integration": "catalog:",
     "@wovain/ui": "workspace:*",
     "ai": "^7.0.0",
@@ -25,6 +26,8 @@
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.17.8",
     "lucide-react": "catalog:",
     "next": "catalog:",
+    "posthog-node": "catalog:",
+    "rate-limiter-flexible": "^9.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark": "^15.0.1",

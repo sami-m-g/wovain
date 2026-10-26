@@ -3,7 +3,7 @@
 ## Structure
 
 - `apps/web`: Next.js 16 app (App Router, oRPC, Better Auth, evlog)
-- `apps/fumadocs`: Fumadocs documentation site with OpenRouter AI chat
+- `apps/fumadocs`: Fumadocs documentation site with Nebius (Nemotron) AI chat
 - `packages/api`: oRPC routers and procedures
 - `packages/auth`: Better Auth configuration
 - `packages/db`: Drizzle schema, relations and client (PostgreSQL)
