@@ -53,12 +53,16 @@ describe("scalarOf", () => {
 describe("the KPI file's PostHog queries", () => {
   it("each take the window and name the value the KPI alerts read", async () => {
     const file = await loadKpis();
-    const queries = file.kpis.flatMap((k) =>
-      k.source.kind === "posthog" ? [k.source.query] : []
+    // These two define their own windows (a matured cohort, the last 24 hours).
+    const fixedWindow = new Set(["activation-cohort", "run-success-rate"]);
+    const posthogKpis = file.kpis.flatMap((k) =>
+      k.source.kind === "posthog" ? [{ id: k.id, query: k.source.query }] : []
     );
-    expect(queries.length).toBeGreaterThan(0);
-    for (const query of queries) {
-      expect(withWindow(query, 7)).toContain("INTERVAL 7 DAY");
+    expect(posthogKpis.length).toBeGreaterThan(0);
+    for (const { id, query } of posthogKpis) {
+      if (!fixedWindow.has(id)) {
+        expect(withWindow(query, 7)).toContain("INTERVAL 7 DAY");
+      }
       expect(query).toContain(" AS value ");
     }
     for (const { query } of file.posthog?.context ?? []) {
