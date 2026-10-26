@@ -125,3 +125,42 @@ export const describeProblem = (error: unknown): FlowProblem => {
     message: error instanceof Error ? error.message : String(error),
   };
 };
+
+/** Why a run stopped, in terms a step can explain without server detail. */
+export type RunFailure =
+  | { reason: "not_connected"; service: Provider }
+  | { reason: "no_ideas" }
+  | { reason: "rejected" }
+  | { reason: "other"; message: string };
+
+const NOT_CONNECTED_CODE =
+  /\b(?<service>fal|fourthwall|meta)_not_connected\b/iu;
+const NOT_CONNECTED_TEXT =
+  /\b(?<service>fal|fourthwall|meta)\b.{0,40}(?:isn't connected|not connected)|connect your (?<named>fal|fourthwall|meta)\b/iu;
+const NO_IDEAS = /found no ideas/iu;
+const AUTOPILOT_REJECTED = /autopilot rejected/iu;
+
+/**
+ * The failed run's stored message, read for its cause. The workflow keeps the
+ * error's message (a typed error like FAL_NOT_CONNECTED included), so a
+ * missing connection is recognised by its code or its wording.
+ */
+export const describeRunFailure = (run: {
+  error?: string | null;
+}): RunFailure => {
+  const message = run.error ?? "";
+  const found = (
+    NOT_CONNECTED_CODE.exec(message) ?? NOT_CONNECTED_TEXT.exec(message)
+  )?.groups;
+  const service = (found?.service ?? found?.named)?.toLowerCase();
+  if (service === "fal" || service === "fourthwall" || service === "meta") {
+    return { reason: "not_connected", service };
+  }
+  if (NO_IDEAS.test(message)) {
+    return { reason: "no_ideas" };
+  }
+  if (AUTOPILOT_REJECTED.test(message)) {
+    return { reason: "rejected" };
+  }
+  return { message, reason: "other" };
+};

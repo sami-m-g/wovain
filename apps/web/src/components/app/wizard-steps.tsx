@@ -40,7 +40,6 @@ import {
   StepActions,
   StepHeader,
 } from "@/components/app/wizard-parts";
-import type { Stage } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
 import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
 
@@ -602,30 +601,23 @@ const adsManagerUrl = (campaign: Campaign) =>
 
 export const DoneStep = ({
   campaigns,
-  failure,
   onRestart,
 }: {
   campaigns: Campaign[];
-  failure?: Stage | undefined;
   onRestart: () => void;
 }) => {
   const t = useTranslations("Wizard.done");
-  const stages = useTranslations("Stages");
   const money = useMoney();
   const [first] = campaigns;
   return (
     <div className="flex flex-col items-start gap-6">
-      {failure === undefined ? (
-        <StepHeader
-          lead={t("lead", {
-            budget: money((first?.dailyBudgetCents ?? 0) / CENTS),
-            count: campaigns.length,
-          })}
-          title={t("title")}
-        />
-      ) : (
-        <StepHeader title={t("autopilotFailed", { stage: stages(failure) })} />
-      )}
+      <StepHeader
+        lead={t("lead", {
+          budget: money((first?.dailyBudgetCents ?? 0) / CENTS),
+          count: campaigns.length,
+        })}
+        title={t("title")}
+      />
       {campaigns.map((campaign) => (
         <section
           aria-label={t("variants")}
