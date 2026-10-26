@@ -343,6 +343,13 @@ export const Pricing = async () => {
           </p>
           <Link
             className="text-accent-text inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
+            href="/pricing"
+          >
+            {t("pricingPlans")}
+            <ArrowRight aria-hidden="true" className="size-4 rtl:rotate-180" />
+          </Link>
+          <Link
+            className="text-accent-text inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
             href="/guides/price-print-on-demand-merch"
           >
             {t("pricingGuide")}

@@ -20,5 +20,7 @@
   },
   "menuColor": "default",
   "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@shadcn-studio": "https://shadcnstudio.com/r/{style}/{name}.json"
+  }
 }

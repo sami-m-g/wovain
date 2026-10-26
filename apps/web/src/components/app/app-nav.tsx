@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@wovain/ui/lib/utils";
-import { History, LayoutGrid, PlugZap, Plus } from "lucide-react";
+import { CreditCard, History, LayoutGrid, PlugZap, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/dashboard/new", icon: Plus, key: "newDrop" },
   { href: "/dashboard/runs", icon: History, key: "runs" },
   { href: "/dashboard/connections", icon: PlugZap, key: "connections" },
+  { href: "/dashboard/billing", icon: CreditCard, key: "billing" },
 ] as const;
 
 export const AppNav = ({ className }: { className?: string }) => {

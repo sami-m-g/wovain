@@ -7,13 +7,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@wovain/ui/components/alert";
-import { Label } from "@wovain/ui/components/label";
-import { Switch } from "@wovain/ui/components/switch";
 import { Bot } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
+import { AutopilotToggle } from "@/components/app/autopilot-toggle";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
 import {
@@ -94,7 +93,6 @@ export const NewDropWizard = ({
   const t = useTranslations("Wizard");
   const stages = useTranslations("Stages");
   const queryClient = useQueryClient();
-  const switchId = useId();
 
   const [step, setStep] = useState<Step>("brief");
   const [autopilot, setAutopilot] = useState(false);
@@ -437,28 +435,11 @@ export const NewDropWizard = ({
           </h1>
           <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
         </div>
-        <div className="border-border bg-card flex max-w-sm items-start gap-3 rounded-xl border p-4">
-          <Switch
-            aria-describedby={`${switchId}-hint`}
-            checked={autopilot}
-            className="mt-0.5"
-            disabled={step !== "brief" || Boolean(working)}
-            id={switchId}
-            onCheckedChange={setAutopilot}
-          />
-          <div className="flex flex-col gap-1">
-            <Label className="text-sm font-medium" htmlFor={switchId}>
-              <Bot aria-hidden="true" className="size-4" />
-              {t("autopilot")}
-            </Label>
-            <p
-              className="text-muted-foreground text-xs"
-              id={`${switchId}-hint`}
-            >
-              {t("autopilotHint")}
-            </p>
-          </div>
-        </div>
+        <AutopilotToggle
+          checked={autopilot}
+          disabled={step !== "brief" || Boolean(working)}
+          onCheckedChange={setAutopilot}
+        />
       </div>
 
       <nav aria-label={t("stepsLabel")} className="flex flex-col gap-3">
@@ -492,7 +473,9 @@ export const NewDropWizard = ({
         </Alert>
       ) : null}
 
-      {problem ? <FlowProblemNotice problem={problem} /> : null}
+      {problem ? (
+        <FlowProblemNotice onDismiss={() => showProblem()} problem={problem} />
+      ) : null}
 
       <section
         aria-labelledby={STEP_TITLE_ID}

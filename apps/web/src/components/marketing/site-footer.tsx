@@ -58,10 +58,7 @@ export const SiteFooter = async () => {
             </Link>
           </li>
           <li>
-            <Link
-              className={linkClass}
-              href={{ hash: "pricing", pathname: "/" }}
-            >
+            <Link className={linkClass} href="/pricing">
               {header("pricing")}
             </Link>
           </li>

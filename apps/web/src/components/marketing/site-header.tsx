@@ -15,7 +15,7 @@ const LINKS = [
   { href: { pathname: "/integrations" }, key: "integrations" },
   { href: { pathname: "/use-cases" }, key: "useCases" },
   { href: { pathname: "/guides" }, key: "guides" },
-  { href: { hash: "pricing", pathname: "/" }, key: "pricing" },
+  { href: { pathname: "/pricing" }, key: "pricing" },
 ] as const;
 
 const linkClass =
