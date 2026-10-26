@@ -308,6 +308,8 @@
       "insights": "Statistiques",
       "billing": "Facturation"
     },
+    "docs": "Docs",
+    "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",
     "toggleSidebar": "Afficher ou masquer la barre latérale"
   },
   "Stages": {

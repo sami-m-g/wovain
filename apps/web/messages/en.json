@@ -308,6 +308,8 @@
       "insights": "Insights",
       "billing": "Billing"
     },
+    "docs": "Docs",
+    "docsLabel": "Docs (opens in a new tab)",
     "toggleSidebar": "Show or hide the sidebar"
   },
   "Stages": {
