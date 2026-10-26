@@ -252,3 +252,15 @@ it("rate-limits attempts per merchant, refused ones included", async () => {
     })
   ).toMatchObject({ status: "refused" });
 });
+
+it("counts a parallel burst one by one, before calling Polar", async () => {
+  const polar = gateway();
+  const burst = REDEEM_LIMIT.attempts + 3;
+  const results = await Promise.all(
+    Array.from({ length: burst }, async () => await redeem(polar))
+  );
+  expect(
+    results.filter((result) => result.status === "rate_limited")
+  ).toHaveLength(burst - REDEEM_LIMIT.attempts);
+  expect(polar.findDiscount).toHaveBeenCalledTimes(REDEEM_LIMIT.attempts);
+});

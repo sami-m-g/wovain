@@ -153,8 +153,8 @@ export const promoAttempt = pgTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    // checkout, or why it was refused: invalid, expired, used_up, not_free,
-    // already_redeemed.
+    // pending while the attempt runs, then checkout, or why it was refused:
+    // invalid, expired, used_up, not_free, already_redeemed.
     outcome: text("outcome").notNull(),
     // The promo the code matched; null for an unknown code.
     promoId: text("promo_id"),

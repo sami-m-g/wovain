@@ -6,7 +6,7 @@ import {
 import { iterListDiscounts } from "@polar-sh/sdk/2026-10/services/discounts";
 import type { Database } from "@wovain/db";
 import { promoAttempt } from "@wovain/db/schema/billing";
-import { and, count, desc, eq, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 
 import { merchantOf, promoRedeemed } from "./mirror";
 import { POLAR_METADATA_KEY } from "./plans";
@@ -138,43 +138,53 @@ export const judgePromo = (
   return { productId: product.id };
 };
 
-export const isRateLimited = async (
+// Claims one of the merchant's attempts before anything else runs, Polar
+// included: the count and the `pending` row it adds happen under a
+// per-merchant advisory lock, so a burst of parallel requests is counted one
+// by one and can't all pass the check together. Undefined when the window
+// is full. An attempt that fails midway stays counted.
+export const claimAttempt = async (
   db: Database,
-  userId: string,
-  now: Date = new Date()
-) => {
-  const [row] = await db
-    .select({ attempts: count() })
-    .from(promoAttempt)
-    .where(
-      and(
-        eq(promoAttempt.userId, userId),
-        gte(
-          promoAttempt.createdAt,
-          new Date(now.getTime() - REDEEM_LIMIT.windowMs)
+  {
+    now,
+    surface,
+    userId,
+  }: { now: Date; surface: RedeemSurface; userId: string }
+) =>
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
+    const [row] = await tx
+      .select({ attempts: count() })
+      .from(promoAttempt)
+      .where(
+        and(
+          eq(promoAttempt.userId, userId),
+          gte(
+            promoAttempt.createdAt,
+            new Date(now.getTime() - REDEEM_LIMIT.windowMs)
+          )
         )
-      )
-    );
-  return (row?.attempts ?? 0) >= REDEEM_LIMIT.attempts;
-};
-
-const recordAttempt = async (
-  db: Database,
-  attempt: {
-    at: Date;
-    outcome: "checkout" | PromoRefusal;
-    promoId?: string | undefined;
-    surface: RedeemSurface;
-    userId: string;
-  }
-) => {
-  await db.insert(promoAttempt).values({
-    createdAt: attempt.at,
-    outcome: attempt.outcome,
-    promoId: attempt.promoId ?? null,
-    surface: attempt.surface,
-    userId: attempt.userId,
+      );
+    if ((row?.attempts ?? 0) >= REDEEM_LIMIT.attempts) {
+      return;
+    }
+    const [claimed] = await tx
+      .insert(promoAttempt)
+      .values({ createdAt: now, outcome: "pending", surface, userId })
+      .returning({ id: promoAttempt.id });
+    return claimed?.id;
   });
+
+const settleAttempt = async (
+  db: Database,
+  id: string,
+  outcome: "checkout" | PromoRefusal,
+  promoId?: string
+) => {
+  await db
+    .update(promoAttempt)
+    .set({ outcome, promoId: promoId ?? null })
+    .where(eq(promoAttempt.id, id));
 };
 
 // Where the checkout behind a promo grant was opened, for `promo_redeemed`.
@@ -224,20 +234,15 @@ export const redeemPromo = async (
 ): Promise<RedeemResult> => {
   const { surface, userId } = input;
   const now = input.now ?? new Date();
-  if (await isRateLimited(db, userId, now)) {
+  const attemptId = await claimAttempt(db, { now, surface, userId });
+  if (attemptId === undefined) {
     return { status: "rate_limited" };
   }
   const refuse = async (
     refused: PromoRefusal,
     promoId?: string
   ): Promise<RedeemResult> => {
-    await recordAttempt(db, {
-      at: now,
-      outcome: refused,
-      promoId,
-      surface,
-      userId,
-    });
+    await settleAttempt(db, attemptId, refused, promoId);
     return promoId === undefined
       ? { refused, status: "refused" }
       : { promoId, refused, status: "refused" };
@@ -271,13 +276,7 @@ export const redeemPromo = async (
   if (checkout.is_payment_required && !input.paidPlans) {
     return await refuse("not_free", promo.id);
   }
-  await recordAttempt(db, {
-    at: now,
-    outcome: "checkout",
-    promoId: promo.id,
-    surface,
-    userId,
-  });
+  await settleAttempt(db, attemptId, "checkout", promo.id);
   const opened = {
     credits: promo.credits,
     promoId: promo.id,
