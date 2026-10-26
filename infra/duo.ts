@@ -31,7 +31,7 @@ interface Trigger {
   active?: boolean;
 }
 
-// A custom flow already enabled in the project, and the trigger that starts it.
+// A custom flow to enable in the project, and the trigger that starts it.
 interface CustomFlow {
   name: string;
   // The flow's YAML, as the ai-catalog component records it in mapping.json.
@@ -53,21 +53,10 @@ const projectPath = config.require("gitlabProject");
 const projectNumber = config.require("gitlabProjectId");
 const triggers = config.requireObject<Trigger[]>("duoTriggers");
 
-// The heal flow (flow 1, .gitlab/duo/catalog/flows/heal.yml): the ops job
-// assigns each new heal issue to its service account; mention lets the ops
-// job ask it once to address Duo Code Review's threads. The stack config's
-// entry wins when it names the same trigger.
-const healFlow: CustomFlow = {
-  description: "wovain heal when wovain ops assigns or mentions it",
-  events: ["assign", "mention"],
-  file: ".gitlab/duo/catalog/flows/heal.yml",
-  name: "duo-heal",
-};
-const configuredFlows = config.getObject<CustomFlow[]>("duoCustomFlows") ?? [];
-const customFlows = [
-  ...configuredFlows,
-  ...[healFlow].filter((f) => !configuredFlows.some((c) => c.name === f.name)),
-];
+// Custom flows from .gitlab/duo/catalog/flows (heal, scout, ...): each is
+// enabled in the project, gets its trigger, and its service account's name
+// becomes a DUO_<NAME>_ACCOUNT CI variable (duoFlowAccounts below).
+const customFlows = config.getObject<CustomFlow[]>("duoCustomFlows") ?? [];
 const customAgents = config.getObject<CustomAgent[]>("duoCustomAgents") ?? [];
 
 // The same token as the GitLab provider (infra/gitlab.ts).
@@ -217,27 +206,106 @@ const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
   ? JSON.parse(readFileSync(mappingFile, "utf-8"))
   : {};
 
-// A custom flow's trigger, created explicitly for the consumer the project
-// already has (enabling the flow made it, along with its service account,
-// which GitLab provisions in the top-level group). Human-action events only:
-// a `scheduled` trigger runs as a dedicated service account that GitLab
-// creates in the project on the fly, which needs create_service_account
-// (Maintainer), so our role gets "you do not have permission" and no trigger.
+// Each synced custom flow is enabled in the project with
+// aiCatalogItemConsumerCreate, the API behind Automate > AI Catalog > Flows >
+// Enable. GitLab first enables it in the top-level group, which provisions the
+// flow's service account there (ai-<flow name>-<group name>), and adds that
+// account to the project as a Developer. That needs
+// admin_ai_catalog_item_consumer on the project, which the hackathon's
+// Developer+ custom role has: GitLab skips the group owner check for these
+// composite-identity accounts (Ai::Catalog::ItemConsumers::CreateService,
+// Namespaces::ServiceAccounts::GroupCreateService).
+//
+// A flow that is already enabled, by hand or by an earlier run, is adopted:
+// its create is a no-op update of the existing consumer, which returns the
+// same id. Once Pulumi holds the resource, the create switching to that form
+// is not a change (ignoreChanges). Kept on delete, as for agents: deleting the
+// consumer would also delete its triggers.
+const ENABLE =
+  "mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { consumer: aiCatalogItemConsumerCreate(input: { itemId: $itemId, target: { projectId: $projectId } }) { errors itemConsumer { id } } }";
+const ADOPT =
+  "mutation($id: AiCatalogItemConsumerID!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id }) { errors itemConsumer { id } } }";
+
+const enableFlow = (name: string, itemId: string) => {
+  const existing = consumerIds.apply((ids) => ids.get(itemId));
+  const consumer = new graphql.Mutation(
+    name,
+    {
+      computeFromCreate: true,
+      computeMutationKeys: { id: "consumer.itemConsumer.id" },
+      createMutation: existing.apply((id) =>
+        id === undefined ? ENABLE : ADOPT
+      ),
+      deleteMutation:
+        "mutation($id: AiCatalogItemConsumerID!) { aiCatalogItemConsumerDelete(input: { id: $id }) { errors } }",
+      mutationVariables: pulumi
+        .all([existing, projectId])
+        .apply(([id, project]) => ({
+          itemId,
+          projectId: project,
+          ...(id === undefined ? {} : { id }),
+        })),
+      readQuery:
+        "query($id: AiCatalogItemConsumerID!) { aiCatalogItemConsumer(id: $id) { id item { id } project { id } } }",
+      readQueryVariables: {},
+      updateMutation: ADOPT,
+    },
+    {
+      ignoreChanges: ["createMutation", "mutationVariables"],
+      provider,
+      retainOnDelete: true,
+    }
+  );
+  // The known id when the flow is already enabled, so a preview shows its
+  // trigger unchanged; otherwise the id the create returned.
+  return existing.apply((id) =>
+    id === undefined
+      ? consumer.computedReadOperationVariables.apply((v) =>
+          must(v.id, `consumer id of ${name}`)
+        )
+      : pulumi.output(id)
+  );
+};
+
+// The service account a custom flow's trigger runs as: GitLab sets it to the
+// account it provisioned when the flow was enabled.
+const triggerAccount = (trigger: graphql.Mutation) =>
+  query<{
+    project: { aiFlowTriggers: { nodes: { user: { username: string } }[] } };
+  }>(
+    "query($path: ID!, $id: AiFlowTriggerID!) { project(fullPath: $path) { aiFlowTriggers(ids: [$id]) { nodes { user { username } } } } }",
+    {
+      id: trigger.computedReadOperationVariables.apply((v) =>
+        must(v.id, "flow trigger id")
+      ),
+      path: projectPath,
+    }
+  ).apply((d) =>
+    must(d.project.aiFlowTriggers.nodes[0]?.user.username, "trigger account")
+  );
+
+// DUO_<NAME>_ACCOUNT for each custom flow (duo-heal: DUO_HEAL_ACCOUNT), the
+// account's username as GitLab created it. index.ts sets each one as a CI
+// variable: the ops job assigns heal issues to DUO_HEAL_ACCOUNT, and whatever
+// asks a flow for a review reads that flow's variable, so no name is guessed.
+export const duoFlowAccounts: Record<string, pulumi.Output<string>> = {};
+
+// Human-action events only: a `scheduled` trigger runs as a dedicated service
+// account that GitLab creates in the project on the fly, which needs
+// create_service_account (Maintainer), so our role gets "you do not have
+// permission" and no trigger.
 for (const f of customFlows) {
   const itemId = mapping.flows?.[f.file]?.catalog_id;
   if (itemId === undefined) {
+    // Not synced yet: the next pipeline on main syncs it and records its id.
     continue;
   }
-  // A flow nobody has enabled yet (Automate > AI Catalog > Flows) has no
-  // consumer; it gets its trigger on the first `pulumi up` after enabling.
-  consumerIds.apply((ids) => {
-    const consumerId = ids.get(itemId);
-    if (consumerId === undefined) {
-      pulumi.log.warn(`${f.file} isn't enabled in the project yet; no trigger`);
-      return;
-    }
-    flowTrigger(f.name, { ...f, consumerId });
+  const trigger = flowTrigger(f.name, {
+    ...f,
+    consumerId: enableFlow(`${f.name}-consumer`, itemId),
   });
+  const key = `${f.name.replaceAll("-", "_").toUpperCase()}_ACCOUNT`;
+  duoFlowAccounts[key] = triggerAccount(trigger);
 }
 
 // Custom agents are enabled here; GitLab adds the top-level group's consumer

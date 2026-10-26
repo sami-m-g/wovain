@@ -24,9 +24,11 @@
 # (infra/index.ts), as it does the PostHog ones (POSTHOG_PERSONAL_API_KEY,
 # POSTHOG_PROJECT_ID, POSTHOG_TRIGGER_TOKEN); don't edit them in the UI.
 # The ops jobs also read
-# TRUSTED_USERS (who may hand issues to Duo) and, when GitLab names the Duo
-# service accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT,
-# DUO_HEAL_ACCOUNT and DUO_REVIEW_ACCOUNT.
+# TRUSTED_USERS (who may hand issues to Duo), DUO_<NAME>_ACCOUNT for each
+# custom flow (DUO_HEAL_ACCOUNT; Pulumi sets them from the accounts GitLab
+# created, infra/duo.ts) and, when GitLab names the built-in flows' service
+# accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT and
+# DUO_REVIEW_ACCOUNT.
 
 workflow:
   rules:

@@ -60,7 +60,12 @@ const graphqlData = {
       item: { foundationalFlowReference: ref, id: ref },
     })),
   },
-  project: { id: "gid://gitlab/Project/1" },
+  project: {
+    aiFlowTriggers: {
+      nodes: [{ user: { username: "ai-wovain-heal-gitlab-ai-hackathon" } }],
+    },
+    id: "gid://gitlab/Project/1",
+  },
   users: {
     nodes: triggers.map((t) => ({
       id: t.serviceAccount,
@@ -89,6 +94,8 @@ await pulumi.runtime.setMocks(
       return {
         id: `${name}-id`,
         state: {
+          // What a graphql.Mutation computes from its create response.
+          computedReadOperationVariables: { id: `${name}-id` },
           privateKeyOpenssh: "private-key",
           publicKeyOpenssh: "ssh-ed25519 public-key",
           records: [
@@ -122,6 +129,17 @@ test("the program registers every resource once, without throwing", async () => 
   );
   expect(registered).toContain(
     "gitlab:index/pipelineTrigger:PipelineTrigger::posthog"
+  );
+  // Every synced custom flow is enabled, gets its trigger, and its service
+  // account reaches the ops job as a CI variable.
+  for (const name of ["duo-heal", "duo-scout"]) {
+    expect(registered).toContain(
+      `graphql:index/mutation:Mutation::${name}-consumer`
+    );
+    expect(registered).toContain(`graphql:index/mutation:Mutation::${name}`);
+  }
+  expect(registered).toContain(
+    "gitlab:index/projectVariable:ProjectVariable::DUO_HEAL_ACCOUNT"
   );
   // Two resources with one type and name are one URN, which the engine refuses.
   expect(registered.filter((r, i) => registered.indexOf(r) !== i)).toEqual([]);
