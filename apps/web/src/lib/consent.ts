@@ -9,9 +9,8 @@
 // opt-in: the EU (with its outermost regions and Åland) and the rest of the
 // EEA under the GDPR and ePrivacy Directive, the UK, its Crown Dependencies
 // and Gibraltar under UK GDPR and PECR, Switzerland (revFADP), Brazil (LGPD)
-// and Canada (PIPEDA, and Quebec's Law 25 for tracking technologies). The US
-// stays implied for now; whether it asks first (California's CIPA and replay)
-// is still to be decided.
+// Canada (PIPEDA, and Quebec's Law 25 for tracking technologies) and the US,
+// where session replay can count as interception under California's CIPA.
 const OPT_IN_COUNTRIES = new Set([
   // EU member states
   "AT",
@@ -59,10 +58,11 @@ const OPT_IN_COUNTRIES = new Set([
   "GI",
   "IM",
   "JE",
-  // Switzerland, Brazil, Canada
+  // Switzerland, Brazil, Canada, the US
   "CH",
   "BR",
   "CA",
+  "US",
 ]);
 
 // The proxy (src/proxy.ts) writes the visitor's rule here when it knows
