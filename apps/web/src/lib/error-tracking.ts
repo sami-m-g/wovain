@@ -123,6 +123,10 @@ export const exceptionOf = (event: WideEvent): ServerException | undefined => {
       path,
       requestId: text(event["requestId"]),
       status,
+      // The request's trace in GitLab Observability (src/lib/otel.ts, set on
+      // the wide event by src/lib/evlog.ts); apps/ops links the PostHog
+      // issue, its incident and the trace.
+      trace_id: text(event["traceId"]),
     },
   };
 };

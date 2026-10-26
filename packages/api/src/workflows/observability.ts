@@ -62,10 +62,15 @@ export const scoresToPostHog = (
 export const createObservability = ({
   analytics,
   cloudTrace,
+  otlpEndpoint,
 }: {
   analytics?: Analytics | undefined;
   // On Google Cloud (K_SERVICE is set on Cloud Run): export to Cloud Trace.
   cloudTrace: boolean;
+  // GitLab Observability's OTLP endpoint (OTEL_EXPORTER_OTLP_ENDPOINT): the
+  // same spans, and Mastra's logs, over OTLP/HTTP. The OTLP exporters add
+  // OTEL_EXPORTER_OTLP_HEADERS themselves when it's set.
+  otlpEndpoint?: string | undefined;
 }) =>
   new Observability({
     configs: {
@@ -76,6 +81,13 @@ export const createObservability = ({
           ...(cloudTrace
             ? [new OtelExporter({ exporter: new TraceExporter() })]
             : []),
+          ...(otlpEndpoint === undefined || otlpEndpoint === ""
+            ? []
+            : [
+                new OtelExporter({
+                  provider: { custom: { endpoint: otlpEndpoint } },
+                }),
+              ]),
           ...(analytics === undefined ? [] : [scoresToPostHog(analytics)]),
         ],
         sampling: { type: SamplingStrategyType.ALWAYS },

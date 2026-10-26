@@ -32,6 +32,8 @@ export const { handler: inngestHandler, runs } = createRunEngine({
   // Cloud Run sets K_SERVICE: there, traces go to Cloud Trace.
   cloudTrace: process.env["K_SERVICE"] !== undefined,
   mastraFor: (userId) => core.flags.isOn("mastra-runs", { userId }),
+  // GitLab Observability gets them too when it's configured (src/lib/otel.ts).
+  otlpEndpoint: process.env["OTEL_EXPORTER_OTLP_ENDPOINT"],
   services: { analytics, billing, core, db, mailer },
   storage,
 });

@@ -91,6 +91,10 @@ catalog:
   mastra: 1.35.0
   p-retry: ^8.0.1
   "@google-cloud/opentelemetry-cloud-trace-exporter": 3.1.0
+  "@opentelemetry/api": 1.10.0
+  "@opentelemetry/sdk-node": 0.300.0
+  "@opentelemetry/instrumentation-runtime-node": 0.37.0
+  "@opentelemetry/instrumentation-undici": 0.34.0
   "@ai-sdk/openai-compatible": ^2.0.87
   inngest: ^4.26.0
   "@electric-sql/pglite": ^0.5.11
