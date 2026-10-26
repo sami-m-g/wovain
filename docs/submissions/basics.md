@@ -146,7 +146,7 @@ Record a real run (pre-run once so the slow steps are ready, or cut the waiting)
 | 2:35 to 2:50 | Repo: `docs/scope.md`, `prd.md`, `spec.md`, `openspec/`; a GitLab Duo flow MR | How it was built with AI: scope, PRD and spec first; OpenSpec changes; Claude Code agents; GitLab Duo flows watching the repo after deploy. |
 | 2:50 to 3:00 | Title card with URL | What's next (two or three items from `scope.md > Later`) and where to try it. |
 
-That outline runs about 3:00; tighten to 2:30 by shortening the intro, the connections shot and the repo shot. Do not go past 3:00.
+That outline ends at 3:00, which is over the limit (the rule is under 3:00). Tighten to about 2:30 by shortening the intro, the connections shot and the repo shot, and merge or drop the closing title card. Keep the final cut at 2:50 or less.
 
 Check before recording:
 
