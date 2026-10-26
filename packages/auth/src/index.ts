@@ -16,6 +16,7 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins";
 import { log } from "evlog";
+import { decodeJwt } from "jose";
 
 export interface AuthConfig {
   BETTER_AUTH_URL: string;
@@ -73,8 +74,69 @@ export interface AuthAnalytics {
     event: BillingEvent | "sign_up";
     properties?: Record<string, unknown>;
   }) => Promise<void>;
+  // A failed email as a `$exception` event (PostHog Error Tracking), which
+  // self-heal triages; awaited when it returns a promise.
+  captureException?: (
+    error: unknown,
+    event: {
+      distinctId?: string | undefined;
+      properties?: Record<string, unknown>;
+    }
+  ) => void | Promise<void>;
   identify?: BillingAnalytics["identify"];
 }
+
+// The email and its verification in a Google ID token. The token comes
+// straight from Google's token endpoint in the OAuth callback, which Better
+// Auth has already validated, so it is only decoded here.
+const googleVerifiedEmail = (
+  idToken: string | null | undefined
+): string | undefined => {
+  let claims: Record<string, unknown> = {};
+  try {
+    claims = idToken ? decodeJwt(idToken) : {};
+  } catch {
+    // Not a JWT: no claims to trust.
+  }
+  const { email, email_verified: verified } = claims;
+  return typeof email === "string" && verified === true ? email : undefined;
+};
+
+/**
+ * Marks a user's email verified when a Google account joins them and Google
+ * verified that same email. Better Auth already does this when Google links
+ * at sign-in, but not when a signed-in merchant connects Google from Account
+ * settings (linkSocial). Google isn't a trusted provider and different emails
+ * can't link, so Better Auth only gets here with Google's verified claim for
+ * the user's own address; the token's claims are checked again regardless.
+ */
+export const verifyEmailFromGoogle = async (
+  account: {
+    idToken?: string | null | undefined;
+    providerId: string;
+    userId: string;
+  },
+  context: GenericEndpointContext | null
+): Promise<void> => {
+  if (account.providerId !== "google" || context === null) {
+    return;
+  }
+  const email = googleVerifiedEmail(account.idToken);
+  if (email === undefined) {
+    return;
+  }
+  const { internalAdapter } = context.context;
+  const user = await internalAdapter.findUserById(account.userId);
+  if (
+    user === null ||
+    user.emailVerified ||
+    user.email.toLowerCase() !== email.toLowerCase()
+  ) {
+    return;
+  }
+  await internalAdapter.updateUser(user.id, { emailVerified: true });
+  log.info({ auth: { emailVerifiedBy: "google", userId: user.id } });
+};
 
 // How a new user signed up, read from the endpoint that created them:
 // email and password, or the OAuth provider's callback (/callback/google).
@@ -132,22 +194,35 @@ export const createAuth = (
   analytics?: AuthAnalytics,
   polar?: PolarCore
 ) => {
-  // Better Auth sends these in the background, so response timing doesn't
-  // reveal whether an account exists; a failed send is logged, not thrown.
-  const send = async (mail: Mail) => {
+  // Better Auth awaits these (no advanced.backgroundTasks), so on Cloud Run
+  // the send finishes while the request still has CPU. A failed send is
+  // logged and captured as an exception, never thrown: the sign-up or reset
+  // answers the same either way.
+  const send = async (mail: Mail, userId: string) => {
     try {
       await mailer(mail);
     } catch (error) {
       log.error({
         email: { kind: mail.message.kind },
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : String(error),
+        userId,
+      });
+      await analytics?.captureException?.(error, {
+        distinctId: userId,
+        properties: { emailKind: mail.message.kind, source: "auth-email" },
       });
     }
   };
   return betterAuth({
-    // A Google sign-in joins the account with the same email, but only when
-    // Google reports that email as verified (Better Auth's default; no
-    // trustedProviders, which would skip that check).
+    // A Google sign-in joins the user with the same email only when Google
+    // verified that email and so did the user (Better Auth's
+    // requireLocalEmailVerified, on by default): otherwise anyone could
+    // pre-register a victim's address with a password and keep access once
+    // the victim signs in with Google. Google stays untrusted, since
+    // trustedProviders would skip Google's own email_verified check. A user
+    // whose email isn't verified yet signs in with their password and
+    // connects Google from Account settings, which verifies the email
+    // (verifyEmailFromGoogle).
     account: { accountLinking: { enabled: true } },
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(database, {
@@ -158,6 +233,11 @@ export const createAuth = (
     // sends sign_up for every new user, whichever way they signed up (email,
     // Google, also from ChatGPT's authorization).
     databaseHooks: {
+      account: {
+        create: {
+          after: (account, context) => verifyEmailFromGoogle(account, context),
+        },
+      },
       user: {
         create: {
           // Awaited, so the event is sent before the sign-up answers.
@@ -187,22 +267,28 @@ export const createAuth = (
       enabled: true,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ url, user }, request) => {
-        await send({
-          locale: localeOf(user, request),
-          message: { kind: "reset", url },
-          to: user.email,
-        });
+        await send(
+          {
+            locale: localeOf(user, request),
+            message: { kind: "reset", url },
+            to: user.email,
+          },
+          user.id
+        );
       },
     },
     emailVerification: {
       autoSignInAfterVerification: true,
       sendOnSignUp: true,
       sendVerificationEmail: async ({ url, user }, request) => {
-        await send({
-          locale: localeOf(user, request),
-          message: { kind: "verify", url },
-          to: user.email,
-        });
+        await send(
+          {
+            locale: localeOf(user, request),
+            message: { kind: "verify", url },
+            to: user.email,
+          },
+          user.id
+        );
       },
     },
     plugins: [

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { AuthView } from "@/components/auth-view";
+import { SignedInRedirect } from "@/components/signed-in-redirect";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 
@@ -60,7 +61,12 @@ const AuthPathPage = async ({ params }: PageProps<"/[locale]/[path]">) => {
   if (!isPath(path)) {
     notFound();
   }
-  return <AuthView view={VIEWS[path]} />;
+  return (
+    <>
+      {path === "auth-error" ? <SignedInRedirect /> : null}
+      <AuthView view={VIEWS[path]} />
+    </>
+  );
 };
 
 export default AuthPathPage;

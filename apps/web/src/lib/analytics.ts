@@ -68,6 +68,9 @@ export const analytics: Context["analytics"] = posthog && {
   captureException: (error, { distinctId, properties }) => {
     const sent = captureServerException(error, distinctId, properties);
     after(() => sent);
+    // Better Auth's email hooks await it (packages/auth), so the event
+    // leaves while the request still has CPU.
+    return sent;
   },
   identify: (person) => {
     after(() => posthog.identifyImmediate(person));

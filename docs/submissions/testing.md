@@ -50,7 +50,7 @@ Please do NOT turn a campaign on, publish a product, or disconnect or change con
 ChatGPT app (optional): add a connector with https://mcp.wovain.com/api/mcp, sign in with the same account, approve access, then ask "research trends for retro surf tees".
 
 Docs: https://docs.wovain.com
-Contact: hello@wovain.com
+Contact: support@wovain.com
 ```
 
 Check before pasting:
@@ -59,7 +59,7 @@ Check before pasting:
 - "a fal account" is true only after MR !120 (fal through OAuth) merges. Until then art is drawn with the platform's fal key; delete "and a fal account".
 - The sign-in line assumes email and password work on the live site (the code enables them, with email verification). Confirm in checklist step 1.
 - The ChatGPT paragraph is optional. The MCP server signs in through Better Auth's own OAuth, so the judge account should work, but confirm in checklist step 6 or delete the paragraph.
-- Contact `hello@wovain.com` is the address in the site's terms page; swap it if you want a different one.
+- Contact `support@wovain.com` is the address in the site's terms page; swap it if you want a different one.
 - `<promo code>` is the `judges-2026` code (checklist step 3 says where to read it). It is the only secret besides the password: paste it only into Devpost's private box. Each account can redeem it once, and it allows 50 redemptions in all.
 
 ## 2. Per-hackathon notes

@@ -53,7 +53,7 @@ describe("createMailer", () => {
     const info = vi.spyOn(log, "info").mockImplementation(() => {});
     const mail = createMailer({
       apiKey: undefined,
-      from: "wovain <hello@wovain.com>",
+      from: "wovain <support@wovain.com>",
       siteUrl: site,
     });
 
@@ -73,10 +73,11 @@ describe("createMailer", () => {
   });
 
   it("sends through Resend with links resolved against the site", async () => {
+    const info = vi.spyOn(log, "info").mockImplementation(() => {});
     send.mockResolvedValue({ data: { id: "e1" }, error: null });
     const mail = createMailer({
       apiKey: "re_test",
-      from: "wovain <hello@wovain.com>",
+      from: "wovain <support@wovain.com>",
       siteUrl: site,
     });
 
@@ -93,12 +94,14 @@ describe("createMailer", () => {
 
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "wovain <hello@wovain.com>",
+        from: "wovain <support@wovain.com>",
         subject: "Your run is finished",
         to: "m@example.com",
       })
     );
     expect(send.mock.calls[0]?.[0].html).toContain(`${site}/dashboard?run=r1`);
+    // Resend's id is logged, so a missing email can be traced in Resend.
+    expect(info).toHaveBeenCalledWith({ email: { id: "e1", kind: "run" } });
   });
 
   it("fails with a structured error when Resend refuses", async () => {

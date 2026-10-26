@@ -45,7 +45,7 @@ export const createMailer = ({ apiKey, from, siteUrl }: MailerConfig) => {
       log.info({ email: { kind: message.kind, subject, text, to } });
       return;
     }
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from,
       html,
       subject,
@@ -55,6 +55,8 @@ export const createMailer = ({ apiKey, from, siteUrl }: MailerConfig) => {
     if (error !== null) {
       throw ResendFailed({ kind: message.kind, why: error.message });
     }
+    // Resend's id finds the email in its dashboard (delivered, bounced).
+    log.info({ email: { id: data?.id, kind: message.kind } });
   };
 };
 
