@@ -58,6 +58,9 @@ export const RunFailedState = ({
   const stages = useTranslations("Stages");
   const service =
     failure.reason === "not_connected" ? SERVICE_NAMES[failure.service] : "";
+  // An expired sign-in the provider wouldn't refresh: reconnect, not connect.
+  const reconnect =
+    failure.reason === "not_connected" && failure.reconnect === true;
   return (
     <div className="flex flex-col items-start gap-5">
       <Alert variant="destructive">
@@ -66,7 +69,9 @@ export const RunFailedState = ({
           <h2 id={STEP_TITLE_ID}>{t("title", { stage: stages(stage) })}</h2>
         </AlertTitle>
         <AlertDescription>
-          {t(FAILURE_COPY[failure.reason], { service })}
+          {t(reconnect ? "reconnect" : FAILURE_COPY[failure.reason], {
+            service,
+          })}
           {failure.reason === "other" && failure.message ? (
             <span className="text-muted-foreground mt-1 block text-xs">
               {t("details", { message: failure.message })}
@@ -80,7 +85,7 @@ export const RunFailedState = ({
             className={cn(buttonVariants(), "h-9 px-4")}
             href="/dashboard/connections"
           >
-            {t("connect", { service })}
+            {t(reconnect ? "reconnectAction" : "connect", { service })}
           </Link>
         ) : null}
         <Button

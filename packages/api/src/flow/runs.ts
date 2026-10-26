@@ -5,6 +5,7 @@ import { user } from "@wovain/db/schema/auth";
 import { design, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { Actor, RunInput } from "./actor";
 import { notFound } from "./actor";
@@ -224,6 +225,55 @@ const reportEnd = async (
   });
 };
 
+const fieldOf = (value: unknown, key: string) =>
+  typeof value === "object" && value !== null && key in value
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
+const textField = (value: unknown, key: string) => {
+  const field = fieldOf(value, key);
+  return typeof field === "string" && field !== "" ? field : undefined;
+};
+
+// Every failed run is an error-level event, so it reaches PostHog Error
+// Tracking (docs/flows.md, "One error sink"): the step, the provider and its
+// own words. The provider's status (often a 4xx, such as a refused grant)
+// rides in `run`, not on `error`, which error tracking would skip.
+const logRunFailure = (
+  actor: Actor,
+  runId: string,
+  {
+    cause,
+    message,
+    step,
+  }: { cause: unknown; message: string | undefined; step: string | null }
+) => {
+  const { errorType, provider } = classifyFailure(cause);
+  const status = fieldOf(cause, "status");
+  const why = textField(cause, "why");
+  const reason =
+    message ??
+    (cause instanceof Error ? cause.message : String(cause ?? "unknown"));
+  log.error({
+    error: {
+      code: textField(cause, "code") ?? "RUN_FAILED",
+      message: `Run failed during ${step ?? "start"}: ${reason}`,
+      name: "RunFailed",
+      ...(cause instanceof Error && cause.stack !== undefined
+        ? { stack: cause.stack }
+        : {}),
+    },
+    run: {
+      error_type: errorType,
+      id: runId,
+      provider: provider ?? null,
+      provider_status: typeof status === "number" ? status : null,
+      step,
+      why: why ?? null,
+    },
+    userId: actor.userId,
+  });
+};
+
 // The run's last word. A run still active ends here once (a retried finish
 // changes nothing); a failed one archives the Meta campaign it left half
 // staged.
@@ -242,6 +292,13 @@ export const finishRun = async (
     .returning({ createdAt: run.createdAt, step: run.step });
   if (ended === undefined) {
     return;
+  }
+  if (outcome.status === "failed") {
+    logRunFailure(actor, runId, {
+      cause: cause ?? outcome.error,
+      message: outcome.error,
+      step: ended.step,
+    });
   }
   await reportEnd(actor, runId, {
     cause: cause ?? outcome.error,

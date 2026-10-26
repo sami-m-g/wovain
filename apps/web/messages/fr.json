@@ -394,7 +394,9 @@
     "lead": "wovain agit pour vous via ces comptes. Vous pouvez les déconnecter à tout moment.",
     "connected": "Connecté",
     "disconnected": "Non connecté",
+    "expired": "Session expirée",
     "connect": "Connecter {name}",
+    "reconnect": "Reconnecter {name}",
     "disconnect": "Déconnecter {name}",
     "since": "Depuis le {date}",
     "connectedToast": "{name} connecté.",
@@ -428,6 +430,7 @@
     "problem": {
       "notConfigured": "Cette étape n'est pas disponible pour le moment. Réessayez dans un instant.",
       "notConnected": "Connectez {service} pour terminer cette étape.",
+      "reconnect": "La session {service} a expiré. Reconnectez-le pour terminer cette étape.",
       "connectLink": "Aller aux connexions",
       "other": "Un problème est survenu : {message}"
     },
@@ -503,11 +506,13 @@
     "failed": {
       "title": "Le drop s'est arrêté à l'étape {stage}",
       "notConnected": "{service} n'est pas connecté : wovain n'a pas pu terminer cette étape. Connectez-le, puis réessayez.",
+      "reconnect": "La session {service} a expiré et n'a pas pu être renouvelée : wovain n'a pas pu terminer cette étape. Reconnectez-le, puis réessayez.",
       "noIdeas": "La recherche n'a trouvé aucune idée pour ce brief. Essayez de le reformuler.",
       "rejected": "Le pilote automatique n'a pas aimé le design. Réessayez pour en obtenir un nouveau.",
       "other": "Un problème est survenu de notre côté. Rien n'a été dépensé pour cette étape. Réessayez.",
       "details": "Détails : {message}",
       "connect": "Connecter {service}",
+      "reconnectAction": "Reconnecter {service}",
       "retry": "Réessayer",
       "retrying": "Relance en cours…",
       "another": "Écrire un nouveau brief"

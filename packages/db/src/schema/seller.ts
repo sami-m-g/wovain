@@ -41,6 +41,9 @@ export const connection = pgTable(
   {
     connectedAt: createdAt(),
     id: id(),
+    // The provider refused the grant and wouldn't refresh it: the merchant
+    // must reconnect. Cleared when a new grant is saved.
+    needsReconnect: boolean("needs_reconnect").default(false).notNull(),
     provider: text("provider").$type<ProviderId>().notNull(),
     sealedTokens: text("sealed_tokens").notNull(),
     updatedAt: updatedAt(),

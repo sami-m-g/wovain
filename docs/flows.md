@@ -25,6 +25,7 @@ Each flow's work is done by the same pieces:
 | --- | --- | --- |
 | Browser exceptions | `posthog-js` exception autocapture | `apps/web/src/lib/analytics-client.ts` |
 | Server errors: procedure and route errors (typed `*_NOT_CONFIGURED` faults included, 4xx excluded), uncaught errors, connection callback failures | Logged at error level on the request's evlog wide event; evlog's error tracking drain sends each as a `$exception` with a stable `$exception_fingerprint` (code and route, or class, route and message) | `apps/web/src/lib/evlog.ts`, `error-tracking.ts` |
+| Failed runs (a durable run's step, or the legacy flow), with the step, the provider, its status and its own words (`fal submit_job failed: 401 …`) | `finishRun` logs each failure through evlog at error level, with the provider's status on `run`, so a refused grant (a 4xx) is still reported | `packages/api/src/flow/runs.ts` |
 | Better Auth's own errors, failed email sends | Better Auth's `logger` and the email sender log through evlog at error level | `packages/auth/src/index.ts` |
 | Plain text on stderr (a library's `console.error`, Varlock's leak guard) | evlog's `captureOutput` turns each stderr line into an error event | `apps/web/src/lib/evlog.ts` |
 | Platform errors: 5xx Cloud Run answered, OOM kills, failed startups, stderr before evlog loaded | The ops job reads them from Cloud Logging every run and forwards each entry once (keyed by its insert id) as a `platform` exception | `apps/ops/src/platform.ts`, `sink.ts` |

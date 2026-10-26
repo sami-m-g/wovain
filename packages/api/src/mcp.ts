@@ -135,7 +135,7 @@ export const createMcpServer = (
     {
       annotations: reads,
       description:
-        "The merchant's connected providers (Fourthwall, Meta, and fal, which draws on the merchant's own fal account), with a connect link for each one that isn't connected.",
+        "The merchant's connected providers (Fourthwall, Meta, and fal, which draws on the merchant's own fal account), with a connect link for each one that isn't connected or whose sign-in expired (needsReconnect).",
       title: "List connections",
     },
     async () =>
@@ -143,8 +143,21 @@ export const createMcpServer = (
         const connected = await client.connections.list();
         return providerIds.map((provider) => {
           const found = connected.find((item) => item.provider === provider);
-          return found === undefined
-            ? { connectUrl: connectUrl(provider), connected: false, provider }
+          if (found === undefined) {
+            return {
+              connectUrl: connectUrl(provider),
+              connected: false,
+              provider,
+            };
+          }
+          // Its sign-in expired and couldn't be refreshed: connect again.
+          return found.needsReconnect
+            ? {
+                connectUrl: connectUrl(provider),
+                connected: false,
+                needsReconnect: true,
+                provider,
+              }
             : { connected: true, connectedAt: found.connectedAt, provider };
         });
       })
