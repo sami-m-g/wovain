@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
+import { publicOrigin } from "@/lib/public-origin";
 import { redirectWithin } from "@/lib/redirect";
 import { routerClientFor } from "@/lib/router-client";
 
@@ -19,7 +20,7 @@ const handleCallback = async (
   const query = request.nextUrl.searchParams;
   const code = query.get("code");
   const state = query.get("state");
-  const { origin } = request.nextUrl;
+  const origin = publicOrigin();
   const failed = (reason: string) =>
     redirectWithin({
       origin,
