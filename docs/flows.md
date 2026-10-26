@@ -136,6 +136,8 @@ The trigger token lives only in PostHog's redacted sensitive inputs and a masked
 
 **LLM analytics.** `packages/core/src/nemotron.ts` wraps the OpenAI SDK on Nebius with `@posthog/ai`: every Nemotron call is a `$ai_generation` with its step (`$ai_span_name`: `design_brief`, `design_judge`, `ad_copy`, `autopilot_*`), tokens, latency and cost at Nebius list prices ($0.30 and $0.90 per million tokens), grouped by run (`$ai_trace_id` is the run id) and merchant. The "wovain health" dashboard shows cost and model time per run and per step; `llm-cost-per-run` is a KPI with an alert.
 
+**Product dashboards** (`infra/posthog/dashboards.tf`): Growth, Retention, Agent quality and cost, and Web vitals, as code; the KPI insights of `kpis.yml` join them. Everything in PostHog is code: change it there, never in the UI or through the API. `infra/posthog/import.tf` adopts the objects first created by hand, and is deleted after that apply.
+
 **The "wovain health" dashboard** (`infra/posthog/health.tf`): the merchant funnel, browser errors per 1,000 pageviews, field web vitals (LCP, INP, CLS at p75), rage and dead clicks by page, Nemotron per run and per step, and one tile per PostHog KPI.
 
 ### PostHog's agentic features, and why wovain uses each or not

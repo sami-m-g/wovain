@@ -4,6 +4,9 @@
 #   kpis.tf     an insight and an alert per PostHog KPI in .gitlab/duo/kpis.yml
 #   health.tf   the "wovain health" dashboard: funnel, errors, web vitals,
 #               clicks and LLM cost per run
+#   dashboards.tf  the Growth, Retention, Agent quality and cost, and Web
+#               vitals dashboards with their insights
+#   import.tf   one-time adoption of the objects created through the API
 #   signals.tf  destinations that start the ops pipeline when PostHog senses
 #               something, and the run-rating survey
 #   settings.tf cookieless hashing, no stored IPs, and the default filters
@@ -59,7 +62,8 @@ variable "gitlab_trigger_token" {
 variable "alert_subscribers" {
   description = "PostHog user ids that also get alert emails."
   type        = list(number)
-  default     = []
+  # The founder (sami.mg@outlook.com), who subscribed the first alerts.
+  default = [413837]
 }
 
 provider "posthog" {
