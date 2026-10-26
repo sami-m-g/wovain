@@ -1,4 +1,3 @@
-import type { Offer, PlanCode } from "@wovain/billing/plans";
 import { CREDIT_PACK, PLANS } from "@wovain/billing/plans";
 import { buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
@@ -6,6 +5,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { CreditTag } from "@/components/billing/credit-tag";
+import { NotifyButton } from "@/components/billing/notify-button";
 import { PackCard, PlanCards } from "@/components/billing/plan-cards";
 import { JsonLd } from "@/components/json-ld";
 import { CtaLink } from "@/components/marketing/cta-link";
@@ -36,15 +36,14 @@ export const generateMetadata = async ({
 
 // Billed on the merchant's own accounts, not through wovain's credits.
 const YOURS = ["fal", "meta", "fourthwall"] as const;
-const FAQ_KEYS = ["credit", "yours", "cancel", "rollover", "free"] as const;
+const FAQ_KEYS = ["credit", "yours", "paid", "rollover", "free"] as const;
 
 const ctaClass = "h-11 rounded-lg px-4 sm:h-9";
 
-/** A paid offer starts in the app, after sign-in, on the billing page. */
-const offerHref = (offer: Offer) => ({
-  pathname: "/dashboard/billing" as const,
-  query: { offer },
-});
+// Only Free is on sale for now: the paid offers are listed with their
+// prices, marked "Coming soon", and record interest instead of checking out.
+const AVAILABLE = "https://schema.org/InStock";
+const NOT_YET = "https://schema.org/PreOrder";
 
 const PricingPage = async ({ params }: Props) => {
   const locale = await enterLocale(params);
@@ -62,22 +61,10 @@ const PricingPage = async ({ params }: Props) => {
     }),
     question: t(`faq.${key}.question`),
   }));
-  const paid = (code: Exclude<PlanCode, "free">, primary: boolean) => (
-    <CtaLink
-      className={cn(
-        buttonVariants({ variant: primary ? "default" : "outline" }),
-        ctaClass
-      )}
-      cta={`pricing-${code}`}
-      href={offerHref(code)}
-      prefetch={false}
-    >
-      {billing("cta.choose", { plan: PLANS[code].name })}
-    </CtaLink>
-  );
   const offers = [
     ...Object.values(PLANS).map((plan) => ({
       "@type": "Offer",
+      availability: plan.priceCents === 0 ? AVAILABLE : NOT_YET,
       name: plan.name,
       price: (plan.priceCents / 100).toFixed(2),
       priceCurrency: "USD",
@@ -91,6 +78,7 @@ const PricingPage = async ({ params }: Props) => {
     })),
     {
       "@type": "Offer",
+      availability: NOT_YET,
       name: CREDIT_PACK.name,
       price: (CREDIT_PACK.priceCents / 100).toFixed(2),
       priceCurrency: "USD",
@@ -131,10 +119,7 @@ const PricingPage = async ({ params }: Props) => {
             actions={{
               free: (
                 <CtaLink
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    ctaClass
-                  )}
+                  className={cn(buttonVariants(), ctaClass)}
                   cta="pricing-free"
                   href="/sign-up"
                   prefetch={false}
@@ -142,21 +127,14 @@ const PricingPage = async ({ params }: Props) => {
                   {billing("cta.startFree")}
                 </CtaLink>
               ),
-              label: paid("label", false),
-              studio: paid("studio", true),
+              label: <NotifyButton offer="label" surface="pricing" />,
+              studio: <NotifyButton offer="studio" surface="pricing" />,
             }}
+            comingSoon
           />
           <PackCard
-            action={
-              <CtaLink
-                className={cn(buttonVariants({ variant: "outline" }), ctaClass)}
-                cta="pricing-pack"
-                href={offerHref("pack")}
-                prefetch={false}
-              >
-                {billing("cta.buyPack", { credits: CREDIT_PACK.credits })}
-              </CtaLink>
-            }
+            action={<NotifyButton offer="pack" surface="pricing" />}
+            comingSoon
           />
           <p className="text-muted-foreground text-sm">{t("noCut")}</p>
         </section>

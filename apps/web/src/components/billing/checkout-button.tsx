@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
+import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 /** Polar's hosted pages (checkout, portal) live on another origin. */
@@ -30,7 +31,17 @@ export const CheckoutButton = ({
   const t = useTranslations("Billing");
   const checkout = useMutation(
     orpc.billing.checkout.mutationOptions({
-      onError: () => toast.error(t("checkoutError")),
+      // Paid plans switched off since the page loaded
+      // (PAID_PLANS_NOT_AVAILABLE): the server says why, in the merchant's
+      // language.
+      onError: (error) => {
+        const problem = describeProblem(error);
+        toast.error(
+          problem.kind === "limit"
+            ? [problem.message, problem.fix].filter(Boolean).join(". ")
+            : t("checkoutError")
+        );
+      },
       onSuccess: ({ url }) => leaveFor(url),
     })
   );

@@ -19,6 +19,7 @@ export type Idea = RunDetail["ideas"][number];
 export type Design = Outputs["designs"]["get"];
 export type Product = Outputs["products"]["create"];
 export type Campaign = Outputs["campaigns"]["create"];
+export type BillingStatus = Outputs["billing"]["status"];
 
 export const PROVIDERS = [
   "fourthwall",
@@ -78,6 +79,10 @@ const refusal = (
         ...count("needed", data.needed),
         ...count("available", data.available),
       };
+    }
+    // A checkout while only Free is on sale: the server words why.
+    case "PAID_PLANS_NOT_AVAILABLE": {
+      return { kind: "limit", message: error.message, ...text(data.fix) };
     }
     case "PLAN_REQUIRED": {
       return { kind: "plan", message: error.message, ...text(data.fix) };

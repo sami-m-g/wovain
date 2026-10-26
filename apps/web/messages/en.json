@@ -29,7 +29,7 @@
     "guidesTitle": "Guides for selling merch",
     "guidesDescription": "Practical guides for creators who sell merch: pricing print-on-demand products so every sale clears a profit, and launching a drop from idea to ads.",
     "pricingTitle": "Pricing: plans and credits for merch drops",
-    "pricingDescription": "Start free with credits every month, then pick Studio or Label when you drop every week. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
+    "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
     "billingTitle": "Billing"
   },
   "Common": {
@@ -198,7 +198,7 @@
       "wovain": {
         "name": "wovain",
         "value": "Free to start",
-        "body": "Free credits every month. Paid plans add credits and autopilot when you need them."
+        "body": "Free credits every month. Paid plans with more credits and autopilot are coming soon."
       },
       "products": {
         "name": "Products",
@@ -224,7 +224,7 @@
     "faq": [
       {
         "question": "What does wovain cost?",
-        "answer": "You can start free, with credits every month. Paid plans add credits and autopilot. Products are paid for by each sale through Fourthwall, and ad spend is your own daily budget, billed by Meta once you turn the campaign on."
+        "answer": "You can start free, with credits every month. Paid plans with more credits and autopilot are coming soon. Products are paid for by each sale through Fourthwall, and ad spend is your own daily budget, billed by Meta once you turn the campaign on."
       },
       {
         "question": "Will wovain spend money on ads by itself?",
@@ -506,7 +506,8 @@
       "campaign": "Building the paused campaign on Meta…"
     },
     "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
-    "autopilotUpgrade": "See plans"
+    "autopilotUpgrade": "See plans",
+    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step."
   },
   "NotFound": {
     "title": "This page isn't here",
@@ -638,7 +639,9 @@
       "pastDue": "Your last payment didn't go through. Update your card in Manage billing to keep your plan.",
       "checkoutSuccess": "Thanks, your payment went through. Your credits arrive in a few seconds.",
       "plansTitle": "Plans",
-      "packTitle": "Need a few more credits?"
+      "packTitle": "Need a few more credits?",
+      "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
+      "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}."
     },
     "paywall": {
       "creditsTitle": "You're out of credits for this step",
@@ -647,15 +650,24 @@
       "studioGain": "Studio gives you {credits, number} credits a month and autopilot, for {price} a month. Cancel any time.",
       "pack": "Buy {credits, number} credits for {price}",
       "comparePlans": "Compare plans",
-      "notNow": "Not now"
+      "notNow": "Not now",
+      "creditsSoonTitle": "More credits are coming soon",
+      "planSoonTitle": "Autopilot is coming soon with paid plans",
+      "freeRefresh": "Your Free credits refresh every month.",
+      "freeRefreshOn": "Your Free credits refresh on {date}."
+    },
+    "notify": {
+      "comingSoon": "Coming soon",
+      "button": "Notify me",
+      "thanks": "Thanks, we've noted your interest."
     }
   },
   "Pricing": {
     "crumb": "Pricing",
     "title": "Pay for the drops you make, not for seats",
-    "lead": "Start free with {credits, number} credits every month. Move to Studio when you're dropping every week. wovain never takes a cut of your sales.",
+    "lead": "Start free with {credits, number} credits every month. Studio, Label and credit packs are coming soon. wovain never takes a cut of your sales.",
     "plansTitle": "Plans",
-    "noCut": "Prices in US dollars. Plans renew monthly and you can cancel from the billing portal at any time.",
+    "noCut": "Prices in US dollars. Free is open now; Studio, Label and credit packs aren't on sale yet.",
     "yoursTitle": "What you pay on your own accounts",
     "yoursLead": "Credits cover wovain's work: trend research and Nemotron's briefs, checks and ad copy. The rest you pay directly, on accounts you own, with no markup from wovain.",
     "yours": {
@@ -682,17 +694,17 @@
         "question": "What do I pay outside wovain?",
         "answer": "Art, ads and products run on your own accounts. fal bills you for the artwork, Meta bills your ad account once you start a campaign, and Fourthwall takes the blank's cost out of each sale."
       },
-      "cancel": {
-        "question": "Can I cancel?",
-        "answer": "Yes, any time, from Manage billing. Your plan and its credits stay until the end of the month you paid for, then you're back on Free."
-      },
       "rollover": {
         "question": "Do unused credits roll over?",
-        "answer": "On Label they do. On Free and Studio, plan credits refresh each month. Credit packs never expire, on any plan."
+        "answer": "On Free, credits refresh each month and unused ones don't carry over. When Label opens, its unused credits will roll over, and credit packs won't expire."
       },
       "free": {
         "question": "What happens when I run out?",
-        "answer": "wovain stops before the step and tells you. Wait for next month's {freeCredits, number} free credits, buy a pack of {packCredits, number}, or move to Studio. Nothing you made is lost."
+        "answer": "wovain stops before the step and tells you. Your {freeCredits, number} free credits come back next month, and nothing you made is lost. Paid plans and packs of {packCredits, number} credits are coming soon."
+      },
+      "paid": {
+        "question": "When can I buy Studio, Label or credits?",
+        "answer": "Soon. For now every account is on Free. Press Notify me on the plan you want, so we know which one to open first."
       }
     }
   }

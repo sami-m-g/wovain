@@ -1,18 +1,55 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { CREDIT_PACK, PLANS } from "@wovain/billing/plans";
 import { Button } from "@wovain/ui/components/button";
 import { Bot, Coins } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 
 import { CheckoutButton } from "@/components/billing/checkout-button";
+import { NotifyButton } from "@/components/billing/notify-button";
 import { useMoney } from "@/components/billing/plan-cards";
 import { Link } from "@/i18n/navigation";
+import { orpc } from "@/utils/orpc";
+
+type Kind = "credits" | "plan";
+
+/** While paid plans are on sale: what Studio (or a pack) gives, and a checkout. */
+const Offers = ({ kind }: { kind: Kind }) => {
+  const t = useTranslations("Billing.paywall");
+  const billing = useTranslations("Billing");
+  const money = useMoney();
+  const { studio } = PLANS;
+  return (
+    <>
+      <p className="figures text-sm">
+        {t("studioGain", {
+          credits: studio.monthlyCredits,
+          price: money(studio.priceCents),
+        })}
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <CheckoutButton offer="studio" primary>
+          {billing("cta.choose", { plan: studio.name })}
+        </CheckoutButton>
+        {kind === "credits" ? (
+          <CheckoutButton offer="pack">
+            {t("pack", {
+              credits: CREDIT_PACK.credits,
+              price: money(CREDIT_PACK.priceCents),
+            })}
+          </CheckoutButton>
+        ) : null}
+      </div>
+    </>
+  );
+};
 
 /**
- * The limit-reached screen, shown where the step stopped: what happened, what
- * Studio (or a pack) gives, one primary way forward and a plain "Not now".
- * Nothing is lost by closing it; the run waits where it stopped.
+ * The limit-reached screen, shown where the step stopped: what happened, the
+ * way forward and a plain "Not now". While only Free is on sale it sells
+ * nothing: it says when Free credits refresh and offers "Notify me". Nothing
+ * is lost by closing it; the run waits where it stopped.
  */
 export const Paywall = ({
   kind,
@@ -22,7 +59,7 @@ export const Paywall = ({
   available,
   onDismiss,
 }: {
-  kind: "credits" | "plan";
+  kind: Kind;
   message: string;
   fix?: string | undefined;
   needed?: number | undefined;
@@ -30,14 +67,18 @@ export const Paywall = ({
   onDismiss?: (() => void) | undefined;
 }) => {
   const t = useTranslations("Billing.paywall");
-  const billing = useTranslations("Billing");
-  const money = useMoney();
-  const { studio } = PLANS;
+  const format = useFormatter();
+  const status = useQuery(orpc.billing.status.queryOptions());
+  const selling = status.data?.paidPlans === true;
+  const refresh = status.data?.subscription?.currentPeriodEnd;
   const Icon = kind === "plan" ? Bot : Coins;
   const short =
     needed !== undefined && available !== undefined
       ? t("shortBy", { available, needed })
       : undefined;
+  const soonTitle =
+    kind === "plan" ? t("planSoonTitle") : t("creditsSoonTitle");
+  const sellTitle = kind === "plan" ? t("planTitle") : t("creditsTitle");
 
   return (
     <section
@@ -53,7 +94,7 @@ export const Paywall = ({
             className="font-display text-lg font-semibold tracking-[-0.02em]"
             id="paywall-title"
           >
-            {kind === "plan" ? t("planTitle") : t("creditsTitle")}
+            {selling ? sellTitle : soonTitle}
           </h2>
           <p className="text-muted-foreground text-sm">
             {[message, fix].filter(Boolean).join(". ")}
@@ -61,28 +102,29 @@ export const Paywall = ({
           {short ? (
             <p className="text-muted-foreground figures text-sm">{short}</p>
           ) : null}
+          {!selling && kind === "credits" ? (
+            <p className="text-muted-foreground text-sm">
+              {refresh
+                ? t("freeRefreshOn", {
+                    date: format.dateTime(new Date(refresh), {
+                      dateStyle: "long",
+                    }),
+                  })
+                : t("freeRefresh")}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <p className="figures text-sm">
-        {t("studioGain", {
-          credits: studio.monthlyCredits,
-          price: money(studio.priceCents),
-        })}
-      </p>
+      {selling ? <Offers kind={kind} /> : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <CheckoutButton offer="studio" primary>
-          {billing("cta.choose", { plan: studio.name })}
-        </CheckoutButton>
-        {kind === "credits" ? (
-          <CheckoutButton offer="pack">
-            {t("pack", {
-              credits: CREDIT_PACK.credits,
-              price: money(CREDIT_PACK.priceCents),
-            })}
-          </CheckoutButton>
-        ) : null}
+        {selling ? null : (
+          <NotifyButton
+            offer={kind === "plan" ? "studio" : "pack"}
+            surface="paywall"
+          />
+        )}
         <Link
           className="text-accent-text inline-flex min-h-11 items-center text-sm font-medium hover:underline sm:min-h-9"
           href="/dashboard/billing"

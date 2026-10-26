@@ -29,7 +29,7 @@
     "guidesTitle": "Guías para vender merch",
     "guidesDescription": "Guías prácticas para creadores que venden merch: cómo poner precio al print-on-demand para ganar con cada venta y cómo lanzar un drop de la idea a los anuncios.",
     "pricingTitle": "Precios: planes y créditos para tus drops de merch",
-    "pricingDescription": "Empieza gratis con créditos cada mes y pasa a Studio o Label cuando lances un drop por semana. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
+    "pricingDescription": "Empieza gratis con créditos cada mes. Studio, Label y los packs de créditos llegan pronto. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
     "billingTitle": "Facturación"
   },
   "Common": {
@@ -198,7 +198,7 @@
       "wovain": {
         "name": "wovain",
         "value": "Gratis para empezar",
-        "body": "Créditos gratis cada mes. Los planes de pago suman créditos y piloto automático cuando los necesites."
+        "body": "Créditos gratis cada mes. Los planes de pago, con más créditos y piloto automático, llegan pronto."
       },
       "products": {
         "name": "Productos",
@@ -224,7 +224,7 @@
     "faq": [
       {
         "question": "¿Cuánto cuesta wovain?",
-        "answer": "Puedes empezar gratis, con créditos cada mes. Los planes de pago suman créditos y piloto automático. Los productos se pagan con cada venta a través de Fourthwall, y el gasto en anuncios es tu presupuesto diario, que factura Meta cuando activas la campaña."
+        "answer": "Puedes empezar gratis, con créditos cada mes. Los planes de pago, con más créditos y piloto automático, llegan pronto. Los productos se pagan con cada venta a través de Fourthwall, y el gasto en anuncios es tu presupuesto diario, que factura Meta cuando activas la campaña."
       },
       {
         "question": "¿Gastará wovain dinero en anuncios por su cuenta?",
@@ -506,7 +506,8 @@
       "campaign": "Creando la campaña en pausa en Meta…"
     },
     "autopilotLocked": "El piloto automático viene con Studio y Label. En Free, apruebas cada paso.",
-    "autopilotUpgrade": "Ver planes"
+    "autopilotUpgrade": "Ver planes",
+    "autopilotSoon": "El piloto automático llega pronto con los planes de pago. En Free, apruebas cada paso."
   },
   "NotFound": {
     "title": "Esta página no está aquí",
@@ -638,7 +639,9 @@
       "pastDue": "Tu último pago no se completó. Actualiza tu tarjeta en Gestionar facturación para mantener tu plan.",
       "checkoutSuccess": "Gracias, tu pago se completó. Tus créditos llegan en unos segundos.",
       "plansTitle": "Planes",
-      "packTitle": "¿Necesitas unos créditos más?"
+      "packTitle": "¿Necesitas unos créditos más?",
+      "comingSoon": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan cada mes.",
+      "comingSoonRenews": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan el {date}."
     },
     "paywall": {
       "creditsTitle": "No te quedan créditos para este paso",
@@ -647,15 +650,24 @@
       "studioGain": "Studio te da {credits, number} créditos al mes y piloto automático, por {price} al mes. Cancela cuando quieras.",
       "pack": "Comprar {credits, number} créditos por {price}",
       "comparePlans": "Comparar planes",
-      "notNow": "Ahora no"
+      "notNow": "Ahora no",
+      "creditsSoonTitle": "Pronto habrá más créditos",
+      "planSoonTitle": "El piloto automático llega pronto con los planes de pago",
+      "freeRefresh": "Tus créditos Free se renuevan cada mes.",
+      "freeRefreshOn": "Tus créditos Free se renuevan el {date}."
+    },
+    "notify": {
+      "comingSoon": "Muy pronto",
+      "button": "Avísame",
+      "thanks": "Gracias, hemos anotado tu interés."
     }
   },
   "Pricing": {
     "crumb": "Precios",
     "title": "Paga por los drops que lanzas, no por usuarios",
-    "lead": "Empieza gratis con {credits, number} créditos cada mes. Pasa a Studio cuando lances un drop cada semana. wovain nunca se queda una parte de tus ventas.",
+    "lead": "Empieza gratis con {credits, number} créditos cada mes. Studio, Label y los packs de créditos llegan pronto. wovain nunca se queda una parte de tus ventas.",
     "plansTitle": "Planes",
-    "noCut": "Precios en dólares estadounidenses. Los planes se renuevan cada mes y puedes cancelarlos cuando quieras desde el portal de facturación.",
+    "noCut": "Precios en dólares estadounidenses. Free ya está abierto; Studio, Label y los packs de créditos aún no están a la venta.",
     "yoursTitle": "Lo que pagas en tus propias cuentas",
     "yoursLead": "Los créditos cubren el trabajo de wovain: la investigación de tendencias y los briefs, revisiones y textos de anuncio de Nemotron. El resto lo pagas directamente, en cuentas tuyas, sin margen de wovain.",
     "yours": {
@@ -682,17 +694,17 @@
         "question": "¿Qué pago fuera de wovain?",
         "answer": "El arte, los anuncios y los productos van en tus propias cuentas. fal te cobra el arte, Meta cobra a tu cuenta publicitaria cuando inicias una campaña y Fourthwall descuenta el coste del producto de cada venta."
       },
-      "cancel": {
-        "question": "¿Puedo cancelar?",
-        "answer": "Sí, cuando quieras, desde Gestionar facturación. Tu plan y sus créditos siguen activos hasta el final del mes pagado y luego vuelves a Free."
-      },
       "rollover": {
         "question": "¿Se acumulan los créditos sin usar?",
-        "answer": "En Label sí. En Free y Studio, los créditos del plan se renuevan cada mes. Los packs de créditos no caducan nunca, en ningún plan."
+        "answer": "En Free, los créditos se renuevan cada mes y los que no usas no se acumulan. Cuando abra Label, sus créditos sin usar se acumularán, y los packs de créditos no caducarán."
       },
       "free": {
         "question": "¿Qué pasa si me quedo sin créditos?",
-        "answer": "wovain se detiene antes del paso y te avisa. Espera a los {freeCredits, number} créditos gratis del mes siguiente, compra un pack de {packCredits, number} o pasa a Studio. No pierdes nada de lo que creaste."
+        "answer": "wovain se detiene antes del paso y te avisa. Tus {freeCredits, number} créditos gratis vuelven el mes siguiente y no pierdes nada de lo que creaste. Los planes de pago y los packs de {packCredits, number} créditos llegan pronto."
+      },
+      "paid": {
+        "question": "¿Cuándo podré comprar Studio, Label o créditos?",
+        "answer": "Pronto. Por ahora todas las cuentas están en Free. Pulsa Avísame en el plan que quieras y sabremos cuál abrir primero."
       }
     }
   }

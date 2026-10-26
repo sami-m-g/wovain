@@ -7,6 +7,8 @@ import { Check } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { ComingSoonBadge } from "@/components/billing/notify-button";
+
 // Started from the @shadcn-studio/pricing-component-01 block (a horizontal
 // card: name, lead and action, a vertical rule, then the price), re-set in
 // wovain's tokens. There is no annual billing yet, so the block's
@@ -63,17 +65,21 @@ const PriceDisplay = ({
 /**
  * The three plans as one stack of horizontal cards. `actions` holds each
  * plan's button or link, so the public page can link to sign-up and the app
- * can open a checkout. `current` marks the merchant's plan.
+ * can open a checkout. `current` marks the merchant's plan. While paid plans
+ * aren't on sale (`comingSoon`), they carry a "Coming soon" badge and none
+ * of them is set as the recommendation.
  */
 export const PlanCards = ({
   actions,
   current,
   recommended = "studio",
+  comingSoon = false,
   headingLevel = 3,
 }: {
   actions: Partial<Record<PlanCode, ReactNode>>;
   current?: PlanCode | undefined;
   recommended?: PlanCode;
+  comingSoon?: boolean;
   headingLevel?: 2 | 3;
 }) => {
   const t = useTranslations("Billing");
@@ -84,7 +90,8 @@ export const PlanCards = ({
     <ul className="flex flex-col gap-4">
       {ORDER.map((code) => {
         const plan = PLANS[code];
-        const highlighted = code === recommended;
+        const unavailable = comingSoon && plan.priceCents > 0;
+        const highlighted = !comingSoon && code === recommended;
         const price = (
           <PriceDisplay
             amount={money(plan.priceCents)}
@@ -111,6 +118,7 @@ export const PlanCards = ({
                           {t("recommended")}
                         </span>
                       ) : null}
+                      {unavailable ? <ComingSoonBadge /> : null}
                       {current === code ? (
                         <span className="bg-muted rounded-full px-2 py-0.5 text-xs font-medium">
                           {t("currentPlan")}
@@ -174,9 +182,11 @@ export const PlanCards = ({
 /** The one-time credit pack, set like a plan card without the emphasis. */
 export const PackCard = ({
   action,
+  comingSoon = false,
   headingLevel = 3,
 }: {
   action?: ReactNode;
+  comingSoon?: boolean;
   headingLevel?: 2 | 3;
 }) => {
   const t = useTranslations("Billing");
@@ -192,9 +202,12 @@ export const PackCard = ({
     <Card className="bg-card ring-border rounded-xl shadow-none">
       <CardContent className="flex justify-between gap-6 px-5 py-1 sm:px-6">
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <Heading className="font-display text-xl font-semibold tracking-[-0.02em]">
-            {CREDIT_PACK.name}
-          </Heading>
+          <div className="flex flex-wrap items-center gap-2">
+            <Heading className="font-display text-xl font-semibold tracking-[-0.02em]">
+              {CREDIT_PACK.name}
+            </Heading>
+            {comingSoon ? <ComingSoonBadge /> : null}
+          </div>
           <p className="text-muted-foreground figures text-sm">
             {t("pack.body", { credits: CREDIT_PACK.credits })}
           </p>

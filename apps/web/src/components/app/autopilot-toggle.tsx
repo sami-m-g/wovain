@@ -7,6 +7,7 @@ import { Bot, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 
+import { NotifyButton } from "@/components/billing/notify-button";
 import { Link } from "@/i18n/navigation";
 import { orpc } from "@/utils/orpc";
 
@@ -27,6 +28,13 @@ export const AutopilotToggle = ({
   const switchId = useId();
   const billing = useQuery(orpc.billing.status.queryOptions());
   const locked = billing.data?.autopilot === false;
+  // While paid plans aren't on sale, the lock says "coming soon" and records
+  // interest instead of linking to an upgrade.
+  const selling = billing.data?.paidPlans === true;
+  let hint = t("autopilotHint");
+  if (locked) {
+    hint = selling ? t("autopilotLocked") : t("autopilotSoon");
+  }
   const Icon = locked ? Lock : Bot;
 
   return (
@@ -45,9 +53,12 @@ export const AutopilotToggle = ({
           {t("autopilot")}
         </Label>
         <p className="text-muted-foreground text-xs" id={`${switchId}-hint`}>
-          {locked ? t("autopilotLocked") : t("autopilotHint")}
+          {hint}
         </p>
-        {locked ? (
+        {locked && !selling ? (
+          <NotifyButton offer="studio" surface="paywall" />
+        ) : null}
+        {locked && selling ? (
           <Link
             className="text-accent-text inline-flex min-h-11 w-fit items-center text-xs font-medium hover:underline sm:min-h-0"
             href={{
