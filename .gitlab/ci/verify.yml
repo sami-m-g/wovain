@@ -22,7 +22,12 @@ verify:infra:
   extends: [.pulumi-install, .on-changes]
   rules:
     - !reference [.not-ops, rules]
-    - changes: [infra/**/*, .gitlab/duo/catalog/**/*]
+    # The Pulumi program only: infra/posthog is OpenTofu (.gitlab/ci/posthog.yml).
+    - changes: &pulumi-paths
+        - infra/*
+        - infra/bootstrap/**/*
+        - infra/policy/**/*
+        - .gitlab/duo/catalog/**/*
   script:
     - pnpm --dir infra run check-types
     - pnpm --dir infra run test
@@ -37,7 +42,7 @@ infra:preview:
   rules:
     # Once main has created the preview identity's variables (infra/README.md).
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GCP_PREVIEW_SERVICE_ACCOUNT
-      changes: [infra/**/*, .gitlab/duo/catalog/**/*]
+      changes: *pulumi-paths
   id_tokens:
     GITLAB_OIDC_TOKEN:
       aud: https://iam.googleapis.com/$GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER
@@ -47,6 +52,26 @@ infra:preview:
   before_script:
     - !reference [.pulumi-install, before_script]
     - !reference [.gcp-credentials, before_script]
+
+# Offline evals of the LLM judges on the versioned labeled set, when a
+# prompt, a judge, a scorer or the model changes (docs/adr/0002): TPR and
+# TNR per judge against the labels, failing on a drop below the recorded
+# baseline (packages/core/src/evals). It reads NEBIUS_API_KEY, the masked,
+# protected CI variable infra/index.ts sets from the nebius-api-key stack
+# secret: main's pipelines run the judges, and a merge request's skip them.
+evals:judges:
+  stage: verify
+  extends: [.pnpm-install]
+  rules:
+    - !reference [.not-ops, rules]
+    - changes:
+        - packages/core/src/{agents,ads,autopilot,design,judges,nemotron,scorers}.ts
+        - packages/core/src/evals/**/*
+  script:
+    - pnpm --filter @wovain/core run evals
+  artifacts:
+    when: always
+    paths: [packages/core/src/evals/report.v1.json]
 
 # The turbo build of every app.
 build:

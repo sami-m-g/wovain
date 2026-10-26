@@ -1,0 +1,9 @@
+{
+  "extends": "@wovain/config/tsconfig.lib.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "references": [{ "path": "../db" }]
+}

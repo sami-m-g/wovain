@@ -1,0 +1,4 @@
+{
+  "note": "Agreement (TPR, TNR) of each judge with the labels in judges.v1.json, from the last accepted eval run. Empty until a run against human-reviewed labels is accepted: the gate then fails any judge that drops more than 0.05 below its entry.",
+  "judges": {}
+}

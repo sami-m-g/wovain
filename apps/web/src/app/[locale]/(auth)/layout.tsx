@@ -1,5 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
+import { AuthSession } from "@/components/auth-session";
 import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -55,7 +57,7 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
       <div className="flex flex-col">
         <header className="flex h-16 items-center justify-between gap-3 px-4 sm:px-8">
           <Link aria-label={common("homeLabel")} href="/">
-            <Logo height={30} variant="seam" />
+            <Logo height={32} intro />
           </Link>
           <div className="flex items-center gap-2">
             <LocaleSwitcher />
@@ -69,7 +71,9 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
           id="main"
           tabIndex={-1}
         >
-          {children}
+          <Suspense>
+            <AuthSession>{children}</AuthSession>
+          </Suspense>
         </main>
       </div>
       <AuthAside />

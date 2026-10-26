@@ -1,21 +1,14 @@
 "use client";
 
 import { Alert, AlertDescription } from "@wovain/ui/components/alert";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldLabel,
-} from "@wovain/ui/components/field";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { Switch } from "@wovain/ui/components/switch";
 import { Bot } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
-import { useId } from "react";
 
+import { AutopilotToggle } from "@/components/app/autopilot-toggle";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import type { Step } from "@/components/app/use-drop-flow";
 import { failureOf, flow, useDropFlow } from "@/components/app/use-drop-flow";
@@ -31,43 +24,6 @@ import {
 } from "@/components/app/wizard-steps";
 import type { Stage } from "@/components/product/run-tape";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
-
-const AutopilotToggle = ({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean;
-  disabled: boolean;
-  onChange: (checked: boolean) => void;
-}) => {
-  const t = useTranslations("Wizard");
-  const id = useId();
-  return (
-    <Field
-      className="border-border bg-card max-w-sm rounded-xl border p-4"
-      data-disabled={disabled || undefined}
-      orientation="horizontal"
-    >
-      <Switch
-        aria-describedby={`${id}-hint`}
-        checked={checked}
-        disabled={disabled}
-        id={id}
-        onCheckedChange={onChange}
-      />
-      <FieldContent>
-        <FieldLabel htmlFor={id}>
-          <Bot aria-hidden="true" className="size-4" />
-          {t("autopilot")}
-        </FieldLabel>
-        <FieldDescription className="text-xs" id={`${id}-hint`}>
-          {t("autopilotHint")}
-        </FieldDescription>
-      </FieldContent>
-    </Field>
-  );
-};
 
 const StepNav = ({ step, stage }: { step: Step; stage: Stage }) => {
   const t = useTranslations("Wizard");
@@ -206,7 +162,7 @@ const DropFlow = ({
         <AutopilotToggle
           checked={drop.autopilot}
           disabled={step !== "brief" || Boolean(drop.working)}
-          onChange={drop.handleAutopilot}
+          onCheckedChange={drop.handleAutopilot}
         />
       </div>
 
@@ -225,7 +181,12 @@ const DropFlow = ({
         </Alert>
       ) : null}
 
-      {drop.problem ? <FlowProblemNotice problem={drop.problem} /> : null}
+      {drop.problem ? (
+        <FlowProblemNotice
+          onDismiss={drop.handleDismissProblem}
+          problem={drop.problem}
+        />
+      ) : null}
 
       {/* Each step settles into place as it replaces the last (preventing a
           jarring change); MotionConfig keeps only the fade for reduced motion. */}

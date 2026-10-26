@@ -4,6 +4,13 @@
 // Maintainer. Merge request settings are open to the role in the UI only:
 // PUT /projects/:id, which gitlab.Project uses, needs admin_project (README).
 // No approval rules: a required approval would stop the loop's auto-merge.
+// GitLab Duo Code Review's settings are such merge request settings too:
+// automatic reviews off (auto_duo_code_review_enabled; the duo-code-review
+// trigger in infra/duo.ts reviews on open instead, and no push re-reviews)
+// and "GitLab Duo can approve and request changes" on
+// (duo_code_review_decisions_enabled, which gitlab.Project doesn't expose).
+// The ops job re-requests Duo's review to clear a change request
+// (apps/ops/src/rereview.ts).
 // The provider authenticates with the `gitlab:token` stack secret.
 import * as gitlab from "@pulumi/gitlab";
 import * as pulumi from "@pulumi/pulumi";
@@ -256,47 +263,3 @@ new gitlab.ProjectIssueBoard(
   },
   adopt("11705998")
 );
-
-// Feature flags for the self-healing flow, read by apps/web through GitLab's
-// Unleash-compatible API (Deploy > Feature flags). Pulumi owns each flag's
-// existence, description and environments (production and development,
-// infra/dev.ts); its on/off state is left to the UI and the loop after
-// creation (ignored), so flipping one is not drift.
-const featureFlags: Record<string, { description: string; active: boolean }> = {
-  autopilot: {
-    active: false,
-    description:
-      "Autopilot: idea, product set, ads and a paused campaign without a human step",
-  },
-  "fault-injection-checkout": {
-    active: false,
-    description:
-      "Injects a checkout failure so the self-healing loop can detect, fix and verify it",
-  },
-  "trends-tavily": {
-    active: true,
-    description: "Trend research through Tavily (off falls back to no trends)",
-  },
-};
-for (const [name, { active, description }] of Object.entries(featureFlags)) {
-  new gitlab.ProjectFeatureFlag(
-    `flag-${name}`,
-    {
-      active,
-      description,
-      name,
-      project: projectId,
-      // All users, in production and development.
-      strategies: [
-        {
-          name: "default",
-          scopes: [
-            { environmentScope: "production" },
-            { environmentScope: "development" },
-          ],
-        },
-      ],
-    },
-    { ignoreChanges: ["active"] }
-  );
-}

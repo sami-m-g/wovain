@@ -61,7 +61,7 @@ docker compose up -d
 pnpm run dev
 ```
 
-Las claves se declaran en `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `FAL_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; la facturación añade `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Nunca hagas commit de valores reales.
+Las claves se declaran en `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; la facturación añade `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Nunca hagas commit de valores reales.
 
 La entrega necesita un vídeo de demostración corto y el repositorio público: [https://github.com/sami-m-g/wovain](https://github.com/sami-m-g/wovain) (MIT). URL del vídeo: se añadirá después de subirlo.
 
@@ -159,7 +159,7 @@ wovain/
 | Nebius Token Factory | Brief, juez, texto de anuncios y autopilot de Nemotron, compatible con OpenAI en `NEBIUS_BASE_URL` | wovain, con los créditos | `NEBIUS_API_KEY` | Pago por token |
 | Qloo | `/search` y `/v2/insights` en `QLOO_API_URL` | wovain, con los créditos | `QLOO_API_KEY` | Clave de hackathon; licencia comercial por confirmar |
 | Tavily | Búsqueda en vivo de noticias y marketplaces | wovain, con los créditos | `TAVILY_API_KEY` | Con límite de uso |
-| fal | Arte para imprimir con GPT Image en fal | El comerciante (su propia clave, en curso) | `FAL_KEY` hoy | Pago por imagen |
+| fal | Arte para imprimir con GPT Image en fal | El comerciante (su propia cuenta de fal) | OAuth por comerciante (relay MCP de fal) | Pago por imagen |
 | Fourthwall | Catálogo, vistas previas, productos y publicación mediante su servidor MCP | El comerciante (su propia tienda) | OAuth por comerciante | Comerciante registrado de las ventas de productos |
 | Meta Ads | Campaña, conjunto de anuncios y anuncios, creados en pausa, mediante su servidor MCP | El comerciante (su propia cuenta publicitaria) | `META_APP_ID`, `META_APP_SECRET`, OAuth por comerciante | Puede requerir revisión de la app |
 | Polar | Suscripciones, paquetes de créditos, pago, portal, webhooks | wovain (4 % + 40 ¢) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET` | En revisión |

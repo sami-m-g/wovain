@@ -200,7 +200,10 @@ const mappingFile = new URL(
   "../.gitlab/duo/catalog/mapping.json",
   import.meta.url
 );
-type Synced = Record<string, { catalog_id: string }>;
+type Synced = Record<
+  string,
+  { catalog_id: string; latest_sync?: { catalog_version: string } }
+>;
 // oxlint-disable-next-line typescript/no-unsafe-assignment -- written by the ai-catalog component
 const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
   ? JSON.parse(readFileSync(mappingFile, "utf-8"))
@@ -221,14 +224,20 @@ const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
 // same id. Once Pulumi holds the resource, the create switching to that form
 // is not a change (ignoreChanges). Kept on delete, as for agents: deleting the
 // consumer would also delete its triggers.
-// pinnedVersionPrefix is required (exactly one of it and pinnedVersion): "1"
-// follows the newest 1.x the catalog sync publishes.
-const ENABLE =
-  'mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { consumer: aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersionPrefix: "1", target: { projectId: $projectId } }) { errors itemConsumer { id } } }';
+// The create needs a pinned version, and its input has only pinnedVersion
+// (n.n.n, a released one): pinnedVersionPrefix is on the update alone. The
+// version is the one the catalog sync last published (mapping.json). It is
+// fixed when the consumer is created: ignoreChanges keeps an existing consumer
+// on its version when a later sync publishes a newer one, so moving a consumer
+// to a new version is done in AI Catalog (or by re-enabling the item).
+const CREATE_CONSUMER =
+  "aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersion: $version, target: { projectId: $projectId } }) { errors itemConsumer { id } }";
+const ENABLE = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!, $version: AiCatalogPinnedVersion!) { consumer: ${CREATE_CONSUMER} }`;
+// The update also needs exactly one of pinnedVersion and pinnedVersionPrefix.
 const ADOPT =
-  "mutation($id: AiCatalogItemConsumerID!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id }) { errors itemConsumer { id } } }";
+  "mutation($id: AiCatalogItemConsumerID!, $version: AiCatalogPinnedVersion!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id, pinnedVersion: $version }) { errors itemConsumer { id } } }";
 
-const enableFlow = (name: string, itemId: string) => {
+const enableFlow = (name: string, itemId: string, version: string) => {
   const existing = consumerIds.apply((ids) => ids.get(itemId));
   const consumer = new graphql.Mutation(
     name,
@@ -245,6 +254,7 @@ const enableFlow = (name: string, itemId: string) => {
         .apply(([id, project]) => ({
           itemId,
           projectId: project,
+          version,
           ...(id === undefined ? {} : { id }),
         })),
       readQuery:
@@ -253,7 +263,9 @@ const enableFlow = (name: string, itemId: string) => {
       updateMutation: ADOPT,
     },
     {
-      ignoreChanges: ["createMutation", "mutationVariables"],
+      // An enabled consumer is never updated: its state keeps the variables
+      // it was created with, which a changed update mutation may not accept.
+      ignoreChanges: ["createMutation", "mutationVariables", "updateMutation"],
       provider,
       retainOnDelete: true,
     }
@@ -297,14 +309,19 @@ export const duoFlowAccounts: Record<string, pulumi.Output<string>> = {};
 // create_service_account (Maintainer), so our role gets "you do not have
 // permission" and no trigger.
 for (const f of customFlows) {
-  const itemId = mapping.flows?.[f.file]?.catalog_id;
-  if (itemId === undefined) {
+  const synced = mapping.flows?.[f.file];
+  if (synced === undefined) {
     // Not synced yet: the next pipeline on main syncs it and records its id.
     continue;
   }
+  const itemId = synced.catalog_id;
+  const version = must(
+    synced.latest_sync?.catalog_version,
+    `catalog version of ${f.file} in mapping.json`
+  );
   const trigger = flowTrigger(f.name, {
     ...f,
-    consumerId: enableFlow(`${f.name}-consumer`, itemId),
+    consumerId: enableFlow(`${f.name}-consumer`, itemId, version),
   });
   const key = `${f.name.replaceAll("-", "_").toUpperCase()}_ACCOUNT`;
   duoFlowAccounts[key] = triggerAccount(trigger);
@@ -312,14 +329,20 @@ for (const f of customFlows) {
 
 // Custom agents are enabled here; GitLab adds the top-level group's consumer
 // for them. Kept on delete: a create that GitLab refuses returns no id, and a
-// later delete with no id would stop `pulumi up`.
+// later delete with no id would stop `pulumi up`. An agent already enabled
+// keeps its consumer when the mutation's text or version changes
+// (ignoreChanges): with forceReplace, any change would re-create it.
 for (const a of customAgents) {
-  const itemId = mapping.agents?.[a.file]?.catalog_id;
-  if (itemId === undefined) {
+  const synced = mapping.agents?.[a.file];
+  if (synced === undefined) {
     continue;
   }
-  const create =
-    'mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersionPrefix: "1", target: { projectId: $projectId } }) { errors itemConsumer { id } } }';
+  const itemId = synced.catalog_id;
+  const version = must(
+    synced.latest_sync?.catalog_version,
+    `catalog version of ${a.file} in mapping.json`
+  );
+  const create = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!, $version: AiCatalogPinnedVersion!) { ${CREATE_CONSUMER} }`;
   new graphql.Mutation(
     a.name,
     {
@@ -331,13 +354,17 @@ for (const a of customAgents) {
       deleteMutation:
         "mutation($id: AiCatalogItemConsumerID!) { aiCatalogItemConsumerDelete(input: { id: $id }) { errors } }",
       forceReplace: true,
-      mutationVariables: { itemId, projectId },
+      mutationVariables: { itemId, projectId, version },
       readQuery:
         "query($id: AiCatalogItemConsumerID!) { aiCatalogItemConsumer(id: $id) { id item { id } project { id } } }",
       readQueryVariables: {},
       updateMutation: create,
     },
-    { provider, retainOnDelete: true }
+    {
+      ignoreChanges: ["createMutation", "mutationVariables", "updateMutation"],
+      provider,
+      retainOnDelete: true,
+    }
   );
 }
 
@@ -381,6 +408,11 @@ const flowLabels: Record<string, { color: string; description: string }> = {
     description:
       "Accepted for Duo's Developer flow: wovain ops hands it over when a trusted user added this label",
   },
+  "flag-cleanup": {
+    color: "#6c757d",
+    description:
+      "A feature flag past its expiry, fully rolled out or unregistered: wovain ops' flag hygiene check",
+  },
   heal: {
     color: "#c0392b",
     description: "A production error the heal flow reproduces and fixes",
@@ -408,6 +440,11 @@ const flowLabels: Record<string, { color: string; description: string }> = {
     color: "#2da160",
     description:
       "PostHog confirmed the shipped kpi-scout change: its KPI alert stopped firing",
+  },
+  "release-guard": {
+    color: "#e74c3c",
+    description:
+      "The release guard rolled back a deploy or switched a flag off; the wovain release-guard flow diagnoses it",
   },
   "vuln-fix": {
     color: "#8e44ad",

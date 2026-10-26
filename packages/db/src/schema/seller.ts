@@ -1,6 +1,5 @@
 import type { AdCopy } from "@wovain/core/ads";
 import type { DesignBrief, Judgment } from "@wovain/core/design";
-import type { SpendKind } from "@wovain/core/spend";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
 import {
@@ -36,7 +35,7 @@ const updatedAt = () =>
     .$onUpdate(() => new Date())
     .notNull();
 
-// A merchant's grant on Fourthwall or Meta; the tokens are sealed.
+// A merchant's grant on Fourthwall, Meta or fal; the tokens are sealed.
 export const connection = pgTable(
   "connection",
   {
@@ -74,6 +73,12 @@ export const run = pgTable(
   {
     autopilot: boolean("autopilot").default(false).notNull(),
     createdAt: createdAt(),
+    // Where the run executes: the durable Mastra workflow, or the legacy
+    // in-request flow while the mastra-runs flag is off. Its resume goes to
+    // the same engine.
+    engine: text("engine", { enum: ["legacy", "mastra"] })
+      .default("legacy")
+      .notNull(),
     error: text("error"),
     id: id(),
     seed: text("seed").notNull(),
@@ -123,6 +128,9 @@ export const design = pgTable(
     ideaId: text("idea_id")
       .notNull()
       .references(() => idea.id, { onDelete: "cascade" }),
+    // The caller's request (or the run step) that made this row: a retry with
+    // the same key gets this row back instead of a second one.
+    idempotencyKey: text("idempotency_key").unique(),
     judgment: jsonb("judgment").$type<Judgment>().notNull(),
     runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
     status: text("status", {
@@ -146,6 +154,9 @@ export const product = pgTable(
       .notNull()
       .references(() => design.id, { onDelete: "cascade" }),
     id: id(),
+    // The caller's request (or the run step) that made this row: a retry with
+    // the same key gets this row back instead of a second one.
+    idempotencyKey: text("idempotency_key").unique(),
     mediaUri: text("media_uri").notNull(),
     mockups: jsonb("mockups").$type<string[]>().notNull(),
     offerId: text("offer_id").notNull(),
@@ -171,6 +182,9 @@ export const campaign = pgTable(
     creativeIds: jsonb("creative_ids").$type<string[]>().notNull(),
     dailyBudgetCents: integer("daily_budget_cents").notNull(),
     id: id(),
+    // The caller's request (or the run step) that made this row: a retry with
+    // the same key gets this row back instead of a second one.
+    idempotencyKey: text("idempotency_key").unique(),
     metaCampaignId: text("meta_campaign_id").notNull(),
     pageId: text("page_id").notNull(),
     productId: text("product_id")
@@ -182,22 +196,4 @@ export const campaign = pgTable(
     userId: owner(),
   },
   (table) => [index("campaign_user_idx").on(table.userId)]
-);
-
-// Each paid step a non-allowlisted merchant takes, with its estimated cost:
-// the daily quotas and the global spend cap count these.
-export const usage = pgTable(
-  "usage",
-  {
-    costUsd: real("cost_usd").notNull(),
-    createdAt: createdAt(),
-    id: id(),
-    kind: text("kind").$type<SpendKind>().notNull(),
-    runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
-    userId: owner(),
-  },
-  (table) => [
-    index("usage_created_idx").on(table.createdAt),
-    index("usage_user_created_idx").on(table.userId, table.createdAt),
-  ]
 );

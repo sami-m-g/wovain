@@ -1,10 +1,11 @@
 # Shared job blocks, used with `extends:` and `!reference`.
 
-# Never in a scheduled pipeline or a manual ops run (OPS=1 or SCOUT=1,
-# .gitlab/ci/ops.yml and scout.yml); every other job's rules start with it.
+# Never in a scheduled pipeline, a manual ops run (OPS=1 or SCOUT=1,
+# .gitlab/ci/ops.yml and scout.yml) or a release guard rollback (ROLLBACK=1,
+# deploy.yml); every other job's rules start with it.
 .not-ops:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT || $ROLLBACK
       when: never
 
 # Every push and merge request.

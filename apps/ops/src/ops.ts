@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
 import { opsContext } from "./context.ts";
+import { ENV } from "./env.ts";
 import type { Issue, MergeRequest, Note } from "./gitlab.ts";
 import {
   blockers,
@@ -19,7 +20,6 @@ import {
   MAX_HEAL_IN_FLIGHT,
   MAX_HEAL_PER_DAY,
   VERIFIED_LABEL,
-  groupErrors,
   healBody,
   healTitle,
   incidentBody,
@@ -30,8 +30,31 @@ import {
 } from "./heal.ts";
 import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
-import { loadKpis } from "./kpis.ts";
-import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
+import {
+  PLATFORM_FILTER,
+  PRODUCTION_SERVICE,
+  eventUuidOf,
+  toForward,
+} from "./platform.ts";
+import {
+  exceptionCountsOf,
+  exceptionCountsQuery,
+  exceptionsQuery,
+  forwardedQuery,
+  issueEventsQuery,
+  scalarOf,
+} from "./posthog.ts";
+import {
+  FLAG_CLEANUP_LABEL,
+  RELEASE_GUARD_LABEL,
+  RELEASE_GUARD_MARKER,
+  cleanupBody,
+  cleanupMarker,
+  guardDecision,
+  hygieneFindings,
+  releaseGuardBody,
+} from "./release.ts";
+import { DUO_USER, MAX_REREVIEWS, rereviewOf } from "./rereview.ts";
 import { fromRoot } from "./root.ts";
 import {
   KPI_MISSED_LABEL,
@@ -42,6 +65,7 @@ import {
   kpiVerdict,
   scoutDue,
 } from "./signals.ts";
+import { runChecks, smokeException } from "./smoke.ts";
 import { doraOf, healthOf, renderStatus } from "./status.ts";
 import {
   RESOLVE_COMMENT,
@@ -72,9 +96,17 @@ import {
 //            or, where it's unavailable, agent::task issues → Developer
 //   resolve  findings no longer detected on the default branch → Resolved
 //   shepherd Duo's MRs → ready → Duo Code Review → guardrails → auto-merge
+//   rereview any open MR GitLab Duo requested changes on → its threads
+//            resolved, pipeline green → Duo re-reviews, and approves when it
+//            finds nothing new (rereview.ts)
 //   status   public/index.html for the status page (the pages job publishes it)
 //   signals  PostHog KPI alerts firing → the scout flow, at most once a day
 //   verifyKpis merged kpi-scout changes → KPI alert stopped? → verified
+//   releaseGuard production degraded after a flag change or deploy → flag
+//            off, or a ROLLBACK=1 pipeline → release-guard issue → the
+//            wovain release-guard flow diagnoses (docs/adr/0001-...)
+//   flagHygiene expired, finished or unregistered feature flags → cleanup
+//            issues for their owners
 // PostHog destinations also start it right away (infra/posthog/signals.tf);
 // it reads PostHog itself, so what started it never steers it.
 // It never merges anything itself; GitLab merges once the pipeline passes.
@@ -85,15 +117,15 @@ const SETTLE_MS = 10 * 60_000;
 const REVIEW_TIMEOUT_MS = 2 * 3_600_000;
 const DAY_MS = 86_400_000;
 
-const { env, gitlab, google, posthog } = opsContext();
-const config = await loadKpis();
+const { env, gitlab, google, posthog, sink } = opsContext();
 const now = new Date();
 const me = await gitlab.currentUser();
 const trusted = new Set([me.username, ...env.TRUSTED_USERS]);
 const developer = env.DUO_DEVELOPER_ACCOUNT;
 const healer = env.DUO_HEAL_ACCOUNT;
 const reviewer = env.DUO_REVIEW_ACCOUNT;
-const errorFilter = `${config.service.logs} AND jsonPayload.level="error" AND jsonPayload.error.name:*`;
+// Production's Cloud Run request log, for the release guard's evidence link.
+const requestsFilter = `resource.type="cloud_run_revision" AND resource.labels.service_name="${PRODUCTION_SERVICE}" AND log_id("run.googleapis.com/requests")`;
 
 const marker = (kind: string) => `<!-- wovain:${kind} -->`;
 const hasMarker = (notes: Note[], kind: string) =>
@@ -148,34 +180,88 @@ const assignTo = async (issue: number, username: string) => {
   await gitlab.updateIssue(issue, { assigneeIds: [id] });
 };
 
-// Browser exceptions PostHog error tracking grouped in the watch window.
-const browserErrors = async (): Promise<ErrorGroup[]> => {
+// PostHog Error Tracking is the one error sink (docs/flows.md): heal, the
+// release guard and the status page read it alone. Without it, the ops job
+// can't watch errors at all, so those phases fail loudly.
+const errorTracking = () => {
   if (posthog === undefined) {
-    return [];
+    throw new Error(
+      "PostHog isn't configured (POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID): no errors can be watched"
+    );
   }
-  const rows = await posthog.rows(exceptionsQuery(WATCH_MS / 60_000));
+  return posthog;
+};
+
+// Every exception error tracking grouped in the watch window: server,
+// browser, platform and synthetic checks.
+const trackedErrors = async (): Promise<ErrorGroup[]> => {
+  const rows = await errorTracking().rows(exceptionsQuery(WATCH_MS / 60_000));
   return rows.flatMap((row) => posthogGroupOf(row) ?? []);
 };
 
-// Where the heal issue's error was seen: PostHog's error tracking issue (its
-// stack, sessions and replays) or the Cloud Logging query.
-const evidenceOf = ({ signature: s }: ErrorGroup) =>
-  s.posthogIssue === undefined || posthog === undefined
-    ? `[Cloud Logging](${logsUrl(`${errorFilter} AND jsonPayload.path="${s.path}"`)})`
-    : `[PostHog error tracking](${posthog.link(`error_tracking/${s.posthogIssue}`)})`;
+const exceptionCounts = async (minutes: number) =>
+  exceptionCountsOf(await errorTracking().rows(exceptionCountsQuery(minutes)));
 
-// Flow 1: file the most frequent new production error, from the server's
-// logs or PostHog's browser exceptions, and hand it to the heal flow, within
-// the daily and in-flight caps.
-const heal = async () => {
-  const range = { end: now, start: new Date(now.getTime() - WATCH_MS) };
-  const [{ entries }, browser] = await Promise.all([
-    google.entries(errorFilter, range),
-    browserErrors(),
+// Where the heal issue's error was seen: PostHog's error tracking issue (its
+// stack, sessions and replays).
+const evidenceOf = ({ signature: s }: ErrorGroup) =>
+  `[PostHog error tracking](${errorTracking().link(`error_tracking/${s.posthogIssue ?? ""}`)})`;
+
+// Before the phases: what PostHog can't hear from the app itself goes there
+// first. Cloud Run's platform errors (5xx it answered, OOM kills, failed
+// startups, stderr before evlog loaded) and the synthetic checks' failures
+// become exceptions; the phases see them from the next run, once PostHog has
+// ingested them.
+const forwardPlatformErrors = async (): Promise<string> => {
+  if (sink === undefined) {
+    return "skipped: NEXT_PUBLIC_POSTHOG_KEY isn't set";
+  }
+  const [{ entries }, forwardedRows] = await Promise.all([
+    google.entries(PLATFORM_FILTER, {
+      end: now,
+      start: new Date(now.getTime() - WATCH_MS),
+    }),
+    errorTracking().rows(forwardedQuery((2 * WATCH_MS) / 60_000)),
   ]);
-  const groups = [...groupErrors(entries), ...browser].toSorted(
-    (a, b) => b.count - a.count
+  const forwarded = new Set(
+    forwardedRows.flatMap(([id]) => (typeof id === "string" ? [id] : []))
   );
+  const fresh = toForward(entries, forwarded);
+  for (const e of fresh) {
+    sink.capture({
+      environment: e.environment,
+      extra: { log_insert_id: e.insertId, log_timestamp: e.timestamp },
+      fingerprint: e.fingerprint,
+      message: e.message,
+      method: e.method,
+      name: e.name,
+      path: e.path,
+      site: e.site,
+      source: "platform",
+      status: e.status,
+      uuid: eventUuidOf(e.insertId),
+    });
+  }
+  return `${fresh.length} platform error(s) forwarded`;
+};
+
+const smoke = async (): Promise<string> => {
+  const sites = { docs: ENV.DOCS_SITE_URL, site: ENV.SITE_URL };
+  const results = await runChecks(sites);
+  const failed = results.filter((r) => !r.ok);
+  for (const result of failed) {
+    sink?.capture(smokeException(result, sites));
+  }
+  return failed.length === 0
+    ? "all synthetic checks pass"
+    : `failed: ${failed.map((r) => `${r.check} (${r.detail})`).join("; ")}`;
+};
+
+// Flow 1: file the most frequent new error PostHog Error Tracking grouped,
+// and hand it to the heal flow, within the daily and in-flight caps.
+const heal = async () => {
+  const tracked = await trackedErrors();
+  const groups = tracked.toSorted((a, b) => b.count - a.count);
   const issues = await gitlab.issues({
     labels: HEAL_LABEL,
     state: "all",
@@ -248,35 +334,15 @@ const mergedAtOf = async (issue: number) => {
   return mergedAt;
 };
 
-// Events with a heal signature since `start`: PostHog's count for its error
-// tracking issue, or the signature's count in Cloud Logging.
-const eventsSince = async (
-  signature: NonNullable<ReturnType<typeof parseSignature>>,
-  start: Date
-) => {
+// Events of a heal signature's PostHog error tracking issue since `start`.
+const eventsSince = async (posthogIssue: string, start: Date) => {
   if (start >= now) {
     return 0;
   }
-  if (signature.posthogIssue !== undefined) {
-    if (posthog === undefined) {
-      throw new Error(
-        "PostHog isn't configured, so a browser fix can't be verified"
-      );
-    }
-    const rows = await posthog.rows(
-      issueEventsQuery(signature.posthogIssue, start)
-    );
-    return scalarOf(rows) ?? 0;
-  }
-  const { entries } = await google.entries(
-    `${errorFilter} AND jsonPayload.path="${signature.path}"`,
-    { end: now, start }
+  const rows = await errorTracking().rows(
+    issueEventsQuery(posthogIssue, start)
   );
-  return (
-    groupErrors(entries).find(
-      (g) => g.signature.fingerprint === signature.fingerprint
-    )?.count ?? 0
-  );
+  return scalarOf(rows) ?? 0;
 };
 
 // Flow 1, after the merge: production must stay clean of the signature.
@@ -286,8 +352,12 @@ const verifyOne = async (issue: Issue) => {
   if (signature === undefined || mergedAt === undefined) {
     return "skip: no signature or no merged MR";
   }
+  // Issues filed from Cloud Logging, before PostHog became the one sink.
+  if (signature.posthogIssue === undefined) {
+    return "skip: no PostHog error tracking issue to verify against";
+  }
   const events = await eventsSince(
-    signature,
+    signature.posthogIssue,
     new Date(mergedAt + DEPLOY_GRACE_MS)
   );
   const result = verdict({
@@ -737,6 +807,78 @@ const shepherd = async () => {
   );
 };
 
+// GitLab Duo's change request on one merge request: re-request its review
+// once its threads are resolved and the pipeline passed (rereview.ts).
+const rereviewOne = async (iid: number, duoId: number) => {
+  const [mr, notes, reviewers, discussions] = await Promise.all([
+    gitlab.mergeRequest(iid),
+    gitlab.mergeRequestNotes(iid),
+    gitlab.reviewers(iid),
+    gitlab.discussions(iid),
+  ]);
+  // Notes come newest first: this is Duo's latest change request.
+  const request = notes.find(
+    (n) =>
+      n.system &&
+      n.author.username === DUO_USER &&
+      n.body.trim() === "requested changes"
+  );
+  const decision = rereviewOf({
+    asked: notes.filter((n) => n.body.includes(marker("duo-rereview"))).length,
+    askedForThis:
+      request !== undefined && hasMarker(notes, `duo-rereview:${request.id}`),
+    draft: mr.draft,
+    openThreads: openThreads(discussions, DUO_USER),
+    pipeline:
+      mr.head_pipeline?.sha === mr.sha ? mr.head_pipeline.status : undefined,
+    requestId: request?.id,
+    state: reviewers.find((r) => r.user.username === DUO_USER)?.state,
+  });
+  if (decision.action === "wait") {
+    return decision.reason;
+  }
+  if (decision.action === "cap") {
+    await once(
+      iid,
+      notes,
+      "duo-rereview-cap",
+      `GitLab Duo still requests changes after ${MAX_REREVIEWS} re-reviews by wovain ops, so a person decides: reply on its threads and re-request its review, or bypass the request in the merge checks.`
+    );
+    return "re-review cap reached";
+  }
+  await gitlab.rereview(iid, duoId);
+  // "duo-rereview" counts the re-reviews; the second marker names the
+  // change request this one answers.
+  await gitlab.noteOnMergeRequest(
+    iid,
+    `Every GitLab Duo thread is resolved and the pipeline passed for ${mr.sha}, so wovain ops re-requested its review. Duo approves when it finds nothing new, which clears its change request.\n\n${marker("duo-rereview")}${marker(`duo-rereview:${request?.id}`)}`
+  );
+  return `re-review requested for ${mr.sha}`;
+};
+
+// Every open merge request with GitLab Duo as a reviewer, a person's or Duo's.
+const rereview = async () => {
+  const mrs = await gitlab.mergeRequests({ state: "opened", wip: "no" });
+  const withDuo = mrs.flatMap((mr) => {
+    const duo = mr.reviewers.find((r) => r.username === DUO_USER);
+    return duo === undefined ? [] : [{ duoId: duo.id, iid: mr.iid }];
+  });
+  const outcomes = await Promise.allSettled(
+    withDuo.map(async ({ duoId, iid }) => await rereviewOne(iid, duoId))
+  );
+  return Object.fromEntries(
+    withDuo.map(({ iid }, i) => {
+      const outcome = outcomes[i];
+      return [
+        iid,
+        outcome?.status === "fulfilled"
+          ? outcome.value
+          : `failed: ${outcome?.reason instanceof Error ? outcome.reason.message : "unknown"}`,
+      ];
+    })
+  );
+};
+
 // The public status page: health, incidents, DORA and SCI (status.ts).
 const statusPage = async () => {
   const since = new Date(now.getTime() - 30 * DAY_MS);
@@ -749,10 +891,7 @@ const statusPage = async () => {
       }),
       gitlab.deployments(since),
       gitlab.doraLeadTime(since),
-      google.entries(errorFilter, {
-        end: now,
-        start: new Date(now.getTime() - WATCH_MS),
-      }),
+      exceptionCounts(WATCH_MS / 60_000),
       gitlab
         .latestArtifactJson(sciSchema, "main", "sci", "sci.json")
         .catch(() => null),
@@ -766,7 +905,8 @@ const statusPage = async () => {
   }));
   const health = healthOf(
     rows.filter((r) => r.state === "opened").length,
-    recent.entries.length
+    // Production's server-side errors: the app's and the platform's.
+    recent.production
   );
   await mkdir(fromRoot("public"), { recursive: true });
   await writeFile(
@@ -869,9 +1009,144 @@ const verifyKpis = async () => {
   return Object.fromEntries(results);
 };
 
+// Progressive delivery, after the canary (docs/adr/0001-progressive-
+// delivery.md): when production degrades and a guarded flag changed in the
+// last 2 hours, switch it off (the kill switch); when a deploy did, start a
+// ROLLBACK=1 pipeline, whose rollback:production job moves traffic back as
+// the deploy account. Either way a release-guard issue, assigned to the
+// wovain release-guard flow, carries the evidence. One action an hour,
+// three a day; nothing is switched back on automatically.
+const GUARD_WATCH_MS = 15 * 60_000;
+const guardAccount = env.DUO_RELEASE_GUARD_ACCOUNT;
+const assignGuardIssues = async (issues: Issue[]) => {
+  if (guardAccount === undefined || guardAccount === "") {
+    return { assigned: [], problems: ["DUO_RELEASE_GUARD_ACCOUNT isn't set"] };
+  }
+  const waiting = issues.filter(
+    (i) =>
+      i.state === "opened" &&
+      i.assignees.length === 0 &&
+      (i.description ?? "").includes(RELEASE_GUARD_MARKER)
+  );
+  // Best effort: a missing flow account never blocks the mitigation.
+  const problems = await Promise.all(
+    waiting.map(
+      async (i) =>
+        await bestEffort(`assigning #${i.iid}`, () =>
+          assignTo(i.iid, guardAccount)
+        )
+    )
+  );
+  return { assigned: waiting.map((i) => i.iid), problems: problems.flat() };
+};
+
+const releaseGuard = async () => {
+  const [exceptions, flags, deployments, issues, alerts] = await Promise.all([
+    exceptionCounts(GUARD_WATCH_MS / 60_000),
+    gitlab.featureFlags(),
+    gitlab.deployments(new Date(now.getTime() - DAY_MS)),
+    gitlab.issues({
+      createdAfter: new Date(now.getTime() - DAY_MS).toISOString(),
+      labels: RELEASE_GUARD_LABEL,
+      state: "all",
+    }),
+    errorTracking().alerts(),
+  ]);
+  const assigned = await assignGuardIssues(issues);
+  const [deployment] = deployments;
+  const kpis = firingKpis(alerts);
+  const decision = guardDecision({
+    actions: issues
+      .map((i) => new Date(i.created_at))
+      .toSorted((a, b) => b.getTime() - a.getTime()),
+    // When the deploy finished: the canary job starts after it.
+    deployedAt:
+      deployment === undefined
+        ? undefined
+        : new Date(deployment.finished_at ?? deployment.created_at),
+    exceptions,
+    firingKpis: kpis,
+    flags,
+    now,
+  });
+  if (decision.action === "none") {
+    return { assigned, decision: decision.reasons.join("; ") };
+  }
+  const evidence = [
+    `PostHog error tracking in the last 15 minutes: ${exceptions.production} production server exceptions (the app's and the platform's), ${exceptions.dev} on dev.wovain.com, ${exceptions.browser} browser exceptions, ${exceptions.smoke} failed synthetic checks ([issues](${errorTracking().link("error_tracking")}))`,
+    `Production requests: [Cloud Logging](${logsUrl(`${requestsFilter} AND httpRequest.status>=500`)})`,
+    `PostHog KPI alerts firing: ${kpis.length > 0 ? kpis.map((k) => `\`kpi:${k}\``).join(", ") : "none"}`,
+    `Latest production deployment: ${deployment?.created_at ?? "none in 24 hours"}`,
+    `Feature flags: https://gitlab.com/${ENV.CI_PROJECT_PATH ?? ""}/-/feature_flags`,
+  ];
+  let action = "";
+  if (decision.action === "flag-off") {
+    await gitlab.setFeatureFlagActive(decision.flag, false);
+    action = `feature flag \`${decision.flag}\` switched off`;
+  } else {
+    const pipeline = await gitlab.runPipeline("main", { ROLLBACK: "1" });
+    action = "traffic rolled back to the previous revision";
+    evidence.push(`Rollback pipeline: ${pipeline.web_url}`);
+  }
+  const issue = await gitlab.createIssue({
+    description: releaseGuardBody({
+      action,
+      evidence,
+      reasons: decision.reasons,
+      source: ENV.CI_JOB_URL ?? "the ops job",
+    }),
+    labels: `${RELEASE_GUARD_LABEL},stage::release`,
+    title: `Release guard: ${action}`,
+  });
+  const handoff = await assignGuardIssues([issue]);
+  return { action, handoff, issue: issue.web_url };
+};
+
+// Flag hygiene: one cleanup issue per expired, fully rolled out or
+// unregistered flag, for its owner, at most three a run; a flag gets a new
+// one only a month after the last.
+const flagHygiene = async () => {
+  const [flags, known] = await Promise.all([
+    gitlab.featureFlags(),
+    gitlab.issues({
+      labels: FLAG_CLEANUP_LABEL,
+      state: "all",
+      updatedAfter: new Date(now.getTime() - 30 * DAY_MS).toISOString(),
+    }),
+  ]);
+  const findings = hygieneFindings(flags, now);
+  const fresh = findings
+    .filter(
+      (f) =>
+        !known.some((i) => (i.description ?? "").includes(cleanupMarker(f)))
+    )
+    .slice(0, 3);
+  const filed = await Promise.all(
+    fresh.map(async (finding) => {
+      const issue = await gitlab.createIssue({
+        description: cleanupBody(finding),
+        labels: `${FLAG_CLEANUP_LABEL},type::chore`,
+        title: `Clean up feature flag ${finding.flag}: ${finding.problem}`,
+      });
+      return issue.web_url;
+    })
+  );
+  return { filed, findings: findings.length };
+};
+
+// First, into the one error sink: platform errors and the synthetic checks.
+const intoSink = { forwardPlatformErrors, smoke };
+const sent = await Promise.allSettled(
+  Object.values(intoSink).map(async (step) => await step())
+);
+await sink?.flush();
+
 const phases = {
+  flagHygiene,
   heal,
   intake,
+  releaseGuard,
+  rereview,
   resolveGone,
   shepherd,
   signals,
@@ -884,8 +1159,10 @@ const results = await Promise.allSettled(
   Object.values(phases).map(async (phase) => await phase())
 );
 let failed = false;
-for (const [i, name] of Object.keys(phases).entries()) {
-  const result = results[i];
+const steps = [...Object.keys(intoSink), ...Object.keys(phases)];
+const outcomes = [...sent, ...results];
+for (const [i, name] of steps.entries()) {
+  const result = outcomes[i];
   if (result?.status === "fulfilled") {
     console.log(`${name}:`, JSON.stringify(result.value, null, 2));
   } else {

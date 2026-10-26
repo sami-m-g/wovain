@@ -3,7 +3,7 @@
 ## Structure
 
 - `apps/web`: Next.js 16 app (App Router, oRPC, Better Auth, evlog)
-- `apps/fumadocs`: Fumadocs documentation site with OpenRouter AI chat
+- `apps/fumadocs`: Fumadocs documentation site with Nebius (Nemotron) AI chat
 - `packages/api`: oRPC routers and procedures
 - `packages/auth`: Better Auth configuration
 - `packages/db`: Drizzle schema, relations and client (PostgreSQL)
@@ -16,16 +16,28 @@
 - TypeScript 6 for tooling (`typescript` alias of `@typescript/typescript6`), TypeScript 7 for `tsc`
 - Varlock for environment: each app owns `.env.schema`; import `ENV` from the generated `src/env.ts`
 - Ultracite (Oxlint + Oxfmt) for lint and format; knip for unused code
+- Mastra for agents, workflows, scorers, memory and tracing: agents, scorers and judges in `packages/core/src/{agents,scorers,judges,step-scorers,taste}.ts`; the run workflow on Inngest in `packages/api/src/workflows` (docs/adr/0001, 0002)
+
+## Mastra Studio (local)
+
+- `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/api studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
+  - The entry `packages/api/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
+  - Required: `DATABASE_URL` (`postgresql://postgres:password@localhost:5432/wovain` with the Docker database) and `TOKEN_ENCRYPTION_KEY`.
+  - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.
+- Running the workflow needs the Inngest Dev Server: `INNGEST_DEV=1` and `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`, with `pnpm dev:web` running.
+- Judge evals: `pnpm --filter @wovain/core run evals` (needs `NEBIUS_API_KEY`) writes `packages/core/src/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
 
 ## Rules
 
 - Do not edit vendored or generated files; update them with their CLI:
   - `packages/ui/src/{components,hooks,lib}`: shadcn CLI
   - `apps/fumadocs/src/components/{ai,codeblock.tsx,tabs,ui}`, `apps/fumadocs/src/lib/{cn,merge-refs}.ts`: Fumadocs CLI
+  - `apps/web/src/{components,lib}/auth`: Better Auth UI registry (`pnpm dlx shadcn add https://better-auth-ui.com/r/base-nova/<item>.json`)
   - `packages/db/src/schema/auth.ts`: `pnpm run auth:generate`
   - `packages/db/src/migrations`: `pnpm run db:generate`
   - `.agents/skills`: `npx skills experimental_install`
   - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
+- Every error must reach PostHog Error Tracking, the one place self-healing watches (`docs/flows.md`, "One error sink"): log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
 - Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
 
@@ -36,6 +48,17 @@
 - Archive the change (`openspec archive <change>`) in the MR that merges it, so `openspec/specs/` stays current.
 - Run `pnpm run spec:validate` before committing spec changes.
 - `docs/scope.md`, `docs/prd.md` and `docs/spec.md` stay the Build With AI: Basics-format summary. When scope changes, update them (and their docs-site copies) in the same MR.
+
+## How to roll out and roll back
+
+Design: `docs/adr/0001-progressive-delivery.md`.
+
+- **New flag:** add it to `packages/core/src/flag-registry.ts` with an owner, an expiry and a rollout per environment, then read it with `core.flags.isOn("<name>", { userId, plan })` (`isFlagOn` in `apps/web`). Names are typed; never pass a string you built. The safe state is off: flags are off when GitLab can't be reached.
+- **Roll out:** change the flag's `rollout` in the registry (`off` → `internal` → `percent` → `all`) in a merge request. Its Pulumi preview shows the new GitLab strategies, and the merge applies them.
+- **Kill switch:** Deploy > Feature flags > the flag's Status toggle, or `PUT /projects/:id/feature_flags/:name` with `active=false`. Pulumi ignores Status, so this isn't drift. The release guard does the same on its own for guarded flags.
+- **Deploys:** every web deploy is a canary (the `canary` tag, 10% of traffic) that `canary:production` promotes or rolls back after 10 minutes. Its verdict is in the job's `canary.md` artifact.
+- **Roll back traffic by hand:** Run pipeline on `main` with `ROLLBACK=1` (optionally `ROLLBACK_TO=<revision>`). Never `gcloud run services update-traffic` from a laptop, and never add traffic to Pulumi: CI owns it.
+- **Clean up:** a `flag-cleanup` issue means the flag expired or is fully rolled out. Delete the losing code path and the `isOn` calls, then the registry entry; `pulumi up` deletes the GitLab flag.
 
 # Ultracite Code Standards
 

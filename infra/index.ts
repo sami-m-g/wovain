@@ -6,6 +6,7 @@ import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
+import { featureFlags } from "./flags.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
@@ -26,12 +27,13 @@ const gitlabProjectId = config.require("gitlabProjectId");
 const { billingAccount, number: projectNumber } =
   await gcp.organizations.getProject({ projectId: project });
 
-const apis = [
+const apiNames = [
   "artifactregistry",
   "billingbudgets",
   "cloudbilling",
   "clouderrorreporting",
   "cloudkms",
+  "cloudtrace",
   "dns",
   "firebase",
   "iam",
@@ -44,13 +46,17 @@ const apis = [
   "sqladmin",
   "storage",
   "sts",
-].map(
-  (api) =>
-    new gcp.projects.Service(api, {
+] as const;
+const api = Object.fromEntries(
+  apiNames.map((name) => [
+    name,
+    new gcp.projects.Service(name, {
       disableOnDestroy: false,
-      service: `${api}.googleapis.com`,
-    })
-);
+      service: `${name}.googleapis.com`,
+    }),
+  ])
+) as Record<(typeof apiNames)[number], gcp.projects.Service>;
+const apis = Object.values(api);
 const afterApis = { dependsOn: apis };
 // Data and identity: the engine refuses to delete or replace a protected
 // resource, and the policy pack (infra/policy) requires it on each of them.
@@ -147,15 +153,26 @@ const dbUser = new gcp.sql.User("wovain", {
 // generated one; Cloud Run mounts only the secrets that have a version, since
 // a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
-// wovain-allowed-emails were created by main; the others are new.
+// wovain-allowed-emails were created by main; the others are new. fal-key
+// is no longer read (fal runs on each merchant's own key); it stays until
+// its value is retired, since dropping it here would delete the secret.
+// inngest-event-key and inngest-signing-key come from the Inngest app
+// (docs/adr/0001-durable-runs.md): runs can't start until both are set.
+// polar-access-token and polar-webhook-secret are wovain's own billing
+// (packages/billing): a Polar organization token and the webhook endpoint's
+// signing secret. Each stays unmounted until its stack secret is set.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
   "gitlab-feature-flags-instance-id",
   "google-client-secret",
+  "inngest-event-key",
+  "inngest-signing-key",
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
+  "polar-access-token",
+  "polar-webhook-secret",
   "qloo-api-key",
   "resend-api-key",
   "tavily-api-key",
@@ -173,6 +190,10 @@ const generated = new Map<string, pulumi.Output<string>>([
       special: false,
     }).result,
   ],
+  // A placeholder version, so Cloud Run starts before `pnpm polar:seed`
+  // writes the endpoint's real secret as a newer version (Cloud Run mounts
+  // the latest). Pulumi never writes the real value, so `pulumi up` keeps it.
+  ["polar-webhook-secret", pulumi.output("pending-polar-seed")],
   [
     "token-encryption-key",
     new random.RandomBytes("token-encryption-key", { length: 32 }).base64,
@@ -205,13 +226,26 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
+// Only secrets with a version are mounted: Cloud Run refuses a revision whose
+// secret has no `latest` version. meta-app-id and meta-app-secret have none
+// yet, so they get theirs from the stack config like the others
+// (`pulumi config set --secret meta-app-id <id>` in infra/); until then,
+// connecting Meta answers META_NOT_CONFIGURED.
+const mountedSecretIds = [...populated.keys()];
+
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
   "web-runner",
   { accountId: "wovain-web", displayName: "wovain web (Cloud Run)" },
   kept
 );
-for (const role of ["roles/cloudsql.client", "roles/logging.logWriter"]) {
+// cloudtrace.agent: Mastra's traces of runs and agents go to Cloud Trace
+// (packages/api/src/workflows/observability.ts).
+for (const role of [
+  "roles/cloudsql.client",
+  "roles/cloudtrace.agent",
+  "roles/logging.logWriter",
+]) {
   new gcp.projects.IAMMember(`runner-${role.split("/")[1]}`, {
     member: runner.member,
     project,
@@ -278,6 +312,7 @@ const sharedEnvs = {
 // project id (`pulumi config set posthogProjectId <id>`). Each is optional.
 const posthogKey = config.get("posthogKey");
 const posthogPersonalApiKey = config.getSecret("posthog-personal-api-key");
+const polarAccessToken = config.getSecret("polar-access-token");
 const posthogProjectId = config.get("posthogProjectId");
 const posthogEnv =
   posthogKey === undefined
@@ -293,6 +328,10 @@ const googleEnv =
     ? []
     : [{ name: "GOOGLE_CLIENT_ID", value: googleClientId }];
 
+// Polar's environment (apps/web/.env.schema): sandbox until the business
+// is registered (`pulumi config set polarEnvironment production`).
+const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
+
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
   cloudSqlInstance: sql.connectionName,
@@ -306,25 +345,29 @@ const service = cloudRunService("web", {
       value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
     },
     { name: "MCP_URL", value: mcpUrl },
+    { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
     ...googleEnv,
     ...posthogEnv,
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
     { name: "WOVAIN_BUCKET", value: media.name },
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
-    ...[...populated.keys()].map((id) => secretEnv(id)),
+    ...mountedSecretIds.map((id) => secretEnv(id)),
   ],
   location: region,
   maxInstances: 2,
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
+  // Inngest calls /api/inngest once per run step; the slowest (a design:
+  // brief, fal art, judge) needs more than Cloud Run's 300 s default.
+  timeout: "900s",
 });
 export const serviceUri = service.uri;
 
-// apps/fumadocs: the docs site and its OpenRouter chat. Without the
-// openrouter-api-key secret (new, empty until set) the chat answers 503.
-// SITE_URL is @public in its schema, so the image is built with it too
-// (.gitlab/ci/deploy.yml).
+// apps/fumadocs: the docs site and its AI chat, which calls Nemotron on
+// Nebius Token Factory with the same nebius-api-key secret as the web app.
+// Without a version of that secret the chat answers 503. SITE_URL is @public
+// in its schema, so the image is built with it too (.gitlab/ci/deploy.yml).
 const docsRunner = new gcp.serviceaccount.Account(
   "docs-runner",
   { accountId: "wovain-docs", displayName: "wovain docs (Cloud Run)" },
@@ -335,24 +378,26 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-const { secret: openrouterKey, version: openrouterVersion } = secretWithValue(
-  "openrouter-api-key",
-  config.getSecret("openrouter-api-key"),
-  kept
-);
-new gcp.secretmanager.SecretIamMember("docs-runner-openrouter-api-key", {
+// The smallest Nemotron on Token Factory ($0.06 in, $0.24 out per 1M tokens).
+const DOCS_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B";
+const nebiusKey = secrets.get("nebius-api-key");
+const nebiusVersion = populated.get("nebius-api-key");
+if (nebiusKey === undefined) {
+  throw new Error("nebius-api-key is not a declared secret");
+}
+new gcp.secretmanager.SecretIamMember("docs-runner-nebius-api-key", {
   member: docsRunner.member,
   role: "roles/secretmanager.secretAccessor",
-  secretId: openrouterKey.id,
+  secretId: nebiusKey.id,
 });
 // The image's own port (apps/fumadocs/Dockerfile).
 const docsService = cloudRunService("docs", {
-  dependsOn: openrouterVersion === undefined ? [] : [openrouterVersion],
+  dependsOn: nebiusVersion === undefined ? [] : [nebiusVersion],
   envs: [
     { name: "SITE_URL", value: docsUrl },
-    ...(openrouterVersion === undefined
-      ? []
-      : [secretEnv("openrouter-api-key")]),
+    { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
+    { name: "NEBIUS_MODEL", value: DOCS_MODEL },
+    ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
   location: region,
   maxInstances: 2,
@@ -390,7 +435,7 @@ const dev = devEnvironment({
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
-  populated: [...populated.keys()],
+  populated: mountedSecretIds,
   project,
   region,
   secrets,
@@ -401,7 +446,10 @@ const dev = devEnvironment({
 // wovain.com end to end (domains.ts). The few values no API hands out are
 // plain stack config keys: `pulumi config set <key> <value>` in infra/.
 const site = configureDomain({
-  after: apis,
+  // Only the APIs it calls: its lookups wait on these, and a lookup that waits
+  // on a resource with pending changes is unknown in a preview, which would
+  // show every record it feeds as changed (adding an unrelated API did).
+  after: [api.dns, api.run, api.siteverification],
   apex: domain,
   caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
     "pki.goog",
@@ -454,8 +502,11 @@ new gcp.serviceaccount.IAMMember("deployer-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: deployer.name,
 });
+// logging.viewer: the canary verdict counts each revision's 5xx responses
+// in Cloud Run's request logs (apps/ops/src/canary.ts).
 for (const role of [
   "roles/cloudsql.client",
+  "roles/logging.viewer",
   "roles/run.developer",
   "roles/serviceusage.serviceUsageConsumer",
 ]) {
@@ -659,7 +710,9 @@ ciVariables({
     protected: true,
     value: config.requireSecret("gitlab-ci-token"),
   },
-  // The loop's and scout's model calls and competitor searches.
+  // The loop's and scout's model calls and competitor searches, and the
+  // judge evals (evals:judges, .gitlab/ci/verify.yml). Protected: only main's
+  // pipelines read it, so a merge request's evals skip and main's run.
   NEBIUS_API_KEY: {
     created: true,
     masked: true,
@@ -675,6 +728,23 @@ ciVariables({
           created: true,
           protected: false,
           value: posthogKey,
+        },
+      }),
+  // The polar:seed job (.gitlab/ci/polar.yml) builds the Polar catalog with
+  // the same token the app uses.
+  ...(polarAccessToken === undefined
+    ? {}
+    : {
+        POLAR_ACCESS_TOKEN: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: polarAccessToken,
+        },
+        POLAR_ENVIRONMENT: {
+          created: true,
+          protected: true,
+          value: polarEnvironment,
         },
       }),
   // The scout's PostHog query API access (apps/ops/src/posthog.ts).
@@ -722,3 +792,4 @@ ciVariables({
   },
 });
 environments(siteUrl, devUrl);
+featureFlags();

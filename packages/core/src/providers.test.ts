@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { stagePausedCampaign } from "./ads";
+import { createArtist, TEXT_TO_IMAGE } from "./fal";
 import {
   createProduct,
   publishProduct,
@@ -18,7 +19,10 @@ const fakeServer = (replies: Record<string, unknown>) => {
     if (!(tool in replies)) {
       throw new Error(`unexpected tool ${tool}`);
     }
-    return await Promise.resolve(replies[tool]);
+    const reply = replies[tool];
+    return await Promise.resolve(
+      typeof reply === "function" ? (reply as () => unknown)() : reply
+    );
   });
   return { call, calls };
 };
@@ -210,6 +214,7 @@ describe("Meta", () => {
       imageUrl: "https://cdn.fourthwall.com/mock.png",
       linkUrl: "https://shop.example.com/products/reading-cat",
       name: "wovain · Reading Cat",
+      tag: "w-test",
     });
 
     expect(staged).toEqual({
@@ -233,5 +238,48 @@ describe("Meta", () => {
       ad_account_id: "222",
       campaign_daily_budget: 1500,
     });
+  });
+});
+
+describe("fal", () => {
+  const brief = {
+    artPrompt: "A sleepy cat reading under a lamp, line art",
+    description: "Two lines.",
+    garmentColors: ["black"],
+    printedText: [],
+    title: "Reading Cat Tee",
+  };
+
+  it("submits once and reads the finished job, on the merchant's fal grant", async () => {
+    let checks = 0;
+    const { call, calls } = fakeServer({
+      check_job: () => {
+        checks += 1;
+        return { status: checks < 2 ? "IN_PROGRESS" : "COMPLETED" };
+      },
+      get_job_result: {
+        data: {
+          images: [
+            { height: null, url: "https://v3.fal.media/a.png", width: null },
+          ],
+        },
+      },
+      submit_job: { request_id: "req_1" },
+    });
+    const artist = createArtist(call, async () => {
+      await Promise.resolve();
+    });
+
+    const requestId = await artist.submit(brief);
+    const art = await artist.result(requestId);
+
+    expect(requestId).toBe("req_1");
+    expect(art).toEqual({
+      height: 2880,
+      url: "https://v3.fal.media/a.png",
+      width: 2880,
+    });
+    expect(calls.filter((item) => item.tool === "submit_job")).toHaveLength(1);
+    expect(calls[0]?.args).toMatchObject({ endpoint_id: TEXT_TO_IMAGE });
   });
 });

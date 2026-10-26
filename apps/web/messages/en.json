@@ -18,6 +18,7 @@
     "newDropTitle": "New drop",
     "runsTitle": "Runs",
     "connectionsTitle": "Connections",
+    "settingsTitle": "Account settings",
     "notFoundTitle": "Page not found",
     "consentTitle": "Allow access",
     "resetTitle": "Reset your password",
@@ -28,7 +29,10 @@
     "useCasesDescription": "How independent designers and small labels use wovain for capsule collections, graphic tees and streetwear drops on print-on-demand, with a paused Meta campaign.",
     "guidesTitle": "Guides for print-on-demand labels",
     "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads.",
-    "insightsTitle": "Insights"
+    "insightsTitle": "Insights",
+    "pricingTitle": "Pricing: plans and credits for merch drops",
+    "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
+    "billingTitle": "Billing"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -44,6 +48,7 @@
     "signUp": "Sign up",
     "signOut": "Sign out",
     "account": "Account",
+    "accountSettings": "Account settings",
     "loading": "Loading…",
     "demoData": "Demo data",
     "tryAgain": "Try again",
@@ -93,21 +98,12 @@
     "settings": "Cookie settings"
   },
   "Home": {
-    "heroTitle": "You set the direction. wovain makes the drop.",
-    "heroLead": "Describe the capsule. wovain researches what your audience wants this week, drafts the graphics for your edit, lists the pieces on your Fourthwall shop at a margin that holds, and stages the Meta campaign, paused until you turn it on.",
+    "heroTitle": "One sentence. A whole drop.",
+    "heroLead": "Describe the capsule. wovain drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
     "briefLabel": "What is your next drop about?",
     "briefPlaceholder": "Washed botanical line drawings for a spring capsule",
     "briefHint": "A sentence is enough: the mood, a reference, who it's for.",
     "briefSubmit": "Start a drop",
-    "windowCaption": "The approval step of a drop in wovain, with example data.",
-    "window": {
-      "designOne": "Fern Study No. 3",
-      "designTwo": "Garden Hours",
-      "printedOne": "FERN STUDY NO. 3 · SPRING CAPSULE",
-      "printedTwo": "GARDEN HOURS · OPEN UNTIL DUSK",
-      "coachOne": "Reads clearly at chest size; two ink colours; no names or marks used.",
-      "coachTwo": "The type is thin at chest size. Try a heavier weight."
-    },
     "tag": {
       "title": "Heavyweight tee",
       "subtitle": "Fern Study No. 3 · example",
@@ -119,7 +115,6 @@
       "margin": "Margin over blank",
       "campaign": "Meta campaign: paused until you turn it on"
     },
-    "chatChange": "Change",
     "connection": {
       "yours": "You connect it",
       "wovain": "Runs on wovain's keys"
@@ -129,93 +124,7 @@
     "tableProfit": "Profit per sale",
     "tableMargin": "Margin over blank",
     "example": "Example",
-    "eyebrow": "Print-on-demand for independent labels",
-    "heroSecondary": "See how a drop is made",
-    "heroNote": "Create an account, then connect Fourthwall, fal and Meta.",
-    "how": {
-      "eyebrow": "How it works",
-      "title": "From a sentence to a listed capsule",
-      "lead": "Four steps. Two of them are yours, and nothing moves on without your yes.",
-      "you": "You",
-      "wovain": "wovain",
-      "steps": [
-        {
-          "title": "Set the direction",
-          "body": "Write the brief the way you'd brief a studio: the mood, the references, who it's for. One sentence works; more detail gets closer.",
-          "detail": "“Washed botanical line drawings, spring, for people who garden on balconies.”"
-        },
-        {
-          "title": "Research and drafts",
-          "body": "wovain reads what your audience is into and what is moving this week, then drafts graphics for each idea, sized and checked for print.",
-          "detail": "Every idea shows its sources and a print check."
-        },
-        {
-          "title": "Edit and approve",
-          "body": "Approve the pieces you'd put your name on. Reject one with a note, such as “heavier type, lose the leaves”, and wovain draws another round.",
-          "detail": "Nothing is listed without your approval."
-        },
-        {
-          "title": "List and stage",
-          "body": "Approved designs become products on your Fourthwall shop, on real blanks, priced from their base cost. wovain writes ads from several angles and builds a Meta campaign around them.",
-          "detail": "Products start hidden. The campaign starts paused."
-        }
-      ]
-    },
-    "connectors": {
-      "eyebrow": "Your accounts",
-      "title": "Works inside the accounts you already run",
-      "lead": "Connect each one with its own sign-in. The products, artwork and ads stay in your accounts, and you can disconnect at any time.",
-      "link": "How connecting works",
-      "fourthwall": {
-        "role": "Shop",
-        "body": "Products are created on real blanks in your shop. Fourthwall prints, ships and runs checkout."
-      },
-      "fal": {
-        "role": "Artwork",
-        "body": "Draws the graphics for each idea on your fal account, at print resolution."
-      },
-      "meta": {
-        "role": "Ads",
-        "body": "The campaign is built in your ad account, created paused, with the daily budget you set."
-      }
-    },
-    "outcomes": {
-      "eyebrow": "What you get",
-      "title": "Studio time back, margins intact",
-      "lead": "wovain takes on the production chores around a drop, so your time goes to the work only you can do.",
-      "items": [
-        {
-          "title": "One flow, brief to listing",
-          "body": "Research, drafts, listings and ads happen in one place, in order, with your approval between them."
-        },
-        {
-          "title": "Prices that hold",
-          "body": "Every price starts from the blank's real base cost and keeps at least $10 profit and a 30% margin after card fees, sales tax and a refund reserve."
-        },
-        {
-          "title": "Nothing spends by itself",
-          "body": "Campaigns are created paused, with a daily budget from $1 to $500. You turn them on in Meta."
-        },
-        {
-          "title": "Ads with more than one idea",
-          "body": "Each product gets several ads written from different angles, so you can see which one your audience answers."
-        },
-        {
-          "title": "Autopilot, when you want it",
-          "body": "Turn it on and wovain makes the approval calls itself, within the same price floor and budget, and records why."
-        },
-        {
-          "title": "Your work stays yours",
-          "body": "You own your briefs and the designs you approve. Products, artwork and ads sit in your own accounts."
-        }
-      ]
-    },
-    "faqSection": {
-      "eyebrow": "Questions",
-      "title": "Before you start",
-      "lead": "Short answers. The docs go further.",
-      "more": "Read the docs"
-    },
+    "heroSecondary": "See how it works",
     "faq": [
       {
         "question": "Who is wovain for?",
@@ -250,10 +159,81 @@
         "answer": "You own your briefs and the designs you approve. wovain screens drafts for names and trademarks, but you stay responsible for what you publish."
       }
     ],
+    "heroCta": "Start a drop",
+    "demo": {
+      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
+      "pause": "Pause the example",
+      "play": "Play the example",
+      "brief": "Washed botanical line drawings for a spring capsule, for people who garden on balconies.",
+      "ideas": [
+        {
+          "theme": "Balcony growing",
+          "moment": "Small-space gardening is up for a third week."
+        },
+        {
+          "theme": "Seed swaps",
+          "moment": "Libraries are lending seeds this spring."
+        },
+        {
+          "theme": "Pressed botanicals",
+          "moment": "Popular, and already crowded."
+        }
+      ],
+      "designs": [
+        "Fern Study No. 3",
+        "Garden Hours",
+        "Balcony Club",
+        "Seed Library"
+      ],
+      "product": "Fern Study No. 3 tee",
+      "ad": {
+        "brand": "Your label",
+        "sponsored": "Sponsored",
+        "body": "Line drawings for people who grow things in small places. Spring capsule, printed to order.",
+        "cta": "Shop now"
+      },
+      "paused": "Campaign: Paused",
+      "initials": "YL"
+    },
+    "results": {
+      "title": "Listed, advertised, counted",
+      "lead": "What one approved design turns into, in your own accounts.",
+      "product": "Product page",
+      "ad": "Ad",
+      "insights": "Insights",
+      "sizes": "Size",
+      "addToCart": "Add to cart",
+      "paused": "Paused until you turn it on",
+      "photoAlt": "A model on a balcony wearing the black Fern Study No. 3 tee",
+      "mockupAlt": "The Fern Study No. 3 design on a black heavyweight tee, worn by a model, as Fourthwall renders it"
+    },
+    "connectors": {
+      "title": "Runs inside the accounts you already have",
+      "lead": "Each connects with its own sign-in. The products, artwork and ads stay yours.",
+      "link": "How connecting works",
+      "fourthwall": {
+        "role": "Shop"
+      },
+      "fal": {
+        "role": "Artwork"
+      },
+      "meta": {
+        "role": "Ads"
+      }
+    },
+    "free": {
+      "title": "Free to start",
+      "body": "{credits, number} credits a month, enough for about two drops. wovain never takes a cut of your sales.",
+      "link": "See pricing"
+    },
+    "faqSection": {
+      "title": "Before you start",
+      "more": "Read the docs"
+    },
     "cta": {
       "title": "Your next drop starts with a sentence",
-      "body": "Create an account, connect your shop and write the brief. You keep every decision; wovain does the production.",
-      "button": "Create your account",
+      "body": "You keep every decision. wovain does the production.",
+      "button": "Start a drop",
       "secondary": "See pricing"
     }
   },
@@ -283,7 +263,7 @@
       "spendTitle": "Ads and spend",
       "spendBody": "Campaigns are created paused. Any ad spend starts only when you turn a campaign on in Meta, and it is billed by Meta to your ad account.",
       "contactTitle": "Contact",
-      "contactBody": "Questions about these terms go to hello@wovain.com."
+      "contactBody": "Questions about these terms go to support@wovain.com."
     }
   },
   "Auth": {
@@ -302,6 +282,10 @@
     "toSignUpLink": "Create an account",
     "toLogin": "Already have an account?",
     "toLoginLink": "Sign in",
+    "verifyTitle": "Check your email",
+    "verifyLead": "We sent you a link to confirm your address. Open it to finish signing up; it signs you in.",
+    "verifyWrongEmail": "Wrong address?",
+    "verifyWrongEmailLink": "Sign up with a different email",
     "errors": {
       "email": "Enter a valid email address, like you@example.com.",
       "name": "Enter your name (at least 2 characters).",
@@ -325,12 +309,11 @@
       "newDrop": "New drop",
       "runs": "Runs",
       "connections": "Connections",
-      "insights": "Insights"
+      "insights": "Insights",
+      "billing": "Billing"
     },
-    "apiStatus": "API",
-    "apiOnline": "online",
-    "apiOffline": "offline",
-    "apiChecking": "checking",
+    "docs": "Docs",
+    "docsLabel": "Docs (opens in a new tab)",
     "toggleSidebar": "Show or hide the sidebar"
   },
   "Stages": {
@@ -433,7 +416,7 @@
     "stepsLabel": "Drop steps",
     "stepOf": "Step {current, number} of {total, number}",
     "autopilot": "Autopilot",
-    "autopilotHint": "wovain picks the idea and approves the design, then lists the pieces and stages the campaign, paused.",
+    "autopilotHint": "wovain picks the idea, approves the design, publishes it and builds the campaign, paused.",
     "autopilotRunning": "Autopilot is running this drop. It can take a few minutes.",
     "back": "Back",
     "problem": {
@@ -520,7 +503,10 @@
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
       "campaign": "Building the paused campaign on Meta…"
-    }
+    },
+    "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
+    "autopilotUpgrade": "See plans",
+    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step."
   },
   "NotFound": {
     "title": "This page isn't here",
@@ -658,6 +644,152 @@
       "emptyTitle": "No drops yet",
       "empty": "Start a drop; its sales, spend and scores land here.",
       "emptyCta": "Start a drop"
+    }
+  },
+  "Billing": {
+    "perMonth": "/ month",
+    "recommended": "Recommended",
+    "currentPlan": "Your plan",
+    "plans": {
+      "free": "Try a drop or two a month. No card needed.",
+      "studio": "For creators who drop every week, with autopilot.",
+      "label": "For shops running several drops a week. Unused credits carry over."
+    },
+    "features": {
+      "credits": "{credits, number} credits a month",
+      "drops": "About {drops, number} drops a month",
+      "autopilot": "Autopilot: wovain picks, approves and stages ads for you",
+      "manualOnly": "You approve every step",
+      "rollover": "Unused credits roll over",
+      "reset": "Credits refresh each month"
+    },
+    "pack": {
+      "suffix": "one time",
+      "body": "{credits, number} extra credits on any plan. They never expire."
+    },
+    "cta": {
+      "startFree": "Start free",
+      "choose": "Choose {plan}",
+      "buyPack": "Buy {credits, number} credits"
+    },
+    "manage": "Manage billing",
+    "opening": "Opening…",
+    "loading": "Loading your plan…",
+    "checkoutError": "Checkout didn't open. Try again in a moment.",
+    "portalError": "The billing portal didn't open. Try again in a moment.",
+    "disabledNote": "Payments aren't set up on this server yet, so plans can't be changed here.",
+    "creditTag": {
+      "title": "What a credit buys",
+      "subtitle": "Taken when a step runs, given back if it fails",
+      "research": "Trend research",
+      "design": "One design",
+      "assist": "Ad copy, or an autopilot call",
+      "manualDrop": "A drop you approve",
+      "autopilotDrop": "An autopilot drop",
+      "credits": "{count, plural, one {# credit} other {# credits}}",
+      "footer": "Art, ads and blanks bill to your own accounts"
+    },
+    "page": {
+      "title": "Billing",
+      "lead": "Your plan, the credits you have left and what each step costs.",
+      "planLabel": "Plan",
+      "creditsLabel": "Credits left",
+      "creditsSplit": "{plan, number} from your plan · {pack, number} from packs",
+      "renews": "Renews on {date}",
+      "ends": "Ends on {date}. You keep your credits until then.",
+      "pastDue": "Your last payment didn't go through. Update your card in Manage billing to keep your plan.",
+      "checkoutSuccess": "Thanks, your payment went through. Your credits arrive in a few seconds.",
+      "plansTitle": "Plans",
+      "packTitle": "Need a few more credits?",
+      "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
+      "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}.",
+      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire."
+    },
+    "paywall": {
+      "creditsTitle": "You're out of credits for this step",
+      "planTitle": "Autopilot comes with Studio",
+      "shortBy": "This step needs {needed, number} and you have {available, number}.",
+      "studioGain": "Studio gives you {credits, number} credits a month and autopilot, for {price} a month. Cancel any time.",
+      "pack": "Buy {credits, number} credits for {price}",
+      "comparePlans": "Compare plans",
+      "notNow": "Not now",
+      "creditsSoonTitle": "More credits are coming soon",
+      "planSoonTitle": "Autopilot is coming soon with paid plans",
+      "freeRefresh": "Your Free credits refresh every month.",
+      "freeRefreshOn": "Your Free credits refresh on {date}."
+    },
+    "notify": {
+      "comingSoon": "Coming soon",
+      "button": "Notify me",
+      "thanks": "Thanks, we've noted your interest."
+    },
+    "redeem": {
+      "title": "Redeem a code",
+      "lead": "Got a promo code? Add its credits to your account.",
+      "label": "Promo code",
+      "placeholder": "Enter your code",
+      "hint": "One redemption per account. No card needed for free codes.",
+      "submit": "Redeem",
+      "redeeming": "Redeeming…",
+      "errors": {
+        "invalid": "That code isn't valid. Check it and try again.",
+        "expired": "That code has expired.",
+        "usedUp": "That code has been fully redeemed.",
+        "alreadyRedeemed": "You've already redeemed this code.",
+        "notFree": "Only codes for free credits work for now. Paid plans are coming soon.",
+        "tooMany": "Too many tries. Wait a few minutes, then try again.",
+        "error": "The code didn't go through. Try again in a moment."
+      }
+    }
+  },
+  "Pricing": {
+    "crumb": "Pricing",
+    "title": "Pay for the drops you make, not for seats",
+    "lead": "Start free with {credits, number} credits every month. Studio, Label and credit packs are coming soon. wovain never takes a cut of your sales.",
+    "plansTitle": "Plans",
+    "noCut": "Prices in US dollars. Free is open now; Studio, Label and credit packs aren't on sale yet.",
+    "yoursTitle": "What you pay on your own accounts",
+    "yoursLead": "Credits cover wovain's work: trend research, briefs, design checks and ad copy. The rest you pay directly, on accounts you own, with no markup from wovain.",
+    "yours": {
+      "fal": {
+        "name": "fal",
+        "body": "Artwork is drawn on your fal account and billed by fal per image."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "Ad spend, billed by Meta to your ad account, and only after you turn a paused campaign on."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Blanks and printing, paid out of each sale. Nothing to buy up front."
+      }
+    },
+    "faqTitle": "Questions about pricing",
+    "faq": {
+      "credit": {
+        "question": "What is a credit?",
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, so a drop you approve step by step is about 6 credits. If a step fails, its credits come back."
+      },
+      "yours": {
+        "question": "What do I pay outside wovain?",
+        "answer": "Art, ads and products run on your own accounts. fal bills you for the artwork, Meta bills your ad account once you start a campaign, and Fourthwall takes the blank's cost out of each sale."
+      },
+      "cancel": {
+        "question": "Can I cancel?",
+        "answer": "Yes, any time, from Manage billing. Your plan and its credits stay until the end of the month you paid for, then you're back on Free."
+      },
+      "rollover": {
+        "question": "Do unused credits roll over?",
+        "answer": "On Free, credits refresh each month and unused ones don't carry over. When Label opens, its unused credits will roll over, and credit packs won't expire."
+      },
+      "free": {
+        "question": "What happens when I run out?",
+        "answer": "wovain stops before the step and tells you. Your {freeCredits, number} free credits come back next month, and nothing you made is lost. Paid plans and packs of {packCredits, number} credits are coming soon."
+      },
+      "paid": {
+        "question": "When can I buy Studio, Label or credits?",
+        "answer": "Soon. For now every account is on Free. Press Notify me on the plan you want, so we know which one to open first."
+      }
     }
   }
 }

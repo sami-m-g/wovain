@@ -54,11 +54,16 @@ interface ServiceArgs {
   cloudSqlInstance?: pulumi.Input<string>;
   // What the revision needs first, such as the secret versions it mounts.
   dependsOn: pulumi.Input<pulumi.Resource>[];
+  // The longest a request may take ("900s"); Cloud Run's 300 s if unset.
+  timeout?: string;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
 // deploy --image`, so the image is ignored here. `pulumi up --refresh` (CI's
 // infra job) reads the live image first, so a settings change keeps it.
+// Traffic is CI's too: the canary split, its promotion and rollbacks
+// (.gitlab/ci/deploy.yml, docs/adr/0001-progressive-delivery.md), so a
+// `pulumi up` never moves traffic.
 // Public: the apps guard themselves (Better Auth).
 export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
   const sql = args.cloudSqlInstance;
@@ -88,6 +93,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
         ],
         scaling: { maxInstanceCount: args.maxInstances, minInstanceCount: 0 },
         serviceAccount: args.serviceAccount,
+        timeout: args.timeout,
         volumes:
           sql === undefined
             ? undefined
@@ -100,6 +106,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
         "client",
         "clientVersion",
         "template.containers[0].image",
+        "traffics",
       ],
     }
   );

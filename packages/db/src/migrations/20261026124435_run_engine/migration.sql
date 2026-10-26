@@ -1,0 +1,1 @@
+ALTER TABLE "run" ADD COLUMN "engine" text DEFAULT 'legacy' NOT NULL;

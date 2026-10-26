@@ -35,6 +35,10 @@ Con el autopilot activado, `pickIdea` elige la idea ordenada más prometedora y 
 
 El motivo de cada decisión se guarda en el diseño y una ejecución registra su paso y cualquier error.
 
+## 5. Chat de la documentación
+
+El chat de IA del sitio de documentación (`apps/fumadocs`) usa el mismo endpoint de Token Factory y `NEBIUS_API_KEY`, con el Nemotron más pequeño, **Nemotron 3 Nano 30B-A3B** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`, 0,06 $ de entrada y 0,24 $ de salida por millón de tokens). Busca en la documentación y responde con tres fragmentos cortos. Para gastar poco, limita la respuesta a 400 tokens, envía solo los últimos cuatro mensajes, rechaza sin llamar al modelo las preguntas vacías, demasiado largas o fuera de tema, y limita a cada visitante a 10 mensajes cada 10 minutos y 50 al día, con un tope diario global. Cada llamada es un evento `$ai_generation` de PostHog con tokens y coste, sin el texto de los mensajes.
+
 ## Por qué Nemotron
 
 - Un segundo modelo con una rúbrica fija y un esquema detecta lo que la autorrevisión de un agente anfitrión pasa por alto.

@@ -18,7 +18,7 @@ export const ModeToggle = () => {
       aria-label={t("toggleTheme")}
       className="relative"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      size="icon-lg"
+      size="icon"
       variant="outline"
     >
       <Sun

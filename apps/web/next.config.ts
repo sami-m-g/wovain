@@ -85,7 +85,21 @@ const nextConfig: NextConfig = {
       },
     ],
   }),
-  serverExternalPackages: ["geoip-country"],
+  // The durable run engine (packages/api/src/workflows) runs as plain
+  // Node: Mastra and Inngest load optional workers and native modules a
+  // bundle can't resolve.
+  serverExternalPackages: [
+    "@google-cloud/opentelemetry-cloud-trace-exporter",
+    "@mastra/core",
+    "@mastra/evals",
+    "@mastra/inngest",
+    "@mastra/memory",
+    "@mastra/observability",
+    "@mastra/otel-exporter",
+    "@mastra/pg",
+    "geoip-country",
+    "inngest",
+  ],
   // PostHog's API paths end in a slash; a redirect would drop the request.
   skipTrailingSlashRedirect: true,
   typedRoutes: true,

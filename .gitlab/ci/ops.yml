@@ -66,3 +66,31 @@ sci:
     reports:
       metrics: metrics.txt
     expire_in: 90 days
+
+# Submission tags (apps/ops/src/submissions.ts, docs/submissions/tags.md):
+# once a hackathon deadline has passed, tag the newest main commit that was
+# green by then as submission/<name> (annotated, with a GitLab release), and
+# push the tag to GitHub; idempotent, so it rides the 10-minute ops schedule.
+# GITLAB_TOKEN creates the tag (the CI job token can't) and GITHUB_MIRROR_KEY
+# is protected, so this runs only where the schedule does: main.
+submission:tag:
+  stage: .post
+  needs: []
+  interruptible: false
+  resource_group: github-mirror
+  variables:
+    GIT_DEPTH: 0
+  rules:
+    - *ops-schedule
+    - *ops-manual
+  before_script:
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm install --frozen-lockfile --ignore-scripts --filter @wovain/ops
+    - !reference [.github-ssh, before_script]
+  script:
+    - pnpm --dir apps/ops run submission-tag
+    - |
+      if [ -s apps/ops/created-tags.txt ]; then
+        git fetch -q origin --tags
+        git push git@github.com:sami-m-g/wovain.git --tags
+      fi

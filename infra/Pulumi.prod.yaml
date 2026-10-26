@@ -114,6 +114,15 @@ config:
       description: wovain deps-review when Renovate assigns it as reviewer
       events: [assign_reviewer]
       active: true
+    # Progressive delivery's diagnosis (docs/adr/0001-progressive-delivery.md):
+    # the canary job and the ops job's release guard assign each
+    # release-guard issue to its service account, after they rolled back or
+    # switched a flag off.
+    - name: duo-release-guard
+      file: .gitlab/duo/catalog/flows/release-guard.yml
+      description: wovain release-guard when the release guard assigns it
+      events: [assign]
+      active: true
   # Custom agents from .gitlab/duo/catalog/agents, enabled in the project once
   # synced (mapping.json).
   wovain:duoCustomAgents:
@@ -124,10 +133,16 @@ config:
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
   gcp:billingProject: wovain
   gcp:userProjectOverride: "true"
+  wovain:polar-access-token:
+    secure: v1:/T0x0osPEHbp2w+/:Jtk83obA4OidW2psGPK3mQqOJn+KF4IaBI6JUN7bnExDGS8dPxYM5Xpz4rQZbSiu+81YCn6fI9V8CgwAcTUvoh2AdZZC
   wovain:wovain-allowed-emails:
     secure: v1:ybkw5nQlPPOMzB+3:Ljnv1xNy+T3GCCbXf5AarPTrjVpj2/nDiOGKBzi/TI7007A6dA==
   wovain:fal-key:
     secure: v1:ph5MIlC4FggQ1Fla:xVrax4Zu6mqdLmmrVN1KKBR7X+DKHg5gaowigcGj7pRlEQKOUGJ/5GIC21xxw6UzP351HcKZyGqk4enRHRQNYMsrFMCVMBg0gtX7tAHNXGipVEMSl8psng==
+  wovain:inngest-signing-key:
+    secure: v1:0+5aiJCgjsZAlsNn:T/jdndZaPYOMwJf4jldpY7yInR7KDbpqVG4XLNcTzpOcZKyVfQdRFPQK3Vbj7kPl2hyW6XiXoMgWuFQqfAVsvTmO4hig5yIZimyatBS1tSY3rQYl9zrNLUnVdFXi
+  wovain:inngest-event-key:
+    secure: v1:y0Y5ig9R/HPr4Oms:6zh1pn0Jr5IPnHHY62YmwbtXsdi62pQ+G7LJluEpvku2sOc4xdbwV8piF31wDUvLbEt6F6jKnpUxLH1FO2q2NvsY5MZYictQJlLGP5ivoANNOeaWdOz3MNepLmGBgi7WDDtKjLWC
   wovain:gitlabProjectId: "87296573"
   # The GitLab group with Observability enabled (gitlab-ai-hackathon/
   # transcend-october-2026/43085639); it names the OTLP and query endpoints.
@@ -160,5 +175,6 @@ config:
   wovain:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
   wovain:google-client-secret:
     secure: v1:nqv2CnxFDtU9Gjcb:jhd9smV7Z5Z+eALSTk6NFf/6KJhk5XaVfXvCeLn2dFY/ByjoO/YFh9eRSmTB5jRf+7OT
+  wovain:o11yOtlpEndpoint: https://144066465.otel.gitlab-o11y.com:14318
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=

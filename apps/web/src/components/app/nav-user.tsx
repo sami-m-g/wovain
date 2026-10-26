@@ -17,12 +17,11 @@ import {
   useSidebar,
 } from "@wovain/ui/components/sidebar";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { BookOpen, ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, LogOut, UserCog } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
-import { resetAnalytics } from "@/lib/consent-store";
 
 const WHITESPACE = /\s+/u;
 const MAX_INITIALS = 2;
@@ -50,10 +49,9 @@ const Identity = ({ email, name }: { email: string; name: string }) => (
   </>
 );
 
-/** sidebar-07's NavUser: who is signed in, the docs and sign out. */
-export const NavUser = ({ docsUrl }: { docsUrl: string }) => {
+/** sidebar-07's NavUser: who is signed in, account settings and sign out. */
+export const NavUser = () => {
   const t = useTranslations("Common");
-  const header = useTranslations("Header");
   const router = useRouter();
   const { isMobile } = useSidebar();
   const { data: session, isPending } = authClient.useSession();
@@ -96,20 +94,18 @@ export const NavUser = ({ docsUrl }: { docsUrl: string }) => {
             <DropdownMenuGroup>
               <DropdownMenuItem
                 render={
-                  // oxlint-disable-next-line jsx-a11y/anchor-has-content, jsx-a11y/control-has-associated-label -- the menu item renders the label inside
-                  <a href={docsUrl} />
+                  <Link href="/dashboard/settings/account" prefetch={false} />
                 }
               >
-                <BookOpen aria-hidden="true" />
-                {header("docs")}
+                <UserCog aria-hidden="true" />
+                {t("accountSettings")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
                   authClient.signOut({
                     fetchOptions: {
+                      // wovainAuthClient resets analytics on every sign-out.
                       onSuccess: () => {
-                        // The next visitor on this browser is anonymous again.
-                        resetAnalytics();
                         router.push("/");
                       },
                     },

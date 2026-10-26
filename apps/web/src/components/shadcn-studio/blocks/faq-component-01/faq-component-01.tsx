@@ -7,43 +7,33 @@ import {
 import { cn } from "@wovain/ui/lib/utils";
 import { ArrowRight } from "lucide-react";
 
-import {
-  container,
-  displayTitle,
-  Eyebrow,
-} from "@/components/marketing/section";
+import { container, displayTitle } from "@/components/marketing/section";
 import type { Faq } from "@/content/types";
 
 /** Questions as shadcn/studio's accordion FAQ, headline on the left. */
 const FAQ = ({
   id,
-  eyebrow,
   title,
-  lead,
   more,
   items,
 }: {
   id: string;
-  eyebrow: string;
   title: string;
-  lead: string;
   more: { href: string; label: string };
   items: Faq[];
 }) => (
   <section
     aria-labelledby={`${id}-title`}
-    className="border-border scroll-mt-20 border-t py-20 sm:py-28"
+    className="border-border scroll-mt-20 border-t py-16 sm:py-24"
     id={id}
   >
     <div
       className={cn(container, "grid gap-10 md:grid-cols-[5fr_7fr] md:gap-16")}
     >
       <div className="flex flex-col gap-4">
-        <Eyebrow>{eyebrow}</Eyebrow>
         <h2 className={displayTitle} id={`${id}-title`}>
           {title}
         </h2>
-        <p className="text-muted-foreground text-lg leading-relaxed">{lead}</p>
         <a
           className="text-accent-text inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
           href={more.href}

@@ -41,6 +41,7 @@ type Work =
   | "publish"
   | "campaign";
 
+const RUN_POLL_MS = 2000;
 const MIN_BRIEF = 10;
 const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
@@ -62,6 +63,17 @@ const resumeStep = (run?: RunDetail): Step => {
     return "products";
   }
   return run.designs.length > 0 ? "designs" : "ideas";
+};
+
+/** What a run working in the background is doing, for the busy label. */
+const runWork = (run?: RunDetail): Work | undefined => {
+  if (run?.status !== "running") {
+    return undefined;
+  }
+  if (run.autopilot) {
+    return "autopilot";
+  }
+  return run.designs.length > 0 ? "products" : "research";
 };
 
 const replaceById = <T extends { id: string }>(items: T[], next: T) =>
@@ -102,6 +114,10 @@ const useRunCache = (runId: string | undefined) => {
   const query = useQuery(
     orpc.runs.get.queryOptions({
       input: runId ? { id: runId } : skipToken,
+      // A started run goes on in the background (runs.start returns at
+      // once): polled until it stops for the merchant or ends.
+      refetchInterval: (current) =>
+        current.state.data?.status === "running" ? RUN_POLL_MS : false,
       retry: false,
     })
   );
@@ -394,6 +410,8 @@ export const useDropFlow = (
       ),
   };
 
+  const working = calls.working ?? runWork(run);
+
   return {
     actions,
     autopilot,
@@ -401,16 +419,18 @@ export const useDropFlow = (
     briefError,
     budget,
     budgetInvalid,
-    busyLabel: calls.working ? t(`working.${calls.working}`) : undefined,
+    busyLabel: working ? t(`working.${working}`) : undefined,
     handleAutopilot: setAutopilotDraft,
     handleBrief: setBrief,
     handleBudget: setBudget,
+    // Closes the paywall a refused step opened.
+    handleDismissProblem: () => showProblem(),
     loading: cache.loading,
     picked,
     problem,
     reasons,
     run,
     step: stepper.current,
-    working: calls.working,
+    working,
   };
 };

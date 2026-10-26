@@ -32,6 +32,7 @@ const note = (overrides: Partial<Note>): Note => ({
   author: { username: "owner" },
   body: "",
   created_at: "2026-10-25T11:00:00Z",
+  id: 1,
   system: false,
   ...overrides,
 });

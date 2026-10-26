@@ -112,6 +112,8 @@ Use the links table above.
 
 ### Testing instructions (notes)
 
+Paste-ready block, per-hackathon notes and the pre-flight checklist for the shared judge account: [testing.md](testing.md).
+
 The rules say the project must be free to test, with no restriction, until the judging period ends (2026-10-30), and that a private site needs login credentials in the testing instructions. State plainly:
 
 - Open <https://wovain.com>, sign in (Google or email). It is on the Free plan.
