@@ -4,6 +4,8 @@ import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
 import type { EvlogOrpcContext } from "evlog/orpc";
 
+import type { RunEngine } from "./flow/actor";
+
 // The seller funnel's server-side steps, as PostHog event names: sign_up
 // comes from Better Auth when it creates a user (packages/auth), the rest from
 // procedures. The browser adds landing_cta_clicked (apps/web).
@@ -42,5 +44,7 @@ export interface Context extends Partial<EvlogOrpcContext> {
   mailer: Mailer;
   // The merchant behind an MCP access token (ChatGPT), which has no session.
   mcpUserId?: string;
+  // Starts and resumes runs on the durable engine (../workflows/engine).
+  runs: RunEngine;
   session: Session | null;
 }

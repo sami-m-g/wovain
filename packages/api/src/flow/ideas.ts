@@ -11,6 +11,17 @@ export const researchIdeas = async (
   seed: string,
   runId?: string
 ) => {
+  // A run's research step retried after it saved its ideas keeps them.
+  if (runId !== undefined) {
+    const saved = await actor.db
+      .select()
+      .from(idea)
+      .where(and(eq(idea.userId, actor.userId), eq(idea.runId, runId)))
+      .orderBy(asc(idea.rank));
+    if (saved.length > 0) {
+      return saved;
+    }
+  }
   await meter(actor, "run", { runId });
   const { avoidNames, ideas, qloo } = await actor.core.trends.research(
     seed,

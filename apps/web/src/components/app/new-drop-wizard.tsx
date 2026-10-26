@@ -81,6 +81,37 @@ const resumeStep = (run: RunDetail): Step => {
   return run.designs.length > 0 ? "designs" : "ideas";
 };
 
+/** A started run goes on in the background: polled until it stops for the merchant or ends. */
+const RUN_POLL_MS = 2000;
+const isWorking = (run: RunDetail | undefined) => run?.status === "running";
+
+/** Follows the run just started, then hands it over once when it stops working. */
+const useFollowedRun = ({
+  onProblem,
+  onStopped,
+}: {
+  onProblem: (error: unknown) => void;
+  onStopped: (run: RunDetail) => void;
+}) => {
+  const [runId, setRunId] = useState<string>();
+  const run = useQuery(
+    orpc.runs.get.queryOptions({
+      input: runId ? { id: runId } : skipToken,
+      refetchInterval: (query) =>
+        isWorking(query.state.data) ? RUN_POLL_MS : false,
+    })
+  );
+  // React's "adjusting state when data changes" pattern, during render.
+  if (runId !== undefined && run.error) {
+    setRunId(undefined);
+    onProblem(run.error);
+  } else if (runId !== undefined && run.data && !isWorking(run.data)) {
+    setRunId(undefined);
+    onStopped(run.data);
+  }
+  return { follow: setRunId, following: runId !== undefined };
+};
+
 const replaceById = <T extends { id: string }>(items: T[], next: T) =>
   items.map((item) => (item.id === next.id ? next : item));
 
@@ -111,6 +142,14 @@ export const NewDropWizard = ({
   // A problem the wizard finds itself (not a failed call), shown above the step
   const [notice, setNotice] = useState<FlowProblem>();
 
+  const applyRun = (run: RunDetail) => {
+    setIdeas(run.ideas);
+    setDesigns(run.designs);
+    setProducts(run.products);
+    setCampaigns(run.campaigns);
+    setPicked(run.designs.map((item) => item.ideaId));
+  };
+
   const refreshRuns = () =>
     queryClient.invalidateQueries({ queryKey: orpc.runs.key() });
 
@@ -124,6 +163,14 @@ export const NewDropWizard = ({
   const start = useMutation(
     orpc.runs.start.mutationOptions({ onSettled: refreshRuns })
   );
+  const followed = useFollowedRun({
+    onProblem: (error) => setNotice(describeProblem(error)),
+    onStopped: (run) => {
+      applyRun(run);
+      setFailure(failureOf(run));
+      setStep(run.autopilot || run.status === "failed" ? "done" : "ideas");
+    },
+  });
   const approve = useMutation(orpc.designs.approve.mutationOptions());
   const reject = useMutation(orpc.designs.reject.mutationOptions());
   const publishProduct = useMutation(orpc.products.publish.mutationOptions());
@@ -167,7 +214,10 @@ export const NewDropWizard = ({
   ];
 
   const busy: [boolean, Work][] = [
-    [start.isPending, start.variables?.autopilot ? "autopilot" : "research"],
+    [
+      start.isPending || followed.following,
+      autopilot ? "autopilot" : "research",
+    ],
     [openedRun.isLoading, "research"],
     [generate.isPending, "designs"],
     [approve.isPending || reject.isPending, "review"],
@@ -200,14 +250,6 @@ export const NewDropWizard = ({
     designs.map((item) => [item.id, item.brief.title])
   );
 
-  const applyRun = (run: RunDetail) => {
-    setIdeas(run.ideas);
-    setDesigns(run.designs);
-    setProducts(run.products);
-    setCampaigns(run.campaigns);
-    setPicked(run.designs.map((item) => item.ideaId));
-  };
-
   const replaceDesign = (updated: Design) =>
     setDesigns((previous) => replaceById(previous, updated));
 
@@ -239,17 +281,7 @@ export const NewDropWizard = ({
     showProblem();
     start.mutate(
       { autopilot, dailyBudget: budgetValue, seed: brief.trim() },
-      {
-        onSuccess: (run) => {
-          applyRun(run);
-          if (!autopilot) {
-            setStep("ideas");
-            return;
-          }
-          setFailure(failureOf(run));
-          setStep("done");
-        },
-      }
+      { onSuccess: (run) => followed.follow(run.id) }
     );
   };
 

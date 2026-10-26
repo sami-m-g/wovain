@@ -210,6 +210,7 @@ describe("Meta", () => {
       imageUrl: "https://cdn.fourthwall.com/mock.png",
       linkUrl: "https://shop.example.com/products/reading-cat",
       name: "wovain · Reading Cat",
+      tag: "w-test",
     });
 
     expect(staged).toEqual({

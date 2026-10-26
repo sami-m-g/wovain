@@ -1,3 +1,4 @@
+import { createRunEngine } from "@wovain/api/workflows/engine";
 import { createAuth } from "@wovain/auth";
 import { createCore } from "@wovain/core/core";
 import { createDb } from "@wovain/db";
@@ -14,3 +15,10 @@ export const mailer = createMailer({
 });
 export const auth = createAuth(ENV, db, mailer, analytics);
 export const core = createCore(ENV);
+
+// Runs execute on the durable engine; Inngest calls /api/inngest for each
+// step (docs/adr/0001-durable-runs.md).
+export const { handler: inngestHandler, runs } = createRunEngine({
+  pool: db.$client,
+  services: { core, db, mailer },
+});

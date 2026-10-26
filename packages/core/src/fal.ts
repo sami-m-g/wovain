@@ -47,27 +47,45 @@ export const artInput = (brief: DesignBrief) => ({
   quality: "high",
 });
 
+// Two calls, so a durable step can key the paid one: `submit` queues the
+// drawing and returns fal's request ID; `result` waits for that request and
+// reads its image, as often as a retry needs, without drawing again.
 export const createArtist = (apiKey: string | undefined) => {
   const fal =
     apiKey === undefined ? undefined : createFalClient({ credentials: apiKey });
-  return async (brief: DesignBrief, log?: Logger): Promise<Artwork> => {
+  const client = () => {
     if (fal === undefined) {
       throw notConfigured.fal();
     }
-    return await external(
-      log,
-      { operation: "generate_art", provider: "fal" },
-      async () => {
-        const { data } = await fal.subscribe(TEXT_TO_IMAGE, {
-          input: artInput(brief),
-        });
-        const [image] = imageSchema.parse(data).images;
-        if (image === undefined) {
-          throw new Error("fal returned no image");
+    return fal;
+  };
+  return {
+    result: async (requestId: string, log?: Logger): Promise<Artwork> =>
+      await external(
+        log,
+        { operation: "generate_art", provider: "fal" },
+        async () => {
+          const { queue } = client();
+          await queue.subscribeToStatus(TEXT_TO_IMAGE, { requestId });
+          const { data } = await queue.result(TEXT_TO_IMAGE, { requestId });
+          const [image] = imageSchema.parse(data).images;
+          if (image === undefined) {
+            throw new Error("fal returned no image");
+          }
+          return image;
         }
-        return image;
-      }
-    );
+      ),
+    submit: async (brief: DesignBrief, log?: Logger): Promise<string> =>
+      await external(
+        log,
+        { operation: "submit_art", provider: "fal" },
+        async () => {
+          const queued = await client().queue.submit(TEXT_TO_IMAGE, {
+            input: artInput(brief),
+          });
+          return queued.request_id;
+        }
+      ),
   };
 };
 

@@ -1,21 +1,28 @@
 import {
-  createProduct,
+  createOffer,
+  findOffer,
+  previewDesign,
   publishProduct,
   searchCatalog,
+  setOfferPrice,
   uploadArtwork,
 } from "@wovain/core/fourthwall";
 import { DEFAULT_BASE_COST, priceFor } from "@wovain/core/pricing";
 import { product } from "@wovain/db/schema/seller";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound, notReady } from "./actor";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
+import { once } from "./once";
 
 // An approved design becomes a Fourthwall product: the art goes to the
 // shop's media library, the product is created hidden at wovain's price, and
 // publishing makes it public.
+//
+// Each Fourthwall write is keyed (./once), and so is the product row: a
+// retried call, or a run step retried after a crash, makes one product.
 
 export const browseCatalog = async (actor: Actor, query?: string) =>
   await withProvider(
@@ -25,13 +32,28 @@ export const browseCatalog = async (actor: Actor, query?: string) =>
       await searchCatalog(call, query === undefined ? {} : { query })
   );
 
+export interface ProductInput {
+  catalogProductId?: string | undefined;
+  designId: string;
+  // The caller's request ID; one product per design and blank without it.
+  requestId?: string | undefined;
+}
+
+const byKey = async ({ db, userId }: Actor, key: string) =>
+  await db.query.product.findFirst({
+    where: { idempotencyKey: key, userId },
+  });
+
 export const createDesignProduct = async (
   actor: Actor,
-  {
-    catalogProductId,
-    designId,
-  }: { catalogProductId?: string | undefined; designId: string }
+  { catalogProductId, designId, requestId }: ProductInput
 ) => {
+  // Keys are global: the merchant's ID keeps a request ID theirs alone.
+  const key = `product:${actor.userId}:${requestId ?? `${designId}:${catalogProductId ?? "auto"}`}`;
+  const made = await byKey(actor, key);
+  if (made !== undefined) {
+    return made;
+  }
   const approved = await getDesign(actor, designId);
   if (approved.status !== "approved") {
     throw notReady({
@@ -39,6 +61,7 @@ export const createDesignProduct = async (
       message: "The design isn't approved",
     });
   }
+  const write = { runId: approved.runId };
   const created = await withProvider(actor, "fourthwall", async (call) => {
     const [blank] = await searchCatalog(
       call,
@@ -50,26 +73,70 @@ export const createDesignProduct = async (
         message: "No Fourthwall blank can render this design",
       });
     }
-    const mediaUri = await uploadArtwork(call, {
-      height: approved.artworkHeight,
-      url: approved.artworkUrl,
-      width: approved.artworkWidth,
+    // A second upload only adds a copy to the media library, but keying it
+    // keeps the product on the first one.
+    const mediaUri = await once(actor, {
+      ...write,
+      key: `${key}:media`,
+      operation: "upload_artwork",
+      perform: async () =>
+        await uploadArtwork(call, {
+          height: approved.artworkHeight,
+          url: approved.artworkUrl,
+          width: approved.artworkWidth,
+        }),
+      provider: "fourthwall",
+    });
+    const preview = await once(actor, {
+      ...write,
+      key: `${key}:preview`,
+      operation: "preview_design",
+      perform: async () =>
+        await previewDesign(call, {
+          catalogProductId: blank.id,
+          mediaUri,
+          region: blank.region,
+        }),
+      provider: "fourthwall",
+    });
+    const { title } = approved.brief;
+    const offerId = await once(actor, {
+      ...write,
+      key: `${key}:offer`,
+      operation: "create_offer",
+      perform: async () =>
+        await createOffer(call, {
+          customizationId: preview.customizationId,
+          description: approved.brief.description,
+          title,
+        }),
+      provider: "fourthwall",
+      recover: async () =>
+        await findOffer(call, {
+          customizationId: preview.customizationId,
+          title,
+        }),
     });
     const price = priceFor(blank.baseCost ?? DEFAULT_BASE_COST);
-    const made = await createProduct(call, {
+    await setOfferPrice(call, offerId, price);
+    return {
+      ...preview,
       catalogProductId: blank.id,
-      description: approved.brief.description,
       mediaUri,
+      offerId,
       price,
-      region: blank.region,
-      title: approved.brief.title,
-    });
-    return { ...made, catalogProductId: blank.id, mediaUri, price };
+    };
   });
-  const [row] = await actor.db
+  await actor.db
     .insert(product)
-    .values({ ...created, designId, userId: actor.userId })
-    .returning();
+    .values({
+      ...created,
+      designId,
+      idempotencyKey: key,
+      userId: actor.userId,
+    })
+    .onConflictDoNothing({ target: product.idempotencyKey });
+  const row = await byKey(actor, key);
   if (row === undefined) {
     throw new Error("The product wasn't saved");
   }
@@ -84,8 +151,12 @@ export const getProduct = async ({ db, userId }: Actor, id: string) => {
   return row;
 };
 
+// Publishing twice is harmless: the product is already public.
 export const publishDesignProduct = async (actor: Actor, id: string) => {
   const hidden = await getProduct(actor, id);
+  if (hidden.status === "public" && hidden.productUrl !== null) {
+    return hidden;
+  }
   const productUrl = await withProvider(
     actor,
     "fourthwall",
@@ -94,7 +165,7 @@ export const publishDesignProduct = async (actor: Actor, id: string) => {
   const [row] = await actor.db
     .update(product)
     .set({ productUrl, status: "public" })
-    .where(eq(product.id, id))
+    .where(and(eq(product.id, id), eq(product.userId, actor.userId)))
     .returning();
   return row ?? { ...hidden, productUrl, status: "public" as const };
 };

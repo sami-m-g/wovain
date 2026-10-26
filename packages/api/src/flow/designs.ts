@@ -1,30 +1,67 @@
+import { randomUUID } from "node:crypto";
+
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
 import { withLlmTrace } from "@wovain/core/nemotron";
 import { design, run } from "@wovain/db/schema/seller";
 import { and, desc, eq } from "drizzle-orm";
 
-import type { Actor } from "./actor";
+import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
 import { getIdea } from "./ideas";
+import { once } from "./once";
 import { meter } from "./spend";
+import { designAlreadyDecided, runNotWaiting } from "./transitions";
 
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
 // Nemotron judges it. The merchant (or autopilot) then approves or rejects.
 
-export const generateDesign = async (actor: Actor, ideaId: string) => {
+const byKey = async ({ db, userId }: Actor, key: string) =>
+  await db.query.design.findFirst({ where: { idempotencyKey: key, userId } });
+
+// `requestId` keys the design: a run step passes its own, so a retried step
+// keeps the brief and the art (fal is asked to draw once). Without one each
+// call is a new design, as a merchant's "try again" means.
+export const generateDesign = async (
+  actor: Actor,
+  ideaId: string,
+  { requestId = randomUUID() }: { requestId?: string | undefined } = {}
+) => {
+  const key = `design:${actor.userId}:${requestId}`;
+  const made = await byKey(actor, key);
+  if (made !== undefined) {
+    return made;
+  }
   const source = await getIdea(actor, ideaId);
-  await meter(actor, "image", { runId: source.runId });
+  const { runId } = source;
   const { artist, nemotron } = actor.core;
   const { artwork, brief, judgment } = await withLlmTrace(
-    { distinctId: actor.userId, traceId: source.runId ?? ideaId },
+    { distinctId: actor.userId, traceId: runId ?? ideaId },
     async () => {
-      const drafted = await draftBrief(
-        nemotron,
-        { avoidNames: source.avoidNames, idea: source.research },
-        actor.log
-      );
-      const art = await artist(drafted, actor.log);
+      const drafted = await once(actor, {
+        key: `${key}:brief`,
+        operation: "design_brief",
+        perform: async () =>
+          await draftBrief(
+            nemotron,
+            { avoidNames: source.avoidNames, idea: source.research },
+            actor.log
+          ),
+        provider: "nebius",
+        runId,
+      });
+      const requested = await once(actor, {
+        key: `${key}:art`,
+        operation: "submit_art",
+        perform: async () => {
+          await meter(actor, "image", { runId });
+          return await artist.submit(drafted, actor.log);
+        },
+        provider: "fal",
+        runId,
+      });
+      // Reading fal's answer again is free: no key needed.
+      const art = await artist.result(requested, actor.log);
       return {
         artwork: art,
         brief: drafted,
@@ -36,7 +73,7 @@ export const generateDesign = async (actor: Actor, ideaId: string) => {
       };
     }
   );
-  const [row] = await actor.db
+  await actor.db
     .insert(design)
     .values({
       artworkHeight: artwork.height,
@@ -44,11 +81,13 @@ export const generateDesign = async (actor: Actor, ideaId: string) => {
       artworkWidth: artwork.width,
       brief,
       ideaId,
+      idempotencyKey: key,
       judgment,
-      runId: source.runId,
+      runId,
       userId: actor.userId,
     })
-    .returning();
+    .onConflictDoNothing({ target: design.idempotencyKey });
+  const row = await byKey(actor, key);
   if (row === undefined) {
     throw new Error("The design wasn't saved");
   }
@@ -74,44 +113,74 @@ export const listDesigns = async ({ db, userId }: Actor, runId?: string) =>
     )
     .orderBy(desc(design.createdAt));
 
-export interface Decision {
-  approve: boolean;
+export interface Decision extends RunDecision {
   by: "merchant" | "autopilot";
-  reason?: string | undefined;
 }
 
-// Records the call on a design; a merchant's call closes its run's approval.
+// The only move out of pending_approval: approve or reject, once. A design
+// already decided answers DESIGN_ALREADY_DECIDED, so a second click, a
+// second client or a late retry can't flip it. A merchant's call on a run
+// waiting at its gate resumes that run, in the same transaction: if the
+// resume can't be queued, the decision isn't kept either.
 export const decideDesign = async (
   actor: Actor,
   id: string,
   { approve, by, reason }: Decision
-) => {
-  const current = await getDesign(actor, id);
-  const [row] = await actor.db
-    .update(design)
-    .set({
-      decidedBy: by,
-      decisionReason: reason ?? null,
-      status: approve ? "approved" : "rejected",
-    })
-    .where(eq(design.id, current.id))
-    .returning();
-  if (by === "merchant" && current.runId !== null) {
-    await actor.db
-      .update(run)
-      .set({ status: "completed", step: approve ? "approved" : "rejected" })
+) =>
+  await actor.db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(design)
+      .set({
+        decidedBy: by,
+        decisionReason: reason ?? null,
+        status: approve ? "approved" : "rejected",
+      })
       .where(
-        and(eq(run.id, current.runId), eq(run.status, "awaiting_approval"))
-      );
-  }
-  return row ?? current;
-};
+        and(
+          eq(design.id, id),
+          eq(design.userId, actor.userId),
+          eq(design.status, "pending_approval")
+        )
+      )
+      .returning();
+    if (row === undefined) {
+      const current = await getDesign(actor, id);
+      throw designAlreadyDecided({
+        designId: current.id,
+        status: current.status === "approved" ? "approved" : "rejected",
+      });
+    }
+    if (by !== "merchant" || row.runId === null) {
+      return row;
+    }
+    const [waiting] = await tx
+      .update(run)
+      .set({ status: "running", step: approve ? "approved" : "rejected" })
+      .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
+      .returning({ id: run.id });
+    if (waiting === undefined) {
+      return row;
+    }
+    if (actor.runs === undefined) {
+      throw new Error("No run engine to resume the run");
+    }
+    try {
+      await actor.runs.resume(waiting.id, { approve, reason });
+    } catch (error) {
+      throw runNotWaiting(waiting.id, error);
+    }
+    return row;
+  });
 
 // Autopilot's review: Nemotron decides, gated by the judge's verdict.
 export const autopilotDecide = async (
   actor: Actor,
   current: Awaited<ReturnType<typeof getDesign>>
 ) => {
+  // A retried step finds its own decision and keeps it.
+  if (current.status !== "pending_approval") {
+    return current;
+  }
   const source = await getIdea(actor, current.ideaId);
   await meter(actor, "llm", { runId: current.runId });
   const decision = await reviewDesign(
