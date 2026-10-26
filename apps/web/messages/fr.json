@@ -469,7 +469,11 @@
       "reasonPlaceholder": "Typo plus grasse, sans les feuilles",
       "error": "Validez au moins un visuel.",
       "submit": "Créer les produits",
-      "artAlt": "Visuel : {title}"
+      "artAlt": "Visuel : {title}",
+      "shirtAlt": "Visuel sur un t-shirt : {title}",
+      "viewShirt": "Sur un t-shirt",
+      "viewFlat": "Visuel seul",
+      "viewLabel": "Vue du visuel"
     },
     "products": {
       "title": "Publier les produits",

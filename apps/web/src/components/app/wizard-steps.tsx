@@ -35,6 +35,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useId } from "react";
 
+import { DesignPreview } from "@/components/app/design-preview";
 import {
   NextButton,
   StepActions,
@@ -323,16 +324,11 @@ const DesignCard = ({
           rejected && "ring-input"
         )}
       >
-        <div className="bg-muted grid aspect-square place-items-center p-4">
-          <Image
-            alt={t("artAlt", { title: brief.title })}
-            className={cn("h-auto w-full", rejected && "opacity-60")}
-            height={IMAGE_SIZE}
-            src={design.artworkUrl}
-            unoptimized
-            width={IMAGE_SIZE}
-          />
-        </div>
+        <DesignPreview
+          artworkUrl={design.artworkUrl}
+          dimmed={rejected}
+          title={brief.title}
+        />
         <CardHeader>
           <CardTitle className="flex items-start justify-between gap-2">
             <h3 className="font-display text-base font-semibold">
