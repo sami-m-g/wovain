@@ -1,7 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import { OpenAI } from "@posthog/ai/openai";
-import { zodResponseFormat } from "openai/helpers/zod";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { Agent } from "@mastra/core/agent";
+import { withTracing } from "@posthog/ai/vercel";
 import { PostHog } from "posthog-node";
 import type { z } from "zod";
 
@@ -9,16 +10,19 @@ import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 
 // NVIDIA Nemotron 3 Super (120B, 12B active) on Nebius Token Factory, through
-// its OpenAI-compatible API and the official OpenAI SDK. wovain's own model
-// calls (design briefs, the design judge, ad copy and autopilot's decisions)
-// all go through `ask`, which returns schema-checked JSON.
+// its OpenAI-compatible API (the AI SDK's openai-compatible provider) and a
+// Mastra agent per call. wovain's own model calls (design briefs, the design
+// judge, ad copy and autopilot's decisions) all go through `ask`, which
+// returns schema-checked JSON.
 //
-// PostHog LLM analytics (posthog.com/docs/ai-observability) wraps the client:
+// PostHog LLM analytics (posthog.com/docs/ai-observability) wraps the model:
 // each call is a $ai_generation event with its step ($ai_span_name), tokens,
-// latency and cost, grouped by run ($ai_trace_id) and merchant.
+// latency and cost, grouped by run ($ai_trace_id = the run's ID) and
+// merchant.
 export const NEMOTRON_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 // Nebius Token Factory's list price, USD per token ($0.30 and $0.90 per 1M).
 const PRICE = { input: 0.3e-6, output: 0.9e-6 } as const;
+const TIMEOUT_MS = 90_000;
 
 export interface LlmTrace {
   distinctId: string;
@@ -43,7 +47,7 @@ export interface NebiusConfig {
 
 export interface Ask<T extends z.ZodType> {
   log?: Logger | undefined;
-  // Names the call in logs, in the response format and in PostHog.
+  // Names the call in logs, as the agent's ID and in PostHog.
   name: string;
   prompt: string;
   schema: T;
@@ -62,10 +66,15 @@ export const createNemotron = ({
     disabled: posthogKey === undefined,
     host: posthogHost,
   });
-  const client =
+  const nebius =
     apiKey === undefined
       ? undefined
-      : new OpenAI({ apiKey, baseURL, posthog, timeout: 90_000 });
+      : createOpenAICompatible({
+          apiKey,
+          baseURL,
+          name: "nebius",
+          supportsStructuredOutputs: true,
+        });
   return async <T extends z.ZodType>({
     log,
     name,
@@ -74,43 +83,34 @@ export const createNemotron = ({
     system,
     temperature = 0.4,
   }: Ask<T>): Promise<z.output<T>> => {
-    if (client === undefined) {
+    if (nebius === undefined) {
       throw notConfigured.nebius();
     }
     const trace = traces.getStore();
+    const model = withTracing(nebius.chatModel(NEMOTRON_MODEL), posthog, {
+      // Cloud Run throttles CPU after the response: send it now.
+      posthogCaptureImmediate: true,
+      posthogCostOverride: { inputCost: PRICE.input, outputCost: PRICE.output },
+      posthogProperties: { $ai_span_name: name, environment },
+      ...(trace && {
+        posthogDistinctId: trace.distinctId,
+        posthogTraceId: trace.traceId,
+      }),
+    });
+    const agent = new Agent({ id: name, instructions: system, model, name });
     return await external(
       log,
       { operation: name, provider: "nebius" },
       async () => {
-        // parse goes through the wrapped create, so PostHog still captures it.
-        const completion = await client.chat.completions.parse({
-          messages: [
-            { content: system, role: "system" },
-            { content: prompt, role: "user" },
-          ],
-          model: NEMOTRON_MODEL,
-          // Cloud Run throttles CPU after the response: send it now.
-          posthogCaptureImmediate: true,
-          posthogProperties: {
-            $ai_input_token_price: PRICE.input,
-            $ai_output_token_price: PRICE.output,
-            $ai_span_name: name,
-            environment,
-          },
-          ...(trace && {
-            posthogDistinctId: trace.distinctId,
-            posthogTraceId: trace.traceId,
-          }),
-          response_format: zodResponseFormat(schema, name),
-          temperature,
+        const reply = await agent.generate(prompt, {
+          abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+          modelSettings: { temperature },
+          structuredOutput: { schema },
         });
-        const parsed = completion.choices[0]?.message.parsed;
-        if (parsed === null || parsed === undefined) {
+        if (reply.object === undefined || reply.object === null) {
           throw new Error("Nemotron returned no structured answer");
         }
-        // The SDK infers the same output type through its own helper type,
-        // which TypeScript can't match to z.output while T is generic.
-        return parsed as z.output<T>;
+        return schema.parse(reply.object);
       }
     );
   };

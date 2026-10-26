@@ -58,7 +58,6 @@ catalog:
   postcss: 8.5.31
   "@fal-ai/client": 1.10.1
   "@tavily/core": 0.7.14
-  openai: 7.32.0
   "@posthog/ai": ^8.16.3
   posthog-js: ^1.438.21
   posthog-node: ^5.57.2
@@ -68,7 +67,7 @@ catalog:
   "@mastra/core": 1.79.0
   "@mastra/inngest": 1.10.7
   "@mastra/pg": 1.32.0
-  "@ai-sdk/openai-compatible": ^3.0.78
+  "@ai-sdk/openai-compatible": ^2.0.87
   inngest: ^4.26.0
   "@electric-sql/pglite": ^0.5.11
 minimumReleaseAgeExclude:
