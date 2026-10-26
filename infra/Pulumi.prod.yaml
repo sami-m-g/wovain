@@ -46,24 +46,47 @@ config:
               operator: in
               value: [push]
     - name: duo-code-review
-      description: Code review when Duo is asked to review
+      description: Code review on every new merge request, and on request
       flow: code_review/v1
       serviceAccount: duo-code-review-gitlab-ai-hackathon
-      # Only when someone requests Duo as reviewer: the loop's shepherd and
-      # the /issue skill do that only for a ready MR that changes app code
-      # (apps/ops/src/gates.ts reviewSkipReason), never for docs-only,
-      # lockfile-only or Renovate MRs. merge_request_ready is off because
-      # marking any MR ready, docs included, would start a paid review.
-      events: [assign_reviewer]
+      # Every merge request a person opens (the merge_request event, action
+      # created, drafts included; 0.25 credit each), plus a re-review
+      # whenever someone requests Duo as reviewer. Until 2026-10-26 this was
+      # assign_reviewer only, and since nothing asks for a review on a
+      # person's MR (only the shepherd does, for Duo's own MRs), !69–!111 got
+      # no review. Duo's own MRs still go through the shepherd: GitLab starts
+      # no flow for a service account's action. code_review/v1 accepts any
+      # event (it has no supported_events); merge_request filters accept
+      # only action, one of approved, created, merged, requested_changes
+      # (ee/app/models/ai/flow_trigger.rb, ALLOWED_FILTER_ACTIONS).
+      events: [assign_reviewer, merge_request]
       active: true
-  # Custom flows from .gitlab/duo/catalog/flows: a trigger for the consumer
-  # the project already has (infra/duo.ts). The scout starts on a successful
+      filter:
+        merge_request:
+          match: all
+          rules:
+            - field: action
+              operator: in
+              value: [created]
+  # Custom flows from .gitlab/duo/catalog/flows, once synced (mapping.json):
+  # infra/duo.ts enables each in the project (GitLab creates its service
+  # account), adopts it if already enabled, adds this trigger and sets the
+  # account's name as DUO_<NAME>_ACCOUNT (duo-heal: DUO_HEAL_ACCOUNT).
+  # The heal flow starts when the ops job assigns it a heal issue (a new
+  # production error signature) and when the ops job mentions it to address
+  # Duo Code Review's threads. The deps-review flow starts when Renovate
+  # assigns it as reviewer. The scout starts on a successful
   # child pipeline on main, which only the weekly schedule's scout:duo job
   # creates (.gitlab/ci/loop.yml); its prompt is fixed text. No mention
   # trigger: anyone who comments could steer it. No scheduled trigger: GitLab
   # gives it a service account created in the project, which needs
   # create_service_account (Maintainer).
   wovain:duoCustomFlows:
+    - name: duo-heal
+      file: .gitlab/duo/catalog/flows/heal.yml
+      description: wovain heal when wovain ops assigns or mentions it
+      events: [assign, mention]
+      active: true
     - name: duo-scout
       file: .gitlab/duo/catalog/flows/scout.yml
       description: wovain scout, weekly from the scout child pipeline
@@ -82,6 +105,15 @@ config:
             - field: object_attributes.source
               operator: in
               value: [parent_pipeline]
+    # deps-review: Renovate sets its service account as reviewer on minor and
+    # major update merge requests (.gitlab/renovate.json), a person's action
+    # through RENOVATE_TOKEN. Starts once the flow is synced (mapping.json)
+    # and enabled in the project (Automate > AI Catalog > Flows).
+    - name: duo-deps-review
+      file: .gitlab/duo/catalog/flows/deps-review.yml
+      description: wovain deps-review when Renovate assigns it as reviewer
+      events: [assign_reviewer]
+      active: true
     # Progressive delivery's diagnosis (docs/adr/0001-progressive-delivery.md):
     # the canary job and the ops job's release guard assign each
     # release-guard issue to its service account, after they rolled back or

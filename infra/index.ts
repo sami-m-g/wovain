@@ -5,7 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import { posthogTrigger, statusDomainVerification } from "./duo.ts";
+import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
 import { featureFlags } from "./flags.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
@@ -421,11 +421,11 @@ const site = configureDomain({
     { host: `mcp.${domain}`, service: service.name },
     { host: `docs.${domain}`, service: docsService.name },
     { host: `dev.${domain}`, service: dev.service.name },
+    // The status page: apps/web proxies this host to GitLab Pages
+    // (apps/web/next.config.ts), so no Pages domain (a Maintainer setting).
+    { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
-  statusDomainVerification,
-  statusPagesTarget:
-    config.get("statusPagesTarget") ?? "gitlab-ai-hackathon.gitlab.io.",
   zone: "wovain-com",
 });
 export const domainMappings = site.mappings;
@@ -576,12 +576,22 @@ const githubMirrorKey = githubMirror();
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
 export const sqlConnectionName = sql.connectionName;
+// `pulumi stack output duoAccounts`: each custom flow's service account.
+export { duoFlowAccounts as duoAccounts } from "./duo.ts";
 
 // What the pipeline reads. The tokens are stack secrets
 // (`pulumi config set --secret <name>`); everything else comes from above.
 ciVariables({
   DEV_SITE_URL: { created: true, protected: true, value: devUrl },
   DOCS_SITE_URL: { created: true, protected: true, value: docsUrl },
+  // Each custom Duo flow's service account (DUO_HEAL_ACCOUNT, ...), as GitLab
+  // named it when infra/duo.ts enabled the flow.
+  ...Object.fromEntries(
+    Object.entries(duoFlowAccounts).map(([key, value]) => [
+      key,
+      { created: true, protected: true, value },
+    ])
+  ),
   GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
   GCP_IMAGE_REPOSITORY: {
     created: true,

@@ -895,7 +895,7 @@ const verifyKpis = async () => {
 const GUARD_WATCH_MS = 15 * 60_000;
 const guardAccount = env.DUO_RELEASE_GUARD_ACCOUNT;
 const assignGuardIssues = async (issues: Issue[]) => {
-  if (guardAccount === undefined) {
+  if (guardAccount === undefined || guardAccount === "") {
     return [];
   }
   const waiting = issues.filter(

@@ -78,7 +78,7 @@ const fileIssue = async (title: string, body: string) => {
   });
   log(`filed ${issue.web_url}`);
   const account = ENV.DUO_RELEASE_GUARD_ACCOUNT;
-  if (account === undefined) {
+  if (account === undefined || account === "") {
     return;
   }
   try {

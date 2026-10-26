@@ -6,25 +6,23 @@
 
 export const INTEGRATION_SLUGS = [
   "fourthwall",
+  "fal",
   "meta",
-  "qloo",
-  "tavily",
-  "nebius",
   "chatgpt",
 ] as const;
 export type IntegrationSlug = (typeof INTEGRATION_SLUGS)[number];
 
 export const USE_CASE_SLUGS = [
-  "creator-merch",
-  "youtube-merch",
-  "twitch-merch",
-  "band-merch",
+  "independent-labels",
+  "capsule-collections",
+  "graphic-tees",
+  "streetwear-drops",
 ] as const;
 export type UseCaseSlug = (typeof USE_CASE_SLUGS)[number];
 
 export const GUIDE_SLUGS = [
-  "price-print-on-demand-merch",
-  "launch-a-merch-drop",
+  "price-print-on-demand",
+  "launch-a-capsule-drop",
 ] as const;
 export type GuideSlug = (typeof GUIDE_SLUGS)[number];
 
@@ -41,7 +39,7 @@ export interface Step {
 interface Integration {
   /** Display name, e.g. "Fourthwall". */
   name: string;
-  /** What the partner is, in a few words, e.g. "Print-on-demand shop and catalog". */
+  /** What the partner is, in a few words, e.g. "Print-on-demand shop". */
   category: string;
   /** H1 for the page. */
   title: string;
@@ -49,9 +47,9 @@ interface Integration {
   description: string;
   /** One or two sentences under the H1. */
   lead: string;
-  /** Who connects it: the creator's own account, or wovain's keys. */
+  /** Who connects it: the merchant's own account, or wovain's keys. */
   connection: "yours" | "wovain";
-  /** One sentence on what the creator has to do (or that they do nothing). */
+  /** One sentence on what the merchant has to do. */
   setup: string;
   /** What wovain does with it, in the order it happens in a run. */
   steps: Step[];
@@ -64,18 +62,18 @@ interface Integration {
 }
 
 interface UseCase {
-  /** Short name, e.g. "YouTube merch". */
+  /** Short name, e.g. "Capsule collections". */
   name: string;
   /** H1 for the page. */
   title: string;
   /** Meta description, 140 to 160 characters. */
   description: string;
   lead: string;
-  /** The situation the creator is in, one short paragraph. */
+  /** The situation the designer is in, one short paragraph. */
   situation: string;
-  /** A realistic one-sentence brief this creator could type. */
+  /** A realistic one-sentence brief this designer could type. */
   exampleBrief: string;
-  /** How a drop goes for this creator, in order. */
+  /** How a drop goes for this designer, in order. */
   steps: Step[];
   /** Concrete tips specific to this audience. */
   tips: string[];

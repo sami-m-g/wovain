@@ -160,6 +160,45 @@ kpis:
       query: >-
         SELECT sum(toFloat(properties.$ai_total_cost_usd)) / nullIf(uniq(properties.$ai_trace_id), 0) AS value FROM events WHERE event = '$ai_generation' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
 
+  # The next three guard against small samples: each query returns 1 (on
+  # target) until enough merchants or runs exist, so they stay quiet at low
+  # volume. Their windows are part of the definition, not {windowDays}.
+  - id: activation-cohort
+    name: Last week's sign-ups that started a run
+    why: Activation of a matured cohort (sign-ups 7 to 14 days old), the North Star's input; guarded at fewer than 5 sign-ups.
+    unit: ratio
+    direction: up
+    target: 0.25
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(count() < 5, 1, countIf(person_id IN (SELECT person_id FROM events WHERE event = 'run_started' AND properties.environment = 'production' AND timestamp > now() - INTERVAL 14 DAY)) / count()) AS value FROM (SELECT person_id FROM events WHERE event = 'sign_up' AND properties.environment = 'production' AND timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY GROUP BY person_id)
+
+  - id: run-success-rate
+    name: Runs that succeed (last 24 hours)
+    why: A failed run is a merchant who got nothing; run_completed over run_completed plus run_failed, guarded at fewer than 10 runs.
+    unit: ratio
+    direction: up
+    target: 0.9
+    weight: 5
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(count() < 10, 1, countIf(event = 'run_completed') / count()) AS value FROM events WHERE event IN ('run_completed', 'run_failed') AND properties.environment = 'production' AND timestamp > now() - INTERVAL 24 HOUR
+
+  - id: design-approval-rate
+    name: Merchants who approve a design after starting a run
+    why: Agent quality; a run whose designs nobody approves produced nothing. Guarded at fewer than 5 merchants.
+    unit: ratio
+    direction: up
+    target: 0.3
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(uniqIf(person_id, event = 'run_started') < 5, 1, uniqIf(person_id, event = 'design_approved') / uniqIf(person_id, event = 'run_started')) AS value FROM events WHERE event IN ('run_started', 'design_approved') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
   - id: server-error-rate
     name: API server error rate
     why: Each 5xx is a merchant whose action failed.

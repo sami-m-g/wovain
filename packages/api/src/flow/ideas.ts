@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
+import { flagContextOf } from "./flags";
 import { meter } from "./spend";
 
 // Trend research (Qloo × Tavily), saved as ranked ideas.
@@ -15,7 +16,7 @@ export const researchIdeas = async (
   // Qloo's hackathon terms allow it on free and demo plans only, so
   // trends-qloo is evaluated for the merchant's plan; paid plans get
   // Tavily-only trends (docs/adr/0001-progressive-delivery.md).
-  const context = { plan: actor.plan, userId: actor.userId };
+  const context = await flagContextOf(actor);
   const sources = {
     qloo: actor.core.flags.isOn("trends-qloo", context),
     tavily: actor.core.flags.isOn("trends-tavily", context),

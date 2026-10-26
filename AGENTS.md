@@ -25,8 +25,17 @@
   - `packages/db/src/schema/auth.ts`: `pnpm run auth:generate`
   - `packages/db/src/migrations`: `pnpm run db:generate`
   - `.agents/skills`: `npx skills experimental_install`
+  - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
-- Run `pnpm run check`, `pnpm run check-types` and `pnpm run knip` before committing
+- Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
+
+## Specs and changes (OpenSpec)
+
+- `openspec/specs/` is the current truth for each capability; `openspec/changes/` holds open changes.
+- Every feature change starts as an OpenSpec change (`/opsx:propose`) linked to a GitLab issue. Put the issue link in `proposal.md`; the MR says `Closes #<issue>`.
+- Archive the change (`openspec archive <change>`) in the MR that merges it, so `openspec/specs/` stays current.
+- Run `pnpm run spec:validate` before committing spec changes.
+- `docs/scope.md`, `docs/prd.md` and `docs/spec.md` stay the Build With AI: Basics-format summary. When scope changes, update them (and their docs-site copies) in the same MR.
 
 ## How to roll out and roll back
 

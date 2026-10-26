@@ -12,6 +12,7 @@ import {
   FLAGS,
   FLAG_ENVIRONMENTS,
   FLAG_NAMES,
+  INTERNAL_USER_ID,
   INTERNAL_USER_LIST,
 } from "../packages/core/src/flag-registry.ts";
 import type {
@@ -66,18 +67,15 @@ export const strategiesOf = (
 };
 
 export const featureFlags = () => {
-  // The Better Auth user IDs of staff and demo accounts:
-  // `pulumi config set --path 'wovain:internalUserIds[0]' <user id>`. GitLab
-  // wants at least one ID, hence the placeholder that matches nobody.
-  const ids = config.getObject<string[]>("internalUserIds") ?? [];
+  // Team members: the app sends INTERNAL_USER_ID for anyone on its
+  // WOVAIN_ALLOWED_EMAILS allowlist (packages/core/src/flags.ts), so the list
+  // never needs real user IDs.
   const internalList = new gitlab.ProjectFeatureFlagUserList(
     INTERNAL_USER_LIST,
     {
       name: INTERNAL_USER_LIST,
       project: projectId,
-      userXids: (ids.length > 0 ? ids : ["wovain-internal-placeholder"]).join(
-        ","
-      ),
+      userXids: INTERNAL_USER_ID,
     }
   );
   return FLAG_NAMES.map((name) => {

@@ -173,6 +173,8 @@ The trigger token lives only in PostHog's redacted sensitive inputs and a masked
 
 **LLM analytics.** `packages/core/src/nemotron.ts` wraps the OpenAI SDK on Nebius with `@posthog/ai`: every Nemotron call is a `$ai_generation` with its step (`$ai_span_name`: `design_brief`, `design_judge`, `ad_copy`, `autopilot_*`), tokens, latency and cost at Nebius list prices ($0.30 and $0.90 per million tokens), grouped by run (`$ai_trace_id` is the run id) and merchant. The "wovain health" dashboard shows cost and model time per run and per step; `llm-cost-per-run` is a KPI with an alert.
 
+**Product dashboards** (`infra/posthog/dashboards.tf`): Growth, Retention, Agent quality and cost, and Web vitals, as code; the KPI insights of `kpis.yml` join them. Everything in PostHog is code: change it there, never in the UI or through the API. `infra/posthog/import.tf` adopts the objects first created by hand, and is deleted after that apply.
+
 **The "wovain health" dashboard** (`infra/posthog/health.tf`): the merchant funnel, browser errors per 1,000 pageviews, field web vitals (LCP, INP, CLS at p75), rage and dead clicks by page, Nemotron per run and per step, and one tile per PostHog KPI.
 
 ### PostHog's agentic features, and why wovain uses each or not
@@ -199,7 +201,7 @@ The ops job renders `public/index.html` every run and the `pages` job publishes 
 
 | Guardrail | Where |
 | --- | --- |
-| Only the ops job starts the Developer and heal flows (assign), and only Duo Code Review on request (assign_reviewer); `merge_request_ready` and the Fix CI/CD trigger are off | `infra/duo.ts`, `infra/Pulumi.prod.yaml` |
+| Only the ops job starts the Developer and heal flows (assign). Duo Code Review runs on every merge request a person creates (`merge_request`, action `created`) and again on request (`assign_reviewer`); Duo's own MRs get it from the shepherd. The Fix CI/CD trigger is off | `infra/duo.ts`, `infra/Pulumi.prod.yaml` |
 | `agent::task` counts only when a trusted person (`TRUSTED_USERS`, plus the token's owner) added it, nobody edited the issue later, and only trusted people or Duo commented | `apps/ops/src/intake.ts` |
 | Caps: 2 tasks in flight and 5 Developer sessions a day; 1 heal issue in flight and 3 a day; 2 Vulnerability Resolutions a day; one review per commit | `intake.ts`, `heal.ts`, `vulns.ts`, `ops.ts` |
 | Log text is never trusted: allowlisted error class, method and normalized route; the message only inside a block marked untrusted | `apps/ops/src/heal.ts` |
@@ -237,10 +239,10 @@ The nine stages, with PostHog in Plan and Monitor:
 
 ## Setup
 
-1. `pulumi up` in `infra/` (a person runs it): triggers, schedules, labels, the Pages domain; with `pulumi config set wovain:ultimate true` and `wovain:complianceGroup <top-level group>`, the compliance framework and the policy link.
-2. CI variables: `GITLAB_TOKEN` (a person's token, `api` scope; flows bill the namespace), `TRUSTED_USERS`, `SITE_URL=https://wovain.com`. When GitLab names the service accounts differently, `DUO_DEVELOPER_ACCOUNT`, `DUO_HEAL_ACCOUNT`, `DUO_REVIEW_ACCOUNT`.
-3. After the first main pipeline syncs `wovain heal` to the AI Catalog, enable it in the project (Automate > AI Catalog > Flows > Enable), then run `pulumi up` again so `infra/duo.ts` adds its trigger.
+1. `pulumi up` in `infra/` (a person runs it): triggers, schedules, labels; with `pulumi config set wovain:ultimate true` and `wovain:complianceGroup <top-level group>`, the compliance framework and the policy link.
+2. CI variables: `GITLAB_TOKEN` (a person's token, `api` scope; flows bill the namespace), `TRUSTED_USERS`, `SITE_URL=https://wovain.com`. When GitLab names the built-in flows' service accounts differently, `DUO_DEVELOPER_ACCOUNT`, `DUO_REVIEW_ACCOUNT`.
+3. Custom flows need no UI step. Once the main pipeline syncs a flow in `wovain:duoCustomFlows` to the AI Catalog (`mapping.json`), the next `pulumi up` enables it in the project (`aiCatalogItemConsumerCreate`, which needs the Developer+ role's `admin_ai_catalog_item_consumer`, not Maintainer), adopts it if it was already enabled, and adds its trigger. GitLab creates the flow's service account, `ai-<flow name>-<top-level group>`. Pulumi reads the name back from the trigger and sets it as the CI variable `DUO_<NAME>_ACCOUNT` (`duo-heal`: `DUO_HEAL_ACCOUNT`, which the ops job assigns heal issues to). `pulumi stack output duoAccounts` lists them all. Anything that asks a custom flow to review, such as Renovate's `reviewers` for a `duo-deps-review` flow, takes its name from that variable (`DUO_DEPS_REVIEW_ACCOUNT`) rather than a guess.
 4. Cloud Run needs `GITLAB_FEATURE_FLAGS_URL` and `GITLAB_FEATURE_FLAGS_INSTANCE_ID` (Deploy > Feature flags > Configure) for the fault flag to work.
-5. DNS: `status.wovain.com` CNAME to the project's Pages host, and the TXT record from the `statusDomainVerification` output.
+5. `status.wovain.com` is a Cloud Run domain mapping to the web service, which proxies it to the project's Pages site (`apps/web/next.config.ts`); no Pages domain is needed.
 6. PostHog (project "wovain", id 687269, US cloud): a person creates a personal API key at Settings > Personal API keys, scoped to this project, with `query:read`, `alert:write`, `insight:write`, `dashboard:write`, `hog_function:write`, `survey:write`, `feature_flag:write`, `experiment:write` and `project:write` (for `infra/posthog/settings.tf`). Then `pulumi config set --secret posthog-personal-api-key phx_...` and `pulumi config set posthogProjectId 687269`; main's `pulumi up` sets the CI variables. A pipeline trigger token needs Maintainer, so it's opt-in: a Maintainer runs `pulumi config set wovain:posthogTrigger true` and `pnpm run infra:up -- --policy-pack-config policy/maintainer.json`, which creates the trigger and `POSTHOG_TRIGGER_TOKEN`. `infra/posthog/settings.tf` sets cookieless server hash mode and the default test account filters (dev traffic, signed-in team members, bots). In PostHog, exception autocapture, web vitals, heatmaps and dead clicks are already on; turn on spike detection in Error tracking > Configuration.
 7. The next main pipeline that touches `infra/posthog` or `kpis.yml` plans the PostHog config (`posthog:plan`); a person reviews the plan and runs `posthog:apply`. Then launch the "Run rating" survey in PostHog when it should start showing.

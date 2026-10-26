@@ -54,6 +54,24 @@ describe("createFlags", () => {
     ]);
   });
 
+  it("evaluates team members as the internal-only list's member", () => {
+    const unleash = fakeUnleash(true, new Set(["app-ui-v2"]));
+    const exposures: Exposure[] = [];
+    const flags = createFlags(configured, {
+      onExposure: (e) => exposures.push(e),
+      unleash,
+    });
+
+    flags.isOn("app-ui-v2", { internal: true, userId: "u1" });
+
+    expect(unleash.isEnabled).toHaveBeenCalledWith(
+      "app-ui-v2",
+      expect.objectContaining({ userId: "wovain-internal" }),
+      false
+    );
+    expect(exposures[0]?.context.userId).toBe("u1");
+  });
+
   it("keeps Qloo off for paid plans whatever GitLab says", () => {
     const unleash = fakeUnleash(true, new Set(["trends-qloo"]));
     const flags = createFlags(configured, { onExposure: vi.fn(), unleash });

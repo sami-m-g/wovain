@@ -44,6 +44,20 @@
         "synced_at": "2026-10-25T15:45:45.898Z",
         "definition_hash": "fa0d80e34b97d300"
       }
+    },
+    ".gitlab/duo/catalog/flows/deps-review.yml": {
+      "catalog_id": "gid://gitlab/Ai::Catalog::Item/1019839",
+      "name": "wovain deps-review",
+      "created_at": "2026-10-26T12:50:01.509Z",
+      "item_consumers": {
+        "additional": []
+      },
+      "latest_sync": {
+        "git_tag": "a1c8c2e6",
+        "catalog_version": "1.0.0",
+        "synced_at": "2026-10-26T12:50:01.509Z",
+        "definition_hash": "bbf2e4135fb10f90"
+      }
     }
   }
 }

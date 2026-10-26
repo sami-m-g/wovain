@@ -5,46 +5,56 @@ status: approved
 
 # wovain — Technical Spec
 
+Last updated 2026-10-26. "Live" means on `main` and deployed; "in review" means an open merge request; "in progress" and "planned" mean not merged yet. Detailed, per-capability requirements live in `openspec/specs/`, and each open change in `openspec/changes/`.
+
 ## How This Works, In Plain Language
 
-One Next.js 16 app runs on Google Cloud Run at <https://wovain.com>. It serves the website, an API and an MCP server that ChatGPT connects to. The website and ChatGPT call the same API procedures, so they always do the same thing. A PostgreSQL database on Cloud SQL remembers users, connections, runs, ideas, designs, products and campaigns.
+One Next.js 16 app runs on Google Cloud Run at <https://wovain.com>. It serves the website, an API and an MCP server that ChatGPT connects to. The website and ChatGPT call the same API procedures, so they always do the same thing. A PostgreSQL database on Cloud SQL remembers users, connections, runs, ideas, designs, products, campaigns and usage.
 
-When the seller asks for ideas, the API asks Qloo which themes the seed's fans love and asks Tavily what is in the news and on marketplaces inside those themes. Nemotron, hosted on Nebius Token Factory, writes the design brief and listing; fal draws the art; Nemotron judges it, and code re-checks the print size. On approval the API creates a Fourthwall product and, later, a Meta campaign, always paused. The documentation lives separately at <https://docs.wovain.com>.
+When a designer describes a drop, the API asks Qloo which themes the audience loves and asks Tavily what is in the news and on marketplaces inside those themes. Nemotron, hosted on Nebius Token Factory, writes the design brief and listing; fal draws the art on the designer's own fal account (in progress; today the platform key); Nemotron judges it, and code re-checks the print size. On approval the API creates a hidden Fourthwall product on the designer's shop and, later, a Meta campaign on their ad account, always paused.
 
-Why not something more elaborate: one app and one set of procedures keep the proof of concept small and the two surfaces identical.
+Today each run is a chain of function calls inside one web request. The target, in progress, is Mastra: each step becomes a Mastra workflow step, the approval gate is a workflow suspend that resumes when the designer decides, runs are stored in Postgres so they survive restarts, and Mastra scorers grade every agent and step. Billing (in review) charges paid steps in credits through Polar.
+
+Why this shape: one app and one set of procedures keep the two surfaces identical; one agent framework (Mastra) replaces hand-rolled orchestration, durability, memory, evals and tracing.
 
 ## The Core Journey Through the System
 
 PRD ref: `prd.md > The Core Journey`.
 
-1. The seller signs in → Better Auth (`/api/auth`) creates a session in PostgreSQL. ChatGPT instead signs in through Better Auth's OAuth server and calls `POST /api/mcp` with an access token.
-2. The seller enters a seed → the page or the MCP tool `research_trends` calls `ideas.research` → `researchIdeas` in `packages/api/src/flow/ideas.ts` uses Qloo and Tavily from `packages/core` → ranked ideas are saved.
-3. The seller picks an idea → `designs.generate` (`generateDesign`) → Nemotron brief (`draftBrief`), fal art (`createArtist`), price (`priceFor`), Nemotron judge (`judgeDesign`) → the design is saved as `pending_approval`.
-4. The seller approves → `designs.approve` (`decideDesign`).
-5. `products.create` (`createDesignProduct`) calls Fourthwall through the seller's sealed connection; `products.publish` makes it public.
-6. `campaigns.create` (`createProductCampaign`) → Nemotron ad copy (`writeAdCopy`) → `stagePausedCampaign` creates the campaign, ad set and ads paused on Meta.
-7. `runs.start` (`startRun`) chains these steps; with `autopilot: true` Nemotron picks the idea (`pickIdea`) and reviews the design (`reviewDesign`).
+1. The designer signs in → Better Auth (`/api/auth`, Google or email) creates a session in PostgreSQL. ChatGPT instead signs in through Better Auth's OAuth server and calls `POST /api/mcp` with an access token.
+2. They connect providers → `/api/connections/[provider]/start` and `callback` run the provider's OAuth; `packages/core/src/sealing.ts` seals the tokens into `connection`.
+3. They describe a drop → the page or the MCP tool `research_trends` calls `ideas.research` → `researchIdeas` (`packages/api/src/flow/ideas.ts`) uses Qloo and Tavily from `packages/core` → ranked ideas are saved. Paid steps are metered (`flow/spend.ts`; credits in MR !116).
+4. They pick an idea → `designs.generate` (`generateDesign`) → Nemotron brief (`draftBrief`), fal art (`createArtist`), price (`priceFor`), Nemotron judge (`judgeDesign`) → the design is saved as `pending_approval`.
+5. They approve → `designs.approve` (`decideDesign`). Target: the Mastra run workflow is suspended here and `resume()` continues it.
+6. `products.create` (`createDesignProduct`) calls Fourthwall through the sealed connection; `products.publish` makes it public.
+7. `campaigns.create` (`createProductCampaign`) → Nemotron ad copy (`writeAdCopy`) → `stagePausedCampaign` creates the campaign, ad set and ads paused on Meta.
+8. `runs.start` (`startRun`) chains these steps; with `autopilot: true` Nemotron picks the idea (`pickIdea`) and reviews the design (`reviewDesign`). Target: `runs.start` creates the run, starts the Mastra workflow and returns at once; clients poll `runs.get`.
 
 ## Stack
 
-| Layer | Choice | Docs |
-| --- | --- | --- |
-| App | Next.js 16, App Router, React 19 | <https://nextjs.org/docs> |
-| API | oRPC procedures in `packages/api`, mounted at `/api/rpc` | <https://orpc.dev> |
-| MCP | `@modelcontextprotocol/server` in `packages/api/src/mcp.ts`, served at `/api/mcp` | <https://modelcontextprotocol.io> |
-| Auth | Better Auth with the MCP and JWT plugins in `packages/auth`, mounted at `/api/auth` | <https://better-auth.com> |
-| Domain logic | `packages/core`: providers, pricing, judge, autopilot |  |
-| Data | Drizzle ORM, PostgreSQL on Cloud SQL, in `packages/db` | <https://orm.drizzle.team> |
-| Logs | evlog wide events, one per request | <https://evlog.dev> |
-| UI | shadcn/ui on Base UI, Tailwind CSS 4, in `packages/ui` | <https://ui.shadcn.com> |
-| Environment | Varlock schemas, typed `ENV` | <https://varlock.dev> |
-| Docs site | Fumadocs with en, fr and es | <https://fumadocs.dev> |
-| Models | NVIDIA Nemotron 3 Super (`NEMOTRON_MODEL`) on Nebius Token Factory | <https://docs.tokenfactory.nebius.com> |
+| Layer | Choice | Status | Docs |
+| --- | --- | --- | --- |
+| App | Next.js 16, App Router, React 19 | Live | <https://nextjs.org/docs> |
+| API | oRPC procedures in `packages/api`, mounted at `/api/rpc` | Live | <https://orpc.dev> |
+| MCP | `@modelcontextprotocol/server` in `packages/api/src/mcp.ts` at `/api/mcp`; MCP Apps widgets in `packages/widgets` | Live | <https://modelcontextprotocol.io> |
+| Auth | Better Auth 1.7 with Google, email, MCP and JWT plugins in `packages/auth`; Better Auth UI for screens | Live; UI in review (!111) | <https://better-auth.com> |
+| Agents and workflows | Mastra: agents, workflows with suspend/resume, durable runs, tools, memory and storage on `@mastra/pg`, scorers, tracing | In progress | <https://mastra.ai/docs> |
+| Domain logic | `packages/core`: providers, pricing, judge, autopilot, spend | Live; moves behind Mastra tools |  |
+| Billing | Polar (merchant of record) through the Better Auth Polar plugin, `packages/billing` with plans and a credit ledger | In review (!116) | <https://polar.sh/docs> |
+| Data | Drizzle ORM, PostgreSQL on Cloud SQL, in `packages/db` | Live | <https://orm.drizzle.team> |
+| Analytics | PostHog (product analytics, `$ai_*`, `$exception`) | Live; dashboards as code in review (!115) | <https://posthog.com/docs> |
+| Logs | evlog wide events, one per request | Live | <https://evlog.dev> |
+| UI | shadcn/ui on Base UI, Tailwind CSS 4, in `packages/ui` | Live | <https://ui.shadcn.com> |
+| Environment | Varlock schemas, typed `ENV` | Live | <https://varlock.dev> |
+| Specs | OpenSpec (`openspec/`) for capability specs and changes | This MR | <https://github.com/Fission-AI/OpenSpec> |
+| Infra | Pulumi (GCP, GitLab, Resend, PostHog), GitLab CI | Live | <https://www.pulumi.com/docs> |
+| Docs site | Fumadocs with en, fr and es | Live | <https://fumadocs.dev> |
+| Models | NVIDIA Nemotron 3 Super (`NEMOTRON_MODEL`) on Nebius Token Factory | Live | <https://docs.tokenfactory.nebius.com> |
 
 ## Where It Runs and How Someone Tries It
 
-- **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>.
-- **ChatGPT:** add a connector with the URL `https://mcp.wovain.com/api/mcp`. OAuth discovery is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`; the seller signs in and approves access on the consent page.
+- **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>. CI deploys on merge to `main` and runs migrations first.
+- **ChatGPT:** add a connector with the URL `https://mcp.wovain.com/api/mcp`. OAuth discovery is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`; the designer signs in and approves access on the consent page.
 - **Locally:** Node.js (see `.nvmrc`), pnpm and Docker for PostgreSQL.
 
 ```bash
@@ -53,57 +63,72 @@ docker compose up -d
 pnpm run dev
 ```
 
-Keys go in `apps/web/.env.schema` values: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `FAL_KEY`, `META_APP_ID`, `META_APP_SECRET`. Never commit real values.
+Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `FAL_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Never commit real values.
 
-Submission needs a short demo video and the public repository; deployment is additional. Video URL: to be added. Repository URL: to be added.
+Submission needs a short demo video and the public repository: <https://github.com/sami-m-g/wovain> (MIT). Video URL: to be added after upload.
 
 ## Look and Feel
 
-Warm, plain, numbers first; coach voice. Light and dark themes from shadcn tokens; one primary action per card. Works at phone width.
+Editorial, restrained, numbers first (`prd.md > Look and Feel`). Light and dark themes from shadcn tokens; one primary action per screen; hairline rules and generous spacing; works at phone width. The visual system is in `apps/web/DESIGN.md`. No model or protocol names in user-facing copy. The logo renders only through `<Logo/>`; the "Impression" wordmark is the round-6 recommendation, not final.
 
 ## Components
 
 ### Web app (`apps/web`)
 
-Pages (`login`, `dashboard`, `consent`), `/api/rpc`, `/api/auth`, `/api/mcp`, `/api/connections/[provider]/start` and `callback`, and the `.well-known` OAuth routes. `src/services.ts` builds `db`, `auth` and `core`. PRD ref: `prd.md > Screens and Layout`.
+Marketing pages (landing, guides, use cases, integrations; pricing in review), auth pages (`login`, `sign-up`, `reset`, `consent`), the `dashboard`, `/api/rpc`, `/api/auth`, `/api/mcp`, `/api/connections/[provider]/start` and `callback`, `/api/checkout/quote`, and the `.well-known` OAuth routes. PRD ref: `prd.md > Screens and Layout`.
 
 ### API (`packages/api`)
 
-`appRouter` in `src/routers/index.ts` lists `ideas`, `designs`, `products`, `campaigns`, `runs` and `connections`; the step logic is in `src/flow/*`. `publicProcedure` adds evlog logging; `protectedProcedure` requires a session or an MCP user. PRD ref: `prd.md > Features and Behavior`.
+`appRouter` in `src/routers/index.ts` lists `ideas`, `designs`, `products`, `campaigns`, `runs` and `connections`; the step logic is in `src/flow/*`. `protectedProcedure` requires a session or an MCP user; `funnelProcedure` sends funnel events to PostHog. PRD ref: `prd.md > Features and Behavior`.
 
 ### MCP server (`packages/api/src/mcp.ts`)
 
-`createMcpServer` registers `list_connections`, `research_trends`, `generate_design`, `approve_design`, `reject_design`, `create_product`, `publish_product`, `create_campaign`, `start_run` and `get_run`, each calling the same router. PRD ref: `prd.md > Screens and Layout`.
+`createMcpServer` registers `list_connections`, `research_trends`, `generate_design`, `approve_design`, `reject_design`, `create_product`, `publish_product`, `create_campaign`, `start_run` and `get_run`, each calling the same router; the main steps also open a widget from `packages/widgets`. PRD ref: `prd.md > Screens and Layout`.
 
 ### Core (`packages/core`)
 
-`createCore` wires Qloo (`qloo.ts`), Tavily (`trends.ts`), Nemotron (`nemotron.ts`), fal (`fal.ts`), pricing (`pricing.ts`), the judge (`design.ts`), autopilot (`autopilot.ts`), ads (`ads.ts`), Fourthwall (`fourthwall.ts`), the upstream OAuth client (`upstream.ts`) and token sealing (`sealing.ts`). PRD ref: `prd.md > Features and Behavior`.
+`createCore` wires Qloo (`qloo.ts`), Tavily (`trends.ts`), Nemotron (`nemotron.ts`), fal (`fal.ts`), pricing (`pricing.ts`), the judge (`design.ts`), idea scores (`score.ts`), autopilot (`autopilot.ts`), ads (`ads.ts`), Fourthwall (`fourthwall.ts`), the upstream MCP OAuth client (`upstream.ts`), spend limits (`spend.ts`) and token sealing (`sealing.ts`). PRD ref: `prd.md > Features and Behavior`.
+
+### Mastra runtime (in progress)
+
+A Mastra instance with storage on `@mastra/pg` (same Cloud SQL database, own schema). Agents: brief writer, judge, ad copywriter, autopilot reviewer. Tools wrap the `packages/core` providers (Qloo, Tavily, fal, Fourthwall, Meta). The run workflow chains research → design → judge → approval (suspend, resume on the designer's decision or the autopilot review) → product → publish → campaign; each step is idempotent so a retry does not duplicate external objects. Memory keeps the designer's direction and past decisions. PRD ref: `prd.md > Runs, approval and autopilot`.
+
+### Quality (planned with Mastra)
+
+Mastra scorers on every agent and step: code scorers (print size, avoided names, length limits, price floor) and LLM judges calibrated against a labeled set. Input and output guardrails as Mastra processors. Scores are stored with the run, traced, and sent to PostHog as `agent_score`. PRD ref: `prd.md > Quality`.
+
+### Billing (`packages/billing`, in review)
+
+Plans in `src/plans.ts` (Free, Studio, Label and a credit pack; numbers are a proposal), seeded into Polar with `pnpm polar:seed`. An atomic credit ledger reserves credits before a paid step and settles or refunds after it. Polar webhooks are mirrored once each. PRD ref: `prd.md > Billing and credits`.
 
 ### Auth (`packages/auth`)
 
-`createAuth` builds Better Auth on the Drizzle database; `mcpResource` is the URL access tokens are bound to. PRD ref: `prd.md > States and Boundaries`.
+`createAuth` builds Better Auth on the Drizzle database with Google, email, JWT and MCP; `mcpResource` is the URL access tokens are bound to. A `sign_up` event goes to PostHog. PRD ref: `prd.md > Sign-in and accounts`.
 
 ### Database (`packages/db`)
 
-Better Auth tables in `src/schema/auth.ts`; seller tables in `src/schema/seller.ts`. PRD ref: `prd.md > States and Boundaries`.
+Better Auth tables in `src/schema/auth.ts` (generated); seller tables in `src/schema/seller.ts`. PRD ref: `prd.md > States and Boundaries`.
 
-### Duo flows
+### Ops and Duo flows (`apps/ops`, `.gitlab/duo`)
 
-Self-healing, scout and developer flows around the repository; definitions in `docs/flows.md`. PRD ref: `prd.md > Features and Behavior` (After deploy).
+Self-healing, scout and developer flows; KPI definitions in `.gitlab/duo/kpis.yml`. PRD ref: `prd.md > After deploy`.
 
 ## Data Model
 
 | Table | Holds | Updated |
 | --- | --- | --- |
 | `user`, `session`, `account` and OAuth tables | Better Auth | Sign-up, sign-in, OAuth consent |
-| `connection`, `connection_flow` | A seller's Fourthwall and Meta grants, tokens sealed with AES-256-GCM; pending OAuth flows | On connect |
-| `run` | A pass from a seed: autopilot flag, status, current step, error | Every step |
+| `connection`, `connection_flow` | A designer's provider grants, tokens sealed with AES-256-GCM; pending OAuth flows | On connect |
+| `run` | A pass from a direction: autopilot flag, status, current step, error | Every step |
 | `idea` | Ranked ideas with their research and the names never to print | On research |
 | `design` | Brief, art, judgment, price, status and decision reason | On generate and decide |
 | `product` | The Fourthwall product and its published state | On create and publish |
 | `campaign` | The paused Meta campaign and its ad copy | On create |
+| `usage` | Metered cost per step | On each paid step |
+| Billing tables (in review) | Polar customer and subscription mirror, credit ledger and reservations, webhook events | Webhooks and paid steps |
+| Mastra tables (in progress) | Workflow snapshots, threads and memory, scores, traces, in their own schema | Managed by Mastra |
 
-Migrations are generated with `pnpm run db:generate`.
+Migrations are generated with `pnpm run db:generate`. Architecture targets for the schema (timestamptz, money in minor units, CHECK constraints, FK indexes, unique external IDs, organizations) are tracked in `openspec/changes/`.
 
 ## File Structure
 
@@ -111,49 +136,61 @@ Migrations are generated with `pnpm run db:generate`.
 wovain/
 ├── apps/
 │   ├── web/              # Next.js 16: pages, /api/rpc, /api/auth, /api/mcp
+│   ├── ops/              # self-healing and KPI jobs
 │   └── fumadocs/         # docs site, content/docs in en, fr, es
 ├── packages/
 │   ├── api/              # oRPC routers, flow steps, MCP server
 │   ├── auth/             # Better Auth configuration
-│   ├── core/             # providers, pricing, judge, autopilot
+│   ├── billing/          # Polar plans and credit ledger (in review)
+│   ├── core/             # providers, pricing, judge, autopilot, spend
 │   ├── db/               # Drizzle schema, relations, client, migrations
+│   ├── email/            # transactional email (Resend)
 │   ├── ui/               # shared shadcn/ui components
+│   ├── widgets/          # ChatGPT (MCP Apps) widgets
 │   └── config/           # shared tsconfig
-├── docs/                 # scope, PRD, spec, app map, flows
-├── infra/                # deployment
+├── openspec/             # capability specs and change proposals
+├── docs/                 # scope, PRD, spec, app map, flows, submissions
+├── infra/                # Pulumi
 └── AGENTS.md
 ```
 
 ## External Services and Dependencies
 
-| Service | Use | Key | Notes |
-| --- | --- | --- | --- |
-| Nebius Token Factory | Nemotron brief, judge, ad copy and autopilot, OpenAI-compatible at `NEBIUS_BASE_URL` (`https://api.tokenfactory.nebius.com/v1/`) | `NEBIUS_API_KEY` | Pay per token |
-| Qloo | `/search` and `/v2/insights` at `QLOO_API_URL` (`https://hackathon.api.qloo.com`) | `QLOO_API_KEY` | Hackathon key |
-| Tavily | Live search of news and marketplaces (etsy.com, redbubble.com, fourthwall.com) | `TAVILY_API_KEY` | Rate limited |
-| fal | Print art with GPT Image on fal | `FAL_KEY` | Pay per image |
-| Fourthwall | Catalog, previews, products and publish through its MCP server | OAuth per seller |  |
-| Meta Ads | Campaign, ad set and ads, created paused, through its MCP server | `META_APP_ID`, `META_APP_SECRET`, OAuth per seller | App review may be needed |
-| Cloud SQL, Cloud Run | PostgreSQL and hosting | GCP project |  |
+| Service | Use | Who pays | Key | Notes |
+| --- | --- | --- | --- | --- |
+| Nebius Token Factory | Nemotron brief, judge, ad copy and autopilot, OpenAI-compatible at `NEBIUS_BASE_URL` | wovain, from credits | `NEBIUS_API_KEY` | Pay per token |
+| Qloo | `/search` and `/v2/insights` at `QLOO_API_URL` | wovain, from credits | `QLOO_API_KEY` | Hackathon key; commercial licence to confirm |
+| Tavily | Live search of news and marketplaces | wovain, from credits | `TAVILY_API_KEY` | Rate limited |
+| fal | Print art with GPT Image on fal | Merchant (own key, in progress) | `FAL_KEY` today | Pay per image |
+| Fourthwall | Catalog, previews, products and publish through its MCP server | Merchant (own shop) | OAuth per merchant | Merchant of record for product sales |
+| Meta Ads | Campaign, ad set and ads, created paused, through its MCP server | Merchant (own ad account) | `META_APP_ID`, `META_APP_SECRET`, OAuth per merchant | App review may be needed |
+| Polar | Subscriptions, credit packs, checkout, portal, webhooks | wovain (4% + 40¢) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET` | In review |
+| PostHog | Product analytics, LLM analytics, errors | wovain | `NEXT_PUBLIC_POSTHOG_KEY` |  |
+| Cloud SQL, Cloud Run | PostgreSQL and hosting | wovain | GCP project |  |
 
 ## Important Failure Modes
 
 - **A provider key is missing** → the step fails with `NOT_CONFIGURED` naming the variable; other steps still work.
-- **A seller has not connected Fourthwall or Meta** → the MCP tool returns the error, why, the fix and the connect link.
-- **A step fails in a run** → the run is `failed` with its step and error.
+- **A designer has not connected Fourthwall or Meta** → the MCP tool returns the error, why, the fix and the connect link.
+- **A step fails in a run** → the run is `failed` with its step and error; with billing, the reserved credits are released.
+- **The instance restarts mid-run** → today the run can stay `running`; with Mastra, the workflow resumes from its last stored step (in progress).
 
 ## What Was Simplified and Why
 
 - **One app** instead of separate API and MCP services — one set of procedures keeps surfaces consistent.
-- **JSON tool results** instead of ChatGPT widgets — less code; widgets can come later.
 - **Paused campaigns** instead of live launches — removes the risk of unintended spend.
-- **T-shirt only** — one product proves the loop.
+- **One design per run** instead of a multi-product set — proves the loop first; fan-out comes after durable runs and evals.
+- **Runs inside the request** until the Mastra migration lands — simple, but bounded by the request timeout.
+- **One user per account** instead of organizations — enough for a solo designer; labels with seats come later.
 - **No optimizer** — it needs real spend data first.
 
 ## Decisions and Open Issues
 
-- Code gates and Nemotron decides inside them — chosen so a model error cannot publish an unchecked design or spend money; the tradeoff is occasional overrides of a good model answer.
-- Qloo before Tavily — taste narrows the news search; the tradeoff is dependence on Qloo coverage of the seed.
+- Code gates and Nemotron decides inside them — so a model error cannot publish an unchecked design or spend money; the tradeoff is occasional overrides of a good model answer.
+- Mastra over a hand-rolled or separate durable-execution engine — the founder chose one framework for agents, workflows, memory, scorers and tracing; the tradeoff is a dependency on Mastra's storage and release cadence.
+- Polar over Stripe direct — merchant of record handles sales tax and invoices; the tradeoff is Polar's fee.
+- Merchant-owned connectors for fal, Meta and Fourthwall; wovain-owned Nebius, Tavily and Qloo — matches who owns the output and keeps onboarding short.
+- OpenSpec for specs and changes — every feature change starts as an OpenSpec change linked to a GitLab issue; these three docs stay the Basics-format summary.
 - Resolved: ChatGPT connects to `https://mcp.wovain.com/api/mcp`; Better Auth's MCP plugin is the OAuth server and `requireMcpAuth` verifies each token.
-- Open: Meta app review scope for server-side campaign creation.
-- Unfamiliar concept discussed: the difference between a model suggesting a value and code guaranteeing it. Clarified by the rule that code-decided checks (print size, price floor, budget range) are not model output, shown by the tests in `packages/core/src/design.test.ts`.
+- Open: lock pricing numbers; Qloo commercial licence; Meta app review scope; fal connector before billing goes live.
+- Unfamiliar concept discussed: the difference between a model suggesting a value and code guaranteeing it. Clarified by the rule that code-decided checks (print size, price floor, budget range) are not model output, shown by the tests in `packages/core/src/design.test.ts`. The same idea now extends to scorers: code scorers are facts, LLM judges are calibrated before they are trusted.

@@ -2,7 +2,7 @@ import { PostHog } from "posthog-node";
 import { InMemStorageProvider, initialize } from "unleash-client";
 import type { Unleash } from "unleash-client";
 
-import { FLAGS, FLAG_NAMES } from "./flag-registry";
+import { FLAGS, FLAG_NAMES, INTERNAL_USER_ID } from "./flag-registry";
 import type {
   FlagDefinition,
   FlagEnvironment,
@@ -33,8 +33,10 @@ export interface FlagContext {
   // Checked by the app against the flag's `plans` (GitLab has no Unleash
   // constraints). Unknown plans count as free, the only plan sold at launch.
   plan?: FlagPlan | undefined;
-  // Staff or demo account, as far as the caller knows; analytics only, the
-  // `internal-only` user list decides in GitLab.
+  // A team member (the WOVAIN_ALLOWED_EMAILS allowlist; flagContextOf in
+  // packages/api derives it server-side). GitLab can't match a property, so
+  // a team member is evaluated as INTERNAL_USER_ID, the `internal-only`
+  // list's member; exposures still go to the real user ID.
   internal?: boolean | undefined;
 }
 
@@ -166,6 +168,9 @@ export const createFlags = (
     if (!sdk.isSynchronized()) {
       return { enabled: false, reason: "closed" };
     }
+    // A team member is the internal-only list's one member.
+    const evaluatedAs =
+      context.internal === true ? INTERNAL_USER_ID : context.userId;
     const enabled = sdk.isEnabled(
       name,
       {
@@ -174,7 +179,7 @@ export const createFlags = (
           internal: String(context.internal ?? false),
           plan: context.plan ?? "free",
         },
-        ...(context.userId === undefined ? {} : { userId: context.userId }),
+        ...(evaluatedAs === undefined ? {} : { userId: evaluatedAs }),
       },
       false
     );
