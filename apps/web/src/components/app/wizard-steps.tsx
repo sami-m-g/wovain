@@ -170,8 +170,16 @@ export const BriefStep = ({
   );
 };
 
-const Signal = ({ label, value }: { label: string; value: string }) => (
-  <div className="bg-muted rounded-md p-2">
+const Signal = ({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string | undefined;
+}) => (
+  <div className="bg-muted rounded-md p-2" title={hint}>
     <dt className="text-muted-foreground">{label}</dt>
     <dd className="figures font-semibold">{value}</dd>
   </div>
@@ -239,10 +247,15 @@ export const IdeasStep = ({
                       ) : null}
                       <dl className="grid grid-cols-3 gap-2 text-xs">
                         <Signal
+                          hint={
+                            research.signals.affinity === undefined
+                              ? t("affinityUnavailableHint")
+                              : undefined
+                          }
                           label={t("affinity")}
                           value={
                             research.signals.affinity === undefined
-                              ? "–"
+                              ? t("affinityUnavailable")
                               : decimal(research.signals.affinity)
                           }
                         />

@@ -314,9 +314,14 @@ export const createTrends = (
     }
     // Qloo sharpens the themes; the brief tops them up to MIN_THEMES.
     const taste = sources.qloo
-      ? await qloo
-          .tasteOf(seed, log)
-          .catch(() => ({ failed: true, names: [], themes: [] }))
+      ? await qloo.tasteOf(seed, log).catch((error: unknown) => {
+          // Research goes on without Qloo, but the failure still reaches
+          // the error sink (PostHog Error Tracking).
+          log?.error?.(
+            error instanceof Error ? error : new Error(String(error))
+          );
+          return { failed: true, names: [], themes: [] };
+        })
       : NO_TASTE;
     const themes = await themesFor(seed, taste.themes, ask, log);
     const searched = await Promise.all(

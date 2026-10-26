@@ -445,6 +445,8 @@
       "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. La mejor idea ya tiene diseño.",
       "score": "Puntuación {score}",
       "affinity": "Afinidad",
+      "affinityUnavailable": "No disponible",
+      "affinityUnavailableHint": "Qloo no tiene datos de gustos para esta idea.",
       "news": "Noticias",
       "listings": "Anuncios",
       "sources": "Fuentes",

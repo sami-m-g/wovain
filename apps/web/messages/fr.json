@@ -445,6 +445,8 @@
       "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. La meilleure idée a déjà un visuel.",
       "score": "Score {score}",
       "affinity": "Affinité",
+      "affinityUnavailable": "Indisponible",
+      "affinityUnavailableHint": "Qloo n'a pas de données de goût pour cette idée.",
       "news": "Actualité",
       "listings": "Annonces",
       "sources": "Sources",

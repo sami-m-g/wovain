@@ -132,8 +132,10 @@ describe("createTrends", () => {
     const { ask, asked } = fakeNemotron(HALLOWEEN_THEMES);
     const trends = createTrends(client, qlooDown, ask);
 
-    const research = await trends.research(BRIEF);
+    const error = vi.fn();
+    const research = await trends.research(BRIEF, { error, set: vi.fn() });
 
+    expect(error).toHaveBeenCalledWith(expect.any(Error));
     expect(research.qloo).toBe("failed");
     expect(asked).toEqual(["research_themes"]);
     const themes = research.ideas.map((idea) => idea.theme);
