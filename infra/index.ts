@@ -6,6 +6,7 @@ import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { posthogTrigger, statusDomainVerification } from "./duo.ts";
+import { featureFlags } from "./flags.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
@@ -712,3 +713,4 @@ ciVariables({
   },
 });
 environments(siteUrl, devUrl);
+featureFlags();

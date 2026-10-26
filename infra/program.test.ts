@@ -125,6 +125,16 @@ test("the program registers every resource once, without throwing", async () => 
   expect(registered).toContain(
     "gitlab:index/pipelineTrigger:PipelineTrigger::posthog"
   );
+  // Every flag in the app's registry, and the user list their rollouts use.
+  const { FLAG_NAMES } = await import("../packages/core/src/flag-registry.ts");
+  for (const name of FLAG_NAMES) {
+    expect(registered).toContain(
+      `gitlab:index/projectFeatureFlag:ProjectFeatureFlag::flag-${name}`
+    );
+  }
+  expect(registered).toContain(
+    "gitlab:index/projectFeatureFlagUserList:ProjectFeatureFlagUserList::internal-only"
+  );
   // Two resources with one type and name are one URN, which the engine refuses.
   expect(registered.filter((r, i) => registered.indexOf(r) !== i)).toEqual([]);
 });
