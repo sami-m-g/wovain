@@ -78,7 +78,7 @@ const load = async (name: string) =>
     )
   );
 
-describe.each(["heal", "scout"])("the %s flow", (name) => {
+describe.each(["heal", "release-guard", "scout"])("the %s flow", (name) => {
   it("is a well-formed private ambient flow", async () => {
     const { definition } = await load(name);
     const components = new Set(definition.components.map((c) => c.name));
@@ -115,5 +115,14 @@ describe("the heal flow", () => {
     const [prompt] = definition.prompts;
     expect(prompt?.prompt_template.system).toContain("wovain:signature");
     expect(prompt?.prompt_template.system).toContain('"heal F"');
+  });
+});
+
+describe("the release-guard flow", () => {
+  it("only diagnoses and fixes: it never turns production back on", async () => {
+    const { definition } = await load("release-guard");
+    const [prompt] = definition.prompts;
+    expect(prompt?.prompt_template.system).toContain("wovain:release-guard");
+    expect(prompt?.prompt_template.system).toContain("Never re-enable a flag");
   });
 });
