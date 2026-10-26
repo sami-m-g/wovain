@@ -28,9 +28,11 @@ import { fromRoot } from "./root.ts";
 
 const mode = process.argv[2] === "rollback" ? "rollback" : "verify";
 const PROBE_PATHS = ["/", "/api/auth/ok", "/api/checkout/quote"];
-const PROBE_TIMEOUT_MS = 10_000;
-// A new revision's first request on each path loads its routes (about 17 s
-// on wovain-web), so the probes start after one warm-up request per path.
+// A new wovain-web instance answers its first request on each path in about
+// 17 s while it loads routes, and Cloud Run starts instances during the
+// window as it scales, so a probe allows 30 s: a slow cold start isn't a
+// failed release. The probes start after one warm-up request per path.
+const PROBE_TIMEOUT_MS = 30_000;
 const WARMUP_TIMEOUT_MS = 60_000;
 
 const { env, gitlab, google } = opsContext();
