@@ -121,9 +121,12 @@ export const FLAGS = {
     guarded: true,
     initiallyActive: false,
     owner: { gitlab: OWNER, team: "platform" },
+    // Development only: its Status on never touches production. The
+    // canary demo faults one production revision instead
+    // (FAULT_INJECTION_REVISION).
     rollout: {
       development: { kind: "all" },
-      production: { kind: "all" },
+      production: { kind: "off" },
     },
     type: "ops",
   },

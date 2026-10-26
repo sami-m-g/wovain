@@ -109,7 +109,16 @@ const trusted = new Set([me.username, ...env.TRUSTED_USERS]);
 const developer = env.DUO_DEVELOPER_ACCOUNT;
 const healer = env.DUO_HEAL_ACCOUNT;
 const reviewer = env.DUO_REVIEW_ACCOUNT;
-const errorFilter = `${config.service.logs} AND jsonPayload.level="error" AND jsonPayload.error.name:*`;
+// Production's service, and dev.wovain.com's (infra/dev.ts): both run the
+// same code and read the same GitLab flags, so errors on either are healed
+// and can trip the release guard's kill switch.
+const DEV_SERVICE = "wovain-web-dev";
+const bothServices = (filter: string) =>
+  filter.replace(
+    'resource.labels.service_name="wovain-web"',
+    `resource.labels.service_name=("wovain-web" OR "${DEV_SERVICE}")`
+  );
+const errorFilter = `${bothServices(config.service.logs)} AND jsonPayload.level="error" AND jsonPayload.error.name:*`;
 
 const marker = (kind: string) => `<!-- wovain:${kind} -->`;
 const hasMarker = (notes: Note[], kind: string) =>
@@ -913,25 +922,44 @@ const assignGuardIssues = async (issues: Issue[]) => {
 const releaseGuard = async () => {
   const range = { end: now, start: new Date(now.getTime() - GUARD_WATCH_MS) };
   const requests = `${config.service.metrics} AND log_id("run.googleapis.com/requests")`;
-  const [all, failed, flags, deployments, issues, browser, alerts] =
-    await Promise.all([
-      google.entries(requests, range),
-      google.entries(`${requests} AND httpRequest.status>=500`, range),
-      gitlab.featureFlags(),
-      gitlab.deployments(new Date(now.getTime() - DAY_MS)),
-      gitlab.issues({
-        createdAfter: new Date(now.getTime() - DAY_MS).toISOString(),
-        labels: RELEASE_GUARD_LABEL,
-        state: "all",
-      }),
-      browserErrors(),
-      posthog === undefined ? Promise.resolve([]) : posthog.alerts(),
-    ]);
+  const devRequests = requests.replace(
+    'service_name="wovain-web"',
+    `service_name="${DEV_SERVICE}"`
+  );
+  const [
+    all,
+    failed,
+    devAll,
+    devFailed,
+    flags,
+    deployments,
+    issues,
+    browser,
+    alerts,
+  ] = await Promise.all([
+    google.entries(requests, range),
+    google.entries(`${requests} AND httpRequest.status>=500`, range),
+    google.entries(devRequests, range),
+    google.entries(`${devRequests} AND httpRequest.status>=500`, range),
+    gitlab.featureFlags(),
+    gitlab.deployments(new Date(now.getTime() - DAY_MS)),
+    gitlab.issues({
+      createdAfter: new Date(now.getTime() - DAY_MS).toISOString(),
+      labels: RELEASE_GUARD_LABEL,
+      state: "all",
+    }),
+    browserErrors(),
+    posthog === undefined ? Promise.resolve([]) : posthog.alerts(),
+  ]);
   const assigned = await assignGuardIssues(issues);
   const [deployment] = deployments;
   const health = {
     errors: failed.entries.length,
     requests: all.entries.length,
+  };
+  const devHealth = {
+    errors: devFailed.entries.length,
+    requests: devAll.entries.length,
   };
   const exceptions = browser.reduce((sum, g) => sum + g.count, 0);
   const kpis = firingKpis(alerts);
@@ -941,6 +969,7 @@ const releaseGuard = async () => {
       .toSorted((a, b) => b.getTime() - a.getTime()),
     deployedAt:
       deployment === undefined ? undefined : new Date(deployment.created_at),
+    devHealth,
     exceptions,
     firingKpis: kpis,
     flags,
@@ -952,6 +981,7 @@ const releaseGuard = async () => {
   }
   const evidence = [
     `Production 5xx in the last 15 minutes: ${health.errors}/${health.requests} ([Cloud Logging](${logsUrl(`${requests} AND httpRequest.status>=500`)}))`,
+    `dev.wovain.com 5xx in the last 15 minutes: ${devHealth.errors}/${devHealth.requests} ([Cloud Logging](${logsUrl(`${devRequests} AND httpRequest.status>=500`)}))`,
     `PostHog error tracking: ${exceptions} browser exceptions in 30 minutes${posthog === undefined ? "" : ` ([issues](${posthog.link("error_tracking")}))`}`,
     `PostHog KPI alerts firing: ${kpis.length > 0 ? kpis.map((k) => `\`kpi:${k}\``).join(", ") : "none"}`,
     `Latest production deployment: ${deployment?.created_at ?? "none in 24 hours"}`,

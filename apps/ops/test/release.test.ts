@@ -108,6 +108,22 @@ describe("guardDecision", () => {
     });
   });
 
+  it("kills a flag for a dev spike but never rolls production back for it", () => {
+    const fresh = [
+      flag({ name: "fault-injection-checkout", updated_at: minutesAgo(5) }),
+    ];
+    expect(
+      guardDecision({ ...base, devHealth: degraded, flags: fresh })
+    ).toMatchObject({ action: "flag-off", flag: "fault-injection-checkout" });
+    expect(
+      guardDecision({
+        ...base,
+        deployedAt: new Date(minutesAgo(20)),
+        devHealth: degraded,
+      }).action
+    ).toBe("none");
+  });
+
   it("rolls back a recent deploy when no flag changed", () => {
     expect(
       guardDecision({

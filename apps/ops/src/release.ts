@@ -99,6 +99,7 @@ export type GuardAction =
 export const guardDecision = ({
   actions,
   deployedAt,
+  devHealth,
   exceptions,
   firingKpis,
   flags,
@@ -116,19 +117,28 @@ export const guardDecision = ({
   flags: GitLabFlag[];
   // Production's requests and 5xx responses in the window.
   health: Health;
+  // dev.wovain.com's: they can blame a flag (its Status is global), never
+  // move production traffic.
+  devHealth?: Health | undefined;
   now: Date;
 }): GuardAction => {
   const reasons: string[] = [];
-  const rate = errorRate(health);
-  if (health.requests >= GUARD_MIN_REQUESTS && rate > GUARD_MAX_ERROR_RATE) {
-    reasons.push(
-      `5xx rate ${percent(rate)} (${health.errors}/${health.requests}) over ${percent(GUARD_MAX_ERROR_RATE)}`
-    );
-  }
+  const spike = (h: Health, where: string) => {
+    const rate = errorRate(h);
+    if (h.requests >= GUARD_MIN_REQUESTS && rate > GUARD_MAX_ERROR_RATE) {
+      reasons.push(
+        `${where} 5xx rate ${percent(rate)} (${h.errors}/${h.requests}) over ${percent(GUARD_MAX_ERROR_RATE)}`
+      );
+    }
+  };
+  spike(health, "production");
   if (exceptions >= GUARD_MAX_EXCEPTIONS) {
     reasons.push(`${exceptions} browser exceptions in PostHog error tracking`);
   }
   const serverSide = reasons.length > 0;
+  if (devHealth !== undefined) {
+    spike(devHealth, "development");
+  }
   if (firingKpis.length > 0) {
     reasons.push(`PostHog KPI alerts firing: ${firingKpis.join(", ")}`);
   }

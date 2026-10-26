@@ -42,7 +42,7 @@ The signature (`apps/ops/src/heal.ts`) is a hash of the error class, method, rou
 **Demo in under a minute** (fix already prepared off-camera if time is short):
 
 1. Deploy > Feature flags: turn `fault-injection-checkout` on.
-2. `pnpm --filter @wovain/ops traffic --requests 20` (defaults to https://wovain.com): every response is 500.
+2. `pnpm --filter @wovain/ops traffic --url https://dev.wovain.com --requests 20`: every response is 500. The flag serves development only, so production never faults; the ops job watches both services.
 3. Build > Pipeline schedules > "wovain ops" > Run. The heal issue and its incident appear, and the heal flow starts (Automate > Sessions).
 4. Show the flow's MR: the failing test, the fix, `heal:verify` green, Duo Code Review, auto-merge set.
 5. After the deploy, run "wovain ops" again: the issue gets `heal::verified`, the incident closes, status.wovain.com shows it resolved. Turn the flag off.
@@ -129,7 +129,7 @@ flowchart LR
 **Demo in under a minute** (flag kill switch):
 
 1. Deploy > Feature flags: turn `fault-injection-checkout` on.
-2. `pnpm --filter @wovain/ops traffic --requests 30`: the checkout quotes fail.
+2. `pnpm --filter @wovain/ops traffic --url https://dev.wovain.com --requests 30`: the checkout quotes fail on dev (the flag serves development only).
 3. Build > Pipeline schedules > "wovain ops" > Run. The flag's Status flips off, a `release-guard` issue appears with the 5xx count and links, and the release-guard flow starts (Automate > Sessions). The heal flow gets its issue for the same error, so it is mitigated first and fixed after.
 
 **Demo of a canary rollback:** Build > Pipelines > Run pipeline on `main` with `CANARY_DEMO_FAULT=1` and `CANARY_WINDOW_S=120`. `canary:production` shows the probes failing on the canary only, moves traffic back and fails; its `canary.md` and the `release-guard` issue are the audit trail.

@@ -53,7 +53,7 @@ Constraints:
 | `billing-paid-plans` | permission | billing | off (Status off) | off | 2027-01-31 |
 | `billing-polar` | release | billing | internal | all | 2026-12-15 |
 | `fal-oauth` | release | connectors | internal | all | 2026-12-31 |
-| `fault-injection-checkout` | ops | platform | all (Status off) | all | 2027-03-31 |
+| `fault-injection-checkout` | ops | platform | off | all (Status off) | 2027-03-31 |
 | `mastra-runs` | release | runs | internal + 10% of users | all | 2026-12-31 |
 | `trends-qloo` | kill-switch, free and demo plans only | growth | all | all | 2026-11-05 |
 | `trends-tavily` | kill-switch | growth | all | all | 2027-06-30 |
