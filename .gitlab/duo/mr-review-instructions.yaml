@@ -1,7 +1,28 @@
 # Project review rules for GitLab Duo Code Review, on top of its standard
 # review. Duo's merge requests (heal flow, Developer flow) are auto-merged
 # only after this review leaves no open threads (apps/ops/src/ops.ts).
+# With "GitLab Duo can approve and request changes" on, every thread Duo opens
+# also requests changes, which blocks the merge until Duo approves on a
+# re-review (the ops job asks for it once the threads are resolved and the
+# pipeline is green). Hence the first group: threads only for real problems.
 instructions:
+  - name: Blocking findings only
+    instructions: |
+      Every comment you leave blocks the merge until a re-review, so open a
+      comment only for a problem that should stop this merge:
+      1. Wrong behaviour, a likely runtime error, data loss, or a broken
+         contract with a caller, an API or the database.
+      2. A security or privacy issue: a leaked secret, a missing auth or
+         session check, unvalidated input reaching a query or a shell.
+      3. A rule from the groups below.
+      4. A claim in documentation or a comment that the diff makes false.
+      Don't comment on style, formatting, naming, wording, comment phrasing,
+      import order or other preferences: Oxlint and Oxfmt run in CI. Don't
+      ask to verify something you can't check from the diff; say what to
+      check in the summary instead. When a point is only a suggestion, put
+      it in the summary, not in a comment. A point the author already
+      answered in a thread reply is settled unless the new diff changes it.
+
   - name: Heal fixes
     fileFilters:
       - "apps/web/src/**/*.ts"

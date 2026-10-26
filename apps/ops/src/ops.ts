@@ -32,6 +32,7 @@ import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
 import { loadKpis } from "./kpis.ts";
 import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
+import { DUO_USER, MAX_REREVIEWS, rereviewOf } from "./rereview.ts";
 import { fromRoot } from "./root.ts";
 import {
   KPI_MISSED_LABEL,
@@ -72,6 +73,9 @@ import {
 //            or, where it's unavailable, agent::task issues → Developer
 //   resolve  findings no longer detected on the default branch → Resolved
 //   shepherd Duo's MRs → ready → Duo Code Review → guardrails → auto-merge
+//   rereview any open MR GitLab Duo requested changes on → its threads
+//            resolved, pipeline green → Duo re-reviews, and approves when it
+//            finds nothing new (rereview.ts)
 //   status   public/index.html for the status page (the pages job publishes it)
 //   signals  PostHog KPI alerts firing → the scout flow, at most once a day
 //   verifyKpis merged kpi-scout changes → KPI alert stopped? → verified
@@ -737,6 +741,78 @@ const shepherd = async () => {
   );
 };
 
+// GitLab Duo's change request on one merge request: re-request its review
+// once its threads are resolved and the pipeline passed (rereview.ts).
+const rereviewOne = async (iid: number, duoId: number) => {
+  const [mr, notes, reviewers, discussions] = await Promise.all([
+    gitlab.mergeRequest(iid),
+    gitlab.mergeRequestNotes(iid),
+    gitlab.reviewers(iid),
+    gitlab.discussions(iid),
+  ]);
+  // Notes come newest first: this is Duo's latest change request.
+  const request = notes.find(
+    (n) =>
+      n.system &&
+      n.author.username === DUO_USER &&
+      n.body.trim() === "requested changes"
+  );
+  const decision = rereviewOf({
+    asked: notes.filter((n) => n.body.includes(marker("duo-rereview"))).length,
+    askedForThis:
+      request !== undefined && hasMarker(notes, `duo-rereview:${request.id}`),
+    draft: mr.draft,
+    openThreads: openThreads(discussions, DUO_USER),
+    pipeline:
+      mr.head_pipeline?.sha === mr.sha ? mr.head_pipeline.status : undefined,
+    requestId: request?.id,
+    state: reviewers.find((r) => r.user.username === DUO_USER)?.state,
+  });
+  if (decision.action === "wait") {
+    return decision.reason;
+  }
+  if (decision.action === "cap") {
+    await once(
+      iid,
+      notes,
+      "duo-rereview-cap",
+      `GitLab Duo still requests changes after ${MAX_REREVIEWS} re-reviews by wovain ops, so a person decides: reply on its threads and re-request its review, or bypass the request in the merge checks.`
+    );
+    return "re-review cap reached";
+  }
+  await gitlab.rereview(iid, duoId);
+  // "duo-rereview" counts the re-reviews; the second marker names the
+  // change request this one answers.
+  await gitlab.noteOnMergeRequest(
+    iid,
+    `Every GitLab Duo thread is resolved and the pipeline passed for ${mr.sha}, so wovain ops re-requested its review. Duo approves when it finds nothing new, which clears its change request.\n\n${marker("duo-rereview")}${marker(`duo-rereview:${request?.id}`)}`
+  );
+  return `re-review requested for ${mr.sha}`;
+};
+
+// Every open merge request with GitLab Duo as a reviewer, a person's or Duo's.
+const rereview = async () => {
+  const mrs = await gitlab.mergeRequests({ state: "opened", wip: "no" });
+  const withDuo = mrs.flatMap((mr) => {
+    const duo = mr.reviewers.find((r) => r.username === DUO_USER);
+    return duo === undefined ? [] : [{ duoId: duo.id, iid: mr.iid }];
+  });
+  const outcomes = await Promise.allSettled(
+    withDuo.map(async ({ duoId, iid }) => await rereviewOne(iid, duoId))
+  );
+  return Object.fromEntries(
+    withDuo.map(({ iid }, i) => {
+      const outcome = outcomes[i];
+      return [
+        iid,
+        outcome?.status === "fulfilled"
+          ? outcome.value
+          : `failed: ${outcome?.reason instanceof Error ? outcome.reason.message : "unknown"}`,
+      ];
+    })
+  );
+};
+
 // The public status page: health, incidents, DORA and SCI (status.ts).
 const statusPage = async () => {
   const since = new Date(now.getTime() - 30 * DAY_MS);
@@ -872,6 +948,7 @@ const verifyKpis = async () => {
 const phases = {
   heal,
   intake,
+  rereview,
   resolveGone,
   shepherd,
   signals,
