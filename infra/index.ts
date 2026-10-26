@@ -226,14 +226,12 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
-// Secrets whose versions live in Secret Manager outside Pulumi (the Meta app
-// credentials, set when the app was registered): mounted without a
-// SecretVersion here, so `pulumi up` never touches their values.
-// Without them, connecting Meta fails with META_NOT_CONFIGURED.
-const externalSecretIds = ["meta-app-id", "meta-app-secret"] as const;
-const mountedSecretIds = [
-  ...new Set([...populated.keys(), ...externalSecretIds]),
-];
+// Only secrets with a version are mounted: Cloud Run refuses a revision whose
+// secret has no `latest` version. meta-app-id and meta-app-secret have none
+// yet, so they get theirs from the stack config like the others
+// (`pulumi config set --secret meta-app-id <id>` in infra/); until then,
+// connecting Meta answers META_NOT_CONFIGURED.
+const mountedSecretIds = [...populated.keys()];
 
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
