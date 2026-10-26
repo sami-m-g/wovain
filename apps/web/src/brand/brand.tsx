@@ -5,8 +5,9 @@
  * Every surface reads the primitives through the semantic tokens in
  * `src/styles/tokens.css` (`--brand-*` → roles such as `--background`,
  * `--primary`). Every logo (header, footer, app rail, Open Graph images,
- * emails) is one of the files listed in `BRAND_ASSETS`; the favicon and Apple
- * icon are `src/app/icon.svg` and `src/app/apple-icon.png`. Swapping a logo
+ * emails) is one of the files listed in `BRAND_ASSETS`; the favicon and app
+ * icons are `src/app/icon.svg` and its raster copies (`favicon.ico`,
+ * `icon.png`, `apple-icon.png`, `public/brand/icon-512.png`). Swapping a logo
  * variant is a file swap.
  *
  * The approved identity: the Flick w, cochineal and plum ink on calico, with
