@@ -9,6 +9,8 @@ import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
+import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
+
 interface DevArgs {
   project: string;
   region: string;
@@ -23,8 +25,6 @@ interface DevArgs {
   // Data and identity options (protect), as in index.ts.
   kept: pulumi.CustomResourceOptions;
 }
-
-const toEnvName = (id: string) => id.toUpperCase().replaceAll("-", "_");
 
 export const devEnvironment = (args: DevArgs) => {
   const { kept, region, sql } = args;
@@ -91,17 +91,10 @@ export const devEnvironment = (args: DevArgs) => {
   const versions: pulumi.Resource[] = [];
   const mounted = new Map<string, gcp.secretmanager.Secret>();
   for (const [id, value] of Object.entries(values)) {
-    const secret = new gcp.secretmanager.Secret(
-      `${id}-dev`,
-      { replication: { auto: {} }, secretId: `${id}-dev` },
-      kept
-    );
-    versions.push(
-      new gcp.secretmanager.SecretVersion(`${id}-dev`, {
-        secret: secret.id,
-        secretData: value,
-      })
-    );
+    const { secret, version } = secretWithValue(`${id}-dev`, value, kept);
+    if (version !== undefined) {
+      versions.push(version);
+    }
     mounted.set(id, secret);
   }
   const databaseUrl = mounted.get("database-url");
@@ -125,60 +118,22 @@ export const devEnvironment = (args: DevArgs) => {
       })
   );
 
-  const service = new gcp.cloudrunv2.Service(
-    "web-dev",
-    {
-      deletionProtection: false,
-      ingress: "INGRESS_TRAFFIC_ALL",
-      invokerIamDisabled: true,
-      location: region,
-      name: "wovain-web-dev",
-      template: {
-        containers: [
-          {
-            envs: [
-              ...args.envs,
-              { name: "BETTER_AUTH_URL", value: args.url },
-              {
-                name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT",
-                value: "development",
-              },
-              { name: "MCP_URL", value: `${args.url}/api/mcp` },
-              { name: "WOVAIN_BUCKET", value: bucket.name },
-              ...[...mounted].map(([id, secret]) => ({
-                name: toEnvName(id),
-                valueSource: {
-                  secretKeyRef: { secret: secret.secretId, version: "latest" },
-                },
-              })),
-            ],
-            image: "us-docker.pkg.dev/cloudrun/container/hello",
-            ports: { containerPort: 3001 },
-            resources: {
-              cpuIdle: true,
-              limits: { cpu: "1", memory: "512Mi" },
-            },
-            volumeMounts: [{ mountPath: "/cloudsql", name: "cloudsql" }],
-          },
-        ],
-        scaling: { maxInstanceCount: 1, minInstanceCount: 0 },
-        serviceAccount: runner.email,
-        volumes: [
-          {
-            cloudSqlInstance: { instances: [sql.connectionName] },
-            name: "cloudsql",
-          },
-        ],
-      },
-    },
-    {
-      dependsOn: [...versions, ...access],
-      ignoreChanges: [
-        "client",
-        "clientVersion",
-        "template.containers[0].image",
-      ],
-    }
-  );
+  const service = cloudRunService("web-dev", {
+    cloudSqlInstance: sql.connectionName,
+    dependsOn: [...versions, ...access],
+    envs: [
+      ...args.envs,
+      { name: "BETTER_AUTH_URL", value: args.url },
+      { name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT", value: "development" },
+      { name: "MCP_URL", value: `${args.url}/api/mcp` },
+      { name: "WOVAIN_BUCKET", value: bucket.name },
+      ...[...mounted].map(([id, secret]) => secretEnv(id, secret.secretId)),
+    ],
+    location: region,
+    maxInstances: 1,
+    name: "wovain-web-dev",
+    port: 3001,
+    serviceAccount: runner.email,
+  });
   return { databaseUrl, runner, service };
 };

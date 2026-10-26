@@ -33,13 +33,11 @@ infra:production:
 # BuildKit and pushes it to the GitLab container registry, where Container
 # Scanning reads it (secure.yml), and to Artifact Registry, where Cloud Run
 # pulls it, as gitlab-deploy. Varlock validates env while Next builds, so the
-# build gets an env file as a BuildKit secret that never lands in a layer:
-# placeholders for the web app's secrets (Cloud Run supplies the real ones),
-# and the public values that are compiled in: the docs' SITE_URL and, when
-# the CI variable is set, the web app's NEXT_PUBLIC_POSTHOG_KEY (otherwise
-# its .env.schema default).
+# build gets an env file (templates.yml, .image-env): placeholders for the web
+# app's secrets (Cloud Run supplies the real ones) and the public values that
+# are compiled in.
 .image:
-  extends: [.gcp-auth, .on-main]
+  extends: [.gcp-auth, .on-main, .env-placeholders]
   stage: deploy
   image: docker:28
   services:
@@ -55,15 +53,7 @@ infra:production:
     - echo "$GCP_ACCESS_TOKEN" | docker login -u oauth2accesstoken --password-stdin "https://$GCP_REGION-docker.pkg.dev"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   script:
-    - |
-      cat > /tmp/web_env <<EOF
-      BETTER_AUTH_SECRET=build-placeholder-never-used-at-runtime
-      BETTER_AUTH_URL=$SITE_URL
-      DATABASE_URL=postgresql://build:build@localhost:5432/build
-      TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
-      ${NEXT_PUBLIC_POSTHOG_KEY:+NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY}
-      EOF
-      echo "SITE_URL=$DOCS_SITE_URL" > /tmp/docs_env
+    - !reference [.image-env, script]
     - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" -t "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:latest" .
     - docker push "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA"
     - docker push --all-tags "$CI_REGISTRY_IMAGE/$APP"
@@ -87,7 +77,10 @@ image:docs:
 
 # Applies packages/db's Drizzle migrations to Cloud SQL. cloud-sql-proxy
 # makes the same /cloudsql/<instance> socket Cloud Run mounts, so the
-# DATABASE_URL secret works as is.
+# DATABASE_URL secret works as is. GitLab reads that secret from Secret
+# Manager with the job's own token (GCP_PROJECT_NUMBER and the
+# GCP_WORKLOAD_IDENTITY_FEDERATION_* variables; infra/index.ts grants each
+# environment its own database's URL).
 migrate:production:
   extends: [.gcp-auth, .on-main]
   stage: deploy
@@ -97,22 +90,21 @@ migrate:production:
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     CLOUD_SQL_PROXY_VERSION: v2.14.0
-    DATABASE_URL_SECRET: database-url
+  secrets:
+    DATABASE_URL:
+      gcp_secret_manager:
+        name: database-url
+      token: $GITLAB_OIDC_TOKEN
+      file: false
   before_script:
     - !reference [.pnpm-install, before_script]
     - !reference [.gcp-credentials, before_script]
-    - !reference [.gcp-token, before_script]
   script:
     - curl -fsSL -o /usr/local/bin/cloud-sql-proxy "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/$CLOUD_SQL_PROXY_VERSION/cloud-sql-proxy.linux.amd64"
     - chmod +x /usr/local/bin/cloud-sql-proxy
     - mkdir -p /cloudsql
-    - cloud-sql-proxy --unix-socket /cloudsql "$GCP_SQL_INSTANCE" &
-    - for i in $(seq 30); do test -S "/cloudsql/$GCP_SQL_INSTANCE/.s.PGSQL.5432" && break; sleep 1; done
-    - |
-      DATABASE_URL=$(curl -sf -H "Authorization: Bearer $GCP_ACCESS_TOKEN" \
-        "https://secretmanager.googleapis.com/v1/projects/$GCP_PROJECT_ID/secrets/$DATABASE_URL_SECRET/versions/latest:access" \
-        | tr -d '\n' | sed -n 's/.*"data": *"\([^"]*\)".*/\1/p' | base64 -d)
-      export DATABASE_URL
+    - cloud-sql-proxy --unix-socket /cloudsql --health-check "$GCP_SQL_INSTANCE" &
+    - cloud-sql-proxy wait --max 30s
     - pnpm --filter @wovain/db exec drizzle-kit migrate
   environment:
     name: production
@@ -121,15 +113,14 @@ migrate:production:
 # Rolls each image out as a new Cloud Run revision; Pulumi owns every other
 # setting of the services (infra/index.ts).
 deploy:production:
-  extends: [.gcloud, .gcp-auth, .on-main]
+  # .gcloud last, so its before_script (credentials, then gcloud) wins.
+  extends: [.gcp-auth, .gcloud, .on-main]
   stage: deploy
   interruptible: false
   resource_group: production
   needs: [image:web, image:docs, migrate:production]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
-  before_script:
-    - !reference [.gcloud, before_script]
   script:
     - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
     - gcloud run deploy wovain-docs --image "$GCP_IMAGE_REPOSITORY/docs:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
@@ -143,8 +134,7 @@ deploy:production:
 # production, trusted from the development environment.
 .on-main-manual:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
-      when: never
+    - !reference [.not-ops, rules]
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
       allow_failure: true
@@ -152,22 +142,22 @@ deploy:production:
 migrate:development:
   extends: [migrate:production, .on-main-manual]
   resource_group: development
-  variables:
-    DATABASE_URL_SECRET: database-url-dev
+  secrets:
+    DATABASE_URL:
+      gcp_secret_manager:
+        name: database-url-dev
   environment:
     name: development
     action: prepare
 
 deploy:development:
-  extends: [.gcloud, .gcp-auth, .on-main]
+  extends: [.gcp-auth, .gcloud, .on-main]
   stage: deploy
   interruptible: false
   resource_group: development
   needs: [migrate:development]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
-  before_script:
-    - !reference [.gcloud, before_script]
   script:
     - gcloud run deploy wovain-web-dev --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
   environment:

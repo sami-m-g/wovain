@@ -54,40 +54,27 @@ export const environments = (
   siteUrl: pulumi.Input<string>,
   devUrl: pulumi.Input<string>
 ) => {
-  // dev.wovain.com (infra/dev.ts), rolled out by hand from main.
-  new gitlab.ProjectEnvironment(
-    "development",
-    {
-      externalUrl: devUrl,
-      name: "development",
-      project: projectId,
-      tier: "development",
-    },
-    // GitLab creates it as soon as a pipeline names the environment.
-    { ...adopt("41982087"), protect: true }
-  );
-  new gitlab.ProjectEnvironment(
-    "production",
-    {
-      externalUrl: siteUrl,
-      name: "production",
-      project: projectId,
-      tier: "production",
-    },
-    { ...adopt("41738026"), protect: true }
-  );
-  new gitlab.ProjectEnvironment(
-    "infrastructure",
-    { name: "infrastructure", project: projectId, tier: "other" },
-    { ...adopt("41825171"), protect: true }
-  );
-  // The self-healing loop's job (.gitlab/ci/loop.yml): it deploys nothing
-  // (action: verify), and Google trusts gitlab-ops only from here.
-  new gitlab.ProjectEnvironment(
-    "operations",
-    { name: "operations", project: projectId, tier: "other" },
-    { ...adopt("41884145"), protect: true }
-  );
+  // By name; the id adopts it, since GitLab creates an environment as soon as
+  // a pipeline names it.
+  const envs: Record<
+    string,
+    { id: string; tier: string; externalUrl?: pulumi.Input<string> }
+  > = {
+    // dev.wovain.com (infra/dev.ts), rolled out by hand from main.
+    development: { externalUrl: devUrl, id: "41982087", tier: "development" },
+    infrastructure: { id: "41825171", tier: "other" },
+    // The ops jobs (.gitlab/ci/ops.yml): they deploy nothing (action:
+    // verify), and Google trusts gitlab-ops only from here.
+    operations: { id: "41884145", tier: "other" },
+    production: { externalUrl: siteUrl, id: "41738026", tier: "production" },
+  };
+  for (const [name, { externalUrl, id, tier }] of Object.entries(envs)) {
+    new gitlab.ProjectEnvironment(
+      name,
+      { externalUrl, name, project: projectId, tier },
+      { ...adopt(id), protect: true }
+    );
+  }
 };
 
 // The renovate job runs only on this schedule (.gitlab/ci/verify.yml matches

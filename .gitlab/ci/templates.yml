@@ -1,18 +1,49 @@
 # Shared job blocks, used with `extends:` and `!reference`.
 
-# Every push and merge request, but not a scheduled pipeline or a manual
-# ops run (OPS=1 or SCOUT=1, .gitlab/ci/ops.yml and scout.yml).
-.on-changes:
+# Never in a scheduled pipeline or a manual ops run (OPS=1 or SCOUT=1,
+# .gitlab/ci/ops.yml and scout.yml); every other job's rules start with it.
+.not-ops:
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
       when: never
+
+# Every push and merge request.
+.on-changes:
+  rules:
+    - !reference [.not-ops, rules]
     - when: on_success
 
 .on-main:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
-      when: never
+    - !reference [.not-ops, rules]
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Varlock validates env when Next loads its config (typegen and build), so
+# builds get placeholders; real values only exist at runtime (Cloud Run).
+.env-placeholders:
+  variables:
+    BETTER_AUTH_SECRET: build-placeholder-never-used-at-runtime
+    BETTER_AUTH_URL: http://localhost:3001
+    DATABASE_URL: postgresql://build:build@localhost:5432/build
+    TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
+
+# The image builds' env files, BuildKit secrets that never land in a layer:
+# the placeholders above for the web app, plus its public origin and, when
+# the CI variable is set, NEXT_PUBLIC_POSTHOG_KEY (otherwise its .env.schema
+# default); the docs' SITE_URL. SITE_URL and DOCS_SITE_URL are protected, so
+# merge request builds fall back to the production origins. Jobs that use it
+# also extend .env-placeholders.
+.image-env:
+  script:
+    - |
+      cat > /tmp/web_env <<EOF
+      BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
+      BETTER_AUTH_URL=${SITE_URL:-https://wovain.com}
+      DATABASE_URL=$DATABASE_URL
+      TOKEN_ENCRYPTION_KEY=$TOKEN_ENCRYPTION_KEY
+      ${NEXT_PUBLIC_POSTHOG_KEY:+NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY}
+      EOF
+      echo "SITE_URL=${DOCS_SITE_URL:-https://docs.wovain.com}" > /tmp/docs_env
 
 # The install runs the root postinstall, which generates each app's typed env
 # (varlock codegen). Turbo's local cache lives in .turbo, kept between runs.

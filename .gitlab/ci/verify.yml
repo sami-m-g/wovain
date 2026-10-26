@@ -1,14 +1,5 @@
 # Lint and format (Ultracite), types, dead code (knip) and tests, on every
-# push and merge request.
-# Varlock validates env when Next loads its config (typegen and build), so
-# these jobs get placeholders; real values only exist at runtime (Cloud Run).
-.env-placeholders:
-  variables:
-    BETTER_AUTH_SECRET: ci-build-placeholder-never-used-at-runtime
-    BETTER_AUTH_URL: http://localhost:3001
-    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-    TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
-
+# push and merge request, with the build placeholders (templates.yml).
 verify:
   stage: verify
   extends: [.pnpm-install, .on-changes, .env-placeholders]
@@ -30,8 +21,7 @@ verify:infra:
   stage: verify
   extends: [.pulumi-install, .on-changes]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
-      when: never
+    - !reference [.not-ops, rules]
     - changes: [infra/**/*, .gitlab/duo/catalog/**/*]
   script:
     - pnpm --dir infra run check-types
@@ -65,29 +55,30 @@ build:
   script:
     - pnpm run build
 
-# Configure: dependency update merge requests, weekly (Mondays 06:00 UTC).
+# Configure: dependency update merge requests, weekly (Mondays 06:00 UTC),
+# from renovate-runner's job (included in .gitlab-ci.yml; it reads
+# RENOVATE_TOKEN and sets the platform and endpoint). Its rule matches every
+# schedule; this one keeps it off the ops and scout schedules. Its resource
+# group is "production", the deploy jobs', so it gets its own.
 renovate:
   stage: verify
+  resource_group: renovate
   image:
     name: renovate/renovate:44.138.0
-    entrypoint: [""]
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "Renovate dependency updates"
   variables:
     GIT_STRATEGY: none
-    RENOVATE_PLATFORM: gitlab
-    RENOVATE_ENDPOINT: $CI_API_V4_URL
     RENOVATE_REPOSITORIES: $CI_PROJECT_PATH
     RENOVATE_ONBOARDING: "false"
     RENOVATE_REQUIRE_CONFIG: required
     LOG_LEVEL: info
-  script:
-    - renovate
 
 # The production Dockerfiles, built (not pushed) on every merge request, so an
 # image that can't build never reaches main.
 image:check:
   stage: verify
+  extends: .env-placeholders
   image: docker:28
   services:
     - docker:28-dind
@@ -102,15 +93,7 @@ image:check:
       - DOCKERFILE: apps/fumadocs/Dockerfile
         BUILD_SECRET: docs_env
   script:
-    - |
-      cat > /tmp/web_env <<ENV
-      BETTER_AUTH_SECRET=build-placeholder-never-used-at-runtime
-      BETTER_AUTH_URL=https://wovain.com
-      DATABASE_URL=postgresql://build:build@localhost:5432/build
-      TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
-      ${NEXT_PUBLIC_POSTHOG_KEY:+NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY}
-      ENV
-      echo "SITE_URL=https://docs.wovain.com" > /tmp/docs_env
+    - !reference [.image-env, script]
     - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" .
 
 # Keeps GitHub's main and tags equal to GitLab's, over the deploy key from

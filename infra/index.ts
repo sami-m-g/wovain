@@ -10,6 +10,7 @@ import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
 import { ResendDomain, ResendVerification } from "./resend.ts";
+import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
 
 // wovain's Google Cloud project: Cloud Run serves apps/web at wovain.com and
 // apps/fumadocs at docs.wovain.com (each from its Dockerfile), Cloud SQL holds its Postgres database, Secret Manager
@@ -161,7 +162,6 @@ const secretIds = [
   "token-encryption-key",
   "wovain-allowed-emails",
 ] as const;
-const toEnvName = (id: string) => id.toUpperCase().replaceAll("-", "_");
 
 // Values Pulumi makes itself unless the stack config sets one: Better Auth's
 // secret, and TOKEN_ENCRYPTION_KEY's 32 random bytes, base64 encoded.
@@ -182,39 +182,28 @@ const generated = new Map<string, pulumi.Output<string>>([
 const secrets = new Map<string, gcp.secretmanager.Secret>();
 const populated = new Map<string, pulumi.Resource>();
 for (const id of secretIds) {
-  const secret = new gcp.secretmanager.Secret(
+  const { secret, version } = secretWithValue(
     id,
-    { replication: { auto: {} }, secretId: id },
+    config.getSecret(id) ?? generated.get(id),
     kept
   );
   secrets.set(id, secret);
-  const value = config.getSecret(id) ?? generated.get(id);
-  if (value !== undefined) {
-    populated.set(
-      id,
-      new gcp.secretmanager.SecretVersion(id, {
-        secret: secret.id,
-        secretData: value,
-      })
-    );
+  if (version !== undefined) {
+    populated.set(id, version);
   }
 }
 
 // DATABASE_URL points at the socket Cloud Run mounts under /cloudsql;
 // `cloud-sql-proxy --unix-socket /cloudsql` makes the same path for migrations.
-const databaseUrl = new gcp.secretmanager.Secret(
+const { secret: databaseUrl, version: databaseUrlVersion } = secretWithValue(
   "database-url",
-  { replication: { auto: {} }, secretId: "database-url" },
+  pulumi.interpolate`postgresql://${dbUser.name}:${dbPassword.result}@localhost/${database.name}?host=/cloudsql/${sql.connectionName}`,
   kept
 );
 secrets.set("database-url", databaseUrl);
-populated.set(
-  "database-url",
-  new gcp.secretmanager.SecretVersion("database-url", {
-    secret: databaseUrl.id,
-    secretData: pulumi.interpolate`postgresql://${dbUser.name}:${dbPassword.result}@localhost/${database.name}?host=/cloudsql/${sql.connectionName}`,
-  })
-);
+if (databaseUrlVersion !== undefined) {
+  populated.set("database-url", databaseUrlVersion);
+}
 
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
@@ -304,73 +293,32 @@ const googleEnv =
     ? []
     : [{ name: "GOOGLE_CLIENT_ID", value: googleClientId }];
 
-// Pulumi owns the service's settings; CI rolls out each image with `gcloud
-// run deploy --image`, so the image is ignored here. `pulumi up --refresh`
-// (CI's infra job) reads the live image first, so a settings change keeps it.
-const service = new gcp.cloudrunv2.Service(
-  "web",
-  {
-    deletionProtection: false,
-    ingress: "INGRESS_TRAFFIC_ALL",
-    // Public: Better Auth guards the app.
-    invokerIamDisabled: true,
-    location: region,
-    name: serviceName,
-    template: {
-      containers: [
-        {
-          envs: [
-            { name: "BETTER_AUTH_URL", value: siteUrl },
-            {
-              name: "NEBIUS_BASE_URL",
-              value: sharedEnvs.NEBIUS_BASE_URL,
-            },
-            {
-              name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT",
-              value: "production",
-            },
-            {
-              name: "GITLAB_FEATURE_FLAGS_URL",
-              value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
-            },
-            { name: "MCP_URL", value: mcpUrl },
-            ...googleEnv,
-            ...posthogEnv,
-            { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
-            { name: "WOVAIN_BUCKET", value: media.name },
-            { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
-            ...[...populated.keys()].map((id) => ({
-              name: toEnvName(id),
-              valueSource: {
-                secretKeyRef: { secret: id, version: "latest" },
-              },
-            })),
-          ],
-          // The image's own port (apps/web/Dockerfile).
-          image: "us-docker.pkg.dev/cloudrun/container/hello",
-          ports: { containerPort: 3001 },
-          resources: {
-            cpuIdle: true,
-            limits: { cpu: "1", memory: "512Mi" },
-          },
-          volumeMounts: [{ mountPath: "/cloudsql", name: "cloudsql" }],
-        },
-      ],
-      scaling: { maxInstanceCount: 2, minInstanceCount: 0 },
-      serviceAccount: runner.email,
-      volumes: [
-        {
-          cloudSqlInstance: { instances: [sql.connectionName] },
-          name: "cloudsql",
-        },
-      ],
+// The image's own port (apps/web/Dockerfile).
+const service = cloudRunService("web", {
+  cloudSqlInstance: sql.connectionName,
+  dependsOn: [...populated.values()],
+  envs: [
+    { name: "BETTER_AUTH_URL", value: siteUrl },
+    { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
+    { name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT", value: "production" },
+    {
+      name: "GITLAB_FEATURE_FLAGS_URL",
+      value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
     },
-  },
-  {
-    dependsOn: [...populated.values()],
-    ignoreChanges: ["client", "clientVersion", "template.containers[0].image"],
-  }
-);
+    { name: "MCP_URL", value: mcpUrl },
+    ...googleEnv,
+    ...posthogEnv,
+    { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
+    { name: "WOVAIN_BUCKET", value: media.name },
+    { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
+    ...[...populated.keys()].map((id) => secretEnv(id)),
+  ],
+  location: region,
+  maxInstances: 2,
+  name: serviceName,
+  port: 3001,
+  serviceAccount: runner.email,
+});
 export const serviceUri = service.uri;
 
 // apps/fumadocs: the docs site and its OpenRouter chat. Without the
@@ -387,9 +335,9 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-const openrouterKey = new gcp.secretmanager.Secret(
+const { secret: openrouterKey, version: openrouterVersion } = secretWithValue(
   "openrouter-api-key",
-  { replication: { auto: {} }, secretId: "openrouter-api-key" },
+  config.getSecret("openrouter-api-key"),
   kept
 );
 new gcp.secretmanager.SecretIamMember("docs-runner-openrouter-api-key", {
@@ -397,55 +345,21 @@ new gcp.secretmanager.SecretIamMember("docs-runner-openrouter-api-key", {
   role: "roles/secretmanager.secretAccessor",
   secretId: openrouterKey.id,
 });
-const openrouterValue = config.getSecret("openrouter-api-key");
-const openrouterVersion =
-  openrouterValue === undefined
-    ? undefined
-    : new gcp.secretmanager.SecretVersion("openrouter-api-key", {
-        secret: openrouterKey.id,
-        secretData: openrouterValue,
-      });
-const openrouterEnv =
-  openrouterVersion === undefined
-    ? []
-    : [
-        {
-          name: "OPENROUTER_API_KEY",
-          valueSource: {
-            secretKeyRef: { secret: "openrouter-api-key", version: "latest" },
-          },
-        },
-      ];
-const docsService = new gcp.cloudrunv2.Service(
-  "docs",
-  {
-    deletionProtection: false,
-    ingress: "INGRESS_TRAFFIC_ALL",
-    invokerIamDisabled: true,
-    location: region,
-    name: "wovain-docs",
-    template: {
-      containers: [
-        {
-          envs: [{ name: "SITE_URL", value: docsUrl }, ...openrouterEnv],
-          // The image's own port (apps/fumadocs/Dockerfile).
-          image: "us-docker.pkg.dev/cloudrun/container/hello",
-          ports: { containerPort: 4000 },
-          resources: {
-            cpuIdle: true,
-            limits: { cpu: "1", memory: "512Mi" },
-          },
-        },
-      ],
-      scaling: { maxInstanceCount: 2, minInstanceCount: 0 },
-      serviceAccount: docsRunner.email,
-    },
-  },
-  {
-    dependsOn: openrouterVersion === undefined ? [] : [openrouterVersion],
-    ignoreChanges: ["client", "clientVersion", "template.containers[0].image"],
-  }
-);
+// The image's own port (apps/fumadocs/Dockerfile).
+const docsService = cloudRunService("docs", {
+  dependsOn: openrouterVersion === undefined ? [] : [openrouterVersion],
+  envs: [
+    { name: "SITE_URL", value: docsUrl },
+    ...(openrouterVersion === undefined
+      ? []
+      : [secretEnv("openrouter-api-key")]),
+  ],
+  location: region,
+  maxInstances: 2,
+  name: "wovain-docs",
+  port: 4000,
+  serviceAccount: docsRunner.email,
+});
 export const docsServiceUri = docsService.uri;
 
 // Resend sends wovain.com's mail. With the `resend-api-key` stack secret
@@ -594,6 +508,19 @@ new gcp.secretmanager.SecretIamMember("deployer-database-url-dev", {
   role: "roles/secretmanager.secretAccessor",
   secretId: dev.databaseUrl.id,
 });
+// The migrate jobs get DATABASE_URL from GitLab's gcp_secret_manager secrets
+// (.gitlab/ci/deploy.yml), read as the job's own federated identity, not an
+// account: each environment reads only its own database's URL.
+for (const [environment, secret] of [
+  ["production", databaseUrl],
+  ["development", dev.databaseUrl],
+] as const) {
+  new gcp.secretmanager.SecretIamMember(`gitlab-${environment}-database-url`, {
+    member: `principalSet://iam.googleapis.com/${pool}/attribute.environment/${environment}`,
+    role: "roles/secretmanager.secretAccessor",
+    secretId: secret.id,
+  });
+}
 
 // The self-healing loop reads production's logs, errors and metrics as this
 // account, from the operations environment only. It can't read secrets or
@@ -674,11 +601,23 @@ ciVariables({
     value: `${pools}/gitlab-mr/providers/gitlab-mr`,
   },
   GCP_PROJECT_ID: { created: true, protected: true, value: project },
+  // What GitLab's gcp_secret_manager secrets exchange the job's token with.
+  GCP_PROJECT_NUMBER: { created: true, protected: true, value: projectNumber },
   GCP_REGION: { created: true, protected: true, value: region },
   GCP_SQL_INSTANCE: {
     created: true,
     protected: true,
     value: sql.connectionName,
+  },
+  GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: {
+    created: true,
+    protected: true,
+    value: "gitlab",
+  },
+  GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: {
+    created: true,
+    protected: true,
+    value: "gitlab",
   },
   GCP_WORKLOAD_IDENTITY_PROVIDER: {
     protected: true,

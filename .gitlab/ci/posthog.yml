@@ -14,32 +14,30 @@
     TF_VAR_gitlab_project_id: $CI_PROJECT_ID
     TF_VAR_gitlab_trigger_token: $POSTHOG_TRIGGER_TOKEN
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
-      when: never
-    - changes:
-        [infra/posthog/**/*, .gitlab/duo/kpis.yml, .gitlab/ci/posthog.yml]
+    - !reference [.not-ops, rules]
+    - changes: &posthog-files
+        - infra/posthog/**/*
+        - .gitlab/duo/kpis.yml
+        - .gitlab/ci/posthog.yml
 
 posthog:validate:
   extends: [.opentofu:validate, .posthog-tofu]
   needs: []
 
+# main, with the PostHog key and the trigger token set.
 posthog:plan:
   extends: [.opentofu:plan, .posthog-tofu]
   needs: [posthog:validate]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $POSTHOG_PERSONAL_API_KEY && $POSTHOG_TRIGGER_TOKEN
-      changes:
-        [infra/posthog/**/*, .gitlab/duo/kpis.yml, .gitlab/ci/posthog.yml]
+    - !reference [.not-ops, rules]
+    - &posthog-on-main
+      if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $POSTHOG_PERSONAL_API_KEY && $POSTHOG_TRIGGER_TOKEN
+      changes: *posthog-files
 
 posthog:apply:
   extends: [.opentofu:apply, .posthog-tofu]
   needs: [posthog:plan]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $OPS || $SCOUT
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $POSTHOG_PERSONAL_API_KEY && $POSTHOG_TRIGGER_TOKEN
-      changes:
-        [infra/posthog/**/*, .gitlab/duo/kpis.yml, .gitlab/ci/posthog.yml]
+    - !reference [.not-ops, rules]
+    - <<: *posthog-on-main
       when: manual
