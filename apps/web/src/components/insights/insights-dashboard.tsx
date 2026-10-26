@@ -13,7 +13,6 @@ import {
   EmptyTitle,
 } from "@wovain/ui/components/empty";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { Spinner } from "@wovain/ui/components/spinner";
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -29,6 +28,7 @@ import type { DataColumn } from "@/components/app/data-table";
 import { DataTable } from "@/components/app/data-table";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { ProviderLogo } from "@/components/app/provider-logo";
+import { ShuttleLoader } from "@/components/brand/shuttle-mark";
 import { KpiFrame } from "@/components/insights/kpi-cards";
 import { SalesChart } from "@/components/insights/sales-chart";
 import { getPathname, Link } from "@/i18n/navigation";
@@ -462,7 +462,7 @@ export const InsightsDashboard = () => {
         </div>
         <div className="flex items-center gap-3">
           {isFetching && !isPending ? (
-            <Spinner aria-label={t("updating")} className="text-primary" />
+            <ShuttleLoader label={t("updating")} />
           ) : null}
           <ToggleGroup
             aria-label={t("rangeLabel")}

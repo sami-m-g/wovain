@@ -154,8 +154,8 @@ const BRAND = {
   muted: "#6b5462",
   paper: "#f7f1e8",
 };
-// public/brand/email-logo.png: the seam lockup at 2x, 188 x 36 CSS pixels.
-const LOGO = { height: 36, path: "/brand/email-logo.png", width: 188 };
+// public/brand/email-logo.png: the Shuttle lockup (light) at 2x, 180 x 40 CSS pixels.
+const LOGO = { height: 40, path: "/brand/email-logo.png", width: 180 };
 
 const Layout = ({
   copy,
