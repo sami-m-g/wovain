@@ -14,9 +14,12 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-// Canary: two failed probes, or a 5xx rate of at least 2% (and at least
-// twice the stable revision's) over at least 3 errors, rolls back.
+// Canary: two probes answered with a 5xx, more than 10% of probes with no
+// answer at all (status 0: a cold start or a dropped connection, not the
+// code), or a 5xx rate of at least 2% (and at least twice the stable
+// revision's) over at least 3 errors, rolls back.
 const MAX_FAILED_PROBES = 2;
+const MAX_UNANSWERED_SHARE = 0.1;
 const MIN_ERRORS = 3;
 const MAX_ERROR_RATE = 0.02;
 // Release guard: production is degraded at 10+ server-side exceptions (the
@@ -68,7 +71,12 @@ export const canaryVerdict = ({
 }): CanaryVerdict => {
   const reasons: string[] = [];
   const failed = probes.filter((p) => p.status === 0 || p.status >= 500);
-  if (failed.length >= MAX_FAILED_PROBES) {
+  const errored = failed.filter((p) => p.status >= 500);
+  const unanswered = failed.length - errored.length;
+  if (
+    errored.length >= MAX_FAILED_PROBES ||
+    unanswered > probes.length * MAX_UNANSWERED_SHARE
+  ) {
     const paths = [...new Set(failed.map((p) => `${p.path} (${p.status})`))];
     reasons.push(
       `${failed.length} of ${probes.length} probes failed: ${paths.join(", ")}`
