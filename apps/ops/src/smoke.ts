@@ -109,8 +109,13 @@ const checksFor = ({ docs, site }: Sites): Check[] => {
       method: "GET",
       name: "inngest",
       url: `${site}/api/inngest`,
+      // In production the serve route has a signing key, so an unsigned GET
+      // answers 401: the route is up and checking signatures. 200 is the dev
+      // server; anything else means it's down or misrouted.
       verify: (response) =>
-        response.status === 200 ? undefined : `status ${response.status}`,
+        response.status === 200 || response.status === 401
+          ? undefined
+          : `status ${response.status}`,
     },
     {
       init: {

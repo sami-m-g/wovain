@@ -9,7 +9,8 @@ Tavily se llama **en tiempo de ejecución**, en cada investigación de tendencia
 
 `packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) usa Tavily para:
 
-- **Momento.** Para cada tema de Qloo, buscar las noticias de la semana y devolver fuentes. Es la línea «por qué ahora» que se muestra en una idea.
+- **Temas.** Cada ejecución investiga de 3 a 5 temas distintos: los de Qloo, completados por el agente `research_themes` (Nemotron) cuando Qloo nombra menos de 3 (`packages/core/src/themes.ts`). Un tema nunca es el propio brief; sin modelo, se usan ángulos de diseño sobre el asunto del brief.
+- **Momento.** Para cada tema, buscar las noticias del último mes (`topic: "news"`, `searchDepth: "advanced"`) y devolver fuentes. El código descarta páginas de archivo y de etiquetas, resultados de más de 31 días, resultados con puntuación de Tavily inferior a 0,4 y resultados sin ninguna palabra de la consulta del tema; después elimina páginas y titulares duplicados y ordena por relevancia y actualidad. Es la línea «por qué ahora» que se muestra en una idea.
 - **Saturación.** Buscar en marketplaces (etsy.com, redbubble.com, fourthwall.com) anuncios coincidentes. Pocas coincidencias puntúan más alto.
 
 El texto de la web no es confiable: las ideas conservan sus enlaces de fuentes y los prompts indican a Nemotron que trate el texto de las ideas solo como datos.

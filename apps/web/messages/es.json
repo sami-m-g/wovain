@@ -471,7 +471,11 @@
       "reasonPlaceholder": "Tipografía más gruesa, sin las hojas",
       "error": "Aprueba al menos un diseño.",
       "submit": "Crear productos",
-      "artAlt": "Diseño: {title}"
+      "artAlt": "Diseño: {title}",
+      "shirtAlt": "Diseño en una camiseta: {title}",
+      "viewShirt": "En camiseta",
+      "viewFlat": "Arte plano",
+      "viewLabel": "Vista del diseño"
     },
     "products": {
       "title": "Publica los productos",

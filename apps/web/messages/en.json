@@ -471,7 +471,11 @@
       "reasonPlaceholder": "Make the type bolder, drop the leaves",
       "error": "Approve at least one design.",
       "submit": "Make products",
-      "artAlt": "Design: {title}"
+      "artAlt": "Design: {title}",
+      "shirtAlt": "Design on a shirt: {title}",
+      "viewShirt": "On a shirt",
+      "viewFlat": "Flat art",
+      "viewLabel": "Artwork view"
     },
     "products": {
       "title": "Publish the products",

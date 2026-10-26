@@ -4,6 +4,8 @@ import { stagePausedCampaign } from "./ads";
 import { createArtist, TEXT_TO_IMAGE } from "./fal";
 import {
   createProduct,
+  DEFAULT_CATALOG_PRODUCT_ID,
+  pickBlank,
   publishProduct,
   searchCatalog,
   uploadArtwork,
@@ -281,5 +283,55 @@ describe("fal", () => {
     });
     expect(calls.filter((item) => item.tool === "submit_job")).toHaveLength(1);
     expect(calls[0]?.args).toMatchObject({ endpoint_id: TEXT_TO_IMAGE });
+  });
+});
+
+// Each catalog call answers with the next reply.
+const sequence = (replies: unknown[]) => {
+  const calls: Record<string, unknown>[] = [];
+  const call: ToolCall = async (_tool, args) => {
+    calls.push(args);
+    return await Promise.resolve(replies.shift());
+  };
+  return { call, calls };
+};
+
+describe("pickBlank", () => {
+  const tee = {
+    id: "prd_tee",
+    name: "Tee",
+    printDetails: {
+      printAreas: [
+        { name: "Front", supportsBackendRendering: true, type: "front_large" },
+      ],
+      supportsBackendRendering: true,
+    },
+    slug: "tee",
+  };
+  const empty = { data: [], totalElements: 0 };
+
+  it("retries an empty reply", async () => {
+    const { call, calls } = sequence([empty, { data: [tee] }]);
+    const blank = await pickBlank(call, { retryMs: 0 });
+    expect(blank.id).toBe("prd_tee");
+    expect(calls).toHaveLength(2);
+  });
+
+  it("falls back to the default blank when the search stays empty", async () => {
+    const { call, calls } = sequence([empty, empty, empty, { data: [tee] }]);
+    const blank = await pickBlank(call, { retryMs: 0 });
+    expect(blank.id).toBe("prd_tee");
+    expect(calls.at(-1)?.productIds).toEqual([DEFAULT_CATALOG_PRODUCT_ID]);
+  });
+
+  it("names what Fourthwall answered when nothing can print", async () => {
+    const { call } = sequence(["no.", "no.", "no."]);
+    await expect(
+      pickBlank(call, { productId: "prd_x", retryMs: 0 })
+    ).rejects.toMatchObject({
+      code: "FOURTHWALL_NO_BLANK",
+      message: "That Fourthwall product can't print this design",
+      why: expect.stringContaining('text="no."'),
+    });
   });
 });

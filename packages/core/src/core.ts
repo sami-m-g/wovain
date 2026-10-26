@@ -49,6 +49,7 @@ export const createCore = (
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
   });
+  const nemotron = createNemotron(agents);
   return {
     // The Mastra agents and scorers, registered on the app's Mastra
     // instance; undefined without a Nebius key.
@@ -59,11 +60,13 @@ export const createCore = (
     // GitLab feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
-    nemotron: createNemotron(agents),
+    nemotron,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(
       tavilyClient(env.TAVILY_API_KEY),
-      createQloo({ apiKey: env.QLOO_API_KEY, baseURL: env.QLOO_API_URL })
+      createQloo({ apiKey: env.QLOO_API_KEY, baseURL: env.QLOO_API_URL }),
+      // Without a Nebius key, research themes fall back to design angles.
+      agents === undefined ? undefined : nemotron
     ),
     upstream: createUpstream({
       appUrl: env.BETTER_AUTH_URL,
