@@ -10,6 +10,8 @@ export const vendorPatterns = [
   "apps/fumadocs/src/components/ui/**",
   "apps/fumadocs/src/lib/cn.ts",
   "apps/fumadocs/src/lib/merge-refs.ts",
+  "apps/web/src/components/auth/**",
+  "apps/web/src/lib/auth/**",
   "packages/db/src/migrations/**",
   "packages/db/src/schema/auth.ts",
   "packages/ui/src/components/**",

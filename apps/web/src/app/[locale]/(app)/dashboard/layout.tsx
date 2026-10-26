@@ -16,6 +16,7 @@ import { AppBreadcrumb } from "@/components/app/app-breadcrumb";
 import { AppMotion } from "@/components/app/app-motion";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { ConnectionToasts } from "@/components/app/connection-toasts";
+import { AuthSession } from "@/components/auth-session";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
 import { AppToaster } from "@/components/toaster";
@@ -77,7 +78,9 @@ const DashboardLayout = async ({
           </header>
           <AppMotion>
             <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 lg:py-10">
-              {children}
+              <Suspense>
+                <AuthSession>{children}</AuthSession>
+              </Suspense>
             </div>
           </AppMotion>
           <Suspense>
