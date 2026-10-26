@@ -263,7 +263,9 @@ const enableFlow = (name: string, itemId: string, version: string) => {
       updateMutation: ADOPT,
     },
     {
-      ignoreChanges: ["createMutation", "mutationVariables"],
+      // An enabled consumer is never updated: its state keeps the variables
+      // it was created with, which a changed update mutation may not accept.
+      ignoreChanges: ["createMutation", "mutationVariables", "updateMutation"],
       provider,
       retainOnDelete: true,
     }
