@@ -3,11 +3,11 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { appRouter } from "@wovain/api/routers/index";
+import { identifyUser } from "evlog/better-auth";
 import type { NextRequest } from "next/server";
 
 import { createContext } from "@/context";
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
-import { identifyEvlogUser } from "@/lib/evlog-auth";
 
 const rpcHandler = new RPCHandler(appRouter);
 const apiHandler = new OpenAPIHandler(appRouter, {
@@ -19,12 +19,14 @@ const apiHandler = new OpenAPIHandler(appRouter, {
 });
 
 const handleRequest = async (req: NextRequest) => {
-  await identifyEvlogUser(req);
   // Procedures log onto this request's wide event through evlog's oRPC middleware
   const context = {
     ...(await createContext(req.headers)),
     log: getRequestLogger(),
   };
+  if (context.session) {
+    identifyUser(context.log, context.session, { maskEmail: true });
+  }
 
   const rpcResult = await rpcHandler.handle(req, {
     context,

@@ -1,4 +1,3 @@
-import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
@@ -9,7 +8,6 @@ import { getContent } from "@/content/load";
 import { INTEGRATION_SLUGS, USE_CASE_SLUGS } from "@/content/types";
 import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
 
 const COPYRIGHT_YEAR = "2026";
 
@@ -37,10 +35,7 @@ export const SiteFooter = async () => {
   const t = await getTranslations("Footer");
   const header = await getTranslations("Header");
   const common = await getTranslations("Common");
-  const requested = await getLocale();
-  const locale = hasLocale(routing.locales, requested)
-    ? requested
-    : routing.defaultLocale;
+  const locale = await getLocale();
   const content = await getContent(locale);
 
   return (

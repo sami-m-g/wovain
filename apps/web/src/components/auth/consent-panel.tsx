@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@wovain/ui/components/alert";
 import { Button } from "@wovain/ui/components/button";
 import { ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -62,12 +63,12 @@ export const ConsentPanel = () => {
         </div>
       ) : null}
       {error ? (
-        <p
-          className="border-destructive/40 bg-destructive/10 text-destructive mt-6 border px-3 py-2 text-sm"
-          role="alert"
+        <Alert
+          className="border-destructive/40 bg-destructive/10 mt-6 rounded-none px-3"
+          variant="destructive"
         >
           {t("error")}
-        </p>
+        </Alert>
       ) : null}
       <div className="mt-8 flex flex-wrap gap-3">
         <Button

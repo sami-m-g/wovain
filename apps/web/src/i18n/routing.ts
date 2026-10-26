@@ -1,12 +1,12 @@
+import { locales } from "@wovain/email/locales";
 import { defineRouting } from "next-intl/routing";
 
-/** Add a language here (and its messages/<locale>.json); nothing else changes. */
-const locales = ["en", "fr", "es"] as const;
-
+// The locale list lives in @wovain/email/locales, shared with the emails.
 export const routing = defineRouting({
   defaultLocale: "en",
   localePrefix: "as-needed",
   locales,
 });
 
-export type Locale = (typeof locales)[number];
+// Registered on next-intl's AppConfig (src/global.d.ts).
+export type { Locale } from "next-intl";

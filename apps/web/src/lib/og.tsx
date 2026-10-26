@@ -2,10 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { ImageResponse } from "next/og";
+import { z } from "zod";
 
 import { BRAND_ASSETS, PALETTE } from "@/brand/brand";
+import { getContent } from "@/content/load";
+import type { SiteContent } from "@/content/types";
+import { toLocale } from "@/i18n/locale";
+import { routing } from "@/i18n/routing";
 
-const OG_SIZE = { height: 630, width: 1200 };
+export const OG_SIZE = { height: 630, width: 1200 };
 const SEAM_HEIGHT = 57;
 const MARK_SIZE = 540;
 
@@ -95,4 +100,42 @@ export const ogImage = async ({
     </div>,
     OG_SIZE
   );
+};
+
+/**
+ * The exports of a `[slug]/opengraph-image.tsx`: one card per locale and
+ * slug, with the content entry's title and lead. Unknown slugs fall back.
+ */
+export const slugOgImage = <const Slug extends string>({
+  alt,
+  slugs,
+  fallback,
+  entry,
+}: {
+  alt: string;
+  slugs: readonly [Slug, ...Slug[]];
+  fallback: Slug;
+  entry: (content: SiteContent, slug: Slug) => { title: string; lead: string };
+}) => {
+  // oxlint-disable-next-line promise/prefer-await-to-then -- zod's .catch(), not a promise
+  const slugSchema = z.enum(slugs).catch(fallback);
+  return {
+    Image: async ({
+      params,
+    }: {
+      params: Promise<{ locale: string; slug: string }>;
+    }) => {
+      const { locale, slug } = await params;
+      const content = await getContent(toLocale(locale));
+      const { title, lead } = entry(content, slugSchema.parse(slug));
+      return ogImage({ subtitle: lead, title });
+    },
+    alt,
+    contentType: "image/png",
+    generateStaticParams: () =>
+      routing.locales.flatMap((locale) =>
+        slugs.map((slug) => ({ locale, slug }))
+      ),
+    size: OG_SIZE,
+  };
 };

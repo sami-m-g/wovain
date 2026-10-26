@@ -1,10 +1,6 @@
 {
   "name": "wovain",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
@@ -24,9 +20,9 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./packages/db/",
-    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./packages/db/",
-    "auth:generate": "cd apps/web && pnpm run auth:generate",
+    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./apps/ops/ && varlock codegen --path ./packages/db/",
+    "postinstall": "pnpm run env:generate",
+    "auth:generate": "pnpm --filter web run auth:generate",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "knip": "knip --config .config/knip.json",

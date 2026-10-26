@@ -11,12 +11,8 @@ import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { RunTape, stageOf } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
 import type { Run } from "@/lib/flow-client";
-import { describeProblem, flowClient } from "@/lib/flow-client";
-
-const runsQuery = {
-  queryFn: () => flowClient.runs.list(),
-  queryKey: ["runs"],
-} as const;
+import { describeProblem } from "@/lib/flow-client";
+import { orpc } from "@/utils/orpc";
 
 const STATUS_VARIANT: Record<
   Run["status"],
@@ -39,7 +35,7 @@ export const RunsList = ({
   const t = useTranslations("Runs");
   const status = useTranslations("Status");
   const format = useFormatter();
-  const { data, error, isPending } = useQuery(runsQuery);
+  const { data, error, isPending } = useQuery(orpc.runs.list.queryOptions());
 
   if (isPending) {
     return (

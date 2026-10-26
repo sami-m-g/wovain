@@ -1,5 +1,6 @@
 "use client";
 
+import { Field } from "@base-ui/react/field";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import { Checkbox } from "@wovain/ui/components/checkbox";
@@ -29,9 +30,6 @@ const useMoney = () => {
     format.number(value, { currency: "USD", style: "currency" });
 };
 
-const describedBy = (...ids: (string | false | undefined)[]) =>
-  ids.filter(Boolean).join(" ") || undefined;
-
 const BudgetField = ({
   budget,
   invalid,
@@ -42,17 +40,11 @@ const BudgetField = ({
   onBudget: (value: string) => void;
 }) => {
   const t = useTranslations("Wizard.campaign");
-  const id = useId();
   return (
-    <div className="flex max-w-xs flex-col gap-2">
-      <Label className="text-sm font-medium" htmlFor={id}>
-        {t("budgetLabel")}
-      </Label>
+    <Field.Root className="flex max-w-xs flex-col gap-2" invalid={invalid}>
+      <Field.Label render={<Label />}>{t("budgetLabel")}</Field.Label>
       <Input
-        aria-describedby={describedBy(`${id}-hint`, invalid && `${id}-error`)}
-        aria-invalid={invalid ? true : undefined}
         className="h-10 rounded-lg text-base tabular-nums md:text-sm"
-        id={id}
         inputMode="decimal"
         max={500}
         min={1}
@@ -61,15 +53,15 @@ const BudgetField = ({
         type="number"
         value={budget}
       />
-      <p className="text-muted-foreground text-xs" id={`${id}-hint`}>
+      <Field.Description className="text-muted-foreground text-xs">
         {t("budgetHint")}
-      </p>
+      </Field.Description>
       {invalid ? (
-        <p className="text-destructive text-sm" id={`${id}-error`}>
+        <Field.Error className="text-destructive text-sm" match>
           {t("budgetError")}
-        </p>
+        </Field.Error>
       ) : null}
-    </div>
+    </Field.Root>
   );
 };
 
@@ -95,7 +87,6 @@ export const BriefStep = ({
   onSubmit: () => void;
 }) => {
   const t = useTranslations("Wizard.brief");
-  const id = useId();
   return (
     <form
       className="flex flex-col gap-5"
@@ -106,30 +97,27 @@ export const BriefStep = ({
       }}
     >
       <StepHeader focusOnMount={false} title={t("title")} />
-      <div className="flex flex-col gap-2">
-        <Label className="text-sm font-medium" htmlFor={id}>
-          {t("label")}
-        </Label>
-        <Textarea
-          aria-describedby={describedBy(`${id}-hint`, error && `${id}-error`)}
-          aria-invalid={error ? true : undefined}
-          className="min-h-28 rounded-xl text-base md:text-sm"
-          id={id}
+      <Field.Root className="flex flex-col gap-2" invalid={Boolean(error)}>
+        <Field.Label render={<Label />}>{t("label")}</Field.Label>
+        <Field.Control
           maxLength={200}
           onChange={(event) => onChange(event.target.value)}
           placeholder={t("placeholder")}
+          render={
+            <Textarea className="min-h-28 rounded-xl text-base md:text-sm" />
+          }
           required
           value={brief}
         />
-        <p className="text-muted-foreground text-xs" id={`${id}-hint`}>
+        <Field.Description className="text-muted-foreground text-xs">
           {t("hint")}
-        </p>
+        </Field.Description>
         {error ? (
-          <p className="text-destructive text-sm" id={`${id}-error`}>
+          <Field.Error className="text-destructive text-sm" match>
             {error}
-          </p>
+          </Field.Error>
         ) : null}
-      </div>
+      </Field.Root>
       {autopilot ? (
         <BudgetField
           budget={budget}

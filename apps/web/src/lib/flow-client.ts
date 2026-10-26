@@ -2,12 +2,11 @@ import { ORPCError } from "@orpc/client";
 import type { InferRouterOutputs } from "@orpc/server";
 import type { AppRouter } from "@wovain/api/routers/index";
 
-import { client } from "@/utils/orpc";
-
 /**
- * The seller flow's client interface. Every screen talks to `flowClient` and
- * nothing else; it calls the oRPC procedures in `@wovain/api` (types come
- * straight from `AppRouter`, so a backend change surfaces here at compile time).
+ * Shared types and helpers for the seller flow. Screens call the oRPC
+ * procedures through `orpc` (TanStack Query) or `client` from `@/utils/orpc`;
+ * types come straight from `AppRouter`, so a backend change surfaces here at
+ * compile time.
  */
 
 type Outputs = InferRouterOutputs<AppRouter>;
@@ -25,64 +24,6 @@ export const PROVIDERS = [
   "fourthwall",
   "meta",
 ] as const satisfies readonly Provider[];
-
-export interface FlowClient {
-  connections: {
-    list: () => Promise<Connection[]>;
-    disconnect: (provider: Provider) => Promise<{ disconnected: boolean }>;
-  };
-  runs: {
-    list: () => Promise<Run[]>;
-    get: (id: string) => Promise<RunDetail>;
-    start: (input: {
-      seed: string;
-      autopilot: boolean;
-      dailyBudget: number;
-    }) => Promise<RunDetail>;
-  };
-  designs: {
-    generate: (ideaId: string) => Promise<Design>;
-    approve: (id: string) => Promise<Design>;
-    reject: (id: string, reason?: string) => Promise<Design>;
-  };
-  products: {
-    create: (designId: string) => Promise<Product>;
-    publish: (id: string) => Promise<Product>;
-  };
-  campaigns: {
-    create: (input: {
-      productId: string;
-      dailyBudget: number;
-    }) => Promise<Campaign>;
-  };
-}
-
-export const flowClient: FlowClient = {
-  campaigns: {
-    create: ({ productId, dailyBudget }) =>
-      client.campaigns.create({ dailyBudget, productId }),
-  },
-  connections: {
-    disconnect: (provider) => client.connections.disconnect({ provider }),
-    list: () => client.connections.list(),
-  },
-  designs: {
-    approve: (id) => client.designs.approve({ id }),
-    generate: (ideaId) => client.designs.generate({ ideaId }),
-    reject: (id, reason) =>
-      client.designs.reject(reason ? { id, reason } : { id }),
-  },
-  products: {
-    create: (designId) => client.products.create({ designId }),
-    publish: (id) => client.products.publish({ id }),
-  },
-  runs: {
-    get: (id) => client.runs.get({ id }),
-    list: () => client.runs.list(),
-    start: ({ seed, autopilot, dailyBudget }) =>
-      client.runs.start({ autopilot, dailyBudget, seed }),
-  },
-};
 
 /**
  * The browser URL that starts connecting a provider; the server redirects to

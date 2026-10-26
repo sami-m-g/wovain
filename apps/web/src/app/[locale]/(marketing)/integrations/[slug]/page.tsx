@@ -1,7 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
@@ -19,6 +18,7 @@ import { getContent } from "@/content/load";
 import type { IntegrationSlug } from "@/content/types";
 import { INTEGRATION_SLUGS } from "@/content/types";
 import { ENV } from "@/env.server";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
 import { breadcrumbJsonLd, contentMetadata, localizedUrl } from "@/lib/seo";
 
@@ -37,8 +37,9 @@ export const dynamicParams = false;
 export const generateMetadata = async ({
   params,
 }: Props): Promise<Metadata> => {
-  const { locale, slug } = await params;
-  if (!(hasLocale(routing.locales, locale) && isSlug(slug))) {
+  const { slug } = await params;
+  const locale = await requireLocale(params);
+  if (!isSlug(slug)) {
     return {};
   }
   const content = await getContent(locale);
@@ -52,11 +53,11 @@ export const generateMetadata = async ({
 };
 
 const IntegrationPage = async ({ params }: Props) => {
-  const { locale, slug } = await params;
-  if (!(hasLocale(routing.locales, locale) && isSlug(slug))) {
+  const { slug } = await params;
+  const locale = await enterLocale(params);
+  if (!isSlug(slug)) {
     notFound();
   }
-  setRequestLocale(locale);
   const t = await getTranslations("Seo");
   const home = await getTranslations("Home");
   const content = await getContent(locale);

@@ -4,8 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import { Skeleton } from "@wovain/ui/components/skeleton";
+import { Spinner } from "@wovain/ui/components/spinner";
 import { cn } from "@wovain/ui/lib/utils";
-import { Loader2, Megaphone, Store } from "lucide-react";
+import { Megaphone, Store } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -13,12 +14,8 @@ import { toast } from "sonner";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { Connection, Provider } from "@/lib/flow-client";
-import {
-  connectUrl,
-  describeProblem,
-  flowClient,
-  PROVIDERS,
-} from "@/lib/flow-client";
+import { connectUrl, describeProblem, PROVIDERS } from "@/lib/flow-client";
+import { orpc } from "@/utils/orpc";
 
 const PROVIDER_ICON: Record<Provider, LucideIcon> = {
   fourthwall: Store,
@@ -35,11 +32,6 @@ const StatusDot = ({ connected }: { connected: boolean }) => (
     )}
   />
 );
-
-const connectionsQuery = {
-  queryFn: () => flowClient.connections.list(),
-  queryKey: ["connections"],
-} as const;
 
 const ProviderRow = ({
   connection,
@@ -58,16 +50,19 @@ const ProviderRow = ({
   const actionClass = "h-9 min-w-36 rounded-lg px-4";
   const Icon = PROVIDER_ICON[provider];
 
-  const disconnect = useMutation({
-    mutationFn: () => flowClient.connections.disconnect(provider),
-    onError: (error) => {
-      toast.error(problems("other", { message: error.message }));
-    },
-    onSuccess: async () => {
-      toast.success(t("disconnectedToast", { name }));
-      await queryClient.invalidateQueries({ queryKey: ["connections"] });
-    },
-  });
+  const disconnect = useMutation(
+    orpc.connections.disconnect.mutationOptions({
+      onError: (error) => {
+        toast.error(problems("other", { message: error.message }));
+      },
+      onSuccess: async () => {
+        toast.success(t("disconnectedToast", { name }));
+        await queryClient.invalidateQueries({
+          queryKey: orpc.connections.key(),
+        });
+      },
+    })
+  );
 
   return (
     <li className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:p-5">
@@ -103,12 +98,10 @@ const ProviderRow = ({
           <Button
             className={actionClass}
             disabled={disconnect.isPending}
-            onClick={() => disconnect.mutate()}
+            onClick={() => disconnect.mutate({ provider })}
             variant="outline"
           >
-            {disconnect.isPending ? (
-              <Loader2 aria-hidden="true" className="animate-spin" />
-            ) : null}
+            {disconnect.isPending ? <Spinner aria-hidden="true" /> : null}
             {t("disconnect", { name })}
           </Button>
         ) : (
@@ -129,7 +122,9 @@ const ProviderRow = ({
 
 export const ConnectionsPanel = () => {
   const t = useTranslations("Connections");
-  const { data, error, isPending } = useQuery(connectionsQuery);
+  const { data, error, isPending } = useQuery(
+    orpc.connections.list.queryOptions()
+  );
 
   if (isPending) {
     return (
@@ -167,7 +162,7 @@ export const ConnectionsPanel = () => {
 export const ConnectionsSummary = () => {
   const t = useTranslations("Connections");
   const dashboard = useTranslations("Dashboard");
-  const { data, isPending } = useQuery(connectionsQuery);
+  const { data, isPending } = useQuery(orpc.connections.list.queryOptions());
 
   if (isPending) {
     return <Skeleton className="h-36 w-full rounded-xl" />;

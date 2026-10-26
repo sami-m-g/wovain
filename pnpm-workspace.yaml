@@ -8,19 +8,24 @@ allowBuilds:
   "@parcel/watcher": false
   "@swc/core": false
   core-js: false
+  protobufjs: false
 overrides:
   "@next/env": npm:@varlock/nextjs-integration@1.2.5
 catalog:
-  zod: ^4.5.4
+  zod: ^4.6.7
+  "@base-ui/react": ^1.9.0
   vitest: ^5.0.5
   typescript: npm:@typescript/typescript6@^6.0.2
   "@typescript/native": npm:typescript@^7.0.2
-  "@types/node": ^26.4.1
+  "@types/node": ^26.6.5
   varlock: 1.23.0
-  lucide-react: ^1.41.0
+  "@gitbeaker/rest": ^43.8.0
+  "@google-cloud/logging": ^12.3.0
+  "@google-cloud/monitoring": ^6.2.0
+  lucide-react: ^1.61.0
   next-themes: ^0.4.6
-  react: ^19.2.8
-  react-dom: ^19.2.8
+  react: ^19.3.1
+  react-dom: ^19.3.1
   sonner: ^2.0.8
   "@orpc/server": ^1.16.1
   "@orpc/client": ^1.16.1
@@ -29,8 +34,8 @@ catalog:
   "@orpc/tanstack-query": ^1.16.1
   better-auth: 1.7.12
   "@tailwindcss/postcss": ^4.3.3
-  "@types/react": ^19.2.18
-  "@types/react-dom": ^19.2.7
+  "@types/react": ^19.3.0
+  "@types/react-dom": ^19.3.0
   tailwindcss: ^4.3.3
   drizzle-orm: 1.0.0-rc.5
   evlog: ^2.33.1
@@ -57,5 +62,8 @@ catalog:
   "@posthog/ai": ^8.16.3
   posthog-js: ^1.438.21
   posthog-node: ^5.57.2
+  negotiator: ^1.1.0
+  "@types/negotiator": ^0.6.5
+  "@formatjs/intl-localematcher": ^0.9.0
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2

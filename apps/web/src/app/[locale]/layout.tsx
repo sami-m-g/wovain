@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { NextIntlClientProvider } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import "@/index.css";
@@ -10,6 +9,7 @@ import { BRAND_CSS, PALETTE } from "@/brand/brand";
 import { fontVariables } from "@/brand/fonts";
 import { ConsentBanner } from "@/components/consent-banner";
 import Providers from "@/components/providers";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
 import { alternatesFor, siteUrl } from "@/lib/seo";
 
@@ -22,10 +22,7 @@ export const generateStaticParams = () =>
 export const generateMetadata = async ({
   params,
 }: LayoutProps<"/[locale]">): Promise<Metadata> => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    return {};
-  }
+  const locale = await requireLocale(params);
   const t = await getTranslations({ locale, namespace: "Metadata" });
   return {
     alternates: alternatesFor("/", locale),
@@ -63,11 +60,7 @@ const LocaleLayout = async ({
   children,
   params,
 }: LayoutProps<"/[locale]"> & { children: ReactNode }) => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+  const locale = await enterLocale(params);
   const t = await getTranslations({ locale, namespace: "Common" });
 
   return (

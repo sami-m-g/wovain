@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { flowClient } from "@/lib/flow-client";
+import { orpc } from "@/utils/orpc";
 
 /**
  * First-run checklist on the overview: connect Fourthwall, connect Meta, run
@@ -15,14 +15,8 @@ import { flowClient } from "@/lib/flow-client";
  */
 export const SetupChecklist = () => {
   const t = useTranslations("Dashboard.setup");
-  const connections = useQuery({
-    queryFn: () => flowClient.connections.list(),
-    queryKey: ["connections"],
-  });
-  const runs = useQuery({
-    queryFn: () => flowClient.runs.list(),
-    queryKey: ["runs"],
-  });
+  const connections = useQuery(orpc.connections.list.queryOptions());
+  const runs = useQuery(orpc.runs.list.queryOptions());
 
   if (
     connections.isPending ||

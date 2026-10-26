@@ -1,6 +1,8 @@
 "use client";
 
+import { Field } from "@base-ui/react/field";
 import { useForm } from "@tanstack/react-form";
+import { Alert } from "@wovain/ui/components/alert";
 import { Button } from "@wovain/ui/components/button";
 import { Input } from "@wovain/ui/components/input";
 import { Label } from "@wovain/ui/components/label";
@@ -24,16 +26,6 @@ const MIN_PASSWORD = 8;
 /** Only same-app paths are allowed as a post-login destination. */
 const safeNext = (value: string | null) =>
   value?.startsWith("/dashboard") ? value : "/dashboard";
-
-const fieldError = (errors: unknown[]): string | undefined => {
-  const [first] = errors;
-  if (typeof first === "string") {
-    return first;
-  }
-  return first && typeof first === "object" && "message" in first
-    ? String(first.message)
-    : undefined;
-};
 
 export const AuthForm = ({
   google,
@@ -137,34 +129,25 @@ export const AuthForm = ({
         }}
       >
         {formError ? (
-          <p
-            className="border-destructive/40 bg-destructive/10 text-destructive border px-3 py-2 text-sm"
-            role="alert"
+          <Alert
+            className="border-destructive/40 bg-destructive/10 rounded-none px-3"
+            variant="destructive"
           >
             {formError}
-          </p>
+          </Alert>
         ) : null}
         {fields.map((name) => (
           <form.Field key={name} name={name}>
             {(field) => {
-              const error = fieldError(field.state.meta.errors);
-              const errorId = `${field.name}-error`;
-              const hintId = `${field.name}-hint`;
-              const describedBy =
-                [
-                  name === "password" && mode === "signUp" ? hintId : null,
-                  error ? errorId : null,
-                ]
-                  .filter(Boolean)
-                  .join(" ") || undefined;
+              const error = field.state.meta.errors[0]?.message;
               return (
-                <div className="flex flex-col gap-2">
-                  <Label className="text-sm font-medium" htmlFor={field.name}>
-                    {t(name)}
-                  </Label>
+                <Field.Root
+                  className="flex flex-col gap-2"
+                  invalid={Boolean(error)}
+                  name={field.name}
+                >
+                  <Field.Label render={<Label />}>{t(name)}</Field.Label>
                   <Input
-                    aria-describedby={describedBy}
-                    aria-invalid={error ? true : undefined}
                     autoComplete={
                       {
                         email: "email",
@@ -176,8 +159,6 @@ export const AuthForm = ({
                       }[name]
                     }
                     className="h-11 text-base md:text-sm"
-                    id={field.name}
-                    name={field.name}
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}
                     required
@@ -189,16 +170,16 @@ export const AuthForm = ({
                     value={field.state.value}
                   />
                   {name === "password" && mode === "signUp" ? (
-                    <p className="text-muted-foreground text-xs" id={hintId}>
+                    <Field.Description className="text-muted-foreground text-xs">
                       {t("passwordHint")}
-                    </p>
+                    </Field.Description>
                   ) : null}
                   {error ? (
-                    <p className="text-destructive text-sm" id={errorId}>
+                    <Field.Error className="text-destructive text-sm" match>
                       {error}
-                    </p>
+                    </Field.Error>
                   ) : null}
-                </div>
+                </Field.Root>
               );
             }}
           </form.Field>

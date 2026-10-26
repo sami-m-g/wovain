@@ -1,13 +1,18 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@wovain/ui/components/alert";
 import { Label } from "@wovain/ui/components/label";
 import { Switch } from "@wovain/ui/components/switch";
 import { Bot } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
@@ -29,7 +34,8 @@ import type {
   Product,
   RunDetail,
 } from "@/lib/flow-client";
-import { describeProblem, flowClient } from "@/lib/flow-client";
+import { describeProblem } from "@/lib/flow-client";
+import { client, orpc } from "@/utils/orpc";
 
 type Step = "brief" | "ideas" | "designs" | "products" | "campaign" | "done";
 type Work =
@@ -63,6 +69,18 @@ const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
 const DEFAULT_BUDGET = 15;
 
+/** Why a run stopped, when it failed ("" when it gave no reason). */
+const failureOf = (run: RunDetail) =>
+  run.status === "failed" ? (run.error ?? "") : undefined;
+
+/** The step an opened run picks up at. */
+const resumeStep = (run: RunDetail): Step => {
+  if (run.status === "completed" || run.status === "failed") {
+    return "done";
+  }
+  return run.designs.length > 0 ? "designs" : "ideas";
+};
+
 const replaceById = <T extends { id: string }>(items: T[], next: T) =>
   items.map((item) => (item.id === next.id ? next : item));
 
@@ -90,8 +108,86 @@ export const NewDropWizard = ({
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [failure, setFailure] = useState<string>();
   const [budget, setBudget] = useState(String(DEFAULT_BUDGET));
-  const [working, setWorking] = useState<Work>();
-  const [problem, setProblem] = useState<FlowProblem>();
+  // A problem the wizard finds itself (not a failed call), shown above the step
+  const [notice, setNotice] = useState<FlowProblem>();
+
+  const refreshRuns = () =>
+    queryClient.invalidateQueries({ queryKey: orpc.runs.key() });
+
+  // Opened from a run link (/dashboard?run=<id>): pick the run up where it stopped.
+  const openedRun = useQuery(
+    orpc.runs.get.queryOptions({
+      input: initialRunId ? { id: initialRunId } : skipToken,
+      retry: false,
+    })
+  );
+  const start = useMutation(
+    orpc.runs.start.mutationOptions({ onSettled: refreshRuns })
+  );
+  const approve = useMutation(orpc.designs.approve.mutationOptions());
+  const reject = useMutation(orpc.designs.reject.mutationOptions());
+  const publishProduct = useMutation(orpc.products.publish.mutationOptions());
+  // These steps act on several items at once, so they take a batch.
+  const generate = useMutation({
+    mutationFn: (ideaIds: string[]) =>
+      Promise.all(ideaIds.map((ideaId) => client.designs.generate({ ideaId }))),
+    mutationKey: orpc.designs.generate.mutationKey(),
+  });
+  const createProducts = useMutation({
+    mutationFn: (designIds: string[]) =>
+      Promise.all(
+        designIds.map((designId) => client.products.create({ designId }))
+      ),
+    mutationKey: orpc.products.create.mutationKey(),
+  });
+  const createCampaigns = useMutation({
+    mutationFn: ({
+      dailyBudget,
+      productIds,
+    }: {
+      dailyBudget: number;
+      productIds: string[];
+    }) =>
+      Promise.all(
+        productIds.map((productId) =>
+          client.campaigns.create({ dailyBudget, productId })
+        )
+      ),
+    mutationKey: orpc.campaigns.create.mutationKey(),
+    onSettled: refreshRuns,
+  });
+  const mutations = [
+    start,
+    generate,
+    approve,
+    reject,
+    createProducts,
+    publishProduct,
+    createCampaigns,
+  ];
+
+  const busy: [boolean, Work][] = [
+    [start.isPending, start.variables?.autopilot ? "autopilot" : "research"],
+    [openedRun.isLoading, "research"],
+    [generate.isPending, "designs"],
+    [approve.isPending || reject.isPending, "review"],
+    [createProducts.isPending, "products"],
+    [publishProduct.isPending, "publish"],
+    [createCampaigns.isPending, "campaign"],
+  ];
+  const working = busy.find(([pending]) => pending)?.[1];
+  const failedCall = mutations.find((mutation) => mutation.error)?.error;
+  const problem =
+    notice ?? (failedCall ? describeProblem(failedCall) : undefined);
+
+  /** Replaces the problem above the step (none clears it), including a failed call's. */
+  const showProblem = (next?: FlowProblem) => {
+    // A call still in flight keeps going and reports when it settles
+    for (const mutation of mutations.filter((item) => !item.isPending)) {
+      mutation.reset();
+    }
+    setNotice(next);
+  };
 
   const stepIndex = STEPS.indexOf(step);
   const busyLabel = working ? t(`working.${working}`) : undefined;
@@ -104,23 +200,6 @@ export const NewDropWizard = ({
     designs.map((item) => [item.id, item.brief.title])
   );
 
-  /** Runs one unit of work with a busy state; problems show above the step. */
-  const perform = async <T,>(work: Work, task: () => Promise<T>) => {
-    setProblem(undefined);
-    setWorking(work);
-    let result: T | undefined;
-    try {
-      result = await task();
-    } catch (error) {
-      setProblem(describeProblem(error));
-    }
-    setWorking(undefined);
-    return result;
-  };
-
-  const refreshRuns = () =>
-    queryClient.invalidateQueries({ queryKey: ["runs"] });
-
   const applyRun = (run: RunDetail) => {
     setIdeas(run.ideas);
     setDesigns(run.designs);
@@ -129,7 +208,26 @@ export const NewDropWizard = ({
     setPicked(run.designs.map((item) => item.ideaId));
   };
 
-  const submitBrief = async () => {
+  const replaceDesign = (updated: Design) =>
+    setDesigns((previous) => replaceById(previous, updated));
+
+  // Seeds the wizard from the opened run once, during render (React's
+  // "adjusting state when data changes" pattern); later refetches leave it be.
+  const [seeded, setSeeded] = useState(false);
+  if (!seeded && openedRun.error) {
+    setSeeded(true);
+    setNotice(describeProblem(openedRun.error));
+  } else if (!seeded && openedRun.data) {
+    const run = openedRun.data;
+    setSeeded(true);
+    applyRun(run);
+    setBrief(run.seed);
+    setAutopilot(run.autopilot);
+    setFailure(failureOf(run));
+    setStep(resumeStep(run));
+  }
+
+  const submitBrief = () => {
     if (brief.trim().length < MIN_BRIEF) {
       setBriefError(t("brief.error"));
       return;
@@ -138,137 +236,106 @@ export const NewDropWizard = ({
       return;
     }
     setBriefError(undefined);
-    const run = await perform(autopilot ? "autopilot" : "research", () =>
-      flowClient.runs.start({
-        autopilot,
-        dailyBudget: budgetValue,
-        seed: brief.trim(),
-      })
+    showProblem();
+    start.mutate(
+      { autopilot, dailyBudget: budgetValue, seed: brief.trim() },
+      {
+        onSuccess: (run) => {
+          applyRun(run);
+          if (!autopilot) {
+            setStep("ideas");
+            return;
+          }
+          setFailure(failureOf(run));
+          setStep("done");
+        },
+      }
     );
-    await refreshRuns();
-    if (!run) {
-      return;
-    }
-    applyRun(run);
-    if (!autopilot) {
-      setStep("ideas");
-      return;
-    }
-    setFailure(run.status === "failed" ? (run.error ?? "") : undefined);
-    setStep("done");
   };
 
-  const designPicked = async () => {
+  const designPicked = () => {
     const designed = new Set(designs.map((item) => item.ideaId));
     const todo = picked.filter((ideaId) => !designed.has(ideaId));
     if (todo.length === 0 && designs.length === 0) {
-      setProblem({ kind: "other", message: t("trends.error") });
+      showProblem({ kind: "other", message: t("trends.error") });
       return;
     }
-    const made = await perform("designs", () =>
-      Promise.all(todo.map((ideaId) => flowClient.designs.generate(ideaId)))
-    );
-    if (made) {
-      setDesigns((previous) => [...previous, ...made]);
-      setStep("designs");
-    }
+    showProblem();
+    generate.mutate(todo, {
+      onSuccess: (made) => {
+        setDesigns((previous) => [...previous, ...made]);
+        setStep("designs");
+      },
+    });
   };
 
-  const decide = async (design: Design, approve: boolean) => {
-    const updated = await perform("review", () =>
-      approve
-        ? flowClient.designs.approve(design.id)
-        : flowClient.designs.reject(design.id, reasons[design.id])
-    );
-    if (updated) {
-      setDesigns((previous) => replaceById(previous, updated));
+  const decide = (design: Design, approved: boolean) => {
+    const reason = reasons[design.id];
+    showProblem();
+    if (approved) {
+      approve.mutate({ id: design.id }, { onSuccess: replaceDesign });
+      return;
     }
+    reject.mutate(reason ? { id: design.id, reason } : { id: design.id }, {
+      onSuccess: replaceDesign,
+    });
   };
 
-  const retry = async (design: Design) => {
-    const made = await perform("designs", () =>
-      flowClient.designs.generate(design.ideaId)
-    );
-    if (made) {
-      setDesigns((previous) => [...previous, made]);
-    }
+  const retry = (design: Design) => {
+    showProblem();
+    generate.mutate([design.ideaId], {
+      onSuccess: (made) => setDesigns((previous) => [...previous, ...made]),
+    });
   };
 
-  const makeProducts = async () => {
+  const makeProducts = () => {
     const approved = designs.filter((item) => item.status === "approved");
     if (approved.length === 0) {
-      setProblem({ kind: "other", message: t("designs.error") });
+      showProblem({ kind: "other", message: t("designs.error") });
       return;
     }
     const haveProduct = new Set(products.map((item) => item.designId));
-    const made = await perform("products", () =>
-      Promise.all(
-        approved
-          .filter((item) => !haveProduct.has(item.id))
-          .map((design) => flowClient.products.create(design.id))
-      )
+    showProblem();
+    createProducts.mutate(
+      approved
+        .filter((item) => !haveProduct.has(item.id))
+        .map((item) => item.id),
+      {
+        onSuccess: (made) => {
+          setProducts((previous) => [...previous, ...made]);
+          setStep("products");
+        },
+      }
     );
-    if (made) {
-      setProducts((previous) => [...previous, ...made]);
-      setStep("products");
-    }
   };
 
-  const publish = async (product: Product) => {
-    const updated = await perform("publish", () =>
-      flowClient.products.publish(product.id)
+  const publish = (product: Product) => {
+    showProblem();
+    publishProduct.mutate(
+      { id: product.id },
+      {
+        onSuccess: (updated) =>
+          setProducts((previous) => replaceById(previous, updated)),
+      }
     );
-    if (updated) {
-      setProducts((previous) => replaceById(previous, updated));
-    }
   };
 
-  const buildCampaigns = async () => {
+  const buildCampaigns = () => {
     if (budgetInvalid) {
       return;
     }
     const live = products.filter((item) => item.status === "public");
-    const made = await perform("campaign", () =>
-      Promise.all(
-        live.map((product) =>
-          flowClient.campaigns.create({
-            dailyBudget: budgetValue,
-            productId: product.id,
-          })
-        )
-      )
+    showProblem();
+    createCampaigns.mutate(
+      { dailyBudget: budgetValue, productIds: live.map((item) => item.id) },
+      {
+        onSuccess: (made) => {
+          setCampaigns(made);
+          setStep("done");
+        },
+      }
     );
-    await refreshRuns();
-    if (made) {
-      setCampaigns(made);
-      setStep("done");
-    }
   };
-
-  // Opened from a run link (/dashboard?run=<id>): pick the run up where it stopped.
-  const openRun = async (runId: string) => {
-    const run = await perform("research", () => flowClient.runs.get(runId));
-    if (!run) {
-      return;
-    }
-    applyRun(run);
-    setBrief(run.seed);
-    setAutopilot(run.autopilot);
-    if (run.status === "completed" || run.status === "failed") {
-      setFailure(run.status === "failed" ? (run.error ?? "") : undefined);
-      setStep("done");
-      return;
-    }
-    setStep(run.designs.length > 0 ? "designs" : "ideas");
-  };
-
-  const opened = useRef(false);
-  useEffect(() => {
-    if (initialRunId && !opened.current) {
-      opened.current = true;
-      openRun(initialRunId);
-    }
-  });
 
   const restart = () => {
     setStep("brief");
@@ -280,11 +347,11 @@ export const NewDropWizard = ({
     setProducts([]);
     setCampaigns([]);
     setFailure(undefined);
-    setProblem(undefined);
+    showProblem();
   };
 
   const goTo = (next: Step) => {
-    setProblem(undefined);
+    showProblem();
     setStep(next);
   };
 
@@ -351,7 +418,7 @@ export const NewDropWizard = ({
           if (products.some((item) => item.status === "public")) {
             goTo("campaign");
           } else {
-            setProblem({ kind: "other", message: t("products.error") });
+            showProblem({ kind: "other", message: t("products.error") });
           }
         }}
         onPublish={publish}

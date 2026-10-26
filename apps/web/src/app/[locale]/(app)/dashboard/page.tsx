@@ -1,25 +1,20 @@
 import { Button } from "@wovain/ui/components/button";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { ConnectionsSummary } from "@/components/app/connections-panel";
 import { RunsList } from "@/components/app/runs-list";
 import { SetupChecklist } from "@/components/app/setup-checklist";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link, redirect } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
 
 export const generateMetadata = async ({
   params,
 }: PageProps<"/[locale]/dashboard">): Promise<Metadata> => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    return {};
-  }
+  const locale = await requireLocale(params);
   return pageMetadata({
     index: false,
     locale,
@@ -34,11 +29,7 @@ const DashboardPage = async ({
   params,
   searchParams,
 }: PageProps<"/[locale]/dashboard">) => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+  const locale = await enterLocale(params);
   const { run } = await searchParams;
   // Run emails link to /dashboard?run=<id>: open that run in the flow.
   if (typeof run === "string" && RUN_ID.test(run)) {
