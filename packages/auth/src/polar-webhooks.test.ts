@@ -6,6 +6,8 @@ import { creditBalance } from "@wovain/billing/credits";
 import { entitlement } from "@wovain/billing/mirror";
 import { addUser, createTestDb } from "@wovain/billing/testing";
 import type { Database } from "@wovain/db";
+import { creditLedger, promoAttempt } from "@wovain/db/schema/billing";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { createAuth } from "./index";
@@ -128,33 +130,40 @@ const grantEvent = (
     code = "studio",
     creditedAt = NOW,
     externalId = userId,
+    grantId = `grant_${code}`,
+    order = false,
+    rollover = false,
     units = 300,
   }: {
     code?: string;
     creditedAt?: string;
     externalId?: string;
+    grantId?: string;
+    // A one-time purchase's grant (an order) rather than a subscription's.
+    order?: boolean;
+    rollover?: boolean;
     units?: number;
   } = {}
 ): webhooks.WebhookPayload => ({
   api_version: "2026-10",
   data: {
-    benefit: benefit(code, units, false),
+    benefit: benefit(code, units, rollover),
     benefit_id: `ben_${code}`,
     created_at: NOW,
     customer: customer(externalId),
     customer_id: `cus_${externalId}`,
     granted_at: NOW,
-    id: `grant_${code}`,
+    id: grantId,
     is_granted: true,
     is_revoked: false,
     modified_at: creditedAt,
-    order_id: null,
+    order_id: order ? `order_${grantId}` : null,
     properties: {
       last_credited_at: creditedAt,
       last_credited_meter_id: "meter_credits",
       last_credited_units: units,
     },
-    subscription_id: `sub_${code}`,
+    subscription_id: order ? null : `sub_${code}`,
   },
   timestamp: creditedAt,
   type,
@@ -308,4 +317,51 @@ it("mirrors a paid subscription and its cancellation, with KPI events", async ()
     plan: "studio",
     subscription: { cancelAtPeriodEnd: true },
   });
+});
+
+// A promo code's credits: the grant of its credit pack product, bought at $0
+// with the 100%-off discount (packages/billing/src/promos.ts).
+const promoGrant = (grantId: string) =>
+  grantEvent("benefit_grant.created", {
+    code: "promo:judges-2026",
+    grantId,
+    order: true,
+    rollover: true,
+    units: 300,
+  });
+
+it("grants a promo code's credits once, noted in the ledger", async () => {
+  await db.insert(promoAttempt).values({
+    outcome: "checkout",
+    promoId: "judges-2026",
+    surface: "billing",
+    userId,
+  });
+  const first = await deliver(promoGrant("grant_promo_1"));
+  const again = await deliver(promoGrant("grant_promo_1"));
+  expect([first.status, again.status]).toStrictEqual([200, 200]);
+  expect(await creditBalance(db, userId)).toStrictEqual({
+    available: 300,
+    pack: 300,
+    plan: 0,
+  });
+  const entries = await db
+    .select({ delta: creditLedger.delta, note: creditLedger.note })
+    .from(creditLedger)
+    .where(eq(creditLedger.userId, userId));
+  expect(entries).toStrictEqual([{ delta: 300, note: "promo judges-2026" }]);
+  expect(capture).toHaveBeenCalledOnce();
+  expect(capture).toHaveBeenCalledWith({
+    distinctId: userId,
+    event: "promo_redeemed",
+    properties: { code: "judges-2026", credits: 300, surface: "billing" },
+  });
+});
+
+it("gives a merchant a promo's credits only once, even from two orders", async () => {
+  await deliver(promoGrant("grant_promo_1"));
+  const second = await deliver(promoGrant("grant_promo_2"));
+  expect(second.status).toBe(200);
+  expect(await creditBalance(db, userId)).toMatchObject({ pack: 300 });
+  expect(capture).toHaveBeenCalledOnce();
 });

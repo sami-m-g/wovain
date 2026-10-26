@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
@@ -55,8 +56,8 @@ export const billingSubscription = pgTable(
   (table) => [index("billing_subscription_user_idx").on(table.userId)]
 );
 
-// One Polar meter-credit benefit grant: a plan's monthly credits or a credit
-// pack. `remaining` is what is left of it to spend.
+// One Polar meter-credit benefit grant: a plan's monthly credits, a credit
+// pack or a promo code's credits. `remaining` is what is left of it to spend.
 export const creditGrant = pgTable(
   "credit_grant",
   {
@@ -66,6 +67,9 @@ export const creditGrant = pgTable(
     // The credit period this row holds: Polar's last_credited_at for the
     // grant. A new period replaces (or, with rollover, adds to) `remaining`.
     periodKey: text("period_key").notNull(),
+    // The promo (packages/billing/src/promos.ts) a redeemed code's credits
+    // came from; a merchant holds at most one grant per promo.
+    promoId: text("promo_id"),
     remaining: credits("remaining"),
     revokedAt: timestamp("revoked_at"),
     rollover: boolean("rollover").notNull(),
@@ -75,6 +79,7 @@ export const creditGrant = pgTable(
   },
   (table) => [
     index("credit_grant_user_idx").on(table.userId),
+    uniqueIndex("credit_grant_user_promo_idx").on(table.userId, table.promoId),
     check("credit_grant_remaining_check", sql`${table.remaining} >= 0`),
   ]
 );
@@ -125,6 +130,9 @@ export const creditLedger = pgTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     idempotencyKey: text("idempotency_key").notNull().unique(),
+    // What the entry was for, when the reason alone doesn't say: the promo
+    // behind a redeemed code's grant.
+    note: text("note"),
     reason: text("reason", {
       enum: ["grant", "expire", "revoke", "reserve", "release"],
     }).notNull(),
@@ -132,4 +140,27 @@ export const creditLedger = pgTable(
     userId: owner(),
   },
   (table) => [index("credit_ledger_user_idx").on(table.userId, table.createdAt)]
+);
+
+// Every promo code a merchant tried to redeem, refused or not: the redeem
+// endpoint's rate limit counts them (in Postgres, so every Cloud Run
+// instance sees the same count), and the webhook reads the surface of the
+// checkout behind a grant. The code itself is never stored.
+export const promoAttempt = pgTable(
+  "promo_attempt",
+  {
+    createdAt: createdAt(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    // checkout, or why it was refused: invalid, expired, used_up, not_free,
+    // already_redeemed.
+    outcome: text("outcome").notNull(),
+    // The promo the code matched; null for an unknown code.
+    promoId: text("promo_id"),
+    // Where the merchant redeemed it: billing (the Billing page).
+    surface: text("surface").notNull(),
+    userId: owner(),
+  },
+  (table) => [index("promo_attempt_user_idx").on(table.userId, table.createdAt)]
 );

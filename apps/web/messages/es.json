@@ -723,7 +723,8 @@
       "plansTitle": "Planes",
       "packTitle": "¿Necesitas unos créditos más?",
       "comingSoon": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan cada mes.",
-      "comingSoonRenews": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan el {date}."
+      "comingSoonRenews": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan el {date}.",
+      "redeemSuccess": "Código canjeado. Tus créditos llegan en unos segundos y nunca caducan."
     },
     "paywall": {
       "creditsTitle": "No te quedan créditos para este paso",
@@ -742,6 +743,24 @@
       "comingSoon": "Muy pronto",
       "button": "Avísame",
       "thanks": "Gracias, hemos anotado tu interés."
+    },
+    "redeem": {
+      "title": "Canjear un código",
+      "lead": "¿Tienes un código promocional? Añade sus créditos a tu cuenta.",
+      "label": "Código promocional",
+      "placeholder": "Escribe tu código",
+      "hint": "Un canje por cuenta. Los códigos gratuitos no piden tarjeta.",
+      "submit": "Canjear",
+      "redeeming": "Canjeando…",
+      "errors": {
+        "invalid": "Ese código no es válido. Revísalo y vuelve a intentarlo.",
+        "expired": "Ese código ha caducado.",
+        "usedUp": "Ese código ya se ha canjeado todas las veces posibles.",
+        "alreadyRedeemed": "Ya has canjeado este código.",
+        "notFree": "Por ahora solo funcionan los códigos de créditos gratuitos. Los planes de pago llegarán pronto.",
+        "tooMany": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
+        "error": "No se pudo canjear el código. Inténtalo de nuevo en un momento."
+      }
     }
   },
   "Pricing": {

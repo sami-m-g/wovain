@@ -5,6 +5,7 @@
 export type BillingEvent =
   | "credits_consumed"
   | "credits_purchased"
+  | "promo_redeemed"
   | "subscription_canceled"
   | "subscription_changed"
   | "subscription_started";
