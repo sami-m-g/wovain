@@ -23,6 +23,7 @@ import { useTranslations } from "next-intl";
 import { BRAND_ASSETS, BRAND_NAME } from "@/brand/brand";
 import type { NavItem } from "@/components/app/nav-main";
 import { NavMain } from "@/components/app/nav-main";
+import { NavSecondary } from "@/components/app/nav-secondary";
 import { NavUser } from "@/components/app/nav-user";
 import { Logo } from "@/components/brand/logo";
 import { Link } from "@/i18n/navigation";
@@ -74,9 +75,10 @@ export const AppSidebar = ({ docsUrl }: { docsUrl: string }) => {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={NAV} />
+        <NavSecondary docsUrl={docsUrl} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser docsUrl={docsUrl} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
