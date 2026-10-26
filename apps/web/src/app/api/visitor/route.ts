@@ -2,13 +2,16 @@ import { ENV } from "@/env.server";
 import { countryName, visitorCountry } from "@/lib/geo";
 import { auth } from "@/services";
 
-// The team's emails, lowercased; analytics only, never an entitlement.
-const TEAM = new Set(
-  (ENV.WOVAIN_ALLOWED_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => email !== "")
-);
+// The team's emails, lowercased; analytics only, never an entitlement. Read
+// per request: WOVAIN_ALLOWED_EMAILS is @dynamic (apps/web/.env.schema), so it
+// isn't available when `next build` evaluates this module.
+const teamEmails = () =>
+  new Set(
+    (ENV.WOVAIN_ALLOWED_EMAILS ?? "")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter((email) => email !== "")
+  );
 
 // What the browser's analytics can't know on their own, for PostHog
 // (src/lib/analytics-client.ts). Until a visitor consents, PostHog is
@@ -31,7 +34,9 @@ export interface Visitor {
 const isInternal = async (headers: Headers) => {
   try {
     const session = await auth.api.getSession({ headers });
-    return session !== null && TEAM.has(session.user.email.toLowerCase());
+    return (
+      session !== null && teamEmails().has(session.user.email.toLowerCase())
+    );
   } catch {
     return false;
   }
