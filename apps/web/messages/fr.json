@@ -394,7 +394,7 @@
     "started": "Lancé le",
     "manual": "Avec vous",
     "autopilot": "Pilote automatique",
-    "stoppedAt": "Arrêtée : {error}",
+    "stoppedAt": "Arrêtée à l'étape {stage}.",
     "emptyTitle": "Aucune exécution pour l'instant",
     "brief": "Brief",
     "status": "Statut",
@@ -419,28 +419,13 @@
       "meta": {
         "name": "Meta",
         "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne."
-      }
-    },
-    "serverKeys": "Rien à configurer : wovain paie ces services et les utilise pour chaque drop.",
-    "serverKeysTitle": "Avec les clés de wovain",
-    "services": {
-      "nebius": {
-        "name": "Nemotron sur Nebius",
-        "body": "Évalue les designs, rédige les annonces et décide en pilote automatique."
-      },
-      "qloo": {
-        "name": "Qloo",
-        "body": "Trouve ce que votre audience aime déjà."
-      },
-      "tavily": {
-        "name": "Tavily",
-        "body": "Parcourt l'actualité et les annonces de la semaine."
       },
       "fal": {
         "name": "fal",
-        "body": "Dessine les visuels prêts à imprimer."
+        "body": "Votre compte fal dessine les visuels, à vos frais. Nécessaire pour créer les designs."
       }
-    }
+    },
+    "comingSoon": "Bientôt disponible"
   },
   "Wizard": {
     "title": "Nouveau drop",
@@ -448,12 +433,11 @@
     "stepsLabel": "Étapes du drop",
     "stepOf": "Étape {current, number} sur {total, number}",
     "autopilot": "Pilote automatique",
-    "autopilotHint": "Nemotron choisit l'idée et valide le visuel ; wovain publie et crée la campagne, en pause.",
+    "autopilotHint": "wovain choisit l'idée et valide le visuel, puis met les pièces en vente et prépare la campagne, en pause.",
     "autopilotRunning": "Le pilote automatique gère ce drop. Cela peut prendre quelques minutes.",
     "back": "Retour",
     "problem": {
-      "notConfigured": "{service} n'est pas encore configuré sur ce serveur.",
-      "notConfiguredVariable": "{service} n'est pas encore configuré sur ce serveur : {variable} manque.",
+      "notConfigured": "Cette étape n'est pas disponible pour le moment. Réessayez dans un instant.",
       "notConnected": "Connectez {service} pour terminer cette étape.",
       "connectLink": "Aller aux connexions",
       "other": "Un problème est survenu : {message}"
@@ -526,7 +510,7 @@
       "open": "Ouvrir le Gestionnaire de publicités",
       "another": "Lancer un autre drop",
       "history": "Voir toutes les exécutions",
-      "autopilotFailed": "Le pilote automatique s'est arrêté : {error}"
+      "autopilotFailed": "Le pilote automatique s'est arrêté à l'étape {stage}. Reprenez-la depuis les étapes."
     },
     "working": {
       "research": "Recherche des tendances et premier visuel…",

@@ -394,7 +394,7 @@
     "started": "Started",
     "manual": "With you",
     "autopilot": "Autopilot",
-    "stoppedAt": "Stopped: {error}",
+    "stoppedAt": "Stopped during {stage}.",
     "emptyTitle": "No runs yet",
     "brief": "Brief",
     "status": "Status",
@@ -402,7 +402,7 @@
   },
   "Connections": {
     "title": "Connections",
-    "lead": "wovain acts for you through these accounts. Disconnect either one at any time.",
+    "lead": "wovain acts for you through these accounts. Disconnect any of them at any time.",
     "connected": "Connected",
     "disconnected": "Not connected",
     "connect": "Connect {name}",
@@ -419,28 +419,13 @@
       "meta": {
         "name": "Meta",
         "body": "Your ad account, Page and pixel. Needed to build the campaign."
-      }
-    },
-    "serverKeys": "Nothing to set up: wovain pays for these and runs them for every drop.",
-    "serverKeysTitle": "Run on wovain's keys",
-    "services": {
-      "nebius": {
-        "name": "Nemotron on Nebius",
-        "body": "Judges designs, writes ad copy and makes autopilot's calls."
-      },
-      "qloo": {
-        "name": "Qloo",
-        "body": "Finds what your audience already loves."
-      },
-      "tavily": {
-        "name": "Tavily",
-        "body": "Scans this week's news and listings."
       },
       "fal": {
         "name": "fal",
-        "body": "Draws the print-ready artwork."
+        "body": "Your fal account draws the artwork, billed to you. Needed to make designs."
       }
-    }
+    },
+    "comingSoon": "Coming soon"
   },
   "Wizard": {
     "title": "New drop",
@@ -448,12 +433,11 @@
     "stepsLabel": "Drop steps",
     "stepOf": "Step {current, number} of {total, number}",
     "autopilot": "Autopilot",
-    "autopilotHint": "Nemotron picks the idea and approves the design; wovain publishes and builds the campaign, paused.",
+    "autopilotHint": "wovain picks the idea and approves the design, then lists the pieces and stages the campaign, paused.",
     "autopilotRunning": "Autopilot is running this drop. It can take a few minutes.",
     "back": "Back",
     "problem": {
-      "notConfigured": "{service} isn't set up on this server yet.",
-      "notConfiguredVariable": "{service} isn't set up on this server yet: {variable} is missing.",
+      "notConfigured": "This step isn't available right now. Try again in a little while.",
       "notConnected": "Connect {service} to finish this step.",
       "connectLink": "Go to Connections",
       "other": "Something went wrong: {message}"
@@ -526,7 +510,7 @@
       "open": "Open in Ads Manager",
       "another": "Start another drop",
       "history": "See all runs",
-      "autopilotFailed": "Autopilot stopped: {error}"
+      "autopilotFailed": "Autopilot stopped during {stage}. Open the steps to pick it up."
     },
     "working": {
       "research": "Researching trends and drafting the first design…",

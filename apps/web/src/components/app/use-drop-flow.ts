@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import type { Stage } from "@/components/product/run-tape";
+import { stageOf } from "@/components/product/run-tape";
 import type { FlowProblem, RunDetail } from "@/lib/flow-client";
 import { describeProblem } from "@/lib/flow-client";
 import { client, orpc } from "@/utils/orpc";
@@ -45,9 +46,9 @@ const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
 const DEFAULT_BUDGET = 15;
 
-/** Why a run stopped, when it failed ("" when it gave no reason). */
-export const failureOf = (run: RunDetail) =>
-  run.status === "failed" ? (run.error ?? "") : undefined;
+/** Where a failed run stopped, in the designer's terms (no server detail). */
+export const failureOf = (run: RunDetail): Stage | undefined =>
+  run.status === "failed" ? stageOf(run) : undefined;
 
 /** The step an opened run picks up at. */
 const resumeStep = (run?: RunDetail): Step => {

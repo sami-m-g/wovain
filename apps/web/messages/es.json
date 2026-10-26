@@ -394,7 +394,7 @@
     "started": "Inicio",
     "manual": "Contigo",
     "autopilot": "Piloto automático",
-    "stoppedAt": "Detenida: {error}",
+    "stoppedAt": "Detenida en el paso {stage}.",
     "emptyTitle": "Aún no hay ejecuciones",
     "brief": "Brief",
     "status": "Estado",
@@ -419,28 +419,13 @@
       "meta": {
         "name": "Meta",
         "body": "Tu cuenta publicitaria, tu página y tu píxel. Necesario para crear la campaña."
-      }
-    },
-    "serverKeys": "Nada que configurar: wovain paga estos servicios y los usa en cada drop.",
-    "serverKeysTitle": "Con las claves de wovain",
-    "services": {
-      "nebius": {
-        "name": "Nemotron en Nebius",
-        "body": "Evalúa los diseños, escribe los anuncios y decide en piloto automático."
-      },
-      "qloo": {
-        "name": "Qloo",
-        "body": "Encuentra lo que tu audiencia ya ama."
-      },
-      "tavily": {
-        "name": "Tavily",
-        "body": "Revisa las noticias y los anuncios de la semana."
       },
       "fal": {
         "name": "fal",
-        "body": "Dibuja el arte listo para imprimir."
+        "body": "Tu cuenta de fal dibuja el arte, a tu cargo. Necesaria para crear los diseños."
       }
-    }
+    },
+    "comingSoon": "Próximamente"
   },
   "Wizard": {
     "title": "Nuevo drop",
@@ -448,12 +433,11 @@
     "stepsLabel": "Pasos del drop",
     "stepOf": "Paso {current, number} de {total, number}",
     "autopilot": "Piloto automático",
-    "autopilotHint": "Nemotron elige la idea y aprueba el diseño; wovain publica y crea la campaña, en pausa.",
+    "autopilotHint": "wovain elige la idea y aprueba el diseño, luego publica las piezas y prepara la campaña, en pausa.",
     "autopilotRunning": "El piloto automático está gestionando este drop. Puede tardar unos minutos.",
     "back": "Atrás",
     "problem": {
-      "notConfigured": "{service} aún no está configurado en este servidor.",
-      "notConfiguredVariable": "{service} aún no está configurado en este servidor: falta {variable}.",
+      "notConfigured": "Este paso no está disponible ahora mismo. Inténtalo de nuevo en un rato.",
       "notConnected": "Conecta {service} para terminar este paso.",
       "connectLink": "Ir a Conexiones",
       "other": "Algo salió mal: {message}"
@@ -526,7 +510,7 @@
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
       "history": "Ver todas las ejecuciones",
-      "autopilotFailed": "El piloto automático se detuvo: {error}"
+      "autopilotFailed": "El piloto automático se detuvo en el paso {stage}. Retómalo desde los pasos."
     },
     "working": {
       "research": "Investigando tendencias y creando el primer diseño…",

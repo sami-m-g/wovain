@@ -8,14 +8,12 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from "@wovain/ui/components/item";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Spinner } from "@wovain/ui/components/spinner";
 import { cn } from "@wovain/ui/lib/utils";
-import { ChevronRight, Cpu, Newspaper, Radar } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -126,54 +124,29 @@ const ProviderItem = ({
   );
 };
 
-/** The services wovain runs on its own keys, so the merchant knows who does what. */
-const SERVICES = [
-  { icon: Cpu, key: "nebius" },
-  { icon: Radar, key: "qloo" },
-  { icon: Newspaper, key: "tavily" },
-  { key: "fal", logo: "fal" },
-] as const satisfies readonly (
-  | { icon: LucideIcon; key: string }
-  | { key: string; logo: "fal" }
-)[];
-
-const ServerKeys = () => {
+/**
+ * fal becomes the designer's own connection (they pay for their artwork)
+ * once the fal MCP sign-in ships; until then it is listed, not connectable.
+ */
+const FalItem = () => {
   const t = useTranslations("Connections");
+  const name = t("providers.fal.name");
   return (
-    <section aria-labelledby="server-keys" className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <h2
-          className="font-display text-lg font-semibold tracking-[-0.015em]"
-          id="server-keys"
-        >
-          {t("serverKeysTitle")}
-        </h2>
-        <p className="text-muted-foreground text-sm">{t("serverKeys")}</p>
-      </div>
-      <ul className="flex grid w-full flex-col gap-2 sm:grid-cols-2">
-        {SERVICES.map((service) => (
-          <Item key={service.key} render={<li />} size="sm" variant="muted">
-            {"logo" in service ? (
-              <ProviderLogo className="size-8" service={service.logo} />
-            ) : (
-              <ItemMedia
-                aria-hidden="true"
-                className="border-border bg-card size-8 rounded-lg border"
-                variant="icon"
-              >
-                <service.icon />
-              </ItemMedia>
-            )}
-            <ItemContent>
-              <ItemTitle>{t(`services.${service.key}.name`)}</ItemTitle>
-              <ItemDescription>
-                {t(`services.${service.key}.body`)}
-              </ItemDescription>
-            </ItemContent>
-          </Item>
-        ))}
-      </ul>
-    </section>
+    <Item className="bg-card p-4 sm:p-5" render={<li />} variant="outline">
+      <ProviderLogo service="fal" />
+      <ItemContent className="min-w-48">
+        <ItemTitle className="font-display flex-wrap text-base font-semibold">
+          <h2>{name}</h2>
+          <Badge variant="secondary">{t("comingSoon")}</Badge>
+        </ItemTitle>
+        <ItemDescription>{t("providers.fal.body")}</ItemDescription>
+      </ItemContent>
+      <ItemActions className="w-full sm:w-auto">
+        <Button className="h-9 w-full sm:w-auto" disabled variant="outline">
+          {t("connect", { name })}
+        </Button>
+      </ItemActions>
+    </Item>
   );
 };
 
@@ -203,7 +176,7 @@ export const ConnectionsPanel = () => {
   );
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col">
       <ul className="flex w-full flex-col gap-3">
         {PROVIDERS.map((provider) => (
           <ProviderItem
@@ -213,8 +186,8 @@ export const ConnectionsPanel = () => {
             provider={provider}
           />
         ))}
+        <FalItem />
       </ul>
-      <ServerKeys />
     </div>
   );
 };

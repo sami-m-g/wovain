@@ -40,6 +40,7 @@ import {
   StepActions,
   StepHeader,
 } from "@/components/app/wizard-parts";
+import type { Stage } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
 import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
 
@@ -605,10 +606,11 @@ export const DoneStep = ({
   onRestart,
 }: {
   campaigns: Campaign[];
-  failure?: string | undefined;
+  failure?: Stage | undefined;
   onRestart: () => void;
 }) => {
   const t = useTranslations("Wizard.done");
+  const stages = useTranslations("Stages");
   const money = useMoney();
   const [first] = campaigns;
   return (
@@ -622,7 +624,7 @@ export const DoneStep = ({
           title={t("title")}
         />
       ) : (
-        <StepHeader title={t("autopilotFailed", { error: failure })} />
+        <StepHeader title={t("autopilotFailed", { stage: stages(failure) })} />
       )}
       {campaigns.map((campaign) => (
         <section

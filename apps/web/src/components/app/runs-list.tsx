@@ -102,6 +102,7 @@ const useRuns = () => useQuery(orpc.runs.list.queryOptions());
 /** Runs as a list of rows: the overview, and the runs page on phones. */
 const RunItems = ({ runs }: { runs: Run[] }) => {
   const t = useTranslations("Runs");
+  const stages = useTranslations("Stages");
   return (
     <ul className="border-border bg-card divide-border flex w-full flex-col divide-y rounded-xl border">
       {runs.map((run) => (
@@ -119,9 +120,9 @@ const RunItems = ({ runs }: { runs: Run[] }) => {
                 <Mode autopilot={run.autopilot} />
                 <Started at={run.createdAt} />
               </ItemDescription>
-              {run.status === "failed" && run.error ? (
+              {run.status === "failed" ? (
                 <p className="text-destructive text-sm">
-                  {t("stoppedAt", { error: run.error })}
+                  {t("stoppedAt", { stage: stages(stageOf(run)) })}
                 </p>
               ) : null}
             </ItemContent>
@@ -156,6 +157,7 @@ export const RecentRuns = ({ limit }: { limit: number }) => {
 
 const useColumns = (): DataColumn<Run>[] => {
   const t = useTranslations("Runs");
+  const stages = useTranslations("Stages");
   return useMemo(
     () => [
       {
@@ -168,9 +170,9 @@ const useColumns = (): DataColumn<Run>[] => {
             >
               {row.original.seed}
             </Link>
-            {row.original.status === "failed" && row.original.error ? (
+            {row.original.status === "failed" ? (
               <span className="text-destructive text-xs">
-                {t("stoppedAt", { error: row.original.error })}
+                {t("stoppedAt", { stage: stages(stageOf(row.original)) })}
               </span>
             ) : null}
           </span>
@@ -205,7 +207,7 @@ const useColumns = (): DataColumn<Run>[] => {
         header: t("started"),
       },
     ],
-    [t]
+    [stages, t]
   );
 };
 
