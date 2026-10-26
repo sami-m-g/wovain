@@ -11,7 +11,7 @@ import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
 
 const LINKS = [
-  { href: { hash: "how", pathname: "/" }, key: "product" },
+  { href: { hash: "results", pathname: "/" }, key: "product" },
   { href: { pathname: "/integrations" }, key: "integrations" },
   { href: { pathname: "/guides" }, key: "guides" },
   { href: { pathname: "/pricing" }, key: "pricing" },

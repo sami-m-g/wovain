@@ -25,7 +25,7 @@ const CTASection = ({
     aria-labelledby={`${id}-title`}
     className="bg-foreground text-background"
   >
-    <div className={cn(container, "py-20 sm:py-28")}>
+    <div className={cn(container, "py-16 sm:py-24")}>
       <Card className="text-background rounded-none bg-transparent py-0 shadow-none ring-0">
         <CardContent className="flex justify-between gap-8 px-0 max-lg:flex-col lg:items-end">
           <div className="flex max-w-2xl flex-col gap-4">

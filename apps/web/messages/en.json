@@ -98,21 +98,12 @@
     "settings": "Cookie settings"
   },
   "Home": {
-    "heroTitle": "You set the direction. wovain makes the drop.",
-    "heroLead": "Describe the capsule. wovain researches what your audience wants this week, drafts the graphics for your edit, lists the pieces on your Fourthwall shop at a margin that holds, and stages the Meta campaign, paused until you turn it on.",
+    "heroTitle": "One sentence. A whole drop.",
+    "heroLead": "Describe the capsule. wovain drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
     "briefLabel": "What is your next drop about?",
     "briefPlaceholder": "Washed botanical line drawings for a spring capsule",
     "briefHint": "A sentence is enough: the mood, a reference, who it's for.",
     "briefSubmit": "Start a drop",
-    "windowCaption": "The approval step of a drop in wovain, with example data.",
-    "window": {
-      "designOne": "Fern Study No. 3",
-      "designTwo": "Garden Hours",
-      "printedOne": "FERN STUDY NO. 3 · SPRING CAPSULE",
-      "printedTwo": "GARDEN HOURS · OPEN UNTIL DUSK",
-      "coachOne": "Reads clearly at chest size; two ink colours; no names or marks used.",
-      "coachTwo": "The type is thin at chest size. Try a heavier weight."
-    },
     "tag": {
       "title": "Heavyweight tee",
       "subtitle": "Fern Study No. 3 · example",
@@ -124,7 +115,6 @@
       "margin": "Margin over blank",
       "campaign": "Meta campaign: paused until you turn it on"
     },
-    "chatChange": "Change",
     "connection": {
       "yours": "You connect it",
       "wovain": "Runs on wovain's keys"
@@ -134,93 +124,7 @@
     "tableProfit": "Profit per sale",
     "tableMargin": "Margin over blank",
     "example": "Example",
-    "eyebrow": "Print-on-demand for independent labels",
-    "heroSecondary": "See how a drop is made",
-    "heroNote": "Create an account, then connect Fourthwall, fal and Meta.",
-    "how": {
-      "eyebrow": "How it works",
-      "title": "From a sentence to a listed capsule",
-      "lead": "Four steps. Two of them are yours, and nothing moves on without your yes.",
-      "you": "You",
-      "wovain": "wovain",
-      "steps": [
-        {
-          "title": "Set the direction",
-          "body": "Write the brief the way you'd brief a studio: the mood, the references, who it's for. One sentence works; more detail gets closer.",
-          "detail": "“Washed botanical line drawings, spring, for people who garden on balconies.”"
-        },
-        {
-          "title": "Research and drafts",
-          "body": "wovain reads what your audience is into and what is moving this week, then drafts graphics for each idea, sized and checked for print.",
-          "detail": "Every idea shows its sources and a print check."
-        },
-        {
-          "title": "Edit and approve",
-          "body": "Approve the pieces you'd put your name on. Reject one with a note, such as “heavier type, lose the leaves”, and wovain draws another round.",
-          "detail": "Nothing is listed without your approval."
-        },
-        {
-          "title": "List and stage",
-          "body": "Approved designs become products on your Fourthwall shop, on real blanks, priced from their base cost. wovain writes ads from several angles and builds a Meta campaign around them.",
-          "detail": "Products start hidden. The campaign starts paused."
-        }
-      ]
-    },
-    "connectors": {
-      "eyebrow": "Your accounts",
-      "title": "Works inside the accounts you already run",
-      "lead": "Connect each one with its own sign-in. The products, artwork and ads stay in your accounts, and you can disconnect at any time.",
-      "link": "How connecting works",
-      "fourthwall": {
-        "role": "Shop",
-        "body": "Products are created on real blanks in your shop. Fourthwall prints, ships and runs checkout."
-      },
-      "fal": {
-        "role": "Artwork",
-        "body": "Draws the graphics for each idea on your fal account, at print resolution."
-      },
-      "meta": {
-        "role": "Ads",
-        "body": "The campaign is built in your ad account, created paused, with the daily budget you set."
-      }
-    },
-    "outcomes": {
-      "eyebrow": "What you get",
-      "title": "Studio time back, margins intact",
-      "lead": "wovain takes on the production chores around a drop, so your time goes to the work only you can do.",
-      "items": [
-        {
-          "title": "One flow, brief to listing",
-          "body": "Research, drafts, listings and ads happen in one place, in order, with your approval between them."
-        },
-        {
-          "title": "Prices that hold",
-          "body": "Every price starts from the blank's real base cost and keeps at least $10 profit and a 30% margin after card fees, sales tax and a refund reserve."
-        },
-        {
-          "title": "Nothing spends by itself",
-          "body": "Campaigns are created paused, with a daily budget from $1 to $500. You turn them on in Meta."
-        },
-        {
-          "title": "Ads with more than one idea",
-          "body": "Each product gets several ads written from different angles, so you can see which one your audience answers."
-        },
-        {
-          "title": "Autopilot, when you want it",
-          "body": "Turn it on and wovain makes the approval calls itself, within the same price floor and budget, and records why."
-        },
-        {
-          "title": "Your work stays yours",
-          "body": "You own your briefs and the designs you approve. Products, artwork and ads sit in your own accounts."
-        }
-      ]
-    },
-    "faqSection": {
-      "eyebrow": "Questions",
-      "title": "Before you start",
-      "lead": "Short answers. The docs go further.",
-      "more": "Read the docs"
-    },
+    "heroSecondary": "See how it works",
     "faq": [
       {
         "question": "Who is wovain for?",
@@ -255,10 +159,80 @@
         "answer": "You own your briefs and the designs you approve. wovain screens drafts for names and trademarks, but you stay responsible for what you publish."
       }
     ],
+    "heroCta": "Start a drop",
+    "demo": {
+      "example": "Example",
+      "caption": "One drop, from brief to paused campaign.",
+      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear on tee blanks with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
+      "pause": "Pause the example",
+      "play": "Play the example",
+      "brief": "Washed botanical line drawings for a spring capsule, for people who garden on balconies.",
+      "ideas": [
+        {
+          "theme": "Balcony growing",
+          "moment": "Small-space gardening is up for a third week."
+        },
+        {
+          "theme": "Seed swaps",
+          "moment": "Libraries are lending seeds this spring."
+        },
+        {
+          "theme": "Pressed botanicals",
+          "moment": "Popular, and already crowded."
+        }
+      ],
+      "designs": [
+        "Fern Study No. 3",
+        "Garden Hours",
+        "Balcony Club",
+        "Seed Library"
+      ],
+      "product": "Fern Study No. 3 tee",
+      "ad": {
+        "brand": "Your label",
+        "sponsored": "Sponsored",
+        "body": "Line drawings for people who grow things in small places. Spring capsule, printed to order.",
+        "cta": "Shop now"
+      },
+      "paused": "Campaign: Paused"
+    },
+    "results": {
+      "title": "Listed, advertised, counted",
+      "lead": "What one approved design turns into, in your own accounts.",
+      "product": "Product page",
+      "ad": "Ad",
+      "insights": "Insights",
+      "sizes": "Size",
+      "addToCart": "Add to cart",
+      "paused": "Paused until you turn it on"
+    },
+    "connectors": {
+      "title": "Runs inside the accounts you already have",
+      "lead": "Each connects with its own sign-in. The products, artwork and ads stay yours.",
+      "link": "How connecting works",
+      "fourthwall": {
+        "role": "Shop"
+      },
+      "fal": {
+        "role": "Artwork"
+      },
+      "meta": {
+        "role": "Ads"
+      }
+    },
+    "free": {
+      "title": "Free to start",
+      "body": "{credits, number} credits a month, enough for about two drops. wovain never takes a cut of your sales.",
+      "link": "See pricing"
+    },
+    "faqSection": {
+      "title": "Before you start",
+      "more": "Read the docs"
+    },
     "cta": {
       "title": "Your next drop starts with a sentence",
-      "body": "Create an account, connect your shop and write the brief. You keep every decision; wovain does the production.",
-      "button": "Create your account",
+      "body": "You keep every decision. wovain does the production.",
+      "button": "Start a drop",
       "secondary": "See pricing"
     }
   },

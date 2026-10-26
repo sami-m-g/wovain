@@ -98,21 +98,12 @@
     "settings": "Paramètres des cookies"
   },
   "Home": {
-    "heroTitle": "Vous donnez la direction. wovain fait le drop.",
-    "heroLead": "Décrivez la capsule. wovain étudie ce que votre public recherche cette semaine, esquisse les visuels pour votre retouche, met les pièces en ligne sur votre boutique Fourthwall avec une marge qui tient, et prépare la campagne Meta, en pause jusqu'à ce que vous l'activiez.",
+    "heroTitle": "Une phrase. Un drop entier.",
+    "heroLead": "Décrivez la capsule. wovain dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
     "briefLabel": "Sur quoi porte votre prochain drop ?",
     "briefPlaceholder": "Dessins botaniques au trait, délavés, pour une capsule de printemps",
     "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui.",
     "briefSubmit": "Lancer un drop",
-    "windowCaption": "L'étape de validation d'un drop dans wovain, avec des données d'exemple.",
-    "window": {
-      "designOne": "Étude de fougère n° 3",
-      "designTwo": "Heures du jardin",
-      "printedOne": "ÉTUDE DE FOUGÈRE N° 3 · CAPSULE DE PRINTEMPS",
-      "printedTwo": "HEURES DU JARDIN · OUVERT JUSQU'AU SOIR",
-      "coachOne": "Lisible à hauteur de poitrine ; deux encres ; aucun nom ni marque.",
-      "coachTwo": "Le texte est fin à hauteur de poitrine. Essayez une graisse plus forte."
-    },
     "tag": {
       "title": "T-shirt épais",
       "subtitle": "Étude de fougère n° 3 · exemple",
@@ -124,7 +115,6 @@
       "margin": "Marge sur le blank",
       "campaign": "Campagne Meta : en pause jusqu'à ce que vous l'activiez"
     },
-    "chatChange": "Modifier",
     "connection": {
       "yours": "Vous le connectez",
       "wovain": "Tourne sur les clés de wovain"
@@ -134,93 +124,7 @@
     "tableProfit": "Profit par vente",
     "tableMargin": "Marge sur le blank",
     "example": "Exemple",
-    "eyebrow": "Le print-on-demand pour les marques indépendantes",
-    "heroSecondary": "Voir comment se fait un drop",
-    "heroNote": "Créez un compte, puis connectez Fourthwall, fal et Meta.",
-    "how": {
-      "eyebrow": "Comment ça marche",
-      "title": "D'une phrase à une capsule en ligne",
-      "lead": "Quatre étapes. Deux vous reviennent, et rien n'avance sans votre accord.",
-      "you": "Vous",
-      "wovain": "wovain",
-      "steps": [
-        {
-          "title": "Donner la direction",
-          "body": "Rédigez le brief comme pour un studio : l'ambiance, les références, pour qui. Une phrase suffit ; plus de détails vous rapprochent du but.",
-          "detail": "« Dessins botaniques au trait, délavés, printemps, pour celles et ceux qui jardinent sur leur balcon. »"
-        },
-        {
-          "title": "Recherche et esquisses",
-          "body": "wovain regarde ce qui plaît à votre public et ce qui bouge cette semaine, puis esquisse des visuels pour chaque idée, dimensionnés et vérifiés pour l'impression.",
-          "detail": "Chaque idée affiche ses sources et un contrôle d'impression."
-        },
-        {
-          "title": "Retoucher et valider",
-          "body": "Validez les pièces que vous signeriez. Refusez-en une avec une note, par exemple « texte plus gras, sans les feuilles », et wovain en dessine une nouvelle série.",
-          "detail": "Rien n'est mis en ligne sans votre accord."
-        },
-        {
-          "title": "Mettre en ligne et préparer",
-          "body": "Les visuels validés deviennent des produits sur votre boutique Fourthwall, sur de vrais blanks, au prix calculé depuis leur coût de base. wovain rédige des annonces sous plusieurs angles et construit une campagne Meta autour.",
-          "detail": "Les produits démarrent masqués. La campagne démarre en pause."
-        }
-      ]
-    },
-    "connectors": {
-      "eyebrow": "Vos comptes",
-      "title": "Fonctionne dans les comptes que vous gérez déjà",
-      "lead": "Connectez chacun avec sa propre connexion. Les produits, les visuels et les annonces restent dans vos comptes, et vous pouvez vous déconnecter à tout moment.",
-      "link": "Comment se passe la connexion",
-      "fourthwall": {
-        "role": "Boutique",
-        "body": "Les produits sont créés sur de vrais blanks dans votre boutique. Fourthwall imprime, expédie et gère le paiement."
-      },
-      "fal": {
-        "role": "Visuels",
-        "body": "Dessine les visuels de chaque idée sur votre compte fal, en résolution d'impression."
-      },
-      "meta": {
-        "role": "Annonces",
-        "body": "La campagne est construite dans votre compte publicitaire, créée en pause, avec le budget quotidien que vous fixez."
-      }
-    },
-    "outcomes": {
-      "eyebrow": "Ce que vous y gagnez",
-      "title": "Du temps d'atelier, des marges intactes",
-      "lead": "wovain prend en charge les tâches de production autour d'un drop, pour que votre temps aille au travail que vous seul pouvez faire.",
-      "items": [
-        {
-          "title": "Un seul parcours, du brief à la mise en ligne",
-          "body": "Recherche, esquisses, fiches produit et annonces se suivent au même endroit, dans l'ordre, avec votre validation entre chaque étape."
-        },
-        {
-          "title": "Des prix qui tiennent",
-          "body": "Chaque prix part du coût de base réel du blank et garde au moins 10 $ de profit et 30 % de marge après frais de carte, taxe de vente et réserve pour remboursements."
-        },
-        {
-          "title": "Aucune dépense toute seule",
-          "body": "Les campagnes sont créées en pause, avec un budget quotidien de 1 $ à 500 $. Vous les activez dans Meta."
-        },
-        {
-          "title": "Des annonces avec plus d'une idée",
-          "body": "Chaque produit reçoit plusieurs annonces écrites sous des angles différents, pour voir à laquelle votre public répond."
-        },
-        {
-          "title": "Le pilote automatique, quand vous le voulez",
-          "body": "Activez-le et wovain prend lui-même les décisions de validation, avec le même prix plancher et le même budget, et note pourquoi."
-        },
-        {
-          "title": "Votre travail reste le vôtre",
-          "body": "Vos briefs et les visuels que vous validez vous appartiennent. Produits, visuels et annonces restent dans vos propres comptes."
-        }
-      ]
-    },
-    "faqSection": {
-      "eyebrow": "Questions",
-      "title": "Avant de commencer",
-      "lead": "Des réponses courtes. La documentation va plus loin.",
-      "more": "Lire la documentation"
-    },
+    "heroSecondary": "Voir comment ça marche",
     "faq": [
       {
         "question": "À qui s'adresse wovain ?",
@@ -255,10 +159,80 @@
         "answer": "Vos briefs et les visuels que vous validez vous appartiennent. wovain vérifie les noms et les marques dans les esquisses, mais vous restez responsable de ce que vous publiez."
       }
     ],
+    "heroCta": "Lancer un drop",
+    "demo": {
+      "example": "Exemple",
+      "caption": "Un drop, du brief à la campagne en pause.",
+      "alt": "Un exemple de drop dans wovain. Un brief d'une ligne est saisi. Trois idées de tendances apparaissent, chacune avec son score et ses indices. Quatre designs apparaissent sur des t-shirts vierges avec leur contrôle d'impression, et le designer en approuve un. Il devient un produit masqué sur Fourthwall, avec son prix et son bénéfice. Un aperçu de publicité Meta apparaît, et la campagne est créée en pause.",
+      "pause": "Mettre l'exemple en pause",
+      "play": "Lire l'exemple",
+      "brief": "Dessins botaniques délavés au trait pour une capsule de printemps, pour ceux qui jardinent sur leur balcon.",
+      "ideas": [
+        {
+          "theme": "Jardins de balcon",
+          "moment": "Le jardinage en petit espace progresse pour la troisième semaine."
+        },
+        {
+          "theme": "Trocs de graines",
+          "moment": "Les bibliothèques prêtent des graines ce printemps."
+        },
+        {
+          "theme": "Herbiers",
+          "moment": "Populaire, et déjà encombré."
+        }
+      ],
+      "designs": [
+        "Fern Study No. 3",
+        "Garden Hours",
+        "Balcony Club",
+        "Seed Library"
+      ],
+      "product": "T-shirt Fern Study No. 3",
+      "ad": {
+        "brand": "Votre label",
+        "sponsored": "Sponsorisé",
+        "body": "Des dessins au trait pour ceux qui font pousser des choses dans de petits espaces. Capsule de printemps, imprimée à la demande.",
+        "cta": "Acheter"
+      },
+      "paused": "Campagne : en pause"
+    },
+    "results": {
+      "title": "En vente, en pub, mesuré",
+      "lead": "Ce que devient un design approuvé, dans vos propres comptes.",
+      "product": "Page produit",
+      "ad": "Publicité",
+      "insights": "Statistiques",
+      "sizes": "Taille",
+      "addToCart": "Ajouter au panier",
+      "paused": "En pause jusqu'à ce que vous l'activiez"
+    },
+    "connectors": {
+      "title": "Fonctionne dans les comptes que vous avez déjà",
+      "lead": "Chacun se connecte avec sa propre connexion. Les produits, les visuels et les publicités restent à vous.",
+      "link": "Comment fonctionne la connexion",
+      "fourthwall": {
+        "role": "Boutique"
+      },
+      "fal": {
+        "role": "Visuels"
+      },
+      "meta": {
+        "role": "Publicité"
+      }
+    },
+    "free": {
+      "title": "Gratuit pour commencer",
+      "body": "{credits, number} crédits par mois, de quoi faire environ deux drops. wovain ne prend jamais de part sur vos ventes.",
+      "link": "Voir les tarifs"
+    },
+    "faqSection": {
+      "title": "Avant de commencer",
+      "more": "Lire la documentation"
+    },
     "cta": {
       "title": "Votre prochain drop commence par une phrase",
-      "body": "Créez un compte, connectez votre boutique et rédigez le brief. Vous gardez chaque décision ; wovain s'occupe de la production.",
-      "button": "Créer votre compte",
+      "body": "Vous gardez chaque décision. wovain s'occupe de la production.",
+      "button": "Lancer un drop",
       "secondary": "Voir les tarifs"
     }
   },
