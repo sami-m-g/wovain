@@ -1,0 +1,16 @@
+{
+  "title": "Guide",
+  "description": "Utiliser wovain",
+  "icon": "BookOpen",
+  "root": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "connecting-accounts",
+    "creating-a-drop",
+    "autopilot",
+    "chatgpt",
+    "billing",
+    "faq"
+  ]
+}
