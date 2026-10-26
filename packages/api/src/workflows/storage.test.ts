@@ -7,24 +7,24 @@ import { describe, expect, it, vi } from "vitest";
 import { createMastra } from "./engine";
 import { RUN_WORKFLOW_ID } from "./run";
 import type { RunServices } from "./run";
-import { createMastraStorage, initStorage } from "./storage";
+import { checkStorage, createMastraStorage, initMastraSchema } from "./storage";
 
 describe("Mastra storage boot", () => {
-  it("retries a failing init, then gives up without throwing", async () => {
-    const init = vi.fn(async () => {
+  it("retries a failing check, then gives up without throwing", async () => {
+    const check = vi.fn(async () => {
       await Promise.resolve();
       throw new Error("connect ECONNREFUSED");
     });
 
     await expect(
-      initStorage({ init }, { minTimeout: 1, retries: 2 })
+      checkStorage(check, { minTimeout: 1, retries: 2 })
     ).resolves.toBe(false);
-    expect(init).toHaveBeenCalledTimes(3);
+    expect(check).toHaveBeenCalledTimes(3);
   });
 
   it("succeeds once Postgres answers", async () => {
     let calls = 0;
-    const init = vi.fn(async () => {
+    const check = vi.fn(async () => {
       calls += 1;
       await Promise.resolve();
       if (calls < 2) {
@@ -33,7 +33,7 @@ describe("Mastra storage boot", () => {
     });
 
     await expect(
-      initStorage({ init }, { minTimeout: 1, retries: 3 })
+      checkStorage(check, { minTimeout: 1, retries: 3 })
     ).resolves.toBe(true);
   });
 
@@ -67,5 +67,11 @@ describe("Mastra storage boot", () => {
     expect(rejections).toEqual([]);
     process.off("unhandledRejection", onRejection);
     await pool.end();
+  });
+
+  it("fails the deploy-time init when the schema can't be created", async () => {
+    await expect(
+      initMastraSchema("postgres://wovain@127.0.0.1:1/none?connect_timeout=1")
+    ).rejects.toThrow();
   });
 });

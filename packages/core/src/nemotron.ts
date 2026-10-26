@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import { RequestContext } from "@mastra/core/request-context";
-import { createError } from "evlog";
+import { createError, log as evlog } from "evlog";
 import type { z } from "zod";
 
 import { REMEMBERING, TRACE_KEYS } from "./agents";
@@ -42,6 +42,35 @@ export interface Ask<T extends z.ZodType> {
 const TIMEOUT_MS = 90_000;
 const HEX_ID = /^[\da-f]{32}$/u;
 
+// The ID of a Mastra storage error (a MastraError in the STORAGE domain,
+// e.g. MASTRA_STORAGE_PG_GET_THREAD_BY_ID_FAILED) in the error or its
+// causes; undefined for any other failure.
+const STORAGE_ERROR_ID = /^MASTRA_STORAGE_/u;
+const MAX_CAUSES = 5;
+const storageErrorOf = (error: unknown): string | undefined => {
+  let current: unknown = error;
+  for (let depth = 0; depth < MAX_CAUSES; depth += 1) {
+    if (!(current instanceof Error)) {
+      return undefined;
+    }
+    // A MastraError carries `id`; once Mastra serializes it as a cause, the
+    // same ID reads `code`.
+    const {
+      code,
+      domain,
+      id = code,
+    } = current as Error & { code?: unknown; domain?: unknown; id?: unknown };
+    if (
+      typeof id === "string" &&
+      (domain === "STORAGE" || STORAGE_ERROR_ID.test(id))
+    ) {
+      return id;
+    }
+    current = current.cause;
+  }
+  return undefined;
+};
+
 // A guardrail stopped the call: the input or the answer broke a rule. It
 // won't pass on a retry, so it fails the step with the reason.
 const blocked = (agent: string, reason: string) =>
@@ -81,24 +110,47 @@ export const createNemotron =
       log,
       { operation: name, provider: "nebius" },
       async () => {
-        const reply = await kit.agents[name].generate(prompt, {
-          abortSignal: AbortSignal.timeout(TIMEOUT_MS),
-          instructions: system,
-          modelSettings: { temperature },
-          requestContext,
-          structuredOutput: { schema },
-          ...(trace !== undefined &&
-            REMEMBERING.has(name) && {
-              memory: { resource: trace.distinctId, thread: trace.traceId },
-            }),
-          tracingOptions: {
-            metadata: {
-              runId: trace?.traceId,
-              userId: trace?.distinctId,
+        const generate = async (remember: boolean) =>
+          await kit.agents[name].generate(prompt, {
+            abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+            instructions: system,
+            modelSettings: { temperature },
+            requestContext,
+            structuredOutput: { schema },
+            ...(remember &&
+              trace !== undefined && {
+                memory: { resource: trace.distinctId, thread: trace.traceId },
+              }),
+            tracingOptions: {
+              metadata: {
+                runId: trace?.traceId,
+                userId: trace?.distinctId,
+              },
+              ...(traceId !== undefined && HEX_ID.test(traceId) && { traceId }),
             },
-            ...(traceId !== undefined && HEX_ID.test(traceId) && { traceId }),
-          },
-        });
+          });
+        const remember = trace !== undefined && REMEMBERING.has(name);
+        let reply: Awaited<ReturnType<typeof generate>>;
+        try {
+          reply = await generate(remember);
+        } catch (error) {
+          // Memory is a nicety: when Mastra's store fails (its schema
+          // missing, Postgres down), the call runs again without memory
+          // and the failure goes to the logs (and to PostHog through the
+          // drain).
+          const failedStore = remember ? storageErrorOf(error) : undefined;
+          if (failedStore === undefined) {
+            throw error;
+          }
+          const memory = {
+            agent: name,
+            failed: failedStore,
+            reason: error instanceof Error ? error.message : String(error),
+          };
+          log?.set({ memory });
+          evlog.error({ error: "MASTRA_MEMORY_UNAVAILABLE", memory });
+          reply = await generate(false);
+        }
         if (reply.tripwire !== undefined) {
           throw blocked(name, reply.tripwire.reason);
         }

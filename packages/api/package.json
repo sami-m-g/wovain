@@ -11,6 +11,7 @@
     "build": "tsc -b",
     "check-types": "tsc -b",
     "test": "vitest run",
+    "storage:init": "node src/workflows/storage-init.ts",
     "studio": "mastra dev --dir src/mastra"
   },
   "dependencies": {
