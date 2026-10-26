@@ -2,6 +2,8 @@ import {
   auth,
   Client,
   StreamableHTTPClientTransport,
+  OAuthError,
+  OAuthErrorCode,
   UnauthorizedError,
 } from "@modelcontextprotocol/client";
 import type {
@@ -177,10 +179,11 @@ class ConnectionAuth implements OAuthClientProvider {
 
   // The SDK calls this on invalid_grant (a refresh token expired or was
   // revoked), before asking for consent again, which a server can't give.
-  async invalidateCredentials(scope: string) {
+  // The session decides whether the grant is dead: another session may
+  // have rotated the refresh token meanwhile.
+  invalidateCredentials(scope: string) {
     if (scope === "all" || scope === "tokens") {
       this.refused = true;
-      await this.#grant.expire();
     }
   }
 
@@ -253,15 +256,21 @@ const textOf = (result: CallToolResult) =>
   result.content.find((part) => part.type === "text")?.text ?? "";
 
 // A tool that says its token was refused instead of answering 401:
-// Fourthwall with this _meta key, a relay such as fal's in its text.
+// Fourthwall with this _meta key, a relay such as fal's in its text. Only
+// an OAuth invalid_token code or a 401 stated as an HTTP status counts: a
+// permission error ("unauthorized for this ad account") isn't a dead token.
 const REFUSED_TOKEN =
-  /\b401\b|\bunauthori[sz]ed\b|\binvalid[_ ]token\b|\btoken\b.{0,30}\bexpired\b|\bexpired\b.{0,30}\btoken\b/iu;
+  /\binvalid_token\b|\b(?:HTTP|status(?: code)?)[ :]*401\b|\b401 Unauthori[sz]ed\b/iu;
 const tokenRefused = (result: CallToolResult) =>
   result.isError === true &&
   ((result._meta !== undefined && "mcp/www_authenticate" in result._meta) ||
     REFUSED_TOKEN.test(textOf(result)));
 
 const HTTP_UNAUTHORIZED = 401;
+
+// The authorization server refused the refresh token.
+const isInvalidGrant = (error: unknown) =>
+  error instanceof OAuthError && error.code === OAuthErrorCode.InvalidGrant;
 
 // A 401 that survived the SDK's own refresh.
 const isUnauthorized = (error: unknown) =>
@@ -375,7 +384,14 @@ export const createUpstream = (config: UpstreamConfig) => {
       throw notConnected(provider);
     }
     const oauth = new ConnectionAuth(provider, config, grant);
+    // The grant is dead: mark it for reconnecting. Unless another session
+    // rotated the refresh token meanwhile: then this attempt only lost the
+    // race, and a retry uses the new grant.
     const refused = async () => {
+      const latest = await grant.load();
+      if (latest !== undefined && latest.refresh_token !== held.refresh_token) {
+        return new Error("Another session refreshed the grant; retry");
+      }
       await grant.expire();
       return reconnectNeeded(provider);
     };
@@ -386,6 +402,8 @@ export const createUpstream = (config: UpstreamConfig) => {
         const outcome = await auth(oauth, {
           ...authOptions(provider),
           ...fetchFn,
+        }).catch(async (error: unknown) => {
+          throw isInvalidGrant(error) ? await refused() : error;
         });
         if (outcome === "AUTHORIZED") {
           return;
@@ -400,7 +418,9 @@ export const createUpstream = (config: UpstreamConfig) => {
       });
     // A 401 the SDK couldn't refresh its way past.
     const unlessRefused = async (error: unknown): Promise<never> => {
-      throw isUnauthorized(error) ? await refused() : error;
+      throw isUnauthorized(error) || isInvalidGrant(error)
+        ? await refused()
+        : error;
     };
     const client = new Client({ name: "wovain", version: "0.1.0" });
     const transport = new StreamableHTTPClientTransport(
@@ -422,12 +442,10 @@ export const createUpstream = (config: UpstreamConfig) => {
         }
         // Refused inside the tool, so the SDK saw no 401: refresh and try
         // once more. A refused call did nothing, so repeating it is safe.
+        // A refresh the provider refuses marks the grant; a retry that still
+        // fails throws the tool's own error and leaves the grant alone.
         await refresh();
-        const retried = await callTool(tool, args);
-        if (tokenRefused(retried)) {
-          throw await refused();
-        }
-        return resultData(retried);
+        return resultData(await callTool(tool, args));
       });
     try {
       if (isExpiring(held)) {

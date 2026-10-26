@@ -23,6 +23,8 @@ interface Relay {
   valid: string;
   // How the relay refuses another token: HTTP 401, or inside the tool.
   refuses: "http" | "tool";
+  // A tool's error text when it refuses.
+  refusal: string;
   // The token endpoint's answer to a refresh.
   refresh: () => Response;
   refreshes: number;
@@ -46,13 +48,10 @@ const AUTH_SERVER = {
   token_endpoint_auth_methods_supported: ["none"],
 };
 
-const toolResult = (authorized: boolean) =>
+const toolResult = (authorized: boolean, refusal: string) =>
   authorized
     ? { content: [{ text: '{"request_id":"req_1"}', type: "text" }] }
-    : {
-        content: [{ text: "fal API error 401: token expired", type: "text" }],
-        isError: true,
-      };
+    : { content: [{ text: refusal, type: "text" }], isError: true };
 
 // The relay's answer to one JSON-RPC message.
 const answer = (relay: Relay, message: RpcMessage, authorized: boolean) => {
@@ -75,7 +74,7 @@ const answer = (relay: Relay, message: RpcMessage, authorized: boolean) => {
     return json({
       id: message.id,
       jsonrpc: "2.0",
-      result: toolResult(authorized),
+      result: toolResult(authorized, relay.refusal),
     });
   }
   return json({ id: message.id, jsonrpc: "2.0", result: {} });
@@ -152,6 +151,7 @@ const setup = (relay: Partial<Relay>, grant: Grant) => {
     calls: [],
     refresh: freshTokens,
     refreshes: 0,
+    refusal: "fal relay: HTTP 401 invalid_token (access token expired)",
     refuses: "http",
     valid: "fresh",
     ...relay,
@@ -229,15 +229,67 @@ describe("upstream session", () => {
     expect(fake.calls).toEqual([]);
   });
 
-  it("asks to reconnect when the refreshed token is refused too", async () => {
+  it("throws the tool's own error, and keeps the grant, when the refreshed token is refused too", async () => {
     const { fake, held, submit } = setup(
       { refuses: "tool", valid: "nobody's" },
       { ...stale, expires_at: nowS() + HOUR_S }
     );
 
-    await expect(submit()).rejects.toSatisfy(isReconnectNeeded);
+    await expect(submit()).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) &&
+        error.code === "FAL_FAILED" &&
+        error.message.includes("HTTP 401 invalid_token")
+    );
     expect(fake.refreshes).toBe(1);
     expect(fake.calls).toEqual(["submit_job", "submit_job"]);
-    expect(held.state.expired).toBe(true);
+    expect(held.state.expired).toBe(false);
+  });
+
+  it("takes a permission error for what it is: no refresh, no retry, no reconnect", async () => {
+    const { fake, held, submit } = setup(
+      {
+        refusal: "(#200) The user is unauthorized for this ad account",
+        refuses: "tool",
+        valid: "nobody's",
+      },
+      { ...stale, expires_at: nowS() + HOUR_S }
+    );
+
+    await expect(submit()).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) && error.code === "FAL_FAILED"
+    );
+    expect(fake.refreshes).toBe(0);
+    expect(fake.calls).toEqual(["submit_job"]);
+    expect(held.state.expired).toBe(false);
+  });
+
+  it("keeps a grant another session rotated while this refresh was refused", async () => {
+    const box: { held?: ReturnType<typeof memoryGrant> } = {};
+    const ctx = setup(
+      {
+        refresh: () => {
+          // The other session's refresh saved a new refresh token first.
+          if (box.held !== undefined) {
+            box.held.state.grant = {
+              ...box.held.state.grant,
+              access_token: "fresh",
+              refresh_token: "refresh_rotated",
+            };
+          }
+          return json({ error: "invalid_grant" }, 400);
+        },
+      },
+      stale
+    );
+    box.held = ctx.held;
+
+    await expect(ctx.submit()).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) && error.code === "FAL_FAILED"
+    );
+    expect(ctx.held.state.expired).toBe(false);
+    expect(ctx.held.state.grant.refresh_token).toBe("refresh_rotated");
   });
 });
