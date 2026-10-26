@@ -10,6 +10,7 @@
     "start": "mkdir -p public && cp -R .next/static .next/standalone/apps/web/.next/ && cp -R public .next/standalone/apps/web/ && PORT=3001 node .next/standalone/apps/web/server.js",
     "env:generate": "varlock codegen",
     "auth:generate": "varlock run -- pnpm dlx auth@latest generate --config src/services.ts --output ../../packages/db/src/schema/auth.ts --yes",
+    "polar:seed": "varlock run -- node ../../packages/billing/src/seed.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@varlock/nextjs-integration": "catalog:",
     "@wovain/api": "workspace:*",
     "@wovain/auth": "workspace:*",
+    "@wovain/billing": "workspace:*",
     "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
     "@wovain/email": "workspace:*",

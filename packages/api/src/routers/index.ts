@@ -1,6 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 
 import { publicProcedure } from "../index";
+import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
 import {
   campaignsRouter,
@@ -11,6 +12,7 @@ import {
 } from "./seller";
 
 export const appRouter = {
+  billing: billingRouter,
   campaigns: campaignsRouter,
   connections: connectionsRouter,
   designs: designsRouter,

@@ -23,6 +23,7 @@
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./apps/ops/ && varlock codegen --path ./packages/db/",
     "postinstall": "pnpm run env:generate",
     "auth:generate": "pnpm --filter web run auth:generate",
+    "polar:seed": "pnpm --filter web run polar:seed",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "knip": "knip --config .config/knip.json",

@@ -1,5 +1,9 @@
 {
   "extends": "@wovain/config/tsconfig.lib.json",
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../db" }, { "path": "../email" }]
+  "references": [
+    { "path": "../billing" },
+    { "path": "../db" },
+    { "path": "../email" }
+  ]
 }

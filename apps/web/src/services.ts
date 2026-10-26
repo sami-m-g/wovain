@@ -1,4 +1,5 @@
 import { createAuth } from "@wovain/auth";
+import { createBilling } from "@wovain/billing/service";
 import { createCore } from "@wovain/core/core";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
@@ -12,5 +13,6 @@ export const mailer = createMailer({
   from: ENV.EMAIL_FROM,
   siteUrl: ENV.BETTER_AUTH_URL,
 });
-export const auth = createAuth(ENV, db, mailer, analytics);
+export const billing = createBilling(ENV);
+export const auth = createAuth(ENV, db, mailer, analytics, billing.polar);
 export const core = createCore(ENV);
