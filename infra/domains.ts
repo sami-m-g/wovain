@@ -4,7 +4,7 @@
 // the zone's other records: mail (Resend), DMARC, CAA, verification tokens,
 // the status page and the shop.
 import * as gcp from "@pulumi/gcp";
-import * as pulumi from "@pulumi/pulumi";
+import type * as pulumi from "@pulumi/pulumi";
 
 import type { ResendRecord } from "./resend.ts";
 
@@ -32,12 +32,8 @@ interface DomainArgs {
   routes: Route[];
   // Values a third party issues and no API hands out (Pulumi.prod.yaml).
   metaDomainVerification: string | undefined;
-  // GitLab's verification code for the status page's Pages domain, when
-  // the project has one (duo.ts).
-  statusDomainVerification: pulumi.Input<string> | undefined;
   dmarcRua: string | undefined;
   caaIssuers: string[];
-  statusPagesTarget: string;
   shopRecords: ShopRecord[];
   // Resend's records for the domain, when Resend is set up (resend.ts).
   resendRecords: pulumi.Output<ResendRecord[]> | undefined;
@@ -50,7 +46,6 @@ const APEX_TYPES = ["A", "AAAA"];
 const SUBDOMAIN_TYPES = ["CNAME"];
 const TTL_SECONDS = 300;
 const DEFAULT_MX_PRIORITY = 10;
-const PAGES_VERIFICATION_PREFIX = "gitlab-pages-verification-code=";
 const TRAILING_DOT = /\.?$/u;
 
 // Cloud DNS takes a TXT value as quoted strings of at most 255 characters.
@@ -181,25 +176,6 @@ export const configureDomain = (args: DomainArgs) => {
     ...(args.dmarcRua === undefined ? [] : [`rua=mailto:${args.dmarcRua}`]),
   ].join("; ");
   record(`_dmarc.${apex}`, "TXT", [txt(dmarc)]);
-
-  // GitLab Pages: the status page and the public SCI/DORA report.
-  const { statusDomainVerification } = args;
-  if (statusDomainVerification !== undefined) {
-    record(`status.${apex}`, "CNAME", [args.statusPagesTarget]);
-    record(
-      `_gitlab-pages-verification-code.status.${apex}`,
-      "TXT",
-      pulumi
-        .output(statusDomainVerification)
-        .apply((code) => [
-          txt(
-            code.startsWith(PAGES_VERIFICATION_PREFIX)
-              ? code
-              : `${PAGES_VERIFICATION_PREFIX}${code}`
-          ),
-        ])
-    );
-  }
 
   // Resend asks for DKIM at resend._domainkey, MX and SPF at its bounce
   // subdomain, send, and a CNAME at rsend (its click and open tracking).
