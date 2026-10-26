@@ -33,6 +33,12 @@ interface DomainArgs {
   // Values a third party issues and no API hands out (Pulumi.prod.yaml).
   metaDomainVerification: string | undefined;
   dmarcRua: string | undefined;
+  // Google Workspace mail: the site-verification token (the part after
+  // "google-site-verification=") and the DKIM public key record's value.
+  googleSiteVerification: string | undefined;
+  googleDkim: string | undefined;
+  // An extra Search Console owner (a Google account, so it must exist first).
+  siteOwnerEmail: string | undefined;
   caaIssuers: string[];
   shopRecords: ShopRecord[];
   // Resend's records for the domain, when Resend is set up (resend.ts).
@@ -111,10 +117,13 @@ export const configureDomain = (args: DomainArgs) => {
     "TXT",
     token.token.apply((googleToken) =>
       [
-        // No mail leaves from the apex's own servers; Resend's bounce domain
-        // is send.<apex>, which has its own SPF.
-        "v=spf1 -all",
+        // Only Google Workspace sends from the apex; Resend's bounce domain
+        // is send.<apex>, which has its own SPF. One SPF record per name.
+        "v=spf1 include:_spf.google.com -all",
         googleToken,
+        ...(args.googleSiteVerification === undefined
+          ? []
+          : [`google-site-verification=${args.googleSiteVerification}`]),
         ...(args.metaDomainVerification === undefined
           ? []
           : [`facebook-domain-verification=${args.metaDomainVerification}`]),
@@ -129,6 +138,16 @@ export const configureDomain = (args: DomainArgs) => {
     },
     { dependsOn: [apexTxt], provider: siteVerification }
   );
+
+  if (args.siteOwnerEmail !== undefined) {
+    // WebResource's `owners` is the verified owners (whoever ran the
+    // verification); more owners are their own resource.
+    new gcp.siteverification.Owner(
+      "search-console-owner",
+      { email: args.siteOwnerEmail, webResourceId: verified.webResourceId },
+      { provider: siteVerification }
+    );
+  }
 
   const mappings = args.routes.map(({ host, service }) => {
     const mapping = new gcp.cloudrun.DomainMapping(
@@ -170,6 +189,11 @@ export const configureDomain = (args: DomainArgs) => {
     "CAA",
     args.caaIssuers.map((issuer) => `0 issue "${issuer}"`)
   );
+  // Google Workspace's mail server (support.google.com/a/answer/174125).
+  record(apex, "MX", ["1 smtp.google.com."]);
+  if (args.googleDkim !== undefined) {
+    record(`google._domainkey.${apex}`, "TXT", [txt(args.googleDkim)]);
+  }
   const dmarc = [
     "v=DMARC1",
     "p=quarantine",
