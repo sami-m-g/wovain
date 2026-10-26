@@ -10,7 +10,14 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@wovain/ui/components/sidebar";
-import { ChartLine, History, LayoutGrid, PlugZap, Plus } from "lucide-react";
+import {
+  ChartLine,
+  CreditCard,
+  History,
+  LayoutGrid,
+  PlugZap,
+  Plus,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { BRAND_ASSETS, BRAND_NAME } from "@/brand/brand";
@@ -27,6 +34,7 @@ const NAV: readonly NavItem[] = [
   { href: "/dashboard/insights", icon: ChartLine, key: "insights" },
   { href: "/dashboard/runs", icon: History, key: "runs" },
   { href: "/dashboard/connections", icon: PlugZap, key: "connections" },
+  { href: "/dashboard/billing", icon: CreditCard, key: "billing" },
 ];
 
 const MARK_SIZE = 20;

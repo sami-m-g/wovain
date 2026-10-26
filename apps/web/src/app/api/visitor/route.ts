@@ -1,7 +1,14 @@
-import { isAllowlisted } from "@wovain/core/spend";
-
+import { ENV } from "@/env.server";
 import { countryName, visitorCountry } from "@/lib/geo";
-import { auth, core } from "@/services";
+import { auth } from "@/services";
+
+// The team's emails, lowercased; analytics only, never an entitlement.
+const TEAM = new Set(
+  (ENV.WOVAIN_ALLOWED_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email !== "")
+);
 
 // What the browser's analytics can't know on their own, for PostHog
 // (src/lib/analytics-client.ts). Until a visitor consents, PostHog is
@@ -24,7 +31,7 @@ export interface Visitor {
 const isInternal = async (headers: Headers) => {
   try {
     const session = await auth.api.getSession({ headers });
-    return session !== null && isAllowlisted(core.spend, session.user.email);
+    return session !== null && TEAM.has(session.user.email.toLowerCase());
   } catch {
     return false;
   }

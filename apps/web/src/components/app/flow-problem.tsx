@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@wovain/ui/components/alert";
 import { CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { Paywall } from "@/components/billing/paywall";
 import { Link } from "@/i18n/navigation";
 import type { FlowProblem } from "@/lib/flow-client";
 
@@ -11,11 +12,35 @@ const SERVICE_NAMES: Record<string, string> = {
   fal: "fal",
   fourthwall: "Fourthwall",
   meta: "Meta",
+  polar: "Polar",
 };
 
-/** A friendly, per-step explanation of why a procedure couldn't run. */
-export const FlowProblemNotice = ({ problem }: { problem: FlowProblem }) => {
+/**
+ * A friendly, per-step explanation of why a procedure couldn't run. Running
+ * out of credits or needing a paid plan opens the paywall instead, which
+ * `onDismiss` closes.
+ */
+export const FlowProblemNotice = ({
+  problem,
+  onDismiss,
+}: {
+  problem: FlowProblem;
+  onDismiss?: () => void;
+}) => {
   const t = useTranslations("Wizard.problem");
+
+  if (problem.kind === "credits" || problem.kind === "plan") {
+    return (
+      <Paywall
+        available={problem.kind === "credits" ? problem.available : undefined}
+        fix={problem.fix}
+        kind={problem.kind}
+        message={problem.message}
+        needed={problem.kind === "credits" ? problem.needed : undefined}
+        onDismiss={onDismiss}
+      />
+    );
+  }
 
   let body: React.ReactNode = null;
   if (problem.kind === "not_connected") {

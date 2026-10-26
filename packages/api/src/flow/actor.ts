@@ -1,3 +1,5 @@
+import type { BillingAnalytics } from "@wovain/billing/analytics";
+import type { Billing } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
 import type { Logger } from "@wovain/core/log";
 import type { Database } from "@wovain/db";
@@ -6,6 +8,8 @@ import { defineError } from "evlog";
 
 // Who a flow step runs for, and with what.
 export interface Actor {
+  analytics?: BillingAnalytics | undefined;
+  billing: Billing;
   core: Core;
   db: Database;
   log?: Logger | undefined;

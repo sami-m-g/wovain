@@ -28,7 +28,10 @@
     "useCasesDescription": "How independent designers and small labels use wovain for capsule collections, graphic tees and streetwear drops on print-on-demand, with a paused Meta campaign.",
     "guidesTitle": "Guides for print-on-demand labels",
     "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads.",
-    "insightsTitle": "Insights"
+    "insightsTitle": "Insights",
+    "pricingTitle": "Pricing: plans and credits for merch drops",
+    "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
+    "billingTitle": "Billing"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -325,7 +328,8 @@
       "newDrop": "New drop",
       "runs": "Runs",
       "connections": "Connections",
-      "insights": "Insights"
+      "insights": "Insights",
+      "billing": "Billing"
     },
     "apiStatus": "API",
     "apiOnline": "online",
@@ -433,7 +437,7 @@
     "stepsLabel": "Drop steps",
     "stepOf": "Step {current, number} of {total, number}",
     "autopilot": "Autopilot",
-    "autopilotHint": "wovain picks the idea and approves the design, then lists the pieces and stages the campaign, paused.",
+    "autopilotHint": "Nemotron picks the idea and approves the design; wovain publishes and builds the campaign, paused.",
     "autopilotRunning": "Autopilot is running this drop. It can take a few minutes.",
     "back": "Back",
     "problem": {
@@ -520,7 +524,10 @@
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
       "campaign": "Building the paused campaign on Meta…"
-    }
+    },
+    "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
+    "autopilotUpgrade": "See plans",
+    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step."
   },
   "NotFound": {
     "title": "This page isn't here",
@@ -658,6 +665,133 @@
       "emptyTitle": "No drops yet",
       "empty": "Start a drop; its sales, spend and scores land here.",
       "emptyCta": "Start a drop"
+    }
+  },
+  "Billing": {
+    "perMonth": "/ month",
+    "recommended": "Recommended",
+    "currentPlan": "Your plan",
+    "plans": {
+      "free": "Try a drop or two a month. No card needed.",
+      "studio": "For creators who drop every week, with autopilot.",
+      "label": "For shops running several drops a week. Unused credits carry over."
+    },
+    "features": {
+      "credits": "{credits, number} credits a month",
+      "drops": "About {drops, number} drops a month",
+      "autopilot": "Autopilot: wovain picks, approves and stages ads for you",
+      "manualOnly": "You approve every step",
+      "rollover": "Unused credits roll over",
+      "reset": "Credits refresh each month"
+    },
+    "pack": {
+      "suffix": "one time",
+      "body": "{credits, number} extra credits on any plan. They never expire."
+    },
+    "cta": {
+      "startFree": "Start free",
+      "choose": "Choose {plan}",
+      "buyPack": "Buy {credits, number} credits"
+    },
+    "manage": "Manage billing",
+    "opening": "Opening…",
+    "loading": "Loading your plan…",
+    "checkoutError": "Checkout didn't open. Try again in a moment.",
+    "portalError": "The billing portal didn't open. Try again in a moment.",
+    "disabledNote": "Payments aren't set up on this server yet, so plans can't be changed here.",
+    "creditTag": {
+      "title": "What a credit buys",
+      "subtitle": "Taken when a step runs, given back if it fails",
+      "research": "Trend research",
+      "design": "One design",
+      "assist": "Ad copy, or an autopilot call",
+      "manualDrop": "A drop you approve",
+      "autopilotDrop": "An autopilot drop",
+      "credits": "{count, plural, one {# credit} other {# credits}}",
+      "footer": "Art, ads and blanks bill to your own accounts"
+    },
+    "page": {
+      "title": "Billing",
+      "lead": "Your plan, the credits you have left and what each step costs.",
+      "planLabel": "Plan",
+      "creditsLabel": "Credits left",
+      "creditsSplit": "{plan, number} from your plan · {pack, number} from packs",
+      "renews": "Renews on {date}",
+      "ends": "Ends on {date}. You keep your credits until then.",
+      "pastDue": "Your last payment didn't go through. Update your card in Manage billing to keep your plan.",
+      "checkoutSuccess": "Thanks, your payment went through. Your credits arrive in a few seconds.",
+      "plansTitle": "Plans",
+      "packTitle": "Need a few more credits?",
+      "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
+      "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}."
+    },
+    "paywall": {
+      "creditsTitle": "You're out of credits for this step",
+      "planTitle": "Autopilot comes with Studio",
+      "shortBy": "This step needs {needed, number} and you have {available, number}.",
+      "studioGain": "Studio gives you {credits, number} credits a month and autopilot, for {price} a month. Cancel any time.",
+      "pack": "Buy {credits, number} credits for {price}",
+      "comparePlans": "Compare plans",
+      "notNow": "Not now",
+      "creditsSoonTitle": "More credits are coming soon",
+      "planSoonTitle": "Autopilot is coming soon with paid plans",
+      "freeRefresh": "Your Free credits refresh every month.",
+      "freeRefreshOn": "Your Free credits refresh on {date}."
+    },
+    "notify": {
+      "comingSoon": "Coming soon",
+      "button": "Notify me",
+      "thanks": "Thanks, we've noted your interest."
+    }
+  },
+  "Pricing": {
+    "crumb": "Pricing",
+    "title": "Pay for the drops you make, not for seats",
+    "lead": "Start free with {credits, number} credits every month. Studio, Label and credit packs are coming soon. wovain never takes a cut of your sales.",
+    "plansTitle": "Plans",
+    "noCut": "Prices in US dollars. Free is open now; Studio, Label and credit packs aren't on sale yet.",
+    "yoursTitle": "What you pay on your own accounts",
+    "yoursLead": "Credits cover wovain's work: trend research and Nemotron's briefs, checks and ad copy. The rest you pay directly, on accounts you own, with no markup from wovain.",
+    "yours": {
+      "fal": {
+        "name": "fal",
+        "body": "Artwork is drawn on your fal account and billed by fal per image."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "Ad spend, billed by Meta to your ad account, and only after you turn a paused campaign on."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Blanks and printing, paid out of each sale. Nothing to buy up front."
+      }
+    },
+    "faqTitle": "Questions about pricing",
+    "faq": {
+      "credit": {
+        "question": "What is a credit?",
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, so a drop you approve step by step is about 6 credits. If a step fails, its credits come back."
+      },
+      "yours": {
+        "question": "What do I pay outside wovain?",
+        "answer": "Art, ads and products run on your own accounts. fal bills you for the artwork, Meta bills your ad account once you start a campaign, and Fourthwall takes the blank's cost out of each sale."
+      },
+      "cancel": {
+        "question": "Can I cancel?",
+        "answer": "Yes, any time, from Manage billing. Your plan and its credits stay until the end of the month you paid for, then you're back on Free."
+      },
+      "rollover": {
+        "question": "Do unused credits roll over?",
+        "answer": "On Free, credits refresh each month and unused ones don't carry over. When Label opens, its unused credits will roll over, and credit packs won't expire."
+      },
+      "free": {
+        "question": "What happens when I run out?",
+        "answer": "wovain stops before the step and tells you. Your {freeCredits, number} free credits come back next month, and nothing you made is lost. Paid plans and packs of {packCredits, number} credits are coming soon."
+      },
+      "paid": {
+        "question": "When can I buy Studio, Label or credits?",
+        "answer": "Soon. For now every account is on Free. Press Notify me on the plan you want, so we know which one to open first."
+      }
     }
   }
 }

@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "check-types": "tsc -b"
+    "check-types": "tsc -b",
+    "test": "vitest run"
   },
   "dependencies": {
     "@better-auth/cimd": "catalog:",
@@ -17,6 +18,9 @@
     "@better-auth/drizzle-adapter": "catalog:",
     "@better-auth/mcp": "catalog:",
     "@better-auth/oauth-provider": "catalog:",
+    "@polar-sh/better-auth": "catalog:",
+    "@polar-sh/sdk": "catalog:",
+    "@wovain/billing": "workspace:*",
     "@wovain/db": "workspace:*",
     "@wovain/email": "workspace:*",
     "better-auth": "catalog:",
@@ -27,6 +31,7 @@
   "devDependencies": {
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
