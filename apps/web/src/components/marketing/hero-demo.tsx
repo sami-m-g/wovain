@@ -29,6 +29,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
+import Image from "next/image";
 import type { ReactNode, RefObject } from "react";
 import {
   useEffect,
@@ -42,17 +43,10 @@ import { Logo } from "@/components/brand/logo";
 import { ShuttleLoader, ShuttleMark } from "@/components/brand/shuttle-mark";
 import {
   AdPreview,
-  BLANK_COLOURS,
+  MOCKUPS,
   PausedBadge,
   ProductListing,
 } from "@/components/marketing/demo-pieces";
-import {
-  BalconyClubArt,
-  FernStudyArt,
-  GardenHoursArt,
-  SeedLibraryArt,
-  TeeMockup,
-} from "@/components/marketing/example-art";
 import { HangTag } from "@/components/product/hang-tag";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import type { Stage } from "@/components/product/run-tape";
@@ -138,10 +132,10 @@ const NAV = [
 ] as const;
 
 const DESIGNS = [
-  { art: FernStudyArt, colour: BLANK_COLOURS.bone, score: 88 },
-  { art: GardenHoursArt, colour: BLANK_COLOURS.slate, score: 61 },
-  { art: BalconyClubArt, colour: BLANK_COLOURS.moss, score: 82 },
-  { art: SeedLibraryArt, colour: BLANK_COLOURS.stone, score: 79 },
+  { mockup: MOCKUPS.fern, score: 88 },
+  { mockup: MOCKUPS.garden, score: 61 },
+  { mockup: MOCKUPS.balcony, score: 82 },
+  { mockup: MOCKUPS.seeds, score: 79 },
 ] as const;
 const READY_SCORE = 75;
 
@@ -391,7 +385,7 @@ const DesignsScene = ({
       >
         <AnimatePresence mode="popLayout">
           {DESIGNS.filter((_, index) => !focused || index === 0).map(
-            ({ art: Art, colour, score }, index) => {
+            ({ mockup, score }, index) => {
               const ready = score >= READY_SCORE;
               return (
                 <motion.li
@@ -416,11 +410,13 @@ const DesignsScene = ({
                       index === 0 && approved && "ring-success ring-2"
                     )}
                   >
-                    <div className="bg-muted relative p-1.5 sm:p-2">
-                      <TeeMockup
-                        art={<Art className="size-full" />}
-                        className="aspect-[5/4] w-full sm:aspect-square"
-                        colour={colour}
+                    <div className="bg-muted relative aspect-[5/4] overflow-hidden sm:aspect-square">
+                      <Image
+                        alt=""
+                        className="object-cover object-[50%_55%]"
+                        fill
+                        sizes="(min-width: 640px) 180px, 45vw"
+                        src={mockup}
                       />
                       {index === 0 && approved ? (
                         <motion.span
@@ -492,7 +488,6 @@ const LaunchScene = ({ elapsed }: { elapsed: number }) => {
   const withTag = elapsed < TAG_OUT;
   const withAd = elapsed >= AD_IN;
   const working = !withTag && !withAd;
-  const art = <FernStudyArt className="size-full" />;
   return (
     <LayoutGroup>
       <div className="relative flex items-start justify-center gap-3 sm:gap-5">
@@ -505,8 +500,8 @@ const LaunchScene = ({ elapsed }: { elapsed: number }) => {
           {...enter()}
         >
           <ProductListing
-            art={art}
-            colour={BLANK_COLOURS.bone}
+            image={MOCKUPS.fern}
+            imageAlt=""
             detail={
               <p className="text-muted-foreground figures text-[0.7rem]">
                 {home("tag.profit")}{" "}

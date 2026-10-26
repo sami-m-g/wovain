@@ -6,7 +6,6 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { ShuttleMark } from "@/components/brand/shuttle-mark";
-import { TeeMockup } from "@/components/marketing/example-art";
 import { PartnerLogo } from "@/components/marketing/partner-logo";
 
 /**
@@ -16,12 +15,15 @@ import { PartnerLogo } from "@/components/marketing/partner-logo";
  */
 const MODEL_SHOT = "/demo/fern-model-1.webp";
 
-/** The garment colours the example drop prints on. */
-export const BLANK_COLOURS = {
-  bone: "#ece6da",
-  moss: "#5b6b4f",
-  slate: "#3d4450",
-  stone: "#c9c3b6",
+/**
+ * The example drop's four designs on a Comfort Colors 1717 heavyweight tee,
+ * as Fourthwall's own preview renders them from wovain's print files.
+ */
+export const MOCKUPS = {
+  balcony: "/demo/balcony-tee.webp",
+  fern: "/demo/fern-tee.webp",
+  garden: "/demo/garden-tee.webp",
+  seeds: "/demo/seeds-tee.webp",
 } as const;
 
 /** The badge every Meta campaign carries when wovain creates it. */
@@ -44,18 +46,19 @@ export const PausedBadge = ({
   </Badge>
 );
 
-/** A product as Fourthwall lists it: the blank with the design, title and price. */
+/** A product as Fourthwall lists it: the mockup, title and price. */
 export const ProductListing = ({
-  art,
-  colour,
+  image,
+  imageAlt,
   title,
   price,
   status,
   detail,
   className,
 }: {
-  art: ReactNode;
-  colour: string;
+  image: string;
+  /** Empty where the picture is decorative. */
+  imageAlt: string;
   title: string;
   price: string;
   status?: string;
@@ -63,8 +66,14 @@ export const ProductListing = ({
   className?: string;
 }) => (
   <Card className={cn("gap-0 overflow-hidden py-0", className)}>
-    <div className="bg-muted relative grid place-items-center p-3">
-      <TeeMockup art={art} className="aspect-square w-full" colour={colour} />
+    <div className="bg-muted relative aspect-square overflow-hidden">
+      <Image
+        alt={imageAlt}
+        className="object-cover object-[50%_55%]"
+        fill
+        sizes="(min-width: 1024px) 280px, 45vw"
+        src={image}
+      />
       {status ? (
         <Badge className="absolute end-2.5 top-2.5" variant="secondary">
           {status}

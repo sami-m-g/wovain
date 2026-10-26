@@ -161,7 +161,7 @@
     ],
     "heroCta": "Lancer un drop",
     "demo": {
-      "alt": "Un exemple de drop dans wovain. Un brief d'une ligne est saisi. Trois idées de tendances apparaissent, chacune avec son score et ses indices. Quatre designs apparaissent sur des t-shirts vierges avec leur contrôle d'impression, et le designer en approuve un. Il devient un produit masqué sur Fourthwall, avec son prix et son bénéfice. Un aperçu de publicité Meta apparaît, et la campagne est créée en pause.",
+      "alt": "Un exemple de drop dans wovain. Un brief d'une ligne est saisi. Trois idées de tendances apparaissent, chacune avec son score et ses indices. Quatre designs apparaissent en maquettes de t-shirt Fourthwall avec leur contrôle d'impression, et le designer en approuve un. Il devient un produit masqué sur Fourthwall, avec son prix et son bénéfice. Un aperçu de publicité Meta apparaît, et la campagne est créée en pause.",
       "pause": "Mettre l'exemple en pause",
       "play": "Lire l'exemple",
       "brief": "Dessins botaniques délavés au trait pour une capsule de printemps, pour ceux qui jardinent sur leur balcon.",
@@ -204,7 +204,8 @@
       "sizes": "Taille",
       "addToCart": "Ajouter au panier",
       "paused": "En pause jusqu'à ce que vous l'activiez",
-      "photoAlt": "Un modèle sur un balcon portant le t-shirt noir Fern Study No. 3"
+      "photoAlt": "Un modèle sur un balcon portant le t-shirt noir Fern Study No. 3",
+      "mockupAlt": "Le design Fern Study No. 3 sur un t-shirt épais noir, porté par un modèle, tel que Fourthwall le génère"
     },
     "connectors": {
       "title": "Fonctionne dans les comptes que vous avez déjà",

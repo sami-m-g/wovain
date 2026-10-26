@@ -161,7 +161,7 @@
     ],
     "heroCta": "Start a drop",
     "demo": {
-      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear on tee blanks with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
+      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
       "pause": "Pause the example",
       "play": "Play the example",
       "brief": "Washed botanical line drawings for a spring capsule, for people who garden on balconies.",
@@ -204,7 +204,8 @@
       "sizes": "Size",
       "addToCart": "Add to cart",
       "paused": "Paused until you turn it on",
-      "photoAlt": "A model on a balcony wearing the black Fern Study No. 3 tee"
+      "photoAlt": "A model on a balcony wearing the black Fern Study No. 3 tee",
+      "mockupAlt": "The Fern Study No. 3 design on a black heavyweight tee, worn by a model, as Fourthwall renders it"
     },
     "connectors": {
       "title": "Runs inside the accounts you already have",
