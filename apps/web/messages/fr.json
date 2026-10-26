@@ -409,7 +409,7 @@
     "stepsLabel": "Étapes du drop",
     "stepOf": "Étape {current, number} sur {total, number}",
     "autopilot": "Pilote automatique",
-    "autopilotHint": "Nemotron choisit l'idée et valide le visuel ; wovain publie et crée la campagne, en pause.",
+    "autopilotHint": "wovain choisit l'idée et valide le visuel, puis publie et crée la campagne, en pause.",
     "autopilotRunning": "Le pilote automatique gère ce drop. Cela peut prendre quelques minutes.",
     "back": "Retour",
     "problem": {
@@ -742,7 +742,7 @@
     "plansTitle": "Formules",
     "noCut": "Prix en dollars américains. Free est ouvert dès maintenant ; Studio, Label et les packs de crédits ne sont pas encore en vente.",
     "yoursTitle": "Ce que vous payez sur vos propres comptes",
-    "yoursLead": "Les crédits couvrent le travail de wovain : la recherche de tendances et les briefs, vérifications et textes de pub de Nemotron. Le reste, vous le payez directement, sur vos comptes, sans marge de wovain.",
+    "yoursLead": "Les crédits couvrent le travail de wovain : la recherche de tendances, les briefs, les vérifications de visuels et les textes de pub. Le reste, vous le payez directement, sur vos comptes, sans marge de wovain.",
     "yours": {
       "fal": {
         "name": "fal",
