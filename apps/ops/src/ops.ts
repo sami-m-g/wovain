@@ -973,8 +973,11 @@ const releaseGuard = async () => {
     actions: issues
       .map((i) => new Date(i.created_at))
       .toSorted((a, b) => b.getTime() - a.getTime()),
+    // When the deploy finished: the canary job starts after it.
     deployedAt:
-      deployment === undefined ? undefined : new Date(deployment.created_at),
+      deployment === undefined
+        ? undefined
+        : new Date(deployment.finished_at ?? deployment.created_at),
     devHealth,
     exceptions,
     firingKpis: kpis,

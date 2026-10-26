@@ -25,9 +25,10 @@ const GUARD_MAX_ERROR_RATE = 0.05;
 const GUARD_MAX_EXCEPTIONS = 20;
 // What a degradation is blamed on: a change in the last 2 hours.
 const GUARD_WINDOW_MS = 2 * HOUR_MS;
-// A deploy this young is still the canary job's to judge (CANARY_WINDOW_S,
-// 10 minutes, plus its probes): the guard leaves its traffic alone.
-const CANARY_GRACE_MS = 15 * MINUTE_MS;
+// A deploy that finished this recently is still the canary job's to judge:
+// its install, CANARY_WINDOW_S (10 minutes), the probes and the final log
+// queries, with a margin. The guard leaves its traffic alone until then.
+const CANARY_GRACE_MS = 20 * MINUTE_MS;
 // One automatic action an hour, three a day.
 const COOLDOWN_MS = HOUR_MS;
 const MAX_ACTIONS_PER_DAY = 3;

@@ -118,7 +118,7 @@ describe("guardDecision", () => {
     expect(
       guardDecision({
         ...base,
-        deployedAt: new Date(minutesAgo(20)),
+        deployedAt: new Date(minutesAgo(30)),
         devHealth: degraded,
       }).action
     ).toBe("none");
@@ -128,7 +128,7 @@ describe("guardDecision", () => {
     expect(
       guardDecision({
         ...base,
-        deployedAt: new Date(minutesAgo(20)),
+        deployedAt: new Date(minutesAgo(30)),
         health: degraded,
       }).action
     ).toBe("rollback");
@@ -138,7 +138,7 @@ describe("guardDecision", () => {
     expect(
       guardDecision({
         ...base,
-        deployedAt: new Date(minutesAgo(20)),
+        deployedAt: new Date(minutesAgo(30)),
         flags: [flag({ name: "app-ui-v2", updated_at: minutesAgo(50) })],
         health: degraded,
       }).action
@@ -149,7 +149,7 @@ describe("guardDecision", () => {
     expect(
       guardDecision({
         ...base,
-        deployedAt: new Date(minutesAgo(5)),
+        deployedAt: new Date(minutesAgo(15)),
         health: degraded,
       }).action
     ).toBe("none");
@@ -159,7 +159,7 @@ describe("guardDecision", () => {
     expect(
       guardDecision({
         ...base,
-        deployedAt: new Date(minutesAgo(20)),
+        deployedAt: new Date(minutesAgo(30)),
         firingKpis: ["checkout-quote-success"],
       }).action
     ).toBe("none");

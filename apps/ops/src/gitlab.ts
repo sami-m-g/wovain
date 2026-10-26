@@ -325,7 +325,14 @@ export const createGitLab = (env: {
           }
         )
       );
-      return z.array(z.object({ created_at: z.string() })).parse(response.body);
+      return z
+        .array(
+          z.object({
+            created_at: z.string(),
+            finished_at: z.string().nullish(),
+          })
+        )
+        .parse(response.body);
     },
     diffs: async (mr: number) =>
       await collect(
