@@ -21,6 +21,21 @@ const posthogAssets = posthogHost.replace(
   "-assets.i.posthog.com"
 );
 
+// SEO pages that were renamed or removed when wovain moved from creator merch
+// to independent labels: each old URL (and its fr/es copy) goes to its closest
+// page, permanently.
+const MOVED_PAGES = [
+  ["/integrations/qloo", "/integrations"],
+  ["/integrations/tavily", "/integrations"],
+  ["/integrations/nebius", "/integrations"],
+  ["/use-cases/creator-merch", "/use-cases/independent-labels"],
+  ["/use-cases/youtube-merch", "/use-cases"],
+  ["/use-cases/twitch-merch", "/use-cases"],
+  ["/use-cases/band-merch", "/use-cases"],
+  ["/guides/price-print-on-demand-merch", "/guides/price-print-on-demand"],
+  ["/guides/launch-a-merch-drop", "/guides/launch-a-capsule-drop"],
+] as const;
+
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
@@ -33,6 +48,17 @@ const nextConfig: NextConfig = {
     "/api/visitor": ["./node_modules/geoip-country/data/*.dat"],
   },
   reactCompiler: true,
+  redirects: () =>
+    Promise.resolve(
+      MOVED_PAGES.flatMap(([source, destination]) => [
+        { destination, permanent: true, source },
+        {
+          destination: `/:locale${destination}`,
+          permanent: true,
+          source: `/:locale(fr|es)${source}`,
+        },
+      ])
+    ),
   rewrites: () => [
     {
       destination: `${posthogAssets}/static/:path*`,

@@ -1,5 +1,4 @@
 import { Badge } from "@wovain/ui/components/badge";
-import { TimelineAnimate } from "@wovain/ui/components/timeline-animate";
 import { cn } from "@wovain/ui/lib/utils";
 
 import {
@@ -7,6 +6,7 @@ import {
   displayTitle,
   Eyebrow,
 } from "@/components/marketing/section";
+import { ProcessSteps } from "@/components/shadcn-studio/blocks/timeline-component-07/process-steps";
 
 interface ProcessStep {
   /** Who acts at this step, shown as a chip: "You" or "wovain". */
@@ -72,9 +72,8 @@ const Process = ({
           </p>
         </div>
       </div>
-      <TimelineAnimate
-        className="-mt-10 sm:-mt-20"
-        data={steps.map((step, index) => ({
+      <ProcessSteps
+        items={steps.map((step, index) => ({
           content: <StepCard {...step} />,
           index: String(index + 1).padStart(2, "0"),
         }))}

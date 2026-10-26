@@ -18,7 +18,7 @@ export const GET = async () => {
   const body = [
     "# wovain",
     "",
-    "> wovain turns one brief into a launched merch drop: trend research, designs you approve, products on Fourthwall priced to clear at least $10 profit, and a Meta ad campaign created paused. It works on the web and as an app in ChatGPT.",
+    "> wovain is print-on-demand for independent designers and small labels. You describe a drop; wovain researches it, drafts the graphics for your approval, lists the pieces on your Fourthwall shop priced to clear at least $10 profit and a 30% margin, and builds a Meta ad campaign created paused. It works on the web and as an app in ChatGPT.",
     "",
     `- ChatGPT app (MCP server): ${mcpUrl}`,
     `- Documentation: ${ENV.DOCS_URL}`,

@@ -166,7 +166,7 @@ const GuidePage = async ({ params }: Props) => {
                       ))}
                     </ul>
                   ) : null}
-                  {slug === "price-print-on-demand-merch" && index === 2 ? (
+                  {slug === "price-print-on-demand" && index === 2 ? (
                     <PriceTable caption={t("priceTable")} />
                   ) : null}
                 </section>
