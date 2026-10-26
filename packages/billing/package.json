@@ -1,0 +1,28 @@
+{
+  "name": "@wovain/billing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@polar-sh/sdk": "catalog:",
+    "@wovain/db": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "evlog": "catalog:"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

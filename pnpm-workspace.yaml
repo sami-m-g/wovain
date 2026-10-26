@@ -65,5 +65,8 @@ catalog:
   negotiator: ^1.1.0
   "@types/negotiator": ^0.6.5
   "@formatjs/intl-localematcher": ^0.9.0
+  "@polar-sh/sdk": 1.0.2
+  "@polar-sh/better-auth": 2.1.0
+  "@electric-sql/pglite": 0.5.10
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2
