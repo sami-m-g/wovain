@@ -439,7 +439,7 @@
     "stepsLabel": "Pasos del drop",
     "stepOf": "Paso {current, number} de {total, number}",
     "autopilot": "Piloto automático",
-    "autopilotHint": "Nemotron elige la idea y aprueba el diseño; wovain publica y crea la campaña, en pausa.",
+    "autopilotHint": "wovain elige la idea y aprueba el diseño, lo publica y crea la campaña, en pausa.",
     "autopilotRunning": "El piloto automático está gestionando este drop. Puede tardar unos minutos.",
     "back": "Atrás",
     "problem": {
@@ -753,7 +753,7 @@
     "plansTitle": "Planes",
     "noCut": "Precios en dólares estadounidenses. Free ya está abierto; Studio, Label y los packs de créditos aún no están a la venta.",
     "yoursTitle": "Lo que pagas en tus propias cuentas",
-    "yoursLead": "Los créditos cubren el trabajo de wovain: la investigación de tendencias y los briefs, revisiones y textos de anuncio de Nemotron. El resto lo pagas directamente, en cuentas tuyas, sin margen de wovain.",
+    "yoursLead": "Los créditos cubren el trabajo de wovain: la investigación de tendencias, los briefs, las revisiones de diseño y los textos de anuncio. El resto lo pagas directamente, en cuentas tuyas, sin margen de wovain.",
     "yours": {
       "fal": {
         "name": "fal",
