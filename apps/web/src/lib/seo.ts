@@ -32,10 +32,7 @@ export const alternatesFor = (
 export const ogImages = (locale: Locale) => [
   {
     height: 630,
-    url: new URL(
-      `${locale === routing.defaultLocale ? "" : `/${locale}`}/opengraph-image/og`,
-      siteUrl
-    ).toString(),
+    url: localizedUrl("/opengraph-image/og", locale),
     width: 1200,
   },
 ];
