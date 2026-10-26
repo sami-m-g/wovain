@@ -452,7 +452,7 @@ const content: SiteContent = {
       data: "ChatGPT envoie vos demandes aux outils de wovain. wovain utilise le même compte, les mêmes sessions et les mêmes connexions que le site : vous pouvez commencer un drop dans le chat et le finir sur le web.",
       description:
         "Ajoutez wovain à ChatGPT et lancez un drop de merch en langage courant : recherche, designs, produits Fourthwall et campagne Meta en pause, avec votre accord.",
-      docsPath: "/docs/seller-guide",
+      docsPath: "/docs/chatgpt",
       faq: [
         {
           answer:
@@ -506,7 +506,7 @@ const content: SiteContent = {
       data: "wovain lit les blanks du catalogue et leurs coûts de base, et envoie votre visuel validé, le titre, la description et le prix pour créer les produits dans votre boutique. L'autorisation Fourthwall est stockée scellée (chiffrée) et vous pouvez la déconnecter à tout moment dans Connexions.",
       description:
         "Connectez votre boutique Fourthwall : vos designs validés deviennent des produits sur de vrais blanks, avec 10 $ de profit par vente, masqués avant publication.",
-      docsPath: "/docs/integrations/fourthwall",
+      docsPath: "/docs/connecting-accounts#fourthwall",
       faq: [
         {
           answer:
@@ -561,7 +561,7 @@ const content: SiteContent = {
       data: "wovain envoie à votre compte publicitaire le texte des annonces, le lien du produit, les pays et le budget choisis pour créer la campagne. Il n'active jamais de dépense. L'autorisation Meta est stockée scellée (chiffrée) et vous pouvez la déconnecter à tout moment dans Connexions.",
       description:
         "wovain rédige jusqu'à trois variantes d'annonce Meta par produit et crée campagne, ensemble de publicités et annonces dans votre compte, le tout en pause.",
-      docsPath: "/docs/integrations/meta-ads",
+      docsPath: "/docs/connecting-accounts#meta",
       faq: [
         {
           answer:
