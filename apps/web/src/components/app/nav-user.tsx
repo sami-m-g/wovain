@@ -17,12 +17,11 @@ import {
   useSidebar,
 } from "@wovain/ui/components/sidebar";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { BookOpen, ChevronsUpDown, LogOut } from "lucide-react";
+import { BookOpen, ChevronsUpDown, LogOut, UserCog } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
-import { resetAnalytics } from "@/lib/consent-store";
 
 const WHITESPACE = /\s+/u;
 const MAX_INITIALS = 2;
@@ -50,7 +49,7 @@ const Identity = ({ email, name }: { email: string; name: string }) => (
   </>
 );
 
-/** sidebar-07's NavUser: who is signed in, the docs and sign out. */
+/** sidebar-07's NavUser: who is signed in, account settings, the docs and sign out. */
 export const NavUser = ({ docsUrl }: { docsUrl: string }) => {
   const t = useTranslations("Common");
   const header = useTranslations("Header");
@@ -96,6 +95,14 @@ export const NavUser = ({ docsUrl }: { docsUrl: string }) => {
             <DropdownMenuGroup>
               <DropdownMenuItem
                 render={
+                  <Link href="/dashboard/settings/account" prefetch={false} />
+                }
+              >
+                <UserCog aria-hidden="true" />
+                {t("accountSettings")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={
                   // oxlint-disable-next-line jsx-a11y/anchor-has-content, jsx-a11y/control-has-associated-label -- the menu item renders the label inside
                   <a href={docsUrl} />
                 }
@@ -107,9 +114,8 @@ export const NavUser = ({ docsUrl }: { docsUrl: string }) => {
                 onClick={() => {
                   authClient.signOut({
                     fetchOptions: {
+                      // wovainAuthClient resets analytics on every sign-out.
                       onSuccess: () => {
-                        // The next visitor on this browser is anonymous again.
-                        resetAnalytics();
                         router.push("/");
                       },
                     },

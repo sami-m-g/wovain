@@ -233,8 +233,9 @@ const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
 const CREATE_CONSUMER =
   "aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersion: $version, target: { projectId: $projectId } }) { errors itemConsumer { id } }";
 const ENABLE = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!, $version: AiCatalogPinnedVersion!) { consumer: ${CREATE_CONSUMER} }`;
+// The update also needs exactly one of pinnedVersion and pinnedVersionPrefix.
 const ADOPT =
-  "mutation($id: AiCatalogItemConsumerID!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id }) { errors itemConsumer { id } } }";
+  "mutation($id: AiCatalogItemConsumerID!, $version: AiCatalogPinnedVersion!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id, pinnedVersion: $version }) { errors itemConsumer { id } } }";
 
 const enableFlow = (name: string, itemId: string, version: string) => {
   const existing = consumerIds.apply((ids) => ids.get(itemId));
@@ -262,7 +263,9 @@ const enableFlow = (name: string, itemId: string, version: string) => {
       updateMutation: ADOPT,
     },
     {
-      ignoreChanges: ["createMutation", "mutationVariables"],
+      // An enabled consumer is never updated: its state keeps the variables
+      // it was created with, which a changed update mutation may not accept.
+      ignoreChanges: ["createMutation", "mutationVariables", "updateMutation"],
       provider,
       retainOnDelete: true,
     }
@@ -405,6 +408,11 @@ const flowLabels: Record<string, { color: string; description: string }> = {
     description:
       "Accepted for Duo's Developer flow: wovain ops hands it over when a trusted user added this label",
   },
+  "flag-cleanup": {
+    color: "#6c757d",
+    description:
+      "A feature flag past its expiry, fully rolled out or unregistered: wovain ops' flag hygiene check",
+  },
   heal: {
     color: "#c0392b",
     description: "A production error the heal flow reproduces and fixes",
@@ -432,6 +440,11 @@ const flowLabels: Record<string, { color: string; description: string }> = {
     color: "#2da160",
     description:
       "PostHog confirmed the shipped kpi-scout change: its KPI alert stopped firing",
+  },
+  "release-guard": {
+    color: "#e74c3c",
+    description:
+      "The release guard rolled back a deploy or switched a flag off; the wovain release-guard flow diagnoses it",
   },
   "vuln-fix": {
     color: "#8e44ad",

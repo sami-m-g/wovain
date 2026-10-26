@@ -60,11 +60,29 @@ const noteSchema = z.object({
   author: z.object({ username: z.string() }),
   body: z.string(),
   created_at: z.string(),
+  id: z.int(),
   // Diff notes name the commit they were written on.
   position: z.object({ head_sha: z.string() }).nullable().optional(),
   system: z.boolean(),
 });
 export type Note = z.infer<typeof noteSchema>;
+
+const featureFlagSchema = z.object({
+  active: z.boolean(),
+  name: z.string(),
+  strategies: z
+    .array(
+      z.object({
+        name: z.string(),
+        parameters: z.record(z.string(), z.string()).nullish(),
+        scopes: z
+          .array(z.object({ environment_scope: z.string() }))
+          .default([]),
+      })
+    )
+    .default([]),
+  updated_at: z.string(),
+});
 
 const discussionSchema = z.object({
   notes: z.array(
@@ -308,7 +326,14 @@ export const createGitLab = (env: {
           }
         )
       );
-      return z.array(z.object({ created_at: z.string() })).parse(response.body);
+      return z
+        .array(
+          z.object({
+            created_at: z.string(),
+            finished_at: z.string().nullish(),
+          })
+        )
+        .parse(response.body);
     },
     diffs: async (mr: number) =>
       await collect(
@@ -345,6 +370,14 @@ export const createGitLab = (env: {
         return null;
       }
     },
+    // The project's feature flags (Deploy > Feature flags), with their
+    // strategies: what the release guard and the hygiene check read.
+    featureFlags: async () =>
+      await collect(
+        featureFlagSchema,
+        "feature_flags",
+        api.FeatureFlags.all(project, allPages)
+      ),
     issueLinks: async (issue: number) =>
       z
         .array(issueSchema)
@@ -446,6 +479,17 @@ export const createGitLab = (env: {
           })
         )
         .parse(await guard(api.Issues.allRelatedMergeRequests(project, issue))),
+    // Asks a reviewer to review again, as the reviewer list's "Re-request a
+    // review" does; for GitLab Duo, that starts a follow-up review.
+    rereview: async (mr: number, userId: number) =>
+      await mutate(
+        "mutation($path: ID!, $iid: String!, $user: UserID!) { m: mergeRequestReviewerRereview(input: { projectPath: $path, iid: $iid, userId: $user }) { errors } }",
+        {
+          iid: String(mr),
+          path: env.projectPath,
+          user: `gid://gitlab/User/${userId}`,
+        }
+      ),
     // Sets a finding to Resolved, with the reason in its history.
     resolveFinding: async (id: string, comment: string) =>
       await mutate(
@@ -500,6 +544,11 @@ export const createGitLab = (env: {
         })
       );
     },
+    // A flag's Status toggle: the kill switch (Developer role).
+    setFeatureFlagActive: async (name: string, active: boolean) =>
+      featureFlagSchema.parse(
+        await guard(api.FeatureFlags.edit(project, name, { active }))
+      ),
     // An incident's severity (GraphQL issueSetSeverity).
     setSeverity: async (
       iid: number,

@@ -114,6 +114,15 @@ config:
       description: wovain deps-review when Renovate assigns it as reviewer
       events: [assign_reviewer]
       active: true
+    # Progressive delivery's diagnosis (docs/adr/0001-progressive-delivery.md):
+    # the canary job and the ops job's release guard assign each
+    # release-guard issue to its service account, after they rolled back or
+    # switched a flag off.
+    - name: duo-release-guard
+      file: .gitlab/duo/catalog/flows/release-guard.yml
+      description: wovain release-guard when the release guard assigns it
+      events: [assign]
+      active: true
   # Custom agents from .gitlab/duo/catalog/agents, enabled in the project once
   # synced (mapping.json).
   wovain:duoCustomAgents:

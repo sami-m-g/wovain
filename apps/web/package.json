@@ -14,7 +14,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@base-ui/react": "catalog:",
+    "@better-auth-ui/core": "catalog:",
+    "@better-auth-ui/locales": "catalog:",
+    "@better-auth-ui/react": "catalog:",
     "@better-auth/mcp": "catalog:",
     "@better-auth/oauth-provider": "catalog:",
     "@fingerprintjs/botd": "^2.0.0",
@@ -38,6 +40,10 @@
     "@wovain/ui": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
+    "bowser": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "date-fns": "catalog:",
     "evlog": "catalog:",
     "geoip-country": "^5.0.202610240156",
     "lucide-react": "catalog:",
@@ -51,7 +57,6 @@
     "react-dom": "catalog:",
     "recharts": "catalog:",
     "sonner": "catalog:",
-    "unleash-client": "^6.12.2",
     "varlock": "catalog:",
     "zod": "catalog:"
   },

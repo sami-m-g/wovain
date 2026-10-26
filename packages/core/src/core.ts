@@ -2,6 +2,8 @@ import type { Memory } from "@mastra/memory";
 
 import { createAgentKit } from "./agents";
 import { createArtist } from "./fal";
+import { createFlags } from "./flags";
+import type { FlagsConfig } from "./flags";
 import { createNemotron } from "./nemotron";
 import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
@@ -11,7 +13,7 @@ import { createUpstream } from "./upstream";
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
 // needs it, with a NOT_CONFIGURED error naming the variable.
-export interface CoreConfig {
+export interface CoreConfig extends FlagsConfig {
   BETTER_AUTH_URL: string;
   // Guardrail processors on model inputs and outputs ("off" to skip them).
   GUARDRAILS?: "off" | "on" | undefined;
@@ -54,6 +56,8 @@ export const createCore = (
     // fal runs on the merchant's own fal account (an MCP grant), never on
     // wovain's.
     artist: createArtist,
+    // GitLab feature flags (./flags.ts), typed by ./flag-registry.ts.
+    flags: createFlags(env),
     memory,
     nemotron: createNemotron(agents),
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),

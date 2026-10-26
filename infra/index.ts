@@ -6,6 +6,7 @@ import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
+import { featureFlags } from "./flags.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
@@ -492,8 +493,11 @@ new gcp.serviceaccount.IAMMember("deployer-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: deployer.name,
 });
+// logging.viewer: the canary verdict counts each revision's 5xx responses
+// in Cloud Run's request logs (apps/ops/src/canary.ts).
 for (const role of [
   "roles/cloudsql.client",
+  "roles/logging.viewer",
   "roles/run.developer",
   "roles/serviceusage.serviceUsageConsumer",
 ]) {
@@ -779,3 +783,4 @@ ciVariables({
   },
 });
 environments(siteUrl, devUrl);
+featureFlags();

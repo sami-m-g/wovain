@@ -22,6 +22,7 @@
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
     "posthog-node": "catalog:",
+    "unleash-client": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -44,7 +44,7 @@ export const LocaleSwitcher = ({ className }: { className?: string }) => {
     >
       <SelectTrigger
         aria-label={t("language")}
-        className={cn("h-9 rounded-lg font-medium", className)}
+        className={cn("font-medium", className)}
       >
         <Languages aria-hidden="true" className="text-muted-foreground" />
         <SelectValue />

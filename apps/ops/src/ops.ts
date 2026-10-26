@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
 import { opsContext } from "./context.ts";
+import { ENV } from "./env.ts";
 import type { Issue, MergeRequest, Note } from "./gitlab.ts";
 import {
   blockers,
@@ -32,6 +33,17 @@ import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
 import { loadKpis } from "./kpis.ts";
 import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
+import {
+  FLAG_CLEANUP_LABEL,
+  RELEASE_GUARD_LABEL,
+  RELEASE_GUARD_MARKER,
+  cleanupBody,
+  cleanupMarker,
+  guardDecision,
+  hygieneFindings,
+  releaseGuardBody,
+} from "./release.ts";
+import { DUO_USER, MAX_REREVIEWS, rereviewOf } from "./rereview.ts";
 import { fromRoot } from "./root.ts";
 import {
   KPI_MISSED_LABEL,
@@ -72,9 +84,17 @@ import {
 //            or, where it's unavailable, agent::task issues → Developer
 //   resolve  findings no longer detected on the default branch → Resolved
 //   shepherd Duo's MRs → ready → Duo Code Review → guardrails → auto-merge
+//   rereview any open MR GitLab Duo requested changes on → its threads
+//            resolved, pipeline green → Duo re-reviews, and approves when it
+//            finds nothing new (rereview.ts)
 //   status   public/index.html for the status page (the pages job publishes it)
 //   signals  PostHog KPI alerts firing → the scout flow, at most once a day
 //   verifyKpis merged kpi-scout changes → KPI alert stopped? → verified
+//   releaseGuard production degraded after a flag change or deploy → flag
+//            off, or a ROLLBACK=1 pipeline → release-guard issue → the
+//            wovain release-guard flow diagnoses (docs/adr/0001-...)
+//   flagHygiene expired, finished or unregistered feature flags → cleanup
+//            issues for their owners
 // PostHog destinations also start it right away (infra/posthog/signals.tf);
 // it reads PostHog itself, so what started it never steers it.
 // It never merges anything itself; GitLab merges once the pipeline passes.
@@ -93,7 +113,21 @@ const trusted = new Set([me.username, ...env.TRUSTED_USERS]);
 const developer = env.DUO_DEVELOPER_ACCOUNT;
 const healer = env.DUO_HEAL_ACCOUNT;
 const reviewer = env.DUO_REVIEW_ACCOUNT;
-const errorFilter = `${config.service.logs} AND jsonPayload.level="error" AND jsonPayload.error.name:*`;
+// Production's service, and dev.wovain.com's (infra/dev.ts): both run the
+// same code and read the same GitLab flags, so errors on either are healed
+// and can trip the release guard's kill switch.
+const DEV_SERVICE = "wovain-web-dev";
+const bothServices = (filter: string) =>
+  filter.replace(
+    'resource.labels.service_name="wovain-web"',
+    `resource.labels.service_name=("wovain-web" OR "${DEV_SERVICE}")`
+  );
+const ERROR_LINES = 'jsonPayload.level="error" AND jsonPayload.error.name:*';
+// heal finds errors on both services (dev.wovain.com runs the fault flag);
+// the status page and verifyHeals measure production alone, since a fix
+// deploys to production and dev is rolled out by hand.
+const errorFilter = `${bothServices(config.service.logs)} AND ${ERROR_LINES}`;
+const productionErrorFilter = `${config.service.logs} AND ${ERROR_LINES}`;
 
 const marker = (kind: string) => `<!-- wovain:${kind} -->`;
 const hasMarker = (notes: Note[], kind: string) =>
@@ -269,7 +303,7 @@ const eventsSince = async (
     return scalarOf(rows) ?? 0;
   }
   const { entries } = await google.entries(
-    `${errorFilter} AND jsonPayload.path="${signature.path}"`,
+    `${productionErrorFilter} AND jsonPayload.path="${signature.path}"`,
     { end: now, start }
   );
   return (
@@ -737,6 +771,78 @@ const shepherd = async () => {
   );
 };
 
+// GitLab Duo's change request on one merge request: re-request its review
+// once its threads are resolved and the pipeline passed (rereview.ts).
+const rereviewOne = async (iid: number, duoId: number) => {
+  const [mr, notes, reviewers, discussions] = await Promise.all([
+    gitlab.mergeRequest(iid),
+    gitlab.mergeRequestNotes(iid),
+    gitlab.reviewers(iid),
+    gitlab.discussions(iid),
+  ]);
+  // Notes come newest first: this is Duo's latest change request.
+  const request = notes.find(
+    (n) =>
+      n.system &&
+      n.author.username === DUO_USER &&
+      n.body.trim() === "requested changes"
+  );
+  const decision = rereviewOf({
+    asked: notes.filter((n) => n.body.includes(marker("duo-rereview"))).length,
+    askedForThis:
+      request !== undefined && hasMarker(notes, `duo-rereview:${request.id}`),
+    draft: mr.draft,
+    openThreads: openThreads(discussions, DUO_USER),
+    pipeline:
+      mr.head_pipeline?.sha === mr.sha ? mr.head_pipeline.status : undefined,
+    requestId: request?.id,
+    state: reviewers.find((r) => r.user.username === DUO_USER)?.state,
+  });
+  if (decision.action === "wait") {
+    return decision.reason;
+  }
+  if (decision.action === "cap") {
+    await once(
+      iid,
+      notes,
+      "duo-rereview-cap",
+      `GitLab Duo still requests changes after ${MAX_REREVIEWS} re-reviews by wovain ops, so a person decides: reply on its threads and re-request its review, or bypass the request in the merge checks.`
+    );
+    return "re-review cap reached";
+  }
+  await gitlab.rereview(iid, duoId);
+  // "duo-rereview" counts the re-reviews; the second marker names the
+  // change request this one answers.
+  await gitlab.noteOnMergeRequest(
+    iid,
+    `Every GitLab Duo thread is resolved and the pipeline passed for ${mr.sha}, so wovain ops re-requested its review. Duo approves when it finds nothing new, which clears its change request.\n\n${marker("duo-rereview")}${marker(`duo-rereview:${request?.id}`)}`
+  );
+  return `re-review requested for ${mr.sha}`;
+};
+
+// Every open merge request with GitLab Duo as a reviewer, a person's or Duo's.
+const rereview = async () => {
+  const mrs = await gitlab.mergeRequests({ state: "opened", wip: "no" });
+  const withDuo = mrs.flatMap((mr) => {
+    const duo = mr.reviewers.find((r) => r.username === DUO_USER);
+    return duo === undefined ? [] : [{ duoId: duo.id, iid: mr.iid }];
+  });
+  const outcomes = await Promise.allSettled(
+    withDuo.map(async ({ duoId, iid }) => await rereviewOne(iid, duoId))
+  );
+  return Object.fromEntries(
+    withDuo.map(({ iid }, i) => {
+      const outcome = outcomes[i];
+      return [
+        iid,
+        outcome?.status === "fulfilled"
+          ? outcome.value
+          : `failed: ${outcome?.reason instanceof Error ? outcome.reason.message : "unknown"}`,
+      ];
+    })
+  );
+};
+
 // The public status page: health, incidents, DORA and SCI (status.ts).
 const statusPage = async () => {
   const since = new Date(now.getTime() - 30 * DAY_MS);
@@ -749,7 +855,7 @@ const statusPage = async () => {
       }),
       gitlab.deployments(since),
       gitlab.doraLeadTime(since),
-      google.entries(errorFilter, {
+      google.entries(productionErrorFilter, {
         end: now,
         start: new Date(now.getTime() - WATCH_MS),
       }),
@@ -869,9 +975,169 @@ const verifyKpis = async () => {
   return Object.fromEntries(results);
 };
 
+// Progressive delivery, after the canary (docs/adr/0001-progressive-
+// delivery.md): when production degrades and a guarded flag changed in the
+// last 2 hours, switch it off (the kill switch); when a deploy did, start a
+// ROLLBACK=1 pipeline, whose rollback:production job moves traffic back as
+// the deploy account. Either way a release-guard issue, assigned to the
+// wovain release-guard flow, carries the evidence. One action an hour,
+// three a day; nothing is switched back on automatically.
+const GUARD_WATCH_MS = 15 * 60_000;
+const guardAccount = env.DUO_RELEASE_GUARD_ACCOUNT;
+const assignGuardIssues = async (issues: Issue[]) => {
+  if (guardAccount === undefined || guardAccount === "") {
+    return { assigned: [], problems: ["DUO_RELEASE_GUARD_ACCOUNT isn't set"] };
+  }
+  const waiting = issues.filter(
+    (i) =>
+      i.state === "opened" &&
+      i.assignees.length === 0 &&
+      (i.description ?? "").includes(RELEASE_GUARD_MARKER)
+  );
+  // Best effort: a missing flow account never blocks the mitigation.
+  const problems = await Promise.all(
+    waiting.map(
+      async (i) =>
+        await bestEffort(`assigning #${i.iid}`, () =>
+          assignTo(i.iid, guardAccount)
+        )
+    )
+  );
+  return { assigned: waiting.map((i) => i.iid), problems: problems.flat() };
+};
+
+const releaseGuard = async () => {
+  const range = { end: now, start: new Date(now.getTime() - GUARD_WATCH_MS) };
+  const requests = `${config.service.metrics} AND log_id("run.googleapis.com/requests")`;
+  const devRequests = requests.replace(
+    'service_name="wovain-web"',
+    `service_name="${DEV_SERVICE}"`
+  );
+  const [
+    all,
+    failed,
+    devAll,
+    devFailed,
+    flags,
+    deployments,
+    issues,
+    browser,
+    alerts,
+  ] = await Promise.all([
+    google.entries(requests, range),
+    google.entries(`${requests} AND httpRequest.status>=500`, range),
+    google.entries(devRequests, range),
+    google.entries(`${devRequests} AND httpRequest.status>=500`, range),
+    gitlab.featureFlags(),
+    gitlab.deployments(new Date(now.getTime() - DAY_MS)),
+    gitlab.issues({
+      createdAfter: new Date(now.getTime() - DAY_MS).toISOString(),
+      labels: RELEASE_GUARD_LABEL,
+      state: "all",
+    }),
+    browserErrors(),
+    posthog === undefined ? Promise.resolve([]) : posthog.alerts(),
+  ]);
+  const assigned = await assignGuardIssues(issues);
+  const [deployment] = deployments;
+  const health = {
+    errors: failed.entries.length,
+    requests: all.entries.length,
+  };
+  const devHealth = {
+    errors: devFailed.entries.length,
+    requests: devAll.entries.length,
+  };
+  const exceptions = browser.reduce((sum, g) => sum + g.count, 0);
+  const kpis = firingKpis(alerts);
+  const decision = guardDecision({
+    actions: issues
+      .map((i) => new Date(i.created_at))
+      .toSorted((a, b) => b.getTime() - a.getTime()),
+    // When the deploy finished: the canary job starts after it.
+    deployedAt:
+      deployment === undefined
+        ? undefined
+        : new Date(deployment.finished_at ?? deployment.created_at),
+    devHealth,
+    exceptions,
+    firingKpis: kpis,
+    flags,
+    health,
+    now,
+  });
+  if (decision.action === "none") {
+    return { assigned, decision: decision.reasons.join("; ") };
+  }
+  const evidence = [
+    `Production 5xx in the last 15 minutes: ${health.errors}/${health.requests} ([Cloud Logging](${logsUrl(`${requests} AND httpRequest.status>=500`)}))`,
+    `dev.wovain.com 5xx in the last 15 minutes: ${devHealth.errors}/${devHealth.requests} ([Cloud Logging](${logsUrl(`${devRequests} AND httpRequest.status>=500`)}))`,
+    `PostHog error tracking: ${exceptions} browser exceptions in 30 minutes${posthog === undefined ? "" : ` ([issues](${posthog.link("error_tracking")}))`}`,
+    `PostHog KPI alerts firing: ${kpis.length > 0 ? kpis.map((k) => `\`kpi:${k}\``).join(", ") : "none"}`,
+    `Latest production deployment: ${deployment?.created_at ?? "none in 24 hours"}`,
+    `Feature flags: https://gitlab.com/${ENV.CI_PROJECT_PATH ?? ""}/-/feature_flags`,
+  ];
+  let action = "";
+  if (decision.action === "flag-off") {
+    await gitlab.setFeatureFlagActive(decision.flag, false);
+    action = `feature flag \`${decision.flag}\` switched off`;
+  } else {
+    const pipeline = await gitlab.runPipeline("main", { ROLLBACK: "1" });
+    action = "traffic rolled back to the previous revision";
+    evidence.push(`Rollback pipeline: ${pipeline.web_url}`);
+  }
+  const issue = await gitlab.createIssue({
+    description: releaseGuardBody({
+      action,
+      evidence,
+      reasons: decision.reasons,
+      source: ENV.CI_JOB_URL ?? "the ops job",
+    }),
+    labels: `${RELEASE_GUARD_LABEL},stage::release`,
+    title: `Release guard: ${action}`,
+  });
+  const handoff = await assignGuardIssues([issue]);
+  return { action, handoff, issue: issue.web_url };
+};
+
+// Flag hygiene: one cleanup issue per expired, fully rolled out or
+// unregistered flag, for its owner, at most three a run; a flag gets a new
+// one only a month after the last.
+const flagHygiene = async () => {
+  const [flags, known] = await Promise.all([
+    gitlab.featureFlags(),
+    gitlab.issues({
+      labels: FLAG_CLEANUP_LABEL,
+      state: "all",
+      updatedAfter: new Date(now.getTime() - 30 * DAY_MS).toISOString(),
+    }),
+  ]);
+  const findings = hygieneFindings(flags, now);
+  const fresh = findings
+    .filter(
+      (f) =>
+        !known.some((i) => (i.description ?? "").includes(cleanupMarker(f)))
+    )
+    .slice(0, 3);
+  const filed = await Promise.all(
+    fresh.map(async (finding) => {
+      const issue = await gitlab.createIssue({
+        description: cleanupBody(finding),
+        labels: `${FLAG_CLEANUP_LABEL},type::chore`,
+        title: `Clean up feature flag ${finding.flag}: ${finding.problem}`,
+      });
+      return issue.web_url;
+    })
+  );
+  return { filed, findings: findings.length };
+};
+
 const phases = {
+  flagHygiene,
   heal,
   intake,
+  releaseGuard,
+  rereview,
   resolveGone,
   shepherd,
   signals,
