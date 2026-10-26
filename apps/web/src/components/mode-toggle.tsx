@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@wovain/ui/components/button";
 import { Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
@@ -13,20 +14,21 @@ export const ModeToggle = () => {
   const t = useTranslations("Common");
 
   return (
-    <button
+    <Button
       aria-label={t("toggleTheme")}
-      className="border-input bg-background hover:bg-muted focus-visible:ring-ring/50 relative inline-flex size-10 shrink-0 items-center justify-center rounded-lg border transition-colors outline-none focus-visible:ring-3"
+      className="relative"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      type="button"
+      size="icon-lg"
+      variant="outline"
     >
       <Sun
         aria-hidden="true"
-        className="size-4 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
+        className="scale-100 rotate-0 transition-transform motion-reduce:transition-none dark:scale-0 dark:-rotate-90"
       />
       <Moon
         aria-hidden="true"
-        className="absolute size-4 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
+        className="absolute scale-0 rotate-90 transition-transform motion-reduce:transition-none dark:scale-100 dark:rotate-0"
       />
-    </button>
+    </Button>
   );
 };

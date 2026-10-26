@@ -28,7 +28,11 @@
     "useCasesTitle": "Cas d'usage : le print-on-demand pour les marques indépendantes",
     "useCasesDescription": "Comment les designers et petites marques indépendantes utilisent wovain pour des capsules, des t-shirts graphiques et des drops streetwear en print-on-demand.",
     "guidesTitle": "Guides pour les marques en print-on-demand",
-    "guidesDescription": "Des guides pratiques pour les marques indépendantes en print-on-demand : fixer le prix de chaque pièce pour qu'elle rapporte, et lancer une capsule de l'idée aux annonces."
+    "guidesDescription": "Des guides pratiques pour les marques indépendantes en print-on-demand : fixer le prix de chaque pièce pour qu'elle rapporte, et lancer une capsule de l'idée aux annonces.",
+    "insightsTitle": "Statistiques",
+    "pricingTitle": "Tarifs : formules et crédits pour vos drops de merch",
+    "pricingDescription": "Commencez gratuitement avec des crédits chaque mois. Studio, Label et les packs de crédits arrivent bientôt. Les crédits paient la recherche et les vérifications IA ; fal, Meta et Fourthwall vous facturent directement.",
+    "billingTitle": "Facturation"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -54,7 +58,8 @@
       "en": "English",
       "fr": "Français",
       "es": "Español"
-    }
+    },
+    "noData": "Rien pour l'instant."
   },
   "Header": {
     "product": "Fonctionnement",
@@ -324,12 +329,15 @@
       "overview": "Vue d'ensemble",
       "newDrop": "Nouveau drop",
       "runs": "Exécutions",
-      "connections": "Connexions"
+      "connections": "Connexions",
+      "insights": "Statistiques",
+      "billing": "Facturation"
     },
     "apiStatus": "API",
     "apiOnline": "en ligne",
     "apiOffline": "hors ligne",
-    "apiChecking": "vérification"
+    "apiChecking": "vérification",
+    "toggleSidebar": "Afficher ou masquer la barre latérale"
   },
   "Stages": {
     "brief": "Brief",
@@ -366,16 +374,21 @@
       "done": "terminé",
       "fourthwall": {
         "title": "Connecter Fourthwall",
-        "body": "Votre boutique et ses blanks, pour que wovain puisse fixer les prix et publier les produits."
+        "body": "Votre boutique et ses blanks, pour que wovain puisse fixer les prix et publier les produits.",
+        "action": "Connecter"
       },
       "meta": {
         "title": "Connecter Meta",
-        "body": "Votre compte publicitaire et votre Page, pour que wovain monte la campagne en pause."
+        "body": "Votre compte publicitaire et votre Page, pour que wovain monte la campagne en pause.",
+        "action": "Connecter"
       },
       "drop": {
         "title": "Lancer votre premier drop",
-        "body": "Une phrase sur le public visé. La veille et les designs marchent tout de suite."
-      }
+        "body": "Une phrase sur le public visé. La veille et les designs marchent tout de suite.",
+        "action": "Commencer"
+      },
+      "lead": "Trois étapes, et wovain peut mener un brief jusqu'à une campagne en pause.",
+      "next": "Suivant"
     }
   },
   "Runs": {
@@ -387,8 +400,11 @@
     "started": "Lancé le",
     "manual": "Avec vous",
     "autopilot": "Pilote automatique",
-    "stoppedAt": "Arrêtée : {error}",
-    "emptyTitle": "Aucune exécution pour l'instant"
+    "stoppedAt": "Arrêtée à l'étape {stage}.",
+    "emptyTitle": "Aucune exécution pour l'instant",
+    "brief": "Brief",
+    "status": "Statut",
+    "progress": "Avancement"
   },
   "Connections": {
     "title": "Connexions",
@@ -409,9 +425,13 @@
       "meta": {
         "name": "Meta",
         "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne."
+      },
+      "fal": {
+        "name": "fal",
+        "body": "Votre compte fal dessine les visuels, à vos frais. Nécessaire pour créer les designs."
       }
     },
-    "serverKeys": "La veille, les visuels et les textes publicitaires utilisent les clés de wovain pour Nebius, Qloo, Tavily et fal."
+    "comingSoon": "Bientôt disponible"
   },
   "Wizard": {
     "title": "Nouveau drop",
@@ -423,8 +443,7 @@
     "autopilotRunning": "Le pilote automatique gère ce drop. Cela peut prendre quelques minutes.",
     "back": "Retour",
     "problem": {
-      "notConfigured": "{service} n'est pas encore configuré sur ce serveur.",
-      "notConfiguredVariable": "{service} n'est pas encore configuré sur ce serveur : {variable} manque.",
+      "notConfigured": "Cette étape n'est pas disponible pour le moment. Réessayez dans un instant.",
       "notConnected": "Connectez {service} pour terminer cette étape.",
       "connectLink": "Aller aux connexions",
       "other": "Un problème est survenu : {message}"
@@ -487,7 +506,8 @@
       "budgetLabel": "Budget quotidien (USD)",
       "budgetHint": "Entre 1 $ et 500 $ par jour. Modifiable dans Meta.",
       "budgetError": "Saisissez un budget quotidien entre 1 $ et 500 $.",
-      "submit": "Créer la campagne en pause"
+      "submit": "Créer la campagne en pause",
+      "perDay": "par jour"
     },
     "done": {
       "title": "Votre campagne est prête, en pause",
@@ -496,7 +516,7 @@
       "open": "Ouvrir le Gestionnaire de publicités",
       "another": "Lancer un autre drop",
       "history": "Voir toutes les exécutions",
-      "autopilotFailed": "Le pilote automatique s'est arrêté : {error}"
+      "autopilotFailed": "Le pilote automatique s'est arrêté à l'étape {stage}. Reprenez-la depuis les étapes."
     },
     "working": {
       "research": "Recherche des tendances et premier visuel…",
@@ -506,7 +526,10 @@
       "products": "Création des produits sur Fourthwall…",
       "publish": "Publication sur Fourthwall…",
       "campaign": "Création de la campagne en pause sur Meta…"
-    }
+    },
+    "autopilotLocked": "L'autopilote est inclus dans Studio et Label. En Free, vous validez chaque étape.",
+    "autopilotUpgrade": "Voir les formules",
+    "autopilotSoon": "L'autopilote arrive bientôt avec les formules payantes. En Free, vous validez chaque étape."
   },
   "NotFound": {
     "title": "Cette page n'est pas ici",
@@ -581,5 +604,196 @@
     "priceTable": "Le prix wovain pour des coûts de blank courants",
     "ctaTitle": "Essayez avec votre propre brief",
     "ctaBody": "Vous validez chaque étape, et la campagne démarre en pause."
+  },
+  "Insights": {
+    "title": "Statistiques",
+    "lead": "Comment vos drops se vendent et ce que font leurs annonces, directement depuis Fourthwall et Meta.",
+    "rangeLabel": "Période",
+    "range": {
+      "7d": "7 jours",
+      "28d": "28 jours",
+      "90d": "90 jours"
+    },
+    "updating": "Mise à jour…",
+    "shop": {
+      "title": "Boutique",
+      "source": "Rapports Fourthwall, sur la période",
+      "revenue": "Chiffre d'affaires",
+      "profit": "Bénéfice",
+      "orders": "Commandes",
+      "chartTitle": "Chiffre d'affaires et bénéfice",
+      "chartLabel": "Chiffre d'affaires et bénéfice par jour : {revenue} de chiffre d'affaires, {profit} de bénéfice au total.",
+      "products": "Meilleurs produits",
+      "product": "Produit",
+      "units": "Unités",
+      "margin": "Marge",
+      "notConnectedTitle": "Connectez Fourthwall pour voir les ventes",
+      "notConnected": "wovain lit les rapports de votre boutique pour afficher le chiffre d'affaires et le bénéfice par drop.",
+      "connect": "Connecter Fourthwall",
+      "unavailable": "Les rapports Fourthwall n'ont pas chargé : {message}",
+      "emptyTitle": "Pas encore de ventes",
+      "empty": "Publiez un produit et partagez-le ; la première commande apparaîtra ici."
+    },
+    "ads": {
+      "title": "Annonces",
+      "source": "Meta, pour les campagnes créées par wovain",
+      "spend": "Dépenses",
+      "roas": "Retour sur dépenses publicitaires",
+      "ctr": "Taux de clic",
+      "cpa": "Coût par résultat",
+      "campaigns": "Campagnes",
+      "campaign": "Campagne",
+      "results": "Résultats",
+      "notConnectedTitle": "Connectez Meta pour voir les résultats",
+      "notConnected": "wovain lit les statistiques des campagnes qu'il a créées pour vous.",
+      "connect": "Connecter Meta",
+      "unavailable": "Les statistiques Meta n'ont pas chargé : {message}",
+      "emptyTitle": "Pas encore de résultats",
+      "empty": "Les campagnes sont créées en pause : les résultats arrivent dès que vous en activez une dans le Gestionnaire de publicités."
+    },
+    "drops": {
+      "title": "Drops",
+      "lead": "Chaque drop avec ses ventes, ses dépenses publicitaires et ses scores.",
+      "drop": "Drop",
+      "status": "Statut",
+      "designScore": "Score design",
+      "adScore": "Score annonce",
+      "revenue": "Chiffre d'affaires",
+      "profit": "Bénéfice",
+      "spend": "Dépenses pub",
+      "units": "Unités",
+      "scorePending": "Les scores d'annonce apparaîtront quand les évaluateurs de wovain auront noté vos textes.",
+      "notScored": "Non noté",
+      "emptyTitle": "Pas encore de drop",
+      "empty": "Lancez un drop ; ses ventes, dépenses et scores arriveront ici.",
+      "emptyCta": "Lancer un drop"
+    }
+  },
+  "Billing": {
+    "perMonth": "/ mois",
+    "recommended": "Recommandée",
+    "currentPlan": "Votre formule",
+    "plans": {
+      "free": "Pour essayer un ou deux drops par mois. Sans carte.",
+      "studio": "Pour les créateurs qui lancent un drop par semaine, avec l'autopilote.",
+      "label": "Pour les boutiques qui lancent plusieurs drops par semaine. Les crédits non utilisés sont reportés."
+    },
+    "features": {
+      "credits": "{credits, number} crédits par mois",
+      "drops": "Environ {drops, number} drops par mois",
+      "autopilot": "Autopilote : wovain choisit, valide et prépare les pubs pour vous",
+      "manualOnly": "Vous validez chaque étape",
+      "rollover": "Les crédits non utilisés sont reportés",
+      "reset": "Les crédits se renouvellent chaque mois"
+    },
+    "pack": {
+      "suffix": "une fois",
+      "body": "{credits, number} crédits en plus, sur n'importe quelle formule. Ils n'expirent jamais."
+    },
+    "cta": {
+      "startFree": "Commencer gratuitement",
+      "choose": "Choisir {plan}",
+      "buyPack": "Acheter {credits, number} crédits"
+    },
+    "manage": "Gérer la facturation",
+    "opening": "Ouverture…",
+    "loading": "Chargement de votre formule…",
+    "checkoutError": "Le paiement ne s'est pas ouvert. Réessayez dans un instant.",
+    "portalError": "Le portail de facturation ne s'est pas ouvert. Réessayez dans un instant.",
+    "disabledNote": "Les paiements ne sont pas encore configurés sur ce serveur : impossible de changer de formule ici.",
+    "creditTag": {
+      "title": "Ce que paie un crédit",
+      "subtitle": "Débité quand une étape tourne, rendu si elle échoue",
+      "research": "Recherche de tendances",
+      "design": "Un design",
+      "assist": "Texte de pub, ou un appel de l'autopilote",
+      "manualDrop": "Un drop que vous validez",
+      "autopilotDrop": "Un drop en autopilote",
+      "credits": "{count, plural, one {# crédit} other {# crédits}}",
+      "footer": "Visuels, pubs et produits sont facturés sur vos propres comptes"
+    },
+    "page": {
+      "title": "Facturation",
+      "lead": "Votre formule, les crédits qu'il vous reste et ce que coûte chaque étape.",
+      "planLabel": "Formule",
+      "creditsLabel": "Crédits restants",
+      "creditsSplit": "{plan, number} de votre formule · {pack, number} de packs",
+      "renews": "Se renouvelle le {date}",
+      "ends": "Prend fin le {date}. Vous gardez vos crédits jusque-là.",
+      "pastDue": "Votre dernier paiement n'est pas passé. Mettez à jour votre carte dans Gérer la facturation pour garder votre formule.",
+      "checkoutSuccess": "Merci, votre paiement est passé. Vos crédits arrivent dans quelques secondes.",
+      "plansTitle": "Formules",
+      "packTitle": "Besoin de quelques crédits de plus ?",
+      "comingSoon": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent chaque mois.",
+      "comingSoonRenews": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent le {date}."
+    },
+    "paywall": {
+      "creditsTitle": "Plus assez de crédits pour cette étape",
+      "planTitle": "L'autopilote est inclus dans Studio",
+      "shortBy": "Cette étape demande {needed, number} crédits et il vous en reste {available, number}.",
+      "studioGain": "Studio vous donne {credits, number} crédits par mois et l'autopilote, pour {price} par mois. Résiliable à tout moment.",
+      "pack": "Acheter {credits, number} crédits pour {price}",
+      "comparePlans": "Comparer les formules",
+      "notNow": "Plus tard",
+      "creditsSoonTitle": "Plus de crédits bientôt",
+      "planSoonTitle": "L'autopilote arrive bientôt avec les formules payantes",
+      "freeRefresh": "Vos crédits Free se renouvellent chaque mois.",
+      "freeRefreshOn": "Vos crédits Free se renouvellent le {date}."
+    },
+    "notify": {
+      "comingSoon": "Bientôt disponible",
+      "button": "Me prévenir",
+      "thanks": "Merci, votre intérêt est noté."
+    }
+  },
+  "Pricing": {
+    "crumb": "Tarifs",
+    "title": "Payez les drops que vous lancez, pas des sièges",
+    "lead": "Commencez gratuitement avec {credits, number} crédits chaque mois. Studio, Label et les packs de crédits arrivent bientôt. wovain ne prend jamais de commission sur vos ventes.",
+    "plansTitle": "Formules",
+    "noCut": "Prix en dollars américains. Free est ouvert dès maintenant ; Studio, Label et les packs de crédits ne sont pas encore en vente.",
+    "yoursTitle": "Ce que vous payez sur vos propres comptes",
+    "yoursLead": "Les crédits couvrent le travail de wovain : la recherche de tendances et les briefs, vérifications et textes de pub de Nemotron. Le reste, vous le payez directement, sur vos comptes, sans marge de wovain.",
+    "yours": {
+      "fal": {
+        "name": "fal",
+        "body": "Les visuels sont générés sur votre compte fal, qui vous facture à l'image."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "Le budget pub, facturé par Meta sur votre compte publicitaire, et seulement après que vous avez activé une campagne en pause."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Les produits et l'impression, payés sur chaque vente. Rien à acheter à l'avance."
+      }
+    },
+    "faqTitle": "Questions sur les tarifs",
+    "faq": {
+      "credit": {
+        "question": "Qu'est-ce qu'un crédit ?",
+        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 3, un design 2, et un texte de pub ou un appel de l'autopilote 1 : un drop validé étape par étape coûte donc environ 6 crédits. Si une étape échoue, ses crédits vous sont rendus."
+      },
+      "yours": {
+        "question": "Que dois-je payer en dehors de wovain ?",
+        "answer": "Les visuels, les pubs et les produits passent par vos propres comptes. fal vous facture les visuels, Meta facture votre compte publicitaire une fois la campagne lancée, et Fourthwall prélève le coût du produit sur chaque vente."
+      },
+      "cancel": {
+        "question": "Puis-je résilier ?",
+        "answer": "Oui, à tout moment, depuis Gérer la facturation. Votre formule et ses crédits restent actifs jusqu'à la fin du mois payé, puis vous repassez en Free."
+      },
+      "rollover": {
+        "question": "Les crédits non utilisés sont-ils reportés ?",
+        "answer": "En Free, les crédits se renouvellent chaque mois et ceux non utilisés ne sont pas reportés. Quand Label ouvrira, ses crédits non utilisés seront reportés, et les packs de crédits n'expireront pas."
+      },
+      "free": {
+        "question": "Que se passe-t-il quand je n'ai plus de crédits ?",
+        "answer": "wovain s'arrête avant l'étape et vous prévient. Vos {freeCredits, number} crédits gratuits reviennent le mois suivant, et rien de ce que vous avez créé n'est perdu. Les formules payantes et les packs de {packCredits, number} crédits arrivent bientôt."
+      },
+      "paid": {
+        "question": "Quand pourrai-je acheter Studio, Label ou des crédits ?",
+        "answer": "Bientôt. Pour l'instant, tous les comptes sont en Free. Cliquez sur Me prévenir sur la formule qui vous intéresse : nous saurons laquelle ouvrir en premier."
+      }
+    }
   }
 }

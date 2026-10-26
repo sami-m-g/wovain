@@ -68,14 +68,25 @@ config:
             - field: action
               operator: in
               value: [created]
-  # Custom flows from .gitlab/duo/catalog/flows: a trigger for the consumer
-  # the project already has (infra/duo.ts). The scout starts on a successful
+  # Custom flows from .gitlab/duo/catalog/flows, once synced (mapping.json):
+  # infra/duo.ts enables each in the project (GitLab creates its service
+  # account), adopts it if already enabled, adds this trigger and sets the
+  # account's name as DUO_<NAME>_ACCOUNT (duo-heal: DUO_HEAL_ACCOUNT).
+  # The heal flow starts when the ops job assigns it a heal issue (a new
+  # production error signature) and when the ops job mentions it to address
+  # Duo Code Review's threads. The deps-review flow starts when Renovate
+  # assigns it as reviewer. The scout starts on a successful
   # child pipeline on main, which only the weekly schedule's scout:duo job
   # creates (.gitlab/ci/loop.yml); its prompt is fixed text. No mention
   # trigger: anyone who comments could steer it. No scheduled trigger: GitLab
   # gives it a service account created in the project, which needs
   # create_service_account (Maintainer).
   wovain:duoCustomFlows:
+    - name: duo-heal
+      file: .gitlab/duo/catalog/flows/heal.yml
+      description: wovain heal when wovain ops assigns or mentions it
+      events: [assign, mention]
+      active: true
     - name: duo-scout
       file: .gitlab/duo/catalog/flows/scout.yml
       description: wovain scout, weekly from the scout child pipeline
@@ -113,6 +124,8 @@ config:
   wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
   gcp:billingProject: wovain
   gcp:userProjectOverride: "true"
+  wovain:polar-access-token:
+    secure: v1:/T0x0osPEHbp2w+/:Jtk83obA4OidW2psGPK3mQqOJn+KF4IaBI6JUN7bnExDGS8dPxYM5Xpz4rQZbSiu+81YCn6fI9V8CgwAcTUvoh2AdZZC
   wovain:wovain-allowed-emails:
     secure: v1:ybkw5nQlPPOMzB+3:Ljnv1xNy+T3GCCbXf5AarPTrjVpj2/nDiOGKBzi/TI7007A6dA==
   wovain:fal-key:

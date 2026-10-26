@@ -23,8 +23,8 @@ ops:
     paths: [public/]
     expire_in: 1 day
 
-# The public status page at status.wovain.com (GitLab Pages; the domain is
-# in infra/duo.ts): health, incident history, DORA and SCI, rendered by the
+# The public status page at status.wovain.com (GitLab Pages, proxied by
+# apps/web/next.config.ts): health, incident history, DORA and SCI, rendered by the
 # ops job every 10 minutes. Publishing needs no install: it only uploads.
 pages:
   stage: .post

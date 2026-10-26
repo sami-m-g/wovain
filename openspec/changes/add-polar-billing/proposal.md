@@ -14,6 +14,8 @@ wovain pays for Nebius, Tavily and Qloo on every drop, and access is an email al
 - An append-only credit ledger with row-locked reservations: reserve before a paid step, settle after, release on failure.
 - Webhook-only sync from Polar, each event processed once.
 - `/pricing` and `/dashboard/billing` pages, upgrade screens and PostHog billing events.
+- Launch Free only: paid plans and packs stay behind the `billing-paid-plans` flag (off), so Qloo is never part of a paid product.
+- `polar:seed` creates the webhook endpoint and writes its secret to Secret Manager.
 - **BREAKING**: removes the email allowlist and `SPEND_*` limits.
 
 ## Capabilities

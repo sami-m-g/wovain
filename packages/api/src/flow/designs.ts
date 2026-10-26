@@ -7,34 +7,39 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
 import { getIdea } from "./ideas";
-import { meter } from "./spend";
+import { charge } from "./spend";
 
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
 // Nemotron judges it. The merchant (or autopilot) then approves or rejects.
 
 export const generateDesign = async (actor: Actor, ideaId: string) => {
   const source = await getIdea(actor, ideaId);
-  await meter(actor, "image", { runId: source.runId });
   const { artist, nemotron } = actor.core;
-  const { artwork, brief, judgment } = await withLlmTrace(
-    { distinctId: actor.userId, traceId: source.runId ?? ideaId },
-    async () => {
-      const drafted = await draftBrief(
-        nemotron,
-        { avoidNames: source.avoidNames, idea: source.research },
-        actor.log
-      );
-      const art = await artist(drafted, actor.log);
-      return {
-        artwork: art,
-        brief: drafted,
-        judgment: await judgeDesign(
-          nemotron,
-          { artwork: art, brief: drafted, idea: source.theme },
-          actor.log
-        ),
-      };
-    }
+  const { artwork, brief, judgment } = await charge(
+    actor,
+    "design",
+    { runId: source.runId },
+    async () =>
+      await withLlmTrace(
+        { distinctId: actor.userId, traceId: source.runId ?? ideaId },
+        async () => {
+          const drafted = await draftBrief(
+            nemotron,
+            { avoidNames: source.avoidNames, idea: source.research },
+            actor.log
+          );
+          const art = await artist(drafted, actor.log);
+          return {
+            artwork: art,
+            brief: drafted,
+            judgment: await judgeDesign(
+              nemotron,
+              { artwork: art, brief: drafted, idea: source.theme },
+              actor.log
+            ),
+          };
+        }
+      )
   );
   const [row] = await actor.db
     .insert(design)
@@ -113,15 +118,20 @@ export const autopilotDecide = async (
   current: Awaited<ReturnType<typeof getDesign>>
 ) => {
   const source = await getIdea(actor, current.ideaId);
-  await meter(actor, "llm", { runId: current.runId });
-  const decision = await reviewDesign(
-    actor.core.nemotron,
-    {
-      brief: current.brief,
-      idea: source.theme,
-      judgment: current.judgment,
-    },
-    actor.log
+  const decision = await charge(
+    actor,
+    "assist",
+    { runId: current.runId },
+    async () =>
+      await reviewDesign(
+        actor.core.nemotron,
+        {
+          brief: current.brief,
+          idea: source.theme,
+          judgment: current.judgment,
+        },
+        actor.log
+      )
   );
   return await decideDesign(actor, current.id, {
     approve: decision.approve,

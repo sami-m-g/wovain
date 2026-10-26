@@ -5,7 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import { posthogTrigger, statusDomainVerification } from "./duo.ts";
+import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
@@ -148,6 +148,9 @@ const dbUser = new gcp.sql.User("wovain", {
 // a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
 // wovain-allowed-emails were created by main; the others are new.
+// polar-access-token and polar-webhook-secret are wovain's own billing
+// (packages/billing): a Polar organization token and the webhook endpoint's
+// signing secret. Each stays unmounted until its stack secret is set.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
@@ -156,6 +159,8 @@ const secretIds = [
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
+  "polar-access-token",
+  "polar-webhook-secret",
   "qloo-api-key",
   "resend-api-key",
   "tavily-api-key",
@@ -173,6 +178,10 @@ const generated = new Map<string, pulumi.Output<string>>([
       special: false,
     }).result,
   ],
+  // A placeholder version, so Cloud Run starts before `pnpm polar:seed`
+  // writes the endpoint's real secret as a newer version (Cloud Run mounts
+  // the latest). Pulumi never writes the real value, so `pulumi up` keeps it.
+  ["polar-webhook-secret", pulumi.output("pending-polar-seed")],
   [
     "token-encryption-key",
     new random.RandomBytes("token-encryption-key", { length: 32 }).base64,
@@ -278,6 +287,7 @@ const sharedEnvs = {
 // project id (`pulumi config set posthogProjectId <id>`). Each is optional.
 const posthogKey = config.get("posthogKey");
 const posthogPersonalApiKey = config.getSecret("posthog-personal-api-key");
+const polarAccessToken = config.getSecret("polar-access-token");
 const posthogProjectId = config.get("posthogProjectId");
 const posthogEnv =
   posthogKey === undefined
@@ -293,6 +303,10 @@ const googleEnv =
     ? []
     : [{ name: "GOOGLE_CLIENT_ID", value: googleClientId }];
 
+// Polar's environment (apps/web/.env.schema): sandbox until the business
+// is registered (`pulumi config set polarEnvironment production`).
+const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
+
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
   cloudSqlInstance: sql.connectionName,
@@ -306,6 +320,7 @@ const service = cloudRunService("web", {
       value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
     },
     { name: "MCP_URL", value: mcpUrl },
+    { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
     ...googleEnv,
     ...posthogEnv,
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
@@ -420,11 +435,11 @@ const site = configureDomain({
     { host: `mcp.${domain}`, service: service.name },
     { host: `docs.${domain}`, service: docsService.name },
     { host: `dev.${domain}`, service: dev.service.name },
+    // The status page: apps/web proxies this host to GitLab Pages
+    // (apps/web/next.config.ts), so no Pages domain (a Maintainer setting).
+    { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
-  statusDomainVerification,
-  statusPagesTarget:
-    config.get("statusPagesTarget") ?? "gitlab-ai-hackathon.gitlab.io.",
   zone: "wovain-com",
 });
 export const domainMappings = site.mappings;
@@ -572,12 +587,22 @@ const githubMirrorKey = githubMirror();
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
 export const sqlConnectionName = sql.connectionName;
+// `pulumi stack output duoAccounts`: each custom flow's service account.
+export { duoFlowAccounts as duoAccounts } from "./duo.ts";
 
 // What the pipeline reads. The tokens are stack secrets
 // (`pulumi config set --secret <name>`); everything else comes from above.
 ciVariables({
   DEV_SITE_URL: { created: true, protected: true, value: devUrl },
   DOCS_SITE_URL: { created: true, protected: true, value: docsUrl },
+  // Each custom Duo flow's service account (DUO_HEAL_ACCOUNT, ...), as GitLab
+  // named it when infra/duo.ts enabled the flow.
+  ...Object.fromEntries(
+    Object.entries(duoFlowAccounts).map(([key, value]) => [
+      key,
+      { created: true, protected: true, value },
+    ])
+  ),
   GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
   GCP_IMAGE_REPOSITORY: {
     created: true,
@@ -665,6 +690,23 @@ ciVariables({
           created: true,
           protected: false,
           value: posthogKey,
+        },
+      }),
+  // The polar:seed job (.gitlab/ci/polar.yml) builds the Polar catalog with
+  // the same token the app uses.
+  ...(polarAccessToken === undefined
+    ? {}
+    : {
+        POLAR_ACCESS_TOKEN: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: polarAccessToken,
+        },
+        POLAR_ENVIRONMENT: {
+          created: true,
+          protected: true,
+          value: polarEnvironment,
         },
       }),
   // The scout's PostHog query API access (apps/ops/src/posthog.ts).

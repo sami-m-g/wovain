@@ -11,7 +11,7 @@ import { createProductCampaign } from "./campaigns";
 import { autopilotDecide, generateDesign } from "./designs";
 import { researchIdeas } from "./ideas";
 import { createDesignProduct, publishDesignProduct } from "./products";
-import { meter } from "./spend";
+import { assertAutopilot, assertCredits, charge } from "./spend";
 
 // A run takes a seed through the flow. Without autopilot it stops at the
 // design for the merchant's approval; with autopilot, Nemotron picks the
@@ -79,14 +79,17 @@ const execute = async (actor: Actor, runId: string, input: RunInput) => {
     });
     return;
   }
-  if (input.autopilot) {
-    await meter(actor, "llm", { runId });
-  }
   const chosen = input.autopilot
-    ? await pickIdea(
-        actor.core.nemotron,
-        ideas.map((row) => ({ ...row.research, id: row.id })),
-        actor.log
+    ? await charge(
+        actor,
+        "assist",
+        { runId },
+        async () =>
+          await pickIdea(
+            actor.core.nemotron,
+            ideas.map((row) => ({ ...row.research, id: row.id })),
+            actor.log
+          )
       )
     : { idea: top };
   await update(actor, runId, { step: "design" });
@@ -143,8 +146,12 @@ export const getRun = async (actor: Actor, id: string) => {
 };
 
 export const startRun = async (actor: Actor, input: RunInput) => {
-  // Refused before the run is saved, so a merchant over quota sees no run.
-  await meter(actor, "run", { record: false });
+  // Refused before the run is saved, so a merchant who can't afford it (or
+  // asks for autopilot on Free) sees no run.
+  if (input.autopilot) {
+    await assertAutopilot(actor);
+  }
+  await assertCredits(actor, "research");
   const [created] = await actor.db
     .insert(run)
     .values({

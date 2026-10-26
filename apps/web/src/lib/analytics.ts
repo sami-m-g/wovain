@@ -61,4 +61,7 @@ export const analytics: Context["analytics"] = posthog && {
     const sent = captureServerException(error, distinctId, properties);
     after(() => sent);
   },
+  identify: (person) => {
+    after(() => posthog.identifyImmediate(person));
+  },
 };
