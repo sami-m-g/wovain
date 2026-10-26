@@ -174,71 +174,91 @@ export interface Decision extends RunDecision {
 // The only move out of pending_approval: approve or reject, once. A design
 // already decided answers DESIGN_ALREADY_DECIDED, so a second click, a
 // second client or a late retry can't flip it. A merchant's call on a run
-// waiting at its gate resumes that run, in the same transaction: if the
-// resume can't be queued, the decision isn't kept either.
+// waiting at its gate resumes that run once the decision is committed: the
+// resume writes the run row from its own connection, so resuming inside the
+// transaction that holds that row's lock waits on itself forever. If the
+// resume fails, the decision is undone and the run waits at its gate again.
 const commitDecision = async (
   actor: Actor,
   id: string,
   { approve, by, reason }: Decision
-) =>
-  await actor.db.transaction(async (tx) => {
-    const [row] = await tx
-      .update(design)
-      .set({
-        decidedBy: by,
-        decisionReason: reason ?? null,
-        status: approve ? "approved" : "rejected",
-      })
-      .where(
-        and(
-          eq(design.id, id),
-          eq(design.userId, actor.userId),
-          eq(design.status, "pending_approval")
+) => {
+  const { row: decided, waitingRunId } = await actor.db.transaction(
+    async (tx) => {
+      const [row] = await tx
+        .update(design)
+        .set({
+          decidedBy: by,
+          decisionReason: reason ?? null,
+          status: approve ? "approved" : "rejected",
+        })
+        .where(
+          and(
+            eq(design.id, id),
+            eq(design.userId, actor.userId),
+            eq(design.status, "pending_approval")
+          )
         )
-      )
-      .returning();
-    if (row !== undefined && !approve) {
-      await track(actor, "design_rejected", {
-        decided_by: by,
-        design_id: row.id,
-        reason: reason ?? null,
-        run_id: row.runId,
-      });
-    }
-    if (row === undefined) {
-      // Read inside the transaction: it holds the connection.
-      const current = await tx.query.design.findFirst({
-        where: { id, userId: actor.userId },
-      });
-      if (current === undefined) {
-        throw notFound.design({ id });
+        .returning();
+      if (row !== undefined && !approve) {
+        await track(actor, "design_rejected", {
+          decided_by: by,
+          design_id: row.id,
+          reason: reason ?? null,
+          run_id: row.runId,
+        });
       }
-      throw designAlreadyDecided({
-        designId: current.id,
-        status: current.status === "approved" ? "approved" : "rejected",
-      });
+      if (row === undefined) {
+        // Read inside the transaction: it holds the connection.
+        const current = await tx.query.design.findFirst({
+          where: { id, userId: actor.userId },
+        });
+        if (current === undefined) {
+          throw notFound.design({ id });
+        }
+        throw designAlreadyDecided({
+          designId: current.id,
+          status: current.status === "approved" ? "approved" : "rejected",
+        });
+      }
+      if (by !== "merchant" || row.runId === null) {
+        return { row, waitingRunId: undefined };
+      }
+      if (actor.runs === undefined) {
+        throw new Error("No run engine to resume the run");
+      }
+      const [waiting] = await tx
+        .update(run)
+        .set({ status: "running", step: approve ? "approved" : "rejected" })
+        .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
+        .returning({ id: run.id });
+      return { row, waitingRunId: waiting?.id };
     }
-    if (by !== "merchant" || row.runId === null) {
-      return row;
-    }
-    const [waiting] = await tx
-      .update(run)
-      .set({ status: "running", step: approve ? "approved" : "rejected" })
-      .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
-      .returning({ id: run.id });
-    if (waiting === undefined) {
-      return row;
-    }
-    if (actor.runs === undefined) {
-      throw new Error("No run engine to resume the run");
-    }
-    try {
-      await actor.runs.resume(waiting.id, { approve, reason });
-    } catch (error) {
-      throw runNotWaiting(waiting.id, error);
-    }
-    return row;
-  });
+  );
+  if (waitingRunId === undefined || actor.runs === undefined) {
+    return decided;
+  }
+  try {
+    await actor.runs.resume(waitingRunId, { approve, reason });
+  } catch (error) {
+    await actor.db.transaction(async (tx) => {
+      await tx
+        .update(design)
+        .set({
+          decidedBy: null,
+          decisionReason: null,
+          status: "pending_approval",
+        })
+        .where(eq(design.id, decided.id));
+      await tx
+        .update(run)
+        .set({ status: "awaiting_approval", step: "approval" })
+        .where(eq(run.id, waitingRunId));
+    });
+    throw runNotWaiting(waitingRunId, error);
+  }
+  return decided;
+};
 
 // The merchant's call teaches the agents their taste (@wovain/core/taste).
 // Memory is a nicety: a failed write never fails the decision.
