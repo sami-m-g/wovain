@@ -29,6 +29,9 @@ import { fromRoot } from "./root.ts";
 const mode = process.argv[2] === "rollback" ? "rollback" : "verify";
 const PROBE_PATHS = ["/", "/api/auth/ok", "/api/checkout/quote"];
 const PROBE_TIMEOUT_MS = 10_000;
+// A new revision's first request on each path loads its routes (about 17 s
+// on wovain-web), so the probes start after one warm-up request per path.
+const WARMUP_TIMEOUT_MS = 60_000;
 
 const { env, gitlab, google } = opsContext();
 const service = ENV.CLOUD_RUN_SERVICE ?? "wovain-web";
@@ -44,11 +47,11 @@ const log = (line: string) => {
   audit.push(`- ${line}`);
 };
 
-const status = async (url: string) => {
+const status = async (url: string, timeoutMs = PROBE_TIMEOUT_MS) => {
   try {
     const response = await fetch(url, {
       redirect: "manual",
-      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     return response.status;
   } catch {
@@ -105,6 +108,13 @@ const verify = async () => {
   log(
     `canary ${canary.revision} at ${canary.percent}% (${canary.uri}), stable ${stable.revision} at ${stable.percent}%`
   );
+  const warmup = await Promise.all(
+    PROBE_PATHS.map(
+      async (path) =>
+        `${path} ${await status(new URL(path, canary.uri).href, WARMUP_TIMEOUT_MS)}`
+    )
+  );
+  log(`warm-up: ${warmup.join(", ")}`);
   const windowMs = (ENV.CANARY_WINDOW_S ?? 600) * 1000;
   const intervalMs = (ENV.CANARY_INTERVAL_S ?? 30) * 1000;
   const start = new Date();
