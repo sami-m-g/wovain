@@ -358,9 +358,14 @@ const service = cloudRunService("web", {
   ],
   location: region,
   maxInstances: 2,
+  // Mastra's agents run in-process: 512Mi ran out on 2026-10-26.
+  memory: "1Gi",
+  // One warm instance, so a visitor rarely waits for a cold start.
+  minInstances: 1,
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
+  startupCpuBoost: true,
   // Inngest calls /api/inngest once per run step; the slowest (a design:
   // brief, fal art, judge) needs more than Cloud Run's 300 s default.
   timeout: "900s",

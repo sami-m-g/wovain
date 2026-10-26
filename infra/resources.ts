@@ -56,6 +56,13 @@ interface ServiceArgs {
   dependsOn: pulumi.Input<pulumi.Resource>[];
   // The longest a request may take ("900s"); Cloud Run's 300 s if unset.
   timeout?: string;
+  // The instance's memory limit; 512Mi if unset. One vCPU allows up to 4Gi.
+  memory?: string;
+  // Warm instances for the whole service. Service-level, so the canary split
+  // shares them and a tagged revision with no traffic gets none. 0 if unset.
+  minInstances?: number;
+  // Extra CPU while an instance starts, for shorter cold starts.
+  startupCpuBoost?: boolean;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
@@ -75,6 +82,10 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
       invokerIamDisabled: true,
       location: args.location,
       name: args.name,
+      scaling:
+        args.minInstances === undefined
+          ? undefined
+          : { minInstanceCount: args.minInstances },
       template: {
         containers: [
           {
@@ -83,7 +94,8 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
             ports: { containerPort: args.port },
             resources: {
               cpuIdle: true,
-              limits: { cpu: "1", memory: "512Mi" },
+              limits: { cpu: "1", memory: args.memory ?? "512Mi" },
+              startupCpuBoost: args.startupCpuBoost,
             },
             volumeMounts:
               sql === undefined
