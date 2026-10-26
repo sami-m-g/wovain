@@ -226,7 +226,10 @@ const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
 // consumer would also delete its triggers.
 // The create needs a pinned version, and its input has only pinnedVersion
 // (n.n.n, a released one): pinnedVersionPrefix is on the update alone. The
-// version is the one the catalog sync last published (mapping.json).
+// version is the one the catalog sync last published (mapping.json). It is
+// fixed when the consumer is created: ignoreChanges keeps an existing consumer
+// on its version when a later sync publishes a newer one, so moving a consumer
+// to a new version is done in AI Catalog (or by re-enabling the item).
 const CREATE_CONSUMER =
   "aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersion: $version, target: { projectId: $projectId } }) { errors itemConsumer { id } }";
 const ENABLE = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!, $version: AiCatalogPinnedVersion!) { consumer: ${CREATE_CONSUMER} }`;
@@ -304,12 +307,15 @@ export const duoFlowAccounts: Record<string, pulumi.Output<string>> = {};
 // permission" and no trigger.
 for (const f of customFlows) {
   const synced = mapping.flows?.[f.file];
-  const itemId = synced?.catalog_id;
-  const version = synced?.latest_sync?.catalog_version;
-  if (itemId === undefined || version === undefined) {
+  if (synced === undefined) {
     // Not synced yet: the next pipeline on main syncs it and records its id.
     continue;
   }
+  const itemId = synced.catalog_id;
+  const version = must(
+    synced.latest_sync?.catalog_version,
+    `catalog version of ${f.file} in mapping.json`
+  );
   const trigger = flowTrigger(f.name, {
     ...f,
     consumerId: enableFlow(`${f.name}-consumer`, itemId, version),
@@ -325,11 +331,14 @@ for (const f of customFlows) {
 // (ignoreChanges): with forceReplace, any change would re-create it.
 for (const a of customAgents) {
   const synced = mapping.agents?.[a.file];
-  const itemId = synced?.catalog_id;
-  const version = synced?.latest_sync?.catalog_version;
-  if (itemId === undefined || version === undefined) {
+  if (synced === undefined) {
     continue;
   }
+  const itemId = synced.catalog_id;
+  const version = must(
+    synced.latest_sync?.catalog_version,
+    `catalog version of ${a.file} in mapping.json`
+  );
   const create = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!, $version: AiCatalogPinnedVersion!) { ${CREATE_CONSUMER} }`;
   new graphql.Mutation(
     a.name,
