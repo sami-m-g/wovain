@@ -108,5 +108,3 @@ export const createCloudRun = (options: {
     },
   };
 };
-
-export type CloudRun = ReturnType<typeof createCloudRun>;

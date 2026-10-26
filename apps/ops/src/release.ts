@@ -24,7 +24,7 @@ const GUARD_MIN_REQUESTS = 20;
 const GUARD_MAX_ERROR_RATE = 0.05;
 const GUARD_MAX_EXCEPTIONS = 20;
 // What a degradation is blamed on: a change in the last 2 hours.
-export const GUARD_WINDOW_MS = 2 * HOUR_MS;
+const GUARD_WINDOW_MS = 2 * HOUR_MS;
 // One automatic action an hour, three a day.
 const COOLDOWN_MS = HOUR_MS;
 const MAX_ACTIONS_PER_DAY = 3;
@@ -36,7 +36,7 @@ export interface Health {
   errors: number;
 }
 
-export const errorRate = ({ errors, requests }: Health) =>
+const errorRate = ({ errors, requests }: Health) =>
   requests === 0 ? 0 : errors / requests;
 
 export interface Probe {
