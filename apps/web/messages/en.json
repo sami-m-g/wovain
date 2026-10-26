@@ -161,8 +161,6 @@
     ],
     "heroCta": "Start a drop",
     "demo": {
-      "example": "Example",
-      "caption": "One drop, from brief to paused campaign.",
       "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear on tee blanks with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
       "pause": "Pause the example",
       "play": "Play the example",
@@ -194,7 +192,8 @@
         "body": "Line drawings for people who grow things in small places. Spring capsule, printed to order.",
         "cta": "Shop now"
       },
-      "paused": "Campaign: Paused"
+      "paused": "Campaign: Paused",
+      "initials": "YL"
     },
     "results": {
       "title": "Listed, advertised, counted",

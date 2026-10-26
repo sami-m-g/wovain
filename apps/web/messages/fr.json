@@ -161,8 +161,6 @@
     ],
     "heroCta": "Lancer un drop",
     "demo": {
-      "example": "Exemple",
-      "caption": "Un drop, du brief à la campagne en pause.",
       "alt": "Un exemple de drop dans wovain. Un brief d'une ligne est saisi. Trois idées de tendances apparaissent, chacune avec son score et ses indices. Quatre designs apparaissent sur des t-shirts vierges avec leur contrôle d'impression, et le designer en approuve un. Il devient un produit masqué sur Fourthwall, avec son prix et son bénéfice. Un aperçu de publicité Meta apparaît, et la campagne est créée en pause.",
       "pause": "Mettre l'exemple en pause",
       "play": "Lire l'exemple",
@@ -194,7 +192,8 @@
         "body": "Des dessins au trait pour ceux qui font pousser des choses dans de petits espaces. Capsule de printemps, imprimée à la demande.",
         "cta": "Acheter"
       },
-      "paused": "Campagne : en pause"
+      "paused": "Campagne : en pause",
+      "initials": "VL"
     },
     "results": {
       "title": "En vente, en pub, mesuré",
