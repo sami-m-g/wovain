@@ -48,6 +48,10 @@ export const SetupChecklist = () => {
   }
   const connected = (provider: string) =>
     connections.data.some((item) => item.provider === provider);
+  // What a drop needs that isn't connected yet, in the order the run uses it.
+  const missing = (["fal", "fourthwall", "meta"] as const).filter(
+    (provider) => !connected(provider)
+  );
   const items = [
     {
       done: connected("fourthwall"),
@@ -115,6 +119,22 @@ export const SetupChecklist = () => {
                     <ItemDescription className="line-clamp-none">
                       {t(`${item.key}.body`)}
                     </ItemDescription>
+                    {item.key === "drop" && missing.length > 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        {t("missing")}{" "}
+                        {missing.map((provider, position) => (
+                          <span key={provider}>
+                            {position > 0 ? ", " : null}
+                            <Link
+                              className="text-foreground font-medium underline underline-offset-3"
+                              href="/dashboard/connections"
+                            >
+                              {t(`needs.${provider}`)}
+                            </Link>
+                          </span>
+                        ))}
+                      </p>
+                    ) : null}
                   </ItemContent>
                   {item.done ? null : (
                     <ItemActions className="max-sm:ms-10">

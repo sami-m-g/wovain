@@ -361,8 +361,14 @@
       },
       "drop": {
         "title": "Start your first drop",
-        "body": "One sentence about who it's for. Research and designs work right away.",
+        "body": "One sentence about who it's for. wovain researches trends, then draws designs with your fal account. Fourthwall publishes them and Meta runs the ads.",
         "action": "Start"
+      },
+      "missing": "Still to connect:",
+      "needs": {
+        "fal": "fal, to draw designs",
+        "fourthwall": "Fourthwall, to publish",
+        "meta": "Meta, for ads"
       },
       "lead": "Three steps, then wovain can take a brief all the way to a paused campaign.",
       "next": "Next"
@@ -492,8 +498,25 @@
       "variants": "Ad variants",
       "open": "Open in Ads Manager",
       "another": "Start another drop",
-      "history": "See all runs",
-      "autopilotFailed": "Autopilot stopped during {stage}. Open the steps to pick it up."
+      "history": "See all runs"
+    },
+    "failed": {
+      "title": "The drop stopped during {stage}",
+      "notConnected": "{service} isn't connected, so wovain couldn't finish this step. Connect it, then try again.",
+      "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
+      "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
+      "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
+      "details": "Details: {message}",
+      "connect": "Connect {service}",
+      "retry": "Try again",
+      "retrying": "Starting again…",
+      "another": "Write a new brief"
+    },
+    "noIdeas": {
+      "title": "No ideas this time",
+      "body": "Research came back empty for this brief. Try again, or write it differently.",
+      "retry": "Try again",
+      "another": "Write a new brief"
     },
     "working": {
       "research": "Researching trends and drafting the first design…",
