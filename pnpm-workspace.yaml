@@ -35,6 +35,7 @@ catalog:
   "@orpc/zod": ^1.16.1
   "@orpc/tanstack-query": ^1.16.1
   better-auth: 1.7.12
+  jose: ^6.2.13
   "@better-auth-ui/core": ^1.7.31
   "@better-auth-ui/react": ^1.7.31
   "@better-auth-ui/locales": ^1.7.31

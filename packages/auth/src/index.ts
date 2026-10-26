@@ -16,6 +16,7 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins";
 import { log } from "evlog";
+import { decodeJwt } from "jose";
 
 export interface AuthConfig {
   BETTER_AUTH_URL: string;
@@ -75,6 +76,77 @@ export interface AuthAnalytics {
   }) => Promise<void>;
   identify?: BillingAnalytics["identify"];
 }
+
+// The email and its verification in a Google ID token. The token comes
+// straight from Google's token endpoint in the OAuth callback, which Better
+// Auth has already validated, so it is only decoded here.
+const googleVerifiedEmail = (
+  idToken: string | null | undefined
+): string | undefined => {
+  let claims: Record<string, unknown> = {};
+  try {
+    claims = idToken ? decodeJwt(idToken) : {};
+  } catch {
+    // Not a JWT: no claims to trust.
+  }
+  const { email, email_verified: verified } = claims;
+  return typeof email === "string" && verified === true ? email : undefined;
+};
+
+/**
+ * Marks a user's email verified when a Google account joins them and Google
+ * verified that same email. Better Auth already does this when Google links
+ * at sign-in, but not when a signed-in merchant connects Google from Account
+ * settings (linkSocial). Google isn't a trusted provider and different emails
+ * can't link, so Better Auth only gets here with Google's verified claim for
+ * the user's own address; the token's claims are checked again regardless.
+ */
+export const verifyEmailFromGoogle = async (
+  account: {
+    idToken?: string | null | undefined;
+    providerId: string;
+    userId: string;
+  },
+  context: GenericEndpointContext | null
+): Promise<void> => {
+  if (account.providerId !== "google" || context === null) {
+    return;
+  }
+  const email = googleVerifiedEmail(account.idToken);
+  if (email === undefined) {
+    return;
+  }
+  const { internalAdapter } = context.context;
+  const user = await internalAdapter.findUserById(account.userId);
+  if (
+    user === null ||
+    user.emailVerified ||
+    user.email.toLowerCase() !== email.toLowerCase()
+  ) {
+    return;
+  }
+  await internalAdapter.updateUser(user.id, { emailVerified: true });
+  log.info({ auth: { emailVerifiedBy: "google", userId: user.id } });
+};
+
+const DASHBOARD = "/dashboard";
+
+/**
+ * Sends a verification link without a destination of its own to the
+ * dashboard. Better Auth points it at "/" when the request named none, as a
+ * password sign-in refused for an unverified email does: the sign-in can't
+ * name one, since a successful sign-in would then redirect the browser and
+ * cut short an OAuth authorization (ChatGPT) or a second factor.
+ */
+const landOnDashboard = (url: string): string => {
+  const link = new URL(url);
+  const callback = link.searchParams.get("callbackURL");
+  if (callback !== null && callback !== "/") {
+    return url;
+  }
+  link.searchParams.set("callbackURL", DASHBOARD);
+  return link.href;
+};
 
 // How a new user signed up, read from the endpoint that created them:
 // email and password, or the OAuth provider's callback (/callback/google).
@@ -168,23 +240,32 @@ export const createAuth = (
   analytics?: AuthAnalytics,
   polar?: PolarCore
 ) => {
-  // Better Auth sends these in the background, so response timing doesn't
-  // reveal whether an account exists; a failed send is logged as an error
-  // (and so reaches error tracking), not thrown.
-  const send = async (mail: Mail) => {
+  // Better Auth awaits these (no advanced.backgroundTasks), so on Cloud Run
+  // the send finishes while the request still has CPU. A failed send is
+  // logged as an error with the user's id, so error tracking reports it for
+  // that user (apps/web/src/lib/error-tracking.ts); it is never thrown: the
+  // sign-up or reset answers the same either way.
+  const send = async (mail: Mail, userId: string) => {
     try {
       await mailer(mail);
     } catch (error) {
       log.error({
         email: { kind: mail.message.kind },
         error: errorFields(error, "EMAIL_SEND_FAILED"),
+        userId,
       });
     }
   };
   return betterAuth({
-    // A Google sign-in joins the account with the same email, but only when
-    // Google reports that email as verified (Better Auth's default; no
-    // trustedProviders, which would skip that check).
+    // A Google sign-in joins the user with the same email only when Google
+    // verified that email and so did the user (Better Auth's
+    // requireLocalEmailVerified, on by default): otherwise anyone could
+    // pre-register a victim's address with a password and keep access once
+    // the victim signs in with Google. Google stays untrusted, since
+    // trustedProviders would skip Google's own email_verified check. A user
+    // whose email isn't verified yet signs in with their password and
+    // connects Google from Account settings, which verifies the email
+    // (verifyEmailFromGoogle).
     account: { accountLinking: { enabled: true } },
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(database, {
@@ -195,6 +276,11 @@ export const createAuth = (
     // sends sign_up for every new user, whichever way they signed up (email,
     // Google, also from ChatGPT's authorization).
     databaseHooks: {
+      account: {
+        create: {
+          after: (account, context) => verifyEmailFromGoogle(account, context),
+        },
+      },
       user: {
         create: {
           // Awaited, so the event is sent before the sign-up answers.
@@ -220,26 +306,43 @@ export const createAuth = (
     },
     // The JWT plugin's /token clashes with the OAuth token endpoint.
     disabledPaths: ["/token"],
+    // A password account signs in only once its email is verified: sign-up
+    // answers without a session and the app shows "check your email"; the
+    // email's link verifies the address and signs the merchant in
+    // (autoSignInAfterVerification). It also answers a taken email the same
+    // way as a new one, so sign-up doesn't reveal who has an account. Google
+    // accounts arrive verified by Google.
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ url, user }, request) => {
-        await send({
-          locale: localeOf(user, request),
-          message: { kind: "reset", url },
-          to: user.email,
-        });
+        await send(
+          {
+            locale: localeOf(user, request),
+            message: { kind: "reset", url },
+            to: user.email,
+          },
+          user.id
+        );
       },
     },
+    // The link is <BETTER_AUTH_URL>/api/auth/verify-email, whatever host the
+    // request came in on. A sign-in with an unverified email sends a fresh
+    // link before it's refused (EMAIL_NOT_VERIFIED).
     emailVerification: {
       autoSignInAfterVerification: true,
+      sendOnSignIn: true,
       sendOnSignUp: true,
       sendVerificationEmail: async ({ url, user }, request) => {
-        await send({
-          locale: localeOf(user, request),
-          message: { kind: "verify", url },
-          to: user.email,
-        });
+        await send(
+          {
+            locale: localeOf(user, request),
+            message: { kind: "verify", url: landOnDashboard(url) },
+            to: user.email,
+          },
+          user.id
+        );
       },
     },
     logger: authLogger,
@@ -273,6 +376,8 @@ export const createAuth = (
         "/oauth2/register": { max: 5, window: 60 },
         // Polar delivers bursts from a few IPs; the signature guards it.
         "/polar/webhooks": false,
+        // Each one sends an email.
+        "/send-verification-email": { max: 3, window: 60 },
         "/sign-in/email": { max: 5, window: 60 },
         "/sign-up/email": { max: 10, window: 60 * 60 },
       },

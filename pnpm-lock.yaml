@@ -281,6 +281,9 @@ catalogs:
     inngest:
       specifier: ^4.26.0
       version: 4.26.0
+    jose:
+      specifier: ^6.2.13
+      version: 6.2.13
     lucide-react:
       specifier: ^1.61.0
       version: 1.61.0
@@ -860,6 +863,9 @@ importers:
       evlog:
         specifier: 'catalog:'
         version: 2.33.1(@orpc/server@1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0))(ai@7.0.152(zod@4.6.7))(express@5.3.0)(hono@4.13.13)(next@16.4.2(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      jose:
+        specifier: 'catalog:'
+        version: 6.2.13
       zod:
         specifier: 'catalog:'
         version: 4.6.7
