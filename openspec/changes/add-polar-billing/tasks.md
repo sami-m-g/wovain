@@ -12,11 +12,18 @@
 - [x] 2.2 Pricing page, billing page and upgrade screens
 - [x] 2.3 Polar secrets and the manual `polar:seed` CI job
 
-## 3. Before merge
+## 3. Free-only launch
 
-- [ ] 3.1 Lock the plan numbers
-- [ ] 3.2 Run against the Polar sandbox
-- [ ] 3.3 Ship `add-fal-byo-connector`, so the pricing copy is true
-- [ ] 3.4 Confirm the Qloo licence allows commercial use
-- [ ] 3.5 Register the business and configure Polar production
-- [ ] 3.6 Merge, then archive this change
+- [x] 3.1 `billing-paid-plans` flag (off): checkout refuses, paid products archived, pricing shows coming soon
+- [x] 3.2 Existing merchants get Free on first use
+- [x] 3.3 `polar:seed` writes the webhook secret to Secret Manager
+- [ ] 3.4 Swap the flag read onto the typed registry from !121
+
+## 4. Before paid plans
+
+- [ ] 4.1 Lock the plan numbers
+- [ ] 4.2 Run against the Polar sandbox
+- [ ] 4.3 Ship `add-fal-byo-connector`, so the pricing copy is true
+- [ ] 4.4 Confirm the Qloo licence allows commercial use
+- [ ] 4.5 Register the business and configure Polar production
+- [ ] 4.6 Archive this change

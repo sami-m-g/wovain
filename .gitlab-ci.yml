@@ -22,7 +22,8 @@
 # GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID (the migrate jobs' secrets),
 # SITE_URL, DEV_SITE_URL, DOCS_SITE_URL and GITHUB_MIRROR_KEY. Pulumi sets them all
 # (infra/index.ts), as it does the PostHog ones (POSTHOG_PERSONAL_API_KEY,
-# POSTHOG_PROJECT_ID, POSTHOG_TRIGGER_TOKEN); don't edit them in the UI.
+# POSTHOG_PROJECT_ID, POSTHOG_TRIGGER_TOKEN) and Polar's (POLAR_ACCESS_TOKEN,
+# POLAR_ENVIRONMENT); don't edit them in the UI.
 # The ops jobs also read
 # TRUSTED_USERS (who may hand issues to Duo), DUO_<NAME>_ACCOUNT for each
 # custom flow (DUO_HEAL_ACCOUNT; Pulumi sets them from the accounts GitLab
@@ -82,6 +83,7 @@ include:
   - local: .gitlab/ci/ops.yml
   - local: .gitlab/ci/scout.yml
   - local: .gitlab/ci/posthog.yml
+  - local: .gitlab/ci/polar.yml
 
 stages:
   - verify

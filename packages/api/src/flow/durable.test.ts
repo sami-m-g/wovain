@@ -2,8 +2,9 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { ORPCError } from "@orpc/server";
+import { applyGrant } from "@wovain/billing/mirror";
+import { createBilling } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
-import { createSpendPolicy } from "@wovain/core/spend";
 import { fakeNemotron } from "@wovain/core/test-doubles";
 import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
@@ -76,6 +77,15 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
     id: USER_ID,
     name: "Merchant",
   });
+  // Enough credits for every paid step the tests run.
+  await applyGrant(db as unknown as Database, {
+    grantId: "grant_plan",
+    periodKey: "2026-10-01T00:00:00Z",
+    rollover: false,
+    source: "plan",
+    units: 1000,
+    userId: USER_ID,
+  });
   const { ask } = fakeNemotron({
     variants: [
       { angle: "humor", headline: "Not today", message: "For quiet nights." },
@@ -84,12 +94,6 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
   });
   const core = {
     nemotron: ask,
-    spend: createSpendPolicy({
-      SPEND_DAILY_CAP_USD: 10,
-      SPEND_IMAGES_PER_RUN: 3,
-      SPEND_RUNS_PER_DAY: 3,
-      WOVAIN_ALLOWED_EMAILS: MERCHANT,
-    }),
     upstream: {
       session: async (
         provider: ProviderId,
@@ -106,6 +110,10 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
     },
   } as unknown as Core;
   const actor: Actor = {
+    billing: createBilling({
+      BETTER_AUTH_URL: "http://localhost:3000",
+      POLAR_ENVIRONMENT: "sandbox",
+    }),
     core,
     // PGlite speaks the same SQL as node-postgres; only the client differs.
     db: db as unknown as Database,

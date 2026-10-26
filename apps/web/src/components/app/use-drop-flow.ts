@@ -423,6 +423,8 @@ export const useDropFlow = (
     handleAutopilot: setAutopilotDraft,
     handleBrief: setBrief,
     handleBudget: setBudget,
+    // Closes the paywall a refused step opened.
+    handleDismissProblem: () => showProblem(),
     loading: cache.loading,
     picked,
     problem,

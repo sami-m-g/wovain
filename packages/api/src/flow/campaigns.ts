@@ -15,7 +15,7 @@ import { withProvider } from "./connections";
 import { getDesign } from "./designs";
 import { once } from "./once";
 import { getProduct } from "./products";
-import { meter } from "./spend";
+import { charge } from "./spend";
 
 // A published product gets varied ads in a PAUSED Meta campaign: the
 // merchant reviews and starts it in Ads Manager.
@@ -64,22 +64,26 @@ export const createProductCampaign = async (
   const copy = await once(actor, {
     key: `${key}:copy`,
     operation: "ad_copy",
-    perform: async () => {
-      await meter(actor, "llm", { runId });
-      return await withLlmTrace(
-        { distinctId: actor.userId, traceId: runId ?? source.id },
+    perform: async () =>
+      await charge(
+        actor,
+        "assist",
+        { runId },
         async () =>
-          await writeAdCopy(
-            actor.core.nemotron,
-            {
-              description: source.brief.description,
-              idea: source.brief.artPrompt,
-              title: source.brief.title,
-            },
-            actor.log
+          await withLlmTrace(
+            { distinctId: actor.userId, traceId: runId ?? source.id },
+            async () =>
+              await writeAdCopy(
+                actor.core.nemotron,
+                {
+                  description: source.brief.description,
+                  idea: source.brief.artPrompt,
+                  title: source.brief.title,
+                },
+                actor.log
+              )
           )
-      );
-    },
+      ),
     provider: "nebius",
     runId,
   });

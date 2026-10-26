@@ -11,7 +11,7 @@ import { toLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
 
 export const OG_SIZE = { height: 630, width: 1200 };
-const SEAM_HEIGHT = 57;
+const LOCKUP_HEIGHT = 60;
 const MARK_SIZE = 540;
 
 const { light } = PALETTE;
@@ -24,7 +24,7 @@ const brandFile = async (file: string) => {
 
 /**
  * The shared social card, after the brand's OG template: calico ground, the
- * seam lockup, the page's title and line, the mark watermarked on the right
+ * Shuttle lockup, the page's title and line, the mark watermarked on the right
  * and a cochineal selvedge along the bottom.
  */
 export const ogImage = async ({
@@ -34,12 +34,12 @@ export const ogImage = async ({
   title: string;
   subtitle: string;
 }) => {
-  const [seam, mark] = await Promise.all([
-    brandFile(BRAND_ASSETS.seam.light),
+  const [lockup, mark] = await Promise.all([
+    brandFile(BRAND_ASSETS.lockup.light),
     brandFile(BRAND_ASSETS.mark),
   ]);
-  const seamWidth = Math.round(
-    (BRAND_ASSETS.seam.width / BRAND_ASSETS.seam.height) * SEAM_HEIGHT
+  const lockupWidth = Math.round(
+    (BRAND_ASSETS.lockup.width / BRAND_ASSETS.lockup.height) * LOCKUP_HEIGHT
   );
   return new ImageResponse(
     <div
@@ -64,7 +64,7 @@ export const ogImage = async ({
         width={MARK_SIZE}
       />
       {/* oxlint-disable-next-line nextjs/no-img-element -- next/og renders plain img */}
-      <img alt="" height={SEAM_HEIGHT} src={seam} width={seamWidth} />
+      <img alt="" height={LOCKUP_HEIGHT} src={lockup} width={lockupWidth} />
       <div
         style={{
           display: "flex",

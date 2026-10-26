@@ -1,3 +1,4 @@
+import { createBilling } from "@wovain/billing/service";
 import { createCore } from "@wovain/core/core";
 import { createMerchantMemory } from "@wovain/core/taste";
 import { createDb } from "@wovain/db";
@@ -24,12 +25,8 @@ const env = z
     QLOO_API_KEY: z.string().optional(),
     QLOO_API_URL: z.url().default("https://hackathon.api.qloo.com"),
     SCORER_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(1),
-    SPEND_DAILY_CAP_USD: z.coerce.number().default(5),
-    SPEND_IMAGES_PER_RUN: z.coerce.number().default(4),
-    SPEND_RUNS_PER_DAY: z.coerce.number().default(2),
     TAVILY_API_KEY: z.string().optional(),
     TOKEN_ENCRYPTION_KEY: z.string().min(44),
-    WOVAIN_ALLOWED_EMAILS: z.string().optional(),
   })
   .parse(process.env);
 
@@ -40,6 +37,11 @@ export const mastra = createMastra({
   cloudTrace: false,
   inngest: new Inngest({ id: INNGEST_APP_ID }),
   services: {
+    // No Polar token: Studio never charges or checks out.
+    billing: createBilling({
+      BETTER_AUTH_URL: env.BETTER_AUTH_URL,
+      POLAR_ENVIRONMENT: "sandbox",
+    }),
     core: createCore(env, { memory: createMerchantMemory(storage) }),
     db,
     mailer: createMailer({

@@ -24,6 +24,7 @@
     "@modelcontextprotocol/server": "catalog:",
     "@orpc/server": "catalog:",
     "@wovain/auth": "workspace:*",
+    "@wovain/billing": "workspace:*",
     "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
     "@wovain/email": "workspace:*",

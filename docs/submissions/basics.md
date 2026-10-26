@@ -115,6 +115,8 @@ YouTube or Vimeo, public or unlisted-but-viewable (the rules require this, not a
 
 ### Testing instructions (for the "additional info" box, if the form has one)
 
+Paste-ready block, per-hackathon notes and the pre-flight checklist for the shared judge account: [testing.md](testing.md).
+
 Judges will not clone the code. To try it: open <https://wovain.com>, sign up with email and password, connect Fourthwall and Meta on the connections page, enter a seed and follow the flow. Without a Fourthwall shop and a Meta ad account the flow stops at the connection step. In ChatGPT, add a connector with `https://mcp.wovain.com/api/mcp`, sign in and approve access. Every Meta object is created paused. Provide a test account here only if you create one for judges; do not paste real credentials into the repo.
 
 ### Other form items

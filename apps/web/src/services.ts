@@ -1,6 +1,7 @@
 import { createRunEngine } from "@wovain/api/workflows/engine";
 import { createMastraStorage } from "@wovain/api/workflows/storage";
 import { createAuth } from "@wovain/auth";
+import { createBilling } from "@wovain/billing/service";
 import { createCore } from "@wovain/core/core";
 import { createMerchantMemory } from "@wovain/core/taste";
 import { createDb } from "@wovain/db";
@@ -16,7 +17,8 @@ export const mailer = createMailer({
   from: ENV.EMAIL_FROM,
   siteUrl: ENV.BETTER_AUTH_URL,
 });
-export const auth = createAuth(ENV, db, mailer, analytics);
+export const billing = createBilling(ENV, isFlagOn);
+export const auth = createAuth(ENV, db, mailer, analytics, billing.polar);
 
 // Mastra's store (snapshots, memory, scores, traces) on the same database,
 // in its own schema; the merchants' brand and taste memory lives there.
@@ -30,6 +32,6 @@ export const { handler: inngestHandler, runs } = createRunEngine({
   // Cloud Run sets K_SERVICE: there, traces go to Cloud Trace.
   cloudTrace: process.env["K_SERVICE"] !== undefined,
   mastraFor: (userId) => isFlagOn(MASTRA_RUNS, userId),
-  services: { analytics, core, db, mailer },
+  services: { analytics, billing, core, db, mailer },
   storage,
 });

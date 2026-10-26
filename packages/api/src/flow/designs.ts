@@ -13,7 +13,7 @@ import { requireFal, withProvider } from "./connections";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
 import { once } from "./once";
-import { meter } from "./spend";
+import { charge } from "./spend";
 import { designAlreadyDecided, runNotWaiting } from "./transitions";
 
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
@@ -92,14 +92,20 @@ export const generateDesign = async (
       const requested = await once(actor, {
         key: `${key}:art`,
         operation: "submit_art",
-        perform: async () => {
-          await meter(actor, "image", { runId });
-          return await withProvider(
+        // The design's credits pay for the art: charged once, when fal is
+        // asked to draw, and given back if the request fails.
+        perform: async () =>
+          await charge(
             actor,
-            "fal",
-            async (call) => await artist(call).submit(drafted, actor.log)
-          );
-        },
+            "design",
+            { runId },
+            async () =>
+              await withProvider(
+                actor,
+                "fal",
+                async (call) => await artist(call).submit(drafted, actor.log)
+              )
+          ),
         provider: "fal",
         runId,
       });
@@ -281,15 +287,20 @@ export const autopilotDecide = async (
     return current;
   }
   const source = await getIdea(actor, current.ideaId);
-  await meter(actor, "llm", { runId: current.runId });
-  const decision = await reviewDesign(
-    actor.core.nemotron,
-    {
-      brief: current.brief,
-      idea: source.theme,
-      judgment: current.judgment,
-    },
-    actor.log
+  const decision = await charge(
+    actor,
+    "assist",
+    { runId: current.runId },
+    async () =>
+      await reviewDesign(
+        actor.core.nemotron,
+        {
+          brief: current.brief,
+          idea: source.theme,
+          judgment: current.judgment,
+        },
+        actor.log
+      )
   );
   return await decideDesign(actor, current.id, {
     approve: decision.approve,

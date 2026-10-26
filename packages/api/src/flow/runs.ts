@@ -14,7 +14,7 @@ import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { createDesignProduct, publishDesignProduct } from "./products";
-import { meter } from "./spend";
+import { assertAutopilot, assertCredits, charge } from "./spend";
 
 // A run takes a seed through the flow: research → design → approval →
 // product → publish → PAUSED campaign. The request only saves the run and
@@ -51,11 +51,16 @@ export const researchStep = async (
   if (!input.autopilot) {
     return { ideaId: top.id };
   }
-  await meter(actor, "llm", { runId });
-  const chosen = await pickIdea(
-    actor.core.nemotron,
-    ideas.map((row) => ({ ...row.research, id: row.id })),
-    actor.log
+  const chosen = await charge(
+    actor,
+    "assist",
+    { runId },
+    async () =>
+      await pickIdea(
+        actor.core.nemotron,
+        ideas.map((row) => ({ ...row.research, id: row.id })),
+        actor.log
+      )
   );
   return { ideaId: chosen.idea.id };
 };
@@ -289,9 +294,12 @@ export const startRun = async (actor: Actor, input: RunInput) => {
   if (actor.runs === undefined) {
     throw new Error("No run engine to start the run");
   }
-  // Refused before the run is saved, so a merchant over quota (or without
-  // a fal key to draw with) sees no run.
-  await meter(actor, "run", { record: false });
+  // Refused before the run is saved, so a merchant who can't afford it, asks
+  // for autopilot on Free or has no fal key to draw with sees no run.
+  if (input.autopilot) {
+    await assertAutopilot(actor);
+  }
+  await assertCredits(actor, "research");
   await requireFal(actor);
   const [created] = await actor.db
     .insert(run)

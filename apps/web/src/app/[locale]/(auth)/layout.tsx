@@ -55,7 +55,7 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
       <div className="flex flex-col">
         <header className="flex h-16 items-center justify-between gap-3 px-4 sm:px-8">
           <Link aria-label={common("homeLabel")} href="/">
-            <Logo height={30} variant="seam" />
+            <Logo height={32} intro />
           </Link>
           <div className="flex items-center gap-2">
             <LocaleSwitcher />

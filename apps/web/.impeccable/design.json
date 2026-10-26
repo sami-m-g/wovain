@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T19:00:00Z",
+  "generatedAt": "2026-10-26T13:19:21+00:00",
   "title": "Design System: wovain",
   "extensions": {
     "colorMeta": {
@@ -182,6 +182,10 @@
       "night-cochineal": {
         "role": "primary",
         "displayName": "Night Cochineal (dark accent)"
+      },
+      "cochineal-lift": {
+        "displayName": "Cochineal Lift",
+        "role": "The Shuttle tile on dark grounds only (3.4:1 on night plum)."
       }
     },
     "typographyMeta": {
@@ -205,7 +209,10 @@
         "displayName": "Body",
         "purpose": "Reading text and leads, 60 to 65ch."
       },
-      "ui": { "displayName": "UI", "purpose": "Buttons, nav, labels." },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Buttons, nav, labels."
+      },
       "figures": {
         "displayName": "Figures",
         "purpose": "Money, scores, counts; tabular, slashed zero."
@@ -257,12 +264,31 @@
         "name": "reduced-motion",
         "value": "durations collapse to 0.01ms",
         "purpose": "prefers-reduced-motion: reduce."
+      },
+      {
+        "name": "shuttle-intro",
+        "value": "900ms ease-out-expo: the shuttle darts 12 units up its 24 degree axis from opacity 0; the thread draws (pathLength 0 to 1) after 120ms",
+        "purpose": "One-time logo intro (`<Logo intro/>`)."
+      },
+      {
+        "name": "shuttle-pass",
+        "value": "700ms ease-in-out, mirrored infinitely: the shuttle travels +/-3.6 units along its axis while the thread feeds (pathLength 0.75 to 1)",
+        "purpose": "The loading state (`ShuttleLoader`). Reduced motion: an 800ms opacity pulse; the intro becomes a 200ms fade."
       }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
     ]
   },
   "components": [
@@ -388,7 +414,8 @@
       "**Do** show product evidence (price math, status, \"paused\") on the hang tag, and label example data as an example.",
       "**Do** use the hairline for every resting border, and draw selection as the same line heavier or in cochineal.",
       "**Do** keep motion to the expo ease-out (`cubic-bezier(0.16, 1, 0.3, 1)`) and let `prefers-reduced-motion` collapse it.",
-      "**Do** render the logo through `<Logo/>` and the files in `public/brand/`."
+      "**Do** render the logo through `<Logo/>` and the files in `public/brand/`.",
+      "**Do** use the Shuttle only through `<Logo/>`, `ShuttleMark` and `ShuttleLoader`; never rotate, recolour or crop it."
     ],
     "donts": [
       "**Don't** return to the \"printer's ink swatch book\" world (swatches, ink chips, print-only devices).",

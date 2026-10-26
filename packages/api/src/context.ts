@@ -1,4 +1,5 @@
 import type { Session } from "@wovain/auth";
+import type { Billing } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
 import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
@@ -13,6 +14,8 @@ export interface Context extends Partial<EvlogOrpcContext> {
   // Product analytics and error tracking (PostHog in apps/web), keyed by
   // user id; absent when the app has no PostHog key.
   analytics?: Analytics | undefined;
+  // Polar: checkout, the customer portal and usage reports.
+  billing: Billing;
   core: Core;
   db: Database;
   mailer: Mailer;

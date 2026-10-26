@@ -1,3 +1,5 @@
+import type { BillingEvent } from "@wovain/billing/analytics";
+import type { Billing } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
 import type { Logger } from "@wovain/core/log";
 import type { Database } from "@wovain/db";
@@ -7,7 +9,9 @@ import { defineError } from "evlog";
 // The seller funnel's server-side steps, as PostHog event names: sign_up
 // comes from Better Auth when it creates a user (packages/auth), the rest from
 // procedures. The browser adds landing_cta_clicked (apps/web).
+// Billing adds its revenue and usage events (packages/billing/src/analytics.ts).
 export type FunnelEvent =
+  | BillingEvent
   | "campaign_created"
   | "connect_provider"
   | "design_approved"
@@ -32,6 +36,13 @@ export interface Analytics {
     event: FunnelEvent | RunEvent;
     properties?: Record<string, unknown>;
   }) => Promise<void>;
+  // Sets person properties (`$set`), such as the merchant's plan.
+  identify?:
+    | ((person: {
+        distinctId: string;
+        properties: Record<string, unknown>;
+      }) => void)
+    | undefined;
   // An unexpected procedure error, as a `$exception` event. Without a
   // distinct id, the event is anonymous.
   captureException: (
@@ -72,6 +83,7 @@ export interface RunEngine {
 // own steps, which never start or resume runs.
 export interface Actor {
   analytics?: Analytics | undefined;
+  billing: Billing;
   core: Core;
   db: Database;
   log?: Logger | undefined;

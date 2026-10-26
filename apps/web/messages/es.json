@@ -28,7 +28,10 @@
     "useCasesDescription": "Cómo diseñadores y marcas pequeñas independientes usan wovain para cápsulas, camisetas gráficas y drops de streetwear en print-on-demand.",
     "guidesTitle": "Guías para marcas en print-on-demand",
     "guidesDescription": "Guías prácticas para marcas independientes en print-on-demand: poner precio a cada pieza para que cada venta deje beneficio y lanzar una cápsula de la idea a los anuncios.",
-    "insightsTitle": "Estadísticas"
+    "insightsTitle": "Estadísticas",
+    "pricingTitle": "Precios: planes y créditos para tus drops de merch",
+    "pricingDescription": "Empieza gratis con créditos cada mes. Studio, Label y los packs de créditos llegan pronto. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
+    "billingTitle": "Facturación"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -325,7 +328,8 @@
       "newDrop": "Nuevo drop",
       "runs": "Ejecuciones",
       "connections": "Conexiones",
-      "insights": "Estadísticas"
+      "insights": "Estadísticas",
+      "billing": "Facturación"
     },
     "apiStatus": "API",
     "apiOnline": "en línea",
@@ -433,7 +437,7 @@
     "stepsLabel": "Pasos del drop",
     "stepOf": "Paso {current, number} de {total, number}",
     "autopilot": "Piloto automático",
-    "autopilotHint": "wovain elige la idea y aprueba el diseño, luego publica las piezas y prepara la campaña, en pausa.",
+    "autopilotHint": "Nemotron elige la idea y aprueba el diseño; wovain publica y crea la campaña, en pausa.",
     "autopilotRunning": "El piloto automático está gestionando este drop. Puede tardar unos minutos.",
     "back": "Atrás",
     "problem": {
@@ -520,7 +524,10 @@
       "products": "Creando productos en Fourthwall…",
       "publish": "Publicando en Fourthwall…",
       "campaign": "Creando la campaña en pausa en Meta…"
-    }
+    },
+    "autopilotLocked": "El piloto automático viene con Studio y Label. En Free, apruebas cada paso.",
+    "autopilotUpgrade": "Ver planes",
+    "autopilotSoon": "El piloto automático llega pronto con los planes de pago. En Free, apruebas cada paso."
   },
   "NotFound": {
     "title": "Esta página no está aquí",
@@ -658,6 +665,133 @@
       "emptyTitle": "Aún no hay drops",
       "empty": "Empieza un drop; sus ventas, gasto y puntuaciones llegarán aquí.",
       "emptyCta": "Empezar un drop"
+    }
+  },
+  "Billing": {
+    "perMonth": "/ mes",
+    "recommended": "Recomendado",
+    "currentPlan": "Tu plan",
+    "plans": {
+      "free": "Para probar uno o dos drops al mes. Sin tarjeta.",
+      "studio": "Para creadores que lanzan un drop cada semana, con piloto automático.",
+      "label": "Para tiendas con varios drops por semana. Los créditos sin usar se acumulan."
+    },
+    "features": {
+      "credits": "{credits, number} créditos al mes",
+      "drops": "Unos {drops, number} drops al mes",
+      "autopilot": "Piloto automático: wovain elige, aprueba y prepara los anuncios por ti",
+      "manualOnly": "Apruebas cada paso",
+      "rollover": "Los créditos sin usar se acumulan",
+      "reset": "Los créditos se renuevan cada mes"
+    },
+    "pack": {
+      "suffix": "pago único",
+      "body": "{credits, number} créditos extra en cualquier plan. No caducan nunca."
+    },
+    "cta": {
+      "startFree": "Empezar gratis",
+      "choose": "Elegir {plan}",
+      "buyPack": "Comprar {credits, number} créditos"
+    },
+    "manage": "Gestionar facturación",
+    "opening": "Abriendo…",
+    "loading": "Cargando tu plan…",
+    "checkoutError": "El pago no se abrió. Vuelve a intentarlo en un momento.",
+    "portalError": "El portal de facturación no se abrió. Vuelve a intentarlo en un momento.",
+    "disabledNote": "Los pagos aún no están configurados en este servidor, así que aquí no se puede cambiar de plan.",
+    "creditTag": {
+      "title": "Lo que paga un crédito",
+      "subtitle": "Se descuenta al ejecutar un paso y se devuelve si falla",
+      "research": "Investigación de tendencias",
+      "design": "Un diseño",
+      "assist": "Texto de anuncio, o una llamada del piloto automático",
+      "manualDrop": "Un drop que apruebas tú",
+      "autopilotDrop": "Un drop en piloto automático",
+      "credits": "{count, plural, one {# crédito} other {# créditos}}",
+      "footer": "Arte, anuncios y productos se cobran en tus propias cuentas"
+    },
+    "page": {
+      "title": "Facturación",
+      "lead": "Tu plan, los créditos que te quedan y lo que cuesta cada paso.",
+      "planLabel": "Plan",
+      "creditsLabel": "Créditos disponibles",
+      "creditsSplit": "{plan, number} de tu plan · {pack, number} de packs",
+      "renews": "Se renueva el {date}",
+      "ends": "Termina el {date}. Conservas tus créditos hasta entonces.",
+      "pastDue": "Tu último pago no se completó. Actualiza tu tarjeta en Gestionar facturación para mantener tu plan.",
+      "checkoutSuccess": "Gracias, tu pago se completó. Tus créditos llegan en unos segundos.",
+      "plansTitle": "Planes",
+      "packTitle": "¿Necesitas unos créditos más?",
+      "comingSoon": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan cada mes.",
+      "comingSoonRenews": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan el {date}."
+    },
+    "paywall": {
+      "creditsTitle": "No te quedan créditos para este paso",
+      "planTitle": "El piloto automático viene con Studio",
+      "shortBy": "Este paso necesita {needed, number} créditos y tienes {available, number}.",
+      "studioGain": "Studio te da {credits, number} créditos al mes y piloto automático, por {price} al mes. Cancela cuando quieras.",
+      "pack": "Comprar {credits, number} créditos por {price}",
+      "comparePlans": "Comparar planes",
+      "notNow": "Ahora no",
+      "creditsSoonTitle": "Pronto habrá más créditos",
+      "planSoonTitle": "El piloto automático llega pronto con los planes de pago",
+      "freeRefresh": "Tus créditos Free se renuevan cada mes.",
+      "freeRefreshOn": "Tus créditos Free se renuevan el {date}."
+    },
+    "notify": {
+      "comingSoon": "Muy pronto",
+      "button": "Avísame",
+      "thanks": "Gracias, hemos anotado tu interés."
+    }
+  },
+  "Pricing": {
+    "crumb": "Precios",
+    "title": "Paga por los drops que lanzas, no por usuarios",
+    "lead": "Empieza gratis con {credits, number} créditos cada mes. Studio, Label y los packs de créditos llegan pronto. wovain nunca se queda una parte de tus ventas.",
+    "plansTitle": "Planes",
+    "noCut": "Precios en dólares estadounidenses. Free ya está abierto; Studio, Label y los packs de créditos aún no están a la venta.",
+    "yoursTitle": "Lo que pagas en tus propias cuentas",
+    "yoursLead": "Los créditos cubren el trabajo de wovain: la investigación de tendencias y los briefs, revisiones y textos de anuncio de Nemotron. El resto lo pagas directamente, en cuentas tuyas, sin margen de wovain.",
+    "yours": {
+      "fal": {
+        "name": "fal",
+        "body": "El arte se genera en tu cuenta de fal, que te cobra por imagen."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "El gasto en anuncios, que Meta cobra a tu cuenta publicitaria, y solo cuando activas una campaña en pausa."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Los productos y la impresión, pagados con cada venta. Nada que comprar por adelantado."
+      }
+    },
+    "faqTitle": "Preguntas sobre precios",
+    "faq": {
+      "credit": {
+        "question": "¿Qué es un crédito?",
+        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 3, un diseño 2, y un texto de anuncio o una llamada del piloto automático 1, así que un drop que apruebas paso a paso cuesta unos 6 créditos. Si un paso falla, sus créditos vuelven."
+      },
+      "yours": {
+        "question": "¿Qué pago fuera de wovain?",
+        "answer": "El arte, los anuncios y los productos van en tus propias cuentas. fal te cobra el arte, Meta cobra a tu cuenta publicitaria cuando inicias una campaña y Fourthwall descuenta el coste del producto de cada venta."
+      },
+      "cancel": {
+        "question": "¿Puedo cancelar?",
+        "answer": "Sí, cuando quieras, desde Gestionar facturación. Tu plan y sus créditos siguen activos hasta el final del mes pagado y luego vuelves a Free."
+      },
+      "rollover": {
+        "question": "¿Se acumulan los créditos sin usar?",
+        "answer": "En Free, los créditos se renuevan cada mes y los que no usas no se acumulan. Cuando abra Label, sus créditos sin usar se acumularán, y los packs de créditos no caducarán."
+      },
+      "free": {
+        "question": "¿Qué pasa si me quedo sin créditos?",
+        "answer": "wovain se detiene antes del paso y te avisa. Tus {freeCredits, number} créditos gratis vuelven el mes siguiente y no pierdes nada de lo que creaste. Los planes de pago y los packs de {packCredits, number} créditos llegan pronto."
+      },
+      "paid": {
+        "question": "¿Cuándo podré comprar Studio, Label o créditos?",
+        "answer": "Pronto. Por ahora todas las cuentas están en Free. Pulsa Avísame en el plan que quieras y sabremos cuál abrir primero."
+      }
     }
   }
 }
