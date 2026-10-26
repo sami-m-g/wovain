@@ -220,18 +220,21 @@ rollback:production:
   script:
     - pnpm --dir apps/ops run canary rollback
 
-# The live sites answer, and Better Auth reaches its handler.
+# The synthetic checks (apps/ops/src/smoke.ts), as a visitor with no
+# account: /login shows Google, a sign-in for an address that can't exist is
+# a 401 and not a 5xx, connect links and callback errors redirect on
+# wovain.com, /api/inngest answers, the docs chat isn't down. A failure goes
+# to PostHog Error Tracking, where heal and the release guard read it, and
+# fails the job. The ops job runs the same checks every 10 minutes.
 smoke:production:
   extends: .on-main
   stage: monitor
-  image: curlimages/curl:8.11.1
   needs: [deploy:production]
-  variables:
-    GIT_STRATEGY: none
+  before_script:
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm install --frozen-lockfile --ignore-scripts --filter @wovain/ops
   script:
-    - curl -sSf -o /dev/null "$SITE_URL/"
-    - curl -sSf "$SITE_URL/api/auth/ok"
-    - curl -sSfL -o /dev/null "$DOCS_SITE_URL/"
+    - pnpm --dir apps/ops run smoke
 
 # Registers the new revision's run workflow with Inngest Cloud
 # (docs/adr/0001-durable-runs.md): a PUT to the serve route syncs the app, so

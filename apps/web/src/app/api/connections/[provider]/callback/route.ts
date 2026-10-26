@@ -3,10 +3,17 @@ import { providerIds } from "@wovain/core/upstream";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
+import {
+  createError,
+  useLogger as getRequestLogger,
+  withEvlog,
+} from "@/lib/evlog";
 import { publicOrigin } from "@/lib/public-origin";
 import { redirectWithin } from "@/lib/redirect";
 import { routerClientFor } from "@/lib/router-client";
+
+// OAuth's error code for a merchant who declined (RFC 6749, 4.1.2.1).
+const DECLINED = "access_denied";
 
 // The provider's redirect back after consent. The flow only completes for
 // the merchant who started it, in a browser signed in as them; the page they
@@ -28,7 +35,20 @@ const handleCallback = async (
       target: "/dashboard",
     });
   if (!parsed.success || code === null || state === null) {
-    return failed(query.get("error") ?? "invalid_callback");
+    const reason = query.get("error") ?? "invalid_callback";
+    // A merchant declining consent is their choice; anything else is a
+    // failure error tracking should see, grouped by its code and route.
+    if (reason !== DECLINED) {
+      getRequestLogger().error(
+        createError({
+          code: "CONNECTION_CALLBACK_FAILED",
+          message: "The provider's callback came back without a grant",
+          status: 502,
+          why: reason.slice(0, 100),
+        })
+      );
+    }
+    return failed(reason);
   }
   const iss = query.get("iss") ?? undefined;
   const client = await routerClientFor(request);

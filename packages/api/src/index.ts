@@ -1,30 +1,14 @@
-import { onError, onSuccess, ORPCError, os } from "@orpc/server";
+import { onSuccess, ORPCError, os } from "@orpc/server";
 import { evlog } from "evlog/orpc";
 
 import type { Context, FunnelEvent } from "./context";
 
 const base = os.$context<Context>();
 
-// oRPC turns a thrown error into a response, so Next's onRequestError never
-// sees it: unexpected errors go to error tracking here, for the website and
-// MCP alike. Errors a procedure means to return (a defined error, or any
-// 4xx such as NOT_FOUND, UNAUTHORIZED, failed validation or a rate limit)
-// are not reported.
-const isUnexpectedError = (error: unknown): boolean =>
-  !(error instanceof ORPCError) || (!error.defined && error.status >= 500);
-
-export const publicProcedure = base
-  .use(
-    onError((failure, { context, path }) => {
-      if (isUnexpectedError(failure)) {
-        context.analytics?.captureException(failure, {
-          distinctId: context.session?.user.id ?? context.mcpUserId,
-          properties: { procedure: path.join(".") },
-        });
-      }
-    })
-  )
-  .use(evlog<Context>());
+// evlog's oRPC middleware logs every procedure error onto the request's wide
+// event, which the app's error tracking drain reports to PostHog (4xx
+// excepted), for the website and MCP alike.
+export const publicProcedure = base.use(evlog<Context>());
 
 // A browser session or an MCP access token: either way, one merchant.
 const requireAuth = base.middleware(({ context, next }) => {

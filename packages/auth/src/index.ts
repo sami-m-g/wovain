@@ -125,6 +125,42 @@ const polarPlugin = (
         }),
       ];
 
+// An error as plain fields for the global evlog logger, which keeps what it
+// is given: an Error instance would serialize as {}.
+const errorFields = (error: unknown, code?: string) =>
+  error instanceof Error
+    ? { code, message: error.message, name: error.name, stack: error.stack }
+    : { code, message: String(error), name: "Error" };
+
+// Better Auth's own logs go through evlog instead of the console, so its
+// errors (a failed sign-in handler, a database fault) are error-level events
+// that reach error tracking with the Error it logged, when there is one.
+export const authLogger = {
+  log: (
+    level: "debug" | "error" | "info" | "warn",
+    message: string,
+    ...args: unknown[]
+  ) => {
+    const error = args.find((arg) => arg instanceof Error);
+    const auth = { message };
+    if (level === "error") {
+      log.error({
+        auth,
+        error: {
+          ...errorFields(error ?? message),
+          message:
+            error === undefined ? message : `${message}: ${error.message}`,
+          name: error?.name ?? "BetterAuthError",
+        },
+      });
+    } else if (level === "warn") {
+      log.warn({ auth });
+    } else {
+      log.info({ auth });
+    }
+  },
+};
+
 export const createAuth = (
   env: AuthConfig,
   database: Database,
@@ -133,14 +169,15 @@ export const createAuth = (
   polar?: PolarCore
 ) => {
   // Better Auth sends these in the background, so response timing doesn't
-  // reveal whether an account exists; a failed send is logged, not thrown.
+  // reveal whether an account exists; a failed send is logged as an error
+  // (and so reaches error tracking), not thrown.
   const send = async (mail: Mail) => {
     try {
       await mailer(mail);
     } catch (error) {
       log.error({
         email: { kind: mail.message.kind },
-        error: error instanceof Error ? error.message : String(error),
+        error: errorFields(error, "EMAIL_SEND_FAILED"),
       });
     }
   };
@@ -205,6 +242,7 @@ export const createAuth = (
         });
       },
     },
+    logger: authLogger,
     plugins: [
       // Signs the access tokens the MCP route verifies against /jwks.
       jwt(),
