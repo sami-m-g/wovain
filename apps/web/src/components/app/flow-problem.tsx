@@ -11,9 +11,6 @@ const SERVICE_NAMES: Record<string, string> = {
   fal: "fal",
   fourthwall: "Fourthwall",
   meta: "Meta",
-  nebius: "Nebius",
-  qloo: "Qloo",
-  tavily: "Tavily",
 };
 
 /** A friendly, per-step explanation of why a procedure couldn't run. */
@@ -33,10 +30,8 @@ export const FlowProblemNotice = ({ problem }: { problem: FlowProblem }) => {
       </>
     );
   } else if (problem.kind === "not_configured") {
-    const service = SERVICE_NAMES[problem.service] ?? problem.service;
-    body = problem.variable
-      ? t("notConfiguredVariable", { service, variable: problem.variable })
-      : t("notConfigured", { service });
+    // Server set-up is wovain's job: the designer sees no vendor or variable names.
+    body = t("notConfigured");
   } else if (problem.kind === "limit") {
     body = [problem.message, problem.fix].filter(Boolean).join(". ");
   } else {
