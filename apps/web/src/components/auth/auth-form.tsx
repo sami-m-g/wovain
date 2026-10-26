@@ -6,12 +6,12 @@ import { Input } from "@wovain/ui/components/input";
 import { Label } from "@wovain/ui/components/label";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { posthog } from "posthog-js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Link, useRouter } from "@/i18n/navigation";
+import { identifyMerchant } from "@/lib/analytics-client";
 import { authClient } from "@/lib/auth-client";
 
 import { GoogleButton } from "./google-button";
@@ -96,12 +96,9 @@ export const AuthForm = ({
         setFormError(errorMessage(error.code));
         return;
       }
-      // Analytics know the merchant by user id only, never the email, so
-      // server-side funnel steps (packages/api) join this browser's visit.
-      posthog.identify(data.user.id);
-      if (mode === "signUp") {
-        posthog.capture("sign_up");
-      }
+      // The server sends sign_up (packages/auth); identifying joins this
+      // browser's visit to it, also when an OAuth client takes over.
+      identifyMerchant(data.user.id);
       toast.success(mode === "signUp" ? t("created") : t("welcome"));
       if (inOAuthFlow) {
         return;
