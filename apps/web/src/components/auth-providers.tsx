@@ -10,10 +10,36 @@ import { authClient } from "@/lib/auth-client";
 import { authLocaleFor } from "@/lib/auth-locale";
 
 const DASHBOARD = "/dashboard";
+// A new merchant starts onboarding here, as Google's newUserCallbackURL
+// does (lib/auth-client-plugin.ts).
+const NEW_MERCHANT = "/dashboard/connections";
+const SIGN_UP_PATH = /\/sign-up\/?$/u;
 
 /** Only same-app paths are allowed as a post-login destination. */
-const safeNext = (value: string | null) =>
-  value?.startsWith(DASHBOARD) ? value : DASHBOARD;
+const safeDestination = (value: string) =>
+  value.startsWith(DASHBOARD) ? value : DASHBOARD;
+
+const searchParams = () => new URLSearchParams(window.location.search);
+
+/**
+ * Whether `to` is Better Auth UI's post-sign-in destination: the URL's
+ * ?redirectTo, or the dashboard.
+ */
+const isDestination = (to: string) =>
+  to === DASHBOARD || to === searchParams().get("redirectTo")?.trim();
+
+// ChatGPT (or another OAuth client) is signing in: Better Auth follows the
+// signed query back to the authorization, so the form must not navigate on
+// its own.
+const inOAuthFlow = () => {
+  const query = searchParams();
+  return query.has("sig") || query.has("oauth_query");
+};
+
+const destinationAfterAuth = (to: string) =>
+  SIGN_UP_PATH.test(window.location.pathname)
+    ? NEW_MERCHANT
+    : safeDestination(to);
 
 // The view routes (app/[locale]/(auth)): /login, /sign-up, /reset, ...
 const viewPaths = {
@@ -73,15 +99,11 @@ export const AuthProviders = ({
       emailAndPassword={{ forgotPassword: true, minPasswordLength: 8 }}
       locale={authLocaleFor(locale)}
       navigate={({ replace, to }) => {
-        const query = new URLSearchParams(window.location.search);
-        // ChatGPT (or another OAuth client) is signing in: Better Auth follows
-        // the signed query back to the authorization, so the form must not
-        // navigate on its own.
-        const inOAuthFlow = query.has("sig") || query.has("oauth_query");
-        if (to === DASHBOARD && inOAuthFlow) {
+        const arriving = isDestination(to);
+        if (arriving && inOAuthFlow()) {
           return;
         }
-        const target = to === DASHBOARD ? safeNext(query.get("next")) : to;
+        const target = arriving ? destinationAfterAuth(to) : to;
         if (replace) {
           router.replace(target);
         } else {

@@ -14,7 +14,6 @@ import { useTranslations } from "next-intl";
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
-import { resetAnalytics } from "@/lib/consent-store";
 
 /** The signed-in account menu; loaded only for signed-in visitors. */
 const AccountMenu = ({
@@ -54,9 +53,8 @@ const AccountMenu = ({
             onClick={() => {
               authClient.signOut({
                 fetchOptions: {
+                  // wovainAuthClient resets analytics on every sign-out.
                   onSuccess: () => {
-                    // The next visitor on this browser is anonymous again.
-                    resetAnalytics();
                     router.push("/");
                   },
                 },
