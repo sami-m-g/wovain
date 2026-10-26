@@ -23,6 +23,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createRunRouter } from "../workflows/rollout";
 import { isPermanent } from "../workflows/run";
 import type { Actor, RunEngine } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
@@ -512,6 +513,40 @@ describe("finishRun", () => {
       })
     );
     expect(actor.mailer).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("mastra-runs rollout", () => {
+  it("starts on the flagged engine and resumes on the one the run started on", async () => {
+    const ctx = await setup({});
+    const { runId } = await seedRun(ctx.db, "running");
+    const mastra = engine();
+    const legacy = engine();
+    let flagOn = true;
+    const router = createRunRouter({
+      db: ctx.actor.db,
+      legacy,
+      mastra,
+      mastraFor: () => flagOn,
+    });
+    const input = {
+      autopilot: false,
+      countries: ["US"],
+      dailyBudget: 15,
+      seed: "cozy reading",
+    };
+
+    await router.start({ input, runId, userId: USER_ID });
+    // The flag flips off while the run waits at its gate.
+    flagOn = false;
+    await router.resume(runId, { approve: true });
+
+    expect(mastra.start).toHaveBeenCalledTimes(1);
+    expect(mastra.resume).toHaveBeenCalledWith(runId, { approve: true });
+    expect(legacy.start).not.toHaveBeenCalled();
+    expect(legacy.resume).not.toHaveBeenCalled();
+    const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(row?.engine).toBe("mastra");
   });
 });
 

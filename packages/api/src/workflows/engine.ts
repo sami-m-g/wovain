@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import type { RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
+import { createLegacyRunEngine, createRunRouter } from "./rollout";
 import { APPROVAL_STEP_ID, createRunWorkflow, RUN_WORKFLOW_ID } from "./run";
 import type { RunServices } from "./run";
 
@@ -34,10 +35,13 @@ const failedRun = z.object({
 });
 
 export const createRunEngine = ({
+  mastraFor,
   pool,
   services,
 }: {
   pool: Database["$client"];
+  // Whether the merchant's runs go to this engine (the mastra-runs flag).
+  mastraFor: (userId: string) => boolean;
   services: RunServices;
 }) => {
   const inngest = new Inngest({ id: INNGEST_APP_ID });
@@ -80,7 +84,7 @@ export const createRunEngine = ({
     }
   );
 
-  const runs: RunEngine = {
+  const durable: RunEngine = {
     resume: async (runId, decision) => {
       const resumed = await mastra
         .getWorkflow(RUN_WORKFLOW_ID)
@@ -104,6 +108,13 @@ export const createRunEngine = ({
     functions: [onRunFailed],
     inngest,
     mastra,
+  });
+
+  const runs = createRunRouter({
+    db: services.db,
+    legacy: createLegacyRunEngine(services),
+    mastra: durable,
+    mastraFor,
   });
 
   return { handler, runs };

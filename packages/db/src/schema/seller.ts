@@ -74,6 +74,12 @@ export const run = pgTable(
   {
     autopilot: boolean("autopilot").default(false).notNull(),
     createdAt: createdAt(),
+    // Where the run executes: the durable Mastra workflow, or the legacy
+    // in-request flow while the mastra-runs flag is off. Its resume goes to
+    // the same engine.
+    engine: text("engine", { enum: ["legacy", "mastra"] })
+      .default("legacy")
+      .notNull(),
     error: text("error"),
     id: id(),
     seed: text("seed").notNull(),
