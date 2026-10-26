@@ -53,6 +53,27 @@ describe("canaryVerdict", () => {
     expect(result.reasons[0]).toContain("/api/checkout/quote (500)");
   });
 
+  it("promotes despite a few probes a cold start left unanswered", () => {
+    const probes = [
+      { path: "/", status: 0 },
+      { path: "/api/checkout/quote", status: 0 },
+      ...Array.from({ length: 57 }, () => ok("/")),
+    ];
+    expect(canaryVerdict({ canary: healthy, probes, stable: healthy })).toEqual(
+      { reasons: [], verdict: "promote" }
+    );
+  });
+
+  it("rolls back when most probes go unanswered", () => {
+    const probes = [
+      ...Array.from({ length: 10 }, () => ({ path: "/", status: 0 })),
+      ...Array.from({ length: 10 }, () => ok("/")),
+    ];
+    expect(
+      canaryVerdict({ canary: healthy, probes, stable: healthy }).verdict
+    ).toBe("rollback");
+  });
+
   it("rolls back on a 5xx rate well over stable's", () => {
     const result = canaryVerdict({
       canary: { errors: 6, requests: 40 },
