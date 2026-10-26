@@ -12,6 +12,9 @@
     "check-types": "tsc -b"
   },
   "dependencies": {
+    "@mastra/core": "catalog:",
+    "@mastra/inngest": "catalog:",
+    "@mastra/pg": "catalog:",
     "@modelcontextprotocol/ext-apps": "catalog:",
     "@modelcontextprotocol/server": "catalog:",
     "@orpc/server": "catalog:",
@@ -22,11 +25,15 @@
     "@wovain/widgets": "workspace:*",
     "drizzle-orm": "catalog:",
     "evlog": "catalog:",
+    "inngest": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
+    "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

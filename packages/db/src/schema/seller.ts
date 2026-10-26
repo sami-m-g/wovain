@@ -123,6 +123,9 @@ export const design = pgTable(
     ideaId: text("idea_id")
       .notNull()
       .references(() => idea.id, { onDelete: "cascade" }),
+    // The caller's request (or the run step) that made this row: a retry with
+    // the same key gets this row back instead of a second one.
+    idempotencyKey: text("idempotency_key").unique(),
     judgment: jsonb("judgment").$type<Judgment>().notNull(),
     runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
     status: text("status", {
@@ -146,6 +149,9 @@ export const product = pgTable(
       .notNull()
       .references(() => design.id, { onDelete: "cascade" }),
     id: id(),
+    // The caller's request (or the run step) that made this row: a retry with
+    // the same key gets this row back instead of a second one.
+    idempotencyKey: text("idempotency_key").unique(),
     mediaUri: text("media_uri").notNull(),
     mockups: jsonb("mockups").$type<string[]>().notNull(),
     offerId: text("offer_id").notNull(),
@@ -171,6 +177,9 @@ export const campaign = pgTable(
     creativeIds: jsonb("creative_ids").$type<string[]>().notNull(),
     dailyBudgetCents: integer("daily_budget_cents").notNull(),
     id: id(),
+    // The caller's request (or the run step) that made this row: a retry with
+    // the same key gets this row back instead of a second one.
+    idempotencyKey: text("idempotency_key").unique(),
     metaCampaignId: text("meta_campaign_id").notNull(),
     pageId: text("page_id").notNull(),
     productId: text("product_id")

@@ -65,5 +65,11 @@ catalog:
   negotiator: ^1.1.0
   "@types/negotiator": ^0.6.5
   "@formatjs/intl-localematcher": ^0.9.0
+  "@mastra/core": 1.79.0
+  "@mastra/inngest": 1.10.7
+  "@mastra/pg": 1.32.0
+  "@ai-sdk/openai-compatible": ^3.0.78
+  inngest: ^4.26.0
+  "@electric-sql/pglite": ^0.5.11
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2
