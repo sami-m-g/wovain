@@ -95,8 +95,13 @@ describe("createTrends", () => {
       qlooWith(async () => await Promise.reject(new Error("Qloo is down")))
     );
 
-    const research = await trends.research("pickleball");
+    const error = vi.fn();
+    const research = await trends.research("pickleball", {
+      error,
+      set: vi.fn(),
+    });
 
+    expect(error).toHaveBeenCalledWith(expect.any(Error));
     expect(research.qloo).toBe("failed");
     expect(research.ideas[0]?.signals.ipSafety).toBe(1);
     expect(search).toHaveBeenCalledTimes(2);

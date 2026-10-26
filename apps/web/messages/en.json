@@ -445,6 +445,8 @@
       "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top idea already has a design.",
       "score": "Score {score}",
       "affinity": "Taste affinity",
+      "affinityUnavailable": "Not available",
+      "affinityUnavailableHint": "Qloo has no taste data for this idea.",
       "news": "News this week",
       "listings": "Listings",
       "sources": "Sources",
