@@ -176,5 +176,6 @@ config:
   wovain:google-client-secret:
     secure: v1:nqv2CnxFDtU9Gjcb:jhd9smV7Z5Z+eALSTk6NFf/6KJhk5XaVfXvCeLn2dFY/ByjoO/YFh9eRSmTB5jRf+7OT
   wovain:o11yOtlpEndpoint: https://144066465.otel.gitlab-o11y.com:14318
+  wovain:googleSiteVerification: 9zjZZMGJ_se_dHp548YFhL1EJ59QCsbvuEDKhIuDibM
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=

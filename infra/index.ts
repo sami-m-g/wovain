@@ -459,6 +459,8 @@ const site = configureDomain({
     "letsencrypt.org",
   ],
   dmarcRua: config.get("dmarcRua"),
+  googleDkim: config.get("googleDkim"),
+  googleSiteVerification: config.get("googleSiteVerification"),
   metaDomainVerification: config.get("metaDomainVerification"),
   project,
   region,
@@ -476,6 +478,7 @@ const site = configureDomain({
     { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
+  siteOwnerEmail: config.get("siteOwnerEmail"),
   zone: "wovain-com",
 });
 export const domainMappings = site.mappings;
