@@ -63,7 +63,10 @@ const statusSchema = z.object({ status: z.string() });
 // request (check_job) and reads its image (get_job_result), as often as a
 // retry needs, without drawing again. `call` is a session on the merchant's
 // fal grant.
-export const createArtist = (call: ToolCall, wait = sleep) => ({
+export const createArtist = (
+  call: ToolCall,
+  wait: (ms: number) => Promise<unknown> = sleep
+) => ({
   result: async (requestId: string, log?: Logger): Promise<Artwork> =>
     await external(
       log,

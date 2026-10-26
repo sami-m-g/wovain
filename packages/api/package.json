@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "check-types": "tsc -b"
+    "check-types": "tsc -b",
+    "test": "vitest run"
   },
   "dependencies": {
     "@mastra/core": "catalog:",

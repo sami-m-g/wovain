@@ -199,7 +199,13 @@ export const decideDesign = async (
       });
     }
     if (row === undefined) {
-      const current = await getDesign(actor, id);
+      // Read inside the transaction: it holds the connection.
+      const current = await tx.query.design.findFirst({
+        where: { id, userId: actor.userId },
+      });
+      if (current === undefined) {
+        throw notFound.design({ id });
+      }
       throw designAlreadyDecided({
         designId: current.id,
         status: current.status === "approved" ? "approved" : "rejected",
