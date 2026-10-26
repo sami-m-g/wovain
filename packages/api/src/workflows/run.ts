@@ -224,6 +224,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
         onError: async ({ error, getInitData }) => {
           const { runId, userId } = trigger.parse(getInitData());
           await finishRun(actorFor(userId), runId, {
+            cause: error,
             error: error?.message ?? "The run failed",
             status: "failed",
           });

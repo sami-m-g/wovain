@@ -64,7 +64,7 @@ export interface AuthAnalytics {
     distinctId: string;
     event: "sign_up";
     properties?: Record<string, unknown>;
-  }) => void;
+  }) => Promise<void>;
 }
 
 // How a new user signed up, read from the endpoint that created them:
@@ -113,14 +113,14 @@ export const createAuth = (
     databaseHooks: {
       user: {
         create: {
-          after: (user, context) => {
+          // Awaited, so the event is sent before the sign-up answers.
+          after: async (user, context) => {
             const method = signUpMethod(context);
-            analytics?.capture({
+            await analytics?.capture({
               distinctId: user.id,
               event: "sign_up",
               properties: method === undefined ? {} : { method },
             });
-            return Promise.resolve();
           },
           before: (user, context) =>
             Promise.resolve({

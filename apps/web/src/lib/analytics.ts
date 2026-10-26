@@ -1,13 +1,15 @@
 import type { Context } from "@wovain/api/context";
+import { log } from "evlog";
 import { after } from "next/server";
 import { PostHog } from "posthog-node";
 
 import { ENV } from "@/env.server";
 
-// Server-side funnel events (posthog.com/docs/libraries/node), keyed by user
-// id: the same distinct id the browser identifies with. Each event is sent
-// after the response, while Cloud Run still allocates CPU to the request.
-// Without a key, procedures get no analytics.
+// Server-side funnel and run events (posthog.com/docs/libraries/node), keyed
+// by user id: the same distinct id the browser identifies with. Each event
+// is sent before the response (or the run step) finishes, while Cloud Run
+// still allocates CPU to the request. Without a key, procedures get no
+// analytics.
 const key = ENV.NEXT_PUBLIC_POSTHOG_KEY;
 const posthog =
   key === undefined
@@ -49,13 +51,19 @@ export const captureServerException = async (
 };
 
 export const analytics: Context["analytics"] = posthog && {
-  capture: ({ properties, ...event }) => {
-    after(() =>
-      posthog.captureImmediate({
+  // Awaited by its callers, so the event leaves before the response: on
+  // Cloud Run (request-based billing) CPU is throttled once the response is
+  // sent, and events queued in after() were starved and lost.
+  capture: async ({ properties, ...event }) => {
+    try {
+      await posthog.captureImmediate({
         ...event,
         properties: { ...properties, environment },
-      })
-    );
+      });
+    } catch (error) {
+      // Analytics never fails the merchant's request.
+      log.warn({ analytics: { event: event.event, failed: String(error) } });
+    }
   },
   captureException: (error, { distinctId, properties }) => {
     const sent = captureServerException(error, distinctId, properties);

@@ -2,13 +2,14 @@ import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
-import { withLlmTrace } from "@wovain/core/nemotron";
+import { NEMOTRON_MODEL, withLlmTrace } from "@wovain/core/nemotron";
 import { design, run } from "@wovain/db/schema/seller";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 
 import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
 import { getIdea } from "./ideas";
+import { track } from "./metrics";
 import { once } from "./once";
 import { meter } from "./spend";
 import { designAlreadyDecided, runNotWaiting } from "./transitions";
@@ -16,8 +17,41 @@ import { designAlreadyDecided, runNotWaiting } from "./transitions";
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
 // Nemotron judges it. The merchant (or autopilot) then approves or rejects.
 
+// The judge scores 0 to 100; agent_score is 0 to 1.
+const JUDGE_SCALE = 100;
+
 const byKey = async ({ db, userId }: Actor, key: string) =>
   await db.query.design.findFirst({ where: { idempotencyKey: key, userId } });
+
+// design_generated and the judge's agent_score, for the approval rate and
+// the quality trend. variant_index counts the idea's earlier designs.
+const reportDesign = async (
+  actor: Actor,
+  row: {
+    id: string;
+    ideaId: string;
+    judgment: { score: number };
+    runId: string | null;
+  }
+) => {
+  const [drawn] = await actor.db
+    .select({ n: count() })
+    .from(design)
+    .where(eq(design.ideaId, row.ideaId));
+  await track(actor, "design_generated", {
+    design_id: row.id,
+    model: NEMOTRON_MODEL,
+    run_id: row.runId,
+    variant_index: Math.max((drawn?.n ?? 1) - 1, 0),
+  });
+  await track(actor, "agent_score", {
+    design_id: row.id,
+    run_id: row.runId,
+    score: row.judgment.score / JUDGE_SCALE,
+    scorer: "design_judge",
+    target: "design",
+  });
+};
 
 // `requestId` keys the design: a run step passes its own, so a retried step
 // keeps the brief and the art (fal is asked to draw once). Without one each
@@ -91,6 +125,7 @@ export const generateDesign = async (
   if (row === undefined) {
     throw new Error("The design wasn't saved");
   }
+  await reportDesign(actor, row);
   return row;
 };
 
@@ -143,6 +178,14 @@ export const decideDesign = async (
         )
       )
       .returning();
+    if (row !== undefined && !approve) {
+      await track(actor, "design_rejected", {
+        decided_by: by,
+        design_id: row.id,
+        reason: reason ?? null,
+        run_id: row.runId,
+      });
+    }
     if (row === undefined) {
       const current = await getDesign(actor, id);
       throw designAlreadyDecided({

@@ -20,5 +20,5 @@ export const core = createCore(ENV);
 // step (docs/adr/0001-durable-runs.md).
 export const { handler: inngestHandler, runs } = createRunEngine({
   pool: db.$client,
-  services: { core, db, mailer },
+  services: { analytics, core, db, mailer },
 });
