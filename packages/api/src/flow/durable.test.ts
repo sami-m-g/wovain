@@ -22,6 +22,7 @@ import {
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
+import { log } from "evlog";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createRunRouter } from "../workflows/rollout";
@@ -32,7 +33,7 @@ import { requireFal } from "./connections";
 import { decideDesign } from "./designs";
 import { once } from "./once";
 import { createDesignProduct } from "./products";
-import { finishRun } from "./runs";
+import { approvedDesigns, awaitApproval, eachSettled, finishRun } from "./runs";
 import { transitionErrors } from "./transitions";
 
 // Steps and state transitions of a durable run against real Postgres
@@ -521,6 +522,131 @@ describe("finishRun", () => {
       })
     );
     expect(actor.mailer).toHaveBeenCalledTimes(1);
+  });
+});
+
+// A run's item that fails for "b" only.
+const failsOnB = async (item: string) => {
+  await Promise.resolve();
+  if (item === "b") {
+    throw new Error("fal timed out");
+  }
+  return item.toUpperCase();
+};
+
+// Another pending design in the same run, as the run draws for each top idea.
+const addDesign = async (
+  db: Awaited<ReturnType<typeof setup>>["db"],
+  designId: string
+) => {
+  const [first] = await db.select().from(design).where(eq(design.id, designId));
+  if (first === undefined) {
+    throw new Error("seed failed");
+  }
+  const { createdAt: _created, id: _id, ...copy } = first;
+  const [added] = await db
+    .insert(design)
+    .values({ ...copy, status: "pending_approval" })
+    .returning();
+  return added?.id ?? "";
+};
+
+describe("several designs per run", () => {
+  let ctx: Awaited<ReturnType<typeof setup>>;
+  beforeEach(async () => {
+    ctx = await setup({});
+  });
+
+  it("waits at the gate until every design is decided, then resumes once", async () => {
+    const { designId, runId } = await seedRun(ctx.db);
+    const second = await addDesign(ctx.db, designId);
+    const third = await addDesign(ctx.db, designId);
+    const resume = vi.fn(async () => {
+      await Promise.resolve();
+    });
+    const actor = { ...ctx.actor, runs: engine(resume) };
+
+    await decideDesign(actor, designId, { approve: true, by: "merchant" });
+    await decideDesign(actor, second, { approve: true, by: "merchant" });
+    expect(resume).not.toHaveBeenCalled();
+    const [waiting] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(waiting?.status).toBe("awaiting_approval");
+
+    // Rejecting the last one opens the gate: the run goes on with the two
+    // approved designs.
+    await decideDesign(actor, third, {
+      approve: false,
+      by: "merchant",
+      reason: "too busy",
+    });
+    expect(resume).toHaveBeenCalledTimes(1);
+    expect(resume).toHaveBeenCalledWith(runId, {
+      approve: true,
+      reason: "too busy",
+    });
+    const [after] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(after).toMatchObject({ status: "running", step: "approved" });
+    expect(await approvedDesigns(ctx.actor, runId)).toEqual([designId, second]);
+  });
+
+  it("resumes once when the last two calls land together", async () => {
+    const { designId, runId } = await seedRun(ctx.db);
+    const second = await addDesign(ctx.db, designId);
+    const resume = vi.fn(async () => {
+      await Promise.resolve();
+    });
+    const actor = { ...ctx.actor, runs: engine(resume) };
+
+    await Promise.all([
+      decideDesign(actor, designId, { approve: false, by: "merchant" }),
+      decideDesign(actor, second, { approve: false, by: "merchant" }),
+    ]);
+
+    expect(resume).toHaveBeenCalledTimes(1);
+    expect(resume).toHaveBeenCalledWith(runId, {
+      approve: false,
+      reason: undefined,
+    });
+    expect(await approvedDesigns(ctx.actor, runId)).toEqual([]);
+  });
+
+  it("opens the gate at once when every design was decided before it", async () => {
+    const { designId, runId } = await seedRun(ctx.db, "running");
+    const second = await addDesign(ctx.db, designId);
+
+    expect(await awaitApproval(ctx.actor, runId)).toBe(true);
+    await ctx.db
+      .update(design)
+      .set({ status: "approved" })
+      .where(eq(design.id, designId));
+    await ctx.db
+      .update(design)
+      .set({ status: "rejected" })
+      .where(eq(design.id, second));
+
+    expect(await awaitApproval(ctx.actor, runId)).toBe(false);
+    const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(row?.status).toBe("running");
+  });
+
+  it("keeps the items that worked when one fails, and fails only when all do", async () => {
+    const logged = vi.spyOn(log, "error").mockImplementation(() => {});
+    const work = failsOnB;
+
+    expect(await eachSettled("run_1", "design", ["a", "b", "c"], work)).toEqual(
+      ["A", "C"]
+    );
+    expect(logged).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: "RUN_ITEM_FAILED",
+        run: expect.objectContaining({ item: "b", stage: "design" }),
+      })
+    );
+    await expect(eachSettled("run_1", "design", ["b"], work)).rejects.toThrow(
+      "fal timed out"
+    );
+    expect(await eachSettled("run_1", "design", [], work)).toEqual([]);
+    logged.mockRestore();
   });
 });
 

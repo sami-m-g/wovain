@@ -12,14 +12,14 @@ Source : `scope.md > What "Working" Looks Like`.
 1. Le créateur se connecte sur [https://wovain.com](https://wovain.com) avec Google ou un e-mail (ou ajoute l'application wovain dans ChatGPT et s'y connecte).
 2. Il connecte sa propre boutique Fourthwall et son compte publicitaire Meta et, une fois disponible, sa propre clé fal. Les comptes gratuits commencent avec 15 crédits par mois (proposition).
 3. Il décrit une collection. wovain demande à Qloo les entités et thèmes de goût de la direction, puis à Tavily les actualités de la semaine et les annonces des places de marché dans ces thèmes, et enregistre des idées classées avec leurs preuves.
-4. Il choisit une idée. Nemotron rédige un brief de design et une fiche, fal dessine un visuel transparent pour l'impression, et le prix découle du coût de base du modèle vierge.
+4. wovain dessine un design pour chacune des trois meilleures idées, et il peut en choisir d'autres. Pour chacune, Nemotron rédige un brief de design et une fiche, fal dessine un visuel transparent pour l'impression, et le prix découle du coût de base du modèle vierge.
 5. Nemotron évalue le design et des scorers le notent. Le code vérifie lui-même la taille d'impression ; un verdict `revise` liste les corrections.
 6. Le créateur approuve ou rejette le design (avec une raison). L'exécution attend cette décision.
 7. Un design approuvé devient un produit Fourthwall, masqué. Le créateur le publie dans une étape distincte.
 8. Nemotron écrit jusqu'à trois variantes de publicité (angle, titre, message) et wovain prépare une campagne, un ensemble de publicités et des publicités Meta, tous en pause, pour les pays et le budget quotidien choisis.
 9. Réussite : le produit est dans la boutique Fourthwall et la campagne en pause est dans le gestionnaire de publicités Meta. Le créateur la lance quand il est prêt. Les étapes payantes sont facturées en crédits.
 
-L'autopilot (une fonction des forfaits payants dans la proposition de prix) enchaîne les étapes 3 à 8 en une exécution : Nemotron choisit l'idée et approuve le design, et l'exécution s'arrête si le juge demande une révision.
+L'autopilot (une fonction des forfaits payants dans la proposition de prix) enchaîne les étapes 3 à 8 en une exécution : Nemotron choisit l'idée principale et relit chaque design, et l'exécution s'arrête s'il n'en approuve aucun ; un design que le juge veut réviser n'est jamais approuvé.
 
 ```text
 Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
@@ -84,7 +84,7 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 ### Exécutions, approbation et autopilot
 
 - En tant que créateur, je veux une seule commande pour lancer la boucle, en s'arrêtant pour mon approbation ou avec Nemotron qui décide.
-  - [x] En autopilot, Nemotron choisit l'idée et relit le design ; un design que le juge veut réviser n'est jamais approuvé.
+  - [x] En autopilot, Nemotron choisit l'idée principale et relit chaque design ; un design que le juge veut réviser n'est jamais approuvé.
   - [x] La raison de chaque approbation ou rejet est enregistrée sur le design.
   - [ ] Les exécutions sont des workflows Mastra durables : l'exécution répond tout de suite, se suspend à l'approbation, reprend vers le produit et la campagne après la décision, et survit à un redémarrage (en cours).
   - [ ] Chaque étape est enregistrée sur l'exécution ; une exécution échouée montre où elle s'est arrêtée et pourquoi, et une nouvelle tentative ne duplique ni le produit Fourthwall ni la campagne Meta (en cours).
@@ -145,7 +145,7 @@ Tout ce qui figure dans `scope.md > The POC Boundary` : connexion avec Google, c
 ## Reporté après la preuve de concept
 
 - Optimiseur et résultats des campagnes : il faut d'abord des données de dépenses.
-- Ensembles multi-produits et publicités variées par collection : après les exécutions durables et les évaluations.
+- Plusieurs modèles vierges par design et publicités variées par collection : après les évaluations.
 - Organisations et sièges : aujourd'hui chaque ligne appartient à un seul utilisateur.
 - Facturation annuelle : une fois les prix mensuels validés.
 

@@ -173,76 +173,108 @@ export interface Decision extends RunDecision {
 
 // The only move out of pending_approval: approve or reject, once. A design
 // already decided answers DESIGN_ALREADY_DECIDED, so a second click, a
-// second client or a late retry can't flip it. A merchant's call on a run
-// waiting at its gate resumes that run once the decision is committed: the
-// resume writes the run row from its own connection, so resuming inside the
-// transaction that holds that row's lock waits on itself forever. If the
-// resume fails, the decision is undone and the run waits at its gate again.
+// second client or a late retry can't flip it. A run draws several designs,
+// and its gate opens on the merchant's call on the last pending one: that
+// call resumes the run once the decision is committed: the resume writes the
+// run row from its own connection, so resuming inside the transaction that
+// holds that row's lock waits on itself forever. If the resume fails, the
+// decision is undone and the run waits at its gate again.
 const commitDecision = async (
   actor: Actor,
   id: string,
   { approve, by, reason }: Decision
 ) => {
-  const { row: decided, waitingRunId } = await actor.db.transaction(
-    async (tx) => {
-      const [row] = await tx
-        .update(design)
-        .set({
-          decidedBy: by,
-          decisionReason: reason ?? null,
-          status: approve ? "approved" : "rejected",
-        })
-        .where(
-          and(
-            eq(design.id, id),
-            eq(design.userId, actor.userId),
-            eq(design.status, "pending_approval")
-          )
-        )
-        .returning();
-      if (row !== undefined && !approve) {
-        await track(actor, "design_rejected", {
-          decided_by: by,
-          design_id: row.id,
-          reason: reason ?? null,
-          run_id: row.runId,
-        });
-      }
-      if (row === undefined) {
-        // Read inside the transaction: it holds the connection.
-        const current = await tx.query.design.findFirst({
-          where: { id, userId: actor.userId },
-        });
-        if (current === undefined) {
-          throw notFound.design({ id });
-        }
-        throw designAlreadyDecided({
-          designId: current.id,
-          status: current.status === "approved" ? "approved" : "rejected",
-        });
-      }
-      if (by !== "merchant" || row.runId === null) {
-        return { row, waitingRunId: undefined };
-      }
-      const [waiting] = await tx
-        .update(run)
-        .set({ status: "running", step: approve ? "approved" : "rejected" })
-        .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
-        .returning({ id: run.id });
-      if (waiting === undefined) {
-        return { row, waitingRunId: undefined };
-      }
-      if (actor.runs === undefined) {
-        throw new Error("No run engine to resume the run");
-      }
-      return { row, waitingRunId: waiting.id };
+  const {
+    anyApproved,
+    row: decided,
+    waitingRunId,
+  } = await actor.db.transaction(async (tx) => {
+    // A merchant's calls on one run's designs take turns on the run row,
+    // so the last of two concurrent calls sees the other's and opens the
+    // gate. NO KEY UPDATE leaves designs being drawn for the run free to
+    // insert.
+    const target = await tx.query.design.findFirst({
+      columns: { runId: true },
+      where: { id, userId: actor.userId },
+    });
+    if (by === "merchant" && target?.runId) {
+      await tx
+        .select({ id: run.id })
+        .from(run)
+        .where(eq(run.id, target.runId))
+        .for("no key update");
     }
-  );
+    const [row] = await tx
+      .update(design)
+      .set({
+        decidedBy: by,
+        decisionReason: reason ?? null,
+        status: approve ? "approved" : "rejected",
+      })
+      .where(
+        and(
+          eq(design.id, id),
+          eq(design.userId, actor.userId),
+          eq(design.status, "pending_approval")
+        )
+      )
+      .returning();
+    if (row !== undefined && !approve) {
+      await track(actor, "design_rejected", {
+        decided_by: by,
+        design_id: row.id,
+        reason: reason ?? null,
+        run_id: row.runId,
+      });
+    }
+    if (row === undefined) {
+      // Read inside the transaction: it holds the connection.
+      const current = await tx.query.design.findFirst({
+        where: { id, userId: actor.userId },
+      });
+      if (current === undefined) {
+        throw notFound.design({ id });
+      }
+      throw designAlreadyDecided({
+        designId: current.id,
+        status: current.status === "approved" ? "approved" : "rejected",
+      });
+    }
+    if (by !== "merchant" || row.runId === null) {
+      return { anyApproved: approve, row, waitingRunId: undefined };
+    }
+    // The gate opens once every design of the run is decided: the merchant
+    // approves one or more and rejects the rest.
+    const decisions = await tx
+      .select({ status: design.status })
+      .from(design)
+      .where(and(eq(design.runId, row.runId), eq(design.userId, actor.userId)));
+    if (decisions.some((item) => item.status === "pending_approval")) {
+      return { anyApproved: approve, row, waitingRunId: undefined };
+    }
+    const approvedSome = decisions.some((item) => item.status === "approved");
+    const [waiting] = await tx
+      .update(run)
+      .set({
+        status: "running",
+        step: approvedSome ? "approved" : "rejected",
+      })
+      .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
+      .returning({ id: run.id });
+    if (waiting === undefined) {
+      return { anyApproved: approvedSome, row, waitingRunId: undefined };
+    }
+    if (actor.runs === undefined) {
+      throw new Error("No run engine to resume the run");
+    }
+    return { anyApproved: approvedSome, row, waitingRunId: waiting.id };
+  });
   if (waitingRunId === undefined || actor.runs === undefined) {
     return decided;
   }
   try {
-    await actor.runs.resume(waitingRunId, { approve, reason });
+    // The run reads which designs were approved; the call says whether any.
+    await actor.runs.resume(waitingRunId, { approve: anyApproved, reason });
   } catch (error) {
     // Undo only what this call set, and only while nothing has moved on.
     try {

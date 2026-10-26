@@ -7,6 +7,8 @@ import { z } from "zod";
 
 import type { Actor } from "../flow/actor";
 import {
+  approvedDesigns,
+  autopilotRejection,
   autopilotStep,
   awaitApproval,
   campaignStep,
@@ -45,13 +47,14 @@ const trigger = z.object({
   userId: z.string(),
 });
 
-// What each step hands the next.
+// What each step hands the next: lists, since a run draws several designs.
 const carry = trigger.extend({
-  designId: z.string().optional(),
-  // What the last step made, for its code scorer (@wovain/core/step-scorers).
-  facts: z.record(z.string(), z.unknown()).optional(),
-  ideaId: z.string().optional(),
-  productId: z.string().optional(),
+  designIds: z.array(z.string()).optional(),
+  // What the last step made, one item per design, for its code scorer
+  // (@wovain/core/step-scorers).
+  facts: z.array(z.record(z.string(), z.unknown())).optional(),
+  ideaIds: z.array(z.string()).optional(),
+  productIds: z.array(z.string()).optional(),
 });
 type Carry = z.infer<typeof carry>;
 
@@ -124,14 +127,14 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
       const found = await body(
         async (actor, from) => await researchStep(actor, from.runId, from.input)
       )(inputData);
-      if (found.ideaId === undefined) {
+      if (found.ideaIds.length === 0) {
         await finishRun(actorFor(inputData.userId), inputData.runId, {
           error: "Research found no ideas for this seed.",
           status: "failed",
         });
         return bail(inputData);
       }
-      return { ...inputData, ideaId: found.ideaId };
+      return { ...inputData, ideaIds: found.ideaIds };
     },
     id: "research",
     inputSchema: trigger,
@@ -143,9 +146,13 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     execute: async ({ inputData }) => {
       const drafted = await body(
         async (actor, from) =>
-          await designStep(actor, from.runId, from.ideaId ?? "")
+          await designStep(actor, from.runId, from.ideaIds ?? [])
       )(inputData);
-      return { ...inputData, designId: drafted.designId, facts: drafted.facts };
+      return {
+        ...inputData,
+        designIds: drafted.designIds,
+        facts: drafted.facts,
+      };
     },
     id: "design",
     inputSchema: carry,
@@ -154,53 +161,54 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     scorers: scored("design_facts"),
   });
 
+  // The gate. Autopilot decides each design; a merchant's run suspends until
+  // the call on its last pending design resumes it, then goes on with every
+  // design the merchant approved (read from the database: they decide one
+  // design at a time, and may have drawn more while the run waited).
   const approval = createStep({
     execute: async ({ bail, inputData, resumeData, suspend }) => {
-      const designId = inputData.designId ?? "";
       const actor = actorFor(inputData.userId);
-      let approved: boolean;
-      let reason: string | null | undefined;
+      const { runId } = inputData;
       if (inputData.input.autopilot) {
-        ({ approved, reason } = await body(
-          async (as) => await autopilotStep(as, designId)
-        )(inputData));
-      } else if (resumeData === undefined) {
-        await awaitApproval(actor, inputData.runId);
-        return await suspend({ designId });
-      } else {
-        approved = resumeData.approve;
-        ({ reason } = resumeData);
+        const decided = await body(
+          async (as, from) =>
+            await autopilotStep(as, from.runId, from.designIds ?? [])
+        )(inputData);
+        if (decided.approvedIds.length === 0) {
+          await finishRun(actor, runId, {
+            error: autopilotRejection(decided.reasons),
+            status: "failed",
+          });
+          return bail(inputData);
+        }
+        return { ...inputData, designIds: decided.approvedIds };
       }
-      if (!approved) {
-        await finishRun(
-          actor,
-          inputData.runId,
-          inputData.input.autopilot
-            ? {
-                error: `Autopilot rejected the design: ${reason ?? ""}`,
-                status: "failed",
-              }
-            : { status: "completed" }
-        );
+      if (resumeData === undefined && (await awaitApproval(actor, runId))) {
+        return await suspend({ designIds: inputData.designIds ?? [] });
+      }
+      const approvedIds = await approvedDesigns(actor, runId);
+      if (approvedIds.length === 0) {
+        // The merchant rejected every design: the run is done.
+        await finishRun(actor, runId, { status: "completed" });
         return bail(inputData);
       }
-      return inputData;
+      return { ...inputData, designIds: approvedIds };
     },
     id: APPROVAL_STEP_ID,
     inputSchema: carry,
     outputSchema: carry,
     resumeSchema: decision,
     retries: RETRIES,
-    suspendSchema: z.object({ designId: z.string() }),
+    suspendSchema: z.object({ designIds: z.array(z.string()) }),
   });
 
   const product = createStep({
     execute: async ({ inputData }) => {
       const made = await body(
         async (actor, from) =>
-          await productStep(actor, from.runId, from.designId ?? "")
+          await productStep(actor, from.runId, from.designIds ?? [])
       )(inputData);
-      return { ...inputData, facts: made.facts, productId: made.productId };
+      return { ...inputData, facts: made.facts, productIds: made.productIds };
     },
     id: "product",
     inputSchema: carry,
@@ -214,7 +222,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
       const staged = await body(async (actor, from) => {
         const made = await campaignStep(actor, from.runId, {
           input: from.input,
-          productId: from.productId ?? "",
+          productIds: from.productIds ?? [],
         });
         await finishRun(actor, from.runId, { status: "completed" });
         return made;

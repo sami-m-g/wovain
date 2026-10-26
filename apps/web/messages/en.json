@@ -442,7 +442,7 @@
     },
     "trends": {
       "title": "Pick the ideas",
-      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top idea already has a design.",
+      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top ideas already have designs; pick more to draw them too.",
       "score": "Score {score}",
       "affinity": "Taste affinity",
       "news": "News this week",
@@ -454,7 +454,7 @@
     },
     "designs": {
       "title": "Approve the designs",
-      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea.",
+      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea. Designs you leave undecided are rejected when you go on.",
       "check": "Design check",
       "checkReady": "Ready",
       "checkRevise": "Needs work",
@@ -519,7 +519,7 @@
       "another": "Write a new brief"
     },
     "working": {
-      "research": "Researching trends and drafting the first design…",
+      "research": "Researching trends and drafting the first designs…",
       "autopilot": "Autopilot is researching, designing, publishing and building the campaign…",
       "designs": "Making designs…",
       "review": "Saving your decision…",

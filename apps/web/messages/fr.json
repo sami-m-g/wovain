@@ -442,7 +442,7 @@
     },
     "trends": {
       "title": "Choisir les idées",
-      "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. La meilleure idée a déjà un visuel.",
+      "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. Les meilleures idées ont déjà un visuel ; choisissez-en d'autres pour les dessiner aussi.",
       "score": "Score {score}",
       "affinity": "Affinité",
       "news": "Actualité",
@@ -454,7 +454,7 @@
     },
     "designs": {
       "title": "Valider les visuels",
-      "lead": "Validez ceux que vous vendriez. Refusez avec une note, puis créez-en un autre pour la même idée.",
+      "lead": "Validez ceux que vous vendriez. Refusez avec une note, puis créez-en un autre pour la même idée. Les visuels laissés sans décision sont refusés quand vous continuez.",
       "check": "Contrôle",
       "checkReady": "Prêt",
       "checkRevise": "À retravailler",
@@ -519,7 +519,7 @@
       "another": "Écrire un nouveau brief"
     },
     "working": {
-      "research": "Recherche des tendances et premier visuel…",
+      "research": "Recherche des tendances et premiers visuels…",
       "autopilot": "Le pilote automatique recherche, crée, publie et prépare la campagne…",
       "designs": "Création des visuels…",
       "review": "Enregistrement de votre décision…",

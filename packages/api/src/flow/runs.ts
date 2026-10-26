@@ -4,7 +4,8 @@ import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
 import { design, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { Actor, RunInput } from "./actor";
 import { notFound } from "./actor";
@@ -16,14 +17,19 @@ import { classifyFailure, track } from "./metrics";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
 
-// A run takes a seed through the flow: research → design → approval →
-// product → publish → PAUSED campaign. The request only saves the run and
+// A run takes a seed through the flow: research → designs → approval →
+// products → publish → PAUSED campaigns. The request only saves the run and
 // queues it; a durable workflow (../workflows/run) calls the steps below,
-// each retried on its own and each safe to run twice. Without autopilot the
-// run waits at the approval gate and the merchant's call resumes it; with
-// autopilot, Nemotron picks the idea and makes the call.
+// each retried on its own and each safe to run twice. The run draws one
+// design for each of the top ideas (DESIGNS_PER_RUN), so the merchant
+// compares options. Without autopilot the run waits at the approval gate
+// until every design is decided, then lists each approved one; with
+// autopilot, Nemotron picks the lead idea and decides each design.
 
 const ACTIVE: RunStatus[] = ["running", "awaiting_approval"];
+
+// The designs a run draws; each costs a design's credits.
+export const DESIGNS_PER_RUN = 3;
 
 export const markRun = async (
   actor: Actor,
@@ -36,7 +42,46 @@ export const markRun = async (
     .where(and(eq(run.id, id), eq(run.userId, actor.userId)));
 };
 
-// Research, then the idea to draw: the top one, or autopilot's pick.
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+// One design, product or campaign failing never fails the others: each item
+// runs on its own, and the step fails only when every item did (it throws
+// the first error, so the step is retried or the run fails as before). A
+// failed item the run goes on without is logged at error level, so it still
+// reaches Error Tracking.
+export const eachSettled = async <R>(
+  runId: string,
+  stage: string,
+  items: string[],
+  work: (item: string) => Promise<R>
+): Promise<R[]> => {
+  const settled = await Promise.allSettled(
+    items.map(async (item) => await work(item))
+  );
+  const done: R[] = [];
+  const failed: { error: unknown; item: string }[] = [];
+  for (const [index, outcome] of settled.entries()) {
+    if (outcome.status === "fulfilled") {
+      done.push(outcome.value);
+    } else {
+      failed.push({ error: outcome.reason, item: items[index] ?? "" });
+    }
+  }
+  const [first] = failed;
+  if (done.length === 0 && first !== undefined) {
+    throw first.error;
+  }
+  for (const { error, item } of failed) {
+    log.error({
+      error: "RUN_ITEM_FAILED",
+      run: { id: runId, item, message: messageOf(error), stage },
+    });
+  }
+  return done;
+};
+
+// Research, then the ideas to draw: the top ones, led by autopilot's pick.
 export const researchStep = async (
   actor: Actor,
   runId: string,
@@ -44,12 +89,9 @@ export const researchStep = async (
 ) => {
   await markRun(actor, runId, { step: "research" });
   const ideas = await researchIdeas(actor, input.seed, runId);
-  const [top] = ideas;
-  if (top === undefined) {
-    return { ideaId: undefined };
-  }
-  if (!input.autopilot) {
-    return { ideaId: top.id };
+  const ranked = ideas.map((row) => row.id);
+  if (ranked.length === 0 || !input.autopilot) {
+    return { ideaIds: ranked.slice(0, DESIGNS_PER_RUN) };
   }
   const chosen = await charge(
     actor,
@@ -62,17 +104,20 @@ export const researchStep = async (
         actor.log
       )
   );
-  return { ideaId: chosen.idea.id };
+  const lead = chosen.idea.id;
+  return {
+    ideaIds: [lead, ...ranked.filter((id) => id !== lead)].slice(
+      0,
+      DESIGNS_PER_RUN
+    ),
+  };
 };
 
-export const designStep = async (
-  actor: Actor,
-  runId: string,
-  ideaId: string
-) => {
-  await markRun(actor, runId, { step: "design" });
+// One idea's design, keyed by the run and the idea: a retried step keeps
+// the designs it drew and pays for none of them twice.
+const drawDesign = async (actor: Actor, runId: string, ideaId: string) => {
   const drafted = await generateDesign(actor, ideaId, {
-    requestId: `run:${runId}`,
+    requestId: `run:${runId}:${ideaId}`,
   });
   const source = await getIdea(actor, ideaId);
   const { brief } = drafted;
@@ -93,50 +138,145 @@ export const designStep = async (
   return { designId: drafted.id, facts };
 };
 
-// Autopilot decides here. A merchant's run stops at the gate: the
-// workflow suspends, and decideDesign resumes it.
-export const autopilotStep = async (actor: Actor, designId: string) => {
-  const decided = await autopilotDecide(
-    actor,
-    await getDesign(actor, designId)
+export const designStep = async (
+  actor: Actor,
+  runId: string,
+  ideaIds: string[]
+) => {
+  await markRun(actor, runId, { step: "design" });
+  const drawn = await eachSettled(
+    runId,
+    "design",
+    ideaIds,
+    async (ideaId) => await drawDesign(actor, runId, ideaId)
   );
   return {
-    approved: decided.status === "approved",
-    reason: decided.decisionReason,
+    designIds: drawn.map((item) => item.designId),
+    facts: drawn.map((item) => item.facts),
   };
 };
 
+// Autopilot decides each design here. A merchant's run stops at the gate:
+// the workflow suspends, and the call on its last pending design resumes it.
+export const autopilotStep = async (
+  actor: Actor,
+  runId: string,
+  designIds: string[]
+) => {
+  const decided = await eachSettled(
+    runId,
+    "autopilot",
+    designIds,
+    async (designId) =>
+      await autopilotDecide(actor, await getDesign(actor, designId))
+  );
+  return {
+    approvedIds: decided
+      .filter((row) => row.status === "approved")
+      .map((row) => row.id),
+    reasons: decided.flatMap((row) =>
+      row.decisionReason === null ? [] : [row.decisionReason]
+    ),
+  };
+};
+
+// Why an autopilot run stopped: it approved none of its designs.
+export const autopilotRejection = (reasons: string[]) =>
+  `Autopilot rejected the designs: ${reasons.join("; ")}`;
+
+// Stops the run at its gate. Answers false when the merchant already decided
+// every design (they can while later ones are still drawn): the gate opens
+// at once, since no call is left to resume the run.
 export const awaitApproval = async (actor: Actor, runId: string) => {
   await markRun(actor, runId, {
     status: "awaiting_approval",
     step: "approval",
   });
+  const pending = await actor.db
+    .select({ id: design.id })
+    .from(design)
+    .where(
+      and(
+        eq(design.runId, runId),
+        eq(design.userId, actor.userId),
+        eq(design.status, "pending_approval")
+      )
+    )
+    .limit(1);
+  if (pending.length > 0) {
+    return true;
+  }
+  const [reopened] = await actor.db
+    .update(run)
+    .set({ status: "running" })
+    .where(and(eq(run.id, runId), eq(run.status, "awaiting_approval")))
+    .returning({ id: run.id });
+  // Not reopened: a decision just took the run on, and resumes it.
+  return reopened === undefined;
 };
 
+// The run's approved designs once its gate opens: the merchant may approve
+// several, including designs they drew from other ideas while it waited.
+export const approvedDesigns = async (actor: Actor, runId: string) => {
+  const rows = await actor.db
+    .select({ id: design.id })
+    .from(design)
+    .where(
+      and(
+        eq(design.runId, runId),
+        eq(design.userId, actor.userId),
+        eq(design.status, "approved")
+      )
+    )
+    .orderBy(asc(design.createdAt));
+  return rows.map((row) => row.id);
+};
+
+// A product for each approved design, published.
 export const productStep = async (
   actor: Actor,
   runId: string,
-  designId: string
+  designIds: string[]
 ) => {
   await markRun(actor, runId, { status: "running", step: "product" });
-  const created = await createDesignProduct(actor, { designId });
+  const made = await eachSettled(
+    runId,
+    "product",
+    designIds,
+    async (designId) => {
+      const created = await createDesignProduct(actor, { designId });
+      return await publishDesignProduct(actor, created.id);
+    }
+  );
   await markRun(actor, runId, { step: "publish" });
-  const published = await publishDesignProduct(actor, created.id);
-  return { facts: { price: published.price }, productId: published.id };
+  return {
+    facts: made.map((item) => ({ price: item.price })),
+    productIds: made.map((item) => item.id),
+  };
 };
 
+// A paused campaign for each product.
 export const campaignStep = async (
   actor: Actor,
   runId: string,
-  { input, productId }: { input: RunInput; productId: string }
+  { input, productIds }: { input: RunInput; productIds: string[] }
 ) => {
   await markRun(actor, runId, { step: "campaign" });
-  const staged = await createProductCampaign(actor, {
-    countries: input.countries,
-    dailyBudget: input.dailyBudget,
-    productId,
-  });
-  return { campaignId: staged.id, facts: { variants: staged.copy } };
+  const staged = await eachSettled(
+    runId,
+    "campaign",
+    productIds,
+    async (productId) =>
+      await createProductCampaign(actor, {
+        countries: input.countries,
+        dailyBudget: input.dailyBudget,
+        productId,
+      })
+  );
+  return {
+    campaignIds: staged.map((item) => item.id),
+    facts: staged.map((item) => ({ variants: item.copy })),
+  };
 };
 
 // Emails the merchant when the run stops for them: a design to approve, the

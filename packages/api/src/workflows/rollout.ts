@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Actor, RunEngine } from "../flow/actor";
 import {
+  autopilotRejection,
   autopilotStep,
   awaitApproval,
   campaignStep,
@@ -24,8 +25,9 @@ import type { RunServices } from "./run";
 export const createLegacyRunEngine = (services: RunServices): RunEngine => {
   const actorFor = (userId: string): Actor => ({ ...services, userId });
   return {
-    // The legacy flow never continued past approval: the merchant's call
-    // ends the run, and the wizard makes the product and campaign itself.
+    // The legacy flow never continued past approval: the merchant's call on
+    // the run's last pending design ends the run, and the wizard makes a
+    // product and campaign for each approved design itself.
     resume: async (runId) => {
       const [row] = await services.db
         .select({ userId: run.userId })
@@ -39,29 +41,35 @@ export const createLegacyRunEngine = (services: RunServices): RunEngine => {
       const actor = actorFor(userId);
       try {
         await withLlmTrace({ distinctId: userId, traceId: runId }, async () => {
-          const { ideaId } = await researchStep(actor, runId, input);
-          if (ideaId === undefined) {
+          const { ideaIds } = await researchStep(actor, runId, input);
+          if (ideaIds.length === 0) {
             await finishRun(actor, runId, {
               error: "Research found no ideas for this seed.",
               status: "failed",
             });
             return;
           }
-          const { designId } = await designStep(actor, runId, ideaId);
+          const { designIds } = await designStep(actor, runId, ideaIds);
           if (!input.autopilot) {
-            await awaitApproval(actor, runId);
+            if (!(await awaitApproval(actor, runId))) {
+              await finishRun(actor, runId, { status: "completed" });
+            }
             return;
           }
-          const decided = await autopilotStep(actor, designId);
-          if (!decided.approved) {
+          const decided = await autopilotStep(actor, runId, designIds);
+          if (decided.approvedIds.length === 0) {
             await finishRun(actor, runId, {
-              error: `Autopilot rejected the design: ${decided.reason ?? ""}`,
+              error: autopilotRejection(decided.reasons),
               status: "failed",
             });
             return;
           }
-          const { productId } = await productStep(actor, runId, designId);
-          await campaignStep(actor, runId, { input, productId });
+          const { productIds } = await productStep(
+            actor,
+            runId,
+            decided.approvedIds
+          );
+          await campaignStep(actor, runId, { input, productIds });
           await finishRun(actor, runId, { status: "completed" });
         });
       } catch (error) {
