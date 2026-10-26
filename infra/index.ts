@@ -26,7 +26,7 @@ const gitlabProjectId = config.require("gitlabProjectId");
 const { billingAccount, number: projectNumber } =
   await gcp.organizations.getProject({ projectId: project });
 
-const apis = [
+const apiNames = [
   "artifactregistry",
   "billingbudgets",
   "cloudbilling",
@@ -45,13 +45,17 @@ const apis = [
   "sqladmin",
   "storage",
   "sts",
-].map(
-  (api) =>
-    new gcp.projects.Service(api, {
+] as const;
+const api = Object.fromEntries(
+  apiNames.map((name) => [
+    name,
+    new gcp.projects.Service(name, {
       disableOnDestroy: false,
-      service: `${api}.googleapis.com`,
-    })
-);
+      service: `${name}.googleapis.com`,
+    }),
+  ])
+) as Record<(typeof apiNames)[number], gcp.projects.Service>;
+const apis = Object.values(api);
 const afterApis = { dependsOn: apis };
 // Data and identity: the engine refuses to delete or replace a protected
 // resource, and the policy pack (infra/policy) requires it on each of them.
@@ -417,7 +421,10 @@ const dev = devEnvironment({
 // wovain.com end to end (domains.ts). The few values no API hands out are
 // plain stack config keys: `pulumi config set <key> <value>` in infra/.
 const site = configureDomain({
-  after: apis,
+  // Only the APIs it calls: its lookups wait on these, and a lookup that waits
+  // on a resource with pending changes is unknown in a preview, which would
+  // show every record it feeds as changed (adding an unrelated API did).
+  after: [api.dns, api.run, api.siteverification],
   apex: domain,
   caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
     "pki.goog",

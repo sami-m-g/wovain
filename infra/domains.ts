@@ -1,5 +1,5 @@
 // wovain.com, end to end: the Cloud DNS zone Cloud Domains created with the
-// registration (looked up, never managed here), Search Console ownership,
+// registration (named, never managed here), Search Console ownership,
 // a Cloud Run domain mapping per host with a Google-managed certificate, and
 // the zone's other records: mail (Resend), DMARC, CAA, verification tokens,
 // the status page and the shop.
@@ -70,27 +70,27 @@ const SITE_VERIFICATION_SCOPES = [
 
 export const configureDomain = (args: DomainArgs) => {
   const { apex, project, region } = args;
-  const zone = gcp.dns.getManagedZoneOutput(
-    { name: args.zone, project },
-    { dependsOn: args.after }
-  );
   const record = (
     name: string,
     type: string,
     rrdatas: pulumi.Input<pulumi.Input<string>[]>,
-    opts?: pulumi.CustomResourceOptions
+    // What it waits on besides the APIs.
+    dependsOn: pulumi.Resource[] = []
   ) =>
     new gcp.dns.RecordSet(
       `${name.replaceAll(".", "-")}-${type.toLowerCase()}`,
       {
-        managedZone: zone.name,
+        // The zone's name as a plain string, so it is known in every preview:
+        // managedZone can't change in place, and an unknown one would show
+        // every record set as replaced.
+        managedZone: args.zone,
         name: `${name}.`,
         project,
         rrdatas,
         ttl: TTL_SECONDS,
         type,
       },
-      opts
+      { dependsOn: [...args.after, ...dependsOn] }
     );
 
   // Search Console: the token goes into the apex TXT set, then the
@@ -158,7 +158,7 @@ export const configureDomain = (args: DomainArgs) => {
               .filter((r) => r.type === type)
               .map((r) => r.rrdata)
         ),
-        { dependsOn: [mapping] }
+        [mapping]
       );
     }
     return mapping.name;
