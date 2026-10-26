@@ -223,7 +223,7 @@
     },
     "free": {
       "title": "Gratuit pour commencer",
-      "body": "{credits, number} crédits par mois, de quoi faire environ deux drops. wovain ne prend jamais de part sur vos ventes.",
+      "body": "{credits, number} crédits par mois, de quoi essayer un drop complet. wovain ne prend jamais de part sur vos ventes.",
       "link": "Voir les tarifs"
     },
     "faqSection": {
@@ -674,7 +674,7 @@
     "recommended": "Recommandée",
     "currentPlan": "Votre formule",
     "plans": {
-      "free": "Pour essayer un ou deux drops par mois. Sans carte.",
+      "free": "Pour essayer un drop par mois. Sans carte.",
       "studio": "Pour les créateurs qui lancent un drop par semaine, avec l'autopilote.",
       "label": "Pour les boutiques qui lancent plusieurs drops par semaine. Les crédits non utilisés sont reportés."
     },
@@ -791,7 +791,7 @@
     "faq": {
       "credit": {
         "question": "Qu'est-ce qu'un crédit ?",
-        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 3, un design 2, et un texte de pub ou un appel de l'autopilote 1 : un drop validé étape par étape coûte donc environ 6 crédits. Si une étape échoue, ses crédits vous sont rendus."
+        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 3, un design 2, et un texte de pub ou un appel de l'autopilote 1, et chaque drop dessine trois designs : un drop validé étape par étape coûte donc environ 10 crédits. Si une étape échoue, ses crédits vous sont rendus."
       },
       "yours": {
         "question": "Que dois-je payer en dehors de wovain ?",

@@ -1,3 +1,4 @@
+import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
 import { pickIdea } from "@wovain/core/autopilot";
 import { NEMOTRON_MODEL } from "@wovain/core/nemotron";
 import type { DesignFacts } from "@wovain/core/step-scorers";
@@ -27,9 +28,6 @@ import { assertAutopilot, assertCredits, charge } from "./spend";
 // autopilot, Nemotron picks the lead idea and decides each design.
 
 const ACTIVE: RunStatus[] = ["running", "awaiting_approval"];
-
-// The designs a run draws; each costs a design's credits.
-export const DESIGNS_PER_RUN = 3;
 
 export const markRun = async (
   actor: Actor,
