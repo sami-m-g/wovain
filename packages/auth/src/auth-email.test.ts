@@ -108,6 +108,18 @@ it("logs and captures a failed verification email, and still signs up", async ()
   });
 });
 
+it("still signs up when capturing the failed email fails too", async () => {
+  vi.spyOn(log, "error").mockImplementation(() => {});
+  const warn = vi.spyOn(log, "warn").mockImplementation(() => {});
+  mailer.mockRejectedValue(new Error("The wovain.com domain is not verified"));
+  captureException.mockRejectedValueOnce(new Error("PostHog is unreachable"));
+
+  const response = await signUp(makeAuth());
+
+  expect(response.status).toBe(200);
+  expect(warn).toHaveBeenCalledOnce();
+});
+
 const googleIdToken = (claims: Record<string, unknown>) =>
   new UnsecuredJWT(claims).encode();
 

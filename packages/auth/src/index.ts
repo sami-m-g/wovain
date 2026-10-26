@@ -207,10 +207,17 @@ export const createAuth = (
         error: error instanceof Error ? error : String(error),
         userId,
       });
-      await analytics?.captureException?.(error, {
-        distinctId: userId,
-        properties: { emailKind: mail.message.kind, source: "auth-email" },
-      });
+      try {
+        await analytics?.captureException?.(error, {
+          distinctId: userId,
+          properties: { emailKind: mail.message.kind, source: "auth-email" },
+        });
+      } catch (captureError) {
+        // Analytics never fails the sign-up or reset either.
+        log.warn({
+          analytics: { event: "$exception", failed: String(captureError) },
+        });
+      }
     }
   };
   return betterAuth({
