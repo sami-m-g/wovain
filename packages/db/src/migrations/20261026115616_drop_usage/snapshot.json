@@ -1,0 +1,79 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "63b23d9f-e915-43fa-b68c-18f5b4446b6d",
+  "prevIds": [
+    "e67f2232-82fb-45fd-8c38-a771311cbced"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "usage"
+      ],
+      "writes": [
+        "s|tbl|public.usage",
+        "n|tbl|public.usage",
+        "e|tbl|public.usage",
+        "n|rel|public.usage",
+        "n|type|public.usage"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "tables\u0000[\"public\",\"usage\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"usage\",\"cost_usd\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"usage\",\"created_at\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"usage\",\"id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"usage\",\"kind\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"usage\",\"run_id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"usage\",\"user_id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"usage_created_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"usage_user_created_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"usage\",\"usage_run_id_run_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"usage\",\"usage_user_id_user_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "pks\u0000[\"public\",\"usage\",\"usage_pkey\"]"
+    }
+  ]
+}

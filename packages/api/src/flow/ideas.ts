@@ -4,7 +4,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
 import { flagContextOf } from "./flags";
-import { meter } from "./spend";
+import { charge } from "./spend";
 
 // Trend research (Qloo × Tavily), saved as ranked ideas.
 export const researchIdeas = async (
@@ -20,16 +20,16 @@ export const researchIdeas = async (
     qloo: actor.core.flags.isOn("trends-qloo", context),
     tavily: actor.core.flags.isOn("trends-tavily", context),
   };
-  // Without Tavily there's nothing to rank: don't spend the merchant's run.
+  // Without Tavily there's nothing to rank: don't spend the merchant's credits.
   if (!sources.tavily) {
     actor.log?.set({ trends: { ideas: 0, sources } });
     return [];
   }
-  await meter(actor, "run", { runId });
-  const { avoidNames, ideas, qloo } = await actor.core.trends.research(
-    seed,
-    actor.log,
-    sources
+  const { avoidNames, ideas, qloo } = await charge(
+    actor,
+    "research",
+    { runId },
+    async () => await actor.core.trends.research(seed, actor.log, sources)
   );
   actor.log?.set({ trends: { ideas: ideas.length, qloo, sources } });
   if (ideas.length === 0) {

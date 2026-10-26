@@ -1,4 +1,5 @@
 import { createAuth } from "@wovain/auth";
+import { createBilling } from "@wovain/billing/service";
 import { createCore } from "@wovain/core/core";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
@@ -12,5 +13,7 @@ export const mailer = createMailer({
   from: ENV.EMAIL_FROM,
   siteUrl: ENV.BETTER_AUTH_URL,
 });
-export const auth = createAuth(ENV, db, mailer, analytics);
 export const core = createCore(ENV);
+// Billing reads its flags (billing-paid-plans) from the typed registry.
+export const billing = createBilling(ENV, (flag) => core.flags.isOn(flag));
+export const auth = createAuth(ENV, db, mailer, analytics, billing.polar);

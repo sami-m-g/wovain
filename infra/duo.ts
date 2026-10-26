@@ -221,8 +221,10 @@ const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
 // same id. Once Pulumi holds the resource, the create switching to that form
 // is not a change (ignoreChanges). Kept on delete, as for agents: deleting the
 // consumer would also delete its triggers.
+// pinnedVersionPrefix is required (exactly one of it and pinnedVersion): "1"
+// follows the newest 1.x the catalog sync publishes.
 const ENABLE =
-  "mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { consumer: aiCatalogItemConsumerCreate(input: { itemId: $itemId, target: { projectId: $projectId } }) { errors itemConsumer { id } } }";
+  'mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { consumer: aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersionPrefix: "1", target: { projectId: $projectId } }) { errors itemConsumer { id } } }';
 const ADOPT =
   "mutation($id: AiCatalogItemConsumerID!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id }) { errors itemConsumer { id } } }";
 
@@ -317,7 +319,7 @@ for (const a of customAgents) {
     continue;
   }
   const create =
-    "mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { aiCatalogItemConsumerCreate(input: { itemId: $itemId, target: { projectId: $projectId } }) { errors itemConsumer { id } } }";
+    'mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!) { aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersionPrefix: "1", target: { projectId: $projectId } }) { errors itemConsumer { id } } }';
   new graphql.Mutation(
     a.name,
     {

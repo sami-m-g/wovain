@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { ConnectionsSummary } from "@/components/app/connections-panel";
-import { RunsList } from "@/components/app/runs-list";
+import { RecentRuns } from "@/components/app/runs-list";
 import { SetupChecklist } from "@/components/app/setup-checklist";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link, redirect } from "@/i18n/navigation";
@@ -51,7 +51,7 @@ const DashboardPage = async ({
           <p className="text-muted-foreground mt-2">{t("lead")}</p>
         </div>
         <Button
-          className="h-9 w-fit rounded-lg px-4"
+          className="h-9 w-fit px-4"
           nativeButton={false}
           render={<Link href="/dashboard/new" />}
         >
@@ -70,13 +70,13 @@ const DashboardPage = async ({
               {t("recentRuns")}
             </h2>
             <Link
-              className="text-primary text-sm font-medium underline"
+              className="text-accent-text text-sm font-medium hover:underline"
               href="/dashboard/runs"
             >
               {t("allRuns")}
             </Link>
           </div>
-          <RunsList headingLevel={3} limit={3} />
+          <RecentRuns limit={3} />
         </section>
         <section aria-labelledby="connections-summary">
           <h2

@@ -1,0 +1,16 @@
+import type { SVGProps } from "react";
+
+// Fourthwall's icon from its brand kit (fourthwall.com/brand). The kit ships
+// black and white versions, so it takes the current text colour.
+const Fourthwall = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" viewBox="0 0 65 40">
+    <path
+      clipRule="evenodd"
+      d="M31.4033 10.3171L35.2771 30.4553L38.713 10.3171H47.9862L51.3681 30.4553L55.2419 10.3171H64.4603L57.6964 39.9999H47.2773L43.3501 18.0962L39.4224 39.9999H28.9488L22.185 10.3171H31.4033ZM24.3537 0L22.9897 6.40047H20.426C17.2077 6.40047 16.4988 6.56593 15.953 8.82726L15.6801 10.3173H22.1716L20.8072 16.7723H14.3162L9.46108 40H0.460266L5.31537 16.7723H1.27891L2.64284 10.3173H6.62491L7.06143 8.44089C8.47975 1.43455 11.8617 0 19.7166 0H24.3537Z"
+      fill="currentColor"
+      fillRule="evenodd"
+    />
+  </svg>
+);
+
+export { Fourthwall };

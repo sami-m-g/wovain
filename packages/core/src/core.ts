@@ -4,15 +4,13 @@ import type { FlagsConfig } from "./flags";
 import { createNemotron } from "./nemotron";
 import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
-import { createSpendPolicy } from "./spend";
-import type { SpendConfig } from "./spend";
 import { createTrends, tavilyClient } from "./trends";
 import { createUpstream } from "./upstream";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
 // needs it, with a NOT_CONFIGURED error naming the variable.
-export interface CoreConfig extends SpendConfig, FlagsConfig {
+export interface CoreConfig extends FlagsConfig {
   BETTER_AUTH_URL: string;
   FAL_KEY?: string | undefined;
   META_APP_ID?: string | undefined;
@@ -25,6 +23,7 @@ export interface CoreConfig extends SpendConfig, FlagsConfig {
   QLOO_API_URL: string;
   TAVILY_API_KEY?: string | undefined;
   TOKEN_ENCRYPTION_KEY: string;
+  WOVAIN_ALLOWED_EMAILS?: string | undefined;
 }
 
 export const createCore = (env: CoreConfig) => ({
@@ -42,7 +41,14 @@ export const createCore = (env: CoreConfig) => ({
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
   }),
   sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
-  spend: createSpendPolicy(env),
+  // The team's emails, lowercased (WOVAIN_ALLOWED_EMAILS): flag targeting
+  // only (the internal-only list), never an entitlement.
+  team: new Set(
+    (env.WOVAIN_ALLOWED_EMAILS ?? "")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter((email) => email !== "")
+  ),
   trends: createTrends(
     tavilyClient(env.TAVILY_API_KEY),
     createQloo({ apiKey: env.QLOO_API_KEY, baseURL: env.QLOO_API_URL })

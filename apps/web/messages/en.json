@@ -27,7 +27,11 @@
     "useCasesTitle": "Use cases: print-on-demand for independent labels",
     "useCasesDescription": "How independent designers and small labels use wovain for capsule collections, graphic tees and streetwear drops on print-on-demand, with a paused Meta campaign.",
     "guidesTitle": "Guides for print-on-demand labels",
-    "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads."
+    "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads.",
+    "insightsTitle": "Insights",
+    "pricingTitle": "Pricing: plans and credits for merch drops",
+    "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
+    "billingTitle": "Billing"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -52,7 +56,8 @@
       "en": "English",
       "fr": "Français",
       "es": "Español"
-    }
+    },
+    "noData": "Nothing here yet."
   },
   "Header": {
     "product": "How it works",
@@ -322,12 +327,15 @@
       "overview": "Overview",
       "newDrop": "New drop",
       "runs": "Runs",
-      "connections": "Connections"
+      "connections": "Connections",
+      "insights": "Insights",
+      "billing": "Billing"
     },
     "apiStatus": "API",
     "apiOnline": "online",
     "apiOffline": "offline",
-    "apiChecking": "checking"
+    "apiChecking": "checking",
+    "toggleSidebar": "Show or hide the sidebar"
   },
   "Stages": {
     "brief": "Brief",
@@ -364,16 +372,21 @@
       "done": "done",
       "fourthwall": {
         "title": "Connect Fourthwall",
-        "body": "Your shop and its blanks, so wovain can price and publish products."
+        "body": "Your shop and its blanks, so wovain can price and publish products.",
+        "action": "Connect"
       },
       "meta": {
         "title": "Connect Meta",
-        "body": "Your ad account and Page, so wovain can build the paused campaign."
+        "body": "Your ad account and Page, so wovain can build the paused campaign.",
+        "action": "Connect"
       },
       "drop": {
         "title": "Start your first drop",
-        "body": "One sentence about who it's for. Research and designs work right away."
-      }
+        "body": "One sentence about who it's for. Research and designs work right away.",
+        "action": "Start"
+      },
+      "lead": "Three steps, then wovain can take a brief all the way to a paused campaign.",
+      "next": "Next"
     }
   },
   "Runs": {
@@ -385,12 +398,15 @@
     "started": "Started",
     "manual": "With you",
     "autopilot": "Autopilot",
-    "stoppedAt": "Stopped: {error}",
-    "emptyTitle": "No runs yet"
+    "stoppedAt": "Stopped during {stage}.",
+    "emptyTitle": "No runs yet",
+    "brief": "Brief",
+    "status": "Status",
+    "progress": "Progress"
   },
   "Connections": {
     "title": "Connections",
-    "lead": "wovain acts for you through these accounts. Disconnect either one at any time.",
+    "lead": "wovain acts for you through these accounts. Disconnect any of them at any time.",
     "connected": "Connected",
     "disconnected": "Not connected",
     "connect": "Connect {name}",
@@ -407,9 +423,13 @@
       "meta": {
         "name": "Meta",
         "body": "Your ad account, Page and pixel. Needed to build the campaign."
+      },
+      "fal": {
+        "name": "fal",
+        "body": "Your fal account draws the artwork, billed to you. Needed to make designs."
       }
     },
-    "serverKeys": "Trend research, art and ad copy run on wovain's own keys for Nebius, Qloo, Tavily and fal."
+    "comingSoon": "Coming soon"
   },
   "Wizard": {
     "title": "New drop",
@@ -421,8 +441,7 @@
     "autopilotRunning": "Autopilot is running this drop. It can take a few minutes.",
     "back": "Back",
     "problem": {
-      "notConfigured": "{service} isn't set up on this server yet.",
-      "notConfiguredVariable": "{service} isn't set up on this server yet: {variable} is missing.",
+      "notConfigured": "This step isn't available right now. Try again in a little while.",
       "notConnected": "Connect {service} to finish this step.",
       "connectLink": "Go to Connections",
       "other": "Something went wrong: {message}"
@@ -485,7 +504,8 @@
       "budgetLabel": "Daily budget (USD)",
       "budgetHint": "Between $1 and $500 a day. You can change it in Meta.",
       "budgetError": "Enter a daily budget from $1 to $500.",
-      "submit": "Build paused campaign"
+      "submit": "Build paused campaign",
+      "perDay": "a day"
     },
     "done": {
       "title": "Your campaign is ready, paused",
@@ -494,7 +514,7 @@
       "open": "Open in Ads Manager",
       "another": "Start another drop",
       "history": "See all runs",
-      "autopilotFailed": "Autopilot stopped: {error}"
+      "autopilotFailed": "Autopilot stopped during {stage}. Open the steps to pick it up."
     },
     "working": {
       "research": "Researching trends and drafting the first design…",
@@ -504,7 +524,10 @@
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
       "campaign": "Building the paused campaign on Meta…"
-    }
+    },
+    "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
+    "autopilotUpgrade": "See plans",
+    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step."
   },
   "NotFound": {
     "title": "This page isn't here",
@@ -579,5 +602,196 @@
     "priceTable": "wovain's price for common blank costs",
     "ctaTitle": "Try it with your own brief",
     "ctaBody": "You approve every step, and the campaign starts paused."
+  },
+  "Insights": {
+    "title": "Insights",
+    "lead": "How your drops sell and how their ads do, straight from Fourthwall and Meta.",
+    "rangeLabel": "Period",
+    "range": {
+      "7d": "7 days",
+      "28d": "28 days",
+      "90d": "90 days"
+    },
+    "updating": "Updating…",
+    "shop": {
+      "title": "Shop",
+      "source": "Fourthwall reports, this period",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "orders": "Orders",
+      "chartTitle": "Revenue and profit",
+      "chartLabel": "Revenue and profit by day: {revenue} revenue, {profit} profit in total.",
+      "products": "Top products",
+      "product": "Product",
+      "units": "Units",
+      "margin": "Margin",
+      "notConnectedTitle": "Connect Fourthwall to see sales",
+      "notConnected": "wovain reads your shop's reports to show revenue and profit per drop.",
+      "connect": "Connect Fourthwall",
+      "unavailable": "Fourthwall's reports didn't load: {message}",
+      "emptyTitle": "No sales yet",
+      "empty": "Publish a product and share it; the first order shows up here."
+    },
+    "ads": {
+      "title": "Ads",
+      "source": "Meta, for the campaigns wovain made",
+      "spend": "Spend",
+      "roas": "Return on ad spend",
+      "ctr": "Click-through rate",
+      "cpa": "Cost per result",
+      "campaigns": "Campaigns",
+      "campaign": "Campaign",
+      "results": "Results",
+      "notConnectedTitle": "Connect Meta to see ad results",
+      "notConnected": "wovain reads the insights for the campaigns it built for you.",
+      "connect": "Connect Meta",
+      "unavailable": "Meta's insights didn't load: {message}",
+      "emptyTitle": "No campaign results yet",
+      "empty": "Campaigns are created paused, so results start once you turn one on in Ads Manager."
+    },
+    "drops": {
+      "title": "Drops",
+      "lead": "Each drop with what it sold, what its ads spent and how its work scored.",
+      "drop": "Drop",
+      "status": "Status",
+      "designScore": "Design score",
+      "adScore": "Ad score",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "spend": "Ad spend",
+      "units": "Units",
+      "scorePending": "Ad scores appear once wovain's scorers rate your ad copy.",
+      "notScored": "Not scored",
+      "emptyTitle": "No drops yet",
+      "empty": "Start a drop; its sales, spend and scores land here.",
+      "emptyCta": "Start a drop"
+    }
+  },
+  "Billing": {
+    "perMonth": "/ month",
+    "recommended": "Recommended",
+    "currentPlan": "Your plan",
+    "plans": {
+      "free": "Try a drop or two a month. No card needed.",
+      "studio": "For creators who drop every week, with autopilot.",
+      "label": "For shops running several drops a week. Unused credits carry over."
+    },
+    "features": {
+      "credits": "{credits, number} credits a month",
+      "drops": "About {drops, number} drops a month",
+      "autopilot": "Autopilot: wovain picks, approves and stages ads for you",
+      "manualOnly": "You approve every step",
+      "rollover": "Unused credits roll over",
+      "reset": "Credits refresh each month"
+    },
+    "pack": {
+      "suffix": "one time",
+      "body": "{credits, number} extra credits on any plan. They never expire."
+    },
+    "cta": {
+      "startFree": "Start free",
+      "choose": "Choose {plan}",
+      "buyPack": "Buy {credits, number} credits"
+    },
+    "manage": "Manage billing",
+    "opening": "Opening…",
+    "loading": "Loading your plan…",
+    "checkoutError": "Checkout didn't open. Try again in a moment.",
+    "portalError": "The billing portal didn't open. Try again in a moment.",
+    "disabledNote": "Payments aren't set up on this server yet, so plans can't be changed here.",
+    "creditTag": {
+      "title": "What a credit buys",
+      "subtitle": "Taken when a step runs, given back if it fails",
+      "research": "Trend research",
+      "design": "One design",
+      "assist": "Ad copy, or an autopilot call",
+      "manualDrop": "A drop you approve",
+      "autopilotDrop": "An autopilot drop",
+      "credits": "{count, plural, one {# credit} other {# credits}}",
+      "footer": "Art, ads and blanks bill to your own accounts"
+    },
+    "page": {
+      "title": "Billing",
+      "lead": "Your plan, the credits you have left and what each step costs.",
+      "planLabel": "Plan",
+      "creditsLabel": "Credits left",
+      "creditsSplit": "{plan, number} from your plan · {pack, number} from packs",
+      "renews": "Renews on {date}",
+      "ends": "Ends on {date}. You keep your credits until then.",
+      "pastDue": "Your last payment didn't go through. Update your card in Manage billing to keep your plan.",
+      "checkoutSuccess": "Thanks, your payment went through. Your credits arrive in a few seconds.",
+      "plansTitle": "Plans",
+      "packTitle": "Need a few more credits?",
+      "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
+      "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}."
+    },
+    "paywall": {
+      "creditsTitle": "You're out of credits for this step",
+      "planTitle": "Autopilot comes with Studio",
+      "shortBy": "This step needs {needed, number} and you have {available, number}.",
+      "studioGain": "Studio gives you {credits, number} credits a month and autopilot, for {price} a month. Cancel any time.",
+      "pack": "Buy {credits, number} credits for {price}",
+      "comparePlans": "Compare plans",
+      "notNow": "Not now",
+      "creditsSoonTitle": "More credits are coming soon",
+      "planSoonTitle": "Autopilot is coming soon with paid plans",
+      "freeRefresh": "Your Free credits refresh every month.",
+      "freeRefreshOn": "Your Free credits refresh on {date}."
+    },
+    "notify": {
+      "comingSoon": "Coming soon",
+      "button": "Notify me",
+      "thanks": "Thanks, we've noted your interest."
+    }
+  },
+  "Pricing": {
+    "crumb": "Pricing",
+    "title": "Pay for the drops you make, not for seats",
+    "lead": "Start free with {credits, number} credits every month. Studio, Label and credit packs are coming soon. wovain never takes a cut of your sales.",
+    "plansTitle": "Plans",
+    "noCut": "Prices in US dollars. Free is open now; Studio, Label and credit packs aren't on sale yet.",
+    "yoursTitle": "What you pay on your own accounts",
+    "yoursLead": "Credits cover wovain's work: trend research and Nemotron's briefs, checks and ad copy. The rest you pay directly, on accounts you own, with no markup from wovain.",
+    "yours": {
+      "fal": {
+        "name": "fal",
+        "body": "Artwork is drawn on your fal account and billed by fal per image."
+      },
+      "meta": {
+        "name": "Meta",
+        "body": "Ad spend, billed by Meta to your ad account, and only after you turn a paused campaign on."
+      },
+      "fourthwall": {
+        "name": "Fourthwall",
+        "body": "Blanks and printing, paid out of each sale. Nothing to buy up front."
+      }
+    },
+    "faqTitle": "Questions about pricing",
+    "faq": {
+      "credit": {
+        "question": "What is a credit?",
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, so a drop you approve step by step is about 6 credits. If a step fails, its credits come back."
+      },
+      "yours": {
+        "question": "What do I pay outside wovain?",
+        "answer": "Art, ads and products run on your own accounts. fal bills you for the artwork, Meta bills your ad account once you start a campaign, and Fourthwall takes the blank's cost out of each sale."
+      },
+      "cancel": {
+        "question": "Can I cancel?",
+        "answer": "Yes, any time, from Manage billing. Your plan and its credits stay until the end of the month you paid for, then you're back on Free."
+      },
+      "rollover": {
+        "question": "Do unused credits roll over?",
+        "answer": "On Free, credits refresh each month and unused ones don't carry over. When Label opens, its unused credits will roll over, and credit packs won't expire."
+      },
+      "free": {
+        "question": "What happens when I run out?",
+        "answer": "wovain stops before the step and tells you. Your {freeCredits, number} free credits come back next month, and nothing you made is lost. Paid plans and packs of {packCredits, number} credits are coming soon."
+      },
+      "paid": {
+        "question": "When can I buy Studio, Label or credits?",
+        "answer": "Soon. For now every account is on Free. Press Notify me on the plan you want, so we know which one to open first."
+      }
+    }
   }
 }

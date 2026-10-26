@@ -11,6 +11,29 @@ The system SHALL sell plans through Polar as merchant of record, defined in one 
 - **WHEN** a user signs up
 - **THEN** they are on the Free plan with its monthly credits
 
+### Requirement: Free-only launch
+
+Paid plans and credit packs SHALL stay off sale while the `billing-paid-plans` flag is off (the default): checkout SHALL refuse with `PAID_PLANS_NOT_AVAILABLE`, the paid Polar products SHALL stay archived, and the pricing page SHALL show them as coming soon.
+
+#### Scenario: Checkout while paid plans are off
+
+- **WHEN** a merchant asks for a Studio, Label or credit pack checkout and `billing-paid-plans` is off
+- **THEN** the request is refused with `PAID_PLANS_NOT_AVAILABLE` and no Polar checkout is created
+
+#### Scenario: Existing merchant's first paid step
+
+- **WHEN** a merchant from before billing, with no plan yet, starts a paid step
+- **THEN** wovain puts them on Free in Polar and the step runs once the free credits arrive
+
+### Requirement: Webhook secret from code
+
+`pnpm polar:seed` SHALL create or keep the Polar webhook endpoint and write its signing secret straight to Secret Manager (`polar-webhook-secret`), never printing it; it SHALL rotate the secret only when the store has none.
+
+#### Scenario: Endpoint exists and its secret is stored
+
+- **WHEN** the seed runs again
+- **THEN** the endpoint and its secret are kept
+
 ### Requirement: Credit reservation
 
 A paid step SHALL reserve its credits atomically before it runs, settle them when it succeeds and release them when it fails; a step with too few credits SHALL be refused before any provider is called.
