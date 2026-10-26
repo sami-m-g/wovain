@@ -19,6 +19,10 @@
     "fal": {
       "type": "http",
       "url": "https://mcp.fal.ai/mcp-relay"
+    },
+    "fourthwall": {
+      "type": "http",
+      "url": "https://mcp.fourthwall.com/app"
     }
   }
 }

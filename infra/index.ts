@@ -226,6 +226,16 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
+// Secrets whose versions live in Secret Manager outside Pulumi (the Meta app
+// credentials, added by hand): mounted without a SecretVersion here, so
+// `pulumi up` never touches their values. Each must keep an enabled version:
+// Cloud Run refuses a revision whose secret has no `latest` version.
+// Without them, connecting Meta answers META_NOT_CONFIGURED.
+const externalSecretIds = ["meta-app-id", "meta-app-secret"] as const;
+const mountedSecretIds = [
+  ...new Set([...populated.keys(), ...externalSecretIds]),
+];
+
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
   "web-runner",
@@ -368,7 +378,7 @@ const service = cloudRunService("web", {
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
     { name: "WOVAIN_BUCKET", value: media.name },
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
-    ...[...populated.keys()].map((id) => secretEnv(id)),
+    ...mountedSecretIds.map((id) => secretEnv(id)),
   ],
   location: region,
   maxInstances: 2,
@@ -455,7 +465,7 @@ const dev = devEnvironment({
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
-  populated: [...populated.keys()],
+  populated: mountedSecretIds,
   project,
   region,
   secrets,
@@ -476,6 +486,8 @@ const site = configureDomain({
     "letsencrypt.org",
   ],
   dmarcRua: config.get("dmarcRua"),
+  googleDkim: config.get("googleDkim"),
+  googleSiteVerification: config.get("googleSiteVerification"),
   metaDomainVerification: config.get("metaDomainVerification"),
   project,
   region,
@@ -493,6 +505,7 @@ const site = configureDomain({
     { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
+  siteOwnerEmail: config.get("siteOwnerEmail"),
   zone: "wovain-com",
 });
 export const domainMappings = site.mappings;

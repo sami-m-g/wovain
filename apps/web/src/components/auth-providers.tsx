@@ -96,7 +96,13 @@ export const AuthProviders = ({
       ]}
       authClient={authClient}
       basePaths={{ auth: "", settings: "/dashboard/settings" }}
-      emailAndPassword={{ forgotPassword: true, minPasswordLength: 8 }}
+      // Sign-up shows "check your email" (verify-email) instead of signing in;
+      // the server requires a verified email for password sign-in.
+      emailAndPassword={{
+        forgotPassword: true,
+        minPasswordLength: 8,
+        requireEmailVerification: true,
+      }}
       locale={authLocaleFor(locale)}
       navigate={({ replace, to }) => {
         const arriving = isDestination(to);

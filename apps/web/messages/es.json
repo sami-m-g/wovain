@@ -161,9 +161,7 @@
     ],
     "heroCta": "Empezar un drop",
     "demo": {
-      "example": "Ejemplo",
-      "caption": "Un drop, del brief a la campaña en pausa.",
-      "alt": "Un ejemplo de drop en wovain. Se escribe un brief de una línea. Aparecen tres ideas de tendencia, cada una con su puntuación y sus indicios. Aparecen cuatro diseños sobre camisetas lisas con su control de impresión, y el diseñador aprueba uno. Se convierte en un producto oculto en Fourthwall, con su precio y su beneficio. Aparece una vista previa de un anuncio de Meta, y la campaña se crea en pausa.",
+      "alt": "Un ejemplo de drop en wovain. Se escribe un brief de una línea. Aparecen tres ideas de tendencia, cada una con su puntuación y sus indicios. Aparecen cuatro diseños como maquetas de camiseta de Fourthwall con su control de impresión, y el diseñador aprueba uno. Se convierte en un producto oculto en Fourthwall, con su precio y su beneficio. Aparece una vista previa de un anuncio de Meta, y la campaña se crea en pausa.",
       "pause": "Pausar el ejemplo",
       "play": "Reproducir el ejemplo",
       "brief": "Dibujos botánicos lavados de línea para una cápsula de primavera, para quienes cultivan en el balcón.",
@@ -194,7 +192,8 @@
         "body": "Dibujos de línea para quienes cultivan en espacios pequeños. Cápsula de primavera, impresa bajo demanda.",
         "cta": "Comprar"
       },
-      "paused": "Campaña: en pausa"
+      "paused": "Campaña: en pausa",
+      "initials": "TM"
     },
     "results": {
       "title": "A la venta, anunciado, medido",
@@ -204,7 +203,9 @@
       "insights": "Estadísticas",
       "sizes": "Talla",
       "addToCart": "Añadir al carrito",
-      "paused": "En pausa hasta que la actives"
+      "paused": "En pausa hasta que la actives",
+      "photoAlt": "Un modelo en un balcón con la camiseta negra Fern Study No. 3",
+      "mockupAlt": "El diseño Fern Study No. 3 en una camiseta gruesa negra, llevada por un modelo, tal como la genera Fourthwall"
     },
     "connectors": {
       "title": "Funciona en las cuentas que ya tienes",
@@ -262,7 +263,7 @@
       "spendTitle": "Anuncios y gasto",
       "spendBody": "Las campañas se crean en pausa. El gasto en anuncios solo empieza cuando activas una campaña en Meta, que lo factura a tu cuenta publicitaria.",
       "contactTitle": "Contacto",
-      "contactBody": "Las preguntas sobre estos términos van a hello@wovain.com."
+      "contactBody": "Las preguntas sobre estos términos van a support@wovain.com."
     }
   },
   "Auth": {
@@ -281,6 +282,10 @@
     "toSignUpLink": "Crea una cuenta",
     "toLogin": "¿Ya tienes una cuenta?",
     "toLoginLink": "Inicia sesión",
+    "verifyTitle": "Revisa tu correo",
+    "verifyLead": "Te enviamos un enlace para confirmar tu dirección. Ábrelo para terminar el registro; te inicia sesión.",
+    "verifyWrongEmail": "¿Dirección equivocada?",
+    "verifyWrongEmailLink": "Regístrate con otro correo",
     "errors": {
       "email": "Introduce un correo válido, como tu@ejemplo.com.",
       "name": "Introduce tu nombre (al menos 2 caracteres).",
@@ -307,10 +312,8 @@
       "insights": "Estadísticas",
       "billing": "Facturación"
     },
-    "apiStatus": "API",
-    "apiOnline": "en línea",
-    "apiOffline": "sin conexión",
-    "apiChecking": "comprobando",
+    "docs": "Docs",
+    "docsLabel": "Docs (se abre en una pestaña nueva)",
     "toggleSidebar": "Mostrar u ocultar la barra lateral"
   },
   "Stages": {
@@ -413,7 +416,7 @@
     "stepsLabel": "Pasos del drop",
     "stepOf": "Paso {current, number} de {total, number}",
     "autopilot": "Piloto automático",
-    "autopilotHint": "Nemotron elige la idea y aprueba el diseño; wovain publica y crea la campaña, en pausa.",
+    "autopilotHint": "wovain elige la idea y aprueba el diseño, lo publica y crea la campaña, en pausa.",
     "autopilotRunning": "El piloto automático está gestionando este drop. Puede tardar unos minutos.",
     "back": "Atrás",
     "problem": {
@@ -746,7 +749,7 @@
     "plansTitle": "Planes",
     "noCut": "Precios en dólares estadounidenses. Free ya está abierto; Studio, Label y los packs de créditos aún no están a la venta.",
     "yoursTitle": "Lo que pagas en tus propias cuentas",
-    "yoursLead": "Los créditos cubren el trabajo de wovain: la investigación de tendencias y los briefs, revisiones y textos de anuncio de Nemotron. El resto lo pagas directamente, en cuentas tuyas, sin margen de wovain.",
+    "yoursLead": "Los créditos cubren el trabajo de wovain: la investigación de tendencias, los briefs, las revisiones de diseño y los textos de anuncio. El resto lo pagas directamente, en cuentas tuyas, sin margen de wovain.",
     "yours": {
       "fal": {
         "name": "fal",

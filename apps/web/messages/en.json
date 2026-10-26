@@ -161,9 +161,7 @@
     ],
     "heroCta": "Start a drop",
     "demo": {
-      "example": "Example",
-      "caption": "One drop, from brief to paused campaign.",
-      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear on tee blanks with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
+      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
       "pause": "Pause the example",
       "play": "Play the example",
       "brief": "Washed botanical line drawings for a spring capsule, for people who garden on balconies.",
@@ -194,7 +192,8 @@
         "body": "Line drawings for people who grow things in small places. Spring capsule, printed to order.",
         "cta": "Shop now"
       },
-      "paused": "Campaign: Paused"
+      "paused": "Campaign: Paused",
+      "initials": "YL"
     },
     "results": {
       "title": "Listed, advertised, counted",
@@ -204,7 +203,9 @@
       "insights": "Insights",
       "sizes": "Size",
       "addToCart": "Add to cart",
-      "paused": "Paused until you turn it on"
+      "paused": "Paused until you turn it on",
+      "photoAlt": "A model on a balcony wearing the black Fern Study No. 3 tee",
+      "mockupAlt": "The Fern Study No. 3 design on a black heavyweight tee, worn by a model, as Fourthwall renders it"
     },
     "connectors": {
       "title": "Runs inside the accounts you already have",
@@ -262,7 +263,7 @@
       "spendTitle": "Ads and spend",
       "spendBody": "Campaigns are created paused. Any ad spend starts only when you turn a campaign on in Meta, and it is billed by Meta to your ad account.",
       "contactTitle": "Contact",
-      "contactBody": "Questions about these terms go to hello@wovain.com."
+      "contactBody": "Questions about these terms go to support@wovain.com."
     }
   },
   "Auth": {
@@ -281,6 +282,10 @@
     "toSignUpLink": "Create an account",
     "toLogin": "Already have an account?",
     "toLoginLink": "Sign in",
+    "verifyTitle": "Check your email",
+    "verifyLead": "We sent you a link to confirm your address. Open it to finish signing up; it signs you in.",
+    "verifyWrongEmail": "Wrong address?",
+    "verifyWrongEmailLink": "Sign up with a different email",
     "errors": {
       "email": "Enter a valid email address, like you@example.com.",
       "name": "Enter your name (at least 2 characters).",
@@ -307,10 +312,8 @@
       "insights": "Insights",
       "billing": "Billing"
     },
-    "apiStatus": "API",
-    "apiOnline": "online",
-    "apiOffline": "offline",
-    "apiChecking": "checking",
+    "docs": "Docs",
+    "docsLabel": "Docs (opens in a new tab)",
     "toggleSidebar": "Show or hide the sidebar"
   },
   "Stages": {
@@ -413,7 +416,7 @@
     "stepsLabel": "Drop steps",
     "stepOf": "Step {current, number} of {total, number}",
     "autopilot": "Autopilot",
-    "autopilotHint": "Nemotron picks the idea and approves the design; wovain publishes and builds the campaign, paused.",
+    "autopilotHint": "wovain picks the idea, approves the design, publishes it and builds the campaign, paused.",
     "autopilotRunning": "Autopilot is running this drop. It can take a few minutes.",
     "back": "Back",
     "problem": {
@@ -746,7 +749,7 @@
     "plansTitle": "Plans",
     "noCut": "Prices in US dollars. Free is open now; Studio, Label and credit packs aren't on sale yet.",
     "yoursTitle": "What you pay on your own accounts",
-    "yoursLead": "Credits cover wovain's work: trend research and Nemotron's briefs, checks and ad copy. The rest you pay directly, on accounts you own, with no markup from wovain.",
+    "yoursLead": "Credits cover wovain's work: trend research, briefs, design checks and ad copy. The rest you pay directly, on accounts you own, with no markup from wovain.",
     "yours": {
       "fal": {
         "name": "fal",

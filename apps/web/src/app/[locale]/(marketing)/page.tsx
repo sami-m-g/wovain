@@ -69,7 +69,7 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
         aria-labelledby="hero-title"
         className="overflow-x-clip pt-6 pb-12 sm:pt-12 sm:pb-20"
       >
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 sm:gap-10 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,8fr)] lg:gap-12">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 sm:gap-10 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
           <div className="flex flex-col gap-4 sm:gap-6">
             <h1
               className="font-display text-display-1 font-semibold text-balance lg:text-[clamp(2.75rem,1rem+3.2vw,4.25rem)]"
@@ -106,7 +106,7 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
               </Link>
             </div>
           </div>
-          <HeroDemo />
+          <HeroDemo className="lg:-me-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))]" />
         </div>
       </section>
 

@@ -504,7 +504,7 @@ describe("finishRun", () => {
     });
     const actor = {
       ...ctx.actor,
-      analytics: { capture, captureException: vi.fn() },
+      analytics: { capture },
     };
     const { runId } = await seedRun(ctx.db, "running");
 

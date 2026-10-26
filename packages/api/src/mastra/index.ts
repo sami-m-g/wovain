@@ -48,7 +48,7 @@ export const mastra = createMastra({
     db,
     mailer: createMailer({
       apiKey: undefined,
-      from: "wovain <hello@wovain.com>",
+      from: "wovain <support@wovain.com>",
       siteUrl: env.BETTER_AUTH_URL,
     }),
   },

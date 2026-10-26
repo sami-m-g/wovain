@@ -200,16 +200,14 @@ const fixedPrice = (product: models.Product) =>
     (price) => !price.is_archived && price.amount_type === "fixed"
   );
 
-const pricesFor = (item: Item): models.ProductPriceFixedCreate[] =>
-  item.priceCents === 0
-    ? []
-    : [
-        {
-          amount_type: "fixed",
-          price_amount: item.priceCents,
-          price_currency: "usd",
-        },
-      ];
+// Polar needs at least one price; a fixed price of 0 is its free price.
+const pricesFor = (item: Item): models.ProductPriceFixedCreate[] => [
+  {
+    amount_type: "fixed",
+    price_amount: item.priceCents,
+    price_currency: "usd",
+  },
+];
 
 // Archived products stay found, so a run never makes a second copy.
 const findProduct = async (polar: PolarCore, code: string) =>

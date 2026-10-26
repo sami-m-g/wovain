@@ -28,6 +28,15 @@ export const alternatesFor = (
   return { canonical: localizedUrl(path, locale), languages };
 };
 
+/** The localized card from app/[locale]/opengraph-image.tsx, as og:image. */
+export const ogImages = (locale: Locale) => [
+  {
+    height: 630,
+    url: localizedUrl("/opengraph-image/og", locale),
+    width: 1200,
+  },
+];
+
 type MetadataKey = Parameters<
   Awaited<ReturnType<typeof getTranslations<"Metadata">>>
 >[0];
@@ -53,6 +62,7 @@ export const pageMetadata = async ({
     description,
     openGraph: {
       description,
+      images: ogImages(locale),
       locale,
       title: t(titleKey),
       url: localizedUrl(path, locale),
@@ -80,6 +90,7 @@ export const contentMetadata = ({
   description,
   openGraph: {
     description,
+    images: ogImages(locale),
     locale,
     title,
     type,

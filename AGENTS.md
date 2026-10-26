@@ -37,6 +37,7 @@
   - `packages/db/src/migrations`: `pnpm run db:generate`
   - `.agents/skills`: `npx skills experimental_install`
   - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
+- Every error must reach PostHog Error Tracking, the one place self-healing watches (`docs/flows.md`, "One error sink"): log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
 - Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
 

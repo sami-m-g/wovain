@@ -7,8 +7,12 @@ import { Checkbox } from "@wovain/ui/components/checkbox";
 import { cn } from "@wovain/ui/lib/utils";
 import {
   Check,
+  ChevronRight,
   History,
+  ChartLine,
   LayoutGrid,
+  PanelLeft,
+  Sun,
   MousePointer2,
   Pause,
   Play,
@@ -25,6 +29,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
+import Image from "next/image";
 import type { ReactNode, RefObject } from "react";
 import {
   useEffect,
@@ -34,20 +39,14 @@ import {
   useState,
 } from "react";
 
+import { Logo } from "@/components/brand/logo";
 import { ShuttleLoader, ShuttleMark } from "@/components/brand/shuttle-mark";
 import {
   AdPreview,
-  BLANK_COLOURS,
+  MOCKUPS,
   PausedBadge,
   ProductListing,
 } from "@/components/marketing/demo-pieces";
-import {
-  BalconyClubArt,
-  FernStudyArt,
-  GardenHoursArt,
-  SeedLibraryArt,
-  TeeMockup,
-} from "@/components/marketing/example-art";
 import { HangTag } from "@/components/product/hang-tag";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import type { Stage } from "@/components/product/run-tape";
@@ -123,13 +122,20 @@ const TITLE_OF = {
   trends: "trends.title",
 } as const satisfies Record<Stage, string>;
 
-const RAIL = [LayoutGrid, Plus, History, PlugZap] as const;
+/** The dashboard's own rail, in its order; "newDrop" is where the demo runs. */
+const NAV = [
+  { icon: LayoutGrid, key: "overview" },
+  { icon: Plus, key: "newDrop" },
+  { icon: History, key: "runs" },
+  { icon: PlugZap, key: "connections" },
+  { icon: ChartLine, key: "insights" },
+] as const;
 
 const DESIGNS = [
-  { art: FernStudyArt, colour: BLANK_COLOURS.bone, score: 88 },
-  { art: GardenHoursArt, colour: BLANK_COLOURS.slate, score: 61 },
-  { art: BalconyClubArt, colour: BLANK_COLOURS.moss, score: 82 },
-  { art: SeedLibraryArt, colour: BLANK_COLOURS.stone, score: 79 },
+  { mockup: MOCKUPS.fern, score: 88 },
+  { mockup: MOCKUPS.garden, score: 61 },
+  { mockup: MOCKUPS.balcony, score: 82 },
+  { mockup: MOCKUPS.seeds, score: 79 },
 ] as const;
 const READY_SCORE = 75;
 
@@ -379,7 +385,7 @@ const DesignsScene = ({
       >
         <AnimatePresence mode="popLayout">
           {DESIGNS.filter((_, index) => !focused || index === 0).map(
-            ({ art: Art, colour, score }, index) => {
+            ({ mockup, score }, index) => {
               const ready = score >= READY_SCORE;
               return (
                 <motion.li
@@ -404,11 +410,13 @@ const DesignsScene = ({
                       index === 0 && approved && "ring-success ring-2"
                     )}
                   >
-                    <div className="bg-muted relative p-1.5 sm:p-2">
-                      <TeeMockup
-                        art={<Art className="size-full" />}
-                        className="aspect-[5/4] w-full sm:aspect-square"
-                        colour={colour}
+                    <div className="bg-muted relative aspect-[5/4] overflow-hidden sm:aspect-square">
+                      <Image
+                        alt=""
+                        className="object-cover object-[50%_55%]"
+                        fill
+                        sizes="(min-width: 640px) 180px, 45vw"
+                        src={mockup}
                       />
                       {index === 0 && approved ? (
                         <motion.span
@@ -480,7 +488,6 @@ const LaunchScene = ({ elapsed }: { elapsed: number }) => {
   const withTag = elapsed < TAG_OUT;
   const withAd = elapsed >= AD_IN;
   const working = !withTag && !withAd;
-  const art = <FernStudyArt className="size-full" />;
   return (
     <LayoutGroup>
       <div className="relative flex items-start justify-center gap-3 sm:gap-5">
@@ -493,8 +500,8 @@ const LaunchScene = ({ elapsed }: { elapsed: number }) => {
           {...enter()}
         >
           <ProductListing
-            art={art}
-            colour={BLANK_COLOURS.bone}
+            image={MOCKUPS.fern}
+            imageAlt=""
             detail={
               <p className="text-muted-foreground figures text-[0.7rem]">
                 {home("tag.profit")}{" "}
@@ -561,10 +568,9 @@ const LaunchScene = ({ elapsed }: { elapsed: number }) => {
               {...enter()}
             >
               <AdPreview
-                art={art}
+                photoAlt=""
                 body={t("demo.ad.body")}
                 brand={t("demo.ad.brand")}
-                colour={BLANK_COLOURS.bone}
                 cta={t("demo.ad.cta")}
                 headline={t("demo.product")}
                 sponsored={t("demo.ad.sponsored")}
@@ -691,6 +697,8 @@ const useHoverFocus = (ref: RefObject<HTMLElement | null>) => {
 export const HeroDemo = ({ className }: { className?: string }) => {
   const t = useTranslations("Home");
   const wizard = useTranslations("Wizard");
+  const shell = useTranslations("Shell.nav");
+  const stages = useTranslations("Stages");
   const reduced = useReducedMotion() ?? false;
   const root = useRef<HTMLElement>(null);
   const frame = useRef<HTMLDivElement>(null);
@@ -718,59 +726,102 @@ export const HeroDemo = ({ className }: { className?: string }) => {
 
   return (
     <figure className={cn("relative", className)} ref={root}>
+      <figcaption className="sr-only">{t("demo.alt")}</figcaption>
+      {/* Soft light behind the app, so it sits on the page like a lit screen. */}
       <div
         aria-hidden="true"
-        className="border-border bg-background shadow-floating relative aspect-[4/5] overflow-hidden rounded-2xl border select-none sm:aspect-[4/3] lg:aspect-[5/4]"
+        className="pointer-events-none absolute -inset-x-8 -top-12 -bottom-8 -z-10 bg-[radial-gradient(55%_60%_at_45%_35%,color-mix(in_oklab,var(--primary)_16%,transparent),transparent_72%)] blur-2xl"
+      />
+      <div
+        aria-hidden="true"
+        className="border-border bg-background shadow-floating relative aspect-[4/5] overflow-hidden rounded-2xl border ring-1 ring-black/5 select-none sm:aspect-[4/3] lg:aspect-[16/11] lg:rounded-e-none lg:border-e-0 dark:ring-white/5"
         inert
         ref={frame}
       >
         <div className="flex h-full">
-          <div className="bg-sidebar text-sidebar-foreground hidden w-14 shrink-0 flex-col items-center gap-5 py-4 sm:flex">
-            <ShuttleMark label={null} size={28} />
-            <ul className="flex flex-col gap-1">
-              {RAIL.map((Icon, index) => (
+          <div className="bg-sidebar text-sidebar-foreground hidden w-14 shrink-0 flex-col gap-6 px-2 py-4 sm:flex lg:w-44 lg:px-3">
+            <div className="flex h-7 items-center justify-center lg:justify-start lg:px-1.5">
+              <span className="lg:hidden">
+                <ShuttleMark label={null} size={26} />
+              </span>
+              <span className="hidden lg:inline-flex">
+                <Logo height={20} tone="dark" />
+              </span>
+            </div>
+            <ul className="flex flex-col gap-0.5 text-[0.8rem]">
+              {NAV.map(({ icon: Icon, key: item }) => (
                 <li
                   className={cn(
-                    "grid size-9 place-items-center rounded-md",
-                    index === 1
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "opacity-60"
+                    "flex h-9 items-center justify-center gap-2.5 rounded-md lg:justify-start lg:px-2.5",
+                    item === "newDrop"
+                      ? "bg-sidebar-accent font-medium"
+                      : "opacity-70"
                   )}
-                  key={Icon.displayName ?? index}
+                  key={item}
                 >
-                  <Icon className="size-4" />
+                  <Icon
+                    className={cn(
+                      "size-4 shrink-0",
+                      item === "newDrop" && "text-sidebar-primary"
+                    )}
+                  />
+                  <span className="hidden truncate lg:inline">
+                    {shell(item)}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:gap-4 sm:p-6">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="font-display truncate text-lg font-semibold tracking-[-0.02em] sm:text-xl">
-                {wizard(TITLE_OF[tapeStage])}
-              </p>
-              <p className="text-muted-foreground figures shrink-0 text-xs">
-                {wizard("stepOf", {
-                  current: STAGE_ORDER.indexOf(tapeStage) + 1,
-                  total: STAGE_COUNT,
-                })}
-              </p>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="border-border bg-background/90 flex h-11 shrink-0 items-center gap-2.5 border-b px-4 text-xs sm:px-6">
+              <PanelLeft className="text-muted-foreground size-4 max-sm:hidden" />
+              <span className="bg-border h-4 w-px max-sm:hidden" />
+              <span className="sm:hidden">
+                <ShuttleMark label={null} size={20} />
+              </span>
+              <span className="text-muted-foreground">{shell("newDrop")}</span>
+              <ChevronRight className="text-muted-foreground size-3.5 rtl:rotate-180" />
+              <span className="truncate font-medium">{stages(tapeStage)}</span>
+              <span className="ms-auto flex items-center gap-2">
+                <span className="border-border grid size-7 place-items-center rounded-md border">
+                  <Sun className="size-3.5" />
+                </span>
+                <span className="bg-secondary text-secondary-foreground grid size-7 place-items-center rounded-full text-[0.65rem] font-semibold">
+                  {t("demo.initials")}
+                </span>
+              </span>
             </div>
-            <RunTape finished={finished} stage={tapeStage} />
-            <div className="relative min-h-0 flex-1 pt-1">
-              <AnimatePresence initial={false} mode="wait">
-                <motion.div
-                  animate={{ opacity: 1 }}
-                  className="flex h-full flex-col justify-center-safe"
-                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                  initial={{ opacity: 0 }}
-                  key={`${clock.index}-${key}`}
-                >
-                  <SceneView beat={beat} elapsed={elapsed} target={target} />
-                </motion.div>
-              </AnimatePresence>
+            <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:gap-4 sm:p-6">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="font-display truncate text-lg font-semibold tracking-[-0.02em] sm:text-xl">
+                  {wizard(TITLE_OF[tapeStage])}
+                </p>
+                <p className="text-muted-foreground figures shrink-0 text-xs">
+                  {wizard("stepOf", {
+                    current: STAGE_ORDER.indexOf(tapeStage) + 1,
+                    total: STAGE_COUNT,
+                  })}
+                </p>
+              </div>
+              <RunTape finished={finished} stage={tapeStage} />
+              <div className="relative min-h-0 flex-1 pt-1">
+                <AnimatePresence initial={false} mode="wait">
+                  <motion.div
+                    animate={{ opacity: 1 }}
+                    className="flex h-full flex-col justify-center-safe"
+                    exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                    initial={{ opacity: 0 }}
+                    key={`${clock.index}-${key}`}
+                  >
+                    <SceneView beat={beat} elapsed={elapsed} target={target} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
+        {/* Top light on the glass. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/15 to-transparent dark:from-white/[0.04]" />
         {reduced ? null : (
           <Cursor
             frame={frame}
@@ -779,28 +830,21 @@ export const HeroDemo = ({ className }: { className?: string }) => {
           />
         )}
       </div>
-      <figcaption className="text-muted-foreground mt-3 flex items-center gap-2 text-xs">
-        <span className="border-border rounded-full border px-2 py-0.5 font-medium">
-          {t("demo.example")}
-        </span>
-        <span className="sr-only">{t("demo.alt")}</span>
-        <span aria-hidden="true">{t("demo.caption")}</span>
-        {reduced ? null : (
-          <Button
-            aria-label={wants === "play" ? t("demo.pause") : t("demo.play")}
-            className="ms-auto"
-            onClick={() => setChoice(wants === "play" ? "pause" : "play")}
-            size="icon-sm"
-            variant="ghost"
-          >
-            {wants === "play" ? (
-              <Pause aria-hidden="true" />
-            ) : (
-              <Play aria-hidden="true" />
-            )}
-          </Button>
-        )}
-      </figcaption>
+      {reduced ? null : (
+        <Button
+          aria-label={wants === "play" ? t("demo.pause") : t("demo.play")}
+          className="bg-background/85 absolute start-3 bottom-3 z-30 backdrop-blur sm:start-[4.25rem] lg:start-[11.75rem]"
+          onClick={() => setChoice(wants === "play" ? "pause" : "play")}
+          size="icon-sm"
+          variant="outline"
+        >
+          {wants === "play" ? (
+            <Pause aria-hidden="true" />
+          ) : (
+            <Play aria-hidden="true" />
+          )}
+        </Button>
+      )}
     </figure>
   );
 };

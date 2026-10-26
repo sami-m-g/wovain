@@ -1,5 +1,8 @@
 import { defineNodeInstrumentation } from "evlog/next/instrumentation";
 
+// An uncaught server error becomes an error-level wide event, which the
+// error tracking drain sends to PostHog (src/lib/evlog.ts). Node runtime
+// only, like evlog.
 const evlog = defineNodeInstrumentation(() => import("./src/lib/evlog"));
 
 // OpenTelemetry to GitLab Observability (src/lib/otel.ts) starts first, so
@@ -13,16 +16,4 @@ export const register: typeof evlog.register = async () => {
   await evlog.register();
 };
 
-// An uncaught server error goes to evlog's wide event and to PostHog Error
-// Tracking (src/lib/error-tracking.ts), each on its own: one failing doesn't
-// stop the other. Node runtime only, like evlog.
-export const onRequestError: typeof evlog.onRequestError = async (...args) => {
-  if (process.env.NEXT_RUNTIME !== "nodejs") {
-    return;
-  }
-  const { captureRequestError } = await import("./src/lib/error-tracking");
-  await Promise.allSettled([
-    evlog.onRequestError(...args),
-    captureRequestError(...args),
-  ]);
-};
+export const { onRequestError } = evlog;

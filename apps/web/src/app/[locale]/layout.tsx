@@ -11,7 +11,7 @@ import { ConsentBanner } from "@/components/consent-banner";
 import Providers from "@/components/providers";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
-import { alternatesFor, siteUrl } from "@/lib/seo";
+import { alternatesFor, ogImages, siteUrl } from "@/lib/seo";
 
 // Only the configured locales exist; anything else (/llms.txt, /foo) is a 404.
 export const dynamicParams = false;
@@ -31,6 +31,7 @@ export const generateMetadata = async ({
     metadataBase: siteUrl,
     openGraph: {
       description: t("defaultDescription"),
+      images: ogImages(locale),
       locale,
       siteName: t("siteName"),
       title: t("defaultTitle"),

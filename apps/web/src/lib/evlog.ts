@@ -8,36 +8,43 @@ import { composeDrains } from "evlog/toolkit";
 
 import { ENV } from "@/env.server";
 
+import { captureServerException } from "./analytics";
 import { createCloudLoggingDrain } from "./cloud-logging";
+import { createErrorTrackingDrain } from "./error-tracking";
 import { activeTraceIds } from "./otel";
 
 const service = "wovain-web";
 const production = process.env.NODE_ENV === "production";
 
-// With a PostHog key, production wide events (errors included) also go to
-// PostHog Logs, linked to the merchant's person by `userId`.
+// With a PostHog key, production wide events also go to PostHog Logs, linked
+// to the merchant's person by `userId`, and every error-level one becomes a
+// `$exception` in PostHog Error Tracking, where self-healing watches
+// (docs/flows.md, "One error sink").
 const cloudLogging = createCloudLoggingDrain();
 const posthogKey = ENV.NEXT_PUBLIC_POSTHOG_KEY;
 const posthog =
   posthogKey === undefined
-    ? undefined
-    : createPostHogDrain({
-        apiKey: posthogKey,
-        host: ENV.NEXT_PUBLIC_POSTHOG_HOST,
-      });
+    ? []
+    : [
+        createPostHogDrain({
+          apiKey: posthogKey,
+          host: ENV.NEXT_PUBLIC_POSTHOG_HOST,
+        }),
+        createErrorTrackingDrain(captureServerException),
+      ];
 // With an OTLP endpoint (src/lib/otel.ts), they also go to GitLab
-// Observability as OTLP logs, linked to their request's trace.
+// Observability as OTLP logs, linked to their request's trace. Errors are
+// still tracked in PostHog only; GitLab gets them as logs and spans.
 const otlpEndpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"];
 const gitlab =
   otlpEndpoint === undefined || otlpEndpoint === ""
-    ? undefined
-    : createOTLPDrain({ recordShape: "compact", semanticConventions: true });
-const drains = composeDrains(
-  [cloudLogging, posthog, gitlab].filter((drain) => drain !== undefined)
-);
+    ? []
+    : [createOTLPDrain({ recordShape: "compact", semanticConventions: true })];
+const drains = composeDrains([cloudLogging, ...posthog, ...gitlab]);
 
 // Every wide event names the trace it belongs to (traceId, spanId), so a
-// Cloud Logging line, a PostHog log and a GitLab Observability trace link up.
+// Cloud Logging line, a PostHog log or exception and a GitLab Observability
+// trace link up.
 const productionDrain = async (ctx: DrainContext) => {
   const ids = activeTraceIds();
   if (ids !== undefined && ctx.event["traceId"] === undefined) {
@@ -57,7 +64,15 @@ export const { withEvlog, useLogger, log, createError } = createEvlog({
   ...output,
 });
 
+// stderr lines (a library's console.error, such as Varlock's leak guard) become
+// error events, so plain text reaches error tracking too. stdout stays the
+// Cloud Logging drain's. PostHog's and evlog's own complaints are skipped:
+// reporting them would go through the same drain.
 export const { register, onRequestError } = createInstrumentation({
+  captureOutput: {
+    ignore: [/\[PostHog/u, /\[evlog/u],
+    stdout: false,
+  },
   service,
   ...output,
 });

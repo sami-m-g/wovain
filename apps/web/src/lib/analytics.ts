@@ -5,8 +5,6 @@ import { PostHog } from "posthog-node";
 
 import { ENV } from "@/env.server";
 
-import { activeTraceIds } from "./otel";
-
 // Server-side funnel and run events (posthog.com/docs/libraries/node), keyed
 // by user id: the same distinct id the browser identifies with. Each event
 // is sent before the response (or the run step) finishes, while Cloud Run
@@ -18,10 +16,8 @@ const posthog =
     ? undefined
     : new PostHog(key, { host: ENV.NEXT_PUBLIC_POSTHOG_HOST });
 // The same property the browser adds to its events (src/lib/analytics-client.ts).
-const environment =
-  new URL(ENV.BETTER_AUTH_URL).hostname === "wovain.com"
-    ? "production"
-    : "development";
+const site = new URL(ENV.BETTER_AUTH_URL).hostname;
+const environment = site === "wovain.com" ? "production" : "development";
 
 /**
  * Sends a server error to PostHog Error Tracking as a `$exception` event
@@ -29,9 +25,9 @@ const environment =
  * merchant's user id when known; without one, PostHog sends it anonymously.
  * The returned promise settles once the event is sent.
  *
- * posthog-node skips an error that carries its "previously captured" flag,
- * so once sent, the error is flagged: a procedure error that oRPC rethrows
- * to a server render, then to `onRequestError`, is reported once.
+ * The error tracking drain (src/lib/error-tracking.ts) is its one caller:
+ * every server error reaches it as an error-level evlog wide event. `site`
+ * tells dev.wovain.com from a laptop, both "development".
  */
 export const captureServerException = async (
   error: unknown,
@@ -41,18 +37,16 @@ export const captureServerException = async (
   if (posthog === undefined) {
     return;
   }
-  // The SDK checks the flag synchronously, before its first await.
-  // trace_id links the PostHog issue to the request's trace in GitLab
-  // Observability (src/lib/otel.ts); apps/ops puts both on the incident.
-  const sent = posthog.captureExceptionImmediate(error, distinctId, {
-    ...properties,
-    environment,
-    trace_id: activeTraceIds()?.traceId,
-  });
-  if (typeof error === "object" && error !== null) {
-    Object.assign(error, { __posthog_previously_captured_error: true });
+  try {
+    await posthog.captureExceptionImmediate(error, distinctId, {
+      ...properties,
+      environment,
+      site,
+    });
+  } catch {
+    // PostHog is unreachable: the error's wide event is still in Cloud
+    // Logging. Logging this failure would loop through the same drain.
   }
-  await sent;
 };
 
 export const analytics: Context["analytics"] = posthog && {
@@ -69,10 +63,6 @@ export const analytics: Context["analytics"] = posthog && {
       // Analytics never fails the merchant's request.
       log.warn({ analytics: { event: event.event, failed: String(error) } });
     }
-  },
-  captureException: (error, { distinctId, properties }) => {
-    const sent = captureServerException(error, distinctId, properties);
-    after(() => sent);
   },
   identify: (person) => {
     after(() => posthog.identifyImmediate(person));

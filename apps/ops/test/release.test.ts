@@ -53,6 +53,27 @@ describe("canaryVerdict", () => {
     expect(result.reasons[0]).toContain("/api/checkout/quote (500)");
   });
 
+  it("promotes despite a few probes a cold start left unanswered", () => {
+    const probes = [
+      { path: "/", status: 0 },
+      { path: "/api/checkout/quote", status: 0 },
+      ...Array.from({ length: 57 }, () => ok("/")),
+    ];
+    expect(canaryVerdict({ canary: healthy, probes, stable: healthy })).toEqual(
+      { reasons: [], verdict: "promote" }
+    );
+  });
+
+  it("rolls back when most probes go unanswered", () => {
+    const probes = [
+      ...Array.from({ length: 10 }, () => ({ path: "/", status: 0 })),
+      ...Array.from({ length: 10 }, () => ok("/")),
+    ];
+    expect(
+      canaryVerdict({ canary: healthy, probes, stable: healthy }).verdict
+    ).toBe("rollback");
+  });
+
   it("rolls back on a 5xx rate well over stable's", () => {
     const result = canaryVerdict({
       canary: { errors: 6, requests: 40 },
@@ -74,14 +95,15 @@ describe("canaryVerdict", () => {
 });
 
 describe("guardDecision", () => {
-  const degraded = { errors: 30, requests: 100 };
+  const none = { browser: 0, dev: 0, production: 0, smoke: 0 };
+  const degraded = { ...none, production: 30 };
+  const devDegraded = { ...none, dev: 30 };
   const base = {
     actions: [],
     deployedAt: undefined,
-    exceptions: 0,
+    exceptions: none,
     firingKpis: [],
     flags: [],
-    health: healthy,
     now,
   };
 
@@ -92,6 +114,7 @@ describe("guardDecision", () => {
   it("switches off the guarded flag that changed most recently", () => {
     const decision = guardDecision({
       ...base,
+      exceptions: degraded,
       flags: [
         flag({ name: "app-ui-v2", updated_at: minutesAgo(50) }),
         flag({ name: "fault-injection-checkout", updated_at: minutesAgo(5) }),
@@ -100,7 +123,6 @@ describe("guardDecision", () => {
         // Already off.
         flag({ active: false, name: "autopilot", updated_at: minutesAgo(1) }),
       ],
-      health: degraded,
     });
     expect(decision).toMatchObject({
       action: "flag-off",
@@ -113,13 +135,13 @@ describe("guardDecision", () => {
       flag({ name: "fault-injection-checkout", updated_at: minutesAgo(5) }),
     ];
     expect(
-      guardDecision({ ...base, devHealth: degraded, flags: fresh })
+      guardDecision({ ...base, exceptions: devDegraded, flags: fresh })
     ).toMatchObject({ action: "flag-off", flag: "fault-injection-checkout" });
     expect(
       guardDecision({
         ...base,
         deployedAt: new Date(minutesAgo(30)),
-        devHealth: degraded,
+        exceptions: devDegraded,
       }).action
     ).toBe("none");
   });
@@ -129,7 +151,7 @@ describe("guardDecision", () => {
       guardDecision({
         ...base,
         deployedAt: new Date(minutesAgo(30)),
-        health: degraded,
+        exceptions: degraded,
       }).action
     ).toBe("rollback");
   });
@@ -139,8 +161,8 @@ describe("guardDecision", () => {
       guardDecision({
         ...base,
         deployedAt: new Date(minutesAgo(30)),
+        exceptions: degraded,
         flags: [flag({ name: "app-ui-v2", updated_at: minutesAgo(50) })],
-        health: degraded,
       }).action
     ).toBe("rollback");
   });
@@ -150,7 +172,7 @@ describe("guardDecision", () => {
       guardDecision({
         ...base,
         deployedAt: new Date(minutesAgo(15)),
-        health: degraded,
+        exceptions: degraded,
       }).action
     ).toBe("none");
   });
@@ -181,8 +203,8 @@ describe("guardDecision", () => {
       guardDecision({
         ...base,
         actions: [new Date(minutesAgo(30))],
+        exceptions: degraded,
         flags: changed,
-        health: degraded,
       }).action
     ).toBe("none");
     expect(
@@ -191,8 +213,8 @@ describe("guardDecision", () => {
         actions: [minutesAgo(70), minutesAgo(200), minutesAgo(300)].map(
           (d) => new Date(d)
         ),
+        exceptions: degraded,
         flags: changed,
-        health: degraded,
       }).action
     ).toBe("none");
   });
