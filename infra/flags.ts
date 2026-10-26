@@ -71,10 +71,15 @@ export const featureFlags = () => {
   // wovain:internalUserIds id1,id2`), which the app evaluates every merchant
   // by (packages/core/src/flags.ts). The placeholder keeps the list valid
   // while it has nobody else.
-  const team = (config.get("internalUserIds") ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter((id) => id !== "");
+  // Either form: `id1,id2`, or a list (`--path 'wovain:internalUserIds[0]'`).
+  const raw = config.get("internalUserIds") ?? "";
+  const listed: unknown = raw.trimStart().startsWith("[")
+    ? JSON.parse(raw)
+    : raw.split(",");
+  if (!Array.isArray(listed)) {
+    throw new TypeError("wovain:internalUserIds must be id1,id2 or a list");
+  }
+  const team = listed.map((id) => String(id).trim()).filter((id) => id !== "");
   const internalList = new gitlab.ProjectFeatureFlagUserList(
     INTERNAL_USER_LIST,
     {
