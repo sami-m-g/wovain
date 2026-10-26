@@ -257,6 +257,9 @@ catalogs:
     typescript:
       specifier: npm:@typescript/typescript6@^6.0.2
       version: 6.0.2
+    unleash-client:
+      specifier: ^6.12.2
+      version: 6.12.2
     varlock:
       specifier: 1.23.0
       version: 1.23.0
@@ -558,9 +561,6 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      unleash-client:
-        specifier: ^6.12.2
-        version: 6.12.2
       varlock:
         specifier: 'catalog:'
         version: 1.23.0
@@ -719,6 +719,9 @@ importers:
       posthog-node:
         specifier: 'catalog:'
         version: 5.57.2(@opentelemetry/api@1.10.0)
+      unleash-client:
+        specifier: 'catalog:'
+        version: 6.12.2
       zod:
         specifier: 'catalog:'
         version: 4.6.7

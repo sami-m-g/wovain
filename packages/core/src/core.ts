@@ -1,4 +1,6 @@
 import { createArtist } from "./fal";
+import { createFlags } from "./flags";
+import type { FlagsConfig } from "./flags";
 import { createNemotron } from "./nemotron";
 import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
@@ -10,7 +12,7 @@ import { createUpstream } from "./upstream";
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
 // needs it, with a NOT_CONFIGURED error naming the variable.
-export interface CoreConfig extends SpendConfig {
+export interface CoreConfig extends SpendConfig, FlagsConfig {
   BETTER_AUTH_URL: string;
   FAL_KEY?: string | undefined;
   META_APP_ID?: string | undefined;
@@ -27,6 +29,8 @@ export interface CoreConfig extends SpendConfig {
 
 export const createCore = (env: CoreConfig) => ({
   artist: createArtist(env.FAL_KEY),
+  // GitLab feature flags (./flags.ts), typed by ./flag-registry.ts.
+  flags: createFlags(env),
   nemotron: createNemotron({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,

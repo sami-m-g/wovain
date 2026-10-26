@@ -12,11 +12,20 @@ export const researchIdeas = async (
   runId?: string
 ) => {
   await meter(actor, "run", { runId });
+  // Qloo's hackathon terms allow it on free and demo plans only, so
+  // trends-qloo is evaluated for the merchant's plan; paid plans get
+  // Tavily-only trends (docs/adr/0001-progressive-delivery.md).
+  const context = { plan: actor.plan, userId: actor.userId };
+  const sources = {
+    qloo: actor.core.flags.isOn("trends-qloo", context),
+    tavily: actor.core.flags.isOn("trends-tavily", context),
+  };
   const { avoidNames, ideas, qloo } = await actor.core.trends.research(
     seed,
-    actor.log
+    actor.log,
+    sources
   );
-  actor.log?.set({ trends: { ideas: ideas.length, qloo } });
+  actor.log?.set({ trends: { ideas: ideas.length, qloo, sources } });
   if (ideas.length === 0) {
     return [];
   }

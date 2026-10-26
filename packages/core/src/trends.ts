@@ -54,8 +54,19 @@ export interface TrendResearch {
   // Names Qloo matched: never put them on a product.
   avoidNames: string[];
   ideas: TrendIdea[];
-  qloo: "used" | "no_match" | "failed";
+  // off: the trends-qloo flag said no (a paid plan, or switched off).
+  qloo: "used" | "no_match" | "failed" | "off";
 }
+
+// Which sources a run may use: the trends-qloo and trends-tavily flags,
+// evaluated by the caller for the merchant (packages/api/src/flow/ideas.ts).
+export interface TrendSources {
+  qloo: boolean;
+  tavily: boolean;
+}
+
+const ALL_SOURCES: TrendSources = { qloo: true, tavily: true };
+const NO_TASTE: Taste & { failed?: boolean } = { names: [], themes: [] };
 
 const qlooStatus = (taste: Taste & { failed?: boolean }) => {
   if (taste.failed === true) {
@@ -170,11 +181,25 @@ const ideaOf = (
 };
 
 export const createTrends = (client: TavilySearch, qloo: Qloo) => ({
-  research: async (seed: string, log?: Logger): Promise<TrendResearch> => {
+  research: async (
+    seed: string,
+    log?: Logger,
+    sources: TrendSources = ALL_SOURCES
+  ): Promise<TrendResearch> => {
+    // Tavily is the evidence: without it there is nothing to rank.
+    if (!sources.tavily) {
+      return {
+        avoidNames: [],
+        ideas: [],
+        qloo: sources.qloo ? "no_match" : "off",
+      };
+    }
     // Qloo only sharpens the themes: without it the seed is the one theme.
-    const taste = await qloo
-      .tasteOf(seed, log)
-      .catch(() => ({ failed: true, names: [], themes: [] }));
+    const taste = sources.qloo
+      ? await qloo
+          .tasteOf(seed, log)
+          .catch(() => ({ failed: true, names: [], themes: [] }))
+      : NO_TASTE;
     const themes: (QlooTheme | { name: string })[] =
       taste.themes.length > 0
         ? taste.themes.slice(0, THEMES)
@@ -204,7 +229,7 @@ export const createTrends = (client: TavilySearch, qloo: Qloo) => ({
     return {
       avoidNames: avoidNames.slice(0, 3),
       ideas,
-      qloo: qlooStatus(taste),
+      qloo: sources.qloo ? qlooStatus(taste) : "off",
     };
   },
 });

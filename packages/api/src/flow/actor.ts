@@ -1,4 +1,5 @@
 import type { Core } from "@wovain/core/core";
+import type { FlagPlan } from "@wovain/core/flag-registry";
 import type { Logger } from "@wovain/core/log";
 import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
@@ -10,6 +11,10 @@ export interface Actor {
   db: Database;
   log?: Logger | undefined;
   mailer: Mailer;
+  // The merchant's plan, for plan-gated flags (trends-qloo). Billing (MR
+  // !116) sets it from the subscription; unset counts as free, the only plan
+  // sold at launch.
+  plan?: FlagPlan | undefined;
   userId: string;
 }
 
