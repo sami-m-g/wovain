@@ -1,13 +1,4 @@
 {
-  "title": "Wovain",
-  "pages": [
-    "index",
-    "getting-started",
-    "seller-guide",
-    "architecture",
-    "integrations",
-    "agent-flows",
-    "product",
-    "hackathons"
-  ]
+  "title": "wovain",
+  "pages": ["(guide)", "(developers)"]
 }

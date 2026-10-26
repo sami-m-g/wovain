@@ -1,11 +1,11 @@
 {
   "Metadata": {
     "siteName": "wovain",
-    "defaultTitle": "wovain : des drops de merch pensés, dessinés et lancés par des agents",
-    "defaultDescription": "wovain transforme un brief en drop print-on-demand : veille des tendances, designs que vous validez, produits sur Fourthwall et campagne Meta en pause. Dans ChatGPT et sur le web.",
-    "ogAlt": "wovain : un brief en entrée, un drop print-on-demand en sortie",
-    "ogTagline": "Un brief. Un drop.",
-    "ogSteps": "Tendances · Designs · Validation · Fourthwall · Pubs Meta",
+    "defaultTitle": "wovain : des drops en print-on-demand pour les marques indépendantes",
+    "defaultDescription": "Décrivez une capsule : wovain l'étudie, esquisse les visuels pour votre retouche, met les pièces en ligne sur votre boutique Fourthwall avec une marge qui tient et prépare une campagne Meta en pause.",
+    "ogAlt": "wovain : des drops en print-on-demand pour les marques indépendantes",
+    "ogTagline": "Vous donnez la direction. wovain fait le drop.",
+    "ogSteps": "Direction · Esquisses · Votre retouche · Fourthwall · Annonces Meta",
     "privacyTitle": "Confidentialité",
     "privacyDescription": "Ce que wovain collecte, pourquoi, et comment le supprimer.",
     "termsTitle": "Conditions",
@@ -22,12 +22,12 @@
     "consentTitle": "Autoriser l'accès",
     "resetTitle": "Réinitialiser le mot de passe",
     "resetDescription": "Choisissez un nouveau mot de passe pour votre compte wovain.",
-    "integrationsTitle": "Intégrations : Fourthwall, Meta, ChatGPT et plus",
-    "integrationsDescription": "Comment wovain s'associe à Fourthwall, Meta, Qloo, Tavily, Nebius et ChatGPT : ce que chacun fait dans une exécution, ce que vous connectez et ce qui est partagé.",
-    "useCasesTitle": "Cas d'usage : du merch pour créateurs, YouTubeurs, streamers et groupes",
-    "useCasesDescription": "Comment créateurs, YouTubeurs, streamers Twitch et groupes utilisent wovain pour imaginer, dessiner et lancer des drops de merch avec une campagne Meta en pause.",
-    "guidesTitle": "Guides pour vendre du merch",
-    "guidesDescription": "Des guides pratiques pour créateurs qui vendent du merch : fixer ses prix en print-on-demand pour dégager un profit à chaque vente, et lancer un drop de l'idée aux pubs.",
+    "integrationsTitle": "Intégrations : Fourthwall, fal, Meta et ChatGPT",
+    "integrationsDescription": "Comment wovain fonctionne avec Fourthwall, fal, Meta et ChatGPT : le rôle de chacun dans un drop, ce que vous connectez et ce qui est partagé.",
+    "useCasesTitle": "Cas d'usage : le print-on-demand pour les marques indépendantes",
+    "useCasesDescription": "Comment les designers et petites marques indépendantes utilisent wovain pour des capsules, des t-shirts graphiques et des drops streetwear en print-on-demand.",
+    "guidesTitle": "Guides pour les marques en print-on-demand",
+    "guidesDescription": "Des guides pratiques pour les marques indépendantes en print-on-demand : fixer le prix de chaque pièce pour qu'elle rapporte, et lancer une capsule de l'idée aux annonces.",
     "pricingTitle": "Tarifs : formules et crédits pour vos drops de merch",
     "pricingDescription": "Commencez gratuitement avec des crédits chaque mois. Studio, Label et les packs de crédits arrivent bientôt. Les crédits paient la recherche et les vérifications IA ; fal, Meta et Fourthwall vous facturent directement.",
     "billingTitle": "Facturation"
@@ -60,7 +60,6 @@
   "Header": {
     "product": "Fonctionnement",
     "integrations": "Intégrations",
-    "useCases": "Cas d'usage",
     "guides": "Guides",
     "pricing": "Tarifs",
     "startDrop": "Lancer un drop",
@@ -69,8 +68,7 @@
     "menu": "Menu"
   },
   "Footer": {
-    "tagline": "Des drops de merch pensés, dessinés et lancés par des agents. Vous validez chaque étape.",
-    "future": "Du print-on-demand aujourd'hui, du vêtement à la demande demain.",
+    "tagline": "Des drops en print-on-demand pour les marques indépendantes. Vous donnez la direction ; wovain s'occupe de la production.",
     "product": "Produit",
     "resources": "Ressources",
     "integrations": "Intégrations",
@@ -78,10 +76,14 @@
     "legal": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "Conditions",
-    "copyright": "© {year} wovain. Conçu pour les hackathons GitLab Transcend et Build With AI.",
+    "copyright": "© {year} wovain.",
     "docs": "Documentation",
     "guides": "Guides",
-    "contact": "Contact"
+    "contact": "Contact",
+    "pricing": "Tarifs",
+    "howItWorks": "Comment ça marche",
+    "chatgpt": "wovain dans ChatGPT",
+    "signUp": "Créer votre compte"
   },
   "AnalyticsConsent": {
     "title": "Aidez-nous à améliorer wovain",
@@ -92,26 +94,24 @@
     "settings": "Paramètres des cookies"
   },
   "Home": {
-    "heroTitle": "Un brief. Un drop de merch complet.",
-    "heroLead": "wovain repère ce que votre audience aime cette semaine, dessine des produits sur de vrais blanks Fourthwall et monte les pubs Meta pour les vendre. Vous validez chaque étape, et la campagne démarre en pause.",
-    "briefLabel": "De quoi doit parler votre prochain drop ?",
-    "briefPlaceholder": "Du merch nature et cosy pour ma chaîne sur les plantes",
-    "briefHint": "Une phrase suffit. Vous pourrez tout modifier ensuite.",
+    "heroTitle": "Vous donnez la direction. wovain fait le drop.",
+    "heroLead": "Décrivez la capsule. wovain étudie ce que votre public recherche cette semaine, esquisse les visuels pour votre retouche, met les pièces en ligne sur votre boutique Fourthwall avec une marge qui tient, et prépare la campagne Meta, en pause jusqu'à ce que vous l'activiez.",
+    "briefLabel": "Sur quoi porte votre prochain drop ?",
+    "briefPlaceholder": "Dessins botaniques au trait, délavés, pour une capsule de printemps",
+    "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui.",
     "briefSubmit": "Lancer un drop",
-    "noCard": "Gratuit pendant la bêta, sans carte bancaire. Vous connectez Fourthwall et Meta après l'inscription.",
-    "windowLabel": "Exemple : l'étape de validation d'une exécution dans l'app wovain",
-    "windowCaption": "L'étape de validation d'une exécution dans l'app wovain, avec des données d'exemple.",
+    "windowCaption": "L'étape de validation d'un drop dans wovain, avec des données d'exemple.",
     "window": {
-      "designOne": "Moss & Fern Supply",
-      "designTwo": "Repot Club",
-      "printedOne": "MOSS & FERN SUPPLY · SLOW LIVING DEPT.",
-      "printedTwo": "REPOT CLUB · EST. THIS WEEKEND",
-      "coachOne": "Se lit bien à 10 cm ; deux couleurs d'encre ; aucun nom repris.",
+      "designOne": "Étude de fougère n° 3",
+      "designTwo": "Heures du jardin",
+      "printedOne": "ÉTUDE DE FOUGÈRE N° 3 · CAPSULE DE PRINTEMPS",
+      "printedTwo": "HEURES DU JARDIN · OUVERT JUSQU'AU SOIR",
+      "coachOne": "Lisible à hauteur de poitrine ; deux encres ; aucun nom ni marque.",
       "coachTwo": "Le texte est fin à hauteur de poitrine. Essayez une graisse plus forte."
     },
     "tag": {
       "title": "T-shirt épais",
-      "subtitle": "Moss & Fern Supply · exemple",
+      "subtitle": "Étude de fougère n° 3 · exemple",
       "price": "Prix",
       "blank": "Blank (coût de base)",
       "fees": "Frais de carte",
@@ -120,145 +120,149 @@
       "margin": "Marge sur le blank",
       "campaign": "Campagne Meta : en pause jusqu'à ce que vous l'activiez"
     },
-    "howTitle": "Comment naît un drop",
-    "howLead": "Une exécution, six étapes. Chacune se termine par quelque chose que vous voyez et validez, construit sur de vrais blanks, prix et marges Fourthwall.",
-    "byLabel": "Réalisé par",
-    "seeLabel": "Ce que vous voyez",
-    "steps": {
-      "brief": {
-        "name": "Brief",
-        "body": "Dites pour qui c'est et dans quel esprit, en une phrase.",
-        "see": "« Du merch nature et cosy pour ma chaîne plantes »",
-        "by": "Vous"
-      },
-      "trends": {
-        "name": "Tendances",
-        "body": "Le graphe de goûts de Qloo trouve ce que vos fans aiment aussi ; Tavily vérifie l'actualité de la semaine et les annonces déjà en ligne.",
-        "see": "Des idées notées sur le goût, l'actualité et la concurrence des annonces, avec les sources",
-        "by": "Qloo · Tavily"
-      },
-      "designs": {
-        "name": "Designs",
-        "body": "Une création pour chaque idée, vérifiée par NVIDIA Nemotron (taille d'impression, couleurs, règles de fiche) avant de vous être montrée.",
-        "see": "Un contrôle de 0 à 100 avec ce qu'il faut corriger",
-        "by": "fal · NVIDIA Nemotron"
-      },
-      "approve": {
-        "name": "Validation",
-        "body": "Validez, refusez ou dites ce qu'il faut changer. Vos retours lancent un nouveau tour ; rien n'avance sans votre accord.",
-        "see": "Valider et Modifier, sur chaque design",
-        "by": "Vous"
-      },
-      "fourthwall": {
-        "name": "Fourthwall",
-        "body": "Les designs validés deviennent des produits sur de vrais blanks, créés masqués jusqu'à ce que vous les publiiez.",
-        "see": "Au moins 10 $ de profit et 30 % de marge par vente",
-        "by": "Fourthwall"
-      },
-      "meta": {
-        "name": "Pubs Meta",
-        "body": "Nemotron rédige deux ou trois variantes de pub, chacune sous un angle différent, et wovain monte la campagne avec une pub par variante.",
-        "see": "Une campagne, créée en pause",
-        "by": "Meta"
-      }
-    },
-    "autopilotTitle": "Le pilote automatique suit le même parcours, avec moins d'arrêts",
-    "autopilotLead": "Activez le pilote automatique : wovain retient la meilleure idée, ne valide un design que si le contrôle le juge prêt, publie et monte la campagne. Elle démarre quand même en pause, et chaque exécution reste dans votre historique.",
-    "autopilotManual": "Avec vous",
-    "autopilotAuto": "Pilote automatique",
-    "autopilotStop": "S'arrête pour votre accord",
-    "autopilotSkip": "Nemotron décide, avec une raison enregistrée",
-    "chatgptTitle": "Aussi une app dans ChatGPT",
-    "chatgptLead": "Demandez un drop en langage courant. Les validations apparaissent sous forme de cartes dans la conversation, les mêmes que sur le web.",
-    "chatgptSteps": [
-      "Dans ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé (un serveur MCP).",
-      "Collez l'URL du serveur MCP ci-dessous.",
-      "Connectez-vous à wovain et autorisez l'accès."
-    ],
-    "chatUser": "Fais un drop pour ma chaîne plantes. Cosy, nature, pas trop de jeux de mots.",
-    "chatAssistant": "J'ai trouvé 4 idées. Le cottagecore mousse et fougère arrive en tête : les fans de chaînes plantes aiment aussi la slow life, et peu de boutiques le proposent en typographie. Voici le premier design.",
-    "chatCard": "Moss & Fern Supply · t-shirt épais · 24 $",
-    "chatApprove": "Valider",
     "chatChange": "Modifier",
-    "chatLabel": "Exemple de conversation dans ChatGPT",
-    "mcpLabel": "URL du serveur MCP",
-    "mcpHint": "Dans ChatGPT : mode développeur, puis un connecteur personnalisé avec cette URL.",
-    "copy": "Copier",
-    "copied": "Copié",
-    "integrationsTitle": "Construit sur des outils que vous connaissez déjà",
-    "integrationsLead": "Vous connectez votre propre boutique Fourthwall et votre compte publicitaire Meta. La veille, les visuels et les textes de pub tournent sur les clés de wovain : rien d'autre à configurer.",
-    "integrationsAll": "Toutes les intégrations",
     "connection": {
       "yours": "Vous le connectez",
       "wovain": "Tourne sur les clés de wovain"
     },
-    "pricingTitle": "Ce que ça coûte, ligne par ligne",
-    "pricingLead": "Aucun calcul caché. wovain fixe le prix de chaque produit pour que chaque vente dégage au moins 10 $ de profit et 30 % de marge sur le blank, après frais de carte et réserve de remboursement.",
-    "costs": {
-      "wovain": {
-        "name": "wovain",
-        "value": "Gratuit pour commencer",
-        "body": "Des crédits offerts chaque mois. Les formules payantes, avec plus de crédits et l'autopilote, arrivent bientôt."
-      },
-      "products": {
-        "name": "Produits",
-        "value": "Payés à chaque vente",
-        "body": "Chaque commande paie son propre blank Fourthwall. Rien à acheter d'avance."
-      },
-      "ads": {
-        "name": "Pubs",
-        "value": "Votre budget, de 1 $ à 500 $ par jour",
-        "body": "Facturé par Meta sur votre compte publicitaire, et seulement après avoir activé la campagne."
-      }
-    },
-    "tableCaption": "Le prix que wovain fixe pour des coûts de blank courants",
     "tableBlank": "Coût du blank",
     "tablePrice": "Prix",
     "tableProfit": "Profit par vente",
     "tableMargin": "Marge sur le blank",
-    "tableNote": "Calculé avec la règle de prix de wovain : frais de carte de 2,9 % + 0,30 $ sur la commande (prix, 5 $ de livraison et 7 % de taxe de vente) et réserve de remboursement de 2 %, arrondi au dollar supérieur.",
-    "pricingGuide": "Lire le guide des prix",
-    "useCasesTitle": "Pensé pour les créateurs qui vendent du merch",
-    "useCasesLead": "Le même parcours, adapté à l'endroit où se trouve déjà votre audience.",
-    "faqTitle": "Vos questions, nos réponses",
+    "example": "Exemple",
+    "eyebrow": "Le print-on-demand pour les marques indépendantes",
+    "heroSecondary": "Voir comment se fait un drop",
+    "heroNote": "Créez un compte, puis connectez Fourthwall, fal et Meta.",
+    "how": {
+      "eyebrow": "Comment ça marche",
+      "title": "D'une phrase à une capsule en ligne",
+      "lead": "Quatre étapes. Deux vous reviennent, et rien n'avance sans votre accord.",
+      "you": "Vous",
+      "wovain": "wovain",
+      "steps": [
+        {
+          "title": "Donner la direction",
+          "body": "Rédigez le brief comme pour un studio : l'ambiance, les références, pour qui. Une phrase suffit ; plus de détails vous rapprochent du but.",
+          "detail": "« Dessins botaniques au trait, délavés, printemps, pour celles et ceux qui jardinent sur leur balcon. »"
+        },
+        {
+          "title": "Recherche et esquisses",
+          "body": "wovain regarde ce qui plaît à votre public et ce qui bouge cette semaine, puis esquisse des visuels pour chaque idée, dimensionnés et vérifiés pour l'impression.",
+          "detail": "Chaque idée affiche ses sources et un contrôle d'impression."
+        },
+        {
+          "title": "Retoucher et valider",
+          "body": "Validez les pièces que vous signeriez. Refusez-en une avec une note, par exemple « texte plus gras, sans les feuilles », et wovain en dessine une nouvelle série.",
+          "detail": "Rien n'est mis en ligne sans votre accord."
+        },
+        {
+          "title": "Mettre en ligne et préparer",
+          "body": "Les visuels validés deviennent des produits sur votre boutique Fourthwall, sur de vrais blanks, au prix calculé depuis leur coût de base. wovain rédige des annonces sous plusieurs angles et construit une campagne Meta autour.",
+          "detail": "Les produits démarrent masqués. La campagne démarre en pause."
+        }
+      ]
+    },
+    "connectors": {
+      "eyebrow": "Vos comptes",
+      "title": "Fonctionne dans les comptes que vous gérez déjà",
+      "lead": "Connectez chacun avec sa propre connexion. Les produits, les visuels et les annonces restent dans vos comptes, et vous pouvez vous déconnecter à tout moment.",
+      "link": "Comment se passe la connexion",
+      "fourthwall": {
+        "role": "Boutique",
+        "body": "Les produits sont créés sur de vrais blanks dans votre boutique. Fourthwall imprime, expédie et gère le paiement."
+      },
+      "fal": {
+        "role": "Visuels",
+        "body": "Dessine les visuels de chaque idée sur votre compte fal, en résolution d'impression."
+      },
+      "meta": {
+        "role": "Annonces",
+        "body": "La campagne est construite dans votre compte publicitaire, créée en pause, avec le budget quotidien que vous fixez."
+      }
+    },
+    "outcomes": {
+      "eyebrow": "Ce que vous y gagnez",
+      "title": "Du temps d'atelier, des marges intactes",
+      "lead": "wovain prend en charge les tâches de production autour d'un drop, pour que votre temps aille au travail que vous seul pouvez faire.",
+      "items": [
+        {
+          "title": "Un seul parcours, du brief à la mise en ligne",
+          "body": "Recherche, esquisses, fiches produit et annonces se suivent au même endroit, dans l'ordre, avec votre validation entre chaque étape."
+        },
+        {
+          "title": "Des prix qui tiennent",
+          "body": "Chaque prix part du coût de base réel du blank et garde au moins 10 $ de profit et 30 % de marge après frais de carte, taxe de vente et réserve pour remboursements."
+        },
+        {
+          "title": "Aucune dépense toute seule",
+          "body": "Les campagnes sont créées en pause, avec un budget quotidien de 1 $ à 500 $. Vous les activez dans Meta."
+        },
+        {
+          "title": "Des annonces avec plus d'une idée",
+          "body": "Chaque produit reçoit plusieurs annonces écrites sous des angles différents, pour voir à laquelle votre public répond."
+        },
+        {
+          "title": "Le pilote automatique, quand vous le voulez",
+          "body": "Activez-le et wovain prend lui-même les décisions de validation, avec le même prix plancher et le même budget, et note pourquoi."
+        },
+        {
+          "title": "Votre travail reste le vôtre",
+          "body": "Vos briefs et les visuels que vous validez vous appartiennent. Produits, visuels et annonces restent dans vos propres comptes."
+        }
+      ]
+    },
+    "faqSection": {
+      "eyebrow": "Questions",
+      "title": "Avant de commencer",
+      "lead": "Des réponses courtes. La documentation va plus loin.",
+      "more": "Lire la documentation"
+    },
     "faq": [
       {
-        "question": "Combien coûte wovain ?",
-        "answer": "Vous pouvez commencer gratuitement, avec des crédits chaque mois. Les formules payantes, avec plus de crédits et l'autopilote, arrivent bientôt. Les produits se paient à chaque vente via Fourthwall, et les pubs correspondent à votre budget quotidien, facturé par Meta une fois la campagne activée."
+        "question": "À qui s'adresse wovain ?",
+        "answer": "Aux designers indépendants et aux petites marques qui vendent des pièces graphiques en print-on-demand : t-shirts, sweats, tote bags et affiches sur Fourthwall."
       },
       {
-        "question": "wovain dépensera-t-il de l'argent en pubs tout seul ?",
-        "answer": "Non. Chaque campagne est créée en pause. Les dépenses ne commencent que lorsque vous l'activez dans le Gestionnaire de publicités Meta, au budget quotidien choisi, de 1 $ à 500 $."
+        "question": "Ma marque va-t-elle avoir l'air générique ?",
+        "answer": "Vous donnez la direction et validez chaque pièce. Refusez un visuel avec une note et wovain en dessine une nouvelle série. Rien n'est mis en ligne sans votre accord."
       },
       {
-        "question": "Me faut-il une boutique Fourthwall et un compte publicitaire Meta ?",
-        "answer": "Pour un drop complet, oui. Vous connectez les deux après l'inscription, dans Connexions. La veille des tendances et les designs fonctionnent avant de rien connecter."
+        "question": "wovain dépense-t-il de l'argent en publicité tout seul ?",
+        "answer": "Non. Chaque campagne est créée en pause, avec le budget quotidien que vous choisissez, de 1 $ à 500 $. La dépense ne commence que lorsque vous l'activez dans le Gestionnaire de publicités Meta."
       },
       {
-        "question": "Comment wovain fixe-t-il les prix ?",
-        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge sur le blank, après frais de carte, taxe de vente et réserve de remboursement, arrondi au dollar supérieur."
+        "question": "Que dois-je connecter ?",
+        "answer": "Une boutique Fourthwall pour les produits, un compte fal pour les visuels et un compte publicitaire Meta pour la campagne. Vous connectez chacun avec sa propre connexion après avoir créé votre compte."
       },
       {
-        "question": "Que décide le pilote automatique tout seul ?",
-        "answer": "NVIDIA Nemotron choisit l'idée et ne valide un design que si le contrôle le juge prêt, en enregistrant sa raison. Le code impose toujours le prix plancher, la fourchette de budget et la campagne en pause."
+        "question": "Comment les prix sont-ils fixés ?",
+        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Vous pouvez modifier chaque prix ensuite dans Fourthwall."
       },
       {
-        "question": "À qui appartiennent les designs ?",
-        "answer": "Vos briefs et les designs que vous validez vous appartiennent. wovain n'imprime jamais les noms repérés par Qloo et vérifie les marques déposées, mais vous restez responsable de ce que vous publiez."
+        "question": "Combien ça coûte ?",
+        "answer": "Les formules de wovain sont sur la page tarifs. La production est payée par chaque vente via Fourthwall, les visuels sont facturés par fal et les annonces par Meta, chacun sur votre propre compte."
+      },
+      {
+        "question": "Puis-je l'utiliser dans ChatGPT ?",
+        "answer": "Oui. wovain est aussi une app dans ChatGPT, avec les mêmes étapes et validations. La documentation explique comment l'ajouter."
+      },
+      {
+        "question": "À qui appartiennent les visuels ?",
+        "answer": "Vos briefs et les visuels que vous validez vous appartiennent. wovain vérifie les noms et les marques dans les esquisses, mais vous restez responsable de ce que vous publiez."
       }
     ],
-    "ctaTitle": "Votre prochain drop tient en une phrase",
-    "ctaBody": "Créez un compte, connectez Fourthwall et Meta, et écrivez un brief. wovain s'occupe des clics ; vous gardez le oui.",
-    "ctaButton": "Créer votre compte",
-    "ctaSecondary": "J'ai déjà un compte",
-    "example": "Exemple",
-    "pricingPlans": "Voir les formules et les crédits"
+    "cta": {
+      "title": "Votre prochain drop commence par une phrase",
+      "body": "Créez un compte, connectez votre boutique et rédigez le brief. Vous gardez chaque décision ; wovain s'occupe de la production.",
+      "button": "Créer votre compte",
+      "secondary": "Voir les tarifs"
+    }
   },
   "Legal": {
     "updated": "Dernière mise à jour : {date}",
     "privacy": {
       "title": "Confidentialité",
-      "intro": "wovain est un projet de hackathon. Nous conservons le moins de données possible et ne les vendons jamais.",
+      "intro": "Nous conservons le moins de données possible et ne les vendons jamais.",
       "collectTitle": "Ce que nous collectons",
       "collectBody": "Votre nom, votre e-mail et l'empreinte de votre mot de passe pour votre compte ; les briefs que vous écrivez ; et les exécutions, visuels et produits que wovain crée pour vous.",
       "analyticsTitle": "Mesure d'audience",
@@ -274,7 +278,7 @@
       "title": "Conditions",
       "intro": "En utilisant wovain, vous acceptez ces conditions.",
       "useTitle": "Utiliser wovain",
-      "useBody": "wovain est fourni en l'état, pendant un hackathon, sans garantie. Les fonctionnalités peuvent changer ou s'arrêter.",
+      "useBody": "wovain est fourni en l'état, sans garantie. Les fonctionnalités peuvent changer ou s'arrêter.",
       "contentTitle": "Votre contenu",
       "contentBody": "Vos briefs et les visuels que vous validez vous appartiennent. Vous devez vous assurer que ce que vous publiez ne porte atteinte aux droits de personne ; wovain vérifie les marques déposées mais ne peut pas le garantir.",
       "spendTitle": "Publicités et dépenses",
@@ -555,18 +559,16 @@
     "home": "Accueil",
     "breadcrumbLabel": "Fil d'Ariane",
     "integrationsTitle": "Intégrations",
-    "integrationsLead": "Un drop de merch passe par une boutique, un compte publicitaire et quelques outils de veille et de design. Voici ce que fait chacun dans une exécution, qui le connecte et ce qui est partagé.",
-    "yoursGroup": "Vous les connectez",
-    "wovainGroup": "Ils tournent sur les clés de wovain",
+    "integrationsLead": "Un drop passe par votre boutique, vos visuels et votre compte publicitaire. Voici le rôle de chacun, ce que vous connectez et ce qui est partagé.",
     "useCasesTitle": "Cas d'usage",
-    "useCasesLead": "Le même parcours, du brief à la campagne en pause, adapté à l'endroit où se trouve déjà votre audience.",
+    "useCasesLead": "Le même parcours, du brief à la campagne en pause, adapté à la façon dont votre marque sort ses collections.",
     "guidesTitle": "Guides",
-    "guidesLead": "Des guides pratiques et clairs pour les créateurs qui vendent du merch. Utiles que vous utilisiez wovain ou non.",
+    "guidesLead": "Des guides pratiques et clairs pour les marques indépendantes en print-on-demand. Utiles que vous utilisiez wovain ou non.",
     "label": "Libellé",
     "category": "De quoi il s'agit",
     "connection": "Qui le connecte",
     "setup": "Mise en place",
-    "docs": "Documentation technique",
+    "docs": "Lire la documentation",
     "steps": "Son rôle dans une exécution",
     "data": "Ce qui est partagé",
     "faq": "Questions",
@@ -583,7 +585,7 @@
     "allGuides": "Tous les guides",
     "priceTable": "Le prix wovain pour des coûts de blank courants",
     "ctaTitle": "Essayez avec votre propre brief",
-    "ctaBody": "Gratuit pendant la bêta. Vous validez chaque étape, et la campagne démarre en pause."
+    "ctaBody": "Vous validez chaque étape, et la campagne démarre en pause."
   },
   "Billing": {
     "perMonth": "/ mois",
@@ -693,6 +695,10 @@
       "yours": {
         "question": "Que dois-je payer en dehors de wovain ?",
         "answer": "Les visuels, les pubs et les produits passent par vos propres comptes. fal vous facture les visuels, Meta facture votre compte publicitaire une fois la campagne lancée, et Fourthwall prélève le coût du produit sur chaque vente."
+      },
+      "cancel": {
+        "question": "Puis-je résilier ?",
+        "answer": "Oui, à tout moment, depuis Gérer la facturation. Votre formule et ses crédits restent actifs jusqu'à la fin du mois payé, puis vous repassez en Free."
       },
       "rollover": {
         "question": "Les crédits non utilisés sont-ils reportés ?",

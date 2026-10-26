@@ -13,7 +13,6 @@ import { Link } from "@/i18n/navigation";
 const LINKS = [
   { href: { hash: "how", pathname: "/" }, key: "product" },
   { href: { pathname: "/integrations" }, key: "integrations" },
-  { href: { pathname: "/use-cases" }, key: "useCases" },
   { href: { pathname: "/guides" }, key: "guides" },
   { href: { pathname: "/pricing" }, key: "pricing" },
 ] as const;

@@ -8,14 +8,14 @@ web
 
 ## Users
 
-1. **Hackathon judges** see the site first. They want a ready, good, real product they can sign up for and use, not a pitch deck.
-2. **Creators and sellers**: YouTubers, streamers, bands and small brands who sell merch on Fourthwall and advertise on Meta. They want new products and ads without doing the research, artwork, listings and campaign set-up by hand. They work in ChatGPT or on the wovain website.
+1. **Independent fashion designers and small labels** (one to five people) who turn their direction into print-on-demand pieces on Fourthwall and advertise on Meta. They want the drop produced, listed and staged without a week of research, listings, pricing math and campaign set-up. They keep the taste decisions. They work on the wovain website or in ChatGPT.
+2. Anyone evaluating wovain sees the public site first. It must read as a ready, real product they can sign up for and use, not a pitch deck.
 
 ## Product Purpose
 
 wovain turns one brief into a launched product drop. It researches what the creator's audience loves and what is moving this week, generates designs, waits for the creator's approval, publishes the products on Fourthwall at a price that clears a set profit, writes ad variants and builds a Meta campaign that is created paused. Autopilot runs the same flow with fewer stops. Success: real Fourthwall products and a ready, paused Meta campaign, while the creator only briefed and approved.
 
-wovain starts with print-on-demand and grows into apparel-on-demand. Mention this lightly; the identity must outlive print.
+wovain is print-on-demand. Do not frame it as apparel-on-demand. Positioning and voice are in `.agents/product-marketing.md`.
 
 ## Positioning
 
@@ -32,16 +32,16 @@ Every step ends in something the creator can see and approve, built from real Fo
 - Seller flow: brief → trend picks → designs with a Nemotron check → approve or give feedback → Fourthwall products (created hidden, then published) → ad variants → paused campaign.
 - Autopilot switch, run history, connections page, ChatGPT consent screen.
 - Locales: English, French, Spanish.
-- No billing exists in the product today; signing up needs no card.
+- Billing (Polar) is in progress; the public site links to /pricing and states no prices of its own.
 
 ## Brand Commitments
 
 - Name: wovain, always lowercase.
 - Feel: a blend of a friendly creator tool (warm, approachable, creator-first, like Canva, Shopify, Gumroad) and a craft atelier with AI precision (material honesty and calm, like Aesop, Arc'teryx, Patagonia, with Linear, Stripe, Vercel precision in the product UI).
 - References: identity from Aesop, Arc'teryx, Patagonia; product UI from Linear, Stripe, Vercel; commerce from Everlane (transparent pricing), Ssense (editorial), Printful; SEO structure from Shopify, Canva, Zapier (integration, use-case and guide pages).
-- Logo (approved 2026-10-25): the Flick w mark, a plain lockup for navigation and a seam lockup for brand moments; files in `apps/web/public/brand/`. Palette: cochineal #B0245F, plum ink #3B1530, calico #F7F1E8, saffron #F3B23A. Everything visual reads from the semantic tokens and the `<Logo/>` component.
+- Logo: a new mark is being redesigned; until then the current files in `apps/web/public/brand/` stand in. Use the logo only through the `<Logo/>` component so it swaps in one place, and build nothing around the current W. Palette: cochineal #B0245F, plum ink #3B1530, calico #F7F1E8, saffron #F3B23A. Everything visual reads from the semantic tokens and the `<Logo/>` component.
 - Anti-reference: the earlier "printer's ink swatch book" world. It was print-only and read as a gimmick.
-- Voice: friendly coach. Warm, explains the why in one sentence, leads with the numbers.
+- Voice: editorial and restrained, on the designer's side, honest about money. Short sentences, numbers over adjectives, craft vocabulary (drop, capsule, blank, edit). No generic SaaS look or phrasing.
 
 ## Evidence on Hand
 

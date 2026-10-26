@@ -11,11 +11,73 @@ html > body[data-scroll-locked] {
   --removed-body-scroll-bar-size: 0px !important;
 }
 
-/* wovain brand: cochineal links and highlights (apps/web/src/brand/brand.tsx). */
+/*
+ * wovain brand, the same palette as the web app (apps/web/src/brand/brand.tsx):
+ * calico ground, card-stock surfaces, plum ink, one cochineal dye. Fumadocs'
+ * shadcn preset reads these roles.
+ */
 :root {
-  --color-fd-primary: #b0245f;
+  --background: #f7f1e8;
+  --foreground: #3b1530;
+  --card: #fffcf7;
+  --card-foreground: #3b1530;
+  --popover: #fffcf7;
+  --popover-foreground: #3b1530;
+  --primary: #b0245f;
+  --primary-foreground: #ffffff;
+  --secondary: #efe7da;
+  --secondary-foreground: #3b1530;
+  --muted: #efe7da;
+  --muted-foreground: #6b5462;
+  --accent: #f6dde6;
+  --accent-foreground: #9a1f53;
+  --border: #e6dccd;
+  --input: #93837a;
+  --ring: #b0245f;
+  --sidebar: #fffcf7;
+  --sidebar-foreground: #3b1530;
+  --sidebar-accent: #f6dde6;
+  --sidebar-accent-foreground: #9a1f53;
+  --sidebar-border: #e6dccd;
+  --sidebar-ring: #b0245f;
+  --sidebar-primary-foreground: #ffffff;
 }
 
 .dark {
-  --color-fd-primary: #e8608f;
+  --background: #1a0c16;
+  --foreground: #f7f1e8;
+  --card: #241320;
+  --card-foreground: #f7f1e8;
+  --popover: #241320;
+  --popover-foreground: #f7f1e8;
+  --primary: #e8608f;
+  --primary-foreground: #1a0c16;
+  --secondary: #2e1a29;
+  --secondary-foreground: #f7f1e8;
+  --muted: #2e1a29;
+  --muted-foreground: #c4b3bc;
+  --accent: #3d1730;
+  --accent-foreground: #f28aae;
+  --border: #3a2533;
+  --input: #806678;
+  --ring: #e8608f;
+  --sidebar: #12080f;
+  --sidebar-foreground: #f7f1e8;
+  --sidebar-accent: #3d1730;
+  --sidebar-accent-foreground: #f28aae;
+  --sidebar-border: #3a2533;
+  --sidebar-ring: #e8608f;
+  --sidebar-primary-foreground: #1a0c16;
+}
+
+/* Familjen Grotesk speaks (headings), Geist works (everything else). */
+body {
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+}
+
+:is(h1, h2, h3, h4) {
+  font-family:
+    var(--font-familjen), var(--font-geist), ui-sans-serif, sans-serif;
+  letter-spacing: -0.02em;
 }

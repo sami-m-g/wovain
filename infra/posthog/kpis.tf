@@ -8,11 +8,14 @@
 resource "posthog_insight" "kpi" {
   for_each = local.posthog_kpis
 
-  name          = "KPI: ${each.value.name}"
-  description   = "${each.value.why} Target ${each.value.direction == "up" ? ">=" : "<="} ${each.value.target} ${each.value.unit}, from .gitlab/duo/kpis.yml."
-  query_sql     = replace(each.value.source.query, "{windowDays}", local.window_days)
-  dashboard_ids = [posthog_dashboard.health.id]
-  tags          = ["wovain", "kpi"]
+  name        = "KPI: ${each.value.name}"
+  description = "${each.value.why} Target ${each.value.direction == "up" ? ">=" : "<="} ${each.value.target} ${each.value.unit}, from .gitlab/duo/kpis.yml."
+  query_sql   = replace(each.value.source.query, "{windowDays}", local.window_days)
+  dashboard_ids = concat(
+    [posthog_dashboard.health.id],
+    [for d in lookup(local.kpi_dashboards, each.key, []) : posthog_dashboard.product[d].id],
+  )
+  tags = ["wovain", "kpi"]
 }
 
 resource "posthog_alert" "kpi" {

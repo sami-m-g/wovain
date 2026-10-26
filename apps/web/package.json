@@ -39,6 +39,7 @@
     "evlog": "catalog:",
     "geoip-country": "^5.0.202610240156",
     "lucide-react": "catalog:",
+    "motion": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",
     "next-themes": "catalog:",
