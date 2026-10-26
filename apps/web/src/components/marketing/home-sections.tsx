@@ -9,11 +9,10 @@ import type { ReactNode } from "react";
 import { ConnectBeams } from "@/components/marketing/connect-beams";
 import {
   AdPreview,
-  BLANK_COLOURS,
+  MOCKUPS,
   PausedBadge,
   ProductListing,
 } from "@/components/marketing/demo-pieces";
-import { FernStudyArt } from "@/components/marketing/example-art";
 import { ExampleInsights } from "@/components/marketing/example-insights";
 import { PartnerLogo } from "@/components/marketing/partner-logo";
 import { container, displayTitle } from "@/components/marketing/section";
@@ -92,7 +91,6 @@ export const Results = async () => {
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
   const tag = priceBreakdown(EXAMPLE_BASE_COST);
-  const art = <FernStudyArt className="size-full" />;
   return (
     <section
       aria-labelledby="results-title"
@@ -109,8 +107,8 @@ export const Results = async () => {
           <Result index={0} label={t("results.product")}>
             <div inert>
               <ProductListing
-                art={art}
-                colour={BLANK_COLOURS.bone}
+                image={MOCKUPS.fern}
+                imageAlt={t("results.mockupAlt")}
                 detail={
                   <div className="flex flex-col gap-3 pt-1">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -144,10 +142,9 @@ export const Results = async () => {
           <Result index={1} label={t("results.ad")}>
             <div inert>
               <AdPreview
-                art={art}
+                photoAlt={t("results.photoAlt")}
                 body={t("demo.ad.body")}
                 brand={t("demo.ad.brand")}
-                colour={BLANK_COLOURS.bone}
                 cta={t("demo.ad.cta")}
                 footer={
                   <div className="border-border flex flex-wrap items-center gap-2 border-t p-3">
