@@ -10,12 +10,14 @@ import type { Actor } from "./actor";
 // list matches (packages/core/src/flags.ts).
 export const flagContextOf = async (actor: Actor): Promise<FlagContext> => {
   const [merchant] = await actor.db
-    .select({ email: user.email })
+    .select({ email: user.email, emailVerified: user.emailVerified })
     .from(user)
     .where(eq(user.id, actor.userId));
   return {
     internal:
       merchant !== undefined &&
+      // Only a verified address proves the merchant owns a team email.
+      merchant.emailVerified &&
       actor.core.team.has(merchant.email.trim().toLowerCase()),
     plan: actor.plan,
     userId: actor.userId,

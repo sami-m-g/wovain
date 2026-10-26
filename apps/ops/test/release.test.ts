@@ -134,6 +134,27 @@ describe("guardDecision", () => {
     ).toBe("rollback");
   });
 
+  it("blames a deploy newer than the flag's last edit", () => {
+    expect(
+      guardDecision({
+        ...base,
+        deployedAt: new Date(minutesAgo(20)),
+        flags: [flag({ name: "app-ui-v2", updated_at: minutesAgo(50) })],
+        health: degraded,
+      }).action
+    ).toBe("rollback");
+  });
+
+  it("leaves a deploy the canary is still verifying alone", () => {
+    expect(
+      guardDecision({
+        ...base,
+        deployedAt: new Date(minutesAgo(5)),
+        health: degraded,
+      }).action
+    ).toBe("none");
+  });
+
   it("never moves traffic for a KPI alert alone", () => {
     expect(
       guardDecision({

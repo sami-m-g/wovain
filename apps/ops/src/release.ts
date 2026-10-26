@@ -25,6 +25,9 @@ const GUARD_MAX_ERROR_RATE = 0.05;
 const GUARD_MAX_EXCEPTIONS = 20;
 // What a degradation is blamed on: a change in the last 2 hours.
 const GUARD_WINDOW_MS = 2 * HOUR_MS;
+// A deploy this young is still the canary job's to judge (CANARY_WINDOW_S,
+// 10 minutes, plus its probes): the guard leaves its traffic alone.
+const CANARY_GRACE_MS = 15 * MINUTE_MS;
 // One automatic action an hour, three a day.
 const COOLDOWN_MS = HOUR_MS;
 const MAX_ACTIONS_PER_DAY = 3;
@@ -167,7 +170,19 @@ export const guardDecision = ({
   // days before the flag changed.
   const measured =
     serverSide || reasons.some((r) => r.startsWith("development"));
-  if (flag !== undefined && measured) {
+  const deployed =
+    deployedAt !== undefined && recent(deployedAt.getTime())
+      ? deployedAt
+      : undefined;
+  // Production's degradation is blamed on the newer change: a deploy after
+  // the flag's last edit is the likelier cause. dev.wovain.com's isn't
+  // production's deploy, so a dev spike still blames the flag.
+  const deployIsNewer =
+    serverSide &&
+    deployed !== undefined &&
+    flag !== undefined &&
+    deployed.getTime() > Date.parse(flag.updated_at);
+  if (flag !== undefined && measured && !deployIsNewer) {
     return {
       action: "flag-off",
       flag: flag.name,
@@ -175,10 +190,19 @@ export const guardDecision = ({
     };
   }
   // A KPI alert alone never moves traffic: KPIs are measured over days.
-  if (serverSide && deployedAt !== undefined && recent(deployedAt.getTime())) {
+  if (serverSide && deployed !== undefined) {
+    if (now.getTime() - deployed.getTime() < CANARY_GRACE_MS) {
+      return {
+        action: "none",
+        reasons: [
+          ...reasons,
+          `deployed at ${deployed.toISOString()}: the canary job is still verifying it`,
+        ],
+      };
+    }
     return {
       action: "rollback",
-      reasons: [...reasons, `deployed at ${deployedAt.toISOString()}`],
+      reasons: [...reasons, `deployed at ${deployed.toISOString()}`],
     };
   }
   return {
