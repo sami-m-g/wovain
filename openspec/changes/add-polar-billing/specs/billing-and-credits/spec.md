@@ -70,6 +70,6 @@ Autopilot SHALL be available only on paid plans.
 
 ### Requirement: Spend limits
 
-**Reason**: Plans, credits and reservations replace the email allowlist and global `SPEND_*` limits.
+**Reason**: Plans, credits and reservations replace the global `SPEND_*` limits.
 
-**Migration**: Remove `WOVAIN_ALLOWED_EMAILS` and `SPEND_*`; every user starts on Free and paid steps are charged in credits.
+**Migration**: Remove `SPEND_*`; every user starts on Free and paid steps are charged in credits.

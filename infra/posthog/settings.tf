@@ -23,12 +23,12 @@ resource "posthog_project_settings" "wovain" {
   # so PostHog's own bot detection ($virt_is_bot) sees every one of them as
   # a bot and can't be used here; the browser marks bots itself (BotD).
   test_account_filters = jsonencode([
-    # People PostHog flags as internal or test users.
+    # People PostHog flags as internal or test users: team members are marked
+    # in PostHog itself ($internal_or_test_user), never by an email list in
+    # the app.
     { key = "id", type = "cohort", value = local.internal_cohort_id, operator = "not_in" },
     # dev.wovain.com and localhost.
     { key = "environment", type = "event", value = ["development"], operator = "is_not" },
-    # A signed-in team member (WOVAIN_ALLOWED_EMAILS), set by /api/visitor.
-    { key = "internal", type = "event", value = "is_not_set", operator = "is_not_set" },
     # Headless and automated browsers (BotD).
     { key = "bot", type = "event", value = "is_not_set", operator = "is_not_set" },
   ])

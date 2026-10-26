@@ -17,7 +17,7 @@ The system SHALL record the estimated cost of each paid step (research, design, 
 
 ### Requirement: Spend limits
 
-The system SHALL refuse a paid step before it runs when the user is not allowed (`WOVAIN_ALLOWED_EMAILS`) or when the daily run limit, images-per-run limit or global daily cap (`SPEND_*`) would be exceeded, with an error that says which limit.
+The system SHALL refuse a paid step before it runs when the daily run limit, images-per-run limit or global daily cap (`SPEND_*`) would be exceeded, with an error that says which limit.
 
 #### Scenario: Daily cap reached
 
