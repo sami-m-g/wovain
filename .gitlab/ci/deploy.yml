@@ -75,9 +75,9 @@ image:docs:
     DOCKERFILE: apps/fumadocs/Dockerfile
     BUILD_SECRET: docs_env
 
-# Applies packages/db's Drizzle migrations to Cloud SQL. cloud-sql-proxy
-# makes the same /cloudsql/<instance> socket Cloud Run mounts, so the
-# DATABASE_URL secret works as is. GitLab reads that secret from Secret
+# Applies packages/db's Drizzle migrations, then Mastra's storage schema, to
+# Cloud SQL. cloud-sql-proxy makes the same /cloudsql/<instance> socket
+# Cloud Run mounts, so the DATABASE_URL secret works as is. GitLab reads that secret from Secret
 # Manager with the job's own token (GCP_PROJECT_NUMBER and the
 # GCP_WORKLOAD_IDENTITY_FEDERATION_* variables; infra/index.ts grants each
 # environment its own database's URL).
@@ -106,6 +106,9 @@ migrate:production:
     - cloud-sql-proxy --unix-socket /cloudsql --health-check "$GCP_SQL_INSTANCE" &
     - cloud-sql-proxy wait --max 30s
     - pnpm --filter @wovain/db exec drizzle-kit migrate
+    # Mastra's own schema (memory, workflow snapshots, scores), created by
+    # Mastra's init: the app's store never runs DDL (workflows/storage.ts).
+    - pnpm --filter @wovain/api run storage:init
   environment:
     name: production
     action: prepare
@@ -180,8 +183,8 @@ deploy:development:
     url: $DEV_SITE_URL
 
 # The canary verdict (apps/ops/src/canary.ts): probes the canary's tag URL
-# and counts each revision's 5xx responses for CANARY_WINDOW_S, then sends
-# 100% to the canary or back to the stable revision and files a
+# and counts each revision's 5xx responses for CANARY_WINDOW_S (5 minutes),
+# then sends 100% to the canary or back to the stable revision and files a
 # release-guard issue for the wovain release-guard Duo flow. It holds the
 # production resource group, so the next deploy waits for the verdict. A
 # rollback fails the job, so the pipeline (and DORA's change failure rate)

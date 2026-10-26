@@ -56,7 +56,7 @@ Design: `docs/adr/0001-progressive-delivery.md`.
 - **New flag:** add it to `packages/core/src/flag-registry.ts` with an owner, an expiry and a rollout per environment, then read it with `core.flags.isOn("<name>", { userId, plan })` (`isFlagOn` in `apps/web`). Names are typed; never pass a string you built. The safe state is off: flags are off when GitLab can't be reached.
 - **Roll out:** change the flag's `rollout` in the registry (`off` → `internal` → `percent` → `all`) in a merge request. Its Pulumi preview shows the new GitLab strategies, and the merge applies them.
 - **Kill switch:** Deploy > Feature flags > the flag's Status toggle, or `PUT /projects/:id/feature_flags/:name` with `active=false`. Pulumi ignores Status, so this isn't drift. The release guard does the same on its own for guarded flags.
-- **Deploys:** every web deploy is a canary (the `canary` tag, 10% of traffic) that `canary:production` promotes or rolls back after 10 minutes. Its verdict is in the job's `canary.md` artifact.
+- **Deploys:** every web deploy is a canary (the `canary` tag, 10% of traffic) that `canary:production` promotes or rolls back after 5 minutes. Its verdict is in the job's `canary.md` artifact.
 - **Roll back traffic by hand:** Run pipeline on `main` with `ROLLBACK=1` (optionally `ROLLBACK_TO=<revision>`). Never `gcloud run services update-traffic` from a laptop, and never add traffic to Pulumi: CI owns it.
 - **Clean up:** a `flag-cleanup` issue means the flag expired or is fully rolled out. Delete the losing code path and the `isOn` calls, then the registry entry; `pulumi up` deletes the GitLab flag.
 

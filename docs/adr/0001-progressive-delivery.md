@@ -71,7 +71,7 @@ Constraints:
 
 ### 3. Canary on every production deploy
 
-`deploy:production` deploys the web image with `--no-traffic --tag canary` and moves `CANARY_PERCENT` (10%) to the tag. `canary:production` (`apps/ops/src/canary.ts`, the official `@google-cloud/run` client) then, for `CANARY_WINDOW_S` (10 minutes):
+`deploy:production` deploys the web image with `--no-traffic --tag canary` and moves `CANARY_PERCENT` (10%) to the tag. `canary:production` (`apps/ops/src/canary.ts`, the official `@google-cloud/run` client) then, for `CANARY_WINDOW_S` (5 minutes):
 
 - probes the tag URL (`/`, `/api/auth/ok`, `/api/checkout/quote`) every 30 s, counting a path only when the live site answers it (so a fault both revisions share isn't blamed on the deploy);
 - counts 5xx responses per revision in Cloud Logging (`resource.labels.revision_name`).
@@ -94,7 +94,7 @@ The ops job's `flagHygiene` phase compares GitLab's flags with the registry and 
 
 ## Consequences
 
-- Each deploy reaches 10% of production for 10 minutes first; a bad one never reaches everyone, and failed deployment recovery time becomes the canary window.
+- Each deploy reaches 10% of production for 5 minutes first; a bad one never reaches everyone, and failed deployment recovery time becomes the canary window.
 - `pulumi up` must not undo CI's traffic split: the Cloud Run service ignores `traffics`, as it already ignores the image.
 - The deploy account reads logs (`roles/logging.viewer`) for the canary verdict; the ops account stays read-only and asks for a rollback through a pipeline.
 - Rollout state lives in two places by design: strategies in code (reviewed), Status in GitLab (fast kill switch). The registry comment and AGENTS.md say which is which.
