@@ -53,8 +53,11 @@
 .buildx:
   variables:
     BUILDX_FLAGS: --provenance=false --sbom=false
+  # buildx won't build on the TLS settings in the environment (dind), so they
+  # go into a docker context first, as GitLab's docs do.
   before_script:
-    - docker buildx create --use --driver docker-container --name ci
+    - docker context create ci
+    - docker buildx create --use --driver docker-container --name ci ci
 
 # The install runs the root postinstall, which generates each app's typed env
 # (varlock codegen). Turbo's local cache lives in .turbo, kept between runs.
