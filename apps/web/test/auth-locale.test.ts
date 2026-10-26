@@ -21,3 +21,23 @@ it.each(routing.locales)(
     expect(message.description).not.toContain("different user");
   }
 );
+
+// The verify-email screen a merchant sees after an email sign-up, or after
+// signing in before confirming their email.
+const VERIFY_EMAIL_KEYS = [
+  "checkYourEmail",
+  "resend",
+  "resendIn",
+  "verificationEmailSent",
+] as const;
+
+it.each(routing.locales.filter((locale) => locale !== "en"))(
+  "gives a %s merchant the verify-email screen in their language",
+  (locale) => {
+    const { auth } = authLocaleFor(locale).localization;
+    const { auth: english } = authLocaleFor("en").localization;
+    for (const key of VERIFY_EMAIL_KEYS) {
+      expect(auth[key]).not.toBe(english[key]);
+    }
+  }
+);

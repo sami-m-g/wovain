@@ -6,7 +6,8 @@ import { esES } from "@better-auth-ui/locales/es-ES";
 import type { Locale } from "@/i18n/routing";
 
 // Better Auth UI ships English and Spanish bundles. French is the English
-// bundle with the sign-in, sign-up and password views translated; the rest of
+// bundle with the sign-in, sign-up, verify-email and password views
+// translated; the rest of
 // the account settings stays English until a French bundle exists.
 const frFR = defineAuthLocale({
   ...enUS,
@@ -33,6 +34,7 @@ const frFR = defineAuthLocale({
       needToCreateAnAccount: "Nouveau sur wovain ?",
       newPassword: "Nouveau mot de passe",
       newPasswordPlaceholder: "Nouveau mot de passe",
+      openEmailProvider: "Ouvrir {{provider}}",
       or: "ou utilisez votre e-mail",
       password: "Mot de passe",
       passwordPlaceholder: "Mot de passe",
@@ -43,54 +45,69 @@ const frFR = defineAuthLocale({
         "Connectez-vous avec votre nouveau mot de passe.",
       rememberMe: "Se souvenir de moi",
       rememberYourPassword: "Vous vous souvenez de votre mot de passe ?",
+      resend: "Renvoyer",
+      resendIn: "Renvoyer dans {{seconds}} s",
       resetPassword: "Enregistrer le nouveau mot de passe",
+      scanToOpenEmailProvider:
+        "Scannez pour ouvrir {{provider}} sur votre téléphone",
       sendResetLink: "Envoyer le lien de réinitialisation",
       showPassword: "Afficher le mot de passe",
       signIn: "Se connecter",
       signOut: "Se déconnecter",
       signUp: "Créer un compte",
+      verificationEmailSent: "E-mail de vérification envoyé.",
+      verifyEmail: "Vérifier l'e-mail",
     },
   },
 });
 
-// Google sign-in refused to join an existing wovain account (account_not_linked
-// and the other linking errors share this message): Better Auth only joins
-// Google to an account whose email is verified. The library's copy blames
-// "a different user"; ours says what to do. The error page's button opens
-// Account settings, after sign-in when needed.
-const LINK_CONFLICT = {
+// Our copy over the library's, per locale.
+// - Google sign-in refused to join an existing wovain account
+//   (account_not_linked and the other linking errors share this message):
+//   Better Auth only joins Google to an account whose email is verified, and
+//   an unverified password account can't sign in until it is. The library's
+//   copy blames "a different user"; ours says what to do. Signing in with the
+//   password sends a new confirmation link.
+// - The verify-email card sits under our "Check your email" heading
+//   (AuthView), so its own line says what to do when the email doesn't come.
+const AUTH_COPY = {
   en: {
     callbackAccountLinkConflictDescription:
-      "This email already has a wovain account. Sign in with your email and password, then connect Google in Account settings.",
-    callbackAccountLinkConflictTitle: "Sign in with your password first",
+      "This email already has a wovain account. Confirm your email with the link we sent you, or sign in with your password to get a new link. Then continue with Google.",
+    callbackAccountLinkConflictTitle: "Confirm your email first",
+    checkYourEmail:
+      "No email after a few minutes? Check your spam folder, or send it again.",
   },
   es: {
     callbackAccountLinkConflictDescription:
-      "Este correo ya tiene una cuenta de wovain. Inicia sesión con tu correo y contraseña, y luego conecta Google en los ajustes de la cuenta.",
-    callbackAccountLinkConflictTitle: "Primero inicia sesión con tu contraseña",
+      "Este correo ya tiene una cuenta de wovain. Confirma tu correo con el enlace que te enviamos, o inicia sesión con tu contraseña para recibir uno nuevo. Luego continúa con Google.",
+    callbackAccountLinkConflictTitle: "Primero confirma tu correo",
+    checkYourEmail:
+      "¿No te llegó en unos minutos? Revisa la carpeta de spam o envíalo de nuevo.",
   },
   fr: {
     callbackAccountLinkConflictDescription:
-      "Cette adresse a déjà un compte wovain. Connectez-vous avec votre e-mail et votre mot de passe, puis associez Google dans les paramètres du compte.",
-    callbackAccountLinkConflictTitle:
-      "Connectez-vous d'abord avec votre mot de passe",
+      "Cette adresse a déjà un compte wovain. Confirmez votre e-mail avec le lien que nous vous avons envoyé, ou connectez-vous avec votre mot de passe pour en recevoir un nouveau. Continuez ensuite avec Google.",
+    callbackAccountLinkConflictTitle: "Confirmez d'abord votre e-mail",
     callbackViewAccountSettings: "Paramètres du compte",
+    checkYourEmail:
+      "Rien reçu après quelques minutes ? Vérifiez vos spams ou renvoyez l'e-mail.",
   },
 } as const satisfies Record<Locale, Partial<typeof enUS.localization.auth>>;
 
-const withLinkConflict = (bundle: AuthLocale, locale: Locale): AuthLocale =>
+const withOurCopy = (bundle: AuthLocale, locale: Locale): AuthLocale =>
   defineAuthLocale({
     ...bundle,
     localization: {
       ...bundle.localization,
-      auth: { ...bundle.localization.auth, ...LINK_CONFLICT[locale] },
+      auth: { ...bundle.localization.auth, ...AUTH_COPY[locale] },
     },
   });
 
 const bundles = {
-  en: withLinkConflict(enUS, "en"),
-  es: withLinkConflict(esES, "es"),
-  fr: withLinkConflict(frFR, "fr"),
+  en: withOurCopy(enUS, "en"),
+  es: withOurCopy(esES, "es"),
+  fr: withOurCopy(frFR, "fr"),
 };
 
 /** The Better Auth UI messages for a site locale. */

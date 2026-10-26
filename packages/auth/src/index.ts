@@ -138,6 +138,25 @@ export const verifyEmailFromGoogle = async (
   log.info({ auth: { emailVerifiedBy: "google", userId: user.id } });
 };
 
+const DASHBOARD = "/dashboard";
+
+/**
+ * Sends a verification link without a destination of its own to the
+ * dashboard. Better Auth points it at "/" when the request named none, as a
+ * password sign-in refused for an unverified email does: the sign-in can't
+ * name one, since a successful sign-in would then redirect the browser and
+ * cut short an OAuth authorization (ChatGPT) or a second factor.
+ */
+const landOnDashboard = (url: string): string => {
+  const link = new URL(url);
+  const callback = link.searchParams.get("callbackURL");
+  if (callback !== null && callback !== "/") {
+    return url;
+  }
+  link.searchParams.set("callbackURL", DASHBOARD);
+  return link.href;
+};
+
 // How a new user signed up, read from the endpoint that created them:
 // email and password, or the OAuth provider's callback (/callback/google).
 const signUpMethod = (context: GenericEndpointContext | null) => {
@@ -270,8 +289,15 @@ export const createAuth = (
     },
     // The JWT plugin's /token clashes with the OAuth token endpoint.
     disabledPaths: ["/token"],
+    // A password account signs in only once its email is verified: sign-up
+    // answers without a session and the app shows "check your email"; the
+    // email's link verifies the address and signs the merchant in
+    // (autoSignInAfterVerification). It also answers a taken email the same
+    // way as a new one, so sign-up doesn't reveal who has an account. Google
+    // accounts arrive verified by Google.
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ url, user }, request) => {
         await send(
@@ -284,14 +310,18 @@ export const createAuth = (
         );
       },
     },
+    // The link is <BETTER_AUTH_URL>/api/auth/verify-email, whatever host the
+    // request came in on. A sign-in with an unverified email sends a fresh
+    // link before it's refused (EMAIL_NOT_VERIFIED).
     emailVerification: {
       autoSignInAfterVerification: true,
+      sendOnSignIn: true,
       sendOnSignUp: true,
       sendVerificationEmail: async ({ url, user }, request) => {
         await send(
           {
             locale: localeOf(user, request),
-            message: { kind: "verify", url },
+            message: { kind: "verify", url: landOnDashboard(url) },
             to: user.email,
           },
           user.id
@@ -328,6 +358,8 @@ export const createAuth = (
         "/oauth2/register": { max: 5, window: 60 },
         // Polar delivers bursts from a few IPs; the signature guards it.
         "/polar/webhooks": false,
+        // Each one sends an email.
+        "/send-verification-email": { max: 3, window: 60 },
         "/sign-in/email": { max: 5, window: 60 },
         "/sign-up/email": { max: 10, window: 60 * 60 },
       },

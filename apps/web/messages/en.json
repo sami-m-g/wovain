@@ -281,6 +281,10 @@
     "toSignUpLink": "Create an account",
     "toLogin": "Already have an account?",
     "toLoginLink": "Sign in",
+    "verifyTitle": "Check your email",
+    "verifyLead": "We sent you a link to confirm your address. Open it to finish signing up; it signs you in.",
+    "verifyWrongEmail": "Wrong address?",
+    "verifyWrongEmailLink": "Sign up with a different email",
     "errors": {
       "email": "Enter a valid email address, like you@example.com.",
       "name": "Enter your name (at least 2 characters).",

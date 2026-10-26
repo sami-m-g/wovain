@@ -281,6 +281,10 @@
     "toSignUpLink": "Créer un compte",
     "toLogin": "Déjà un compte ?",
     "toLoginLink": "Se connecter",
+    "verifyTitle": "Vérifiez votre e-mail",
+    "verifyLead": "Nous vous avons envoyé un lien pour confirmer votre adresse. Ouvrez-le pour terminer l'inscription : il vous connecte.",
+    "verifyWrongEmail": "Mauvaise adresse ?",
+    "verifyWrongEmailLink": "S'inscrire avec un autre e-mail",
     "errors": {
       "email": "Saisissez une adresse e-mail valide, par exemple vous@exemple.com.",
       "name": "Saisissez votre nom (au moins 2 caractères).",

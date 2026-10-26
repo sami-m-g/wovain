@@ -120,6 +120,115 @@ it("still signs up when capturing the failed email fails too", async () => {
   expect(warn).toHaveBeenCalledOnce();
 });
 
+// Cloud Run hands the app requests on its own listen address; the link must
+// still point at the public origin.
+const INTERNAL_ORIGIN = "http://0.0.0.0:8080";
+
+const post = async (
+  auth: ReturnType<typeof makeAuth>,
+  path: string,
+  body: Record<string, unknown>,
+  origin = URL_BASE
+) =>
+  await auth.handler(
+    new Request(`${origin}/api/auth${path}`, {
+      body: JSON.stringify(body),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    })
+  );
+
+const signUpForDashboard = async (
+  auth: ReturnType<typeof makeAuth>,
+  origin = URL_BASE
+) =>
+  await post(
+    auth,
+    "/sign-up/email",
+    {
+      callbackURL: "/dashboard",
+      email: EMAIL,
+      name: "Merchant",
+      password: "a-long-password-1",
+    },
+    origin
+  );
+
+// As the sign-in form sends it: without a callback URL.
+const signIn = async (auth: ReturnType<typeof makeAuth>) =>
+  await post(auth, "/sign-in/email", {
+    email: EMAIL,
+    password: "a-long-password-1",
+  });
+
+// The link in the last email sent.
+const sentLink = () => {
+  const mail = mailer.mock.lastCall?.[0];
+  if (mail === undefined || !("url" in mail.message)) {
+    throw new Error("No email with a link was sent");
+  }
+  return new URL(mail.message.url);
+};
+
+const SESSION_COOKIE = /better-auth\.session_token=[^;]+/u;
+
+it("answers an email sign-up without a session, and emails a public link", async () => {
+  mailer.mockResolvedValue();
+
+  const response = await signUpForDashboard(makeAuth(), INTERNAL_ORIGIN);
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ token: null });
+  expect(response.headers.get("set-cookie") ?? "").not.toMatch(SESSION_COOKIE);
+  const link = sentLink();
+  expect(`${link.origin}${link.pathname}`).toBe(
+    `${URL_BASE}/api/auth/verify-email`
+  );
+  expect(link.searchParams.get("callbackURL")).toBe("/dashboard");
+  expect(await isVerified()).toBe(false);
+});
+
+it("refuses a password sign-in until the email is verified, and sends a new link", async () => {
+  mailer.mockResolvedValue();
+  const auth = makeAuth();
+  await signUpForDashboard(auth);
+  mailer.mockClear();
+
+  const response = await signIn(auth);
+
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({ code: "EMAIL_NOT_VERIFIED" });
+  expect(mailer).toHaveBeenCalledOnce();
+  const link = sentLink();
+  expect(link.pathname).toBe("/api/auth/verify-email");
+  expect(link.searchParams.get("callbackURL")).toBe("/dashboard");
+});
+
+it("verifies the email and signs the merchant in from the link, landing on /dashboard", async () => {
+  mailer.mockResolvedValue();
+  const auth = makeAuth();
+  await signUpForDashboard(auth);
+
+  const response = await auth.handler(new Request(sentLink()));
+
+  expect(response.status).toBe(302);
+  expect(response.headers.get("location")).toBe("/dashboard");
+  expect(response.headers.get("set-cookie") ?? "").toMatch(SESSION_COOKIE);
+  expect(await isVerified()).toBe(true);
+  const signedIn = await signIn(auth);
+  expect(signedIn.status).toBe(200);
+});
+
+it("answers a sign-up with a taken email like a new one", async () => {
+  mailer.mockResolvedValue();
+  const auth = makeAuth();
+  const first = await signUpForDashboard(auth);
+  const again = await signUpForDashboard(auth);
+
+  expect(again.status).toBe(first.status);
+  expect(await again.json()).toMatchObject({ token: null });
+});
+
 const googleIdToken = (claims: Record<string, unknown>) =>
   new UnsecuredJWT(claims).encode();
 

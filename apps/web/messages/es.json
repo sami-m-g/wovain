@@ -281,6 +281,10 @@
     "toSignUpLink": "Crea una cuenta",
     "toLogin": "¿Ya tienes una cuenta?",
     "toLoginLink": "Inicia sesión",
+    "verifyTitle": "Revisa tu correo",
+    "verifyLead": "Te enviamos un enlace para confirmar tu dirección. Ábrelo para terminar el registro; te inicia sesión.",
+    "verifyWrongEmail": "¿Dirección equivocada?",
+    "verifyWrongEmailLink": "Regístrate con otro correo",
     "errors": {
       "email": "Introduce un correo válido, como tu@ejemplo.com.",
       "name": "Introduce tu nombre (al menos 2 caracteres).",
