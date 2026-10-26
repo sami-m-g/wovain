@@ -92,7 +92,15 @@ await pulumi.runtime.setMocks(
         state: {
           privateKeyOpenssh: "private-key",
           publicKeyOpenssh: "ssh-ed25519 public-key",
-          records: [],
+          records: [
+            {
+              name: "send",
+              priority: 10,
+              type: "MX",
+              value: "feedback.example.com",
+            },
+            { name: "rsend", type: "CNAME", value: "send.forge.example.net" },
+          ],
           verificationCode: "code",
           ...inputs,
         },
@@ -110,6 +118,9 @@ test("the program registers every resource once, without throwing", async () => 
   // serializing a dynamic provider fails the run.
   await pulumi.runtime.disconnect();
   expect(registered).toContain("pulumi-nodejs:dynamic/resend:Domain::resend");
+  expect(registered).toContain(
+    "gcp:dns/recordSet:RecordSet::rsend-wovain-com-cname"
+  );
   expect(registered).toContain("gitlab:index/pagesDomain:PagesDomain::status");
   expect(registered).toContain(
     "gitlab:index/pipelineTrigger:PipelineTrigger::posthog"
