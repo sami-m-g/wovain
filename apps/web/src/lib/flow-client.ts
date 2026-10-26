@@ -19,6 +19,8 @@ export type Idea = RunDetail["ideas"][number];
 export type Design = Outputs["designs"]["get"];
 export type Product = Outputs["products"]["create"];
 export type Campaign = Outputs["campaigns"]["create"];
+export type Insights = Outputs["insights"]["overview"];
+export type InsightRange = Insights["range"]["key"];
 
 export const PROVIDERS = [
   "fourthwall",

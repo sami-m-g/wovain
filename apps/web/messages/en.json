@@ -27,7 +27,8 @@
     "useCasesTitle": "Use cases: print-on-demand for independent labels",
     "useCasesDescription": "How independent designers and small labels use wovain for capsule collections, graphic tees and streetwear drops on print-on-demand, with a paused Meta campaign.",
     "guidesTitle": "Guides for print-on-demand labels",
-    "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads."
+    "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads.",
+    "insightsTitle": "Insights"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -52,7 +53,8 @@
       "en": "English",
       "fr": "Français",
       "es": "Español"
-    }
+    },
+    "noData": "Nothing here yet."
   },
   "Header": {
     "product": "How it works",
@@ -322,7 +324,8 @@
       "overview": "Overview",
       "newDrop": "New drop",
       "runs": "Runs",
-      "connections": "Connections"
+      "connections": "Connections",
+      "insights": "Insights"
     },
     "apiStatus": "API",
     "apiOnline": "online",
@@ -608,5 +611,69 @@
     "priceTable": "wovain's price for common blank costs",
     "ctaTitle": "Try it with your own brief",
     "ctaBody": "You approve every step, and the campaign starts paused."
+  },
+  "Insights": {
+    "title": "Insights",
+    "lead": "How your drops sell and how their ads do, straight from Fourthwall and Meta.",
+    "rangeLabel": "Period",
+    "range": {
+      "7d": "7 days",
+      "28d": "28 days",
+      "90d": "90 days"
+    },
+    "updating": "Updating…",
+    "shop": {
+      "title": "Shop",
+      "source": "Fourthwall reports, this period",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "orders": "Orders",
+      "chartTitle": "Revenue and profit",
+      "chartLabel": "Revenue and profit by day: {revenue} revenue, {profit} profit in total.",
+      "products": "Top products",
+      "product": "Product",
+      "units": "Units",
+      "margin": "Margin",
+      "notConnectedTitle": "Connect Fourthwall to see sales",
+      "notConnected": "wovain reads your shop's reports to show revenue and profit per drop.",
+      "connect": "Connect Fourthwall",
+      "unavailable": "Fourthwall's reports didn't load: {message}",
+      "emptyTitle": "No sales yet",
+      "empty": "Publish a product and share it; the first order shows up here."
+    },
+    "ads": {
+      "title": "Ads",
+      "source": "Meta, for the campaigns wovain made",
+      "spend": "Spend",
+      "roas": "Return on ad spend",
+      "ctr": "Click-through rate",
+      "cpa": "Cost per result",
+      "campaigns": "Campaigns",
+      "campaign": "Campaign",
+      "results": "Results",
+      "notConnectedTitle": "Connect Meta to see ad results",
+      "notConnected": "wovain reads the insights for the campaigns it built for you.",
+      "connect": "Connect Meta",
+      "unavailable": "Meta's insights didn't load: {message}",
+      "emptyTitle": "No campaign results yet",
+      "empty": "Campaigns are created paused, so results start once you turn one on in Ads Manager."
+    },
+    "drops": {
+      "title": "Drops",
+      "lead": "Each drop with what it sold, what its ads spent and how its work scored.",
+      "drop": "Drop",
+      "status": "Status",
+      "designScore": "Design score",
+      "adScore": "Ad score",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "spend": "Ad spend",
+      "units": "Units",
+      "scorePending": "Ad scores appear once wovain's scorers rate your ad copy.",
+      "notScored": "Not scored",
+      "emptyTitle": "No drops yet",
+      "empty": "Start a drop; its sales, spend and scores land here.",
+      "emptyCta": "Start a drop"
+    }
   }
 }

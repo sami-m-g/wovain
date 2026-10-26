@@ -16,6 +16,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 
 const SECTIONS = {
   "/dashboard/connections": "connections",
+  "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
   "/dashboard/runs": "runs",
 } as const;

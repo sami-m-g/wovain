@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@wovain/ui/components/sidebar";
-import { History, LayoutGrid, PlugZap, Plus } from "lucide-react";
+import { ChartLine, History, LayoutGrid, PlugZap, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { BRAND_ASSETS, BRAND_NAME } from "@/brand/brand";
@@ -24,6 +24,7 @@ import { Link } from "@/i18n/navigation";
 const NAV: readonly NavItem[] = [
   { href: "/dashboard", icon: LayoutGrid, key: "overview" },
   { href: "/dashboard/new", icon: Plus, key: "newDrop" },
+  { href: "/dashboard/insights", icon: ChartLine, key: "insights" },
   { href: "/dashboard/runs", icon: History, key: "runs" },
   { href: "/dashboard/connections", icon: PlugZap, key: "connections" },
 ];

@@ -16,7 +16,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 export interface NavItem {
   href: "/dashboard" | `/dashboard/${string}`;
   icon: LucideIcon;
-  key: "overview" | "newDrop" | "runs" | "connections";
+  key: "overview" | "newDrop" | "insights" | "runs" | "connections";
 }
 
 /** Is `href` the page, or the section the page belongs to? */

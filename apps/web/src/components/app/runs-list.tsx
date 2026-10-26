@@ -1,12 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import { Badge } from "@wovain/ui/components/badge";
 import { buttonVariants } from "@wovain/ui/components/button";
 import {
@@ -23,19 +17,13 @@ import {
   ItemTitle,
 } from "@wovain/ui/components/item";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@wovain/ui/components/table";
 import { cn } from "@wovain/ui/lib/utils";
 import { Bot, UserRound } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo } from "react";
 
+import type { DataColumn } from "@/components/app/data-table";
+import { DataTable } from "@/components/app/data-table";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { RunTape, stageOf } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
@@ -166,7 +154,7 @@ export const RecentRuns = ({ limit }: { limit: number }) => {
   return <RunItems runs={data.slice(0, limit)} />;
 };
 
-const useColumns = (): ColumnDef<Run>[] => {
+const useColumns = (): DataColumn<Run>[] => {
   const t = useTranslations("Runs");
   return useMemo(
     () => [
@@ -221,19 +209,10 @@ const useColumns = (): ColumnDef<Run>[] => {
   );
 };
 
-/** Every run as a data table (shadcn's TanStack Table pattern), newest first. */
+/** Every run as a ReUI data grid, newest first; rows on phones. */
 export const RunsTable = () => {
-  // TanStack Table returns fresh functions each render, which the React
-  // Compiler can't memoise; opt this component out (TanStack's guidance).
-  "use no memo";
   const { data, error, isPending } = useRuns();
   const columns = useColumns();
-  // oxlint-disable-next-line react/incompatible-library -- opted out above
-  const table = useReactTable({
-    columns,
-    data: data ?? [],
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   if (isPending) {
     return <Skeleton className="h-72 w-full rounded-xl" />;
@@ -251,34 +230,8 @@ export const RunsTable = () => {
       <div className="md:hidden">
         <RunItems runs={data} />
       </div>
-      <div className="border-border bg-card hidden overflow-hidden rounded-xl border md:block">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id}>
-                {group.headers.map((header) => (
-                  <TableHead className="px-4" key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell className="px-4 py-3" key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="hidden md:block">
+        <DataTable columns={columns} data={data} rowId={(run) => run.id} />
       </div>
     </>
   );

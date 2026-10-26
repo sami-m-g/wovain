@@ -27,7 +27,8 @@
     "useCasesTitle": "Casos de uso: print-on-demand para marcas independientes",
     "useCasesDescription": "Cómo diseñadores y marcas pequeñas independientes usan wovain para cápsulas, camisetas gráficas y drops de streetwear en print-on-demand.",
     "guidesTitle": "Guías para marcas en print-on-demand",
-    "guidesDescription": "Guías prácticas para marcas independientes en print-on-demand: poner precio a cada pieza para que cada venta deje beneficio y lanzar una cápsula de la idea a los anuncios."
+    "guidesDescription": "Guías prácticas para marcas independientes en print-on-demand: poner precio a cada pieza para que cada venta deje beneficio y lanzar una cápsula de la idea a los anuncios.",
+    "insightsTitle": "Estadísticas"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -52,7 +53,8 @@
       "en": "English",
       "fr": "Français",
       "es": "Español"
-    }
+    },
+    "noData": "Aún no hay nada."
   },
   "Header": {
     "product": "Cómo funciona",
@@ -322,7 +324,8 @@
       "overview": "Resumen",
       "newDrop": "Nuevo drop",
       "runs": "Ejecuciones",
-      "connections": "Conexiones"
+      "connections": "Conexiones",
+      "insights": "Estadísticas"
     },
     "apiStatus": "API",
     "apiOnline": "en línea",
@@ -608,5 +611,69 @@
     "priceTable": "El precio de wovain para costes de blank habituales",
     "ctaTitle": "Pruébalo con tu propio brief",
     "ctaBody": "Tú apruebas cada paso, y la campaña empieza en pausa."
+  },
+  "Insights": {
+    "title": "Estadísticas",
+    "lead": "Cómo se venden tus drops y qué logran sus anuncios, directo de Fourthwall y Meta.",
+    "rangeLabel": "Periodo",
+    "range": {
+      "7d": "7 días",
+      "28d": "28 días",
+      "90d": "90 días"
+    },
+    "updating": "Actualizando…",
+    "shop": {
+      "title": "Tienda",
+      "source": "Informes de Fourthwall, en el periodo",
+      "revenue": "Ingresos",
+      "profit": "Beneficio",
+      "orders": "Pedidos",
+      "chartTitle": "Ingresos y beneficio",
+      "chartLabel": "Ingresos y beneficio por día: {revenue} de ingresos y {profit} de beneficio en total.",
+      "products": "Productos más vendidos",
+      "product": "Producto",
+      "units": "Unidades",
+      "margin": "Margen",
+      "notConnectedTitle": "Conecta Fourthwall para ver las ventas",
+      "notConnected": "wovain lee los informes de tu tienda para mostrar ingresos y beneficio por drop.",
+      "connect": "Conectar Fourthwall",
+      "unavailable": "Los informes de Fourthwall no cargaron: {message}",
+      "emptyTitle": "Aún no hay ventas",
+      "empty": "Publica un producto y compártelo; el primer pedido aparecerá aquí."
+    },
+    "ads": {
+      "title": "Anuncios",
+      "source": "Meta, para las campañas que creó wovain",
+      "spend": "Gasto",
+      "roas": "Retorno de la inversión publicitaria",
+      "ctr": "Tasa de clics",
+      "cpa": "Coste por resultado",
+      "campaigns": "Campañas",
+      "campaign": "Campaña",
+      "results": "Resultados",
+      "notConnectedTitle": "Conecta Meta para ver los resultados",
+      "notConnected": "wovain lee las estadísticas de las campañas que creó para ti.",
+      "connect": "Conectar Meta",
+      "unavailable": "Las estadísticas de Meta no cargaron: {message}",
+      "emptyTitle": "Aún no hay resultados",
+      "empty": "Las campañas se crean en pausa: los resultados llegan cuando activas una en el Administrador de anuncios."
+    },
+    "drops": {
+      "title": "Drops",
+      "lead": "Cada drop con lo que vendió, lo que gastaron sus anuncios y cómo puntuó su trabajo.",
+      "drop": "Drop",
+      "status": "Estado",
+      "designScore": "Puntuación del diseño",
+      "adScore": "Puntuación del anuncio",
+      "revenue": "Ingresos",
+      "profit": "Beneficio",
+      "spend": "Gasto en anuncios",
+      "units": "Unidades",
+      "scorePending": "Las puntuaciones de anuncios aparecerán cuando los evaluadores de wovain califiquen tus textos.",
+      "notScored": "Sin puntuar",
+      "emptyTitle": "Aún no hay drops",
+      "empty": "Empieza un drop; sus ventas, gasto y puntuaciones llegarán aquí.",
+      "emptyCta": "Empezar un drop"
+    }
   }
 }
