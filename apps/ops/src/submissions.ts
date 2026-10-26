@@ -15,11 +15,23 @@ export const submissions: readonly Submission[] = [
     devpost: "https://learn-ai-basics.devpost.com/",
     name: "basics",
   },
-  { deadline: "2026-10-27T13:00:00Z", name: "transcend" },
+  {
+    deadline: "2026-10-27T13:00:00Z",
+    devpost: "https://gitlab-transcend.devpost.com/",
+    name: "transcend",
+  },
   // 10:00 PDT.
-  { deadline: "2026-10-30T17:00:00Z", name: "nebius" },
+  {
+    deadline: "2026-10-30T17:00:00Z",
+    devpost: "https://nebiusglobalaihackathon.devpost.com/",
+    name: "nebius",
+  },
   // 23:45 EDT on 2026-10-30.
-  { deadline: "2026-10-31T03:45:00Z", name: "qloo" },
+  {
+    deadline: "2026-10-31T03:45:00Z",
+    devpost: "https://qloo.devpost.com/",
+    name: "qloo",
+  },
 ];
 
 export interface MainPipeline {
