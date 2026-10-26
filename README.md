@@ -81,11 +81,11 @@ See the [Hackathons page](apps/fumadocs/content/docs/hackathons.mdx) for where e
 3. `drizzle-kit migrate` runs against Cloud SQL through `cloud-sql-proxy`.
 4. `gcloud run deploy` rolls the images out.
 
-| Host                             | Serves                               |
-| -------------------------------- | ------------------------------------ |
-| `https://wovain.com`             | apps/web (`www` redirects here)      |
-| `https://mcp.wovain.com/api/mcp` | the MCP endpoint ChatGPT connects to |
-| `https://docs.wovain.com`        | apps/fumadocs                        |
-| `https://status.wovain.com`      | the status page (GitLab Pages)       |
+| Host                             | Serves                                  |
+| -------------------------------- | --------------------------------------- |
+| `https://wovain.com`             | apps/web (`www` redirects here)         |
+| `https://mcp.wovain.com/api/mcp` | the MCP endpoint ChatGPT connects to    |
+| `https://docs.wovain.com`        | apps/fumadocs                           |
+| `https://status.wovain.com`      | the status page (GitLab Pages, proxied) |
 
 Secrets live in Secret Manager under kebab-case ids (`better-auth-secret` is `BETTER_AUTH_SECRET`). A secret gets a value from the stack config, `pulumi config set --secret <id>` in `infra/`, and Cloud Run mounts only the secrets that have one. Pulumi generates `database-url`, `better-auth-secret` and `token-encryption-key` itself. A local `pulumi up` needs the Site Verification scope: `gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/siteverification`. Logs are JSON lines on stdout (`apps/web/src/lib/cloud-logging.ts`): Cloud Logging parses them, and Error Reporting groups server errors under `wovain-web`.

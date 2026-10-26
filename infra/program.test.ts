@@ -26,7 +26,6 @@ const { config } = parse(read("Pulumi.prod.yaml")) as {
 const values: Record<string, string> = {
   "wovain:posthogTrigger": "true",
   "wovain:resendDomain": "true",
-  "wovain:statusDomain": "true",
 };
 for (const [key, value] of Object.entries(config)) {
   if (isSecure(value)) {
@@ -121,7 +120,6 @@ test("the program registers every resource once, without throwing", async () => 
   expect(registered).toContain(
     "gcp:dns/recordSet:RecordSet::rsend-wovain-com-cname"
   );
-  expect(registered).toContain("gitlab:index/pagesDomain:PagesDomain::status");
   expect(registered).toContain(
     "gitlab:index/pipelineTrigger:PipelineTrigger::posthog"
   );

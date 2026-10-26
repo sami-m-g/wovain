@@ -11,6 +11,8 @@ const logRequest = evlogMiddleware();
 const localize = createIntlMiddleware(routing);
 
 const WWW_PREFIX = "www.";
+// Proxied to GitLab Pages by a rewrite in next.config.ts.
+const STATUS_PREFIX = "status.";
 const PERMANENT_REDIRECT = 308;
 // Files, Next internals, OAuth metadata and the PostHog proxy (/ingest,
 // next.config.ts) keep their paths; pages get a locale.
@@ -62,6 +64,9 @@ export const proxy = (request: NextRequest) => {
     );
     target.search = request.nextUrl.search;
     return NextResponse.redirect(target, PERMANENT_REDIRECT);
+  }
+  if (host.startsWith(STATUS_PREFIX)) {
+    return NextResponse.next();
   }
   const { pathname } = request.nextUrl;
   if (pathname.startsWith("/api/")) {

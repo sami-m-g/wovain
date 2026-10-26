@@ -357,21 +357,6 @@ export const flowLabelIds = Object.fromEntries(
   ])
 );
 
-// The public status page (GitLab Pages, published by the ops schedule's
-// pages job, .gitlab/ci/ops.yml). DNS: a CNAME status.wovain.com to the
-// project's Pages host, plus the TXT record GitLab verifies with
-// (statusDomainVerification, at _gitlab-pages-verification-code.status.wovain.com).
-// Adding a Pages domain needs Maintainer, which the hackathon role lacks, so
-// it's opt-in: `pulumi config set wovain:statusDomain true`.
-export const statusDomainVerification =
-  config.getBoolean("statusDomain") === true
-    ? new gitlab.PagesDomain("status", {
-        autoSslEnabled: true,
-        domain: "status.wovain.com",
-        project: projectNumber,
-      }).verificationCode
-    : undefined;
-
 // --- Ultimate only (Govern). Off unless `pulumi config set wovain:ultimate
 // true`; delete this block to drop it. The compliance framework needs the
 // top-level group's Owner (wovain:complianceGroup), and linking the security

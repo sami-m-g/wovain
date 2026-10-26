@@ -5,7 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import { posthogTrigger, statusDomainVerification } from "./duo.ts";
+import { posthogTrigger } from "./duo.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
@@ -420,11 +420,11 @@ const site = configureDomain({
     { host: `mcp.${domain}`, service: service.name },
     { host: `docs.${domain}`, service: docsService.name },
     { host: `dev.${domain}`, service: dev.service.name },
+    // The status page: apps/web proxies this host to GitLab Pages
+    // (apps/web/next.config.ts), so no Pages domain (a Maintainer setting).
+    { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
-  statusDomainVerification,
-  statusPagesTarget:
-    config.get("statusPagesTarget") ?? "gitlab-ai-hackathon.gitlab.io.",
   zone: "wovain-com",
 });
 export const domainMappings = site.mappings;
