@@ -408,6 +408,11 @@ const flowLabels: Record<string, { color: string; description: string }> = {
     description:
       "Accepted for Duo's Developer flow: wovain ops hands it over when a trusted user added this label",
   },
+  "flag-cleanup": {
+    color: "#6c757d",
+    description:
+      "A feature flag past its expiry, fully rolled out or unregistered: wovain ops' flag hygiene check",
+  },
   heal: {
     color: "#c0392b",
     description: "A production error the heal flow reproduces and fixes",
@@ -435,6 +440,11 @@ const flowLabels: Record<string, { color: string; description: string }> = {
     color: "#2da160",
     description:
       "PostHog confirmed the shipped kpi-scout change: its KPI alert stopped firing",
+  },
+  "release-guard": {
+    color: "#e74c3c",
+    description:
+      "The release guard rolled back a deploy or switched a flag off; the wovain release-guard flow diagnoses it",
   },
   "vuln-fix": {
     color: "#8e44ad",

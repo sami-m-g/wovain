@@ -155,6 +155,9 @@ catalogs:
     '@google-cloud/monitoring':
       specifier: ^6.2.0
       version: 6.2.0
+    '@google-cloud/run':
+      specifier: ^4.1.1
+      version: 4.2.0
     '@google-cloud/secret-manager':
       specifier: 7.2.0
       version: 7.2.0
@@ -305,6 +308,9 @@ catalogs:
     typescript:
       specifier: npm:@typescript/typescript6@^6.0.2
       version: 6.0.2
+    unleash-client:
+      specifier: ^6.12.2
+      version: 6.12.2
     varlock:
       specifier: 1.23.0
       version: 1.23.0
@@ -482,6 +488,9 @@ importers:
       '@google-cloud/monitoring':
         specifier: 'catalog:'
         version: 6.2.0
+      '@google-cloud/run':
+        specifier: 'catalog:'
+        version: 4.2.0
       playwright:
         specifier: ^1.64.1
         version: 1.64.1
@@ -642,9 +651,6 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      unleash-client:
-        specifier: ^6.12.2
-        version: 6.12.2
       varlock:
         specifier: 'catalog:'
         version: 1.23.0
@@ -855,6 +861,9 @@ importers:
       posthog-node:
         specifier: 'catalog:'
         version: 5.57.2(@opentelemetry/api@1.10.0)
+      unleash-client:
+        specifier: 'catalog:'
+        version: 6.12.2
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -2085,6 +2094,10 @@ packages:
 
   '@google-cloud/promisify@6.2.1':
     resolution: {integrity: sha512-/+RvLJ5u+WhGay6Z3aY6OApDQmNqq1427Mmt7Eov9kYp69gdUiGSwFnygeTxfz69XBtYZLAnWikGMIoFXtKt+A==}
+    engines: {node: '>=22'}
+
+  '@google-cloud/run@4.2.0':
+    resolution: {integrity: sha512-idLdoweHOA4la4/46Vw0d1DwyRqjseWQkzDqfF6DzX7Zf18bzTNhWdGGAVAk41gdL50DRhAmOOtn2+0tUQpSAA==}
     engines: {node: '>=22'}
 
   '@google-cloud/secret-manager@7.2.0':
@@ -9419,6 +9432,12 @@ snapshots:
   '@google-cloud/promisify@4.0.0': {}
 
   '@google-cloud/promisify@6.2.1': {}
+
+  '@google-cloud/run@4.2.0':
+    dependencies:
+      google-gax: 6.13.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@google-cloud/secret-manager@7.2.0':
     dependencies:

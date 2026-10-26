@@ -22,6 +22,7 @@ export const opsContext = () => {
     env: {
       DUO_DEVELOPER_ACCOUNT: ENV.DUO_DEVELOPER_ACCOUNT,
       DUO_HEAL_ACCOUNT: ENV.DUO_HEAL_ACCOUNT,
+      DUO_RELEASE_GUARD_ACCOUNT: ENV.DUO_RELEASE_GUARD_ACCOUNT,
       DUO_REVIEW_ACCOUNT: ENV.DUO_REVIEW_ACCOUNT,
       GCP_PROJECT_ID: gcpProject,
       // People whose agent::task label hands an issue to Duo. The token's

@@ -59,6 +59,9 @@ interface ServiceArgs {
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
 // deploy --image`, so the image is ignored here. `pulumi up --refresh` (CI's
 // infra job) reads the live image first, so a settings change keeps it.
+// Traffic is CI's too: the canary split, its promotion and rollbacks
+// (.gitlab/ci/deploy.yml, docs/adr/0001-progressive-delivery.md), so a
+// `pulumi up` never moves traffic.
 // Public: the apps guard themselves (Better Auth).
 export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
   const sql = args.cloudSqlInstance;
@@ -100,6 +103,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
         "client",
         "clientVersion",
         "template.containers[0].image",
+        "traffics",
       ],
     }
   );

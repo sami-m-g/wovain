@@ -8,6 +8,7 @@ Code that has merged keeps going without anyone at the keyboard. Production erro
 | 2. KPI scout | Daily schedule, or a PostHog KPI alert (at most once a day) | Custom flow `wovain scout` | Up to three ranked issues against `.gitlab/duo/kpis.yml`, verified in PostHog after they ship |
 | 3. Issue to completion | A trusted person adds `agent::task` | Developer flow, then Duo Code Review | An auto-merged merge request |
 | 4. Vuln to fix | A new High or Critical SAST finding | Duo Vulnerability Resolution, then Duo Code Review | An auto-merged patch |
+| 5. Progressive delivery | Every web deploy (canary), and an error spike after a flag change or deploy | Custom flow `wovain release-guard` | A promoted or rolled-back canary, a flag switched off or traffic rolled back, and a diagnosis with a fix MR |
 
 Each flow's work is done by the same pieces:
 
@@ -41,7 +42,7 @@ The signature (`apps/ops/src/heal.ts`) is a hash of the error class, method, rou
 **Demo in under a minute** (fix already prepared off-camera if time is short):
 
 1. Deploy > Feature flags: turn `fault-injection-checkout` on.
-2. `pnpm --filter @wovain/ops traffic --requests 20` (defaults to https://wovain.com): every response is 500.
+2. `pnpm --filter @wovain/ops traffic --url https://dev.wovain.com --requests 20`: every response is 500. The flag serves development only, so production never faults; the ops job watches both services.
 3. Build > Pipeline schedules > "wovain ops" > Run. The heal issue and its incident appear, and the heal flow starts (Automate > Sessions).
 4. Show the flow's MR: the failing test, the fix, `heal:verify` green, Duo Code Review, auto-merge set.
 5. After the deploy, run "wovain ops" again: the issue gets `heal::verified`, the incident closes, status.wovain.com shows it resolved. Turn the flag off.
@@ -97,6 +98,42 @@ The ops job's `resolveGone` phase sets those no-longer-detected SAST and Depende
 
 **Demo in under a minute:** Secure > Vulnerability report: show a High SAST finding. Run "wovain ops". Show the note on the `vuln-fix` issue, the Resolution MR, the review and the auto-merge.
 
+## Flow 5: progressive delivery and the release guard
+
+Design and sources: `docs/adr/0001-progressive-delivery.md`.
+
+```mermaid
+flowchart LR
+  merge["Merge to main"] --> deploy["deploy:production: new revision, no traffic, tag canary, then 10%"]
+  deploy --> canary["canary:production: probes and 5xx per revision for 10 min"]
+  canary -->|healthy| promote["100% to the canary"]
+  canary -->|errors| back["100% back to stable, job fails"]
+  back --> issue["release-guard issue with the evidence"]
+  flag["Flag rollout in the registry (Pulumi) or Status toggle"] --> prod["Production"]
+  promote --> prod
+  prod --> guard["ops job, releaseGuard: 5xx, PostHog exceptions, kpi: alerts"]
+  guard -->|guarded flag changed in 2 h| off["Status off (kill switch)"]
+  guard -->|deploy in 2 h| rollback["ROLLBACK=1 pipeline: rollback:production"]
+  off --> issue
+  rollback --> issue
+  issue -->|"assigned to the flow's service account"| rg["wovain release-guard flow: diagnosis note, fix or revert MR"]
+  rg --> shep["Duo Code Review, guardrails"]
+```
+
+- **Flags as code.** `packages/core/src/flag-registry.ts` lists every flag with its owner, expiry, type, plans and a rollout per environment; `infra/flags.ts` applies it as GitLab strategies (the `internal-only` user list, "Percent of users", "All users"). The Status toggle is the kill switch, which Pulumi leaves alone.
+- **The SDK.** `packages/core/src/flags.ts` uses the official `unleash-client` with the user ID, plan and environment; it fails closed and sends `$feature_flag_called` exposures to PostHog. `trends-qloo` is checked against the plan in the app: free and demo only, so paid plans get Tavily-only trends (Qloo's hackathon terms).
+- **Canary.** `apps/ops/src/canary.ts` with the official `@google-cloud/run` client. A failed canary fails the pipeline, so it counts in DORA's change failure rate.
+- **Release guard.** `apps/ops/src/release.ts` decides, `ops.ts` acts: one action an hour, three a day, nothing switched back on automatically.
+- **Hygiene.** The `flagHygiene` phase opens a `flag-cleanup` issue per expired, fully rolled out or unregistered flag.
+
+**Demo in under a minute** (flag kill switch):
+
+1. Deploy > Feature flags: turn `fault-injection-checkout` on.
+2. `pnpm --filter @wovain/ops traffic --url https://dev.wovain.com --requests 30`: the checkout quotes fail on dev (the flag serves development only).
+3. Build > Pipeline schedules > "wovain ops" > Run. The flag's Status flips off, a `release-guard` issue appears with the 5xx count and links, and the release-guard flow starts (Automate > Sessions). The heal flow gets its issue for the same error, so it is mitigated first and fixed after.
+
+**Demo of a canary rollback:** Build > Pipelines > Run pipeline on `main` with `CANARY_DEMO_FAULT=1` and `CANARY_WINDOW_S=120`. `canary:production` shows the probes failing on the canary only, moves traffic back and fails; its `canary.md` and the `release-guard` issue are the audit trail.
+
 ## The PostHog loop
 
 PostHog senses, Duo acts, PostHog verifies. PostHog sees what logs can't: real visitors' funnel, browser exceptions, rage and dead clicks, field web vitals, survey ratings and every Nemotron call's cost. GitLab Duo stays the only actor on code, inside the guardrails above.
@@ -132,7 +169,7 @@ The trigger token lives only in PostHog's redacted sensitive inputs and a masked
 
 **Experiments.** A UX change for signed-in merchants ships behind a PostHog flag named `exp-<KPI id>` (control and test), declared as a `posthog_experiment` in `infra/posthog`. The flag lives outside the auto-merge scope, so a person approves each experiment. The snapshot's experiments table shows exposures and runs started per variant; the scout proposes shipping a clear winner and removing the flag, or removing a loser. Experiments target signed-in merchants (identified on sign-in) because anonymous visitors who haven't consented are cookieless and have no stable id.
 
-**GitLab feature flags stay for fault injection.** `fault-injection-checkout` is part of the self-healing harness, not the product: it is evaluated server-side through GitLab's Unleash endpoint, toggled from Deploy > Feature flags during the demo, and kept off-limits to Duo and auto-merge. PostHog flags are for product rollouts and experiments, where exposure analytics matter. Keeping them apart means an experiment cleanup can never switch the harness, and the demo has no PostHog dependency.
+**GitLab feature flags for releases, PostHog flags for experiments.** GitLab's flags (flow 5) gate releases, kill switches, plans and the fault-injection harness; Duo and the release guard can switch them off through GitLab's API, and every evaluation is a PostHog exposure, so KPIs still break down by flag value. PostHog flags stay for A/B experiments (`exp-<KPI id>`), where PostHog's experiment statistics matter. The harness and the registry are off-limits to auto-merge.
 
 **LLM analytics.** `packages/core/src/nemotron.ts` wraps the OpenAI SDK on Nebius with `@posthog/ai`: every Nemotron call is a `$ai_generation` with its step (`$ai_span_name`: `design_brief`, `design_judge`, `ad_copy`, `autopilot_*`), tokens, latency and cost at Nebius list prices ($0.30 and $0.90 per million tokens), grouped by run (`$ai_trace_id` is the run id) and merchant. The "wovain health" dashboard shows cost and model time per run and per step; `llm-cost-per-run` is a KPI with an alert.
 
@@ -196,7 +233,7 @@ The nine stages, with PostHog in Plan and Monitor:
 | Verify | `verify` job (check, types, knip, tests with JUnit), `heal:verify` reproduces the production error (flow 1) |
 | Package | The web image built and pushed by `image:production` (`.gitlab/ci/deploy.yml`), deployed by every merged fix |
 | Secure | SAST, Secret Detection, Dependency Scanning; vuln to fix (flow 4); scan execution policy |
-| Release | Auto-merge to `main`, deploy to Cloud Run, GitLab feature flags (`fault-injection-checkout`), PostHog experiments (`exp-<KPI id>`) |
+| Release | Auto-merge to `main`, canary deploys to Cloud Run with automatic promotion or rollback, GitLab feature flags as code with kill switches and the release guard (flow 5), PostHog experiments (`exp-<KPI id>`) |
 | Configure | Triggers, schedules, labels, Pages domain, policies and the PostHog trigger token as Pulumi code (`infra/duo.ts`); PostHog alerts, destinations, dashboard and survey as OpenTofu code (`infra/posthog`); `.gitlab/duo/agent-config.yml` for flow runners |
 | Monitor | Cloud Logging and Error Reporting, PostHog error tracking, KPI alerts, web vitals and LLM analytics, incidents with timelines, verify-in-production (Cloud Logging or PostHog), `verifyKpis`, KPI snapshot, status page with DORA and SCI (flows 1, 2) |
 | Govern | Trusted-user checks, caps, guardrails, tool allow-lists, the `vuln-fix` audit issue, approval policy and compliance framework (Ultimate), SCI report |
