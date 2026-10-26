@@ -26,6 +26,12 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   output: "standalone",
+  // The country lookup (src/lib/geo.ts, used by the proxy and /api/visitor)
+  // reads geoip-country's data files from its own folder at runtime, so the
+  // package stays external and its data ships in the standalone output.
+  outputFileTracingIncludes: {
+    "/api/visitor": ["./node_modules/geoip-country/data/*.dat"],
+  },
   reactCompiler: true,
   rewrites: () => [
     {
@@ -38,6 +44,7 @@ const nextConfig: NextConfig = {
     },
     { destination: `${posthogHost}/:path*`, source: "/ingest/:path*" },
   ],
+  serverExternalPackages: ["geoip-country"],
   // PostHog's API paths end in a slash; a redirect would drop the request.
   skipTrailingSlashRedirect: true,
   typedRoutes: true,

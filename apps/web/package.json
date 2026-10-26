@@ -15,6 +15,7 @@
   "dependencies": {
     "@better-auth/mcp": "catalog:",
     "@better-auth/oauth-provider": "catalog:",
+    "@fingerprintjs/botd": "^2.0.0",
     "@modelcontextprotocol/server": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
@@ -33,6 +34,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
     "evlog": "catalog:",
+    "geoip-country": "^5.0.202610240156",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",
@@ -49,6 +51,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.104.2",
+    "@types/geoip-country": "^5.0.0",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

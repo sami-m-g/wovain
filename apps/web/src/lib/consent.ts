@@ -11,7 +11,7 @@
 // and Gibraltar under UK GDPR and PECR, Switzerland (revFADP), Brazil (LGPD)
 // and Canada (PIPEDA, and Quebec's Law 25 for tracking technologies). The US
 // stays implied for now; whether it asks first (California's CIPA and replay)
-// is to be decided once an edge sends the country (src/proxy.ts).
+// is still to be decided.
 const OPT_IN_COUNTRIES = new Set([
   // EU member states
   "AT",
@@ -65,8 +65,8 @@ const OPT_IN_COUNTRIES = new Set([
   "CA",
 ]);
 
-// The proxy (src/proxy.ts) writes the visitor's rule here when the edge in
-// front of the app names their country; the browser reads it before PostHog
+// The proxy (src/proxy.ts) writes the visitor's rule here when it knows
+// their country (lib/geo.ts); the browser reads it before PostHog
 // starts. It holds no identifier, only which rule applies.
 export const CONSENT_REGION_COOKIE = "consent-region";
 const IMPLIED = "implied";

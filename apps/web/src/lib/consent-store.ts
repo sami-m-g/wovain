@@ -14,6 +14,11 @@ const notify = () => {
   }
 };
 
+/** Called once PostHog has started (lib/analytics-client.ts). */
+export const analyticsStarted = () => {
+  notify();
+};
+
 export const subscribeConsent = (listener: () => void) => {
   listeners.add(listener);
   return () => {
