@@ -35,15 +35,18 @@ const shuttleMotion = (
   if (state === "static") {
     return {};
   }
+  // The server cannot read the visitor's setting, so it may render the full
+  // intro's offset; the reduced branches pin x and y to rest explicitly so a
+  // hydrated client never leaves the shuttle displaced.
   if (reduced) {
     return state === "intro"
       ? {
-          animate: { opacity: 1 },
-          initial: { opacity: 0 },
+          animate: { opacity: 1, x: 0, y: 0 },
+          initial: { opacity: 0, x: 0, y: 0 },
           transition: { duration: 0.2 },
         }
       : {
-          animate: { opacity: [1, 0.55] },
+          animate: { opacity: [1, 0.55], x: 0, y: 0 },
           transition: { ...LOOP, duration: PULSE_SECONDS },
         };
   }
@@ -67,8 +70,12 @@ const threadMotion = (
   state: "intro" | "loading" | "static",
   reduced: boolean
 ) => {
-  if (state === "static" || reduced) {
+  if (state === "static") {
     return {};
+  }
+  if (reduced) {
+    // Pin the full thread for the same reason as the shuttle's reduced branch.
+    return { animate: { pathLength: 1 }, transition: { duration: 0 } };
   }
   if (state === "intro") {
     return {
