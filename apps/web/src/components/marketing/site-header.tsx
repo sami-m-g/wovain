@@ -32,7 +32,7 @@ export const SiteHeader = async () => {
           className="me-auto shrink-0 lg:me-4"
           href="/"
         >
-          <Logo />
+          <Logo intro />
         </Link>
         <nav
           aria-label={common("primaryNav")}

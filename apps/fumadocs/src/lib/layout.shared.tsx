@@ -4,9 +4,9 @@ import Image from "next/image";
 import { i18n } from "./i18n";
 import { appName, gitConfig } from "./shared";
 
-// The wovain lockup (public/brand/, the same files as the web app), one per theme.
+// The wovain Shuttle lockup (public/brand/, the same files as the web app), one per theme.
 const LOGO_HEIGHT = 24;
-const LOGO_WIDTH = 100;
+const LOGO_WIDTH = 108;
 
 const Logo = () => (
   <>
