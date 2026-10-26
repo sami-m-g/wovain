@@ -48,13 +48,13 @@
       "description": "Minor: one weekly merge request, reviewed by the deps-review flow",
       "matchUpdateTypes": ["minor"],
       "groupName": "minor",
-      "reviewers": ["duo-deps-review-gitlab-ai-hackathon"]
+      "reviewers": ["ai-wovain-deps-review-gitlab-ai-hackathon"]
     },
     {
       "description": "Major: approve on the dashboard first, then the deps-review flow reviews",
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true,
-      "reviewers": ["duo-deps-review-gitlab-ai-hackathon"],
+      "reviewers": ["ai-wovain-deps-review-gitlab-ai-hackathon"],
       "addLabels": ["deps::major"]
     },
     {
