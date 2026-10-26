@@ -44,15 +44,6 @@ export interface Analytics {
         properties: Record<string, unknown>;
       }) => void)
     | undefined;
-  // An unexpected procedure error, as a `$exception` event. Without a
-  // distinct id, the event is anonymous.
-  captureException: (
-    error: unknown,
-    event: {
-      distinctId?: string | undefined;
-      properties?: Record<string, unknown>;
-    }
-  ) => void;
 }
 
 // The merchant's answer at a run's approval gate.

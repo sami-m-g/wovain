@@ -2,6 +2,7 @@ import { ENV } from "./env.ts";
 import { createGitLab } from "./gitlab.ts";
 import { createGoogle } from "./google.ts";
 import { createPostHog } from "./posthog.ts";
+import { createSink } from "./sink.ts";
 
 // What the ops jobs read from CI is declared in ../.env.schema: GitLab's
 // predefined variables plus the project's CI/CD variables (.gitlab-ci.yml
@@ -12,6 +13,15 @@ const required = (name: string, value: string | undefined): string => {
     throw new Error(`${name} is not set`);
   }
   return value;
+};
+
+// PostHog Error Tracking for what the ops jobs report: none without the
+// project's token.
+export const errorSink = () => {
+  const apiKey = ENV.NEXT_PUBLIC_POSTHOG_KEY;
+  return apiKey === undefined || apiKey === ""
+    ? undefined
+    : createSink({ apiKey, host: ENV.POSTHOG_INGEST_HOST });
 };
 
 export const opsContext = () => {
@@ -47,5 +57,6 @@ export const opsContext = () => {
             host: ENV.POSTHOG_HOST,
             projectId: posthogProject,
           }),
+    sink: errorSink(),
   };
 };

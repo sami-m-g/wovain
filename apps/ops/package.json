@@ -10,6 +10,7 @@
     "heal-verify": "varlock codegen && node --import varlock/auto-load src/heal-verify.ts",
     "ops": "varlock codegen && node --import varlock/auto-load src/ops.ts",
     "sci-report": "varlock codegen && node --import varlock/auto-load src/sci-report.ts",
+    "smoke": "varlock codegen && node --import varlock/auto-load src/smoke-production.ts",
     "scout-collect": "varlock codegen && node --import varlock/auto-load src/scout-collect.ts",
     "submission-tag": "varlock codegen && node --import varlock/auto-load src/submission-tag.ts",
     "test": "vitest run",
@@ -21,6 +22,7 @@
     "@google-cloud/monitoring": "catalog:",
     "@google-cloud/run": "catalog:",
     "playwright": "^1.64.1",
+    "posthog-node": "catalog:",
     "varlock": "catalog:",
     "yaml": "^2.9.1",
     "zod": "catalog:"
