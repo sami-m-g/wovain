@@ -1,51 +1,63 @@
 "use client";
 
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@wovain/ui/components/select";
 import { cn } from "@wovain/ui/lib/utils";
 import { Languages } from "lucide-react";
 import { hasLocale, useLocale, useTranslations } from "next-intl";
-import { useId, useTransition } from "react";
+import { useTransition } from "react";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 
+/** Switches the interface language, keeping the visitor on the same page. */
 export const LocaleSwitcher = ({ className }: { className?: string }) => {
   const t = useTranslations("Common");
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const id = useId();
+  const items = routing.locales.map((item) => ({
+    label: t(`localeNames.${item}`),
+    value: item,
+  }));
 
   return (
-    <div className={cn("relative flex items-center", className)}>
-      <label className="sr-only" htmlFor={id}>
-        {t("language")}
-      </label>
-      <Languages
-        aria-hidden="true"
-        className="text-muted-foreground pointer-events-none absolute start-2.5 size-4"
-      />
-      <select
-        className="border-input hover:bg-muted h-10 appearance-none rounded-lg border bg-transparent ps-8 pe-3 text-sm font-medium disabled:opacity-60"
-        disabled={isPending}
-        id={id}
-        onChange={(event) => {
-          const next = event.target.value;
-          if (!hasLocale(routing.locales, next)) {
-            return;
-          }
-          startTransition(() => {
-            router.replace(pathname, { locale: next });
-          });
-        }}
-        value={locale}
+    <Select
+      disabled={isPending}
+      items={items}
+      onValueChange={(next) => {
+        if (typeof next !== "string" || !hasLocale(routing.locales, next)) {
+          return;
+        }
+        startTransition(() => {
+          router.replace(pathname, { locale: next });
+        });
+      }}
+      value={locale}
+    >
+      <SelectTrigger
+        aria-label={t("language")}
+        className={cn("h-9 rounded-lg font-medium", className)}
       >
-        {routing.locales.map((item) => (
-          <option key={item} lang={item} value={item}>
-            {t(`localeNames.${item}`)}
-          </option>
-        ))}
-      </select>
-    </div>
+        <Languages aria-hidden="true" className="text-muted-foreground" />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end" alignItemWithTrigger={false}>
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value} lang={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 };

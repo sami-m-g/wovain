@@ -3,6 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { publicProcedure } from "../index";
 import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
+import { insightsRouter } from "./insights";
 import {
   campaignsRouter,
   designsRouter,
@@ -18,6 +19,7 @@ export const appRouter = {
   designs: designsRouter,
   healthCheck: publicProcedure.handler(() => "OK"),
   ideas: ideasRouter,
+  insights: insightsRouter,
   products: productsRouter,
   runs: runsRouter,
 };

@@ -20,6 +20,8 @@ export type Design = Outputs["designs"]["get"];
 export type Product = Outputs["products"]["create"];
 export type Campaign = Outputs["campaigns"]["create"];
 export type BillingStatus = Outputs["billing"]["status"];
+export type Insights = Outputs["insights"]["overview"];
+export type InsightRange = Insights["range"]["key"];
 
 export const PROVIDERS = [
   "fourthwall",

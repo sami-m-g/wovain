@@ -28,6 +28,7 @@
     "useCasesDescription": "Cómo diseñadores y marcas pequeñas independientes usan wovain para cápsulas, camisetas gráficas y drops de streetwear en print-on-demand.",
     "guidesTitle": "Guías para marcas en print-on-demand",
     "guidesDescription": "Guías prácticas para marcas independientes en print-on-demand: poner precio a cada pieza para que cada venta deje beneficio y lanzar una cápsula de la idea a los anuncios.",
+    "insightsTitle": "Estadísticas",
     "pricingTitle": "Precios: planes y créditos para tus drops de merch",
     "pricingDescription": "Empieza gratis con créditos cada mes. Studio, Label y los packs de créditos llegan pronto. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
     "billingTitle": "Facturación"
@@ -55,7 +56,8 @@
       "en": "English",
       "fr": "Français",
       "es": "Español"
-    }
+    },
+    "noData": "Aún no hay nada."
   },
   "Header": {
     "product": "Cómo funciona",
@@ -326,12 +328,14 @@
       "newDrop": "Nuevo drop",
       "runs": "Ejecuciones",
       "connections": "Conexiones",
+      "insights": "Estadísticas",
       "billing": "Facturación"
     },
     "apiStatus": "API",
     "apiOnline": "en línea",
     "apiOffline": "sin conexión",
-    "apiChecking": "comprobando"
+    "apiChecking": "comprobando",
+    "toggleSidebar": "Mostrar u ocultar la barra lateral"
   },
   "Stages": {
     "brief": "Brief",
@@ -368,16 +372,21 @@
       "done": "hecho",
       "fourthwall": {
         "title": "Conecta Fourthwall",
-        "body": "Tu tienda y sus blanks, para que wovain pueda poner precio y publicar productos."
+        "body": "Tu tienda y sus blanks, para que wovain pueda poner precio y publicar productos.",
+        "action": "Conectar"
       },
       "meta": {
         "title": "Conecta Meta",
-        "body": "Tu cuenta publicitaria y tu página, para que wovain monte la campaña en pausa."
+        "body": "Tu cuenta publicitaria y tu página, para que wovain monte la campaña en pausa.",
+        "action": "Conectar"
       },
       "drop": {
         "title": "Lanza tu primer drop",
-        "body": "Una frase sobre para quién es. La investigación y los diseños funcionan desde ya."
-      }
+        "body": "Una frase sobre para quién es. La investigación y los diseños funcionan desde ya.",
+        "action": "Empezar"
+      },
+      "lead": "Tres pasos y wovain podrá llevar un brief hasta una campaña en pausa.",
+      "next": "Siguiente"
     }
   },
   "Runs": {
@@ -389,8 +398,11 @@
     "started": "Inicio",
     "manual": "Contigo",
     "autopilot": "Piloto automático",
-    "stoppedAt": "Detenida: {error}",
-    "emptyTitle": "Aún no hay ejecuciones"
+    "stoppedAt": "Detenida en el paso {stage}.",
+    "emptyTitle": "Aún no hay ejecuciones",
+    "brief": "Brief",
+    "status": "Estado",
+    "progress": "Progreso"
   },
   "Connections": {
     "title": "Conexiones",
@@ -411,9 +423,13 @@
       "meta": {
         "name": "Meta",
         "body": "Tu cuenta publicitaria, tu página y tu píxel. Necesario para crear la campaña."
+      },
+      "fal": {
+        "name": "fal",
+        "body": "Tu cuenta de fal dibuja el arte, a tu cargo. Necesaria para crear los diseños."
       }
     },
-    "serverKeys": "La investigación, el arte y los textos de anuncios usan las claves de wovain para Nebius, Qloo, Tavily y fal."
+    "comingSoon": "Próximamente"
   },
   "Wizard": {
     "title": "Nuevo drop",
@@ -425,8 +441,7 @@
     "autopilotRunning": "El piloto automático está gestionando este drop. Puede tardar unos minutos.",
     "back": "Atrás",
     "problem": {
-      "notConfigured": "{service} aún no está configurado en este servidor.",
-      "notConfiguredVariable": "{service} aún no está configurado en este servidor: falta {variable}.",
+      "notConfigured": "Este paso no está disponible ahora mismo. Inténtalo de nuevo en un rato.",
       "notConnected": "Conecta {service} para terminar este paso.",
       "connectLink": "Ir a Conexiones",
       "other": "Algo salió mal: {message}"
@@ -489,7 +504,8 @@
       "budgetLabel": "Presupuesto diario (USD)",
       "budgetHint": "Entre 1 US$ y 500 US$ al día. Puedes cambiarlo en Meta.",
       "budgetError": "Introduce un presupuesto diario de 1 US$ a 500 US$.",
-      "submit": "Crear campaña en pausa"
+      "submit": "Crear campaña en pausa",
+      "perDay": "al día"
     },
     "done": {
       "title": "Tu campaña está lista, en pausa",
@@ -498,7 +514,7 @@
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
       "history": "Ver todas las ejecuciones",
-      "autopilotFailed": "El piloto automático se detuvo: {error}"
+      "autopilotFailed": "El piloto automático se detuvo en el paso {stage}. Retómalo desde los pasos."
     },
     "working": {
       "research": "Investigando tendencias y creando el primer diseño…",
@@ -586,6 +602,70 @@
     "priceTable": "El precio de wovain para costes de blank habituales",
     "ctaTitle": "Pruébalo con tu propio brief",
     "ctaBody": "Tú apruebas cada paso, y la campaña empieza en pausa."
+  },
+  "Insights": {
+    "title": "Estadísticas",
+    "lead": "Cómo se venden tus drops y qué logran sus anuncios, directo de Fourthwall y Meta.",
+    "rangeLabel": "Periodo",
+    "range": {
+      "7d": "7 días",
+      "28d": "28 días",
+      "90d": "90 días"
+    },
+    "updating": "Actualizando…",
+    "shop": {
+      "title": "Tienda",
+      "source": "Informes de Fourthwall, en el periodo",
+      "revenue": "Ingresos",
+      "profit": "Beneficio",
+      "orders": "Pedidos",
+      "chartTitle": "Ingresos y beneficio",
+      "chartLabel": "Ingresos y beneficio por día: {revenue} de ingresos y {profit} de beneficio en total.",
+      "products": "Productos más vendidos",
+      "product": "Producto",
+      "units": "Unidades",
+      "margin": "Margen",
+      "notConnectedTitle": "Conecta Fourthwall para ver las ventas",
+      "notConnected": "wovain lee los informes de tu tienda para mostrar ingresos y beneficio por drop.",
+      "connect": "Conectar Fourthwall",
+      "unavailable": "Los informes de Fourthwall no cargaron: {message}",
+      "emptyTitle": "Aún no hay ventas",
+      "empty": "Publica un producto y compártelo; el primer pedido aparecerá aquí."
+    },
+    "ads": {
+      "title": "Anuncios",
+      "source": "Meta, para las campañas que creó wovain",
+      "spend": "Gasto",
+      "roas": "Retorno de la inversión publicitaria",
+      "ctr": "Tasa de clics",
+      "cpa": "Coste por resultado",
+      "campaigns": "Campañas",
+      "campaign": "Campaña",
+      "results": "Resultados",
+      "notConnectedTitle": "Conecta Meta para ver los resultados",
+      "notConnected": "wovain lee las estadísticas de las campañas que creó para ti.",
+      "connect": "Conectar Meta",
+      "unavailable": "Las estadísticas de Meta no cargaron: {message}",
+      "emptyTitle": "Aún no hay resultados",
+      "empty": "Las campañas se crean en pausa: los resultados llegan cuando activas una en el Administrador de anuncios."
+    },
+    "drops": {
+      "title": "Drops",
+      "lead": "Cada drop con lo que vendió, lo que gastaron sus anuncios y cómo puntuó su trabajo.",
+      "drop": "Drop",
+      "status": "Estado",
+      "designScore": "Puntuación del diseño",
+      "adScore": "Puntuación del anuncio",
+      "revenue": "Ingresos",
+      "profit": "Beneficio",
+      "spend": "Gasto en anuncios",
+      "units": "Unidades",
+      "scorePending": "Las puntuaciones de anuncios aparecerán cuando los evaluadores de wovain califiquen tus textos.",
+      "notScored": "Sin puntuar",
+      "emptyTitle": "Aún no hay drops",
+      "empty": "Empieza un drop; sus ventas, gasto y puntuaciones llegarán aquí.",
+      "emptyCta": "Empezar un drop"
+    }
   },
   "Billing": {
     "perMonth": "/ mes",

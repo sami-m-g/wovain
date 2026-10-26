@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
-import { RunsList } from "@/components/app/runs-list";
+import { RunsTable } from "@/components/app/runs-list";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
@@ -31,7 +31,7 @@ const RunsPage = async ({ params }: PageProps<"/[locale]/dashboard/runs">) => {
         </h1>
         <p className="text-muted-foreground mt-2">{t("lead")}</p>
       </div>
-      <RunsList />
+      <RunsTable />
     </div>
   );
 };

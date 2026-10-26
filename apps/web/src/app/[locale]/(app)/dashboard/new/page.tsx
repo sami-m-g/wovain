@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { NewDropWizard } from "@/components/app/new-drop-wizard";
 import { enterLocale, requireLocale } from "@/i18n/locale";
@@ -36,8 +37,12 @@ const NewDropPage = async ({
   }
   await requireSession(locale, next);
 
+  // The flow reads ?run, ?step and ?brief itself, so it can move between
+  // steps in the URL without a server round trip.
   return (
-    <NewDropWizard initialBrief={initialBrief} initialRunId={initialRunId} />
+    <Suspense>
+      <NewDropWizard />
+    </Suspense>
   );
 };
 
