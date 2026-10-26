@@ -27,6 +27,7 @@ const note = (n: number) => ({
   author: { username: "duo" },
   body: `note ${n}`,
   created_at: "2026-10-26T00:00:00Z",
+  id: n,
   system: false,
 });
 

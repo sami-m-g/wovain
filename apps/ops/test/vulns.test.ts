@@ -34,6 +34,7 @@ const note = (body: string, createdAt: string): Note => ({
   author: { username: "owner" },
   body,
   created_at: createdAt,
+  id: 1,
   system: false,
 });
 
