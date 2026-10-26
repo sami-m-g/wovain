@@ -10,11 +10,14 @@
 ops:
   extends: .ops-job
   resource_group: ops
+  # The "wovain ops" schedule, or Run pipeline and the PostHog trigger with OPS.
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
-    - if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "trigger") && $OPS
+    - &ops-schedule
+      if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
+    - &ops-manual
+      if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "trigger") && $OPS
   script:
-    - node apps/ops/src/ops.ts
+    - pnpm --dir apps/ops run ops
   artifacts:
     when: always
     paths: [public/]
@@ -29,10 +32,11 @@ pages:
   needs:
     - job: ops
       artifacts: true
+  # The ops job's rules, even when it fails.
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "wovain ops"
+    - <<: *ops-schedule
       when: always
-    - if: ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "trigger") && $OPS
+    - <<: *ops-manual
       when: always
   variables:
     GIT_STRATEGY: none
@@ -55,7 +59,7 @@ sci:
   rules:
     - !reference [.on-main, rules]
   script:
-    - node apps/ops/src/sci-report.ts
+    - pnpm --dir apps/ops run sci-report
   artifacts:
     expose_as: SCI report
     paths: [sci-report.md, sci.json]

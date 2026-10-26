@@ -12,4 +12,4 @@ heal:verify:
     # The diff base must be in the clone.
     GIT_DEPTH: "0"
   script:
-    - node apps/ops/src/heal-verify.ts
+    - pnpm --dir apps/ops run heal-verify

@@ -1,9 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 
-import { opsContext } from "./env.ts";
+import { opsContext } from "./context.ts";
+import { ENV } from "./env.ts";
 import { kpiReport, loadKpis, rank } from "./kpis.ts";
 import type { CloudSource, Kpi } from "./kpis.ts";
 import { scalarOf, tableReport, withWindow } from "./posthog.ts";
+import { fromRoot } from "./root.ts";
 import { inspectPages } from "./ui.ts";
 import type { PageReading } from "./ui.ts";
 
@@ -16,11 +18,11 @@ import type { PageReading } from "./ui.ts";
 // only: no log text.
 
 const SNAPSHOT_LABEL = "kpi-snapshot";
-const OUT = "scout";
+const OUT = fromRoot("scout");
 
 const { gitlab, google, posthog } = opsContext();
 // The live site: SITE_URL in CI, production (wovain.com) by default.
-const site = process.env["SITE_URL"] ?? "https://wovain.com";
+const site = ENV.SITE_URL;
 const config = await loadKpis();
 const now = new Date();
 const range = {
@@ -128,7 +130,7 @@ const report = [
     "</details>",
     "",
   ]),
-  `Screenshots: the \`scout:collect\` job's artifacts (${process.env["CI_JOB_URL"] ?? "local run"}).`,
+  `Screenshots: the \`scout:collect\` job's artifacts (${ENV.CI_JOB_URL ?? "local run"}).`,
 ].join("\n");
 
 await mkdir(OUT, { recursive: true });

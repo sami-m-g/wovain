@@ -1,27 +1,11 @@
-import { z } from "zod";
-
 import type { Signature } from "./heal.ts";
 import { normalizeMessage, testNameOf } from "./heal.ts";
 
 // The heal:verify job's judgement (.gitlab/ci/heal.yml, heal-verify.ts): a
 // heal MR's reproduction test must fail on the target branch with the
-// original error, and pass with the fix. Results are vitest's JSON report.
+// original error, and pass with the fix. Results come from vitest's Node API.
 
 export const TEST_FILE = /(?:^|\/)test\/.+\.test\.tsx?$/u;
-
-const reportSchema = z.object({
-  testResults: z.array(
-    z.object({
-      assertionResults: z.array(
-        z.object({
-          failureMessages: z.array(z.string()).default([]),
-          fullName: z.string(),
-          status: z.string(),
-        })
-      ),
-    })
-  ),
-});
 
 export interface TestRun {
   name: string;
@@ -29,13 +13,32 @@ export interface TestRun {
   failure: string;
 }
 
-export const parseReport = (raw: unknown): TestRun[] =>
-  reportSchema.parse(raw).testResults.flatMap((file) =>
-    file.assertionResults.map((t) => ({
-      failure: t.failureMessages.join("\n"),
-      name: t.fullName,
-      status: t.status,
-    }))
+// What runsOf reads of vitest's TestModule and TestCase.
+interface TestCaseLike {
+  fullName: string;
+  result: () => {
+    state: string;
+    errors?:
+      | readonly { message: string; stack?: string | undefined }[]
+      | undefined;
+  };
+}
+interface TestModuleLike {
+  children: { allTests: () => Iterable<TestCaseLike> };
+}
+
+// One run per test, named and worded as vitest's JSON reporter did: suite
+// titles joined with spaces, and each error's stack (or its message).
+export const runsOf = (modules: Iterable<TestModuleLike>): TestRun[] =>
+  [...modules].flatMap((module) =>
+    [...module.children.allTests()].map((test) => {
+      const { errors = [], state } = test.result();
+      return {
+        failure: errors.map((e) => e.stack || e.message).join("\n"),
+        name: test.fullName.replaceAll(" > ", " "),
+        status: state,
+      };
+    })
   );
 
 export interface ReproVerdict {

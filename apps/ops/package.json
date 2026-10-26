@@ -5,12 +5,20 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
+    "env:generate": "varlock codegen",
+    "heal-verify": "varlock codegen && node --import varlock/auto-load src/heal-verify.ts",
+    "ops": "varlock codegen && node --import varlock/auto-load src/ops.ts",
+    "sci-report": "varlock codegen && node --import varlock/auto-load src/sci-report.ts",
+    "scout-collect": "varlock codegen && node --import varlock/auto-load src/scout-collect.ts",
     "test": "vitest run",
-    "traffic": "node src/traffic.ts"
+    "traffic": "varlock codegen && node --import varlock/auto-load src/traffic.ts"
   },
   "dependencies": {
-    "google-auth-library": "^11.3.1",
+    "@gitbeaker/rest": "catalog:",
+    "@google-cloud/logging": "catalog:",
+    "@google-cloud/monitoring": "catalog:",
     "playwright": "^1.64.1",
+    "varlock": "catalog:",
     "yaml": "^2.9.1",
     "zod": "catalog:"
   },

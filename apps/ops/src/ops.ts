@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 import { z } from "zod";
 
-import { opsContext } from "./env.ts";
+import { opsContext } from "./context.ts";
 import type { Issue, MergeRequest, Note } from "./gitlab.ts";
 import {
   blockers,
@@ -32,6 +32,7 @@ import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
 import { loadKpis } from "./kpis.ts";
 import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
+import { fromRoot } from "./root.ts";
 import {
   KPI_MISSED_LABEL,
   KPI_SCOUT_LABEL,
@@ -132,7 +133,7 @@ const tellIncidents = async (
     open.map(async (incident) => {
       await gitlab.noteOnIssue(incident.iid, note);
       if (close) {
-        await gitlab.updateIssue(incident.iid, { state_event: "close" });
+        await gitlab.updateIssue(incident.iid, { stateEvent: "close" });
       }
       return await bestEffort("timeline event", () =>
         gitlab.timelineEvent(incident.id, note, now)
@@ -144,7 +145,7 @@ const tellIncidents = async (
 
 const assignTo = async (issue: number, username: string) => {
   const id = await gitlab.userId(username);
-  await gitlab.updateIssue(issue, { assignee_ids: [id] });
+  await gitlab.updateIssue(issue, { assigneeIds: [id] });
 };
 
 // Browser exceptions PostHog error tracking grouped in the watch window.
@@ -178,7 +179,7 @@ const heal = async () => {
   const issues = await gitlab.issues({
     labels: HEAL_LABEL,
     state: "all",
-    updated_after: new Date(now.getTime() - 7 * DAY_MS).toISOString(),
+    updatedAfter: new Date(now.getTime() - 7 * DAY_MS).toISOString(),
   });
   const known = issues.flatMap((i) => {
     const s = parseSignature(i.description);
@@ -219,7 +220,7 @@ const heal = async () => {
   const incident = await gitlab.createIssue({
     confidential: true,
     description: incidentBody(problem, created.iid),
-    issue_type: "incident",
+    issueType: "incident",
     title: `Incident: ${healTitle(s)}`,
   });
   await gitlab.linkIssues(created.iid, incident.iid);
@@ -299,14 +300,14 @@ const verifyOne = async (issue: Issue) => {
       issue.iid,
       `Verified in production: no \`${signature.fingerprint}\` errors in the ${result.minutes} minutes since the fix deployed. You can turn the \`fault-injection-checkout\` flag off.\n\n${marker("verified")}`
     );
-    await gitlab.updateIssue(issue.iid, { add_labels: VERIFIED_LABEL });
+    await gitlab.updateIssue(issue.iid, { addLabels: VERIFIED_LABEL });
     await tellIncidents(
       issue.iid,
       `Resolved: the fix for #${issue.iid} is verified in production, no \`${signature.fingerprint}\` errors in ${result.minutes} minutes.`,
       true
     );
   } else if (result.kind === "regressed") {
-    await gitlab.updateIssue(issue.iid, { state_event: "reopen" });
+    await gitlab.updateIssue(issue.iid, { stateEvent: "reopen" });
     await gitlab.noteOnIssue(
       issue.iid,
       `Reopened: production logged ${result.events} \`${signature.fingerprint}\` error(s) after the fix deployed. @${me.username} please look; the ops job won't hand it to Duo again.\n\n${marker("regressed")}`
@@ -324,7 +325,7 @@ const verifyHeals = async () => {
   const closed = await gitlab.issues({
     labels: HEAL_LABEL,
     state: "closed",
-    updated_after: new Date(now.getTime() - 2 * DAY_MS).toISOString(),
+    updatedAfter: new Date(now.getTime() - 2 * DAY_MS).toISOString(),
   });
   const pending = closed.filter((i) => !i.labels.includes(VERIFIED_LABEL));
   const results = await Promise.all(
@@ -466,7 +467,7 @@ const fileVulnTasks = async (
     ...plan.reopen.map(
       async ({ issue, vuln }) =>
         await bestEffort(`reopening #${issue.iid}`, async () => {
-          await gitlab.updateIssue(issue.iid, { state_event: "reopen" });
+          await gitlab.updateIssue(issue.iid, { stateEvent: "reopen" });
           await gitlab.noteOnIssue(
             issue.iid,
             `Reopened: the latest default-branch scan still reports ${vuln.webUrl}.`
@@ -542,8 +543,8 @@ const handBack = async (mr: number, notes: Note[], reasons: string[]) => {
 const requestReview = async (mr: MergeRequest, notes: Note[]) => {
   const id = await gitlab.userId(reviewer);
   const others = mr.reviewers.flatMap((r) => (r.id === id ? [] : [r.id]));
-  await gitlab.updateMergeRequest(mr.iid, { reviewer_ids: others });
-  await gitlab.updateMergeRequest(mr.iid, { reviewer_ids: [...others, id] });
+  await gitlab.updateMergeRequest(mr.iid, { reviewerIds: others });
+  await gitlab.updateMergeRequest(mr.iid, { reviewerIds: [...others, id] });
   await once(
     mr.iid,
     notes,
@@ -702,7 +703,7 @@ const shepherd = async () => {
       [developer, healer].map(
         async (author) =>
           await gitlab.mergeRequests({
-            author_username: author,
+            authorUsername: author,
             state: "opened",
           })
       )
@@ -742,8 +743,8 @@ const statusPage = async () => {
   const [incidents, deployments, leadTimeSeconds, recent, sci] =
     await Promise.all([
       gitlab.issues({
-        created_after: since.toISOString(),
-        issue_type: "incident",
+        createdAfter: since.toISOString(),
+        issueType: "incident",
         state: "all",
       }),
       gitlab.deployments(since),
@@ -753,9 +754,7 @@ const statusPage = async () => {
         start: new Date(now.getTime() - WATCH_MS),
       }),
       gitlab
-        .inProject(sciSchema, "GET", "jobs/artifacts/main/raw/sci.json", {
-          job: "sci",
-        })
+        .latestArtifactJson(sciSchema, "main", "sci", "sci.json")
         .catch(() => null),
     ]);
   const rows = incidents.map((i) => ({
@@ -769,9 +768,9 @@ const statusPage = async () => {
     rows.filter((r) => r.state === "opened").length,
     recent.entries.length
   );
-  await mkdir("public", { recursive: true });
+  await mkdir(fromRoot("public"), { recursive: true });
   await writeFile(
-    "public/index.html",
+    fromRoot("public/index.html"),
     renderStatus({
       dora: doraOf({
         deployments: deployments.map((d) => ({ createdAt: d.created_at })),
@@ -829,7 +828,7 @@ const verifyKpis = async () => {
     gitlab.issues({
       labels: KPI_SCOUT_LABEL,
       state: "closed",
-      updated_after: new Date(now.getTime() - 14 * DAY_MS).toISOString(),
+      updatedAfter: new Date(now.getTime() - 14 * DAY_MS).toISOString(),
     }),
   ]);
   const pending = closed.filter(
@@ -861,7 +860,7 @@ const verifyKpis = async () => {
           : `PostHog still shows \`${kpi}\` missing its target a week after the change merged${link}. @${me.username} please decide what's next.`
       );
       await gitlab.updateIssue(issue.iid, {
-        add_labels:
+        addLabels:
           result === "verified" ? KPI_VERIFIED_LABEL : KPI_MISSED_LABEL,
       });
       return [issue.iid, result];

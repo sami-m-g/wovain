@@ -15,14 +15,6 @@
     "apps/web": {
       "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"]
     },
-    "apps/ops": {
-      "entry": [
-        "src/ops.ts",
-        "src/heal-verify.ts",
-        "src/scout-collect.ts",
-        "src/sci-report.ts"
-      ]
-    },
     "packages/widgets": {
       "entry": ["src/{trends,design,product,campaign}.tsx", "src/styles.css"],
       "ignoreDependencies": ["tailwindcss"]
