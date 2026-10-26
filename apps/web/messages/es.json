@@ -385,7 +385,7 @@
   },
   "Connections": {
     "title": "Conexiones",
-    "lead": "wovain actúa por ti a través de estas cuentas. Desconéctalas cuando quieras.",
+    "lead": "wovain actúa por ti a través de estas cuentas. Desconecta cualquiera cuando quieras.",
     "connected": "Conectado",
     "disconnected": "Sin conectar",
     "connect": "Conectar {name}",
@@ -402,9 +402,16 @@
       "meta": {
         "name": "Meta",
         "body": "Tu cuenta publicitaria, tu página y tu píxel. Necesario para crear la campaña."
+      },
+      "fal": {
+        "name": "fal",
+        "body": "Tu propia cuenta de fal dibuja el arte de impresión, así que pagas a fal directamente. Pega una clave de API de fal.ai/dashboard/keys."
       }
     },
-    "serverKeys": "La investigación, el arte y los textos de anuncios usan las claves de wovain para Nebius, Qloo, Tavily y fal."
+    "serverKeys": "La investigación de tendencias y los textos de anuncios usan las claves de wovain para Nebius, Qloo y Tavily. El arte usa tu clave de fal.",
+    "keyLabel": "Clave de API de {name}",
+    "keyPlaceholder": "Pega tu clave",
+    "saveKey": "Guardar clave"
   },
   "Wizard": {
     "title": "Nuevo drop",

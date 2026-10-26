@@ -12,7 +12,6 @@ import { createUpstream } from "./upstream";
 // needs it, with a NOT_CONFIGURED error naming the variable.
 export interface CoreConfig extends SpendConfig {
   BETTER_AUTH_URL: string;
-  FAL_KEY?: string | undefined;
   META_APP_ID?: string | undefined;
   META_APP_SECRET?: string | undefined;
   NEBIUS_API_KEY?: string | undefined;
@@ -26,7 +25,8 @@ export interface CoreConfig extends SpendConfig {
 }
 
 export const createCore = (env: CoreConfig) => ({
-  artist: createArtist(env.FAL_KEY),
+  // fal runs on the merchant's own key (a sealed connection), never wovain's.
+  artist: createArtist,
   nemotron: createNemotron({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,

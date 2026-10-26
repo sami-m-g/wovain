@@ -2,7 +2,11 @@ import type { AdCopy } from "@wovain/core/ads";
 import type { DesignBrief, Judgment } from "@wovain/core/design";
 import type { SpendKind } from "@wovain/core/spend";
 import type { TrendIdea } from "@wovain/core/trends";
-import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
+import type {
+  ConnectorId,
+  PendingFlow,
+  ProviderId,
+} from "@wovain/core/upstream";
 import {
   boolean,
   index,
@@ -36,13 +40,14 @@ const updatedAt = () =>
     .$onUpdate(() => new Date())
     .notNull();
 
-// A merchant's grant on Fourthwall or Meta; the tokens are sealed.
+// A merchant's grant on Fourthwall or Meta, or their fal key; sealed.
 export const connection = pgTable(
   "connection",
   {
     connectedAt: createdAt(),
     id: id(),
-    provider: text("provider").$type<ProviderId>().notNull(),
+    // An OAuth grant (Fourthwall, Meta) or an API key (fal), sealed alike.
+    provider: text("provider").$type<ConnectorId>().notNull(),
     sealedTokens: text("sealed_tokens").notNull(),
     updatedAt: updatedAt(),
     userId: owner(),

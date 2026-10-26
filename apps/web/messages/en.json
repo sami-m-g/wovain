@@ -385,7 +385,7 @@
   },
   "Connections": {
     "title": "Connections",
-    "lead": "wovain acts for you through these accounts. Disconnect either one at any time.",
+    "lead": "wovain acts for you through these accounts. Disconnect any of them at any time.",
     "connected": "Connected",
     "disconnected": "Not connected",
     "connect": "Connect {name}",
@@ -402,9 +402,16 @@
       "meta": {
         "name": "Meta",
         "body": "Your ad account, Page and pixel. Needed to build the campaign."
+      },
+      "fal": {
+        "name": "fal",
+        "body": "Your own fal account draws the print art, so you pay fal directly. Paste an API key from fal.ai/dashboard/keys."
       }
     },
-    "serverKeys": "Trend research, art and ad copy run on wovain's own keys for Nebius, Qloo, Tavily and fal."
+    "serverKeys": "Trend research and ad copy run on wovain's own keys for Nebius, Qloo and Tavily. Art runs on your fal key.",
+    "keyLabel": "{name} API key",
+    "keyPlaceholder": "Paste your key",
+    "saveKey": "Save key"
   },
   "Wizard": {
     "title": "New drop",

@@ -28,6 +28,13 @@ import type { Logger } from "./log";
 export const providerIds = ["fourthwall", "meta"] as const;
 export type ProviderId = (typeof providerIds)[number];
 
+// Providers the merchant connects with their own API key instead of OAuth:
+// fal draws on the merchant's account, so they pay fal directly.
+export const keyProviderIds = ["fal"] as const;
+export type KeyProviderId = (typeof keyProviderIds)[number];
+export const connectorIds = [...providerIds, ...keyProviderIds] as const;
+export type ConnectorId = (typeof connectorIds)[number];
+
 interface ProviderInfo {
   // Asked for instead of every scope the server advertises.
   scope?: string;

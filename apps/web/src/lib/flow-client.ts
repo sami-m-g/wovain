@@ -23,8 +23,8 @@ export type Campaign = Outputs["campaigns"]["create"];
 export const PROVIDERS = [
   "fourthwall",
   "meta",
+  "fal",
 ] as const satisfies readonly Provider[];
-
 /**
  * The browser URL that starts connecting a provider; the server redirects to
  * the provider's consent page and back to `returnTo` with `?connected=`.

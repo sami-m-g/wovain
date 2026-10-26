@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import type { Artwork, DesignBrief } from "./design";
 import { REQUIRED_PX } from "./design";
-import { external, notConfigured } from "./log";
+import { external } from "./log";
 import type { Logger } from "./log";
 
-// Print art on fal, through its official client and wovain's FAL_KEY: GPT
-// Image draws on a transparent background at print size, told to print
-// exactly the brief's words and nothing else.
+// Print art on fal, through its official client and the merchant's own fal
+// key (they pay fal directly): GPT Image draws on a transparent background
+// at print size, told to print exactly the brief's words and nothing else.
 export const TEXT_TO_IMAGE = "openai/gpt-image-2.5/flare/text-to-image";
 
 const imageSchema = z.object({
@@ -50,22 +50,15 @@ export const artInput = (brief: DesignBrief) => ({
 // Two calls, so a durable step can key the paid one: `submit` queues the
 // drawing and returns fal's request ID; `result` waits for that request and
 // reads its image, as often as a retry needs, without drawing again.
-export const createArtist = (apiKey: string | undefined) => {
-  const fal =
-    apiKey === undefined ? undefined : createFalClient({ credentials: apiKey });
-  const client = () => {
-    if (fal === undefined) {
-      throw notConfigured.fal();
-    }
-    return fal;
-  };
+export const createArtist = (apiKey: string) => {
+  const fal = createFalClient({ credentials: apiKey });
   return {
     result: async (requestId: string, log?: Logger): Promise<Artwork> =>
       await external(
         log,
         { operation: "generate_art", provider: "fal" },
         async () => {
-          const { queue } = client();
+          const { queue } = fal;
           await queue.subscribeToStatus(TEXT_TO_IMAGE, { requestId });
           const { data } = await queue.result(TEXT_TO_IMAGE, { requestId });
           const [image] = imageSchema.parse(data).images;
@@ -80,7 +73,7 @@ export const createArtist = (apiKey: string | undefined) => {
         log,
         { operation: "submit_art", provider: "fal" },
         async () => {
-          const queued = await client().queue.submit(TEXT_TO_IMAGE, {
+          const queued = await fal.queue.submit(TEXT_TO_IMAGE, {
             input: artInput(brief),
           });
           return queued.request_id;

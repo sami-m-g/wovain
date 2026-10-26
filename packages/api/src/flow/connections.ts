@@ -1,6 +1,13 @@
 import { randomBytes } from "node:crypto";
 
-import type { GrantStore, ProviderId, ToolCall } from "@wovain/core/upstream";
+import { ORPCError } from "@orpc/server";
+import type {
+  ConnectorId,
+  GrantStore,
+  KeyProviderId,
+  ProviderId,
+  ToolCall,
+} from "@wovain/core/upstream";
 import { connection, connectionFlow } from "@wovain/db/schema/seller";
 import { and, eq, gt, lte } from "drizzle-orm";
 import { defineError } from "evlog";
@@ -8,8 +15,9 @@ import { z } from "zod";
 
 import type { Actor } from "./actor";
 
-// The merchant's connections to Fourthwall and Meta: grants sealed in the
-// database, and the authorization flows that create them.
+// The merchant's connections: Fourthwall and Meta grants sealed in the
+// database with the authorization flows that create them, and the
+// merchant's own fal key.
 
 const FLOW_TTL_MS = 10 * 60 * 1000;
 
@@ -80,6 +88,63 @@ export const withProvider = async <T>(
     actor.log,
     work
   );
+
+// fal runs on the merchant's own key: connecting fal saves it, sealed like
+// a grant and bound to its owner. Nothing calls fal with wovain's own key.
+const apiKeySchema = z.object({ apiKey: z.string().min(1) });
+
+export const connectionErrors = {
+  FAL_NOT_CONNECTED: {
+    data: z.object({ provider: z.literal("fal") }),
+    message: "Connect your fal account to draw designs",
+    status: 409,
+  },
+} as const;
+
+const falNotConnected = () =>
+  new ORPCError("FAL_NOT_CONNECTED", {
+    data: { provider: "fal" },
+    message: connectionErrors.FAL_NOT_CONNECTED.message,
+    status: connectionErrors.FAL_NOT_CONNECTED.status,
+  });
+
+export const saveApiKey = async (
+  { core, db, userId }: Actor,
+  provider: KeyProviderId,
+  apiKey: string
+) => {
+  const sealedTokens = core.sealer.seal(
+    JSON.stringify({ apiKey }),
+    `${userId}:${provider}`
+  );
+  await db
+    .insert(connection)
+    .values({ provider, sealedTokens, userId })
+    .onConflictDoUpdate({
+      set: { sealedTokens },
+      target: [connection.userId, connection.provider],
+    });
+  return { connected: true };
+};
+
+// The merchant's fal key, or FAL_NOT_CONNECTED.
+export const apiKeyFor = async (
+  { core, db, userId }: Actor,
+  provider: KeyProviderId
+) => {
+  const [row] = await db
+    .select({ sealedTokens: connection.sealedTokens })
+    .from(connection)
+    .where(
+      and(eq(connection.userId, userId), eq(connection.provider, provider))
+    );
+  if (row === undefined) {
+    throw falNotConnected();
+  }
+  return apiKeySchema.parse(
+    JSON.parse(core.sealer.open(row.sealedTokens, `${userId}:${provider}`))
+  ).apiKey;
+};
 
 export const listConnections = async ({ db, userId }: Actor) =>
   await db
@@ -170,7 +235,7 @@ export const completeConnection = async (
   return { connected, returnTo: flow.returnTo };
 };
 
-export const disconnect = async (actor: Actor, provider: ProviderId) => {
+export const disconnect = async (actor: Actor, provider: ConnectorId) => {
   const removed = await actor.db
     .delete(connection)
     .where(

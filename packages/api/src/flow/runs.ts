@@ -8,6 +8,7 @@ import { and, count, desc, eq, inArray } from "drizzle-orm";
 import type { Actor, RunInput } from "./actor";
 import { notFound } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
+import { apiKeyFor } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
@@ -271,8 +272,10 @@ export const startRun = async (actor: Actor, input: RunInput) => {
   if (actor.runs === undefined) {
     throw new Error("No run engine to start the run");
   }
-  // Refused before the run is saved, so a merchant over quota sees no run.
+  // Refused before the run is saved, so a merchant over quota (or without
+  // a fal key to draw with) sees no run.
   await meter(actor, "run", { record: false });
+  await apiKeyFor(actor, "fal");
   const [created] = await actor.db
     .insert(run)
     .values({

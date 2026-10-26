@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createProductCampaign, listCampaigns } from "../flow/campaigns";
+import { connectionErrors } from "../flow/connections";
 import {
   decideDesign,
   generateDesign,
@@ -62,6 +63,7 @@ export const designsRouter = {
         await decideDesign(context, input.id, { approve: true, by: "merchant" })
     ),
   generate: protectedProcedure
+    .errors(connectionErrors)
     .input(z.object({ ideaId: id }))
     .handler(
       async ({ context, input }) => await generateDesign(context, input.ideaId)
@@ -143,6 +145,7 @@ export const runsRouter = {
     async ({ context }) => await listRuns(context)
   ),
   start: funnelProcedure("run_started")
+    .errors(connectionErrors)
     .input(
       z.object({
         autopilot: z.boolean().default(false),
