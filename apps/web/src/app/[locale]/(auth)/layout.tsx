@@ -70,8 +70,10 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
             <ModeToggle />
           </div>
         </header>
+        {/* Session replays mask this text (ph-mask): the consent page names
+            the account and the app asking for access. */}
         <main
-          className="flex flex-1 items-center justify-center px-4 py-12 outline-none sm:px-8"
+          className="ph-mask flex flex-1 items-center justify-center px-4 py-12 outline-none sm:px-8"
           id="main"
           tabIndex={-1}
         >

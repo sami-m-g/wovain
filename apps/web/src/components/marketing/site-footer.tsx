@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/brand/logo";
+import { ConsentSettingsButton } from "@/components/consent-banner";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getContent } from "@/content/load";
 import { INTEGRATION_SLUGS, USE_CASE_SLUGS } from "@/content/types";
@@ -120,6 +121,9 @@ export const SiteFooter = async () => {
             <Link className={linkClass} href="/terms">
               {t("terms")}
             </Link>
+          </li>
+          <li>
+            <ConsentSettingsButton className={linkClass} />
           </li>
           <li>
             <a className={linkClass} href="mailto:hello@wovain.com">

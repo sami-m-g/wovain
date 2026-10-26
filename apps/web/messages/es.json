@@ -80,6 +80,14 @@
     "guides": "Guías",
     "contact": "Contacto"
   },
+  "AnalyticsConsent": {
+    "title": "Ayúdanos a mejorar wovain",
+    "body": "Con tu permiso, PostHog guarda un identificador en tu navegador y graba cómo usas el sitio, sin nada de lo que escribes, para que arreglemos lo que te estorba. Sin él, solo contamos las visitas de forma anónima.",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "privacy": "Privacidad",
+    "settings": "Configuración de cookies"
+  },
   "Home": {
     "heroTitle": "Un brief. Un drop de merch completo.",
     "heroLead": "wovain investiga lo que le gusta a tu audiencia esta semana, diseña productos sobre blanks reales de Fourthwall y monta los anuncios de Meta para venderlos. Tú apruebas cada paso, y la campaña empieza en pausa.",
@@ -250,7 +258,7 @@
       "collectTitle": "Qué recopilamos",
       "collectBody": "Tu nombre, tu correo y el hash de tu contraseña para tu cuenta; los briefs que escribes; y las ejecuciones, diseños y productos que wovain crea para ti.",
       "analyticsTitle": "Analítica",
-      "analyticsBody": "Usamos PostHog, alojado en EE. UU., para entender cómo se descubre y usa wovain: las páginas que visitas, los clics, la velocidad de las páginas y el idioma del sitio. Funciona sin cookies ni almacenamiento en el navegador, así que no puede reconocerte entre visitas y no hay ningún banner que aceptar. Cuando inicias sesión, estos eventos se vinculan al identificador de tu cuenta, nunca a tu correo.",
+      "analyticsBody": "Usamos PostHog, alojado en EE. UU., para entender cómo se descubre y usa wovain: las páginas que visitas, los clics, la velocidad de las páginas y el idioma del sitio. Hasta que aceptes, funciona sin cookies ni almacenamiento en el navegador, así que no puede reconocerte entre visitas ni grabar sesiones. Si aceptas, o donde la ley no exige preguntar primero, guarda un identificador en tu navegador y graba las sesiones, sin lo que escribes ni los datos de tu cuenta. Puedes cambiar tu elección cuando quieras con Configuración de cookies al pie de la página, y la señal Global Privacy Control de tu navegador cuenta como un no. Cuando inicias sesión, estos eventos se vinculan al identificador de tu cuenta, nunca a tu correo.",
       "connectionsTitle": "Servicios conectados",
       "connectionsBody": "Cuando conectas Fourthwall, Meta o fal, guardamos el acceso que conceden para que wovain actúe por ti. Puedes desconectarlos cuando quieras desde Conexiones.",
       "processorsTitle": "Quién los procesa",

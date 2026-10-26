@@ -8,6 +8,7 @@ import "@/index.css";
 import "@/lib/orpc.server";
 import { BRAND_CSS, PALETTE } from "@/brand/brand";
 import { fontVariables } from "@/brand/fonts";
+import { ConsentBanner } from "@/components/consent-banner";
 import Providers from "@/components/providers";
 import { routing } from "@/i18n/routing";
 import { alternatesFor, siteUrl } from "@/lib/seo";
@@ -83,7 +84,10 @@ const LocaleLayout = async ({
           {t("skipToContent")}
         </a>
         <NextIntlClientProvider>
-          <Providers>{children}</Providers>
+          <Providers>
+            {children}
+            <ConsentBanner />
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

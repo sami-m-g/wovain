@@ -80,6 +80,14 @@
     "guides": "Guides",
     "contact": "Contact"
   },
+  "AnalyticsConsent": {
+    "title": "Aidez-nous à améliorer wovain",
+    "body": "Avec votre accord, PostHog enregistre un identifiant dans votre navigateur et votre parcours sur le site, sans rien de ce que vous saisissez, pour que nous corrigions ce qui vous gêne. Sans accord, nous comptons seulement les visites, de façon anonyme.",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "privacy": "Confidentialité",
+    "settings": "Paramètres des cookies"
+  },
   "Home": {
     "heroTitle": "Un brief. Un drop de merch complet.",
     "heroLead": "wovain repère ce que votre audience aime cette semaine, dessine des produits sur de vrais blanks Fourthwall et monte les pubs Meta pour les vendre. Vous validez chaque étape, et la campagne démarre en pause.",
@@ -250,7 +258,7 @@
       "collectTitle": "Ce que nous collectons",
       "collectBody": "Votre nom, votre e-mail et l'empreinte de votre mot de passe pour votre compte ; les briefs que vous écrivez ; et les exécutions, visuels et produits que wovain crée pour vous.",
       "analyticsTitle": "Mesure d'audience",
-      "analyticsBody": "Nous utilisons PostHog, hébergé aux États-Unis, pour comprendre comment on découvre et utilise wovain : les pages visitées, les clics, la vitesse des pages et la langue du site. Il fonctionne sans cookies ni stockage dans le navigateur : il ne peut pas vous reconnaître d'une visite à l'autre, et aucune bannière n'est à accepter. Une fois connecté, ces événements sont liés à l'identifiant de votre compte, jamais à votre e-mail.",
+      "analyticsBody": "Nous utilisons PostHog, hébergé aux États-Unis, pour comprendre comment on découvre et utilise wovain : les pages visitées, les clics, la vitesse des pages et la langue du site. Tant que vous n'avez pas accepté, il fonctionne sans cookies ni stockage dans le navigateur : il ne peut ni vous reconnaître d'une visite à l'autre, ni enregistrer de sessions. Si vous acceptez, ou là où la loi n'impose pas de demander d'abord, il enregistre un identifiant dans votre navigateur et des enregistrements de session, sans ce que vous saisissez ni les informations de votre compte. Vous pouvez changer d'avis à tout moment avec Paramètres des cookies en bas de page, et le signal Global Privacy Control de votre navigateur vaut refus. Une fois connecté, ces événements sont liés à l'identifiant de votre compte, jamais à votre e-mail.",
       "connectionsTitle": "Services connectés",
       "connectionsBody": "Quand vous connectez Fourthwall, Meta ou fal, nous conservons l'accès qu'ils accordent pour que wovain agisse pour vous. Vous pouvez les déconnecter à tout moment depuis Connexions.",
       "processorsTitle": "Qui traite vos données",

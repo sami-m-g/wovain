@@ -11,10 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "@wovain/ui/components/dropdown-menu";
 import { useTranslations } from "next-intl";
-import { posthog } from "posthog-js";
 
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
+import { resetAnalytics } from "@/lib/consent-store";
 
 /** The signed-in account menu; loaded only for signed-in visitors. */
 const AccountMenu = ({
@@ -30,14 +30,16 @@ const AccountMenu = ({
         render={
           <Button
             aria-label={`${session.user.name} (${t("account")})`}
-            className="h-9 max-w-48 rounded-lg px-3 text-sm"
+            // Replays block the trigger (its label carries the name) and mask
+            // the menu's email (instrumentation-client.ts).
+            className="ph-no-capture h-9 max-w-48 rounded-lg px-3 text-sm"
             variant="outline"
           />
         }
       >
         <span className="truncate">{session.user.name}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-card">
+      <DropdownMenuContent align="end" className="bg-card ph-mask">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{session.user.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -47,7 +49,7 @@ const AccountMenu = ({
                 fetchOptions: {
                   onSuccess: () => {
                     // The next visitor on this browser is anonymous again.
-                    posthog.reset();
+                    resetAnalytics();
                     router.push("/");
                   },
                 },
