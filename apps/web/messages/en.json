@@ -699,7 +699,8 @@
       "plansTitle": "Plans",
       "packTitle": "Need a few more credits?",
       "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
-      "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}."
+      "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}.",
+      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire."
     },
     "paywall": {
       "creditsTitle": "You're out of credits for this step",
@@ -718,6 +719,24 @@
       "comingSoon": "Coming soon",
       "button": "Notify me",
       "thanks": "Thanks, we've noted your interest."
+    },
+    "redeem": {
+      "title": "Redeem a code",
+      "lead": "Got a promo code? Add its credits to your account.",
+      "label": "Promo code",
+      "placeholder": "Enter your code",
+      "hint": "One redemption per account. No card needed for free codes.",
+      "submit": "Redeem",
+      "redeeming": "Redeeming…",
+      "errors": {
+        "invalid": "That code isn't valid. Check it and try again.",
+        "expired": "That code has expired.",
+        "usedUp": "That code has been fully redeemed.",
+        "alreadyRedeemed": "You've already redeemed this code.",
+        "notFree": "Only codes for free credits work for now. Paid plans are coming soon.",
+        "tooMany": "Too many tries. Wait a few minutes, then try again.",
+        "error": "The code didn't go through. Try again in a moment."
+      }
     }
   },
   "Pricing": {

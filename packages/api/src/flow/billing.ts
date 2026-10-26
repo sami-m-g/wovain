@@ -32,7 +32,7 @@ export const paidPlansNotAvailable = defineError("PAID_PLANS_NOT_AVAILABLE", {
   why: "The billing-paid-plans flag is off.",
 });
 
-const requirePolar = (actor: Actor): NonNullable<Billing["polar"]> => {
+export const requirePolar = (actor: Actor): NonNullable<Billing["polar"]> => {
   const { polar } = actor.billing;
   if (polar === undefined) {
     throw notConfigured();

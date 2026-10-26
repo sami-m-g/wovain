@@ -18,28 +18,33 @@ export interface GrantCredits {
   grantId: string;
   // The credit period: Polar's last_credited_at for the grant.
   periodKey: string;
+  // The promo behind a redeemed code's credits (src/promos.ts).
+  promoId?: string | undefined;
   rollover: boolean;
   source: "plan" | "pack";
   units: number;
   userId: string;
 }
 
+type GrantRef = Pick<
+  GrantCredits,
+  "grantId" | "promoId" | "rollover" | "source" | "userId"
+>;
+
 // The grant row, created empty if this is its first event, then locked so
-// concurrent deliveries for one grant apply one at a time.
+// concurrent deliveries for one grant apply one at a time. Undefined for a
+// promo grant when the merchant already holds another grant of that promo
+// (credit_grant_user_promo_idx): one redemption per merchant per promo.
 const lockGrant = async (
   tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
-  {
-    grantId,
-    rollover,
-    source,
-    userId,
-  }: Pick<GrantCredits, "grantId" | "rollover" | "source" | "userId">
+  { grantId, promoId, rollover, source, userId }: GrantRef
 ) => {
   await tx
     .insert(creditGrant)
     .values({
       id: grantId,
       periodKey: "",
+      promoId: promoId ?? null,
       remaining: 0,
       rollover,
       source,
@@ -51,10 +56,29 @@ const lockGrant = async (
     .from(creditGrant)
     .where(eq(creditGrant.id, grantId))
     .for("update");
-  if (row === undefined) {
+  if (row === undefined && promoId === undefined) {
     throw new Error(`Credit grant ${grantId} wasn't saved`);
   }
   return row;
+};
+
+// Whether the merchant holds a grant of this promo other than `grantId`: a
+// second redemption, which brings no credits.
+export const promoRedeemed = async (
+  db: Database,
+  {
+    exceptGrantId,
+    promoId,
+    userId,
+  }: { exceptGrantId?: string; promoId: string; userId: string }
+) => {
+  const rows = await db
+    .select({ id: creditGrant.id })
+    .from(creditGrant)
+    .where(
+      and(eq(creditGrant.userId, userId), eq(creditGrant.promoId, promoId))
+    );
+  return rows.some((row) => row.id !== exceptGrantId);
 };
 
 // A new credit period for a grant: its units replace what was left (which
@@ -63,7 +87,11 @@ const lockGrant = async (
 export const applyGrant = async (db: Database, grant: GrantCredits) =>
   await db.transaction(async (tx) => {
     const row = await lockGrant(tx, grant);
-    if (row.revokedAt !== null || grant.periodKey <= row.periodKey) {
+    if (
+      row === undefined ||
+      row.revokedAt !== null ||
+      grant.periodKey <= row.periodKey
+    ) {
       return false;
     }
     const expired = grant.rollover ? 0 : row.remaining;
@@ -83,6 +111,10 @@ export const applyGrant = async (db: Database, grant: GrantCredits) =>
       delta,
       grantId: grant.grantId,
       idempotencyKey: `${reason}:${grant.grantId}:${grant.periodKey}`,
+      note:
+        reason === "grant" && grant.promoId !== undefined
+          ? `promo ${grant.promoId}`
+          : null,
       reason,
       userId: grant.userId,
     });
@@ -99,13 +131,10 @@ export const applyGrant = async (db: Database, grant: GrantCredits) =>
 
 // A revoked grant (a cancelled plan, a refunded pack): what's left of it is
 // gone, and later events for it change nothing.
-export const revokeGrant = async (
-  db: Database,
-  grant: Pick<GrantCredits, "grantId" | "rollover" | "source" | "userId">
-) =>
+export const revokeGrant = async (db: Database, grant: GrantRef) =>
   await db.transaction(async (tx) => {
     const row = await lockGrant(tx, grant);
-    if (row.revokedAt !== null) {
+    if (row === undefined || row.revokedAt !== null) {
       return false;
     }
     await tx

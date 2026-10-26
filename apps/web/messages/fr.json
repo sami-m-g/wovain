@@ -699,7 +699,8 @@
       "plansTitle": "Formules",
       "packTitle": "Besoin de quelques crédits de plus ?",
       "comingSoon": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent chaque mois.",
-      "comingSoonRenews": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent le {date}."
+      "comingSoonRenews": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent le {date}.",
+      "redeemSuccess": "Code utilisé. Vos crédits arrivent dans quelques secondes et n'expirent jamais."
     },
     "paywall": {
       "creditsTitle": "Plus assez de crédits pour cette étape",
@@ -718,6 +719,24 @@
       "comingSoon": "Bientôt disponible",
       "button": "Me prévenir",
       "thanks": "Merci, votre intérêt est noté."
+    },
+    "redeem": {
+      "title": "Utiliser un code",
+      "lead": "Vous avez un code promo ? Ajoutez ses crédits à votre compte.",
+      "label": "Code promo",
+      "placeholder": "Saisissez votre code",
+      "hint": "Une utilisation par compte. Aucune carte requise pour les codes gratuits.",
+      "submit": "Valider",
+      "redeeming": "Validation…",
+      "errors": {
+        "invalid": "Ce code n'est pas valide. Vérifiez-le et réessayez.",
+        "expired": "Ce code a expiré.",
+        "usedUp": "Ce code a atteint son nombre maximal d'utilisations.",
+        "alreadyRedeemed": "Vous avez déjà utilisé ce code.",
+        "notFree": "Seuls les codes de crédits gratuits fonctionnent pour l'instant. Les formules payantes arrivent bientôt.",
+        "tooMany": "Trop d'essais. Patientez quelques minutes, puis réessayez.",
+        "error": "Le code n'a pas pu être validé. Réessayez dans un instant."
+      }
     }
   },
   "Pricing": {

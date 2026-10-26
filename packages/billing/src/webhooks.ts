@@ -8,12 +8,15 @@ import {
   applyGrant,
   entitlement,
   merchantOf,
+  promoRedeemed,
   revokeGrant,
   storedSubscription,
   upsertSubscription,
 } from "./mirror";
 import { CREDIT_PACK, POLAR_METADATA_KEY, isPlanCode } from "./plans";
 import { ensureFreePlan } from "./polar";
+import { promoOfTag } from "./promos";
+import { redeemSurface } from "./redeem";
 
 // Polar's webhooks, as the Better Auth plugin hands them over after checking
 // their signature (packages/auth). Every handler is idempotent: Polar retries
@@ -35,7 +38,8 @@ const isMeterCredit = (grant: Grant): grant is MeterCreditGrant =>
   grant.benefit.type === "meter_credit";
 
 // The wovain grant behind a Polar benefit grant, if it is one: a plan's
-// credits or a pack's, from the benefit's `wovain` metadata.
+// credits, a pack's or a promo code's, from the benefit's `wovain` metadata.
+// A promo's credits never expire, like a pack's.
 const creditsOf = (grant: Grant) => {
   if (!isMeterCredit(grant)) {
     return;
@@ -45,11 +49,16 @@ const creditsOf = (grant: Grant) => {
   if (typeof code !== "string" || typeof userId !== "string") {
     return;
   }
+  const promo = promoOfTag(code);
   return {
     grant,
     grantId: grant.id,
+    promoId: promo?.id,
     rollover: grant.benefit.properties.rollover,
-    source: code === "pack" ? ("pack" as const) : ("plan" as const),
+    source:
+      code === "pack" || promo !== undefined
+        ? ("pack" as const)
+        : ("plan" as const),
     userId,
   };
 };
@@ -74,7 +83,33 @@ const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
   }
   const units =
     data.properties.last_credited_units ?? data.benefit.properties.units;
+  // One redemption per merchant per promo: a second one (two checkouts
+  // finished at once) brings no credits. Polar's per-customer limit should
+  // already have refused it.
+  if (
+    ref.promoId !== undefined &&
+    (await promoRedeemed(db, {
+      exceptGrantId: ref.grantId,
+      promoId: ref.promoId,
+      userId: ref.userId,
+    }))
+  ) {
+    return "already_redeemed";
+  }
   const applied = await applyGrant(db, { ...ref, periodKey, units });
+  if (applied && ref.promoId !== undefined) {
+    analytics?.capture({
+      distinctId: ref.userId,
+      event: "promo_redeemed",
+      properties: {
+        // The promo's public id, never the secret code.
+        code: ref.promoId,
+        credits: units,
+        surface: await redeemSurface(db, ref.userId, ref.promoId),
+      },
+    });
+    return "granted";
+  }
   // A pack is credited once, when it is bought.
   if (applied && ref.source === "pack") {
     analytics?.capture({
