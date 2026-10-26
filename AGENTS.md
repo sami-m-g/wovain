@@ -22,6 +22,7 @@
 - Do not edit vendored or generated files; update them with their CLI:
   - `packages/ui/src/{components,hooks,lib}`: shadcn CLI
   - `apps/fumadocs/src/components/{ai,codeblock.tsx,tabs,ui}`, `apps/fumadocs/src/lib/{cn,merge-refs}.ts`: Fumadocs CLI
+  - `apps/web/src/{components,lib}/auth`: Better Auth UI registry (`pnpm dlx shadcn add https://better-auth-ui.com/r/base-nova/<item>.json`)
   - `packages/db/src/schema/auth.ts`: `pnpm run auth:generate`
   - `packages/db/src/migrations`: `pnpm run db:generate`
   - `.agents/skills`: `npx skills experimental_install`

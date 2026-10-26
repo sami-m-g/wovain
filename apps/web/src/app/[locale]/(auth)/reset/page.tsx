@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ResetForm } from "@/components/auth/reset-form";
+import { AuthView } from "@/components/auth-view";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 
@@ -17,14 +17,9 @@ export const generateMetadata = async ({
   });
 };
 
-const ResetPage = async ({
-  params,
-  searchParams,
-}: PageProps<"/[locale]/reset">) => {
+const ResetPage = async ({ params }: PageProps<"/[locale]/reset">) => {
   await enterLocale(params);
-  const query = await searchParams;
-  const token = typeof query.token === "string" ? query.token : null;
-  return <ResetForm invalid={query.error !== undefined} token={token} />;
+  return <AuthView view="resetPassword" />;
 };
 
 export default ResetPage;

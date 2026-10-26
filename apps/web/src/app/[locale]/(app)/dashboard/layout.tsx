@@ -6,6 +6,7 @@ import { AnalyticsIdentity } from "@/components/app/analytics-identity";
 import { ApiStatus } from "@/components/app/api-status";
 import { AppNav } from "@/components/app/app-nav";
 import { ConnectionToasts } from "@/components/app/connection-toasts";
+import { AuthSession } from "@/components/auth-session";
 import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -58,7 +59,9 @@ const DashboardLayout = async ({
           id="main"
           tabIndex={-1}
         >
-          {children}
+          <Suspense>
+            <AuthSession>{children}</AuthSession>
+          </Suspense>
           <Suspense>
             <ConnectionToasts />
           </Suspense>

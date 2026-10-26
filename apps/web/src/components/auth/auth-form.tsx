@@ -1,230 +1,346 @@
-"use client";
+"use client"
 
-import { Field } from "@base-ui/react/field";
-import { useForm } from "@tanstack/react-form";
-import { Alert } from "@wovain/ui/components/alert";
-import { Button } from "@wovain/ui/components/button";
-import { Input } from "@wovain/ui/components/input";
-import { Label } from "@wovain/ui/components/label";
-import { useLocale, useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
-import { z } from "zod";
+import {
+  type AdditionalField as AdditionalFieldConfig,
+  type AdditionalFieldFormValue,
+  DEFAULT_ADDITIONAL_FIELD_VALIDATION_DEBOUNCE_MS,
+  getFormFieldErrors,
+  normalizeAuthFormServerError,
+  validateAdditionalFieldRequired,
+  validateAdditionalFieldValue
+} from "@better-auth-ui/core"
+import {
+  type AnyFormApi,
+  createFormHook,
+  createFormHookContexts
+} from "@tanstack/react-form"
+import {
+  type ComponentProps,
+  type FormEvent,
+  type ReactNode,
+  useRef
+} from "react"
 
-import { Link, useRouter } from "@/i18n/navigation";
-import { identifyMerchant } from "@/lib/analytics-client";
-import { authClient } from "@/lib/auth-client";
+import { Button } from "@wovain/ui/components/button"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel
+} from "@wovain/ui/components/field"
+import { Input } from "@wovain/ui/components/input"
+import { Spinner } from "@wovain/ui/components/spinner"
+import { AdditionalField, type AdditionalFieldProps } from "./additional-field"
 
-import { GoogleButton } from "./google-button";
+const { fieldContext, formContext, useFieldContext, useFormContext } =
+  createFormHookContexts()
 
-type Mode = "login" | "signUp";
+const DEFAULT_AUTH_FORM_SERVER_ERROR = "Unable to submit this form. Try again."
 
-const MIN_NAME = 2;
-const MIN_PASSWORD = 8;
+export function focusFirstInvalidAuthFormControl(form: HTMLFormElement) {
+  requestAnimationFrame(() => {
+    form
+      .querySelector<HTMLElement>(
+        '[aria-invalid="true"]:not([disabled]), :invalid:not([disabled])'
+      )
+      ?.focus()
+  })
+}
 
-/** Only same-app paths are allowed as a post-login destination. */
-const safeNext = (value: string | null) =>
-  value?.startsWith("/dashboard") ? value : "/dashboard";
+function AuthFormFieldError() {
+  const field = useFieldContext<unknown>()
+  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
 
-export const AuthForm = ({
-  google,
-  mode,
-}: {
-  /** Google sign-in is configured (the button is hidden otherwise). */
-  google: boolean;
-  mode: Mode;
-}) => {
-  const t = useTranslations("Auth");
-  const locale = useLocale();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = safeNext(searchParams.get("next"));
-  // ChatGPT (or another OAuth client) is signing in: Better Auth follows the
-  // signed query back to the authorization, so the form must not navigate.
-  const inOAuthFlow =
-    searchParams.has("sig") || searchParams.has("oauth_query");
-  // Better Auth sends a failed Google sign-in back here with ?error=.
-  const [formError, setFormError] = useState<string | undefined>(
-    google && searchParams.has("error") ? t("googleError") : undefined
-  );
+  if (!isInvalid) return null
 
-  const schema = z.object({
-    email: z.email(t("errors.email")),
-    name:
-      mode === "signUp"
-        ? z.string().trim().min(MIN_NAME, t("errors.name"))
-        : z.string(),
-    password: z.string().min(MIN_PASSWORD, t("errors.password")),
-  });
+  const errors = getFormFieldErrors(field.state.meta.errors)
 
-  const errorMessage = (code?: string) => {
-    if (code === "INVALID_EMAIL_OR_PASSWORD") {
-      return t("errors.invalidCredentials");
-    }
-    if (code?.startsWith("USER_ALREADY_EXISTS")) {
-      return t("errors.userExists");
-    }
-    return t("errors.generic");
-  };
+  return errors.length > 0 ? <FieldError errors={errors} /> : null
+}
 
-  const form = useForm({
-    defaultValues: { email: "", name: "", password: "" },
-    onSubmit: async ({ value }) => {
-      setFormError(undefined);
-      const { data, error } = await (mode === "signUp"
-        ? authClient.signUp.email({
-            email: value.email,
-            // Saved on the user so wovain's emails match the site's language.
-            locale,
-            name: value.name,
-            password: value.password,
-          })
-        : authClient.signIn.email({
-            email: value.email,
-            password: value.password,
-          }));
-      if (error) {
-        setFormError(errorMessage(error.code));
-        return;
-      }
-      // The server sends sign_up (packages/auth); identifying joins this
-      // browser's visit to it, also when an OAuth client takes over.
-      identifyMerchant(data.user.id);
-      toast.success(mode === "signUp" ? t("created") : t("welcome"));
-      if (inOAuthFlow) {
-        return;
-      }
-      router.push(mode === "signUp" ? "/dashboard/connections" : next);
-    },
-    validators: { onSubmit: schema },
-  });
-
-  const fields =
-    mode === "signUp"
-      ? (["name", "email", "password"] as const)
-      : (["email", "password"] as const);
+function AuthFormServerError() {
+  const form = useFormContext()
 
   return (
-    <div className="w-full">
-      {google ? (
-        <div className="mt-8">
-          <GoogleButton next={next} onError={setFormError} />
-          <div className="text-muted-foreground mt-6 flex items-center gap-3 text-xs">
-            <span aria-hidden="true" className="bg-border h-px flex-1" />
-            {t("googleDivider")}
-            <span aria-hidden="true" className="bg-border h-px flex-1" />
-          </div>
-        </div>
-      ) : null}
-      <form
-        className={
-          google ? "mt-6 flex flex-col gap-5" : "mt-8 flex flex-col gap-5"
-        }
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          form.handleSubmit();
+    <form.Subscribe selector={(state) => state.errorMap.onServer}>
+      {(error) => {
+        const formError =
+          error && typeof error === "object" && "form" in error
+            ? error.form
+            : error
+        const errors = getFormFieldErrors(formError ? [formError] : [])
+        return errors.length > 0 ? <FieldError errors={errors} /> : null
+      }}
+    </form.Subscribe>
+  )
+}
+
+export function setAuthFormServerError(
+  form: AnyFormApi,
+  error: unknown,
+  fallbackMessage: string
+) {
+  const normalized = normalizeAuthFormServerError(error, fallbackMessage)
+  form.setErrorMap({
+    onServer: {
+      fields: normalized.fields ?? {},
+      form: normalized.form
+    }
+  })
+}
+
+export function clearAuthFormServerError(form: AnyFormApi) {
+  form.setErrorMap({ onServer: { fields: {} } })
+}
+
+export function clearAuthFormFieldServerError(
+  form: AnyFormApi,
+  fieldName: string
+) {
+  form.setErrorMap({ onServer: undefined })
+  if (!fieldName) return
+
+  const fieldMeta = form.getFieldMeta(fieldName as never)
+  if (!fieldMeta?.errorMap.onServer) return
+
+  form.setFieldMeta(fieldName as never, (current = fieldMeta) => ({
+    ...current,
+    errorMap: { ...current.errorMap, onServer: undefined },
+    errorSourceMap: { ...current.errorSourceMap, onServer: undefined }
+  }))
+}
+
+export async function runAuthFormAction(
+  form: AnyFormApi,
+  action: () => Promise<unknown>,
+  serverErrorMessage = DEFAULT_AUTH_FORM_SERVER_ERROR
+) {
+  clearAuthFormServerError(form)
+  try {
+    await action()
+    return true
+  } catch (error) {
+    if (!form.state.errorMap.onServer) {
+      setAuthFormServerError(form, error, serverErrorMessage)
+    }
+    return false
+  }
+}
+
+export async function submitAuthForm(
+  form: AnyFormApi,
+  serverErrorMessage = DEFAULT_AUTH_FORM_SERVER_ERROR
+) {
+  clearAuthFormServerError(form)
+  try {
+    await form.handleSubmit()
+    return form.state.isValid
+  } catch (error) {
+    if (!form.state.errorMap.onServer) {
+      setAuthFormServerError(form, error, serverErrorMessage)
+    }
+    return false
+  }
+}
+
+type AuthFormRootProps = Omit<ComponentProps<"form">, "onSubmit"> & {
+  onBeforeSubmit?: () => void
+  serverErrorMessage?: string
+}
+
+function AuthFormRoot({
+  children,
+  onBeforeSubmit,
+  onInput,
+  serverErrorMessage = DEFAULT_AUTH_FORM_SERVER_ERROR,
+  ...props
+}: AuthFormRootProps) {
+  const form = useFormContext()
+  const submittingRef = useRef(false)
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (submittingRef.current || form.state.isSubmitting) return
+
+    const formElement = event.currentTarget
+    onBeforeSubmit?.()
+    submittingRef.current = true
+    try {
+      const isValid = await submitAuthForm(form, serverErrorMessage)
+      if (!isValid) focusFirstInvalidAuthFormControl(formElement)
+    } finally {
+      submittingRef.current = false
+    }
+  }
+
+  return (
+    <form
+      {...props}
+      onInvalid={(event) =>
+        focusFirstInvalidAuthFormControl(event.currentTarget)
+      }
+      onInput={(event) => {
+        const target = event.target
+        const fieldName =
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLSelectElement ||
+          target instanceof HTMLTextAreaElement
+            ? target.name
+            : ""
+        clearAuthFormFieldServerError(form, fieldName)
+        onInput?.(event)
+      }}
+      onSubmit={submit}
+    >
+      {children}
+    </form>
+  )
+}
+
+type AuthFormTextFieldProps = Omit<
+  ComponentProps<typeof Input>,
+  "name" | "onBlur" | "onChange" | "value"
+> & {
+  description?: ReactNode
+  label: ReactNode
+}
+
+function AuthFormTextField({
+  description,
+  id,
+  label,
+  ...props
+}: AuthFormTextFieldProps) {
+  const field = useFieldContext<string>()
+  const form = useFormContext()
+  const isInvalid = isAuthFormFieldInvalid(field.state.meta)
+  const inputId = id ?? field.name
+
+  return (
+    <Field data-invalid={isInvalid}>
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <Input
+        {...props}
+        aria-busy={field.state.meta.isValidating || undefined}
+        aria-invalid={isInvalid}
+        id={inputId}
+        name={field.name}
+        onBlur={field.handleBlur}
+        onChange={(event) => {
+          clearAuthFormFieldServerError(form, field.name)
+          field.handleChange(event.target.value)
         }}
-      >
-        {formError ? (
-          <Alert
-            className="border-destructive/40 bg-destructive/10 rounded-none px-3"
-            variant="destructive"
-          >
-            {formError}
-          </Alert>
-        ) : null}
-        {fields.map((name) => (
-          <form.Field key={name} name={name}>
-            {(field) => {
-              const error = field.state.meta.errors[0]?.message;
-              return (
-                <Field.Root
-                  className="flex flex-col gap-2"
-                  invalid={Boolean(error)}
-                  name={field.name}
-                >
-                  <Field.Label render={<Label />}>{t(name)}</Field.Label>
-                  <Input
-                    autoComplete={
-                      {
-                        email: "email",
-                        name: "name",
-                        password:
-                          mode === "signUp"
-                            ? "new-password"
-                            : "current-password",
-                      }[name]
-                    }
-                    className="h-11 text-base md:text-sm"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    required
-                    type={
-                      { email: "email", name: "text", password: "password" }[
-                        name
-                      ]
-                    }
-                    value={field.state.value}
-                  />
-                  {name === "password" && mode === "signUp" ? (
-                    <Field.Description className="text-muted-foreground text-xs">
-                      {t("passwordHint")}
-                    </Field.Description>
-                  ) : null}
-                  {error ? (
-                    <Field.Error className="text-destructive text-sm" match>
-                      {error}
-                    </Field.Error>
-                  ) : null}
-                </Field.Root>
-              );
-            }}
-          </form.Field>
-        ))}
+        value={field.state.value}
+      />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
+      <AuthFormFieldError />
+    </Field>
+  )
+}
 
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-          {(isSubmitting) => (
-            <Button
-              className="h-11 w-full text-sm font-medium"
-              disabled={isSubmitting}
-              type="submit"
-            >
-              {(() => {
-                if (isSubmitting) {
-                  return t("submitting");
-                }
-                return mode === "signUp" ? t("submitSignUp") : t("submitLogin");
-              })()}
-            </Button>
-          )}
-        </form.Subscribe>
-      </form>
+function AuthFormSubmitButton({
+  children,
+  disabled,
+  isPending,
+  ...props
+}: ComponentProps<typeof Button> & { isPending?: boolean }) {
+  const form = useFormContext()
 
-      <p className="text-muted-foreground mt-6 text-sm">
-        {mode === "signUp" ? t("toLogin") : t("toSignUp")}{" "}
-        <Link
-          className="text-accent-text font-medium hover:underline"
-          href={{
-            pathname: mode === "signUp" ? "/login" : "/sign-up",
-            query: Object.fromEntries(searchParams.entries()),
-          }}
+  return (
+    <form.Subscribe
+      selector={(state) => [state.isSubmitting, state.isValidating] as const}
+    >
+      {([isSubmitting, isValidating]) => (
+        <Button
+          {...props}
+          aria-busy={isPending || isSubmitting || undefined}
+          aria-disabled={
+            disabled || isPending || isSubmitting || isValidating || undefined
+          }
+          disabled={disabled || isPending || isSubmitting || isValidating}
+          type="submit"
         >
-          {mode === "signUp" ? t("toLoginLink") : t("toSignUpLink")}
-        </Link>
-      </p>
-      {mode === "login" ? (
-        <p className="mt-2 text-sm">
-          <Link
-            className="text-accent-text font-medium hover:underline"
-            href="/reset"
-          >
-            {t("forgot")}
-          </Link>
-        </p>
-      ) : null}
-    </div>
-  );
-};
+          {isPending || isSubmitting ? (
+            <Spinner data-icon="inline-start" />
+          ) : null}
+          {children}
+        </Button>
+      )}
+    </form.Subscribe>
+  )
+}
+
+type AuthFormAdditionalFieldProps = Omit<
+  AdditionalFieldProps,
+  "errors" | "isInvalid" | "name" | "onBlur" | "onChange" | "value"
+>
+
+function AuthFormAdditionalField(props: AuthFormAdditionalFieldProps) {
+  const field = useFieldContext<AdditionalFieldFormValue>()
+  const form = useFormContext()
+  const isInvalid = isAuthFormFieldInvalid(field.state.meta)
+
+  return (
+    <AdditionalField
+      {...props}
+      errors={
+        isInvalid ? getFormFieldErrors(field.state.meta.errors) : undefined
+      }
+      isInvalid={isInvalid}
+      name={field.name}
+      onBlur={field.handleBlur}
+      onChange={(value) => {
+        clearAuthFormFieldServerError(form, field.name)
+        field.handleChange(value)
+      }}
+      value={field.state.value}
+    />
+  )
+}
+
+export const {
+  useAppForm: useAuthForm,
+  withFieldGroup: withAuthFieldGroup,
+  withForm: withAuthForm
+} = createFormHook({
+  fieldComponents: {
+    AuthFormAdditionalField,
+    AuthFormFieldError,
+    AuthFormTextField
+  },
+  fieldContext,
+  formComponents: {
+    AuthFormRoot,
+    AuthFormServerError,
+    AuthFormSubmitButton
+  },
+  formContext
+})
+
+export function isAuthFormFieldInvalid({
+  isTouched,
+  isValid
+}: {
+  isTouched: boolean
+  isValid: boolean
+}) {
+  return isTouched && !isValid
+}
+
+export function getAuthAdditionalFieldValidators(
+  field: AdditionalFieldConfig,
+  requiredMessage: string
+) {
+  return {
+    onChange: ({ value }: { value: AdditionalFieldFormValue }) =>
+      validateAdditionalFieldRequired(field, value, requiredMessage),
+    onChangeAsync: field.validate
+      ? ({ value }: { value: AdditionalFieldFormValue }) =>
+          validateAdditionalFieldValue(field, value)
+      : undefined,
+    onChangeAsyncDebounceMs: field.validate
+      ? (field.validateDebounceMs ??
+        DEFAULT_ADDITIONAL_FIELD_VALIDATION_DEBOUNCE_MS)
+      : undefined
+  }
+}

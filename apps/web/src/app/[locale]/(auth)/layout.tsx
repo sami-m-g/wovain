@@ -1,5 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
+import { AuthSession } from "@/components/auth-session";
 import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -69,7 +71,9 @@ const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
           id="main"
           tabIndex={-1}
         >
-          {children}
+          <Suspense>
+            <AuthSession>{children}</AuthSession>
+          </Suspense>
         </main>
       </div>
       <AuthAside />

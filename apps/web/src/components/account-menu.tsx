@@ -12,7 +12,7 @@ import {
 } from "@wovain/ui/components/dropdown-menu";
 import { useTranslations } from "next-intl";
 
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { resetAnalytics } from "@/lib/consent-store";
 
@@ -43,6 +43,13 @@ const AccountMenu = ({
         <DropdownMenuGroup>
           <DropdownMenuLabel>{session.user.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            render={
+              <Link href="/dashboard/settings/account" prefetch={false} />
+            }
+          >
+            {t("accountSettings")}
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               authClient.signOut({

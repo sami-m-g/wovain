@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { AuthPage } from "@/components/auth/auth-page";
+import { AuthView } from "@/components/auth-view";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 
@@ -18,7 +18,7 @@ export const generateMetadata = async ({
 
 const LoginPage = async ({ params }: PageProps<"/[locale]/login">) => {
   await enterLocale(params);
-  return <AuthPage mode="login" />;
+  return <AuthView view="signIn" />;
 };
 
 export default LoginPage;
