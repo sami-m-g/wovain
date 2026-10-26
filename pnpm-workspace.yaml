@@ -66,6 +66,12 @@ catalog:
   "@mastra/core": 1.79.0
   "@mastra/inngest": 1.10.7
   "@mastra/pg": 1.32.0
+  "@mastra/evals": 1.10.8
+  "@mastra/memory": 1.39.0
+  "@mastra/observability": 1.21.0
+  "@mastra/otel-exporter": 1.4.9
+  mastra: 1.35.0
+  "@google-cloud/opentelemetry-cloud-trace-exporter": 3.1.0
   "@ai-sdk/openai-compatible": ^2.0.87
   inngest: ^4.26.0
   "@electric-sql/pglite": ^0.5.11

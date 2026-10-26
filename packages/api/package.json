@@ -10,11 +10,15 @@
   "scripts": {
     "build": "tsc -b",
     "check-types": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "studio": "mastra dev --dir src/mastra"
   },
   "dependencies": {
+    "@google-cloud/opentelemetry-cloud-trace-exporter": "catalog:",
     "@mastra/core": "catalog:",
     "@mastra/inngest": "catalog:",
+    "@mastra/observability": "catalog:",
+    "@mastra/otel-exporter": "catalog:",
     "@mastra/pg": "catalog:",
     "@modelcontextprotocol/ext-apps": "catalog:",
     "@modelcontextprotocol/server": "catalog:",
@@ -34,6 +38,7 @@
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
+    "mastra": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

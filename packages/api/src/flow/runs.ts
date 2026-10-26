@@ -1,5 +1,6 @@
 import { pickIdea } from "@wovain/core/autopilot";
 import { NEMOTRON_MODEL } from "@wovain/core/nemotron";
+import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
 import { design, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
@@ -10,7 +11,7 @@ import { notFound } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
 import { requireFal } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
-import { researchIdeas } from "./ideas";
+import { getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { meter } from "./spend";
@@ -68,7 +69,23 @@ export const designStep = async (
   const drafted = await generateDesign(actor, ideaId, {
     requestId: `run:${runId}`,
   });
-  return { designId: drafted.id };
+  const source = await getIdea(actor, ideaId);
+  const { brief } = drafted;
+  // What the step's code scorer checks (@wovain/core/step-scorers).
+  const facts: DesignFacts = {
+    artworkWidth: drafted.artworkWidth,
+    avoidNames: source.avoidNames,
+    description: brief.description,
+    printedText: brief.printedText,
+    text: [
+      brief.title,
+      brief.description,
+      brief.artPrompt,
+      ...brief.printedText,
+    ].join("\n"),
+    title: brief.title,
+  };
+  return { designId: drafted.id, facts };
 };
 
 // Autopilot decides here. A merchant's run stops at the gate: the
@@ -100,7 +117,7 @@ export const productStep = async (
   const created = await createDesignProduct(actor, { designId });
   await markRun(actor, runId, { step: "publish" });
   const published = await publishDesignProduct(actor, created.id);
-  return { productId: published.id };
+  return { facts: { price: published.price }, productId: published.id };
 };
 
 export const campaignStep = async (
@@ -114,7 +131,7 @@ export const campaignStep = async (
     dailyBudget: input.dailyBudget,
     productId,
   });
-  return { campaignId: staged.id };
+  return { campaignId: staged.id, facts: { variants: staged.copy } };
 };
 
 // Emails the merchant when the run stops for them: a design to approve, the

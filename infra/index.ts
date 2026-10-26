@@ -32,6 +32,7 @@ const apis = [
   "cloudbilling",
   "clouderrorreporting",
   "cloudkms",
+  "cloudtrace",
   "dns",
   "firebase",
   "iam",
@@ -217,7 +218,13 @@ const runner = new gcp.serviceaccount.Account(
   { accountId: "wovain-web", displayName: "wovain web (Cloud Run)" },
   kept
 );
-for (const role of ["roles/cloudsql.client", "roles/logging.logWriter"]) {
+// cloudtrace.agent: Mastra's traces of runs and agents go to Cloud Trace
+// (packages/api/src/workflows/observability.ts).
+for (const role of [
+  "roles/cloudsql.client",
+  "roles/cloudtrace.agent",
+  "roles/logging.logWriter",
+]) {
   new gcp.projects.IAMMember(`runner-${role.split("/")[1]}`, {
     member: runner.member,
     project,

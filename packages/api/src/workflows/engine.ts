@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import type { RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
+import { createObservability } from "./observability";
 import { createLegacyRunEngine, createRunRouter } from "./rollout";
 import { APPROVAL_STEP_ID, createRunWorkflow, RUN_WORKFLOW_ID } from "./run";
 import type { RunServices } from "./run";
@@ -34,26 +35,50 @@ const failedRun = z.object({
   function_id: z.string(),
 });
 
-export const createRunEngine = ({
-  mastraFor,
-  pool,
+// Mastra's store on the app's database: workflow snapshots, memory threads,
+// working memory, scores and traces, all in the `mastra` schema.
+export const createMastraStorage = (pool: Database["$client"]) =>
+  new PostgresStore({ id: "wovain-mastra", pool, schemaName: "mastra" });
+
+// The app's one Mastra instance: the run workflow, the agents with their
+// scorers, guardrails and memory (@wovain/core/agents), and tracing.
+export const createMastra = ({
+  cloudTrace,
+  inngest,
   services,
+  storage,
 }: {
-  pool: Database["$client"];
+  cloudTrace: boolean;
+  inngest: Inngest;
+  services: RunServices;
+  storage: PostgresStore;
+}) =>
+  new Mastra({
+    agents: { ...services.core.agents?.agents },
+    observability: createObservability({
+      analytics: services.analytics,
+      cloudTrace,
+    }),
+    scorers: services.core.agents?.scorers ?? {},
+    storage,
+    workflows: { [RUN_WORKFLOW_ID]: createRunWorkflow(inngest, services) },
+  });
+
+export const createRunEngine = ({
+  cloudTrace,
+  mastraFor,
+  services,
+  storage,
+}: {
+  // Export Mastra traces to Cloud Trace (on Google Cloud).
+  cloudTrace: boolean;
   // Whether the merchant's runs go to this engine (the mastra-runs flag).
   mastraFor: (userId: string) => boolean;
   services: RunServices;
+  storage: PostgresStore;
 }) => {
   const inngest = new Inngest({ id: INNGEST_APP_ID });
-  const workflow = createRunWorkflow(inngest, services);
-  const mastra = new Mastra({
-    storage: new PostgresStore({
-      id: "wovain-runs",
-      pool,
-      schemaName: "mastra",
-    }),
-    workflows: { [RUN_WORKFLOW_ID]: workflow },
-  });
+  const mastra = createMastra({ cloudTrace, inngest, services, storage });
 
   // A run whose function died for good (its retries spent on crashes or
   // timeouts, so the workflow's own onError never ran) still ends: failed,

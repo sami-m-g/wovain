@@ -1,5 +1,6 @@
 import { init } from "@mastra/inngest";
 import { withLlmTrace } from "@wovain/core/nemotron";
+import { stepScorers } from "@wovain/core/step-scorers";
 import { NonRetriableError } from "inngest";
 import type { Inngest } from "inngest";
 import { z } from "zod";
@@ -47,6 +48,8 @@ const trigger = z.object({
 // What each step hands the next.
 const carry = trigger.extend({
   designId: z.string().optional(),
+  // What the last step made, for its code scorer (@wovain/core/step-scorers).
+  facts: z.record(z.string(), z.unknown()).optional(),
   ideaId: z.string().optional(),
   productId: z.string().optional(),
 });
@@ -55,6 +58,14 @@ type Carry = z.infer<typeof carry>;
 const decision = z.object({
   approve: z.boolean(),
   reason: z.string().optional(),
+});
+
+// A step's code scorer, run on every step (code checks cost nothing).
+const scored = (id: keyof typeof stepScorers) => ({
+  [id]: {
+    sampling: { rate: 1, type: "ratio" as const },
+    scorer: stepScorers[id],
+  },
 });
 
 const RETRIES = 3;
@@ -134,12 +145,13 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
         async (actor, from) =>
           await designStep(actor, from.runId, from.ideaId ?? "")
       )(inputData);
-      return { ...inputData, designId: drafted.designId };
+      return { ...inputData, designId: drafted.designId, facts: drafted.facts };
     },
     id: "design",
     inputSchema: carry,
     outputSchema: carry,
     retries: RETRIES,
+    scorers: scored("design_facts"),
   });
 
   const approval = createStep({
@@ -188,29 +200,32 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
         async (actor, from) =>
           await productStep(actor, from.runId, from.designId ?? "")
       )(inputData);
-      return { ...inputData, productId: made.productId };
+      return { ...inputData, facts: made.facts, productId: made.productId };
     },
     id: "product",
     inputSchema: carry,
     outputSchema: carry,
     retries: RETRIES,
+    scorers: scored("price_floor"),
   });
 
   const campaign = createStep({
     execute: async ({ inputData }) => {
-      await body(async (actor, from) => {
-        await campaignStep(actor, from.runId, {
+      const staged = await body(async (actor, from) => {
+        const made = await campaignStep(actor, from.runId, {
           input: from.input,
           productId: from.productId ?? "",
         });
         await finishRun(actor, from.runId, { status: "completed" });
+        return made;
       })(inputData);
-      return inputData;
+      return { ...inputData, facts: staged.facts };
     },
     id: "campaign",
     inputSchema: carry,
     outputSchema: carry,
     retries: RETRIES,
+    scorers: scored("ad_copy_lengths"),
   });
 
   return (

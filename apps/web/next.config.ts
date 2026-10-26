@@ -48,8 +48,13 @@ const nextConfig: NextConfig = {
   // Node: Mastra and Inngest load optional workers and native modules a
   // bundle can't resolve.
   serverExternalPackages: [
+    "@google-cloud/opentelemetry-cloud-trace-exporter",
     "@mastra/core",
+    "@mastra/evals",
     "@mastra/inngest",
+    "@mastra/memory",
+    "@mastra/observability",
+    "@mastra/otel-exporter",
     "@mastra/pg",
     "geoip-country",
     "inngest",

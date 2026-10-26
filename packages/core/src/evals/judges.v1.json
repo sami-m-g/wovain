@@ -1,0 +1,293 @@
+{
+  "version": "v1",
+  "labeler": "seed: written by the coding agent, not yet reviewed by a domain expert. Replace or confirm each label before reading agreement numbers as calibration (docs/adr/0002-agent-quality.md).",
+  "cases": [
+    {
+      "id": "design_quality-001",
+      "judge": "design_quality",
+      "label": "pass",
+      "input": { "idea": "Cozy reading cats for book lovers" },
+      "output": {
+        "title": "Reading Cat Tee, Line Art Book Lover Shirt",
+        "description": "A sleepy cat lost in a good book. For quiet nights and long chapters.",
+        "artPrompt": "Single-line drawing of a curled-up cat reading a small open book under a desk lamp, warm cream lines, transparent background, centered composition",
+        "printedText": ["One more chapter"]
+      },
+      "note": "Clear subject, printable composition, short printed text, listing matches."
+    },
+    {
+      "id": "design_quality-002",
+      "judge": "design_quality",
+      "label": "fail",
+      "input": { "idea": "Cozy reading cats for book lovers" },
+      "output": {
+        "title": "Shirt",
+        "description": "Nice shirt.",
+        "artPrompt": "a cat",
+        "printedText": [
+          "I love reading books so much that I read every single night before I sleep and also during lunch"
+        ]
+      },
+      "note": "Vague art prompt, generic title, printed text far too long for a chest print."
+    },
+    {
+      "id": "design_quality-003",
+      "judge": "design_quality",
+      "label": "pass",
+      "input": { "idea": "Retro synthwave cycling" },
+      "output": {
+        "title": "Synthwave Cycling Tee, Retro Sunset Bike Shirt",
+        "description": "Ride into a neon sunset. Made for night rides and loud playlists.",
+        "artPrompt": "Retro 80s sunset grid with a road bike silhouette, magenta and cyan gradient, transparent background, no frame",
+        "printedText": []
+      },
+      "note": "Borderline: no printed text is fine; composition and listing are coherent."
+    },
+    {
+      "id": "design_quality-004",
+      "judge": "design_quality",
+      "label": "fail",
+      "input": { "idea": "Retro synthwave cycling" },
+      "output": {
+        "title": "Synthwave Cycling Tee",
+        "description": "100% cotton, true to size, machine wash cold.",
+        "artPrompt": "Photo of a person wearing a t-shirt with a bike on it, mockup on a hanger, studio background",
+        "printedText": []
+      },
+      "note": "Asks for a garment mockup with a background, and the description is care details."
+    },
+    {
+      "id": "brand_fit-001",
+      "judge": "brand_fit",
+      "label": "pass",
+      "input": {
+        "brand": "Quiet, literary, warm humour; earthy palette; no shouting"
+      },
+      "output": {
+        "title": "Reading Cat Tee",
+        "printedText": ["One more chapter"],
+        "artPrompt": "Soft line-art cat with a book, warm cream and sage"
+      },
+      "note": "Tone and palette match the brand memory."
+    },
+    {
+      "id": "brand_fit-002",
+      "judge": "brand_fit",
+      "label": "fail",
+      "input": {
+        "brand": "Quiet, literary, warm humour; earthy palette; no shouting"
+      },
+      "output": {
+        "title": "EXTREME CAT RAGE TEE",
+        "printedText": ["READ OR DIE!!!"],
+        "artPrompt": "Neon screaming cat, glitch effects, hot pink"
+      },
+      "note": "Shouting caps and aggressive neon contradict the brand."
+    },
+    {
+      "id": "brand_fit-003",
+      "judge": "brand_fit",
+      "label": "pass",
+      "input": { "brand": "Bold streetwear, high contrast, short slogans" },
+      "output": {
+        "title": "Night Shift Tee",
+        "printedText": ["NIGHT SHIFT"],
+        "artPrompt": "Heavy black stencil type over a white moon"
+      },
+      "note": "Caps are on brand here: bold streetwear."
+    },
+    {
+      "id": "brand_fit-004",
+      "judge": "brand_fit",
+      "label": "fail",
+      "input": { "brand": "Bold streetwear, high contrast, short slogans" },
+      "output": {
+        "title": "Gentle Watercolour Florals",
+        "printedText": ["Bloom where you are planted, gently and with grace"],
+        "artPrompt": "Pastel watercolour wildflowers, soft edges"
+      },
+      "note": "Soft pastel watercolour and a long slogan miss the brand."
+    },
+    {
+      "id": "trend_fit-001",
+      "judge": "trend_fit",
+      "label": "pass",
+      "input": {
+        "trend": "Book-tok cozy reading season; 'one more chapter' memes rising"
+      },
+      "output": {
+        "title": "Reading Cat Tee",
+        "printedText": ["One more chapter"]
+      },
+      "note": "Uses the rising phrase and the cozy-reading theme."
+    },
+    {
+      "id": "trend_fit-002",
+      "judge": "trend_fit",
+      "label": "fail",
+      "input": {
+        "trend": "Book-tok cozy reading season; 'one more chapter' memes rising"
+      },
+      "output": {
+        "title": "Gym Bro Protein Tee",
+        "printedText": ["Lift heavy"]
+      },
+      "note": "Unrelated to the researched trend."
+    },
+    {
+      "id": "trend_fit-003",
+      "judge": "trend_fit",
+      "label": "pass",
+      "input": { "trend": "Retro 80s nostalgia among urban cyclists" },
+      "output": { "title": "Synthwave Cycling Tee", "printedText": [] },
+      "note": "Borderline: no slogan, but the art direction carries the trend."
+    },
+    {
+      "id": "trend_fit-004",
+      "judge": "trend_fit",
+      "label": "fail",
+      "input": { "trend": "Retro 80s nostalgia among urban cyclists" },
+      "output": {
+        "title": "Minimal Mountain Hiking Tee",
+        "printedText": ["Hike more"]
+      },
+      "note": "Wrong activity and era."
+    },
+    {
+      "id": "ip_risk-001",
+      "judge": "ip_risk",
+      "label": "pass",
+      "input": { "avoidNames": ["Garfield", "Hogwarts"] },
+      "output": {
+        "title": "Reading Cat Tee",
+        "printedText": ["One more chapter"],
+        "artPrompt": "Original line-art tabby cat with a book"
+      },
+      "note": "Original character, no protected names or look-alikes."
+    },
+    {
+      "id": "ip_risk-002",
+      "judge": "ip_risk",
+      "label": "fail",
+      "input": { "avoidNames": ["Garfield", "Hogwarts"] },
+      "output": {
+        "title": "Lasagna Cat Tee",
+        "printedText": ["I hate Mondays"],
+        "artPrompt": "Fat orange cartoon cat in the style of Jim Davis eating lasagna"
+      },
+      "note": "Imitates a protected character and its catchphrase without naming it."
+    },
+    {
+      "id": "ip_risk-003",
+      "judge": "ip_risk",
+      "label": "fail",
+      "input": { "avoidNames": [] },
+      "output": {
+        "title": "Just Read It Tee",
+        "printedText": ["JUST READ IT"],
+        "artPrompt": "Swoosh-like curved check mark under the text"
+      },
+      "note": "Parodies a famous slogan and logo shape: trademark risk."
+    },
+    {
+      "id": "ip_risk-004",
+      "judge": "ip_risk",
+      "label": "pass",
+      "input": { "avoidNames": [] },
+      "output": {
+        "title": "Night Shift Tee",
+        "printedText": ["NIGHT SHIFT"],
+        "artPrompt": "Stencil type over a white moon"
+      },
+      "note": "Borderline: common phrase, no mark-like design."
+    },
+    {
+      "id": "ad_copy-001",
+      "judge": "ad_copy_quality",
+      "label": "pass",
+      "input": { "title": "Reading Cat Tee" },
+      "output": {
+        "headline": "One more chapter?",
+        "message": "For the reader who's always 'just finishing this page'. Soft tee, quiet humour."
+      },
+      "note": "Specific angle, short headline, no unbacked claims."
+    },
+    {
+      "id": "ad_copy-002",
+      "judge": "ad_copy_quality",
+      "label": "fail",
+      "input": { "title": "Reading Cat Tee" },
+      "output": {
+        "headline": "BEST SHIRT EVER MADE IN THE WORLD!!!",
+        "message": "Buy now. Buy now. Best quality guaranteed, cures boredom."
+      },
+      "note": "Headline over 40 characters, repetition, unbacked claims."
+    },
+    {
+      "id": "ad_copy-003",
+      "judge": "ad_copy_quality",
+      "label": "pass",
+      "input": { "title": "Synthwave Cycling Tee" },
+      "output": {
+        "headline": "Ride the neon hour",
+        "message": "Retro sunset art for night rides."
+      },
+      "note": "Borderline: brief but on-angle."
+    },
+    {
+      "id": "ad_copy-004",
+      "judge": "ad_copy_quality",
+      "label": "fail",
+      "input": { "title": "Synthwave Cycling Tee" },
+      "output": {
+        "headline": "T-shirt",
+        "message": "This is a t-shirt. It has a design."
+      },
+      "note": "No angle or benefit."
+    },
+    {
+      "id": "meta_policy-001",
+      "judge": "meta_policy",
+      "label": "pass",
+      "input": {},
+      "output": {
+        "headline": "One more chapter?",
+        "message": "A soft tee for readers who stay up late."
+      },
+      "note": "No personal attributes, no sensational claims."
+    },
+    {
+      "id": "meta_policy-002",
+      "judge": "meta_policy",
+      "label": "fail",
+      "input": {},
+      "output": {
+        "headline": "Are you depressed?",
+        "message": "Feeling lonely and overweight? This shirt fixes it."
+      },
+      "note": "Asserts personal attributes (health, mood): Meta personal-attributes policy."
+    },
+    {
+      "id": "meta_policy-003",
+      "judge": "meta_policy",
+      "label": "fail",
+      "input": {},
+      "output": {
+        "headline": "Guaranteed to make you rich",
+        "message": "Wear it and earn $10,000 a week."
+      },
+      "note": "Unrealistic income claims."
+    },
+    {
+      "id": "meta_policy-004",
+      "judge": "meta_policy",
+      "label": "pass",
+      "input": {},
+      "output": {
+        "headline": "Night riders, this one's yours",
+        "message": "Retro sunset art for cyclists."
+      },
+      "note": "Borderline: addresses an interest, not a personal attribute."
+    }
+  ]
+}

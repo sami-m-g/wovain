@@ -16,6 +16,16 @@
 - TypeScript 6 for tooling (`typescript` alias of `@typescript/typescript6`), TypeScript 7 for `tsc`
 - Varlock for environment: each app owns `.env.schema`; import `ENV` from the generated `src/env.ts`
 - Ultracite (Oxlint + Oxfmt) for lint and format; knip for unused code
+- Mastra for agents, workflows, scorers, memory and tracing: agents, scorers and judges in `packages/core/src/{agents,scorers,judges,step-scorers,taste}.ts`; the run workflow on Inngest in `packages/api/src/workflows` (docs/adr/0001, 0002)
+
+## Mastra Studio (local)
+
+- `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/api studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
+  - The entry `packages/api/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
+  - Required: `DATABASE_URL` (`postgresql://postgres:password@localhost:5432/wovain` with the Docker database) and `TOKEN_ENCRYPTION_KEY`.
+  - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.
+- Running the workflow needs the Inngest Dev Server: `INNGEST_DEV=1` and `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`, with `pnpm dev:web` running.
+- Judge evals: `pnpm --filter @wovain/core run evals` (needs `NEBIUS_API_KEY`) writes `packages/core/src/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
 
 ## Rules
 

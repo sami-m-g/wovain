@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
 import { NEMOTRON_MODEL, withLlmTrace } from "@wovain/core/nemotron";
+import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
 import { and, count, desc, eq } from "drizzle-orm";
 
@@ -169,7 +170,7 @@ export interface Decision extends RunDecision {
 // second client or a late retry can't flip it. A merchant's call on a run
 // waiting at its gate resumes that run, in the same transaction: if the
 // resume can't be queued, the decision isn't kept either.
-export const decideDesign = async (
+const commitDecision = async (
   actor: Actor,
   id: string,
   { approve, by, reason }: Decision
@@ -232,6 +233,43 @@ export const decideDesign = async (
     }
     return row;
   });
+
+// The merchant's call teaches the agents their taste (@wovain/core/taste).
+// Memory is a nicety: a failed write never fails the decision.
+const learnTaste = async (
+  actor: Actor,
+  decided: { brief: { title: string }; decisionReason: string | null },
+  approve: boolean
+) => {
+  const { memory } = actor.core;
+  if (memory === undefined) {
+    return;
+  }
+  try {
+    await recordTaste(memory, {
+      approved: approve,
+      reason: decided.decisionReason,
+      title: decided.brief.title,
+      userId: actor.userId,
+    });
+  } catch (error) {
+    actor.log?.set({
+      taste: { failed: error instanceof Error ? error.message : String(error) },
+    });
+  }
+};
+
+export const decideDesign = async (
+  actor: Actor,
+  id: string,
+  decision: Decision
+) => {
+  const decided = await commitDecision(actor, id, decision);
+  if (decision.by === "merchant") {
+    await learnTaste(actor, decided, decision.approve);
+  }
+  return decided;
+};
 
 // Autopilot's review: Nemotron decides, gated by the judge's verdict.
 export const autopilotDecide = async (

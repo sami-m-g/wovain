@@ -9,11 +9,14 @@
   "scripts": {
     "build": "tsc -b",
     "check-types": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "evals": "vitest run --config vitest.evals.config.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "catalog:",
     "@mastra/core": "catalog:",
+    "@mastra/evals": "catalog:",
+    "@mastra/memory": "catalog:",
     "@modelcontextprotocol/client": "catalog:",
     "@posthog/ai": "catalog:",
     "@tavily/core": "catalog:",
