@@ -337,10 +337,10 @@ const service = cloudRunService("web", {
 });
 export const serviceUri = service.uri;
 
-// apps/fumadocs: the docs site and its OpenRouter chat. Without the
-// openrouter-api-key secret (new, empty until set) the chat answers 503.
-// SITE_URL is @public in its schema, so the image is built with it too
-// (.gitlab/ci/deploy.yml).
+// apps/fumadocs: the docs site and its AI chat, which calls Nemotron on
+// Nebius Token Factory with the same nebius-api-key secret as the web app.
+// Without a version of that secret the chat answers 503. SITE_URL is @public
+// in its schema, so the image is built with it too (.gitlab/ci/deploy.yml).
 const docsRunner = new gcp.serviceaccount.Account(
   "docs-runner",
   { accountId: "wovain-docs", displayName: "wovain docs (Cloud Run)" },
@@ -351,24 +351,26 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-const { secret: openrouterKey, version: openrouterVersion } = secretWithValue(
-  "openrouter-api-key",
-  config.getSecret("openrouter-api-key"),
-  kept
-);
-new gcp.secretmanager.SecretIamMember("docs-runner-openrouter-api-key", {
+// The smallest Nemotron on Token Factory ($0.06 in, $0.24 out per 1M tokens).
+const DOCS_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B";
+const nebiusKey = secrets.get("nebius-api-key");
+const nebiusVersion = populated.get("nebius-api-key");
+if (nebiusKey === undefined) {
+  throw new Error("nebius-api-key is not a declared secret");
+}
+new gcp.secretmanager.SecretIamMember("docs-runner-nebius-api-key", {
   member: docsRunner.member,
   role: "roles/secretmanager.secretAccessor",
-  secretId: openrouterKey.id,
+  secretId: nebiusKey.id,
 });
 // The image's own port (apps/fumadocs/Dockerfile).
 const docsService = cloudRunService("docs", {
-  dependsOn: openrouterVersion === undefined ? [] : [openrouterVersion],
+  dependsOn: nebiusVersion === undefined ? [] : [nebiusVersion],
   envs: [
     { name: "SITE_URL", value: docsUrl },
-    ...(openrouterVersion === undefined
-      ? []
-      : [secretEnv("openrouter-api-key")]),
+    { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
+    { name: "NEBIUS_MODEL", value: DOCS_MODEL },
+    ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
   location: region,
   maxInstances: 2,

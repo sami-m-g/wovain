@@ -16,7 +16,8 @@ Wovain calls **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`) o
 
 1. **Brief, judge and ad copy.** Nemotron writes the design brief and listing (`draftBrief`), judges the design (`judgeDesign`: a Zod-validated `ready` or `revise` verdict, a 0 to 100 score, a check for title, description, idea fit and originality, and up to five fixes) and writes up to three ad variants (`writeAdCopy`). The print-size rule is decided by code and overrides the model.
 2. **Autopilot.** Nemotron picks the idea (`pickIdea`) and approves or rejects the design (`reviewDesign`), each with a stored reason. Code gates the run: a design the judge says to revise is never approved, the price keeps at least $10 profit and a 30% margin, the daily budget stays between $1 and $500, and every Meta object is created paused. Each step is recorded on the run.
-3. **Safe by construction.** Replies that fail validation never reach the seller as raw errors, and no procedure activates a Meta object: campaigns stay paused.
+3. **Docs chat.** The AI chat on [docs.wovain.com](https://docs.wovain.com) also runs on Nebius, on the smallest Nemotron (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`, $0.06 in and $0.24 out per 1M tokens). It searches the docs, answers in at most 400 tokens, and is rate limited per visitor.
+4. **Safe by construction.** Replies that fail validation never reach the seller as raw errors, and no procedure activates a Meta object: campaigns stay paused.
 
 Details: [docs/integrations/nebius-nemotron](apps/fumadocs/content/docs/integrations/nebius-nemotron.mdx).
 

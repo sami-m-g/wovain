@@ -35,6 +35,10 @@ With autopilot on, `pickIdea` chooses the most promising ranked idea and `review
 
 The reason for each decision is stored on the design, and a run records its step and any error.
 
+## 5. Docs chat
+
+The AI chat on the docs site (`apps/fumadocs`) uses the same Token Factory endpoint and `NEBIUS_API_KEY`, with the smallest Nemotron, **Nemotron 3 Nano 30B-A3B** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`, $0.06 in and $0.24 out per 1M tokens). It searches the docs, then answers from three short results. To keep spend low it caps the answer at 400 tokens, sends only the last four messages, refuses empty, very long or off-topic prompts without calling the model, and limits each visitor to 10 messages per 10 minutes and 50 per day, with a global daily cap. Each call is a PostHog `$ai_generation` event with tokens and cost, and no message text.
+
 ## Why Nemotron
 
 - A second model with a fixed rubric and a schema catches what a host agent's self-review misses.
