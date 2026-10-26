@@ -4,6 +4,21 @@
 #   wovain.com       apps/web        Cloud Run wovain-web
 #   docs.wovain.com  apps/fumadocs   Cloud Run wovain-docs
 
+# A pipeline for a commit that is no longer main's HEAD must not deploy: with
+# the resource groups on newest_ready_first (AGENTS.md), a superseded
+# pipeline's job can still reach the lock after the newer one, and would roll
+# older code over it. Each job that deploys starts with this check and ends
+# successfully, doing nothing, when main has moved on. It fails open if the
+# API can't be read. DEPLOY_STALE=1 (Run pipeline) forces an old commit out.
+.skip-if-superseded:
+  script:
+    - |
+      head=$(curl -fsS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/commits/$CI_DEFAULT_BRANCH" | sed -n 's/^{"id":"\([0-9a-f]\{40\}\)".*/\1/p' || true)
+      if [ -n "$head" ] && [ "$head" != "$CI_COMMIT_SHA" ] && [ -z "$DEPLOY_STALE" ]; then
+        echo "Superseded: $CI_COMMIT_SHA is not $CI_DEFAULT_BRANCH's head ($head); skipping."
+        exit 0
+      fi
+
 # `pulumi up` applies infra/ (state in gs://wovain-pulumi-state) as
 # gitlab-infra, after the same guarded preview as the merge request's
 # (verify.yml, infra/README.md), so a plan that would fail stops before any
@@ -22,6 +37,7 @@ infra:production:
     - !reference [.pulumi-install, before_script]
     - !reference [.gcp-credentials, before_script]
   script:
+    - !reference [.skip-if-superseded, script]
     - !reference [.pulumi-preview, script]
     - pulumi up --cwd infra --stack prod --refresh --policy-pack "$CI_PROJECT_DIR/infra/policy" --yes --non-interactive
   # Google trusts gitlab-infra only for jobs in this environment.
@@ -53,6 +69,7 @@ infra:production:
     - echo "$GCP_ACCESS_TOKEN" | docker login -u oauth2accesstoken --password-stdin "https://$GCP_REGION-docker.pkg.dev"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   script:
+    - !reference [.skip-if-superseded, script]
     - !reference [.image-env, script]
     - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" -t "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:latest" .
     - docker push "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA"
@@ -100,6 +117,7 @@ migrate:production:
     - !reference [.pnpm-install, before_script]
     - !reference [.gcp-credentials, before_script]
   script:
+    - !reference [.skip-if-superseded, script]
     - curl -fsSL -o /usr/local/bin/cloud-sql-proxy "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/$CLOUD_SQL_PROXY_VERSION/cloud-sql-proxy.linux.amd64"
     - chmod +x /usr/local/bin/cloud-sql-proxy
     - mkdir -p /cloudsql
@@ -130,6 +148,7 @@ deploy:production:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     CANARY_PERCENT: "10"
   script:
+    - !reference [.skip-if-superseded, script]
     - |
       if [ -n "$CANARY_DEMO_FAULT" ]; then
         fault=--update-env-vars=FAULT_INJECTION_REVISION=checkout
@@ -206,6 +225,7 @@ canary:production:
   extends: [.release-job, .on-main]
   needs: [deploy:production]
   script:
+    - !reference [.skip-if-superseded, script]
     - pnpm --dir apps/ops run canary verify
 
 # The release guard's traffic rollback: the ops job (a person's token)
