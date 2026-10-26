@@ -94,6 +94,15 @@ config:
             - field: object_attributes.source
               operator: in
               value: [parent_pipeline]
+    # deps-review: Renovate sets its service account as reviewer on minor and
+    # major update merge requests (.gitlab/renovate.json), a person's action
+    # through RENOVATE_TOKEN. Starts once the flow is synced (mapping.json)
+    # and enabled in the project (Automate > AI Catalog > Flows).
+    - name: duo-deps-review
+      file: .gitlab/duo/catalog/flows/deps-review.yml
+      description: wovain deps-review when Renovate assigns it as reviewer
+      events: [assign_reviewer]
+      active: true
   # Custom agents from .gitlab/duo/catalog/agents, enabled in the project once
   # synced (mapping.json).
   wovain:duoCustomAgents:

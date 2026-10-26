@@ -64,7 +64,7 @@ renovate:
   stage: verify
   resource_group: renovate
   image:
-    name: renovate/renovate:44.138.0
+    name: renovate/renovate:44.181.11
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $CI_PIPELINE_SCHEDULE_DESCRIPTION == "Renovate dependency updates"
   variables:
@@ -73,6 +73,15 @@ renovate:
     RENOVATE_ONBOARDING: "false"
     RENOVATE_REQUIRE_CONFIG: required
     LOG_LEVEL: info
+    # postUpgradeTasks in .gitlab/renovate.json: infra's lockfile needs the
+    # generated @pulumi/graphql SDK, which `pulumi install` makes.
+    RENOVATE_ALLOWED_COMMANDS: '["^pulumi install --cwd infra$"]'
+    # Lets Renovate fetch release notes and tool binaries without the
+    # anonymous GitHub rate limit. A masked CI variable (public-repo read only).
+    # GITHUB_COM_TOKEN is set in the project's CI/CD variables, not here.
+  before_script:
+    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION" --no-edit-path
+    - export PATH="$HOME/.pulumi/bin:$PATH"
 
 # The production Dockerfiles, built (not pushed) on every merge request, so an
 # image that can't build never reaches main.
