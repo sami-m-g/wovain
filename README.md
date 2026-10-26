@@ -61,7 +61,7 @@ docker compose up -d   # local PostgreSQL
 pnpm run dev           # web app and docs
 ```
 
-Environment variables are validated by [Varlock](https://varlock.dev): each app has a `.env.schema`. The web app needs `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `DATABASE_URL`; provider keys are `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY` and `FAL_KEY`.
+Environment variables are validated by [Varlock](https://varlock.dev): each app has a `.env.schema`. The web app needs `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `DATABASE_URL`; provider keys are `NEBIUS_API_KEY`, `QLOO_API_KEY` and `TAVILY_API_KEY` (fal runs on each merchant's own fal account, connected in Connections).
 
 Before committing: `pnpm run check`, `pnpm run check-types` and `pnpm run knip`.
 

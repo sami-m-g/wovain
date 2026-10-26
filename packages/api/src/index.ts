@@ -43,11 +43,14 @@ const requireAuth = base.middleware(({ context, next }) => {
 export const protectedProcedure = publicProcedure.use(requireAuth);
 
 // A funnel step: recorded in product analytics once the procedure succeeds,
-// whether the merchant acted on the site or through ChatGPT.
+// whether the merchant acted on the site or through ChatGPT. Sent before the
+// response: Cloud Run throttles the CPU of anything left for after it, which
+// is how these events used to get lost.
 export const funnelProcedure = (event: FunnelEvent) =>
   protectedProcedure.use(
-    onSuccess((_output, { context }) => {
-      context.analytics?.capture({
+    // oRPC awaits this callback before it answers.
+    onSuccess(async (_output, { context }) => {
+      await context.analytics?.capture({
         distinctId: context.userId,
         event,
         properties: {

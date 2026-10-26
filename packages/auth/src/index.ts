@@ -72,7 +72,7 @@ export interface AuthAnalytics {
     distinctId: string;
     event: BillingEvent | "sign_up";
     properties?: Record<string, unknown>;
-  }) => void;
+  }) => Promise<void>;
   identify?: BillingAnalytics["identify"];
 }
 
@@ -160,14 +160,14 @@ export const createAuth = (
     databaseHooks: {
       user: {
         create: {
-          after: (user, context) => {
+          // Awaited, so the event is sent before the sign-up answers.
+          after: async (user, context) => {
             const method = signUpMethod(context);
-            analytics?.capture({
+            await analytics?.capture({
               distinctId: user.id,
               event: "sign_up",
               properties: method === undefined ? {} : { method },
             });
-            return Promise.resolve();
           },
           before: (user, context) =>
             Promise.resolve({

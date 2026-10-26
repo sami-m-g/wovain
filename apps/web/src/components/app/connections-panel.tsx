@@ -124,32 +124,6 @@ const ProviderItem = ({
   );
 };
 
-/**
- * fal becomes the designer's own connection (they pay for their artwork)
- * once the fal MCP sign-in ships; until then it is listed, not connectable.
- */
-const FalItem = () => {
-  const t = useTranslations("Connections");
-  const name = t("providers.fal.name");
-  return (
-    <Item className="bg-card p-4 sm:p-5" render={<li />} variant="outline">
-      <ProviderLogo service="fal" />
-      <ItemContent className="min-w-48">
-        <ItemTitle className="font-display flex-wrap text-base font-semibold">
-          <h2>{name}</h2>
-          <Badge variant="secondary">{t("comingSoon")}</Badge>
-        </ItemTitle>
-        <ItemDescription>{t("providers.fal.body")}</ItemDescription>
-      </ItemContent>
-      <ItemActions className="w-full sm:w-auto">
-        <Button className="h-9 w-full sm:w-auto" disabled variant="outline">
-          {t("connect", { name })}
-        </Button>
-      </ItemActions>
-    </Item>
-  );
-};
-
 export const ConnectionsPanel = () => {
   const { data, error, isPending } = useQuery(
     orpc.connections.list.queryOptions()
@@ -186,7 +160,6 @@ export const ConnectionsPanel = () => {
             provider={provider}
           />
         ))}
-        <FalItem />
       </ul>
     </div>
   );

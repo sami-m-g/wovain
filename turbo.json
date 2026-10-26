@@ -46,7 +46,6 @@
     "CI",
     "DATABASE_URL",
     "EMAIL_FROM",
-    "FAL_KEY",
     "META_APP_ID",
     "META_APP_SECRET",
     "NEBIUS_API_KEY",

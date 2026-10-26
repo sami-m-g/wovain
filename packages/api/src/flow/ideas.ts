@@ -12,6 +12,17 @@ export const researchIdeas = async (
   seed: string,
   runId?: string
 ) => {
+  // A run's research step retried after it saved its ideas keeps them.
+  if (runId !== undefined) {
+    const saved = await actor.db
+      .select()
+      .from(idea)
+      .where(and(eq(idea.userId, actor.userId), eq(idea.runId, runId)))
+      .orderBy(asc(idea.rank));
+    if (saved.length > 0) {
+      return saved;
+    }
+  }
   // Qloo's hackathon terms allow it on free and demo plans only, so
   // trends-qloo is evaluated for the merchant's plan; paid plans get
   // Tavily-only trends (docs/adr/0001-progressive-delivery.md).

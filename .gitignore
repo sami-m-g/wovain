@@ -56,3 +56,5 @@ temp
 
 # CI test reports
 junit.xml
+packages/core/src/evals/report.v1.json
+.mastra

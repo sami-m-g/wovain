@@ -54,6 +54,8 @@ interface ServiceArgs {
   cloudSqlInstance?: pulumi.Input<string>;
   // What the revision needs first, such as the secret versions it mounts.
   dependsOn: pulumi.Input<pulumi.Resource>[];
+  // The longest a request may take ("900s"); Cloud Run's 300 s if unset.
+  timeout?: string;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
@@ -91,6 +93,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
         ],
         scaling: { maxInstanceCount: args.maxInstances, minInstanceCount: 0 },
         serviceAccount: args.serviceAccount,
+        timeout: args.timeout,
         volumes:
           sql === undefined
             ? undefined

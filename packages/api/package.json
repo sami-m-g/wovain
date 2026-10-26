@@ -9,9 +9,17 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "check-types": "tsc -b"
+    "check-types": "tsc -b",
+    "test": "vitest run",
+    "studio": "mastra dev --dir src/mastra"
   },
   "dependencies": {
+    "@google-cloud/opentelemetry-cloud-trace-exporter": "catalog:",
+    "@mastra/core": "catalog:",
+    "@mastra/inngest": "catalog:",
+    "@mastra/observability": "catalog:",
+    "@mastra/otel-exporter": "catalog:",
+    "@mastra/pg": "catalog:",
     "@modelcontextprotocol/ext-apps": "catalog:",
     "@modelcontextprotocol/server": "catalog:",
     "@orpc/server": "catalog:",
@@ -23,11 +31,17 @@
     "@wovain/widgets": "workspace:*",
     "drizzle-orm": "catalog:",
     "evlog": "catalog:",
+    "inngest": "catalog:",
+    "p-retry": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
+    "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
-    "typescript": "catalog:"
+    "mastra": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

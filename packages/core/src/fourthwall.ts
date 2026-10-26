@@ -142,9 +142,17 @@ export interface NewProduct {
   title: string;
 }
 
-// Renders the design on the blank, creates the product (Fourthwall creates it
-// hidden) and sets wovain's price on every variant.
-export const createProduct = async (call: ToolCall, product: NewProduct) => {
+export interface DesignPreview {
+  customizationId: string;
+  mockups: string[];
+}
+
+// Renders the design on the blank: the customization the product is made
+// from, and its mockups.
+export const previewDesign = async (
+  call: ToolCall,
+  product: Pick<NewProduct, "catalogProductId" | "mediaUri" | "region">
+): Promise<DesignPreview> => {
   const previews = await call("ecommerce_generate-product-design-previews", {
     products: [
       {
@@ -163,30 +171,77 @@ export const createProduct = async (call: ToolCall, product: NewProduct) => {
     previews,
     "design preview"
   );
-  const created = await call("ecommerce_create-offers-from-designs", {
-    customizationIds: [preview.customizationId],
-    offerDescriptions: [product.description],
-    offerNames: [product.title],
-  });
-  throwBulkErrors(created);
-  const { offerId } = findOne(
-    z.object({ offerId: z.string().min(1) }),
-    created,
-    "offer"
-  );
-  throwBulkErrors(
-    await call("ecommerce_bulk-update-offer-variant-prices", {
-      offerId,
-      price: product.price,
-    })
-  );
   return {
     customizationId: preview.customizationId,
     mockups: preview.images.map((image) =>
       typeof image === "string" ? image : image.url
     ),
-    offerId,
   };
+};
+
+// Creates the product from a customization; Fourthwall creates it hidden.
+export const createOffer = async (
+  call: ToolCall,
+  {
+    customizationId,
+    description,
+    title,
+  }: { customizationId: string; description: string; title: string }
+) => {
+  const created = await call("ecommerce_create-offers-from-designs", {
+    customizationIds: [customizationId],
+    offerDescriptions: [description],
+    offerNames: [title],
+  });
+  throwBulkErrors(created);
+  return findOne(z.object({ offerId: z.string().min(1) }), created, "offer")
+    .offerId;
+};
+
+// The product an earlier, unanswered createOffer made, if it made one:
+// Fourthwall keeps the customization it was created from.
+export const findOffer = async (
+  call: ToolCall,
+  { customizationId, title }: { customizationId: string; title: string }
+) => {
+  const reply = await call("ecommerce_get-offers", {
+    page: 0,
+    searchPhrase: title,
+    size: 10,
+    sortDirection: "DESC",
+    sortField: "CREATED_AT",
+  });
+  return findAll(
+    z.object({ customizationId: z.string().nullish(), id: z.string().min(1) }),
+    reply
+  ).find((offer) => offer.customizationId === customizationId)?.id;
+};
+
+// Sets wovain's price on every variant; setting it twice is harmless.
+export const setOfferPrice = async (
+  call: ToolCall,
+  offerId: string,
+  price: number
+) => {
+  throwBulkErrors(
+    await call("ecommerce_bulk-update-offer-variant-prices", {
+      offerId,
+      price,
+    })
+  );
+};
+
+// Renders the design on the blank, creates the product (Fourthwall creates it
+// hidden) and sets wovain's price on every variant.
+export const createProduct = async (call: ToolCall, product: NewProduct) => {
+  const preview = await previewDesign(call, product);
+  const offerId = await createOffer(call, {
+    customizationId: preview.customizationId,
+    description: product.description,
+    title: product.title,
+  });
+  await setOfferPrice(call, offerId, product.price);
+  return { ...preview, offerId };
 };
 
 // Makes the product public and returns its storefront page.

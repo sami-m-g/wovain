@@ -32,7 +32,7 @@ export const connectionsRouter = {
       const result = await completeConnection(context, input);
       // A funnel step, once the provider's consent actually connected.
       if (result.connected) {
-        context.analytics?.capture({
+        await context.analytics?.capture({
           distinctId: context.userId,
           event: "connect_provider",
           properties: { provider: input.provider },

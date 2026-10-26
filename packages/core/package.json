@@ -9,15 +9,18 @@
   "scripts": {
     "build": "tsc -b",
     "check-types": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "evals": "vitest run --config vitest.evals.config.ts"
   },
   "dependencies": {
-    "@fal-ai/client": "catalog:",
+    "@ai-sdk/openai-compatible": "catalog:",
+    "@mastra/core": "catalog:",
+    "@mastra/evals": "catalog:",
+    "@mastra/memory": "catalog:",
     "@modelcontextprotocol/client": "catalog:",
     "@posthog/ai": "catalog:",
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
-    "openai": "catalog:",
     "posthog-node": "catalog:",
     "unleash-client": "catalog:",
     "zod": "catalog:"

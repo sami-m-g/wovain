@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 
 import { z } from "zod";
 
@@ -56,6 +56,9 @@ export interface CampaignPlan {
   name: string;
   // The Page the ads run as; the ad account's first Page if unset.
   pageId?: string | undefined;
+  // Stable across retries of one staging: it names every object, so an
+  // object whose create got no answer can be found again on Meta.
+  tag: string;
 }
 
 export interface StagedCampaign {
@@ -67,16 +70,36 @@ export interface StagedCampaign {
   pageId: string;
 }
 
+// Runs one create at most once per staging. `recover` looks for the object
+// an earlier attempt may have made before it lost the answer. The default
+// sends every create (a single, unretried staging).
+export type WriteOnce = (
+  name: string,
+  perform: () => Promise<string>,
+  recover?: () => Promise<string | undefined>
+) => Promise<string>;
+
+const sendEveryTime: WriteOnce = async (_name, perform) => await perform();
+
 const CONVERSATION_ID_LENGTH = 20;
 const ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-// Meta's MCP asks every call of one job to carry the same conversation id.
-export const conversationId = () =>
-  Array.from(
-    { length: CONVERSATION_ID_LENGTH },
-    () => ALPHABET[randomInt(ALPHABET.length)]
+// Meta's MCP asks every call of one job to carry the same conversation id:
+// derived from the seed, a retried job keeps its conversation.
+export const conversationId = (seed?: string) => {
+  if (seed === undefined) {
+    return Array.from(
+      { length: CONVERSATION_ID_LENGTH },
+      () => ALPHABET[randomInt(ALPHABET.length)]
+    ).join("");
+  }
+  const digest = createHash("sha256").update(seed).digest();
+  return Array.from(
+    digest.subarray(0, CONVERSATION_ID_LENGTH),
+    (byte) => ALPHABET[byte % ALPHABET.length]
   ).join("");
+};
 
 const idField = (key: string) =>
   z.object({ [key]: z.union([z.string().min(1), z.number()]) });
@@ -112,70 +135,138 @@ const resolvePage = async (
     "page_id"
   );
 
+// The campaign, ad set or ad on the account whose name ends with `name`.
+const findByName = async (
+  call: ToolCall,
+  adAccountId: string,
+  level: "ad" | "adset" | "campaign",
+  name: string
+) => {
+  const reply = await call("ads_get_ad_entities", {
+    ad_account_id: adAccountId,
+    date_preset: "maximum",
+    fields: ["id", "name"],
+    filtering: [{ field: "name", operator: "CONTAIN", value: [name] }],
+    level,
+    reporting_purpose: ["entity_lookup"],
+  });
+  return findAll(
+    z.object({ id: z.union([z.string(), z.number()]), name: z.string() }),
+    reply
+  )
+    .find((entity) => entity.name === name)
+    ?.id.toString();
+};
+
 export const stagePausedCampaign = async (
   call: ToolCall,
-  plan: CampaignPlan
+  plan: CampaignPlan,
+  once: WriteOnce = sendEveryTime
 ): Promise<StagedCampaign> => {
   const common = {
     advertiser_job: "create_and_launch_new_ads",
-    client_conversation_id: conversationId(),
+    client_conversation_id: conversationId(plan.tag),
   };
   const meta = async (tool: string, args: Record<string, unknown>) =>
     await call(tool, { ...common, ...args });
   const adAccountId = await resolveAccount(meta, plan.adAccountId);
   const pageId = await resolvePage(meta, adAccountId, plan.pageId);
   const account = { ad_account_id: adAccountId };
-  const campaignId = idOf(
-    await meta("ads_create_campaign", {
-      ...account,
-      buying_type: "AUCTION",
-      campaign_daily_budget: plan.dailyBudgetCents,
-      campaign_name: plan.name,
-      objective: "OUTCOME_TRAFFIC",
-      special_ad_categories: "[]",
-    }),
-    "campaign_id"
+  const named = (suffix: string) => `${plan.name} · ${suffix} · ${plan.tag}`;
+  const campaignName = named("campaign");
+  // Named with its account, which archiving it again needs.
+  const campaignId = await once(
+    `campaign@${adAccountId}`,
+    async () =>
+      idOf(
+        await meta("ads_create_campaign", {
+          ...account,
+          buying_type: "AUCTION",
+          campaign_daily_budget: plan.dailyBudgetCents,
+          campaign_name: campaignName,
+          objective: "OUTCOME_TRAFFIC",
+          special_ad_categories: "[]",
+        }),
+        "campaign_id"
+      ),
+    async () => await findByName(meta, adAccountId, "campaign", campaignName)
   );
-  const adSetId = idOf(
-    await meta("ads_create_ad_set", {
-      ...account,
-      ad_set_name: `${plan.name} · broad`,
-      billing_event: "IMPRESSIONS",
-      campaign_id: campaignId,
-      destination_type: "WEBSITE",
-      optimization_goal: "LINK_CLICKS",
-      targeting: JSON.stringify({
-        geo_locations: { countries: plan.countries },
-      }),
-    }),
-    "ad_set_id"
+  const adSetName = named("broad");
+  const adSetId = await once(
+    "ad_set",
+    async () =>
+      idOf(
+        await meta("ads_create_ad_set", {
+          ...account,
+          ad_set_name: adSetName,
+          billing_event: "IMPRESSIONS",
+          campaign_id: campaignId,
+          destination_type: "WEBSITE",
+          optimization_goal: "LINK_CLICKS",
+          targeting: JSON.stringify({
+            geo_locations: { countries: plan.countries },
+          }),
+        }),
+        "ad_set_id"
+      ),
+    async () => await findByName(meta, adAccountId, "adset", adSetName)
   );
   const creativeIds: string[] = [];
   const adIds: string[] = [];
   for (const [index, variant] of plan.copy.entries()) {
-    const name = `${plan.name} · ${variant.angle}`;
-    // One at a time: Meta's draft takes its objects in order.
+    const name = named(`${variant.angle} ${index + 1}`);
+    // One at a time: Meta's draft takes its objects in order. A creative
+    // made twice is harmless (it serves only through an ad), so it has no
+    // lookup.
     // oxlint-disable-next-line no-await-in-loop
-    const creative = await meta("ads_create_creative", {
-      ...account,
-      call_to_action_type: "SHOP_NOW",
-      headline: variant.headline,
-      image_url: plan.imageUrl,
-      link_url: plan.linkUrl,
-      message: variant.message,
-      name,
-      page_id: pageId,
-    });
-    const creativeId = idOf(creative, "creative_id");
+    const creativeId = await once(`creative:${index}`, async () =>
+      idOf(
+        await meta("ads_create_creative", {
+          ...account,
+          call_to_action_type: "SHOP_NOW",
+          headline: variant.headline,
+          image_url: plan.imageUrl,
+          link_url: plan.linkUrl,
+          message: variant.message,
+          name,
+          page_id: pageId,
+        }),
+        "creative_id"
+      )
+    );
     creativeIds.push(creativeId);
     // oxlint-disable-next-line no-await-in-loop
-    const ad = await meta("ads_create_ad", {
-      ...account,
-      ad_name: `${name} ${index + 1}`,
-      ad_set_id: adSetId,
-      creative: JSON.stringify({ creative_id: creativeId }),
-    });
-    adIds.push(idOf(ad, "ad_id"));
+    const adId = await once(
+      `ad:${index}`,
+      async () =>
+        idOf(
+          await meta("ads_create_ad", {
+            ...account,
+            ad_name: name,
+            ad_set_id: adSetId,
+            creative: JSON.stringify({ creative_id: creativeId }),
+          }),
+          "ad_id"
+        ),
+      async () => await findByName(meta, adAccountId, "ad", name)
+    );
+    adIds.push(adId);
   }
   return { adAccountId, adIds, adSetId, campaignId, creativeIds, pageId };
+};
+
+// Undoes a staging that can't finish: archiving the campaign archives its ad
+// sets and ads with it, so nothing is left behind on the merchant's account.
+export const archiveCampaign = async (
+  call: ToolCall,
+  { adAccountId, campaignId }: { adAccountId: string; campaignId: string }
+) => {
+  await call("ads_update_entity", {
+    ad_account_id: adAccountId,
+    advertiser_job: "update_existing_campaigns",
+    client_conversation_id: conversationId(campaignId),
+    entity_id: campaignId,
+    entity_type: "campaign",
+    fields: JSON.stringify({ status: "ARCHIVED" }),
+  });
 };

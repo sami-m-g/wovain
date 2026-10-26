@@ -27,12 +27,13 @@ const gitlabProjectId = config.require("gitlabProjectId");
 const { billingAccount, number: projectNumber } =
   await gcp.organizations.getProject({ projectId: project });
 
-const apis = [
+const apiNames = [
   "artifactregistry",
   "billingbudgets",
   "cloudbilling",
   "clouderrorreporting",
   "cloudkms",
+  "cloudtrace",
   "dns",
   "firebase",
   "iam",
@@ -45,13 +46,17 @@ const apis = [
   "sqladmin",
   "storage",
   "sts",
-].map(
-  (api) =>
-    new gcp.projects.Service(api, {
+] as const;
+const api = Object.fromEntries(
+  apiNames.map((name) => [
+    name,
+    new gcp.projects.Service(name, {
       disableOnDestroy: false,
-      service: `${api}.googleapis.com`,
-    })
-);
+      service: `${name}.googleapis.com`,
+    }),
+  ])
+) as Record<(typeof apiNames)[number], gcp.projects.Service>;
+const apis = Object.values(api);
 const afterApis = { dependsOn: apis };
 // Data and identity: the engine refuses to delete or replace a protected
 // resource, and the policy pack (infra/policy) requires it on each of them.
@@ -148,7 +153,11 @@ const dbUser = new gcp.sql.User("wovain", {
 // generated one; Cloud Run mounts only the secrets that have a version, since
 // a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
-// wovain-allowed-emails were created by main; the others are new.
+// wovain-allowed-emails were created by main; the others are new. fal-key
+// is no longer read (fal runs on each merchant's own key); it stays until
+// its value is retired, since dropping it here would delete the secret.
+// inngest-event-key and inngest-signing-key come from the Inngest app
+// (docs/adr/0001-durable-runs.md): runs can't start until both are set.
 // polar-access-token and polar-webhook-secret are wovain's own billing
 // (packages/billing): a Polar organization token and the webhook endpoint's
 // signing secret. Each stays unmounted until its stack secret is set.
@@ -157,6 +166,8 @@ const secretIds = [
   "fal-key",
   "gitlab-feature-flags-instance-id",
   "google-client-secret",
+  "inngest-event-key",
+  "inngest-signing-key",
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
@@ -221,7 +232,13 @@ const runner = new gcp.serviceaccount.Account(
   { accountId: "wovain-web", displayName: "wovain web (Cloud Run)" },
   kept
 );
-for (const role of ["roles/cloudsql.client", "roles/logging.logWriter"]) {
+// cloudtrace.agent: Mastra's traces of runs and agents go to Cloud Trace
+// (packages/api/src/workflows/observability.ts).
+for (const role of [
+  "roles/cloudsql.client",
+  "roles/cloudtrace.agent",
+  "roles/logging.logWriter",
+]) {
   new gcp.projects.IAMMember(`runner-${role.split("/")[1]}`, {
     member: runner.member,
     project,
@@ -334,6 +351,9 @@ const service = cloudRunService("web", {
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
+  // Inngest calls /api/inngest once per run step; the slowest (a design:
+  // brief, fal art, judge) needs more than Cloud Run's 300 s default.
+  timeout: "900s",
 });
 export const serviceUri = service.uri;
 
@@ -419,7 +439,10 @@ const dev = devEnvironment({
 // wovain.com end to end (domains.ts). The few values no API hands out are
 // plain stack config keys: `pulumi config set <key> <value>` in infra/.
 const site = configureDomain({
-  after: apis,
+  // Only the APIs it calls: its lookups wait on these, and a lookup that waits
+  // on a resource with pending changes is unknown in a preview, which would
+  // show every record it feeds as changed (adding an unrelated API did).
+  after: [api.dns, api.run, api.siteverification],
   apex: domain,
   caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
     "pki.goog",
@@ -680,7 +703,9 @@ ciVariables({
     protected: true,
     value: config.requireSecret("gitlab-ci-token"),
   },
-  // The loop's and scout's model calls and competitor searches.
+  // The loop's and scout's model calls and competitor searches, and the
+  // judge evals (evals:judges, .gitlab/ci/verify.yml). Protected: only main's
+  // pipelines read it, so a merge request's evals skip and main's run.
   NEBIUS_API_KEY: {
     created: true,
     masked: true,

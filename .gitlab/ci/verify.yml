@@ -48,6 +48,26 @@ infra:preview:
     - !reference [.pulumi-install, before_script]
     - !reference [.gcp-credentials, before_script]
 
+# Offline evals of the LLM judges on the versioned labeled set, when a
+# prompt, a judge, a scorer or the model changes (docs/adr/0002): TPR and
+# TNR per judge against the labels, failing on a drop below the recorded
+# baseline (packages/core/src/evals). It reads NEBIUS_API_KEY, the masked,
+# protected CI variable infra/index.ts sets from the nebius-api-key stack
+# secret: main's pipelines run the judges, and a merge request's skip them.
+evals:judges:
+  stage: verify
+  extends: [.pnpm-install]
+  rules:
+    - !reference [.not-ops, rules]
+    - changes:
+        - packages/core/src/{agents,ads,autopilot,design,judges,nemotron,scorers}.ts
+        - packages/core/src/evals/**/*
+  script:
+    - pnpm --filter @wovain/core run evals
+  artifacts:
+    when: always
+    paths: [packages/core/src/evals/report.v1.json]
+
 # The turbo build of every app.
 build:
   stage: verify

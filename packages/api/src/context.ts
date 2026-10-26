@@ -1,51 +1,19 @@
 import type { Session } from "@wovain/auth";
-import type { BillingEvent } from "@wovain/billing/analytics";
 import type { Billing } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
 import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
 import type { EvlogOrpcContext } from "evlog/orpc";
 
-// The seller funnel's server-side steps, as PostHog event names: sign_up
-// comes from Better Auth when it creates a user (packages/auth), the rest from
-// procedures. The browser adds landing_cta_clicked (apps/web).
-// Billing adds its revenue and usage events (packages/billing/src/analytics.ts).
-export type FunnelEvent =
-  | BillingEvent
-  | "campaign_created"
-  | "connect_provider"
-  | "design_approved"
-  | "product_published"
-  | "run_started"
-  | "sign_up";
+import type { Analytics, RunEngine } from "./flow/actor";
+
+export type { FunnelEvent } from "./flow/actor";
 
 // `log` is the request logger when the caller runs inside an evlog-instrumented request
 export interface Context extends Partial<EvlogOrpcContext> {
   // Product analytics and error tracking (PostHog in apps/web), keyed by
   // user id; absent when the app has no PostHog key.
-  analytics?:
-    | {
-        capture: (event: {
-          distinctId: string;
-          event: FunnelEvent;
-          properties?: Record<string, unknown>;
-        }) => void;
-        // Sets person properties (`$set`), such as the merchant's plan.
-        identify?: (person: {
-          distinctId: string;
-          properties: Record<string, unknown>;
-        }) => void;
-        // An unexpected procedure error, as a `$exception` event. Without a
-        // distinct id, the event is anonymous.
-        captureException: (
-          error: unknown,
-          event: {
-            distinctId?: string | undefined;
-            properties?: Record<string, unknown>;
-          }
-        ) => void;
-      }
-    | undefined;
+  analytics?: Analytics | undefined;
   // Polar: checkout, the customer portal and usage reports.
   billing: Billing;
   core: Core;
@@ -53,5 +21,7 @@ export interface Context extends Partial<EvlogOrpcContext> {
   mailer: Mailer;
   // The merchant behind an MCP access token (ChatGPT), which has no session.
   mcpUserId?: string;
+  // Starts and resumes runs on the durable engine (../workflows/engine).
+  runs: RunEngine;
   session: Session | null;
 }
