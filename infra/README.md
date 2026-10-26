@@ -6,7 +6,7 @@ Pulumi (TypeScript) for wovain's Google Cloud project, GitLab project and DNS. `
 
 1. **Merge request.** `verify:infra` type-checks and runs both programs against mocks with no credentials (`*.test.ts`). This catches missing config, code that throws, duplicate URNs and dynamic providers that don't serialize. `infra:preview` runs `pulumi preview` against the real stack with the policy pack, as `gitlab-preview`. That account is read-only and Google trusts it only from this project's merge request pipelines. The plan is linked in the merge request widget as **infra preview**. The job fails on any error, on any policy violation, and on any delete or replace of a stateful resource (`policy/guard.ts`).
 2. **Review** the plan. Merge only a green, reviewed plan.
-3. **Merge.** On main, `infra:production` refreshes, runs the same guarded preview and then `pulumi up`, with the same policy pack and without `--continue-on-error`. Images, migrations and the rollouts run only after it succeeds.
+3. **Merge.** On main, `infra:production` refreshes, runs the same guarded preview and then `pulumi up`, with the same policy pack and without `--continue-on-error`. It runs alongside the image builds, and only when infra/ (or another file the program reads) changed since the stack's last successful update; `FORCE_ALL=1` on Run pipeline forces it. The migration and the rollouts run only after it succeeds.
 
 The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 

@@ -3,9 +3,11 @@
 #            tests and the turbo build
 #   test     GitLab SAST, IaC scanning, Secret Detection and Dependency
 #            Scanning (secure.yml)
-#   deploy   main only: pulumi up (infra/); package the web and docs images
-#            into the GitLab and Google registries, then Container Scanning;
-#            migrate Cloud SQL; roll both images out to Cloud Run
+#   deploy   main only, in parallel: pulumi up (infra/) when it changed;
+#            package the web and docs images (the docs one only when it
+#            changed) into the GitLab and Google registries, then Container
+#            Scanning; migrate Cloud SQL; then roll out to Cloud Run.
+#            FORCE_ALL=1 applies and builds everything (deploy.yml)
 #   monitor  smoke-test wovain.com and docs.wovain.com
 #   Duo      three flows run the post-code lifecycle (docs/flows.md):
 #            self-healing (ops job, heal flow, heal:verify), KPI scout

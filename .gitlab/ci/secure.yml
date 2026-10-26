@@ -6,7 +6,8 @@
 #   Dependency Scanning   pnpm-lock.yaml
 #   Container Scanning    the images deploy.yml pushes, on main
 # The source scanners don't use anything verify makes, so they start right
-# away.
+# away. On main no deploy job needs a scanner: they report alongside the
+# rollout instead of in front of it.
 semgrep-sast:
   needs: []
 

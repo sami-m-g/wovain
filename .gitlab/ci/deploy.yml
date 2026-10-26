@@ -1,8 +1,24 @@
-# main only, in order: infrastructure, the images (package), the database
-# schema, the rollout, then a smoke test. Every Google call goes through
-# Workload Identity Federation (templates.yml); no Google key is stored.
+# main only. The images start with the pipeline, infrastructure once its
+# own checks pass, and the migration once verify and infrastructure pass; the
+# rollout waits for all of them, then the canary and a smoke test. The
+# scanners (secure.yml) report and gate merge requests but never hold a
+# deploy back. Every Google call goes through Workload Identity Federation
+# (templates.yml); no Google key is stored.
 #   wovain.com       apps/web        Cloud Run wovain-web
 #   docs.wovain.com  apps/fumadocs   Cloud Run wovain-docs
+# infra:production and image:docs do their work only when their inputs
+# changed since what is live (changed-since.sh), not since the previous push,
+# so a change whose pipeline was cancelled still goes out with the next one.
+# FORCE_ALL=1 (Run pipeline) applies and builds everything.
+
+# What the Pulumi program reads (infra/flags.ts and infra/duo.ts read outside
+# infra/), plus the jobs that run it; infra/posthog is OpenTofu (posthog.yml).
+# The docs image: apps/fumadocs, its workspace packages and the build setup.
+variables:
+  INFRA_PATHS: >-
+    infra :(exclude)infra/posthog .gitlab/duo packages/core/src/flag-registry.ts .gitlab-ci.yml .gitlab/ci/deploy.yml .gitlab/ci/templates.yml
+  DOCS_PATHS: >-
+    apps/fumadocs packages/ui packages/config package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .dockerignore .gitlab/ci/deploy.yml .gitlab/ci/templates.yml
 
 # `pulumi up` applies infra/ (state in gs://wovain-pulumi-state) as
 # gitlab-infra, after the same guarded preview as the merge request's
@@ -10,17 +26,33 @@
 # change. --refresh first reads the live Cloud Run images, which CI owns and
 # Pulumi ignores, so a settings change never rolls an image back. No
 # --continue-on-error: the first error stops the update.
+# It runs alongside the image builds; the rollout waits for both, so a new
+# env variable or secret is on the service before the image that reads it.
+# When INFRA_PATHS are unchanged since the commit of the stack's last
+# successful update (its git.head), it stops before installing anything.
 infra:production:
   extends: [.gcp-auth, .on-main, .pulumi-preview]
   stage: deploy
   interruptible: false
   resource_group: infra
+  needs:
+    - job: verify:infra
+      optional: true
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
     PREVIEW_FLAGS: --refresh
   before_script:
-    - !reference [.pulumi-install, before_script]
     - !reference [.gcp-credentials, before_script]
+    - !reference [.pulumi-cli, before_script]
+    - |
+      live=$(pulumi stack history --cwd infra --stack prod --output json --page-size 20 \
+        | node -e 'let s = ""; process.stdin.on("data", (d) => { s += d; }).on("end", () => { const u = JSON.parse(s).find((x) => x.kind === "update" && x.result === "succeeded"); process.stdout.write(u?.environment?.["git.head"] ?? ""); });' || true)
+      if ! sh .gitlab/ci/changed-since.sh "$live" $INFRA_PATHS; then
+        echo "infra/ is as applied; skipping pulumi up."
+        exit 0
+      fi
+    - !reference [.pnpm-install, before_script]
+    - pulumi install --cwd infra
   script:
     - !reference [.pulumi-preview, script]
     - pulumi up --cwd infra --stack prod --refresh --policy-pack "$CI_PROJECT_DIR/infra/policy" --yes --non-interactive
@@ -35,28 +67,31 @@ infra:production:
 # pulls it, as gitlab-deploy. Varlock validates env while Next builds, so the
 # build gets an env file (templates.yml, .image-env): placeholders for the web
 # app's secrets (Cloud Run supplies the real ones) and the public values that
-# are compiled in.
+# are compiled in. The builds start with the pipeline: nothing in them
+# depends on infrastructure, and the rollout waits for both.
+# Layer cache: buildx's registry cache (.buildx in templates.yml), every
+# layer (mode=max) in <app>:buildcache in the GitLab registry, so an
+# unchanged lockfile skips the install and an unchanged prune skips the build.
 .image:
-  extends: [.gcp-auth, .on-main, .env-placeholders]
+  extends: [.gcp-auth, .on-main, .env-placeholders, .buildx]
   stage: deploy
   image: docker:28
   services:
     - docker:28-dind
   interruptible: false
-  needs: [infra:production]
+  needs: []
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     DOCKER_TLS_CERTDIR: /certs
   before_script:
-    - apk add --no-cache curl
+    - apk add --no-cache curl git
     - !reference [.gcp-token, before_script]
     - echo "$GCP_ACCESS_TOKEN" | docker login -u oauth2accesstoken --password-stdin "https://$GCP_REGION-docker.pkg.dev"
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - !reference [.buildx, before_script]
   script:
     - !reference [.image-env, script]
-    - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" -t "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:latest" .
-    - docker push "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA"
-    - docker push --all-tags "$CI_REGISTRY_IMAGE/$APP"
+    - docker buildx build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" $BUILDX_FLAGS --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$APP:buildcache" --cache-to "type=registry,ref=$CI_REGISTRY_IMAGE/$APP:buildcache,mode=max,image-manifest=true,oci-mediatypes=true" -t "$GCP_IMAGE_REPOSITORY/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/$APP:latest" --push .
   environment:
     name: production
     action: prepare
@@ -68,12 +103,32 @@ image:web:
     DOCKERFILE: apps/web/Dockerfile
     BUILD_SECRET: web_env
 
+# When DOCS_PATHS are unchanged since the image wovain-docs runs, the job
+# tags that image with this commit instead of building it (Container
+# Scanning still finds docs:<sha>), and deploy:production leaves the docs
+# service alone (DOCS_REUSED, a dotenv report).
 image:docs:
   extends: .image
   variables:
     APP: docs
     DOCKERFILE: apps/fumadocs/Dockerfile
     BUILD_SECRET: docs_env
+  script:
+    - |
+      live=$(curl -sf -H "Authorization: Bearer $GCP_ACCESS_TOKEN" \
+        "https://run.googleapis.com/v2/projects/$GCP_PROJECT_ID/locations/$GCP_REGION/services/wovain-docs" \
+        | tr -d '\n' | sed -n 's/.*"image": *"[^"]*\/docs:\([0-9a-f]\{40\}\)".*/\1/p' || true)
+      if ! sh .gitlab/ci/changed-since.sh "$live" $DOCS_PATHS \
+        && docker buildx imagetools create -t "$GCP_IMAGE_REPOSITORY/docs:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/docs:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/docs:latest" "$GCP_IMAGE_REPOSITORY/docs:$live"; then
+        echo "Reused docs:$live."
+        echo "DOCS_REUSED=$live" > image.env
+        exit 0
+      fi
+      echo "DOCS_BUILT=$CI_COMMIT_SHA" > image.env
+    - !reference [.image, script]
+  artifacts:
+    reports:
+      dotenv: image.env
 
 # Applies packages/db's Drizzle migrations, then Mastra's storage schema, to
 # Cloud SQL. cloud-sql-proxy makes the same /cloudsql/<instance> socket
@@ -81,12 +136,15 @@ image:docs:
 # Manager with the job's own token (GCP_PROJECT_NUMBER and the
 # GCP_WORKLOAD_IDENTITY_FEDERATION_* variables; infra/index.ts grants each
 # environment its own database's URL).
+# It runs while the images build, once the tests and infrastructure pass. A
+# rollback already leaves the schema ahead of the code (the canary is judged
+# after the migration), so migrations stay backward compatible.
 migrate:production:
   extends: [.gcp-auth, .on-main]
   stage: deploy
   interruptible: false
   resource_group: production
-  needs: [image:web]
+  needs: [verify, infra:production]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     CLOUD_SQL_PROXY_VERSION: v2.14.0
@@ -128,7 +186,8 @@ deploy:production:
   stage: deploy
   interruptible: false
   resource_group: production
-  needs: [image:web, image:docs, migrate:production]
+  needs:
+    [verify, build, infra:production, image:web, image:docs, migrate:production]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
     CANARY_PERCENT: "10"
@@ -141,13 +200,17 @@ deploy:production:
       fi
     - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --no-traffic --tag canary "$fault" --quiet
     - gcloud run services update-traffic wovain-web --region "$GCP_REGION" --to-tags "canary=$CANARY_PERCENT" --quiet
-    - gcloud run deploy wovain-docs --image "$GCP_IMAGE_REPOSITORY/docs:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
+    # image:docs reused the running image (DOCS_REUSED): nothing to roll out.
+    - |
+      if [ -z "$DOCS_REUSED" ]; then
+        gcloud run deploy wovain-docs --image "$GCP_IMAGE_REPOSITORY/docs:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
+      fi
   environment:
     name: production
     url: $SITE_URL
 
-# dev.wovain.com (infra/dev.ts), by hand from main: the commit's web image,
-# already built and pushed after infra:production applied its guarded plan,
+# dev.wovain.com (infra/dev.ts), by hand from main: once the commit's web
+# image is pushed and infra:production has applied its guarded plan, it
 # migrates wovain_dev and rolls out to wovain-web-dev. Same account as
 # production, trusted from the development environment.
 .on-main-manual:
@@ -160,6 +223,7 @@ deploy:production:
 migrate:development:
   extends: [migrate:production, .on-main-manual]
   resource_group: development
+  needs: [image:web, infra:production]
   secrets:
     DATABASE_URL:
       gcp_secret_manager:
