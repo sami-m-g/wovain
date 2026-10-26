@@ -233,8 +233,9 @@ const mapping: { flows?: Synced; agents?: Synced } = existsSync(mappingFile)
 const CREATE_CONSUMER =
   "aiCatalogItemConsumerCreate(input: { itemId: $itemId, pinnedVersion: $version, target: { projectId: $projectId } }) { errors itemConsumer { id } }";
 const ENABLE = `mutation($itemId: AiCatalogItemID!, $projectId: ProjectID!, $version: AiCatalogPinnedVersion!) { consumer: ${CREATE_CONSUMER} }`;
+// The update also needs exactly one of pinnedVersion and pinnedVersionPrefix.
 const ADOPT =
-  "mutation($id: AiCatalogItemConsumerID!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id }) { errors itemConsumer { id } } }";
+  "mutation($id: AiCatalogItemConsumerID!, $version: AiCatalogPinnedVersion!) { consumer: aiCatalogItemConsumerUpdate(input: { id: $id, pinnedVersion: $version }) { errors itemConsumer { id } } }";
 
 const enableFlow = (name: string, itemId: string, version: string) => {
   const existing = consumerIds.apply((ids) => ids.get(itemId));
