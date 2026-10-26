@@ -162,7 +162,7 @@ The ops job renders `public/index.html` every run and the `pages` job publishes 
 
 | Guardrail | Where |
 | --- | --- |
-| Only the ops job starts the Developer and heal flows (assign), and only Duo Code Review on request (assign_reviewer); `merge_request_ready` and the Fix CI/CD trigger are off | `infra/duo.ts`, `infra/Pulumi.prod.yaml` |
+| Only the ops job starts the Developer and heal flows (assign). Duo Code Review runs on every merge request a person creates (`merge_request`, action `created`) and again on request (`assign_reviewer`); Duo's own MRs get it from the shepherd. The Fix CI/CD trigger is off | `infra/duo.ts`, `infra/Pulumi.prod.yaml` |
 | `agent::task` counts only when a trusted person (`TRUSTED_USERS`, plus the token's owner) added it, nobody edited the issue later, and only trusted people or Duo commented | `apps/ops/src/intake.ts` |
 | Caps: 2 tasks in flight and 5 Developer sessions a day; 1 heal issue in flight and 3 a day; 2 Vulnerability Resolutions a day; one review per commit | `intake.ts`, `heal.ts`, `vulns.ts`, `ops.ts` |
 | Log text is never trusted: allowlisted error class, method and normalized route; the message only inside a block marked untrusted | `apps/ops/src/heal.ts` |

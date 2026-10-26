@@ -46,16 +46,28 @@ config:
               operator: in
               value: [push]
     - name: duo-code-review
-      description: Code review when Duo is asked to review
+      description: Code review on every new merge request, and on request
       flow: code_review/v1
       serviceAccount: duo-code-review-gitlab-ai-hackathon
-      # Only when someone requests Duo as reviewer: the loop's shepherd and
-      # the /issue skill do that only for a ready MR that changes app code
-      # (apps/ops/src/gates.ts reviewSkipReason), never for docs-only,
-      # lockfile-only or Renovate MRs. merge_request_ready is off because
-      # marking any MR ready, docs included, would start a paid review.
-      events: [assign_reviewer]
+      # Every merge request a person opens (the merge_request event, action
+      # created, drafts included; 0.25 credit each), plus a re-review
+      # whenever someone requests Duo as reviewer. Until 2026-10-26 this was
+      # assign_reviewer only, and since nothing asks for a review on a
+      # person's MR (only the shepherd does, for Duo's own MRs), !69–!111 got
+      # no review. Duo's own MRs still go through the shepherd: GitLab starts
+      # no flow for a service account's action. code_review/v1 accepts any
+      # event (it has no supported_events); merge_request filters accept
+      # only action, one of approved, created, merged, requested_changes
+      # (ee/app/models/ai/flow_trigger.rb, ALLOWED_FILTER_ACTIONS).
+      events: [assign_reviewer, merge_request]
       active: true
+      filter:
+        merge_request:
+          match: all
+          rules:
+            - field: action
+              operator: in
+              value: [created]
   # Custom flows from .gitlab/duo/catalog/flows: a trigger for the consumer
   # the project already has (infra/duo.ts). The scout starts on a successful
   # child pipeline on main, which only the weekly schedule's scout:duo job

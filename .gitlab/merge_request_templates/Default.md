@@ -25,4 +25,4 @@ Closes #
 - [ ] A Drizzle migration is included if the schema changed
 - [ ] No secrets, tokens or `.env` files in the diff
 
-<!-- Duo code review (0.25 GitLab Credits per review) is off until approved; to request one, add: /assign_reviewer @GitLabDuo -->
+<!-- Duo Code Review (0.25 GitLab Credits) starts by itself when this MR is created (infra/Pulumi.prod.yaml, duo-code-review). To review a later commit again, comment: /assign_reviewer @duo-code-review-gitlab-ai-hackathon -->
