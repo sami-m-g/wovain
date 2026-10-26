@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
-const LAST_UPDATED = new Date("2026-10-25T00:00:00.000Z");
+const LAST_UPDATED = new Date("2026-10-26T00:00:00.000Z");
 
 const DOCS = {
   privacy: {

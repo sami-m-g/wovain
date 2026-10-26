@@ -55,8 +55,10 @@ const DashboardLayout = async ({
           <ModeToggle />
           <UserMenu />
         </header>
+        {/* Session replays mask the merchant's text here (ph-mask): shop
+            names, briefs, emails. Inputs are masked everywhere. */}
         <main
-          className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none sm:px-8 lg:py-10"
+          className="ph-mask mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none sm:px-8 lg:py-10"
           id="main"
           tabIndex={-1}
         >

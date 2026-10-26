@@ -130,7 +130,7 @@ flowchart LR
 
 The trigger token lives only in PostHog's redacted sensitive inputs and a masked, protected CI variable. The payload is a nudge, not an input: the ops job runs every 10 minutes anyway, so a lost webhook only delays detection, and a forged one only runs the same checks early. Its caps (one heal in flight, three a day, one early scout a day) hold whatever starts it. Error tracking's own GitLab integration can also link a PostHog issue to the GitLab issue by hand (Error tracking > issue > Create issue > GitLab).
 
-**Experiments.** A UX change for signed-in merchants ships behind a PostHog flag named `exp-<KPI id>` (control and test), declared as a `posthog_experiment` in `infra/posthog`. The flag lives outside the auto-merge scope, so a person approves each experiment. The snapshot's experiments table shows exposures and runs started per variant; the scout proposes shipping a clear winner and removing the flag, or removing a loser. Experiments target signed-in merchants (identified on sign-in) because cookieless mode gives anonymous visitors no stable id.
+**Experiments.** A UX change for signed-in merchants ships behind a PostHog flag named `exp-<KPI id>` (control and test), declared as a `posthog_experiment` in `infra/posthog`. The flag lives outside the auto-merge scope, so a person approves each experiment. The snapshot's experiments table shows exposures and runs started per variant; the scout proposes shipping a clear winner and removing the flag, or removing a loser. Experiments target signed-in merchants (identified on sign-in) because anonymous visitors who haven't consented are cookieless and have no stable id.
 
 **GitLab feature flags stay for fault injection.** `fault-injection-checkout` is part of the self-healing harness, not the product: it is evaluated server-side through GitLab's Unleash endpoint, toggled from Deploy > Feature flags during the demo, and kept off-limits to Duo and auto-merge. PostHog flags are for product rollouts and experiments, where exposure analytics matter. Keeping them apart means an experiment cleanup can never switch the harness, and the demo has no PostHog dependency.
 
@@ -151,7 +151,7 @@ As of October 2026; prices are PostHog Cloud's monthly free tier, then pay as yo
 | Surveys | "Run rating" (draft until a person launches it) | Free tier of survey responses | Either |
 | LLM analytics | Nemotron cost, latency and steps | 100k LLM events free | Either |
 | Web analytics, web vitals, rage and dead clicks | KPIs and dashboard tiles | Product analytics events | Either |
-| Session replay and Replay Vision | Not used: cookieless mode ("always") records no replays, and Replay Vision scans replays | 5k recordings free; Replay Vision 2,500 credits free, then $0.01 a credit | Either |
+| Session replay and Replay Vision | Replays of visitors who consented: cookieless "on_reject" mode records none until the banner's Accept, or implied consent outside the opt-in countries in `apps/web/src/lib/consent.ts`. Inputs and dashboard text are masked. Replay Vision not used yet | 5k recordings free; Replay Vision 2,500 credits free, then $0.01 a credit | Either |
 | Self-driving: Signals scouts, Inbox, reports, Tasks and PostHog Code, Loops | Not used to act: they open pull requests through PostHog's GitHub App only, and their external signal sources are GitHub Issues, Jira, Linear and Zendesk. wovain lives on GitLab, so Duo acts and PostHog senses | Open beta; AI credits (500 free, then $0.01 a credit; beta features are free) | GitHub only |
 
 ## Status page

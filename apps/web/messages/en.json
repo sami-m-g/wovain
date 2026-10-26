@@ -80,6 +80,14 @@
     "guides": "Guides",
     "contact": "Contact"
   },
+  "AnalyticsConsent": {
+    "title": "Help us improve wovain",
+    "body": "With your OK, PostHog stores an ID in your browser and records how you use the site, with everything you type hidden, so we can fix what gets in your way. Without it, we only count visits anonymously.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "privacy": "Privacy",
+    "settings": "Cookie settings"
+  },
   "Home": {
     "heroTitle": "One brief in. A whole merch drop out.",
     "heroLead": "wovain researches what your audience loves this week, designs products on real Fourthwall blanks and builds the Meta ads to sell them. You approve every step, and the campaign starts paused.",
@@ -250,7 +258,7 @@
       "collectTitle": "What we collect",
       "collectBody": "Your name, email and password hash for your account; the briefs you write; and the runs, designs and products wovain makes for you.",
       "analyticsTitle": "Analytics",
-      "analyticsBody": "We use PostHog, hosted in the US, to learn how people find and use wovain: the pages you visit, what you click, page speed and the site's language. It runs without cookies or browser storage, so it can't recognize you across visits, and there is no banner to accept. Once you sign in, these events are tied to your account's id, never your email.",
+      "analyticsBody": "We use PostHog, hosted in the US, to learn how people find and use wovain: the pages you visit, what you click, page speed and the site's language. Until you accept, it runs without cookies or browser storage, so it can't recognize you across visits or record replays. If you accept, or where the law doesn't require asking first, it stores an ID in your browser and records session replays, with everything you type and your account details hidden. You can change your choice at any time with Cookie settings at the bottom of the page, and a Global Privacy Control signal from your browser counts as a no. Once you sign in, these events are tied to your account's id, never your email.",
       "connectionsTitle": "Connected services",
       "connectionsBody": "When you connect Fourthwall, Meta or fal, we store the access they grant so wovain can act for you. You can disconnect any of them at any time from Connections.",
       "processorsTitle": "Who processes it",
