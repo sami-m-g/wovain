@@ -1,3 +1,4 @@
+import { match } from "@formatjs/intl-localematcher";
 import {
   Body,
   Button,
@@ -9,24 +10,30 @@ import {
   Preview,
   Text,
 } from "@react-email/components";
+import type { RunStatus as RunState } from "@wovain/db/schema/seller";
+import Negotiator from "negotiator";
+
+import { locales } from "./locales";
+import type { Locale } from "./locales";
 
 // wovain's transactional emails: one layout, with copy in each locale the
 // site speaks.
 
-export const locales = ["en", "fr", "es"] as const;
-export type Locale = (typeof locales)[number];
-
 const isLocale = (value: string): value is Locale =>
   locales.some((locale) => locale === value);
 
-// The first supported language in a locale or Accept-Language value.
-export const pickLocale = (value?: string | null): Locale =>
-  (value ?? "")
-    .split(",")
-    .map((tag) => tag.trim().slice(0, 2).toLowerCase())
-    .find(isLocale) ?? "en";
+// The supported language a locale or Accept-Language value prefers most, by
+// q-value; English when none matches.
+export const pickLocale = (value?: string | null): Locale => {
+  const preferred = new Negotiator({
+    headers: { "accept-language": value ?? "" },
+  }).languages(locales);
+  const picked = match(preferred, locales, "en");
+  return isLocale(picked) ? picked : "en";
+};
 
-export type RunStatus = "awaiting_approval" | "completed" | "failed";
+// The statuses a run emails the merchant about: every one but "running".
+type RunStatus = Exclude<RunState, "running">;
 
 export type Message =
   | { kind: "reset" | "verify"; url: string }

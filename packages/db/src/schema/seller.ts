@@ -68,12 +68,6 @@ export const connectionFlow = pgTable("connection_flow", {
   userId: owner(),
 });
 
-export type RunStatus =
-  | "running"
-  | "awaiting_approval"
-  | "completed"
-  | "failed";
-
 // One pass of the flow from a seed; autopilot lets Nemotron approve.
 export const run = pgTable(
   "run",
@@ -83,13 +77,19 @@ export const run = pgTable(
     error: text("error"),
     id: id(),
     seed: text("seed").notNull(),
-    status: text("status").$type<RunStatus>().default("running").notNull(),
+    status: text("status", {
+      enum: ["running", "awaiting_approval", "completed", "failed"],
+    })
+      .default("running")
+      .notNull(),
     step: text("step"),
     updatedAt: updatedAt(),
     userId: owner(),
   },
   (table) => [index("run_user_idx").on(table.userId)]
 );
+
+export type RunStatus = (typeof run.$inferSelect)["status"];
 
 export const idea = pgTable(
   "idea",
@@ -109,8 +109,6 @@ export const idea = pgTable(
   (table) => [index("idea_user_idx").on(table.userId)]
 );
 
-export type DesignStatus = "pending_approval" | "approved" | "rejected";
-
 export const design = pgTable(
   "design",
   {
@@ -119,7 +117,7 @@ export const design = pgTable(
     artworkWidth: integer("artwork_width").notNull(),
     brief: jsonb("brief").$type<DesignBrief>().notNull(),
     createdAt: createdAt(),
-    decidedBy: text("decided_by").$type<"merchant" | "autopilot">(),
+    decidedBy: text("decided_by", { enum: ["merchant", "autopilot"] }),
     decisionReason: text("decision_reason"),
     id: id(),
     ideaId: text("idea_id")
@@ -127,8 +125,9 @@ export const design = pgTable(
       .references(() => idea.id, { onDelete: "cascade" }),
     judgment: jsonb("judgment").$type<Judgment>().notNull(),
     runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
-    status: text("status")
-      .$type<DesignStatus>()
+    status: text("status", {
+      enum: ["pending_approval", "approved", "rejected"],
+    })
       .default("pending_approval")
       .notNull(),
     updatedAt: updatedAt(),
@@ -152,8 +151,7 @@ export const product = pgTable(
     offerId: text("offer_id").notNull(),
     price: real("price").notNull(),
     productUrl: text("product_url"),
-    status: text("status")
-      .$type<"hidden" | "public">()
+    status: text("status", { enum: ["hidden", "public"] })
       .default("hidden")
       .notNull(),
     updatedAt: updatedAt(),
@@ -178,7 +176,9 @@ export const campaign = pgTable(
     productId: text("product_id")
       .notNull()
       .references(() => product.id, { onDelete: "cascade" }),
-    status: text("status").$type<"paused">().default("paused").notNull(),
+    status: text("status", { enum: ["paused"] })
+      .default("paused")
+      .notNull(),
     userId: owner(),
   },
   (table) => [index("campaign_user_idx").on(table.userId)]

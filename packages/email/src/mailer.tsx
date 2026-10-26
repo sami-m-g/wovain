@@ -1,5 +1,5 @@
 import { render } from "@react-email/render";
-import { createError, log } from "evlog";
+import { defineError, log } from "evlog";
 import { Resend } from "resend";
 
 import { compose, pickLocale } from "./emails";
@@ -7,6 +7,12 @@ import type { Message } from "./emails";
 
 // Sends wovain's emails through Resend. Without RESEND_API_KEY (local
 // development), each email is logged instead of sent.
+
+const ResendFailed = defineError("RESEND_FAILED", {
+  fix: "Check RESEND_API_KEY and that EMAIL_FROM's domain is verified in Resend.",
+  message: ({ kind }: { kind: string }) => `Couldn't send the ${kind} email`,
+  status: 502,
+});
 
 export interface MailerConfig {
   apiKey: string | undefined;
@@ -47,13 +53,7 @@ export const createMailer = ({ apiKey, from, siteUrl }: MailerConfig) => {
       to,
     });
     if (error !== null) {
-      throw createError({
-        code: "RESEND_FAILED",
-        fix: "Check RESEND_API_KEY and that EMAIL_FROM's domain is verified in Resend.",
-        message: `Couldn't send the ${message.kind} email`,
-        status: 502,
-        why: error.message,
-      });
+      throw ResendFailed({ kind: message.kind, why: error.message });
     }
   };
 };

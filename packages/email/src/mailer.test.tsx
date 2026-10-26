@@ -20,9 +20,11 @@ afterEach(() => {
 const site = "https://wovain.com";
 
 describe("emails", () => {
-  it("picks the first supported language, else English", () => {
+  it("picks the most preferred supported language, else English", () => {
     expect(pickLocale("fr-CA,fr;q=0.9,en;q=0.8")).toBe("fr");
     expect(pickLocale("de-DE, es;q=0.7")).toBe("es");
+    expect(pickLocale("en;q=0.1, fr;q=0.9")).toBe("fr");
+    expect(pickLocale("*, not a tag")).toBe("en");
     expect(pickLocale("de")).toBe("en");
     expect(pickLocale()).toBe("en");
   });

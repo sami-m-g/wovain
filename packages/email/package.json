@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./locales": "./src/locales.ts",
     "./*": "./src/*.tsx"
   },
   "scripts": {
@@ -12,14 +13,18 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@formatjs/intl-localematcher": "catalog:",
     "@react-email/components": "catalog:",
     "@react-email/render": "catalog:",
+    "@wovain/db": "workspace:*",
     "evlog": "catalog:",
+    "negotiator": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "resend": "catalog:"
   },
   "devDependencies": {
+    "@types/negotiator": "catalog:",
     "@types/react": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",

@@ -63,7 +63,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     schema: T
   ): Promise<z.output<T>> => {
     if (apiKey === undefined) {
-      throw notConfigured("qloo", "QLOO_API_KEY");
+      throw notConfigured.qloo();
     }
     const response = await fetch(
       // Qloo's configured base URL; path is one of this file's literals and

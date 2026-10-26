@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 
 import type { GrantStore, ProviderId, ToolCall } from "@wovain/core/upstream";
 import { connection, connectionFlow } from "@wovain/db/schema/seller";
-import { and, eq, gt } from "drizzle-orm";
-import { createError } from "evlog";
+import { and, eq, gt, lte } from "drizzle-orm";
+import { defineError } from "evlog";
 import { z } from "zod";
 
 import type { Actor } from "./actor";
@@ -12,6 +12,12 @@ import type { Actor } from "./actor";
 // database, and the authorization flows that create them.
 
 const FLOW_TTL_MS = 10 * 60 * 1000;
+
+const FlowInvalid = defineError("CONNECTION_FLOW_INVALID", {
+  fix: "Start connecting again from wovain.",
+  message: "This connection link expired or was already used",
+  status: 400,
+});
 
 // What the MCP SDK saves, checked after unsealing.
 const tokensSchema = z.looseObject({
@@ -97,6 +103,10 @@ export const startConnection = async (
     state,
     actor.log
   );
+  // Flows nobody finished would pile up: each new one clears the expired.
+  await actor.db
+    .delete(connectionFlow)
+    .where(lte(connectionFlow.expiresAt, new Date()));
   await actor.db.insert(connectionFlow).values({
     codeVerifier: flow.codeVerifier ?? null,
     discoveryState: flow.discoveryState ?? null,
@@ -137,12 +147,7 @@ export const completeConnection = async (
     )
     .returning();
   if (flow === undefined) {
-    throw createError({
-      code: "CONNECTION_FLOW_INVALID",
-      fix: "Start connecting again from wovain.",
-      message: "This connection link expired or was already used",
-      status: 400,
-    });
+    throw FlowInvalid();
   }
   const connected = await actor.core.upstream.finishConnect(
     provider,

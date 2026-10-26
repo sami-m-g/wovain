@@ -21,16 +21,20 @@ import { funnelProcedure, protectedProcedure } from "../index";
 // product → publish → paused campaign, or all of it in one autopilot run.
 
 const id = z.string().min(1).max(64);
-const byId = z.object({ id });
-const byRun = z.object({ runId: id.optional() });
 const seed = z.string().trim().min(1).max(200);
+const reason = z.string().trim().max(500);
 const countries = z
   .array(z.string().regex(/^[A-Z]{2}$/u))
   .min(1)
-  .max(25)
-  .default(["US"]);
+  .max(25);
 // Dollars a day; the upper bound stops a typo from staging a runaway budget.
-const dailyBudget = z.number().min(1).max(500).default(15);
+const dailyBudget = z.number().min(1).max(500);
+
+// Shared with the MCP tools, which leave the defaults to these procedures.
+export const fields = { countries, dailyBudget, id, reason, seed };
+
+const byId = z.object({ id });
+const byRun = z.object({ runId: id.optional() });
 
 export const ideasRouter = {
   list: protectedProcedure
@@ -66,7 +70,7 @@ export const designsRouter = {
       async ({ context, input }) => await listDesigns(context, input.runId)
     ),
   reject: protectedProcedure
-    .input(z.object({ id, reason: z.string().trim().max(500).optional() }))
+    .input(z.object({ id, reason: reason.optional() }))
     .handler(
       async ({ context, input }) =>
         await decideDesign(context, input.id, {
@@ -104,8 +108,8 @@ export const campaignsRouter = {
     .input(
       z.object({
         adAccountId: z.string().regex(/^\d+$/u).optional(),
-        countries,
-        dailyBudget,
+        countries: countries.default(["US"]),
+        dailyBudget: dailyBudget.default(15),
         pageId: z.string().regex(/^\d+$/u).optional(),
         productId: id,
       })
@@ -129,8 +133,8 @@ export const runsRouter = {
     .input(
       z.object({
         autopilot: z.boolean().default(false),
-        countries,
-        dailyBudget,
+        countries: countries.default(["US"]),
+        dailyBudget: dailyBudget.default(15),
         seed,
       })
     )

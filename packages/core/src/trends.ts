@@ -217,7 +217,7 @@ export const tavilyClient = (apiKey: string | undefined): TavilySearch =>
   apiKey === undefined
     ? {
         search: () => {
-          throw notConfigured("tavily", "TAVILY_API_KEY");
+          throw notConfigured.tavily();
         },
       }
     : tavily({ apiKey });

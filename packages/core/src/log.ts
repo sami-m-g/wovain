@@ -1,4 +1,4 @@
-import { createError, EvlogError } from "evlog";
+import { createError, defineError, EvlogError } from "evlog";
 import type { RequestLogger } from "evlog";
 
 // Every call wovain makes to another service goes through `external`, so the
@@ -65,11 +65,18 @@ export const external = async <T>(
 };
 
 // A key the merchant's deployment hasn't set: the feature can't run at all.
-export const notConfigured = (provider: Provider, variable: string) =>
-  createError({
-    code: `${provider.toUpperCase()}_NOT_CONFIGURED`,
+const unconfigured = (provider: Provider, variable: string) =>
+  defineError(`${provider.toUpperCase()}_NOT_CONFIGURED`, {
     fix: `Set ${variable} in apps/web/.env.`,
     message: `${provider} isn't configured on this server`,
     status: 503,
     why: `${variable} isn't set.`,
   });
+
+export const notConfigured = {
+  fal: unconfigured("fal", "FAL_KEY"),
+  meta: unconfigured("meta", "META_APP_ID and META_APP_SECRET"),
+  nebius: unconfigured("nebius", "NEBIUS_API_KEY"),
+  qloo: unconfigured("qloo", "QLOO_API_KEY"),
+  tavily: unconfigured("tavily", "TAVILY_API_KEY"),
+};

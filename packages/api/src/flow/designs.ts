@@ -56,12 +56,9 @@ export const generateDesign = async (actor: Actor, ideaId: string) => {
 };
 
 export const getDesign = async ({ db, userId }: Actor, id: string) => {
-  const [row] = await db
-    .select()
-    .from(design)
-    .where(and(eq(design.id, id), eq(design.userId, userId)));
+  const row = await db.query.design.findFirst({ where: { id, userId } });
   if (row === undefined) {
-    throw notFound("design", id);
+    throw notFound.design({ id });
   }
   return row;
 };

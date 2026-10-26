@@ -176,7 +176,7 @@ class ConnectionAuth implements OAuthClientProvider {
     }
     const { metaAppId, metaAppSecret } = this.#config;
     if (metaAppId === undefined || metaAppSecret === undefined) {
-      throw notConfigured("meta", "META_APP_ID and META_APP_SECRET");
+      throw notConfigured.meta();
     }
     return { client_id: metaAppId, client_secret: metaAppSecret };
   }

@@ -49,12 +49,9 @@ export const listIdeas = async ({ db, userId }: Actor, runId?: string) =>
     .orderBy(desc(idea.createdAt), asc(idea.rank));
 
 export const getIdea = async ({ db, userId }: Actor, id: string) => {
-  const [row] = await db
-    .select()
-    .from(idea)
-    .where(and(eq(idea.id, id), eq(idea.userId, userId)));
+  const row = await db.query.idea.findFirst({ where: { id, userId } });
   if (row === undefined) {
-    throw notFound("idea", id);
+    throw notFound.idea({ id });
   }
   return row;
 };
