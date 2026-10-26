@@ -57,7 +57,7 @@ kpis:
     source:
       kind: posthog
       query: >-
-        SELECT uniq(person_id) AS value FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+        SELECT uniq(person_id) AS value FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND properties.bot IS NULL AND properties.internal IS NULL AND timestamp > now() - INTERVAL {windowDays} DAY
 
   - id: visitor-sign-up-rate
     name: Visitors who sign up
@@ -69,7 +69,7 @@ kpis:
     source:
       kind: posthog
       query: >-
-        SELECT uniqIf(person_id, event = 'sign_up') / nullIf(uniqIf(person_id, event = '$pageview'), 0) AS value FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+        SELECT uniqIf(person_id, event = 'sign_up') / nullIf(uniqIf(person_id, event = '$pageview'), 0) AS value FROM events WHERE properties.environment = 'production' AND properties.bot IS NULL AND properties.internal IS NULL AND timestamp > now() - INTERVAL {windowDays} DAY
 
   - id: sign-up-to-run
     name: Sign-ups that start a run

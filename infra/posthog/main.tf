@@ -6,6 +6,8 @@
 #               clicks and LLM cost per run
 #   signals.tf  destinations that start the ops pipeline when PostHog senses
 #               something, and the run-rating survey
+#   settings.tf cookieless hashing, no stored IPs, and the default filters
+#               that leave out the team, dev traffic and bots
 # Nothing here acts on code: the ops job reads PostHog again and decides.
 
 terraform {

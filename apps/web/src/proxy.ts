@@ -5,6 +5,7 @@ import type { NextRequest } from "next/server";
 
 import { routing } from "@/i18n/routing";
 import { CONSENT_REGION_COOKIE, consentRegionFor } from "@/lib/consent";
+import { visitorCountry } from "@/lib/geo";
 
 const logRequest = evlogMiddleware();
 const localize = createIntlMiddleware(routing);
@@ -31,24 +32,13 @@ const UNKNOWN_WELL_KNOWN =
   /^\/\.well-known\/(?!oauth-authorization-server|oauth-protected-resource)/u;
 const NOT_FOUND = 404;
 
-// The visitor's country, from whichever edge is in front of the app: a
-// Google Cloud load balancer's custom header set to {client_region},
-// Cloudflare, or Vercel. Cloud Run domain mappings send none, and then the
-// browser asks for consent (lib/consent.ts).
-const COUNTRY_HEADERS = [
-  "x-client-region",
-  "cf-ipcountry",
-  "x-vercel-ip-country",
-];
 const CONSENT_REGION_MAX_AGE = 60 * 60 * 24 * 30;
 
-// Pages stay static: the proxy, not the page, reads the country, and hands
+// Pages stay static: the proxy, not the page, reads the country
+// (lib/geo.ts: the edge's header, else a GeoLite2 lookup), and hands
 // the browser its consent rule in a cookie that PostHog's setup reads.
 const withConsentRegion = (request: NextRequest, response: NextResponse) => {
-  const country = COUNTRY_HEADERS.map((name) => request.headers.get(name)).find(
-    (value) => value !== null && value !== ""
-  );
-  const region = consentRegionFor(country);
+  const region = consentRegionFor(visitorCountry(request.headers));
   const current = request.cookies.get(CONSENT_REGION_COOKIE)?.value;
   if (region !== undefined && region !== current) {
     response.cookies.set(CONSENT_REGION_COOKIE, region, {

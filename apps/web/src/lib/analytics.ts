@@ -13,7 +13,7 @@ const posthog =
   key === undefined
     ? undefined
     : new PostHog(key, { host: ENV.NEXT_PUBLIC_POSTHOG_HOST });
-// The same property the browser adds to its events (instrumentation-client.ts).
+// The same property the browser adds to its events (src/lib/analytics-client.ts).
 const environment =
   new URL(ENV.BETTER_AUTH_URL).hostname === "wovain.com"
     ? "production"
