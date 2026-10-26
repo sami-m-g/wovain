@@ -4,7 +4,6 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".vendor-types/**", ".next/**", "!.next/cache/**"]
     },
     "check-types": {
@@ -17,9 +16,6 @@
     "dev": {
       "cache": false,
       "persistent": true
-    },
-    "test": {
-      "outputs": []
     },
     "start": {
       "dependsOn": ["build"],
@@ -42,19 +38,6 @@
     "db:studio": {
       "cache": false,
       "persistent": true
-    },
-    "db:start": {
-      "cache": false
-    },
-    "db:stop": {
-      "cache": false
-    },
-    "db:watch": {
-      "cache": false,
-      "persistent": true
-    },
-    "db:down": {
-      "cache": false
     }
   },
   "globalEnv": [
@@ -79,10 +62,6 @@
     "SPEND_RUNS_PER_DAY",
     "TAVILY_API_KEY",
     "TOKEN_ENCRYPTION_KEY",
-    "VERCEL",
-    "VERCEL_ENV",
-    "VERCEL_PROJECT_PRODUCTION_URL",
-    "VERCEL_URL",
     "WOVAIN_ALLOWED_EMAILS",
     "_VARLOCK_ENV_KEY"
   ],

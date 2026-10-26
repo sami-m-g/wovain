@@ -1,27 +1,23 @@
 "use client";
 
+import { Field } from "@base-ui/react/field";
 import { Check, Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 const RESET_MS = 2000;
 
 /** A read-only value with a copy button, for the MCP server URL. */
 export const CopyField = ({ value }: { value: string }) => {
   const t = useTranslations("Home");
-  const id = useId();
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium" htmlFor={id}>
-        {t("mcpLabel")}
-      </label>
+    <Field.Root className="flex flex-col gap-2">
+      <Field.Label className="text-sm font-medium">{t("mcpLabel")}</Field.Label>
       <div className="border-input bg-card focus-within:ring-ring/30 flex rounded-xl border p-1 focus-within:ring-3">
-        <input
-          aria-describedby={`${id}-hint`}
+        <Field.Control
           className="h-10 min-w-0 flex-1 bg-transparent px-3 font-mono text-sm outline-none"
-          id={id}
           onFocus={(event) => event.target.select()}
           readOnly
           value={value}
@@ -43,9 +39,9 @@ export const CopyField = ({ value }: { value: string }) => {
           <span aria-live="polite">{copied ? t("copied") : t("copy")}</span>
         </button>
       </div>
-      <p className="text-muted-foreground text-xs" id={`${id}-hint`}>
+      <Field.Description className="text-muted-foreground text-xs">
         {t("mcpHint")}
-      </p>
-    </div>
+      </Field.Description>
+    </Field.Root>
   );
 };

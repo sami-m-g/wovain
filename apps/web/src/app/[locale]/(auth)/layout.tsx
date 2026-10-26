@@ -1,17 +1,12 @@
-import { hasLocale } from "next-intl";
-import {
-  getFormatter,
-  getTranslations,
-  setRequestLocale,
-} from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 
 import { Logo } from "@/components/brand/logo";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
 import { HangTag } from "@/components/product/hang-tag";
 import { AppToaster } from "@/components/toaster";
+import { enterLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
 import { priceBreakdown } from "@/lib/pricing";
 
 const EXAMPLE_BASE_COST = 12;
@@ -53,10 +48,7 @@ const AuthAside = async () => {
 };
 
 const AuthLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
-  const { locale } = await params;
-  if (hasLocale(routing.locales, locale)) {
-    setRequestLocale(locale);
-  }
+  await enterLocale(params);
   const common = await getTranslations("Common");
   return (
     <div className="bg-background grid min-h-svh lg:grid-cols-[1.1fr_1fr]">

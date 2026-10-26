@@ -1,6 +1,5 @@
 import { BookOpen } from "lucide-react";
-import { hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { AnalyticsIdentity } from "@/components/app/analytics-identity";
@@ -13,18 +12,15 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { AppToaster } from "@/components/toaster";
 import UserMenu from "@/components/user-menu";
 import { ENV } from "@/env.server";
+import { enterLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
 
 // Each page checks the session itself so it can send people back to the exact URL after sign-in.
 const DashboardLayout = async ({
   children,
   params,
 }: LayoutProps<"/[locale]/dashboard">) => {
-  const { locale } = await params;
-  if (hasLocale(routing.locales, locale)) {
-    setRequestLocale(locale);
-  }
+  await enterLocale(params);
   const common = await getTranslations("Common");
   const header = await getTranslations("Header");
   return (

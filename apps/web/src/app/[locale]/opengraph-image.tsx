@@ -1,15 +1,14 @@
-import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { routing } from "@/i18n/routing";
-import { ogImage } from "@/lib/og";
+import { toLocale } from "@/i18n/locale";
+import { OG_SIZE, ogImage } from "@/lib/og";
 
-export const size = { height: 630, width: 1200 };
+export const size = OG_SIZE;
 export const contentType = "image/png";
 
 const metadataFor = (locale: string) =>
   getTranslations({
-    locale: hasLocale(routing.locales, locale) ? locale : routing.defaultLocale,
+    locale: toLocale(locale),
     namespace: "Metadata",
   });
 

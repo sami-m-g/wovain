@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { RunsList } from "@/components/app/runs-list";
-import { routing } from "@/i18n/routing";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
 
 export const generateMetadata = async ({
   params,
 }: PageProps<"/[locale]/dashboard/runs">): Promise<Metadata> => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    return {};
-  }
+  const locale = await requireLocale(params);
   return pageMetadata({
     index: false,
     locale,
@@ -24,11 +19,7 @@ export const generateMetadata = async ({
 };
 
 const RunsPage = async ({ params }: PageProps<"/[locale]/dashboard/runs">) => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+  const locale = await enterLocale(params);
   await requireSession(locale, "/dashboard/runs");
   const t = await getTranslations("Runs");
 

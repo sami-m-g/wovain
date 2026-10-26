@@ -17,8 +17,8 @@ export type FunnelEvent =
 
 // `log` is the request logger when the caller runs inside an evlog-instrumented request
 export interface Context extends Partial<EvlogOrpcContext> {
-  // Product analytics (PostHog in apps/web), keyed by user id; absent when
-  // the app has no PostHog key.
+  // Product analytics and error tracking (PostHog in apps/web), keyed by
+  // user id; absent when the app has no PostHog key.
   analytics?:
     | {
         capture: (event: {
@@ -26,6 +26,15 @@ export interface Context extends Partial<EvlogOrpcContext> {
           event: FunnelEvent;
           properties?: Record<string, unknown>;
         }) => void;
+        // An unexpected procedure error, as a `$exception` event. Without a
+        // distinct id, the event is anonymous.
+        captureException: (
+          error: unknown,
+          event: {
+            distinctId?: string | undefined;
+            properties?: Record<string, unknown>;
+          }
+        ) => void;
       }
     | undefined;
   core: Core;

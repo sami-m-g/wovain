@@ -1,22 +1,13 @@
 "use client";
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import dynamic from "next/dynamic";
+// Renders nothing outside development, where the bundler drops it.
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ThemeProvider } from "next-themes";
 
 import { getQueryClient } from "@/utils/query-client";
 
-import { ThemeProvider } from "./theme-provider";
-
-// The dev-only query devtools stay out of production bundles. Toasts mount in
-// the app and auth layouts only (components/toaster.tsx).
-const ReactQueryDevtools =
-  process.env.NODE_ENV === "development"
-    ? dynamic(async () => {
-        const devtools = await import("@tanstack/react-query-devtools");
-        return devtools.ReactQueryDevtools;
-      })
-    : () => null;
-
+// Toasts mount in the app and auth layouts only (components/toaster.tsx).
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const queryClient = getQueryClient();
 

@@ -19,7 +19,7 @@ export const localizedUrl = (path: string, locale: Locale) =>
 export const alternatesFor = (
   path: string,
   locale: Locale
-): Metadata["alternates"] => {
+): { canonical: string; languages: Record<string, string> } => {
   const languages: Record<string, string> = {};
   for (const item of routing.locales) {
     languages[item] = localizedUrl(path, item);

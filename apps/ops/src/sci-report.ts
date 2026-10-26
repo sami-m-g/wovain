@@ -1,7 +1,8 @@
 import { writeFile } from "node:fs/promises";
 
-import { opsContext } from "./env.ts";
+import { opsContext } from "./context.ts";
 import { loadKpis } from "./kpis.ts";
+import { fromRoot } from "./root.ts";
 import { sciOf, sciReport } from "./sci.ts";
 
 // The sci job (.gitlab/ci/ops.yml), on every main pipeline: the last 7 days'
@@ -29,7 +30,7 @@ const metric = async (type: string) =>
 const [instanceSeconds, requests, pipelines, sessions] = await Promise.all([
   metric("run.googleapis.com/container/billable_instance_time"),
   metric("run.googleapis.com/request_count"),
-  gitlab.pipelines({ ref: "main", updated_after: range.start.toISOString() }),
+  gitlab.pipelines({ ref: "main", updatedAfter: range.start.toISOString() }),
   gitlab.sessions(),
 ]);
 const jobSeconds = await Promise.all(
@@ -50,13 +51,13 @@ const { perThousand, total } = sciOf(measured);
 const report = sciReport(measured, now, DAYS);
 console.log(report);
 await Promise.all([
-  writeFile("sci-report.md", `${report}\n`),
+  writeFile(fromRoot("sci-report.md"), `${report}\n`),
   writeFile(
-    "sci.json",
+    fromRoot("sci.json"),
     `${JSON.stringify({ at: now.toISOString(), measured, perThousand, total }, null, 2)}\n`
   ),
   writeFile(
-    "metrics.txt",
+    fromRoot("metrics.txt"),
     `sci_gco2e_total_7d ${total.toFixed(3)}\n${perThousand === undefined ? "" : `sci_gco2e_per_1k_requests ${perThousand.toFixed(4)}\n`}`
   ),
 ]);

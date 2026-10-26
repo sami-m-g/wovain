@@ -1,10 +1,13 @@
 "use client";
 
+import { Field } from "@base-ui/react/field";
+import { useForm } from "@tanstack/react-form";
+import { Alert } from "@wovain/ui/components/alert";
 import { Button } from "@wovain/ui/components/button";
 import { Input } from "@wovain/ui/components/input";
 import { Label } from "@wovain/ui/components/label";
 import { useLocale, useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -13,46 +16,7 @@ import { authClient } from "@/lib/auth-client";
 
 const MIN_PASSWORD = 8;
 
-const Field = ({
-  label,
-  type,
-  autoComplete,
-  value,
-  error,
-  onChange,
-}: {
-  label: string;
-  type: "email" | "password";
-  autoComplete: string;
-  value: string;
-  error?: string | undefined;
-  onChange: (value: string) => void;
-}) => {
-  const id = useId();
-  return (
-    <div className="flex flex-col gap-2">
-      <Label className="text-sm font-medium" htmlFor={id}>
-        {label}
-      </Label>
-      <Input
-        aria-describedby={error ? `${id}-error` : undefined}
-        aria-invalid={error ? true : undefined}
-        autoComplete={autoComplete}
-        className="h-11 text-base md:text-sm"
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
-        required
-        type={type}
-        value={value}
-      />
-      {error ? (
-        <p className="text-destructive text-sm" id={`${id}-error`}>
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-};
+const alertClass = "border-destructive/40 bg-destructive/10 rounded-none px-3";
 
 /**
  * Without a token: asks for a reset link (Better Auth emails it). With the
@@ -69,49 +33,47 @@ export const ResetForm = ({
   const t = useTranslations("Reset");
   const locale = useLocale();
   const router = useRouter();
-  const [value, setValue] = useState("");
-  const [error, setError] = useState<string>();
-  const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState<string>();
   const [sent, setSent] = useState(false);
+  const name = token ? "password" : "email";
 
-  const request = async () => {
-    if (!z.email().safeParse(value).success) {
-      setError(t("errors.email"));
-      return;
-    }
-    setError(undefined);
-    setPending(true);
-    const { error: failed } = await authClient.requestPasswordReset({
-      email: value,
-      redirectTo: getPathname({ href: "/reset", locale }),
-    });
-    setPending(false);
-    if (failed) {
-      setError(t("errors.generic"));
-      return;
-    }
-    setSent(true);
-  };
-
-  const reset = async (resetToken: string) => {
-    if (value.length < MIN_PASSWORD) {
-      setError(t("errors.password"));
-      return;
-    }
-    setError(undefined);
-    setPending(true);
-    const { error: failed } = await authClient.resetPassword({
-      newPassword: value,
-      token: resetToken,
-    });
-    setPending(false);
-    if (failed) {
-      setError(t("errors.generic"));
-      return;
-    }
-    toast.success(t("done"));
-    router.push("/login");
-  };
+  const form = useForm({
+    defaultValues: { email: "", password: "" },
+    onSubmit: async ({ value }) => {
+      setFormError(undefined);
+      if (!token) {
+        const { error } = await authClient.requestPasswordReset({
+          email: value.email,
+          redirectTo: getPathname({ href: "/reset", locale }),
+        });
+        if (error) {
+          setFormError(t("errors.generic"));
+          return;
+        }
+        setSent(true);
+        return;
+      }
+      const { error } = await authClient.resetPassword({
+        newPassword: value.password,
+        token,
+      });
+      if (error) {
+        setFormError(t("errors.generic"));
+        return;
+      }
+      toast.success(t("done"));
+      router.push("/login");
+    },
+    validators: {
+      // Only the field on screen is checked: email without a token, else password.
+      onSubmit: z.object({
+        email: token ? z.string() : z.email(t("errors.email")),
+        password: token
+          ? z.string().min(MIN_PASSWORD, t("errors.password"))
+          : z.string(),
+      }),
+    },
+  });
 
   return (
     <div className="w-full max-w-sm">
@@ -122,12 +84,9 @@ export const ResetForm = ({
         {token ? t("lead") : t("requestLead")}
       </p>
       {invalid ? (
-        <p
-          className="border-destructive/40 bg-destructive/10 text-destructive mt-6 border px-3 py-2 text-sm"
-          role="alert"
-        >
+        <Alert className={`${alertClass} mt-6`} variant="destructive">
           {t("invalid")}
-        </p>
+        </Alert>
       ) : null}
       {sent ? (
         <output className="border-border bg-card mt-8 block border p-4 text-sm">
@@ -139,33 +98,61 @@ export const ResetForm = ({
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
-            if (token) {
-              reset(token);
-            } else {
-              request();
-            }
+            event.stopPropagation();
+            form.handleSubmit();
           }}
         >
-          <Field
-            autoComplete={token ? "new-password" : "email"}
-            error={error}
-            label={token ? t("password") : t("email")}
-            onChange={setValue}
-            type={token ? "password" : "email"}
-            value={value}
-          />
-          <Button
-            className="h-11 w-full text-sm font-medium"
-            disabled={pending}
-            type="submit"
-          >
-            {(() => {
-              if (pending) {
-                return t("submitting");
-              }
-              return token ? t("submit") : t("send");
-            })()}
-          </Button>
+          {formError ? (
+            <Alert className={alertClass} variant="destructive">
+              {formError}
+            </Alert>
+          ) : null}
+          <form.Field name={name}>
+            {(field) => {
+              const error = field.state.meta.errors[0]?.message;
+              return (
+                <Field.Root
+                  className="flex flex-col gap-2"
+                  invalid={Boolean(error)}
+                  name={field.name}
+                >
+                  <Field.Label render={<Label />}>
+                    {token ? t("password") : t("email")}
+                  </Field.Label>
+                  <Input
+                    autoComplete={token ? "new-password" : "email"}
+                    className="h-11 text-base md:text-sm"
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    required
+                    type={name}
+                    value={field.state.value}
+                  />
+                  {error ? (
+                    <Field.Error className="text-destructive text-sm" match>
+                      {error}
+                    </Field.Error>
+                  ) : null}
+                </Field.Root>
+              );
+            }}
+          </form.Field>
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button
+                className="h-11 w-full text-sm font-medium"
+                disabled={isSubmitting}
+                type="submit"
+              >
+                {(() => {
+                  if (isSubmitting) {
+                    return t("submitting");
+                  }
+                  return token ? t("submit") : t("send");
+                })()}
+              </Button>
+            )}
+          </form.Subscribe>
         </form>
       )}
       <p className="mt-6 text-sm">

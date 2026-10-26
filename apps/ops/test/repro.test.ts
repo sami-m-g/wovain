@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { TEST_FILE, judgeRepro, parseReport } from "../src/repro.ts";
+import { TEST_FILE, judgeRepro, runsOf } from "../src/repro.ts";
 
 const signature = {
   fingerprint: "abc123abc123",
@@ -49,24 +49,40 @@ describe("judgeRepro", () => {
   });
 });
 
-describe("parseReport", () => {
-  it("reads vitest's JSON report", () => {
-    expect(
-      parseReport({
-        testResults: [
+describe("runsOf", () => {
+  const modules = [
+    {
+      children: {
+        allTests: () => [
           {
-            assertionResults: [
-              {
-                failureMessages: ["ZodError: x"],
-                fullName: "heal f works",
-                status: "failed",
-              },
-            ],
+            fullName: "prices > heal f works",
+            result: () => ({
+              errors: [{ message: "x", stack: "ZodError: x\n  at a.ts:1" }],
+              state: "failed",
+            }),
+          },
+          {
+            fullName: "heal f also works",
+            result: () => ({ state: "passed" }),
+          },
+          {
+            fullName: "no stack",
+            result: () => ({ errors: [{ message: "boom" }], state: "failed" }),
           },
         ],
-      })
-    ).toStrictEqual([
-      { failure: "ZodError: x", name: "heal f works", status: "failed" },
+      },
+    },
+  ];
+
+  it("names tests and words failures as vitest's JSON report did", () => {
+    expect(runsOf(modules)).toStrictEqual([
+      {
+        failure: "ZodError: x\n  at a.ts:1",
+        name: "prices heal f works",
+        status: "failed",
+      },
+      { failure: "", name: "heal f also works", status: "passed" },
+      { failure: "boom", name: "no stack", status: "failed" },
     ]);
   });
 });

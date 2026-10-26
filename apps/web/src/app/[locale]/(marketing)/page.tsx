@@ -1,9 +1,7 @@
 import { buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { JsonLd } from "@/components/json-ld";
 import { BriefForm } from "@/components/marketing/brief-form";
@@ -23,25 +21,18 @@ import { container, displayTitle } from "@/components/marketing/section";
 import { getContent } from "@/content/load";
 import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
-import { routing } from "@/i18n/routing";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { localizedUrl, mcpUrl, pageMetadata, siteUrl } from "@/lib/seo";
 
 export const generateMetadata = async ({
   params,
 }: PageProps<"/[locale]">): Promise<Metadata> => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    return {};
-  }
+  const locale = await requireLocale(params);
   return pageMetadata({ locale, path: "/", titleKey: "defaultTitle" });
 };
 
 const HomePage = async ({ params }: PageProps<"/[locale]">) => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+  const locale = await enterLocale(params);
   const t = await getTranslations("Home");
   const meta = await getTranslations("Metadata");
   const content = await getContent(locale);

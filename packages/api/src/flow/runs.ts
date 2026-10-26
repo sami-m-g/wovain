@@ -1,9 +1,9 @@
 import { pickIdea } from "@wovain/core/autopilot";
 import { withLlmTrace } from "@wovain/core/nemotron";
 import { user } from "@wovain/db/schema/auth";
-import { campaign, design, idea, product, run } from "@wovain/db/schema/seller";
+import { run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
@@ -117,43 +117,29 @@ const execute = async (actor: Actor, runId: string, input: RunInput) => {
 };
 
 export const getRun = async (actor: Actor, id: string) => {
-  const { db, userId } = actor;
-  const [found] = await db
-    .select()
-    .from(run)
-    .where(and(eq(run.id, id), eq(run.userId, userId)));
+  const found = await actor.db.query.run.findFirst({
+    where: { id, userId: actor.userId },
+    with: {
+      designs: { with: { products: { with: { campaigns: true } } } },
+      ideas: { orderBy: { rank: "asc" } },
+    },
+  });
   if (found === undefined) {
-    throw notFound("run", id);
+    throw notFound.run({ id });
   }
-  const [ideas, designs] = await Promise.all([
-    db.select().from(idea).where(eq(idea.runId, id)).orderBy(idea.rank),
-    db.select().from(design).where(eq(design.runId, id)),
-  ]);
-  const products =
-    designs.length === 0
-      ? []
-      : await db
-          .select()
-          .from(product)
-          .where(
-            inArray(
-              product.designId,
-              designs.map((row) => row.id)
-            )
-          );
-  const campaigns =
-    products.length === 0
-      ? []
-      : await db
-          .select()
-          .from(campaign)
-          .where(
-            inArray(
-              campaign.productId,
-              products.map((row) => row.id)
-            )
-          );
-  return { ...found, campaigns, designs, ideas, products };
+  // Flattened: each step's rows in a list of their own.
+  const { designs: drafted, ...rest } = found;
+  const designs = [];
+  const products = [];
+  const campaigns = [];
+  for (const { products: made, ...row } of drafted) {
+    designs.push(row);
+    for (const { campaigns: staged, ...item } of made) {
+      products.push(item);
+      campaigns.push(...staged);
+    }
+  }
+  return { ...rest, campaigns, designs, products };
 };
 
 export const startRun = async (actor: Actor, input: RunInput) => {

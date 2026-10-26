@@ -2,7 +2,8 @@
 
 import { Button } from "@wovain/ui/components/button";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { Spinner } from "@wovain/ui/components/spinner";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
@@ -85,7 +86,7 @@ export const StepActions = ({
     <div className="border-border flex flex-col gap-4 border-t pt-5">
       {busyLabel ? (
         <div aria-hidden="true" className="flex items-center gap-3">
-          <Loader2 className="text-primary size-4 animate-spin" />
+          <Spinner className="text-primary" />
           <span className="text-sm font-medium">{busyLabel}</span>
           <Skeleton className="h-2 flex-1" />
         </div>

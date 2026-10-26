@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import {
-  getFormatter,
-  getTranslations,
-  setRequestLocale,
-} from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
@@ -15,6 +10,7 @@ import { Breadcrumbs, CtaBand } from "@/components/marketing/seo-parts";
 import { getContent } from "@/content/load";
 import type { GuideSlug } from "@/content/types";
 import { GUIDE_SLUGS } from "@/content/types";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { routing } from "@/i18n/routing";
 import {
   breadcrumbJsonLd,
@@ -38,8 +34,9 @@ export const dynamicParams = false;
 export const generateMetadata = async ({
   params,
 }: Props): Promise<Metadata> => {
-  const { locale, slug } = await params;
-  if (!(hasLocale(routing.locales, locale) && isSlug(slug))) {
+  const { slug } = await params;
+  const locale = await requireLocale(params);
+  if (!isSlug(slug)) {
     return {};
   }
   const content = await getContent(locale);
@@ -56,11 +53,11 @@ export const generateMetadata = async ({
 const sectionId = (index: number) => `section-${index + 1}`;
 
 const GuidePage = async ({ params }: Props) => {
-  const { locale, slug } = await params;
-  if (!(hasLocale(routing.locales, locale) && isSlug(slug))) {
+  const { slug } = await params;
+  const locale = await enterLocale(params);
+  if (!isSlug(slug)) {
     notFound();
   }
-  setRequestLocale(locale);
   const t = await getTranslations("Seo");
   const meta = await getTranslations("Metadata");
   const format = await getFormatter();

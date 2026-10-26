@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
 
 import { AuthPage } from "@/components/auth/auth-page";
-import { routing } from "@/i18n/routing";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 
 export const generateMetadata = async ({
   params,
 }: PageProps<"/[locale]/login">): Promise<Metadata> => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    return {};
-  }
+  const locale = await requireLocale(params);
   return pageMetadata({
     descriptionKey: "loginDescription",
     locale,
@@ -23,11 +17,7 @@ export const generateMetadata = async ({
 };
 
 const LoginPage = async ({ params }: PageProps<"/[locale]/login">) => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+  await enterLocale(params);
   return <AuthPage mode="login" />;
 };
 

@@ -1,8 +1,8 @@
-import type { DrainContext } from "evlog";
 import { createFsDrain } from "evlog/fs";
 import { createEvlog } from "evlog/next";
 import { createInstrumentation } from "evlog/next/instrumentation/create";
 import { createPostHogDrain } from "evlog/posthog";
+import { composeDrains } from "evlog/toolkit";
 
 import { ENV } from "@/env.server";
 
@@ -23,12 +23,7 @@ const posthog =
         host: ENV.NEXT_PUBLIC_POSTHOG_HOST,
       });
 const productionDrain =
-  posthog === undefined
-    ? cloudLogging
-    : async (ctx: DrainContext) => {
-        cloudLogging(ctx);
-        await posthog(ctx);
-      };
+  posthog === undefined ? cloudLogging : composeDrains([cloudLogging, posthog]);
 
 // Production runs on Cloud Run: the Cloud Logging drain owns stdout, so
 // evlog's own console output is off. Locally, events go to .evlog/logs.

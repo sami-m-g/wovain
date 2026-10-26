@@ -43,21 +43,11 @@ interface DomainArgs {
   resendRecords: pulumi.Output<ResendRecord[]> | undefined;
 }
 
-// The records Cloud Run asks for (cloud.google.com/run/docs/mapping-custom-
-// domains): Google's frontends for an apex, ghs.googlehosted.com otherwise.
-const APEX_A = [
-  "216.239.32.21",
-  "216.239.34.21",
-  "216.239.36.21",
-  "216.239.38.21",
-];
-const APEX_AAAA = [
-  "2001:4860:4802:32::15",
-  "2001:4860:4802:34::15",
-  "2001:4860:4802:36::15",
-  "2001:4860:4802:38::15",
-];
-const GOOGLE_HOSTED = "ghs.googlehosted.com.";
+// The record types Cloud Run asks for (cloud.google.com/run/docs/mapping-
+// custom-domains): Google's frontends for an apex, a CNAME otherwise. The
+// values come from the mapping itself.
+const APEX_TYPES = ["A", "AAAA"];
+const SUBDOMAIN_TYPES = ["CNAME"];
 const TTL_SECONDS = 300;
 const DEFAULT_MX_PRIORITY = 10;
 const PAGES_VERIFICATION_PREFIX = "gitlab-pages-verification-code=";
@@ -156,11 +146,25 @@ export const configureDomain = (args: DomainArgs) => {
       },
       { dependsOn: [verified, ...args.after] }
     );
-    if (host === apex) {
-      record(host, "A", APEX_A, { dependsOn: [mapping] });
-      record(host, "AAAA", APEX_AAAA, { dependsOn: [mapping] });
-    } else {
-      record(host, "CNAME", [GOOGLE_HOSTED], { dependsOn: [mapping] });
+    // A resource's name can't wait on an output, so the types are known
+    // here and the values are the ones the mapping lists for each type.
+    for (const type of host === apex ? APEX_TYPES : SUBDOMAIN_TYPES) {
+      record(
+        host,
+        type,
+        // Empty until Google has created the mapping (and in the mocks).
+        mapping.statuses.apply(
+          (
+            statuses:
+              | gcp.types.output.cloudrun.DomainMappingStatus[]
+              | undefined
+          ) =>
+            (statuses?.[0]?.resourceRecords ?? [])
+              .filter((r) => r.type === type)
+              .map((r) => r.rrdata)
+        ),
+        { dependsOn: [mapping] }
+      );
     }
     return mapping.name;
   });

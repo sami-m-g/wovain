@@ -6,10 +6,10 @@ import { appRouter } from "@wovain/api/routers/index";
 import { mcpResource } from "@wovain/auth";
 import { createError } from "evlog";
 
+import { baseContext } from "@/context";
 import { ENV } from "@/env.server";
-import { analytics } from "@/lib/analytics";
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
-import { auth, core, db, mailer } from "@/services";
+import { auth } from "@/services";
 
 // wovain's MCP endpoint for ChatGPT. Better Auth's MCP plugin is the OAuth
 // server ChatGPT signs in with; requireMcpAuth verifies each access token
@@ -26,11 +26,8 @@ const handler = createMcpHandler(({ authInfo }) => {
   }
   const client = createRouterClient(appRouter, {
     context: {
-      analytics,
-      core,
-      db,
+      ...baseContext,
       log: getRequestLogger(),
-      mailer,
       mcpUserId: userId,
       session: null,
     },

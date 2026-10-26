@@ -27,10 +27,10 @@ export const createProductCampaign = async (
 ) => {
   const live = await getProduct(actor, input.productId);
   if (live.productUrl === null) {
-    throw notReady(
-      "The product isn't published",
-      "Publish the product before advertising it."
-    );
+    throw notReady({
+      fix: "Publish the product before advertising it.",
+      message: "The product isn't published",
+    });
   }
   const linkUrl = live.productUrl;
   const source = await getDesign(actor, live.designId);

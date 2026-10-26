@@ -6,7 +6,7 @@ import {
 } from "@wovain/core/fourthwall";
 import { DEFAULT_BASE_COST, priceFor } from "@wovain/core/pricing";
 import { product } from "@wovain/db/schema/seller";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound, notReady } from "./actor";
@@ -34,10 +34,10 @@ export const createDesignProduct = async (
 ) => {
   const approved = await getDesign(actor, designId);
   if (approved.status !== "approved") {
-    throw notReady(
-      "The design isn't approved",
-      "Approve the design before creating its product."
-    );
+    throw notReady({
+      fix: "Approve the design before creating its product.",
+      message: "The design isn't approved",
+    });
   }
   const created = await withProvider(actor, "fourthwall", async (call) => {
     const [blank] = await searchCatalog(
@@ -45,10 +45,10 @@ export const createDesignProduct = async (
       catalogProductId === undefined ? {} : { productId: catalogProductId }
     );
     if (blank === undefined) {
-      throw notReady(
-        "No Fourthwall blank can render this design",
-        "Pick another catalog product."
-      );
+      throw notReady({
+        fix: "Pick another catalog product.",
+        message: "No Fourthwall blank can render this design",
+      });
     }
     const mediaUri = await uploadArtwork(call, {
       height: approved.artworkHeight,
@@ -77,12 +77,9 @@ export const createDesignProduct = async (
 };
 
 export const getProduct = async ({ db, userId }: Actor, id: string) => {
-  const [row] = await db
-    .select()
-    .from(product)
-    .where(and(eq(product.id, id), eq(product.userId, userId)));
+  const row = await db.query.product.findFirst({ where: { id, userId } });
   if (row === undefined) {
-    throw notFound("product", id);
+    throw notFound.product({ id });
   }
   return row;
 };

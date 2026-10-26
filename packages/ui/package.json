@@ -20,7 +20,7 @@
     "check-types": "tsc -b"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0",
+    "@base-ui/react": "catalog:",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "lucide-react": "catalog:",

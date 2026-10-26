@@ -6,6 +6,8 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { secretWithValue } from "./resources.ts";
+
 const retain = { protect: true, retainOnDelete: true };
 
 export const retainLegacy = ({
@@ -56,18 +58,6 @@ export const retainLegacy = ({
     "otel-exporter-otlp-headers",
     "workos-api-key",
   ]) {
-    const secret = new gcp.secretmanager.Secret(
-      name,
-      { replication: { auto: {} }, secretId: name },
-      retain
-    );
-    const value = config.getSecret(name);
-    if (value !== undefined) {
-      new gcp.secretmanager.SecretVersion(
-        name,
-        { secret: secret.id, secretData: value },
-        retain
-      );
-    }
+    secretWithValue(name, config.getSecret(name), retain, retain);
   }
 };

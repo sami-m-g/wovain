@@ -75,14 +75,15 @@ export const createNemotron = ({
     temperature = 0.4,
   }: Ask<T>): Promise<z.output<T>> => {
     if (client === undefined) {
-      throw notConfigured("nebius", "NEBIUS_API_KEY");
+      throw notConfigured.nebius();
     }
     const trace = traces.getStore();
     return await external(
       log,
       { operation: name, provider: "nebius" },
       async () => {
-        const completion = await client.chat.completions.create({
+        // parse goes through the wrapped create, so PostHog still captures it.
+        const completion = await client.chat.completions.parse({
           messages: [
             { content: system, role: "system" },
             { content: prompt, role: "user" },
@@ -103,11 +104,13 @@ export const createNemotron = ({
           response_format: zodResponseFormat(schema, name),
           temperature,
         });
-        const content = completion.choices[0]?.message.content;
-        if (content === null || content === undefined) {
+        const parsed = completion.choices[0]?.message.parsed;
+        if (parsed === null || parsed === undefined) {
           throw new Error("Nemotron returned no structured answer");
         }
-        return schema.parse(JSON.parse(content));
+        // The SDK infers the same output type through its own helper type,
+        // which TypeScript can't match to z.output while T is generic.
+        return parsed as z.output<T>;
       }
     );
   };

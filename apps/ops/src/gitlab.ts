@@ -1,6 +1,15 @@
+import { GitbeakerRequestError, Gitlab } from "@gitbeaker/rest";
+import type {
+  AllIssuesOptions,
+  AllMergeRequestsOptions,
+  AllPipelinesOptions,
+  CreateIssueOptions,
+  EditIssueOptions,
+  EditMergeRequestOptions,
+} from "@gitbeaker/rest";
 import { z } from "zod";
 
-// GitLab's REST and GraphQL APIs with GITLAB_TOKEN, a person's access token.
+// GitLab's REST API (through gitbeaker) and GraphQL with GITLAB_TOKEN, a person's access token.
 // GitLab starts a Duo flow only for a human's action (docs: Duo Agent
 // Platform triggers, "Restrictions"), so the ops job's assignments and
 // reviewer requests are what start the Developer, heal and Code Review
@@ -172,12 +181,55 @@ const noLongerDetectedSchema = z.object({
   }),
 });
 
-type Method = "GET" | "POST" | "PUT";
-type Query = Record<
-  string,
-  string | number | boolean | number[] | { key: string; value: string }[]
->;
 const MAX_PAGES = 20;
+const PER_PAGE = 100;
+// A list of up to PER_PAGE items: one page, as the API's default.
+const firstPage = { maxPages: 1, perPage: PER_PAGE } as const;
+// Every page up to MAX_PAGES: with showExpanded, the last page's next header
+// says whether the cap cut the list short.
+const allPages = {
+  maxPages: MAX_PAGES,
+  perPage: PER_PAGE,
+  showExpanded: true,
+} as const;
+
+interface Paged {
+  data: unknown[];
+  paginationInfo: { next?: number | null };
+}
+
+// Errors carry the request's method, path and the response status only:
+// gitbeaker's own message is GitLab's response body, which can echo fields
+// of private issues.
+const failure = (error: GitbeakerRequestError) => {
+  const { request, response } = error.cause ?? {};
+  const path = request
+    ? new URL(request.url).pathname.replace(/^.*\/api\/v4\//u, "")
+    : "";
+  return new Error(
+    `GitLab ${request?.method ?? "request"} ${path}: ${response?.status ?? "failed"}`
+  );
+};
+const guard = async <T>(request: Promise<T>): Promise<T> => {
+  try {
+    return await request;
+  } catch (error) {
+    throw error instanceof GitbeakerRequestError ? failure(error) : error;
+  }
+};
+
+// Every page of a list, at most MAX_PAGES of them.
+const collect = async <T>(
+  schema: z.ZodType<T>,
+  what: string,
+  request: Promise<Paged>
+) => {
+  const { data, paginationInfo } = await guard(request);
+  if (paginationInfo.next) {
+    throw new Error(`GitLab GET ${what}: more than ${MAX_PAGES} pages`);
+  }
+  return z.array(schema).parse(data);
+};
 
 export const createGitLab = (env: {
   api: string;
@@ -185,39 +237,11 @@ export const createGitLab = (env: {
   projectPath: string;
   token: string;
 }) => {
-  const project = `projects/${encodeURIComponent(env.project)}`;
-  const call = async <T>(
-    schema: z.ZodType<T>,
-    method: Method,
-    path: string,
-    query: Query = {}
-  ): Promise<T> => {
-    const url = new URL(`${env.api}/${path}`);
-    const read = method === "GET";
-    if (read) {
-      for (const [key, value] of Object.entries(query)) {
-        url.searchParams.set(key, String(value));
-      }
-    }
-    const response = await fetch(url, {
-      headers: {
-        "PRIVATE-TOKEN": env.token,
-        "content-type": "application/json",
-      },
-      method,
-      ...(read ? {} : { body: JSON.stringify(query) }),
-    });
-    if (!response.ok) {
-      throw new Error(`GitLab ${method} ${path}: ${response.status}`);
-    }
-    return schema.parse(await response.json());
-  };
-  const inProject = async <T>(
-    schema: z.ZodType<T>,
-    method: Method,
-    path: string,
-    query?: Query
-  ) => await call(schema, method, `${project}/${path}`, query);
+  const { project } = env;
+  const api = new Gitlab({
+    host: env.api.replace(/\/api\/v4\/?$/u, ""),
+    token: env.token,
+  });
 
   const graphql = async (
     query: string,
@@ -248,115 +272,144 @@ export const createGitLab = (env: {
     }
   };
 
-  // Every page of a list, following GitLab's x-next-page header.
-  const allPages = async <T>(schema: z.ZodType<T>, path: string) => {
-    const items: T[] = [];
-    let page = "1";
-    for (let n = 0; n < MAX_PAGES; n += 1) {
-      const url = new URL(`${env.api}/${project}/${path}`);
-      url.searchParams.set("per_page", "100");
-      url.searchParams.set("page", page);
-      // oxlint-disable-next-line eslint/no-await-in-loop -- each page needs the previous page's header
-      const response = await fetch(url, {
-        headers: { "PRIVATE-TOKEN": env.token },
-      });
-      if (!response.ok) {
-        throw new Error(`GitLab GET ${path}: ${response.status}`);
-      }
-      // oxlint-disable-next-line eslint/no-await-in-loop -- same page
-      items.push(...z.array(schema).parse(await response.json()));
-      page = response.headers.get("x-next-page") ?? "";
-      if (page === "") {
-        return items;
-      }
-    }
-    throw new Error(`GitLab GET ${path}: more than ${MAX_PAGES} pages`);
-  };
-
   return {
     closesIssues: async (mr: number) =>
-      await inProject(
-        z.array(issueSchema),
-        "GET",
-        `merge_requests/${mr}/closes_issues`
+      z
+        .array(issueSchema)
+        .parse(await guard(api.MergeRequests.allIssuesClosed(project, mr))),
+    createIssue: async ({
+      title,
+      ...options
+    }: CreateIssueOptions & { title: string }) =>
+      issueSchema.parse(
+        await guard(api.Issues.create(project, title, options))
       ),
-    createIssue: async (fields: Query) =>
-      await inProject(issueSchema, "POST", "issues", fields),
-    currentUser: async () => await call(userSchema, "GET", "user"),
+    currentUser: async () =>
+      userSchema.parse(await guard(api.Users.showCurrentUser())),
     // Successful production deployments since a date. The Deployments API
     // filters by date only with the matching sort: finished_after needs
     // order_by=finished_at and status=success (updated_after would need
     // order_by=updated_at, and answers 400 otherwise).
-    deployments: async (since: Date) =>
-      await inProject(
-        z.array(z.object({ created_at: z.string() })),
-        "GET",
-        "deployments",
-        {
-          environment: "production",
-          finished_after: since.toISOString(),
-          order_by: "finished_at",
-          per_page: 100,
-          sort: "desc",
-          status: "success",
-        }
-      ),
+    // The typed Deployments.all knows neither finished_after nor
+    // order_by=finished_at, so this goes through the same requester.
+    deployments: async (since: Date) => {
+      const response = await guard(
+        api.Deployments.requester.get(
+          `projects/${encodeURIComponent(project)}/deployments`,
+          {
+            searchParams: {
+              environment: "production",
+              finished_after: since.toISOString(),
+              order_by: "finished_at",
+              per_page: PER_PAGE,
+              sort: "desc",
+              status: "success",
+            },
+          }
+        )
+      );
+      return z.array(z.object({ created_at: z.string() })).parse(response.body);
+    },
     diffs: async (mr: number) =>
-      await allPages(
+      await collect(
         z.object({
           diff: z.string(),
           new_path: z.string(),
           old_path: z.string(),
         }),
-        `merge_requests/${mr}/diffs`
+        `merge_requests/${mr}/diffs`,
+        api.MergeRequests.allDiffs(project, mr, allPages)
       ),
     discussions: async (mr: number) =>
-      await allPages(discussionSchema, `merge_requests/${mr}/discussions`),
+      await collect(
+        discussionSchema,
+        `merge_requests/${mr}/discussions`,
+        api.MergeRequestDiscussions.all(project, mr, allPages)
+      ),
     // Median lead time for changes in seconds (GitLab's DORA API, Ultimate);
     // null when the tier or the data doesn't have it.
     doraLeadTime: async (since: Date) => {
       try {
-        const points = await inProject(
-          z.array(z.object({ value: z.number().nullable() })),
-          "GET",
-          "dora/metrics",
-          {
-            interval: "all",
-            metric: "lead_time_for_changes",
-            start_date: since.toISOString().slice(0, 10),
-          }
-        );
+        const points = z
+          .array(z.object({ value: z.number().nullable() }))
+          .parse(
+            await guard(
+              api.ProjectDORA4Metrics.all(project, "lead_time_for_changes", {
+                interval: "all",
+                startDate: since.toISOString().slice(0, 10),
+              })
+            )
+          );
         return points[0]?.value ?? null;
       } catch {
         return null;
       }
     },
-    inProject,
     issueLinks: async (issue: number) =>
-      await inProject(z.array(issueSchema), "GET", `issues/${issue}/links`),
+      z
+        .array(issueSchema)
+        .parse(await guard(api.IssueLinks.all(project, issue))),
     issueNotes: async (issue: number) =>
-      await allPages(noteSchema, `issues/${issue}/notes?sort=desc`),
-    issues: async (query: Query) =>
-      await inProject(z.array(issueSchema), "GET", "issues", {
-        per_page: 100,
-        ...query,
-      }),
+      await collect(
+        noteSchema,
+        `issues/${issue}/notes`,
+        api.IssueNotes.all(project, issue, { ...allPages, sort: "desc" })
+      ),
+    issues: async (options: Omit<AllIssuesOptions, "withLabelsDetails">) =>
+      z
+        .array(issueSchema)
+        .parse(
+          await guard(
+            api.Issues.all({ ...firstPage, ...options, projectId: project })
+          )
+        ),
     labelEvents: async (issue: number) =>
-      await allPages(labelEventSchema, `issues/${issue}/resource_label_events`),
-    linkIssues: async (issue: number, target: number) =>
-      await inProject(z.unknown(), "POST", `issues/${issue}/links`, {
-        target_issue_iid: target,
-        target_project_id: env.project,
-      }),
+      await collect(
+        labelEventSchema,
+        `issues/${issue}/resource_label_events`,
+        api.IssueLabelEvents.all(project, issue, allPages)
+      ),
+    // A file a job's artifacts hold, from the latest pipeline on a ref.
+    latestArtifactJson: async <T>(
+      schema: z.ZodType<T>,
+      ref: string,
+      job: string,
+      artifactPath: string
+    ) => {
+      const body = await guard(
+        api.JobArtifacts.downloadArchive(project, { artifactPath, job, ref })
+      );
+      // GitLab serves .json files as application/json, which is parsed
+      // already; anything else arrives as a Blob.
+      return schema.parse(
+        body instanceof Blob ? JSON.parse(await body.text()) : body
+      );
+    },
+    linkIssues: async (issue: number, target: number) => {
+      await guard(api.IssueLinks.create(project, issue, project, target));
+    },
     mergeRequest: async (mr: number) =>
-      await inProject(mergeRequestSchema, "GET", `merge_requests/${mr}`),
+      mergeRequestSchema.parse(
+        await guard(api.MergeRequests.show(project, mr))
+      ),
     mergeRequestNotes: async (mr: number) =>
-      await allPages(noteSchema, `merge_requests/${mr}/notes?sort=desc`),
-    mergeRequests: async (query: Query) =>
-      await inProject(z.array(mergeRequestSchema), "GET", "merge_requests", {
-        per_page: 100,
-        ...query,
-      }),
+      await collect(
+        noteSchema,
+        `merge_requests/${mr}/notes`,
+        api.MergeRequestNotes.all(project, mr, { ...allPages, sort: "desc" })
+      ),
+    mergeRequests: async (
+      options: Omit<AllMergeRequestsOptions, "withLabelsDetails">
+    ) =>
+      z.array(mergeRequestSchema).parse(
+        await guard(
+          api.MergeRequests.all({
+            ...firstPage,
+            ...options,
+            projectId: project,
+          })
+        )
+      ),
     // Findings fixed on the default branch that still wait in the report.
     noLongerDetected: async () => {
       const body = noLongerDetectedSchema.parse(
@@ -366,33 +419,33 @@ export const createGitLab = (env: {
         (v) => v.resolvedOnDefaultBranch
       );
     },
-    noteOnIssue: async (issue: number, body: string) =>
-      await inProject(z.unknown(), "POST", `issues/${issue}/notes`, { body }),
-    noteOnMergeRequest: async (mr: number, body: string) =>
-      await inProject(z.unknown(), "POST", `merge_requests/${mr}/notes`, {
-        body,
-      }),
+    noteOnIssue: async (issue: number, body: string) => {
+      await guard(api.IssueNotes.create(project, issue, body));
+    },
+    noteOnMergeRequest: async (mr: number, body: string) => {
+      await guard(api.MergeRequestNotes.create(project, mr, body));
+    },
     pipelineJobs: async (pipeline: number) =>
-      await allPages(
+      await collect(
         z.object({ duration: z.number().nullable() }),
-        `pipelines/${pipeline}/jobs`
+        `pipelines/${pipeline}/jobs`,
+        api.Jobs.all(project, { ...allPages, pipelineId: pipeline })
       ),
-    pipelines: async (query: Query) =>
-      await inProject(z.array(z.object({ id: z.int() })), "GET", "pipelines", {
-        per_page: 100,
-        ...query,
-      }),
+    pipelines: async (options: AllPipelinesOptions) =>
+      z
+        .array(z.object({ id: z.int() }))
+        .parse(
+          await guard(api.Pipelines.all(project, { ...firstPage, ...options }))
+        ),
     relatedMergeRequests: async (issue: number) =>
-      await inProject(
-        z.array(
+      z
+        .array(
           z.object({
             iid: z.int(),
             merged_at: z.string().nullable().optional(),
           })
-        ),
-        "GET",
-        `issues/${issue}/related_merge_requests`
-      ),
+        )
+        .parse(await guard(api.Issues.allRelatedMergeRequests(project, issue))),
     // Sets a finding to Resolved, with the reason in its history.
     resolveFinding: async (id: string, comment: string) =>
       await mutate(
@@ -407,25 +460,26 @@ export const createGitLab = (env: {
       ),
     // Each reviewer's state: unreviewed, reviewed, requested_changes, approved.
     reviewers: async (mr: number) =>
-      await inProject(
-        z.array(
+      z
+        .array(
           z.object({
             state: z.string(),
             user: z.object({ username: z.string() }),
           })
-        ),
-        "GET",
-        `merge_requests/${mr}/reviewers`
-      ),
+        )
+        .parse(await guard(api.MergeRequests.showReviewers(project, mr))),
     // A new pipeline on `ref` with these CI variables.
     runPipeline: async (ref: string, variables: Record<string, string>) =>
-      await inProject(z.object({ web_url: z.string() }), "POST", "pipeline", {
-        ref,
-        variables: Object.entries(variables).map(([key, value]) => ({
-          key,
-          value,
-        })),
-      }),
+      z.object({ web_url: z.string() }).parse(
+        await guard(
+          api.Pipelines.create(project, ref, {
+            variables: Object.entries(variables).map(([key, value]) => ({
+              key,
+              value,
+            })),
+          })
+        )
+      ),
     // Duo sessions in the project, newest first: their flow and start time.
     sessions: async () => {
       const body = sessionsSchema.parse(
@@ -437,12 +491,15 @@ export const createGitLab = (env: {
       }));
     },
     // GitLab merges once the pipeline passes; sha pins the reviewed commit.
-    setAutoMerge: async (mr: number, sha: string) =>
-      await inProject(z.unknown(), "PUT", `merge_requests/${mr}/merge`, {
-        auto_merge: true,
-        sha,
-        should_remove_source_branch: true,
-      }),
+    setAutoMerge: async (mr: number, sha: string) => {
+      await guard(
+        api.MergeRequests.merge(project, mr, {
+          autoMerge: true,
+          sha,
+          shouldRemoveSourceBranch: true,
+        })
+      );
+    },
     // An incident's severity (GraphQL issueSetSeverity).
     setSeverity: async (
       iid: number,
@@ -458,32 +515,27 @@ export const createGitLab = (env: {
         "mutation($id: IssueID!, $note: String!, $at: Time!) { m: timelineEventCreate(input: { incidentId: $id, note: $note, occurredAt: $at }) { errors } }",
         { at: at.toISOString(), id: `gid://gitlab/Issue/${issueId}`, note }
       ),
-    updateIssue: async (issue: number, fields: Query) =>
-      await inProject(issueSchema, "PUT", `issues/${issue}`, fields),
-    updateMergeRequest: async (mr: number, fields: Query) =>
-      await inProject(
-        mergeRequestSchema,
-        "PUT",
-        `merge_requests/${mr}`,
-        fields
+    updateIssue: async (issue: number, options: EditIssueOptions) =>
+      issueSchema.parse(await guard(api.Issues.edit(project, issue, options))),
+    updateMergeRequest: async (mr: number, options: EditMergeRequestOptions) =>
+      mergeRequestSchema.parse(
+        await guard(api.MergeRequests.edit(project, mr, options))
       ),
     userId: async (username: string) => {
-      const [user] = await call(z.array(userSchema), "GET", "users", {
-        username,
-      });
+      const [user] = z
+        .array(userSchema)
+        .parse(await guard(api.Users.all({ username })));
       if (user === undefined) {
         throw new Error(`GitLab user ${username} not found`);
       }
       return user.id;
     },
     versions: async (mr: number) =>
-      await inProject(
-        z.array(
+      z
+        .array(
           z.object({ created_at: z.string(), head_commit_sha: z.string() })
-        ),
-        "GET",
-        `merge_requests/${mr}/versions`
-      ),
+        )
+        .parse(await guard(api.MergeRequests.allDiffVersions(project, mr))),
 
     // High and Critical SAST findings still to triage, newest first. A
     // finding the latest default-branch scan no longer reports is fixed

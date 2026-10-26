@@ -52,7 +52,7 @@ export const createArtist = (apiKey: string | undefined) => {
     apiKey === undefined ? undefined : createFalClient({ credentials: apiKey });
   return async (brief: DesignBrief, log?: Logger): Promise<Artwork> => {
     if (fal === undefined) {
-      throw notConfigured("fal", "FAL_KEY");
+      throw notConfigured.fal();
     }
     return await external(
       log,

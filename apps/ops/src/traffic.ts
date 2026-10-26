@@ -1,6 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
+import { ENV } from "./env.ts";
+
 // Demo traffic for the self-healing flow (docs/flows.md): calls the checkout
 // quote endpoint so that, with the fault-injection-checkout flag on, errors
 // reach Cloud Logging. Usage:
@@ -14,7 +16,7 @@ const { values } = parseArgs({
   },
 });
 // Production by default; --url or SITE_URL points it elsewhere.
-const site = values.url ?? process.env["SITE_URL"] ?? "https://wovain.com";
+const site = values.url ?? ENV.SITE_URL;
 const endpoint = new URL("/api/checkout/quote", site);
 const total = Number(values.requests);
 const delay = Number(values["delay-ms"]);

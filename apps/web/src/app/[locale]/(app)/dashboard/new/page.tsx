@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
 
 import { NewDropWizard } from "@/components/app/new-drop-wizard";
-import { routing } from "@/i18n/routing";
+import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
 
@@ -13,10 +10,7 @@ const MAX_BRIEF = 280;
 export const generateMetadata = async ({
   params,
 }: PageProps<"/[locale]/dashboard/new">): Promise<Metadata> => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    return {};
-  }
+  const locale = await requireLocale(params);
   return pageMetadata({
     index: false,
     locale,
@@ -29,11 +23,7 @@ const NewDropPage = async ({
   params,
   searchParams,
 }: PageProps<"/[locale]/dashboard/new">) => {
-  const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+  const locale = await enterLocale(params);
   const { brief, run } = await searchParams;
   const initialRunId = typeof run === "string" ? run : undefined;
   const initialBrief =

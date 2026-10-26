@@ -6,7 +6,7 @@ import {
   USE_CASE_SLUGS,
 } from "@/content/types";
 import { routing } from "@/i18n/routing";
-import { localizedUrl } from "@/lib/seo";
+import { alternatesFor } from "@/lib/seo";
 
 const LAST_MODIFIED = new Date("2026-10-25T00:00:00.000Z");
 
@@ -32,20 +32,18 @@ const PAGES: { path: string; priority: number }[] = [
 
 /** Every public page in every locale, each with its hreflang alternates. */
 const sitemap = (): MetadataRoute.Sitemap =>
-  PAGES.flatMap(({ path, priority }) => {
-    const languages: Record<string, string> = {};
-    for (const locale of routing.locales) {
-      languages[locale] = localizedUrl(path, locale);
-    }
-    languages["x-default"] = localizedUrl(path, routing.defaultLocale);
-    return routing.locales.map((locale) => ({
-      alternates: { languages },
-      changeFrequency:
-        path === "/" ? ("weekly" as const) : ("monthly" as const),
-      lastModified: LAST_MODIFIED,
-      priority,
-      url: localizedUrl(path, locale),
-    }));
-  });
+  PAGES.flatMap(({ path, priority }) =>
+    routing.locales.map((locale) => {
+      const { canonical, languages } = alternatesFor(path, locale);
+      return {
+        alternates: { languages },
+        changeFrequency:
+          path === "/" ? ("weekly" as const) : ("monthly" as const),
+        lastModified: LAST_MODIFIED,
+        priority,
+        url: canonical,
+      };
+    })
+  );
 
 export default sitemap;
