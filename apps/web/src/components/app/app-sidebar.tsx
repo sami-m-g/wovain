@@ -21,7 +21,6 @@ import {
 import { useTranslations } from "next-intl";
 
 import { BRAND_ASSETS, BRAND_NAME } from "@/brand/brand";
-import { ApiStatus } from "@/components/app/api-status";
 import type { NavItem } from "@/components/app/nav-main";
 import { NavMain } from "@/components/app/nav-main";
 import { NavUser } from "@/components/app/nav-user";
@@ -77,7 +76,6 @@ export const AppSidebar = ({ docsUrl }: { docsUrl: string }) => {
         <NavMain items={NAV} />
       </SidebarContent>
       <SidebarFooter>
-        <ApiStatus />
         <NavUser docsUrl={docsUrl} />
       </SidebarFooter>
       <SidebarRail />

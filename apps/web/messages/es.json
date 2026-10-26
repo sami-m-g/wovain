@@ -307,10 +307,6 @@
       "insights": "Estadísticas",
       "billing": "Facturación"
     },
-    "apiStatus": "API",
-    "apiOnline": "en línea",
-    "apiOffline": "sin conexión",
-    "apiChecking": "comprobando",
     "toggleSidebar": "Mostrar u ocultar la barra lateral"
   },
   "Stages": {
