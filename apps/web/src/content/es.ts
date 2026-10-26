@@ -2,342 +2,342 @@ import type { SiteContent } from "@/content/types";
 
 const content: SiteContent = {
   cases: {
-    "band-merch": {
+    "capsule-collections": {
       description:
-        "Merch de banda para un lanzamiento o una gira: ideas según los gustos de tus fans, diseños revisados, productos con beneficio y una campaña de Meta en pausa.",
+        "Lanza una pequeña cápsula print-on-demand en torno a un tema: ideas investigadas, gráficos revisados para impresión, fichas de Fourthwall con margen y una campaña de Meta en pausa.",
       exampleBrief:
-        "Merch para nuestro nuevo EP de shoegaze, estética de foto analógica desvaída, para fans a los que también les gusta el indie de los 90.",
+        "Una cápsula de primavera de cuatro piezas con dibujos botánicos de línea desvaída, verdes apagados y blanco hueso, para quienes cultivan plantas en el balcón.",
       faq: [
         {
           answer:
-            "wovain publica productos en tu tienda Fourthwall, pensada para pedidos en línea. El stock para un puesto en un concierto es un pedido aparte, fuera de wovain.",
-          question: "¿Puedo vender merch en conciertos con wovain?",
+            "De tres a seis piezas es un buen tamaño: suficiente para que parezca una colección, pero lo bastante pequeño para editarlo con cuidado y presentarlo pieza a pieza.",
+          question: "¿Cuántas piezas debe tener una cápsula?",
         },
         {
           answer:
-            "Con la misma regla que las camisetas: al menos 10 US$ de beneficio y un 30 % de margen sobre el coste base de la prenda, lo que dé el precio más alto.",
-          question: "¿Cómo se fija el precio de las sudaderas?",
+            "Sí. Lanza un drop por pieza o por idea con el mismo brief, aprueba los diseños que van juntos y rechaza los que no.",
+          question: "¿Pueden las piezas compartir un mismo estilo?",
         },
         {
           answer:
-            "Sí, si la portada es de la banda. Se puede describir en el brief, y cada diseño se aprueba antes de fabricar nada.",
-          question: "¿Podemos usar la portada del disco?",
+            "Cada producto se tarifica según el coste base de su propio blank, así que una camiseta y una sudadera de la misma cápsula conservan cada una al menos 10 $ de beneficio y un 30 % de margen.",
+          question: "¿Cómo se tarifican blanks distintos en una misma cápsula?",
         },
       ],
-      lead: "Los fans compran merch de banda para decir que estuvieron ahí. wovain te ayuda a montar un drop en torno a un lanzamiento o una gira, con un precio que te deja beneficio en cada venta y los anuncios listos, en pausa.",
-      name: "Merch de banda",
-      related: ["fourthwall", "meta", "qloo", "tavily"],
+      lead: "Una cápsula es un conjunto pequeño y editado de piezas en torno a una idea. wovain investiga el tema, prepara los gráficos según tu dirección, publica en Fourthwall las piezas que apruebas y deja la campaña preparada, en pausa.",
+      name: "Colecciones cápsula",
+      related: ["fourthwall", "fal", "meta"],
       situation:
-        "Tocas en una banda o publicas música por tu cuenta. El merch importa, pero tu tiempo va a componer y tocar, no a fichas de producto y ajustes de anuncios. Quieres unas pocas piezas buenas para el próximo lanzamiento, vendidas en línea, con un margen con el que contar.",
+        "Piensas en colecciones, no en productos sueltos. Una cápsula tiene que encajar: una paleta, un ambiente, unas pocas siluetas. En print-on-demand, la parte del diseño es la divertida; las fichas, los precios y los anuncios de cada pieza son lo que convierte una cápsula pequeña en un trabajo grande.",
       steps: [
         {
-          body: "Describe el disco o la gira, la estética y quién te escucha.",
-          title: "Un brief desde el lanzamiento",
+          body: "Describe el tema, la paleta y para quién es la cápsula, como harías con un estudio.",
+          title: "Briefea la cápsula",
         },
         {
-          body: "Qloo muestra lo que también aman tus oyentes, del cine a la moda, y Tavily añade las noticias de la semana y revisa los productos publicados.",
-          title: "Elige ideas",
+          body: "wovain propone direcciones dentro de tu tema, cada una con sus fuentes y una nota sobre lo saturadas que están las fichas similares.",
+          title: "Elige las direcciones",
         },
         {
-          body: "Cada diseño se revisa por tamaño de impresión y encaje. Aprueba, rechaza o pide cambios.",
-          title: "Aprueba los diseños",
+          body: "Aprueba los gráficos que van juntos. Devuelve los demás con una nota, como «el mismo grosor de línea que el primero».",
+          title: "Edita para dar coherencia",
         },
         {
-          body: "Los productos salen a la venta en tu tienda cuando publicas, a un precio que deja al menos 10 US$ por venta.",
+          body: "Las piezas aprobadas se convierten en productos ocultos de Fourthwall sobre blanks reales, cada uno tarificado según su propio coste base. Publícalos juntos.",
+          title: "Publica el conjunto",
+        },
+        {
+          body: "Hay una campaña de Meta en pausa lista para cada pieza, con anuncios escritos desde distintos ángulos. Actívalos para el lanzamiento.",
+          title: "Prepara el lanzamiento",
+        },
+      ],
+      tips: [
+        "Decide la paleta antes que los motivos. Dos o tres colores de tinta en toda la cápsula hacen que se lea como una sola colección.",
+        "Combina blanks a propósito: una camiseta, una sudadera más pesada y un tote dan tres precios a partir de una sola idea.",
+        "Publica todas las piezas el mismo día, para que la cápsula llegue como un conjunto y no a cuentagotas.",
+        "Ponle a las piezas nombres de colección («Estudio de helecho n.º 1, 2, 3») para que cada ficha remita a las demás.",
+        "Empieza la campaña con un presupuesto diario pequeño y mira qué pieza genera respuesta antes de gastar más.",
+      ],
+      title: "Lanza una colección cápsula print-on-demand, editada por ti",
+    },
+    "graphic-tees": {
+      description:
+        "Convierte una idea gráfica en camisetas que se venden: diseños revisados a tamaño de pecho, blanks reales de Fourthwall con precio para 10 $ de beneficio y una campaña de Meta en pausa.",
+      exampleBrief:
+        "Camisetas pesadas con un único motivo de estilo linograbado, costero y algo seco, para quienes nadan en agua fría.",
+      faq: [
+        {
+          answer:
+            "Depende del coste base del blank en Fourthwall. Un blank de 12 $ se vende a 24 $, lo que deja 10,33 $ tras las comisiones de tarjeta, el impuesto sobre las ventas y una reserva para reembolsos.",
+          question: "¿A cuánto se vende una camiseta típica?",
+        },
+        {
+          answer:
+            "Antes de que lo veas, cada borrador se revisa en cuanto a tamaño de impresión, legibilidad a tamaño de pecho y número de colores.",
+          question: "¿Se imprimirá bien el gráfico?",
+        },
+        {
+          answer:
+            "Todavía no. wovain prepara los gráficos a partir de tu brief y tú los vas ajustando con notas hasta que quedan bien.",
+          question: "¿Puedo subir mi propia ilustración?",
+        },
+      ],
+      lead: "Una buena camiseta gráfica es una idea fuerte, bien impresa y con el precio adecuado. wovain prepara el gráfico según tu dirección, lo revisa para impresión y publica la camiseta en tu tienda de Fourthwall con un margen que se sostiene.",
+      name: "Camisetas gráficas",
+      related: ["fourthwall", "fal", "meta"],
+      situation:
+        "Tienes un lenguaje gráfico: una línea, un estilo tipográfico, una manera de dibujar. Las camisetas son la forma más directa de ponerlo delante de la gente, y el print-on-demand evita el stock. Lo que no quieres es una semana de maquetas, guías de tallas, cuentas de precios y ajustes de anuncios por cada camiseta nueva.",
+      steps: [
+        {
+          body: "Describe el motivo, el estilo y quién la lleva. Di qué evitar, por ejemplo «sin eslóganes».",
+          title: "Briefea el gráfico",
+        },
+        {
+          body: "wovain prepara gráficos para cada idea y los revisa en cuanto a tamaño de impresión, legibilidad a tamaño de pecho y colores.",
+          title: "Mira borradores revisados",
+        },
+        {
+          body: "Aprueba los que firmarías. Rechaza con una nota, como «letra más pesada», para otra ronda.",
+          title: "Edita y aprueba",
+        },
+        {
+          body: "La camiseta se crea oculta sobre un blank real de Fourthwall, con precio según su coste base. Publícala cuando la página te convenza.",
+          title: "Publica la camiseta",
+        },
+        {
+          body: "Anuncios desde varios ángulos esperan en una campaña de Meta en pausa hasta que la actives.",
+          title: "Prepara los anuncios",
+        },
+      ],
+      tips: [
+        "Diseña para tamaño de pecho. Un gráfico que se lee a 10 pulgadas de ancho se leerá en la calle; el detalle fino a menudo no.",
+        "Menos colores de tinta imprimen más limpio y mantienen el estilo coherente entre colores de prenda.",
+        "Los blanks pesados cuestan más, pero transmiten mejor el estilo de un sello. El suelo de margen del 30 % mantiene el precio honesto.",
+        "Mira la página real del producto en tu teléfono antes de decírselo a nadie.",
+        "Que el ángulo del anuncio case con el gráfico: una camiseta seca y minimalista pide un texto seco y minimalista.",
+      ],
+      title:
+        "Camisetas gráficas print-on-demand, preparadas según tu dirección",
+    },
+    "independent-labels": {
+      description:
+        "Print-on-demand para sellos independientes: investigación, gráficos preparados según tu dirección, fichas de Fourthwall con margen y anuncios de Meta en pausa. Tú apruebas cada paso.",
+      exampleBrief:
+        "Un drop tranquilo de otoño para mi sello: gráficos workwear desgastados, óxido y azul marino, para quienes arreglan su propia ropa.",
+      faq: [
+        {
+          answer:
+            "Tú. Escribes la dirección, apruebas cada pieza y puedes rechazar cualquier borrador con una nota. Nada se publica sin tu sí.",
+          question: "¿Quién decide lo que lanza mi sello?",
+        },
+        {
+          answer:
+            "No. wovain trabaja con blanks print-on-demand en Fourthwall. No gestiona producción de corte y confección.",
+          question: "¿wovain se encarga del corte y confección?",
+        },
+        {
+          answer:
+            "En tu propia tienda de Fourthwall, con el nombre de tu sello. Fourthwall imprime, envía y gestiona el pago.",
+          question: "¿Dónde se venden los productos?",
+        },
+        {
+          answer:
+            "No. Cada campaña se crea en pausa, con el presupuesto diario que elijas. El gasto solo empieza cuando la activas en Meta.",
+          question: "¿Se publicarán anuncios sin mí?",
+        },
+      ],
+      lead: "Llevas un sello pequeño y cada lanzamiento es una semana de gestión. wovain se encarga de la investigación, las fichas, los precios y la preparación de anuncios de un drop print-on-demand, y te deja a ti las decisiones de gusto.",
+      name: "Sellos independientes",
+      related: ["fourthwall", "fal", "meta", "chatgpt"],
+      situation:
+        "Tu sello son de una a cinco personas. La misma persona dirige el arte, hace el merchandising, contesta correos y lleva los anuncios. El print-on-demand te permite lanzar sin stock, pero cada drop sigue significando investigación, archivos, fichas, cuentas de precios y una campaña. Quieres un ritmo de lanzamientos constante sin perder el estilo del sello.",
+      steps: [
+        {
+          body: "Escribe la dirección como se lo explicarías a un estudio: ambiente, referencias, para quién es.",
+          title: "Fija la dirección",
+        },
+        {
+          body: "wovain mira qué le interesa a tu público esta semana y sugiere ideas, cada una con sus fuentes.",
+          title: "Revisa las ideas",
+        },
+        {
+          body: "Se preparan gráficos para cada idea y se revisan para impresión. Aprueba o devuelve con una nota.",
+          title: "Edita los borradores",
+        },
+        {
+          body: "Los diseños aprobados se convierten en productos ocultos en tu tienda de Fourthwall, con precio para al menos 10 $ de beneficio y un 30 % de margen.",
           title: "Publica en Fourthwall",
         },
         {
-          body: "Hasta tres variantes de anuncio esperan en una campaña en pausa. Actívala cerca del día del lanzamiento.",
-          title: "Anuncios para la semana del lanzamiento",
+          body: "Varios anuncios, escritos desde distintos ángulos, esperan en una campaña de Meta en pausa hasta que la actives.",
+          title: "Prepara la campaña",
         },
       ],
       tips: [
-        "Une el drop al lanzamiento: la portada, una letra que escribiste o las fechas de la gira.",
-        "Deja fuera de la impresión los nombres de otras bandas y títulos de discos. wovain guarda los nombres que relacionó con tu brief como nombres que nunca se imprimen.",
-        "Las piezas de impresión bajo demanda se fabrican después del pedido, así que encajan mejor con la venta en línea y la preventa que con el puesto de merch de la noche del concierto.",
-        "Publica unos días antes del lanzamiento para tener el enlace listo para tus publicaciones y los anuncios del día.",
-        "Las prendas base más caras, como las sudaderas con capucha, tienen un precio fijado por el suelo del 30 % de margen. Una prenda de 35 US$ se vende a 50 US$ y aún deja 12 US$.",
+        "Mantén un brief por drop. Una dirección concreta da una primera ronda coherente.",
+        "Di qué no hace nunca el sello («sin eslóganes», «sin neón») para que los borradores partan ya dentro de tus reglas.",
+        "Lanza con ritmo, por ejemplo un drop pequeño al mes. Una cadencia constante es más fácil de promocionar que un gran lanzamiento.",
+        "Lee las fuentes detrás de una idea antes de elegirla. Un tema ligado a las noticias de una semana puede envejecer rápido.",
+        "Activa el piloto automático solo cuando confíes en los primeros drops que hayas llevado tú mismo.",
+      ],
+      title: "Print-on-demand para sellos independientes, sin la gestión",
+    },
+    "streetwear-drops": {
+      description:
+        "Lleva drops limitados de streetwear en print-on-demand: ideas ajustadas a esta semana, gráficos según tu dirección, fichas de Fourthwall con margen justo y anuncios de Meta en pausa.",
+      exampleBrief:
+        "Un drop de una semana de camisetas y sudaderas oversize, gráficos de fotocopia con grano, para quienes patinan de noche.",
+      faq: [
+        {
+          answer:
+            "Las piezas print-on-demand se fabrican tras cada pedido, así que un drop no tiene stock que agotar. Lo haces limitado en el tiempo: lo publicas y lo ocultas en Fourthwall cuando se cierra la ventana.",
+          question: "¿Puede un drop print-on-demand ser limitado?",
+        },
+        {
+          answer:
+            "Las sudaderas siguen la misma regla que las camisetas: al menos 10 $ de beneficio y un 30 % de margen sobre el coste base del blank. Un blank de 35 $ se vende a 50 $ y deja 12 $.",
+          question: "¿Cómo se tarifican las sudaderas?",
+        },
+        {
+          answer:
+            "wovain revisa los borradores para detectar nombres y marcas que no debes usar, pero tú sigues siendo responsable de lo que publicas. Mantén otras marcas fuera de la impresión.",
+          question: "¿Puedo hacer referencia a otras marcas?",
+        },
+      ],
+      lead: "El streetwear vive del momento. wovain mira qué se mueve esta semana dentro de tu tema, prepara gráficos según tu dirección y deja listas las fichas y los anuncios para que el drop esté a punto cuando tú lo estés.",
+      name: "Drops de streetwear",
+      related: ["fourthwall", "fal", "meta"],
+      situation:
+        "Tu sello lanza en ventanas cortas. Cada drop necesita una razón para existir ahora, unos pocos gráficos fuertes y todo en línea a la vez. En print-on-demand te libras del riesgo de stock, pero la preparación de cada lanzamiento sigue siendo el cuello de botella.",
+      steps: [
+        {
+          body: "Nombra el tema, el estilo gráfico y el público. Añade la ventana, por ejemplo «una semana».",
+          title: "Briefea el drop",
+        },
+        {
+          body: "Las ideas llegan con el contexto de esta semana y una nota sobre lo saturadas que ya están las fichas similares.",
+          title: "Elige un ángulo de actualidad",
+        },
+        {
+          body: "Aprueba los gráficos que dan en el clavo. Rechaza el resto con una nota para otra ronda.",
+          title: "Edita los gráficos",
+        },
+        {
+          body: "Los productos se crean ocultos sobre blanks reales y con precio según el margen. Publícalos todos a la hora del drop.",
+          title: "Publica para el drop",
+        },
+        {
+          body: "La campaña espera, en pausa, con anuncios desde varios ángulos. Actívala cuando se abra el drop.",
+          title: "Abre el drop",
+        },
+      ],
+      tips: [
+        "Anuncia la ventana antes del drop y respétala. Oculta los productos en Fourthwall cuando se cierre.",
+        "Los blanks oversize y pesados encajan con el estilo y admiten un precio más alto. El suelo de margen lo fija por ti.",
+        "Usa un único lenguaje gráfico en camisetas y sudaderas para que el drop se lea como un solo lanzamiento.",
+        "Mantén otras marcas, logotipos y personajes fuera de la impresión.",
+        "Mantén los anuncios solo mientras el drop esté abierto y luego desactívalos.",
       ],
       title:
-        "Merch de banda: diseña, pon precio y lanza un drop en torno a tu lanzamiento",
-    },
-    "creator-merch": {
-      description:
-        "Tu merch de creador en una frase: ideas según los gustos de tu audiencia, diseños revisados, productos en Fourthwall con beneficio y campaña de Meta en pausa.",
-      exampleBrief:
-        "Merch sobrio y minimalista para mi canal de cocina casera, colores cálidos, sin un logo gigante.",
-      faq: [
-        {
-          answer:
-            "La investigación y el primer diseño tardan unos minutos. El resto depende de cuánto tiempo dediques a elegir y aprobar.",
-          question: "¿Cuánto tarda un drop?",
-        },
-        {
-          answer:
-            "No. Apruebas o comentas con tus palabras, y wovain hace otro diseño para la misma idea.",
-          question: "¿Necesito saber diseñar?",
-        },
-        {
-          answer:
-            "El coste base de la prenda, las comisiones de tarjeta y la reserva que wovain aparta para devoluciones. El precio se fija para que te queden al menos 10 US$ por venta después de todo eso.",
-          question: "¿Cuánto me cuesta cada venta?",
-        },
-        {
-          answer:
-            "Funciona con las prendas base del catálogo de Fourthwall. wovain empieza por la impresión bajo demanda y avanza hacia la ropa fabricada bajo pedido.",
-          question: "¿Es solo para camisetas?",
-        },
-      ],
-      lead: "A tu audiencia ya la conoces. Lo que consume tiempo es la investigación, el arte, las fichas y la configuración de anuncios. wovain se encarga de eso y tú apruebas cada paso.",
-      name: "Merch de creador",
-      related: ["fourthwall", "meta", "qloo", "nebius"],
-      situation:
-        "Haces vídeos, publicaciones o un pódcast, y te piden merch. Tienes una tienda en Fourthwall, o estás a punto de abrirla, pero un drop supone una semana de investigación, archivos de diseño, cuentas de precios y ajustes en el Administrador de anuncios. Quieres productos que tus fans se pondrían de verdad, a un precio que te deje un beneficio real.",
-      steps: [
-        {
-          body: "Di para quién es el drop y qué sensación debe transmitir. Ese es todo el brief.",
-          title: "Escribe una frase",
-        },
-        {
-          body: "wovain muestra ideas puntuadas según lo que también ama tu audiencia, las noticias de la semana y cuánta competencia hay, con fuentes.",
-          title: "Elige entre ideas ordenadas",
-        },
-        {
-          body: "Cada diseño llega con la revisión de NVIDIA Nemotron: veredicto, nota y correcciones. Apruébalo, o di qué cambiar y recibe otro.",
-          title: "Aprueba los diseños",
-        },
-        {
-          body: "Los diseños aprobados se convierten en productos ocultos sobre prendas base reales, con al menos 10 US$ de beneficio por venta. Publica cuando te convenza.",
-          title: "Publica en Fourthwall",
-        },
-        {
-          body: "wovain escribe hasta tres variantes de anuncio y monta una campaña de Meta creada en pausa. La activas cuando quieras.",
-          title: "Revisa la campaña en pausa",
-        },
-      ],
-      tips: [
-        "Escribe el brief sobre tu audiencia, no sobre tu logo. «Fans de la cocina lenta a los que les gustan el lino y los tonos tierra» da mejores ideas que «mi logo en una sudadera».",
-        "Di qué evitar. «Nada de juegos de palabras» o «sin colores neón» te ahorra una ronda de comentarios.",
-        "Empieza con uno o dos productos. Un drop pequeño es más fácil de presentar y más rápido de evaluar.",
-        "Lee las fuentes de la idea que elijas. Si la noticia que la respalda estará pasada en un mes, lanza pronto o elige un tema más estable.",
-        "Activa la campaña con un presupuesto diario pequeño y mira qué ángulo recibe clics antes de gastar más.",
-      ],
-      title: "Merch de creador sin el trabajo pesado: un brief, un drop listo",
-    },
-    "twitch-merch": {
-      description:
-        "Tu merch de Twitch en un brief corto: ideas según los gustos de tu comunidad, diseños revisados, productos Fourthwall con beneficio y anuncios de Meta en pausa.",
-      exampleBrief:
-        "Merch para mis directos de juegos de granja acogedores, colores pastel suaves, con la broma del chat «un día más».",
-      faq: [
-        {
-          answer:
-            "Los emotes creados para ti encajan bien, siempre que el arte sea tuyo. Evita el arte de juegos y el trabajo de otros creadores.",
-          question: "¿Puedo poner emotes en el merch?",
-        },
-        {
-          answer:
-            "Depende de la prenda base. Una de 12 US$ sale a 24 US$, lo que deja unos 10,33 US$ tras comisiones y la reserva para devoluciones.",
-          question: "¿Cuánto les costará una camiseta a mis espectadores?",
-        },
-        {
-          answer:
-            "No. La campaña se crea en pausa. Puedes vender solo a tu directo y activar los anuncios más tarde, o nunca.",
-          question: "¿Tengo que hacer anuncios?",
-        },
-      ],
-      lead: "Tu chat ya escribe tu mejor merch: emotes, bromas recurrentes, los momentos que todos recortaron en clips. wovain te ayuda a convertirlos en productos y anuncios sin una semana de preparación.",
-      name: "Merch de Twitch",
-      related: ["fourthwall", "meta", "tavily", "nebius"],
-      situation:
-        "Haces directos en Twitch y tu comunidad tiene su propio idioma. Quieres merch que los habituales reconozcan, listo para un hito o un directo especial, y a un precio que haga que cada venta valga la pena.",
-      steps: [
-        {
-          body: "Indica el juego o el género, la sensación y la broma recurrente que quieres en el producto.",
-          title: "Un brief con la broma",
-        },
-        {
-          body: "wovain ordena las ideas según los gustos más amplios de tu audiencia y las noticias de la semana, y muestra cuántos productos parecidos existen.",
-          title: "Elige ideas",
-        },
-        {
-          body: "Mira el veredicto y las correcciones, aprueba los que llevarías en directo o pide otro.",
-          title: "Aprueba los diseños",
-        },
-        {
-          body: "Publica en Fourthwall antes de tu hito o directo especial para tener el enlace listo.",
-          title: "Publica antes del directo",
-        },
-        {
-          body: "Tu campaña de Meta espera en pausa hasta que quieras llegar a gente fuera de tu chat.",
-          title: "Llega a nuevos espectadores",
-        },
-      ],
-      tips: [
-        "Haz coincidir el drop con algo que tu comunidad ya celebra: un hito de seguidores, un directo de aniversario o un evento benéfico.",
-        "Ponte o enseña el producto en directo. La gente compra lo que ha visto en uso.",
-        "Añade el enlace de la tienda a tus paneles y a un comando del chat para que esté a un clic durante el directo.",
-        "Deja los logos y personajes de juegos fuera de la impresión si no tienes los derechos. Las bromas que inventó tu chat sí son tuyas.",
-        "Deja unos días tras publicar antes de un gran anuncio, para revisar antes la página del producto.",
-      ],
-      title: "Merch de Twitch: convierte las bromas de tu chat en un drop",
-    },
-    "youtube-merch": {
-      description:
-        "Tu merch de YouTube en un brief: ideas según lo que aman tus suscriptores, diseños revisados, productos en Fourthwall con beneficio y anuncios de Meta en pausa.",
-      exampleBrief:
-        "Merch para mi canal de reparación de sintetizadores vintage, estilo portada de manual antiguo, para gente a la que le encanta arreglar equipos viejos.",
-      faq: [
-        {
-          answer:
-            "No. El precio se fija para que cada venta deje al menos 10 US$, así que un drop pequeño para una audiencia fiel sale rentable en cada pedido.",
-          question: "¿Necesito un canal grande para vender merch?",
-        },
-        {
-          answer:
-            "Sí, si son tuyos. wovain deja fuera de la impresión los nombres de otras marcas, artistas y títulos que relacionó con tu tema.",
-          question: "¿Puedo usar el nombre o el logo de mi canal?",
-        },
-        {
-          answer:
-            "No. La campaña se crea en pausa. No se gasta nada hasta que la activas en Meta.",
-          question: "¿Los anuncios empiezan en cuanto publico?",
-        },
-      ],
-      lead: "Tus suscriptores ya tienen sus bromas internas, sus secciones favoritas y un estilo que reconocen. wovain lo convierte en un drop en Fourthwall y una campaña de Meta en pausa, y te pregunta en cada paso.",
-      name: "Merch de YouTube",
-      related: ["fourthwall", "meta", "qloo", "tavily"],
-      situation:
-        "Tienes un canal de YouTube y los comentarios piden merch. Quieres algo que encaje con el canal sin ser un logo pegado en una camiseta, y poder hablar de ello en un vídeo sin temer que el precio no te deje nada.",
-      steps: [
-        {
-          body: "Describe el tema del canal y la sensación del drop en una frase.",
-          title: "Un brief desde tu canal",
-        },
-        {
-          body: "Las ideas llegan ordenadas según lo que también aman tus suscriptores y las noticias de la semana, con la revisión de productos publicados que muestra la competencia de cada una.",
-          title: "Elige ideas con motivo",
-        },
-        {
-          body: "Cada diseño llega con una comprobación del tamaño de impresión y la nota del juez. Aprueba o pide cambios.",
-          title: "Aprueba diseños revisados",
-        },
-        {
-          body: "Publica los productos en Fourthwall y menciónalos en tu próximo vídeo con el enlace listo.",
-          title: "Publica y luego graba",
-        },
-        {
-          body: "La campaña de Meta espera en pausa. Actívala para llegar a gente más allá de tus suscriptores.",
-          title: "Activa los anuncios para llegar más lejos",
-        },
-      ],
-      tips: [
-        "Construye el drop en torno a una sección o una frase que tus seguidores habituales conocen. Se lee como un guiño a los fans, no como publicidad.",
-        "Publica antes de grabar la mención, para que el enlace funcione en cuanto salga el vídeo.",
-        "Pon el enlace del producto en la descripción y en un comentario fijado, y dilo una vez en voz alta en el vídeo.",
-        "Si tu canal cumple los requisitos de YouTube Shopping, Fourthwall puede conectarse para mostrar tus productos junto a tus vídeos. Comprueba los requisitos en la configuración de YouTube y de Fourthwall.",
-        "Elige el ángulo de anuncio que se parezca a cómo hablas a cámara. Si eres sobrio y técnico, elige la variante que también lo sea.",
-      ],
-      title:
-        "Merch de YouTube: un drop que tus suscriptores se pondrán de verdad",
+        "Drops de streetwear en print-on-demand, con su momento y preparados",
     },
   },
   guides: {
-    "launch-a-merch-drop": {
+    "launch-a-capsule-drop": {
       description:
-        "Guía práctica para lanzar un drop de merch: investigación, diseños y controles de impresión, aprobación, publicación en Fourthwall y campaña de Meta en pausa.",
+        "Una guía práctica para lanzar un drop cápsula print-on-demand: investigación, diseño y revisiones de impresión, edición, publicación en Fourthwall, variantes de anuncios y campaña en pausa.",
       faq: [
         {
           answer:
-            "Uno o dos. Es más fácil de explicar, de promocionar y de evaluar que una colección grande.",
-          question: "¿Cuántos productos debe tener un primer drop?",
+            "De tres a seis piezas. Suficiente para que parezca una colección, pero lo bastante pequeño para editarlo con cuidado y promocionarlo pieza a pieza.",
+          question: "¿Cuántas piezas debe tener una primera cápsula?",
         },
         {
           answer:
-            "Empieza con poco, unos dólares al día, y sube el presupuesto solo en la variante que da resultados. Tu beneficio por venta marca el límite.",
-          question: "¿Cuánto gastar en anuncios de Meta para merch?",
+            "Empieza poco, unos dólares al día, y sube el presupuesto solo en el anuncio que da resultados. Tu beneficio por venta marca el límite.",
+          question: "¿Cuánto debo gastar en anuncios de Meta para un drop?",
         },
         {
           answer:
-            "Sí: investigación, diseños revisados, productos en Fourthwall y una campaña de Meta en pausa. Tú apruebas cada paso y tú activas la campaña.",
+            "Sí: investigación, gráficos preparados con revisiones de impresión, fichas de Fourthwall y una campaña de Meta en pausa. Tú apruebas cada paso y tú activas la campaña.",
           question: "¿wovain hace todo esto?",
         },
         {
           answer:
-            "Sí. Publica los productos y compártelos tú. La campaña en pausa puede esperar a que quieras más alcance.",
+            "Sí. Publica los productos y compártelos tú mismo. La campaña en pausa puede esperar hasta que quieras más alcance.",
           question: "¿Puedo lanzar sin anuncios?",
         },
       ],
-      lead: "Un drop de merch tiene seis partes: investigación, diseño, comprobaciones, aprobación, publicación y anuncios. Aquí tienes cómo hacer cada una, qué revisar antes de que empiece a moverse el dinero y una lista para guardar.",
-      published: "2026-10-25",
+      lead: "Un drop cápsula tiene seis partes: investigación, diseño, revisiones, edición, publicación y anuncios. Aquí tienes cómo llevar cada una, qué comprobar antes de que el dinero se mueva y una lista de verificación para guardar.",
+      published: "2026-10-26",
       readingMinutes: 5,
       sections: [
         {
-          heading: "Investigación: gustos, momento y competencia",
+          heading: "Investigación: gusto, momento y saturación",
           paragraphs: [
-            "Las buenas ideas de merch están donde se cruzan tres cosas. A tu audiencia le gusta el tema. Algo de él está en el aire esta semana. Y no hay demasiadas tiendas que ya lo vendan.",
-            "Primero los gustos. Pregúntate qué más les gusta a quienes te ven, te escuchan o te leen: las películas, la música, las aficiones y los estilos que comparten. Los suscriptores de un canal de plantas quizá amen también la vida lenta y el senderismo, y esa es una veta más rica que otra hoja en una camiseta.",
-            "Después el momento. Mira las noticias de la semana dentro de ese tema. Una estación, un aniversario o un lanzamiento le dan al drop un motivo para existir ahora, y algo que decir en el anuncio.",
-            "Por último, revisa lo que ya está publicado. Busca la idea en tiendas en línea como Etsy, Redbubble y Fourthwall. Si hay cientos de casi copias, tu versión tiene que ser mucho mejor, o conviene elegir otro ángulo.",
-            "Apunta por qué cada idea entró en la lista: la relación de gustos, la noticia y la cantidad de productos parecidos. Reutilizarás esos motivos en el texto de los anuncios, y te ayudan a descartar ideas que solo brillaban un día.",
+            "Las buenas ideas de drop están donde se cruzan tres cosas. A tu público le gusta el tema. Algo sobre él está en el ambiente esta semana. Y no hay demasiadas tiendas que ya lo vendan.",
+            "Primero, el gusto. Pregunta qué más aman quienes te compran: las películas, la música, los lugares y los estilos que comparten. Un sello para quienes cultivan plantas quizá encuentre una veta más rica en las mañanas lentas y los viejos catálogos de semillas que en una hoja más sobre una camiseta.",
+            "Después, el momento. Mira las noticias de la última semana dentro de ese tema. Una estación, un aniversario o un evento da al drop una razón para existir ahora y algo que decir en el anuncio.",
+            "Por último, revisa las fichas existentes. Busca la idea en los grandes marketplaces de print-on-demand. Si hay cientos de copias casi idénticas, tu versión tiene que ser mucho mejor, o debes elegir otro ángulo.",
+            "Anota por qué cada idea entró en la lista. Reutilizarás esas razones en el texto del anuncio, y te ayudan a descartar ideas que solo parecían buenas por un día.",
           ],
         },
         {
           heading: "Diseña y revisa antes de que nadie lo vea",
           list: [
             "Tamaño de impresión: el archivo debe ser lo bastante grande para el área de impresión. wovain rechaza todo lo que mida menos de 2880 px de ancho.",
-            "Colores: la tinta tiene que verse sobre el color de la prenda. Un arte oscuro sobre una camiseta oscura desaparece.",
-            "Ficha: un título claro y una descripción que diga qué es el producto, sin prometer de más.",
-            "Originalidad: nada de otras marcas, artistas, títulos de películas o personajes sin los derechos.",
+            "Colores: la tinta debe leerse sobre el color de la prenda. Un arte oscuro sobre una camiseta oscura desaparece.",
+            "Legibilidad: la tipografía y el trazo deben aguantar a tamaño de pecho.",
+            "Originalidad: ninguna otra marca, artista, título de película ni personaje salvo que tengas los derechos.",
           ],
           paragraphs: [
-            "Convierte la idea en un brief corto: qué se imprime, el estilo, los colores de la prenda y qué evitar. Luego haz varias propuestas en lugar de una.",
-            "Revisa cada diseño con las reglas aburridas antes de encariñarte con él. Un diseño que falla en una de ellas cuesta menos de arreglar ahora que cuando un cliente abre el paquete.",
-            "En wovain, cada diseño llega con la revisión de NVIDIA Nemotron: un veredicto de listo o revisar, una nota sobre 100 y hasta cinco correcciones. La regla del tamaño de impresión la decide el código, así que un archivo demasiado pequeño nunca pasa.",
+            "Convierte cada idea en un brief corto: qué se imprime, el estilo, los colores de la prenda y qué evitar. Luego haz varios candidatos en lugar de uno.",
+            "Comprueba cada diseño con estas reglas sencillas antes de enamorarte de él. Un diseño que falla una de ellas es más barato de arreglar ahora que cuando un cliente abre el paquete.",
+            "En wovain, cada borrador llega con una revisión de impresión marcada como listo o por retocar, con lo que hay que arreglar. La regla del tamaño de impresión es fija, así que un archivo demasiado pequeño nunca pasa.",
           ],
         },
         {
-          heading: "Aprueba con un motivo",
+          heading: "Edita como una colección",
           paragraphs: [
-            "La aprobación es donde aportas lo que ninguna herramienta puede: tu conocimiento de tu audiencia. Aprueba los diseños que te pondrías tú. Rechaza el resto con una línea de motivo, como «letra demasiado fina» o «quita las hojas», para que la siguiente ronda sea mejor.",
-            "Uno o dos productos fuertes valen más que seis normales. Un drop pequeño es más fácil de explicar en un vídeo y más rápido de evaluar.",
+            "La edición es donde más cuenta tu ojo. Aprueba las piezas a las que pondrías tu nombre. Rechaza el resto con una línea de motivo, como «letra demasiado fina» o «quita las hojas», para que la siguiente ronda sea mejor.",
+            "Edita para el conjunto, no solo para la pieza suelta. La misma paleta, el mismo grosor de línea, un solo ambiente. Una cápsula ajustada de cuatro se lee más fuerte que una docena dispersa.",
           ],
         },
         {
           heading: "Publica en Fourthwall a un precio que compense",
           paragraphs: [
-            "Crea cada producto sobre la prenda elegida y fija un precio que supere tu mínimo tras comisiones. Una regla sencilla: al menos 10 US$ de beneficio por venta y un 30 % de margen, lo que dé el precio más alto. Una camiseta de 12 US$ se vende a 24 US$, y una prenda de 25 US$ a 38 US$.",
-            "Mantén el producto oculto hasta que la página esté bien: fotos, título, tallas y precio. Luego publica y abre la página en línea una vez como lo haría un comprador.",
-            "Publica antes de anunciar. Un vídeo o una publicación que sale con el producto aún oculto manda a la gente a un enlace roto, y esa primera ola de atención cuesta recuperarla.",
+            "Crea cada producto sobre el blank elegido y fija un precio que supere tu suelo tras las comisiones. Una regla sencilla es al menos 10 $ de beneficio por venta y un 30 % de margen, el que dé más: una camiseta de 12 $ se vende a 24 $, un blank de 25 $ a 38 $.",
+            "Mantén los productos ocultos hasta que las páginas estén bien: fotos, título, tallas y precio. Luego publica el conjunto a la vez y abre cada página real una vez, como lo haría un comprador.",
+            "Publica antes de anunciar. Una publicación que sale mientras los productos siguen ocultos manda a la gente a un enlace muerto, y esa primera oleada de atención es difícil de recuperar.",
           ],
         },
         {
-          heading: "Escribe variantes de anuncio desde ángulos distintos",
+          heading: "Escribe anuncios desde distintos ángulos",
           paragraphs: [
-            "Un solo anuncio te dice muy poco. Dos o tres, cada uno desde un ángulo distinto, te dicen a qué responde tu audiencia.",
-            "Elige ángulos que de verdad sean distintos: la broma interna (para quien ya te conoce), la identidad («para quienes arreglan sus propios sintetizadores») y el momento (el motivo para comprar esta semana). Dale a cada uno su titular y su mensaje, y mantén el mismo producto para que el ángulo sea lo único que cambia.",
-            "Que el texto sea corto y cierto. Di qué es el producto, para quién es y por qué ahora. Evita afirmaciones que no puedas respaldar, como «el más vendido» en un producto que salió hoy.",
+            "Un solo anuncio te dice muy poco. Dos o tres, cada uno desde un ángulo distinto, te dicen a qué responde tu público.",
+            "Elige ángulos realmente distintos: el oficio (cómo se hace y se imprime la pieza), la identidad («para quienes arreglan su propia ropa») y el momento (la razón para comprar esta semana). Mantén el mismo producto para que el ángulo sea lo único que cambia.",
+            "Mantén el texto corto y veraz. Di qué es la pieza, para quién es y por qué ahora. Evita afirmaciones que no puedas respaldar, como «el más vendido» en un producto lanzado hoy.",
           ],
         },
         {
           heading:
-            "Por qué la campaña empieza en pausa y cómo elegir el presupuesto",
+            "Por qué la campaña empieza en pausa y cómo elegir un presupuesto",
           paragraphs: [
-            "Una campaña que arranca en cuanto se crea puede gastar antes de que nadie haya leído los anuncios. Crearla en pausa te da un momento tranquilo para revisarlo todo, y no se gasta nada hasta que lo decides tú.",
-            "Para el presupuesto diario, empieza con poco. Unos pocos dólares al día por campaña bastan para ver qué variante recibe clics, sin arriesgar mucho. Recuerda que el gasto en anuncios sale de tu beneficio por venta: con 10 US$ de margen queda poco espacio para clics caros. Sube el presupuesto solo en la variante que funciona. wovain acepta un presupuesto diario de 1 a 500 US$, y puedes cambiarlo en Meta cuando quieras.",
-            "Dale a cada prueba unos días antes de juzgarla. Una tarde tranquila dice poco; un patrón de varios días dice más.",
+            "Una campaña que sale en línea en cuanto se construye puede gastar antes de que nadie haya leído los anuncios. Construirla en pausa te da un momento tranquilo para revisarlo todo, y no se gasta nada hasta que decidas.",
+            "Para el presupuesto diario, empieza poco. Unos dólares al día bastan para ver qué anuncio consigue clics sin arriesgar mucho. El gasto en anuncios sale de tu beneficio por venta, así que un margen de 10 $ deja poco espacio para clics caros. wovain acepta un presupuesto diario de 1 $ a 500 $, y puedes cambiarlo en Meta en cualquier momento.",
+            "Da a cada prueba unos días antes de juzgarla. Una tarde tranquila dice poco; un patrón de varios días dice más.",
           ],
         },
         {
-          heading: "Tu lista antes del lanzamiento",
+          heading: "Tu lista de verificación previa al lanzamiento",
           list: [
-            "El producto está publicado y la página carga bien en tu móvil.",
-            "Precio, tallas y colores de la página son los que aprobaste.",
+            "Cada pieza está publicada y su página carga en tu teléfono.",
+            "El precio, las tallas y los colores de cada página son los que aprobaste.",
             "Cada anuncio enlaza al producto correcto.",
-            "El titular y el mensaje se leen bien y no prometen nada que el producto no haga.",
+            "Los titulares no prometen nada que las piezas no cumplan.",
             "Los países coinciden con donde quieres vender.",
             "El presupuesto diario es uno que te parece bien gastar cada día.",
-            "Tienes un vídeo, una publicación o un directo previsto para hablar del drop.",
+            "Tienes planeada una publicación o un boletín para el lanzamiento.",
             "Sabes cuándo vas a mirar los resultados, por ejemplo a los tres días.",
           ],
           paragraphs: [
@@ -346,417 +346,333 @@ const content: SiteContent = {
         },
       ],
       title:
-        "Cómo lanzar un drop de merch: de la idea a una campaña de Meta en pausa",
+        "Cómo lanzar un drop cápsula print-on-demand, de la idea a una campaña en pausa",
     },
-    "price-print-on-demand-merch": {
+    "price-print-on-demand": {
       description:
-        "Precio del merch de impresión bajo demanda: coste base, comisiones, impuestos, devoluciones, un mínimo de 10 US$ de beneficio y un 30 % de margen, con ejemplos.",
+        "Una guía clara para poner precio a piezas print-on-demand: coste base, comisiones de tarjeta, impuestos y reembolsos, un suelo de 10 $ de beneficio y de 30 % de margen, con ejemplos.",
       faq: [
         {
           answer:
-            "El suficiente para que el trabajo merezca la pena tras todas las comisiones. Un mínimo de 10 US$ por venta, más al menos un 30 % de margen en las prendas caras, es una buena regla para empezar.",
-          question:
-            "¿Qué beneficio buscar por venta en impresión bajo demanda?",
+            "Lo suficiente para que el trabajo merezca la pena tras todas las comisiones. Un suelo de 10 $ por venta, más al menos un 30 % de margen en blanks más caros, es una regla de partida razonable.",
+          question: "¿Cuál es un buen beneficio por venta print-on-demand?",
         },
         {
           answer:
-            "Puedes cobrar el envío al comprador, pero la comisión de tarjeta también se aplica sobre él. Cuéntala al revisar tu beneficio.",
-          question: "¿Debo incluir el envío en el precio?",
+            "Puedes trasladar el envío al comprador, pero también se cobra comisión de tarjeta sobre él. Cuenta esa comisión al comprobar tu beneficio.",
+          question: "¿Debo incluir el envío en mi precio?",
         },
         {
           answer:
-            "Duplicar funciona con prendas baratas pero encarece de más las caras, e ignora las comisiones. Un mínimo de beneficio más un mínimo de margen cubren los dos extremos.",
-          question: "¿Por qué no duplicar simplemente el coste base?",
+            "Duplicar sirve para blanks baratos, pero encarece de más los caros e ignora las comisiones. Un suelo de beneficio más un suelo de margen cubren ambos extremos.",
+          question: "¿Por qué no simplemente duplicar el coste base?",
         },
         {
           answer:
-            "Sí. Los productos se crean ocultos en tu tienda Fourthwall y puedes editar el precio allí antes o después de publicar.",
+            "Sí. Los productos se crean ocultos en tu tienda de Fourthwall y puedes editar el precio allí antes o después de publicar.",
           question: "¿Puedo cambiar el precio que fija wovain?",
         },
       ],
-      lead: "Casi todos los precios de merch fallan igual: coste base más una cifra redonda, y las comisiones se comen el resto. Aquí tienes una regla sencilla que deja al menos 10 US$ por venta, con las cuentas a la vista.",
-      published: "2026-10-25",
+      lead: "La mayoría de los precios en print-on-demand fallan igual: coste base más un número redondo, y las comisiones se llevan el resto. Aquí tienes una regla sencilla que mantiene al menos 10 $ por venta, con las cuentas a la vista.",
+      published: "2026-10-26",
       readingMinutes: 5,
       sections: [
         {
-          heading: "Empieza por el coste base",
+          heading: "Parte del coste base",
           paragraphs: [
-            "Todo producto de impresión bajo demanda empieza con un coste base: lo que la plataforma cobra por imprimir y fabricar una unidad sobre una prenda base concreta. Una camiseta básica puede costar 12 US$, una más gruesa 15 US$ y una sudadera con capucha entre 25 y 35 US$. Cambia según la prenda, el área de impresión y a veces el color.",
-            "El coste base es la única cifra que no negocias venta a venta, así que es donde debe empezar el cálculo. Consúltalo para la prenda y la impresión exactas que vas a vender, no para la versión más barata del producto.",
-            "El error es quedarse ahí y sumar una cifra redonda. «Coste base más 10 US$» parece 10 US$ de beneficio, pero no lo es. Varios costes pequeños salen de cada venta antes de que el dinero te llegue.",
+            "Todo producto print-on-demand empieza con un coste base: lo que cobra la plataforma por imprimir y fabricar un artículo sobre un blank concreto. Una camiseta básica puede costar 12 $, una pesada 15 $, una sudadera de 25 $ a 35 $. Cambia según el blank, el área de impresión y a veces el color.",
+            "El coste base es el único número que no puedes negociar en cada venta, así que es donde debe empezar el precio. Búscalo para el blank y la impresión exactos que piensas vender, no para la versión más barata de ese producto.",
+            "El error es quedarse ahí y añadir un número redondo. «Coste base más 10 $» suena a 10 $ de beneficio, pero no lo es. Varios costes pequeños salen de cada venta antes de que el dinero te llegue.",
           ],
         },
         {
           heading: "Cuenta lo que sale de cada venta",
           list: [
-            "Comisión de tarjeta: 2,9 % del precio + envío + impuesto, más 0,30 US$",
-            "Envío: lo paga el comprador (5 US$ en los ejemplos de abajo)",
-            "Impuesto sobre la venta: se traslada (7 % en los ejemplos de abajo)",
-            "Reserva para devoluciones: 2 % del precio",
+            "Comisión de tarjeta: 2,9 % del precio + envío + impuesto, más 0,30 $",
+            "Envío: trasladado al comprador (5 $ en los ejemplos de abajo)",
+            "Impuesto sobre las ventas: trasladado (7 % en los ejemplos de abajo)",
+            "Reserva para reembolsos: 2 % del precio",
           ],
           paragraphs: [
-            "Hay tres costes fáciles de olvidar porque no aparecen en la ficha del producto.",
-            "Comisiones de tarjeta. Los procesadores de pago suelen cobrar un porcentaje más un importe fijo por pedido. Una tarifa habitual es 2,9 % más 0,30 US$. El porcentaje se aplica a todo el pedido que paga el comprador, envío e impuestos incluidos, no solo a tu precio.",
-            "Impuesto sobre la venta. Lo cobras y lo entregas, así que no es ingreso. Pero hace el pedido más grande y, con él, la comisión de tarjeta.",
-            "Devoluciones. Algunos pedidos vuelven: talla equivocada, paquete perdido, cambio de opinión. Apartar una pequeña parte de cada precio, por ejemplo un 2 %, evita que una devolución borre el beneficio de varias ventas.",
+            "Tres costes son fáciles de olvidar porque no aparecen en la página del producto.",
+            "Comisiones de tarjeta. Los procesadores de pago suelen cobrar un porcentaje más una cantidad fija por pedido. Una tarifa habitual es 2,9 % más 0,30 $. El porcentaje se aplica a todo el pedido que paga el comprador, incluidos el envío y el impuesto sobre las ventas, no solo a tu precio.",
+            "Impuesto sobre las ventas. Lo cobras y lo trasladas, así que no es ingreso. Pero hace más grande el pedido y, por tanto, la comisión de tarjeta.",
+            "Reembolsos. Algunos pedidos vuelven: talla equivocada, paquete perdido, un cambio de opinión. Apartar una pequeña parte de cada precio, como un 2 %, hace que un reembolso no borre el beneficio de varias ventas más.",
           ],
         },
         {
-          heading: "Fija dos mínimos: 10 US$ de beneficio y un 30 % de margen",
+          heading: "Fija dos suelos: 10 $ de beneficio y un 30 % de margen",
           paragraphs: [
             "Un buen precio supera dos pruebas a la vez.",
-            "El mínimo de beneficio: después del coste base, las comisiones de tarjeta y la reserva para devoluciones, cada venta deja al menos 10 US$. Es suficiente para que una venta valga una mención en un vídeo y un correo a un cliente. Puedes elegir otra cifra, pero elige una y mantenla.",
-            "El mínimo de margen: la diferencia entre precio y coste base es al menos el 30 % del precio, es decir, (precio − coste base) ÷ precio ≥ 30 %. 10 US$ fijos son mucho en una camiseta de 12 US$ pero poco en una sudadera de 35 US$. El mínimo de margen asegura que los artículos más caros conserven una parte justa, para que una devolución o una pequeña subida de comisiones no te deje en cero.",
-            "Quédate con el mínimo que dé el precio más alto y redondea al dólar superior. Un precio redondo se lee mejor y se dice más fácil en un vídeo.",
+            "El suelo de beneficio: tras el coste base, las comisiones de tarjeta y la reserva para reembolsos, cada venta deja al menos 10 $. Es suficiente para que merezca la pena una venta y un correo de cliente. Puedes elegir otro número, pero elige uno y mantenlo.",
+            "El suelo de margen: la diferencia entre precio y coste base es al menos el 30 % del precio, que se escribe (precio − coste base) ÷ precio ≥ 30 %. Una cantidad fija de 10 $ es mucho en una camiseta de 12 $, pero poco en una sudadera de 35 $. El suelo de margen asegura que las piezas más caras conserven una parte justa.",
+            "Toma el suelo que dé el precio más alto y redondea hacia arriba al dólar entero. Los precios en dólares enteros se leen más limpios en una página de producto.",
           ],
         },
         {
-          heading: "Ejemplos con números",
+          heading: "Ejemplos resueltos",
           list: [
-            "Coste base 8 US$ → precio 20 US$, beneficio 10,53 US$",
-            "Coste base 12 US$ → precio 24 US$, beneficio 10,33 US$",
-            "Coste base 15 US$ → precio 27 US$, beneficio 10,18 US$",
-            "Coste base 20 US$ → precio 33 US$, beneficio 10,87 US$",
-            "Coste base 25 US$ → precio 38 US$, beneficio 10,62 US$",
-            "Coste base 35 US$ → precio 50 US$, beneficio 12,00 US$",
+            "Coste base 8 $ → precio 20 $, beneficio 10,53 $",
+            "Coste base 12 $ → precio 24 $, beneficio 10,33 $",
+            "Coste base 15 $ → precio 27 $, beneficio 10,18 $",
+            "Coste base 20 $ → precio 33 $, beneficio 10,87 $",
+            "Coste base 25 $ → precio 38 $, beneficio 10,62 $",
+            "Coste base 35 $ → precio 50 $, beneficio 12,00 $",
           ],
           paragraphs: [
-            "Esta es la regla aplicada a seis costes base, con 5 US$ de envío, un 7 % de impuesto, comisiones de tarjeta del 2,9 % más 0,30 US$ y una reserva del 2 %. El beneficio es lo que queda tras el coste base, la comisión y la reserva.",
-            "Veamos la camiseta de 12 US$ paso a paso. Un primer intento a 22 US$ (coste más 10 US$) parece correcto. A 22 US$ el pedido es 22 + 5 de envío + 1,54 de impuesto = 28,54 US$. La comisión es de unos 1,13 US$ y la reserva 0,44 US$, así que el beneficio es 8,43 US$. No basta. A 23 US$ queda en 9,38 US$. A 24 US$ el pedido es 30,68 US$, la comisión 1,19 US$, la reserva 0,48 US$ y el beneficio 10,33 US$. El precio es 24 US$.",
-            "Ahora la prenda de 35 US$. Coste más 10 US$ daría 45 US$, pero a 45 US$ el margen es solo del 22 % y el beneficio tras comisiones, 7,26 US$. El mínimo del 30 % de margen fija el precio en 50 US$, que deja 12,00 US$. En las prendas caras, el mínimo que manda es el de margen.",
+            "Aquí está la regla aplicada a seis costes base, con 5 $ de envío, 7 % de impuesto, comisiones de tarjeta de 2,9 % más 0,30 $ y una reserva del 2 % para reembolsos. El beneficio es lo que queda tras el coste base, la comisión de tarjeta y la reserva.",
+            "Veamos la camiseta de 12 $ paso a paso. Una primera estimación de 22 $ (base más 10 $) parece correcta. A 22 $, el pedido es 22 $ + 5 $ de envío + 1,54 $ de impuesto = 28,54 $. La comisión de tarjeta es de unos 1,13 $ y la reserva de 0,44 $, así que el beneficio es 8,43 $. No basta. A 23 $ es 9,38 $. A 24 $ el pedido es 30,68 $, la comisión de tarjeta 1,19 $, la reserva 0,48 $, y el beneficio es 10,33 $. Así que el precio es 24 $.",
+            "Ahora el blank de 35 $. Base más 10 $ serían 45 $, pero a 45 $ el margen es solo del 22 % y el beneficio tras comisiones es 7,26 $. El suelo de margen del 30 % fija el precio en 50 $, que deja 12,00 $. En los blanks caros, el suelo que importa es el de margen.",
           ],
         },
         {
-          heading: "Cuándo cobrar más",
+          heading: "Cuándo poner un precio más alto",
           paragraphs: [
-            "Los mínimos son un suelo, no un objetivo. Algunos drops pueden, y deben, venderse por encima.",
-            "Sube el precio cuando la pieza es limitada, como una tirada de gira o de aniversario, cuando el diseño costó trabajo de verdad o hay que pagar a un colaborador, o cuando tu audiencia ya compra más caro en otros sitios. Súbelo también si vas a hacer anuncios: el gasto publicitario sale de esos 10 US$, así que un producto que necesita alcance pagado necesita más margen.",
-            "Quédate cerca del mínimo cuando el objetivo es la visibilidad más que los ingresos: un primer drop, un artículo barato que los fans compran por impulso o una pieza que quieres ver en un encuentro. Aun así, no bajes del mínimo. Una venta que deja 3 US$ no compensa la atención al cliente que trae.",
-            "Elijas lo que elijas, comprueba las cifras reales de tu tienda. Impuestos, envío y comisiones cambian según el país y la plataforma, así que aplica la regla con tus propios datos.",
+            "Los suelos son un mínimo, no un objetivo. Muchas piezas de un sello pueden y deben venderse por encima.",
+            "Pon un precio más alto cuando el drop es limitado, cuando el diseño dio mucho trabajo o hay que pagar a un colaborador, o cuando tus compradores ya pagan más por tu sello en otro sitio. Hazlo también si piensas poner anuncios: el gasto en anuncios sale de esos 10 $, así que una pieza que necesita alcance de pago necesita más margen.",
+            "Pon un precio cercano al suelo cuando el objetivo sea el alcance y no el ingreso: un primer drop, o una pieza barata que la gente pueda comprar por impulso. Aun así, no bajes del suelo. Una venta que deja 3 $ no compensa la carga de atención al cliente.",
+            "Elijas lo que elijas, comprueba los números reales de tu tienda. Los tipos de impuesto, el envío y las comisiones varían según el país y la plataforma, así que aplica la regla con tus propios datos.",
           ],
         },
         {
           heading: "Cómo lo aplica wovain por ti",
           paragraphs: [
-            "wovain usa exactamente esta regla. Cuando un diseño se convierte en producto, wovain lee el coste base real de la prenda de Fourthwall y fija el precio en dólares enteros más bajo que deja a la vez 10 US$ de beneficio y un 30 % de margen tras comisiones de tarjeta, impuesto sobre la venta y una reserva del 2 %. Precio, beneficio y margen se muestran con el producto, así que ves la cuenta y no solo el resultado.",
-            "La regla está en el código, no en un prompt, así que el piloto automático no puede saltársela. Los productos se crean ocultos, de modo que puedes cambiar el precio en Fourthwall antes de publicar si quieres quedarte por encima del mínimo.",
+            "wovain usa exactamente esta regla. Cuando un diseño se convierte en producto, wovain lee el coste base real del blank de Fourthwall y fija el precio en dólares enteros más bajo que supera a la vez 10 $ de beneficio y un 30 % de margen tras las comisiones de tarjeta, el impuesto sobre las ventas y una reserva del 2 % para reembolsos. El precio, el beneficio y el margen se muestran junto al producto, así que ves la cuenta y no solo el resultado.",
+            "La regla es fija, así que el piloto automático no puede saltársela. Los productos se crean ocultos, por lo que puedes cambiar el precio en Fourthwall antes de publicar si quieres situarte por encima del suelo.",
           ],
         },
       ],
       title:
-        "Cómo poner precio al merch de impresión bajo demanda para ganar en cada venta",
+        "Cómo poner precio a piezas print-on-demand para que cada venta deje beneficio",
     },
   },
   integrations: {
     chatgpt: {
-      category: "App de chat (servidor MCP)",
+      category: "App en ChatGPT",
       connection: "yours",
-      data: "ChatGPT envía tus peticiones a las herramientas de wovain. wovain usa la misma cuenta, las mismas ejecuciones y las mismas conexiones que la web, así que puedes empezar un drop en el chat y terminarlo en la web.",
+      data: "ChatGPT envía tus peticiones a wovain. wovain usa la misma cuenta, los mismos drops y las mismas conexiones que el sitio web, así que puedes empezar un drop en el chat y terminarlo en la web.",
       description:
-        "Añade wovain a ChatGPT y lanza un drop de merch con tus palabras: investigación, diseños, productos Fourthwall y campaña de Meta en pausa, con tu visto bueno.",
-      docsPath: "/docs/seller-guide",
+        "Añade wovain a ChatGPT y lleva un drop print-on-demand con palabras sencillas: ideas, gráficos preparados, fichas de Fourthwall y una campaña de Meta en pausa, con tu aprobación.",
+      docsPath: "/docs/chatgpt",
       faq: [
         {
           answer:
-            "Sí. Los mismos agentes, aprobaciones y reglas funcionan en los dos sitios, y las ejecuciones iniciadas en ChatGPT aparecen en tu historial de la web.",
-          question: "¿Es lo mismo que la web?",
+            "Sí. Los mismos pasos, aprobaciones y reglas funcionan en ambos sitios, y los drops iniciados en ChatGPT aparecen en Ejecuciones en el sitio web.",
+          question: "¿Es lo mismo que el sitio web?",
         },
         {
           answer:
-            "Sí. Pide una ejecución con el piloto automático. Llega hasta el producto publicado y la campaña en pausa, con las mismas comprobaciones en código que en la web.",
+            "Sí. Pide un drop con el piloto automático activado. Llega hasta un producto publicado y una campaña en pausa, con los mismos límites de precio y presupuesto que en la web.",
           question: "¿Puedo usar el piloto automático desde ChatGPT?",
         },
         {
           answer:
-            "Sí. ChatGPT te da un enlace de conexión para cada uno, y autorizas tu propia tienda y tu propia cuenta publicitaria.",
-          question: "¿Tengo que conectar igualmente Fourthwall y Meta?",
+            "Sí. ChatGPT te da un enlace de conexión para cada cuenta que aún falte, y tú autorizas tu propia tienda y tu propia cuenta publicitaria.",
+          question: "¿Sigo teniendo que conectar Fourthwall y Meta?",
         },
       ],
-      lead: "Si ya planeas en ChatGPT, también puedes lanzar ahí tu drop. wovain es un servidor MCP: añádelo como app, pide un drop y di que sí en cada paso.",
+      lead: "Si ya planificas en ChatGPT, también puedes llevar tu drop allí. Añade wovain como app, describe el drop y di que sí en cada paso.",
       name: "ChatGPT",
-      related: ["creator-merch", "youtube-merch", "twitch-merch", "band-merch"],
+      related: [
+        "independent-labels",
+        "capsule-collections",
+        "graphic-tees",
+        "streetwear-drops",
+      ],
       setup:
         "En ChatGPT, activa el modo desarrollador, añade un conector personalizado con https://mcp.wovain.com/api/mcp, inicia sesión en wovain y permite el acceso.",
       steps: [
         {
-          body: "En ChatGPT activa el modo desarrollador y añade un conector personalizado (un servidor MCP) con la URL https://mcp.wovain.com/api/mcp.",
-          title: "Añadir wovain como app",
+          body: "En los ajustes de ChatGPT, activa el modo desarrollador y añade un conector personalizado con la URL https://mcp.wovain.com/api/mcp.",
+          title: "Añade wovain a ChatGPT",
         },
         {
-          body: "ChatGPT abre la página de inicio de sesión de wovain. Al entrar, una pantalla de consentimiento te pide permitir que ChatGPT use tu cuenta de wovain.",
-          title: "Iniciar sesión y permitir el acceso",
+          body: "ChatGPT abre la página de inicio de sesión de wovain. Tras iniciar sesión, permites que ChatGPT use tu cuenta de wovain.",
+          title: "Inicia sesión y permite el acceso",
         },
         {
-          body: "Si aún no los conectaste, pide a ChatGPT la lista de tus conexiones. Te devuelve un enlace para cada cuenta que falte autorizar.",
-          title: "Conectar Fourthwall y Meta",
+          body: "Si una cuenta aún no está conectada, ChatGPT te da un enlace para conectarla.",
+          title: "Conecta tus cuentas",
         },
         {
-          body: "Di lo que quieres con tus palabras, por ejemplo «busca tendencias para equipo de senderismo retro». ChatGPT hace la investigación y el primer diseño.",
-          title: "Pedir un drop",
+          body: "Describe el drop con tus propias palabras, como «un drop de primavera de dibujos botánicos de línea desvaída para mi sello».",
+          title: "Pide un drop",
         },
         {
-          body: "ChatGPT te pregunta antes de aprobar un diseño, crear o publicar productos o montar la campaña. La campaña se sigue creando en pausa.",
-          title: "Aprobar cada paso",
+          body: "ChatGPT te pregunta antes de aprobar un diseño, publicar productos o montar la campaña. La campaña se sigue creando en pausa.",
+          title: "Aprueba cada paso",
         },
       ],
-      title: "wovain en ChatGPT: planea y lanza un drop de merch desde el chat",
+      title:
+        "wovain en ChatGPT: planifica y lanza un drop print-on-demand desde un chat",
     },
-    fourthwall: {
-      category: "Tienda y catálogo de impresión bajo demanda",
+    fal: {
+      category: "Ilustración",
       connection: "yours",
-      data: "wovain lee las prendas base del catálogo y su coste base, y envía tu arte aprobado, el título, la descripción y el precio para crear productos en tu tienda. La autorización de Fourthwall se guarda sellada (cifrada) y puedes desconectarla en Conexiones cuando quieras.",
+      data: "wovain envía a fal la dirección de arte de cada idea y recibe el gráfico. Las imágenes se generan en tu cuenta de fal y se guardan con tu drop.",
       description:
-        "Conecta tu tienda Fourthwall: tus diseños aprobados pasan a ser productos en prendas base reales, con 10 US$ de beneficio por venta, ocultos hasta publicar.",
-      docsPath: "/docs/integrations/fourthwall",
+        "Conecta tu cuenta de fal a wovain. Dibuja los gráficos de cada idea según tu dirección, a resolución de impresión, y cada borrador se revisa para impresión antes de que lo veas.",
+      docsPath: "/docs/connecting-accounts#fal",
       faq: [
         {
           answer:
-            "Sí. wovain crea los productos en la tienda que conectas, así que son tuyos desde el principio. Sigues gestionando la tienda en Fourthwall como siempre.",
-          question: "¿Necesito mi propia tienda Fourthwall?",
+            "fal factura la generación de imágenes a tu propia cuenta de fal, a los precios de fal. El plan de wovain es aparte; consulta la página de precios.",
+          question: "¿Quién paga las imágenes?",
+        },
+        {
+          answer: "Sí. Tus briefs y los diseños que apruebas son tuyos.",
+          question: "¿Los gráficos son míos?",
         },
         {
           answer:
-            "No. Los productos se crean ocultos y salen a la venta cuando los publicas. La única excepción es el piloto automático, que activas tú para una ejecución.",
-          question: "¿Pueden publicarse productos sin mí?",
+            "Rechaza el borrador con una nota, como «línea más pesada», y wovain dibuja otra ronda para la misma idea.",
+          question: "¿Qué hago si un borrador no está bien?",
+        },
+      ],
+      lead: "fal es donde se dibujan los gráficos. wovain convierte cada idea en una dirección de arte, fal la dibuja en tu cuenta y wovain revisa el resultado para impresión antes de que lo edites.",
+      name: "fal",
+      related: ["graphic-tees", "capsule-collections", "streetwear-drops"],
+      setup: "Abre Conexiones en wovain y conecta tu cuenta de fal.",
+      steps: [
+        {
+          body: "Cada idea se convierte en una dirección de arte breve: qué se imprime, el estilo, los colores y qué evitar.",
+          title: "Escribe la dirección de arte",
+        },
+        {
+          body: "fal dibuja el gráfico en tu cuenta como arte de impresión cuadrado y transparente.",
+          title: "Dibuja el gráfico",
+        },
+        {
+          body: "El borrador se revisa en cuanto a tamaño de impresión, legibilidad a tamaño de pecho y colores, y se marca como listo o por retocar.",
+          title: "Revísalo para impresión",
+        },
+        {
+          body: "Apruebas el borrador o lo devuelves con una nota para otra ronda.",
+          title: "Edita con wovain",
+        },
+      ],
+      title:
+        "fal y wovain: gráficos dibujados según tu dirección y revisados para impresión",
+    },
+    fourthwall: {
+      category: "Tienda print-on-demand",
+      connection: "yours",
+      data: "wovain lee los blanks del catálogo y sus costes base, y envía tu ilustración aprobada, el título, la descripción y el precio para crear productos en tu tienda. La conexión se guarda cifrada y puedes desconectarla en Conexiones en cualquier momento.",
+      description:
+        "Conecta tu tienda de Fourthwall a wovain. Los diseños aprobados se convierten en productos sobre blanks reales, con precio para dejar 10 $ de beneficio por venta, y siguen ocultos hasta que publiques.",
+      docsPath: "/docs/connecting-accounts#fourthwall",
+      faq: [
+        {
+          answer:
+            "Sí. wovain crea los productos en la tienda que conectes, así que son tuyos desde el principio. Sigues gestionando la tienda en Fourthwall como siempre.",
+          question: "¿Necesito mi propia tienda de Fourthwall?",
         },
         {
           answer:
-            "A partir del coste base de la prenda: al menos 10 US$ de beneficio por venta y al menos un 30 % de margen, lo que dé el precio más alto, redondeado al dólar superior. Después puedes cambiar el precio en Fourthwall.",
+            "No. Los productos se crean ocultos y salen en línea cuando los publicas. La única excepción es el piloto automático, que activas tú mismo para un drop.",
+          question: "¿Saldrán productos en línea sin mí?",
+        },
+        {
+          answer:
+            "A partir del coste base del blank: al menos 10 $ de beneficio por venta y al menos un 30 % de margen, el que dé más, redondeado al dólar entero hacia arriba. Después puedes cambiar el precio en Fourthwall.",
           question: "¿Cómo fija wovain el precio?",
         },
         {
           answer:
-            "No. Pedidos, pagos y mensajes de clientes siguen en tu tienda Fourthwall. wovain solo crea y publica productos.",
+            "No. Los pedidos, los pagos y los mensajes de clientes se quedan en tu tienda de Fourthwall. wovain solo crea y publica productos.",
           question: "¿wovain gestiona mis pedidos?",
         },
       ],
-      lead: "Fourthwall es donde tu merch se pone a la venta. wovain lee su catálogo para conocer las prendas base reales y su coste base, y convierte los diseños que apruebas en productos de tu propia tienda.",
+      lead: "Fourthwall es donde tus piezas se publican y se venden. wovain lee su catálogo para obtener blanks reales y sus costes base, y luego convierte los diseños que apruebas en productos de tu propia tienda.",
       name: "Fourthwall",
-      related: ["creator-merch", "youtube-merch", "twitch-merch", "band-merch"],
+      related: [
+        "independent-labels",
+        "capsule-collections",
+        "graphic-tees",
+        "streetwear-drops",
+      ],
       setup:
-        "Inicia sesión en wovain, abre Conexiones y autoriza tu propia tienda Fourthwall en una sola pantalla de consentimiento.",
+        "Inicia sesión en wovain, abre Conexiones y autoriza tu propia tienda de Fourthwall.",
       steps: [
         {
-          body: "wovain consulta las prendas base reales de Fourthwall y su coste base, así que cada precio, beneficio y margen que ves es un número real, no una estimación.",
-          title: "Leer el catálogo",
+          body: "wovain consulta los blanks reales de Fourthwall y sus costes base, así que cada precio, beneficio y margen que ves es un número real.",
+          title: "Lee el catálogo",
         },
         {
-          body: "El precio parte del coste base de la prenda y deja al menos 10 US$ de beneficio y un 30 % de margen tras comisiones de tarjeta, impuesto sobre la venta y una reserva para devoluciones. Una prenda de 12 US$ se vende a 24 US$.",
-          title: "Poner precio a cada producto",
+          body: "El precio parte del coste base del blank y supera al menos 10 $ de beneficio y un 30 % de margen tras las comisiones de tarjeta, el impuesto sobre las ventas y una reserva para reembolsos. Un blank de 12 $ se vende a 24 $.",
+          title: "Pon precio a cada pieza",
         },
         {
-          body: "Se sube tu arte aprobado y se crea el producto con su título, descripción y precio. Queda oculto, así que todavía no aparece nada en tu tienda.",
-          title: "Crear el producto, oculto",
+          body: "Tu ilustración aprobada se sube y el producto se crea con su título, descripción y precio. Sigue oculto, así que todavía no aparece nada en tu tienda.",
+          title: "Crea el producto, oculto",
         },
         {
-          body: "Revisas el producto y pulsas publicar. Solo entonces sale a la venta. En piloto automático, wovain publica por ti cuando todas las comprobaciones pasan.",
-          title: "Publicar cuando tú digas",
+          body: "Revisas el producto y lo publicas. Solo entonces sale en línea en tu tienda. Con el piloto automático, wovain publica por ti cuando pasan todas las revisiones.",
+          title: "Publica cuando tú lo digas",
         },
       ],
       title:
-        "Fourthwall y wovain: del diseño aprobado al producto en tu tienda",
+        "Fourthwall y wovain: del diseño aprobado a un producto en tu tienda",
     },
     meta: {
-      category: "Cuenta publicitaria, página y píxel",
+      category: "Anuncios",
       connection: "yours",
-      data: "wovain envía a tu cuenta publicitaria el texto de los anuncios, el enlace del producto y los países y el presupuesto que elegiste para crear la campaña. Nunca activa el gasto. La autorización de Meta se guarda sellada (cifrada) y puedes desconectarla en Conexiones cuando quieras.",
+      data: "wovain envía el texto de los anuncios, el enlace del producto y los países y el presupuesto que elegiste a tu cuenta publicitaria para crear la campaña. Nunca activa el gasto. La conexión se guarda cifrada y puedes desconectarla en Conexiones en cualquier momento.",
       description:
-        "wovain escribe hasta tres variantes de anuncio de Meta por producto y crea la campaña, el conjunto de anuncios y los anuncios en tu cuenta, todo en pausa.",
-      docsPath: "/docs/integrations/meta-ads",
+        "wovain escribe varios anuncios de Meta para cada pieza y construye la campaña, el conjunto de anuncios y los anuncios en tu cuenta publicitaria, todo en pausa hasta que lo actives.",
+      docsPath: "/docs/connecting-accounts#meta",
       faq: [
         {
           answer:
-            "No. Cada campaña, conjunto de anuncios y anuncio se crea en pausa, y wovain nunca los activa. El gasto empieza solo cuando activas la campaña en Meta.",
+            "No. Cada campaña, conjunto de anuncios y anuncio se crea en pausa, y wovain nunca los activa. El gasto solo empieza cuando activas la campaña en Meta.",
           question: "¿Puede wovain gastar mi presupuesto publicitario?",
         },
         {
           answer:
-            "De 1 a 500 US$ al día. Empezar con poco es una buena forma de ver qué variante funciona antes de gastar más.",
-          question: "¿Qué presupuesto diario puedo poner?",
+            "Cualquier cantidad de 1 $ a 500 $ al día. Empezar poco es una buena forma de ver a qué anuncio responde la gente antes de gastar más.",
+          question: "¿Qué presupuesto diario puedo fijar?",
         },
         {
           answer:
-            "Hasta tres variantes por producto, cada una desde un ángulo distinto, con un anuncio por variante dentro de una campaña.",
-          question: "¿Cuántos anuncios crea wovain?",
+            "Hasta tres por producto, cada uno desde un ángulo distinto, con un anuncio por variante dentro de una campaña.",
+          question: "¿Cuántos anuncios escribe wovain?",
         },
         {
           answer:
-            "Sí. Son objetos normales de tu cuenta, así que puedes cambiar el texto, el público o el presupuesto en el Administrador de anuncios antes de activarlos.",
+            "Sí. Son objetos normales de tu cuenta publicitaria, así que puedes cambiar el texto, la audiencia o el presupuesto en el Administrador de anuncios de Meta antes de activarlos.",
           question: "¿Puedo editar los anuncios antes de que se publiquen?",
         },
       ],
-      lead: "Meta es donde se muestran tus anuncios. wovain escribe las variantes y monta toda la campaña en tu cuenta publicitaria, y ahí se detiene: la campaña se crea en pausa y tú decides cuándo empieza a gastar.",
+      lead: "Meta es donde se publican tus anuncios. wovain escribe los anuncios y construye toda la campaña en tu cuenta publicitaria, y se detiene ahí: la campaña se crea en pausa, así que tú decides cuándo empieza a moverse el dinero.",
       name: "Meta",
-      related: ["creator-merch", "youtube-merch", "twitch-merch", "band-merch"],
+      related: [
+        "independent-labels",
+        "capsule-collections",
+        "graphic-tees",
+        "streetwear-drops",
+      ],
       setup:
-        "Abre Conexiones en wovain y autoriza tu propia cuenta publicitaria de Meta, con tu página y tu píxel.",
+        "Abre Conexiones en wovain y autoriza tu propia cuenta publicitaria de Meta y tu Página.",
       steps: [
         {
-          body: "NVIDIA Nemotron escribe hasta tres variantes por producto, cada una desde un ángulo distinto, con su propio titular y mensaje.",
-          title: "Escribir las variantes",
+          body: "wovain escribe hasta tres anuncios por producto, cada uno desde un ángulo distinto, con su propio titular y mensaje.",
+          title: "Escribe los anuncios",
         },
         {
-          body: "Eliges dónde se mostrarán los anuncios y un presupuesto diario de entre 1 y 500 US$. Puedes cambiar ambos más tarde en Meta.",
-          title: "Elegir países y presupuesto",
+          body: "Eliges dónde deben mostrarse los anuncios y un presupuesto diario entre 1 $ y 500 $. Puedes cambiar ambos más tarde en Meta.",
+          title: "Elige países y un presupuesto",
         },
         {
-          body: "wovain crea una campaña por producto, un conjunto de anuncios y un anuncio por variante en tu cuenta. Todo se crea en pausa.",
-          title: "Crear la campaña, en pausa",
+          body: "wovain crea una campaña por producto, un conjunto de anuncios y un anuncio por variante en tu cuenta publicitaria. Cada objeto se crea en pausa.",
+          title: "Construye la campaña, en pausa",
         },
         {
-          body: "Abre la campaña en el Administrador de anuncios de Meta, revisa anuncios, público y presupuesto, y actívala cuando quieras empezar a gastar.",
-          title: "Revisar y activar en Meta",
+          body: "Abre la campaña en el Administrador de anuncios de Meta, revisa los anuncios, la audiencia y el presupuesto, y actívala cuando estés listo para gastar.",
+          title: "Revisa y activa en Meta",
         },
       ],
       title:
-        "Anuncios de Meta para tu merch, preparados para ti y creados en pausa",
-    },
-    nebius: {
-      category: "Juez de diseños, redactor y piloto automático",
-      connection: "wovain",
-      data: "wovain envía a Nemotron la idea, el brief, la ficha y datos del arte como su tamaño, y guarda las respuestas (veredictos, notas y motivos) en tu diseño y tu ejecución.",
-      description:
-        "En wovain, NVIDIA Nemotron en Nebius Token Factory escribe fichas, juzga cada diseño, redacta anuncios y guía el piloto automático, con reglas fijas en código.",
-      docsPath: "/docs/integrations/nebius-nemotron",
-      faq: [
-        {
-          answer:
-            "No. El precio, el rango de presupuesto de 1 a 500 US$ y la campaña en pausa los impone el código. Nemotron escribe y juzga; no cambia esas reglas.",
-          question: "¿La IA decide mis precios?",
-        },
-        {
-          answer:
-            "No. Si el juez dice revisar, el diseño no se aprueba, diga lo que diga la respuesta del piloto automático.",
-          question:
-            "¿Puede el piloto automático aprobar un diseño que el juez marcó?",
-        },
-        {
-          answer:
-            "NVIDIA Nemotron 3 Super, servido por Nebius Token Factory. Cada respuesta se valida con un formato fijo antes de que wovain la use.",
-          question: "¿Qué modelo es?",
-        },
-        {
-          answer: "No. Funciona con la clave de wovain.",
-          question: "¿Necesito una cuenta de Nebius?",
-        },
-      ],
-      lead: "wovain usa NVIDIA Nemotron en Nebius Token Factory para cuatro tareas pequeñas: escribir el brief y la ficha, juzgar el diseño, escribir los anuncios y decidir en piloto automático. Las reglas firmes, como el precio y el tamaño de impresión, se quedan en el código.",
-      name: "Nebius · NVIDIA Nemotron",
-      related: ["creator-merch", "youtube-merch", "twitch-merch", "band-merch"],
-      setup:
-        "No tienes que hacer nada. Nemotron funciona con la clave de Nebius de wovain.",
-      steps: [
-        {
-          body: "Nemotron convierte la idea elegida en el prompt del arte, el título, la descripción y los colores de la prenda.",
-          title: "Escribir el brief y la ficha",
-        },
-        {
-          body: "Devuelve un veredicto (listo o revisar), una nota sobre 100, comprobaciones de título, descripción, encaje y originalidad, y hasta cinco correcciones. Un arte de menos de 2880 px de ancho no pasa en el código, diga lo que diga el modelo.",
-          title: "Juzgar el diseño",
-        },
-        {
-          body: "Escribe hasta tres variantes de anuncio, cada una con un ángulo, un titular y un mensaje.",
-          title: "Escribir los anuncios",
-        },
-        {
-          body: "Con el piloto automático, elige la idea más prometedora y aprueba o rechaza el diseño, con un motivo de una línea para cada decisión. Un diseño que el juez marcó nunca se aprueba.",
-          title: "Decidir en piloto automático",
-        },
-      ],
-      title: "NVIDIA Nemotron en Nebius: una segunda mirada a cada diseño",
-    },
-    qloo: {
-      category: "Grafo de gustos",
-      connection: "wovain",
-      data: "wovain envía a Qloo el tema de tu brief y recibe entidades relacionadas y etiquetas de gusto. No se envía a Qloo nada de tus cuentas de Fourthwall o Meta.",
-      description:
-        "wovain usa el grafo de gustos de Qloo para encontrar los temas que también aman tus fans antes de diseñar. Funciona con la clave de wovain: nada que configurar.",
-      docsPath: "/docs/integrations/qloo",
-      faq: [
-        {
-          answer:
-            "No. Qloo funciona con la clave de wovain, así que tú solo escribes el brief.",
-          question: "¿Necesito una cuenta de Qloo?",
-        },
-        {
-          answer:
-            "Un mapa de lo que suele gustar a quien le gusta algo. Responde a lo que una gráfica de tendencias no puede: ¿qué se pondrían de verdad tus fans?",
-          question: "¿Qué es un grafo de gustos?",
-        },
-        {
-          answer:
-            "Ayuda. Los nombres que Qloo relacionó con tu tema quedan fuera de la impresión. Es una protección, no asesoría legal, y tú apruebas cada diseño.",
-          question: "¿Me protege de usar marcas ajenas?",
-        },
-      ],
-      lead: "Casi todas las ideas de merch salen de las noticias. wovain empieza por tu audiencia: el grafo de gustos de Qloo muestra qué temas aman también los fans de tu tema, y los diseños salen de ahí.",
-      name: "Qloo",
-      related: ["creator-merch", "band-merch"],
-      setup: "No tienes que hacer nada. Qloo funciona con la clave de wovain.",
-      steps: [
-        {
-          body: "El tema de tu brief, como el nicho de un canal, un fandom o un estilo, se relaciona con lo que Qloo conoce.",
-          title: "Leer tu brief",
-        },
-        {
-          body: "Qloo devuelve los gustos que comparten los fans de esos temas en música, cine, comida, viajes y más. Se convierten en los temas de las ideas.",
-          title: "Encontrar los temas de gusto",
-        },
-        {
-          body: "Las marcas, artistas y títulos que Qloo relacionó con tu tema se guardan con la idea como nombres que nunca se imprimen, y el brief de diseño los evita.",
-          title: "Dejar los nombres fuera de la impresión",
-        },
-        {
-          body: "Después Tavily busca las noticias de la semana y los productos ya publicados dentro de esos temas, así que cada idea tiene detrás el gusto y el momento.",
-          title: "Pasar a las noticias",
-        },
-      ],
-      title: "Qloo en wovain: descubre lo que tu audiencia ya ama",
-    },
-    tavily: {
-      category: "Búsqueda de noticias y productos publicados",
-      connection: "wovain",
-      data: "wovain envía búsquedas creadas a partir de los temas de tu brief y guarda los resultados con sus enlaces de origen. El texto de la web se trata como dato, nunca como instrucción.",
-      description:
-        "wovain usa Tavily para ver las noticias de la semana de cada idea de merch y cuántos productos parecidos ya existen. Con fuentes adjuntas y nada que configurar.",
-      docsPath: "/docs/integrations/tavily",
-      faq: [
-        {
-          answer: "No. Tavily funciona con la clave de wovain.",
-          question: "¿Necesito una cuenta de Tavily?",
-        },
-        {
-          answer:
-            "Etsy, Redbubble y Fourthwall. Si ya hay muchos productos parecidos a una idea, puntúa más bajo.",
-          question: "¿Qué tiendas en línea revisa?",
-        },
-        {
-          answer:
-            "Sí. Cada idea muestra sus fuentes, así que puedes abrir las noticias que la respaldan antes de elegir.",
-          question: "¿Puedo ver de dónde sale una idea?",
-        },
-      ],
-      lead: "Una buena idea en mal momento se vende poco. Tavily da a cada idea su porqué de ahora con las noticias de la semana, y comprueba cuántas tiendas venden ya algo parecido.",
-      name: "Tavily",
-      related: ["creator-merch", "youtube-merch", "twitch-merch"],
-      setup:
-        "No tienes que hacer nada. Tavily funciona con la clave de wovain.",
-      steps: [
-        {
-          body: "Para cada tema de gusto de Qloo, Tavily busca en las noticias de los últimos siete días. Los resultados explican por qué la idea encaja ahora, con enlaces.",
-          title: "Buscar las noticias de la semana",
-        },
-        {
-          body: "Tavily busca productos parecidos en Etsy, Redbubble y Fourthwall. Cuantos menos haya, menos saturada está la idea y mejor puntúa.",
-          title: "Revisar los productos publicados",
-        },
-        {
-          body: "Cada idea guarda sus enlaces de origen, así que puedes leer por qué se propone antes de elegirla.",
-          title: "Adjuntar las fuentes",
-        },
-      ],
-      title:
-        "Tavily en wovain: las noticias de la semana y cuánta competencia hay",
+        "Anuncios de Meta para los drops de tu sello, construidos por ti y creados en pausa",
     },
   },
 };
