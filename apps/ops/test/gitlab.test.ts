@@ -127,7 +127,9 @@ describe("gitlab REST client", () => {
     expect(notes.map((n) => n.body)).toEqual(["note 1", "note 2", "note 3"]);
   });
 
-  it("stops at 20 pages and says so", async () => {
+  // 21 round trips through gitbeaker's per-endpoint rate limiter: slower than
+  // vitest's 5 s default on shared CI runners.
+  it("stops at 20 pages and says so", { timeout: 30_000 }, async () => {
     await expect(gitlab.issueNotes(8)).rejects.toThrow(
       "GitLab GET issues/8/notes: more than 20 pages"
     );
