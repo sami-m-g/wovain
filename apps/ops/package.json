@@ -10,6 +10,7 @@
     "ops": "varlock codegen && node --import varlock/auto-load src/ops.ts",
     "sci-report": "varlock codegen && node --import varlock/auto-load src/sci-report.ts",
     "scout-collect": "varlock codegen && node --import varlock/auto-load src/scout-collect.ts",
+    "submission-tag": "varlock codegen && node --import varlock/auto-load src/submission-tag.ts",
     "test": "vitest run",
     "traffic": "varlock codegen && node --import varlock/auto-load src/traffic.ts"
   },
