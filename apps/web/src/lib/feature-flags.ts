@@ -1,27 +1,13 @@
-import { initialize } from "unleash-client";
-import type { Unleash } from "unleash-client";
+import type { FlagName } from "@wovain/core/flag-registry";
+import type { FlagContext } from "@wovain/core/flags";
 
-import { ENV } from "@/env.server";
+import { core } from "@/services";
 
-// GitLab feature flags through their Unleash API (Deploy > Feature flags >
-// Configure). Without the URL and instance ID every flag is off. The client
-// polls every 15 seconds, so a toggle in GitLab reaches the app within that.
-let client: Unleash | undefined;
-
-export const FAULT_INJECTION_CHECKOUT = "fault-injection-checkout";
-
-export const isFlagOn = (name: string): boolean => {
-  const url = ENV.GITLAB_FEATURE_FLAGS_URL;
-  const instanceId = ENV.GITLAB_FEATURE_FLAGS_INSTANCE_ID;
-  if (url === undefined || instanceId === undefined) {
-    return false;
-  }
-  client ??= initialize({
-    appName: ENV.GITLAB_FEATURE_FLAGS_ENVIRONMENT,
-    disableMetrics: true,
-    instanceId,
-    refreshInterval: 15_000,
-    url,
-  });
-  return client.isEnabled(name);
-};
+// GitLab feature flags for the web app's own routes: the typed registry
+// (packages/core/src/flag-registry.ts) through the official Unleash SDK
+// (packages/core/src/flags.ts). Off when GitLab can't be reached; each
+// answer is a PostHog exposure for a signed-in user. Client components get
+// values as props from a server component (core.flags.snapshot): GitLab has
+// no Unleash frontend API, so the browser never asks GitLab.
+export const isFlagOn = (name: FlagName, context?: FlagContext): boolean =>
+  core.flags.isOn(name, context);

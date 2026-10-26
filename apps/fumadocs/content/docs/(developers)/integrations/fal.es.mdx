@@ -1,15 +1,12 @@
 ---
 title: fal
-description: fal dibuja el arte de impresión transparente.
+description: fal dibuja el arte de impresión transparente, en la cuenta de fal del propio vendedor.
 ---
 
 fal ejecuta el modelo de imagen (`TEXT_TO_IMAGE` en `packages/core/src/fal.ts`, GPT Image en fal).
 
 - **Arte.** `createArtist` convierte el prompt de arte del brief en un arte de impresión cuadrado y transparente que imprime solo las palabras del brief (`artInput`).
 - **Tamaño de impresión.** El juez comprueba el resultado frente al requisito de 2880 px, en el código.
+- **Tu cuenta, tu factura.** Cada vendedor conecta su cuenta de fal en la página de Conexiones (OAuth a través del relay MCP de fal, `https://mcp.fal.ai/mcp-relay`). wovain sella la autorización como las demás conexiones y dibuja con ella (`submit_job`, `check_job`, `get_job_result`), así que el vendedor paga a fal directamente. wovain no tiene clave de fal propia.
 
-```bash
-FAL_KEY=...
-```
-
-Sin la clave, la generación del diseño falla con un error `NOT_CONFIGURED` que nombra la variable.
+Sin conexión con fal, la generación de diseños y las ejecuciones fallan con un error `FAL_NOT_CONNECTED` que enlaza a Conexiones.

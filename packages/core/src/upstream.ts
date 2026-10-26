@@ -25,7 +25,9 @@ import type { Logger } from "./log";
 // keeps what it hands over, through a store the caller backs with its
 // database.
 
-export const providerIds = ["fourthwall", "meta"] as const;
+// fal draws on the merchant's own fal account through fal's MCP relay, so
+// the merchant pays fal directly; wovain has no fal key.
+export const providerIds = ["fourthwall", "meta", "fal"] as const;
 export type ProviderId = (typeof providerIds)[number];
 
 interface ProviderInfo {
@@ -36,6 +38,14 @@ interface ProviderInfo {
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
+  // fal's model relay (fal.ai/docs/documentation/setting-up/mcp); its
+  // authorization server, AuthKit, takes wovain's client metadata document.
+  // offline_access is what gets a refresh token.
+  fal: {
+    scope: "openid profile email offline_access",
+    serverUrl: "https://mcp.fal.ai/mcp-relay",
+    title: "fal",
+  },
   fourthwall: {
     serverUrl: "https://mcp.fourthwall.com/app",
     title: "Fourthwall",
@@ -74,7 +84,7 @@ export const callbackUrl = (appUrl: string, provider: ProviderId) =>
   `${appUrl}/api/connections/${provider}/callback`;
 
 // wovain's Client ID Metadata Document: its URL is the client_id, so nothing
-// is registered with providers that support it (Fourthwall).
+// is registered with providers that support it (Fourthwall, fal).
 export const clientMetadataUrl = (appUrl: string) =>
   `${appUrl}/api/connections/client.json`;
 
@@ -82,7 +92,10 @@ export const clientMetadata = (appUrl: string): OAuthClientMetadata => ({
   client_name: "wovain",
   client_uri: appUrl,
   grant_types: ["authorization_code", "refresh_token"],
-  redirect_uris: [callbackUrl(appUrl, "fourthwall")],
+  redirect_uris: [
+    callbackUrl(appUrl, "fourthwall"),
+    callbackUrl(appUrl, "fal"),
+  ],
   response_types: ["code"],
   token_endpoint_auth_method: "none",
 });
@@ -169,7 +182,7 @@ class ConnectionAuth implements OAuthClientProvider {
   }
 
   #clientFor(provider: ProviderId): StoredOAuthClientInformation {
-    if (provider === "fourthwall") {
+    if (provider === "fourthwall" || provider === "fal") {
       const url = clientMetadataUrl(this.#config.appUrl);
       this.clientMetadataUrl = url;
       return { client_id: url };

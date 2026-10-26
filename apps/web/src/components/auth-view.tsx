@@ -4,12 +4,14 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { Auth } from "@/components/auth/auth";
+import { Link } from "@/i18n/navigation";
 
 const HEADED_VIEWS: ReadonlySet<View> = new Set([
   "signIn",
   "signUp",
   "forgotPassword",
   "resetPassword",
+  "verifyEmail",
 ]);
 
 const headingFor = async (view: View) => {
@@ -28,10 +30,31 @@ const headingFor = async (view: View) => {
     case "resetPassword": {
       return { lead: reset("lead"), title: reset("title") };
     }
+    case "verifyEmail": {
+      return { lead: auth("verifyLead"), title: auth("verifyTitle") };
+    }
     default: {
       return null;
     }
   }
+};
+
+// Better Auth UI's verify-email card offers resend and sign-in; a merchant who
+// typed the wrong address signs up again with the right one.
+const ChangeEmail = async () => {
+  const auth = await getTranslations("Auth");
+  return (
+    <p className="text-muted-foreground mt-4 text-center text-sm">
+      {auth("verifyWrongEmail")}{" "}
+      <Link
+        className="text-foreground underline underline-offset-4"
+        href="/sign-up"
+        prefetch={false}
+      >
+        {auth("verifyWrongEmailLink")}
+      </Link>
+    </p>
+  );
 };
 
 /**
@@ -62,6 +85,7 @@ export const AuthView = async ({ view }: { view: View }) => {
           view={view}
         />
       </Suspense>
+      {view === "verifyEmail" ? <ChangeEmail /> : null}
     </div>
   );
 };

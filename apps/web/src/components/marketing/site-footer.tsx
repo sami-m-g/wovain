@@ -72,7 +72,7 @@ export const SiteFooter = async () => {
           <ConsentSettingsButton className={linkClass} />
         </li>,
         <li key="contact">
-          <a className={linkClass} href="mailto:hello@wovain.com">
+          <a className={linkClass} href="mailto:support@wovain.com">
             {t("contact")}
           </a>
         </li>,

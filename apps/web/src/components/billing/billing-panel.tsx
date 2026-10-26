@@ -17,12 +17,14 @@ import {
 import { CreditTag } from "@/components/billing/credit-tag";
 import { NotifyButton } from "@/components/billing/notify-button";
 import { PackCard, PlanCards } from "@/components/billing/plan-cards";
+import { RedeemCode } from "@/components/billing/redeem-code";
 import type { BillingStatus } from "@/lib/flow-client";
 import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
-// Credits arrive by webhook a few seconds after Polar's checkout returns, so
-// the page polls the status for about 30 seconds after a successful checkout.
+// Credits arrive by webhook a few seconds after Polar's checkout returns (or
+// a promo code is redeemed), so the page polls the status for about 30
+// seconds after either.
 const POLL_MS = 2000;
 const POLLS = 15;
 
@@ -106,13 +108,16 @@ export const BillingPanel = () => {
   const format = useFormatter();
   const searchParams = useSearchParams();
   const returned = searchParams.get("checkout") === "success";
+  const redeemed = searchParams.get("redeemed") === "1";
   const asked = searchParams.get("offer");
   const offer = isOffer(asked) ? asked : undefined;
 
   const status = useQuery(
     orpc.billing.status.queryOptions({
       refetchInterval: (query) =>
-        returned && query.state.dataUpdateCount < POLLS ? POLL_MS : false,
+        (returned || redeemed) && query.state.dataUpdateCount < POLLS
+          ? POLL_MS
+          : false,
     })
   );
 
@@ -174,6 +179,14 @@ export const BillingPanel = () => {
           </AlertDescription>
         </Alert>
       ) : null}
+      {redeemed ? (
+        <Alert>
+          <CircleCheck aria-hidden="true" />
+          <AlertDescription className="text-foreground text-sm">
+            {t("page.redeemSuccess")}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {pastDue ? (
         <Alert variant="destructive">
           <CircleAlert aria-hidden="true" />
@@ -225,7 +238,10 @@ export const BillingPanel = () => {
             comingSoon={!paidPlans}
           />
         </section>
-        <CreditTag className="mx-auto mt-16 w-full max-w-72 lg:mt-20" />
+        <div className="flex flex-col gap-10 lg:mt-12">
+          <RedeemCode disabled={!enabled} />
+          <CreditTag className="mx-auto w-full max-w-72" />
+        </div>
       </div>
     </div>
   );

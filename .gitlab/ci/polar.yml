@@ -9,6 +9,11 @@
 # endpoint, or finds Secret Manager without its secret, it writes the signing
 # secret straight to polar-webhook-secret as a new version (never printed),
 # as gitlab-infra.
+# Promo codes (packages/billing/src/promos.ts) are applied the same way: a
+# promo's first run makes a random code in Polar and writes it only to
+# Secret Manager (polar-promo-<id>). The repository and its job logs are
+# public, so no code is ever printed; set POLAR_PROMO_CODE_<ID> (masked,
+# protected) to choose a code instead.
 
 polar:seed:
   extends: [.gcp-auth, .pnpm-install, .env-placeholders]
@@ -31,6 +36,7 @@ polar:seed:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $POLAR_ACCESS_TOKEN
       changes:
         - packages/billing/src/plans.ts
+        - packages/billing/src/promos.ts
         - packages/billing/src/seed.ts
         - .gitlab/ci/polar.yml
       when: manual

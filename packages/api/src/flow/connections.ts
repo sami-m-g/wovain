@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { ORPCError } from "@orpc/server";
 import type { GrantStore, ProviderId, ToolCall } from "@wovain/core/upstream";
 import { connection, connectionFlow } from "@wovain/db/schema/seller";
 import { and, eq, gt, lte } from "drizzle-orm";
@@ -8,8 +9,9 @@ import { z } from "zod";
 
 import type { Actor } from "./actor";
 
-// The merchant's connections to Fourthwall and Meta: grants sealed in the
-// database, and the authorization flows that create them.
+// The merchant's connections: Fourthwall and Meta grants sealed in the
+// database with the authorization flows that create them, and the
+// merchant's own fal key.
 
 const FLOW_TTL_MS = 10 * 60 * 1000;
 
@@ -80,6 +82,34 @@ export const withProvider = async <T>(
     actor.log,
     work
   );
+
+// fal draws on the merchant's own fal account (its MCP relay, their OAuth
+// grant), never on a wovain key: a step that draws checks for the grant
+// first and answers this typed error, before any model call.
+export const connectionErrors = {
+  FAL_NOT_CONNECTED: {
+    data: z.object({ provider: z.literal("fal") }),
+    message: "Connect your fal account to draw designs",
+    status: 409,
+  },
+} as const;
+
+const falNotConnected = () =>
+  new ORPCError("FAL_NOT_CONNECTED", {
+    data: { provider: "fal" },
+    message: connectionErrors.FAL_NOT_CONNECTED.message,
+    status: connectionErrors.FAL_NOT_CONNECTED.status,
+  });
+
+export const requireFal = async ({ db, userId }: Actor) => {
+  const [row] = await db
+    .select({ id: connection.id })
+    .from(connection)
+    .where(and(eq(connection.userId, userId), eq(connection.provider, "fal")));
+  if (row === undefined) {
+    throw falNotConnected();
+  }
+};
 
 export const listConnections = async ({ db, userId }: Actor) =>
   await db

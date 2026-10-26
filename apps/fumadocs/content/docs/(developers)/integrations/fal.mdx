@@ -1,15 +1,12 @@
 ---
 title: fal
-description: fal draws the transparent print art.
+description: fal draws the transparent print art, on the merchant's own fal account.
 ---
 
 fal runs the image model (`TEXT_TO_IMAGE` in `packages/core/src/fal.ts`, GPT Image on fal).
 
 - **Art.** `createArtist` turns the design brief's art prompt into transparent, square print art that prints only the brief's words (`artInput`).
 - **Print size.** The judge checks the result against the 2880 px requirement in code.
+- **Your account, your bill.** Each merchant connects their fal account on the Connections page (OAuth through fal's MCP relay, `https://mcp.fal.ai/mcp-relay`). wovain seals the grant like the other connections and draws through it (`submit_job`, `check_job`, `get_job_result`), so the merchant pays fal directly. wovain has no fal key of its own.
 
-```bash
-FAL_KEY=...
-```
-
-Without the key, design generation fails with a `NOT_CONFIGURED` error naming the variable.
+Without a fal connection, design generation and runs fail with a `FAL_NOT_CONNECTED` error that links to Connections.

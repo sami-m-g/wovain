@@ -17,7 +17,7 @@ export type Provider =
   | "tavily";
 
 const FIXES: Record<Provider, string> = {
-  fal: "Check FAL_KEY and the fal account's balance.",
+  fal: "Check the fal key in Connections and your fal balance, then retry.",
   fourthwall: "Reconnect Fourthwall, then retry.",
   meta: "Reconnect Meta and check the ad account and Page, then retry.",
   nebius: "Check NEBIUS_API_KEY and NEBIUS_BASE_URL on Nebius Token Factory.",
@@ -74,7 +74,6 @@ const unconfigured = (provider: Provider, variable: string) =>
   });
 
 export const notConfigured = {
-  fal: unconfigured("fal", "FAL_KEY"),
   meta: unconfigured("meta", "META_APP_ID and META_APP_SECRET"),
   nebius: unconfigured("nebius", "NEBIUS_API_KEY"),
   qloo: unconfigured("qloo", "QLOO_API_KEY"),

@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
+import { flagContextOf } from "./flags";
 import { charge } from "./spend";
 
 // Trend research (Qloo × Tavily), saved as ranked ideas.
@@ -11,13 +12,37 @@ export const researchIdeas = async (
   seed: string,
   runId?: string
 ) => {
+  // A run's research step retried after it saved its ideas keeps them.
+  if (runId !== undefined) {
+    const saved = await actor.db
+      .select()
+      .from(idea)
+      .where(and(eq(idea.userId, actor.userId), eq(idea.runId, runId)))
+      .orderBy(asc(idea.rank));
+    if (saved.length > 0) {
+      return saved;
+    }
+  }
+  // Qloo's hackathon terms allow it on free and demo plans only, so
+  // trends-qloo is evaluated for the merchant's plan; paid plans get
+  // Tavily-only trends (docs/adr/0001-progressive-delivery.md).
+  const context = flagContextOf(actor);
+  const sources = {
+    qloo: actor.core.flags.isOn("trends-qloo", context),
+    tavily: actor.core.flags.isOn("trends-tavily", context),
+  };
+  // Without Tavily there's nothing to rank: don't spend the merchant's credits.
+  if (!sources.tavily) {
+    actor.log?.set({ trends: { ideas: 0, sources } });
+    return [];
+  }
   const { avoidNames, ideas, qloo } = await charge(
     actor,
     "research",
     { runId },
-    async () => await actor.core.trends.research(seed, actor.log)
+    async () => await actor.core.trends.research(seed, actor.log, sources)
   );
-  actor.log?.set({ trends: { ideas: ideas.length, qloo } });
+  actor.log?.set({ trends: { ideas: ideas.length, qloo, sources } });
   if (ideas.length === 0) {
     return [];
   }

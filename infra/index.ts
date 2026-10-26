@@ -6,6 +6,7 @@ import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
+import { featureFlags } from "./flags.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
@@ -26,12 +27,13 @@ const gitlabProjectId = config.require("gitlabProjectId");
 const { billingAccount, number: projectNumber } =
   await gcp.organizations.getProject({ projectId: project });
 
-const apis = [
+const apiNames = [
   "artifactregistry",
   "billingbudgets",
   "cloudbilling",
   "clouderrorreporting",
   "cloudkms",
+  "cloudtrace",
   "dns",
   "firebase",
   "iam",
@@ -44,13 +46,17 @@ const apis = [
   "sqladmin",
   "storage",
   "sts",
-].map(
-  (api) =>
-    new gcp.projects.Service(api, {
+] as const;
+const api = Object.fromEntries(
+  apiNames.map((name) => [
+    name,
+    new gcp.projects.Service(name, {
       disableOnDestroy: false,
-      service: `${api}.googleapis.com`,
-    })
-);
+      service: `${name}.googleapis.com`,
+    }),
+  ])
+) as Record<(typeof apiNames)[number], gcp.projects.Service>;
+const apis = Object.values(api);
 const afterApis = { dependsOn: apis };
 // Data and identity: the engine refuses to delete or replace a protected
 // resource, and the policy pack (infra/policy) requires it on each of them.
@@ -147,7 +153,11 @@ const dbUser = new gcp.sql.User("wovain", {
 // generated one; Cloud Run mounts only the secrets that have a version, since
 // a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
-// wovain-allowed-emails were created by main; the others are new.
+// wovain-allowed-emails were created by main; the others are new. fal-key
+// is no longer read (fal runs on each merchant's own key); it stays until
+// its value is retired, since dropping it here would delete the secret.
+// inngest-event-key and inngest-signing-key come from the Inngest app
+// (docs/adr/0001-durable-runs.md): runs can't start until both are set.
 // polar-access-token and polar-webhook-secret are wovain's own billing
 // (packages/billing): a Polar organization token and the webhook endpoint's
 // signing secret. Each stays unmounted until its stack secret is set.
@@ -156,6 +166,8 @@ const secretIds = [
   "fal-key",
   "gitlab-feature-flags-instance-id",
   "google-client-secret",
+  "inngest-event-key",
+  "inngest-signing-key",
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
@@ -214,13 +226,29 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
+// Secrets whose versions live in Secret Manager outside Pulumi (the Meta app
+// credentials, added by hand): mounted without a SecretVersion here, so
+// `pulumi up` never touches their values. Each must keep an enabled version:
+// Cloud Run refuses a revision whose secret has no `latest` version.
+// Without them, connecting Meta answers META_NOT_CONFIGURED.
+const externalSecretIds = ["meta-app-id", "meta-app-secret"] as const;
+const mountedSecretIds = [
+  ...new Set([...populated.keys(), ...externalSecretIds]),
+];
+
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
   "web-runner",
   { accountId: "wovain-web", displayName: "wovain web (Cloud Run)" },
   kept
 );
-for (const role of ["roles/cloudsql.client", "roles/logging.logWriter"]) {
+// cloudtrace.agent: Mastra's traces of runs and agents go to Cloud Trace
+// (packages/api/src/workflows/observability.ts).
+for (const role of [
+  "roles/cloudsql.client",
+  "roles/cloudtrace.agent",
+  "roles/logging.logWriter",
+]) {
   new gcp.projects.IAMMember(`runner-${role.split("/")[1]}`, {
     member: runner.member,
     project,
@@ -326,20 +354,23 @@ const service = cloudRunService("web", {
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
     { name: "WOVAIN_BUCKET", value: media.name },
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
-    ...[...populated.keys()].map((id) => secretEnv(id)),
+    ...mountedSecretIds.map((id) => secretEnv(id)),
   ],
   location: region,
   maxInstances: 2,
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
+  // Inngest calls /api/inngest once per run step; the slowest (a design:
+  // brief, fal art, judge) needs more than Cloud Run's 300 s default.
+  timeout: "900s",
 });
 export const serviceUri = service.uri;
 
-// apps/fumadocs: the docs site and its OpenRouter chat. Without the
-// openrouter-api-key secret (new, empty until set) the chat answers 503.
-// SITE_URL is @public in its schema, so the image is built with it too
-// (.gitlab/ci/deploy.yml).
+// apps/fumadocs: the docs site and its AI chat, which calls Nemotron on
+// Nebius Token Factory with the same nebius-api-key secret as the web app.
+// Without a version of that secret the chat answers 503. SITE_URL is @public
+// in its schema, so the image is built with it too (.gitlab/ci/deploy.yml).
 const docsRunner = new gcp.serviceaccount.Account(
   "docs-runner",
   { accountId: "wovain-docs", displayName: "wovain docs (Cloud Run)" },
@@ -350,24 +381,26 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-const { secret: openrouterKey, version: openrouterVersion } = secretWithValue(
-  "openrouter-api-key",
-  config.getSecret("openrouter-api-key"),
-  kept
-);
-new gcp.secretmanager.SecretIamMember("docs-runner-openrouter-api-key", {
+// The smallest Nemotron on Token Factory ($0.06 in, $0.24 out per 1M tokens).
+const DOCS_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B";
+const nebiusKey = secrets.get("nebius-api-key");
+const nebiusVersion = populated.get("nebius-api-key");
+if (nebiusKey === undefined) {
+  throw new Error("nebius-api-key is not a declared secret");
+}
+new gcp.secretmanager.SecretIamMember("docs-runner-nebius-api-key", {
   member: docsRunner.member,
   role: "roles/secretmanager.secretAccessor",
-  secretId: openrouterKey.id,
+  secretId: nebiusKey.id,
 });
 // The image's own port (apps/fumadocs/Dockerfile).
 const docsService = cloudRunService("docs", {
-  dependsOn: openrouterVersion === undefined ? [] : [openrouterVersion],
+  dependsOn: nebiusVersion === undefined ? [] : [nebiusVersion],
   envs: [
     { name: "SITE_URL", value: docsUrl },
-    ...(openrouterVersion === undefined
-      ? []
-      : [secretEnv("openrouter-api-key")]),
+    { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
+    { name: "NEBIUS_MODEL", value: DOCS_MODEL },
+    ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
   location: region,
   maxInstances: 2,
@@ -405,7 +438,7 @@ const dev = devEnvironment({
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
-  populated: [...populated.keys()],
+  populated: mountedSecretIds,
   project,
   region,
   secrets,
@@ -416,13 +449,18 @@ const dev = devEnvironment({
 // wovain.com end to end (domains.ts). The few values no API hands out are
 // plain stack config keys: `pulumi config set <key> <value>` in infra/.
 const site = configureDomain({
-  after: apis,
+  // Only the APIs it calls: its lookups wait on these, and a lookup that waits
+  // on a resource with pending changes is unknown in a preview, which would
+  // show every record it feeds as changed (adding an unrelated API did).
+  after: [api.dns, api.run, api.siteverification],
   apex: domain,
   caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
     "pki.goog",
     "letsencrypt.org",
   ],
   dmarcRua: config.get("dmarcRua"),
+  googleDkim: config.get("googleDkim"),
+  googleSiteVerification: config.get("googleSiteVerification"),
   metaDomainVerification: config.get("metaDomainVerification"),
   project,
   region,
@@ -440,6 +478,7 @@ const site = configureDomain({
     { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
+  siteOwnerEmail: config.get("siteOwnerEmail"),
   zone: "wovain-com",
 });
 export const domainMappings = site.mappings;
@@ -469,8 +508,11 @@ new gcp.serviceaccount.IAMMember("deployer-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: deployer.name,
 });
+// logging.viewer: the canary verdict counts each revision's 5xx responses
+// in Cloud Run's request logs (apps/ops/src/canary.ts).
 for (const role of [
   "roles/cloudsql.client",
+  "roles/logging.viewer",
   "roles/run.developer",
   "roles/serviceusage.serviceUsageConsumer",
 ]) {
@@ -674,7 +716,9 @@ ciVariables({
     protected: true,
     value: config.requireSecret("gitlab-ci-token"),
   },
-  // The loop's and scout's model calls and competitor searches.
+  // The loop's and scout's model calls and competitor searches, and the
+  // judge evals (evals:judges, .gitlab/ci/verify.yml). Protected: only main's
+  // pipelines read it, so a merge request's evals skip and main's run.
   NEBIUS_API_KEY: {
     created: true,
     masked: true,
@@ -754,3 +798,4 @@ ciVariables({
   },
 });
 environments(siteUrl, devUrl);
+featureFlags();

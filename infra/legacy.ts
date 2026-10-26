@@ -52,9 +52,11 @@ export const retainLegacy = ({
     retain
   );
 
-  // main's WorkOS key and OTLP settings, kept with their values.
+  // main's WorkOS key and OTLP settings, kept with their values, and the docs
+  // chat's retired OpenRouter key (the chat now uses Nebius).
   for (const name of [
     "otel-exporter-otlp-endpoint",
+    "openrouter-api-key",
     "otel-exporter-otlp-headers",
     "workos-api-key",
   ]) {

@@ -102,4 +102,35 @@ describe("createTrends", () => {
     expect(search).toHaveBeenCalledTimes(2);
     expect(research.ideas.map((idea) => idea.theme)).toEqual(["pickleball"]);
   });
+
+  it("never calls Qloo when trends-qloo is off (paid plans)", async () => {
+    const { client, search } = fakeTavily();
+    const tasteOf = vi.fn<Qloo["tasteOf"]>();
+    const trends = createTrends(client, qlooWith(tasteOf));
+
+    const research = await trends.research("pickleball", undefined, {
+      qloo: false,
+      tavily: true,
+    });
+
+    expect(tasteOf).not.toHaveBeenCalled();
+    expect(research.qloo).toBe("off");
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(research.ideas.map((idea) => idea.theme)).toEqual(["pickleball"]);
+  });
+
+  it("returns no ideas and calls nothing when trends-tavily is off", async () => {
+    const { client, search } = fakeTavily();
+    const tasteOf = vi.fn<Qloo["tasteOf"]>();
+    const trends = createTrends(client, qlooWith(tasteOf));
+
+    const research = await trends.research("pickleball", undefined, {
+      qloo: true,
+      tavily: false,
+    });
+
+    expect(search).not.toHaveBeenCalled();
+    expect(tasteOf).not.toHaveBeenCalled();
+    expect(research.ideas).toEqual([]);
+  });
 });

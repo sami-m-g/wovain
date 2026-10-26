@@ -17,10 +17,12 @@ Open http://localhost:4000.
 
 Set these in `apps/fumadocs/.env.local`:
 
-| Variable             | Required | Purpose                              |
-| -------------------- | -------- | ------------------------------------ |
-| `OPENROUTER_API_KEY` | Yes      | API key for the AI chat              |
-| `OPENROUTER_MODEL`   | No       | OpenRouter model used by the AI chat |
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEBIUS_API_KEY` | Yes | Nebius Token Factory key for the AI chat |
+| `NEBIUS_MODEL` | No | Model for the AI chat; defaults to Nemotron 3 Nano 30B-A3B |
+| `NEBIUS_BASE_URL` | No | Token Factory's OpenAI-compatible endpoint |
+| `POSTHOG_KEY` | No | PostHog token for the chat's `$ai_generation` events; empty is off |
 
 ## Content
 

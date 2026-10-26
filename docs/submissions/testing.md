@@ -6,7 +6,7 @@ status: draft
 
 # Judge testing instructions for wovain
 
-One shared judge account serves all four hackathons. Credentials go only into Devpost's private testing box, never into this repo. In this file they are the placeholders `<judge email>` and `<judge password>`.
+One shared judge account serves all four hackathons. Credentials and the judges' promo code go only into Devpost's private testing box, never into this repo (it is public). In this file they are the placeholders `<judge email>`, `<judge password>` and `<promo code>`.
 
 Checked 2026-10-26 against each hackathon's official rules page, read in the browser.
 
@@ -21,7 +21,7 @@ All four say the project must be free of charge and without restriction for test
 | Qloo Agentic | 2026-10-30 23:45 EDT | 2026-11-05 23:45 EDT | 2026-11-05 |
 | Nebius x NVIDIA | 2026-10-30 10:00 PT | **2026-12-15 12:00 PT** | **2026-12-15** |
 
-Heads-up: Nebius's judging period runs to 2026-12-15, not 2026-10-30. The account, the connected shop, ad account and fal account, and the credits must last until then. Free credits refresh monthly (see the checklist).
+Heads-up: Nebius's judging period runs to 2026-12-15, not 2026-10-30. The account, the connected shop, ad account and fal account, and the credits must last until then. Free credits refresh monthly, and the judges' promo code adds 300 that never expire (see the checklist). The code works until 2026-12-16.
 
 ## 1. Paste-ready block for Devpost's testing-instructions field
 
@@ -41,14 +41,16 @@ The account is pre-connected to a test Fourthwall shop, a Meta ad account and a 
 6. Open the run: the Meta campaign is staged PAUSED (Meta Ads Manager shows the same).
 7. Open Insights.
 
-Safe: campaigns are always created paused, products are hidden, nothing spends money. The Free plan has 15 credits a month; a manual drop costs 6, so about two drops. Autopilot is a paid feature and is off.
+Safe: campaigns are always created paused, products are hidden, nothing spends money. A manual drop costs 6 credits; the account has enough for many. Autopilot is a paid feature and is off.
+
+Your own account (optional): sign up, then Billing > Redeem a code > <promo code> for 300 free credits. No card needed.
 
 Please do NOT turn a campaign on, publish a product, or disconnect or change connections.
 
 ChatGPT app (optional): add a connector with https://mcp.wovain.com/api/mcp, sign in with the same account, approve access, then ask "research trends for retro surf tees".
 
 Docs: https://docs.wovain.com
-Contact: hello@wovain.com
+Contact: support@wovain.com
 ```
 
 Check before pasting:
@@ -57,7 +59,8 @@ Check before pasting:
 - "a fal account" is true only after MR !120 (fal through OAuth) merges. Until then art is drawn with the platform's fal key; delete "and a fal account".
 - The sign-in line assumes email and password work on the live site (the code enables them, with email verification). Confirm in checklist step 1.
 - The ChatGPT paragraph is optional. The MCP server signs in through Better Auth's own OAuth, so the judge account should work, but confirm in checklist step 6 or delete the paragraph.
-- Contact `hello@wovain.com` is the address in the site's terms page; swap it if you want a different one.
+- Contact `support@wovain.com` is the address in the site's terms page; swap it if you want a different one.
+- `<promo code>` is the `judges-2026` code (checklist step 3 says where to read it). It is the only secret besides the password: paste it only into Devpost's private box. Each account can redeem it once, and it allows 50 redemptions in all.
 
 ## 2. Per-hackathon notes
 
@@ -77,25 +80,13 @@ Do these in order. Tick each only after you saw it work.
 
 1. **Create the judge account** at <https://wovain.com> with a dedicated email and a throwaway password. Use email and password, not Google, so a judge can sign in. Open the verification email and verify it: paid steps are refused with "Please verify your email first" until you do (`packages/api/src/flow/spend.ts`). Keep the credentials in a password manager, not in the repo.
 2. **Connect the providers** while signed in as that account: Fourthwall (your shop), Meta (your ad account) and fal (your account, after MR !120 merges; until then the platform key draws the art). Use a shop and ad account you are happy for judges to use. Keep the ad account safe from charges: campaigns are always paused, but an account with no payment method is safest.
-3. **Top up credits.** Free gives 15 credits a month and refreshes each cycle; a manual drop costs 6 (research 3, design 2, ad copy 1), so one judge gets about two drops. Several judges over seven weeks (to 2026-12-15) need more. The billing code has no admin grant command: `packages/billing` grants credits only from Polar webhooks, and paid plans and packs are off behind the `billing-paid-plans` flag. The only way today is a direct SQL grant. It is written from the schema in `packages/db/src/schema/billing.ts` and `packages/billing/src/credits.ts` but has not been run, so try it on `dev.wovain.com` first.
+3. **Redeem the code on the judge account.** Free gives 15 credits a month, about two manual drops (6 credits each), and several judges over seven weeks need more. The `judges-2026` promo (`packages/billing/src/promos.ts`) adds 300 credits that never expire, about 50 drops, through a $0 Polar checkout. Its credits arrive by Polar's webhook like any purchase, so the ledger stays the only record.
 
-   Connect to the production database through `cloud-sql-proxy`, the same way CI migrates (README > Deployment), then run:
+   1. Read the code. The `polar:seed` job generated it at random and stored it only in Secret Manager; it is never in the repo or the job log. Run `gcloud secrets versions access latest --secret=polar-promo-judges-2026 --project=<gcp project>`, or open the Polar dashboard > Products > Discounts > "wovain Judges 2026".
+   2. Signed in as the judge account, open Billing, enter the code under **Redeem a code** and select **Redeem**. No card is asked for: the code is 100% off, so wovain confirms the checkout itself.
+   3. Within a few seconds, the page shows "Code redeemed" and **Credits left** goes up by 300.
 
-   ```sql
-   BEGIN;
-   WITH u AS (SELECT id FROM "user" WHERE email = '<judge email>'),
-   g AS (
-     INSERT INTO credit_grant (id, user_id, source, remaining, rollover, period_key)
-     SELECT 'admin-judge-' || to_char(now(), 'YYYYMMDDHH24MISS'), u.id, 'pack', 150, true, ''
-     FROM u
-     RETURNING id, user_id, remaining
-   )
-   INSERT INTO credit_ledger (user_id, grant_id, delta, reason, idempotency_key)
-   SELECT user_id, id, remaining, 'grant', 'admin-grant:' || id FROM g;
-   COMMIT;
-   ```
-
-   Why this shape: a `pack` grant is spent after the plan's own credits and is not reset by a new monthly period, and the ledger's deltas must sum to the grants' `remaining`, so both rows go in one transaction. 150 credits is about 25 manual drops; change the number. Check the balance on the Billing page. Autopilot stays off, because it is gated by plan, not credits. If you would rather have a reviewed command, a small `pnpm billing:grant` script is the follow-up; none exists yet.
+   Each account can redeem a code once, and the code allows 50 redemptions in all, until 2026-12-16. Autopilot stays off, because it is gated by plan, not credits.
 
 4. **Make one test run** as the judge account, end to end: describe a drop, pick designs, approve, then check the hidden product in Fourthwall and the run in Insights. Time it; the block promises 5 minutes.
 5. **Confirm the campaign is paused.** In Meta Ads Manager for the connected account, the campaign, ad set and ads must all show Paused. If anything is on, pause it and do not submit until you know why.
@@ -108,6 +99,6 @@ The account is shared, so judges will see each other's runs. Between judges, or 
 
 1. In Meta Ads Manager, confirm everything is still Paused; delete leftover test campaigns if the account is cluttered.
 2. In Fourthwall, archive test products you do not want to keep (they are hidden, so not public).
-3. Check the credit balance on the Billing page; top up with the SQL above if it is under 12.
+3. Check the credit balance on the Billing page. The account can redeem `judges-2026` only once, so if it runs under 12, add a second promo to `packages/billing/src/promos.ts` (for example `judges-2026-b`), merge it, run the `polar:seed` job, and redeem the new code as in checklist step 3.
 4. Confirm both connections still show connected (a Meta token can expire; reconnect as the owner if so).
 5. Nothing in wovain needs deleting: old runs are history and do not block a new drop.

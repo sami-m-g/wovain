@@ -1,23 +1,23 @@
 import type { Context } from "@wovain/api/context";
+import { log } from "evlog";
 import { after } from "next/server";
 import { PostHog } from "posthog-node";
 
 import { ENV } from "@/env.server";
 
-// Server-side funnel events (posthog.com/docs/libraries/node), keyed by user
-// id: the same distinct id the browser identifies with. Each event is sent
-// after the response, while Cloud Run still allocates CPU to the request.
-// Without a key, procedures get no analytics.
+// Server-side funnel and run events (posthog.com/docs/libraries/node), keyed
+// by user id: the same distinct id the browser identifies with. Each event
+// is sent before the response (or the run step) finishes, while Cloud Run
+// still allocates CPU to the request. Without a key, procedures get no
+// analytics.
 const key = ENV.NEXT_PUBLIC_POSTHOG_KEY;
 const posthog =
   key === undefined
     ? undefined
     : new PostHog(key, { host: ENV.NEXT_PUBLIC_POSTHOG_HOST });
 // The same property the browser adds to its events (src/lib/analytics-client.ts).
-const environment =
-  new URL(ENV.BETTER_AUTH_URL).hostname === "wovain.com"
-    ? "production"
-    : "development";
+const site = new URL(ENV.BETTER_AUTH_URL).hostname;
+const environment = site === "wovain.com" ? "production" : "development";
 
 /**
  * Sends a server error to PostHog Error Tracking as a `$exception` event
@@ -25,9 +25,9 @@ const environment =
  * merchant's user id when known; without one, PostHog sends it anonymously.
  * The returned promise settles once the event is sent.
  *
- * posthog-node skips an error that carries its "previously captured" flag,
- * so once sent, the error is flagged: a procedure error that oRPC rethrows
- * to a server render, then to `onRequestError`, is reported once.
+ * The error tracking drain (src/lib/error-tracking.ts) is its one caller:
+ * every server error reaches it as an error-level evlog wide event. `site`
+ * tells dev.wovain.com from a laptop, both "development".
  */
 export const captureServerException = async (
   error: unknown,
@@ -37,29 +37,32 @@ export const captureServerException = async (
   if (posthog === undefined) {
     return;
   }
-  // The SDK checks the flag synchronously, before its first await.
-  const sent = posthog.captureExceptionImmediate(error, distinctId, {
-    ...properties,
-    environment,
-  });
-  if (typeof error === "object" && error !== null) {
-    Object.assign(error, { __posthog_previously_captured_error: true });
+  try {
+    await posthog.captureExceptionImmediate(error, distinctId, {
+      ...properties,
+      environment,
+      site,
+    });
+  } catch {
+    // PostHog is unreachable: the error's wide event is still in Cloud
+    // Logging. Logging this failure would loop through the same drain.
   }
-  await sent;
 };
 
 export const analytics: Context["analytics"] = posthog && {
-  capture: ({ properties, ...event }) => {
-    after(() =>
-      posthog.captureImmediate({
+  // Awaited by its callers, so the event leaves before the response: on
+  // Cloud Run (request-based billing) CPU is throttled once the response is
+  // sent, and events queued in after() were starved and lost.
+  capture: async ({ properties, ...event }) => {
+    try {
+      await posthog.captureImmediate({
         ...event,
         properties: { ...properties, environment },
-      })
-    );
-  },
-  captureException: (error, { distinctId, properties }) => {
-    const sent = captureServerException(error, distinctId, properties);
-    after(() => sent);
+      });
+    } catch (error) {
+      // Analytics never fails the merchant's request.
+      log.warn({ analytics: { event: event.event, failed: String(error) } });
+    }
   },
   identify: (person) => {
     after(() => posthog.identifyImmediate(person));

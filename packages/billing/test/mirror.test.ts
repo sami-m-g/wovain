@@ -125,3 +125,17 @@ it("picks the best active plan and keeps the newest copy", async () => {
     subscription: { id: "sub_free", status: "active" },
   });
 });
+
+const promo = (grantId: string) =>
+  plan({ grantId, promoId: "judges-2026", rollover: true, source: "pack" });
+
+it("holds one grant per merchant per promo, even when two race", async () => {
+  expect(await applyGrant(db, promo("grant_promo_1"))).toBe(true);
+  // A second order's grant loses on credit_grant_user_promo_idx.
+  expect(await applyGrant(db, promo("grant_promo_2"))).toBe(false);
+  expect(await creditBalance(db, userId)).toMatchObject({ pack: 300 });
+  expect(await ledgerTotals(db, userId)).toStrictEqual({
+    grants: 300,
+    ledger: 300,
+  });
+});

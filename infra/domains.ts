@@ -1,5 +1,5 @@
 // wovain.com, end to end: the Cloud DNS zone Cloud Domains created with the
-// registration (looked up, never managed here), Search Console ownership,
+// registration (named, never managed here), Search Console ownership,
 // a Cloud Run domain mapping per host with a Google-managed certificate, and
 // the zone's other records: mail (Resend), DMARC, CAA, verification tokens,
 // the status page and the shop.
@@ -33,6 +33,12 @@ interface DomainArgs {
   // Values a third party issues and no API hands out (Pulumi.prod.yaml).
   metaDomainVerification: string | undefined;
   dmarcRua: string | undefined;
+  // Google Workspace mail: the site-verification token (the part after
+  // "google-site-verification=") and the DKIM public key record's value.
+  googleSiteVerification: string | undefined;
+  googleDkim: string | undefined;
+  // An extra Search Console owner (a Google account, so it must exist first).
+  siteOwnerEmail: string | undefined;
   caaIssuers: string[];
   shopRecords: ShopRecord[];
   // Resend's records for the domain, when Resend is set up (resend.ts).
@@ -70,27 +76,27 @@ const SITE_VERIFICATION_SCOPES = [
 
 export const configureDomain = (args: DomainArgs) => {
   const { apex, project, region } = args;
-  const zone = gcp.dns.getManagedZoneOutput(
-    { name: args.zone, project },
-    { dependsOn: args.after }
-  );
   const record = (
     name: string,
     type: string,
     rrdatas: pulumi.Input<pulumi.Input<string>[]>,
-    opts?: pulumi.CustomResourceOptions
+    // What it waits on besides the APIs.
+    dependsOn: pulumi.Resource[] = []
   ) =>
     new gcp.dns.RecordSet(
       `${name.replaceAll(".", "-")}-${type.toLowerCase()}`,
       {
-        managedZone: zone.name,
+        // The zone's name as a plain string, so it is known in every preview:
+        // managedZone can't change in place, and an unknown one would show
+        // every record set as replaced.
+        managedZone: args.zone,
         name: `${name}.`,
         project,
         rrdatas,
         ttl: TTL_SECONDS,
         type,
       },
-      opts
+      { dependsOn: [...args.after, ...dependsOn] }
     );
 
   // Search Console: the token goes into the apex TXT set, then the
@@ -111,10 +117,13 @@ export const configureDomain = (args: DomainArgs) => {
     "TXT",
     token.token.apply((googleToken) =>
       [
-        // No mail leaves from the apex's own servers; Resend's bounce domain
-        // is send.<apex>, which has its own SPF.
-        "v=spf1 -all",
+        // Only Google Workspace sends from the apex; Resend's bounce domain
+        // is send.<apex>, which has its own SPF. One SPF record per name.
+        "v=spf1 include:_spf.google.com -all",
         googleToken,
+        ...(args.googleSiteVerification === undefined
+          ? []
+          : [`google-site-verification=${args.googleSiteVerification}`]),
         ...(args.metaDomainVerification === undefined
           ? []
           : [`facebook-domain-verification=${args.metaDomainVerification}`]),
@@ -129,6 +138,16 @@ export const configureDomain = (args: DomainArgs) => {
     },
     { dependsOn: [apexTxt], provider: siteVerification }
   );
+
+  if (args.siteOwnerEmail !== undefined) {
+    // WebResource's `owners` is the verified owners (whoever ran the
+    // verification); more owners are their own resource.
+    new gcp.siteverification.Owner(
+      "search-console-owner",
+      { email: args.siteOwnerEmail, webResourceId: verified.webResourceId },
+      { provider: siteVerification }
+    );
+  }
 
   const mappings = args.routes.map(({ host, service }) => {
     const mapping = new gcp.cloudrun.DomainMapping(
@@ -158,7 +177,7 @@ export const configureDomain = (args: DomainArgs) => {
               .filter((r) => r.type === type)
               .map((r) => r.rrdata)
         ),
-        { dependsOn: [mapping] }
+        [mapping]
       );
     }
     return mapping.name;
@@ -170,6 +189,11 @@ export const configureDomain = (args: DomainArgs) => {
     "CAA",
     args.caaIssuers.map((issuer) => `0 issue "${issuer}"`)
   );
+  // Google Workspace's mail server (support.google.com/a/answer/174125).
+  record(apex, "MX", ["1 smtp.google.com."]);
+  if (args.googleDkim !== undefined) {
+    record(`google._domainkey.${apex}`, "TXT", [txt(args.googleDkim)]);
+  }
   const dmarc = [
     "v=DMARC1",
     "p=quarantine",

@@ -15,6 +15,14 @@
     "mastra": {
       "command": "npx",
       "args": ["-y", "@mastra/mcp-docs-server"]
+    },
+    "fal": {
+      "type": "http",
+      "url": "https://mcp.fal.ai/mcp-relay"
+    },
+    "fourthwall": {
+      "type": "http",
+      "url": "https://mcp.fourthwall.com/app"
     }
   }
 }

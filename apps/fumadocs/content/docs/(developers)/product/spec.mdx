@@ -61,7 +61,7 @@ docker compose up -d
 pnpm run dev
 ```
 
-Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `FAL_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Never commit real values.
+Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Never commit real values.
 
 Submission needs a short demo video and the public repository: [https://github.com/sami-m-g/wovain](https://github.com/sami-m-g/wovain) (MIT). Video URL: to be added after upload.
 
@@ -159,7 +159,7 @@ wovain/
 | Nebius Token Factory | Nemotron brief, judge, ad copy and autopilot, OpenAI-compatible at `NEBIUS_BASE_URL` | wovain, from credits | `NEBIUS_API_KEY` | Pay per token |
 | Qloo | `/search` and `/v2/insights` at `QLOO_API_URL` | wovain, from credits | `QLOO_API_KEY` | Hackathon key; commercial licence to confirm |
 | Tavily | Live search of news and marketplaces | wovain, from credits | `TAVILY_API_KEY` | Rate limited |
-| fal | Print art with GPT Image on fal | Merchant (own key, in progress) | `FAL_KEY` today | Pay per image |
+| fal | Print art with GPT Image on fal, through fal's MCP relay | Merchant (own fal account) | OAuth per merchant | Pay per image |
 | Fourthwall | Catalog, previews, products and publish through its MCP server | Merchant (own shop) | OAuth per merchant | Merchant of record for product sales |
 | Meta Ads | Campaign, ad set and ads, created paused, through its MCP server | Merchant (own ad account) | `META_APP_ID`, `META_APP_SECRET`, OAuth per merchant | App review may be needed |
 | Polar | Subscriptions, credit packs, checkout, portal, webhooks | wovain (4% + 40¢) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET` | In review |

@@ -12,6 +12,23 @@ Only Free is live, so every merchant is on Free. This keeps wovain within the Ql
 - Free runs on Polar (sandbox for now) and grants its 15 credits a month.
 - `pnpm polar:seed` creates the paid products **archived**, so nobody can buy them. To launch them: get Qloo's written permission or a commercial licence, run `POLAR_PAID_PLANS=on pnpm polar:seed`, then turn `billing-paid-plans` on.
 
+## Promo codes for credits (2026-10-26)
+
+Promo codes give free credits while only Free is live, and later they can run launch offers. They go through Polar's normal checkout, so there is no manual top-up: credits still come only from Polar's webhooks.
+
+- **Defined in code.** `packages/billing/src/promos.ts` lists each promo: an id, the credits, the total redemptions, the end date, whether it is on, and who it is for. `pnpm polar:seed` makes each one a private, one-time credit pack product in Polar (its credits at the pack's rate, $10 per 100, so 300 credits list at $30). It also makes a 100%-off discount restricted to that product, with Polar's total and per-customer limits and the end date. An off promo's product is archived and its discount deleted.
+- **No code in the repo.** The repository is public, so the seed generates a random 16-character code for each promo (80 bits) the first time it runs. It stores the code only in Polar and in Secret Manager (`polar-promo-<id>`) and never prints it. Read a code with `gcloud secrets versions access latest --secret=polar-promo-<id>` or in the Polar dashboard under Discounts. To choose a code instead, set the masked CI variable `POLAR_PROMO_CODE_<ID>`.
+- **Redeeming.** Billing > Redeem a code calls `billing.redeem`. The server finds the code's discount in Polar, checks it, then opens a checkout with it applied. A $0 checkout needs no payment form, so the server confirms it and the merchant never leaves wovain. The webhook grants the credits as a pack grant (they never expire), notes `promo <id>` in the ledger, and sends `promo_redeemed` (the promo's id as `code`, the credits and the surface) to PostHog.
+- **While paid plans are off,** only codes that make the checkout $0 are accepted. The server checks both the discount's terms and Polar's own `is_payment_required`. Otherwise it answers `PROMO_NOT_FREE`. The other typed errors are `PROMO_INVALID`, `PROMO_EXPIRED`, `PROMO_USED_UP`, `PROMO_ALREADY_REDEEMED` and `TOO_MANY_REQUESTS`.
+- **Abuse limits.** Each code has Polar's total and one-per-customer limits. wovain also allows one promo grant per merchant per promo, enforced by a unique index, so two checkouts finished at once still credit once. The endpoint allows 5 attempts per merchant per 10 minutes, counted in Postgres so every instance sees the same count.
+
+| Promo | Credits | Redemptions | Ends | Status |
+| --- | --- | --- | --- | --- |
+| `judges-2026` | 300 | 50 | 2026-12-16 | on: hackathon judges, shared only in Devpost's private testing box |
+| `launch-2027` | 50 | 500 | 2027-03-31 | off: an example launch code for when paid plans open |
+
+Cost: a 300-credit redemption costs wovain at most about $6 in provider calls (about $0.02 a credit). A $0 order takes no payment.
+
 ## Value metric: credits, sized to drops
 
 A merchant pays for finished drops: researched ideas, approved designs, a paused campaign. Seats and API calls don't measure that. Credits do, and they map cleanly onto the steps wovain runs and pays for:

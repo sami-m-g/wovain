@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createProductCampaign, listCampaigns } from "../flow/campaigns";
+import { connectionErrors } from "../flow/connections";
 import {
   decideDesign,
   generateDesign,
@@ -15,10 +16,12 @@ import {
   publishDesignProduct,
 } from "../flow/products";
 import { getRun, listRuns, startRun } from "../flow/runs";
+import { transitionErrors } from "../flow/transitions";
 import { funnelProcedure, protectedProcedure } from "../index";
 
 // The seller flow, one procedure per step: research → design → approve →
-// product → publish → paused campaign, or all of it in one autopilot run.
+// product → publish → paused campaign, or all of it in one run. runs.start
+// returns the run at once; the run goes on in the background (../workflows).
 
 const id = z.string().min(1).max(64);
 const seed = z.string().trim().min(1).max(200);
@@ -27,6 +30,8 @@ const countries = z
   .array(z.string().regex(/^[A-Z]{2}$/u))
   .min(1)
   .max(25);
+// Makes a create idempotent (AIP-155): the same ID returns the same row.
+const requestId = z.uuid();
 // Dollars a day; the upper bound stops a typo from staging a runaway budget.
 const dailyBudget = z.number().min(1).max(500);
 
@@ -51,12 +56,14 @@ export const ideasRouter = {
 
 export const designsRouter = {
   approve: funnelProcedure("design_approved")
+    .errors(transitionErrors)
     .input(byId)
     .handler(
       async ({ context, input }) =>
         await decideDesign(context, input.id, { approve: true, by: "merchant" })
     ),
   generate: protectedProcedure
+    .errors(connectionErrors)
     .input(z.object({ ideaId: id }))
     .handler(
       async ({ context, input }) => await generateDesign(context, input.ideaId)
@@ -70,6 +77,7 @@ export const designsRouter = {
       async ({ context, input }) => await listDesigns(context, input.runId)
     ),
   reject: protectedProcedure
+    .errors(transitionErrors)
     .input(z.object({ id, reason: reason.optional() }))
     .handler(
       async ({ context, input }) =>
@@ -88,7 +96,13 @@ export const productsRouter = {
       async ({ context, input }) => await browseCatalog(context, input.query)
     ),
   create: protectedProcedure
-    .input(z.object({ catalogProductId: id.optional(), designId: id }))
+    .input(
+      z.object({
+        catalogProductId: id.optional(),
+        designId: id,
+        requestId: requestId.optional(),
+      })
+    )
     .handler(
       async ({ context, input }) => await createDesignProduct(context, input)
     ),
@@ -112,6 +126,7 @@ export const campaignsRouter = {
         dailyBudget: dailyBudget.default(15),
         pageId: z.string().regex(/^\d+$/u).optional(),
         productId: id,
+        requestId: requestId.optional(),
       })
     )
     .handler(
@@ -130,6 +145,7 @@ export const runsRouter = {
     async ({ context }) => await listRuns(context)
   ),
   start: funnelProcedure("run_started")
+    .errors(connectionErrors)
     .input(
       z.object({
         autopilot: z.boolean().default(false),

@@ -111,7 +111,14 @@ migrate:production:
     action: prepare
 
 # Rolls each image out as a new Cloud Run revision; Pulumi owns every other
-# setting of the services (infra/index.ts).
+# setting of the services (infra/index.ts) but not their traffic. The web
+# app goes out as a canary (docs/adr/0001-progressive-delivery.md): a
+# revision with no traffic and the `canary` tag, then CANARY_PERCENT of
+# production; canary:production promotes it or rolls it back. The docs site
+# goes straight to 100%.
+# CANARY_DEMO_FAULT=1 (Run pipeline on main) makes the canary revision fail
+# its checkout quotes (FAULT_INJECTION_REVISION, apps/web), the demo's bad
+# deploy; every other deploy clears it.
 deploy:production:
   # .gcloud last, so its before_script (credentials, then gcloud) wins.
   extends: [.gcp-auth, .gcloud, .on-main]
@@ -121,8 +128,16 @@ deploy:production:
   needs: [image:web, image:docs, migrate:production]
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
+    CANARY_PERCENT: "10"
   script:
-    - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
+    - |
+      if [ -n "$CANARY_DEMO_FAULT" ]; then
+        fault=--update-env-vars=FAULT_INJECTION_REVISION=checkout
+      else
+        fault=--remove-env-vars=FAULT_INJECTION_REVISION
+      fi
+    - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --no-traffic --tag canary "$fault" --quiet
+    - gcloud run services update-traffic wovain-web --region "$GCP_REGION" --to-tags "canary=$CANARY_PERCENT" --quiet
     - gcloud run deploy wovain-docs --image "$GCP_IMAGE_REPOSITORY/docs:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
   environment:
     name: production
@@ -164,15 +179,74 @@ deploy:development:
     name: development
     url: $DEV_SITE_URL
 
-# The live sites answer, and Better Auth reaches its handler.
+# The canary verdict (apps/ops/src/canary.ts): probes the canary's tag URL
+# and counts each revision's 5xx responses for CANARY_WINDOW_S, then sends
+# 100% to the canary or back to the stable revision and files a
+# release-guard issue for the wovain release-guard Duo flow. It holds the
+# production resource group, so the next deploy waits for the verdict. A
+# rollback fails the job, so the pipeline (and DORA's change failure rate)
+# shows it. canary.md is the audit trail.
+.release-job:
+  extends: .ops-job
+  interruptible: false
+  resource_group: production
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
+  # Google trusts gitlab-deploy only from this environment; verify records
+  # no deployment.
+  environment:
+    name: production
+    action: verify
+  artifacts:
+    when: always
+    expose_as: canary verdict
+    paths: [canary.md]
+
+canary:production:
+  extends: [.release-job, .on-main]
+  needs: [deploy:production]
+  script:
+    - pnpm --dir apps/ops run canary verify
+
+# The release guard's traffic rollback: the ops job (a person's token)
+# starts a pipeline on main with ROLLBACK=1 when production degrades after a
+# deploy and no flag change explains it (apps/ops/src/release.ts). ROLLBACK_TO
+# names the revision; without it, the newest ready one before the current.
+rollback:production:
+  extends: .release-job
+  rules:
+    - if: ($CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "web") && $ROLLBACK && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  needs: []
+  script:
+    - pnpm --dir apps/ops run canary rollback
+
+# The synthetic checks (apps/ops/src/smoke.ts), as a visitor with no
+# account: /login shows Google, a sign-in for an address that can't exist is
+# a 401 and not a 5xx, connect links and callback errors redirect on
+# wovain.com, /api/inngest answers, the docs chat isn't down. A failure goes
+# to PostHog Error Tracking, where heal and the release guard read it, and
+# fails the job. The ops job runs the same checks every 10 minutes.
 smoke:production:
+  extends: .on-main
+  stage: monitor
+  needs: [deploy:production]
+  before_script:
+    - npm install -g --silent "pnpm@$PNPM_VERSION"
+    - pnpm install --frozen-lockfile --ignore-scripts --filter @wovain/ops
+  script:
+    - pnpm --dir apps/ops run smoke
+
+# Registers the new revision's run workflow with Inngest Cloud
+# (docs/adr/0001-durable-runs.md): a PUT to the serve route syncs the app, so
+# no one syncs it by hand in the Inngest dashboard. It fails until the
+# inngest-event-key and inngest-signing-key secrets are set.
+sync:inngest:
   extends: .on-main
   stage: monitor
   image: curlimages/curl:8.11.1
   needs: [deploy:production]
+  allow_failure: true
   variables:
     GIT_STRATEGY: none
   script:
-    - curl -sSf -o /dev/null "$SITE_URL/"
-    - curl -sSf "$SITE_URL/api/auth/ok"
-    - curl -sSfL -o /dev/null "$DOCS_SITE_URL/"
+    - curl -sSf -X PUT "$SITE_URL/api/inngest"
