@@ -66,6 +66,23 @@ const noteSchema = z.object({
 });
 export type Note = z.infer<typeof noteSchema>;
 
+const featureFlagSchema = z.object({
+  active: z.boolean(),
+  name: z.string(),
+  strategies: z
+    .array(
+      z.object({
+        name: z.string(),
+        parameters: z.record(z.string(), z.string()).nullish(),
+        scopes: z
+          .array(z.object({ environment_scope: z.string() }))
+          .default([]),
+      })
+    )
+    .default([]),
+  updated_at: z.string(),
+});
+
 const discussionSchema = z.object({
   notes: z.array(
     z.object({
@@ -345,6 +362,14 @@ export const createGitLab = (env: {
         return null;
       }
     },
+    // The project's feature flags (Deploy > Feature flags), with their
+    // strategies: what the release guard and the hygiene check read.
+    featureFlags: async () =>
+      await collect(
+        featureFlagSchema,
+        "feature_flags",
+        api.FeatureFlags.all(project, allPages)
+      ),
     issueLinks: async (issue: number) =>
       z
         .array(issueSchema)
@@ -500,6 +525,11 @@ export const createGitLab = (env: {
         })
       );
     },
+    // A flag's Status toggle: the kill switch (Developer role).
+    setFeatureFlagActive: async (name: string, active: boolean) =>
+      featureFlagSchema.parse(
+        await guard(api.FeatureFlags.edit(project, name, { active }))
+      ),
     // An incident's severity (GraphQL issueSetSeverity).
     setSeverity: async (
       iid: number,

@@ -140,6 +140,9 @@ catalogs:
     '@google-cloud/monitoring':
       specifier: ^6.2.0
       version: 6.2.0
+    '@google-cloud/run':
+      specifier: ^4.1.1
+      version: 4.2.0
     '@modelcontextprotocol/client':
       specifier: 2.3.1
       version: 2.3.1
@@ -434,6 +437,9 @@ importers:
       '@google-cloud/monitoring':
         specifier: 'catalog:'
         version: 6.2.0
+      '@google-cloud/run':
+        specifier: 'catalog:'
+        version: 4.2.0
       playwright:
         specifier: ^1.64.1
         version: 1.64.1
@@ -1793,6 +1799,10 @@ packages:
 
   '@google-cloud/promisify@6.2.1':
     resolution: {integrity: sha512-/+RvLJ5u+WhGay6Z3aY6OApDQmNqq1427Mmt7Eov9kYp69gdUiGSwFnygeTxfz69XBtYZLAnWikGMIoFXtKt+A==}
+    engines: {node: '>=22'}
+
+  '@google-cloud/run@4.2.0':
+    resolution: {integrity: sha512-idLdoweHOA4la4/46Vw0d1DwyRqjseWQkzDqfF6DzX7Zf18bzTNhWdGGAVAk41gdL50DRhAmOOtn2+0tUQpSAA==}
     engines: {node: '>=22'}
 
   '@grpc/grpc-js@1.14.6':
@@ -8563,6 +8573,12 @@ snapshots:
   '@google-cloud/promisify@4.0.0': {}
 
   '@google-cloud/promisify@6.2.1': {}
+
+  '@google-cloud/run@4.2.0':
+    dependencies:
+      google-gax: 6.13.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@grpc/grpc-js@1.14.6':
     dependencies:

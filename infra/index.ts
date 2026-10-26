@@ -455,8 +455,11 @@ new gcp.serviceaccount.IAMMember("deployer-from-gitlab", {
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: deployer.name,
 });
+// logging.viewer: the canary verdict counts each revision's 5xx responses
+// in Cloud Run's request logs (apps/ops/src/canary.ts).
 for (const role of [
   "roles/cloudsql.client",
+  "roles/logging.viewer",
   "roles/run.developer",
   "roles/serviceusage.serviceUsageConsumer",
 ]) {
