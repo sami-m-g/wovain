@@ -197,8 +197,9 @@ export const configureDomain = (args: DomainArgs) => {
     );
   }
 
-  // Resend always asks for the same three records: DKIM at
-  // resend._domainkey, and MX and SPF at its bounce subdomain, send.
+  // Resend asks for DKIM at resend._domainkey, MX and SPF at its bounce
+  // subdomain, send, and a CNAME at rsend (its click and open tracking).
+  // Every value is Resend's, as returned when the domain was created.
   const { resendRecords } = args;
   const values = (
     records: pulumi.Output<ResendRecord[]>,
@@ -208,11 +209,15 @@ export const configureDomain = (args: DomainArgs) => {
     records.apply((list) =>
       list
         .filter((r) => r.name === name && r.type === type)
-        .map((r) =>
-          type === "TXT"
-            ? txt(r.value)
-            : `${r.priority ?? DEFAULT_MX_PRIORITY} ${r.value.replace(TRAILING_DOT, ".")}`
-        )
+        .map((r) => {
+          if (type === "TXT") {
+            return txt(r.value);
+          }
+          const target = r.value.replace(TRAILING_DOT, ".");
+          return type === "MX"
+            ? `${r.priority ?? DEFAULT_MX_PRIORITY} ${target}`
+            : target;
+        })
     );
   const resendRecordSets =
     resendRecords === undefined
@@ -225,6 +230,11 @@ export const configureDomain = (args: DomainArgs) => {
           ),
           record(`send.${apex}`, "MX", values(resendRecords, "send", "MX")),
           record(`send.${apex}`, "TXT", values(resendRecords, "send", "TXT")),
+          record(
+            `rsend.${apex}`,
+            "CNAME",
+            values(resendRecords, "rsend", "CNAME")
+          ),
         ];
 
   // The shop's records, as Fourthwall's get-dns-entries lists them, grouped
