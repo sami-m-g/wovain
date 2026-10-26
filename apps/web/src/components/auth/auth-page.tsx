@@ -1,5 +1,6 @@
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { getTranslations } from "next-intl/server";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { AuthForm } from "@/components/auth/auth-form";
@@ -18,12 +19,27 @@ const FormFallback = ({ fields }: { fields: number }) => (
 );
 
 /**
+ * Google sign-in is configured per deployment (Cloud Run env), not at build
+ * time, so this is read at request time: `connection()` opts this subtree out
+ * of prerendering. Reading ENV during prerender would bake `false` into the
+ * HTML, because `next build` runs without the Google credentials.
+ */
+const AuthFormWithProviders = async ({
+  mode,
+}: {
+  mode: "login" | "signUp";
+}) => {
+  await connection();
+  const google = Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET);
+  return <AuthForm google={google} mode={mode} />;
+};
+
+/**
  * Sign-in and sign-up: the heading renders on the server, so it paints before
  * any JavaScript; the form itself reads the URL (?next=) on the client.
  */
 export const AuthPage = async ({ mode }: { mode: "login" | "signUp" }) => {
   const t = await getTranslations("Auth");
-  const google = Boolean(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET);
   return (
     <div className="w-full max-w-sm">
       <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
@@ -33,7 +49,7 @@ export const AuthPage = async ({ mode }: { mode: "login" | "signUp" }) => {
         {mode === "signUp" ? t("signUpLead") : t("loginLead")}
       </p>
       <Suspense fallback={<FormFallback fields={mode === "signUp" ? 3 : 2} />}>
-        <AuthForm google={google} mode={mode} />
+        <AuthFormWithProviders mode={mode} />
       </Suspense>
     </div>
   );
