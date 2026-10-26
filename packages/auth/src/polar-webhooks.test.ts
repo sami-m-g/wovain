@@ -6,7 +6,7 @@ import { creditBalance } from "@wovain/billing/credits";
 import { entitlement } from "@wovain/billing/mirror";
 import { addUser, createTestDb } from "@wovain/billing/testing";
 import type { Database } from "@wovain/db";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { createAuth } from "./index";
 
@@ -22,13 +22,18 @@ const NOW = "2026-10-26T10:00:00Z";
 
 let db: Database;
 let close: () => Promise<void>;
+let reset: () => Promise<void>;
 let userId: string;
 let auth: ReturnType<typeof createAuth>;
 const capture = vi.fn();
 const identify = vi.fn();
 
+beforeAll(async () => {
+  ({ close, db, reset } = await createTestDb());
+});
+
 beforeEach(async () => {
-  ({ close, db } = await createTestDb());
+  await reset();
   userId = await addUser(db, "merchant");
   auth = createAuth(
     {
@@ -46,7 +51,7 @@ beforeEach(async () => {
   identify.mockClear();
 });
 
-afterEach(async () => {
+afterAll(async () => {
   await close();
 });
 

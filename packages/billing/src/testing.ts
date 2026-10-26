@@ -23,7 +23,15 @@ export const createTestDb = async () => {
   // The flow code takes the app's node-postgres type; PGlite's drizzle
   // database has the same query API.
   const db = pglite as unknown as Database;
-  return { close: async () => await client.close(), db };
+  return {
+    close: async () => await client.close(),
+    db,
+    // Empties every table that hangs off a user, so one migrated database
+    // serves a whole test file (migrating is the slow part).
+    reset: async () => {
+      await client.exec('TRUNCATE "user" CASCADE');
+    },
+  };
 };
 
 export const addUser = async (db: Database, id: string) => {

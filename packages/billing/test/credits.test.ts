@@ -1,7 +1,7 @@
 import type { Database } from "@wovain/db";
 import { creditReservation } from "@wovain/db/schema/billing";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 
 import {
   creditBalance,
@@ -15,6 +15,7 @@ import { addUser, createTestDb, ledgerTotals } from "../src/testing";
 
 let db: Database;
 let close: () => Promise<void>;
+let reset: () => Promise<void>;
 let userId: string;
 
 const grantPlan = async (units: number, periodKey = "2026-10-01T00:00:00Z") =>
@@ -37,12 +38,16 @@ const grantPack = async (units: number) =>
     userId,
   });
 
+beforeAll(async () => {
+  ({ close, db, reset } = await createTestDb());
+});
+
 beforeEach(async () => {
-  ({ close, db } = await createTestDb());
+  await reset();
   userId = await addUser(db, "merchant");
 });
 
-afterEach(async () => {
+afterAll(async () => {
   await close();
 });
 

@@ -1,5 +1,5 @@
 import type { Database } from "@wovain/db";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 
 import { creditBalance } from "../src/credits";
 import {
@@ -13,14 +13,19 @@ import { addUser, createTestDb, ledgerTotals } from "../src/testing";
 
 let db: Database;
 let close: () => Promise<void>;
+let reset: () => Promise<void>;
 let userId: string;
 
+beforeAll(async () => {
+  ({ close, db, reset } = await createTestDb());
+});
+
 beforeEach(async () => {
-  ({ close, db } = await createTestDb());
+  await reset();
   userId = await addUser(db, "merchant");
 });
 
-afterEach(async () => {
+afterAll(async () => {
   await close();
 });
 
