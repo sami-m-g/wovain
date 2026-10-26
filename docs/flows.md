@@ -217,7 +217,7 @@ PostHog stays the product brain (funnels, KPIs, experiments, replays, error trac
 | Signal | Source | How |
 | --- | --- | --- |
 | Request traces | Next.js's own spans for every request, plus outgoing `fetch` (Nemotron, Fourthwall, Meta, PostHog) | `@opentelemetry/sdk-node` with the undici instrumentation, `apps/web/src/lib/otel.ts` |
-| Agent traces and logs | Mastra's spans for runs, agents, tools, scorers and guardrails | A second Mastra `OtelExporter` (the `custom` provider), `packages/api/src/workflows/observability.ts`; Cloud Trace keeps its copy |
+| Agent traces and logs | Mastra's spans for runs, agents, tools, scorers and guardrails | A second Mastra `OtelExporter` with an OTLP/HTTP span exporter passed in (Mastra's own exporter loading isn't traced into the standalone build), `packages/api/src/workflows/observability.ts`; Cloud Trace keeps its copy |
 | Logs | Every evlog wide event (one per request, errors included), with its `traceId` and `spanId` | evlog's official OTLP drain (`evlog/otlp`), composed with the Cloud Logging and PostHog drains, `apps/web/src/lib/evlog.ts` |
 | Metrics | Node runtime metrics (event loop, GC, heap); request rate, errors and latency per route come from the spans | `@opentelemetry/instrumentation-runtime-node` |
 | CI/CD | Pipeline and job traces, metrics and logs | `GITLAB_OBSERVABILITY_EXPORT=metrics,logs,traces` ([docs](https://docs.gitlab.com/operations/observability/ci_cd/)), a CI variable in `infra/index.ts` |
