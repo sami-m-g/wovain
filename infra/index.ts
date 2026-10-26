@@ -382,6 +382,8 @@ const service = cloudRunService("web", {
   ],
   location: region,
   maxInstances: 2,
+  // Mastra's agents run in-process: 512Mi ran out on 2026-10-26.
+  memory: "1Gi",
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
