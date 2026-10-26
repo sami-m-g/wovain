@@ -73,25 +73,24 @@ Constraints:
 
 `deploy:production` deploys the web image with `--no-traffic --tag canary` and moves `CANARY_PERCENT` (10%) to the tag. `canary:production` (`apps/ops/src/canary.ts`, the official `@google-cloud/run` client) then, for `CANARY_WINDOW_S` (10 minutes):
 
-- probes the tag URL (`/`, `/api/auth/ok`) every 30 s;
-- counts 5xx responses per revision in Cloud Logging (`resource.labels.revision_name`);
-- reads firing PostHog `kpi:` alerts and PostHog error-tracking exceptions since the deploy.
+- probes the tag URL (`/`, `/api/auth/ok`, `/api/checkout/quote`) every 30 s, counting a path only when the live site answers it (so a fault both revisions share isn't blamed on the deploy);
+- counts 5xx responses per revision in Cloud Logging (`resource.labels.revision_name`).
 
-Verdict: **promote** (100% to the canary revision, tag removed) or **roll back** (100% to the stable revision, canary keeps 0% and its tag for debugging). Every verdict is a note in the job log, a GitLab deployment, and on rollback a `release-guard` issue with the evidence.
+Verdict: **promote** (100% to the canary revision; the old stable revision keeps the `previous` tag at 0%, the target of a later rollback) or **roll back** (100% to the stable revision, canary keeps 0% and its tag for debugging). Any error after the canary got its share also rolls it back. Every verdict is a note in the job log, a GitLab deployment, and on rollback a `release-guard` issue with the evidence.
 
 ### 4. The release guard after promotion
 
-The ops job (every 10 minutes, and right away from PostHog destinations) gets a `releaseGuard` phase. When production degrades within 24 hours of a deploy or a flag change (5xx ratio over the threshold in Cloud Logging, a new error-tracking spike, or a firing `kpi:` alert):
+The ops job (every 10 minutes, and right away from PostHog destinations) gets a `releaseGuard` phase. It measures the last 15 minutes: the 5xx ratio of production and of dev.wovain.com in Cloud Logging, and PostHog error-tracking exceptions. Firing `kpi:` alerts are reported as evidence but never trigger an action on their own, because a KPI can miss its target for days.
 
-1. If a guarded flag changed in the last 24 hours, it switches that flag's Status off through the GitLab API (the kill switch).
-2. Otherwise it starts a `ROLLBACK=1` pipeline, whose `rollback:production` job (the deploy account, the production environment) moves 100% back to the previous revision.
-3. It opens a `release-guard` issue (and incident) with the evidence and assigns it to the custom Duo flow **`wovain release-guard`**, which reads the issue, the deploy's commits and the flag, writes the diagnosis and, when the cause is clear, opens a fix or revert MR that goes through the usual Duo Code Review and guardrails.
+1. If a guarded flag changed in the last 2 hours, it switches that flag's Status off through the GitLab API (the kill switch). A dev spike counts here: the Status is global.
+2. Otherwise, if production (not dev) degraded within 2 hours of a deploy, it starts a `ROLLBACK=1` pipeline, whose `rollback:production` job (the deploy account, the production environment) moves 100% back to the `previous` revision.
+3. It opens a `release-guard` issue with the evidence and assigns it to the custom Duo flow **`wovain release-guard`**, which reads the issue, the deploy's commits and the flag, writes the diagnosis and, when the cause is clear, opens a fix or revert MR that goes through the usual Duo Code Review and guardrails.
 
 Caps: one automatic action an hour, three a day. Nothing is switched back on automatically: a person re-enables the flag or re-deploys.
 
 ### 5. Hygiene
 
-The ops job's `flagHygiene` phase compares GitLab's flags with the registry and opens one `flag-cleanup` issue per flag (deduplicated by a marker, assigned to the owner) when a flag is past its expiry, a `release` flag has served all of production for 14+ days, or a flag exists only in GitLab or only in the registry.
+The ops job's `flagHygiene` phase compares GitLab's flags with the registry and opens one `flag-cleanup` issue per flag (deduplicated by a marker, naming the owner) when a flag is past its expiry, a `release` flag has served all of production for 14+ days, or a flag exists only in GitLab or only in the registry.
 
 ## Consequences
 

@@ -12,7 +12,6 @@ export const researchIdeas = async (
   seed: string,
   runId?: string
 ) => {
-  await meter(actor, "run", { runId });
   // Qloo's hackathon terms allow it on free and demo plans only, so
   // trends-qloo is evaluated for the merchant's plan; paid plans get
   // Tavily-only trends (docs/adr/0001-progressive-delivery.md).
@@ -21,6 +20,12 @@ export const researchIdeas = async (
     qloo: actor.core.flags.isOn("trends-qloo", context),
     tavily: actor.core.flags.isOn("trends-tavily", context),
   };
+  // Without Tavily there's nothing to rank: don't spend the merchant's run.
+  if (!sources.tavily) {
+    actor.log?.set({ trends: { ideas: 0, sources } });
+    return [];
+  }
+  await meter(actor, "run", { runId });
   const { avoidNames, ideas, qloo } = await actor.core.trends.research(
     seed,
     actor.log,

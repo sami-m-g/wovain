@@ -144,14 +144,14 @@ describe("guardDecision", () => {
     ).toBe("none");
   });
 
-  it("switches off a fresh flag for a firing KPI alert", () => {
+  it("never blames a fresh flag for a KPI alert alone", () => {
     expect(
       guardDecision({
         ...base,
         firingKpis: ["checkout-quote-success"],
         flags: [flag({ name: "app-ui-v2", updated_at: minutesAgo(30) })],
       }).action
-    ).toBe("flag-off");
+    ).toBe("none");
   });
 
   it("cools down for an hour and stops at three actions a day", () => {
@@ -227,6 +227,7 @@ describe("splitOf", () => {
         tag: "canary",
         uri: "https://canary---web.a.run.app",
       },
+      previous: undefined,
       stable: {
         percent: 90,
         revision: "web-00041",

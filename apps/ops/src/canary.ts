@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { CANARY_TAG, createCloudRun } from "./cloudrun.ts";
+import { CANARY_TAG, PREVIOUS_TAG, createCloudRun } from "./cloudrun.ts";
 import type { Target } from "./cloudrun.ts";
 import { opsContext } from "./context.ts";
 import { ENV } from "./env.ts";
@@ -93,7 +93,7 @@ const fileIssue = async (title: string, body: string) => {
 };
 
 const verify = async () => {
-  const { canary, stable } = await run.split();
+  const { canary, previous, stable } = await run.split();
   if (canary === undefined || canary.uri === undefined) {
     log("no revision on the canary tag: nothing to verify");
     return true;
@@ -148,12 +148,19 @@ const verify = async () => {
     stable: stableHealth,
   });
   if (result.verdict === "promote") {
-    await run.sendAllTo(canary.revision);
-    log(`promoted ${canary.revision} to 100%`);
+    // The old stable revision keeps the `previous` tag at 0%: a later
+    // rollback returns there, never to a canary that was rejected.
+    await run.sendAllTo(canary.revision, [
+      { ...stable, percent: 0, tag: PREVIOUS_TAG },
+    ]);
+    log(`promoted ${canary.revision} to 100%; ${stable.revision} is previous`);
     return true;
   }
-  const kept: Target = { ...canary, tag: CANARY_TAG };
-  await run.sendAllTo(stable.revision, [kept]);
+  const kept: Target[] = [
+    { ...canary, tag: CANARY_TAG },
+    ...(previous === undefined ? [] : [previous]),
+  ];
+  await run.sendAllTo(stable.revision, kept);
   log(
     `rolled back to ${stable.revision}; ${canary.revision} keeps 0% on its tag for debugging`
   );
@@ -180,14 +187,21 @@ const verify = async () => {
 };
 
 const rollback = async () => {
-  const { canary, stable } = await run.split();
+  const { canary, previous, stable } = await run.split();
   const [serving] = [stable, canary]
     .filter((t) => t !== undefined)
     .toSorted((a, b) => b.percent - a.percent);
   const revisions = await run.revisions();
   const current = revisions.find((r) => r.name === serving?.revision);
+  const named =
+    ENV.ROLLBACK_TO === undefined || ENV.ROLLBACK_TO === ""
+      ? undefined
+      : ENV.ROLLBACK_TO;
+  // Named, else the last revision that served all of production, else the
+  // newest ready one before the current.
   const target =
-    ENV.ROLLBACK_TO ??
+    named ??
+    previous?.revision ??
     revisions.find(
       (r) =>
         r.ready &&
@@ -213,7 +227,33 @@ const rollback = async () => {
   return true;
 };
 
-const ok = mode === "verify" ? await verify() : await rollback();
+// Whatever fails after the canary got its share sends production back to
+// the stable revision, so an unverified revision never keeps traffic.
+const failSafe = async (error: unknown) => {
+  log(`failed: ${error instanceof Error ? error.message : "unknown"}`);
+  if (mode !== "verify") {
+    return false;
+  }
+  try {
+    const { canary, stable } = await run.split();
+    if (canary !== undefined && stable !== undefined && canary.percent > 0) {
+      await run.sendAllTo(stable.revision, [{ ...canary, tag: CANARY_TAG }]);
+      log(`rolled back to ${stable.revision} because the verdict failed`);
+    }
+  } catch (rollbackError) {
+    log(
+      `the fail-safe rollback failed too: ${rollbackError instanceof Error ? rollbackError.message : "unknown"}`
+    );
+  }
+  return false;
+};
+
+let ok = false;
+try {
+  ok = mode === "verify" ? await verify() : await rollback();
+} catch (error) {
+  ok = await failSafe(error);
+}
 await writeFile(fromRoot("canary.md"), `${audit.join("\n")}\n`);
 if (!ok) {
   process.exitCode = 1;

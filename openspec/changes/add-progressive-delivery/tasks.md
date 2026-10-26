@@ -27,7 +27,7 @@
 
 - [x] 4.1 `releaseGuard` ops phase: flag off or rollback pipeline, caps, issue
 - [x] 4.2 `wovain release-guard` Duo flow in `wovain:duoCustomFlows`
-- [ ] 4.3 Confirm the flow's service account name (`DUO_RELEASE_GUARD_ACCOUNT`) after it is enabled
+- [x] 4.3 `DUO_RELEASE_GUARD_ACCOUNT` from `infra/duo.ts` outputs
 
 ## 5. Hygiene
 

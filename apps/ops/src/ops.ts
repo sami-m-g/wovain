@@ -905,7 +905,7 @@ const GUARD_WATCH_MS = 15 * 60_000;
 const guardAccount = env.DUO_RELEASE_GUARD_ACCOUNT;
 const assignGuardIssues = async (issues: Issue[]) => {
   if (guardAccount === undefined || guardAccount === "") {
-    return [];
+    return { assigned: [], problems: ["DUO_RELEASE_GUARD_ACCOUNT isn't set"] };
   }
   const waiting = issues.filter(
     (i) =>
@@ -913,10 +913,16 @@ const assignGuardIssues = async (issues: Issue[]) => {
       i.assignees.length === 0 &&
       (i.description ?? "").includes(RELEASE_GUARD_MARKER)
   );
-  await Promise.all(
-    waiting.map(async (i) => await assignTo(i.iid, guardAccount))
+  // Best effort: a missing flow account never blocks the mitigation.
+  const problems = await Promise.all(
+    waiting.map(
+      async (i) =>
+        await bestEffort(`assigning #${i.iid}`, () =>
+          assignTo(i.iid, guardAccount)
+        )
+    )
   );
-  return waiting.map((i) => i.iid);
+  return { assigned: waiting.map((i) => i.iid), problems: problems.flat() };
 };
 
 const releaseGuard = async () => {
@@ -1006,8 +1012,8 @@ const releaseGuard = async () => {
     labels: `${RELEASE_GUARD_LABEL},stage::release`,
     title: `Release guard: ${action}`,
   });
-  await assignGuardIssues([issue]);
-  return { action, issue: issue.web_url };
+  const handoff = await assignGuardIssues([issue]);
+  return { action, handoff, issue: issue.web_url };
 };
 
 // Flag hygiene: one cleanup issue per expired, fully rolled out or

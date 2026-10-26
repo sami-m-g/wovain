@@ -28,4 +28,4 @@ Every merge went to all of production at once, and the GitLab feature flags were
 
 ## Impact
 
-`packages/core` (registry, SDK, trends), `packages/api` (ideas flow), `apps/web` (flag helper, quote route), `apps/ops` (canary, release guard, hygiene), `.gitlab/ci` (deploy, rollback), `.gitlab/duo/catalog/flows/release-guard.yml`, `infra/` (flags, labels, the deploy account's `roles/logging.viewer`, `traffics` ignored). People add their Better Auth user IDs to `wovain:internalUserIds` and confirm the release-guard flow's service account name once it is enabled.
+`packages/core` (registry, SDK, trends), `packages/api` (ideas flow), `apps/web` (flag helper, quote route), `apps/ops` (canary, release guard, hygiene), `.gitlab/ci` (deploy, rollback), `.gitlab/duo/catalog/flows/release-guard.yml`, `infra/` (flags, labels, the deploy account's `roles/logging.viewer`, `traffics` ignored). No manual steps: team members come from `WOVAIN_ALLOWED_EMAILS`, and `infra/duo.ts` enables the release-guard flow and publishes its service account as `DUO_RELEASE_GUARD_ACCOUNT`.

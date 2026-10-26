@@ -163,7 +163,11 @@ export const guardDecision = ({
       return definition.guarded && recent(Date.parse(f.updated_at));
     })
     .toSorted((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
-  if (flag !== undefined) {
+  // A KPI alert alone never blames a flag either: it can have fired for
+  // days before the flag changed.
+  const measured =
+    serverSide || reasons.some((r) => r.startsWith("development"));
+  if (flag !== undefined && measured) {
     return {
       action: "flag-off",
       flag: flag.name,

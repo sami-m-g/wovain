@@ -10,6 +10,9 @@ import { RevisionsClient, ServicesClient } from "@google-cloud/run";
 
 const REVISION = "TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION" as const;
 export const CANARY_TAG = "canary";
+// The last revision that served all of production before the current one:
+// what a later rollback returns to (never a canary that was rejected).
+export const PREVIOUS_TAG = "previous";
 
 export interface Target {
   revision: string;
@@ -27,7 +30,11 @@ export const splitOf = (
     tag?: string | null;
     uri?: string | null;
   }[]
-): { canary: Target | undefined; stable: Target | undefined } => {
+): {
+  canary: Target | undefined;
+  previous: Target | undefined;
+  stable: Target | undefined;
+} => {
   const targets: Target[] = statuses.flatMap((s) =>
     s.revision === undefined || s.revision === null || s.revision === ""
       ? []
@@ -41,10 +48,11 @@ export const splitOf = (
         ]
   );
   const canary = targets.find((t) => t.tag === CANARY_TAG);
+  const previous = targets.find((t) => t.tag === PREVIOUS_TAG);
   const [stable] = targets
     .filter((t) => t.revision !== canary?.revision && t.percent > 0)
     .toSorted((a, b) => b.percent - a.percent);
-  return { canary, stable };
+  return { canary, previous, stable };
 };
 
 export const createCloudRun = (options: {
