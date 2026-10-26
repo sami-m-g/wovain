@@ -1,17 +1,102 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommits"],
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":maintainLockFilesWeekly"
+  ],
+  "labels": ["type::chore", "stage::configure", "dependencies"],
   "minimumReleaseAge": "7 days",
-  "labels": ["type::chore", "stage::configure"],
+  "internalChecksFilter": "strict",
+  "osvVulnerabilityAlerts": true,
+  "schedule": ["before 6am on monday"],
+  "platformAutomerge": true,
+  "gitlabci": {
+    "managerFilePatterns": [
+      "/^\\.gitlab-ci\\.yml$/",
+      "/^\\.gitlab/ci/.+\\.ya?ml$/"
+    ]
+  },
+  "customManagers": [
+    {
+      "description": "The CI pin of the pnpm version (the packageManager field is the npm manager's)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.gitlab-ci\\.yml$/"],
+      "matchStrings": ["PNPM_VERSION: (?<currentValue>\\S+)"],
+      "depNameTemplate": "pnpm",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "description": "The CI pin of the Pulumi CLI",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.gitlab-ci\\.yml$/"],
+      "matchStrings": ["PULUMI_VERSION: (?<currentValue>\\S+)"],
+      "depNameTemplate": "pulumi/pulumi",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "minor and patch"
+      "description": "Patch: automerge on a green pipeline (not 0.x, not prereleases)",
+      "matchUpdateTypes": ["patch", "digest", "pin"],
+      "matchCurrentVersion": "!/^0|-/",
+      "groupName": "patch",
+      "automerge": true
+    },
+    {
+      "description": "Minor: one weekly merge request, reviewed by the deps-review flow",
+      "matchUpdateTypes": ["minor"],
+      "groupName": "minor",
+      "reviewers": ["duo-deps-review-gitlab-ai-hackathon"]
+    },
+    {
+      "description": "Major: approve on the dashboard first, then the deps-review flow reviews",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "reviewers": ["duo-deps-review-gitlab-ai-hackathon"],
+      "addLabels": ["deps::major"]
+    },
+    {
+      "description": "Drizzle v1: rc releases only, never branch snapshots like rc.5-ab785fc (they rank above the rc)",
+      "matchPackageNames": ["drizzle-orm", "drizzle-kit"],
+      "groupName": "drizzle",
+      "allowedVersions": "!/-[a-z0-9.]+-[0-9a-f]{7}$/",
+      "automerge": false
+    },
+    {
+      "description": "pnpm moves with its CI pin",
+      "matchPackageNames": ["pnpm"],
+      "groupName": "pnpm"
+    },
+    {
+      "description": "The Pulumi SDK and CLI move together (the dynamic provider's Read change spans both)",
+      "matchPackageNames": ["@pulumi/pulumi", "pulumi/pulumi"],
+      "groupName": "pulumi"
+    },
+    {
+      "description": "infra's lockfile needs the generated @pulumi/graphql SDK (gitignored), which pulumi install makes",
+      "matchFileNames": ["infra/package.json"],
+      "postUpgradeTasks": {
+        "commands": ["pulumi install --cwd infra"],
+        "fileFilters": ["infra/pnpm-lock.yaml"],
+        "executionMode": "branch"
+      }
+    },
+    {
+      "description": "High-churn SDK whose new APIs we don't use: monthly",
+      "matchPackageNames": ["openai"],
+      "schedule": ["on the first day of the month"]
     },
     {
       "description": "The stories job's Playwright image must match the playwright package",
       "matchPackageNames": ["playwright", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
+    },
+    {
+      "description": "CI components resolve against gitlab.com",
+      "matchPackageNames": ["components/ai-catalog", "components/opentofu"],
+      "registryUrls": ["https://gitlab.com"]
     }
   ]
 }
