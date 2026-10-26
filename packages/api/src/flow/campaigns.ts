@@ -8,7 +8,7 @@ import { notReady } from "./actor";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
 import { getProduct } from "./products";
-import { meter } from "./spend";
+import { charge } from "./spend";
 
 // A published product gets varied ads in a PAUSED Meta campaign: the
 // merchant reviews and starts it in Ads Manager.
@@ -34,18 +34,23 @@ export const createProductCampaign = async (
   }
   const linkUrl = live.productUrl;
   const source = await getDesign(actor, live.designId);
-  await meter(actor, "llm", { runId: source.runId });
-  const copy = await withLlmTrace(
-    { distinctId: actor.userId, traceId: source.runId ?? source.id },
+  const copy = await charge(
+    actor,
+    "assist",
+    { runId: source.runId },
     async () =>
-      await writeAdCopy(
-        actor.core.nemotron,
-        {
-          description: source.brief.description,
-          idea: source.brief.artPrompt,
-          title: source.brief.title,
-        },
-        actor.log
+      await withLlmTrace(
+        { distinctId: actor.userId, traceId: source.runId ?? source.id },
+        async () =>
+          await writeAdCopy(
+            actor.core.nemotron,
+            {
+              description: source.brief.description,
+              idea: source.brief.artPrompt,
+              title: source.brief.title,
+            },
+            actor.log
+          )
       )
   );
   const dailyBudgetCents = Math.round(input.dailyBudget * 100);

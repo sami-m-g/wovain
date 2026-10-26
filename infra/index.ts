@@ -148,6 +148,9 @@ const dbUser = new gcp.sql.User("wovain", {
 // a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
 // wovain-allowed-emails were created by main; the others are new.
+// polar-access-token and polar-webhook-secret are wovain's own billing
+// (packages/billing): a Polar organization token and the webhook endpoint's
+// signing secret. Each stays unmounted until its stack secret is set.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
@@ -156,6 +159,8 @@ const secretIds = [
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
+  "polar-access-token",
+  "polar-webhook-secret",
   "qloo-api-key",
   "resend-api-key",
   "tavily-api-key",
@@ -173,6 +178,10 @@ const generated = new Map<string, pulumi.Output<string>>([
       special: false,
     }).result,
   ],
+  // A placeholder version, so Cloud Run starts before `pnpm polar:seed`
+  // writes the endpoint's real secret as a newer version (Cloud Run mounts
+  // the latest). Pulumi never writes the real value, so `pulumi up` keeps it.
+  ["polar-webhook-secret", pulumi.output("pending-polar-seed")],
   [
     "token-encryption-key",
     new random.RandomBytes("token-encryption-key", { length: 32 }).base64,
@@ -278,6 +287,7 @@ const sharedEnvs = {
 // project id (`pulumi config set posthogProjectId <id>`). Each is optional.
 const posthogKey = config.get("posthogKey");
 const posthogPersonalApiKey = config.getSecret("posthog-personal-api-key");
+const polarAccessToken = config.getSecret("polar-access-token");
 const posthogProjectId = config.get("posthogProjectId");
 const posthogEnv =
   posthogKey === undefined
@@ -293,6 +303,10 @@ const googleEnv =
     ? []
     : [{ name: "GOOGLE_CLIENT_ID", value: googleClientId }];
 
+// Polar's environment (apps/web/.env.schema): sandbox until the business
+// is registered (`pulumi config set polarEnvironment production`).
+const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
+
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
   cloudSqlInstance: sql.connectionName,
@@ -306,6 +320,7 @@ const service = cloudRunService("web", {
       value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
     },
     { name: "MCP_URL", value: mcpUrl },
+    { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
     ...googleEnv,
     ...posthogEnv,
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
@@ -675,6 +690,23 @@ ciVariables({
           created: true,
           protected: false,
           value: posthogKey,
+        },
+      }),
+  // The polar:seed job (.gitlab/ci/polar.yml) builds the Polar catalog with
+  // the same token the app uses.
+  ...(polarAccessToken === undefined
+    ? {}
+    : {
+        POLAR_ACCESS_TOKEN: {
+          created: true,
+          masked: true,
+          protected: true,
+          value: polarAccessToken,
+        },
+        POLAR_ENVIRONMENT: {
+          created: true,
+          protected: true,
+          value: polarEnvironment,
         },
       }),
   // The scout's PostHog query API access (apps/ops/src/posthog.ts).

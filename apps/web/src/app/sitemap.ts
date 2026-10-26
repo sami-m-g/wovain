@@ -12,6 +12,7 @@ const LAST_MODIFIED = new Date("2026-10-25T00:00:00.000Z");
 
 const PAGES: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },
+  { path: "/pricing", priority: 0.9 },
   { path: "/integrations", priority: 0.8 },
   ...INTEGRATION_SLUGS.map((slug) => ({
     path: `/integrations/${slug}`,
