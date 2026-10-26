@@ -30,6 +30,12 @@ type Strategy = gitlab.types.input.ProjectFeatureFlagStrategy;
 // (docs.gitlab.com/operations/feature_flags): "All users" is `default`,
 // "Percent of users" is `gradualRolloutUserId` (sticky by user ID) and
 // "User list" is `gitlabUserList`.
+// "mastra-runs" → "mastraruns": GitLab's groupId is [a-z]{1,32}.
+const NOT_A_LETTER = /[^a-z]/gu;
+const MAX_GROUP_ID = 32;
+export const groupIdOf = (name: string) =>
+  name.toLowerCase().replaceAll(NOT_A_LETTER, "").slice(0, MAX_GROUP_ID);
+
 export const strategiesOf = (
   name: string,
   environment: FlagEnvironment,
@@ -51,8 +57,11 @@ export const strategiesOf = (
         {
           name: "gradualRolloutUserId",
           // The flag's own group, so users land in independent buckets per
-          // flag.
-          parameters: { groupId: name, percentage: String(rollout.percent) },
+          // flag. GitLab takes 1 to 32 lowercase letters only.
+          parameters: {
+            groupId: groupIdOf(name),
+            percentage: String(rollout.percent),
+          },
           scopes,
         },
       ];

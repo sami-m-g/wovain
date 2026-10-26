@@ -85,11 +85,24 @@ const calls: Record<string, Record<string, unknown>> = {
 };
 
 const registered: string[] = [];
+// Each feature flag's strategy parameters, as GitLab's API receives them.
+const flagParameters: Record<string, unknown>[] = [];
 await pulumi.runtime.setMocks(
   {
     call: ({ inputs, token }) => calls[token] ?? inputs,
     newResource: ({ inputs, name, type }) => {
       registered.push(`${type}::${name}`);
+      if (type === "gitlab:index/projectFeatureFlag:ProjectFeatureFlag") {
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the provider's input shape
+        const strategies = (inputs["strategies"] ?? []) as {
+          parameters?: Record<string, unknown>;
+        }[];
+        for (const { parameters } of strategies) {
+          if (parameters !== undefined) {
+            flagParameters.push(parameters);
+          }
+        }
+      }
       // Outputs the program reads that only the provider computes.
       return {
         id: `${name}-id`,
@@ -153,4 +166,15 @@ test("the program registers every resource once, without throwing", async () => 
   );
   // Two resources with one type and name are one URN, which the engine refuses.
   expect(registered.filter((r, i) => registered.indexOf(r) !== i)).toEqual([]);
+});
+
+test("every percent rollout's groupId is one GitLab accepts", () => {
+  const groupIds = flagParameters.flatMap((p) => {
+    const id = p["groupId"];
+    return typeof id === "string" ? [id] : [];
+  });
+  expect(groupIds.length).toBeGreaterThan(0);
+  for (const id of groupIds) {
+    expect(id).toMatch(/^[a-z]{1,32}$/u);
+  }
 });
