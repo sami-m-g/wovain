@@ -85,15 +85,32 @@ describe("createFlags", () => {
     expect(unleash.isEnabled).toHaveBeenCalledTimes(3);
   });
 
-  it("uses the development rollout when GitLab isn't configured", () => {
+  it("fails closed in production when GitLab isn't configured, except for flags on for everyone", () => {
     const flags = createFlags(
       { ...configured, GITLAB_FEATURE_FLAGS_URL: undefined },
       { onExposure: vi.fn() }
     );
 
     expect(flags.isOn("trends-tavily")).toBe(true);
+    expect(flags.isOn("billing-polar")).toBe(false);
+    expect(flags.isOn("mastra-runs")).toBe(false);
     expect(flags.isOn("billing-paid-plans")).toBe(false);
     expect(flags.isOn("fault-injection-checkout")).toBe(false);
+  });
+
+  it("uses the development rollout in development when GitLab isn't configured", () => {
+    const flags = createFlags(
+      {
+        ...configured,
+        GITLAB_FEATURE_FLAGS_ENVIRONMENT: "development",
+        GITLAB_FEATURE_FLAGS_URL: undefined,
+      },
+      { onExposure: vi.fn() }
+    );
+
+    expect(flags.isOn("billing-polar")).toBe(true);
+    expect(flags.isOn("mastra-runs")).toBe(true);
+    expect(flags.isOn("billing-paid-plans")).toBe(false);
   });
 
   it("snapshots every registered flag", () => {

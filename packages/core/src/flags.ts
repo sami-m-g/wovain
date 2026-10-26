@@ -72,9 +72,17 @@ const environmentOf = (name: string): FlagEnvironment =>
 const allowedFor = (flag: FlagDefinition, plan: FlagPlan | undefined) =>
   flag.plans === undefined || flag.plans.includes(plan ?? "free");
 
-// The development rollout, for a process with no GitLab configured.
-const localAnswer = (flag: FlagDefinition) =>
-  flag.initiallyActive && flag.rollout.development.kind !== "off";
+// For a process with no GitLab configured: development follows its rollout;
+// production fails closed except for a flag rolled out to everyone (a kill
+// switch such as trends-tavily), so a missing secret never opens an
+// internal or percent rollout to all users.
+const localAnswer = (flag: FlagDefinition, environment: FlagEnvironment) => {
+  const { kind } = flag.rollout[environment];
+  if (!flag.initiallyActive) {
+    return false;
+  }
+  return environment === "production" ? kind === "all" : kind !== "off";
+};
 
 export interface Flags {
   isOn: (name: FlagName, context?: FlagContext) => boolean;
@@ -163,7 +171,7 @@ export const createFlags = (
     }
     const sdk = client();
     if (sdk === undefined) {
-      return { enabled: localAnswer(flag), reason: "local" };
+      return { enabled: localAnswer(flag, environment), reason: "local" };
     }
     if (!sdk.isSynchronized()) {
       return { enabled: false, reason: "closed" };

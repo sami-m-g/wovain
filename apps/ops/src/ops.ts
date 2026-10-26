@@ -118,7 +118,12 @@ const bothServices = (filter: string) =>
     'resource.labels.service_name="wovain-web"',
     `resource.labels.service_name=("wovain-web" OR "${DEV_SERVICE}")`
   );
-const errorFilter = `${bothServices(config.service.logs)} AND jsonPayload.level="error" AND jsonPayload.error.name:*`;
+const ERROR_LINES = 'jsonPayload.level="error" AND jsonPayload.error.name:*';
+// heal finds errors on both services (dev.wovain.com runs the fault flag);
+// the status page and verifyHeals measure production alone, since a fix
+// deploys to production and dev is rolled out by hand.
+const errorFilter = `${bothServices(config.service.logs)} AND ${ERROR_LINES}`;
+const productionErrorFilter = `${config.service.logs} AND ${ERROR_LINES}`;
 
 const marker = (kind: string) => `<!-- wovain:${kind} -->`;
 const hasMarker = (notes: Note[], kind: string) =>
@@ -294,7 +299,7 @@ const eventsSince = async (
     return scalarOf(rows) ?? 0;
   }
   const { entries } = await google.entries(
-    `${errorFilter} AND jsonPayload.path="${signature.path}"`,
+    `${productionErrorFilter} AND jsonPayload.path="${signature.path}"`,
     { end: now, start }
   );
   return (
@@ -774,7 +779,7 @@ const statusPage = async () => {
       }),
       gitlab.deployments(since),
       gitlab.doraLeadTime(since),
-      google.entries(errorFilter, {
+      google.entries(productionErrorFilter, {
         end: now,
         start: new Date(now.getTime() - WATCH_MS),
       }),
