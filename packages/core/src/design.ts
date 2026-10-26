@@ -78,16 +78,18 @@ export const REQUIRED_PX = 2880;
 // oxlint-disable-next-line sort-keys
 const checkSchema = z.object({
   rule: z.enum(JUDGE_RULES),
-  note: z.string().max(200),
+  note: z.string(),
   pass: z.boolean(),
 });
 type JudgeCheck = z.infer<typeof checkSchema>;
 
 export const judgeReplySchema = z.object({
   checks: z.array(checkSchema).max(10),
-  // One friendly line for the merchant about this design.
-  coach: z.string().min(1).max(160),
-  fixes: z.array(z.string().max(200)).max(5),
+  // One friendly line for the merchant about this design. Display-only text
+  // carries no length cap: a model running a few words long must not fail
+  // the run; the prompt asks for short lines and the UI wraps them.
+  coach: z.string().min(1),
+  fixes: z.array(z.string()).max(5),
   score: z.int().min(0).max(100),
 });
 type JudgeReply = z.infer<typeof judgeReplySchema>;
@@ -142,7 +144,7 @@ Rules:
 - originality: nothing names or imitates a brand, artist, character or title.
 - print_size: the facts you are given are final; repeat them.
 
-Give one check per rule (${JUDGE_RULES.join(", ")}): a short note, then pass: true when the design meets the rule and false only when it breaks it. Then a one-line coach note for the merchant, up to 5 concrete fixes for failed rules (most important first, plain sentences), and a 0 to 100 score for how ready the design is to sell.`;
+Give one check per rule (${JUDGE_RULES.join(", ")}): a short note, then pass: true when the design meets the rule and false only when it breaks it. Then a one-line coach note for the merchant (under 25 words), up to 5 concrete fixes for failed rules (most important first, plain sentences), and a 0 to 100 score for how ready the design is to sell.`;
 
 export const judgeDesign = async (
   ask: Nemotron,
