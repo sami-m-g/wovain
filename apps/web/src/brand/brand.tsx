@@ -10,8 +10,9 @@
  * `icon.png`, `apple-icon.png`, `public/brand/icon-512.png`). Swapping a logo
  * variant is a file swap.
  *
- * The approved identity: the Flick w, cochineal and plum ink on calico, with
- * saffron for small highlights.
+ * The approved identity: the Shuttle. A calico loom shuttle with a bobbin
+ * window rises on a 24 degree diagonal across a cochineal tile, trailing a
+ * saffron thread. Wordmark: Geist 600 with a drawn w and a single-storey a.
  */
 export const BRAND_NAME = "wovain";
 
@@ -52,6 +53,10 @@ interface Palette {
   railInk: string;
   /** The accent as it reads on the rail. */
   railAccent: string;
+  /** The Shuttle mark drawn inline (intro, loader): tile, shuttle, thread. */
+  markTile: string;
+  markShuttle: string;
+  markThread: string;
 }
 
 export const PALETTE: { light: Palette; dark: Palette } = {
@@ -64,6 +69,9 @@ export const PALETTE: { light: Palette; dark: Palette } = {
     inkMuted: "#c4b3bc",
     line: "#3a2533",
     lineStrong: "#806678",
+    markShuttle: "#f7f1e8",
+    markThread: "#f3b23a",
+    markTile: "#be2b68",
     onAccent: "#1a0c16",
     paper: "#1a0c16",
     rail: "#12080f",
@@ -85,6 +93,9 @@ export const PALETTE: { light: Palette; dark: Palette } = {
     inkMuted: "#6b5462",
     line: "#e6dccd",
     lineStrong: "#93837a",
+    markShuttle: "#f7f1e8",
+    markThread: "#f3b23a",
+    markTile: "#b0245f",
     onAccent: "#ffffff",
     paper: "#f7f1e8",
     rail: "#3b1530",
@@ -112,21 +123,36 @@ export const BRAND_CSS = `:root{${declarations(PALETTE.light)}}.dark{${declarati
 
 /** Logo files under `public/brand/`, with their intrinsic sizes. */
 export const BRAND_ASSETS = {
-  /** Mark plus wordmark, for the nav and the app rail. */
+  /** Mark plus wordmark: `light` for light grounds, `dark` for dark ones. */
   lockup: {
     dark: "/brand/lockup-dark.svg",
-    height: 42.16,
+    height: 48,
     light: "/brand/lockup-light.svg",
-    width: 175.28,
+    width: 216.61,
   },
-  /** The mark alone, in colour; `markMono` uses currentColor. */
+  /** The mark alone: light (default), dark grounds, one ink (currentColor) and reversed. */
   mark: "/brand/mark.svg",
+  markDark: "/brand/mark-dark.svg",
   markMono: "/brand/mark-mono.svg",
-  /** The seam lockup, for brand moments (footer, auth, social cards). */
-  seam: {
-    dark: "/brand/lockup-seam-dark.svg",
-    height: 46,
-    light: "/brand/lockup-seam-light.svg",
-    width: 241.25,
+  markReversed: "/brand/mark-reversed.svg",
+  /** The lockup with the mark's square left empty, for the animated `<Logo intro/>`. */
+  wordmark: {
+    dark: "/brand/wordmark-dark.svg",
+    light: "/brand/wordmark-light.svg",
   },
+} as const;
+
+/**
+ * The Shuttle drawn inline on its 48 grid, for the animated mark (intro and
+ * loader). The same geometry as `public/brand/mark.svg`.
+ */
+export const SHUTTLE = {
+  /** One step along the rising diagonal (24 degrees). */
+  axis: { x: 0.914, y: -0.407 },
+  /** The shuttle with its bobbin window (even-odd). */
+  hull: "M12.12 29.29 16.99 20.55 31.61 14.04 41.36 16.27 36.49 25.01 21.87 31.51Z M20.98 23.37 31.03 18.9 32.5 22.19 22.45 26.66Z",
+  /** The thread's centre line, stroked at `threadWidth`. */
+  thread: "M15.78 27.66C8.47 30.91 5.83 34.83 -6 33.86",
+  threadWidth: 2.6,
+  tileRadius: 10.5,
 } as const;

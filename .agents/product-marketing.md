@@ -158,7 +158,8 @@ Every marketing skill reads this file before drafting. It covers positioning, au
 | 2026-10-26 | Audience is independent fashion designers and small labels; tone is editorial and restrained, with craft cues and no generic SaaS look | Founder decision | All copy, imagery and docs | active |
 | 2026-10-26 | Position as print-on-demand only; no apparel-on-demand framing | Founder decision | All copy | active |
 | 2026-10-26 | Keep technical internals (frameworks, models, protocols) off the landing page and the user docs | Founder feedback: the site read like a hackathon entry | Landing, docs | active |
-| 2026-10-26 | Use the logo only through the `<Logo/>` component; a new mark is in progress | Founder decision | Design | active |
+| 2026-10-26 | Use the logo only through the `<Logo/>` component; a new mark is in progress | Founder decision | Design | superseded |
+| 2026-10-26 | The logo is the Shuttle: a loom shuttle on a rising diagonal carrying a saffron thread, with a custom Geist wordmark. Use it through `<Logo/>`, `ShuttleMark` and `ShuttleLoader` | Founder picked it from logo round 8 | Design, all surfaces | active |
 
 ## Changelog
 *Newest first. One line per revision: what changed and why.*

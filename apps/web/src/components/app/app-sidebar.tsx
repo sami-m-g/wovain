@@ -66,7 +66,7 @@ export const AppSidebar = ({ docsUrl }: { docsUrl: string }) => {
                 alt={BRAND_NAME}
                 className="hidden shrink-0 group-data-[collapsible=icon]:block"
                 height={MARK_SIZE}
-                src={BRAND_ASSETS.mark}
+                src={BRAND_ASSETS.markDark}
                 width={MARK_SIZE}
               />
             </SidebarMenuButton>

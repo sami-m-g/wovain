@@ -13,6 +13,12 @@ const manifest = (): MetadataRoute.Manifest => ({
     { sizes: "180x180", src: "/apple-icon.png", type: "image/png" },
     { sizes: "192x192", src: "/icon.png", type: "image/png" },
     { sizes: "512x512", src: "/brand/icon-512.png", type: "image/png" },
+    {
+      purpose: "maskable",
+      sizes: "512x512",
+      src: "/brand/maskable-512.png",
+      type: "image/png",
+    },
     { sizes: "1024x1024", src: "/brand/app-icon.svg", type: "image/svg+xml" },
   ],
   name: messages.Metadata.defaultTitle,

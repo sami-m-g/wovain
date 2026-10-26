@@ -5,18 +5,9 @@
   "type": "module",
   "exports": {
     "./globals.css": "./src/styles/globals.css",
-    "./lib/*": {
-      "types": "./dist/lib/*.d.ts",
-      "default": "./src/lib/*.ts"
-    },
-    "./components/*": {
-      "types": "./dist/components/*.d.ts",
-      "default": "./src/components/*.tsx"
-    },
-    "./hooks/*": {
-      "types": "./dist/hooks/*.d.ts",
-      "default": "./src/hooks/*.ts"
-    },
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
     "./postcss.config": "./postcss.config.mts"
   },
   "scripts": {
@@ -31,12 +22,13 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-table": "catalog:",
     "@tanstack/react-virtual": "^3.14.22",
-    "class-variance-authority": "^0.7.1",
-    "cn": "^0.5.0",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "motion": "catalog:",
     "next-themes": "catalog:",
     "react": "catalog:",
+    "react-day-picker": "catalog:",
     "react-dom": "catalog:",
     "recharts": "catalog:",
     "shadcn": "^4.21.0",

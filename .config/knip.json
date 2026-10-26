@@ -13,7 +13,8 @@
       ]
     },
     "apps/web": {
-      "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"]
+      "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"],
+      "ignore": ["src/components/auth/**", "src/lib/auth/**"]
     },
     "packages/widgets": {
       "entry": ["src/{trends,design,product,campaign}.tsx", "src/styles.css"],

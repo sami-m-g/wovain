@@ -2,11 +2,12 @@
 
 import { Button } from "@wovain/ui/components/button";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { Spinner } from "@wovain/ui/components/spinner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
+
+import { ShuttleMark } from "@/components/brand/shuttle-mark";
 
 export const STEP_TITLE_ID = "wizard-step-title";
 
@@ -86,7 +87,7 @@ export const StepActions = ({
     <div className="border-border flex flex-col gap-4 border-t pt-5">
       {busyLabel ? (
         <div aria-hidden="true" className="flex items-center gap-3">
-          <Spinner className="text-primary" />
+          <ShuttleMark label={null} size={20} state="loading" />
           <span className="text-sm font-medium">{busyLabel}</span>
           <Skeleton className="h-2 flex-1" />
         </div>

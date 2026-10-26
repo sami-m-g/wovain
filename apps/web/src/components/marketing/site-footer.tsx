@@ -86,7 +86,7 @@ export const SiteFooter = async () => {
       aside={<LocaleSwitcher />}
       brand={
         <Link aria-label={common("homeLabel")} href="/">
-          <Logo height={30} variant="seam" />
+          <Logo height={30} />
         </Link>
       }
       columns={columns}

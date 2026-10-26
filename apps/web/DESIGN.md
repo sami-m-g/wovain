@@ -27,6 +27,7 @@ colors:
   night-cochineal: "#e8608f"
   night-cochineal-text: "#f28aae"
   night-cochineal-wash: "#3d1730"
+  cochineal-lift: "#be2b68"
 typography:
   display:
     fontFamily: "Familjen Grotesk, Geist, ui-sans-serif, sans-serif"
@@ -187,7 +188,8 @@ All values are written once, in `src/brand/brand.tsx` (`PALETTE.light` and `PALE
 
 ### Secondary
 
-- **Saffron** (`colors.saffron`, role `--sidebar-primary`): the active icon and focus ring on the dark app rail. In dark mode it also serves as the warning colour. Never on calico.
+- **Saffron** (`colors.saffron`, role `--sidebar-primary`): the active icon and focus ring on the dark app rail, and the Shuttle's thread. In dark mode it also serves as the warning colour. Never on calico.
+- **Mark tokens** (`--brand-mark-tile`, `--brand-mark-shuttle`, `--brand-mark-thread`): the inline Shuttle's tile (cochineal, lifted to `colors.cochineal-lift` in dark mode), shuttle (calico) and thread (saffron). Only the mark reads them.
 
 ### Neutral
 
@@ -208,7 +210,7 @@ All values are written once, in `src/brand/brand.tsx` (`PALETTE.light` and `PALE
 
 **The One Dye Rule.** Cochineal marks only what is live or chosen: the primary action, the current step, the selection. If two cochineal things compete on a screen, one of them is wrong.
 
-**The Saffron Thread Rule.** Saffron appears only on the plum rail (active icon, rail focus ring). It is a highlight, not a second accent.
+**The Saffron Thread Rule.** Saffron appears only on the plum rail (active icon, rail focus ring) and as the Shuttle's thread. It is a highlight, not a second accent.
 
 **The Light Tag Rule.** The hang tag is card stock with plum ink in both themes. It does not invert.
 
@@ -307,13 +309,19 @@ The run as one continuous label of five passages (brief, trends, designs, produc
 
 ### Logo
 
-The approved Flick w, used only through the `<Logo/>` component: the plain lockup in navigation and the rail, the seam lockup for brand moments (footer, auth, social cards). `tone="dark"` forces the version drawn for dark grounds (the rail); otherwise it follows the theme.
+The Shuttle. A calico loom shuttle with long, sharp tips and a bobbin window rises on a 24 degree diagonal across a cochineal tile (10.5/48 corner radius), trailing a saffron thread with a soft sag. It carries one thread across the cloth, the way wovain carries one brief to a paused campaign. The wordmark is Geist 600 with a drawn w (lowered middle apex) and a single-storey a; its x-height is half the tile and is centred on it, 0.3 tile from the mark.
+
+- Use it only through `<Logo/>`: the lockup in the header, footer, auth and the rail (`tone="dark"` forces the dark-ground version). `<Logo intro/>` draws the mark inline and plays the one-time intro (header, auth).
+- `ShuttleMark` (`components/brand/shuttle-mark.tsx`) is the inline, animated mark, coloured by the `--brand-mark-*` tokens. `ShuttleLoader` is the loading state: the shuttle passes back and forth on its axis. It replaces spinners in page loading, the wizard's busy row and the insights refresh. Small inline button spinners stay the shared `Spinner`.
+- Variants: light (cochineal tile, the default), dark (tile lifted to `#be2b68` for 3.4:1 on night plum), mono (one ink, shuttle and thread knocked out) and reversed (calico tile, plum shuttle, cochineal thread) for cochineal or photographic grounds.
+- Clear space is half the tile height on every side. The minimum size is 16px for the mark (the pixel-fitted `favicon-16.svg`, without the window) and 20px tall for the lockup; below that, use the mark alone.
+- Don't rotate, stretch, recolour, outline, shadow or crop the mark, and don't put the cochineal tile on cochineal.
 
 ### Swapping the brand
 
 - **Palette:** edit `PALETTE.light` and `PALETTE.dark` in `src/brand/brand.tsx`. They become `--brand-*` custom properties; `src/styles/tokens.css` maps them to roles and does not need to change. Keep the contrast notes in the `Palette` interface (muted text 4.5:1, input borders 3:1).
-- **Logo files:** replace the SVGs in `public/brand/` (`lockup-light.svg`, `lockup-dark.svg`, `lockup-seam-light.svg`, `lockup-seam-dark.svg`, `mark.svg`, `mark-mono.svg`, `mark-solid-mono.svg`, `app-icon.svg`, `favicon-16.svg`, `favicon-32.svg`, `email-logo.png`). If a lockup's proportions change, update its `width` and `height` in `BRAND_ASSETS` in `src/brand/brand.tsx`.
-- **Favicon and app icon:** replace `src/app/icon.svg`, then regenerate its raster copies from it: `src/app/favicon.ico` (16, 32 and 48px, which Google Search shows), `src/app/icon.png` (192px), `src/app/apple-icon.png` (180px) and `public/brand/icon-512.png` (Next.js file conventions; the manifest lists the 192 and 512px PNGs).
+- **Logo files:** replace the SVGs in `public/brand/` (`lockup-light.svg`, `lockup-dark.svg`, `wordmark-light.svg`, `wordmark-dark.svg` (the lockup with the mark's square left empty, for `<Logo intro/>`), `mark.svg`, `mark-dark.svg`, `mark-mono.svg`, `mark-reversed.svg`, `app-icon.svg`, `favicon-16.svg`, `favicon-32.svg`, `maskable-512.png`, `email-logo.png`). If a lockup's proportions change, update its `width` and `height` in `BRAND_ASSETS` in `src/brand/brand.tsx`. The inline mark's geometry is `SHUTTLE` in the same file.
+- **Favicon and app icon:** replace `src/app/icon.svg` (the 32px-tuned mark), then regenerate its raster copies: `src/app/favicon.ico` (16px pixel-fitted, 32 and 48px, which Google Search shows), `src/app/icon.png` (192px), `src/app/apple-icon.png` (180px, full bleed), `public/brand/icon-512.png` and the maskable `public/brand/maskable-512.png` (glyph inside the 80% safe circle). These are Next.js metadata file conventions; the manifest lists the PNGs.
 
 ## Do's and Don'ts
 
@@ -325,7 +333,7 @@ The approved Flick w, used only through the `<Logo/>` component: the plain locku
 - **Do** show product evidence (price math, status, "paused") on the hang tag, and label example data as an example.
 - **Do** use the hairline for every resting border, and draw selection as the same line heavier or in cochineal.
 - **Do** keep motion to the expo ease-out (`cubic-bezier(0.16, 1, 0.3, 1)`) and let `prefers-reduced-motion` collapse it.
-- **Do** render the logo through `<Logo/>` and the files in `public/brand/`.
+- **Do** render the logo through `<Logo/>` and the files in `public/brand/`, and use `ShuttleLoader` for page-level loading.
 
 ### Don't:
 

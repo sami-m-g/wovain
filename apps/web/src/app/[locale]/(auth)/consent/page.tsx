@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { ConsentPanel } from "@/components/auth/consent-panel";
+import { ConsentPanel } from "@/components/consent-panel";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 
