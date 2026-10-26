@@ -63,7 +63,7 @@ Constraints:
 `packages/core/src/flags.ts` wraps `unleash-client` (pnpm catalog):
 
 - Context: `userId` (GitLab's user lists and percentages match it), `plan` and `internal` as properties, the environment as the app name.
-- **Fail closed**: until the SDK has fetched GitLab's flags, and for any flag GitLab doesn't return, the answer is `false`. Storage is in memory only, so a cold start never serves a stale backup file. Without any GitLab URL (laptops, tests) the registry's development rollout answers.
+- **Fail closed**: until the SDK has fetched GitLab's flags, and for any flag GitLab doesn't return, the answer is `false`. Storage is in memory only, so a cold start never serves a stale backup file. Without any GitLab URL (laptops, tests) the registry answers: in development its development rollout, in production only a flag whose production rollout is `all`, so a missing secret never opens an internal or percent rollout.
 - **Plan gating in the app**: GitLab has no constraints, so a flag's `plans` allowlist is checked before GitLab. `trends-qloo` is `["free", "demo"]`: paid plans get Tavily-only trends even if the flag is on, which keeps Qloo out of paid products after paid plans open.
 - **Exposures to PostHog**: the first answer per user, flag and value is a `$feature_flag_called` event with `$feature_flag`, `$feature_flag_response` and `$feature/<flag>`, so any KPI insight breaks down by flag value.
 - **No browser SDK**: GitLab offers no frontend API, and `@unleash/nextjs` needs one (or an Unleash Edge, which GitLab doesn't support). Client components get values as props from a server component (`core.flags.snapshot`).

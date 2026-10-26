@@ -18,8 +18,9 @@ import type {
 // Fail closed: until the SDK has fetched GitLab's flags, and for any flag
 // GitLab doesn't return, the answer is false. State lives in memory only (no
 // backup file), so a cold start without GitLab never serves stale flags.
-// Without a URL and instance ID at all (local dev, tests), the registry's
-// development rollout answers instead, so a laptop still works.
+// Without a URL and instance ID at all (local dev, tests), the registry
+// answers instead: development follows its rollout, so a laptop still works,
+// and production answers only flags rolled out to everyone there.
 //
 // Every first answer per user, flag and value is sent to PostHog as a
 // `$feature_flag_called` event with `$feature/<flag>`, so any KPI breaks down
