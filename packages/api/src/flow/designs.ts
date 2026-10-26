@@ -224,15 +224,18 @@ const commitDecision = async (
       if (by !== "merchant" || row.runId === null) {
         return { row, waitingRunId: undefined };
       }
-      if (actor.runs === undefined) {
-        throw new Error("No run engine to resume the run");
-      }
       const [waiting] = await tx
         .update(run)
         .set({ status: "running", step: approve ? "approved" : "rejected" })
         .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
         .returning({ id: run.id });
-      return { row, waitingRunId: waiting?.id };
+      if (waiting === undefined) {
+        return { row, waitingRunId: undefined };
+      }
+      if (actor.runs === undefined) {
+        throw new Error("No run engine to resume the run");
+      }
+      return { row, waitingRunId: waiting.id };
     }
   );
   if (waitingRunId === undefined || actor.runs === undefined) {
@@ -241,20 +244,37 @@ const commitDecision = async (
   try {
     await actor.runs.resume(waitingRunId, { approve, reason });
   } catch (error) {
-    await actor.db.transaction(async (tx) => {
-      await tx
-        .update(design)
-        .set({
-          decidedBy: null,
-          decisionReason: null,
-          status: "pending_approval",
-        })
-        .where(eq(design.id, decided.id));
-      await tx
-        .update(run)
-        .set({ status: "awaiting_approval", step: "approval" })
-        .where(eq(run.id, waitingRunId));
-    });
+    // Undo only what this call set, and only while nothing has moved on.
+    try {
+      await actor.db.transaction(async (tx) => {
+        await tx
+          .update(design)
+          .set({
+            decidedBy: null,
+            decisionReason: null,
+            status: "pending_approval",
+          })
+          .where(
+            and(
+              eq(design.id, decided.id),
+              eq(design.userId, actor.userId),
+              eq(design.status, approve ? "approved" : "rejected")
+            )
+          );
+        await tx
+          .update(run)
+          .set({ status: "awaiting_approval", step: "approval" })
+          .where(and(eq(run.id, waitingRunId), eq(run.status, "running")));
+      });
+    } catch (undoError) {
+      throw runNotWaiting(
+        waitingRunId,
+        new AggregateError(
+          [error, undoError],
+          "Resume failed and undoing the decision failed"
+        )
+      );
+    }
     throw runNotWaiting(waitingRunId, error);
   }
   return decided;
