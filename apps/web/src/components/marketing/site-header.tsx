@@ -57,10 +57,7 @@ export const SiteHeader = async () => {
           <LocaleSwitcher className="hidden sm:flex" />
           <ModeToggle />
           <Link
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "h-9 rounded-lg px-3 text-sm"
-            )}
+            className={buttonVariants({ variant: "ghost" })}
             href="/login"
             prefetch={false}
           >
@@ -68,10 +65,7 @@ export const SiteHeader = async () => {
           </Link>
           <CtaLink
             cta="header-sign-up"
-            className={cn(
-              buttonVariants(),
-              "hidden h-9 rounded-lg px-4 sm:inline-flex"
-            )}
+            className={cn(buttonVariants(), "hidden sm:inline-flex")}
             href="/sign-up"
             prefetch={false}
           >
