@@ -23,7 +23,6 @@ export interface CoreConfig extends FlagsConfig {
   QLOO_API_URL: string;
   TAVILY_API_KEY?: string | undefined;
   TOKEN_ENCRYPTION_KEY: string;
-  WOVAIN_ALLOWED_EMAILS?: string | undefined;
 }
 
 export const createCore = (env: CoreConfig) => ({
@@ -41,14 +40,6 @@ export const createCore = (env: CoreConfig) => ({
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
   }),
   sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
-  // The team's emails, lowercased (WOVAIN_ALLOWED_EMAILS): flag targeting
-  // only (the internal-only list), never an entitlement.
-  team: new Set(
-    (env.WOVAIN_ALLOWED_EMAILS ?? "")
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter((email) => email !== "")
-  ),
   trends: createTrends(
     tavilyClient(env.TAVILY_API_KEY),
     createQloo({ apiKey: env.QLOO_API_KEY, baseURL: env.QLOO_API_URL })

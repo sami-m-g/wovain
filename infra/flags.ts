@@ -67,15 +67,20 @@ export const strategiesOf = (
 };
 
 export const featureFlags = () => {
-  // Team members: the app sends INTERNAL_USER_ID for anyone on its
-  // WOVAIN_ALLOWED_EMAILS allowlist (packages/core/src/flags.ts), so the list
-  // never needs real user IDs.
+  // Team members: their Better Auth user IDs (`pulumi config set
+  // wovain:internalUserIds id1,id2`), which the app evaluates every merchant
+  // by (packages/core/src/flags.ts). The placeholder keeps the list valid
+  // while it has nobody else.
+  const team = (config.get("internalUserIds") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id !== "");
   const internalList = new gitlab.ProjectFeatureFlagUserList(
     INTERNAL_USER_LIST,
     {
       name: INTERNAL_USER_LIST,
       project: projectId,
-      userXids: INTERNAL_USER_ID,
+      userXids: [INTERNAL_USER_ID, ...team].join(","),
     }
   );
   return FLAG_NAMES.map((name) => {

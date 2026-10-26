@@ -121,7 +121,7 @@ flowchart LR
 ```
 
 - **Flags as code.** `packages/core/src/flag-registry.ts` lists every flag with its owner, expiry, type, plans and a rollout per environment; `infra/flags.ts` applies it as GitLab strategies (the `internal-only` user list, "Percent of users", "All users"). The Status toggle is the kill switch, which Pulumi leaves alone.
-- **The SDK.** `packages/core/src/flags.ts` uses the official `unleash-client` with the user ID, plan, environment and internal flag; it fails closed and sends `$feature_flag_called` exposures to PostHog. `trends-qloo` is checked against the plan in the app: free and demo only, so paid plans get Tavily-only trends (Qloo's hackathon terms).
+- **The SDK.** `packages/core/src/flags.ts` uses the official `unleash-client` with the user ID, plan and environment; it fails closed and sends `$feature_flag_called` exposures to PostHog. `trends-qloo` is checked against the plan in the app: free and demo only, so paid plans get Tavily-only trends (Qloo's hackathon terms).
 - **Canary.** `apps/ops/src/canary.ts` with the official `@google-cloud/run` client. A failed canary fails the pipeline, so it counts in DORA's change failure rate.
 - **Release guard.** `apps/ops/src/release.ts` decides, `ops.ts` acts: one action an hour, three a day, nothing switched back on automatically.
 - **Hygiene.** The `flagHygiene` phase opens a `flag-cleanup` issue per expired, fully rolled out or unregistered flag.
@@ -201,7 +201,8 @@ The ops job renders `public/index.html` every run and the `pages` job publishes 
 
 | Guardrail | Where |
 | --- | --- |
-| Only the ops job starts the Developer and heal flows (assign). Duo Code Review runs on every merge request a person creates (`merge_request`, action `created`) and again on request (`assign_reviewer`); Duo's own MRs get it from the shepherd. The Fix CI/CD trigger is off | `infra/duo.ts`, `infra/Pulumi.prod.yaml` |
+| Only the ops job starts the Developer and heal flows (assign). Duo Code Review runs on every merge request a person creates (`merge_request`, action `created`) and again on request (`assign_reviewer`); Duo's own MRs get it from the shepherd. A push starts no new review (GitLab's automatic reviews, and so "Start a new review on push", are off). The Fix CI/CD trigger is off | `infra/duo.ts`, `infra/Pulumi.prod.yaml` |
+| GitLab Duo approves or requests changes ("GitLab Duo can approve and request changes", a project setting). Its change request blocks the merge until it approves on a re-review: once every Duo thread is resolved and the pipeline is green, the ops job re-requests its review (at most 3 times per MR, then a person replies or bypasses). Duo stays a reviewer. Its threads are for blocking findings only; suggestions go in its summary | `apps/ops/src/rereview.ts`, `.gitlab/duo/mr-review-instructions.yaml` |
 | `agent::task` counts only when a trusted person (`TRUSTED_USERS`, plus the token's owner) added it, nobody edited the issue later, and only trusted people or Duo commented | `apps/ops/src/intake.ts` |
 | Caps: 2 tasks in flight and 5 Developer sessions a day; 1 heal issue in flight and 3 a day; 2 Vulnerability Resolutions a day; one review per commit | `intake.ts`, `heal.ts`, `vulns.ts`, `ops.ts` |
 | Log text is never trusted: allowlisted error class, method and normalized route; the message only inside a block marked untrusted | `apps/ops/src/heal.ts` |

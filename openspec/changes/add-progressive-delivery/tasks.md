@@ -4,7 +4,7 @@
 
 - [x] 1.1 Typed registry with owners, expiries, types and plan allowlists
 - [x] 1.2 Pulumi strategies per environment and the `internal-only` user list
-- [x] 1.3 Team members from `WOVAIN_ALLOWED_EMAILS` match `internal-only` (no manual IDs)
+- [x] 1.3 Team members' user IDs on `internal-only` from `wovain:internalUserIds` (no email or app variable)
 - [ ] 1.4 `pulumi preview` on the MR, then merge
 
 ## 2. App SDK

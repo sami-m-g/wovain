@@ -60,6 +60,7 @@ const noteSchema = z.object({
   author: z.object({ username: z.string() }),
   body: z.string(),
   created_at: z.string(),
+  id: z.int(),
   // Diff notes name the commit they were written on.
   position: z.object({ head_sha: z.string() }).nullable().optional(),
   system: z.boolean(),
@@ -478,6 +479,17 @@ export const createGitLab = (env: {
           })
         )
         .parse(await guard(api.Issues.allRelatedMergeRequests(project, issue))),
+    // Asks a reviewer to review again, as the reviewer list's "Re-request a
+    // review" does; for GitLab Duo, that starts a follow-up review.
+    rereview: async (mr: number, userId: number) =>
+      await mutate(
+        "mutation($path: ID!, $iid: String!, $user: UserID!) { m: mergeRequestReviewerRereview(input: { projectPath: $path, iid: $iid, userId: $user }) { errors } }",
+        {
+          iid: String(mr),
+          path: env.projectPath,
+          user: `gid://gitlab/User/${userId}`,
+        }
+      ),
     // Sets a finding to Resolved, with the reason in its history.
     resolveFinding: async (id: string, comment: string) =>
       await mutate(

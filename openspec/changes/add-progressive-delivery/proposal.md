@@ -10,7 +10,7 @@ Every merge went to all of production at once, and the GitLab feature flags were
 
 - A typed flag registry (`packages/core/src/flag-registry.ts`) with owner, expiry, type, plan allowlist and a rollout per environment, applied to GitLab by Pulumi (`infra/flags.ts`): an `internal-only` user list, "Percent of users" rollouts, and the Status toggle as the kill switch.
 - New flags: `billing-polar`, `billing-paid-plans` (off everywhere: only Free is sold at launch), `mastra-runs`, `app-ui-v2`, `fal-oauth`, `trends-qloo` (free and demo plans only until Qloo judging ends on 2026-11-05).
-- The official Unleash Node SDK (`unleash-client`, pnpm catalog) server-side: context with user ID, plan, environment and internal; fail closed; PostHog `$feature_flag_called` exposures.
+- The official Unleash Node SDK (`unleash-client`, pnpm catalog) server-side: context with user ID, plan and environment; fail closed; PostHog `$feature_flag_called` exposures.
 - Trend research uses `trends-qloo` and `trends-tavily`: paid plans get Tavily-only trends.
 - A canary for every web deploy: a tagged Cloud Run revision with 10% of traffic, promoted or rolled back by `canary:production` (`@google-cloud/run`).
 - A release guard in the ops job: on an error spike after a flag change or deploy, switch the flag off or start a `ROLLBACK=1` pipeline, then file a `release-guard` issue for the new `wovain release-guard` Duo flow.
@@ -28,4 +28,4 @@ Every merge went to all of production at once, and the GitLab feature flags were
 
 ## Impact
 
-`packages/core` (registry, SDK, trends), `packages/api` (ideas flow), `apps/web` (flag helper, quote route), `apps/ops` (canary, release guard, hygiene), `.gitlab/ci` (deploy, rollback), `.gitlab/duo/catalog/flows/release-guard.yml`, `infra/` (flags, labels, the deploy account's `roles/logging.viewer`, `traffics` ignored). No manual steps: team members come from `WOVAIN_ALLOWED_EMAILS`, and `infra/duo.ts` enables the release-guard flow and publishes its service account as `DUO_RELEASE_GUARD_ACCOUNT`.
+`packages/core` (registry, SDK, trends), `packages/api` (ideas flow), `apps/web` (flag helper, quote route), `apps/ops` (canary, release guard, hygiene), `.gitlab/ci` (deploy, rollback), `.gitlab/duo/catalog/flows/release-guard.yml`, `infra/` (flags, labels, the deploy account's `roles/logging.viewer`, `traffics` ignored). Team members are added by user ID (`wovain:internalUserIds`), and `infra/duo.ts` enables the release-guard flow and publishes its service account as `DUO_RELEASE_GUARD_ACCOUNT`.

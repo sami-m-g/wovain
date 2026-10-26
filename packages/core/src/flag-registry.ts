@@ -21,8 +21,8 @@ export type FlagEnvironment = (typeof FLAG_ENVIRONMENTS)[number];
 
 // How far a flag is rolled out in one environment:
 // - off: no strategy, nobody gets it.
-// - internal: the `internal-only` GitLab user list: team members, as the
-//   app's WOVAIN_ALLOWED_EMAILS allowlist says (INTERNAL_USER_ID below).
+// - internal: the `internal-only` GitLab user list: team members' Better
+//   Auth user IDs (INTERNAL_USER_ID below).
 // - percent: the user list plus that percentage of signed-in users, sticky
 //   by user ID (GitLab's "Percent of users", Unleash gradualRolloutUserId).
 // - all: every user (GitLab's "All users", Unleash default).
@@ -182,9 +182,9 @@ export const isFlagName = (name: string): name is FlagName =>
 // The GitLab user list every `internal` and `percent` rollout includes.
 export const INTERNAL_USER_LIST = "internal-only";
 
-// The list's one member. GitLab's strategies match user IDs only (no Unleash
-// constraints), so the SDK evaluates a team member (`internal: true`, from
-// the WOVAIN_ALLOWED_EMAILS allowlist) as this user ID; nobody keeps a list
-// of real IDs. Percent rollouts include the list, so team members are always
-// in.
+// GitLab's strategies match user IDs only (no Unleash constraints), so the
+// list holds the team's Better Auth user IDs: Pulumi's `wovain:internalUserIds`
+// (comma separated, infra/flags.ts), never an email or an app variable. This
+// placeholder keeps the list non-empty before anyone is added. Percent
+// rollouts include the list, so team members are always in.
 export const INTERNAL_USER_ID = "wovain-internal";

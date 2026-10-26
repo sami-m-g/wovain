@@ -2,7 +2,7 @@ import { PostHog } from "posthog-node";
 import { InMemStorageProvider, initialize } from "unleash-client";
 import type { Unleash } from "unleash-client";
 
-import { FLAGS, FLAG_NAMES, INTERNAL_USER_ID } from "./flag-registry";
+import { FLAGS, FLAG_NAMES } from "./flag-registry";
 import type {
   FlagDefinition,
   FlagEnvironment,
@@ -34,11 +34,6 @@ export interface FlagContext {
   // Checked by the app against the flag's `plans` (GitLab has no Unleash
   // constraints). Unknown plans count as free, the only plan sold at launch.
   plan?: FlagPlan | undefined;
-  // A team member (the WOVAIN_ALLOWED_EMAILS allowlist; flagContextOf in
-  // packages/api derives it server-side). GitLab can't match a property, so
-  // a team member is evaluated as INTERNAL_USER_ID, the `internal-only`
-  // list's member; exposures still go to the real user ID.
-  internal?: boolean | undefined;
 }
 
 export interface FlagsConfig {
@@ -157,7 +152,6 @@ export const createFlags = (
           flag_plan: exposure.context.plan ?? "free",
           flag_reason: exposure.reason,
           flag_source: "gitlab",
-          internal: exposure.context.internal ?? false,
         },
       });
     });
@@ -177,18 +171,14 @@ export const createFlags = (
     if (!sdk.isSynchronized()) {
       return { enabled: false, reason: "closed" };
     }
-    // A team member is the internal-only list's one member.
-    const evaluatedAs =
-      context.internal === true ? INTERNAL_USER_ID : context.userId;
+    // Team members are matched by their user ID on the internal-only list.
+    const { userId } = context;
     const enabled = sdk.isEnabled(
       name,
       {
         environment,
-        properties: {
-          internal: String(context.internal ?? false),
-          plan: context.plan ?? "free",
-        },
-        ...(evaluatedAs === undefined ? {} : { userId: evaluatedAs }),
+        properties: { plan: context.plan ?? "free" },
+        ...(userId === undefined ? {} : { userId }),
       },
       false
     );

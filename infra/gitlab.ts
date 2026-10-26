@@ -4,6 +4,13 @@
 // Maintainer. Merge request settings are open to the role in the UI only:
 // PUT /projects/:id, which gitlab.Project uses, needs admin_project (README).
 // No approval rules: a required approval would stop the loop's auto-merge.
+// GitLab Duo Code Review's settings are such merge request settings too:
+// automatic reviews off (auto_duo_code_review_enabled; the duo-code-review
+// trigger in infra/duo.ts reviews on open instead, and no push re-reviews)
+// and "GitLab Duo can approve and request changes" on
+// (duo_code_review_decisions_enabled, which gitlab.Project doesn't expose).
+// The ops job re-requests Duo's review to clear a change request
+// (apps/ops/src/rereview.ts).
 // The provider authenticates with the `gitlab:token` stack secret.
 import * as gitlab from "@pulumi/gitlab";
 import * as pulumi from "@pulumi/pulumi";
