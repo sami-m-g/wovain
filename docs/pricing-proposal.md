@@ -2,6 +2,16 @@
 
 **Status: proposal (2026-10-26).** Every number below is for you to lock in. They live in one file, `packages/billing/src/plans.ts`. To change a number, edit that file and run `pnpm polar:seed`.
 
+## Launch: Free only (decided 2026-10-26)
+
+Only Free is live, so every merchant is on Free. This keeps wovain within the Qloo hackathon rules: Qloo is never part of a paid product.
+
+- `/pricing` shows every tier. Studio, Label and the credit pack are marked **Coming soon**. They have no checkout button. Instead, "Notify me" sends a `paid_plan_interest` PostHog event, with no email form.
+- The server flag `billing-paid-plans` is **off** by default. While it is off, `billing.checkout` refuses with `PAID_PLANS_NOT_AVAILABLE`, so there are no plan changes and no pack purchases. The flag is read through `packages/billing/src/flags.ts`, so it can move onto the typed flag registry from feat/progressive-delivery.
+- When a merchant runs out of credits, the upgrade screens say "More credits are coming soon" and that Free's credits refresh every month. Nothing is sold.
+- Free runs on Polar (sandbox for now) and grants its 15 credits a month.
+- `pnpm polar:seed` creates the paid products **archived**, so nobody can buy them. To launch them: get Qloo's written permission or a commercial licence, run `POLAR_PAID_PLANS=on pnpm polar:seed`, then turn `billing-paid-plans` on.
+
 ## Value metric: credits, sized to drops
 
 A merchant pays for finished drops: researched ideas, approved designs, a paused campaign. Seats and API calls don't measure that. Credits do, and they map cleanly onto the steps wovain runs and pays for:

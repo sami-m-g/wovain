@@ -3,6 +3,8 @@
 # Terraform or OpenTofu provider, so `pnpm polar:seed` applies plans.ts with
 # the official SDK, idempotently. Like posthog:apply, it runs on main only,
 # by hand (Run on polar:seed), with the protected token Pulumi sets.
+# Paid plans and the pack stay archived in Polar until POLAR_PAID_PLANS=on
+# (set it as a CI variable when the billing-paid-plans flag goes on).
 # The webhook endpoint is created once outside CI (POLAR_WEBHOOK_URL), since
 # its signing secret is shown only on creation and goes to Secret Manager.
 

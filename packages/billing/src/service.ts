@@ -1,5 +1,7 @@
 import type { PolarCore } from "@polar-sh/sdk/2026-10";
 
+import { BILLING_PAID_PLANS, flagsOff } from "./flags";
+import type { FlagReader } from "./flags";
 import { createPolarClient } from "./polar";
 import type { PolarConfig } from "./polar";
 
@@ -14,10 +16,16 @@ export interface BillingConfig extends PolarConfig {
 export interface Billing {
   // The site origin, for Polar's success and return URLs.
   appUrl: string;
+  // Whether paid plans and credit packs are on sale (`billing-paid-plans`).
+  paidPlans: () => boolean;
   polar: PolarCore | undefined;
 }
 
-export const createBilling = (env: BillingConfig): Billing => ({
+export const createBilling = (
+  env: BillingConfig,
+  isFlagOn: FlagReader = flagsOff
+): Billing => ({
   appUrl: env.BETTER_AUTH_URL,
+  paidPlans: () => isFlagOn(BILLING_PAID_PLANS),
   polar: createPolarClient(env),
 });

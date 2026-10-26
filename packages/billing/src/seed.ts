@@ -5,6 +5,7 @@
 // applies changes. Nothing is set up by hand in the dashboard.
 //
 //   pnpm polar:seed        (reads POLAR_* from apps/web's env through Varlock)
+//   POLAR_PAID_PLANS=on pnpm polar:seed   (unarchives the paid plans and pack)
 //
 // Node runs this file directly, so it imports only the SDK and plans.ts.
 
@@ -175,11 +176,20 @@ const pricesFor = (item: Item): models.ProductPriceFixedCreate[] =>
         },
       ];
 
-const ensureProduct = async (polar: PolarCore, item: Item) => {
-  const found = await first(
-    iterListProducts(polar)({ is_archived: false }),
-    (product) => hasTag(product.metadata, item.code)
-  );
+// Archived products stay found, so a run never makes a second copy.
+const findProduct = async (polar: PolarCore, code: string) =>
+  (await first(iterListProducts(polar)({ is_archived: false }), (product) =>
+    hasTag(product.metadata, code)
+  )) ??
+  (await first(iterListProducts(polar)({ is_archived: true }), (product) =>
+    hasTag(product.metadata, code)
+  ));
+
+// Paid plans and the pack exist but stay archived (nobody can buy them)
+// until POLAR_PAID_PLANS=on; Free is always live.
+const ensureProduct = async (polar: PolarCore, item: Item, paid: boolean) => {
+  const archived = item.priceCents > 0 && !paid;
+  const found = await findProduct(polar, item.code);
   if (found === undefined) {
     const shared = {
       description: item.description,
@@ -187,9 +197,12 @@ const ensureProduct = async (polar: PolarCore, item: Item) => {
       name: item.name,
       prices: pricesFor(item),
     };
-    return await createProducts(polar)(
+    const created = await createProducts(polar)(
       item.recurring ? { ...shared, recurring_interval: "month" } : shared
     );
+    return archived
+      ? await updateProducts(polar)(created.id, { is_archived: true })
+      : created;
   }
   const price = fixedPrice(found);
   const priceCents =
@@ -197,7 +210,8 @@ const ensureProduct = async (polar: PolarCore, item: Item) => {
   if (
     found.name === item.name &&
     found.description === item.description &&
-    priceCents === item.priceCents
+    priceCents === item.priceCents &&
+    found.is_archived === archived
   ) {
     return found;
   }
@@ -205,6 +219,7 @@ const ensureProduct = async (polar: PolarCore, item: Item) => {
   // theirs until they change plan (Polar's rule).
   return await updateProducts(polar)(found.id, {
     description: item.description,
+    is_archived: archived,
     name: item.name,
     ...(priceCents === item.priceCents ? {} : { prices: pricesFor(item) }),
   });
@@ -243,6 +258,8 @@ const main = async () => {
       ? "production"
       : "sandbox";
   const polar = createPolarCore({ accessToken, environment });
+  // Matches the app's billing-paid-plans flag: off until paid plans launch.
+  const paid = process.env["POLAR_PAID_PLANS"] === "on";
   const meter = await ensureMeter(polar);
   console.info(`polar:${environment} meter ${meter.name} ${meter.id}`);
   for (const item of ITEMS) {
@@ -250,11 +267,11 @@ const main = async () => {
     // oxlint-disable-next-line no-await-in-loop
     const benefit = await ensureBenefit(polar, meter.id, item);
     // oxlint-disable-next-line no-await-in-loop
-    const product = await ensureProduct(polar, item);
+    const product = await ensureProduct(polar, item, paid);
     // oxlint-disable-next-line no-await-in-loop
     await updateBenefitsProducts(polar)(product.id, { benefits: [benefit.id] });
     console.info(
-      `polar:${environment} ${item.code} ${dollars(item.priceCents)} product ${product.id} benefit ${benefit.id}`
+      `polar:${environment} ${item.code} ${dollars(item.priceCents)} product ${product.id}${product.is_archived ? " (archived)" : ""} benefit ${benefit.id}`
     );
   }
   const webhookUrl = process.env["POLAR_WEBHOOK_URL"];

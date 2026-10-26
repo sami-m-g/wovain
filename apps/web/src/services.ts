@@ -6,6 +6,7 @@ import { createMailer } from "@wovain/email/mailer";
 
 import { ENV } from "./env.server";
 import { analytics } from "./lib/analytics";
+import { isFlagOn } from "./lib/feature-flags";
 
 export const db = createDb(ENV);
 export const mailer = createMailer({
@@ -13,6 +14,6 @@ export const mailer = createMailer({
   from: ENV.EMAIL_FROM,
   siteUrl: ENV.BETTER_AUTH_URL,
 });
-export const billing = createBilling(ENV);
+export const billing = createBilling(ENV, isFlagOn);
 export const auth = createAuth(ENV, db, mailer, analytics, billing.polar);
 export const core = createCore(ENV);

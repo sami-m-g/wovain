@@ -43,6 +43,7 @@ export const assertCredits = async (actor: Actor, step: CreditStep) => {
     throw refusalError("out_of_credits", merchant.locale, {
       available,
       needed: CREDIT_COST[step],
+      paid: actor.billing.paidPlans(),
     });
   }
 };
@@ -52,7 +53,9 @@ export const assertAutopilot = async (actor: Actor) => {
   const merchant = await merchantOf(actor);
   const { plan } = await entitlement(actor.db, actor.userId);
   if (!PLANS[plan].autopilot) {
-    throw refusalError("plan_required", merchant.locale);
+    throw refusalError("plan_required", merchant.locale, {
+      paid: actor.billing.paidPlans(),
+    });
   }
 };
 
@@ -73,7 +76,10 @@ export const charge = async <T>(
     actor.log?.set({
       credits: { available: held.available, needed: held.needed, step },
     });
-    throw refusalError("out_of_credits", merchant.locale, held);
+    throw refusalError("out_of_credits", merchant.locale, {
+      ...held,
+      paid: actor.billing.paidPlans(),
+    });
   }
   let result: T;
   try {

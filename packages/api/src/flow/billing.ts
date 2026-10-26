@@ -4,7 +4,7 @@ import { PLANS } from "@wovain/billing/plans";
 import type { Offer } from "@wovain/billing/plans";
 import { checkoutUrl, ensureFreePlan, portalUrl } from "@wovain/billing/polar";
 import type { Billing } from "@wovain/billing/service";
-import { createError } from "evlog";
+import { createError, defineError } from "evlog";
 
 import type { Actor } from "./actor";
 
@@ -21,6 +21,15 @@ const notConfigured = () =>
     status: 503,
     why: "POLAR_ACCESS_TOKEN is not set.",
   });
+
+// Paid plans and packs aren't on sale yet (the billing-paid-plans flag):
+// every merchant is on Free.
+export const paidPlansNotAvailable = defineError("PAID_PLANS_NOT_AVAILABLE", {
+  fix: "Free credits refresh every month. Paid plans and credit packs are coming soon.",
+  message: "Paid plans aren't available yet",
+  status: 403,
+  why: "The billing-paid-plans flag is off.",
+});
 
 const requirePolar = (actor: Actor): NonNullable<Billing["polar"]> => {
   const { polar } = actor.billing;
@@ -58,6 +67,7 @@ export const billingStatus = async (actor: Actor) => {
     autopilot: PLANS[current.plan].autopilot,
     credits: await creditBalance(actor.db, actor.userId),
     enabled: polar !== undefined,
+    paidPlans: actor.billing.paidPlans(),
     plan: current.plan,
     subscription:
       subscription === null
@@ -74,6 +84,10 @@ export const billingStatus = async (actor: Actor) => {
 const BILLING_PATH = "/dashboard/billing";
 
 export const startCheckout = async (actor: Actor, offer: Offer) => {
+  if (!actor.billing.paidPlans()) {
+    actor.log?.set({ billing: { checkout: offer, refused: "paid_plans_off" } });
+    throw paidPlansNotAvailable();
+  }
   const polar = requirePolar(actor);
   const returnUrl = `${actor.billing.appUrl}${BILLING_PATH}`;
   const current = await entitlement(actor.db, actor.userId);
