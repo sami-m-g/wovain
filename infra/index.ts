@@ -147,12 +147,18 @@ const dbUser = new gcp.sql.User("wovain", {
 // generated one; Cloud Run mounts only the secrets that have a version, since
 // a revision won't start on an empty secret.
 // fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
-// wovain-allowed-emails were created by main; the others are new.
+// wovain-allowed-emails were created by main; the others are new. fal-key
+// is no longer read (fal runs on each merchant's own key); it stays until
+// its value is retired, since dropping it here would delete the secret.
+// inngest-event-key and inngest-signing-key come from the Inngest app
+// (docs/adr/0001-durable-runs.md): runs can't start until both are set.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
   "gitlab-feature-flags-instance-id",
   "google-client-secret",
+  "inngest-event-key",
+  "inngest-signing-key",
   "meta-app-id",
   "meta-app-secret",
   "nebius-api-key",
@@ -318,6 +324,9 @@ const service = cloudRunService("web", {
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
+  // Inngest calls /api/inngest once per run step; the slowest (a design:
+  // brief, fal art, judge) needs more than Cloud Run's 300 s default.
+  timeout: "900s",
 });
 export const serviceUri = service.uri;
 

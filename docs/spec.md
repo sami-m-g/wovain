@@ -131,7 +131,7 @@ wovain/
 | Nebius Token Factory | Nemotron brief, judge, ad copy and autopilot, OpenAI-compatible at `NEBIUS_BASE_URL` (`https://api.tokenfactory.nebius.com/v1/`) | `NEBIUS_API_KEY` | Pay per token |
 | Qloo | `/search` and `/v2/insights` at `QLOO_API_URL` (`https://hackathon.api.qloo.com`) | `QLOO_API_KEY` | Hackathon key |
 | Tavily | Live search of news and marketplaces (etsy.com, redbubble.com, fourthwall.com) | `TAVILY_API_KEY` | Rate limited |
-| fal | Print art with GPT Image on fal | The merchant's own fal key | The merchant pays fal per image |
+| fal | Print art with GPT Image on fal | The merchant's own fal account (OAuth) | The merchant pays fal per image |
 | Fourthwall | Catalog, previews, products and publish through its MCP server | OAuth per seller |  |
 | Meta Ads | Campaign, ad set and ads, created paused, through its MCP server | `META_APP_ID`, `META_APP_SECRET`, OAuth per seller | App review may be needed |
 | Cloud SQL, Cloud Run | PostgreSQL and hosting | GCP project |  |

@@ -405,13 +405,10 @@
       },
       "fal": {
         "name": "fal",
-        "body": "Votre propre compte fal dessine les illustrations, vous payez donc fal directement. Collez une clé d'API depuis fal.ai/dashboard/keys."
+        "body": "Votre propre compte fal dessine les illustrations, vous payez donc fal directement. Nécessaire pour générer des designs."
       }
     },
-    "serverKeys": "La recherche de tendances et les textes d'annonces utilisent les clés de wovain pour Nebius, Qloo et Tavily. Les illustrations utilisent votre clé fal.",
-    "keyLabel": "Clé d'API {name}",
-    "keyPlaceholder": "Collez votre clé",
-    "saveKey": "Enregistrer la clé"
+    "serverKeys": "La recherche de tendances et les textes d'annonces utilisent les clés de wovain pour Nebius, Qloo et Tavily. Les illustrations utilisent votre compte fal."
   },
   "Wizard": {
     "title": "Nouveau drop",

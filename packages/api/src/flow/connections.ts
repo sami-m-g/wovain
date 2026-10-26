@@ -1,13 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { ORPCError } from "@orpc/server";
-import type {
-  ConnectorId,
-  GrantStore,
-  KeyProviderId,
-  ProviderId,
-  ToolCall,
-} from "@wovain/core/upstream";
+import type { GrantStore, ProviderId, ToolCall } from "@wovain/core/upstream";
 import { connection, connectionFlow } from "@wovain/db/schema/seller";
 import { and, eq, gt, lte } from "drizzle-orm";
 import { defineError } from "evlog";
@@ -89,10 +83,9 @@ export const withProvider = async <T>(
     work
   );
 
-// fal runs on the merchant's own key: connecting fal saves it, sealed like
-// a grant and bound to its owner. Nothing calls fal with wovain's own key.
-const apiKeySchema = z.object({ apiKey: z.string().min(1) });
-
+// fal draws on the merchant's own fal account (its MCP relay, their OAuth
+// grant), never on a wovain key: a step that draws checks for the grant
+// first and answers this typed error, before any model call.
 export const connectionErrors = {
   FAL_NOT_CONNECTED: {
     data: z.object({ provider: z.literal("fal") }),
@@ -108,42 +101,14 @@ const falNotConnected = () =>
     status: connectionErrors.FAL_NOT_CONNECTED.status,
   });
 
-export const saveApiKey = async (
-  { core, db, userId }: Actor,
-  provider: KeyProviderId,
-  apiKey: string
-) => {
-  const sealedTokens = core.sealer.seal(
-    JSON.stringify({ apiKey }),
-    `${userId}:${provider}`
-  );
-  await db
-    .insert(connection)
-    .values({ provider, sealedTokens, userId })
-    .onConflictDoUpdate({
-      set: { sealedTokens },
-      target: [connection.userId, connection.provider],
-    });
-  return { connected: true };
-};
-
-// The merchant's fal key, or FAL_NOT_CONNECTED.
-export const apiKeyFor = async (
-  { core, db, userId }: Actor,
-  provider: KeyProviderId
-) => {
+export const requireFal = async ({ db, userId }: Actor) => {
   const [row] = await db
-    .select({ sealedTokens: connection.sealedTokens })
+    .select({ id: connection.id })
     .from(connection)
-    .where(
-      and(eq(connection.userId, userId), eq(connection.provider, provider))
-    );
+    .where(and(eq(connection.userId, userId), eq(connection.provider, "fal")));
   if (row === undefined) {
     throw falNotConnected();
   }
-  return apiKeySchema.parse(
-    JSON.parse(core.sealer.open(row.sealedTokens, `${userId}:${provider}`))
-  ).apiKey;
 };
 
 export const listConnections = async ({ db, userId }: Actor) =>
@@ -235,7 +200,7 @@ export const completeConnection = async (
   return { connected, returnTo: flow.returnTo };
 };
 
-export const disconnect = async (actor: Actor, provider: ConnectorId) => {
+export const disconnect = async (actor: Actor, provider: ProviderId) => {
   const removed = await actor.db
     .delete(connection)
     .where(

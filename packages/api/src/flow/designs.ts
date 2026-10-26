@@ -8,7 +8,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
-import { apiKeyFor } from "./connections";
+import { requireFal, withProvider } from "./connections";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
 import { once } from "./once";
@@ -69,10 +69,10 @@ export const generateDesign = async (
   }
   const source = await getIdea(actor, ideaId);
   const { runId } = source;
-  // The merchant's own fal account draws; asked first, so a missing key
+  // The merchant's own fal account draws; checked first, so a missing grant
   // stops the step before any model call.
-  const artist = actor.core.artist(await apiKeyFor(actor, "fal"));
-  const { nemotron } = actor.core;
+  await requireFal(actor);
+  const { artist, nemotron } = actor.core;
   const { artwork, brief, judgment } = await withLlmTrace(
     { distinctId: actor.userId, traceId: runId ?? ideaId },
     async () => {
@@ -93,13 +93,21 @@ export const generateDesign = async (
         operation: "submit_art",
         perform: async () => {
           await meter(actor, "image", { runId });
-          return await artist.submit(drafted, actor.log);
+          return await withProvider(
+            actor,
+            "fal",
+            async (call) => await artist(call).submit(drafted, actor.log)
+          );
         },
         provider: "fal",
         runId,
       });
       // Reading fal's answer again is free: no key needed.
-      const art = await artist.result(requested, actor.log);
+      const art = await withProvider(
+        actor,
+        "fal",
+        async (call) => await artist(call).result(requested, actor.log)
+      );
       return {
         artwork: art,
         brief: drafted,

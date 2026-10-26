@@ -405,13 +405,10 @@
       },
       "fal": {
         "name": "fal",
-        "body": "Tu propia cuenta de fal dibuja el arte de impresión, así que pagas a fal directamente. Pega una clave de API de fal.ai/dashboard/keys."
+        "body": "Tu propia cuenta de fal dibuja el arte de impresión, así que pagas a fal directamente. Necesaria para generar diseños."
       }
     },
-    "serverKeys": "La investigación de tendencias y los textos de anuncios usan las claves de wovain para Nebius, Qloo y Tavily. El arte usa tu clave de fal.",
-    "keyLabel": "Clave de API de {name}",
-    "keyPlaceholder": "Pega tu clave",
-    "saveKey": "Guardar clave"
+    "serverKeys": "La investigación de tendencias y los textos de anuncios usan las claves de wovain para Nebius, Qloo y Tavily. El arte usa tu cuenta de fal."
   },
   "Wizard": {
     "title": "Nuevo drop",

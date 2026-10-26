@@ -7,6 +7,6 @@ fal runs the image model (`TEXT_TO_IMAGE` in `packages/core/src/fal.ts`, GPT Ima
 
 - **Art.** `createArtist` turns the design brief's art prompt into transparent, square print art that prints only the brief's words (`artInput`).
 - **Print size.** The judge checks the result against the 2880 px requirement in code.
-- **Your key, your bill.** Each merchant pastes their own fal API key on the Connections page. wovain seals it like the other connections and draws with it, so the merchant pays fal directly. wovain has no fal key of its own.
+- **Your account, your bill.** Each merchant connects their fal account on the Connections page (OAuth through fal's MCP relay, `https://mcp.fal.ai/mcp-relay`). wovain seals the grant like the other connections and draws through it (`submit_job`, `check_job`, `get_job_result`), so the merchant pays fal directly. wovain has no fal key of its own.
 
-Without a fal key, design generation and runs fail with a `FAL_NOT_CONNECTED` error that links to Connections.
+Without a fal connection, design generation and runs fail with a `FAL_NOT_CONNECTED` error that links to Connections.

@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "catalog:",
-    "@fal-ai/client": "catalog:",
     "@mastra/core": "catalog:",
     "@modelcontextprotocol/client": "catalog:",
     "@posthog/ai": "catalog:",

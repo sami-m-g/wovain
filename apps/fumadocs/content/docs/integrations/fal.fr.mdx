@@ -7,6 +7,6 @@ fal exécute le modèle d'images (`TEXT_TO_IMAGE` dans `packages/core/src/fal.ts
 
 - **Illustration.** `createArtist` transforme le prompt d'illustration du brief en illustration d'impression carrée et transparente qui n'imprime que les mots du brief (`artInput`).
 - **Taille d'impression.** Le juge vérifie le résultat par rapport à l'exigence de 2880 px, dans le code.
-- **Votre clé, votre facture.** Chaque marchand colle sa propre clé d'API fal sur la page Connexions. wovain la scelle comme les autres connexions et dessine avec, le marchand paie donc fal directement. wovain n'a pas de clé fal à lui.
+- **Votre compte, votre facture.** Chaque marchand connecte son compte fal sur la page Connexions (OAuth via le relais MCP de fal, `https://mcp.fal.ai/mcp-relay`). wovain scelle l'autorisation comme les autres connexions et dessine avec (`submit_job`, `check_job`, `get_job_result`), le marchand paie donc fal directement. wovain n'a pas de clé fal à lui.
 
-Sans clé fal, la génération de designs et les exécutions échouent avec une erreur `FAL_NOT_CONNECTED` qui renvoie vers Connexions.
+Sans connexion fal, la génération de designs et les exécutions échouent avec une erreur `FAL_NOT_CONNECTED` qui renvoie vers Connexions.

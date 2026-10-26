@@ -405,13 +405,10 @@
       },
       "fal": {
         "name": "fal",
-        "body": "Your own fal account draws the print art, so you pay fal directly. Paste an API key from fal.ai/dashboard/keys."
+        "body": "Your own fal account draws the print art, so you pay fal directly. Needed to generate designs."
       }
     },
-    "serverKeys": "Trend research and ad copy run on wovain's own keys for Nebius, Qloo and Tavily. Art runs on your fal key.",
-    "keyLabel": "{name} API key",
-    "keyPlaceholder": "Paste your key",
-    "saveKey": "Save key"
+    "serverKeys": "Trend research and ad copy run on wovain's own keys for Nebius, Qloo and Tavily. Art runs on your fal account."
   },
   "Wizard": {
     "title": "New drop",

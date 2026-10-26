@@ -3,15 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
-import { Input } from "@wovain/ui/components/input";
-import { Label } from "@wovain/ui/components/label";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Spinner } from "@wovain/ui/components/spinner";
 import { cn } from "@wovain/ui/lib/utils";
 import { Megaphone, Palette, Store } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
@@ -24,60 +21,6 @@ const PROVIDER_ICON: Record<Provider, LucideIcon> = {
   fal: Palette,
   fourthwall: Store,
   meta: Megaphone,
-};
-
-/** fal runs on the merchant's own key: they paste it here, and pay fal directly. */
-const KeyForm = ({ name, provider }: { name: string; provider: "fal" }) => {
-  const t = useTranslations("Connections");
-  const problems = useTranslations("Wizard.problem");
-  const queryClient = useQueryClient();
-  const inputId = useId();
-  const [apiKey, setApiKey] = useState("");
-  const save = useMutation(
-    orpc.connections.saveKey.mutationOptions({
-      onError: (error) => {
-        toast.error(problems("other", { message: error.message }));
-      },
-      onSuccess: async () => {
-        setApiKey("");
-        toast.success(t("connectedToast", { name }));
-        await queryClient.invalidateQueries({
-          queryKey: orpc.connections.key(),
-        });
-      },
-    })
-  );
-  return (
-    <form
-      className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-72"
-      onSubmit={(event) => {
-        event.preventDefault();
-        save.mutate({ apiKey, provider });
-      }}
-    >
-      <Label htmlFor={inputId}>{t("keyLabel", { name })}</Label>
-      <div className="flex gap-2">
-        <Input
-          autoComplete="off"
-          className="h-9"
-          id={inputId}
-          onChange={(event) => setApiKey(event.target.value)}
-          placeholder={t("keyPlaceholder")}
-          required
-          type="password"
-          value={apiKey}
-        />
-        <Button
-          className="h-9 rounded-lg px-4"
-          disabled={save.isPending || apiKey.trim().length === 0}
-          type="submit"
-        >
-          {save.isPending ? <Spinner aria-hidden="true" /> : null}
-          {t("saveKey")}
-        </Button>
-      </div>
-    </form>
-  );
 };
 
 /** Connected: a filled green dot; not connected: a hollow ring. */
@@ -122,22 +65,6 @@ const ProviderRow = ({
     })
   );
 
-  // fal takes the merchant's key; the others go through the provider's consent.
-  const connectAction =
-    provider === "fal" ? (
-      <KeyForm name={name} provider={provider} />
-    ) : (
-      <a
-        className={cn(buttonVariants(), actionClass)}
-        href={connectUrl(
-          provider,
-          getPathname({ href: "/dashboard/connections", locale })
-        )}
-      >
-        {t("connect", { name })}
-      </a>
-    );
-
   return (
     <li className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:p-5">
       <span
@@ -179,7 +106,15 @@ const ProviderRow = ({
             {t("disconnect", { name })}
           </Button>
         ) : (
-          connectAction
+          <a
+            className={cn(buttonVariants(), actionClass)}
+            href={connectUrl(
+              provider,
+              getPathname({ href: "/dashboard/connections", locale })
+            )}
+          >
+            {t("connect", { name })}
+          </a>
         )}
       </div>
     </li>

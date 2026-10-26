@@ -56,7 +56,6 @@ catalog:
   "@react-email/components": 1.0.12
   "@react-email/render": 2.1.0
   postcss: 8.5.31
-  "@fal-ai/client": 1.10.1
   "@tavily/core": 0.7.14
   "@posthog/ai": ^8.16.3
   posthog-js: ^1.438.21

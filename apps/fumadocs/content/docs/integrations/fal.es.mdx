@@ -7,6 +7,6 @@ fal ejecuta el modelo de imagen (`TEXT_TO_IMAGE` en `packages/core/src/fal.ts`, 
 
 - **Arte.** `createArtist` convierte el prompt de arte del brief en un arte de impresión cuadrado y transparente que imprime solo las palabras del brief (`artInput`).
 - **Tamaño de impresión.** El juez comprueba el resultado frente al requisito de 2880 px, en el código.
-- **Tu clave, tu factura.** Cada vendedor pega su propia clave de API de fal en la página de Conexiones. wovain la sella como las demás conexiones y dibuja con ella, así que el vendedor paga a fal directamente. wovain no tiene clave de fal propia.
+- **Tu cuenta, tu factura.** Cada vendedor conecta su cuenta de fal en la página de Conexiones (OAuth a través del relay MCP de fal, `https://mcp.fal.ai/mcp-relay`). wovain sella la autorización como las demás conexiones y dibuja con ella (`submit_job`, `check_job`, `get_job_result`), así que el vendedor paga a fal directamente. wovain no tiene clave de fal propia.
 
-Sin clave de fal, la generación de diseños y las ejecuciones fallan con un error `FAL_NOT_CONNECTED` que enlaza a Conexiones.
+Sin conexión con fal, la generación de diseños y las ejecuciones fallan con un error `FAL_NOT_CONNECTED` que enlaza a Conexiones.
