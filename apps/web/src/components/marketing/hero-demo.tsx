@@ -573,10 +573,9 @@ const LaunchScene = ({ elapsed }: { elapsed: number }) => {
               {...enter()}
             >
               <AdPreview
-                art={art}
+                photoAlt=""
                 body={t("demo.ad.body")}
                 brand={t("demo.ad.brand")}
-                colour={BLANK_COLOURS.bone}
                 cta={t("demo.ad.cta")}
                 headline={t("demo.product")}
                 sponsored={t("demo.ad.sponsored")}

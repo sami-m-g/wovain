@@ -2,11 +2,19 @@ import { Badge } from "@wovain/ui/components/badge";
 import { Card } from "@wovain/ui/components/card";
 import { cn } from "@wovain/ui/lib/utils";
 import { Pause } from "lucide-react";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { ShuttleMark } from "@/components/brand/shuttle-mark";
 import { TeeMockup } from "@/components/marketing/example-art";
 import { PartnerLogo } from "@/components/marketing/partner-logo";
+
+/**
+ * The Fern Study tee on a model: generated with fal (Nano Banana Pro edit)
+ * from wovain's own print file. Next serves it as AVIF or WebP at the size
+ * the ad needs.
+ */
+const MODEL_SHOT = "/demo/fern-model-1.webp";
 
 /** The garment colours the example drop prints on. */
 export const BLANK_COLOURS = {
@@ -78,8 +86,7 @@ export const ProductListing = ({
 
 /** A feed ad as Meta previews it, labelled with the label's own mark. */
 export const AdPreview = ({
-  art,
-  colour,
+  photoAlt,
   brand,
   sponsored,
   body,
@@ -88,8 +95,8 @@ export const AdPreview = ({
   footer,
   className,
 }: {
-  art: ReactNode;
-  colour: string;
+  /** Empty where the picture is decorative. */
+  photoAlt: string;
   brand: string;
   sponsored: string;
   body: string;
@@ -112,8 +119,14 @@ export const AdPreview = ({
     <div className="px-3 pb-2.5">
       <p className="line-clamp-2 text-xs leading-snug">{body}</p>
     </div>
-    <div className="bg-muted grid place-items-center px-10 py-2">
-      <TeeMockup art={art} className="aspect-square w-full" colour={colour} />
+    <div className="bg-muted relative aspect-square overflow-hidden">
+      <Image
+        alt={photoAlt}
+        className="object-cover object-[50%_28%]"
+        fill
+        sizes="(min-width: 1024px) 320px, 80vw"
+        src={MODEL_SHOT}
+      />
     </div>
     <div className="bg-muted/60 border-border flex items-center justify-between gap-3 border-t px-3 py-2.5">
       <span className="truncate text-xs font-semibold">{headline}</span>

@@ -144,10 +144,9 @@ export const Results = async () => {
           <Result index={1} label={t("results.ad")}>
             <div inert>
               <AdPreview
-                art={art}
+                photoAlt={t("results.photoAlt")}
                 body={t("demo.ad.body")}
                 brand={t("demo.ad.brand")}
-                colour={BLANK_COLOURS.bone}
                 cta={t("demo.ad.cta")}
                 footer={
                   <div className="border-border flex flex-wrap items-center gap-2 border-t p-3">
