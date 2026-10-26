@@ -5,14 +5,8 @@
   "type": "module",
   "exports": {
     "./globals.css": "./src/styles/globals.css",
-    "./lib/*": {
-      "types": "./dist/lib/*.d.ts",
-      "default": "./src/lib/*.ts"
-    },
-    "./components/*": {
-      "types": "./dist/components/*.d.ts",
-      "default": "./src/components/*.tsx"
-    },
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx",
     "./postcss.config": "./postcss.config.mts"
   },
   "scripts": {
