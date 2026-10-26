@@ -20,7 +20,6 @@ import {
   MAX_HEAL_IN_FLIGHT,
   MAX_HEAL_PER_DAY,
   VERIFIED_LABEL,
-  groupErrors,
   healBody,
   healTitle,
   incidentBody,
@@ -31,8 +30,20 @@ import {
 } from "./heal.ts";
 import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
-import { loadKpis } from "./kpis.ts";
-import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
+import {
+  PLATFORM_FILTER,
+  PRODUCTION_SERVICE,
+  eventUuidOf,
+  toForward,
+} from "./platform.ts";
+import {
+  exceptionCountsOf,
+  exceptionCountsQuery,
+  exceptionsQuery,
+  forwardedQuery,
+  issueEventsQuery,
+  scalarOf,
+} from "./posthog.ts";
 import {
   FLAG_CLEANUP_LABEL,
   RELEASE_GUARD_LABEL,
@@ -54,6 +65,7 @@ import {
   kpiVerdict,
   scoutDue,
 } from "./signals.ts";
+import { runChecks, smokeException } from "./smoke.ts";
 import { doraOf, healthOf, renderStatus } from "./status.ts";
 import {
   RESOLVE_COMMENT,
@@ -105,29 +117,15 @@ const SETTLE_MS = 10 * 60_000;
 const REVIEW_TIMEOUT_MS = 2 * 3_600_000;
 const DAY_MS = 86_400_000;
 
-const { env, gitlab, google, posthog } = opsContext();
-const config = await loadKpis();
+const { env, gitlab, google, posthog, sink } = opsContext();
 const now = new Date();
 const me = await gitlab.currentUser();
 const trusted = new Set([me.username, ...env.TRUSTED_USERS]);
 const developer = env.DUO_DEVELOPER_ACCOUNT;
 const healer = env.DUO_HEAL_ACCOUNT;
 const reviewer = env.DUO_REVIEW_ACCOUNT;
-// Production's service, and dev.wovain.com's (infra/dev.ts): both run the
-// same code and read the same GitLab flags, so errors on either are healed
-// and can trip the release guard's kill switch.
-const DEV_SERVICE = "wovain-web-dev";
-const bothServices = (filter: string) =>
-  filter.replace(
-    'resource.labels.service_name="wovain-web"',
-    `resource.labels.service_name=("wovain-web" OR "${DEV_SERVICE}")`
-  );
-const ERROR_LINES = 'jsonPayload.level="error" AND jsonPayload.error.name:*';
-// heal finds errors on both services (dev.wovain.com runs the fault flag);
-// the status page and verifyHeals measure production alone, since a fix
-// deploys to production and dev is rolled out by hand.
-const errorFilter = `${bothServices(config.service.logs)} AND ${ERROR_LINES}`;
-const productionErrorFilter = `${config.service.logs} AND ${ERROR_LINES}`;
+// Production's Cloud Run request log, for the release guard's evidence link.
+const requestsFilter = `resource.type="cloud_run_revision" AND resource.labels.service_name="${PRODUCTION_SERVICE}" AND log_id("run.googleapis.com/requests")`;
 
 const marker = (kind: string) => `<!-- wovain:${kind} -->`;
 const hasMarker = (notes: Note[], kind: string) =>
@@ -182,34 +180,88 @@ const assignTo = async (issue: number, username: string) => {
   await gitlab.updateIssue(issue, { assigneeIds: [id] });
 };
 
-// Browser exceptions PostHog error tracking grouped in the watch window.
-const browserErrors = async (): Promise<ErrorGroup[]> => {
+// PostHog Error Tracking is the one error sink (docs/flows.md): heal, the
+// release guard and the status page read it alone. Without it, the ops job
+// can't watch errors at all, so those phases fail loudly.
+const errorTracking = () => {
   if (posthog === undefined) {
-    return [];
+    throw new Error(
+      "PostHog isn't configured (POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID): no errors can be watched"
+    );
   }
-  const rows = await posthog.rows(exceptionsQuery(WATCH_MS / 60_000));
+  return posthog;
+};
+
+// Every exception error tracking grouped in the watch window: server,
+// browser, platform and synthetic checks.
+const trackedErrors = async (): Promise<ErrorGroup[]> => {
+  const rows = await errorTracking().rows(exceptionsQuery(WATCH_MS / 60_000));
   return rows.flatMap((row) => posthogGroupOf(row) ?? []);
 };
 
-// Where the heal issue's error was seen: PostHog's error tracking issue (its
-// stack, sessions and replays) or the Cloud Logging query.
-const evidenceOf = ({ signature: s }: ErrorGroup) =>
-  s.posthogIssue === undefined || posthog === undefined
-    ? `[Cloud Logging](${logsUrl(`${errorFilter} AND jsonPayload.path="${s.path}"`)})`
-    : `[PostHog error tracking](${posthog.link(`error_tracking/${s.posthogIssue}`)})`;
+const exceptionCounts = async (minutes: number) =>
+  exceptionCountsOf(await errorTracking().rows(exceptionCountsQuery(minutes)));
 
-// Flow 1: file the most frequent new production error, from the server's
-// logs or PostHog's browser exceptions, and hand it to the heal flow, within
-// the daily and in-flight caps.
-const heal = async () => {
-  const range = { end: now, start: new Date(now.getTime() - WATCH_MS) };
-  const [{ entries }, browser] = await Promise.all([
-    google.entries(errorFilter, range),
-    browserErrors(),
+// Where the heal issue's error was seen: PostHog's error tracking issue (its
+// stack, sessions and replays).
+const evidenceOf = ({ signature: s }: ErrorGroup) =>
+  `[PostHog error tracking](${errorTracking().link(`error_tracking/${s.posthogIssue ?? ""}`)})`;
+
+// Before the phases: what PostHog can't hear from the app itself goes there
+// first. Cloud Run's platform errors (5xx it answered, OOM kills, failed
+// startups, stderr before evlog loaded) and the synthetic checks' failures
+// become exceptions; the phases see them from the next run, once PostHog has
+// ingested them.
+const forwardPlatformErrors = async (): Promise<string> => {
+  if (sink === undefined) {
+    return "skipped: NEXT_PUBLIC_POSTHOG_KEY isn't set";
+  }
+  const [{ entries }, forwardedRows] = await Promise.all([
+    google.entries(PLATFORM_FILTER, {
+      end: now,
+      start: new Date(now.getTime() - WATCH_MS),
+    }),
+    errorTracking().rows(forwardedQuery((2 * WATCH_MS) / 60_000)),
   ]);
-  const groups = [...groupErrors(entries), ...browser].toSorted(
-    (a, b) => b.count - a.count
+  const forwarded = new Set(
+    forwardedRows.flatMap(([id]) => (typeof id === "string" ? [id] : []))
   );
+  const fresh = toForward(entries, forwarded);
+  for (const e of fresh) {
+    sink.capture({
+      environment: e.environment,
+      extra: { log_insert_id: e.insertId, log_timestamp: e.timestamp },
+      fingerprint: e.fingerprint,
+      message: e.message,
+      method: e.method,
+      name: e.name,
+      path: e.path,
+      site: e.site,
+      source: "platform",
+      status: e.status,
+      uuid: eventUuidOf(e.insertId),
+    });
+  }
+  return `${fresh.length} platform error(s) forwarded`;
+};
+
+const smoke = async (): Promise<string> => {
+  const sites = { docs: ENV.DOCS_SITE_URL, site: ENV.SITE_URL };
+  const results = await runChecks(sites);
+  const failed = results.filter((r) => !r.ok);
+  for (const result of failed) {
+    sink?.capture(smokeException(result, sites));
+  }
+  return failed.length === 0
+    ? "all synthetic checks pass"
+    : `failed: ${failed.map((r) => `${r.check} (${r.detail})`).join("; ")}`;
+};
+
+// Flow 1: file the most frequent new error PostHog Error Tracking grouped,
+// and hand it to the heal flow, within the daily and in-flight caps.
+const heal = async () => {
+  const tracked = await trackedErrors();
+  const groups = tracked.toSorted((a, b) => b.count - a.count);
   const issues = await gitlab.issues({
     labels: HEAL_LABEL,
     state: "all",
@@ -282,35 +334,15 @@ const mergedAtOf = async (issue: number) => {
   return mergedAt;
 };
 
-// Events with a heal signature since `start`: PostHog's count for its error
-// tracking issue, or the signature's count in Cloud Logging.
-const eventsSince = async (
-  signature: NonNullable<ReturnType<typeof parseSignature>>,
-  start: Date
-) => {
+// Events of a heal signature's PostHog error tracking issue since `start`.
+const eventsSince = async (posthogIssue: string, start: Date) => {
   if (start >= now) {
     return 0;
   }
-  if (signature.posthogIssue !== undefined) {
-    if (posthog === undefined) {
-      throw new Error(
-        "PostHog isn't configured, so a browser fix can't be verified"
-      );
-    }
-    const rows = await posthog.rows(
-      issueEventsQuery(signature.posthogIssue, start)
-    );
-    return scalarOf(rows) ?? 0;
-  }
-  const { entries } = await google.entries(
-    `${productionErrorFilter} AND jsonPayload.path="${signature.path}"`,
-    { end: now, start }
+  const rows = await errorTracking().rows(
+    issueEventsQuery(posthogIssue, start)
   );
-  return (
-    groupErrors(entries).find(
-      (g) => g.signature.fingerprint === signature.fingerprint
-    )?.count ?? 0
-  );
+  return scalarOf(rows) ?? 0;
 };
 
 // Flow 1, after the merge: production must stay clean of the signature.
@@ -320,8 +352,12 @@ const verifyOne = async (issue: Issue) => {
   if (signature === undefined || mergedAt === undefined) {
     return "skip: no signature or no merged MR";
   }
+  // Issues filed from Cloud Logging, before PostHog became the one sink.
+  if (signature.posthogIssue === undefined) {
+    return "skip: no PostHog error tracking issue to verify against";
+  }
   const events = await eventsSince(
-    signature,
+    signature.posthogIssue,
     new Date(mergedAt + DEPLOY_GRACE_MS)
   );
   const result = verdict({
@@ -855,10 +891,7 @@ const statusPage = async () => {
       }),
       gitlab.deployments(since),
       gitlab.doraLeadTime(since),
-      google.entries(productionErrorFilter, {
-        end: now,
-        start: new Date(now.getTime() - WATCH_MS),
-      }),
+      exceptionCounts(WATCH_MS / 60_000),
       gitlab
         .latestArtifactJson(sciSchema, "main", "sci", "sci.json")
         .catch(() => null),
@@ -872,7 +905,8 @@ const statusPage = async () => {
   }));
   const health = healthOf(
     rows.filter((r) => r.state === "opened").length,
-    recent.entries.length
+    // Production's server-side errors: the app's and the platform's.
+    recent.production
   );
   await mkdir(fromRoot("public"), { recursive: true });
   await writeFile(
@@ -1007,27 +1041,8 @@ const assignGuardIssues = async (issues: Issue[]) => {
 };
 
 const releaseGuard = async () => {
-  const range = { end: now, start: new Date(now.getTime() - GUARD_WATCH_MS) };
-  const requests = `${config.service.metrics} AND log_id("run.googleapis.com/requests")`;
-  const devRequests = requests.replace(
-    'service_name="wovain-web"',
-    `service_name="${DEV_SERVICE}"`
-  );
-  const [
-    all,
-    failed,
-    devAll,
-    devFailed,
-    flags,
-    deployments,
-    issues,
-    browser,
-    alerts,
-  ] = await Promise.all([
-    google.entries(requests, range),
-    google.entries(`${requests} AND httpRequest.status>=500`, range),
-    google.entries(devRequests, range),
-    google.entries(`${devRequests} AND httpRequest.status>=500`, range),
+  const [exceptions, flags, deployments, issues, alerts] = await Promise.all([
+    exceptionCounts(GUARD_WATCH_MS / 60_000),
     gitlab.featureFlags(),
     gitlab.deployments(new Date(now.getTime() - DAY_MS)),
     gitlab.issues({
@@ -1035,20 +1050,10 @@ const releaseGuard = async () => {
       labels: RELEASE_GUARD_LABEL,
       state: "all",
     }),
-    browserErrors(),
-    posthog === undefined ? Promise.resolve([]) : posthog.alerts(),
+    errorTracking().alerts(),
   ]);
   const assigned = await assignGuardIssues(issues);
   const [deployment] = deployments;
-  const health = {
-    errors: failed.entries.length,
-    requests: all.entries.length,
-  };
-  const devHealth = {
-    errors: devFailed.entries.length,
-    requests: devAll.entries.length,
-  };
-  const exceptions = browser.reduce((sum, g) => sum + g.count, 0);
   const kpis = firingKpis(alerts);
   const decision = guardDecision({
     actions: issues
@@ -1059,20 +1064,17 @@ const releaseGuard = async () => {
       deployment === undefined
         ? undefined
         : new Date(deployment.finished_at ?? deployment.created_at),
-    devHealth,
     exceptions,
     firingKpis: kpis,
     flags,
-    health,
     now,
   });
   if (decision.action === "none") {
     return { assigned, decision: decision.reasons.join("; ") };
   }
   const evidence = [
-    `Production 5xx in the last 15 minutes: ${health.errors}/${health.requests} ([Cloud Logging](${logsUrl(`${requests} AND httpRequest.status>=500`)}))`,
-    `dev.wovain.com 5xx in the last 15 minutes: ${devHealth.errors}/${devHealth.requests} ([Cloud Logging](${logsUrl(`${devRequests} AND httpRequest.status>=500`)}))`,
-    `PostHog error tracking: ${exceptions} browser exceptions in 30 minutes${posthog === undefined ? "" : ` ([issues](${posthog.link("error_tracking")}))`}`,
+    `PostHog error tracking in the last 15 minutes: ${exceptions.production} production server exceptions (the app's and the platform's), ${exceptions.dev} on dev.wovain.com, ${exceptions.browser} browser exceptions, ${exceptions.smoke} failed synthetic checks ([issues](${errorTracking().link("error_tracking")}))`,
+    `Production requests: [Cloud Logging](${logsUrl(`${requestsFilter} AND httpRequest.status>=500`)})`,
     `PostHog KPI alerts firing: ${kpis.length > 0 ? kpis.map((k) => `\`kpi:${k}\``).join(", ") : "none"}`,
     `Latest production deployment: ${deployment?.created_at ?? "none in 24 hours"}`,
     `Feature flags: https://gitlab.com/${ENV.CI_PROJECT_PATH ?? ""}/-/feature_flags`,
@@ -1132,6 +1134,13 @@ const flagHygiene = async () => {
   return { filed, findings: findings.length };
 };
 
+// First, into the one error sink: platform errors and the synthetic checks.
+const intoSink = { forwardPlatformErrors, smoke };
+const sent = await Promise.allSettled(
+  Object.values(intoSink).map(async (step) => await step())
+);
+await sink?.flush();
+
 const phases = {
   flagHygiene,
   heal,
@@ -1150,8 +1159,10 @@ const results = await Promise.allSettled(
   Object.values(phases).map(async (phase) => await phase())
 );
 let failed = false;
-for (const [i, name] of Object.keys(phases).entries()) {
-  const result = results[i];
+const steps = [...Object.keys(intoSink), ...Object.keys(phases)];
+const outcomes = [...sent, ...results];
+for (const [i, name] of steps.entries()) {
+  const result = outcomes[i];
   if (result?.status === "fulfilled") {
     console.log(`${name}:`, JSON.stringify(result.value, null, 2));
   } else {

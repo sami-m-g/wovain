@@ -2,18 +2,28 @@ import { Badge } from "@wovain/ui/components/badge";
 import { Card } from "@wovain/ui/components/card";
 import { cn } from "@wovain/ui/lib/utils";
 import { Pause } from "lucide-react";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { ShuttleMark } from "@/components/brand/shuttle-mark";
-import { TeeMockup } from "@/components/marketing/example-art";
 import { PartnerLogo } from "@/components/marketing/partner-logo";
 
-/** The garment colours the example drop prints on. */
-export const BLANK_COLOURS = {
-  bone: "#ece6da",
-  moss: "#5b6b4f",
-  slate: "#3d4450",
-  stone: "#c9c3b6",
+/**
+ * The Fern Study tee on a model: generated with fal (Nano Banana Pro edit)
+ * from wovain's own print file. Next serves it as AVIF or WebP at the size
+ * the ad needs.
+ */
+const MODEL_SHOT = "/demo/fern-model-1.webp";
+
+/**
+ * The example drop's four designs on a Comfort Colors 1717 heavyweight tee,
+ * as Fourthwall's own preview renders them from wovain's print files.
+ */
+export const MOCKUPS = {
+  balcony: "/demo/balcony-tee.webp",
+  fern: "/demo/fern-tee.webp",
+  garden: "/demo/garden-tee.webp",
+  seeds: "/demo/seeds-tee.webp",
 } as const;
 
 /** The badge every Meta campaign carries when wovain creates it. */
@@ -36,18 +46,19 @@ export const PausedBadge = ({
   </Badge>
 );
 
-/** A product as Fourthwall lists it: the blank with the design, title and price. */
+/** A product as Fourthwall lists it: the mockup, title and price. */
 export const ProductListing = ({
-  art,
-  colour,
+  image,
+  imageAlt,
   title,
   price,
   status,
   detail,
   className,
 }: {
-  art: ReactNode;
-  colour: string;
+  image: string;
+  /** Empty where the picture is decorative. */
+  imageAlt: string;
   title: string;
   price: string;
   status?: string;
@@ -55,8 +66,14 @@ export const ProductListing = ({
   className?: string;
 }) => (
   <Card className={cn("gap-0 overflow-hidden py-0", className)}>
-    <div className="bg-muted relative grid place-items-center p-3">
-      <TeeMockup art={art} className="aspect-square w-full" colour={colour} />
+    <div className="bg-muted relative aspect-square overflow-hidden">
+      <Image
+        alt={imageAlt}
+        className="object-cover object-[50%_55%]"
+        fill
+        sizes="(min-width: 1024px) 280px, 45vw"
+        src={image}
+      />
       {status ? (
         <Badge className="absolute end-2.5 top-2.5" variant="secondary">
           {status}
@@ -78,8 +95,7 @@ export const ProductListing = ({
 
 /** A feed ad as Meta previews it, labelled with the label's own mark. */
 export const AdPreview = ({
-  art,
-  colour,
+  photoAlt,
   brand,
   sponsored,
   body,
@@ -88,8 +104,8 @@ export const AdPreview = ({
   footer,
   className,
 }: {
-  art: ReactNode;
-  colour: string;
+  /** Empty where the picture is decorative. */
+  photoAlt: string;
   brand: string;
   sponsored: string;
   body: string;
@@ -112,8 +128,14 @@ export const AdPreview = ({
     <div className="px-3 pb-2.5">
       <p className="line-clamp-2 text-xs leading-snug">{body}</p>
     </div>
-    <div className="bg-muted grid place-items-center px-10 py-2">
-      <TeeMockup art={art} className="aspect-square w-full" colour={colour} />
+    <div className="bg-muted relative aspect-square overflow-hidden">
+      <Image
+        alt={photoAlt}
+        className="object-cover object-[50%_28%]"
+        fill
+        sizes="(min-width: 1024px) 320px, 80vw"
+        src={MODEL_SHOT}
+      />
     </div>
     <div className="bg-muted/60 border-border flex items-center justify-between gap-3 border-t px-3 py-2.5">
       <span className="truncate text-xs font-semibold">{headline}</span>

@@ -1,5 +1,6 @@
 import { FLAGS, isFlagName } from "../../../packages/core/src/flag-registry.ts";
 import type { FlagDefinition } from "../../../packages/core/src/flag-registry.ts";
+import type { ExceptionCounts } from "./posthog.ts";
 
 // Progressive delivery (docs/adr/0001-progressive-delivery.md), the parts
 // that decide: the canary verdict after a deploy, the release guard's action
@@ -18,10 +19,10 @@ const DAY_MS = 24 * HOUR_MS;
 const MAX_FAILED_PROBES = 2;
 const MIN_ERRORS = 3;
 const MAX_ERROR_RATE = 0.02;
-// Release guard: production is degraded at a 5% 5xx rate over 20+ requests
-// in the window, or 20+ new browser exceptions.
-const GUARD_MIN_REQUESTS = 20;
-const GUARD_MAX_ERROR_RATE = 0.05;
+// Release guard: production is degraded at 10+ server-side exceptions (the
+// app's errors and the platform's 5xx, crashes and OOMs) in PostHog Error
+// Tracking in the window, or 20+ browser exceptions.
+const GUARD_MAX_SERVER_EXCEPTIONS = 10;
 const GUARD_MAX_EXCEPTIONS = 20;
 // What a degradation is blamed on: a change in the last 2 hours.
 const GUARD_WINDOW_MS = 2 * HOUR_MS;
@@ -100,48 +101,50 @@ export type GuardAction =
   | { action: "flag-off"; flag: string; reasons: string[] }
   | { action: "rollback"; reasons: string[] };
 
+// Why production itself is degraded, if it is.
+const productionReasons = (exceptions: ExceptionCounts) => {
+  const reasons: string[] = [];
+  if (exceptions.production >= GUARD_MAX_SERVER_EXCEPTIONS) {
+    reasons.push(
+      `production: ${exceptions.production} server exceptions in PostHog error tracking`
+    );
+  }
+  if (exceptions.browser >= GUARD_MAX_EXCEPTIONS) {
+    reasons.push(
+      `${exceptions.browser} browser exceptions in PostHog error tracking`
+    );
+  }
+  return reasons;
+};
+
 export const guardDecision = ({
   actions,
   deployedAt,
-  devHealth,
   exceptions,
   firingKpis,
   flags,
-  health,
   now,
 }: {
   // When the guard acted in the last day, newest first.
   actions: Date[];
   // The latest successful production deployment.
   deployedAt: Date | undefined;
-  // PostHog error tracking's exceptions in the window.
-  exceptions: number;
+  // PostHog Error Tracking's exceptions in the window, the one error sink:
+  // production's server side, dev.wovain.com's (they can blame a flag, whose
+  // Status is global, never move production traffic) and the browser's.
+  // Failed synthetic checks file heal issues instead.
+  exceptions: ExceptionCounts;
   // KPI ids whose PostHog `kpi:` alert fires now.
   firingKpis: string[];
   flags: GitLabFlag[];
-  // Production's requests and 5xx responses in the window.
-  health: Health;
-  // dev.wovain.com's: they can blame a flag (its Status is global), never
-  // move production traffic.
-  devHealth?: Health | undefined;
   now: Date;
 }): GuardAction => {
-  const reasons: string[] = [];
-  const spike = (h: Health, where: string) => {
-    const rate = errorRate(h);
-    if (h.requests >= GUARD_MIN_REQUESTS && rate > GUARD_MAX_ERROR_RATE) {
-      reasons.push(
-        `${where} 5xx rate ${percent(rate)} (${h.errors}/${h.requests}) over ${percent(GUARD_MAX_ERROR_RATE)}`
-      );
-    }
-  };
-  spike(health, "production");
-  if (exceptions >= GUARD_MAX_EXCEPTIONS) {
-    reasons.push(`${exceptions} browser exceptions in PostHog error tracking`);
-  }
+  const reasons = productionReasons(exceptions);
   const serverSide = reasons.length > 0;
-  if (devHealth !== undefined) {
-    spike(devHealth, "development");
+  if (exceptions.dev >= GUARD_MAX_SERVER_EXCEPTIONS) {
+    reasons.push(
+      `development: ${exceptions.dev} server exceptions in PostHog error tracking`
+    );
   }
   if (firingKpis.length > 0) {
     reasons.push(`PostHog KPI alerts firing: ${firingKpis.join(", ")}`);

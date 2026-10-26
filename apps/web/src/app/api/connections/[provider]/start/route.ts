@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { withEvlog } from "@/lib/evlog";
+import { publicOrigin } from "@/lib/public-origin";
 import { redirectWithin } from "@/lib/redirect";
 import { routerClientFor } from "@/lib/router-client";
 
@@ -33,7 +34,7 @@ const handleStart = async (
     if (!(error instanceof ORPCError)) {
       throw error;
     }
-    const { origin } = request.nextUrl;
+    const origin = publicOrigin();
     return error.code === "UNAUTHORIZED"
       ? redirectWithin({ origin, target: "/login" })
       : redirectWithin({

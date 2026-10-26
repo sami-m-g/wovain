@@ -3,6 +3,7 @@ import { appendFile } from "node:fs/promises";
 
 import { z } from "zod";
 
+import { apiUrl } from "./api-url.ts";
 import { ENV } from "./env.ts";
 import {
   latestGreenBefore,
@@ -27,7 +28,7 @@ if (!token || !project) {
 const base = `${ENV.CI_API_V4_URL}/projects/${project}`;
 
 const call = async (path: string, init?: RequestInit): Promise<unknown> => {
-  const response = await fetch(`${base}${path}`, {
+  const response = await fetch(apiUrl(base, path), {
     ...init,
     headers: {
       "content-type": "application/json",

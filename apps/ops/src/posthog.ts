@@ -113,11 +113,55 @@ export const tableReport = (
 export const withWindow = (hogql: string, windowDays: number) =>
   hogql.replaceAll("{windowDays}", String(windowDays));
 
-// Browser exceptions in production over the last `minutes`, one row per
-// PostHog error tracking issue, most frequent first; heal.ts's posthogGroupOf
-// reads each row.
+// Exceptions from production and dev.wovain.com (which runs the same code and
+// the fault-injection flag), never from a laptop: server exceptions carry
+// `site`, the browser's `$host`.
+const WATCHED = `(properties.environment = 'production' OR coalesce(properties.site, properties.$host) = 'dev.wovain.com')`;
+const sinceMinutes = (minutes: number) =>
+  `timestamp > now() - INTERVAL ${Math.round(minutes)} MINUTE`;
+
+// Every exception over the last `minutes` (server, browser, platform and
+// smoke: PostHog Error Tracking is the one error sink), one row per error
+// tracking issue, most frequent first; heal.ts's posthogGroupOf reads each
+// row.
 export const exceptionsQuery = (minutes: number) =>
-  `SELECT properties.$exception_issue_id AS issue, any(JSONExtractString(properties.$exception_types, 1)) AS name, any(JSONExtractString(properties.$exception_values, 1)) AS message, any(properties.$pathname) AS path, count() AS events, toString(min(timestamp)) AS first_seen, toString(max(timestamp)) AS last_seen, any(properties.$exception_functions) AS functions, any(properties.$exception_sources) AS sources FROM events WHERE event = '$exception' AND properties.environment = 'production' AND timestamp > now() - INTERVAL ${Math.round(minutes)} MINUTE GROUP BY issue ORDER BY events DESC LIMIT 20`;
+  `SELECT properties.$exception_issue_id AS issue, any(JSONExtractString(properties.$exception_types, 1)) AS name, any(JSONExtractString(properties.$exception_values, 1)) AS message, any(coalesce(properties.$pathname, properties.path)) AS path, count() AS events, toString(min(timestamp)) AS first_seen, toString(max(timestamp)) AS last_seen, any(properties.$exception_functions) AS functions, any(properties.$exception_sources) AS sources, any(properties.method) AS method, any(coalesce(properties.error_source, '')) AS source, any(properties.status) AS status FROM events WHERE event = '$exception' AND ${WATCHED} AND ${sinceMinutes(minutes)} GROUP BY issue ORDER BY events DESC LIMIT 20`;
+
+// Exception counts over the last `minutes` by where (production or dev) and
+// source (server, platform, smoke or browser), for the release guard and the
+// status page.
+export const exceptionCountsQuery = (minutes: number) =>
+  `SELECT if(properties.environment = 'production', 'production', 'dev') AS env, coalesce(properties.error_source, 'browser') AS source, count() AS events FROM events WHERE event = '$exception' AND ${WATCHED} AND ${sinceMinutes(minutes)} GROUP BY env, source`;
+
+export interface ExceptionCounts {
+  // Server and platform exceptions: the server side of production.
+  production: number;
+  dev: number;
+  browser: number;
+  smoke: number;
+}
+
+export const exceptionCountsOf = (rows: unknown[][]): ExceptionCounts => {
+  const counts = { browser: 0, dev: 0, production: 0, smoke: 0 };
+  for (const [env, source, events] of rows) {
+    const n = Number(events) || 0;
+    if (source === "browser") {
+      counts.browser += env === "production" ? n : 0;
+    } else if (source === "smoke") {
+      counts.smoke += n;
+    } else if (env === "production") {
+      counts.production += n;
+    } else {
+      counts.dev += n;
+    }
+  }
+  return counts;
+};
+
+// Cloud Logging entries the ops job already forwarded as platform
+// exceptions, by insert id, so a rerun doesn't send them twice.
+export const forwardedQuery = (minutes: number) =>
+  `SELECT DISTINCT properties.log_insert_id FROM events WHERE event = '$exception' AND properties.error_source = 'platform' AND ${sinceMinutes(minutes)} LIMIT 10000`;
 
 // How many times one error tracking issue fired since `since`.
 export const issueEventsQuery = (issue: string, since: Date) =>

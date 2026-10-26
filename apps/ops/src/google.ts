@@ -1,6 +1,8 @@
 import { Logging } from "@google-cloud/logging";
 import { MetricServiceClient, protos } from "@google-cloud/monitoring";
 
+import type { LogEntry } from "./platform.ts";
+
 // Production's logs and metrics in Google Cloud. CI signs in through Workload
 // Identity Federation (.gcp-auth in .gitlab/ci/templates.yml sets
 // GOOGLE_APPLICATION_CREDENTIALS) as a service account that may only read
@@ -15,11 +17,14 @@ export interface Range {
   end: Date;
 }
 
-// The evlog wide event's fields, unchecked: heal.ts validates each one.
-interface ErrorEvent {
-  timestamp: string | undefined;
+// One entry's JSON payload and the metadata platform.ts reads, unchecked:
+// every field is validated where it's used.
+interface Entry extends LogEntry {
   payload: Record<string, unknown>;
 }
+
+const textOf = (value: unknown) =>
+  typeof value === "string" ? value : undefined;
 
 const window = (range: Range) =>
   `timestamp>="${range.start.toISOString()}" AND timestamp<"${range.end.toISOString()}"`;
@@ -57,10 +62,24 @@ export const createGoogle = (project: string) => {
       pageSize: PAGE_SIZE,
       resourceNames: [`projects/${project}`],
     });
-    const events: ErrorEvent[] = found.map((entry) => {
-      const { timestamp } = entry.metadata;
+    const events: Entry[] = found.map((entry) => {
+      const { httpRequest, insertId, logName, resource, severity, timestamp } =
+        entry.metadata;
       return {
+        httpRequest:
+          httpRequest === undefined || httpRequest === null
+            ? undefined
+            : {
+                requestMethod: textOf(httpRequest.requestMethod),
+                requestUrl: textOf(httpRequest.requestUrl),
+                status: Number(httpRequest.status) || undefined,
+              },
+        insertId: textOf(insertId),
+        logName: textOf(logName),
         payload: isRecord(entry.data) ? entry.data : {},
+        service: textOf(resource?.labels?.["service_name"]),
+        severity: textOf(severity),
+        text: textOf(entry.data),
         timestamp:
           timestamp instanceof Date ? timestamp.toISOString() : undefined,
       };

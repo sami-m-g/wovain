@@ -226,6 +226,13 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
+// Only secrets with a version are mounted: Cloud Run refuses a revision whose
+// secret has no `latest` version. meta-app-id and meta-app-secret have none
+// yet, so they get theirs from the stack config like the others
+// (`pulumi config set --secret meta-app-id <id>` in infra/); until then,
+// connecting Meta answers META_NOT_CONFIGURED.
+const mountedSecretIds = [...populated.keys()];
+
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
   "web-runner",
@@ -344,7 +351,7 @@ const service = cloudRunService("web", {
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
     { name: "WOVAIN_BUCKET", value: media.name },
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
-    ...[...populated.keys()].map((id) => secretEnv(id)),
+    ...mountedSecretIds.map((id) => secretEnv(id)),
   ],
   location: region,
   maxInstances: 2,
@@ -428,7 +435,7 @@ const dev = devEnvironment({
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
-  populated: [...populated.keys()],
+  populated: mountedSecretIds,
   project,
   region,
   secrets,

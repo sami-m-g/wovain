@@ -74,15 +74,6 @@ export interface AuthAnalytics {
     event: BillingEvent | "sign_up";
     properties?: Record<string, unknown>;
   }) => Promise<void>;
-  // A failed email as a `$exception` event (PostHog Error Tracking), which
-  // self-heal triages; awaited when it returns a promise.
-  captureException?: (
-    error: unknown,
-    event: {
-      distinctId?: string | undefined;
-      properties?: Record<string, unknown>;
-    }
-  ) => void | Promise<void>;
   identify?: BillingAnalytics["identify"];
 }
 
@@ -206,6 +197,42 @@ const polarPlugin = (
         }),
       ];
 
+// An error as plain fields for the global evlog logger, which keeps what it
+// is given: an Error instance would serialize as {}.
+const errorFields = (error: unknown, code?: string) =>
+  error instanceof Error
+    ? { code, message: error.message, name: error.name, stack: error.stack }
+    : { code, message: String(error), name: "Error" };
+
+// Better Auth's own logs go through evlog instead of the console, so its
+// errors (a failed sign-in handler, a database fault) are error-level events
+// that reach error tracking with the Error it logged, when there is one.
+export const authLogger = {
+  log: (
+    level: "debug" | "error" | "info" | "warn",
+    message: string,
+    ...args: unknown[]
+  ) => {
+    const error = args.find((arg) => arg instanceof Error);
+    const auth = { message };
+    if (level === "error") {
+      log.error({
+        auth,
+        error: {
+          ...errorFields(error ?? message),
+          message:
+            error === undefined ? message : `${message}: ${error.message}`,
+          name: error?.name ?? "BetterAuthError",
+        },
+      });
+    } else if (level === "warn") {
+      log.warn({ auth });
+    } else {
+      log.info({ auth });
+    }
+  },
+};
+
 export const createAuth = (
   env: AuthConfig,
   database: Database,
@@ -215,28 +242,18 @@ export const createAuth = (
 ) => {
   // Better Auth awaits these (no advanced.backgroundTasks), so on Cloud Run
   // the send finishes while the request still has CPU. A failed send is
-  // logged and captured as an exception, never thrown: the sign-up or reset
-  // answers the same either way.
+  // logged as an error with the user's id, so error tracking reports it for
+  // that user (apps/web/src/lib/error-tracking.ts); it is never thrown: the
+  // sign-up or reset answers the same either way.
   const send = async (mail: Mail, userId: string) => {
     try {
       await mailer(mail);
     } catch (error) {
       log.error({
         email: { kind: mail.message.kind },
-        error: error instanceof Error ? error : String(error),
+        error: errorFields(error, "EMAIL_SEND_FAILED"),
         userId,
       });
-      try {
-        await analytics?.captureException?.(error, {
-          distinctId: userId,
-          properties: { emailKind: mail.message.kind, source: "auth-email" },
-        });
-      } catch (captureError) {
-        // Analytics never fails the sign-up or reset either.
-        log.warn({
-          analytics: { event: "$exception", failed: String(captureError) },
-        });
-      }
     }
   };
   return betterAuth({
@@ -328,6 +345,7 @@ export const createAuth = (
         );
       },
     },
+    logger: authLogger,
     plugins: [
       // Signs the access tokens the MCP route verifies against /jwks.
       jwt(),

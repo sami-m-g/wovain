@@ -21,7 +21,6 @@ let close: () => Promise<void>;
 let reset: () => Promise<void>;
 const mailer = vi.fn<Mailer>();
 const capture = vi.fn(async () => {});
-const captureException = vi.fn(async () => {});
 
 const makeAuth = () =>
   createAuth(
@@ -31,7 +30,7 @@ const makeAuth = () =>
     },
     db,
     mailer,
-    { capture, captureException }
+    { capture }
   );
 
 beforeAll(async () => {
@@ -41,7 +40,6 @@ beforeAll(async () => {
 beforeEach(async () => {
   await reset();
   mailer.mockReset();
-  captureException.mockClear();
   vi.restoreAllMocks();
 });
 
@@ -90,34 +88,24 @@ it("sends the verification email before the sign-up answers", async () => {
   );
 });
 
-it("logs and captures a failed verification email, and still signs up", async () => {
+// Logged at error level with the user's id, which error tracking turns into
+// that user's `$exception` (apps/web/src/lib/error-tracking.ts).
+it("logs a failed verification email as an error for the user, and still signs up", async () => {
   const error = vi.spyOn(log, "error").mockImplementation(() => {});
-  const refused = new Error("The wovain.com domain is not verified");
-  mailer.mockRejectedValue(refused);
+  mailer.mockRejectedValue(new Error("The wovain.com domain is not verified"));
 
   const response = await signUp(makeAuth());
 
   expect(response.status).toBe(200);
   const { id } = await userRow();
-  expect(error).toHaveBeenCalledWith(
-    expect.objectContaining({ email: { kind: "verify" }, userId: id })
-  );
-  expect(captureException).toHaveBeenCalledWith(refused, {
-    distinctId: id,
-    properties: { emailKind: "verify", source: "auth-email" },
+  expect(error).toHaveBeenCalledWith({
+    email: { kind: "verify" },
+    error: expect.objectContaining({
+      code: "EMAIL_SEND_FAILED",
+      message: "The wovain.com domain is not verified",
+    }),
+    userId: id,
   });
-});
-
-it("still signs up when capturing the failed email fails too", async () => {
-  vi.spyOn(log, "error").mockImplementation(() => {});
-  const warn = vi.spyOn(log, "warn").mockImplementation(() => {});
-  mailer.mockRejectedValue(new Error("The wovain.com domain is not verified"));
-  captureException.mockRejectedValueOnce(new Error("PostHog is unreachable"));
-
-  const response = await signUp(makeAuth());
-
-  expect(response.status).toBe(200);
-  expect(warn).toHaveBeenCalledOnce();
 });
 
 // Cloud Run hands the app requests on its own listen address; the link must

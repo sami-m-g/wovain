@@ -22,7 +22,12 @@ verify:infra:
   extends: [.pulumi-install, .on-changes]
   rules:
     - !reference [.not-ops, rules]
-    - changes: [infra/**/*, .gitlab/duo/catalog/**/*]
+    # The Pulumi program only: infra/posthog is OpenTofu (.gitlab/ci/posthog.yml).
+    - changes: &pulumi-paths
+        - infra/*
+        - infra/bootstrap/**/*
+        - infra/policy/**/*
+        - .gitlab/duo/catalog/**/*
   script:
     - pnpm --dir infra run check-types
     - pnpm --dir infra run test
@@ -37,7 +42,7 @@ infra:preview:
   rules:
     # Once main has created the preview identity's variables (infra/README.md).
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $GCP_PREVIEW_SERVICE_ACCOUNT
-      changes: [infra/**/*, .gitlab/duo/catalog/**/*]
+      changes: *pulumi-paths
   id_tokens:
     GITLAB_OIDC_TOKEN:
       aud: https://iam.googleapis.com/$GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER
