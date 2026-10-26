@@ -193,6 +193,36 @@ As of October 2026; prices are PostHog Cloud's monthly free tier, then pay as yo
 | Session replay and Replay Vision | Replays of visitors who consented: cookieless "on_reject" mode records none until the banner's Accept, or implied consent outside the opt-in countries in `apps/web/src/lib/consent.ts`. Inputs and dashboard text are masked. Replay Vision not used yet | 5k recordings free; Replay Vision 2,500 credits free, then $0.01 a credit | Either |
 | Self-driving: Signals scouts, Inbox, reports, Tasks and PostHog Code, Loops | Not used to act: they open pull requests through PostHog's GitHub App only, and their external signal sources are GitHub Issues, Jira, Linear and Zendesk. wovain lives on GitLab, so Duo acts and PostHog senses | Open beta; AI credits (500 free, then $0.01 a credit; beta features are free) | GitHub only |
 
+## GitLab Observability
+
+GitLab Observability ([docs](https://docs.gitlab.com/operations/observability/)) is GitLab's OpenTelemetry backend: traces, metrics and logs over OTLP, shown under the group's **Observe** menu. It's in beta, on every tier, free with no ingestion limits for now. A group member with the Developer role or higher enables it once for the group (Observe > Setup > Enable Observability), and every project in the group can send to it. wovain's group, `transcend-october-2026/43085639` (id 144066465), has it on; its instance is `https://144066465.gitlab-o11y.com`.
+
+PostHog stays the product brain (funnels, KPIs, experiments, replays, error tracking issues). GitLab Observability gets the engineering telemetry, next to the code, incidents and Duo flows:
+
+| Signal | Source | How |
+| --- | --- | --- |
+| Request traces | Next.js's own spans for every request, plus outgoing `fetch` (Nemotron, Fourthwall, Meta, PostHog) | `@opentelemetry/sdk-node` with the undici instrumentation, `apps/web/src/lib/otel.ts` |
+| Agent traces and logs | Mastra's spans for runs, agents, tools, scorers and guardrails | A second Mastra `OtelExporter` (the `custom` provider), `packages/api/src/workflows/observability.ts`; Cloud Trace keeps its copy |
+| Logs | Every evlog wide event (one per request, errors included), with its `traceId` and `spanId` | evlog's official OTLP drain (`evlog/otlp`), composed with the Cloud Logging and PostHog drains, `apps/web/src/lib/evlog.ts` |
+| Metrics | Node runtime metrics (event loop, GC, heap); request rate, errors and latency per route come from the spans | `@opentelemetry/instrumentation-runtime-node` |
+| CI/CD | Pipeline and job traces, metrics and logs | `GITLAB_OBSERVABILITY_EXPORT=metrics,logs,traces` ([docs](https://docs.gitlab.com/operations/observability/ci_cd/)), a CI variable in `infra/index.ts` |
+
+No OpenTelemetry Collector runs: each SDK exports straight to the group's OTLP endpoint over HTTP, from the standard `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_RESOURCE_ATTRIBUTES` (with `gitlab.project.id`, `gitlab.project.name` and `deployment.environment.name`, as the [send docs](https://docs.gitlab.com/operations/observability/send/) recommend). Pulumi sets both on the production and dev services only when `wovain:o11yOtlpEndpoint` is set, so without it nothing is sent. Ingestion needs no token unless the group turns on enforcement; then `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Bearer <token>`) is picked up by every exporter without code changes.
+
+**One error, three views, linked both ways.** Every server error carries its trace ID: on the evlog wide event (Cloud Logging `jsonPayload.traceId`, the OTLP log record's `traceId`) and on PostHog's `$exception` (`trace_id`). When the ops job files a heal incident (flow 1), `linkIncident` in `apps/ops/src/ops.ts`:
+
+- adds a timeline event to the incident: "Trace in GitLab Observability", linking `https://144066465.gitlab-o11y.com/trace/<trace id>` (`GITLAB_O11Y_URL`, `apps/ops/src/o11y.ts`);
+- for a PostHog error tracking issue, sets the issue's description to the incident's URL and the trace URL, and its severity to high (PostHog's error tracking API, which needs the key's Error Tracking Write scope).
+
+The heal issue already links the PostHog issue as its evidence, and the incident links the heal issue, so from any of PostHog, the incident or the trace you reach the others. PostHog's own GitLab integration (Error tracking > Integrations > GitLab) can still create a GitLab issue from a PostHog issue by hand, but it needs a project access token, which the Developer+ role can't create, and it would duplicate the incident.
+
+**Demo in 20 seconds** (after flow 1's steps 1 to 3 have run):
+
+1. PostHog > Error tracking: the `ZodError` issue, severity high, its description linking the GitLab incident and the trace.
+2. Click the incident: Monitor > Incidents shows it with severity High, and its timeline has "Detected" and "Trace in GitLab Observability".
+3. Click the trace: GitLab Observability shows `GET /api/checkout/quote` with its spans, the failing span in red, and the wide event's log line beside it (same trace ID).
+4. Back in the incident, the linked heal issue leads to the Duo heal flow's MR: the failing test, the fix, `heal:verify` green, auto-merge set.
+
 ## Status page
 
 The ops job renders `public/index.html` every run and the `pages` job publishes it to status.wovain.com: health (incident, degraded, operational), incidents of the last 30 days with durations, DORA metrics (deployments a week, lead time from GitLab's DORA API when the tier has it, change failure rate as incidents per deployment, time to restore) and the SCI score from the latest `sci` job. Only numbers and titles the ops job wrote are shown.
@@ -235,7 +265,7 @@ The nine stages, with PostHog in Plan and Monitor:
 | Secure | SAST, Secret Detection, Dependency Scanning; vuln to fix (flow 4); scan execution policy |
 | Release | Auto-merge to `main`, canary deploys to Cloud Run with automatic promotion or rollback, GitLab feature flags as code with kill switches and the release guard (flow 5), PostHog experiments (`exp-<KPI id>`) |
 | Configure | Triggers, schedules, labels, Pages domain, policies and the PostHog trigger token as Pulumi code (`infra/duo.ts`); PostHog alerts, destinations, dashboard and survey as OpenTofu code (`infra/posthog`); `.gitlab/duo/agent-config.yml` for flow runners |
-| Monitor | Cloud Logging and Error Reporting, PostHog error tracking, KPI alerts, web vitals and LLM analytics, incidents with timelines, verify-in-production (Cloud Logging or PostHog), `verifyKpis`, KPI snapshot, status page with DORA and SCI (flows 1, 2) |
+| Monitor | GitLab Observability (Observe): request, `fetch` and Mastra traces, evlog logs and Node runtime metrics over OTLP, and CI/CD telemetry; incidents with timelines that link each error's trace and its PostHog issue (see [GitLab Observability](#gitlab-observability)); Cloud Logging and Error Reporting, PostHog error tracking, KPI alerts, web vitals and LLM analytics, verify-in-production (Cloud Logging or PostHog), `verifyKpis`, KPI snapshot, status page with DORA and SCI (flows 1, 2) |
 | Govern | Trusted-user checks, caps, guardrails, tool allow-lists, the `vuln-fix` audit issue, approval policy and compliance framework (Ultimate), SCI report |
 
 ## Setup
@@ -246,4 +276,5 @@ The nine stages, with PostHog in Plan and Monitor:
 4. Cloud Run needs `GITLAB_FEATURE_FLAGS_URL` and `GITLAB_FEATURE_FLAGS_INSTANCE_ID` (Deploy > Feature flags > Configure) for the fault flag to work.
 5. `status.wovain.com` is a Cloud Run domain mapping to the web service, which proxies it to the project's Pages site (`apps/web/next.config.ts`); no Pages domain is needed.
 6. PostHog (project "wovain", id 687269, US cloud): a person creates a personal API key at Settings > Personal API keys, scoped to this project, with `query:read`, `alert:write`, `insight:write`, `dashboard:write`, `hog_function:write`, `survey:write`, `feature_flag:write`, `experiment:write` and `project:write` (for `infra/posthog/settings.tf`). Then `pulumi config set --secret posthog-personal-api-key phx_...` and `pulumi config set posthogProjectId 687269`; main's `pulumi up` sets the CI variables. A pipeline trigger token needs Maintainer, so it's opt-in: a Maintainer runs `pulumi config set wovain:posthogTrigger true` and `pnpm run infra:up -- --policy-pack-config policy/maintainer.json`, which creates the trigger and `POSTHOG_TRIGGER_TOKEN`. `infra/posthog/settings.tf` sets cookieless server hash mode and the default test account filters (dev traffic, signed-in team members, bots). In PostHog, exception autocapture, web vitals, heatmaps and dead clicks are already on; turn on spike detection in Error tracking > Configuration.
-7. The next main pipeline that touches `infra/posthog` or `kpis.yml` plans the PostHog config (`posthog:plan`); a person reviews the plan and runs `posthog:apply`. Then launch the "Run rating" survey in PostHog when it should start showing.
+7. GitLab Observability: a group member with Developer or higher opens the group, Observe > Setup, and copies the OTEL endpoint URL shown there (no API returns it). Then `pulumi config set o11yOtlpEndpoint <url>` in `infra/`; the next `pulumi up` sets `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_RESOURCE_ATTRIBUTES` on both web services. For the PostHog side of the incident links, add Error Tracking Write to the PostHog personal API key's scopes.
+8. The next main pipeline that touches `infra/posthog` or `kpis.yml` plans the PostHog config (`posthog:plan`); a person reviews the plan and runs `posthog:apply`. Then launch the "Run rating" survey in PostHog when it should start showing.

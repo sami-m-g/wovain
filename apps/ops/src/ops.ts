@@ -32,6 +32,12 @@ import {
 import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
 import { loadKpis } from "./kpis.ts";
+import {
+  issueTraceQuery,
+  posthogIssueDescription,
+  traceIdOf,
+  traceUrl,
+} from "./o11y.ts";
 import { exceptionsQuery, issueEventsQuery, scalarOf } from "./posthog.ts";
 import {
   FLAG_CLEANUP_LABEL,
@@ -198,6 +204,69 @@ const evidenceOf = ({ signature: s }: ErrorGroup) =>
     ? `[Cloud Logging](${logsUrl(`${errorFilter} AND jsonPayload.path="${s.path}"`)})`
     : `[PostHog error tracking](${posthog.link(`error_tracking/${s.posthogIssue}`)})`;
 
+// The newest trace ID of a heal problem's events: PostHog's $exception
+// trace_id for an error tracking issue, or the wide event's traceId in
+// Cloud Logging (apps/web/src/lib/otel.ts sets both). Undefined when there
+// is none or the lookup fails: the link is an extra.
+const traceOf = async (
+  { signature: s }: ErrorGroup,
+  range: { end: Date; start: Date }
+) => {
+  try {
+    if (s.posthogIssue !== undefined && posthog !== undefined) {
+      const rows = await posthog.rows(issueTraceQuery(s.posthogIssue));
+      return traceIdOf(rows[0]?.[0]);
+    }
+    const { entries } = await google.entries(
+      `${errorFilter} AND jsonPayload.error.name="${s.name}" AND jsonPayload.traceId:*`,
+      range
+    );
+    return traceIdOf(entries[0]?.payload["traceId"]);
+  } catch {
+    // No link then; the incident stands without it.
+  }
+};
+
+// Links an incident both ways: to the error's trace in GitLab Observability
+// (a timeline event), and from the PostHog error tracking issue (its
+// description and severity). Best effort, like the incident's extras.
+const linkIncident = async (
+  problem: ErrorGroup,
+  incident: Issue,
+  range: { end: Date; start: Date }
+) => {
+  const o11y = ENV.GITLAB_O11Y_URL;
+  const traceId =
+    o11y === undefined ? undefined : await traceOf(problem, range);
+  const trace =
+    o11y === undefined || traceId === undefined
+      ? undefined
+      : traceUrl(o11y, traceId);
+  const { posthogIssue } = problem.signature;
+  return [
+    ...(trace === undefined
+      ? []
+      : await bestEffort("trace link", () =>
+          gitlab.timelineEvent(
+            incident.id,
+            `Trace in GitLab Observability: [${traceId}](${trace})`,
+            now
+          )
+        )),
+    ...(posthogIssue === undefined || posthog === undefined
+      ? []
+      : await bestEffort("PostHog issue link", () =>
+          posthog.updateIssue(posthogIssue, {
+            description: posthogIssueDescription({
+              incident: incident.web_url,
+              trace,
+            }),
+            severity: "high",
+          })
+        )),
+  ];
+};
+
 // Flow 1: file the most frequent new production error, from the server's
 // logs or PostHog's browser exceptions, and hand it to the heal flow, within
 // the daily and in-flight caps.
@@ -269,6 +338,7 @@ const heal = async () => {
         new Date(problem.firstSeen || now.toISOString())
       )
     )),
+    ...(await linkIncident(problem, incident, range)),
   ];
   return `filed #${created.iid} and incident #${incident.iid} for ${s.fingerprint}, assigned the heal flow${problems.length > 0 ? ` (${problems.join("; ")})` : ""}`;
 };

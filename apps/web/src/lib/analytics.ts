@@ -5,6 +5,8 @@ import { PostHog } from "posthog-node";
 
 import { ENV } from "@/env.server";
 
+import { activeTraceIds } from "./otel";
+
 // Server-side funnel and run events (posthog.com/docs/libraries/node), keyed
 // by user id: the same distinct id the browser identifies with. Each event
 // is sent before the response (or the run step) finishes, while Cloud Run
@@ -40,9 +42,12 @@ export const captureServerException = async (
     return;
   }
   // The SDK checks the flag synchronously, before its first await.
+  // trace_id links the PostHog issue to the request's trace in GitLab
+  // Observability (src/lib/otel.ts); apps/ops puts both on the incident.
   const sent = posthog.captureExceptionImmediate(error, distinctId, {
     ...properties,
     environment,
+    trace_id: activeTraceIds()?.traceId,
   });
   if (typeof error === "object" && error !== null) {
     Object.assign(error, { __posthog_previously_captured_error: true });

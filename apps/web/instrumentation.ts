@@ -2,7 +2,16 @@ import { defineNodeInstrumentation } from "evlog/next/instrumentation";
 
 const evlog = defineNodeInstrumentation(() => import("./src/lib/evlog"));
 
-export const { register } = evlog;
+// OpenTelemetry to GitLab Observability (src/lib/otel.ts) starts first, so
+// Next.js's request spans and evlog's events share trace IDs. Node runtime
+// only, like evlog.
+export const register: typeof evlog.register = async () => {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { startOtel } = await import("./src/lib/otel");
+    startOtel();
+  }
+  await evlog.register();
+};
 
 // An uncaught server error goes to evlog's wide event and to PostHog Error
 // Tracking (src/lib/error-tracking.ts), each on its own: one failing doesn't
