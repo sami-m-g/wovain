@@ -11,7 +11,7 @@ import type { TrendIdea } from "./trends";
 
 const pickSchema = z.object({
   index: z.int().min(0),
-  reason: z.string().min(1).max(300),
+  reason: z.string().min(1),
 });
 
 export const pickIdea = async <T extends TrendIdea>(
@@ -47,7 +47,7 @@ export const pickIdea = async <T extends TrendIdea>(
 
 const reviewSchema = z.object({
   approve: z.boolean(),
-  reason: z.string().min(1).max(300),
+  reason: z.string().min(1),
 });
 
 export interface Decision {
