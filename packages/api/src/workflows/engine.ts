@@ -1,7 +1,6 @@
 import { Mastra } from "@mastra/core/mastra";
 import { createServe } from "@mastra/inngest";
-import { PostgresStore } from "@mastra/pg";
-import type { Database } from "@wovain/db";
+import type { PostgresStore } from "@mastra/pg";
 import { Inngest } from "inngest";
 import { serve } from "inngest/next";
 import { z } from "zod";
@@ -34,11 +33,6 @@ const failedRun = z.object({
   }),
   function_id: z.string(),
 });
-
-// Mastra's store on the app's database: workflow snapshots, memory threads,
-// working memory, scores and traces, all in the `mastra` schema.
-export const createMastraStorage = (pool: Database["$client"]) =>
-  new PostgresStore({ id: "wovain-mastra", pool, schemaName: "mastra" });
 
 // The app's one Mastra instance: the run workflow, the agents with their
 // scorers, guardrails and memory (@wovain/core/agents), and tracing.

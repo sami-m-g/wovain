@@ -33,6 +33,21 @@ instructions:
       Flag new code that reimplements what an installed dependency or a
       helper already in this repo does. Name the alternative.
 
+  - name: Dependency updates
+    fileFilters:
+      - "**/package.json"
+      - "pnpm-workspace.yaml"
+      - "**/pnpm-lock.yaml"
+      - ".gitlab-ci.yml"
+    instructions: |
+      1. Flag a prerelease or branch-snapshot version (for example
+         1.0.0-rc.5-ab785fc) that was published before the version it
+         replaces; semver ranks it higher, but it is a downgrade.
+      2. Flag a packageManager bump without the matching PNPM_VERSION in
+         .gitlab-ci.yml, and an @pulumi/pulumi bump without PULUMI_VERSION.
+      3. Flag a package.json change whose pnpm-lock.yaml (the root one, or
+         infra/'s) isn't in the diff.
+
   - name: Secrets
     instructions: |
       Flag tokens, API keys, URLs with embedded credentials, or .env files in

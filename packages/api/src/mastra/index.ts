@@ -5,11 +5,8 @@ import { createMailer } from "@wovain/email/mailer";
 import { Inngest } from "inngest";
 import { z } from "zod";
 
-import {
-  createMastra,
-  createMastraStorage,
-  INNGEST_APP_ID,
-} from "../workflows/engine";
+import { createMastra, INNGEST_APP_ID } from "../workflows/engine";
+import { createMastraStorage } from "../workflows/storage";
 
 // Mastra Studio's entry (`pnpm --filter @wovain/api studio`, AGENTS.md): the
 // same agents, scorers, memory, workflow and storage as the app, built from
@@ -37,7 +34,7 @@ const env = z
   .parse(process.env);
 
 const db = createDb(env);
-const storage = createMastraStorage(db.$client);
+const { storage } = createMastraStorage(db.$client);
 
 export const mastra = createMastra({
   cloudTrace: false,

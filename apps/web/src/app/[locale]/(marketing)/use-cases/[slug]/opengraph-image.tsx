@@ -4,7 +4,7 @@ import { slugOgImage } from "@/lib/og";
 const og = slugOgImage({
   alt: "wovain use case",
   entry: (content, slug) => content.cases[slug],
-  fallback: "creator-merch",
+  fallback: "independent-labels",
   slugs: USE_CASE_SLUGS,
 });
 

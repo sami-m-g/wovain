@@ -4,7 +4,10 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/brand/logo";
-import { MossFernArt, RepotClubArt } from "@/components/marketing/example-art";
+import {
+  FernStudyArt,
+  GardenHoursArt,
+} from "@/components/marketing/example-art";
 import { HangTag } from "@/components/product/hang-tag";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import { priceBreakdown } from "@/lib/pricing";
@@ -151,7 +154,7 @@ export const ProductWindow = async () => {
               <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:me-64">
                 <DesignCard
                   approve={wizard("designs.approve")}
-                  art={<MossFernArt className="size-full" />}
+                  art={<FernStudyArt className="size-full" />}
                   change={t("chatChange")}
                   coach={t("window.coachOne")}
                   printed={t("window.printedOne")}
@@ -162,7 +165,7 @@ export const ProductWindow = async () => {
                 <div className="hidden sm:flex">
                   <DesignCard
                     approve={wizard("designs.approve")}
-                    art={<RepotClubArt className="size-full" />}
+                    art={<GardenHoursArt className="size-full" />}
                     change={t("chatChange")}
                     coach={t("window.coachTwo")}
                     printed={t("window.printedTwo")}

@@ -8,7 +8,7 @@ const LEAFLETS = [0, 1, 2, 3, 4] as const;
 const LEAFLET_GAP = 9;
 const LEAFLET_TOP = 70;
 
-export const MossFernArt = ({ className }: { className?: string }) => (
+export const FernStudyArt = ({ className }: { className?: string }) => (
   <svg
     aria-hidden="true"
     className={className}
@@ -44,7 +44,7 @@ export const MossFernArt = ({ className }: { className?: string }) => (
       letterSpacing="2"
     >
       <textPath href="#moss-top" startOffset="50%" textAnchor="middle">
-        MOSS &amp; FERN SUPPLY
+        FERN STUDY · NO. 3
       </textPath>
     </text>
     <text
@@ -54,7 +54,7 @@ export const MossFernArt = ({ className }: { className?: string }) => (
       letterSpacing="2.5"
     >
       <textPath href="#moss-bottom" startOffset="50%" textAnchor="middle">
-        SLOW LIVING DEPT.
+        SPRING CAPSULE
       </textPath>
     </text>
     <path
@@ -90,7 +90,7 @@ export const MossFernArt = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export const RepotClubArt = ({ className }: { className?: string }) => (
+export const GardenHoursArt = ({ className }: { className?: string }) => (
   <svg
     aria-hidden="true"
     className={className}
@@ -105,10 +105,10 @@ export const RepotClubArt = ({ className }: { className?: string }) => (
       textAnchor="middle"
     >
       <text fontSize="44" letterSpacing="-1" x="100" y="96">
-        repot
+        garden
       </text>
       <text fontSize="44" letterSpacing="-1" x="100" y="136">
-        club
+        hours
       </text>
     </g>
     <path d="M58 150h84" stroke="#1f2a24" strokeWidth="1" />
@@ -121,7 +121,7 @@ export const RepotClubArt = ({ className }: { className?: string }) => (
       x="100"
       y="164"
     >
-      EST. THIS WEEKEND
+      OPEN UNTIL DUSK
     </text>
   </svg>
 );

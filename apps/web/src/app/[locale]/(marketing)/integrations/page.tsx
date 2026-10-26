@@ -28,8 +28,6 @@ export const generateMetadata = async ({
   });
 };
 
-const GROUPS = ["yours", "wovain"] as const;
-
 const IntegrationsPage = async ({ params }: Props) => {
   const locale = await enterLocale(params);
   const t = await getTranslations("Seo");
@@ -48,34 +46,22 @@ const IntegrationsPage = async ({ params }: Props) => {
         title={t("integrationsTitle")}
       />
       <div className={`${container} flex flex-col gap-16 pb-24`}>
-        {GROUPS.map((group) => (
-          <section aria-labelledby={`group-${group}`} key={group}>
-            <h2
-              className="font-display text-display-3 font-semibold"
-              id={`group-${group}`}
-            >
-              {t(`${group}Group`)}
-            </h2>
-            <ul className="border-border mt-6 grid border-t md:grid-cols-2 md:gap-x-10">
-              {INTEGRATION_SLUGS.filter(
-                (slug) => content.integrations[slug].connection === group
-              ).map((slug) => (
-                <li className="border-border border-b" key={slug}>
-                  <RowLink
-                    body={content.integrations[slug].lead}
-                    href={`/integrations/${slug}`}
-                    meta={
-                      <span className="text-muted-foreground text-xs">
-                        {content.integrations[slug].category}
-                      </span>
-                    }
-                    title={content.integrations[slug].name}
-                  />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        <ul className="border-border grid border-t md:grid-cols-2 md:gap-x-10">
+          {INTEGRATION_SLUGS.map((slug) => (
+            <li className="border-border border-b" key={slug}>
+              <RowLink
+                body={content.integrations[slug].lead}
+                href={`/integrations/${slug}`}
+                meta={
+                  <span className="text-muted-foreground text-xs">
+                    {content.integrations[slug].category}
+                  </span>
+                }
+                title={content.integrations[slug].name}
+              />
+            </li>
+          ))}
+        </ul>
       </div>
       <CtaBand />
     </>

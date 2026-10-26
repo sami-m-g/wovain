@@ -1,7 +1,5 @@
-import {
-  createMastraStorage,
-  createRunEngine,
-} from "@wovain/api/workflows/engine";
+import { createRunEngine } from "@wovain/api/workflows/engine";
+import { createMastraStorage } from "@wovain/api/workflows/storage";
 import { createAuth } from "@wovain/auth";
 import { createCore } from "@wovain/core/core";
 import { createMerchantMemory } from "@wovain/core/taste";
@@ -22,7 +20,7 @@ export const auth = createAuth(ENV, db, mailer, analytics);
 
 // Mastra's store (snapshots, memory, scores, traces) on the same database,
 // in its own schema; the merchants' brand and taste memory lives there.
-const storage = createMastraStorage(db.$client);
+const { storage } = createMastraStorage(db.$client);
 export const core = createCore(ENV, { memory: createMerchantMemory(storage) });
 
 // Runs execute on the durable engine (Inngest calls /api/inngest for each

@@ -1,0 +1,14 @@
+{
+  "title": "Developers",
+  "description": "How wovain is built",
+  "icon": "Code",
+  "root": true,
+  "pages": [
+    "local-setup",
+    "architecture",
+    "integrations",
+    "agent-flows",
+    "product",
+    "hackathons"
+  ]
+}

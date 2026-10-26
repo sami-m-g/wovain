@@ -1,0 +1,86 @@
+---
+title: Périmètre
+description: Pour qui est wovain, ce qui le distingue et où se situe la limite de la preuve de concept.
+---
+
+Des collections en impression à la demande pour les créateurs de mode indépendants et les petites marques : wovain transforme la direction d'un créateur en pièces recherchées, dessinées et chiffrées, mises en ligne sur sa boutique Fourthwall, et en une campagne Meta en pause, une approbation à la fois.
+
+En ligne sur [https://wovain.com](https://wovain.com) (site web et application ChatGPT, sur Cloud Run). Documentation sur [https://docs.wovain.com](https://docs.wovain.com). Dernière mise à jour : 2026-10-26.
+
+## Le noyau unique
+
+Goût fois moment, avec une autonomie bornée, dans les propres comptes du créateur. Le graphe de goûts de Qloo dit à qui s'adresse la collection et ce que ces personnes aiment d'autre ; la recherche en direct de Tavily dit pourquoi maintenant ; Nemotron sur Nebius Token Factory rédige et évalue, et en autopilot décide, mais seulement dans des garde-fous que le code impose (la taille d'impression, un prix plancher issu du coût de base du modèle vierge, une fourchette de budget quotidien, et un design que le juge veut réviser n'est jamais approuvé). Chaque étape est notée, et rien ne dépense d'argent tant que le créateur n'a pas lancé la campagne.
+
+## Pour qui
+
+Un créateur de mode indépendant ou une petite marque (une à cinq personnes) qui vend, ou veut vendre, des pièces graphiques en impression à la demande : t-shirts, sweats, tote bags, casquettes et affiches. Le fondateur est aussi directeur artistique, merchandiser et marketeur. Aujourd'hui, une petite capsule coûte une semaine de travail hors design : chercher ce qui va plaire, préparer les fichiers pour chaque modèle vierge, rédiger les fiches, calculer des prix qui résistent aux frais et construire les publicités à la main dans le gestionnaire de publicités. Il veut faire la direction artistique et approuver, pas piloter des outils.
+
+Pas pour : les vendeurs à gros volume qui veulent des milliers de fiches, les vendeurs de marques déposées ou de fan art, ni ceux qui cherchent une fabrication sur mesure (cut-and-sew). wovain fait uniquement de l'impression à la demande.
+
+## La boucle principale
+
+Le créateur décrit une collection (ambiance, références, public visé) sur le site web ou dans ChatGPT. wovain renvoie des idées classées avec leurs preuves, prépare des designs pour de vrais modèles vierges Fourthwall, les fait évaluer par Nemotron et demande l'approbation. Les designs approuvés deviennent des produits Fourthwall masqués, puis des variantes de publicité, puis une campagne Meta en pause. Le créateur revient parce que chaque collection passe de la direction à la mise en ligne et à la campagne préparée en une seule série d'approbations, avec le calcul des prix affiché.
+
+```text
+Direction -> Graphe de goûts Qloo -> Tavily : pourquoi maintenant -> Design sur un modèle vierge Fourthwall
+  -> Juge Nemotron + scorers (révision : retour au design)
+  -> Le créateur approuve -> Produits Fourthwall, masqués -> Variantes de publicité Meta
+  -> Campagne Meta en pause
+```
+
+## Inspiration et identité
+
+Éditorial et sobre : des phrases courtes et réfléchies, des mots d'atelier (collection, capsule, modèle vierge, retouche, marge), des chiffres plutôt que des adjectifs, pas d'emphase. Du côté du créateur : le goût lui reste, wovain s'occupe des corvées. Honnête sur l'argent : frais, marges et dépenses dits clairement. Références : Aesop, Linear, Everlane et Shopify pour le ton et le soin. Nom : wovain, en minuscules. Un nouveau logo est en cours de conception ; le tour 6 recommande le logotype « Impression » (pas définitif). La voix et le public sont décrits dans `.agents/product-marketing.md` (MR !118, en revue).
+
+Construit à partir de services existants plutôt que reconstruit : Fourthwall pour le catalogue, la boutique et l'expédition, Meta pour la diffusion des publicités, fal pour les visuels, Qloo et Tavily pour les signaux, Nemotron pour la rédaction et l'évaluation, Polar pour la facturation.
+
+## Pourquoi c'est important pour le créateur
+
+Le créateur du projet veut que wovain soit un vrai produit pour lequel les créateurs indépendants paient, pas une démo : un agent prend en charge les corvées de production et de marketing d'une collection en impression à la demande, tandis que le créateur garde chaque décision de goût et de dépense. Le projet a commencé comme projet Build With AI: Basics et participe aussi aux hackathons GitLab Transcend, Nebius x NVIDIA et Qloo.
+
+## À quoi ressemble « ça marche »
+
+1. Se connecter sur [https://wovain.com](https://wovain.com) avec Google ou un e-mail, ou ajouter l'application wovain dans ChatGPT.
+2. Connecter Fourthwall et Meta (et, une fois disponible, sa propre clé fal).
+3. Décrire une collection. Voir des idées classées, chacune avec son signal de goût, son signal de moment et les éléments derrière le score.
+4. Voir les designs sur de vrais modèles vierges Fourthwall avec le prix, le bénéfice et la marge, le verdict de Nemotron et les notes.
+5. Approuver ; les produits existent, masqués, dans la boutique Fourthwall.
+6. Voir les variantes de publicité et approuver.
+7. Ouvrir le gestionnaire de publicités Meta : la campagne est là, en pause, pour les pays et le budget quotidien choisis. Le moment « ah, c'est génial » est l'étape 7, après avoir seulement décrit et approuvé.
+
+## Limite de la preuve de concept
+
+| Domaine | Inclus | Statut |
+| --- | --- | --- |
+| Surfaces | Site web Next.js 16 et application ChatGPT (serveur MCP avec widgets) dans une seule app sur Cloud Run | En ligne |
+| Recherche | Graphe de goûts Qloo et recherche web Tavily | En ligne |
+| Design | Brief, visuel transparent pour l'impression (fal), prix à partir du coût de base du modèle vierge | En ligne |
+| Évaluation | Nemotron sur Nebius Token Factory, taille d'impression vérifiée par le code | En ligne |
+| Publication | Produits Fourthwall masqués, publiés par une étape distincte | En ligne |
+| Publicités | Jusqu'à trois variantes de publicité par produit et une campagne Meta en pause | En ligne |
+| Autopilot | Exécution de bout en bout où Nemotron décide et le code encadre | En ligne |
+| Comptes | Better Auth avec Google et e-mail ; écrans Better Auth UI et paramètres du compte | Google en ligne ; UI en revue (MR !111) |
+| Connecteurs | Fourthwall et Meta du marchand (OAuth) ; clé fal du marchand | Fourthwall et Meta en ligne ; fal en cours |
+| Facturation | Crédits et forfaits Polar (marchand officiel) ; wovain paie Nebius, Tavily et Qloo sur les crédits | En revue (MR !116), prix proposés |
+| Moteur d'agents | Agents Mastra, workflows avec suspension et reprise pour l'approbation, exécutions durables, mémoire sur `@mastra/pg`, traçage | En cours |
+| Qualité | Scorers Mastra sur chaque agent et chaque étape, juges LLM calibrés, garde-fous | Prévu avec la migration Mastra |
+| Analytique | PostHog ; étoile polaire « marchands activés par semaine » | Tableaux de bord créés ; certains événements prévus |
+| Après le déploiement | Flows GitLab Duo : auto-réparation, éclaireur et développeur ; revue de code sur chaque MR et un flow de revue des dépendances | Trois flows en ligne ; le reste en revue (MR !113, !114, !117) |
+
+## Plus tard
+
+- Un optimiseur qui lit les résultats des campagnes et propose des changements, une fois qu'il y a des données de dépenses.
+- Des ensembles multi-produits par collection (plusieurs designs sur plusieurs modèles vierges) avec des publicités variées.
+- Des organisations et des sièges pour les marques de plus d'une personne.
+- Des forfaits annuels, et sa propre clé Nebius en option du forfait Label.
+- TikTok Shop et les publicités TikTok.
+
+## Explicitement exclu
+
+| Élément | Raison |
+| --- | --- |
+| Vêtements à la demande et fabrication sur mesure | wovain fait uniquement de l'impression à la demande ; la production reste chez Fourthwall |
+| Un modèle d'image ou de vidéo maison | Réutiliser les fournisseurs ; le compte fal du marchand dessine les visuels |
+| Un moteur d'achat média maison | La diffusion de Meta optimise déjà les campagnes |
+| Activation automatique des dépenses publicitaires | Le créateur doit garder le contrôle de l'argent ; les campagnes sont créées en pause |
+| Affirmations sur des clients, utilisateurs, ventes, revenus ou témoignages | Il n'y a pas encore de clients payants, de ventes ni de témoignages, et aucun n'est inventé. Les prix sont une proposition, pas un résultat |

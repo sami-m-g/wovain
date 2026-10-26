@@ -32,7 +32,7 @@ Every model call runs as a named Mastra agent, registered on the app's one Mastr
   - Nobody on the team has reviewed them, and no Nebius key was available where this was built, so no judge has been run against them.
   - `baseline.v1.json` is therefore empty, and the gate only reports until a baseline is accepted.
 - **To calibrate** (validate-evaluator):
-  1. A domain expert labels about 100 traces per judge, roughly 50 Pass and 50 Fail. Error analysis on real run traces comes first.
+  1. Once production runs on Mastra (`mastra-runs` on), sample about 100 real traces per judge from Mastra's store, roughly 50 Pass and 50 Fail. Label them through a lightweight review queue: Mastra Studio's trace and score views where they allow labelling, otherwise a simple internal page. Error analysis on those traces comes first. No labelling happens before then (OpenSpec `migrate-runs-to-mastra` 3.2.2–3.2.4).
   2. The splits come from `splitOf` (about 15% train, 43% dev, 42% test, deterministic by case ID).
   3. Iterate on the dev split until TPR and TNR are both above 0.9, with 0.8 as the minimum.
   4. Run the test split once, and record TPR and TNR in `baseline.v1.json`.
