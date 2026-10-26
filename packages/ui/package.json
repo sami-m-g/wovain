@@ -13,6 +13,10 @@
       "types": "./dist/components/*.d.ts",
       "default": "./src/components/*.tsx"
     },
+    "./hooks/*": {
+      "types": "./dist/hooks/*.d.ts",
+      "default": "./src/hooks/*.ts"
+    },
     "./postcss.config": "./postcss.config.mts"
   },
   "scripts": {

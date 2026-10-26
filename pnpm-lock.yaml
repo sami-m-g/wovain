@@ -501,12 +501,18 @@ importers:
       '@orpc/zod':
         specifier: 'catalog:'
         version: 1.16.1(@opentelemetry/api@1.10.0)(@orpc/contract@1.16.1(@opentelemetry/api@1.10.0))(@orpc/server@1.16.1(@opentelemetry/api@1.10.0))(zod@4.6.7)
+      '@stepperize/react':
+        specifier: ^8.0.1
+        version: 8.0.1(@typescript/typescript6@6.0.2)(react@19.3.1)
       '@tanstack/react-form':
         specifier: ^1.33.5
         version: 1.33.5(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-query':
         specifier: ^5.104.2
         version: 5.104.5(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/react-table':
+        specifier: ^8.21.3
+        version: 8.21.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@varlock/nextjs-integration':
         specifier: 'catalog:'
         version: 1.2.5(next@16.4.3(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(varlock@1.23.0)
@@ -3478,6 +3484,19 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@stepperize/core@4.0.0':
+    resolution: {integrity: sha512-ciSSDJnylQNAZIudFJHXsDG3sPlYEA3XAmRrogeJTdxGwM7R/HnH3aNoWoPn7+hstHpHuzMx6xN9GVWyAnvXAQ==}
+    peerDependencies:
+      typescript: '>=5.0.2'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  '@stepperize/react@8.0.1':
+    resolution: {integrity: sha512-/Sz9QXzRblvqUlmQfKsMzzjH1TCGruip0DHlLRzYSoHL1XAUFhtVYnytGH2Gf7esNjyfPEQJoFcm+mO69bVx3Q==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+
   '@swc/core-darwin-arm64@1.16.20':
     resolution: {integrity: sha512-i7NFSDnuE6tdBvBgmoVKKmburgcwZt/FZK2IusJaVGrjFrMUC1hrgE3RI+Kt9RhYM7vHvQj0W9j53zSxKEMbWQ==}
     engines: {node: '>=10'}
@@ -3722,8 +3741,19 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  '@tanstack/react-table@8.21.3':
+    resolution: {integrity: sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+
   '@tanstack/store@0.11.2':
     resolution: {integrity: sha512-sJ4mjol8uQsHV0gOJzzjwXfh2Fwm+Sz0+8deqiTm4jGbMdjzNSW+xZCFm0kUa870uhd8yi+DpKnZb5Kc4apa0Q==}
+
+  '@tanstack/table-core@8.21.3':
+    resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
+    engines: {node: '>=12'}
 
   '@tavily/core@0.7.14':
     resolution: {integrity: sha512-QB6EHpWjSbTnmIAIA0GU6COYQS8VfGcD8wokfXA9TTvrOzBCTtZZJnKw/JFN0qYpO97SJ4gwmlVlnsSg8DUFcw==}
@@ -10060,6 +10090,17 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
+  '@stepperize/core@4.0.0(@typescript/typescript6@6.0.2)':
+    optionalDependencies:
+      typescript: '@typescript/typescript6@6.0.2'
+
+  '@stepperize/react@8.0.1(@typescript/typescript6@6.0.2)(react@19.3.1)':
+    dependencies:
+      '@stepperize/core': 4.0.0(@typescript/typescript6@6.0.2)
+      react: 19.3.1
+    transitivePeerDependencies:
+      - typescript
+
   '@swc/core-darwin-arm64@1.16.20':
     optional: true
 
@@ -10258,7 +10299,15 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       use-sync-external-store: 1.7.0(react@19.3.1)
 
+  '@tanstack/react-table@8.21.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@tanstack/table-core': 8.21.3
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+
   '@tanstack/store@0.11.2': {}
+
+  '@tanstack/table-core@8.21.3': {}
 
   '@tavily/core@0.7.14(debug@4.4.3)':
     dependencies:

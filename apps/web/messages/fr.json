@@ -327,7 +327,8 @@
     "apiStatus": "API",
     "apiOnline": "en ligne",
     "apiOffline": "hors ligne",
-    "apiChecking": "vérification"
+    "apiChecking": "vérification",
+    "toggleSidebar": "Afficher ou masquer la barre latérale"
   },
   "Stages": {
     "brief": "Brief",
@@ -364,16 +365,21 @@
       "done": "terminé",
       "fourthwall": {
         "title": "Connecter Fourthwall",
-        "body": "Votre boutique et ses blanks, pour que wovain puisse fixer les prix et publier les produits."
+        "body": "Votre boutique et ses blanks, pour que wovain puisse fixer les prix et publier les produits.",
+        "action": "Connecter"
       },
       "meta": {
         "title": "Connecter Meta",
-        "body": "Votre compte publicitaire et votre Page, pour que wovain monte la campagne en pause."
+        "body": "Votre compte publicitaire et votre Page, pour que wovain monte la campagne en pause.",
+        "action": "Connecter"
       },
       "drop": {
         "title": "Lancer votre premier drop",
-        "body": "Une phrase sur le public visé. La veille et les designs marchent tout de suite."
-      }
+        "body": "Une phrase sur le public visé. La veille et les designs marchent tout de suite.",
+        "action": "Commencer"
+      },
+      "lead": "Trois étapes, et wovain peut mener un brief jusqu'à une campagne en pause.",
+      "next": "Suivant"
     }
   },
   "Runs": {
@@ -386,7 +392,10 @@
     "manual": "Avec vous",
     "autopilot": "Pilote automatique",
     "stoppedAt": "Arrêtée : {error}",
-    "emptyTitle": "Aucune exécution pour l'instant"
+    "emptyTitle": "Aucune exécution pour l'instant",
+    "brief": "Brief",
+    "status": "Statut",
+    "progress": "Avancement"
   },
   "Connections": {
     "title": "Connexions",
@@ -409,7 +418,26 @@
         "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne."
       }
     },
-    "serverKeys": "La veille, les visuels et les textes publicitaires utilisent les clés de wovain pour Nebius, Qloo, Tavily et fal."
+    "serverKeys": "Rien à configurer : wovain paie ces services et les utilise pour chaque drop.",
+    "serverKeysTitle": "Avec les clés de wovain",
+    "services": {
+      "nebius": {
+        "name": "Nemotron sur Nebius",
+        "body": "Évalue les designs, rédige les annonces et décide en pilote automatique."
+      },
+      "qloo": {
+        "name": "Qloo",
+        "body": "Trouve ce que votre audience aime déjà."
+      },
+      "tavily": {
+        "name": "Tavily",
+        "body": "Parcourt l'actualité et les annonces de la semaine."
+      },
+      "fal": {
+        "name": "fal",
+        "body": "Dessine les visuels prêts à imprimer."
+      }
+    }
   },
   "Wizard": {
     "title": "Nouveau drop",
@@ -485,7 +513,8 @@
       "budgetLabel": "Budget quotidien (USD)",
       "budgetHint": "Entre 1 $ et 500 $ par jour. Modifiable dans Meta.",
       "budgetError": "Saisissez un budget quotidien entre 1 $ et 500 $.",
-      "submit": "Créer la campagne en pause"
+      "submit": "Créer la campagne en pause",
+      "perDay": "par jour"
     },
     "done": {
       "title": "Votre campagne est prête, en pause",

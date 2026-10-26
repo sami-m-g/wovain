@@ -1,11 +1,40 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import { Badge } from "@wovain/ui/components/badge";
-import { Button } from "@wovain/ui/components/button";
+import { buttonVariants } from "@wovain/ui/components/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@wovain/ui/components/empty";
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@wovain/ui/components/item";
 import { Skeleton } from "@wovain/ui/components/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@wovain/ui/components/table";
+import { cn } from "@wovain/ui/lib/utils";
 import { Bot, UserRound } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import { useMemo } from "react";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { RunTape, stageOf } from "@/components/product/run-tape";
@@ -24,117 +53,233 @@ const STATUS_VARIANT: Record<
   running: "outline",
 };
 
-export const RunsList = ({
-  limit,
-  headingLevel = 2,
-}: {
-  limit?: number;
-  headingLevel?: 2 | 3;
-}) => {
-  const Heading = headingLevel === 2 ? "h2" : "h3";
+const runHref = (run: Run) => ({
+  pathname: "/dashboard/new" as const,
+  query: { run: run.id },
+});
+
+const StatusBadge = ({ status }: { status: Run["status"] }) => {
+  const t = useTranslations("Status");
+  return (
+    <Badge className="w-fit" variant={STATUS_VARIANT[status]}>
+      {t(status)}
+    </Badge>
+  );
+};
+
+const Mode = ({ autopilot }: { autopilot: boolean }) => {
   const t = useTranslations("Runs");
-  const status = useTranslations("Status");
+  const Icon = autopilot ? Bot : UserRound;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon aria-hidden="true" className="size-4" />
+      {autopilot ? t("autopilot") : t("manual")}
+    </span>
+  );
+};
+
+const Started = ({ at }: { at: Run["createdAt"] }) => {
   const format = useFormatter();
-  const { data, error, isPending } = useQuery(orpc.runs.list.queryOptions());
+  const date = new Date(at);
+  return (
+    <time className="figures" dateTime={date.toISOString()}>
+      {format.dateTime(date, { dateStyle: "medium", timeStyle: "short" })}
+    </time>
+  );
+};
 
-  if (isPending) {
-    return (
-      <ul className="border-border bg-card divide-border flex flex-col divide-y rounded-xl border">
-        {[0, 1, 2].map((item) => (
-          <li className="flex flex-col gap-3 p-4 sm:p-5" key={item}>
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="h-1.5 w-full" />
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  if (error) {
-    return <FlowProblemNotice problem={describeProblem(error)} />;
-  }
-
-  const runs = limit ? data.slice(0, limit) : data;
-
-  if (runs.length === 0) {
-    return (
-      <div className="border-input flex flex-col items-start gap-4 rounded-xl border border-dashed p-8">
-        <RunTape className="w-full max-w-xs" compact stage="brief" />
-        <div className="flex flex-col gap-1">
-          <p className="font-medium">{t("emptyTitle")}</p>
-          <p className="text-muted-foreground text-sm">{t("empty")}</p>
-        </div>
-        <Button
-          className="h-9 rounded-lg px-4"
-          nativeButton={false}
-          render={<Link href="/dashboard/new" />}
+const RunsEmpty = () => {
+  const t = useTranslations("Runs");
+  return (
+    <Empty className="border-input border border-dashed">
+      <EmptyHeader>
+        <RunTape className="mb-2 w-40" compact stage="brief" />
+        <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
+        <EmptyDescription>{t("empty")}</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Link
+          className={cn(buttonVariants({ variant: "outline" }), "h-9 px-4")}
+          href="/dashboard/new"
         >
           {t("emptyCta")}
-        </Button>
-      </div>
-    );
-  }
+        </Link>
+      </EmptyContent>
+    </Empty>
+  );
+};
 
+const useRuns = () => useQuery(orpc.runs.list.queryOptions());
+
+/** Runs as a list of rows: the overview, and the runs page on phones. */
+const RunItems = ({ runs }: { runs: Run[] }) => {
+  const t = useTranslations("Runs");
   return (
-    <ul className="border-border bg-card divide-border flex flex-col divide-y rounded-xl border">
+    <ul className="border-border bg-card divide-border flex w-full flex-col divide-y rounded-xl border">
       {runs.map((run) => (
-        <li
-          className="hover:bg-muted/50 grid gap-4 p-4 transition-colors sm:p-5 md:grid-cols-[1fr_14rem] md:items-center"
-          key={run.id}
-        >
-          <div className="flex min-w-0 flex-col gap-2">
-            <Badge
-              className="w-fit gap-1.5"
-              variant={STATUS_VARIANT[run.status]}
-            >
-              {status(run.status)}
-            </Badge>
-            <Heading className="text-[0.95rem] font-medium text-pretty">
-              <Link
-                className="hover:underline"
-                href={{ pathname: "/dashboard/new", query: { run: run.id } }}
-              >
-                {run.seed}
-              </Link>
-            </Heading>
-            <dl className="text-muted-foreground flex flex-wrap gap-x-5 gap-y-1 text-sm">
-              <div>
-                <dt className="sr-only">{t("mode")}</dt>
-                <dd className="flex items-center gap-1.5">
-                  {run.autopilot ? (
-                    <Bot aria-hidden="true" className="size-4" />
-                  ) : (
-                    <UserRound aria-hidden="true" className="size-4" />
-                  )}
-                  {run.autopilot ? t("autopilot") : t("manual")}
-                </dd>
-              </div>
-              <div>
-                <dt className="sr-only">{t("started")}</dt>
-                <dd>
-                  <time dateTime={new Date(run.createdAt).toISOString()}>
-                    {format.dateTime(new Date(run.createdAt), {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </time>
-                </dd>
-              </div>
-            </dl>
-            {run.status === "failed" && run.error ? (
-              <p className="text-destructive text-sm">
-                {t("stoppedAt", { error: run.error })}
-              </p>
-            ) : null}
-          </div>
-          <RunTape
-            compact
-            finished={run.status === "completed"}
-            stage={stageOf(run)}
-          />
+        <li key={run.id}>
+          <Item
+            className="rounded-none px-4 py-3.5 sm:px-5"
+            render={<Link href={runHref(run)} />}
+          >
+            <ItemContent className="min-w-0 gap-2">
+              <ItemTitle className="w-full text-pretty">
+                <span className="line-clamp-2">{run.seed}</span>
+              </ItemTitle>
+              <ItemDescription className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <StatusBadge status={run.status} />
+                <Mode autopilot={run.autopilot} />
+                <Started at={run.createdAt} />
+              </ItemDescription>
+              {run.status === "failed" && run.error ? (
+                <p className="text-destructive text-sm">
+                  {t("stoppedAt", { error: run.error })}
+                </p>
+              ) : null}
+            </ItemContent>
+            <RunTape
+              className="w-full sm:w-36"
+              compact
+              finished={run.status === "completed"}
+              stage={stageOf(run)}
+            />
+          </Item>
         </li>
       ))}
     </ul>
+  );
+};
+
+/** The latest runs as a compact list, for the overview. */
+export const RecentRuns = ({ limit }: { limit: number }) => {
+  const { data, error, isPending } = useRuns();
+
+  if (isPending) {
+    return <Skeleton className="h-48 w-full rounded-xl" />;
+  }
+  if (error) {
+    return <FlowProblemNotice problem={describeProblem(error)} />;
+  }
+  if (data.length === 0) {
+    return <RunsEmpty />;
+  }
+  return <RunItems runs={data.slice(0, limit)} />;
+};
+
+const useColumns = (): ColumnDef<Run>[] => {
+  const t = useTranslations("Runs");
+  return useMemo(
+    () => [
+      {
+        accessorKey: "seed",
+        cell: ({ row }) => (
+          <span className="flex min-w-56 flex-col gap-1 whitespace-normal">
+            <Link
+              className="font-medium text-pretty hover:underline"
+              href={runHref(row.original)}
+            >
+              {row.original.seed}
+            </Link>
+            {row.original.status === "failed" && row.original.error ? (
+              <span className="text-destructive text-xs">
+                {t("stoppedAt", { error: row.original.error })}
+              </span>
+            ) : null}
+          </span>
+        ),
+        header: t("brief"),
+      },
+      {
+        accessorKey: "status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        header: t("status"),
+      },
+      {
+        cell: ({ row }) => (
+          <RunTape
+            className="w-32"
+            compact
+            finished={row.original.status === "completed"}
+            stage={stageOf(row.original)}
+          />
+        ),
+        header: t("progress"),
+        id: "progress",
+      },
+      {
+        accessorKey: "autopilot",
+        cell: ({ row }) => <Mode autopilot={row.original.autopilot} />,
+        header: t("mode"),
+      },
+      {
+        accessorKey: "createdAt",
+        cell: ({ row }) => <Started at={row.original.createdAt} />,
+        header: t("started"),
+      },
+    ],
+    [t]
+  );
+};
+
+/** Every run as a data table (shadcn's TanStack Table pattern), newest first. */
+export const RunsTable = () => {
+  // TanStack Table returns fresh functions each render, which the React
+  // Compiler can't memoise; opt this component out (TanStack's guidance).
+  "use no memo";
+  const { data, error, isPending } = useRuns();
+  const columns = useColumns();
+  // oxlint-disable-next-line react/incompatible-library -- opted out above
+  const table = useReactTable({
+    columns,
+    data: data ?? [],
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  if (isPending) {
+    return <Skeleton className="h-72 w-full rounded-xl" />;
+  }
+  if (error) {
+    return <FlowProblemNotice problem={describeProblem(error)} />;
+  }
+  if (data.length === 0) {
+    return <RunsEmpty />;
+  }
+
+  return (
+    <>
+      {/* Five columns don't fit a phone; it gets the row list instead. */}
+      <div className="md:hidden">
+        <RunItems runs={data} />
+      </div>
+      <div className="border-border bg-card hidden overflow-hidden rounded-xl border md:block">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((group) => (
+              <TableRow key={group.id}>
+                {group.headers.map((header) => (
+                  <TableHead className="px-4" key={header.id}>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell className="px-4 py-3" key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 };

@@ -1,11 +1,33 @@
 "use client";
 
-import { Field } from "@base-ui/react/field";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@wovain/ui/components/card";
 import { Checkbox } from "@wovain/ui/components/checkbox";
-import { Input } from "@wovain/ui/components/input";
-import { Label } from "@wovain/ui/components/label";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from "@wovain/ui/components/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@wovain/ui/components/input-group";
 import { Textarea } from "@wovain/ui/components/textarea";
 import { cn } from "@wovain/ui/lib/utils";
 import { Check, ExternalLink, RotateCcw, Upload, X } from "lucide-react";
@@ -23,6 +45,9 @@ import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
 
 const CENTS = 100;
 const IMAGE_SIZE = 640;
+export const MAX_BRIEF = 200;
+const MIN_BUDGET = 1;
+const MAX_BUDGET = 500;
 
 const useMoney = () => {
   const format = useFormatter();
@@ -40,28 +65,34 @@ const BudgetField = ({
   onBudget: (value: string) => void;
 }) => {
   const t = useTranslations("Wizard.campaign");
+  const id = useId();
   return (
-    <Field.Root className="flex max-w-xs flex-col gap-2" invalid={invalid}>
-      <Field.Label render={<Label />}>{t("budgetLabel")}</Field.Label>
-      <Input
-        className="h-10 rounded-lg text-base tabular-nums md:text-sm"
-        inputMode="decimal"
-        max={500}
-        min={1}
-        onChange={(event) => onBudget(event.target.value)}
-        step="1"
-        type="number"
-        value={budget}
-      />
-      <Field.Description className="text-muted-foreground text-xs">
-        {t("budgetHint")}
-      </Field.Description>
-      {invalid ? (
-        <Field.Error className="text-destructive text-sm" match>
-          {t("budgetError")}
-        </Field.Error>
-      ) : null}
-    </Field.Root>
+    <Field className="max-w-xs" data-invalid={invalid || undefined}>
+      <FieldLabel htmlFor={id}>{t("budgetLabel")}</FieldLabel>
+      <InputGroup className="h-10">
+        <InputGroupAddon>
+          <InputGroupText>$</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupInput
+          aria-describedby={`${id}-hint`}
+          aria-invalid={invalid || undefined}
+          className="figures text-base md:text-sm"
+          id={id}
+          inputMode="decimal"
+          max={MAX_BUDGET}
+          min={MIN_BUDGET}
+          onChange={(event) => onBudget(event.target.value)}
+          step="1"
+          type="number"
+          value={budget}
+        />
+        <InputGroupAddon align="inline-end">
+          <InputGroupText>{t("perDay")}</InputGroupText>
+        </InputGroupAddon>
+      </InputGroup>
+      <FieldDescription id={`${id}-hint`}>{t("budgetHint")}</FieldDescription>
+      {invalid ? <FieldError>{t("budgetError")}</FieldError> : null}
+    </Field>
   );
 };
 
@@ -87,9 +118,11 @@ export const BriefStep = ({
   onSubmit: () => void;
 }) => {
   const t = useTranslations("Wizard.brief");
+  const format = useFormatter();
+  const id = useId();
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-6"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -97,27 +130,29 @@ export const BriefStep = ({
       }}
     >
       <StepHeader focusOnMount={false} title={t("title")} />
-      <Field.Root className="flex flex-col gap-2" invalid={Boolean(error)}>
-        <Field.Label render={<Label />}>{t("label")}</Field.Label>
-        <Field.Control
-          maxLength={200}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={t("placeholder")}
-          render={
-            <Textarea className="min-h-28 rounded-xl text-base md:text-sm" />
-          }
-          required
-          value={brief}
-        />
-        <Field.Description className="text-muted-foreground text-xs">
-          {t("hint")}
-        </Field.Description>
-        {error ? (
-          <Field.Error className="text-destructive text-sm" match>
-            {error}
-          </Field.Error>
-        ) : null}
-      </Field.Root>
+      <Field data-invalid={error ? true : undefined}>
+        <FieldLabel htmlFor={id}>{t("label")}</FieldLabel>
+        <InputGroup>
+          <InputGroupTextarea
+            aria-describedby={`${id}-hint`}
+            aria-invalid={error ? true : undefined}
+            className="min-h-28 text-base md:text-sm"
+            id={id}
+            maxLength={MAX_BRIEF}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={t("placeholder")}
+            required
+            value={brief}
+          />
+          <InputGroupAddon align="block-end" className="justify-end">
+            <InputGroupText aria-hidden="true" className="figures text-xs">
+              {format.number(brief.length)}/{format.number(MAX_BRIEF)}
+            </InputGroupText>
+          </InputGroupAddon>
+        </InputGroup>
+        <FieldDescription id={`${id}-hint`}>{t("hint")}</FieldDescription>
+        {error ? <FieldError>{error}</FieldError> : null}
+      </Field>
       {autopilot ? (
         <BudgetField
           budget={budget}
@@ -133,6 +168,13 @@ export const BriefStep = ({
     </form>
   );
 };
+
+const Signal = ({ label, value }: { label: string; value: string }) => (
+  <div className="bg-muted rounded-md p-2">
+    <dt className="text-muted-foreground">{label}</dt>
+    <dd className="figures font-semibold">{value}</dd>
+  </div>
+);
 
 export const IdeasStep = ({
   ideas,
@@ -158,93 +200,89 @@ export const IdeasStep = ({
       minimumFractionDigits: 2,
     });
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
-      <ul className="grid gap-3 md:grid-cols-2">
-        {ideas.map((idea) => {
-          const designed = designedIdeaIds.includes(idea.id);
-          const checked = designed || picked.includes(idea.id);
-          const checkboxId = `${id}-${idea.id}`;
-          const { research } = idea;
-          return (
-            <li
-              className={cn(
-                "flex flex-col gap-3 rounded-xl border p-4 transition-colors",
-                checked ? "border-primary bg-accent-soft" : "border-border"
-              )}
-              key={idea.id}
-            >
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  checked={checked}
-                  className="mt-0.5 size-5"
-                  disabled={designed}
-                  id={checkboxId}
-                  onCheckedChange={(next) => onToggle(idea.id, next)}
-                />
-                <div className="flex flex-1 flex-col gap-1">
-                  <Label className="text-base font-medium" htmlFor={checkboxId}>
-                    {idea.theme}
-                  </Label>
-                  <span className="text-muted-foreground figures flex flex-wrap items-center gap-2 text-xs font-medium">
-                    {t("score", { score: decimal(idea.score) })}
-                    {designed ? (
-                      <Badge variant="secondary">{t("hasDesign")}</Badge>
-                    ) : null}
-                  </span>
-                </div>
-              </div>
-              {research.moment || research.answer ? (
-                <p className="line-clamp-4 text-sm">
-                  {research.moment ?? research.answer}
-                </p>
-              ) : null}
-              <dl className="grid grid-cols-3 gap-2 text-xs">
-                <div className="bg-muted rounded-md p-2">
-                  <dt className="text-muted-foreground">{t("affinity")}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {research.signals.affinity === undefined
-                      ? "–"
-                      : decimal(research.signals.affinity)}
-                  </dd>
-                </div>
-                <div className="bg-muted rounded-md p-2">
-                  <dt className="text-muted-foreground">{t("news")}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {format.number(research.signals.newsHits)}
-                  </dd>
-                </div>
-                <div className="bg-muted rounded-md p-2">
-                  <dt className="text-muted-foreground">{t("listings")}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {format.number(research.signals.marketHits)}
-                  </dd>
-                </div>
-              </dl>
-              {research.sources.length > 0 ? (
-                <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span>{t("sources")}:</span>
-                  {research.sources.slice(0, 3).map((source) => (
-                    <a
-                      className="text-accent-text inline-flex min-h-6 max-w-56 items-center gap-1 font-semibold underline"
-                      href={source.url}
-                      key={source.url}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      <span className="truncate">{source.title}</span>
-                      <ExternalLink
-                        aria-hidden="true"
-                        className="size-3 shrink-0"
-                      />
-                    </a>
-                  ))}
-                </p>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+      <FieldSet>
+        <FieldLegend className="sr-only">{t("title")}</FieldLegend>
+        <ul className="grid gap-3 md:grid-cols-2">
+          {ideas.map((idea) => {
+            const designed = designedIdeaIds.includes(idea.id);
+            const checked = designed || picked.includes(idea.id);
+            const checkboxId = `${id}-${idea.id}`;
+            const { research } = idea;
+            return (
+              <li className="flex flex-col gap-2" key={idea.id}>
+                {/* shadcn's choice card: the whole card is the label. */}
+                <FieldLabel className="h-full" htmlFor={checkboxId}>
+                  <Field className="h-full p-4!" orientation="horizontal">
+                    <Checkbox
+                      checked={checked}
+                      disabled={designed}
+                      id={checkboxId}
+                      onCheckedChange={(next) => onToggle(idea.id, next)}
+                    />
+                    <FieldContent className="gap-3">
+                      <FieldTitle className="text-base">
+                        {idea.theme}
+                        {designed ? (
+                          <Badge variant="secondary">{t("hasDesign")}</Badge>
+                        ) : null}
+                      </FieldTitle>
+                      <span className="text-muted-foreground figures text-xs font-medium">
+                        {t("score", { score: decimal(idea.score) })}
+                      </span>
+                      {research.moment || research.answer ? (
+                        <FieldDescription className="text-foreground line-clamp-4">
+                          {research.moment ?? research.answer}
+                        </FieldDescription>
+                      ) : null}
+                      <dl className="grid grid-cols-3 gap-2 text-xs">
+                        <Signal
+                          label={t("affinity")}
+                          value={
+                            research.signals.affinity === undefined
+                              ? "–"
+                              : decimal(research.signals.affinity)
+                          }
+                        />
+                        <Signal
+                          label={t("news")}
+                          value={format.number(research.signals.newsHits)}
+                        />
+                        <Signal
+                          label={t("listings")}
+                          value={format.number(research.signals.marketHits)}
+                        />
+                      </dl>
+                    </FieldContent>
+                  </Field>
+                </FieldLabel>
+                {/* Sources sit outside the label so a link click doesn't toggle the pick. */}
+                {research.sources.length > 0 ? (
+                  <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs">
+                    <span>{t("sources")}:</span>
+                    {research.sources.slice(0, 3).map((source) => (
+                      <a
+                        className="text-accent-text inline-flex min-h-6 max-w-56 items-center gap-1 font-semibold underline"
+                        href={source.url}
+                        key={source.url}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <span className="truncate">{source.title}</span>
+                        <ExternalLink
+                          aria-hidden="true"
+                          className="size-3 shrink-0"
+                        />
+                      </a>
+                    ))}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </FieldSet>
       <StepActions busyLabel={busyLabel}>
         <NextButton disabled={Boolean(busyLabel)} onClick={onNext}>
           {t("submit")}
@@ -277,49 +315,54 @@ const DesignCard = ({
   const rejected = design.status === "rejected";
   const { judgment, brief } = design;
   return (
-    <li
-      className={cn(
-        "flex flex-col overflow-hidden rounded-xl border",
-        approved && "border-success",
-        rejected && "border-input border-dashed",
-        design.status === "pending_approval" && "border-border"
-      )}
-    >
-      <div className="bg-muted grid aspect-square place-items-center p-4">
-        <Image
-          alt={t("artAlt", { title: brief.title })}
-          className={cn("h-auto w-full", rejected && "opacity-60")}
-          height={IMAGE_SIZE}
-          src={design.artworkUrl}
-          unoptimized
-          width={IMAGE_SIZE}
-        />
-      </div>
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium">{brief.title}</h3>
-          {approved ? <Badge>{t("approved")}</Badge> : null}
-          {rejected ? <Badge variant="outline">{t("rejected")}</Badge> : null}
+    <li className="flex">
+      <Card
+        className={cn(
+          "w-full pt-0",
+          approved && "ring-success ring-2",
+          rejected && "ring-input"
+        )}
+      >
+        <div className="bg-muted grid aspect-square place-items-center p-4">
+          <Image
+            alt={t("artAlt", { title: brief.title })}
+            className={cn("h-auto w-full", rejected && "opacity-60")}
+            height={IMAGE_SIZE}
+            src={design.artworkUrl}
+            unoptimized
+            width={IMAGE_SIZE}
+          />
         </div>
-        {brief.printedText.length > 0 ? (
+        <CardHeader>
+          <CardTitle className="flex items-start justify-between gap-2">
+            <h3 className="font-display text-base font-semibold">
+              {brief.title}
+            </h3>
+            {approved ? <Badge>{t("approved")}</Badge> : null}
+            {rejected ? <Badge variant="outline">{t("rejected")}</Badge> : null}
+          </CardTitle>
+          {brief.printedText.length > 0 ? (
+            <CardDescription className="text-xs">
+              {t("printed", { text: brief.printedText.join(" · ") })}
+            </CardDescription>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col gap-3">
           <p className="text-muted-foreground text-xs">
-            {t("printed", { text: brief.printedText.join(" · ") })}
+            <span className="text-foreground font-semibold">
+              {t("check")}:{" "}
+              {judgment.verdict === "ready"
+                ? t("checkReady")
+                : t("checkRevise")}{" "}
+              ({t("checkScore", { score: Math.round(judgment.score) })})
+            </span>{" "}
+            {judgment.coach}
           </p>
-        ) : null}
-        <p className="text-muted-foreground text-xs">
-          <span className="text-foreground font-semibold">
-            {t("check")}:{" "}
-            {judgment.verdict === "ready" ? t("checkReady") : t("checkRevise")}{" "}
-            ({t("checkScore", { score: Math.round(judgment.score) })})
-          </span>{" "}
-          {judgment.coach}
-        </p>
-        {design.status === "pending_approval" ? (
-          <>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium" htmlFor={reasonId}>
+          {design.status === "pending_approval" ? (
+            <Field>
+              <FieldLabel className="text-xs" htmlFor={reasonId}>
                 {t("reasonLabel")}
-              </Label>
+              </FieldLabel>
               <Textarea
                 className="min-h-14 text-sm"
                 id={reasonId}
@@ -328,40 +371,45 @@ const DesignCard = ({
                 placeholder={t("reasonPlaceholder")}
                 value={reason}
               />
-            </div>
-            <div className="mt-auto grid grid-cols-2 gap-2">
-              <Button
-                className="h-9 rounded-lg"
-                disabled={disabled}
-                onClick={onApprove}
-              >
-                <Check aria-hidden="true" data-icon="inline-start" />
-                {t("approve")}
-              </Button>
-              <Button
-                className="h-9 rounded-lg"
-                disabled={disabled}
-                onClick={onReject}
-                variant="outline"
-              >
-                <X aria-hidden="true" data-icon="inline-start" />
-                {t("reject")}
-              </Button>
-            </div>
-          </>
+            </Field>
+          ) : null}
+        </CardContent>
+        {design.status === "pending_approval" ? (
+          <CardFooter className="grid grid-cols-2 gap-2 pb-4">
+            <Button
+              className="h-9"
+              disabled={disabled}
+              onClick={onApprove}
+              variant="outline"
+            >
+              <Check aria-hidden="true" data-icon="inline-start" />
+              {t("approve")}
+            </Button>
+            <Button
+              className="h-9"
+              disabled={disabled}
+              onClick={onReject}
+              variant="ghost"
+            >
+              <X aria-hidden="true" data-icon="inline-start" />
+              {t("reject")}
+            </Button>
+          </CardFooter>
         ) : null}
         {rejected ? (
-          <Button
-            className="mt-auto h-9 rounded-lg"
-            disabled={disabled}
-            onClick={onRetry}
-            variant="outline"
-          >
-            <RotateCcw aria-hidden="true" data-icon="inline-start" />
-            {t("retry")}
-          </Button>
+          <CardFooter className="pb-4">
+            <Button
+              className="h-9 w-full"
+              disabled={disabled}
+              onClick={onRetry}
+              variant="outline"
+            >
+              <RotateCcw aria-hidden="true" data-icon="inline-start" />
+              {t("retry")}
+            </Button>
+          </CardFooter>
         ) : null}
-      </div>
+      </Card>
     </li>
   );
 };
@@ -389,7 +437,7 @@ export const DesignsStep = ({
 }) => {
   const t = useTranslations("Wizard.designs");
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {designs.map((design) => (
@@ -430,7 +478,7 @@ export const ProductsStep = ({
   const t = useTranslations("Wizard.products");
   const money = useMoney();
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => {
@@ -438,41 +486,42 @@ export const ProductsStep = ({
           const title = titles[product.designId] ?? "";
           const [mockup] = product.mockups;
           return (
-            <li
-              className="border-border flex flex-col overflow-hidden rounded-xl border"
-              key={product.id}
-            >
-              <div className="bg-muted relative aspect-square">
-                {mockup ? (
-                  <Image
-                    alt={t("mockupAlt", { title })}
-                    className="size-full object-contain"
-                    height={IMAGE_SIZE}
-                    src={mockup}
-                    unoptimized
-                    width={IMAGE_SIZE}
-                  />
-                ) : null}
-              </div>
-              <div className="flex flex-1 flex-col gap-3 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-medium">{title}</h3>
-                  <Badge variant={live ? "default" : "outline"}>
-                    {live ? t("public") : t("hidden")}
-                  </Badge>
+            <li className="flex" key={product.id}>
+              <Card className="w-full pt-0">
+                <div className="bg-muted relative aspect-square">
+                  {mockup ? (
+                    <Image
+                      alt={t("mockupAlt", { title })}
+                      className="size-full object-contain"
+                      height={IMAGE_SIZE}
+                      src={mockup}
+                      unoptimized
+                      width={IMAGE_SIZE}
+                    />
+                  ) : null}
                 </div>
-                <p className="text-sm">
-                  <span className="text-muted-foreground">{t("price")}: </span>
-                  <span className="font-semibold tabular-nums">
-                    {money(product.price)}
-                  </span>
-                </p>
-                <div className="mt-auto">
+                <CardHeader>
+                  <CardTitle className="flex items-start justify-between gap-2">
+                    <h3 className="font-display text-base font-semibold">
+                      {title}
+                    </h3>
+                    <Badge variant={live ? "default" : "outline"}>
+                      {live ? t("public") : t("hidden")}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    {t("price")}:{" "}
+                    <span className="text-foreground figures font-semibold">
+                      {money(product.price)}
+                    </span>
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter className="mt-auto pb-4">
                   {live && product.productUrl ? (
                     <a
                       className={cn(
                         buttonVariants({ variant: "outline" }),
-                        "h-9 w-full rounded-lg"
+                        "h-9 w-full"
                       )}
                       href={product.productUrl}
                       rel="noopener noreferrer"
@@ -483,16 +532,17 @@ export const ProductsStep = ({
                     </a>
                   ) : (
                     <Button
-                      className="h-9 w-full rounded-lg"
+                      className="h-9 w-full"
                       disabled={Boolean(busyLabel) || live}
                       onClick={() => onPublish(product)}
+                      variant="outline"
                     >
                       <Upload aria-hidden="true" data-icon="inline-start" />
                       {t("publish")}
                     </Button>
                   )}
-                </div>
-              </div>
+                </CardFooter>
+              </Card>
             </li>
           );
         })}
@@ -524,7 +574,7 @@ export const CampaignStep = ({
   const t = useTranslations("Wizard.campaign");
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-6"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -560,13 +610,10 @@ export const DoneStep = ({
 }) => {
   const t = useTranslations("Wizard.done");
   const money = useMoney();
-  const size = "h-9 rounded-lg px-4";
   const [first] = campaigns;
   return (
     <div className="flex flex-col items-start gap-6">
-      {failure ? (
-        <StepHeader title={t("autopilotFailed", { error: failure })} />
-      ) : (
+      {failure === undefined ? (
         <StepHeader
           lead={t("lead", {
             budget: money((first?.dailyBudgetCents ?? 0) / CENTS),
@@ -574,34 +621,37 @@ export const DoneStep = ({
           })}
           title={t("title")}
         />
+      ) : (
+        <StepHeader title={t("autopilotFailed", { error: failure })} />
       )}
       {campaigns.map((campaign) => (
         <section
           aria-label={t("variants")}
-          className="w-full"
+          className="flex w-full flex-col gap-3"
           key={campaign.id}
         >
           <h3 className="text-muted-foreground text-xs font-medium">
             {t("variants")}
           </h3>
-          <ul className="mt-3 grid gap-3 md:grid-cols-3">
+          <ul className="grid gap-3 md:grid-cols-3">
             {campaign.copy.map((variant) => (
-              <li
-                className="border-border flex flex-col gap-2 rounded-xl border p-4"
-                key={variant.headline}
-              >
-                <Badge className="w-fit" variant="secondary">
-                  {variant.angle}
-                </Badge>
-                <p className="font-medium">{variant.headline}</p>
-                <p className="text-muted-foreground text-sm">
-                  {variant.message}
-                </p>
+              <li className="flex" key={variant.headline}>
+                <Card className="w-full" size="sm">
+                  <CardHeader>
+                    <Badge className="w-fit" variant="secondary">
+                      {variant.angle}
+                    </Badge>
+                    <CardTitle className="mt-1 font-medium">
+                      {variant.headline}
+                    </CardTitle>
+                    <CardDescription>{variant.message}</CardDescription>
+                  </CardHeader>
+                </Card>
               </li>
             ))}
           </ul>
           <a
-            className={cn(buttonVariants(), size, "mt-4")}
+            className={cn(buttonVariants(), "h-9 w-fit px-4")}
             href={adsManagerUrl(campaign)}
             rel="noopener noreferrer"
             target="_blank"
@@ -612,11 +662,11 @@ export const DoneStep = ({
         </section>
       ))}
       <div className="flex flex-wrap gap-3">
-        <Button className={size} onClick={onRestart} variant="outline">
+        <Button className="h-9 px-4" onClick={onRestart} variant="outline">
           {t("another")}
         </Button>
         <Link
-          className={cn(buttonVariants({ variant: "ghost" }), size)}
+          className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-4")}
           href="/dashboard/runs"
         >
           {t("history")}
