@@ -3,6 +3,7 @@ import { hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 
+import { AnalyticsIdentity } from "@/components/app/analytics-identity";
 import { ApiStatus } from "@/components/app/api-status";
 import { AppNav } from "@/components/app/app-nav";
 import { ConnectionToasts } from "@/components/app/connection-toasts";
@@ -63,6 +64,7 @@ const DashboardLayout = async ({
           <Suspense>
             <ConnectionToasts />
           </Suspense>
+          <AnalyticsIdentity />
           <AppToaster />
         </main>
       </div>

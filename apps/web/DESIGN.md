@@ -313,7 +313,7 @@ The approved Flick w, used only through the `<Logo/>` component: the plain locku
 
 - **Palette:** edit `PALETTE.light` and `PALETTE.dark` in `src/brand/brand.tsx`. They become `--brand-*` custom properties; `src/styles/tokens.css` maps them to roles and does not need to change. Keep the contrast notes in the `Palette` interface (muted text 4.5:1, input borders 3:1).
 - **Logo files:** replace the SVGs in `public/brand/` (`lockup-light.svg`, `lockup-dark.svg`, `lockup-seam-light.svg`, `lockup-seam-dark.svg`, `mark.svg`, `mark-mono.svg`, `mark-solid-mono.svg`, `app-icon.svg`, `favicon-16.svg`, `favicon-32.svg`, `email-logo.png`). If a lockup's proportions change, update its `width` and `height` in `BRAND_ASSETS` in `src/brand/brand.tsx`.
-- **Favicon and app icon:** replace `src/app/icon.svg` and `src/app/apple-icon.png` (Next.js file conventions).
+- **Favicon and app icon:** replace `src/app/icon.svg`, then regenerate its raster copies from it: `src/app/favicon.ico` (16, 32 and 48px, which Google Search shows), `src/app/icon.png` (192px), `src/app/apple-icon.png` (180px) and `public/brand/icon-512.png` (Next.js file conventions; the manifest lists the 192 and 512px PNGs).
 
 ## Do's and Don'ts
 

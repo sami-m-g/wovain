@@ -7,6 +7,7 @@ import type { Database } from "@wovain/db";
 import * as schema from "@wovain/db/schema/auth";
 import { pickLocale } from "@wovain/email/emails";
 import type { Mail, Mailer } from "@wovain/email/mailer";
+import type { GenericEndpointContext } from "better-auth";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins";
@@ -56,10 +57,33 @@ const localeOf = (user: object, request?: Request) =>
     ? user.locale
     : request?.headers.get("accept-language");
 
+// Product analytics (PostHog in apps/web), keyed by user id and never the
+// email; absent when the app has no PostHog key.
+export interface AuthAnalytics {
+  capture: (event: {
+    distinctId: string;
+    event: "sign_up";
+    properties?: Record<string, unknown>;
+  }) => void;
+}
+
+// How a new user signed up, read from the endpoint that created them:
+// email and password, or the OAuth provider's callback (/callback/google).
+const signUpMethod = (context: GenericEndpointContext | null) => {
+  if (context?.path === "/sign-up/email") {
+    return "email";
+  }
+  const provider: unknown = context?.params?.["id"];
+  return context?.path === "/callback/:id" && typeof provider === "string"
+    ? provider
+    : undefined;
+};
+
 export const createAuth = (
   env: AuthConfig,
   database: Database,
-  mailer: Mailer
+  mailer: Mailer,
+  analytics?: AuthAnalytics
 ) => {
   // Better Auth sends these in the background, so response timing doesn't
   // reveal whether an account exists; a failed send is logged, not thrown.
@@ -83,10 +107,21 @@ export const createAuth = (
       provider: "pg",
       schema,
     }),
-    // Saves the browser's language as the merchant's locale at sign-up.
+    // Saves the browser's language as the merchant's locale at sign-up, and
+    // sends sign_up for every new user, whichever way they signed up (email,
+    // Google, also from ChatGPT's authorization).
     databaseHooks: {
       user: {
         create: {
+          after: (user, context) => {
+            const method = signUpMethod(context);
+            analytics?.capture({
+              distinctId: user.id,
+              event: "sign_up",
+              properties: method === undefined ? {} : { method },
+            });
+            return Promise.resolve();
+          },
           before: (user, context) =>
             Promise.resolve({
               data: {

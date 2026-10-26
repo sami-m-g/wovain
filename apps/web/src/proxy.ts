@@ -19,6 +19,7 @@ const UNLOCALIZED = /^\/(?:_next|_vercel|\.well-known|ingest)\/|\.[^/]+$/u;
 const ROOT_FILE = /^\/[^/]+\.[^/]+$/u;
 const ROOT_FILES = new Set([
   "/apple-icon.png",
+  "/icon.png",
   "/icon.svg",
   "/llms.txt",
   "/manifest.webmanifest",
