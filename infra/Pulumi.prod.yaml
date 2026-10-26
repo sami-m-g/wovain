@@ -128,6 +128,10 @@ config:
     secure: v1:ybkw5nQlPPOMzB+3:Ljnv1xNy+T3GCCbXf5AarPTrjVpj2/nDiOGKBzi/TI7007A6dA==
   wovain:fal-key:
     secure: v1:ph5MIlC4FggQ1Fla:xVrax4Zu6mqdLmmrVN1KKBR7X+DKHg5gaowigcGj7pRlEQKOUGJ/5GIC21xxw6UzP351HcKZyGqk4enRHRQNYMsrFMCVMBg0gtX7tAHNXGipVEMSl8psng==
+  wovain:inngest-signing-key:
+    secure: v1:0+5aiJCgjsZAlsNn:T/jdndZaPYOMwJf4jldpY7yInR7KDbpqVG4XLNcTzpOcZKyVfQdRFPQK3Vbj7kPl2hyW6XiXoMgWuFQqfAVsvTmO4hig5yIZimyatBS1tSY3rQYl9zrNLUnVdFXi
+  wovain:inngest-event-key:
+    secure: v1:y0Y5ig9R/HPr4Oms:6zh1pn0Jr5IPnHHY62YmwbtXsdi62pQ+G7LJluEpvku2sOc4xdbwV8piF31wDUvLbEt6F6jKnpUxLH1FO2q2NvsY5MZYictQJlLGP5ivoANNOeaWdOz3MNepLmGBgi7WDDtKjLWC
   wovain:gitlabProjectId: "87296573"
   # The GitLab group with Observability enabled (gitlab-ai-hackathon/
   # transcend-october-2026/43085639); it names the OTLP and query endpoints.
