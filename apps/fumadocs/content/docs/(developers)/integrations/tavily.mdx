@@ -9,7 +9,8 @@ Tavily is called at **runtime**, on every trend research, not only during develo
 
 `packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) uses Tavily to:
 
-- **Moment.** For each Qloo theme, search the past week's news and return sources. This is the "why now" shown on an idea.
+- **Themes.** Each run researches 3 to 5 distinct themes: Qloo's, topped up by the `research_themes` agent (Nemotron) when Qloo names fewer than 3 (`packages/core/src/themes.ts`). A theme is never the brief itself; without a model, design angles on the brief's subject stand in.
+- **Moment.** For each theme, search the past month's news (`topic: "news"`, `searchDepth: "advanced"`) and return sources. Code drops archive and tag pages, results older than 31 days, results Tavily scores below 0.4 and results that share no word with the theme's query, then dedupes pages and headlines and ranks by relevance and freshness. This is the "why now" shown on an idea.
 - **Saturation.** Search marketplaces (etsy.com, redbubble.com, fourthwall.com) for matching listings. Few matches score higher.
 
 Web text is untrusted: the ideas carry their source links, and the model prompts tell Nemotron to treat idea text as data only.
