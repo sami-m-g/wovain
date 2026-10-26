@@ -1,12 +1,13 @@
 import { creditBalance } from "@wovain/billing/credits";
-import { entitlement, merchantOf } from "@wovain/billing/mirror";
+import { entitlement } from "@wovain/billing/mirror";
 import { PLANS } from "@wovain/billing/plans";
 import type { Offer } from "@wovain/billing/plans";
-import { checkoutUrl, ensureFreePlan, portalUrl } from "@wovain/billing/polar";
+import { checkoutUrl, portalUrl } from "@wovain/billing/polar";
 import type { Billing } from "@wovain/billing/service";
 import { createError, defineError } from "evlog";
 
 import type { Actor } from "./actor";
+import { startFreePlan } from "./free-plan";
 
 // The merchant's plan and credits, and the ways to change them: Polar's
 // hosted checkout and customer portal. The plan and credits shown are the
@@ -41,27 +42,11 @@ const requirePolar = (actor: Actor): NonNullable<Billing["polar"]> => {
 
 export const billingStatus = async (actor: Actor) => {
   const { polar } = actor.billing;
-  let current = await entitlement(actor.db, actor.userId);
-  // No plan mirrored yet (an account from before billing, or webhooks still
-  // on their way): make sure Polar has them on Free. Its webhooks bring the
-  // plan and the free credits; until then the merchant sees Free with what
-  // they have.
-  if (current.subscription === null && polar !== undefined) {
-    const merchant = await merchantOf(actor.db, actor.userId);
-    if (merchant !== undefined) {
-      try {
-        await ensureFreePlan(polar, merchant);
-      } catch (error) {
-        actor.log?.set({
-          polar: {
-            freePlanFailed:
-              error instanceof Error ? error.message : String(error),
-          },
-        });
-      }
-      current = await entitlement(actor.db, actor.userId);
-    }
-  }
+  // No plan mirrored yet: put them on Free, whose webhooks bring the plan
+  // and the free credits; until then the merchant sees Free with what they
+  // have.
+  await startFreePlan(actor);
+  const current = await entitlement(actor.db, actor.userId);
   const { subscription } = current;
   return {
     autopilot: PLANS[current.plan].autopilot,

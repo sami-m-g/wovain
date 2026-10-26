@@ -9,8 +9,9 @@
 //
 // Node runs this file directly, so it imports only the SDK and plans.ts.
 
-import { appendFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { createPolarCore } from "@polar-sh/sdk/2026-10";
 import type { Environment, PolarCore, models } from "@polar-sh/sdk/2026-10";
 import {
@@ -31,6 +32,7 @@ import {
 import {
   createWebhookEndpointWebhooks,
   iterListWebhookEndpointsWebhooks,
+  resetWebhookEndpointSecretWebhooks,
   updateWebhookEndpointWebhooks,
 } from "@polar-sh/sdk/2026-10/services/webhooks";
 
@@ -225,27 +227,90 @@ const ensureProduct = async (polar: PolarCore, item: Item, paid: boolean) => {
   });
 };
 
-const ensureWebhook = async (polar: PolarCore, url: string, out: string) => {
+// Where the endpoint's signing secret goes. Polar shows it only when the
+// endpoint is created or its secret reset, so it is written straight to its
+// store and never printed: Secret Manager in CI (GCP_PROJECT_ID set), else a
+// gitignored env file.
+interface SecretSink {
+  has: () => Promise<boolean>;
+  name: string;
+  put: (secret: string) => Promise<void>;
+}
+
+// Pulumi's first version of polar-webhook-secret (infra/index.ts), so Cloud
+// Run starts before the seed has written the real one.
+const PLACEHOLDER = "pending-polar-seed";
+
+const secretManagerSink = (project: string): SecretSink => {
+  const client = new SecretManagerServiceClient();
+  const parent = `projects/${project}/secrets/polar-webhook-secret`;
+  return {
+    has: async () => {
+      try {
+        const [latest] = await client.accessSecretVersion({
+          name: `${parent}/versions/latest`,
+        });
+        const data = latest.payload?.data;
+        const value =
+          typeof data === "string" ? data : Buffer.from(data ?? "").toString();
+        return value !== "" && value !== PLACEHOLDER;
+      } catch {
+        return false;
+      }
+    },
+    name: parent,
+    put: async (secret) => {
+      await client.addSecretVersion({
+        parent,
+        payload: { data: Buffer.from(secret) },
+      });
+    },
+  };
+};
+
+const fileSink = (path: string): SecretSink => ({
+  has: () =>
+    Promise.resolve(
+      existsSync(path) &&
+        readFileSync(path, "utf-8").includes("POLAR_WEBHOOK_SECRET=")
+    ),
+  name: path,
+  put: (secret) => {
+    appendFileSync(path, `POLAR_WEBHOOK_SECRET=${secret}\n`);
+    return Promise.resolve();
+  },
+});
+
+// Keeps an existing endpoint (and its secret) unless the store has no secret
+// for it, in which case the secret is rotated into the store.
+const ensureWebhook = async (
+  polar: PolarCore,
+  url: string,
+  sink: SecretSink
+) => {
   const events = [...POLAR_WEBHOOK_EVENTS];
   const found = await first(
     iterListWebhookEndpointsWebhooks(polar)(),
     (endpoint) => endpoint.url === url
   );
-  if (found !== undefined) {
-    await updateWebhookEndpointWebhooks(polar)(found.id, { events });
-    return `updated ${found.id}`;
+  if (found === undefined) {
+    const created = await createWebhookEndpointWebhooks(polar)({
+      api_version: "2026-10",
+      events,
+      format: "raw",
+      name: "wovain",
+      url,
+    });
+    await sink.put(created.secret);
+    return `created ${created.id}; secret stored in ${sink.name}`;
   }
-  const created = await createWebhookEndpointWebhooks(polar)({
-    api_version: "2026-10",
-    events,
-    format: "raw",
-    name: "wovain",
-    url,
-  });
-  // The signing secret is shown once: it goes to a gitignored env file, never
-  // to the console.
-  appendFileSync(out, `POLAR_WEBHOOK_SECRET=${created.secret}\n`);
-  return `created ${created.id}; its secret is in ${out}`;
+  await updateWebhookEndpointWebhooks(polar)(found.id, { events });
+  if (await sink.has()) {
+    return `kept ${found.id}`;
+  }
+  const rotated = await resetWebhookEndpointSecretWebhooks(polar)(found.id);
+  await sink.put(rotated.secret);
+  return `kept ${found.id}; secret rotated into ${sink.name}`;
 };
 
 const main = async () => {
@@ -276,11 +341,14 @@ const main = async () => {
   }
   const webhookUrl = process.env["POLAR_WEBHOOK_URL"];
   if (webhookUrl !== undefined && webhookUrl !== "") {
-    const outcome = await ensureWebhook(
-      polar,
-      webhookUrl,
-      process.env["POLAR_WEBHOOK_SECRET_OUT"] ?? ".env.polar-webhook"
-    );
+    const project = process.env["GCP_PROJECT_ID"];
+    const sink =
+      project === undefined || project === ""
+        ? fileSink(
+            process.env["POLAR_WEBHOOK_SECRET_OUT"] ?? ".env.polar-webhook"
+          )
+        : secretManagerSink(project);
+    const outcome = await ensureWebhook(polar, webhookUrl, sink);
     console.info(`polar:${environment} webhook ${webhookUrl} ${outcome}`);
   }
 };

@@ -5,13 +5,27 @@
 # by hand (Run on polar:seed), with the protected token Pulumi sets.
 # Paid plans and the pack stay archived in Polar until POLAR_PAID_PLANS=on
 # (set it as a CI variable when the billing-paid-plans flag goes on).
-# The webhook endpoint is created once outside CI (POLAR_WEBHOOK_URL), since
-# its signing secret is shown only on creation and goes to Secret Manager.
+# It also keeps the webhook endpoint for $SITE_URL: when it creates the
+# endpoint, or finds Secret Manager without its secret, it writes the signing
+# secret straight to polar-webhook-secret as a new version (never printed),
+# as gitlab-infra.
 
 polar:seed:
-  extends: [.pnpm-install, .env-placeholders]
+  extends: [.gcp-auth, .pnpm-install, .env-placeholders]
   stage: deploy
   needs: []
+  interruptible: false
+  resource_group: infra
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
+    POLAR_WEBHOOK_URL: $SITE_URL/api/auth/polar/webhooks
+  before_script:
+    - !reference [.gcp-credentials, before_script]
+    - !reference [.pnpm-install, before_script]
+  # Google trusts gitlab-infra only for jobs in this environment.
+  environment:
+    name: infrastructure
+    deployment_tier: other
   rules:
     - !reference [.not-ops, rules]
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $POLAR_ACCESS_TOKEN

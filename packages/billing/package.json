@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "catalog:",
     "@polar-sh/sdk": "catalog:",
     "@wovain/db": "workspace:*",
     "drizzle-orm": "catalog:",

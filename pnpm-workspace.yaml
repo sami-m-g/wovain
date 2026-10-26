@@ -70,5 +70,6 @@ catalog:
   "@polar-sh/sdk": 1.0.2
   "@polar-sh/better-auth": 2.1.0
   "@electric-sql/pglite": 0.5.10
+  "@google-cloud/secret-manager": 7.2.0
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2

@@ -1,5 +1,4 @@
 import {
-  creditBalance,
   releaseCredits,
   reserveCredits,
   settleCredits,
@@ -13,6 +12,7 @@ import { user } from "@wovain/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
+import { awaitFreeCredits } from "./free-plan";
 
 // Paid steps spend the merchant's credits: reserved before the step runs,
 // settled when it succeeds, given back when it fails. The reservation is
@@ -38,7 +38,7 @@ const merchantOf = async ({ db, userId }: Actor) => {
 // step (a run's research). The step itself still reserves its credits.
 export const assertCredits = async (actor: Actor, step: CreditStep) => {
   const merchant = await merchantOf(actor);
-  const { available } = await creditBalance(actor.db, actor.userId);
+  const available = await awaitFreeCredits(actor, CREDIT_COST[step]);
   if (available < CREDIT_COST[step]) {
     throw refusalError("out_of_credits", merchant.locale, {
       available,

@@ -178,6 +178,10 @@ const generated = new Map<string, pulumi.Output<string>>([
       special: false,
     }).result,
   ],
+  // A placeholder version, so Cloud Run starts before `pnpm polar:seed`
+  // writes the endpoint's real secret as a newer version (Cloud Run mounts
+  // the latest). Pulumi never writes the real value, so `pulumi up` keeps it.
+  ["polar-webhook-secret", pulumi.output("pending-polar-seed")],
   [
     "token-encryption-key",
     new random.RandomBytes("token-encryption-key", { length: 32 }).base64,
