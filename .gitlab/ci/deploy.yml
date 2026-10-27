@@ -16,7 +16,15 @@
 .skip-if-superseded:
   script:
     - |
-      head=$(curl -fsS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/commits/$CI_DEFAULT_BRANCH" | sed -n 's/^{"id":"\([0-9a-f]\{40\}\)".*/\1/p' || true)
+      # The gcloud image has no curl, so fall back to python3 (docker and
+      # node images have curl or install it).
+      url="$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/commits/$CI_DEFAULT_BRANCH"
+      if command -v curl >/dev/null; then
+        body=$(curl -fsS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$url" || true)
+      else
+        body=$(python3 -c 'import os,sys,urllib.request as u; print(u.urlopen(u.Request(sys.argv[1], headers={"PRIVATE-TOKEN": os.environ["GITLAB_TOKEN"]}), timeout=20).read().decode())' "$url" || true)
+      fi
+      head=$(printf '%s' "$body" | sed -n 's/^{"id":"\([0-9a-f]\{40\}\)".*/\1/p')
       if [ -n "$head" ] && [ "$head" != "$CI_COMMIT_SHA" ] && [ -z "$DEPLOY_STALE" ]; then
         echo "Superseded: $CI_COMMIT_SHA is not $CI_DEFAULT_BRANCH's head ($head); skipping."
         exit 0
