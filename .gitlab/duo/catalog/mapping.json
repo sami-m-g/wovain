@@ -39,10 +39,10 @@
         "additional": []
       },
       "latest_sync": {
-        "git_tag": "cc7041d5",
-        "catalog_version": "1.1.0",
-        "synced_at": "2026-10-25T15:45:45.898Z",
-        "definition_hash": "fa0d80e34b97d300"
+        "git_tag": "94595678",
+        "catalog_version": "1.2.0",
+        "synced_at": "2026-10-27T09:53:06.217Z",
+        "definition_hash": "f0ef96cf5ccd7ab2"
       }
     },
     ".gitlab/duo/catalog/flows/deps-review.yml": {
@@ -67,10 +67,10 @@
         "additional": []
       },
       "latest_sync": {
-        "git_tag": "2771b7a6",
-        "catalog_version": "1.0.0",
-        "synced_at": "2026-10-26T15:18:36.048Z",
-        "definition_hash": "3dd287edd533c512"
+        "git_tag": "94595678",
+        "catalog_version": "1.1.0",
+        "synced_at": "2026-10-27T09:53:07.405Z",
+        "definition_hash": "b1596ca8b47fa854"
       }
     }
   }
