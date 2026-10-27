@@ -71,7 +71,7 @@ export const createRunEngine = ({
   // Export Mastra traces to Cloud Trace (on Google Cloud).
   cloudTrace: boolean;
   // Whether the merchant's runs go to this engine (the mastra-runs flag).
-  mastraFor: (userId: string) => boolean;
+  mastraFor: (userId: string) => Promise<boolean>;
   // Also export them to this OTLP endpoint (GitLab Observability).
   otlpEndpoint?: string | undefined;
   services: RunServices;

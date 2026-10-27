@@ -119,7 +119,7 @@ describe("guardDecision", () => {
       exceptions: degraded,
       flags: [
         flag({ name: "app-ui-v2", updated_at: minutesAgo(50) }),
-        flag({ name: "fault-injection-checkout", updated_at: minutesAgo(5) }),
+        flag({ name: "billing-polar", updated_at: minutesAgo(5) }),
         // Not guarded: a kill switch for a dependency.
         flag({ name: "trends-qloo", updated_at: minutesAgo(1) }),
         // Already off.
@@ -128,17 +128,15 @@ describe("guardDecision", () => {
     });
     expect(decision).toMatchObject({
       action: "flag-off",
-      flag: "fault-injection-checkout",
+      flag: "billing-polar",
     });
   });
 
   it("kills a flag for a dev spike but never rolls production back for it", () => {
-    const fresh = [
-      flag({ name: "fault-injection-checkout", updated_at: minutesAgo(5) }),
-    ];
+    const fresh = [flag({ name: "billing-polar", updated_at: minutesAgo(5) })];
     expect(
       guardDecision({ ...base, exceptions: devDegraded, flags: fresh })
-    ).toMatchObject({ action: "flag-off", flag: "fault-injection-checkout" });
+    ).toMatchObject({ action: "flag-off", flag: "billing-polar" });
     expect(
       guardDecision({
         ...base,

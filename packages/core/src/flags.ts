@@ -1,6 +1,6 @@
+import { log as evlog } from "evlog";
 import { PostHog } from "posthog-node";
-import { InMemStorageProvider, initialize } from "unleash-client";
-import type { Unleash } from "unleash-client";
+import type { FeatureFlagEvaluations } from "posthog-node";
 
 import { FLAGS, FLAG_NAMES } from "./flag-registry";
 import type {
@@ -10,38 +10,48 @@ import type {
   FlagPlan,
 } from "./flag-registry";
 
-// GitLab feature flags through their Unleash client API, with Unleash's
-// official Node SDK (docs.gitlab.com/operations/feature_flags: the API URL,
-// the instance ID, and the environment as the app name). Flag names come
-// from the typed registry (./flag-registry.ts), never from strings.
+// PostHog feature flags with PostHog's official Node SDK and server-side
+// local evaluation (posthog.com/docs/feature-flags/local-evaluation): the SDK
+// polls the flag definitions with a project secret API key
+// (POSTHOG_SECRET_KEY, `feature_flag:read`) and evaluates them in process,
+// never calling PostHog per request (strictLocalEvaluation). Flag names come
+// from the typed registry (./flag-registry.ts), which OpenTofu applies as
+// PostHog flags (./flag-posthog.ts, infra/posthog/flags.tf); every condition
+// matches only what the app passes here: the user ID, `plan` and
+// `environment`.
 //
-// Fail closed: until the SDK has fetched GitLab's flags, and for any flag
-// GitLab doesn't return, the answer is false. State lives in memory only (no
-// backup file), so a cold start without GitLab never serves stale flags.
-// Without a URL and instance ID at all (local dev, tests), the registry
-// answers instead: development follows its rollout, so a laptop still works,
-// and production answers only flags rolled out to everyone there.
+// PostHog decides whenever it has the flag: a flag switched off in PostHog
+// (its Status, the kill switch) is off. Only when PostHog has no answer (the
+// definitions aren't loaded after READY_MS, or the flag isn't in them) does
+// the registry answer, per flag, so an outage can't switch off a kill switch
+// such as trends-tavily: development follows its rollout, production only
+// flags rolled out to everyone there, so a fallback never opens an internal
+// or percent rollout to all users. Each fallback is logged at error level.
+// Without a secret key at all (laptops, tests, Mastra Studio) the registry
+// answers the same way, without the error. A flag's `plans` allowlist is also
+// checked here first, so a plan outside it is off whoever answers.
 //
-// Every first answer per user, flag and value is sent to PostHog as a
-// `$feature_flag_called` event with `$feature/<flag>`, so any KPI breaks down
-// by flag variant: the exposure event PostHog's experiments read, here for
-// flags another provider evaluates.
+// Exposures: the SDK sends `$feature_flag_called` (with `$feature/<flag>`)
+// itself the first time per user, flag and value that PostHog decides, so
+// any KPI breaks down by flag value. Registry answers get the same event from
+// here, marked with `flag_reason`, so nothing is counted twice. Requests
+// without a user evaluate under ANONYMOUS, whose exposures are dropped.
 
 export interface FlagContext {
-  // The Better Auth user ID: GitLab's user lists and "Percent of users"
-  // match it, and PostHog keys exposures by it.
+  // The Better Auth user ID: PostHog's percentages and the team condition
+  // match it, and exposures are keyed by it.
   userId?: string | undefined;
-  // Checked by the app against the flag's `plans` (GitLab has no Unleash
-  // constraints). Unknown plans count as free, the only plan sold at launch.
+  // Matched by the flag's `plan` condition and the app's allowlist. Unknown
+  // plans count as free, the only plan sold at launch.
   plan?: FlagPlan | undefined;
 }
 
 export interface FlagsConfig {
-  GITLAB_FEATURE_FLAGS_URL?: string | undefined;
-  GITLAB_FEATURE_FLAGS_INSTANCE_ID?: string | undefined;
-  GITLAB_FEATURE_FLAGS_ENVIRONMENT: string;
+  // wovain.com is production; every other host is development.
+  BETTER_AUTH_URL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
+  POSTHOG_SECRET_KEY?: string | undefined;
 }
 
 export interface Exposure {
@@ -49,30 +59,39 @@ export interface Exposure {
   enabled: boolean;
   environment: FlagEnvironment;
   context: FlagContext;
-  // gitlab: GitLab answered; plan: the plan allowlist said no; local: no
-  // GitLab configured; closed: GitLab not reached yet, so off.
-  reason: "gitlab" | "plan" | "local" | "closed";
+  // posthog: PostHog decided; plan: the plan allowlist said no; local: no
+  // PostHog secret key configured; fallback: PostHog had no answer, so the
+  // registry decided.
+  reason: "posthog" | "plan" | "local" | "fallback";
 }
 
-// Polls every 15 s: a toggle in GitLab reaches every instance within that,
-// and at one request per 15 s GitLab's per-IP limit allows about 125
-// clients.
-const REFRESH_MS = 15_000;
-// Distinct (user, flag, value) exposures remembered per process.
-const SEEN_MAX = 10_000;
+// What ./flags.ts needs from the SDK (tests pass a fake).
+export type FlagClient = Pick<
+  PostHog,
+  | "capture"
+  | "evaluateFlags"
+  | "isLocalEvaluationReady"
+  | "waitForLocalEvaluationReady"
+>;
 
-const environmentOf = (name: string): FlagEnvironment =>
-  name === "production" ? "production" : "development";
+// How long the first evaluations wait for the definitions after boot.
+const READY_MS = 3000;
+// Distinct (user, flag, value) registry exposures remembered per process.
+const SEEN_MAX = 10_000;
+// The distinct ID of evaluations without a user.
+export const ANONYMOUS = "wovain-anonymous";
+
+const environmentOf = (siteUrl: string): FlagEnvironment =>
+  new URL(siteUrl).hostname === "wovain.com" ? "production" : "development";
 
 // What a flag is for a plan: free when unknown.
 const allowedFor = (flag: FlagDefinition, plan: FlagPlan | undefined) =>
   flag.plans === undefined || flag.plans.includes(plan ?? "free");
 
-// For a process with no GitLab configured: development follows its rollout;
-// production fails closed except for a flag rolled out to everyone (a kill
-// switch such as trends-tavily), so a missing secret never opens an
-// internal or percent rollout to all users.
-const localAnswer = (flag: FlagDefinition, environment: FlagEnvironment) => {
+// The registry's answer when PostHog has none: development follows its
+// rollout; production only a flag rolled out to everyone (a kill switch such
+// as trends-tavily).
+const registryAnswer = (flag: FlagDefinition, environment: FlagEnvironment) => {
   const { kind } = flag.rollout[environment];
   if (!flag.initiallyActive) {
     return false;
@@ -81,122 +100,133 @@ const localAnswer = (flag: FlagDefinition, environment: FlagEnvironment) => {
 };
 
 export interface Flags {
-  isOn: (name: FlagName, context?: FlagContext) => boolean;
+  isOn: (name: FlagName, context?: FlagContext) => Promise<boolean>;
   // Every flag for one user: what a server component hands to client code.
-  snapshot: (context?: FlagContext) => Record<FlagName, boolean>;
-  // Whether the SDK has GitLab's flags (health checks, canary verdicts).
-  ready: () => boolean;
+  snapshot: (context?: FlagContext) => Promise<Record<FlagName, boolean>>;
 }
 
 export const createFlags = (
   config: FlagsConfig,
   options: {
-    // For tests: the Unleash client, and where exposures go.
-    unleash?: Pick<Unleash, "isEnabled" | "isSynchronized">;
+    // For tests: the SDK, and every answer as it is given.
+    posthog?: FlagClient;
     onExposure?: (exposure: Exposure) => void;
   } = {}
 ): Flags => {
-  const environment = environmentOf(config.GITLAB_FEATURE_FLAGS_ENVIRONMENT);
-  const url = config.GITLAB_FEATURE_FLAGS_URL;
-  const instanceId = config.GITLAB_FEATURE_FLAGS_INSTANCE_ID;
-  const configured = url !== undefined && instanceId !== undefined;
-  let { unleash } = options;
-  const client = () => {
-    if (!configured) {
+  const environment = environmentOf(config.BETTER_AUTH_URL);
+  const key = config.NEXT_PUBLIC_POSTHOG_KEY;
+  const secretKey = config.POSTHOG_SECRET_KEY;
+  const posthog: FlagClient | undefined =
+    options.posthog ??
+    (key === undefined
+      ? undefined
+      : new PostHog(key, {
+          // Anonymous evaluations don't count as exposures.
+          // oxlint-disable-next-line eslint-plugin-unicorn/no-null
+          before_send: (event) =>
+            event.distinctId === ANONYMOUS ? null : event,
+          host: config.NEXT_PUBLIC_POSTHOG_HOST,
+          ...(secretKey === undefined ? {} : { secretKey }),
+          strictLocalEvaluation: true,
+        }));
+  const evaluates = secretKey !== undefined && posthog !== undefined;
+  // Started at boot, so the first requests find the definitions loaded.
+  const ready = evaluates
+    ? posthog.waitForLocalEvaluationReady(READY_MS)
+    : Promise.resolve(false);
+
+  const seen = new Set<string>();
+  const expose = (exposure: Exposure) => {
+    options.onExposure?.(exposure);
+    const distinctId = exposure.context.userId;
+    // PostHog's own answers were sent by the SDK.
+    if (
+      exposure.reason === "posthog" ||
+      posthog === undefined ||
+      distinctId === undefined
+    ) {
       return;
     }
-    unleash ??= initialize({
-      appName: config.GITLAB_FEATURE_FLAGS_ENVIRONMENT,
-      // GitLab's Unleash API takes no metrics.
-      disableMetrics: true,
-      instanceId,
-      refreshInterval: REFRESH_MS,
-      storageProvider: new InMemStorageProvider(),
-      url,
+    const seenKey = `${distinctId}:${exposure.flag}:${exposure.enabled}`;
+    if (seen.has(seenKey)) {
+      return;
+    }
+    if (seen.size >= SEEN_MAX) {
+      seen.clear();
+    }
+    seen.add(seenKey);
+    posthog.capture({
+      distinctId,
+      event: "$feature_flag_called",
+      properties: {
+        $feature_flag: exposure.flag,
+        $feature_flag_response: exposure.enabled,
+        [`$feature/${exposure.flag}`]: exposure.enabled,
+        environment: exposure.environment,
+        flag_plan: exposure.context.plan ?? "free",
+        flag_reason: exposure.reason,
+      },
     });
-    return unleash;
   };
 
-  // Start polling at boot, so the first requests find the flags fetched.
-  client();
-
-  const posthogKey = config.NEXT_PUBLIC_POSTHOG_KEY;
-  const posthog =
-    options.onExposure === undefined && posthogKey !== undefined
-      ? new PostHog(posthogKey, { host: config.NEXT_PUBLIC_POSTHOG_HOST })
-      : undefined;
-  const seen = new Set<string>();
-  const expose =
-    options.onExposure ??
-    ((exposure: Exposure) => {
-      const distinctId = exposure.context.userId;
-      if (posthog === undefined || distinctId === undefined) {
-        return;
-      }
-      const key = `${distinctId}:${exposure.flag}:${exposure.enabled}`;
-      if (seen.has(key)) {
-        return;
-      }
-      if (seen.size >= SEEN_MAX) {
-        seen.clear();
-      }
-      seen.add(key);
-      posthog.capture({
-        distinctId,
-        event: "$feature_flag_called",
-        properties: {
-          $feature_flag: exposure.flag,
-          $feature_flag_response: exposure.enabled,
-          [`$feature/${exposure.flag}`]: exposure.enabled,
-          environment: exposure.environment,
-          flag_plan: exposure.context.plan ?? "free",
-          flag_reason: exposure.reason,
-          flag_source: "gitlab",
-        },
-      });
-    });
-
-  const evaluate = (
+  const fromPostHog = async (
     name: FlagName,
     context: FlagContext
-  ): Pick<Exposure, "enabled" | "reason"> => {
+  ): Promise<FeatureFlagEvaluations | undefined> => {
+    if (!evaluates) {
+      return;
+    }
+    // A boot without PostHog recovers when a later poll loads them.
+    if (!((await ready) || posthog.isLocalEvaluationReady())) {
+      return;
+    }
+    return await posthog.evaluateFlags(context.userId ?? ANONYMOUS, {
+      flagKeys: [name],
+      personProperties: { environment, plan: context.plan ?? "free" },
+    });
+  };
+
+  const evaluate = async (
+    name: FlagName,
+    context: FlagContext
+  ): Promise<Pick<Exposure, "enabled" | "reason">> => {
     const flag: FlagDefinition = FLAGS[name];
     if (!allowedFor(flag, context.plan)) {
       return { enabled: false, reason: "plan" };
     }
-    const sdk = client();
-    if (sdk === undefined) {
-      return { enabled: localAnswer(flag, environment), reason: "local" };
+    if (!evaluates) {
+      return { enabled: registryAnswer(flag, environment), reason: "local" };
     }
-    if (!sdk.isSynchronized()) {
-      return { enabled: false, reason: "closed" };
+    const evaluations = await fromPostHog(name, context);
+    // A conclusive false (Status off included) is PostHog's answer too.
+    if (evaluations?.getFlag(name) !== undefined) {
+      return { enabled: evaluations.isEnabled(name), reason: "posthog" };
     }
-    // Team members are matched by their user ID on the internal-only list.
-    const { userId } = context;
-    const enabled = sdk.isEnabled(
-      name,
-      {
-        environment,
-        properties: { plan: context.plan ?? "free" },
-        ...(userId === undefined ? {} : { userId }),
-      },
-      false
-    );
-    return { enabled, reason: "gitlab" };
+    const enabled = registryAnswer(flag, environment);
+    evlog.error({
+      error: "FEATURE_FLAG_FALLBACK",
+      flags: { enabled, environment, flag: name },
+      why:
+        evaluations === undefined
+          ? "PostHog's flag definitions aren't loaded"
+          : "The flag isn't in PostHog's definitions",
+    });
+    return { enabled, reason: "fallback" };
   };
 
-  const isOn = (name: FlagName, context: FlagContext = {}) => {
-    const result = evaluate(name, context);
+  const isOn = async (name: FlagName, context: FlagContext = {}) => {
+    const result = await evaluate(name, context);
     expose({ context, environment, flag: name, ...result });
     return result.enabled;
   };
 
   return {
     isOn,
-    ready: () => client()?.isSynchronized() ?? false,
-    snapshot: (context = {}) =>
+    snapshot: async (context = {}) =>
       Object.fromEntries(
-        FLAG_NAMES.map((name) => [name, isOn(name, context)])
+        await Promise.all(
+          FLAG_NAMES.map(async (name) => [name, await isOn(name, context)])
+        )
       ) as Record<FlagName, boolean>,
   };
 };

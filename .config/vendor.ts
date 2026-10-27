@@ -12,6 +12,8 @@ export const vendorPatterns = [
   "apps/fumadocs/src/lib/merge-refs.ts",
   "apps/web/src/components/auth/**",
   "apps/web/src/lib/auth/**",
+  // Written by packages/core/src/flag-posthog.test.ts (a Vitest file snapshot).
+  "infra/posthog/flags.json",
   "packages/db/src/migrations/**",
   "packages/db/src/schema/auth.ts",
   "packages/ui/src/components/**",

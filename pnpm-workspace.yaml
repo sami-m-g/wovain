@@ -71,7 +71,6 @@ catalog:
   "@posthog/ai": ^8.16.3
   posthog-js: ^1.438.21
   posthog-node: ^5.57.2
-  unleash-client: ^6.12.2
   negotiator: ^1.1.0
   "@types/negotiator": ^0.6.5
   "@formatjs/intl-localematcher": ^0.9.0

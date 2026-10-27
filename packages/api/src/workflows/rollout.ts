@@ -94,7 +94,7 @@ export const createRunRouter = ({
   db: RunServices["db"];
   legacy: RunEngine;
   mastra: RunEngine;
-  mastraFor: (userId: string) => boolean;
+  mastraFor: (userId: string) => Promise<boolean>;
 }): RunEngine => ({
   resume: async (runId, decision) => {
     const [row] = await db
@@ -105,7 +105,7 @@ export const createRunRouter = ({
     await engine.resume(runId, decision);
   },
   start: async (started) => {
-    const durable = mastraFor(started.userId);
+    const durable = await mastraFor(started.userId);
     await db
       .update(run)
       .set({ engine: durable ? "mastra" : "legacy" })

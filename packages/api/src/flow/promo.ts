@@ -18,7 +18,7 @@ export const redeemCode = async (
   const returnUrl = `${actor.billing.appUrl}${BILLING_PATH}`;
   const result = await redeemPromo(actor.db, polarPromoGateway(polar), {
     code,
-    paidPlans: actor.billing.paidPlans(),
+    paidPlans: await actor.billing.paidPlans(),
     returnUrl,
     successUrl: `${returnUrl}?redeemed=1`,
     surface,

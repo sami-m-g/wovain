@@ -1,31 +1,30 @@
-// wovain's feature flags: the one list that GitLab's flags (infra/gitlab.ts,
-// Pulumi), the app's SDK (./flags.ts) and the hygiene check (apps/ops) read.
-// Pure data with no imports, so Pulumi (Node's type stripping) and the ops
-// job can import it by path. docs/adr/0001-progressive-delivery.md explains
-// the design; AGENTS.md has the "roll out and roll back" steps.
+// wovain's feature flags: the one list that PostHog's flags (./flag-posthog.ts
+// to infra/posthog/flags.json, applied by OpenTofu in infra/posthog/flags.tf)
+// and the app's SDK (./flags.ts) read. Pure data with no imports, so tools
+// can import it by path. docs/adr/0001-progressive-delivery.md explains the
+// design; AGENTS.md has the "roll out and roll back" steps.
 //
-// GitLab evaluates the rollout (Unleash strategies per environment); GitLab
-// has no Unleash constraints, so a flag's `plans` allowlist is checked by the
-// app on top of GitLab's answer. Every flag is off when GitLab is unreachable
-// (fail closed), so `on` must never be the safe state of a flag.
+// PostHog evaluates the rollout (a condition per environment) and the
+// `plans` allowlist, which the app also checks. When PostHog has no answer,
+// the registry does: in production only flags rolled out to everyone, so
+// `on` must never be the safe state of a release flag.
 
 // The plans a merchant can be on. `demo` is the hackathon judges' and
 // internal demo accounts; at launch only `free` is sold (billing-paid-plans).
 export const PLAN_CODES = ["free", "demo", "studio", "label"] as const;
 export type FlagPlan = (typeof PLAN_CODES)[number];
 
-// The GitLab environments whose names the Unleash client sends as its app
-// name (GITLAB_FEATURE_FLAGS_ENVIRONMENT).
+// The environments a rollout is set for. The app passes its own as the
+// `environment` property: production on wovain.com, development elsewhere.
 export const FLAG_ENVIRONMENTS = ["production", "development"] as const;
 export type FlagEnvironment = (typeof FLAG_ENVIRONMENTS)[number];
 
 // How far a flag is rolled out in one environment:
-// - off: no strategy, nobody gets it.
-// - internal: the `internal-only` GitLab user list: team members' Better
-//   Auth user IDs (INTERNAL_USER_ID below).
-// - percent: the user list plus that percentage of signed-in users, sticky
-//   by user ID (GitLab's "Percent of users", Unleash gradualRolloutUserId).
-// - all: every user (GitLab's "All users", Unleash default).
+// - off: no condition, nobody gets it.
+// - internal: team members, matched by their Better Auth user IDs
+//   (infra/posthog's internal_user_ids, plus INTERNAL_USER_ID below).
+// - percent: the team plus that percentage of users, sticky by user ID.
+// - all: every user.
 export type Rollout =
   | { kind: "off" }
   | { kind: "internal" }
@@ -40,18 +39,19 @@ export type FlagType = "release" | "kill-switch" | "permission" | "ops";
 
 export interface FlagDefinition {
   description: string;
-  // The team that answers for the flag, and the GitLab user the cleanup
-  // issue is assigned to.
+  // The team that answers for the flag, and the user the cleanup issue is
+  // assigned to.
   owner: { team: string; gitlab: string };
   // ISO date. Past it, the hygiene check opens a cleanup issue.
   expires: string;
   type: FlagType;
-  // GitLab's status toggle when Pulumi creates the flag. After that it is the
+  // PostHog's Status when OpenTofu creates the flag. After that it is the
   // global kill switch, left to people and the release guard (ignored by
-  // Pulumi, so flipping it is not drift).
+  // OpenTofu, so flipping it is not drift).
   initiallyActive: boolean;
   rollout: Record<FlagEnvironment, Rollout>;
-  // Evaluated by the app: other plans get `false` whatever GitLab says.
+  // A `plan` condition in PostHog, checked by the app too: other plans get
+  // `false` whoever answers.
   plans?: readonly FlagPlan[];
   // The release guard may switch it off on its own when production degrades
   // after the flag changed.
@@ -114,22 +114,6 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
-  "fault-injection-checkout": {
-    description:
-      "Injects a checkout failure so the self-healing loop can detect, fix and verify it",
-    expires: "2027-03-31",
-    guarded: true,
-    initiallyActive: false,
-    owner: { gitlab: OWNER, team: "platform" },
-    // Development only: its Status on never touches production. The
-    // canary demo faults one production revision instead
-    // (FAULT_INJECTION_REVISION).
-    rollout: {
-      development: { kind: "all" },
-      production: { kind: "off" },
-    },
-    type: "ops",
-  },
   "mastra-runs": {
     description:
       "New runs go through the Mastra workflow; the legacy run steps are the fallback",
@@ -179,12 +163,11 @@ export const FLAG_NAMES = Object.keys(FLAGS) as FlagName[];
 export const isFlagName = (name: string): name is FlagName =>
   Object.hasOwn(FLAGS, name);
 
-// The GitLab user list every `internal` and `percent` rollout includes.
+// Only infra/flags.ts (GitLab, until it is removed) reads this.
 export const INTERNAL_USER_LIST = "internal-only";
 
-// GitLab's strategies match user IDs only (no Unleash constraints), so the
-// list holds the team's Better Auth user IDs: Pulumi's `wovain:internalUserIds`
-// (comma separated, infra/flags.ts), never an email or an app variable. This
-// placeholder keeps the list non-empty before anyone is added. Percent
-// rollouts include the list, so team members are always in.
+// The team condition of `internal` and `percent` rollouts matches the team's
+// Better Auth user IDs (infra/posthog's internal_user_ids), never an email or
+// an app variable. This placeholder keeps the list non-empty before anyone is
+// added. Percent rollouts include the team, so team members are always in.
 export const INTERNAL_USER_ID = "wovain-internal";

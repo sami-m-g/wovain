@@ -18,8 +18,6 @@ const env = z
   .object({
     BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1),
-    // Studio has no GitLab flags: the registry's development rollout answers.
-    GITLAB_FEATURE_FLAGS_ENVIRONMENT: z.string().default("development"),
     GUARDRAILS: z.enum(["on", "off"]).default("on"),
     NEBIUS_API_KEY: z.string().optional(),
     NEBIUS_BASE_URL: z.url().default("https://api.tokenfactory.nebius.com/v1/"),
