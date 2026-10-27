@@ -27,7 +27,7 @@
     "lucide-react": "catalog:",
     "next": "catalog:",
     "posthog-node": "catalog:",
-    "rate-limiter-flexible": "^9.0.0",
+    "rate-limiter-flexible": "^11.2.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark": "^15.0.1",
