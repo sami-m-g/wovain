@@ -223,7 +223,7 @@
     },
     "free": {
       "title": "Free to start",
-      "body": "{credits, number} credits a month, enough for about two drops. wovain never takes a cut of your sales.",
+      "body": "{credits, number} credits a month, enough to try a full drop. wovain never takes a cut of your sales.",
       "link": "See pricing"
     },
     "faqSection": {
@@ -442,7 +442,7 @@
     },
     "trends": {
       "title": "Pick the ideas",
-      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top idea already has a design.",
+      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top ideas already have designs; pick more to draw them too.",
       "score": "Score {score}",
       "affinity": "Taste affinity",
       "affinityUnavailable": "Not available",
@@ -456,7 +456,7 @@
     },
     "designs": {
       "title": "Approve the designs",
-      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea.",
+      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea. Designs you leave undecided are rejected when you go on.",
       "check": "Design check",
       "checkReady": "Ready",
       "checkRevise": "Needs work",
@@ -525,7 +525,7 @@
       "another": "Write a new brief"
     },
     "working": {
-      "research": "Researching trends and drafting the first design…",
+      "research": "Researching trends and drafting the first designs…",
       "autopilot": "Autopilot is researching, designing, publishing and building the campaign…",
       "designs": "Making designs…",
       "review": "Saving your decision…",
@@ -680,7 +680,7 @@
     "recommended": "Recommended",
     "currentPlan": "Your plan",
     "plans": {
-      "free": "Try a drop or two a month. No card needed.",
+      "free": "Try a drop a month. No card needed.",
       "studio": "For creators who drop every week, with autopilot.",
       "label": "For shops running several drops a week. Unused credits carry over."
     },
@@ -797,7 +797,7 @@
     "faq": {
       "credit": {
         "question": "What is a credit?",
-        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, so a drop you approve step by step is about 6 credits. If a step fails, its credits come back."
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 10 credits. If a step fails, its credits come back."
       },
       "yours": {
         "question": "What do I pay outside wovain?",

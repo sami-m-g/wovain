@@ -4,8 +4,12 @@
 // imports nothing. Money is in US cents and credits are whole numbers.
 // The numbers are a proposal (docs/pricing-proposal.md) until they are locked.
 
-// What each metered step debits. A manual drop (research, one design, ad copy)
-// is 6 credits; an autopilot drop adds its pick and review, 8 credits.
+// The designs a run draws, one for each of its top ideas; each is charged.
+export const DESIGNS_PER_RUN = 3;
+
+// What each metered step debits. A manual drop (research, three designs, ad
+// copy for one approved design) is 10 credits; an autopilot drop adds its
+// pick and a review per design, 14 credits.
 export const CREDIT_COST = {
   // Autopilot's pick and review, or the ad copy: one Nemotron call.
   assist: 1,
