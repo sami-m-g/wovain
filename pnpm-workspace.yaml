@@ -89,7 +89,7 @@ catalog:
   "@opentelemetry/api": 1.10.0
   "@opentelemetry/sdk-node": 0.300.0
   # The 0.221 line @mastra/otel-exporter's own SDK uses (its optional peer).
-  "@opentelemetry/exporter-trace-otlp-http": 0.223.0
+  "@opentelemetry/exporter-trace-otlp-http": 0.221.0
   "@opentelemetry/instrumentation-runtime-node": 0.37.0
   "@opentelemetry/instrumentation-undici": 0.34.0
   "@ai-sdk/openai-compatible": ^2.0.87
