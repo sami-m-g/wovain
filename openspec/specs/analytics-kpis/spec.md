@@ -26,9 +26,9 @@ The website SHALL capture pageviews, autocapture, web vitals and `landing_cta_cl
 
 ### Requirement: North Star and KPIs
 
-The North Star SHALL be activated merchants per week, with KPIs defined in `.gitlab/duo/kpis.yml`; only alerts named `kpi:<id>` SHALL trigger the scout flow.
+The North Star SHALL be activated merchants per week, shown on PostHog dashboards.
 
-#### Scenario: KPI alert fires
+#### Scenario: Merchant activates
 
-- **WHEN** a `kpi:<id>` alert fires in PostHog
-- **THEN** the scout flow can open an evidence-backed issue for it
+- **WHEN** a merchant approves a design within 7 days of sign-up
+- **THEN** they count as activated that week

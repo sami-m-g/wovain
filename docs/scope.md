@@ -38,13 +38,13 @@ flowchart LR
 
 ## Inspiration & Identity
 
-Editorial and restrained: short, considered sentences, studio nouns (drop, capsule, blank, edit, margin), numbers instead of adjectives, no hype. On the designer's side: taste stays with them, wovain does the chores. Honest about money: fees, margins and spend stated plainly. References: Aesop, Linear, Everlane and Shopify for tone and craft. Name: wovain, lowercase. A new logo is being redesigned; round 6 recommends the "Impression" wordmark (not final). Voice and audience are written down in `.agents/product-marketing.md` (MR !118, in review).
+Editorial and restrained: short, considered sentences, studio nouns (drop, capsule, blank, edit, margin), numbers instead of adjectives, no hype. On the designer's side: taste stays with them, wovain does the chores. Honest about money: fees, margins and spend stated plainly. References: Aesop, Linear, Everlane and Shopify for tone and craft. Name: wovain, lowercase. A new logo is being redesigned; round 6 recommends the "Impression" wordmark (not final). Voice and audience are written down in `.agents/product-marketing.md`.
 
 Built from existing services rather than rebuilt: Fourthwall for catalog, shop and fulfilment, Meta for ad delivery, fal for artwork, Qloo and Tavily for signals, Nemotron for drafting and judgment, Polar for billing.
 
 ## Why This Matters to the Learner
 
-The builder wants wovain to be a real product that independent designers pay for, not a demo: an agent runs the production and marketing chores of a print-on-demand drop while the designer keeps every taste and spending decision. It started as the Build With AI: Basics project and is also entered in GitLab Transcend, Nebius x NVIDIA and Qloo hackathons.
+The builder wants wovain to be a real product that independent designers pay for, not a demo: an agent runs the production and marketing chores of a print-on-demand drop while the designer keeps every taste and spending decision. It started as the Build With AI: Basics project and is also entered in the Nebius x NVIDIA and Qloo hackathons.
 
 ## What "Working" Looks Like
 
@@ -67,13 +67,12 @@ The builder wants wovain to be a real product that independent designers pay for
 | Publishing | Hidden Fourthwall products, published by a separate step | Live |
 | Ads | Up to three ad variants per product and a paused Meta campaign | Live |
 | Autopilot | End-to-end run where Nemotron decides and code gates | Live |
-| Accounts | Better Auth with Google and email; Better Auth UI screens and account settings | Google live; UI in review (MR !111) |
+| Accounts | Better Auth with Google and email; Better Auth UI screens and account settings | Google live; UI in review |
 | Connectors | Merchant's own Fourthwall and Meta (OAuth); merchant's own fal key | Fourthwall and Meta live; fal in progress |
-| Billing | Polar (merchant of record) credits and plans; wovain pays Nebius, Tavily and Qloo from credits | In review (MR !116), prices are a proposal |
+| Billing | Polar (merchant of record) credits and plans; wovain pays Nebius, Tavily and Qloo from credits | In review, prices are a proposal |
 | Agent runtime | Mastra agents, workflows with suspend/resume for approval, durable runs, memory on `@mastra/pg`, tracing | In progress |
 | Quality | Mastra scorers on every agent and step, calibrated LLM judges, guardrails | Planned with the Mastra migration |
 | Analytics | PostHog; North Star "activated merchants per week" | Dashboards built; some events planned |
-| After deploy | GitLab Duo flows: self-healing, scout and developer; code review on every MR and a deps-review flow | Three flows live; the rest in review (MR !113, !114, !117) |
 
 ## Later
 

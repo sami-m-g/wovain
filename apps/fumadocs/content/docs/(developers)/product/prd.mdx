@@ -31,12 +31,12 @@ Direction -> Ideas (Qloo + Tavily) -> Design: brief, art, price
 
 | Surface | What it holds | Status |
 | --- | --- | --- |
-| Landing | What wovain does for independent labels, guides, use cases, integrations (pricing page in MR !116) | Live; product rewrite in review (MR !118) |
-| Sign in and sign up | Google and email through Better Auth; password reset | Live; Better Auth UI screens in review (MR !111) |
-| Account settings | Profile, sessions, linked accounts | In review (MR !111) |
+| Landing | What wovain does for independent labels, guides, use cases, integrations | Live; product rewrite in review |
+| Sign in and sign up | Google and email through Better Auth; password reset | Live; Better Auth UI screens in review |
+| Account settings | Profile, sessions, linked accounts | In review |
 | Dashboard | Setup checklist, new-drop wizard, runs, designs, products, campaigns | Live; app UI pass in progress |
 | Connections | Connect Fourthwall and Meta (OAuth); fal API key | Fourthwall and Meta live; fal in progress |
-| Pricing and billing | Plans, credit balance, upgrade screens, Polar checkout and portal | In review (MR !116) |
+| Pricing and billing | Plans, credit balance, upgrade screens, Polar checkout and portal | In review |
 | ChatGPT | The same steps as MCP tools at `https://mcp.wovain.com/api/mcp`, with widgets for trends, designs, products and campaigns | Live |
 | Consent | The OAuth consent page ChatGPT sends the designer to | Live |
 | Docs | [https://docs.wovain.com](https://docs.wovain.com) in English, French and Spanish | Live |
@@ -51,7 +51,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 
 - As a designer, I want to sign in with Google so that I don't make another password.
   - [x] Google and email sign-in through Better Auth; Better Auth is also the OAuth server for ChatGPT.
-  - [ ] Better Auth UI screens for sign-in, sign-up, reset and account settings, with English error messages (MR !111).
+  - [ ] Better Auth UI screens for sign-in, sign-up, reset and account settings, with English error messages.
 
 ### Connectors
 
@@ -100,7 +100,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 ### Billing and credits
 
 - As a designer, I want a small free allowance and a clear price so that I can try a real drop before paying.
-  - [ ] Polar is the merchant of record. Proposed plans: Free 15 credits a month, Studio $29 for 300, Label $79 for 1,000 (rolls over), and a 100-credit pack for $10 (MR !116, prices not locked).
+  - [ ] Polar is the merchant of record. Proposed plans: Free 15 credits a month, Studio $29 for 300, Label $79 for 1,000 (rolls over), and a 100-credit pack for $10.
   - [ ] Credits are reserved before a paid step and returned if it fails; research 3, design 2, assist 1 (proposal).
   - [ ] Autopilot is on paid plans only (proposal).
 
@@ -108,19 +108,12 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 
 - As the founder, I want to see whether designers reach their first approved design.
   - [x] North Star: activated merchants per week (a merchant who approves a design within 7 days of sign-up). PostHog dashboards for growth, retention, agent quality and cost, and web vitals exist.
-  - [ ] Missing events (`run_completed`, `run_failed`, `design_generated`, `design_rejected`, `agent_score`, `campaign_activated`, subscription and credit events) are added (planned; dashboards as code in MR !115).
-
-### After deploy
-
-- Self-healing flow: a production error read from evlog events becomes a merge request with a fix and a regression test.
-- Scout flow: KPIs and UI become evidence-backed issues.
-- Developer flow: an issue becomes a merge request.
-- In review: Duo Code Review on every MR (!113), Renovate with a deps-review flow (!114), custom flows enabled in code (!117).
+  - [ ] Missing events (`run_completed`, `run_failed`, `design_generated`, `design_rejected`, `agent_score`, `campaign_activated`, subscription and credit events) are added (planned).
 
 ## States and Boundaries
 
 - **First use** — no connections yet; the setup checklist and the MCP tools point to the connect link.
-- **Out of credits** — the paid step is refused before it runs, with the upgrade link (MR !116).
+- **Out of credits** — the paid step is refused before it runs, with the upgrade link.
 - **Provider key missing** — that step fails with a `NOT_CONFIGURED` error naming the variable.
 - **Provider failure** — the run is marked `failed` with its step and error; reserved credits come back.
 - **Awaiting approval** — the run is suspended until the designer decides (Mastra migration, in progress).
@@ -140,7 +133,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 
 ## What We're Building
 
-Everything in `scope.md > The POC Boundary`: sign-in with Google, own-account connectors, Qloo and Tavily research, designs with the Nemotron judge, approval, Fourthwall product and publish, Meta ad variants and a paused campaign, autopilot, the ChatGPT app, the docs site and the Duo flows. In progress on top of the live loop: Better Auth UI, Polar billing, the fal connector, the Mastra migration with scorers, and the app UI pass.
+Everything in `scope.md > The POC Boundary`: sign-in with Google, own-account connectors, Qloo and Tavily research, designs with the Nemotron judge, approval, Fourthwall product and publish, Meta ad variants and a paused campaign, autopilot, the ChatGPT app and the docs site. In progress on top of the live loop: Better Auth UI, Polar billing, the fal connector, the Mastra migration with scorers, and the app UI pass.
 
 ## Deferred From the POC
 
@@ -162,7 +155,7 @@ TikTok Shop and ads; bring-your-own Nebius key on Label; Qloo audience demograph
 
 ## Open Questions
 
-- Lock the pricing numbers (proposal in MR !116) — must be settled before billing goes live.
+- Lock the pricing numbers — must be settled before billing goes live.
 - Qloo licence for commercial resale (the current key is a hackathon key) — before charging.
 - Meta app review scope for server-side campaign creation — before public launch.
 - Final logo (round 6 recommends "Impression") — can wait.

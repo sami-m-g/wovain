@@ -1,15 +1,15 @@
 # Proposal
 
-MR: !115 (`chore/posthog-dashboards-as-code`). Status: in review.
+Status: in review.
 
 ## Why
 
-The four product dashboards and three alerts around the North Star (activated merchants per week) were created through the PostHog API, so they can drift from code and the scout flow does not react to them.
+The four product dashboards and three alerts around the North Star (activated merchants per week) were created through the PostHog API, so they can drift from code.
 
 ## What Changes
 
 - `infra/posthog/dashboards.tf`: Growth, Retention, Agent quality and cost, and Web vitals dashboards with their 29 insights.
-- Three KPIs in `.gitlab/duo/kpis.yml` from the alerts: `activation-cohort`, `run-success-rate`, `design-approval-rate`, each with a `kpi:<id>` alert.
+- Three KPI alerts: `activation-cohort`, `run-success-rate`, `design-approval-rate`, each named `kpi:<id>`.
 - One-time `import` blocks adopt the API-created objects in place; alerts are renamed to `kpi:<id>`.
 - Planned with `migrate-runs-to-mastra` and `add-polar-billing`: the missing events (`run_completed`, `run_failed`, `design_generated`, `design_rejected`, `agent_score`, `campaign_activated`, subscription and credit events).
 
@@ -25,4 +25,4 @@ None.
 
 ## Impact
 
-`infra/posthog/*.tf`, `.gitlab/duo/kpis.yml`, the ops KPI test. After merge: `posthog:plan` on main, a person runs `posthog:apply`, then `import.tf` is deleted in a follow-up.
+`infra/posthog/*.tf`. After merge: `posthog:plan` on main, a person runs `posthog:apply`, then `import.tf` is deleted in a follow-up.

@@ -1,5 +1,7 @@
 # ADR 0001: Progressive delivery with GitLab feature flags, Cloud Run canaries and a Duo release guard
 
+> **Superseded by [ADR 0003](0003-move-to-github.md).** The GitLab feature flags, the Duo release guard, the canary jobs and the GitLab pipeline described below were removed when development moved to GitHub. The typed flag registry in `packages/core/src/flag-registry.ts` stays; its provider is open. Kept as a record.
+
 - Status: accepted (2026-10-26)
 - Owner: @sami-m-g
 - Related: `docs/flows.md` (flow 1, self-healing), MR !116 (`feat/billing-polar`), openspec change `add-progressive-delivery`

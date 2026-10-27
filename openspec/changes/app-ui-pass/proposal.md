@@ -1,6 +1,6 @@
 # Proposal
 
-MR: `feat/app-ui-pass` (link added on open). Status: in review.
+PR: `feat/app-ui-pass` (link added on open). Status: in review.
 
 ## Why
 

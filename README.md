@@ -29,18 +29,6 @@ Qloo is the first step of every run. The seed is resolved to Qloo entities (`/se
 
 Inside the seller flow, Tavily searches the past week's news within Qloo's themes (the "why now"), and checks marketplace saturation on Etsy, Redbubble and Fourthwall. Results keep their source links. Details: [docs/integrations/tavily](apps/fumadocs/content/docs/integrations/tavily.mdx).
 
-## GitLab Duo flows
-
-After the code ships, three GitLab Duo flows automate post-code DevSecOps:
-
-| Flow | What it does |
-| --- | --- |
-| Self-healing | Reads production errors from evlog wide events and opens a fix merge request; feature-flag fault injection makes it demonstrable |
-| Scout | Reads KPIs and UI and files improvement issues |
-| Developer | Takes an issue to a merge request |
-
-Details: [docs/flows.md](docs/flows.md) and [Agent flows](apps/fumadocs/content/docs/agent-flows.mdx).
-
 ## Architecture
 
 | Path | Role |
@@ -75,18 +63,17 @@ See the [Hackathons page](apps/fumadocs/content/docs/hackathons.mdx) for where e
 
 ## Deployment
 
-`main` deploys to Google Cloud from GitLab CI (`.gitlab/ci/deploy.yml`), with Workload Identity Federation and no stored key:
+Infrastructure is code in `infra/` and runs on Google Cloud, with Workload Identity Federation and no stored key:
 
-1. `pulumi up` applies `infra/` after a guarded, policy-checked preview (see [infra/README.md](infra/README.md#how-infra-changes-ship)): Cloud Run services `wovain-web` and `wovain-docs`, Cloud SQL Postgres `wovain`, Artifact Registry, Secret Manager, the wovain.com zone's records and domain mappings, Search Console verification, Resend's sending domain, GitLab variables, labels, the Workflow board and feature flags.
-2. Both images are pushed to the GitLab container registry (Container Scanning) and Artifact Registry.
+1. `pulumi up` applies `infra/` after a guarded, policy-checked preview (see [infra/README.md](infra/README.md#how-infra-changes-ship)): Cloud Run services `wovain-web` and `wovain-docs`, Cloud SQL Postgres `wovain`, Artifact Registry, Secret Manager, the wovain.com zone's records and domain mappings, Search Console verification, Resend's sending domain.
+2. Both images are pushed to Artifact Registry.
 3. `drizzle-kit migrate` runs against Cloud SQL through `cloud-sql-proxy`.
 4. `gcloud run deploy` rolls the images out.
 
-| Host                             | Serves                                  |
-| -------------------------------- | --------------------------------------- |
-| `https://wovain.com`             | apps/web (`www` redirects here)         |
-| `https://mcp.wovain.com/api/mcp` | the MCP endpoint ChatGPT connects to    |
-| `https://docs.wovain.com`        | apps/fumadocs                           |
-| `https://status.wovain.com`      | the status page (GitLab Pages, proxied) |
+| Host                             | Serves                               |
+| -------------------------------- | ------------------------------------ |
+| `https://wovain.com`             | apps/web (`www` redirects here)      |
+| `https://mcp.wovain.com/api/mcp` | the MCP endpoint ChatGPT connects to |
+| `https://docs.wovain.com`        | apps/fumadocs                        |
 
 Secrets live in Secret Manager under kebab-case ids (`better-auth-secret` is `BETTER_AUTH_SECRET`). A secret gets a value from the stack config, `pulumi config set --secret <id>` in `infra/`, and Cloud Run mounts only the secrets that have one. Pulumi generates `database-url`, `better-auth-secret` and `token-encryption-key` itself. A local `pulumi up` needs the Site Verification scope: `gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/siteverification`. Logs are JSON lines on stdout (`apps/web/src/lib/cloud-logging.ts`): Cloud Logging parses them, and Error Reporting groups server errors under `wovain-web`.
