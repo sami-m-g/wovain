@@ -8,6 +8,8 @@
 # when the cause is clear, opens a fix or revert merge request that goes
 # through Duo Code Review and the ops job's guardrails like any other.
 # Synced to the AI Catalog by the ai-catalog component (.gitlab/ci/duo.yml).
+# Its trigger markers are visible "Machine data" lines: get_issue strips
+# HTML comments.
 name: "wovain release-guard"
 description: "Diagnoses a wovain production rollback or flag kill switch from its release-guard issue, writes the diagnosis and opens a fix or revert merge request when the cause is clear."
 public: false

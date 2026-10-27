@@ -6,6 +6,8 @@
 # checks the test fails on main with the original error class and passes
 # with the fix; the ops job auto-merges only inside its guardrails.
 # Synced to the AI Catalog by the ai-catalog component (.gitlab/ci/duo.yml).
+# Its trigger markers are visible "Machine data" lines: get_issue strips
+# HTML comments.
 name: "wovain heal"
 description: "Reproduces a wovain production error from its heal issue with a failing test, fixes the cause and opens a merge request that closes the issue."
 public: false
