@@ -59,9 +59,9 @@ catalog:
   "@modelcontextprotocol/server": 2.3.1
   "@modelcontextprotocol/ext-apps": 2.0.3
   esbuild: 0.28.2
-  resend: 6.32.1
+  resend: 6.34.1
   "@react-email/components": 1.0.12
-  "@react-email/render": 2.1.0
+  "@react-email/render": 2.1.1
   postcss: 8.5.31
   "@tavily/core": 0.7.14
   "@posthog/ai": ^8.16.3
@@ -75,7 +75,7 @@ catalog:
   "@polar-sh/better-auth": 2.1.0
   "@google-cloud/secret-manager": 7.2.0
   "@tanstack/react-table": ^9.3.1
-  recharts: 3.8.0
+  recharts: 3.10.1
   "@mastra/core": 1.79.0
   "@mastra/inngest": 1.10.7
   "@mastra/pg": 1.32.0
@@ -89,7 +89,7 @@ catalog:
   "@opentelemetry/api": 1.10.0
   "@opentelemetry/sdk-node": 0.300.0
   # The 0.221 line @mastra/otel-exporter's own SDK uses (its optional peer).
-  "@opentelemetry/exporter-trace-otlp-http": 0.221.0
+  "@opentelemetry/exporter-trace-otlp-http": 0.223.0
   "@opentelemetry/instrumentation-runtime-node": 0.37.0
   "@opentelemetry/instrumentation-undici": 0.34.0
   "@ai-sdk/openai-compatible": ^2.0.87
