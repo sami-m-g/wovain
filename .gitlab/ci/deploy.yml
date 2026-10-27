@@ -48,6 +48,26 @@ variables:
         exit 0
       fi
 
+# A Cloud Run template whose image is missing (a failed deploy of a
+# superseded pipeline's image wrote it) makes every `pulumi up` fail, and with
+# it every deploy. Before infra:production, this points such a template back
+# at its latest ready revision's image without moving traffic
+# (repair-run-template.sh), as gitlab-deploy, the account that owns images.
+repair:run-template:
+  extends: [.gcp-auth, .gcloud, .on-main]
+  stage: deploy
+  interruptible: false
+  needs: []
+  # It must never block infra:production: a failure here only means no repair.
+  allow_failure: true
+  variables:
+    GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
+  script:
+    - sh .gitlab/ci/repair-run-template.sh wovain-web wovain-web-dev
+  environment:
+    name: production
+    action: prepare
+
 # `pulumi up` applies infra/ (state in gs://wovain-pulumi-state) as
 # gitlab-infra, after the same guarded preview as the merge request's
 # (verify.yml, infra/README.md), so a plan that would fail stops before any
@@ -66,6 +86,7 @@ infra:production:
   needs:
     - job: verify:infra
       optional: true
+    - repair:run-template
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_INFRA_SERVICE_ACCOUNT
     PREVIEW_FLAGS: --refresh
@@ -240,7 +261,9 @@ deploy:production:
       else
         fault=--remove-env-vars=FAULT_INJECTION_REVISION
       fi
-    - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --no-traffic --tag canary "$fault" --quiet
+    # A failed deploy still writes its image into the template; put the
+    # template back before failing, so the next pulumi up isn't stuck.
+    - gcloud run deploy wovain-web --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --no-traffic --tag canary "$fault" --quiet || { sh .gitlab/ci/repair-run-template.sh wovain-web; exit 1; }
     - gcloud run services update-traffic wovain-web --region "$GCP_REGION" --to-tags "canary=$CANARY_PERCENT" --quiet
     # image:docs reused the running image (DOCS_REUSED): nothing to roll out.
     - |
@@ -284,7 +307,7 @@ deploy:development:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
   script:
     - !reference [.skip-if-superseded, script]
-    - gcloud run deploy wovain-web-dev --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
+    - gcloud run deploy wovain-web-dev --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet || { sh .gitlab/ci/repair-run-template.sh wovain-web-dev; exit 1; }
   environment:
     name: development
     url: $DEV_SITE_URL
