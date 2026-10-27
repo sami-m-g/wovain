@@ -31,7 +31,13 @@
 # accounts differently from apps/ops/src/env.ts, DUO_DEVELOPER_ACCOUNT and
 # DUO_REVIEW_ACCOUNT.
 
+# A new commit cancels the branch's or merge request's running pipeline when
+# all its started jobs are interruptible (the default below). The deploy,
+# migrate, infra, image and canary jobs set interruptible: false, so a
+# pipeline that has reached one finishes.
 workflow:
+  auto_cancel:
+    on_new_commit: interruptible
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
