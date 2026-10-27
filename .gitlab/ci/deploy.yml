@@ -32,13 +32,15 @@ variables:
 .skip-if-superseded:
   script:
     - |
-      # The gcloud image has no curl, so fall back to python3 (docker and
-      # node images have curl or install it).
+      # The gcloud image has no curl and no python3 on PATH, so fall back to
+      # the Python gcloud bundles (docker and node images have curl or
+      # install it).
       url="$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/commits/$CI_DEFAULT_BRANCH"
       if command -v curl >/dev/null; then
         body=$(curl -fsS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$url" || true)
       else
-        body=$(python3 -c 'import os,sys,urllib.request as u; print(u.urlopen(u.Request(sys.argv[1], headers={"PRIVATE-TOKEN": os.environ["GITLAB_TOKEN"]}), timeout=20).read().decode())' "$url" || true)
+        py=$(command -v python3 || gcloud info --format='value(basic.python_location)')
+        body=$("$py" -c 'import os,sys,urllib.request as u; print(u.urlopen(u.Request(sys.argv[1], headers={"PRIVATE-TOKEN": os.environ["GITLAB_TOKEN"]}), timeout=20).read().decode())' "$url" || true)
       fi
       head=$(printf '%s' "$body" | sed -n 's/^{"id":"\([0-9a-f]\{40\}\)".*/\1/p')
       if [ -n "$head" ] && [ "$head" != "$CI_COMMIT_SHA" ] && [ -z "$DEPLOY_STALE" ]; then
@@ -229,7 +231,9 @@ deploy:production:
   script:
     - !reference [.skip-if-superseded, script]
     - |
-      trailer=$(python3 .gitlab/ci/canary-demo-fault.py || true)
+      # No python3 on PATH here: gcloud's bundled Python runs the script.
+      py=$(command -v python3 || gcloud info --format='value(basic.python_location)')
+      trailer=$("$py" .gitlab/ci/canary-demo-fault.py || true)
       if [ -n "$CANARY_DEMO_FAULT" ] || [ -n "$trailer" ]; then
         echo "Canary demo fault: the canary revision will fail its checkout quotes."
         fault=--update-env-vars=FAULT_INJECTION_REVISION=checkout
