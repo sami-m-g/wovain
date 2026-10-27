@@ -6,8 +6,8 @@
 # ignores images, CI owns them) and the update can't make a revision from it,
 # so infra:production, and every deploy after it, is stuck. For each SERVICE
 # whose template image is missing from Artifact Registry, this points the
-# template back at the image of the latest ready revision, with --no-traffic:
-# traffic stays where it is. A service that doesn't exist, or a template whose
+# template back at the image of the latest ready revision without moving
+# traffic. A service that doesn't exist, or a template whose
 # image exists, is left alone. Needs gcloud, logged in, and GCP_REGION.
 status=0
 for service in "$@"; do
@@ -31,7 +31,15 @@ for service in "$@"; do
     status=1
     continue
   fi
-  echo "$service: template image $image is missing; repairing it to $ready_image (latest ready revision $ready), no traffic change."
-  gcloud run services update "$service" --region "$GCP_REGION" --image "$ready_image" --no-traffic --quiet || status=1
+  # --no-traffic would pin a service that routes to LATEST (wovain-web-dev)
+  # to fixed revisions, and later deploys there would get none; such a
+  # service keeps LATEST, which then serves the same image as before.
+  # wovain-web's traffic is pinned by CI, so it gets --no-traffic.
+  traffic=--no-traffic
+  if gcloud run services describe "$service" --region "$GCP_REGION" --format='value(spec.traffic[].latestRevision)' | grep -qi true; then
+    traffic=
+  fi
+  echo "$service: template image $image is missing; repairing it to $ready_image (latest ready revision $ready) ${traffic:-keeping LATEST routing}."
+  gcloud run services update "$service" --region "$GCP_REGION" --image "$ready_image" $traffic --quiet || status=1
 done
 exit $status
