@@ -197,6 +197,9 @@ catalogs:
     '@opentelemetry/api':
       specifier: 1.10.0
       version: 1.10.0
+    '@opentelemetry/exporter-trace-otlp-http':
+      specifier: 0.221.0
+      version: 0.221.0
     '@opentelemetry/instrumentation-runtime-node':
       specifier: 0.37.0
       version: 0.37.0
@@ -787,6 +790,12 @@ importers:
       '@modelcontextprotocol/server':
         specifier: 'catalog:'
         version: 2.3.1
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.10.0
+      '@opentelemetry/exporter-trace-otlp-http':
+        specifier: 'catalog:'
+        version: 0.221.0(@opentelemetry/api@1.10.0)
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0)
@@ -12643,7 +12652,6 @@ snapshots:
       '@opentelemetry/otlp-exporter-base': 0.221.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/otlp-transformer': 0.221.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace': 2.10.0(@opentelemetry/api@1.10.0)
-    optional: true
 
   '@opentelemetry/exporter-trace-otlp-http@0.223.0(@opentelemetry/api@1.10.0)':
     dependencies:
@@ -13066,7 +13074,6 @@ snapshots:
       '@opentelemetry/api': 1.10.0
       '@opentelemetry/core': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/otlp-transformer': 0.221.0(@opentelemetry/api@1.10.0)
-    optional: true
 
   '@opentelemetry/otlp-exporter-base@0.223.0(@opentelemetry/api@1.10.0)':
     dependencies:
@@ -13106,7 +13113,6 @@ snapshots:
       '@opentelemetry/sdk-logs': 0.221.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-metrics': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace': 2.10.0(@opentelemetry/api@1.10.0)
-    optional: true
 
   '@opentelemetry/otlp-transformer@0.223.0(@opentelemetry/api@1.10.0)':
     dependencies:
@@ -13219,7 +13225,6 @@ snapshots:
       '@opentelemetry/api': 1.10.0
       '@opentelemetry/core': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
-    optional: true
 
   '@opentelemetry/sdk-metrics@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
@@ -13283,7 +13288,6 @@ snapshots:
       '@opentelemetry/core': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.43.0
-    optional: true
 
   '@opentelemetry/sdk-trace@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
