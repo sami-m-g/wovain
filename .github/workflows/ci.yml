@@ -12,14 +12,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  # Varlock validates env when Next loads its config (typegen and build), so
-  # builds get obviously fake placeholders; real values exist only at runtime.
-  BETTER_AUTH_SECRET: build-placeholder-never-used-at-runtime
-  BETTER_AUTH_URL: http://localhost:3001
-  DATABASE_URL: postgresql://build:build@localhost:5432/build
-  TOKEN_ENCRYPTION_KEY: YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk=
-
 jobs:
   verify:
     name: verify
@@ -35,6 +27,16 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+      # Varlock validates env when Next loads its config (typegen and build).
+      # Throwaway values are generated per run; real ones exist only at runtime.
+      - name: Generate placeholder env
+        run: |
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
+            echo "BETTER_AUTH_URL=http://localhost:3001"
+            echo "DATABASE_URL=postgresql://ci:$(openssl rand -hex 16)@localhost:5432/ci"
+            echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+          } >> "$GITHUB_ENV"
       # postinstall runs the Varlock codegen (env:generate).
       - run: pnpm install --frozen-lockfile
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
