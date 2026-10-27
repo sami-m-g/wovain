@@ -391,6 +391,7 @@ const service = cloudRunService("web", {
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
+  startupCpuBoost: true,
   // Inngest calls /api/inngest once per run step; the slowest (a design:
   // brief, fal art, judge) needs more than Cloud Run's 300 s default.
   timeout: "900s",

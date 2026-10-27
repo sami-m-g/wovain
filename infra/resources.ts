@@ -58,6 +58,8 @@ interface ServiceArgs {
   timeout?: string;
   // The instance's memory limit; 512Mi if unset. One vCPU allows up to 4Gi.
   memory?: string;
+  // Extra CPU while an instance starts, for shorter cold starts.
+  startupCpuBoost?: boolean;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
@@ -86,6 +88,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
             resources: {
               cpuIdle: true,
               limits: { cpu: "1", memory: args.memory ?? "512Mi" },
+              startupCpuBoost: args.startupCpuBoost,
             },
             volumeMounts:
               sql === undefined

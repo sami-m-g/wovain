@@ -46,6 +46,19 @@
       EOF
       echo "SITE_URL=${DOCS_SITE_URL:-https://docs.wovain.com}" > /tmp/docs_env
 
+# A BuildKit builder in its own container (docker-container driver), which
+# can export a registry cache; the dind daemon's default builder can't. No
+# provenance or SBOM attestations: each image stays a single manifest, as
+# `docker build` made it, for Cloud Run and Container Scanning.
+.buildx:
+  variables:
+    BUILDX_FLAGS: --provenance=false --sbom=false
+  # buildx won't build on the TLS settings in the environment (dind), so they
+  # go into a docker context first, as GitLab's docs do.
+  before_script:
+    - docker context create ci-context
+    - docker buildx create --use --driver docker-container --name ci-builder ci-context
+
 # The install runs the root postinstall, which generates each app's typed env
 # (varlock codegen). Turbo's local cache lives in .turbo, kept between runs.
 .pnpm-install:
@@ -60,11 +73,15 @@
 
 # infra/ is its own pnpm project: `pulumi install` installs it and generates
 # infra/sdks (gitignored) from infra/Pulumi.yaml.
+.pulumi-cli:
+  before_script:
+    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
+    - export PATH="$HOME/.pulumi/bin:$PATH"
+
 .pulumi-install:
   before_script:
     - !reference [.pnpm-install, before_script]
-    - curl -fsSL https://get.pulumi.com | sh -s -- --version "$PULUMI_VERSION"
-    - export PATH="$HOME/.pulumi/bin:$PATH"
+    - !reference [.pulumi-cli, before_script]
     - pulumi install --cwd infra
 
 # `pulumi preview` with the policy pack (infra/policy), as the merge request

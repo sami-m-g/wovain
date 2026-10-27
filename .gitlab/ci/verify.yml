@@ -28,6 +28,8 @@ verify:infra:
         - infra/bootstrap/**/*
         - infra/policy/**/*
         - .gitlab/duo/catalog/**/*
+        # infra/flags.ts makes a GitLab feature flag of each entry.
+        - packages/core/src/flag-registry.ts
   script:
     - pnpm --dir infra run check-types
     - pnpm --dir infra run test
@@ -109,10 +111,11 @@ renovate:
     - export PATH="$HOME/.pulumi/bin:$PATH"
 
 # The production Dockerfiles, built (not pushed) on every merge request, so an
-# image that can't build never reaches main.
+# image that can't build never reaches main. It reads main's layer cache
+# (deploy.yml) and writes none.
 image:check:
   stage: verify
-  extends: .env-placeholders
+  extends: [.env-placeholders, .buildx]
   image: docker:28
   services:
     - docker:28-dind
@@ -124,11 +127,16 @@ image:check:
     matrix:
       - DOCKERFILE: apps/web/Dockerfile
         BUILD_SECRET: web_env
+        APP: web
       - DOCKERFILE: apps/fumadocs/Dockerfile
         BUILD_SECRET: docs_env
+        APP: docs
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - !reference [.buildx, before_script]
   script:
     - !reference [.image-env, script]
-    - docker build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" .
+    - docker buildx build -f "$DOCKERFILE" --secret "id=$BUILD_SECRET,src=/tmp/$BUILD_SECRET" $BUILDX_FLAGS --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$APP:buildcache" .
 
 # Keeps GitHub's main and tags equal to GitLab's, over the deploy key from
 # infra/github.ts. A plain push, never --force: if GitHub's main isn't an
