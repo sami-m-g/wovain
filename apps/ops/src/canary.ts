@@ -117,7 +117,7 @@ const verify = async () => {
     )
   );
   log(`warm-up: ${warmup.join(", ")}`);
-  const windowMs = (ENV.CANARY_WINDOW_S ?? 600) * 1000;
+  const windowMs = (ENV.CANARY_WINDOW_S ?? 300) * 1000;
   const intervalMs = (ENV.CANARY_INTERVAL_S ?? 30) * 1000;
   const start = new Date();
   const probes: Probe[] = [];

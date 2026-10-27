@@ -361,8 +361,14 @@
       },
       "drop": {
         "title": "Lanza tu primer drop",
-        "body": "Una frase sobre para quién es. La investigación y los diseños funcionan desde ya.",
+        "body": "Una frase sobre para quién es. wovain investiga las tendencias y luego dibuja los diseños con tu cuenta de fal. Fourthwall los publica y Meta lanza los anuncios.",
         "action": "Empezar"
+      },
+      "missing": "Falta conectar:",
+      "needs": {
+        "fal": "fal, para dibujar los diseños",
+        "fourthwall": "Fourthwall, para publicar",
+        "meta": "Meta, para los anuncios"
       },
       "lead": "Tres pasos y wovain podrá llevar un brief hasta una campaña en pausa.",
       "next": "Siguiente"
@@ -439,6 +445,8 @@
       "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. La mejor idea ya tiene diseño.",
       "score": "Puntuación {score}",
       "affinity": "Afinidad",
+      "affinityUnavailable": "No disponible",
+      "affinityUnavailableHint": "Qloo no tiene datos de gustos para esta idea.",
       "news": "Noticias",
       "listings": "Anuncios",
       "sources": "Fuentes",
@@ -463,7 +471,11 @@
       "reasonPlaceholder": "Tipografía más gruesa, sin las hojas",
       "error": "Aprueba al menos un diseño.",
       "submit": "Crear productos",
-      "artAlt": "Diseño: {title}"
+      "artAlt": "Diseño: {title}",
+      "shirtAlt": "Diseño en una camiseta: {title}",
+      "viewShirt": "En camiseta",
+      "viewFlat": "Arte plano",
+      "viewLabel": "Vista del diseño"
     },
     "products": {
       "title": "Publica los productos",
@@ -492,8 +504,25 @@
       "variants": "Variantes de anuncio",
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
-      "history": "Ver todas las ejecuciones",
-      "autopilotFailed": "El piloto automático se detuvo en el paso {stage}. Retómalo desde los pasos."
+      "history": "Ver todas las ejecuciones"
+    },
+    "failed": {
+      "title": "El drop se detuvo en el paso {stage}",
+      "notConnected": "{service} no está conectado, así que wovain no pudo terminar este paso. Conéctalo y vuelve a intentarlo.",
+      "noIdeas": "La investigación no encontró ideas para este brief. Prueba a redactarlo de otra forma.",
+      "rejected": "Al piloto automático no le gustó el diseño. Inténtalo de nuevo para obtener uno nuevo.",
+      "other": "Algo salió mal por nuestra parte. No se gastó nada en este paso. Inténtalo de nuevo.",
+      "details": "Detalles: {message}",
+      "connect": "Conectar {service}",
+      "retry": "Reintentar",
+      "retrying": "Reiniciando…",
+      "another": "Escribir un nuevo brief"
+    },
+    "noIdeas": {
+      "title": "Sin ideas esta vez",
+      "body": "La investigación no encontró nada para este brief. Inténtalo de nuevo o redáctalo de otra forma.",
+      "retry": "Reintentar",
+      "another": "Escribir un nuevo brief"
     },
     "working": {
       "research": "Investigando tendencias y creando el primer diseño…",

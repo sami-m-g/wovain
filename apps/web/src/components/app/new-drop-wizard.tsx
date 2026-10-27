@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 
 import { AutopilotToggle } from "@/components/app/autopilot-toggle";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { NoIdeasState, RunFailedState } from "@/components/app/run-failed";
 import type { Step } from "@/components/app/use-drop-flow";
 import { failureOf, flow, useDropFlow } from "@/components/app/use-drop-flow";
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
@@ -24,6 +25,7 @@ import {
 } from "@/components/app/wizard-steps";
 import type { Stage } from "@/components/product/run-tape";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
+import { describeRunFailure } from "@/lib/flow-client";
 
 const StepNav = ({ step, stage }: { step: Step; stage: Stage }) => {
   const t = useTranslations("Wizard");
@@ -67,6 +69,49 @@ const PanelSkeleton = () => {
         <Skeleton className="h-40" />
       </div>
     </div>
+  );
+};
+
+type Drop = ReturnType<typeof useDropFlow>;
+
+/**
+ * The step's panel, unless the run says otherwise: a failed run, or research
+ * that came back empty, never leaves the wizard on an empty step. The
+ * merchant sees what happened and what to do next.
+ */
+const RunStatePanel = ({
+  children,
+  drop,
+  step,
+}: {
+  children: ReactNode;
+  drop: Drop;
+  step: Step;
+}) => {
+  const { actions, run, starting } = drop;
+  const failedAt = run ? failureOf(run) : undefined;
+  if (run && failedAt) {
+    return (
+      <RunFailedState
+        failure={describeRunFailure(run)}
+        onRestart={actions.handleRestart}
+        onRetry={actions.handleRetryRun}
+        retrying={starting}
+        stage={failedAt}
+      />
+    );
+  }
+  if (step !== "ideas" || !run || run.ideas.length > 0) {
+    return children;
+  }
+  return run.status === "running" ? (
+    <PanelSkeleton />
+  ) : (
+    <NoIdeasState
+      onRestart={actions.handleRestart}
+      onRetry={actions.handleRetryRun}
+      retrying={starting}
+    />
   );
 };
 
@@ -123,7 +168,6 @@ const DropFlow = ({
     done: (
       <DoneStep
         campaigns={run?.campaigns ?? []}
-        failure={run ? failureOf(run) : undefined}
         onRestart={actions.handleRestart}
       />
     ),
@@ -197,7 +241,13 @@ const DropFlow = ({
         initial={{ opacity: 0, transform: "translateY(8px)" }}
         key={drop.loading ? "loading" : step}
       >
-        {drop.loading ? <PanelSkeleton /> : panels[step]}
+        {drop.loading ? (
+          <PanelSkeleton />
+        ) : (
+          <RunStatePanel drop={drop} step={step}>
+            {panels[step]}
+          </RunStatePanel>
+        )}
       </motion.section>
     </div>
   );

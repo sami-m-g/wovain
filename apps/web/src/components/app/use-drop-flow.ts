@@ -276,6 +276,23 @@ export const useDropFlow = (
       designs: replaceById(current.designs, updated),
     }));
 
+  /** Starts a run; the flow remounts on it and reads it from the cache. */
+  const startRun = (input: { autopilot: boolean; seed: string }) => {
+    showProblem();
+    calls.start.mutate(
+      { ...input, dailyBudget: budgetValue },
+      {
+        onSuccess: (started) => {
+          cache.seed(started);
+          pushFlowUrl({
+            run: started.id,
+            step: input.autopilot ? "done" : "ideas",
+          });
+        },
+      }
+    );
+  };
+
   const actions = {
     /** Approves or rejects one design, with the merchant's reason if given. */
     handleDecide: (id: string, approved: boolean) => {
@@ -380,6 +397,15 @@ export const useDropFlow = (
       showProblem();
       calls.generate.mutate([ideaId], { onSuccess: addDesigns });
     },
+    /**
+     * "Try again" on a failed run: runs are not resumable once failed, so
+     * this starts a new run from the same brief.
+     */
+    handleRetryRun: () => {
+      if (run && !budgetInvalid) {
+        startRun({ autopilot: run.autopilot, seed: run.seed });
+      }
+    },
     handleSubmitBrief: () => {
       if (brief.trim().length < MIN_BRIEF) {
         setBriefError(t("brief.error"));
@@ -389,20 +415,7 @@ export const useDropFlow = (
         return;
       }
       setBriefError(undefined);
-      showProblem();
-      calls.start.mutate(
-        { autopilot, dailyBudget: budgetValue, seed: brief.trim() },
-        {
-          onSuccess: (started) => {
-            cache.seed(started);
-            // The flow remounts on the run and reads it from the cache.
-            pushFlowUrl({
-              run: started.id,
-              step: autopilot ? "done" : "ideas",
-            });
-          },
-        }
-      );
+      startRun({ autopilot, seed: brief.trim() });
     },
     handleToggleIdea: (id: string, checked: boolean) =>
       setPicked((previous) =>
@@ -430,6 +443,7 @@ export const useDropFlow = (
     problem,
     reasons,
     run,
+    starting: calls.start.isPending,
     step: stepper.current,
     working,
   };

@@ -6,7 +6,8 @@ import type { RequestLogger } from "evlog";
 // failure surfaces as one structured error naming the provider. The
 // self-healing flow groups and retries on these error codes.
 
-export type Logger = Pick<RequestLogger, "set">;
+export type Logger = Pick<RequestLogger, "set"> &
+  Partial<Pick<RequestLogger, "error">>;
 
 export type Provider =
   | "fal"

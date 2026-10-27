@@ -56,6 +56,8 @@ interface ServiceArgs {
   dependsOn: pulumi.Input<pulumi.Resource>[];
   // The longest a request may take ("900s"); Cloud Run's 300 s if unset.
   timeout?: string;
+  // The instance's memory limit; 512Mi if unset. One vCPU allows up to 4Gi.
+  memory?: string;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
@@ -83,7 +85,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
             ports: { containerPort: args.port },
             resources: {
               cpuIdle: true,
-              limits: { cpu: "1", memory: "512Mi" },
+              limits: { cpu: "1", memory: args.memory ?? "512Mi" },
             },
             volumeMounts:
               sql === undefined

@@ -35,12 +35,12 @@ import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useId } from "react";
 
+import { DesignPreview } from "@/components/app/design-preview";
 import {
   NextButton,
   StepActions,
   StepHeader,
 } from "@/components/app/wizard-parts";
-import type { Stage } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
 import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
 
@@ -170,8 +170,16 @@ export const BriefStep = ({
   );
 };
 
-const Signal = ({ label, value }: { label: string; value: string }) => (
-  <div className="bg-muted rounded-md p-2">
+const Signal = ({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string | undefined;
+}) => (
+  <div className="bg-muted rounded-md p-2" title={hint}>
     <dt className="text-muted-foreground">{label}</dt>
     <dd className="figures font-semibold">{value}</dd>
   </div>
@@ -239,10 +247,15 @@ export const IdeasStep = ({
                       ) : null}
                       <dl className="grid grid-cols-3 gap-2 text-xs">
                         <Signal
+                          hint={
+                            research.signals.affinity === undefined
+                              ? t("affinityUnavailableHint")
+                              : undefined
+                          }
                           label={t("affinity")}
                           value={
                             research.signals.affinity === undefined
-                              ? "–"
+                              ? t("affinityUnavailable")
                               : decimal(research.signals.affinity)
                           }
                         />
@@ -324,16 +337,11 @@ const DesignCard = ({
           rejected && "ring-input"
         )}
       >
-        <div className="bg-muted grid aspect-square place-items-center p-4">
-          <Image
-            alt={t("artAlt", { title: brief.title })}
-            className={cn("h-auto w-full", rejected && "opacity-60")}
-            height={IMAGE_SIZE}
-            src={design.artworkUrl}
-            unoptimized
-            width={IMAGE_SIZE}
-          />
-        </div>
+        <DesignPreview
+          artworkUrl={design.artworkUrl}
+          dimmed={rejected}
+          title={brief.title}
+        />
         <CardHeader>
           <CardTitle className="flex items-start justify-between gap-2">
             <h3 className="font-display text-base font-semibold">
@@ -602,30 +610,23 @@ const adsManagerUrl = (campaign: Campaign) =>
 
 export const DoneStep = ({
   campaigns,
-  failure,
   onRestart,
 }: {
   campaigns: Campaign[];
-  failure?: Stage | undefined;
   onRestart: () => void;
 }) => {
   const t = useTranslations("Wizard.done");
-  const stages = useTranslations("Stages");
   const money = useMoney();
   const [first] = campaigns;
   return (
     <div className="flex flex-col items-start gap-6">
-      {failure === undefined ? (
-        <StepHeader
-          lead={t("lead", {
-            budget: money((first?.dailyBudgetCents ?? 0) / CENTS),
-            count: campaigns.length,
-          })}
-          title={t("title")}
-        />
-      ) : (
-        <StepHeader title={t("autopilotFailed", { stage: stages(failure) })} />
-      )}
+      <StepHeader
+        lead={t("lead", {
+          budget: money((first?.dailyBudgetCents ?? 0) / CENTS),
+          count: campaigns.length,
+        })}
+        title={t("title")}
+      />
       {campaigns.map((campaign) => (
         <section
           aria-label={t("variants")}

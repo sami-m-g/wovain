@@ -361,8 +361,14 @@
       },
       "drop": {
         "title": "Lancer votre premier drop",
-        "body": "Une phrase sur le public visé. La veille et les designs marchent tout de suite.",
+        "body": "Une phrase sur le public visé. wovain étudie les tendances, puis dessine les designs avec votre compte fal. Fourthwall les publie et Meta diffuse les pubs.",
         "action": "Commencer"
+      },
+      "missing": "À connecter :",
+      "needs": {
+        "fal": "fal, pour dessiner les designs",
+        "fourthwall": "Fourthwall, pour publier",
+        "meta": "Meta, pour les pubs"
       },
       "lead": "Trois étapes, et wovain peut mener un brief jusqu'à une campagne en pause.",
       "next": "Suivant"
@@ -439,6 +445,8 @@
       "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. La meilleure idée a déjà un visuel.",
       "score": "Score {score}",
       "affinity": "Affinité",
+      "affinityUnavailable": "Indisponible",
+      "affinityUnavailableHint": "Qloo n'a pas de données de goût pour cette idée.",
       "news": "Actualité",
       "listings": "Annonces",
       "sources": "Sources",
@@ -463,7 +471,11 @@
       "reasonPlaceholder": "Typo plus grasse, sans les feuilles",
       "error": "Validez au moins un visuel.",
       "submit": "Créer les produits",
-      "artAlt": "Visuel : {title}"
+      "artAlt": "Visuel : {title}",
+      "shirtAlt": "Visuel sur un t-shirt : {title}",
+      "viewShirt": "Sur un t-shirt",
+      "viewFlat": "Visuel seul",
+      "viewLabel": "Vue du visuel"
     },
     "products": {
       "title": "Publier les produits",
@@ -492,8 +504,25 @@
       "variants": "Variantes publicitaires",
       "open": "Ouvrir le Gestionnaire de publicités",
       "another": "Lancer un autre drop",
-      "history": "Voir toutes les exécutions",
-      "autopilotFailed": "Le pilote automatique s'est arrêté à l'étape {stage}. Reprenez-la depuis les étapes."
+      "history": "Voir toutes les exécutions"
+    },
+    "failed": {
+      "title": "Le drop s'est arrêté à l'étape {stage}",
+      "notConnected": "{service} n'est pas connecté : wovain n'a pas pu terminer cette étape. Connectez-le, puis réessayez.",
+      "noIdeas": "La recherche n'a trouvé aucune idée pour ce brief. Essayez de le reformuler.",
+      "rejected": "Le pilote automatique n'a pas aimé le design. Réessayez pour en obtenir un nouveau.",
+      "other": "Un problème est survenu de notre côté. Rien n'a été dépensé pour cette étape. Réessayez.",
+      "details": "Détails : {message}",
+      "connect": "Connecter {service}",
+      "retry": "Réessayer",
+      "retrying": "Relance en cours…",
+      "another": "Écrire un nouveau brief"
+    },
+    "noIdeas": {
+      "title": "Aucune idée cette fois",
+      "body": "La recherche n'a rien donné pour ce brief. Réessayez, ou reformulez-le.",
+      "retry": "Réessayer",
+      "another": "Écrire un nouveau brief"
     },
     "working": {
       "research": "Recherche des tendances et premier visuel…",

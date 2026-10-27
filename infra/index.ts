@@ -339,6 +339,29 @@ const googleEnv =
 // is registered (`pulumi config set polarEnvironment production`).
 const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
 
+// GitLab Observability (docs/flows.md, "GitLab Observability"): the group's
+// OTLP endpoint, which Observe > Setup shows once Observability is enabled
+// (`pulumi config set o11yOtlpEndpoint <url>`). With it, apps/web sends its
+// request spans, Mastra's spans, evlog's wide events and Node runtime
+// metrics there over OTLP/HTTP (apps/web/src/lib/otel.ts); without it,
+// nothing is sent. Ingestion needs no token unless the group turns on
+// enforcement. Free for every tier during the beta.
+const o11yOtlpEndpoint = config.get("o11yOtlpEndpoint");
+const o11yEnv = (environment: "development" | "production") =>
+  o11yOtlpEndpoint === undefined
+    ? []
+    : [
+        { name: "OTEL_EXPORTER_OTLP_ENDPOINT", value: o11yOtlpEndpoint },
+        {
+          name: "OTEL_RESOURCE_ATTRIBUTES",
+          value: [
+            `deployment.environment.name=${environment}`,
+            `gitlab.project.id=${gitlabProjectId}`,
+            "gitlab.project.name=showcase",
+          ].join(","),
+        },
+      ];
+
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
   cloudSqlInstance: sql.connectionName,
@@ -353,6 +376,7 @@ const service = cloudRunService("web", {
     },
     { name: "MCP_URL", value: mcpUrl },
     { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
+    ...o11yEnv("production"),
     ...googleEnv,
     ...posthogEnv,
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
@@ -362,6 +386,8 @@ const service = cloudRunService("web", {
   ],
   location: region,
   maxInstances: 2,
+  // Mastra's agents run in-process: 512Mi ran out on 2026-10-26.
+  memory: "1Gi",
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,
@@ -439,6 +465,9 @@ const dev = devEnvironment({
     ...googleEnv,
     // The same PostHog project; events say "development" by host.
     ...posthogEnv,
+    // The same GitLab Observability group, as deployment.environment.name
+    // "development".
+    ...o11yEnv("development"),
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
@@ -701,7 +730,8 @@ ciVariables({
     protected: true,
     value: githubMirrorKey,
   },
-  // The group's GitLab Observability query API, which the loop reads.
+  // The group's GitLab Observability instance: the ops job links each heal
+  // incident to the error's trace there (apps/ops/src/o11y.ts).
   GITLAB_O11Y_URL: {
     created: true,
     protected: true,

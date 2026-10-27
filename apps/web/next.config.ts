@@ -97,6 +97,10 @@ const nextConfig: NextConfig = {
     "@mastra/observability",
     "@mastra/otel-exporter",
     "@mastra/pg",
+    // OpenTelemetry's SDK patches Node modules at runtime (src/lib/otel.ts).
+    "@opentelemetry/instrumentation-runtime-node",
+    "@opentelemetry/instrumentation-undici",
+    "@opentelemetry/sdk-node",
     "geoip-country",
     "inngest",
   ],
