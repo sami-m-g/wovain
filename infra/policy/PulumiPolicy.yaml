@@ -1,5 +1,5 @@
 name: wovain
-description: Protects stateful resources and keeps Maintainer-only GitLab resources out of CI
+description: Protects stateful resources
 runtime:
   name: nodejs
   options:

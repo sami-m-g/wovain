@@ -2,7 +2,7 @@
 // registration (named, never managed here), Search Console ownership,
 // a Cloud Run domain mapping per host with a Google-managed certificate, and
 // the zone's other records: mail (Resend), DMARC, CAA, verification tokens,
-// the status page and the shop.
+// and the shop.
 import * as gcp from "@pulumi/gcp";
 import type * as pulumi from "@pulumi/pulumi";
 
@@ -100,7 +100,7 @@ export const configureDomain = (args: DomainArgs) => {
     );
 
   // Search Console: the token goes into the apex TXT set, then the
-  // verification makes whoever runs `pulumi up` (gitlab-infra in CI) a
+  // verification makes whoever runs `pulumi up` (the gitlab-infra account in CI) a
   // verified owner, which Cloud Run domain mappings require.
   const siteVerification = new gcp.Provider("site-verification", {
     billingProject: project,

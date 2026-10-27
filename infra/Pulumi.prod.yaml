@@ -1,136 +1,6 @@
 config:
-  # GitLab Duo flow triggers on GitLab's built-in flows (infra/duo.ts). flow is
-  # the flow's foundationalFlowReference; events use GitLab's EVENT_TYPES names.
-  # Filters only accept the fields in ALLOWED_FILTER_FIELDS
-  # (ee/app/models/ai/flow_trigger.rb): merge requests by action, pipelines by
-  # status, source, ref and default_branch. Each trigger fires only on a
-  # human action, so Duo credits go where they matter; a red main goes
-  # through the loop's gate instead (apps/ops/src/gates.ts), since filters
-  # can't dedupe or tell job types apart. GitLab never starts a flow for a
-  # bot's or another flow's action (run_service.rb,
-  # cloud_events_flow_trigger_worker.rb), so the self-healing loop
-  # (apps/ops, docs/loop.md) assigns and requests review with GITLAB_TOKEN,
-  # a person's token: that is what chains Developer → Code Review here.
-  wovain:duoTriggers:
-    - name: duo-developer
-      description: Developer flow on assign or mention
-      flow: developer/v1
-      serviceAccount: duo-developer-gitlab-ai-hackathon
-      events: [assign, mention]
-      active: true
-    - name: duo-fix-pipeline
-      description: Fix CI/CD on a failed push pipeline on main
-      flow: fix_pipeline/v1
-      serviceAccount: duo-fix-ci-cd-pipeline-gitlab-ai-hackathon
-      events: [pipeline_hooks]
-      # Off: replaced by the gated path in the loop job (apps/ops/src/
-      # red-main.ts, gates.ts). This trigger fired on every red push to main,
-      # infra 403s and auth 404s included (7 runs in 30 minutes), and its
-      # filters can't dedupe or tell job types apart. The loop starts the
-      # same flow through the API only for a new, confirmed code failure, at
-      # most once an hour and 3 times a day. Kept configured so it can be
-      # switched back on. On work-in-progress branches it opened draft MRs
-      # nobody wanted (!19, !20); "Fix pipeline with Duo" fixes one by hand.
-      active: false
-      filter:
-        pipeline_hooks:
-          match: all
-          rules:
-            - field: object_attributes.status
-              operator: in
-              value: [failed]
-            - field: object_attributes.default_branch
-              operator: in
-              value: [true]
-            - field: object_attributes.source
-              operator: in
-              value: [push]
-    - name: duo-code-review
-      description: Code review on every new merge request, and on request
-      flow: code_review/v1
-      serviceAccount: duo-code-review-gitlab-ai-hackathon
-      # Every merge request a person opens (the merge_request event, action
-      # created, drafts included; 0.25 credit each), plus a re-review
-      # whenever someone requests Duo as reviewer. Until 2026-10-26 this was
-      # assign_reviewer only, and since nothing asks for a review on a
-      # person's MR (only the shepherd does, for Duo's own MRs), !69–!111 got
-      # no review. Duo's own MRs still go through the shepherd: GitLab starts
-      # no flow for a service account's action. code_review/v1 accepts any
-      # event (it has no supported_events); merge_request filters accept
-      # only action, one of approved, created, merged, requested_changes
-      # (ee/app/models/ai/flow_trigger.rb, ALLOWED_FILTER_ACTIONS).
-      events: [assign_reviewer, merge_request]
-      active: true
-      filter:
-        merge_request:
-          match: all
-          rules:
-            - field: action
-              operator: in
-              value: [created]
-  # Custom flows from .gitlab/duo/catalog/flows, once synced (mapping.json):
-  # infra/duo.ts enables each in the project (GitLab creates its service
-  # account), adopts it if already enabled, adds this trigger and sets the
-  # account's name as DUO_<NAME>_ACCOUNT (duo-heal: DUO_HEAL_ACCOUNT).
-  # The heal flow starts when the ops job assigns it a heal issue (a new
-  # production error signature) and when the ops job mentions it to address
-  # Duo Code Review's threads. The deps-review flow starts when Renovate
-  # assigns it as reviewer. The scout starts on a successful
-  # child pipeline on main, which only the weekly schedule's scout:duo job
-  # creates (.gitlab/ci/loop.yml); its prompt is fixed text. No mention
-  # trigger: anyone who comments could steer it. No scheduled trigger: GitLab
-  # gives it a service account created in the project, which needs
-  # create_service_account (Maintainer).
-  wovain:duoCustomFlows:
-    - name: duo-heal
-      file: .gitlab/duo/catalog/flows/heal.yml
-      description: wovain heal when wovain ops assigns or mentions it
-      events: [assign, mention]
-      active: true
-    - name: duo-scout
-      file: .gitlab/duo/catalog/flows/scout.yml
-      description: wovain scout, weekly from the scout child pipeline
-      events: [pipeline_hooks]
-      active: true
-      filter:
-        pipeline_hooks:
-          match: all
-          rules:
-            - field: object_attributes.status
-              operator: in
-              value: [success]
-            - field: object_attributes.default_branch
-              operator: in
-              value: [true]
-            - field: object_attributes.source
-              operator: in
-              value: [parent_pipeline]
-    # deps-review: Renovate sets its service account as reviewer on minor and
-    # major update merge requests (.gitlab/renovate.json), a person's action
-    # through RENOVATE_TOKEN. Starts once the flow is synced (mapping.json)
-    # and enabled in the project (Automate > AI Catalog > Flows).
-    - name: duo-deps-review
-      file: .gitlab/duo/catalog/flows/deps-review.yml
-      description: wovain deps-review when Renovate assigns it as reviewer
-      events: [assign_reviewer]
-      active: true
-    # Progressive delivery's diagnosis (docs/adr/0001-progressive-delivery.md):
-    # the canary job and the ops job's release guard assign each
-    # release-guard issue to its service account, after they rolled back or
-    # switched a flag off.
-    - name: duo-release-guard
-      file: .gitlab/duo/catalog/flows/release-guard.yml
-      description: wovain release-guard when the release guard assigns it
-      events: [assign]
-      active: true
-  # Custom agents from .gitlab/duo/catalog/agents, enabled in the project once
-  # synced (mapping.json).
-  wovain:duoCustomAgents:
-    - name: duo-explain
-      file: .gitlab/duo/catalog/agents/explain.yml
   gcp:project: wovain
   gcp:region: us-central1
-  wovain:gitlabProject: gitlab-ai-hackathon/transcend-october-2026/43085639/showcase
   gcp:billingProject: wovain
   gcp:userProjectOverride: "true"
   wovain:polar-access-token:
@@ -143,21 +13,11 @@ config:
     secure: v1:0+5aiJCgjsZAlsNn:T/jdndZaPYOMwJf4jldpY7yInR7KDbpqVG4XLNcTzpOcZKyVfQdRFPQK3Vbj7kPl2hyW6XiXoMgWuFQqfAVsvTmO4hig5yIZimyatBS1tSY3rQYl9zrNLUnVdFXi
   wovain:inngest-event-key:
     secure: v1:y0Y5ig9R/HPr4Oms:6zh1pn0Jr5IPnHHY62YmwbtXsdi62pQ+G7LJluEpvku2sOc4xdbwV8piF31wDUvLbEt6F6jKnpUxLH1FO2q2NvsY5MZYictQJlLGP5ivoANNOeaWdOz3MNepLmGBgi7WDDtKjLWC
-  wovain:gitlabProjectId: "87296573"
-  # The GitLab group with Observability enabled (gitlab-ai-hackathon/
-  # transcend-october-2026/43085639); it names the OTLP and query endpoints.
-  wovain:o11yGroupId: "144066465"
-  wovain:gitlab-ci-token:
-    secure: v1:0WdO0e7fRKNIDdr1:xt12NG6hpBEypj9HeDrMYngIgBnpyUKVxBVbfvdRN5zdV8144g4XHjHB5SFvB7GGbRywADx8S+sAzYnekl6ZjjuIxjY9YM1nyOezashH
   github:owner: sami-m-g
   github:token:
     secure: v1:kfWUuhyMSjRr+uV5:2WLDTnEniORUTKMBTAj8e/4ygwTqshwhdaCF6CTPtj5qlz60+n6nYZQA+Vq6BkselOmvcl0E09ePrNs8yXp8/wBS0gB3fdI/gyt8gFNpLnvMUiu/j8Y2Q5J2HEKLN0Cw105ymPQzV8FIv57eWA==
   wovain:workos-api-key:
     secure: v1:GkJevW0f0siZ/dXe:Rb9jTdS6z1EOfGI99TAwMR3th9vBOBw/dj5symnyMlGvFBv51sIj6dcl/XQZHh85ViDFhHDOzMG/l/H2SnQQFhag6FIGlEgHjUiFUk+0ZF6ai7KIANvxbNRZdQsWx2xQQCdA
-  gitlab:token:
-    secure: v1:5Ll6LrFV6DNaTO5F:fJ3FqeKHKOMTvj9tAWi5l4GpJMGuc63TWzwnvwpluhxcLwd9huB6gVExypQkwTWlXDT5lsRqT4Zf8WQyYaOTt3KWt4fmb6zMcfW13d1o
-  wovain:renovate-token:
-    secure: v1:DObnXNQ8bR1gRS68:V04mVs6m6ZMdEYNwTEZq+sz99pcefRxFzw6Y4QkEOdvrevI/ZSH70hst8BVEedfcXlKBJJCB6mdY/t6lVcvP8T85rf8lo2V/1HIcZEDt
   wovain:nebius-api-key:
     secure: v1:sIae3yg/vFm3zlFs:VdAckm6D4GiO/9hgpJghj1iANAjp2k84I3iCbYK+/x3XYLl05ERu4wrXHOGNAo3jOehjiIq6dKFvlD3wdcM664ZjHcf/Wy5A3h/33pwxpdjUnw4GXz0cDNCLl3kkpWCvB84rOLUu9fE9pQkIrn7Cgm4o6m+w1aUxGGSgWxGPBEBFP6HjxrXK2pBGvLcyOmXn9IlQnzafwaJIN+ZbhdGma28YINQdhAtBL3jQHd6xE6u1CS4y9giSsDORgsT45IayNkq6eIwWd/5WVtqEoxqVNdVrrJJaFpOq3Yux+4ZhyDOvsI/CRieDnynXcIcYcXWohCu5ZWrB4HL3CHc=
   wovain:tavily-api-key:
@@ -175,7 +35,6 @@ config:
   wovain:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
   wovain:google-client-secret:
     secure: v1:nqv2CnxFDtU9Gjcb:jhd9smV7Z5Z+eALSTk6NFf/6KJhk5XaVfXvCeLn2dFY/ByjoO/YFh9eRSmTB5jRf+7OT
-  wovain:o11yOtlpEndpoint: https://144066465.otel.gitlab-o11y.com:14318
   wovain:googleSiteVerification: 9zjZZMGJ_se_dHp548YFhL1EJ59QCsbvuEDKhIuDibM
   wovain:googleDkim: v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAphtR+jKyW3mzKAGa9TWWrHhRK/ZbKvXlVehIIiepiCzUfIrOfkPirv25j+MewKlZGwJ5jrhgZZ9L4X77rZNddWP74NxaYlryoAbMZk5nHBkCw0P2Sischl6hSl4XBpBXB1oCTC5QXsffQ3z91y5G5WAwLy54ZsZfVsIIuPuj2o/4c64oV7h9kOYHCJq4K0G8fM2Bh6s2EQjErGVADevvVG+2VWw9dYIr9bQXA+9M8dljBfQDDCh8MoSNmk4cWtjtrYrOzFO2aB8apcamk1IbzxtQGPBFoEGFTM4xNUhPxPLgqe1612djnVYpJImv8xiWYLiWncebUNQZ8iTl0a1ehQIDAQAB
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
