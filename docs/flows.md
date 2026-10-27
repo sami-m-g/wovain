@@ -148,7 +148,7 @@ flowchart LR
 2. `pnpm --filter @wovain/ops traffic --url https://dev.wovain.com --requests 30`: the checkout quotes fail on dev (the flag serves development only).
 3. Build > Pipeline schedules > "wovain ops" > Run. The flag's Status flips off, a `release-guard` issue appears with the exception counts and links, and the release-guard flow starts (Automate > Sessions). The heal flow gets its issue for the same error, so it is mitigated first and fixed after.
 
-**Demo of a canary rollback:** Build > Pipelines > Run pipeline on `main` with `CANARY_DEMO_FAULT=1` and `CANARY_WINDOW_S=120`. `canary:production` shows the probes failing on the canary only, moves traffic back and fails; its `canary.md` and the `release-guard` issue are the audit trail.
+**Demo of a canary rollback:** merge a merge request whose commit carries the trailer `Canary-Demo-Fault: true`, or Build > Pipelines > Run pipeline on `main` with `CANARY_DEMO_FAULT=1` and `CANARY_WINDOW_S=120`. `canary:production` shows the probes failing on the canary only, moves traffic back and fails; its `canary.md` and the `release-guard` issue are the audit trail.
 
 ## The PostHog loop
 
