@@ -28,9 +28,8 @@ const PRODUCTION_HOSTS = new Set([
 // How long the page waits for /api/visitor before PostHog starts without it.
 const VISITOR_TIMEOUT_MS = 1500;
 
-// The country and whether a team member is signed in, from
-// src/app/api/visitor/route.ts. Cookieless events reach PostHog without an
-// IP address, so its GeoIP can't name their country.
+// The country, from src/app/api/visitor/route.ts. Cookieless events reach
+// PostHog without an IP address, so its GeoIP can't name their country.
 const fetchVisitor = async (): Promise<Visitor | undefined> => {
   try {
     const response = await fetch("/api/visitor", {
@@ -59,8 +58,8 @@ const detectBot = async () => {
 };
 
 // Properties every event carries, in PostHog's own names where it has one.
-// `internal` and `bot` are set only when true, so the project's test account
-// filters (infra/posthog/settings.tf) drop events where they are set.
+// `bot` is set only when true, so the project's test account filters
+// (infra/posthog/settings.tf) drop events where it is set.
 const visitorProperties = async () => {
   const [visitor, botCheck] = await Promise.all([fetchVisitor(), detectBot()]);
   return {
@@ -69,7 +68,6 @@ const visitorProperties = async () => {
     environment: PRODUCTION_HOSTS.has(window.location.hostname)
       ? "production"
       : "development",
-    ...(visitor?.internal === true && { internal: true }),
     ...(visitor?.country && {
       $geoip_country_code: visitor.country.code,
       $geoip_country_name: visitor.country.name,

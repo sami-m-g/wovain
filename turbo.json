@@ -62,7 +62,6 @@
     "RESEND_API_KEY",
     "TAVILY_API_KEY",
     "TOKEN_ENCRYPTION_KEY",
-    "WOVAIN_ALLOWED_EMAILS",
     "_VARLOCK_ENV_KEY"
   ],
   "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"]
