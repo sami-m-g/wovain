@@ -9,8 +9,12 @@ import {
   SamplingStrategyType,
 } from "@mastra/observability";
 import { OtelExporter } from "@mastra/otel-exporter";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 
 import type { Analytics } from "../flow/actor";
+
+const CLOUD_TRACE = "https://cloudtrace.googleapis.com";
+const TRAILING_SLASHES = /\/+$/u;
 
 // Mastra AI tracing for runs, agents, scorers and guardrails: every span is
 // kept in Mastra's store and goes to Google Cloud Trace over OpenTelemetry
@@ -62,10 +66,15 @@ export const scoresToPostHog = (
 export const createObservability = ({
   analytics,
   cloudTrace,
+  otlpEndpoint,
 }: {
   analytics?: Analytics | undefined;
   // On Google Cloud (K_SERVICE is set on Cloud Run): export to Cloud Trace.
   cloudTrace: boolean;
+  // GitLab Observability's OTLP endpoint (OTEL_EXPORTER_OTLP_ENDPOINT): the
+  // same spans over OTLP/HTTP. The OTLP exporter adds
+  // OTEL_EXPORTER_OTLP_HEADERS itself when it's set.
+  otlpEndpoint?: string | undefined;
 }) =>
   new Observability({
     configs: {
@@ -73,9 +82,34 @@ export const createObservability = ({
         exporters: [
           // Traces in Mastra's store too: Studio and the score views read them.
           new MastraStorageExporter(),
+          // OtelExporter disables itself without a provider, even with its
+          // own exporter: the custom provider's endpoint is only used for
+          // logs, which are off.
           ...(cloudTrace
-            ? [new OtelExporter({ exporter: new TraceExporter() })]
+            ? [
+                new OtelExporter({
+                  exporter: new TraceExporter(),
+                  provider: { custom: { endpoint: CLOUD_TRACE } },
+                  signals: { logs: false },
+                }),
+              ]
             : []),
+          ...(otlpEndpoint === undefined || otlpEndpoint === ""
+            ? []
+            : [
+                // The span exporter is passed in, not left to Mastra to load:
+                // it imports its OTLP exporters by a computed name, which
+                // Next's standalone output doesn't trace, so in production
+                // they were "not installed". Mastra's own logs stay off for
+                // the same reason; evlog's wide events reach GitLab instead.
+                new OtelExporter({
+                  exporter: new OTLPTraceExporter({
+                    url: `${otlpEndpoint.replace(TRAILING_SLASHES, "")}/v1/traces`,
+                  }),
+                  provider: { custom: { endpoint: otlpEndpoint } },
+                  signals: { logs: false },
+                }),
+              ]),
           ...(analytics === undefined ? [] : [scoresToPostHog(analytics)]),
         ],
         sampling: { type: SamplingStrategyType.ALWAYS },

@@ -39,7 +39,7 @@ A merchant pays for finished drops: researched ideas, approved designs, a paused
 | Design | 2 | Nemotron brief and judge (the art runs on the merchant's fal) |
 | Assist (autopilot pick or review, ad copy) | 1 | one Nemotron call |
 
-A manual drop (research, one design, ad copy) is **6 credits**. An autopilot drop is **8 credits**. wovain's cost is at most about $0.02 a credit (Qloo about $0.01, Tavily about $0.008 a call, Nemotron about $0.005 a call). A credit sells for $0.08 to $0.10, so gross margin is about 75 to 80% before Polar's fee (4% + 40¢).
+A manual drop (research, three designs, ad copy for one approved design) is **10 credits**. An autopilot drop (plus its pick and a review per design) is **14 credits**. wovain's cost is at most about $0.02 a credit (Qloo about $0.01, Tavily about $0.008 a call, Nemotron about $0.005 a call). A credit sells for $0.08 to $0.10, so gross margin is about 75 to 80% before Polar's fee (4% + 40¢).
 
 Credits are reserved before a step runs and come back if the step fails.
 
@@ -48,7 +48,7 @@ Credits are reserved before a step runs and come back if the step fails.
 |  | Free | Studio (recommended) | Label |
 | --- | --- | --- | --- |
 | Price | $0 | **$29 / month** | **$79 / month** |
-| Credits | **15 a month** (about 2 drops) | 300 a month (about 40 drops) | 1,000 a month (about 125 drops) |
+| Credits | **15 a month** (about 1 drop) | 300 a month (about 30 drops) | 1,000 a month (about 100 drops) |
 | Autopilot | no, you approve every step | yes | yes |
 | Unused credits | expire | expire | roll over |
 

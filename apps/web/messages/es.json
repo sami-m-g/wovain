@@ -223,7 +223,7 @@
     },
     "free": {
       "title": "Gratis para empezar",
-      "body": "{credits, number} créditos al mes, suficientes para unos dos drops. wovain nunca se queda con una parte de tus ventas.",
+      "body": "{credits, number} créditos al mes, suficientes para probar un drop completo. wovain nunca se queda con una parte de tus ventas.",
       "link": "Ver precios"
     },
     "faqSection": {
@@ -361,8 +361,14 @@
       },
       "drop": {
         "title": "Lanza tu primer drop",
-        "body": "Una frase sobre para quién es. La investigación y los diseños funcionan desde ya.",
+        "body": "Una frase sobre para quién es. wovain investiga las tendencias y luego dibuja los diseños con tu cuenta de fal. Fourthwall los publica y Meta lanza los anuncios.",
         "action": "Empezar"
+      },
+      "missing": "Falta conectar:",
+      "needs": {
+        "fal": "fal, para dibujar los diseños",
+        "fourthwall": "Fourthwall, para publicar",
+        "meta": "Meta, para los anuncios"
       },
       "lead": "Tres pasos y wovain podrá llevar un brief hasta una campaña en pausa.",
       "next": "Siguiente"
@@ -436,9 +442,11 @@
     },
     "trends": {
       "title": "Elige las ideas",
-      "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. La mejor idea ya tiene diseño.",
+      "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. Las mejores ideas ya tienen diseño; elige más para diseñarlas también.",
       "score": "Puntuación {score}",
       "affinity": "Afinidad",
+      "affinityUnavailable": "No disponible",
+      "affinityUnavailableHint": "Qloo no tiene datos de gustos para esta idea.",
       "news": "Noticias",
       "listings": "Anuncios",
       "sources": "Fuentes",
@@ -448,7 +456,7 @@
     },
     "designs": {
       "title": "Aprueba los diseños",
-      "lead": "Aprueba los que venderías. Recházalos con una nota y crea otro para la misma idea.",
+      "lead": "Aprueba los que venderías. Recházalos con una nota y crea otro para la misma idea. Los diseños sin decidir se rechazan al continuar.",
       "check": "Revisión",
       "checkReady": "Listo",
       "checkRevise": "Requiere cambios",
@@ -463,7 +471,11 @@
       "reasonPlaceholder": "Tipografía más gruesa, sin las hojas",
       "error": "Aprueba al menos un diseño.",
       "submit": "Crear productos",
-      "artAlt": "Diseño: {title}"
+      "artAlt": "Diseño: {title}",
+      "shirtAlt": "Diseño en una camiseta: {title}",
+      "viewShirt": "En camiseta",
+      "viewFlat": "Arte plano",
+      "viewLabel": "Vista del diseño"
     },
     "products": {
       "title": "Publica los productos",
@@ -492,11 +504,28 @@
       "variants": "Variantes de anuncio",
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
-      "history": "Ver todas las ejecuciones",
-      "autopilotFailed": "El piloto automático se detuvo en el paso {stage}. Retómalo desde los pasos."
+      "history": "Ver todas las ejecuciones"
+    },
+    "failed": {
+      "title": "El drop se detuvo en el paso {stage}",
+      "notConnected": "{service} no está conectado, así que wovain no pudo terminar este paso. Conéctalo y vuelve a intentarlo.",
+      "noIdeas": "La investigación no encontró ideas para este brief. Prueba a redactarlo de otra forma.",
+      "rejected": "Al piloto automático no le gustó el diseño. Inténtalo de nuevo para obtener uno nuevo.",
+      "other": "Algo salió mal por nuestra parte. No se gastó nada en este paso. Inténtalo de nuevo.",
+      "details": "Detalles: {message}",
+      "connect": "Conectar {service}",
+      "retry": "Reintentar",
+      "retrying": "Reiniciando…",
+      "another": "Escribir un nuevo brief"
+    },
+    "noIdeas": {
+      "title": "Sin ideas esta vez",
+      "body": "La investigación no encontró nada para este brief. Inténtalo de nuevo o redáctalo de otra forma.",
+      "retry": "Reintentar",
+      "another": "Escribir un nuevo brief"
     },
     "working": {
-      "research": "Investigando tendencias y creando el primer diseño…",
+      "research": "Investigando tendencias y creando los primeros diseños…",
       "autopilot": "El piloto automático está investigando, diseñando, publicando y creando la campaña…",
       "designs": "Creando diseños…",
       "review": "Guardando tu decisión…",
@@ -651,7 +680,7 @@
     "recommended": "Recomendado",
     "currentPlan": "Tu plan",
     "plans": {
-      "free": "Para probar uno o dos drops al mes. Sin tarjeta.",
+      "free": "Para probar un drop al mes. Sin tarjeta.",
       "studio": "Para creadores que lanzan un drop cada semana, con piloto automático.",
       "label": "Para tiendas con varios drops por semana. Los créditos sin usar se acumulan."
     },
@@ -768,7 +797,7 @@
     "faq": {
       "credit": {
         "question": "¿Qué es un crédito?",
-        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 3, un diseño 2, y un texto de anuncio o una llamada del piloto automático 1, así que un drop que apruebas paso a paso cuesta unos 6 créditos. Si un paso falla, sus créditos vuelven."
+        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 3, un diseño 2, y un texto de anuncio o una llamada del piloto automático 1, y cada drop dibuja tres diseños, así que un drop que apruebas paso a paso cuesta unos 10 créditos. Si un paso falla, sus créditos vuelven."
       },
       "yours": {
         "question": "¿Qué pago fuera de wovain?",

@@ -1,10 +1,15 @@
 import { tavily } from "@tavily/core";
-import type { TavilyClient, TavilySearchOptions } from "@tavily/core";
+import type {
+  TavilyClient,
+  TavilySearchOptions,
+  TavilySearchResponse,
+} from "@tavily/core";
 
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
+import type { Nemotron } from "./nemotron";
 import { DEFAULT_BASE_COST, priceFor } from "./pricing";
-import type { Qloo, QlooTheme, Taste } from "./qloo";
+import type { Qloo, Taste } from "./qloo";
 import {
   ipSafetyOf,
   marginOf,
@@ -14,19 +19,36 @@ import {
   scoreIdea,
 } from "./score";
 import type { IdeaSignals } from "./score";
+import { themesFor } from "./themes";
+import type { Theme } from "./themes";
 
-// Trend research: Qloo's taste graph names the themes the seed's fans love,
-// and Tavily (called live on every run) says why each one matters this week
-// and how crowded it already is on the marketplaces. Code scores each theme;
-// everything Tavily returns is untrusted web text, kept as data only.
+// Trend research: Qloo's taste graph names the themes the seed's fans love
+// (topped up from the brief by Nemotron, ./themes), and Tavily (called live
+// on every run) says why each one matters now and how crowded it already is
+// on the marketplaces. Code filters and ranks the sources and scores each
+// theme; everything Tavily returns is untrusted web text, kept as data only.
 
-const THEMES = 3;
 const TIMEOUT_S = 20;
 const TEXT_MAX = 1200;
 const PRICE = /\$(?<amount>\d{1,4}(?:\.\d{2})?)/u;
 const MARKETPLACES = ["etsy.com", "redbubble.com", "fourthwall.com"];
+// Sources an idea shows, after filtering and ranking.
+const SOURCES_SHOWN = 3;
+// Tavily's relevance score (0..1) a news result needs to count as evidence.
+export const MIN_RELEVANCE = 0.4;
+// News older than this is not "why now", whatever the search returned.
+export const MAX_NEWS_AGE_DAYS = 31;
+const DAY_MS = 86_400_000;
+const YEAR_DAYS = 365;
+// Archive, tag and listing pages match a query's words without being about
+// it ("Archive for March 2011 – SlashFilm").
+const INDEX_PATH =
+  /\/(?:archives?|authors?|categor(?:y|ies)|page|search|tags?|topics?)(?:\/|$)|\/\d{4}\/\d{2}\/?$/iu;
+const INDEX_TITLE = /^(?:archives?|all posts|category|tag)\b|\barchives?\b/iu;
+const WORD = /[\p{L}\p{N}]{3,}/gu;
 
 export type TavilySearch = Pick<TavilyClient, "search">;
+type Hit = TavilySearchResponse["results"][number];
 
 export interface Source {
   publishedDate?: string | undefined;
@@ -81,6 +103,80 @@ const isWebUrl = (value: string) =>
 const clip = (value: string, max: number) =>
   value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 
+// One key per page: scheme, www, query, hash and a trailing slash aside.
+const pageKey = (url: string) => {
+  const { hostname, pathname } = new URL(url);
+  const host = hostname.replace(/^www\./u, "");
+  return `${host}${pathname.replace(/\/+$/u, "")}`.toLowerCase();
+};
+
+const titleKey = (title: string) =>
+  title
+    .toLowerCase()
+    .replaceAll(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+
+const wordsOf = (value: string) =>
+  new Set([...value.toLowerCase().matchAll(WORD)].map(([word]) => word));
+
+const ageDays = (date: string | undefined, now: number) => {
+  const time = date === undefined ? Number.NaN : Date.parse(date);
+  return Number.isNaN(time) ? undefined : (now - time) / DAY_MS;
+};
+
+const isIndexPage = ({ title, url }: Hit) =>
+  INDEX_PATH.test(new URL(url).pathname) || INDEX_TITLE.test(title);
+
+export interface SourceFilter {
+  // Drop dated results older than this many days.
+  maxAgeDays?: number | undefined;
+  // Drop results Tavily scored less relevant than this.
+  minScore: number;
+}
+
+// Evidence a theme can stand on: web pages about the theme (they share a
+// word with its query and Tavily scores them relevant), recent, not archive
+// or tag pages, one per page and per headline, most relevant and freshest
+// first.
+export const rankSources = (
+  hits: Hit[],
+  query: string,
+  { maxAgeDays, minScore }: SourceFilter,
+  now = Date.now()
+): Hit[] => {
+  const words = wordsOf(query);
+  const window = maxAgeDays ?? YEAR_DAYS;
+  const weight = (hit: Hit) => {
+    const age = ageDays(hit.publishedDate, now);
+    const fresh = age === undefined ? 0 : Math.max(0, 1 - age / window);
+    return hit.score * (1 + fresh);
+  };
+  const relevant = (hit: Hit) => {
+    if (!isWebUrl(hit.url) || isIndexPage(hit) || hit.score < minScore) {
+      return false;
+    }
+    const age = ageDays(hit.publishedDate, now);
+    if (maxAgeDays !== undefined && age !== undefined && age > maxAgeDays) {
+      return false;
+    }
+    const text = wordsOf(`${hit.title} ${hit.content}`);
+    return words.size === 0 || [...words].some((word) => text.has(word));
+  };
+  const pages = new Set<string>();
+  const titles = new Set<string>();
+  return hits
+    .filter(relevant)
+    .toSorted((a, b) => weight(b) - weight(a))
+    .filter((hit) => {
+      const page = pageKey(hit.url);
+      const title = titleKey(hit.title);
+      const repeat = pages.has(page) || (title !== "" && titles.has(title));
+      pages.add(page);
+      titles.add(title);
+      return !repeat;
+    });
+};
+
 const search = async (
   client: TavilySearch,
   query: string,
@@ -89,9 +185,9 @@ const search = async (
 ) =>
   await external(log, { operation: "search", provider: "tavily" }, async () => {
     const reply = await client.search(query, {
-      ...options,
       searchDepth: "basic",
       timeout: TIMEOUT_S,
+      ...options,
     });
     return {
       answer:
@@ -99,33 +195,34 @@ const search = async (
           ? clip(reply.answer, TEXT_MAX)
           : undefined,
       images: reply.images.flatMap(({ url }) => (isWebUrl(url) ? [url] : [])),
-      results: reply.results.filter((result) => isWebUrl(result.url)),
+      results: reply.results,
     };
   });
 
+// The news search reads Tavily's reranked "advanced" snippets from the past
+// month; the marketplace search only counts and prices listings.
 const searchTheme = async (
   client: TavilySearch,
-  seed: string,
-  theme: string,
+  theme: Theme,
   log?: Logger
 ) => {
-  const query = theme === seed ? seed : `${theme} ${seed}`;
   const [news, market] = await Promise.all([
     search(
       client,
-      query,
+      theme.query,
       {
         includeAnswer: "advanced",
         includeImages: true,
-        maxResults: 5,
-        timeRange: "week",
+        maxResults: 10,
+        searchDepth: "advanced",
+        timeRange: "month",
         topic: "news",
       },
       log
     ),
     search(
       client,
-      `${query} shirt`,
+      `${theme.query} t-shirt`,
       {
         includeDomains: MARKETPLACES,
         maxResults: 10,
@@ -135,13 +232,25 @@ const searchTheme = async (
       log
     ),
   ]);
-  return { market, news };
+  return {
+    market: {
+      ...market,
+      results: rankSources(market.results, theme.query, { minScore: 0 }),
+    },
+    news: {
+      ...news,
+      results: rankSources(news.results, theme.query, {
+        maxAgeDays: MAX_NEWS_AGE_DAYS,
+        minScore: MIN_RELEVANCE,
+      }),
+    },
+  };
 };
 
 type Searched = Awaited<ReturnType<typeof searchTheme>>;
 
 const ideaOf = (
-  theme: { affinity?: number; id?: string; name: string },
+  theme: Theme,
   { market, news }: Searched,
   avoidNames: string[]
 ): Omit<TrendIdea, "rank"> | undefined => {
@@ -165,22 +274,31 @@ const ideaOf = (
     ),
   };
   return {
-    answer: news.answer,
+    // Tavily's answer stands only when its news held up.
+    answer: news.results.length > 0 ? news.answer : undefined,
     moment: news.results[0]?.title,
     qlooTag: theme.id,
     references: news.images.slice(0, 4),
     score: scoreIdea(signals),
     signals,
-    sources: sources.slice(0, 3).map(({ publishedDate, title, url }) => ({
-      publishedDate,
-      title: clip(title, 300),
-      url,
-    })),
+    sources: sources
+      .slice(0, SOURCES_SHOWN)
+      .map(({ publishedDate, title, url }) => ({
+        publishedDate,
+        title: clip(title, 300),
+        url,
+      })),
     theme: theme.name,
   };
 };
 
-export const createTrends = (client: TavilySearch, qloo: Qloo) => ({
+export const createTrends = (
+  client: TavilySearch,
+  qloo: Qloo,
+  // Splits a brief into themes when Qloo names too few; without it, design
+  // angles on the brief's subject stand in (./themes).
+  ask?: Nemotron
+) => ({
   research: async (
     seed: string,
     log?: Logger,
@@ -194,20 +312,20 @@ export const createTrends = (client: TavilySearch, qloo: Qloo) => ({
         qloo: sources.qloo ? "no_match" : "off",
       };
     }
-    // Qloo only sharpens the themes: without it the seed is the one theme.
+    // Qloo sharpens the themes; the brief tops them up to MIN_THEMES.
     const taste = sources.qloo
-      ? await qloo
-          .tasteOf(seed, log)
-          .catch(() => ({ failed: true, names: [], themes: [] }))
+      ? await qloo.tasteOf(seed, log).catch((error: unknown) => {
+          // Research goes on without Qloo, but the failure still reaches
+          // the error sink (PostHog Error Tracking).
+          log?.error?.(
+            error instanceof Error ? error : new Error(String(error))
+          );
+          return { failed: true, names: [], themes: [] };
+        })
       : NO_TASTE;
-    const themes: (QlooTheme | { name: string })[] =
-      taste.themes.length > 0
-        ? taste.themes.slice(0, THEMES)
-        : [{ name: seed }];
+    const themes = await themesFor(seed, taste.themes, ask, log);
     const searched = await Promise.all(
-      themes.map(
-        async (theme) => await searchTheme(client, seed, theme.name, log)
-      )
+      themes.map(async (theme) => await searchTheme(client, theme, log))
     );
     // Names Qloo matched never go on a product, but the merchant's own seed
     // doesn't count against itself ("Pickleball" is also a game title).

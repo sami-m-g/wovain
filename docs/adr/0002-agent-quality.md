@@ -6,7 +6,7 @@
 
 ## Decision
 
-Every model call runs as a named Mastra agent, registered on the app's one Mastra instance (`packages/api/src/workflows/engine.ts`) with Postgres storage in the `mastra` schema. The agents are `design_brief`, `design_judge`, `ad_copy`, `autopilot_pick_idea` and `autopilot_review_design`, defined in `packages/core/src/agents.ts` on Nemotron through the AI SDK's openai-compatible provider.
+Every model call runs as a named Mastra agent, registered on the app's one Mastra instance (`packages/api/src/workflows/engine.ts`) with Postgres storage in the `mastra` schema. The agents are `design_brief`, `design_judge`, `ad_copy`, `autopilot_pick_idea`, `autopilot_review_design` and `research_themes` (splits a brief into research themes when Qloo names too few), defined in `packages/core/src/agents.ts` on Nemotron through the AI SDK's openai-compatible provider.
 
 ### Scorers on every agent and step
 

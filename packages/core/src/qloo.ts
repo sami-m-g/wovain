@@ -14,6 +14,26 @@ export interface QlooConfig {
 }
 
 const TIMEOUT_MS = 15_000;
+
+// Entities a merchant's seed can name that fans have tastes about. Without
+// the filter, a word like "hiking" matches restaurants and trails (places),
+// whose tags ("Identifies as women-owned") are no theme for a shirt.
+const SEED_TYPES = [
+  "urn:entity:artist",
+  "urn:entity:book",
+  "urn:entity:brand",
+  "urn:entity:movie",
+  "urn:entity:podcast",
+  "urn:entity:tv_show",
+  "urn:entity:videogame",
+].join(",");
+
+// Tag families that read as a theme: genres and keywords of media and music.
+const THEME_TAG_TYPES = [
+  "urn:tag:genre:media",
+  "urn:tag:genre:music",
+  "urn:tag:keyword:media",
+].join(",");
 const THEME_MAX = 120;
 
 const searchSchema = z.object({
@@ -86,7 +106,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     await external(log, { operation: "taste", provider: "qloo" }, async () => {
       const { results: entities } = await get(
         "/search",
-        { query: seed, take: "3" },
+        { query: seed, take: "3", types: SEED_TYPES },
         searchSchema
       );
       if (entities.length === 0) {
@@ -95,6 +115,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       const tags = await get(
         "/v2/insights",
         {
+          "filter.tag.types": THEME_TAG_TYPES,
           "filter.type": "urn:tag",
           "signal.interests.entities": entities
             .map((entity) => entity.entity_id)

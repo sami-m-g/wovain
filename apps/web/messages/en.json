@@ -223,7 +223,7 @@
     },
     "free": {
       "title": "Free to start",
-      "body": "{credits, number} credits a month, enough for about two drops. wovain never takes a cut of your sales.",
+      "body": "{credits, number} credits a month, enough to try a full drop. wovain never takes a cut of your sales.",
       "link": "See pricing"
     },
     "faqSection": {
@@ -361,8 +361,14 @@
       },
       "drop": {
         "title": "Start your first drop",
-        "body": "One sentence about who it's for. Research and designs work right away.",
+        "body": "One sentence about who it's for. wovain researches trends, then draws designs with your fal account. Fourthwall publishes them and Meta runs the ads.",
         "action": "Start"
+      },
+      "missing": "Still to connect:",
+      "needs": {
+        "fal": "fal, to draw designs",
+        "fourthwall": "Fourthwall, to publish",
+        "meta": "Meta, for ads"
       },
       "lead": "Three steps, then wovain can take a brief all the way to a paused campaign.",
       "next": "Next"
@@ -436,9 +442,11 @@
     },
     "trends": {
       "title": "Pick the ideas",
-      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top idea already has a design.",
+      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top ideas already have designs; pick more to draw them too.",
       "score": "Score {score}",
       "affinity": "Taste affinity",
+      "affinityUnavailable": "Not available",
+      "affinityUnavailableHint": "Qloo has no taste data for this idea.",
       "news": "News this week",
       "listings": "Listings",
       "sources": "Sources",
@@ -448,7 +456,7 @@
     },
     "designs": {
       "title": "Approve the designs",
-      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea.",
+      "lead": "Approve the ones you'd sell. Reject with a note, then make another for the same idea. Designs you leave undecided are rejected when you go on.",
       "check": "Design check",
       "checkReady": "Ready",
       "checkRevise": "Needs work",
@@ -463,7 +471,11 @@
       "reasonPlaceholder": "Make the type bolder, drop the leaves",
       "error": "Approve at least one design.",
       "submit": "Make products",
-      "artAlt": "Design: {title}"
+      "artAlt": "Design: {title}",
+      "shirtAlt": "Design on a shirt: {title}",
+      "viewShirt": "On a shirt",
+      "viewFlat": "Flat art",
+      "viewLabel": "Artwork view"
     },
     "products": {
       "title": "Publish the products",
@@ -492,11 +504,28 @@
       "variants": "Ad variants",
       "open": "Open in Ads Manager",
       "another": "Start another drop",
-      "history": "See all runs",
-      "autopilotFailed": "Autopilot stopped during {stage}. Open the steps to pick it up."
+      "history": "See all runs"
+    },
+    "failed": {
+      "title": "The drop stopped during {stage}",
+      "notConnected": "{service} isn't connected, so wovain couldn't finish this step. Connect it, then try again.",
+      "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
+      "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
+      "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
+      "details": "Details: {message}",
+      "connect": "Connect {service}",
+      "retry": "Try again",
+      "retrying": "Starting again…",
+      "another": "Write a new brief"
+    },
+    "noIdeas": {
+      "title": "No ideas this time",
+      "body": "Research came back empty for this brief. Try again, or write it differently.",
+      "retry": "Try again",
+      "another": "Write a new brief"
     },
     "working": {
-      "research": "Researching trends and drafting the first design…",
+      "research": "Researching trends and drafting the first designs…",
       "autopilot": "Autopilot is researching, designing, publishing and building the campaign…",
       "designs": "Making designs…",
       "review": "Saving your decision…",
@@ -651,7 +680,7 @@
     "recommended": "Recommended",
     "currentPlan": "Your plan",
     "plans": {
-      "free": "Try a drop or two a month. No card needed.",
+      "free": "Try a drop a month. No card needed.",
       "studio": "For creators who drop every week, with autopilot.",
       "label": "For shops running several drops a week. Unused credits carry over."
     },
@@ -768,7 +797,7 @@
     "faq": {
       "credit": {
         "question": "What is a credit?",
-        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, so a drop you approve step by step is about 6 credits. If a step fails, its credits come back."
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 10 credits. If a step fails, its credits come back."
       },
       "yours": {
         "question": "What do I pay outside wovain?",
