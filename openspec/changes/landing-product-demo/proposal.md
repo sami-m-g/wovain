@@ -1,6 +1,6 @@
 # Proposal
 
-MR: `feat/hero-product-demo`. Issue: not filed yet (to link before merge).
+PR: `feat/hero-product-demo`. Issue: not filed yet (to link before merge).
 
 ## Why
 

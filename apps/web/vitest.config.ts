@@ -2,8 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vitest/config";
 
-// Unit tests for server-side logic. The heal flow adds its reproduction tests
-// here (docs/flows.md). In CI, a JUnit report for GitLab's test report too.
+// Unit tests for server-side logic. In CI, a JUnit report too.
 // Component tests render to static markup (react-dom/server), no DOM needed.
 export default defineConfig({
   // The app's `@/` imports (tsconfig.json paths), for modules under test.
@@ -13,8 +12,6 @@ export default defineConfig({
     include: ["test/**/*.test.{ts,tsx}"],
     outputFile: { junit: "junit.xml" },
     reporters:
-      process.env["GITLAB_CI"] === undefined
-        ? ["default"]
-        : ["default", "junit"],
+      process.env["CI"] === undefined ? ["default"] : ["default", "junit"],
   },
 });

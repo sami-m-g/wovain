@@ -1,6 +1,6 @@
 # Tasks
 
-MR !120 (draft). Design: `docs/adr/0001-durable-runs.md`, `docs/adr/0002-agent-quality.md`.
+Design: `docs/adr/0001-durable-runs.md`, `docs/adr/0002-agent-quality.md`.
 
 ## 1. Runtime
 
@@ -32,5 +32,5 @@ MR !120 (draft). Design: `docs/adr/0001-durable-runs.md`, `docs/adr/0002-agent-q
 
 ## 4. Ship
 
-- [ ] 4.1 Open the MR linked to its GitLab issue; update `docs/spec.md` in the same MR
+- [ ] 4.1 Open the PR linked to its GitHub issue; update `docs/spec.md` in the same PR
 - [ ] 4.2 Merge, then archive this change

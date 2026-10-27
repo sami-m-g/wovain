@@ -1,6 +1,6 @@
 # Proposal
 
-MR: !111 (`fix/google-button-runtime-env`). Status: in review.
+PR: `fix/google-button-runtime-env`. Status: in review.
 
 ## Why
 

@@ -7,7 +7,7 @@ import pRetry from "p-retry";
 // working memory, scores and traces, all in the `mastra` schema.
 //
 // The schema is created at deploy time, never by the app: the migrate jobs
-// (.gitlab/ci/deploy.yml) run `initMastraSchema` (./storage-init.ts) after
+// (the deploy pipeline) run `initMastraSchema` (./storage-init.ts) after
 // Drizzle's migrations, with Mastra's own `init()`. At runtime the store
 // has disableInit, so Mastra never runs DDL on first use (its lazy init
 // rejects unhandled when Postgres is down, which can take the process with

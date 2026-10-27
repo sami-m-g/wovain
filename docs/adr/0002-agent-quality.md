@@ -65,7 +65,7 @@ Mastra processors, enabled with `GUARDRAILS=on`:
 
 ### Rollout
 
-- Runs go to the Mastra workflow only while the GitLab feature flag `mastra-runs` is on for the merchant.
+- Runs go to the Mastra workflow only while the feature flag `mastra-runs` is on for the merchant.
   - The flag is read through the existing Unleash client with the user ID (`apps/web/src/lib/feature-flags.ts`).
   - It is a small local boolean read until the typed flag registry from `feat/progressive-delivery` lands.
 - With the flag off, runs take the legacy in-request flow.

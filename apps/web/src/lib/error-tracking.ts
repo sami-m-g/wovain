@@ -116,16 +116,14 @@ export const exceptionOf = (event: WideEvent): ServerException | undefined => {
         path,
       }),
       code: fields.code,
-      // Server, platform (forwarded by the ops job) or smoke (the synthetic
-      // checks): browser exceptions carry none.
+      // Server: browser exceptions carry none.
       error_source: "server",
       method,
       path,
       requestId: text(event["requestId"]),
       status,
-      // The request's trace in GitLab Observability (src/lib/otel.ts, set on
-      // the wide event by src/lib/evlog.ts); apps/ops links the PostHog
-      // issue, its incident and the trace.
+      // The request's OTLP trace (src/lib/otel.ts, set on the wide event by
+      // src/lib/evlog.ts).
       trace_id: text(event["traceId"]),
     },
   };

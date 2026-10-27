@@ -52,9 +52,11 @@ export const retainLegacy = ({
     retain
   );
 
-  // main's WorkOS key and OTLP settings, kept with their values, and the docs
-  // chat's retired OpenRouter key (the chat now uses Nebius).
+  // main's WorkOS key and OTLP settings, kept with their values, the docs
+  // chat's retired OpenRouter key (the chat now uses Nebius), and the GitLab
+  // feature flags instance id, unread since flags left GitLab.
   for (const name of [
+    "gitlab-feature-flags-instance-id",
     "otel-exporter-otlp-endpoint",
     "openrouter-api-key",
     "otel-exporter-otlp-headers",

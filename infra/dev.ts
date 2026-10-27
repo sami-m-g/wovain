@@ -3,8 +3,8 @@
 // gate and shares what costs money or can't be duplicated: the Cloud SQL
 // instance (its own database and user), the DNS zone, the provider API keys.
 // It gets its own auth secret, token key, database URL, bucket and runtime
-// account, and scales to zero. CI rolls images out to it from main by hand
-// (.gitlab/ci/deploy.yml, deploy:development).
+// account, and scales to zero. Images are rolled out to it by hand
+// (`gcloud run deploy wovain-web-dev`); no workflow deploys it yet.
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
@@ -124,7 +124,6 @@ export const devEnvironment = (args: DevArgs) => {
     envs: [
       ...args.envs,
       { name: "BETTER_AUTH_URL", value: args.url },
-      { name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT", value: "development" },
       { name: "MCP_URL", value: `${args.url}/api/mcp` },
       { name: "WOVAIN_BUCKET", value: bucket.name },
       ...[...mounted].map(([id, secret]) => secretEnv(id, secret.secretId)),

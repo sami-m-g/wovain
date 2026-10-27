@@ -1,7 +1,7 @@
 # CI's identities and workload identity pools, applied once by a project
 # owner (infra/README.md). Runs on infra/'s packages (`pnpm run infra:install`).
 name: wovain-bootstrap
-description: GitLab CI's Google identities, applied once by a project owner
+description: CI's Google identities (GitHub Actions), applied once by a project owner
 # Explicit, so the language host never falls back to infra/package.json's main.
 main: index.ts
 runtime:

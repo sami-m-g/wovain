@@ -1,8 +1,8 @@
 # One-time adoption of the objects first created through PostHog's API
 # (2026-10-26): the four dashboards, their insights and the three alerts. The
-# first `posthog:apply` imports them into state and then updates them in
+# first `tofu apply` imported them into state and then updates them in
 # place to match this code (names, tags, `kpi:<id>` alert names). Delete this
-# file in the merge request after that apply; the state keeps the objects.
+# file in the pull request after that apply; the state keeps the objects.
 
 import {
   for_each = {
@@ -49,7 +49,7 @@ import {
 }
 
 # The three alert metrics and their alerts become the KPIs of the same names
-# in .gitlab/duo/kpis.yml.
+# in kpis.yml.
 import {
   for_each = {
     activation-cohort    = "13300237"

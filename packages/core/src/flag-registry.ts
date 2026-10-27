@@ -163,9 +163,6 @@ export const FLAG_NAMES = Object.keys(FLAGS) as FlagName[];
 export const isFlagName = (name: string): name is FlagName =>
   Object.hasOwn(FLAGS, name);
 
-// Only infra/flags.ts (GitLab, until it is removed) reads this.
-export const INTERNAL_USER_LIST = "internal-only";
-
 // The team condition of `internal` and `percent` rollouts matches the team's
 // Better Auth user IDs (infra/posthog's internal_user_ids), never an email or
 // an app variable. This placeholder keeps the list non-empty before anyone is

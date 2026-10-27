@@ -31,12 +31,12 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 
 | Surface | Contenu | Statut |
 | --- | --- | --- |
-| Accueil | Ce que wovain fait pour les marques indépendantes, guides, cas d'usage, intégrations (page de tarifs dans la MR !116) | En ligne ; réécriture produit en revue (MR !118) |
-| Connexion et inscription | Google et e-mail via Better Auth ; réinitialisation du mot de passe | En ligne ; écrans Better Auth UI en revue (MR !111) |
-| Paramètres du compte | Profil, sessions, comptes liés | En revue (MR !111) |
+| Accueil | Ce que wovain fait pour les marques indépendantes, guides, cas d'usage, intégrations | En ligne ; réécriture produit en revue |
+| Connexion et inscription | Google et e-mail via Better Auth ; réinitialisation du mot de passe | En ligne ; écrans Better Auth UI en revue |
+| Paramètres du compte | Profil, sessions, comptes liés | En revue |
 | Tableau de bord | Liste de démarrage, assistant de nouvelle collection, exécutions, designs, produits, campagnes | En ligne ; passe sur l'interface en cours |
 | Connexions | Connecter Fourthwall et Meta (OAuth) ; clé d'API fal | Fourthwall et Meta en ligne ; fal en cours |
-| Tarifs et facturation | Forfaits, solde de crédits, écrans de mise à niveau, paiement et portail Polar | En revue (MR !116) |
+| Tarifs et facturation | Forfaits, solde de crédits, écrans de mise à niveau, paiement et portail Polar | En revue |
 | ChatGPT | Les mêmes étapes en outils MCP à `https://mcp.wovain.com/api/mcp`, avec des widgets pour les tendances, designs, produits et campagnes | En ligne |
 | Consentement | La page de consentement OAuth vers laquelle ChatGPT envoie le créateur | En ligne |
 | Documentation | [https://docs.wovain.com](https://docs.wovain.com) en anglais, français et espagnol | En ligne |
@@ -51,7 +51,7 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 
 - En tant que créateur, je veux me connecter avec Google pour ne pas créer un mot de passe de plus.
   - [x] Connexion Google et e-mail via Better Auth ; Better Auth est aussi le serveur OAuth pour ChatGPT.
-  - [ ] Écrans Better Auth UI pour la connexion, l'inscription, la réinitialisation et les paramètres du compte, avec des messages d'erreur en anglais (MR !111).
+  - [ ] Écrans Better Auth UI pour la connexion, l'inscription, la réinitialisation et les paramètres du compte, avec des messages d'erreur en anglais.
 
 ### Connecteurs
 
@@ -100,7 +100,7 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 ### Facturation et crédits
 
 - En tant que créateur, je veux une petite allocation gratuite et un prix clair pour essayer une vraie collection avant de payer.
-  - [ ] Polar est le marchand officiel. Forfaits proposés : Free 15 crédits par mois, Studio 29 $ pour 300, Label 79 $ pour 1 000 (reportés), et un pack de 100 crédits à 10 $ (MR !116, prix non arrêtés).
+  - [ ] Polar est le marchand officiel. Forfaits proposés : Free 15 crédits par mois, Studio 29 $ pour 300, Label 79 $ pour 1 000 (reportés), et un pack de 100 crédits à 10 $.
   - [ ] Les crédits sont réservés avant une étape payante et rendus si elle échoue ; recherche 3, design 2, assistance 1 (proposition).
   - [ ] L'autopilot est réservé aux forfaits payants (proposition).
 
@@ -110,17 +110,10 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
   - [x] Étoile polaire : marchands activés par semaine (un marchand qui approuve un design dans les 7 jours suivant l'inscription). Des tableaux de bord PostHog existent pour la croissance, la rétention, la qualité et le coût des agents, et les Web Vitals.
   - [ ] Les événements manquants (`run_completed`, `run_failed`, `design_generated`, `design_rejected`, `agent_score`, `campaign_activated`, événements d'abonnement et de crédits) sont ajoutés (prévu ; tableaux de bord en code dans la MR !115).
 
-### Après le déploiement
-
-- Flow d'auto-réparation : une erreur de production lue dans les événements evlog devient une merge request avec un correctif et un test de non-régression.
-- Flow éclaireur : les KPI et l'interface deviennent des tickets étayés par des preuves.
-- Flow développeur : un ticket devient une merge request.
-- En revue : Duo Code Review sur chaque MR (!113), Renovate avec un flow de revue des dépendances (!114), flows personnalisés activés en code (!117).
-
 ## États et limites
 
 - **Première utilisation** — aucune connexion encore ; la liste de démarrage et les outils MCP renvoient vers le lien de connexion.
-- **Plus de crédits** — l'étape payante est refusée avant de s'exécuter, avec le lien de mise à niveau (MR !116).
+- **Plus de crédits** — l'étape payante est refusée avant de s'exécuter, avec le lien de mise à niveau.
 - **Clé de fournisseur manquante** — cette étape échoue avec une erreur `NOT_CONFIGURED` qui nomme la variable.
 - **Échec d'un fournisseur** — l'exécution est marquée `failed` avec son étape et son erreur ; les crédits réservés sont rendus.
 - **En attente d'approbation** — l'exécution est suspendue jusqu'à la décision du créateur (migration Mastra, en cours).
@@ -140,7 +133,7 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 
 ## Ce que nous construisons
 
-Tout ce qui figure dans `scope.md > The POC Boundary` : connexion avec Google, connecteurs sur les comptes du marchand, recherche Qloo et Tavily, designs avec le juge Nemotron, approbation, produit Fourthwall et publication, variantes de publicité Meta et campagne en pause, autopilot, l'application ChatGPT, le site de documentation et les flows Duo. En cours, par-dessus la boucle en ligne : Better Auth UI, la facturation Polar, le connecteur fal, la migration Mastra avec scorers et la passe sur l'interface de l'app.
+Tout ce qui figure dans `scope.md > The POC Boundary` : connexion avec Google, connecteurs sur les comptes du marchand, recherche Qloo et Tavily, designs avec le juge Nemotron, approbation, produit Fourthwall et publication, variantes de publicité Meta et campagne en pause, autopilot, l'application ChatGPT, le site de documentation. En cours, par-dessus la boucle en ligne : Better Auth UI, la facturation Polar, le connecteur fal, la migration Mastra avec scorers et la passe sur l'interface de l'app.
 
 ## Reporté après la preuve de concept
 
@@ -162,7 +155,7 @@ TikTok Shop et publicités TikTok ; propre clé Nebius sur Label ; données dém
 
 ## Questions ouvertes
 
-- Arrêter les chiffres de prix (proposition dans la MR !116) — à régler avant le lancement de la facturation.
+- Arrêter les chiffres de prix — à régler avant le lancement de la facturation.
 - Licence Qloo pour la revente commerciale (la clé actuelle est une clé de hackathon) — avant de facturer.
 - Périmètre de la revue d'app Meta pour la création de campagnes côté serveur — avant le lancement public.
 - Logo définitif (le tour 6 recommande « Impression ») — peut attendre.

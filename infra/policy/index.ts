@@ -1,9 +1,9 @@
 // wovain's CrossGuard policy pack, enforced by every `pulumi preview` and
 // `pulumi up` (--policy-pack infra/policy). A violation stops the preview, so
-// it fails in the merge request instead of halfway through an apply.
+// it fails before an apply starts.
 import { PolicyPack } from "@pulumi/policy";
 
-import { MAINTAINER_ONLY, STATEFUL } from "./types.ts";
+import { STATEFUL } from "./types.ts";
 
 new PolicyPack("wovain", {
   enforcementLevel: "mandatory",
@@ -20,24 +20,6 @@ new PolicyPack("wovain", {
         if (STATEFUL.has(type) && !opts.protect) {
           reportViolation(
             `${type} "${name}" holds data or identity: give it protect: true`
-          );
-        }
-      },
-    },
-    {
-      configSchema: {
-        properties: { allow: { default: false, type: "boolean" } },
-      },
-      description:
-        "No GitLab resources that need Maintainer, unless a Maintainer applies them",
-      name: "gitlab-maintainer-only",
-      validateResource: ({ getConfig, name, type }, reportViolation) => {
-        if (
-          MAINTAINER_ONLY.has(type) &&
-          getConfig<{ allow: boolean }>().allow !== true
-        ) {
-          reportViolation(
-            `${type} "${name}" needs GitLab Maintainer; the CI role gets 403. A Maintainer applies it with --policy-pack-config infra/policy/maintainer.json`
           );
         }
       },

@@ -1,0 +1,155 @@
+# wovain's PostHog KPIs: one SQL insight and one alert each (kpis.tf). Each
+# query returns its value as the first row's `value` column; {windowDays} is
+# the window. direction: down means lower is better; weight: 1 (nice) to 5
+# (critical). Moved here from .gitlab/duo/kpis.yml when wovain left GitLab;
+# only the KPIs PostHog measures came along.
+
+windowDays: 7
+
+kpis:
+  - id: weekly-visitors
+    name: Unique visitors to wovain.com
+    why: The top of the funnel; nothing below it grows without visitors.
+    unit: visitors
+    direction: up
+    target: 500
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniq(person_id) AS value FROM events WHERE event = '$pageview' AND properties.environment = 'production' AND properties.bot IS NULL AND properties.internal IS NULL AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: visitor-sign-up-rate
+    name: Visitors who sign up
+    why: Whether the landing page turns visitors into merchants.
+    unit: ratio
+    direction: up
+    target: 0.05
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniqIf(person_id, event = 'sign_up') / nullIf(uniqIf(person_id, event = '$pageview'), 0) AS value FROM events WHERE properties.environment = 'production' AND properties.bot IS NULL AND properties.internal IS NULL AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: sign-up-to-run
+    name: Sign-ups that start a run
+    why: Activation; a merchant who never starts a run never sells.
+    unit: ratio
+    direction: up
+    target: 0.5
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniqIf(person_id, event = 'run_started') / nullIf(uniqIf(person_id, event = 'sign_up'), 0) AS value FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: run-to-campaign
+    name: Merchants whose run reaches a campaign
+    why: The whole flow working end to end, from run to design, product and ad.
+    unit: ratio
+    direction: up
+    target: 0.3
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT uniqIf(person_id, event = 'campaign_created') / nullIf(uniqIf(person_id, event = 'run_started'), 0) AS value FROM events WHERE properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: client-errors
+    name: Browser exceptions per 1,000 pageviews
+    why: An uncaught error in the browser is usually a broken screen.
+    unit: per 1k views
+    direction: down
+    target: 5
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT countIf(event = '$exception') * 1000 / nullIf(countIf(event = '$pageview'), 0) AS value FROM events WHERE event IN ('$exception', '$pageview') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: frustrated-clicks
+    name: Rage and dead clicks per 1,000 pageviews
+    why: Clicks that do nothing, or repeated in anger, mark UI that misleads.
+    unit: per 1k views
+    direction: down
+    target: 10
+    weight: 2
+    source:
+      kind: posthog
+      query: >-
+        SELECT countIf(event IN ('$rageclick', '$dead_click')) * 1000 / nullIf(countIf(event = '$pageview'), 0) AS value FROM events WHERE event IN ('$rageclick', '$dead_click', '$pageview') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: field-lcp
+    name: Largest Contentful Paint p75 from real visits
+    why: Field data, unlike home-lcp's one lab load; "good" is 2.5 s or less.
+    unit: ms
+    direction: down
+    target: 2500
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT quantile(0.75)(toFloat(properties.$web_vitals_LCP_value)) AS value FROM events WHERE event = '$web_vitals' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: merchant-rating
+    name: Run rating from merchants (1 to 5)
+    why: What merchants say about a run, from the "Run rating" survey.
+    unit: stars
+    direction: up
+    target: 4
+    weight: 3
+    source:
+      kind: posthog
+      query: >-
+        SELECT avg(toFloat(properties.$survey_response_rating)) AS value FROM events WHERE event = 'survey sent' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: llm-cost-per-run
+    name: Nemotron cost per run
+    why: Model spend per run, from PostHog LLM analytics at Nebius list prices.
+    unit: USD
+    direction: down
+    target: 0.02
+    weight: 2
+    source:
+      kind: posthog
+      query: >-
+        SELECT sum(toFloat(properties.$ai_total_cost_usd)) / nullIf(uniq(properties.$ai_trace_id), 0) AS value FROM events WHERE event = '$ai_generation' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  # The next three guard against small samples: each query returns 1 (on
+  # target) until enough merchants or runs exist, so they stay quiet at low
+  # volume. Their windows are part of the definition, not {windowDays}.
+  - id: activation-cohort
+    name: Last week's sign-ups that started a run
+    why: Activation of a matured cohort (sign-ups 7 to 14 days old), the North Star's input; guarded at fewer than 5 sign-ups.
+    unit: ratio
+    direction: up
+    target: 0.25
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(count() < 5, 1, countIf(person_id IN (SELECT person_id FROM events WHERE event = 'run_started' AND properties.environment = 'production' AND timestamp > now() - INTERVAL 14 DAY)) / count()) AS value FROM (SELECT person_id FROM events WHERE event = 'sign_up' AND properties.environment = 'production' AND timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY GROUP BY person_id)
+
+  - id: run-success-rate
+    name: Runs that succeed (last 24 hours)
+    why: A failed run is a merchant who got nothing; run_completed over run_completed plus run_failed, guarded at fewer than 10 runs.
+    unit: ratio
+    direction: up
+    target: 0.9
+    weight: 5
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(count() < 10, 1, countIf(event = 'run_completed') / count()) AS value FROM events WHERE event IN ('run_completed', 'run_failed') AND properties.environment = 'production' AND timestamp > now() - INTERVAL 24 HOUR
+
+  - id: design-approval-rate
+    name: Merchants who approve a design after starting a run
+    why: Agent quality; a run whose designs nobody approves produced nothing. Guarded at fewer than 5 merchants.
+    unit: ratio
+    direction: up
+    target: 0.3
+    weight: 4
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(uniqIf(person_id, event = 'run_started') < 5, 1, uniqIf(person_id, event = 'design_approved') / uniqIf(person_id, event = 'run_started')) AS value FROM events WHERE event IN ('run_started', 'design_approved') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
