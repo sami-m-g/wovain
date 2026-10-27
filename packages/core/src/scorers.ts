@@ -72,6 +72,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   autopilot_review_design: [],
   design_brief: ["design_quality", "brand_fit", "trend_fit", "ip_risk"],
   design_judge: [],
+  research_themes: [],
 };
 
 // Built-ins per agent. Faithfulness and hallucination read the research the
@@ -90,6 +91,7 @@ const BUILT_INS: Record<AgentId, string[]> = {
     "completeness",
   ],
   design_judge: ["answer_relevancy", "prompt_alignment", "completeness"],
+  research_themes: ["answer_relevancy", "prompt_alignment"],
 };
 
 export const createScorers = (model: MastraModelConfig, rate: number) => {

@@ -12,14 +12,14 @@ Fuente: `scope.md > What "Working" Looks Like`.
 1. El diseñador inicia sesión en [https://wovain.com](https://wovain.com) con Google o correo (o añade la app de wovain en ChatGPT e inicia sesión allí).
 2. Conecta su propia tienda de Fourthwall y su cuenta publicitaria de Meta y, cuando esté disponible, su propia clave de fal. Las cuentas gratuitas empiezan con 15 créditos al mes (propuesta).
 3. Describe una colección. wovain pide a Qloo las entidades y los temas de gusto de la dirección, luego a Tavily las noticias de esta semana y los anuncios de marketplaces dentro de esos temas, y guarda ideas clasificadas con evidencia.
-4. Elige una idea. Nemotron escribe un brief de diseño y una ficha, fal dibuja arte transparente para imprimir y el precio sale del coste base de la prenda lisa.
+4. wovain dibuja un diseño para cada una de las tres mejores ideas, y puede elegir más. Para cada una, Nemotron escribe un brief de diseño y una ficha, fal dibuja arte transparente para imprimir y el precio sale del coste base de la prenda lisa.
 5. Nemotron evalúa el diseño y los scorers lo puntúan. El código comprueba por sí mismo el tamaño de impresión; un veredicto `revise` enumera las correcciones.
 6. El diseñador aprueba o rechaza el diseño (con un motivo). La ejecución espera esta decisión.
 7. Un diseño aprobado se convierte en un producto de Fourthwall, oculto. El diseñador lo publica en un paso aparte.
 8. Nemotron escribe hasta tres variantes de anuncio (enfoque, titular, mensaje) y wovain prepara una campaña, un conjunto de anuncios y anuncios en Meta, todos en pausa, para los países y el presupuesto diario elegidos.
 9. Éxito: el producto está en la tienda de Fourthwall y la campaña en pausa está en el administrador de anuncios de Meta. El diseñador la inicia cuando quiera. Los pasos de pago se cobran en créditos.
 
-El autopilot (una función de los planes de pago en la propuesta de precios) hace los pasos 3 a 8 en una ejecución: Nemotron elige la idea y aprueba el diseño, y la ejecución se detiene si el juez pide revisarlo.
+El autopilot (una función de los planes de pago en la propuesta de precios) hace los pasos 3 a 8 en una ejecución: Nemotron elige la idea principal y revisa cada diseño, y la ejecución se detiene si no aprueba ninguno; un diseño que el juez pide revisar nunca se aprueba.
 
 ```text
 Dirección -> Ideas (Qloo + Tavily) -> Diseño: brief, arte, precio
@@ -84,7 +84,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 ### Ejecuciones, aprobación y autopilot
 
 - Como diseñador, quiero un solo comando para ejecutar el bucle, deteniéndose para mi aprobación o con Nemotron decidiendo.
-  - [x] En autopilot, Nemotron elige la idea y revisa el diseño; un diseño que el juez pide revisar nunca se aprueba.
+  - [x] En autopilot, Nemotron elige la idea principal y revisa cada diseño; un diseño que el juez pide revisar nunca se aprueba.
   - [x] El motivo de cada aprobación o rechazo se guarda en el diseño.
   - [ ] Las ejecuciones son workflows duraderos de Mastra: la ejecución responde al instante, se suspende en la aprobación, continúa hacia el producto y la campaña tras la decisión y sobrevive a un reinicio (en curso).
   - [ ] Cada paso queda registrado en la ejecución; una ejecución fallida muestra dónde se detuvo y por qué, y un reintento no duplica el producto de Fourthwall ni la campaña de Meta (en curso).
@@ -145,7 +145,7 @@ Todo lo que hay en `scope.md > The POC Boundary`: inicio de sesión con Google, 
 ## Aplazado respecto a la prueba de concepto
 
 - Optimizador y resultados de campañas: primero hacen falta datos de gasto.
-- Conjuntos de varios productos y anuncios variados por colección: tras las ejecuciones duraderas y las evaluaciones.
+- Varias prendas por diseño y anuncios variados por colección: tras las evaluaciones.
 - Organizaciones y puestos: hoy cada fila pertenece a un solo usuario.
 - Facturación anual: cuando los precios mensuales estén probados.
 

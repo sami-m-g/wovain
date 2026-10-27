@@ -131,6 +131,8 @@ export const devEnvironment = (args: DevArgs) => {
     ],
     location: region,
     maxInstances: 1,
+    // The same app as production's, with Mastra's agents in-process.
+    memory: "1Gi",
     name: "wovain-web-dev",
     port: 3001,
     serviceAccount: runner.email,

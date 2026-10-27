@@ -232,9 +232,13 @@ if (databaseUrlVersion !== undefined) {
 // Cloud Run refuses a revision whose secret has no `latest` version.
 // Without them, connecting Meta answers META_NOT_CONFIGURED.
 const externalSecretIds = ["meta-app-id", "meta-app-secret"] as const;
+// wovain-allowed-emails is no longer read (the allowlist is gone); its secret
+// stays, unmounted, until it is retired, since dropping it from secretIds
+// would delete a protected resource.
+const unmountedSecretIds = new Set(["wovain-allowed-emails"]);
 const mountedSecretIds = [
   ...new Set([...populated.keys(), ...externalSecretIds]),
-];
+].filter((id) => !unmountedSecretIds.has(id));
 
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
@@ -382,6 +386,8 @@ const service = cloudRunService("web", {
   ],
   location: region,
   maxInstances: 2,
+  // Mastra's agents run in-process: 512Mi ran out on 2026-10-26.
+  memory: "1Gi",
   name: serviceName,
   port: 3001,
   serviceAccount: runner.email,

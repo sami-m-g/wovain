@@ -2,6 +2,7 @@ import {
   createOffer,
   findOffer,
   previewDesign,
+  pickBlank,
   publishProduct,
   searchCatalog,
   setOfferPrice,
@@ -63,16 +64,10 @@ export const createDesignProduct = async (
   }
   const write = { runId: approved.runId };
   const created = await withProvider(actor, "fourthwall", async (call) => {
-    const [blank] = await searchCatalog(
+    const blank = await pickBlank(
       call,
       catalogProductId === undefined ? {} : { productId: catalogProductId }
     );
-    if (blank === undefined) {
-      throw notReady({
-        fix: "Pick another catalog product.",
-        message: "No Fourthwall blank can render this design",
-      });
-    }
     // A second upload only adds a copy to the media library, but keying it
     // keeps the product on the first one.
     const mediaUri = await once(actor, {
