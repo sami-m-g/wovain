@@ -10,6 +10,9 @@
 # older code over it. Each job that deploys starts with this check and ends
 # successfully, doing nothing, when main has moved on. It fails open if the
 # API can't be read. DEPLOY_STALE=1 (Run pipeline) forces an old commit out.
+# canary:production doesn't use it: it deploys nothing, and must always
+# promote or roll back the canary that deploy:production already put at 10%,
+# even when main has moved on in between; skipping would leave it unresolved.
 .skip-if-superseded:
   script:
     - |
@@ -193,6 +196,7 @@ deploy:development:
   variables:
     GCP_SERVICE_ACCOUNT: $GCP_DEPLOY_SERVICE_ACCOUNT
   script:
+    - !reference [.skip-if-superseded, script]
     - gcloud run deploy wovain-web-dev --image "$GCP_IMAGE_REPOSITORY/web:$CI_COMMIT_SHA" --region "$GCP_REGION" --quiet
   environment:
     name: development
@@ -225,7 +229,6 @@ canary:production:
   extends: [.release-job, .on-main]
   needs: [deploy:production]
   script:
-    - !reference [.skip-if-superseded, script]
     - pnpm --dir apps/ops run canary verify
 
 # The release guard's traffic rollback: the ops job (a person's token)
