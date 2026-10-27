@@ -207,9 +207,14 @@ migrate:production:
 # revision with no traffic and the `canary` tag, then CANARY_PERCENT of
 # production; canary:production promotes it or rolls it back. The docs site
 # goes straight to 100%.
-# CANARY_DEMO_FAULT=1 (Run pipeline on main) makes the canary revision fail
-# its checkout quotes (FAULT_INJECTION_REVISION, apps/web), the demo's bad
-# deploy; every other deploy clears it.
+# The demo's bad deploy makes the canary revision fail its checkout quotes
+# (FAULT_INJECTION_REVISION, apps/web). Two triggers: CANARY_DEMO_FAULT=1
+# (Run pipeline on main, for roles that can set variables), or a
+# `Canary-Demo-Fault: true` git trailer on a commit this merge brings in
+# (HEAD^1..HEAD), so a merge request can start the demo. Only the new canary
+# revision gets it; every other deploy clears it, and a revert or a later
+# merge carries no trailer, so it never recurs. A shallow clone that lacks
+# HEAD^1 reads no trailer: the safe state is no fault.
 deploy:production:
   # .gcloud last, so its before_script (credentials, then gcloud) wins.
   extends: [.gcp-auth, .gcloud, .on-main]
@@ -224,7 +229,9 @@ deploy:production:
   script:
     - !reference [.skip-if-superseded, script]
     - |
-      if [ -n "$CANARY_DEMO_FAULT" ]; then
+      trailer=$(git log --format='%(trailers:key=Canary-Demo-Fault,valueonly)' "$CI_COMMIT_SHA^1..$CI_COMMIT_SHA" 2>/dev/null | grep -ix 'true' || true)
+      if [ -n "$CANARY_DEMO_FAULT" ] || [ -n "$trailer" ]; then
+        echo "Canary demo fault: the canary revision will fail its checkout quotes."
         fault=--update-env-vars=FAULT_INJECTION_REVISION=checkout
       else
         fault=--remove-env-vars=FAULT_INJECTION_REVISION
