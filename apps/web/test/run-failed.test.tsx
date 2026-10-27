@@ -45,6 +45,17 @@ describe("describeRunFailure", () => {
     ).toEqual({ reason: "not_connected", service: "fal" });
   });
 
+  it("reads an expired grant as a reconnect", () => {
+    expect(
+      describeRunFailure({ error: "Reconnect fal: its sign-in expired" })
+    ).toEqual({ reason: "not_connected", reconnect: true, service: "fal" });
+    expect(describeRunFailure({ error: "META_RECONNECT_NEEDED" })).toEqual({
+      reason: "not_connected",
+      reconnect: true,
+      service: "meta",
+    });
+  });
+
   it("recognises empty research and autopilot rejections", () => {
     expect(
       describeRunFailure({ error: "Research found no ideas for this seed." })
@@ -82,6 +93,21 @@ describe("RunFailedState", () => {
     expect(html).toContain("Connect fal");
     expect(html).toContain('href="/dashboard/connections"');
     expect(html).toContain("Try again");
+  });
+
+  it("offers Reconnect when the sign-in expired", () => {
+    const html = render(
+      <RunFailedState
+        failure={{ reason: "not_connected", reconnect: true, service: "fal" }}
+        onRestart={noop}
+        onRetry={noop}
+        retrying={false}
+        stage="designs"
+      />
+    );
+    expect(html).toContain("fal&#x27;s sign-in expired");
+    expect(html).toContain("Reconnect fal");
+    expect(html).toContain('href="/dashboard/connections"');
   });
 
   it("explains an unknown failure and offers Try again, without Connect", () => {

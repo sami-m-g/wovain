@@ -394,7 +394,9 @@
     "lead": "wovain acts for you through these accounts. Disconnect any of them at any time.",
     "connected": "Connected",
     "disconnected": "Not connected",
+    "expired": "Sign-in expired",
     "connect": "Connect {name}",
+    "reconnect": "Reconnect {name}",
     "disconnect": "Disconnect {name}",
     "since": "Since {date}",
     "connectedToast": "{name} connected.",
@@ -428,6 +430,7 @@
     "problem": {
       "notConfigured": "This step isn't available right now. Try again in a little while.",
       "notConnected": "Connect {service} to finish this step.",
+      "reconnect": "{service}'s sign-in expired. Reconnect it to finish this step.",
       "connectLink": "Go to Connections",
       "other": "Something went wrong: {message}"
     },
@@ -509,11 +512,13 @@
     "failed": {
       "title": "The drop stopped during {stage}",
       "notConnected": "{service} isn't connected, so wovain couldn't finish this step. Connect it, then try again.",
+      "reconnect": "{service}'s sign-in expired and couldn't be renewed, so wovain couldn't finish this step. Reconnect it, then try again.",
       "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
       "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
       "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
       "details": "Details: {message}",
       "connect": "Connect {service}",
+      "reconnectAction": "Reconnect {service}",
       "retry": "Try again",
       "retrying": "Starting again…",
       "another": "Write a new brief"

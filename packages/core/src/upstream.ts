@@ -2,10 +2,13 @@ import {
   auth,
   Client,
   StreamableHTTPClientTransport,
+  OAuthError,
+  OAuthErrorCode,
   UnauthorizedError,
 } from "@modelcontextprotocol/client";
 import type {
   CallToolResult,
+  FetchLike,
   OAuthClientMetadata,
   OAuthClientProvider,
   OAuthDiscoveryState,
@@ -23,7 +26,10 @@ import type { Logger } from "./log";
 // merchant's OAuth grant. The official MCP SDK does discovery, PKCE, the
 // resource indicator, the code exchange and token refresh; this module only
 // keeps what it hands over, through a store the caller backs with its
-// database.
+// database. The SDK refreshes only when a provider answers 401, so this
+// module also refreshes a grant past its expiry before using it, and once
+// more when a tool says its token was refused. A grant the provider won't
+// refresh is marked for the merchant to reconnect.
 
 // fal draws on the merchant's own fal account through fal's MCP relay, so
 // the merchant pays fal directly; wovain has no fal key.
@@ -64,14 +70,37 @@ export interface UpstreamConfig {
   // Meta has no client metadata documents: its app is registered by hand.
   metaAppId: string | undefined;
   metaAppSecret: string | undefined;
+  // Tests answer the providers' HTTP; the global fetch otherwise.
+  fetch?: FetchLike;
 }
+
+// The SDK's tokens, with when the access token expires (seconds since the
+// epoch), stamped when they are saved.
+export type Grant = StoredOAuthTokens & { expires_at?: number | undefined };
 
 // Where the merchant's tokens live (sealed at rest by the caller).
 export interface GrantStore {
-  clear: () => Promise<void>;
-  load: () => Promise<StoredOAuthTokens | undefined>;
-  save: (tokens: StoredOAuthTokens) => Promise<void>;
+  // The provider refused the grant and won't refresh it: the merchant must
+  // reconnect. `load` finds nothing until a new grant is saved.
+  expire: () => Promise<void>;
+  load: () => Promise<Grant | undefined>;
+  save: (tokens: Grant) => Promise<void>;
 }
+
+// Refreshed this long before it expires, so it can't lapse mid-session.
+const EXPIRY_MARGIN_S = 60;
+const MS_PER_S = 1000;
+
+const nowS = () => Math.floor(Date.now() / MS_PER_S);
+
+const withExpiry = (tokens: StoredOAuthTokens): Grant =>
+  tokens.expires_in === undefined
+    ? tokens
+    : { ...tokens, expires_at: nowS() + tokens.expires_in };
+
+const isExpiring = (grant: Grant) =>
+  grant.expires_at !== undefined &&
+  grant.expires_at - EXPIRY_MARGIN_S <= nowS();
 
 // One pending authorization: what the callback leg needs to finish it.
 export interface PendingFlow {
@@ -103,6 +132,8 @@ export const clientMetadata = (appUrl: string): OAuthClientMetadata => ({
 class ConnectionAuth implements OAuthClientProvider {
   authorizationUrl: URL | undefined;
   clientMetadataUrl?: string;
+  // The SDK discarded the tokens: the authorization server refused them.
+  refused = false;
   readonly #client: StoredOAuthClientInformation;
   readonly #config: UpstreamConfig;
   readonly #flow: PendingFlow | undefined;
@@ -146,9 +177,13 @@ class ConnectionAuth implements OAuthClientProvider {
     return this.#flow?.discoveryState;
   }
 
-  async invalidateCredentials(scope: string) {
+  // The SDK calls this on invalid_grant (a refresh token expired or was
+  // revoked), before asking for consent again, which a server can't give.
+  // The session decides whether the grant is dead: another session may
+  // have rotated the refresh token meanwhile.
+  invalidateCredentials(scope: string) {
     if (scope === "all" || scope === "tokens") {
-      await this.#grant.clear();
+      this.refused = true;
     }
   }
 
@@ -169,7 +204,7 @@ class ConnectionAuth implements OAuthClientProvider {
   }
 
   async saveTokens(tokens: StoredOAuthTokens) {
-    await this.#grant.save(tokens);
+    await this.#grant.save(withExpiry(tokens));
   }
 
   // Outside a connect flow the authorization URL is never followed.
@@ -206,15 +241,43 @@ export const notConnected = (provider: ProviderId) =>
     why: `wovain has no valid ${PROVIDERS[provider].title} grant for this merchant.`,
   });
 
-// Fourthwall answers a call without a valid grant with isError and this
-// _meta key instead of a 401.
-const loginNeeded = (result: CallToolResult) =>
-  result.isError === true &&
-  result._meta !== undefined &&
-  "mcp/www_authenticate" in result._meta;
+// The grant expired and the provider refused to refresh it.
+export const reconnectNeeded = (provider: ProviderId) =>
+  createError({
+    code: `${provider.toUpperCase()}_RECONNECT_NEEDED`,
+    data: { provider },
+    fix: `Reconnect ${PROVIDERS[provider].title} in wovain, then retry.`,
+    message: `Reconnect ${PROVIDERS[provider].title}: its sign-in expired`,
+    status: 409,
+    why: `${PROVIDERS[provider].title} refused wovain's grant and wouldn't refresh it.`,
+  });
 
 const textOf = (result: CallToolResult) =>
   result.content.find((part) => part.type === "text")?.text ?? "";
+
+// A tool that says its token was refused instead of answering 401:
+// Fourthwall with this _meta key, a relay such as fal's in its text. Only
+// an OAuth invalid_token code or a 401 stated as an HTTP status counts: a
+// permission error ("unauthorized for this ad account") isn't a dead token.
+const REFUSED_TOKEN =
+  /\binvalid_token\b|\b(?:HTTP|status(?: code)?)[ :]*401\b|\b401 Unauthori[sz]ed\b/iu;
+const tokenRefused = (result: CallToolResult) =>
+  result.isError === true &&
+  ((result._meta !== undefined && "mcp/www_authenticate" in result._meta) ||
+    REFUSED_TOKEN.test(textOf(result)));
+
+const HTTP_UNAUTHORIZED = 401;
+
+// The authorization server refused the refresh token.
+const isInvalidGrant = (error: unknown) =>
+  error instanceof OAuthError && error.code === OAuthErrorCode.InvalidGrant;
+
+// A 401 that survived the SDK's own refresh.
+const isUnauthorized = (error: unknown) =>
+  error instanceof UnauthorizedError ||
+  (error instanceof Error &&
+    "status" in error &&
+    error.status === HTTP_UNAUTHORIZED);
 
 // A tool result's data: its structured content, else the JSON in its text.
 // It's data from the merchant's account, never instructions.
@@ -269,12 +332,8 @@ const authOptions = (provider: ProviderId) => {
   return { serverUrl, ...(scope === undefined ? {} : { scope }) };
 };
 
-// A refused grant (the SDK couldn't refresh it) means connect again.
-const unlessRefused = (provider: ProviderId) => (error: unknown) => {
-  throw error instanceof UnauthorizedError ? notConnected(provider) : error;
-};
-
 export const createUpstream = (config: UpstreamConfig) => {
+  const fetchFn = config.fetch === undefined ? {} : { fetchFn: config.fetch };
   // The provider's consent page for a new connection, and the flow state
   // the caller keeps until the callback.
   const startConnect = async (
@@ -286,7 +345,7 @@ export const createUpstream = (config: UpstreamConfig) => {
     await external(log, { operation: "authorize", provider }, async () => {
       const flow: PendingFlow = { state };
       const oauth = new ConnectionAuth(provider, config, grant, flow);
-      await auth(oauth, authOptions(provider));
+      await auth(oauth, { ...authOptions(provider), ...fetchFn });
       if (oauth.authorizationUrl === undefined) {
         throw new Error("The provider didn't ask for authorization");
       }
@@ -304,6 +363,7 @@ export const createUpstream = (config: UpstreamConfig) => {
       const oauth = new ConnectionAuth(provider, config, grant, flow);
       const outcome = await auth(oauth, {
         ...authOptions(provider),
+        ...fetchFn,
         authorizationCode: code,
         ...(iss === undefined ? {} : { iss }),
       });
@@ -311,35 +371,91 @@ export const createUpstream = (config: UpstreamConfig) => {
     });
 
   // Runs `work` with one MCP session on the merchant's account; every tool
-  // call is logged and fails as a structured error.
+  // call is logged and fails as a structured error. An expiring grant is
+  // refreshed first; one the provider refuses is marked for reconnecting.
   const session = async <T>(
     provider: ProviderId,
     grant: GrantStore,
     log: Logger | undefined,
     work: (call: ToolCall) => Promise<T>
   ): Promise<T> => {
-    if ((await grant.load()) === undefined) {
+    const held = await grant.load();
+    if (held === undefined) {
       throw notConnected(provider);
     }
     const oauth = new ConnectionAuth(provider, config, grant);
+    // The grant is dead: mark it for reconnecting. Unless another session
+    // rotated the refresh token meanwhile: then this attempt only lost the
+    // race, and a retry uses the new grant.
+    const refused = async () => {
+      const latest = await grant.load();
+      if (latest !== undefined && latest.refresh_token !== held.refresh_token) {
+        return new Error("Another session refreshed the grant; retry");
+      }
+      await grant.expire();
+      return reconnectNeeded(provider);
+    };
+    // The SDK's documented refresh: auth() trades the refresh token for new
+    // tokens and saves them through the provider (saveTokens).
+    const refresh = async () =>
+      await external(log, { operation: "refresh", provider }, async () => {
+        const outcome = await auth(oauth, {
+          ...authOptions(provider),
+          ...fetchFn,
+        }).catch(async (error: unknown) => {
+          throw isInvalidGrant(error) ? await refused() : error;
+        });
+        if (outcome === "AUTHORIZED") {
+          return;
+        }
+        // No new tokens. Refused (invalid_grant) or never refreshable: the
+        // merchant must reconnect. Otherwise the token endpoint failed, and
+        // a retry may pass.
+        if (oauth.refused || held.refresh_token === undefined) {
+          throw await refused();
+        }
+        throw new Error("The token endpoint didn't refresh the grant");
+      });
+    // A 401 the SDK couldn't refresh its way past.
+    const unlessRefused = async (error: unknown): Promise<never> => {
+      throw isUnauthorized(error) || isInvalidGrant(error)
+        ? await refused()
+        : error;
+    };
     const client = new Client({ name: "wovain", version: "0.1.0" });
     const transport = new StreamableHTTPClientTransport(
       new URL(PROVIDERS[provider].serverUrl),
-      { authProvider: oauth }
+      {
+        authProvider: oauth,
+        ...(config.fetch === undefined ? {} : { fetch: config.fetch }),
+      }
     );
+    const callTool = async (tool: string, args: Record<string, unknown>) =>
+      await client
+        .callTool({ arguments: args, name: tool })
+        .catch(unlessRefused);
     const call: ToolCall = async (tool, args) =>
       await external(log, { operation: tool, provider }, async () => {
-        const result = await client
-          .callTool({ arguments: args, name: tool })
-          .catch(unlessRefused(provider));
-        if (loginNeeded(result)) {
-          await grant.clear();
-          throw notConnected(provider);
+        const result = await callTool(tool, args);
+        if (!tokenRefused(result)) {
+          return resultData(result);
         }
-        return resultData(result);
+        // Refused inside the tool, so the SDK saw no 401: refresh and try
+        // once more. A refused call did nothing, so repeating it is safe.
+        // A refresh the provider refuses marks the grant; a retry that still
+        // fails throws the tool's own error and leaves the grant alone.
+        await refresh();
+        return resultData(await callTool(tool, args));
       });
     try {
-      await client.connect(transport).catch(unlessRefused(provider));
+      if (isExpiring(held)) {
+        await refresh();
+      }
+      await external(
+        log,
+        { operation: "connect", provider },
+        async () => await client.connect(transport).catch(unlessRefused)
+      );
       return await work(call);
     } finally {
       await client.close();

@@ -394,7 +394,9 @@
     "lead": "wovain actúa por ti a través de estas cuentas. Desconéctalas cuando quieras.",
     "connected": "Conectado",
     "disconnected": "Sin conectar",
+    "expired": "Sesión caducada",
     "connect": "Conectar {name}",
+    "reconnect": "Volver a conectar {name}",
     "disconnect": "Desconectar {name}",
     "since": "Desde el {date}",
     "connectedToast": "{name} conectado.",
@@ -428,6 +430,7 @@
     "problem": {
       "notConfigured": "Este paso no está disponible ahora mismo. Inténtalo de nuevo en un rato.",
       "notConnected": "Conecta {service} para terminar este paso.",
+      "reconnect": "La sesión de {service} caducó. Vuelve a conectarlo para terminar este paso.",
       "connectLink": "Ir a Conexiones",
       "other": "Algo salió mal: {message}"
     },
@@ -509,11 +512,13 @@
     "failed": {
       "title": "El drop se detuvo en el paso {stage}",
       "notConnected": "{service} no está conectado, así que wovain no pudo terminar este paso. Conéctalo y vuelve a intentarlo.",
+      "reconnect": "La sesión de {service} caducó y no se pudo renovar, así que wovain no pudo terminar este paso. Vuelve a conectarlo e inténtalo de nuevo.",
       "noIdeas": "La investigación no encontró ideas para este brief. Prueba a redactarlo de otra forma.",
       "rejected": "Al piloto automático no le gustó el diseño. Inténtalo de nuevo para obtener uno nuevo.",
       "other": "Algo salió mal por nuestra parte. No se gastó nada en este paso. Inténtalo de nuevo.",
       "details": "Detalles: {message}",
       "connect": "Conectar {service}",
+      "reconnectAction": "Volver a conectar {service}",
       "retry": "Reintentar",
       "retrying": "Reiniciando…",
       "another": "Escribir un nuevo brief"

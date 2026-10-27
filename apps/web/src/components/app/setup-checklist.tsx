@@ -47,7 +47,9 @@ export const SetupChecklist = () => {
     return null;
   }
   const connected = (provider: string) =>
-    connections.data.some((item) => item.provider === provider);
+    connections.data.some(
+      (item) => item.provider === provider && !item.needsReconnect
+    );
   // What a drop needs that isn't connected yet, in the order the run uses it.
   const missing = (["fal", "fourthwall", "meta"] as const).filter(
     (provider) => !connected(provider)
