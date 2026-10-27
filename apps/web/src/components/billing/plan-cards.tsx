@@ -1,5 +1,10 @@
 import type { PlanCode } from "@wovain/billing/plans";
-import { CREDIT_COST, CREDIT_PACK, PLANS } from "@wovain/billing/plans";
+import {
+  CREDIT_COST,
+  CREDIT_PACK,
+  DESIGNS_PER_RUN,
+  PLANS,
+} from "@wovain/billing/plans";
 import { Card, CardContent } from "@wovain/ui/components/card";
 import { Separator } from "@wovain/ui/components/separator";
 import { cn } from "@wovain/ui/lib/utils";
@@ -17,12 +22,17 @@ import { ComingSoonBadge } from "@/components/billing/notify-button";
 
 const ORDER: PlanCode[] = ["free", "studio", "label"];
 
-/** Credits for a drop with no autopilot: research, one design and ad copy. */
+/**
+ * Credits for a drop with no autopilot: research, the run's designs and ad
+ * copy for one approved design.
+ */
 export const MANUAL_DROP_CREDITS =
-  CREDIT_COST.research + CREDIT_COST.design + CREDIT_COST.assist;
-/** Autopilot adds its pick and its review. */
+  CREDIT_COST.research +
+  DESIGNS_PER_RUN * CREDIT_COST.design +
+  CREDIT_COST.assist;
+/** Autopilot adds its pick and a review per design. */
 export const AUTOPILOT_DROP_CREDITS =
-  MANUAL_DROP_CREDITS + 2 * CREDIT_COST.assist;
+  MANUAL_DROP_CREDITS + (1 + DESIGNS_PER_RUN) * CREDIT_COST.assist;
 
 /** Whole dollars from cents: plan prices are round. */
 export const useMoney = () => {

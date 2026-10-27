@@ -31,6 +31,12 @@ import {
 import type { ErrorGroup } from "./heal.ts";
 import { TASK_LABEL, taskBlocker, taskBudget } from "./intake.ts";
 import {
+  issueTraceQuery,
+  posthogIssueDescription,
+  traceIdOf,
+  traceUrl,
+} from "./o11y.ts";
+import {
   PLATFORM_FILTER,
   PRODUCTION_SERVICE,
   eventUuidOf,
@@ -207,6 +213,56 @@ const exceptionCounts = async (minutes: number) =>
 const evidenceOf = ({ signature: s }: ErrorGroup) =>
   `[PostHog error tracking](${errorTracking().link(`error_tracking/${s.posthogIssue ?? ""}`)})`;
 
+// The newest trace ID of a heal problem's server exceptions in PostHog
+// (their trace_id, set by apps/web/src/lib/error-tracking.ts). Undefined when
+// there is none or the lookup fails: the link is an extra.
+const traceOf = async ({ signature: s }: ErrorGroup) => {
+  if (s.posthogIssue === undefined) {
+    return;
+  }
+  try {
+    const rows = await errorTracking().rows(issueTraceQuery(s.posthogIssue));
+    return traceIdOf(rows[0]?.[0]);
+  } catch {
+    // No link then; the incident stands without it.
+  }
+};
+
+// Links an incident both ways: to the error's trace in GitLab Observability
+// (a timeline event), and from the PostHog error tracking issue (its
+// description and severity). Best effort, like the incident's extras.
+const linkIncident = async (problem: ErrorGroup, incident: Issue) => {
+  const o11y = ENV.GITLAB_O11Y_URL;
+  const traceId = o11y === undefined ? undefined : await traceOf(problem);
+  const trace =
+    o11y === undefined || traceId === undefined
+      ? undefined
+      : traceUrl(o11y, traceId);
+  const { posthogIssue } = problem.signature;
+  return [
+    ...(trace === undefined
+      ? []
+      : await bestEffort("trace link", () =>
+          gitlab.timelineEvent(
+            incident.id,
+            `Trace in GitLab Observability: [${traceId}](${trace})`,
+            now
+          )
+        )),
+    ...(posthogIssue === undefined
+      ? []
+      : await bestEffort("PostHog issue link", () =>
+          errorTracking().updateIssue(posthogIssue, {
+            description: posthogIssueDescription({
+              incident: incident.web_url,
+              trace,
+            }),
+            severity: "high",
+          })
+        )),
+  ];
+};
+
 // Before the phases: what PostHog can't hear from the app itself goes there
 // first. Cloud Run's platform errors (5xx it answered, OOM kills, failed
 // startups, stderr before evlog loaded) and the synthetic checks' failures
@@ -321,6 +377,7 @@ const heal = async () => {
         new Date(problem.firstSeen || now.toISOString())
       )
     )),
+    ...(await linkIncident(problem, incident)),
   ];
   return `filed #${created.iid} and incident #${incident.iid} for ${s.fingerprint}, assigned the heal flow${problems.length > 0 ? ` (${problems.join("; ")})` : ""}`;
 };

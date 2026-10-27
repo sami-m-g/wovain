@@ -5,8 +5,9 @@ import { REQUIRED_PX } from "./design";
 import { DEFAULT_BASE_COST, PRICING, profitPerSale } from "./pricing";
 
 // Code scorers on the run workflow's steps: facts code can check without a
-// model. Each step puts what it made in its output's `facts`; each scorer
-// returns the share of its checks that pass (1 = all).
+// model. Each step puts what it made in its output's `facts` (one item, or
+// a list with one per design); each scorer returns the share of its checks
+// that pass (1 = all).
 
 export const designFactsSchema = z.object({
   artworkWidth: z.number(),
@@ -62,16 +63,21 @@ export const copyChecks = ({ variants }: z.infer<typeof copyFactsSchema>) =>
     variant.message.length <= LIMITS.message,
   ]);
 
+// A step that made several things (one per design) puts a list in `facts`;
+// each item is scored and the step gets their mean.
 const factsOf = <T extends z.ZodType>(
   schema: T,
   output: unknown
-): z.output<T> | undefined => {
+): z.output<T>[] => {
   const facts: unknown =
     typeof output === "object" && output !== null && "facts" in output
       ? output.facts
       : undefined;
-  const parsed = schema.safeParse(facts);
-  return parsed.success ? parsed.data : undefined;
+  const items: unknown[] = Array.isArray(facts) ? facts : [facts];
+  return items.flatMap((item) => {
+    const parsed = schema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
 };
 
 const codeScorer = <T extends z.ZodType>(
@@ -84,7 +90,11 @@ const codeScorer = <T extends z.ZodType>(
     .preprocess(({ run }) => ({ facts: factsOf(schema, run.output) }))
     .generateScore(({ results }) => {
       const { facts } = results.preprocessStepResult;
-      return facts === undefined ? 0 : share(checks(facts));
+      if (facts.length === 0) {
+        return 0;
+      }
+      const shares = facts.map((item) => share(checks(item)));
+      return shares.reduce((sum, value) => sum + value, 0) / shares.length;
     });
 
 export const stepScorers = {

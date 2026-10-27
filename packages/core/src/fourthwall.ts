@@ -1,3 +1,6 @@
+import { setTimeout as delay } from "node:timers/promises";
+
+import { createError } from "evlog";
 import { z } from "zod";
 
 import type { Artwork } from "./design";
@@ -46,12 +49,35 @@ const frontRegion = (areas: z.infer<typeof printAreaSchema>[]) => {
   return (front.find((area) => area.type === "front_large") ?? front[0])?.type;
 };
 
-// Catalog blanks that Fourthwall can render a design on, most popular first.
-// One blank by its ID, or a search ("t-shirt" by default).
-export const searchCatalog = async (
+// Comfort Colors 1717, a front-printable tee that Fourthwall lists for every
+// shop. A search that comes back empty falls back to it.
+export const DEFAULT_CATALOG_PRODUCT_ID = "pro_8be1acca2fe7403f89";
+
+const REPLY_PREVIEW = 200;
+const MAX_KEYS = 10;
+
+// What a catalog reply held, for the error log: never the products' content.
+const summarizeReply = (reply: unknown, renderable: number) => {
+  const shape = Array.isArray(reply) ? "array" : typeof reply;
+  const keys =
+    typeof reply === "object" && reply !== null
+      ? Object.keys(reply).slice(0, MAX_KEYS).join(",")
+      : "";
+  const listed = findAll(catalogSchema, reply).length;
+  const preview =
+    typeof reply === "string" ? ` text="${reply.slice(0, REPLY_PREVIEW)}"` : "";
+  return `${shape}${keys === "" ? "" : ` keys=[${keys}]`} products=${listed} renderable=${renderable}${preview}`;
+};
+
+interface CatalogResult {
+  blanks: CatalogProduct[];
+  summary: string;
+}
+
+const queryCatalog = async (
   call: ToolCall,
-  { productId, query = "t-shirt" }: { productId?: string; query?: string } = {}
-): Promise<CatalogProduct[]> => {
+  { productId, query = "t-shirt" }: { productId?: string; query?: string }
+): Promise<CatalogResult> => {
   const reply = await call("ecommerce_get-catalog-products", {
     includePrintDetails: true,
     page: 0,
@@ -59,7 +85,7 @@ export const searchCatalog = async (
     sortingMethod: "MOST_POPULAR",
     ...(productId === undefined ? { query } : { productIds: [productId] }),
   });
-  return findAll(catalogSchema, reply).flatMap((product) => {
+  const blanks = findAll(catalogSchema, reply).flatMap((product) => {
     const details = product.printDetails;
     const region =
       details?.supportsBackendRendering === true
@@ -76,6 +102,75 @@ export const searchCatalog = async (
             slug: product.slug,
           },
         ];
+  });
+  return { blanks, summary: summarizeReply(reply, blanks.length) };
+};
+
+// Catalog blanks that Fourthwall can render a design on, most popular first.
+// One blank by its ID, or a search ("t-shirt" by default).
+export const searchCatalog = async (
+  call: ToolCall,
+  options: { productId?: string; query?: string } = {}
+): Promise<CatalogProduct[]> => {
+  const { blanks } = await queryCatalog(call, options);
+  return blanks;
+};
+
+const BLANK_ATTEMPTS = 3;
+const BLANK_RETRY_MS = 400;
+
+// One blank to print on. A reply with nothing usable is retried (Fourthwall
+// can answer a good call with an empty page); a search that stays empty falls
+// back to the default blank. A blank that can't be found is an error that
+// says what Fourthwall answered.
+export const pickBlank = async (
+  call: ToolCall,
+  {
+    productId,
+    retryMs = BLANK_RETRY_MS,
+  }: { productId?: string; retryMs?: number } = {}
+): Promise<CatalogProduct> => {
+  const tried: string[] = [];
+  const attempt = async (
+    id: string | undefined,
+    n = 1
+  ): Promise<CatalogProduct | undefined> => {
+    const { blanks, summary } = await queryCatalog(
+      call,
+      id === undefined ? {} : { productId: id }
+    );
+    const [blank] = blanks;
+    if (blank !== undefined) {
+      return blank;
+    }
+    tried.push(`${id ?? "search"} #${n}: ${summary}`);
+    if (n >= BLANK_ATTEMPTS) {
+      return undefined;
+    }
+    await delay(retryMs);
+    return await attempt(id, n + 1);
+  };
+  const found =
+    (await attempt(productId)) ??
+    (productId === undefined
+      ? await attempt(DEFAULT_CATALOG_PRODUCT_ID)
+      : undefined);
+  if (found !== undefined) {
+    return found;
+  }
+  throw createError({
+    code: "FOURTHWALL_NO_BLANK",
+    fix:
+      productId === undefined
+        ? "Reconnect Fourthwall, then retry."
+        : "Pick another catalog product.",
+    internal: { replies: tried },
+    message:
+      productId === undefined
+        ? "Fourthwall's catalog returned no product that can print this design"
+        : "That Fourthwall product can't print this design",
+    status: 412,
+    why: tried.join(" | "),
   });
 };
 

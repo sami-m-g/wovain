@@ -73,6 +73,10 @@ const runWork = (run?: RunDetail): Work | undefined => {
   if (run.autopilot) {
     return "autopilot";
   }
+  // The run draws several designs; the first can land before the others.
+  if (run.step === "design") {
+    return "designs";
+  }
   return run.designs.length > 0 ? "products" : "research";
 };
 
@@ -151,15 +155,41 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   const publishProduct = useMutation(orpc.products.publish.mutationOptions());
   // These steps act on several items at once, so they take a batch.
   const generate = useMutation({
-    mutationFn: (ideaIds: string[]) =>
-      Promise.all(ideaIds.map((ideaId) => client.designs.generate({ ideaId }))),
+    // One idea's design failing keeps the others: the merchant sees those
+    // and the first failure.
+    mutationFn: async (ideaIds: string[]) => {
+      const settled = await Promise.allSettled(
+        ideaIds.map((ideaId) => client.designs.generate({ ideaId }))
+      );
+      return {
+        failed: settled.flatMap((item) =>
+          item.status === "rejected" ? [item.reason as unknown] : []
+        ),
+        made: settled.flatMap((item) =>
+          item.status === "fulfilled" ? [item.value] : []
+        ),
+      };
+    },
     mutationKey: orpc.designs.generate.mutationKey(),
   });
   const createProducts = useMutation({
-    mutationFn: (designIds: string[]) =>
-      Promise.all(
+    // Designs left undecided are rejected first: the run waits at its gate
+    // until every design is decided.
+    mutationFn: async ({
+      designIds,
+      undecided,
+    }: {
+      designIds: string[];
+      undecided: { id: string; reason?: string }[];
+    }) => {
+      const rejected = await Promise.all(
+        undecided.map((item) => client.designs.reject(item))
+      );
+      const made = await Promise.all(
         designIds.map((designId) => client.products.create({ designId }))
-      ),
+      );
+      return { made, rejected };
+    },
     mutationKey: orpc.products.create.mutationKey(),
   });
   const createCampaigns = useMutation({
@@ -265,6 +295,14 @@ export const useDropFlow = (
     setNotice(next);
   };
 
+  /** Shows the first of a batch's calls that failed while the rest went through. */
+  const reportFailed = (failed: unknown[]) => {
+    const [first] = failed;
+    if (first !== undefined) {
+      setNotice(describeProblem(first));
+    }
+  };
+
   const addDesigns = (made: RunDetail["designs"]) =>
     cache.patch((current) => ({
       ...current,
@@ -315,9 +353,12 @@ export const useDropFlow = (
       }
       showProblem();
       calls.generate.mutate(todo, {
-        onSuccess: (made) => {
+        onSuccess: ({ failed, made }) => {
           addDesigns(made);
-          stepper.goTo("designs");
+          reportFailed(failed);
+          if (designs.length + made.length > 0) {
+            stepper.goTo("designs");
+          }
         },
       });
     },
@@ -353,15 +394,29 @@ export const useDropFlow = (
         return;
       }
       const haveProduct = new Set(products.map((item) => item.designId));
+      // Approving some means rejecting the rest: the run's gate opens once
+      // every design is decided.
+      const undecided = designs
+        .filter((item) => item.status === "pending_approval")
+        .map(({ id }) => {
+          const reason = reasons[id];
+          return reason ? { id, reason } : { id };
+        });
       showProblem();
       calls.createProducts.mutate(
-        approved
-          .filter((item) => !haveProduct.has(item.id))
-          .map((item) => item.id),
         {
-          onSuccess: (made) => {
+          designIds: approved
+            .filter((item) => !haveProduct.has(item.id))
+            .map((item) => item.id),
+          undecided,
+        },
+        {
+          onSuccess: ({ made, rejected }) => {
             cache.patch((current) => ({
               ...current,
+              designs: current.designs.map(
+                (item) => rejected.find((next) => next.id === item.id) ?? item
+              ),
               products: appendNew(current.products, made),
             }));
             stepper.goTo("products");
@@ -395,7 +450,12 @@ export const useDropFlow = (
     handleRestart: () => pushFlowUrl({}),
     handleRetry: (ideaId: string) => {
       showProblem();
-      calls.generate.mutate([ideaId], { onSuccess: addDesigns });
+      calls.generate.mutate([ideaId], {
+        onSuccess: ({ failed, made }) => {
+          addDesigns(made);
+          reportFailed(failed);
+        },
+      });
     },
     /**
      * "Try again" on a failed run: runs are not resumable once failed, so

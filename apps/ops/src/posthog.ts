@@ -2,7 +2,8 @@ import { z } from "zod";
 
 // wovain's product analytics in PostHog, read through its query and alerts
 // APIs (posthog.com/docs/api) with a personal API key that has the Query Read
-// and Alert Read scopes. The ops jobs use it only when the key and project id
+// and Alert Read scopes (and Error Tracking Write, to link an error tracking
+// issue to its GitLab incident). The ops jobs use it only when the key and project id
 // are set; without them the KPIs that need it fall back or show "no data",
 // and the PostHog loop (signals.ts) is off.
 
@@ -26,6 +27,12 @@ export interface PostHogQuery {
   table: (hogql: string) => Promise<z.infer<typeof resultSchema>>;
   rows: (hogql: string) => Promise<unknown[][]>;
   alerts: () => Promise<Alert[]>;
+  // Sets an error tracking issue's description and severity (needs the key's
+  // Error Tracking Write scope): o11y.ts links it to its GitLab incident.
+  updateIssue: (
+    issue: string,
+    fields: { description?: string; severity?: "critical" | "high" }
+  ) => Promise<void>;
   // The app's link for a path in the project, like "insights/<short id>".
   link: (path: string) => string;
 }
@@ -38,7 +45,7 @@ export const createPostHog = (options: {
   fetch?: typeof globalThis.fetch;
 }): PostHogQuery => {
   const send = options.fetch ?? globalThis.fetch;
-  const api = async (path: string, body?: unknown) => {
+  const api = async (path: string, body?: unknown, method = "POST") => {
     const response = await send(
       `${options.host}/api/projects/${options.projectId}/${path}`,
       {
@@ -46,9 +53,7 @@ export const createPostHog = (options: {
           Authorization: `Bearer ${options.apiKey}`,
           "Content-Type": "application/json",
         },
-        ...(body === undefined
-          ? {}
-          : { body: JSON.stringify(body), method: "POST" }),
+        ...(body === undefined ? {} : { body: JSON.stringify(body), method }),
       }
     );
     if (!response.ok) {
@@ -78,6 +83,13 @@ export const createPostHog = (options: {
       return results;
     },
     table,
+    updateIssue: async (issue, fields) => {
+      await api(
+        `error_tracking/issues/${z.uuid().parse(issue)}/`,
+        fields,
+        "PATCH"
+      );
+    },
   };
 };
 

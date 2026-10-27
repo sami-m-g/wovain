@@ -40,4 +40,15 @@ describe("step code scorers", () => {
     const missing = await stepScorers.price_floor.run({ output: {} });
     expect(missing.score).toBe(0);
   });
+
+  it("averages a step that made one item per design", async () => {
+    const scored = await stepScorers.design_facts.run({
+      output: { facts: [facts, { ...facts, artworkWidth: 1024 }] },
+    });
+    expect(scored.score).toBeCloseTo(0.9, 5);
+    const prices = await stepScorers.price_floor.run({
+      output: { facts: [{ price: 29 }, { price: 12 }] },
+    });
+    expect(prices.score).toBe(0.5);
+  });
 });

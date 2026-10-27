@@ -58,9 +58,6 @@ interface ServiceArgs {
   timeout?: string;
   // The instance's memory limit; 512Mi if unset. One vCPU allows up to 4Gi.
   memory?: string;
-  // Warm instances for the whole service. Service-level, so the canary split
-  // shares them and a tagged revision with no traffic gets none. 0 if unset.
-  minInstances?: number;
   // Extra CPU while an instance starts, for shorter cold starts.
   startupCpuBoost?: boolean;
 }
@@ -82,10 +79,6 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
       invokerIamDisabled: true,
       location: args.location,
       name: args.name,
-      scaling:
-        args.minInstances === undefined
-          ? undefined
-          : { minInstanceCount: args.minInstances },
       template: {
         containers: [
           {

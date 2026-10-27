@@ -72,6 +72,14 @@ describe("server error tracking", () => {
     expect(exception?.error.message).toBe("DETECTED LEAKED SENSITIVE CONFIG");
   });
 
+  it("carries the wide event's trace ID to GitLab Observability", () => {
+    const traceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+    const exception = exceptionOf(
+      event({ error: { message: "boom", name: "TypeError" }, traceId })
+    );
+    expect(exception?.properties["trace_id"]).toBe(traceId);
+  });
+
   it("groups uncoded errors by message without numbers", () => {
     expect(fingerprintFor("row 12 missing")).toBe(
       fingerprintFor("row 345 missing")

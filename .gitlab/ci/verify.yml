@@ -144,8 +144,10 @@ image:check:
 mirror:github:
   extends: [.on-main]
   # After deploy: infra:production creates the deploy key this job uses, and
-  # a failed mirror must never hold back a deploy.
+  # a failed mirror must never hold back a deploy. It runs even when an
+  # earlier job failed: GitHub mirrors main, whatever a smoke check says.
   stage: .post
+  when: always
   allow_failure: true
   image: alpine:3.21
   interruptible: false

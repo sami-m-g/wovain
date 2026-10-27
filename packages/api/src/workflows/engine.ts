@@ -39,11 +39,13 @@ const failedRun = z.object({
 export const createMastra = ({
   cloudTrace,
   inngest,
+  otlpEndpoint,
   services,
   storage,
 }: {
   cloudTrace: boolean;
   inngest: Inngest;
+  otlpEndpoint?: string | undefined;
   services: RunServices;
   storage: PostgresStore;
 }) =>
@@ -52,6 +54,7 @@ export const createMastra = ({
     observability: createObservability({
       analytics: services.analytics,
       cloudTrace,
+      otlpEndpoint,
     }),
     scorers: services.core.agents?.scorers ?? {},
     storage,
@@ -61,6 +64,7 @@ export const createMastra = ({
 export const createRunEngine = ({
   cloudTrace,
   mastraFor,
+  otlpEndpoint,
   services,
   storage,
 }: {
@@ -68,11 +72,19 @@ export const createRunEngine = ({
   cloudTrace: boolean;
   // Whether the merchant's runs go to this engine (the mastra-runs flag).
   mastraFor: (userId: string) => boolean;
+  // Also export them to this OTLP endpoint (GitLab Observability).
+  otlpEndpoint?: string | undefined;
   services: RunServices;
   storage: PostgresStore;
 }) => {
   const inngest = new Inngest({ id: INNGEST_APP_ID });
-  const mastra = createMastra({ cloudTrace, inngest, services, storage });
+  const mastra = createMastra({
+    cloudTrace,
+    inngest,
+    otlpEndpoint,
+    services,
+    storage,
+  });
 
   // A run whose function died for good (its retries spent on crashes or
   // timeouts, so the workflow's own onError never ran) still ends: failed,
