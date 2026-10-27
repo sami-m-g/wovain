@@ -3,12 +3,10 @@ import { RuntimeNodeInstrumentation } from "@opentelemetry/instrumentation-runti
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 
-// OpenTelemetry for GitLab Observability (docs/flows.md, "GitLab
-// Observability"). The SDK reads the standard OTEL_* variables: with
-// OTEL_EXPORTER_OTLP_ENDPOINT set (Cloud Run gets the group's OTLP endpoint
-// from infra/index.ts), Next.js's own request spans, outgoing fetch spans
-// and Node runtime metrics go there over OTLP/HTTP, with
-// OTEL_RESOURCE_ATTRIBUTES naming the GitLab project and environment.
+// OpenTelemetry to any OTLP backend. The SDK reads the standard OTEL_*
+// variables: with OTEL_EXPORTER_OTLP_ENDPOINT set, Next.js's own request
+// spans, outgoing fetch spans and Node runtime metrics go there over
+// OTLP/HTTP, with OTEL_RESOURCE_ATTRIBUTES naming the environment.
 // Without it nothing starts, so local runs, builds and tests export nothing.
 export const startOtel = () => {
   const endpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"];
@@ -25,7 +23,7 @@ export const startOtel = () => {
 };
 
 // The active span's W3C trace and span IDs, which tie a log line or a
-// PostHog exception to its trace in GitLab Observability; undefined when
+// PostHog exception to its trace in the OTLP backend; undefined when
 // no SDK runs or no span is active.
 export const activeTraceIds = () => {
   const context = trace.getActiveSpan()?.spanContext();

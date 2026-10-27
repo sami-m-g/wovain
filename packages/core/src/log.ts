@@ -3,8 +3,8 @@ import type { RequestLogger } from "evlog";
 
 // Every call wovain makes to another service goes through `external`, so the
 // request's wide event lists each call with its outcome and duration, and a
-// failure surfaces as one structured error naming the provider. The
-// self-healing flow groups and retries on these error codes.
+// failure surfaces as one structured error naming the provider, grouped in
+// error tracking by its code.
 
 export type Logger = Pick<RequestLogger, "set"> &
   Partial<Pick<RequestLogger, "error">>;

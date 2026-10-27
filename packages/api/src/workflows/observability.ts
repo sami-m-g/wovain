@@ -71,7 +71,7 @@ export const createObservability = ({
   analytics?: Analytics | undefined;
   // On Google Cloud (K_SERVICE is set on Cloud Run): export to Cloud Trace.
   cloudTrace: boolean;
-  // GitLab Observability's OTLP endpoint (OTEL_EXPORTER_OTLP_ENDPOINT): the
+  // An OTLP endpoint (OTEL_EXPORTER_OTLP_ENDPOINT): the
   // same spans over OTLP/HTTP. The OTLP exporter adds
   // OTEL_EXPORTER_OTLP_HEADERS itself when it's set.
   otlpEndpoint?: string | undefined;
@@ -101,7 +101,7 @@ export const createObservability = ({
                 // it imports its OTLP exporters by a computed name, which
                 // Next's standalone output doesn't trace, so in production
                 // they were "not installed". Mastra's own logs stay off for
-                // the same reason; evlog's wide events reach GitLab instead.
+                // the same reason; evlog's wide events reach it instead.
                 new OtelExporter({
                   exporter: new OTLPTraceExporter({
                     url: `${otlpEndpoint.replace(TRAILING_SLASHES, "")}/v1/traces`,
