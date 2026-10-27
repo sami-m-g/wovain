@@ -155,7 +155,10 @@ const dbUser = new gcp.sql.User("wovain", {
 // (docs/adr/0001-durable-runs.md): runs can't start until both are set.
 // polar-access-token and polar-webhook-secret are wovain's own billing
 // (packages/billing): a Polar organization token and the webhook endpoint's
-// signing secret. Each stays unmounted until its stack secret is set.
+// signing secret. posthog-secret-key is the PostHog project's secret API key
+// (feature_flag:read), with which the app evaluates feature flags on the
+// server (`pulumi config set --secret posthog-secret-key phs_...`). Each stays
+// unmounted until its stack secret is set.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
@@ -167,6 +170,7 @@ const secretIds = [
   "nebius-api-key",
   "polar-access-token",
   "polar-webhook-secret",
+  "posthog-secret-key",
   "qloo-api-key",
   "resend-api-key",
   "tavily-api-key",

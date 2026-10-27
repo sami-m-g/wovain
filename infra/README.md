@@ -87,7 +87,7 @@ What the `bootstrap` preview should show: creates the `github` pool and provider
 
 What the `prod` preview should show:
 
-- **Creates:** `deployer-from-github`, the `main` ruleset, the `Production` environment and its main-only branch policy, Dependabot security updates, and one `ActionsVariable` per variable above.
+- **Creates:** the `posthog-secret-key` secret (mounted once it has a value), `deployer-from-github`, the `main` ruleset, the `Production` environment and its main-only branch policy, Dependabot security updates, and one `ActionsVariable` per variable above.
 - **Updates:** the repository (description, homepage https://wovain.com, topics, issues on, vulnerability alerts), the `gitlab-deploy` display name, the web services' env (no `GITLAB_FEATURE_FLAGS_*` or GitLab Observability `OTEL_*`; the refresh also drops a leftover `FAULT_INJECTION_REVISION`), and `gitlab-feature-flags-instance-id` (unmounted, retained in `legacy.ts`).
 - **Deletes:** the mirror's deploy key, its private key and the "main is mirrored from GitLab" ruleset; `gitlab-ops` and its grants; the GitLab-pool grants (`deployer-from-gitlab*`, `gitlab-*-database-url`); `deployer-logging.viewer` (only the canary used it); the runners' access to `gitlab-feature-flags-instance-id`; and the `status.wovain.com` domain mapping and its DNS record (the status page was GitLab Pages).
 
@@ -105,12 +105,14 @@ CI's account, its roles and the workload identity pool live in `bootstrap/`, not
 
 ## PostHog (`posthog/`)
 
-OpenTofu with PostHog's provider: the KPI insights and alerts (`kpis.yml`, `kpis.tf`), the dashboards, the project settings and the run-rating survey. The destinations that started GitLab's ops pipeline are gone. It is applied by hand:
+OpenTofu with PostHog's provider: the KPI insights and alerts (`kpis.yml`, `kpis.tf`), the dashboards, the project settings, the run-rating survey and the app's feature flags (`flags.tf`, which replace GitLab's; `TF_VAR_internal_user_ids` lists the team). The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (`pulumi config set --secret posthog-secret-key <key>`). The destinations that started GitLab's ops pipeline are gone. It is applied by hand:
 
 ```sh
 cd infra/posthog
 export TF_VAR_posthog_project_id=$(pulumi config get posthogProjectId --cwd .. --stack prod)
 export TF_VAR_posthog_api_key=$(pulumi config get posthog-personal-api-key --cwd .. --stack prod)
+# Feature flags (flags.tf): the team's Better Auth user ids, as a list.
+export TF_VAR_internal_user_ids='["<user id>"]'
 tofu init
 tofu plan
 tofu apply
