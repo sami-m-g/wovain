@@ -1,5 +1,5 @@
 // Reads `pulumi preview --json` on stdin and writes the plan as Markdown for
-// the merge request. Fails when the plan deletes or replaces a stateful
+// the pull request. Fails when the plan deletes or replaces a stateful
 // resource that isn't retainOnDelete: a policy never sees deletes, and the
 // engine's protect only covers what's already protected in the state.
 // Usage: node infra/policy/guard.ts < preview.json > preview.md

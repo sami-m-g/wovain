@@ -1,15 +1,12 @@
-# One SQL insight and one alert per PostHog KPI in .gitlab/duo/kpis.yml, so
-# the scout's targets and PostHog's alerts can't drift apart. Each query
-# returns its value as the first row's `value` column. An alert fires while
-# its KPI misses the target; the ops job reads the alert's state by its name,
-# "kpi:<id>", to start the scout and to verify a shipped fix
-# (apps/ops/src/signals.ts).
+# One SQL insight and one alert per KPI in kpis.yml. Each query returns its
+# value as the first row's `value` column. An alert, named "kpi:<id>", fires
+# while its KPI misses the target and emails the subscribers.
 
 resource "posthog_insight" "kpi" {
   for_each = local.posthog_kpis
 
   name        = "KPI: ${each.value.name}"
-  description = "${each.value.why} Target ${each.value.direction == "up" ? ">=" : "<="} ${each.value.target} ${each.value.unit}, from .gitlab/duo/kpis.yml."
+  description = "${each.value.why} Target ${each.value.direction == "up" ? ">=" : "<="} ${each.value.target} ${each.value.unit}, from infra/posthog/kpis.yml."
   query_sql   = replace(each.value.source.query, "{windowDays}", local.window_days)
   dashboard_ids = concat(
     [posthog_dashboard.health.id],

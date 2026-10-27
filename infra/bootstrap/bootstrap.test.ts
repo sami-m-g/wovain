@@ -10,10 +10,7 @@ import { parse } from "yaml";
 const { config } = parse(
   readFileSync(new URL("Pulumi.prod.yaml", import.meta.url), "utf-8")
 ) as { config: Record<string, string> };
-pulumi.runtime.setAllConfig({
-  ...config,
-  "wovain-bootstrap:previewUsers": JSON.stringify(["someone"]),
-});
+pulumi.runtime.setAllConfig(config);
 
 const registered: string[] = [];
 await pulumi.runtime.setMocks(
@@ -38,9 +35,9 @@ test("the bootstrap program registers CI's identities", async () => {
   expect(registered).toEqual(
     expect.arrayContaining([
       "gcp:serviceaccount/account:Account::gitlab-infra",
-      "gcp:serviceaccount/account:Account::gitlab-preview",
-      "gcp:iam/workloadIdentityPoolProvider:WorkloadIdentityPoolProvider::gitlab",
-      "gcp:iam/workloadIdentityPoolProvider:WorkloadIdentityPoolProvider::gitlab-mr",
+      "gcp:iam/workloadIdentityPool:WorkloadIdentityPool::github",
+      "gcp:iam/workloadIdentityPoolProvider:WorkloadIdentityPoolProvider::github",
+      "gcp:serviceaccount/iAMMember:IAMMember::infra-from-github",
       "gcp:projects/iAMMember:IAMMember::infra-editor",
       "gcp:billing/accountIamMember:AccountIamMember::infra-budgets",
     ])
