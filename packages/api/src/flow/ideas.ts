@@ -27,10 +27,11 @@ export const researchIdeas = async (
   // trends-qloo is evaluated for the merchant's plan; paid plans get
   // Tavily-only trends (docs/adr/0001-progressive-delivery.md).
   const context = flagContextOf(actor);
-  const sources = {
-    qloo: actor.core.flags.isOn("trends-qloo", context),
-    tavily: actor.core.flags.isOn("trends-tavily", context),
-  };
+  const [qlooOn, tavilyOn] = await Promise.all([
+    actor.core.flags.isOn("trends-qloo", context),
+    actor.core.flags.isOn("trends-tavily", context),
+  ]);
+  const sources = { qloo: qlooOn, tavily: tavilyOn };
   // Without Tavily there's nothing to rank: don't spend the merchant's credits.
   if (!sources.tavily) {
     actor.log?.set({ trends: { ideas: 0, sources } });

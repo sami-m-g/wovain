@@ -57,7 +57,7 @@ export const createCore = (
     // fal runs on the merchant's own fal account (an MCP grant), never on
     // wovain's.
     artist: createArtist,
-    // GitLab feature flags (./flags.ts), typed by ./flag-registry.ts.
+    // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
     nemotron,

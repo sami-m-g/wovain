@@ -699,7 +699,7 @@ describe("mastra-runs rollout", () => {
       db: ctx.actor.db,
       legacy,
       mastra,
-      mastraFor: () => flagOn,
+      mastraFor: async () => await Promise.resolve(flagOn),
     });
     const input = {
       autopilot: false,

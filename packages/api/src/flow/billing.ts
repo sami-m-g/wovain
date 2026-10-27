@@ -52,7 +52,7 @@ export const billingStatus = async (actor: Actor) => {
     autopilot: PLANS[current.plan].autopilot,
     credits: await creditBalance(actor.db, actor.userId),
     enabled: polar !== undefined,
-    paidPlans: actor.billing.paidPlans(),
+    paidPlans: await actor.billing.paidPlans(),
     plan: current.plan,
     subscription:
       subscription === null
@@ -69,7 +69,7 @@ export const billingStatus = async (actor: Actor) => {
 const BILLING_PATH = "/dashboard/billing";
 
 export const startCheckout = async (actor: Actor, offer: Offer) => {
-  if (!actor.billing.paidPlans()) {
+  if (!(await actor.billing.paidPlans())) {
     actor.log?.set({ billing: { checkout: offer, refused: "paid_plans_off" } });
     throw paidPlansNotAvailable();
   }

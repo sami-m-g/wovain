@@ -2,11 +2,11 @@
 
 ## 1. Dashboards and alerts as code (!115)
 
-- [x] 1.1 Four dashboards and 29 insights in `infra/posthog/dashboards.tf`
-- [x] 1.2 Three KPIs with `kpi:<id>` alerts in `kpis.yml` and `kpis.tf`
-- [x] 1.3 Import blocks for the API-created objects
-- [ ] 1.4 Merge; check `posthog:plan` shows imports and updates, no destroys
-- [ ] 1.5 Run `posthog:apply`, then delete `import.tf` in a follow-up
+- [x] 1.1 Four dashboards and 29 insights in `infra/posthog/dashboards.ts`
+- [x] 1.2 Three KPIs with `kpi:<id>` alerts in `kpis.yml` and `infra/posthog/program.ts`
+- [x] 1.3 `infra/posthog/import.json` for the API-created objects
+- [ ] 1.4 Merge; run the one-time `pulumi import`, then check `pnpm infra:preview` shows updates and creates, no deletes
+- [ ] 1.5 Run `pnpm infra:up`, then delete `import.json` in a follow-up
 
 ## 2. Missing events
 

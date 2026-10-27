@@ -1,0 +1,154 @@
+{
+  "resources": [
+    {
+      "type": "posthog:index/projectSettings:ProjectSettings",
+      "name": "wovain",
+      "id": "687269"
+    },
+    {
+      "type": "posthog:index/dashboard:Dashboard",
+      "name": "dashboard-growth",
+      "id": "2260870"
+    },
+    {
+      "type": "posthog:index/dashboard:Dashboard",
+      "name": "dashboard-retention",
+      "id": "2260871"
+    },
+    {
+      "type": "posthog:index/dashboard:Dashboard",
+      "name": "dashboard-agent",
+      "id": "2260872"
+    },
+    {
+      "type": "posthog:index/dashboard:Dashboard",
+      "name": "dashboard-web",
+      "id": "2260873"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-funnel_visit_to_campaign",
+      "id": "13300146"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-activation_funnel",
+      "id": "13300147"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-weekly_signups",
+      "id": "13300148"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-cta_clicks",
+      "id": "13300149"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-provider_connections",
+      "id": "13300150"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-signup_retention",
+      "id": "13300159"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-run_retention",
+      "id": "13300160"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-lifecycle",
+      "id": "13300161"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-stickiness",
+      "id": "13300162"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-mastra_scores",
+      "id": "13300180"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-llm_cost_by_model",
+      "id": "13300185"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-approval_rate",
+      "id": "13300163"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-run_success_weekly",
+      "id": "13300164"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-run_duration",
+      "id": "13300177"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-llm_cost_per_run_weekly",
+      "id": "13300183"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-vitals_daily",
+      "id": "13300256"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-cls_daily",
+      "id": "13300260"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-vitals_by_page",
+      "id": "13300262"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "insight-errors_and_frustration",
+      "id": "13300263"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "kpi-activation-cohort",
+      "id": "13300237"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "kpi-run-success-rate",
+      "id": "13300242"
+    },
+    {
+      "type": "posthog:index/insight:Insight",
+      "name": "kpi-design-approval-rate",
+      "id": "13300249"
+    },
+    {
+      "type": "posthog:index/alert:Alert",
+      "name": "kpi-activation-cohort",
+      "id": "01a17821-a492-0000-7451-dc0b5255aed7"
+    },
+    {
+      "type": "posthog:index/alert:Alert",
+      "name": "kpi-run-success-rate",
+      "id": "01a17821-b5c7-0000-4746-3ca26c49e2ce"
+    },
+    {
+      "type": "posthog:index/alert:Alert",
+      "name": "kpi-design-approval-rate",
+      "id": "01a17821-c69f-0000-dc03-6f1b0574fd71"
+    }
+  ]
+}

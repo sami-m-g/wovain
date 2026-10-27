@@ -1,6 +1,6 @@
 # infra
 
-Pulumi (TypeScript) for wovain's Google Cloud project, its DNS and its GitHub repository (github.com/sami-m-g/wovain). `index.ts` is the `prod` stack, which also holds dev.wovain.com (`dev.ts`). `bootstrap/` holds CI's own identities and the GitHub Actions workload identity pool, `policy/` is the CrossGuard policy pack, and `posthog/` is the PostHog project in OpenTofu.
+Pulumi (TypeScript) for wovain's Google Cloud project, its DNS, its GitHub repository (github.com/sami-m-g/wovain) and its PostHog project. `index.ts` is the `prod` stack, which also holds dev.wovain.com (`dev.ts`). `bootstrap/` holds CI's own identities and the GitHub Actions workload identity pool, `policy/` is the CrossGuard policy pack, and `posthog/` is the PostHog project (part of the `prod` stack).
 
 State lives in `gs://wovain-pulumi-state`; stack secrets are encrypted with the `stack-secrets` Cloud KMS key.
 
@@ -79,6 +79,8 @@ Deleted workload identity pools stay soft-deleted for 30 days, so the ids `gitla
 pnpm run infra:install
 pulumi preview --cwd infra/bootstrap --stack prod --policy-pack ../policy
 pulumi up --cwd infra/bootstrap --stack prod --policy-pack ../policy
+# Adopt the PostHog objects that already exist (see "PostHog" below).
+pulumi import --cwd infra --stack prod --file posthog/import.json --generate-code=false --protect=false --yes
 pulumi preview --cwd infra --stack prod --refresh --policy-pack policy
 pulumi up --cwd infra --stack prod --refresh --policy-pack policy
 ```
@@ -87,8 +89,8 @@ What the `bootstrap` preview should show: creates the `github` pool and provider
 
 What the `prod` preview should show:
 
-- **Creates:** the `posthog-secret-key` secret (mounted once it has a value), `deployer-from-github`, the `main` ruleset, the `Production` environment and its main-only branch policy, Dependabot security updates, and one `ActionsVariable` per variable above.
-- **Updates:** the repository (description, homepage https://wovain.com, topics, issues on, vulnerability alerts), the `gitlab-deploy` display name, the web services' env (no `GITLAB_FEATURE_FLAGS_*` or GitLab Observability `OTEL_*`; the refresh also drops a leftover `FAULT_INJECTION_REVISION`), and `gitlab-feature-flags-instance-id` (unmounted, retained in `legacy.ts`).
+- **Creates:** the PostHog objects not in `posthog/import.json` (see "PostHog" below), the `posthog-secret-key` secret (mounted once it has a value), `deployer-from-github`, the `main` ruleset, the `Production` environment and its main-only branch policy, Dependabot security updates, and one `ActionsVariable` per variable above.
+- **Updates:** the imported PostHog objects (names, descriptions, tags, `kpi:<id>` alert names, project settings), the repository (description, homepage https://wovain.com, topics, issues on, vulnerability alerts), the `gitlab-deploy` display name, the web services' env (no `GITLAB_FEATURE_FLAGS_*` or GitLab Observability `OTEL_*`; the refresh also drops a leftover `FAULT_INJECTION_REVISION`), and `gitlab-feature-flags-instance-id` (unmounted, retained in `legacy.ts`).
 - **Deletes:** the mirror's deploy key, its private key and the "main is mirrored from GitLab" ruleset; `gitlab-ops` and its grants; the GitLab-pool grants (`deployer-from-gitlab*`, `gitlab-*-database-url`); `deployer-logging.viewer` (only the canary used it); the runners' access to `gitlab-feature-flags-instance-id`; and the `status.wovain.com` domain mapping and its DNS record (the status page was GitLab Pages).
 
 The old ruleset lets only the mirror's deploy key update main, so on GitHub no pull request can merge until this `up` replaces it. To merge the pull request that brings this change first, set the ruleset's enforcement to Disabled (Settings > Rules > Rulesets) and merge; the `up` deletes it.
@@ -105,23 +107,28 @@ CI's account, its roles and the workload identity pool live in `bootstrap/`, not
 
 ## PostHog (`posthog/`)
 
-OpenTofu with PostHog's provider: the KPI insights and alerts (`kpis.yml`, `kpis.tf`), the dashboards, the project settings, the run-rating survey and the app's feature flags (`flags.tf`, which replace GitLab's; `TF_VAR_internal_user_ids` lists the team). The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (`pulumi config set --secret posthog-secret-key <key>`). The destinations that started GitLab's ops pipeline are gone. It is applied by hand:
+`posthog/program.ts` manages the PostHog project with PostHog's official Terraform provider, bridged into Pulumi (`packages:` in `Pulumi.yaml`; PostHog publishes no Pulumi package). `pulumi install` generates its SDK in `sdks/posthog` (gitignored). It declares:
+
+- an insight and an alert per KPI in `kpis.yml`;
+- the "wovain health" dashboard and the Growth, Retention, Agent quality and cost, and Web vitals dashboards, with the insights in `dashboards.ts`;
+- the project settings (cookieless hashing, no stored IPs, the default test account filters) and the run-rating survey (created as a draft);
+- the app's feature flags, from `flags.json`. `packages/core/src/flag-posthog.test.ts` writes that file from the typed registry, and fails while they differ. A flag's Status (`active`) is set once at creation and then ignored (`ignoreChanges`): it is the kill switch, flipped in PostHog without drift.
+
+Stack config:
+
+- `posthog:apiKey` (secret): a personal API key with write access to the project's insights, dashboards, alerts, surveys, feature flags and settings.
+- `posthog:projectId`: `687269`.
+- `wovain:posthogInternalUserIds` (optional): the team's Better Auth user ids, which every `internal` and `percent` rollout includes, e.g. `pulumi config set --path 'wovain:posthogInternalUserIds[0]' <user id>`.
+- `wovain:posthogAlertSubscribers` (optional): the PostHog user ids that get KPI alert emails; the founder by default.
+
+The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (`pulumi config set --secret posthog-secret-key <key>`).
+
+### Adopting what exists (one time)
+
+The four product dashboards, their 19 insights, the three alert insights and their alerts were created through PostHog's API, and the project settings exist with the project. `posthog/import.json` lists them with their PostHog ids; `pulumi import` adds them to the state without changing PostHog, so `pulumi up` updates them in place instead of creating duplicates. Run it once, before the first preview that includes `posthog/` (step 3 of "Leaving GitLab"):
 
 ```sh
-cd infra/posthog
-export TF_VAR_posthog_project_id=$(pulumi config get posthogProjectId --cwd .. --stack prod)
-export TF_VAR_posthog_api_key=$(pulumi config get posthog-personal-api-key --cwd .. --stack prod)
-# Feature flags (flags.tf): the team's Better Auth user ids, as a list.
-export TF_VAR_internal_user_ids='["<user id>"]'
-tofu init
-tofu plan
-tofu apply
+pulumi import --cwd infra --stack prod --file posthog/import.json --generate-code=false --protect=false --yes
 ```
 
-Its state used to be GitLab-managed (the `posthog` state of the GitLab project); it now lives in `gs://wovain-pulumi-state/opentofu/posthog`. Move it once, before the first `tofu plan`:
-
-1. Download the old state. An archived project still serves it read-only: `curl -fsS -H "PRIVATE-TOKEN: <token with read_api>" -o /tmp/posthog.tfstate https://gitlab.com/api/v4/projects/87296573/terraform/state/posthog`.
-2. `tofu init` (the new, empty GCS backend), then `tofu state push /tmp/posthog.tfstate`, and delete `/tmp/posthog.tfstate`: it holds the PostHog key in plain text.
-3. `tofu plan` should show only the two `posthog_hog_function.ops` destinations deleted (they called GitLab's pipeline trigger) and no other change.
-
-If the state can't be downloaded, start from an empty state instead: `import.tf` adopts the four dashboards, their insights and three KPIs and alerts. Add `import` blocks for the rest (the health dashboard and its insights, the other KPI insights and alerts, the survey and the project settings, by their PostHog ids) before the first `tofu apply`, or the apply creates duplicates. Delete the two "-> wovain ops" destinations in PostHog (Data pipeline > Destinations) by hand.
+The preview after it should show only updates for the imported objects, and creates for the rest: the health dashboard and its 6 insights, the other KPI insights and alerts, `insight-weekly_visitors`, `insight-top_referrers`, the survey and the feature flags. Delete `import.json` (and its test in `program.test.ts`) in the pull request after that `up`.
