@@ -47,7 +47,7 @@
     "oxlint": "^1.86.0",
     "turbo": "^2.11.7",
     "typescript": "catalog:",
-    "ultracite": "8.0.0",
+    "ultracite": "8.0.1",
     "varlock": "catalog:"
   },
   "engines": {
