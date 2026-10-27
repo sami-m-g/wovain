@@ -6,7 +6,9 @@ import {
   cleanupBody,
   cleanupMarker,
   guardDecision,
+  hasReleaseGuardMarker,
   hygieneFindings,
+  releaseGuardBody,
 } from "../src/release.ts";
 import type { GitLabFlag } from "../src/release.ts";
 
@@ -278,5 +280,26 @@ describe("splitOf", () => {
         uri: undefined,
       },
     });
+  });
+});
+
+describe("the release-guard marker", () => {
+  it("is a visible line the flow's issue tool can read", () => {
+    const body = releaseGuardBody({
+      action: "rolled back",
+      evidence: ["5xx"],
+      reasons: ["errors"],
+      source: "https://x",
+    });
+    expect(body).not.toContain("<!--");
+    expect(body).toMatch(/```text\nwovain:release-guard\n```$/u);
+    expect(hasReleaseGuardMarker(body)).toBe(true);
+  });
+
+  it("still matches older issues with the hidden comment", () => {
+    expect(hasReleaseGuardMarker("x\n<!-- wovain:release-guard -->")).toBe(
+      true
+    );
+    expect(hasReleaseGuardMarker(null)).toBe(false);
   });
 });

@@ -53,10 +53,10 @@ import {
 import {
   FLAG_CLEANUP_LABEL,
   RELEASE_GUARD_LABEL,
-  RELEASE_GUARD_MARKER,
   cleanupBody,
   cleanupMarker,
   guardDecision,
+  hasReleaseGuardMarker,
   hygieneFindings,
   releaseGuardBody,
 } from "./release.ts";
@@ -1083,7 +1083,7 @@ const assignGuardIssues = async (issues: Issue[]) => {
     (i) =>
       i.state === "opened" &&
       i.assignees.length === 0 &&
-      (i.description ?? "").includes(RELEASE_GUARD_MARKER)
+      hasReleaseGuardMarker(i.description)
   );
   // Best effort: a missing flow account never blocks the mitigation.
   const problems = await Promise.all(

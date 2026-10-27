@@ -1,5 +1,6 @@
 import { FLAGS, isFlagName } from "../../../packages/core/src/flag-registry.ts";
 import type { FlagDefinition } from "../../../packages/core/src/flag-registry.ts";
+import { machineData } from "./heal.ts";
 import type { ExceptionCounts } from "./posthog.ts";
 
 // Progressive delivery (docs/adr/0001-progressive-delivery.md), the parts
@@ -318,7 +319,12 @@ export const cleanupBody = (finding: HygieneFinding) => {
   ].join("\n");
 };
 
-export const RELEASE_GUARD_MARKER = "<!-- wovain:release-guard -->";
+// A visible line in the issue's "Machine data" block: the flow's get_issue
+// tool strips HTML comments. Older issues carry `<!-- wovain:release-guard -->`,
+// which contains it too.
+const RELEASE_GUARD_MARKER = "wovain:release-guard";
+export const hasReleaseGuardMarker = (description: string | null) =>
+  (description ?? "").includes(RELEASE_GUARD_MARKER);
 
 // The issue the release guard files after it acted; the wovain release-guard
 // Duo flow reads it and writes the diagnosis.
@@ -347,5 +353,5 @@ export const releaseGuardBody = ({
     "",
     `Acted from ${source}. Nothing is switched back on automatically: after the diagnosis, a person re-enables the flag or merges the fix, and the next deploy goes through the canary again.`,
     "",
-    RELEASE_GUARD_MARKER,
+    machineData(RELEASE_GUARD_MARKER),
   ].join("\n");

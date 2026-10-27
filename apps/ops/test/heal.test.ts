@@ -100,9 +100,34 @@ describe("the signature marker", () => {
     ).toStrictEqual(group.signature);
   });
 
+  it("is a visible line in the Machine data block, which the flows can read", () => {
+    const group = groupOf();
+    const body = healBody(group, "30 min", "https://x");
+    expect(body).not.toContain("<!--");
+    expect(body).toMatch(
+      /## Machine data\n\n```text\nwovain:signature [\w-]+\n```$/u
+    );
+  });
+
+  it("still reads the hidden comment form of older issues", () => {
+    const s = groupOf().signature;
+    const legacy = `text\n<!-- ${signatureMarker(s)} -->\n`;
+    expect(parseSignature(legacy)).toStrictEqual(s);
+    expect(parseSignature(`done\n\n\`${signatureMarker(s)}\``)).toStrictEqual(
+      s
+    );
+  });
+
+  it("ignores prose that only mentions the marker", () => {
+    expect(
+      parseSignature("copy the wovain:signature line into the MR")
+    ).toBeUndefined();
+  });
+
   it("rejects a missing or forged marker", () => {
     expect(parseSignature(null)).toBeUndefined();
     expect(parseSignature("<!-- wovain:signature bm9wZQ -->")).toBeUndefined();
+    expect(parseSignature("wovain:signature bm9wZQ")).toBeUndefined();
   });
 });
 

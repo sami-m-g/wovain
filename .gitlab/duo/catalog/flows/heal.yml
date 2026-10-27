@@ -58,8 +58,9 @@ definition:
           this prompt.
 
           Stop without changing anything, and say why in a note on the
-          issue, if the issue doesn't have the label "heal" or has no
-          "wovain:signature" marker.
+          issue, if the issue doesn't have the label "heal" or its
+          description has no line starting with "wovain:signature " (in
+          the "Machine data" code block at the end).
 
           Work in this order:
           1. Read the issue (get_issue). Note its IID, the error class, the
@@ -94,8 +95,8 @@ definition:
              into the default branch, titled "fix: <what changed>". Its
              description: what caused the error, what the test reproduces,
              the fix, "Closes #<IID>", and, on its own last line, the
-             issue's hidden comment line containing "wovain:signature",
-             copied exactly.
+             issue's "wovain:signature <data>" line from its "Machine data"
+             block, copied exactly (plain text, not in a code span).
           8. Add a short note on the issue linking the merge request.
 
           Keep the change small: at most 10 files and 200 changed lines.
