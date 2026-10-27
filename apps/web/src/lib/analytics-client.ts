@@ -9,7 +9,7 @@ import { analyticsStarted } from "@/lib/consent-store";
 // from instrumentation-client.ts as the page loads. Consent follows PostHog's
 // cookie banner setup: cookieless "on_reject" mode stores nothing in the
 // browser and records no replays until the visitor accepts, and PostHog
-// counts those visits with a server-side hash (infra/posthog/settings.tf
+// counts those visits with a server-side hash (infra/posthog/program.ts
 // turns on "Cookieless server hash mode"). Where the law asks for an opt-in,
 // or the country is unknown, the visitor starts opted out and sees the
 // banner (lib/consent.ts, components/consent-banner.tsx); elsewhere consent
@@ -59,7 +59,7 @@ const detectBot = async () => {
 
 // Properties every event carries, in PostHog's own names where it has one.
 // `bot` is set only when true, so the project's test account filters
-// (infra/posthog/settings.tf) drop events where it is set.
+// (infra/posthog/program.ts) drop events where it is set.
 const visitorProperties = async () => {
   const [visitor, botCheck] = await Promise.all([fetchVisitor(), detectBot()]);
   return {

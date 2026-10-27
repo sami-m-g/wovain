@@ -100,4 +100,29 @@ test("the program registers every resource once, without throwing", async () => 
   ).toEqual([]);
   // Two resources with one type and name are one URN, which the engine refuses.
   expect(registered.filter((r, i) => registered.indexOf(r) !== i)).toEqual([]);
+
+  // PostHog: the health dashboard, a flag per registry entry and an insight
+  // and alert per KPI.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- generated JSON
+  const flags = JSON.parse(read("posthog/flags.json")) as {
+    flags: Record<string, unknown>;
+  };
+  for (const key of Object.keys(flags.flags)) {
+    expect(registered).toContain(
+      `posthog:index/featureFlag:FeatureFlag::flag-${key}`
+    );
+  }
+  expect(registered).toContain("posthog:index/dashboard:Dashboard::health");
+  expect(registered).toContain("posthog:index/alert:Alert::kpi-field-lcp");
+});
+
+test("every PostHog object to adopt is one the program declares", () => {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- pulumi import's file format
+  const { resources } = JSON.parse(read("posthog/import.json")) as {
+    resources: { id: string; name: string; type: string }[];
+  };
+  expect(resources.length).toBeGreaterThan(0);
+  for (const { name, type } of resources) {
+    expect(registered).toContain(`${type}::${name}`);
+  }
 });

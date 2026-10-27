@@ -1,123 +1,199 @@
+import { log } from "evlog";
+import type { FeatureFlagEvaluations } from "posthog-node";
 import { describe, expect, it, vi } from "vitest";
 
 import { FLAGS, FLAG_NAMES } from "./flag-registry";
-import { createFlags } from "./flags";
-import type { Exposure, FlagsConfig } from "./flags";
+import { ANONYMOUS, createFlags } from "./flags";
+import type { Exposure, FlagClient, FlagsConfig } from "./flags";
 
-const configured: FlagsConfig = {
-  GITLAB_FEATURE_FLAGS_ENVIRONMENT: "production",
-  GITLAB_FEATURE_FLAGS_INSTANCE_ID: "instance",
-  GITLAB_FEATURE_FLAGS_URL:
-    "https://gitlab.example/api/v4/feature_flags/unleash/1",
-  NEXT_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com",
-};
-
-const fakeUnleash = (synced: boolean, on: Set<string>) => ({
-  isEnabled: vi.fn((name: string) => on.has(name)),
-  isSynchronized: () => synced,
+vi.mock(import("evlog"), async (original) => {
+  const evlog = await original();
+  return { ...evlog, log: { ...evlog.log, error: vi.fn() } };
 });
 
+const configured: FlagsConfig = {
+  BETTER_AUTH_URL: "https://wovain.com",
+  NEXT_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com",
+  NEXT_PUBLIC_POSTHOG_KEY: "phc_test",
+  POSTHOG_SECRET_KEY: "phs_test",
+};
+
+// PostHog's local evaluation: `flags` holds the definitions' answers (absent:
+// not in PostHog), `ready` whether the definitions loaded.
+const fakePostHog = (ready: boolean, flags: Record<string, boolean>) => {
+  const client = {
+    capture: vi.fn(),
+    evaluateFlags: vi.fn(
+      async () =>
+        await Promise.resolve({
+          getFlag: (key: string) => flags[key],
+          isEnabled: (key: string) => flags[key] ?? false,
+        } as unknown as FeatureFlagEvaluations)
+    ),
+    isLocalEvaluationReady: vi.fn(() => ready),
+    waitForLocalEvaluationReady: vi.fn(
+      async () => await Promise.resolve(ready)
+    ),
+  };
+  return client satisfies FlagClient;
+};
+
 describe("createFlags", () => {
-  it("fails closed until GitLab's flags are fetched", () => {
+  it("answers from PostHog's local evaluation with the user, plan and environment", async () => {
     const exposures: Exposure[] = [];
+    const posthog = fakePostHog(true, { "mastra-runs": true });
     const flags = createFlags(configured, {
       onExposure: (e) => exposures.push(e),
-      unleash: fakeUnleash(false, new Set(["trends-tavily"])),
+      posthog,
     });
 
-    expect(flags.isOn("trends-tavily", { userId: "u1" })).toBe(false);
-    expect(flags.ready()).toBe(false);
-    expect(exposures[0]?.reason).toBe("closed");
-  });
-
-  it("answers from GitLab and reports the exposure", () => {
-    const exposures: Exposure[] = [];
-    const unleash = fakeUnleash(true, new Set(["mastra-runs"]));
-    const flags = createFlags(configured, {
-      onExposure: (e) => exposures.push(e),
-      unleash,
+    expect(await flags.isOn("mastra-runs", { userId: "u1" })).toBe(true);
+    expect(posthog.evaluateFlags).toHaveBeenCalledWith("u1", {
+      flagKeys: ["mastra-runs"],
+      personProperties: { environment: "production", plan: "free" },
     });
-
-    expect(flags.isOn("mastra-runs", { userId: "u1" })).toBe(true);
-    expect(unleash.isEnabled).toHaveBeenCalledWith(
-      "mastra-runs",
-      expect.objectContaining({ userId: "u1" }),
-      false
-    );
     expect(exposures).toEqual([
       expect.objectContaining({
         enabled: true,
         environment: "production",
         flag: "mastra-runs",
-        reason: "gitlab",
+        reason: "posthog",
       }),
     ]);
+    // The SDK sends PostHog's own exposures.
+    expect(posthog.capture).not.toHaveBeenCalled();
   });
 
-  it("evaluates every merchant by their own user ID", () => {
-    const unleash = fakeUnleash(true, new Set(["app-ui-v2"]));
+  it("keeps a flag PostHog switched off off, kill switches included", async () => {
+    const posthog = fakePostHog(true, { "trends-tavily": false });
+    const flags = createFlags(configured, { posthog });
+
+    expect(await flags.isOn("trends-tavily", { userId: "u1" })).toBe(false);
+  });
+
+  it("evaluates requests without a user as anonymous", async () => {
+    const posthog = fakePostHog(true, { "billing-paid-plans": false });
+    const flags = createFlags(configured, { posthog });
+
+    await flags.isOn("billing-paid-plans");
+
+    expect(posthog.evaluateFlags).toHaveBeenCalledWith(
+      ANONYMOUS,
+      expect.anything()
+    );
+  });
+
+  it("falls back to the registry when PostHog's definitions aren't loaded", async () => {
+    const exposures: Exposure[] = [];
+    const posthog = fakePostHog(false, {});
     const flags = createFlags(configured, {
-      onExposure: vi.fn(),
-      unleash,
+      onExposure: (e) => exposures.push(e),
+      posthog,
     });
 
-    flags.isOn("app-ui-v2", { userId: "u1" });
-
-    expect(unleash.isEnabled).toHaveBeenCalledWith(
-      "app-ui-v2",
-      expect.objectContaining({ userId: "u1" }),
+    // Kill switches rolled out to everyone stay on through an outage.
+    expect(await flags.isOn("trends-tavily", { userId: "u1" })).toBe(true);
+    expect(await flags.isOn("trends-qloo", { userId: "u1" })).toBe(true);
+    // Internal and percent rollouts stay closed.
+    expect(await flags.isOn("billing-polar", { userId: "u1" })).toBe(false);
+    expect(await flags.isOn("mastra-runs", { userId: "u1" })).toBe(false);
+    expect(await flags.isOn("billing-paid-plans", { userId: "u1" })).toBe(
       false
     );
-  });
-
-  it("keeps Qloo off for paid plans whatever GitLab says", () => {
-    const unleash = fakeUnleash(true, new Set(["trends-qloo"]));
-    const flags = createFlags(configured, { onExposure: vi.fn(), unleash });
-
-    expect(flags.isOn("trends-qloo", { plan: "studio" })).toBe(false);
-    expect(flags.isOn("trends-qloo", { plan: "label" })).toBe(false);
-    expect(flags.isOn("trends-qloo", { plan: "demo" })).toBe(true);
-    expect(flags.isOn("trends-qloo", { plan: "free" })).toBe(true);
-    // No plan counts as free, the only plan sold at launch.
-    expect(flags.isOn("trends-qloo")).toBe(true);
-    expect(unleash.isEnabled).toHaveBeenCalledTimes(3);
-  });
-
-  it("fails closed in production when GitLab isn't configured, except for flags on for everyone", () => {
-    const flags = createFlags(
-      { ...configured, GITLAB_FEATURE_FLAGS_URL: undefined },
-      { onExposure: vi.fn() }
+    expect(posthog.evaluateFlags).not.toHaveBeenCalled();
+    expect(exposures[0]?.reason).toBe("fallback");
+    // Every fallback reaches error tracking.
+    expect(log.error).toHaveBeenCalledWith(
+      expect.objectContaining({ error: "FEATURE_FLAG_FALLBACK" })
     );
-
-    expect(flags.isOn("trends-tavily")).toBe(true);
-    expect(flags.isOn("billing-polar")).toBe(false);
-    expect(flags.isOn("mastra-runs")).toBe(false);
-    expect(flags.isOn("billing-paid-plans")).toBe(false);
-    expect(flags.isOn("fault-injection-checkout")).toBe(false);
+    // Registry answers are exposures too, once per user, flag and value.
+    await flags.isOn("trends-tavily", { userId: "u1" });
+    expect(posthog.capture).toHaveBeenCalledTimes(5);
+    expect(posthog.capture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        distinctId: "u1",
+        event: "$feature_flag_called",
+        properties: expect.objectContaining({
+          "$feature/trends-tavily": true,
+          $feature_flag: "trends-tavily",
+          flag_reason: "fallback",
+        }),
+      })
+    );
   });
 
-  it("uses the development rollout in development when GitLab isn't configured", () => {
+  it("answers from PostHog once a later poll loads the definitions", async () => {
+    const posthog = fakePostHog(false, { "trends-tavily": false });
+    const flags = createFlags(configured, { posthog });
+
+    expect(await flags.isOn("trends-tavily", { userId: "u1" })).toBe(true);
+    posthog.isLocalEvaluationReady.mockReturnValue(true);
+    expect(await flags.isOn("trends-tavily", { userId: "u1" })).toBe(false);
+  });
+
+  it("falls back to the registry for a flag PostHog doesn't have", async () => {
+    const posthog = fakePostHog(true, {});
+    const flags = createFlags(configured, { posthog });
+
+    expect(await flags.isOn("trends-tavily", { userId: "u1" })).toBe(true);
+    expect(await flags.isOn("app-ui-v2", { userId: "u1" })).toBe(false);
+  });
+
+  it("keeps Qloo off for paid plans whatever PostHog says", async () => {
+    const posthog = fakePostHog(true, { "trends-qloo": true });
+    const flags = createFlags(configured, { posthog });
+
+    expect(await flags.isOn("trends-qloo", { plan: "studio" })).toBe(false);
+    expect(await flags.isOn("trends-qloo", { plan: "label" })).toBe(false);
+    expect(await flags.isOn("trends-qloo", { plan: "demo" })).toBe(true);
+    expect(await flags.isOn("trends-qloo", { plan: "free" })).toBe(true);
+    // No plan counts as free, the only plan sold at launch.
+    expect(await flags.isOn("trends-qloo")).toBe(true);
+    expect(posthog.evaluateFlags).toHaveBeenCalledTimes(3);
+  });
+
+  it("answers from the registry without a secret key, production only for flags on for everyone", async () => {
+    const flags = createFlags({
+      ...configured,
+      NEXT_PUBLIC_POSTHOG_KEY: undefined,
+      POSTHOG_SECRET_KEY: undefined,
+    });
+
+    expect(await flags.isOn("trends-tavily")).toBe(true);
+    expect(await flags.isOn("billing-polar")).toBe(false);
+    expect(await flags.isOn("mastra-runs")).toBe(false);
+    expect(await flags.isOn("billing-paid-plans")).toBe(false);
+  });
+
+  it("uses the development rollout outside wovain.com without a secret key", async () => {
+    const exposures: Exposure[] = [];
     const flags = createFlags(
       {
         ...configured,
-        GITLAB_FEATURE_FLAGS_ENVIRONMENT: "development",
-        GITLAB_FEATURE_FLAGS_URL: undefined,
+        BETTER_AUTH_URL: "http://localhost:3000",
+        NEXT_PUBLIC_POSTHOG_KEY: undefined,
+        POSTHOG_SECRET_KEY: undefined,
       },
-      { onExposure: vi.fn() }
+      { onExposure: (e) => exposures.push(e) }
     );
 
-    expect(flags.isOn("billing-polar")).toBe(true);
-    expect(flags.isOn("mastra-runs")).toBe(true);
-    expect(flags.isOn("billing-paid-plans")).toBe(false);
+    expect(await flags.isOn("billing-polar")).toBe(true);
+    expect(await flags.isOn("mastra-runs")).toBe(true);
+    expect(await flags.isOn("billing-paid-plans")).toBe(false);
+    expect(exposures[0]).toMatchObject({
+      environment: "development",
+      reason: "local",
+    });
   });
 
-  it("snapshots every registered flag", () => {
+  it("snapshots every registered flag", async () => {
     const flags = createFlags(configured, {
-      onExposure: vi.fn(),
-      unleash: fakeUnleash(true, new Set()),
+      posthog: fakePostHog(true, {}),
     });
 
-    expect(Object.keys(flags.snapshot({ userId: "u1" }))).toEqual(FLAG_NAMES);
+    expect(Object.keys(await flags.snapshot({ userId: "u1" }))).toEqual(
+      FLAG_NAMES
+    );
   });
 });
 

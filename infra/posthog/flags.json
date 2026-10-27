@@ -1,0 +1,318 @@
+{
+  "flags": {
+    "app-ui-v2": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The redesigned app UI (openspec app-ui-pass) (owner: design, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "autopilot": {
+      "active": false,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Autopilot: idea, product set, ads and a paused campaign without a human step (owner: runs, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "billing-paid-plans": {
+      "active": false,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [],
+          "rollout_percentage": 0
+        }
+      ],
+      "name": "Paid plans: checkout, plan changes and credit pack purchases (MR !116). Off at launch: only Free is sold (owner: billing, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "permission"
+      ]
+    },
+    "billing-polar": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Polar billing paths from MR !116: credits, the billing page and webhooks (owner: billing, expires 2026-12-15). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "fal-oauth": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Connect fal with OAuth instead of a pasted key (openspec add-fal-byo-connector) (owner: connectors, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "mastra-runs": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 10
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "New runs go through the Mastra workflow; the legacy run steps are the fallback (owner: runs, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "trends-qloo": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            },
+            {
+              "key": "plan",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "free",
+                "demo"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            },
+            {
+              "key": "plan",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "free",
+                "demo"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Qloo taste themes in trend research. Qloo hackathon terms: free and demo plans only until judging ends on 2026-11-05; paid plans get Tavily-only trends (owner: growth, expires 2026-11-05). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "kill-switch"
+      ]
+    },
+    "trends-tavily": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Live Tavily search in trend research (off: research returns no ideas) (owner: growth, expires 2027-06-30). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "kill-switch"
+      ]
+    }
+  },
+  "internal_user_id": "wovain-internal"
+}
