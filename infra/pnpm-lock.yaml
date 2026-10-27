@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@pulumi/gcp':
-        specifier: 9.37.1
-        version: 9.37.1(@typescript/typescript6@6.0.2)
+        specifier: 10.1.1
+        version: 10.1.1(@typescript/typescript6@6.0.2)
       '@pulumi/github':
         specifier: 6.15.0
         version: 6.15.0(@typescript/typescript6@6.0.2)
@@ -18,8 +18,8 @@ importers:
         specifier: file:sdks/posthog
         version: file:sdks/posthog
       '@pulumi/pulumi':
-        specifier: 3.267.0
-        version: 3.267.0(@typescript/typescript6@6.0.2)
+        specifier: 3.270.0
+        version: 3.270.0(@typescript/typescript6@6.0.2)
       '@pulumi/random':
         specifier: 4.21.4
         version: 4.21.4(@typescript/typescript6@6.0.2)
@@ -292,8 +292,8 @@ packages:
   '@protobufjs/utf8@1.1.2':
     resolution: {integrity: sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==}
 
-  '@pulumi/gcp@9.37.1':
-    resolution: {integrity: sha512-KDUykcf1CYwn4/QQ+/TcfU2qhKPhYyENtPcQq6+5x4pIc3FyycuhfMXDybERmONQMiqo3tG5LNkMlgtSKJHo9A==}
+  '@pulumi/gcp@10.1.1':
+    resolution: {integrity: sha512-4BqjwTQYUELgTOXHbdxarlyHyPt6VV9zUg+ppzzXQTs8+/n8FTNaYBM2P6h+BR26+tEDnEmBmGzE39Z1ZfsZMA==}
 
   '@pulumi/github@6.15.0':
     resolution: {integrity: sha512-U8ZxPQQcOrcTn8y8EZsWmXzMtbw0JnwWCVGmqxBZ/i2SpUlEGMYT9B+EFC/qTALZXkDf7cMiq6fZ3Gy1G23nyQ==}
@@ -304,8 +304,8 @@ packages:
   '@pulumi/posthog@file:sdks/posthog':
     resolution: {directory: sdks/posthog, type: directory}
 
-  '@pulumi/pulumi@3.267.0':
-    resolution: {integrity: sha512-dd/K3sxqNKqiYAvcg14TtEL7ZYqSyphMQMuqDeZvooX7jIKaa0t6QeNBnu6KeyH4bqKqNzmta07a/tgmUkw8/w==}
+  '@pulumi/pulumi@3.270.0':
+    resolution: {integrity: sha512-k2GSGtoP2yrkIe4r+1YvyKL6k7mM6SYnySv6tSzGrv/oTY7WemEmvNEvn7Qd/JbkCMmYeBhWULDS5qB9qpvgkg==}
     engines: {node: '>=22'}
     peerDependencies:
       ts-node: '>= 7.0.1 < 12'
@@ -1766,9 +1766,9 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
-  '@pulumi/gcp@9.37.1(@typescript/typescript6@6.0.2)':
+  '@pulumi/gcp@10.1.1(@typescript/typescript6@6.0.2)':
     dependencies:
-      '@pulumi/pulumi': 3.267.0(@typescript/typescript6@6.0.2)
+      '@pulumi/pulumi': 3.270.0(@typescript/typescript6@6.0.2)
       '@types/express': 4.17.25
     transitivePeerDependencies:
       - supports-color
@@ -1777,7 +1777,7 @@ snapshots:
 
   '@pulumi/github@6.15.0(@typescript/typescript6@6.0.2)':
     dependencies:
-      '@pulumi/pulumi': 3.267.0(@typescript/typescript6@6.0.2)
+      '@pulumi/pulumi': 3.270.0(@typescript/typescript6@6.0.2)
     transitivePeerDependencies:
       - supports-color
       - ts-node
@@ -1786,7 +1786,7 @@ snapshots:
   '@pulumi/policy@1.21.0(@typescript/typescript6@6.0.2)':
     dependencies:
       '@grpc/grpc-js': 1.14.6
-      '@pulumi/pulumi': 3.267.0(@typescript/typescript6@6.0.2)
+      '@pulumi/pulumi': 3.270.0(@typescript/typescript6@6.0.2)
       google-protobuf: 3.21.4
     transitivePeerDependencies:
       - supports-color
@@ -1795,14 +1795,14 @@ snapshots:
 
   '@pulumi/posthog@file:sdks/posthog':
     dependencies:
-      '@pulumi/pulumi': 3.267.0(typescript@4.9.5)
+      '@pulumi/pulumi': 3.270.0(typescript@4.9.5)
       '@types/node': 20.19.43
       typescript: 4.9.5
     transitivePeerDependencies:
       - supports-color
       - ts-node
 
-  '@pulumi/pulumi@3.267.0(@typescript/typescript6@6.0.2)':
+  '@pulumi/pulumi@3.270.0(@typescript/typescript6@6.0.2)':
     dependencies:
       '@grpc/grpc-js': 1.14.6
       '@logdna/tail-file': 2.2.0
@@ -1834,7 +1834,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@pulumi/pulumi@3.267.0(typescript@4.9.5)':
+  '@pulumi/pulumi@3.270.0(typescript@4.9.5)':
     dependencies:
       '@grpc/grpc-js': 1.14.6
       '@logdna/tail-file': 2.2.0
@@ -1868,7 +1868,7 @@ snapshots:
 
   '@pulumi/random@4.21.4(@typescript/typescript6@6.0.2)':
     dependencies:
-      '@pulumi/pulumi': 3.267.0(@typescript/typescript6@6.0.2)
+      '@pulumi/pulumi': 3.270.0(@typescript/typescript6@6.0.2)
     transitivePeerDependencies:
       - supports-color
       - ts-node
