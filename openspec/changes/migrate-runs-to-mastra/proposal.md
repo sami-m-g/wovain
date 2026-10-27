@@ -1,6 +1,6 @@
 # Proposal
 
-MR: none yet. Status: in progress.
+PR: none yet. Status: in progress.
 
 ## Why
 

@@ -30,13 +30,13 @@ Direction -> Graphe de goûts Qloo -> Tavily : pourquoi maintenant -> Design sur
 
 ## Inspiration et identité
 
-Éditorial et sobre : des phrases courtes et réfléchies, des mots d'atelier (collection, capsule, modèle vierge, retouche, marge), des chiffres plutôt que des adjectifs, pas d'emphase. Du côté du créateur : le goût lui reste, wovain s'occupe des corvées. Honnête sur l'argent : frais, marges et dépenses dits clairement. Références : Aesop, Linear, Everlane et Shopify pour le ton et le soin. Nom : wovain, en minuscules. Un nouveau logo est en cours de conception ; le tour 6 recommande le logotype « Impression » (pas définitif). La voix et le public sont décrits dans `.agents/product-marketing.md` (MR !118, en revue).
+Éditorial et sobre : des phrases courtes et réfléchies, des mots d'atelier (collection, capsule, modèle vierge, retouche, marge), des chiffres plutôt que des adjectifs, pas d'emphase. Du côté du créateur : le goût lui reste, wovain s'occupe des corvées. Honnête sur l'argent : frais, marges et dépenses dits clairement. Références : Aesop, Linear, Everlane et Shopify pour le ton et le soin. Nom : wovain, en minuscules. Un nouveau logo est en cours de conception ; le tour 6 recommande le logotype « Impression » (pas définitif). La voix et le public sont décrits dans `.agents/product-marketing.md`.
 
 Construit à partir de services existants plutôt que reconstruit : Fourthwall pour le catalogue, la boutique et l'expédition, Meta pour la diffusion des publicités, fal pour les visuels, Qloo et Tavily pour les signaux, Nemotron pour la rédaction et l'évaluation, Polar pour la facturation.
 
 ## Pourquoi c'est important pour le créateur
 
-Le créateur du projet veut que wovain soit un vrai produit pour lequel les créateurs indépendants paient, pas une démo : un agent prend en charge les corvées de production et de marketing d'une collection en impression à la demande, tandis que le créateur garde chaque décision de goût et de dépense. Le projet a commencé comme projet Build With AI: Basics et participe aussi aux hackathons GitLab Transcend, Nebius x NVIDIA et Qloo.
+Le créateur du projet veut que wovain soit un vrai produit pour lequel les créateurs indépendants paient, pas une démo : un agent prend en charge les corvées de production et de marketing d'une collection en impression à la demande, tandis que le créateur garde chaque décision de goût et de dépense. Le projet a commencé comme projet Build With AI: Basics et participe aussi aux hackathons Nebius x NVIDIA et Qloo.
 
 ## À quoi ressemble « ça marche »
 
@@ -59,13 +59,12 @@ Le créateur du projet veut que wovain soit un vrai produit pour lequel les cré
 | Publication | Produits Fourthwall masqués, publiés par une étape distincte | En ligne |
 | Publicités | Jusqu'à trois variantes de publicité par produit et une campagne Meta en pause | En ligne |
 | Autopilot | Exécution de bout en bout où Nemotron décide et le code encadre | En ligne |
-| Comptes | Better Auth avec Google et e-mail ; écrans Better Auth UI et paramètres du compte | Google en ligne ; UI en revue (MR !111) |
+| Comptes | Better Auth avec Google et e-mail ; écrans Better Auth UI et paramètres du compte | Google en ligne ; UI en revue |
 | Connecteurs | Fourthwall et Meta du marchand (OAuth) ; clé fal du marchand | Fourthwall et Meta en ligne ; fal en cours |
-| Facturation | Crédits et forfaits Polar (marchand officiel) ; wovain paie Nebius, Tavily et Qloo sur les crédits | En revue (MR !116), prix proposés |
+| Facturation | Crédits et forfaits Polar (marchand officiel) ; wovain paie Nebius, Tavily et Qloo sur les crédits | En revue, prix proposés |
 | Moteur d'agents | Agents Mastra, workflows avec suspension et reprise pour l'approbation, exécutions durables, mémoire sur `@mastra/pg`, traçage | En cours |
 | Qualité | Scorers Mastra sur chaque agent et chaque étape, juges LLM calibrés, garde-fous | Prévu avec la migration Mastra |
 | Analytique | PostHog ; étoile polaire « marchands activés par semaine » | Tableaux de bord créés ; certains événements prévus |
-| Après le déploiement | Flows GitLab Duo : auto-réparation, éclaireur et développeur ; revue de code sur chaque MR et un flow de revue des dépendances | Trois flows en ligne ; le reste en revue (MR !113, !114, !117) |
 
 ## Plus tard
 

@@ -1,6 +1,6 @@
 # Proposal
 
-MR: !118 (`feat/product-landing-docs`). Status: in review.
+PR: `feat/product-landing-docs`. Status: in review.
 
 ## Why
 

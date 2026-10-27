@@ -1,6 +1,6 @@
 # Proposal
 
-MR: none yet. Status: in progress. Blocks `add-polar-billing` going live.
+PR: none yet. Status: in progress. Blocks `add-polar-billing` going live.
 
 ## Why
 

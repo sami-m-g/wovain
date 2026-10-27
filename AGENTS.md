@@ -37,31 +37,28 @@
   - `packages/db/src/migrations`: `pnpm run db:generate`
   - `.agents/skills`: `npx skills experimental_install`
   - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
-- Every error must reach PostHog Error Tracking, the one place self-healing watches (`docs/flows.md`, "One error sink"): log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
+- Every error must reach PostHog Error Tracking, the one place errors are watched: log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
 - Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
 
 ## Specs and changes (OpenSpec)
 
 - `openspec/specs/` is the current truth for each capability; `openspec/changes/` holds open changes.
-- Every feature change starts as an OpenSpec change (`/opsx:propose`) linked to a GitLab issue. Put the issue link in `proposal.md`; the MR says `Closes #<issue>`.
-- Archive the change (`openspec archive <change>`) in the MR that merges it, so `openspec/specs/` stays current.
+- Every feature change starts as an OpenSpec change (`/opsx:propose`) linked to a GitHub issue. Put the issue link in `proposal.md`; the PR says `Closes #<issue>`.
+- Archive the change (`openspec archive <change>`) in the PR that merges it, so `openspec/specs/` stays current.
 - Run `pnpm run spec:validate` before committing spec changes.
-- `docs/scope.md`, `docs/prd.md` and `docs/spec.md` stay the Build With AI: Basics-format summary. When scope changes, update them (and their docs-site copies) in the same MR.
+- `docs/scope.md`, `docs/prd.md` and `docs/spec.md` stay the Build With AI: Basics-format summary. When scope changes, update them (and their docs-site copies) in the same PR.
 
-## How to roll out and roll back
+## Issues, pull requests and CI
 
-Design: `docs/adr/0001-progressive-delivery.md`.
+- Code, issues and pull requests live on GitHub (`sami-m-g/wovain`). CI is GitHub Actions.
+- Work on a branch and open a pull request against `main`. The PR says `Closes #<issue>`.
 
-- **New flag:** add it to `packages/core/src/flag-registry.ts` with an owner, an expiry and a rollout per environment, then read it with `core.flags.isOn("<name>", { userId, plan })` (`isFlagOn` in `apps/web`). Names are typed; never pass a string you built. The safe state is off: flags are off when GitLab can't be reached.
-- **Roll out:** change the flag's `rollout` in the registry (`off` → `internal` → `percent` → `all`) in a merge request. Its Pulumi preview shows the new GitLab strategies, and the merge applies them.
-- **Kill switch:** Deploy > Feature flags > the flag's Status toggle, or `PUT /projects/:id/feature_flags/:name` with `active=false`. Pulumi ignores Status, so this isn't drift. The release guard does the same on its own for guarded flags.
-- **Deploys:** every web deploy is a canary (the `canary` tag, 10% of traffic) that `canary:production` promotes or rolls back after 5 minutes. Its verdict is in the job's `canary.md` artifact.
-- **Deploy order:** the `production`, `infra` and `development` resource groups run `newest_ready_first`, so the newest pipeline's job takes the lock first, not the oldest. A project setting in GitLab, not in code or Pulumi (the provider has no resource for it): re-apply with `glab api -X PUT projects/87296573/resource_groups/<key> -f process_mode=newest_ready_first` (Developer is enough; the project-wide default needs Maintainer). A new push cancels the branch's running pipeline while only interruptible jobs have started (`workflow:auto_cancel:on_new_commit: interruptible`; build and test jobs are interruptible by default, infra, image, migrate, deploy and canary jobs are not). A superseded pipeline's queued deploy jobs skip themselves when `CI_COMMIT_SHA` is no longer main's head (`.skip-if-superseded`, `.gitlab/ci/deploy.yml`), except `canary:production`, which always resolves a canary already at 10%; `DEPLOY_STALE=1` on Run pipeline forces an old commit out. Never cancel main pipelines by hand to unblock a deploy.
-- **Force a full deploy:** main applies infra/ and builds the docs image only when they changed since what is live (`.gitlab/ci/changed-since.sh`). Run pipeline on `main` with `FORCE_ALL=1` to apply and build everything.
-- **Roll back traffic by hand:** Run pipeline on `main` with `ROLLBACK=1` (optionally `ROLLBACK_TO=<revision>`). Never `gcloud run services update-traffic` from a laptop, and never add traffic to Pulumi: CI owns it.
-- **Canary demo (a bad deploy on purpose):** merge a merge request whose commit carries the git trailer `Canary-Demo-Fault: true` (or Run pipeline on `main` with `CANARY_DEMO_FAULT=1` if your role can set variables). `deploy:production` sets `FAULT_INJECTION_REVISION=checkout` on the new canary revision only (10%); the stable revision never gets it. `canary:production` rolls it back and files a `release-guard` issue, and the next deploy without the trailer clears it. Put the trailer on one demo commit only, never in a merge request description or a revert.
-- **Clean up:** a `flag-cleanup` issue means the flag expired or is fully rolled out. Delete the losing code path and the `isOn` calls, then the registry entry; `pulumi up` deletes the GitLab flag.
+## Feature flags
+
+- Add a flag to the registry in `packages/core/src/flag-registry.ts` with an owner, an expiry and a rollout per environment, then read it with `core.flags.isOn("<name>", { userId, plan })` (`isFlagOn` in `apps/web`). Names are typed; never pass a string you built.
+- The safe state is off: a flag is off when its provider can't be reached.
+- When a flag expires or is fully rolled out, delete the losing code path, the `isOn` calls and the registry entry.
 
 # Ultracite Code Standards
 

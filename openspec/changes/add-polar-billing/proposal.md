@@ -1,6 +1,6 @@
 # Proposal
 
-MR: !116 (`feat/billing-polar`, draft). Status: in review; prices are a proposal (`docs/pricing-proposal.md`).
+PR: `feat/billing-polar` (draft). Status: in review; prices are a proposal (`docs/pricing-proposal.md`).
 
 ## Why
 

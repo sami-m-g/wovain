@@ -14,4 +14,4 @@
 
 ## 3. Ship
 
-- [ ] 3.1 Open the MR linked to its GitLab issue; merge, then archive this change
+- [ ] 3.1 Open the PR linked to its GitHub issue; merge, then archive this change
