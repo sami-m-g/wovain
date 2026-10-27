@@ -36,12 +36,6 @@ const MOVED_PAGES = [
   ["/guides/launch-a-merch-drop", "/guides/launch-a-capsule-drop"],
 ] as const;
 
-// The status page is GitLab Pages' unique domain for the project. status.<apex>
-// reaches this app through a Cloud Run domain mapping (infra/index.ts) and is
-// proxied there, so the URL stays put and no Pages domain (a Maintainer
-// setting) is needed. src/proxy.ts lets the host through untouched.
-const statusPages = "https://showcase-10d519.gitlab.io";
-
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
@@ -76,13 +70,6 @@ const nextConfig: NextConfig = {
         source: "/ingest/array/:path*",
       },
       { destination: `${posthogHost}/:path*`, source: "/ingest/:path*" },
-    ],
-    beforeFiles: [
-      {
-        destination: `${statusPages}/:path*`,
-        has: [{ type: "host", value: "status.wovain.com" }],
-        source: "/:path*",
-      },
     ],
   }),
   // The durable run engine (packages/api/src/workflows) runs as plain

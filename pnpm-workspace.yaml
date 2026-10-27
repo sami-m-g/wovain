@@ -19,10 +19,6 @@ catalog:
   "@typescript/native": npm:typescript@^7.0.2
   "@types/node": ^26.6.5
   varlock: 1.23.0
-  "@gitbeaker/rest": ^43.8.0
-  "@google-cloud/logging": ^12.3.0
-  "@google-cloud/monitoring": ^6.2.0
-  "@google-cloud/run": ^4.1.1
   lucide-react: ^1.61.0
   next-themes: ^0.4.6
   motion: ^14.6.0
