@@ -134,6 +134,9 @@ class ConnectionAuth implements OAuthClientProvider {
   clientMetadataUrl?: string;
   // The SDK discarded the tokens: the authorization server refused them.
   refused = false;
+  // The refresh token this session last saved (its own refresh, or the
+  // SDK's on a 401), so a rotation it made isn't taken for another's.
+  savedRefreshToken: string | undefined;
   readonly #client: StoredOAuthClientInformation;
   readonly #config: UpstreamConfig;
   readonly #flow: PendingFlow | undefined;
@@ -205,6 +208,7 @@ class ConnectionAuth implements OAuthClientProvider {
 
   async saveTokens(tokens: StoredOAuthTokens) {
     await this.#grant.save(withExpiry(tokens));
+    this.savedRefreshToken = tokens.refresh_token;
   }
 
   // Outside a connect flow the authorization URL is never followed.
@@ -386,10 +390,12 @@ export const createUpstream = (config: UpstreamConfig) => {
     const oauth = new ConnectionAuth(provider, config, grant);
     // The grant is dead: mark it for reconnecting. Unless another session
     // rotated the refresh token meanwhile: then this attempt only lost the
-    // race, and a retry uses the new grant.
+    // race, and a retry uses the new grant. The baseline is the refresh
+    // token this session saved last, else the one it started with.
     const refused = async () => {
       const latest = await grant.load();
-      if (latest !== undefined && latest.refresh_token !== held.refresh_token) {
+      const ours = oauth.savedRefreshToken ?? held.refresh_token;
+      if (latest !== undefined && latest.refresh_token !== ours) {
         return new Error("Another session refreshed the grant; retry");
       }
       await grant.expire();

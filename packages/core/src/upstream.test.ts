@@ -265,6 +265,29 @@ describe("upstream session", () => {
     expect(held.state.expired).toBe(false);
   });
 
+  it("marks the grant when a refresh it rotated itself is later refused", async () => {
+    let refreshes = 0;
+    const { fake, held, submit } = setup(
+      {
+        // The first refresh rotates the token; the next one is refused.
+        refresh: () => {
+          refreshes += 1;
+          return refreshes === 1
+            ? freshTokens()
+            : json({ error: "invalid_grant" }, 400);
+        },
+        refuses: "tool",
+        valid: "nobody's",
+      },
+      stale
+    );
+
+    await expect(submit()).rejects.toSatisfy(isReconnectNeeded);
+    expect(fake.calls).toEqual(["submit_job"]);
+    expect(held.state.grant.refresh_token).toBe("refresh_2");
+    expect(held.state.expired).toBe(true);
+  });
+
   it("keeps a grant another session rotated while this refresh was refused", async () => {
     const box: { held?: ReturnType<typeof memoryGrant> } = {};
     const ctx = setup(
