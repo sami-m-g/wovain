@@ -24,8 +24,34 @@ export interface Quote {
   subtotal: number;
 }
 
-export const parseVariants = (raw: unknown): Variant[] =>
-  z.array(variantSchema).parse(raw);
+interface RejectedVariant {
+  id: string | undefined;
+  index: number;
+}
+
+export interface ParsedVariants {
+  rejected: RejectedVariant[];
+  variants: Variant[];
+}
+
+// Keeps the variants that parse and reports the ones that don't (an unpriced
+// draft variant, say), so one bad upstream row can't fail the whole quote. The
+// caller must log `rejected`; a payload that isn't a list still throws.
+export const parseVariants = (raw: unknown): ParsedVariants => {
+  const items = z.array(z.unknown()).parse(raw);
+  const variants: Variant[] = [];
+  const rejected: RejectedVariant[] = [];
+  for (const [index, item] of items.entries()) {
+    const parsed = variantSchema.safeParse(item);
+    if (parsed.success) {
+      variants.push(parsed.data);
+    } else {
+      const id = (item as { id?: unknown } | null)?.id;
+      rejected.push({ id: typeof id === "string" ? id : undefined, index });
+    }
+  }
+  return { rejected, variants };
+};
 
 export const quoteCheckout = (variants: Variant[], cart: CartLine[]): Quote => {
   const byId = new Map(variants.map((v) => [v.id, v]));
