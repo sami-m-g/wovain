@@ -1,4 +1,4 @@
-# wovain's PostHog KPIs: one SQL insight and one alert each (kpis.tf). Each
+# wovain's PostHog KPIs: one SQL insight and one alert each (program.ts). Each
 # query returns its value as the first row's `value` column; {windowDays} is
 # the window. direction: down means lower is better; weight: 1 (nice) to 5
 # (critical). Moved here from .gitlab/duo/kpis.yml when wovain left GitLab;

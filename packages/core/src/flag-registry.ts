@@ -1,5 +1,5 @@
 // wovain's feature flags: the one list that PostHog's flags (./flag-posthog.ts
-// to infra/posthog/flags.json, applied by OpenTofu in infra/posthog/flags.tf)
+// to infra/posthog/flags.json, applied by Pulumi in infra/posthog/program.ts)
 // and the app's SDK (./flags.ts) read. Pure data with no imports, so tools
 // can import it by path. docs/adr/0001-progressive-delivery.md explains the
 // design; AGENTS.md has the "roll out and roll back" steps.
@@ -22,7 +22,7 @@ export type FlagEnvironment = (typeof FLAG_ENVIRONMENTS)[number];
 // How far a flag is rolled out in one environment:
 // - off: no condition, nobody gets it.
 // - internal: team members, matched by their Better Auth user IDs
-//   (infra/posthog's internal_user_ids, plus INTERNAL_USER_ID below).
+//   (the wovain:posthogInternalUserIds stack config, plus INTERNAL_USER_ID below).
 // - percent: the team plus that percentage of users, sticky by user ID.
 // - all: every user.
 export type Rollout =
@@ -45,9 +45,9 @@ export interface FlagDefinition {
   // ISO date. Past it, the hygiene check opens a cleanup issue.
   expires: string;
   type: FlagType;
-  // PostHog's Status when OpenTofu creates the flag. After that it is the
+  // PostHog's Status when Pulumi creates the flag. After that it is the
   // global kill switch, left to people and the release guard (ignored by
-  // OpenTofu, so flipping it is not drift).
+  // Pulumi, so flipping it is not drift).
   initiallyActive: boolean;
   rollout: Record<FlagEnvironment, Rollout>;
   // A `plan` condition in PostHog, checked by the app too: other plans get

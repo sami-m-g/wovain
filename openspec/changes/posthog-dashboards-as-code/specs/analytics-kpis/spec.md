@@ -8,7 +8,7 @@ PostHog dashboards, insights and alerts SHALL be defined in `infra/posthog` and 
 
 #### Scenario: Plan after merge
 
-- **WHEN** `posthog:plan` runs on main
+- **WHEN** `pnpm infra:preview` runs on main
 - **THEN** it shows no drift between code and PostHog after apply
 
 ### Requirement: Run outcome events

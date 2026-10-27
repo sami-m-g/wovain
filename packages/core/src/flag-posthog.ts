@@ -6,8 +6,8 @@ import {
 } from "./flag-registry";
 import type { FlagDefinition, FlagEnvironment } from "./flag-registry";
 
-// The registry as PostHog feature flags: what infra/posthog/flags.tf applies
-// with OpenTofu. ./flag-posthog.test.ts writes it to infra/posthog/flags.json
+// The registry as PostHog feature flags: what infra/posthog/program.ts applies
+// with Pulumi. ./flag-posthog.test.ts writes it to infra/posthog/flags.json
 // (a Vitest file snapshot: `pnpm --filter @wovain/core exec vitest run -u`
 // after a registry change), so CI fails while the two differ.
 //
@@ -15,8 +15,8 @@ import type { FlagDefinition, FlagEnvironment } from "./flag-registry";
 // (./flags.ts): `environment`, `plan`, and the user ID as `distinct_id`, so the
 // SDK never has to ask PostHog's servers. A rollout becomes, per environment:
 // - off: no condition.
-// - internal: a condition with `internal: true`, which flags.tf turns into
-//   `distinct_id` in the team's Better Auth user IDs (var.internal_user_ids
+// - internal: a condition with `internal: true`, which program.ts turns into
+//   `distinct_id` in the team's Better Auth user IDs (wovain:posthogInternalUserIds
 //   and INTERNAL_USER_ID).
 // - percent: that condition plus the percentage of all users, sticky by user.
 // - all: every user.
@@ -30,7 +30,7 @@ interface PostHogProperty {
 }
 
 export interface PostHogCondition {
-  // flags.tf adds the team's user IDs to this condition.
+  // infra/posthog/program.ts adds the team's user IDs to this condition.
   internal: boolean;
   properties: PostHogProperty[];
   rollout_percentage: number;
@@ -38,7 +38,7 @@ export interface PostHogCondition {
 
 export interface PostHogFlag {
   // The initial Status. Like GitLab's toggle before, it is then the kill
-  // switch: OpenTofu ignores it after creation.
+  // switch: Pulumi ignores it after creation.
   active: boolean;
   groups: PostHogCondition[];
   name: string;

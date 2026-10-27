@@ -15,8 +15,8 @@ import type {
 // polls the flag definitions with a project secret API key
 // (POSTHOG_SECRET_KEY, `feature_flag:read`) and evaluates them in process,
 // never calling PostHog per request (strictLocalEvaluation). Flag names come
-// from the typed registry (./flag-registry.ts), which OpenTofu applies as
-// PostHog flags (./flag-posthog.ts, infra/posthog/flags.tf); every condition
+// from the typed registry (./flag-registry.ts), which Pulumi applies as
+// PostHog flags (./flag-posthog.ts, infra/posthog/program.ts); every condition
 // matches only what the app passes here: the user ID, `plan` and
 // `environment`.
 //

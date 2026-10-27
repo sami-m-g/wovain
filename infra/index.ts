@@ -7,6 +7,7 @@ import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { githubRepository } from "./github.ts";
 import { retainLegacy } from "./legacy.ts";
+import { configurePostHog } from "./posthog/program.ts";
 import { ResendDomain, ResendVerification } from "./resend.ts";
 import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
 
@@ -590,3 +591,7 @@ githubRepository({
   ...(posthogKey === undefined ? {} : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
   SITE_URL: siteUrl,
 });
+
+// The PostHog project: KPIs and alerts, dashboards, the run-rating survey,
+// project settings and the app's feature flags (posthog/program.ts).
+export const posthogDashboardUrl = configurePostHog();
