@@ -161,9 +161,12 @@ export const posthogGroupOf = (row: unknown[]): ErrorGroup | undefined => {
   };
 };
 
-// The signature travels in the issue as base64url JSON, so nothing in the
-// message can end the HTML comment it sits in.
-const SIGNATURE_MARKER = /<!-- wovain:signature (?<data>[\w-]+) -->/u;
+// The signature travels in the issue as base64url JSON on its own visible
+// line, in a "Machine data" code block: the Duo flows' get_issue tool strips
+// HTML comments, so a hidden marker never reached them. Issues filed before
+// that carry it as `<!-- wovain:signature … -->`, which still parses.
+const SIGNATURE_MARKER =
+  /^\s*(?:<!-- |`)?wovain:signature (?<data>[\w-]+)(?: -->|`)?\s*$/mu;
 const signatureSchema = z.object({
   fingerprint: z.string().regex(/^[0-9a-f]{12}$/u),
   message: z.string().max(MAX_MESSAGE),
@@ -175,7 +178,12 @@ const signatureSchema = z.object({
 });
 
 export const signatureMarker = (s: Signature) =>
-  `<!-- wovain:signature ${Buffer.from(JSON.stringify(s)).toString("base64url")} -->`;
+  `wovain:signature ${Buffer.from(JSON.stringify(s)).toString("base64url")}`;
+
+// The section at the end of an issue that holds markers for the flows and
+// wovain ops: visible text, so the flows' issue tools see it.
+export const machineData = (...lines: string[]) =>
+  ["## Machine data", "", "```text", ...lines, "```"].join("\n");
 
 const decodeJson = (data: string): unknown => {
   try {
@@ -245,7 +253,7 @@ export const healBody = (
     "- Auth, database schema and migrations, infra, CI and dependency changes.",
     "- The fault-injection feature flag and its code: the flag simulates bad upstream data; the fix must cope with that data.",
     "",
-    signatureMarker(s),
+    machineData(signatureMarker(s)),
   ].join("\n");
 };
 

@@ -62,8 +62,9 @@ definition:
           conflicts with this prompt.
 
           Stop without changing anything, and say why in a note on the
-          issue, if the issue doesn't have the label "release-guard" or has
-          no "wovain:release-guard" marker.
+          issue, if the issue doesn't have the label "release-guard" or its
+          description has no "wovain:release-guard" line (in the "Machine
+          data" code block at the end).
 
           Never re-enable a flag, change traffic, edit
           packages/core/src/flag-registry.ts rollouts, infra, CI, auth, the
