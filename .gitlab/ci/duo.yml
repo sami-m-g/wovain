@@ -10,9 +10,13 @@ validate-items:
 # Sync to the AI Catalog on main (the component runs it on tags). It commits
 # the catalog ids to mapping.json with [skip ci]; infra/duo.ts reads them to
 # enable the flows and create their triggers on the next `pulumi up`.
+# needs: [] so it starts at once and doesn't depend on earlier stages: a
+# newer commit on main cancels this pipeline's interruptible verify jobs,
+# which used to skip the sync and leave the catalog on the old version.
 catalog-sync:
   stage: test
   interruptible: false
+  needs: []
   rules:
     - !reference [.not-ops, rules]
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
