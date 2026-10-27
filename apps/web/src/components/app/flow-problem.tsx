@@ -46,7 +46,7 @@ export const FlowProblemNotice = ({
   if (problem.kind === "not_connected") {
     body = (
       <>
-        {t("notConnected", {
+        {t(problem.reconnect === true ? "reconnect" : "notConnected", {
           service: SERVICE_NAMES[problem.service] ?? problem.service,
         })}{" "}
         <Link className="font-semibold" href="/dashboard/connections">

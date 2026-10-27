@@ -37,7 +37,8 @@ export const connectUrl = (provider: Provider, returnTo: string) =>
 
 export type FlowProblem =
   | { kind: "not_configured"; service: string; variable?: string }
-  | { kind: "not_connected"; service: string }
+  // reconnect: the grant expired and couldn't be refreshed.
+  | { kind: "not_connected"; service: string; reconnect?: boolean }
   | { kind: "limit"; message: string; fix?: string }
   // The step needs more credits than the merchant has left.
   | {
@@ -53,7 +54,7 @@ export type FlowProblem =
 
 const VARIABLE = /\b(?<name>[A-Z][A-Z0-9_]{2,})\b/u;
 const SERVICE_CODE =
-  /^(?<service>[A-Z]+)_(?<kind>NOT_CONFIGURED|NOT_CONNECTED)$/u;
+  /^(?<service>[A-Z]+)_(?<kind>NOT_CONFIGURED|NOT_CONNECTED|RECONNECT_NEEDED)$/u;
 
 const text = (value: unknown) =>
   typeof value === "string" ? { fix: value } : {};
@@ -111,6 +112,9 @@ export const describeProblem = (error: unknown): FlowProblem => {
       if (match.groups.kind === "NOT_CONNECTED") {
         return { kind: "not_connected", service };
       }
+      if (match.groups.kind === "RECONNECT_NEEDED") {
+        return { kind: "not_connected", reconnect: true, service };
+      }
       const data = (error.data ?? {}) as { why?: unknown; fix?: unknown };
       const variable = VARIABLE.exec(String(data.why ?? data.fix ?? ""))?.groups
         ?.name;
@@ -128,7 +132,8 @@ export const describeProblem = (error: unknown): FlowProblem => {
 
 /** Why a run stopped, in terms a step can explain without server detail. */
 export type RunFailure =
-  | { reason: "not_connected"; service: Provider }
+  // reconnect: the grant expired and couldn't be refreshed.
+  | { reason: "not_connected"; service: Provider; reconnect?: boolean }
   | { reason: "no_ideas" }
   | { reason: "rejected" }
   | { reason: "other"; message: string };
@@ -137,6 +142,14 @@ const NOT_CONNECTED_CODE =
   /\b(?<service>fal|fourthwall|meta)_not_connected\b/iu;
 const NOT_CONNECTED_TEXT =
   /\b(?<service>fal|fourthwall|meta)\b.{0,40}(?:isn't connected|not connected)|connect your (?<named>fal|fourthwall|meta)\b/iu;
+const RECONNECT =
+  /\b(?<service>fal|fourthwall|meta)_reconnect_needed\b|\breconnect (?<named>fal|fourthwall|meta)\b/iu;
+// The service whose expired grant stopped the run, if that's why.
+const reconnectFor = (message: string): Provider | undefined => {
+  const found = RECONNECT.exec(message)?.groups;
+  const service = (found?.service ?? found?.named)?.toLowerCase();
+  return PROVIDERS.find((provider) => provider === service);
+};
 const NO_IDEAS = /found no ideas/iu;
 const AUTOPILOT_REJECTED = /autopilot rejected/iu;
 
@@ -149,6 +162,10 @@ export const describeRunFailure = (run: {
   error?: string | null;
 }): RunFailure => {
   const message = run.error ?? "";
+  const stale = reconnectFor(message);
+  if (stale !== undefined) {
+    return { reason: "not_connected", reconnect: true, service: stale };
+  }
   const found = (
     NOT_CONNECTED_CODE.exec(message) ?? NOT_CONNECTED_TEXT.exec(message)
   )?.groups;

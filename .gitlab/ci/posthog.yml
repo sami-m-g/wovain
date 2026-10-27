@@ -37,6 +37,8 @@ posthog:plan:
 posthog:apply:
   extends: [.opentofu:apply, .posthog-tofu]
   needs: [posthog:plan]
+  # A new commit must not cancel an apply halfway (workflow:auto_cancel).
+  interruptible: false
   rules:
     - !reference [.not-ops, rules]
     - <<: *posthog-on-main

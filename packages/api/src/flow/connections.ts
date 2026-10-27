@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { ORPCError } from "@orpc/server";
+import { reconnectNeeded } from "@wovain/core/upstream";
 import type { GrantStore, ProviderId, ToolCall } from "@wovain/core/upstream";
 import { connection, connectionFlow } from "@wovain/db/schema/seller";
 import { and, eq, gt, lte } from "drizzle-orm";
@@ -9,9 +10,9 @@ import { z } from "zod";
 
 import type { Actor } from "./actor";
 
-// The merchant's connections: Fourthwall and Meta grants sealed in the
-// database with the authorization flows that create them, and the
-// merchant's own fal key.
+// The merchant's connections: Fourthwall, Meta and fal grants sealed in the
+// database with the authorization flows that create them. A grant the
+// provider refused to refresh stays, marked for reconnecting.
 
 const FLOW_TTL_MS = 10 * 60 * 1000;
 
@@ -24,6 +25,7 @@ const FlowInvalid = defineError("CONNECTION_FLOW_INVALID", {
 // What the MCP SDK saves, checked after unsealing.
 const tokensSchema = z.looseObject({
   access_token: z.string(),
+  expires_at: z.number().optional(),
   expires_in: z.number().optional(),
   id_token: z.string().optional(),
   issuer: z.string().optional(),
@@ -43,15 +45,19 @@ const grantStore = (
     eq(connection.provider, provider)
   );
   return {
-    clear: async () => {
-      await db.delete(connection).where(mine);
+    // Kept, so Connections can say "Reconnect" rather than "Connect".
+    expire: async () => {
+      await db.update(connection).set({ needsReconnect: true }).where(mine);
     },
     load: async () => {
       const [row] = await db
-        .select({ sealedTokens: connection.sealedTokens })
+        .select({
+          needsReconnect: connection.needsReconnect,
+          sealedTokens: connection.sealedTokens,
+        })
         .from(connection)
         .where(mine);
-      return row === undefined
+      return row === undefined || row.needsReconnect
         ? undefined
         : tokensSchema.parse(
             JSON.parse(core.sealer.open(row.sealedTokens, context))
@@ -63,25 +69,42 @@ const grantStore = (
         .insert(connection)
         .values({ provider, sealedTokens, userId })
         .onConflictDoUpdate({
-          set: { sealedTokens },
+          set: { needsReconnect: false, sealedTokens },
           target: [connection.userId, connection.provider],
         });
     },
   };
 };
 
-// Runs Fourthwall or Meta tool calls on the merchant's own account.
+const needsReconnect = async (
+  { db, userId }: Pick<Actor, "db" | "userId">,
+  provider: ProviderId
+) => {
+  const [row] = await db
+    .select({ needsReconnect: connection.needsReconnect })
+    .from(connection)
+    .where(
+      and(eq(connection.userId, userId), eq(connection.provider, provider))
+    );
+  return row?.needsReconnect === true;
+};
+
+// Runs Fourthwall, Meta or fal tool calls on the merchant's own account.
 export const withProvider = async <T>(
   actor: Actor,
   provider: ProviderId,
   work: (call: ToolCall) => Promise<T>
-) =>
-  await actor.core.upstream.session(
+) => {
+  if (await needsReconnect(actor, provider)) {
+    throw reconnectNeeded(provider);
+  }
+  return await actor.core.upstream.session(
     provider,
     grantStore(actor, provider),
     actor.log,
     work
   );
+};
 
 // fal draws on the merchant's own fal account (its MCP relay, their OAuth
 // grant), never on a wovain key: a step that draws checks for the grant
@@ -92,22 +115,30 @@ export const connectionErrors = {
     message: "Connect your fal account to draw designs",
     status: 409,
   },
+  FAL_RECONNECT_NEEDED: {
+    data: z.object({ provider: z.literal("fal") }),
+    message: "Reconnect fal: its sign-in expired",
+    status: 409,
+  },
 } as const;
 
-const falNotConnected = () =>
-  new ORPCError("FAL_NOT_CONNECTED", {
+const falError = (code: keyof typeof connectionErrors) =>
+  new ORPCError(code, {
     data: { provider: "fal" },
-    message: connectionErrors.FAL_NOT_CONNECTED.message,
-    status: connectionErrors.FAL_NOT_CONNECTED.status,
+    message: connectionErrors[code].message,
+    status: connectionErrors[code].status,
   });
 
 export const requireFal = async ({ db, userId }: Actor) => {
   const [row] = await db
-    .select({ id: connection.id })
+    .select({ needsReconnect: connection.needsReconnect })
     .from(connection)
     .where(and(eq(connection.userId, userId), eq(connection.provider, "fal")));
   if (row === undefined) {
-    throw falNotConnected();
+    throw falError("FAL_NOT_CONNECTED");
+  }
+  if (row.needsReconnect) {
+    throw falError("FAL_RECONNECT_NEEDED");
   }
 };
 
@@ -115,6 +146,7 @@ export const listConnections = async ({ db, userId }: Actor) =>
   await db
     .select({
       connectedAt: connection.connectedAt,
+      needsReconnect: connection.needsReconnect,
       provider: connection.provider,
     })
     .from(connection)

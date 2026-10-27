@@ -24,19 +24,34 @@ import type { Connection, Provider } from "@/lib/flow-client";
 import { connectUrl, describeProblem, PROVIDERS } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
-/** Connected: a filled green dot; not connected: a hollow ring. */
-const ConnectionBadge = ({ connected }: { connected: boolean }) => {
+/**
+ * Connected: a filled green dot; not connected: a hollow ring; a sign-in
+ * that expired and couldn't be refreshed: a filled red dot.
+ */
+const ConnectionBadge = ({
+  connected,
+  expired = false,
+}: {
+  connected: boolean;
+  expired?: boolean;
+}) => {
   const t = useTranslations("Connections");
+  let dot = "border-muted-foreground border";
+  let label = t("disconnected");
+  if (expired) {
+    dot = "bg-destructive";
+    label = t("expired");
+  } else if (connected) {
+    dot = "bg-success";
+    label = t("connected");
+  }
   return (
     <Badge className="gap-1.5" variant="outline">
       <span
         aria-hidden="true"
-        className={cn(
-          "size-2 shrink-0 rounded-full",
-          connected ? "bg-success" : "border-muted-foreground border"
-        )}
+        className={cn("size-2 shrink-0 rounded-full", dot)}
       />
-      {connected ? t("connected") : t("disconnected")}
+      {label}
     </Badge>
   );
 };
@@ -57,7 +72,8 @@ const ProviderItem = ({
   const locale = useLocale();
   const queryClient = useQueryClient();
   const name = t(`providers.${provider}.name`);
-  const connected = connection !== undefined;
+  const expired = connection?.needsReconnect === true;
+  const connected = connection !== undefined && !expired;
 
   const disconnect = useMutation(
     orpc.connections.disconnect.mutationOptions({
@@ -79,7 +95,7 @@ const ProviderItem = ({
       <ItemContent className="min-w-48">
         <ItemTitle className="font-display flex-wrap text-base font-semibold">
           <h2>{name}</h2>
-          <ConnectionBadge connected={connected} />
+          <ConnectionBadge connected={connected} expired={expired} />
         </ItemTitle>
         <ItemDescription>{t(`providers.${provider}.body`)}</ItemDescription>
         {connected ? (
@@ -108,7 +124,9 @@ const ProviderItem = ({
         ) : (
           <a
             className={cn(
-              buttonVariants({ variant: primary ? "default" : "outline" }),
+              buttonVariants({
+                variant: primary || expired ? "default" : "outline",
+              }),
               "h-9 w-full sm:w-auto"
             )}
             href={connectUrl(
@@ -116,7 +134,7 @@ const ProviderItem = ({
               getPathname({ href: "/dashboard/connections", locale })
             )}
           >
-            {t("connect", { name })}
+            {t(expired ? "reconnect" : "connect", { name })}
           </a>
         )}
       </ItemActions>
@@ -146,7 +164,8 @@ export const ConnectionsPanel = () => {
   }
 
   const firstMissing = PROVIDERS.find(
-    (provider) => !data.some((item) => item.provider === provider)
+    (provider) =>
+      !data.some((item) => item.provider === provider && !item.needsReconnect)
   );
 
   return (
@@ -178,7 +197,8 @@ export const ConnectionsSummary = () => {
   return (
     <ul className="border-border bg-card divide-border flex w-full flex-col divide-y rounded-xl border">
       {PROVIDERS.map((provider) => {
-        const connected = data?.some((item) => item.provider === provider);
+        const found = data?.find((item) => item.provider === provider);
+        const expired = found?.needsReconnect === true;
         return (
           <Item
             className="rounded-none first:rounded-t-xl last:rounded-b-xl"
@@ -189,7 +209,10 @@ export const ConnectionsSummary = () => {
             <ItemContent>
               <ItemTitle>{t(`providers.${provider}.name`)}</ItemTitle>
             </ItemContent>
-            <ConnectionBadge connected={Boolean(connected)} />
+            <ConnectionBadge
+              connected={found !== undefined && !expired}
+              expired={expired}
+            />
           </Item>
         );
       })}

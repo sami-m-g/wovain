@@ -22,14 +22,14 @@ import {
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { log } from "evlog";
+import { createError, log } from "evlog";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createRunRouter } from "../workflows/rollout";
 import { isPermanent } from "../workflows/run";
 import type { Actor, RunEngine } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
-import { requireFal } from "./connections";
+import { listConnections, requireFal, withProvider } from "./connections";
 import { decideDesign } from "./designs";
 import { once } from "./once";
 import { createDesignProduct } from "./products";
@@ -523,6 +523,44 @@ describe("finishRun", () => {
     );
     expect(actor.mailer).toHaveBeenCalledTimes(1);
   });
+
+  it("logs a failed run at error level with its provider and their words", async () => {
+    const ctx = await setup({});
+    const errorLog = vi.spyOn(log, "error").mockImplementation(() => {});
+    const { runId } = await seedRun(ctx.db, "running");
+    const cause = createError({
+      code: "FAL_FAILED",
+      message: "fal submit_job failed: 401 token expired",
+      status: 502,
+      why: "401 token expired",
+    });
+
+    await finishRun(ctx.actor, runId, {
+      cause,
+      error: cause.message,
+      status: "failed",
+    });
+
+    expect(errorLog).toHaveBeenCalledTimes(1);
+    expect(errorLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({
+          code: "FAL_FAILED",
+          message:
+            "Run failed during approval: fal submit_job failed: 401 token expired",
+        }),
+        run: expect.objectContaining({
+          id: runId,
+          provider: "fal",
+          provider_status: 502,
+          step: "approval",
+          why: "401 token expired",
+        }),
+        userId: USER_ID,
+      })
+    );
+    errorLog.mockRestore();
+  });
 });
 
 // A run's item that fails for "b" only.
@@ -705,5 +743,26 @@ describe("fal connection", () => {
       userId: USER_ID,
     });
     await expect(requireFal(actor)).resolves.toBeUndefined();
+  });
+
+  it("asks to reconnect once its grant expired for good", async () => {
+    const { actor, db } = await setup({ fal: fakeProvider({}).call });
+    await db.insert(connection).values({
+      needsReconnect: true,
+      provider: "fal",
+      sealedTokens: "sealed",
+      userId: USER_ID,
+    });
+
+    await expect(requireFal(actor)).rejects.toMatchObject({
+      code: "FAL_RECONNECT_NEEDED",
+      message: "Reconnect fal: its sign-in expired",
+    });
+    await expect(
+      withProvider(actor, "fal", async () => await Promise.resolve("drew"))
+    ).rejects.toMatchObject({ code: "FAL_RECONNECT_NEEDED", status: 409 });
+    await expect(listConnections(actor)).resolves.toEqual([
+      expect.objectContaining({ needsReconnect: true, provider: "fal" }),
+    ]);
   });
 });

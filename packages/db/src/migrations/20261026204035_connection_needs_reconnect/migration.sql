@@ -1,0 +1,1 @@
+ALTER TABLE "connection" ADD COLUMN "needs_reconnect" boolean DEFAULT false NOT NULL;

@@ -35,6 +35,23 @@ describe("external", () => {
     });
   });
 
+  it("keeps the provider's status and words in the message", async () => {
+    const refused = Object.assign(new Error("invalid_token"), { status: 401 });
+
+    await expect(
+      external(
+        undefined,
+        { operation: "submit_job", provider: "fal" },
+        async () => await Promise.reject(refused)
+      )
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) &&
+        error.message === "fal submit_job failed: 401 invalid_token" &&
+        error.why === "401 invalid_token"
+    );
+  });
+
   it("passes a result through and records success", async () => {
     const set = vi.fn();
     const value = await external(
