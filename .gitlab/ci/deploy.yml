@@ -39,7 +39,7 @@ variables:
       if command -v curl >/dev/null; then
         body=$(curl -fsS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$url" || true)
       else
-        py=$(command -v python3 || gcloud info --format='value(basic.python_location)')
+        . .gitlab/ci/gcloud-python.sh
         body=$("$py" -c 'import os,sys,urllib.request as u; print(u.urlopen(u.Request(sys.argv[1], headers={"PRIVATE-TOKEN": os.environ["GITLAB_TOKEN"]}), timeout=20).read().decode())' "$url" || true)
       fi
       head=$(printf '%s' "$body" | sed -n 's/^{"id":"\([0-9a-f]\{40\}\)".*/\1/p')
@@ -232,7 +232,7 @@ deploy:production:
     - !reference [.skip-if-superseded, script]
     - |
       # No python3 on PATH here: gcloud's bundled Python runs the script.
-      py=$(command -v python3 || gcloud info --format='value(basic.python_location)')
+      . .gitlab/ci/gcloud-python.sh
       trailer=$("$py" .gitlab/ci/canary-demo-fault.py || true)
       if [ -n "$CANARY_DEMO_FAULT" ] || [ -n "$trailer" ]; then
         echo "Canary demo fault: the canary revision will fail its checkout quotes."
