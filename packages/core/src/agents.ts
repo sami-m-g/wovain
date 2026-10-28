@@ -58,6 +58,9 @@ export const AGENT_ROLES = {
   ad_judge: "fast",
   autopilot_pick_idea: "reasoning",
   autopilot_review_design: "reasoning",
+  // Reads web results for a brand reference and names Qloo-searchable
+  // proxies: research, on the default model.
+  brand_proxies: "default",
   design_brief: "default",
   design_judge: "reasoning",
   design_vision: "vision",
