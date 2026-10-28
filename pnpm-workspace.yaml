@@ -96,7 +96,7 @@ catalog:
   "@opentelemetry/exporter-trace-otlp-http": 0.221.0
   "@opentelemetry/instrumentation-runtime-node": 0.37.0
   "@opentelemetry/instrumentation-undici": 0.34.0
-  "@ai-sdk/openai-compatible": ^2.0.87
+  "@ai-sdk/openai-compatible": ^3.0.75
   inngest: ^4.26.0
   "@electric-sql/pglite": ^0.5.11
 minimumReleaseAgeExclude:
