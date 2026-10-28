@@ -104,12 +104,13 @@ export const configurePostHog = () => {
         type: "cohort",
         value: INTERNAL_COHORT_ID,
       },
-      // dev.wovain.com and localhost.
+      // qloo.wovain.com, dev.wovain.com and localhost
+      // (apps/web/src/lib/analytics-environment.ts).
       {
         key: "environment",
         operator: "is_not",
         type: "event",
-        value: ["development"],
+        value: ["development", "qloo"],
       },
       // Headless and automated browsers (BotD).
       {

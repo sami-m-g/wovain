@@ -1,10 +1,11 @@
 // wovain's repository, github.com/sami-m-g/wovain: where the code lives and
-// GitHub Actions runs CI (.github/workflows). main changes only through a
-// pull request whose `verify` and `infra` checks pass (ci.yml), and
+// GitHub Actions runs CI (.github/workflows). main and the release branch
+// change only through a pull request whose checks pass (ci.yml), and
 // deploy.yml reaches Google Cloud through Workload Identity Federation as the
-// accounts in the Actions variables below, from the `Production` environment
-// on main only. The provider authenticates with the `github:token` stack
-// secret and `github:owner`.
+// accounts in the Actions variables below: production from the `Production`
+// environment on the release branch, after approval; qloo.wovain.com from the
+// `qloo` environment on main (docs/adr/0004-release-branch.md). The provider
+// authenticates with the `github:token` stack secret and `github:owner`.
 import * as github from "@pulumi/github";
 import type * as pulumi from "@pulumi/pulumi";
 
@@ -12,9 +13,25 @@ import type * as pulumi from "@pulumi/pulumi";
 // any app that reports a status of the same name.
 const GITHUB_ACTIONS_APP_ID = 15_368;
 
-export const githubRepository = (
-  variables: Record<string, pulumi.Input<string>>
-) => {
+type Variables = Record<string, pulumi.Input<string>>;
+
+interface RepositoryArgs {
+  // Shared by every workflow and environment.
+  variables: Variables;
+  // Each deploy environment's own: where it deploys, and as whom.
+  environments: { production: Variables; qloo: Variables };
+  // The branch production deploys from, e.g. `release/transcend`.
+  releaseBranch: string;
+  // GitHub user ids who may approve a production deploy.
+  releaseReviewerIds: number[];
+}
+
+export const githubRepository = ({
+  environments,
+  releaseBranch,
+  releaseReviewerIds,
+  variables,
+}: RepositoryArgs) => {
   // Adopted, never deleted: protected and retained, so removing it from the
   // program or `pulumi up` can't remove the repository.
   const repository = new github.Repository(
@@ -83,12 +100,43 @@ export const githubRepository = (
     target: "branch",
   });
 
-  // Google trusts the deploy account only from jobs in this environment
-  // (infra/index.ts), and the environment only deploys main. It already
-  // exists, as `Production` (Vercel's integration made it), and GitHub
-  // matches environment names without case, so it keeps that spelling: the
-  // name is what reaches Google in the OIDC token's `environment` claim.
-  // Retained: deleting it would delete Vercel's deployment history too.
+  // The release branch production deploys from (docs/adr/0004-release-branch.md):
+  // the same protection as main, with only `verify` required (infra/ is
+  // applied from main, so the release branch's `infra` check means nothing).
+  new github.RepositoryRuleset("release", {
+    conditions: {
+      refName: { excludes: [], includes: [`refs/heads/${releaseBranch}`] },
+    },
+    enforcement: "active",
+    name: "release",
+    repository: repository.name,
+    rules: {
+      deletion: true,
+      nonFastForward: true,
+      pullRequest: {
+        dismissStaleReviewsOnPush: false,
+        requireCodeOwnerReview: false,
+        requireLastPushApproval: false,
+        requiredApprovingReviewCount: 0,
+        requiredReviewThreadResolution: false,
+      },
+      requiredStatusChecks: {
+        requiredChecks: [
+          { context: "verify", integrationId: GITHUB_ACTIONS_APP_ID },
+        ],
+        strictRequiredStatusChecksPolicy: false,
+      },
+    },
+    target: "branch",
+  });
+
+  // Google trusts the production deploy account only from jobs in this
+  // environment (infra/index.ts), and the environment only deploys the
+  // release branch, after a reviewer approves the run. It already exists, as
+  // `Production` (Vercel's integration made it), and GitHub matches
+  // environment names without case, so it keeps that spelling: the name is
+  // what reaches Google in the OIDC token's `environment` claim. Retained:
+  // deleting it would delete Vercel's deployment history too.
   const production = new github.RepositoryEnvironment(
     "production",
     {
@@ -97,13 +145,33 @@ export const githubRepository = (
         protectedBranches: false,
       },
       environment: "Production",
+      // The owner approves their own deploys: one reviewer is the gate, not
+      // a second person.
+      preventSelfReview: false,
       repository: repository.name,
+      reviewers: [{ users: releaseReviewerIds }],
     },
     { retainOnDelete: true }
   );
-  new github.RepositoryEnvironmentDeploymentPolicy("production-main", {
-    branchPattern: "main",
+  new github.RepositoryEnvironmentDeploymentPolicy("production-release", {
+    branchPattern: releaseBranch,
     environment: production.environment,
+    repository: repository.name,
+  });
+
+  // main deploys to qloo.wovain.com from this environment, with no approval.
+  // Google trusts only qloo's own deploy account from it (infra/dev.ts).
+  const qloo = new github.RepositoryEnvironment("qloo", {
+    deploymentBranchPolicy: {
+      customBranchPolicies: true,
+      protectedBranches: false,
+    },
+    environment: "qloo",
+    repository: repository.name,
+  });
+  new github.RepositoryEnvironmentDeploymentPolicy("qloo-main", {
+    branchPattern: "main",
+    environment: qloo.environment,
     repository: repository.name,
   });
 
@@ -114,5 +182,19 @@ export const githubRepository = (
       value,
       variableName,
     });
+  }
+  const byEnvironment = [
+    ["production", production, environments.production],
+    ["qloo", qloo, environments.qloo],
+  ] as const;
+  for (const [key, environment, values] of byEnvironment) {
+    for (const [variableName, value] of Object.entries(values)) {
+      new github.ActionsEnvironmentVariable(`${key}-${variableName}`, {
+        environment: environment.environment,
+        repository: repository.name,
+        value,
+        variableName,
+      });
+    }
   }
 };

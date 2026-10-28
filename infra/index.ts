@@ -2,7 +2,7 @@ import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
-import { devEnvironment } from "./dev.ts";
+import { appEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { githubRepository } from "./github.ts";
@@ -64,6 +64,8 @@ const kept = { ...afterApis, protect: true };
 // grants itself a role can't use it in the same run, since IAM takes minutes
 // to propagate. Their names are fixed, so this stack just refers to them.
 const pool = `projects/${projectNumber}/locations/global/workloadIdentityPools/github`;
+// sami-m-g's GitHub user id (`gh api users/sami-m-g --jq .id`).
+const OWNER_GITHUB_ID = 106_979_416;
 
 // Firebase was added to the project by hand at first; adopted, never removed.
 new gcp.firebase.Project(
@@ -332,6 +334,17 @@ const googleEnv =
 // is registered (`pulumi config set polarEnvironment production`).
 const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
 
+// Production runs release/transcend (docs/adr/0004-release-branch.md), the
+// build judges saw at the Transcend deadline, until winners are announced
+// (about 2026-11-16). Until then no `pulumi up` from main may roll a new
+// production revision: wovain-web and wovain-docs keep their live template
+// (image, env, secrets, scaling), and only an approved deploy from the
+// release branch changes them. The live revision still reads
+// GITLAB_FEATURE_FLAGS_* and the GitLab OTLP settings, which the template
+// below no longer has. Set `wovain:freezeProduction false` (or delete this)
+// when main converges onto production.
+const productionFrozen = config.getBoolean("freezeProduction") ?? true;
+
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
   cloudSqlInstance: sql.connectionName,
@@ -348,6 +361,7 @@ const service = cloudRunService("web", {
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
     ...mountedSecretIds.map((id) => secretEnv(id)),
   ],
+  frozen: productionFrozen,
   location: region,
   maxInstances: 2,
   // Mastra's agents run in-process: 512Mi ran out on 2026-10-26.
@@ -398,6 +412,7 @@ const docsService = cloudRunService("docs", {
     { name: "NEBIUS_MODEL", value: DOCS_MODEL },
     ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
+  frozen: productionFrozen,
   location: region,
   maxInstances: 2,
   name: "wovain-docs",
@@ -421,19 +436,24 @@ const resendDomain =
         region: config.get("resendRegion") ?? "us-east-1",
       });
 
-// dev.wovain.com (dev.ts).
+// dev.wovain.com (dev.ts), rolled out by hand.
 export const devUrl = `https://dev.${domain}`;
-const dev = devEnvironment({
+const sharedEnvList = [
+  ...Object.entries(sharedEnvs).map(([name, value]) => ({ name, value })),
+  // The same Google OAuth client (each host is a registered origin).
+  ...googleEnv,
+  // The same PostHog project; events carry their environment by host
+  // (apps/web/src/lib/analytics-environment.ts).
+  ...posthogEnv,
+];
+const dev = appEnvironment({
   connectionsKey,
   envs: [
-    ...Object.entries(sharedEnvs).map(([name, value]) => ({ name, value })),
-    // The same Google OAuth client (dev.wovain.com is a registered origin).
-    ...googleEnv,
-    // The same PostHog project; events say "development" by host.
-    ...posthogEnv,
+    ...sharedEnvList,
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
   ],
   kept,
+  name: "dev",
   populated: mountedSecretIds,
   project,
   region,
@@ -441,6 +461,53 @@ const dev = devEnvironment({
   sql,
   url: devUrl,
 });
+
+// qloo.wovain.com (dev.ts): where main deploys while production is frozen,
+// for the Qloo and Nebius judges and every fix that isn't a production
+// emergency (docs/adr/0004-release-branch.md). Its own database, Inngest
+// keys, Polar credentials, auth secret, deploy account and image repository;
+// production's metered provider keys unless a `<id>-qloo` stack secret is
+// set (`pulumi config set --secret nebius-api-key-qloo ...`).
+export const qlooUrl = `https://qloo.${domain}`;
+const ownSecret = (id: string) => config.getSecret(`${id}-qloo`);
+const qloo = appEnvironment({
+  envs: sharedEnvList,
+  isolation: {
+    afterApis,
+    githubEnvironment: "qloo",
+    ownKeys: Object.fromEntries(
+      ["nebius-api-key", "qloo-api-key", "tavily-api-key"].map((id) => [
+        id,
+        ownSecret(id),
+      ])
+    ),
+    // From a separate Inngest environment and a separate Polar sandbox
+    // organization: with production's, a sync of qloo's /api/inngest would
+    // repoint production's Inngest app (the same app id) at qloo, and Polar
+    // would send qloo's checkouts to production's webhook.
+    ownSecrets: Object.fromEntries(
+      [
+        "inngest-event-key",
+        "inngest-signing-key",
+        "polar-access-token",
+        "polar-webhook-secret",
+      ].map((id) => [id, ownSecret(id)])
+    ),
+    pool,
+  },
+  kept,
+  name: "qloo",
+  populated: mountedSecretIds,
+  project,
+  region,
+  secrets,
+  sql,
+  url: qlooUrl,
+});
+const qlooDeploy = qloo.deploy;
+if (qlooDeploy === undefined) {
+  throw new Error("qloo has no deploy account");
+}
 
 // wovain.com end to end (domains.ts). The few values no API hands out are
 // plain stack config keys: `pulumi config set <key> <value>` in infra/.
@@ -469,6 +536,7 @@ const site = configureDomain({
     { host: `mcp.${domain}`, service: service.name },
     { host: `docs.${domain}`, service: docsService.name },
     { host: `dev.${domain}`, service: dev.service.name },
+    { host: `qloo.${domain}`, service: qloo.service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
   siteOwnerEmail: config.get("siteOwnerEmail"),
@@ -543,7 +611,8 @@ new gcp.serviceaccount.IAMMember("deployer-acts-as-docs-runner", {
   serviceAccountId: docsRunner.name,
 });
 // The same account can roll dev out (wovain-web-dev, wovain_dev) once a
-// workflow does it from a `development` environment Google trusts.
+// workflow does it from a `development` environment Google trusts. qloo has
+// its own deploy account (dev.ts), so main's deploys never hold this one.
 new gcp.serviceaccount.IAMMember("deployer-acts-as-runner-dev", {
   member: deployer.member,
   role: "roles/iam.serviceAccountUser",
@@ -579,17 +648,41 @@ export const sqlConnectionName = sql.connectionName;
 
 // What the workflows read (`vars.<NAME>`), so nothing is set by hand. None is
 // a secret: deploy.yml gets Google credentials through Workload Identity
-// Federation and reads DATABASE_URL from Secret Manager.
+// Federation and reads DATABASE_URL from Secret Manager. The repository's
+// variables are shared; each environment's say where it deploys, as whom.
 githubRepository({
-  DOCS_SITE_URL: docsUrl,
-  GCP_DEPLOY_SERVICE_ACCOUNT: deployer.email,
-  GCP_IMAGE_REPOSITORY: imageRepository,
-  GCP_PROJECT_ID: project,
-  GCP_REGION: region,
-  GCP_SQL_INSTANCE: sql.connectionName,
-  GCP_WORKLOAD_IDENTITY_PROVIDER: `${pool}/providers/github`,
-  ...(posthogKey === undefined ? {} : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
-  SITE_URL: siteUrl,
+  environments: {
+    production: {
+      DATABASE_URL_SECRET: databaseUrl.secretId,
+      DOCS_SERVICE: docsService.name,
+      GCP_DEPLOY_SERVICE_ACCOUNT: deployer.email,
+      GCP_IMAGE_REPOSITORY: imageRepository,
+      SITE_URL: siteUrl,
+      WEB_SERVICE: service.name,
+    },
+    qloo: {
+      DATABASE_URL_SECRET: qloo.databaseUrl.secretId,
+      GCP_DEPLOY_SERVICE_ACCOUNT: qlooDeploy.deployer.email,
+      GCP_IMAGE_REPOSITORY: qlooDeploy.imageRepository,
+      SITE_URL: qlooUrl,
+      WEB_SERVICE: qloo.service.name,
+    },
+  },
+  releaseBranch: config.get("releaseBranch") ?? "release/transcend",
+  // Who approves a production deploy (GitHub user ids): the owner by default.
+  releaseReviewerIds: config.getObject<number[]>("releaseReviewerIds") ?? [
+    OWNER_GITHUB_ID,
+  ],
+  variables: {
+    DOCS_SITE_URL: docsUrl,
+    GCP_PROJECT_ID: project,
+    GCP_REGION: region,
+    GCP_SQL_INSTANCE: sql.connectionName,
+    GCP_WORKLOAD_IDENTITY_PROVIDER: `${pool}/providers/github`,
+    ...(posthogKey === undefined
+      ? {}
+      : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
+  },
 });
 
 // The PostHog project: KPIs and alerts, dashboards, the run-rating survey,

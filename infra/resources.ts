@@ -60,6 +60,10 @@ interface ServiceArgs {
   memory?: string;
   // Extra CPU while an instance starts, for shorter cold starts.
   startupCpuBoost?: boolean;
+  // Pulumi leaves the whole revision template as it is live: no `pulumi up`
+  // rolls a new revision, so only a deploy changes what the service runs.
+  // For production while a judged release must not change (index.ts).
+  frozen?: boolean;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
@@ -110,6 +114,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
         "clientVersion",
         "template.containers[0].image",
         "traffics",
+        ...(args.frozen === true ? ["template"] : []),
       ],
     }
   );
