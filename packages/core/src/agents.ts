@@ -45,6 +45,7 @@ export const AGENT_IDS = [
   "autopilot_review_design",
   "brand_proxies",
   "research_themes",
+  "ads_optimizer_review",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
@@ -56,6 +57,7 @@ export type AgentId = (typeof AGENT_IDS)[number];
 export const AGENT_ROLES = {
   ad_copy: "default",
   ad_judge: "fast",
+  ads_optimizer_review: "reasoning",
   autopilot_pick_idea: "reasoning",
   autopilot_review_design: "reasoning",
   // Reads web results for a brand reference and names Qloo-searchable
@@ -69,6 +71,11 @@ export const AGENT_ROLES = {
 
 // The agents that read images, on the vision model.
 const SEEING: ReadonlySet<AgentId> = new Set(["design_vision"]);
+
+// The agents that weigh evidence before an action: on their job's model
+// (reasoning, NEMOTRON_MODEL_REASONING, ./model-router) even when the call
+// isn't routed.
+const REASONING: ReadonlySet<AgentId> = new Set(["ads_optimizer_review"]);
 
 // The two agents that write for the merchant read their brand and taste.
 export const REMEMBERING: ReadonlySet<AgentId> = new Set([
@@ -181,7 +188,7 @@ export const createAgentKit = ({
     ({ requestContext }: { requestContext: RequestContext }) => {
       const distinctId = requestContext.get(TRACE_KEYS.distinctId);
       const traceId = requestContext.get(TRACE_KEYS.traceId);
-      const routed = isRouted(requestContext);
+      const routed = isRouted(requestContext) || REASONING.has(span);
       // The list price is NEMOTRON_MODEL's. A routed call on another model
       // (Ultra, Lightning) sends no override, so PostHog prices it from its
       // own model table instead of at the wrong model's price.
