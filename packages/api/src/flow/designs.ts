@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
+import type { Previous } from "@wovain/core/design";
 import { NEMOTRON_MODEL, withLlmTrace } from "@wovain/core/nemotron";
 import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
@@ -18,7 +19,8 @@ import { charge } from "./spend";
 import { designAlreadyDecided, runNotWaiting } from "./transitions";
 
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
-// Nemotron judges it. The merchant (or autopilot) then approves or rejects.
+// Nemotron judges both, looking at the art itself. A design the judge sends
+// back is redrawn once. The merchant (or autopilot) then approves or rejects.
 
 // The judge scores 0 to 100; agent_score is 0 to 1.
 const JUDGE_SCALE = 100;
@@ -76,56 +78,81 @@ export const generateDesign = async (
   // stops the step before any model call.
   await requireFal(actor);
   const { artist, nemotron } = actor.core;
-  const { artwork, brief, judgment } = await withLlmTrace(
-    { distinctId: actor.userId, traceId: runId ?? ideaId },
-    async () => {
-      const drafted = await once(actor, {
-        key: `${key}:brief`,
-        operation: "design_brief",
-        perform: async () =>
-          await draftBrief(
-            nemotron,
-            { avoidNames: source.avoidNames, idea: source.research },
-            actor.log
-          ),
-        provider: "nebius",
-        runId,
-      });
-      const requested = await once(actor, {
-        key: `${key}:art`,
-        operation: "submit_art",
-        // The design's credits pay for the art: charged once, when fal is
-        // asked to draw, and given back if the request fails.
-        perform: async () =>
-          await charge(
-            actor,
-            "design",
-            { runId },
-            async () =>
-              await withProvider(
-                actor,
-                "fal",
-                async (call) => await artist(call).submit(drafted, actor.log)
-              )
-          ),
-        provider: "fal",
-        runId,
-      });
-      // Reading fal's answer again is free: no key needed.
-      const art = await withProvider(
+  // One drawing: a brief, fal's art and the judge's look at both. Each paid
+  // call is keyed, so a retried step reuses it; `previous` makes it the
+  // redraw of a design the judge sent back.
+  const draw = async (previous?: Previous) => {
+    const at = previous === undefined ? key : `${key}:redraw`;
+    const drafted = await once(actor, {
+      key: `${at}:brief`,
+      operation: "design_brief",
+      perform: async () =>
+        await draftBrief(
+          nemotron,
+          { avoidNames: source.avoidNames, idea: source.research, previous },
+          actor.log
+        ),
+      provider: "nebius",
+      runId,
+    });
+    const submit = async () =>
+      await withProvider(
         actor,
         "fal",
-        async (call) => await artist(call).result(requested, actor.log)
+        async (call) => await artist(call).submit(drafted, actor.log)
       );
-      return {
-        artwork: art,
-        brief: drafted,
-        judgment: await judgeDesign(
+    const requested = await once(actor, {
+      key: `${at}:art`,
+      operation: "submit_art",
+      // The design's credits pay for the art: charged once, when fal is
+      // asked to draw, and given back if the request fails. A redraw is
+      // wovain's quality cost and isn't charged again.
+      perform:
+        previous === undefined
+          ? async () => await charge(actor, "design", { runId }, submit)
+          : submit,
+      provider: "fal",
+      runId,
+    });
+    // Reading fal's answer again is free: no key needed.
+    const art = await withProvider(
+      actor,
+      "fal",
+      async (call) => await artist(call).result(requested, actor.log)
+    );
+    // Keyed too, so a retried step makes the same call on redrawing.
+    const judged = await once(actor, {
+      key: `${at}:judge`,
+      operation: "design_judge",
+      perform: async () =>
+        await judgeDesign(
           nemotron,
           { artwork: art, brief: drafted, idea: source.theme },
           actor.log
         ),
-      };
+      provider: "nebius",
+      runId,
+    });
+    return { artwork: art, ...judged };
+  };
+  const { artwork, brief, judgment } = await withLlmTrace(
+    { distinctId: actor.userId, traceId: runId ?? ideaId },
+    async () => {
+      const first = await draw();
+      if (first.judgment.verdict === "ready") {
+        return first;
+      }
+      // Sent back: redrawn once from the judge's fixes. A redraw still sent
+      // back is saved as it is, and the merchant sees it flagged.
+      actor.log?.set({
+        design: {
+          failed: first.judgment.checks
+            .filter((check) => !check.pass)
+            .map((check) => check.rule),
+          redrawn: true,
+        },
+      });
+      return await draw({ brief: first.brief, judgment: first.judgment });
     }
   );
   await actor.db

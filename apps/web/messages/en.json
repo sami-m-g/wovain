@@ -466,6 +466,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Prints: {text}",
       "approve": "Approve",
+      "approveAnyway": "Approve anyway",
+      "flagged": "The design check flagged this design. Check these before you sell it:",
       "approved": "Approved",
       "reject": "Reject",
       "rejected": "Rejected",

@@ -21,18 +21,25 @@ import type { AnyScorer } from "./scorers";
 // their scores, memory and traces in Postgres.
 
 export const NEMOTRON_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+// The judge's eyes: Nemotron's vision model on the same Nebius key reads the
+// drawn artwork (./design inspectArtwork). Nebius lists it at the same price.
+export const NEMOTRON_VISION_MODEL = "nvidia/Nemotron-3.5-Super-VL";
 // Nebius Token Factory's list price, USD per token ($0.30 and $0.90 per 1M).
 const PRICE = { input: 0.3e-6, output: 0.9e-6 } as const;
 
 export const AGENT_IDS = [
   "design_brief",
   "design_judge",
+  "design_vision",
   "ad_copy",
   "autopilot_pick_idea",
   "autopilot_review_design",
   "research_themes",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
+
+// The agents that read images, on the vision model.
+const SEEING: ReadonlySet<AgentId> = new Set(["design_vision"]);
 
 // The two agents that write for the merchant read their brand and taste.
 export const REMEMBERING: ReadonlySet<AgentId> = new Set([
@@ -57,6 +64,8 @@ export interface AgentKitConfig {
   scoreSampleRate?: number | undefined;
 }
 
+const HTTPS_URL = /^https:\/\/.+$/u;
+
 const GUARD_THRESHOLD = { injection: 0.8, moderation: 0.7, pii: 0.7 };
 
 export const createAgentKit = ({
@@ -79,6 +88,17 @@ export const createAgentKit = ({
     supportsStructuredOutputs: true,
   });
   const base = nebius.chatModel(NEMOTRON_MODEL);
+  // Nebius fetches the artwork from its https URL itself, so the AI SDK
+  // passes the URL through: a 2880 px PNG isn't downloaded and inlined, and
+  // an image Nebius can't fetch fails the call instead of being replaced by
+  // a placeholder the model never sees.
+  const vision = createOpenAICompatible({
+    apiKey,
+    baseURL,
+    name: "nebius",
+    supportedUrls: () => ({ "image/*": [HTTPS_URL] }),
+    supportsStructuredOutputs: true,
+  }).chatModel(NEMOTRON_VISION_MODEL);
   const posthog = new PostHog(posthogKey ?? "off", {
     disabled: posthogKey === undefined,
     host: posthogHost,
@@ -86,11 +106,11 @@ export const createAgentKit = ({
   // Each call's model is wrapped for PostHog LLM analytics with the call's
   // merchant and run: $ai_generation with $ai_trace_id = the run's ID.
   const tracedModel =
-    (span: string) =>
+    (span: AgentId) =>
     ({ requestContext }: { requestContext: RequestContext }) => {
       const distinctId = requestContext.get(TRACE_KEYS.distinctId);
       const traceId = requestContext.get(TRACE_KEYS.traceId);
-      return withTracing(base, posthog, {
+      return withTracing(SEEING.has(span) ? vision : base, posthog, {
         // Cloud Run throttles CPU after the response: send it now.
         posthogCaptureImmediate: true,
         posthogCostOverride: {
