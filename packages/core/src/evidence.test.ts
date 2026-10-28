@@ -154,7 +154,7 @@ describe("competitorPrices", () => {
 });
 
 describe("dossier", () => {
-  it("starts mini research with the schema and the Qloo file", async () => {
+  it("starts research on the configured model with the schema and the Qloo file", async () => {
     const research = vi.fn(
       async () =>
         await Promise.resolve({
@@ -168,7 +168,12 @@ describe("dossier", () => {
     );
     const started = await startDossier(
       { research },
-      { seed: "horror", taste: { qlooTag: "urn:tag:x" }, theme: "VHS slashers" }
+      {
+        model: "pro",
+        seed: "horror",
+        taste: { qlooTag: "urn:tag:x" },
+        theme: "VHS slashers",
+      }
     );
     expect(started.requestId).toBe("req-1");
     const [prompt, options] = research.mock.calls[0] as unknown as [
@@ -177,6 +182,7 @@ describe("dossier", () => {
     ];
     expect(prompt).toContain("VHS slashers");
     expect(options["outputSchema"]).toBeDefined();
+    expect(options["model"]).toBe("pro");
     const [file] = options["files"] as { data: string; name: string }[];
     expect(file?.name).toBe("qloo-taste.json");
     expect(
@@ -241,5 +247,39 @@ describe("dossier", () => {
 
   it("rejects a reply without a why-now answer", () => {
     expect(() => dossierOf("a plain report", [])).toThrow();
+  });
+
+  it("fails a finished dossier it can't read instead of waiting on it", async () => {
+    const state = await readDossier(
+      {
+        getResearch: async () =>
+          await Promise.resolve({
+            content: "A plain report, not JSON.",
+            createdAt: "",
+            requestId: "r",
+            responseTime: 1,
+            sources: [],
+            status: "completed",
+          }),
+      },
+      "r"
+    );
+    expect(state.status).toBe("failed");
+    expect(state.status === "failed" && state.error).toContain("can't read");
+  });
+
+  it("reads a price band Tavily left null as no price", () => {
+    const dossier = dossierOf(
+      {
+        price_band: { high_usd: null, low_usd: null, note: "No prices" },
+        why_now: "A remake opens this month.",
+      },
+      []
+    );
+    expect(dossier.priceBand).toEqual({
+      highUsd: undefined,
+      lowUsd: undefined,
+      note: "No prices",
+    });
   });
 });

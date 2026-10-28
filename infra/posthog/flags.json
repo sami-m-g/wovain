@@ -791,7 +791,7 @@
           "rollout_percentage": 100
         }
       ],
-      "name": "Tavily evidence with citations: per-search failures logged, trademark and claim checks (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "name": "Tavily evidence with citations: per-search failures logged, competitor prices, research dossiers and the trademark check (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
       "tags": [
         "registry",
         "release"

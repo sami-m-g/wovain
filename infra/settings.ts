@@ -55,6 +55,8 @@ export const appSettings = (config: pulumi.Config, key: SettingKey) => {
       NEMOTRON_OUTPUT_PRICE: "nemotronOutputPrice",
       PRIVACY_EMAIL: "privacyEmail",
       SUPPORT_EMAIL: "supportEmail",
+      // Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
+      TAVILY_RESEARCH_MODEL: "tavilyResearchModel",
     }).map(([env, base]) => [env, config.require(key(base))])
   );
   return {

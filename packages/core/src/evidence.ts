@@ -379,8 +379,9 @@ const dossierSchema = z.object({
     .default([]),
   price_band: z
     .object({
-      high_usd: z.number().nonnegative().optional(),
-      low_usd: z.number().nonnegative().optional(),
+      // Tavily may answer null where it found no price.
+      high_usd: z.number().nonnegative().nullish(),
+      low_usd: z.number().nonnegative().nullish(),
       note: z.string().default(""),
     })
     .default({ note: "" }),
@@ -401,7 +402,14 @@ export interface Dossier {
   citations: Citation[];
 }
 
+// Tavily Research's model (TAVILY_RESEARCH_MODEL, set per environment from
+// Pulumi config): mini is cheaper and quicker, pro digs deeper, auto lets
+// Tavily choose.
+export const RESEARCH_MODELS = ["mini", "pro", "auto"] as const;
+export type ResearchModel = (typeof RESEARCH_MODELS)[number];
+
 export interface DossierInput {
+  model: ResearchModel;
   seed: string;
   theme: string;
   // What Qloo knows about the merchant's audience and this theme; sent to
@@ -429,7 +437,7 @@ export const startDossier = async (
         citationFormat: "numbered",
         // Passed through to the API as is (docs.tavily.com research `files`).
         files: [{ data: file, name: "qloo-taste.json", type: "base64" }],
-        model: "mini",
+        model: input.model,
         outputSchema: DOSSIER_SCHEMA,
       })
   );
@@ -464,8 +472,8 @@ export const dossierOf = (
   return {
     citations: citationsOf([...parsed.citations, ...sources]).slice(0, 10),
     priceBand: {
-      highUsd: parsed.price_band.high_usd,
-      lowUsd: parsed.price_band.low_usd,
+      highUsd: parsed.price_band.high_usd ?? undefined,
+      lowUsd: parsed.price_band.low_usd ?? undefined,
       note: clip(parsed.price_band.note, TEXT_MAX),
     },
     risks: parsed.risks.slice(0, LIST_MAX).map((risk) => clip(risk, TEXT_MAX)),
@@ -491,10 +499,23 @@ export const readDossier = async (
     return { status: "pending" };
   }
   const done = reply as TavilyGetResearchResponse;
-  return {
-    dossier: dossierOf(done.content, done.sources ?? []),
-    status: "done",
-  };
+  try {
+    return {
+      dossier: dossierOf(done.content, done.sources ?? []),
+      status: "done",
+    };
+  } catch (error) {
+    // Finished, but not in the schema (a report instead of JSON, no why-now
+    // answer): reading it again won't change it, so the dossier failed. The
+    // caller logs the error.
+    return {
+      error: `Tavily research returned a dossier wovain can't read: ${clip(
+        asError(error).message,
+        TITLE_MAX
+      )}`,
+      status: "failed",
+    };
+  }
 };
 
 // A dossier as saved on its idea: started, then read back until Tavily

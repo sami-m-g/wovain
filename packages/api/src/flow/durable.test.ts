@@ -1385,6 +1385,23 @@ describe("generateDesign", () => {
     expect(made.judgment.trademark?.pass).toBe(true);
   });
 
+  it("holds a design whose words it couldn't check, without a redraw", async () => {
+    const search = vi.fn(async () => {
+      await Promise.resolve();
+      throw new Error("432 out of credits");
+    });
+    const { fal, made } = await draw([printing("Night Shift Crew")], {
+      briefs: [{ ...cat, printedText: ["Night Shift Crew"] }],
+      tavily: { search },
+    });
+
+    // fal draws once: a redraw can't check the words either.
+    expect(fal.count("submit_job")).toBe(1);
+    expect(made.status).toBe("pending_approval");
+    expect(made.judgment.verdict).toBe("revise");
+    expect(made.judgment.trademark?.checks[0]?.verdict).toBe("unchecked");
+  });
+
   it("saves a redraw still sent back, pending and flagged revise", async () => {
     const { fal, made } = await draw([sight(false), sight(false)]);
 

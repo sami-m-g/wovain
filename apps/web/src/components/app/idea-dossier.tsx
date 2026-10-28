@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@wovain/ui/components/button";
 import { Spinner } from "@wovain/ui/components/spinner";
@@ -15,9 +16,13 @@ import { orpc } from "@/utils/orpc";
 // how crowded, the price range and the risks, each with its sources. The
 // merchant starts it; the card reads it back every few seconds until Tavily
 // finishes. While the flag is off the server answers 404 and the card shows
-// nothing.
+// nothing; any other error offers a retry.
 
 const POLL_MS = 5000;
+const NOT_FOUND = 404;
+
+const isFlagOff = (error: unknown) =>
+  error instanceof ORPCError && error.status === NOT_FOUND;
 
 type DossierRecord = IdeaDossierRecord;
 type Dossier = NonNullable<DossierRecord["dossier"]>;
@@ -132,14 +137,16 @@ export const IdeaDossier = ({ ideaId }: { ideaId: string }) => {
   });
 
   // Loading, or the flag is off (404): nothing to show.
-  if (dossier.isPending || dossier.isError) {
+  if (dossier.isPending || isFlagOff(dossier.error)) {
     return null;
   }
+  // A failed poll keeps the last answer on screen; with no answer at all the
+  // merchant gets a retry.
   const record = dossier.data;
-  if (record === null || record.status === "failed") {
+  if (record === undefined || record === null || record.status === "failed") {
     return (
       <DossierStart
-        failed={record?.status === "failed"}
+        failed={record === undefined || record?.status === "failed"}
         ideaId={ideaId}
         onStarted={(started) =>
           queryClient.setQueryData(options.queryKey, started)

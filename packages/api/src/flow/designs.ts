@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
-import { draftBrief, judgeDesign } from "@wovain/core/design";
+import { draftBrief, judgeDesign, redrawCanFix } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
 import { checkTrademarks } from "@wovain/core/evidence";
 import { recordTaste } from "@wovain/core/taste";
@@ -161,7 +161,9 @@ export const generateDesign = async (
     { runId, traceId: runId ?? ideaId },
     async () => {
       const first = await draw();
-      if (first.judgment.verdict === "ready") {
+      // Ready, or held for something a redraw can't fix (a phrase the
+      // trademark check couldn't reach): saved as it is.
+      if (first.judgment.verdict === "ready" || !redrawCanFix(first.judgment)) {
         return first;
       }
       // Sent back: redrawn once from the judge's fixes. A redraw still sent

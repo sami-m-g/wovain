@@ -138,7 +138,7 @@ While the `tavily-evidence` flag is on, research SHALL read up to 5 Redbubble, T
 
 ### Requirement: Research dossier
 
-While the `tavily-evidence` flag is on, a merchant SHALL be able to start one Tavily Research dossier per idea, with the idea's and brand profile's Qloo taste data attached as a JSON file and a schema of why now, saturation, price band, risks and citations. The app SHALL save the finished dossier on the idea and show every part with its citations.
+While the `tavily-evidence` flag is on, a merchant SHALL be able to start one Tavily Research dossier per idea, with the idea's and brand profile's Qloo taste data attached as a JSON file and a schema of why now, saturation, price band, risks and citations. The research model SHALL come from `TAVILY_RESEARCH_MODEL` (mini, pro or auto), set per environment from Pulumi config. The app SHALL save the finished dossier on the idea and show every part with its citations.
 
 #### Scenario: Dossier finishes
 
@@ -152,12 +152,22 @@ While the `tavily-evidence` flag is on, a merchant SHALL be able to start one Ta
 
 ### Requirement: Dossier failures
 
-A dossier that Tavily fails, or that is still pending after 15 minutes, SHALL be marked failed and logged at error level, and the merchant MAY start it again.
+A dossier that Tavily fails, that Tavily finishes in a form the app can't read, or that is still pending after 15 minutes, SHALL be marked failed and logged at error level, and the merchant MAY start it again. A read of a pending dossier that errors SHALL fail the request; once the dossier is past 15 minutes, the same error SHALL mark it failed instead.
 
 #### Scenario: Research times out
 
 - **WHEN** a dossier is still pending 15 minutes after it started
 - **THEN** the card says the research didn't finish and offers to research again
+
+#### Scenario: Unreadable reply
+
+- **WHEN** Tavily completes a dossier whose content doesn't match the schema
+- **THEN** the dossier is marked failed at once, the error is logged, and the card offers to research again
+
+#### Scenario: Request lost
+
+- **WHEN** reading a pending dossier keeps erroring (for example, Tavily no longer knows its request ID)
+- **THEN** each read fails while the dossier is under 15 minutes old, and the first read after that marks it failed
 
 ### Requirement: Trademark check on printed words
 
@@ -172,6 +182,15 @@ While the `tavily-evidence` flag is on, every phrase a design prints (except sin
 
 - **WHEN** the trademark search for a phrase fails
 - **THEN** the check fails closed, the failure reaches error tracking, and the merchant sees the phrase was not checked
+
+### Requirement: Unchecked phrases hold the design without a redraw
+
+A design whose only failed checks are trademark checks on phrases that could not be checked SHALL NOT be redrawn, since a redraw can't check them either. It SHALL be saved flagged revise for the merchant.
+
+#### Scenario: Tavily is down while a design is judged
+
+- **WHEN** every trademark search fails and the judge fails nothing else
+- **THEN** fal draws the design once, and it is saved flagged revise with the phrase marked not checked
 
 ### Requirement: Marketplace matches are a caution
 

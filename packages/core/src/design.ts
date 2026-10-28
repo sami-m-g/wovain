@@ -178,13 +178,28 @@ const FACT_ONLY: ReadonlySet<JudgeRule> = new Set([
 ]);
 
 // The trademark guardrail as a fact: a printed phrase that matches a
-// trademark record, or that couldn't be checked, sends the design back, and
-// the redraw's brief changes the words.
+// trademark record, or that couldn't be checked, fails it, so the design is
+// saved flagged revise for the merchant. Only a matched phrase is worth a
+// redraw (see redrawCanFix): the redraw's brief changes the words.
 export const trademarkFact = (check: TrademarkCheck): JudgeCheck => ({
   note: trademarkNote(check),
   pass: check.pass,
   rule: "trademark",
 });
+
+// Whether redrawing can fix what the judge sent back. A trademark check that
+// failed only because a phrase couldn't be checked (Tavily down, out of
+// credits, timing out) can't: the redraw would cost the merchant a second fal
+// render and the phrase would still be unchecked. That design is held for
+// the merchant as it is.
+export const redrawCanFix = ({ checks, trademark }: Judgment): boolean =>
+  checks.some(
+    (check) =>
+      !check.pass &&
+      (check.rule !== "trademark" ||
+        trademark === undefined ||
+        trademark.checks.some((phrase) => phrase.verdict === "blocked"))
+  );
 
 export const printFacts = (artwork: Artwork): JudgeCheck[] => {
   const sharp = artwork.width >= REQUIRED_PX;

@@ -1,5 +1,6 @@
 import { createBilling } from "@wovain/billing/service";
 import { createCore } from "@wovain/core/core";
+import { RESEARCH_MODELS } from "@wovain/core/evidence";
 import { createMerchantMemory } from "@wovain/core/taste";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
@@ -49,6 +50,7 @@ const env = z
     QLOO_API_URL: z.url().default("https://hackathon.api.qloo.com"),
     SCORER_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(1),
     TAVILY_API_KEY: z.string().optional(),
+    TAVILY_RESEARCH_MODEL: z.enum(RESEARCH_MODELS),
     TOKEN_ENCRYPTION_KEY: z.string().min(44),
   })
   .parse(process.env);

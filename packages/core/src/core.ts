@@ -1,6 +1,7 @@
 import type { Memory } from "@mastra/memory";
 
 import { createAgentKit } from "./agents";
+import type { ResearchModel } from "./evidence";
 import { createArtist } from "./fal";
 import { createFlags } from "./flags";
 import type { FlagsConfig } from "./flags";
@@ -54,6 +55,8 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   // Share of live model calls the scorers judge, 0 to 1.
   SCORER_SAMPLE_RATE?: number | undefined;
   TAVILY_API_KEY?: string | undefined;
+  // Tavily Research's model for idea dossiers (apps/web/.env.schema).
+  TAVILY_RESEARCH_MODEL: ResearchModel;
   TOKEN_ENCRYPTION_KEY: string;
 }
 
@@ -120,6 +123,8 @@ export const createCore = (
     nemotron,
     // Qloo's Taste API (./qloo): trends, demographics and audiences.
     qloo,
+    // Tavily Research's model for idea dossiers (./evidence.ts).
+    researchModel: env.TAVILY_RESEARCH_MODEL,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     tavily,
     trends: createTrends(

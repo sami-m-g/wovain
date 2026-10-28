@@ -108,6 +108,7 @@ const setup = async ({ flag = true } = {}) => {
   const actor = {
     core: {
       flags: { isOn: async () => await Promise.resolve(flag) },
+      researchModel: "mini",
       tavily,
     } as unknown as Core,
     db: db as unknown as Database,
@@ -132,6 +133,7 @@ describe("research dossiers", () => {
     expect(tavily.research).toHaveBeenCalledOnce();
 
     const options = tavily.research.mock.calls[0]?.[1] ?? {};
+    expect(options["model"]).toBe("mini");
     const [file] = options["files"] as { data: string }[];
     const taste = JSON.parse(
       Buffer.from(file?.data ?? "", "base64").toString()
@@ -174,6 +176,49 @@ describe("research dossiers", () => {
     // A failed one can start again.
     await startIdeaDossier(actor, ideaId);
     expect(tavily.research).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails a finished dossier it can't read, so it can start again", async () => {
+    const { actor, error, ideaId, tavily } = await setup();
+    await startIdeaDossier(actor, ideaId);
+    const report = { ...DONE, content: "A plain report, not JSON." };
+    tavily.getResearch.mockResolvedValueOnce(report);
+
+    const failed = await readIdeaDossier(actor, ideaId);
+
+    expect(failed?.status).toBe("failed");
+    expect(failed?.error).toContain("can't read");
+    expect(error).toHaveBeenCalledOnce();
+    await startIdeaDossier(actor, ideaId);
+    expect(tavily.research).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails a dossier still pending after 15 minutes", async () => {
+    const { actor, error, ideaId } = await setup();
+    const started = await startIdeaDossier(actor, ideaId);
+    const late = Date.parse(started.startedAt) + 16 * 60_000;
+
+    const failed = await readIdeaDossier(actor, ideaId, late);
+
+    expect(failed?.status).toBe("failed");
+    expect(failed?.error).toContain("15 minutes");
+    expect(error).toHaveBeenCalledOnce();
+  });
+
+  it("throws a read that fails in time, and fails the dossier once it's late", async () => {
+    const { actor, error, ideaId, tavily } = await setup();
+    const started = await startIdeaDossier(actor, ideaId);
+    tavily.getResearch.mockRejectedValue(new Error("404 request not found"));
+
+    // In time: the procedure throws (error tracking sees it) and the dossier
+    // stays pending for the next poll.
+    await expect(readIdeaDossier(actor, ideaId)).rejects.toThrow("404");
+    const late = Date.parse(started.startedAt) + 16 * 60_000;
+    const failed = await readIdeaDossier(actor, ideaId, late);
+
+    expect(failed?.status).toBe("failed");
+    expect(failed?.error).toContain("404");
+    expect(error).toHaveBeenCalledOnce();
   });
 
   it("is not found while tavily-evidence is off", async () => {

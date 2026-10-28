@@ -69,6 +69,8 @@ config:
   wovain:nemotronModelReasoning: nvidia/Nemotron-3.5-Super-VL
   wovain:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
   wovain:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
+  # Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
+  wovain:tavilyResearchModel: mini
   wovain:guardrailInjectionThreshold: "0.8"
   wovain:guardrailModerationThreshold: "0.7"
   wovain:guardrailPiiThreshold: "0.7"
@@ -161,6 +163,8 @@ config:
   wovain:nemotronModelReasoning-dev: nvidia/Nemotron-3-Ultra-550b-a55b
   wovain:nemotronModelVision-dev: nvidia/Nemotron-3.5-Super-VL
   wovain:nemotronModelSafety-dev: nvidia/Nemotron-3_5-Lightning
+  # Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
+  wovain:tavilyResearchModel-dev: mini
   wovain:guardrailInjectionThreshold-dev: "0.8"
   wovain:guardrailModerationThreshold-dev: "0.7"
   wovain:guardrailPiiThreshold-dev: "0.7"

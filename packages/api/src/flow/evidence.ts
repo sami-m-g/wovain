@@ -1,5 +1,5 @@
 import { readDossier, startDossier } from "@wovain/core/evidence";
-import type { DossierRecord } from "@wovain/core/evidence";
+import type { DossierRecord, DossierState } from "@wovain/core/evidence";
 import { idea } from "@wovain/db/schema/seller";
 import { and, eq } from "drizzle-orm";
 import { createError } from "evlog";
@@ -82,7 +82,12 @@ export const startIdeaDossier = async (actor: Actor, ideaId: string) => {
   }
   const { requestId } = await startDossier(
     actor.core.tavily,
-    { seed: row.seed, taste: await tasteOf(actor, row), theme: row.theme },
+    {
+      model: actor.core.researchModel,
+      seed: row.seed,
+      taste: await tasteOf(actor, row),
+      theme: row.theme,
+    },
     actor.log
   );
   actor.log?.set({ dossier: { ideaId, started: true } });
@@ -91,6 +96,29 @@ export const startIdeaDossier = async (actor: Actor, ideaId: string) => {
     startedAt: new Date().toISOString(),
     status: "pending",
   });
+};
+
+// Tavily's answer on a pending dossier. A read that throws is a procedure
+// error (error tracking sees it) and the card keeps polling; once the dossier
+// is past its time, the same error fails it instead, so a request Tavily
+// lost (a 404 on an expired request ID) can't keep it pending for good.
+const stateOf = async (
+  actor: Actor,
+  requestId: string,
+  timedOut: boolean
+): Promise<DossierState> => {
+  try {
+    return await readDossier(actor.core.tavily, requestId, actor.log);
+  } catch (error) {
+    if (!timedOut) {
+      throw error;
+    }
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      error: `Tavily research couldn't be read: ${reason}`,
+      status: "failed",
+    };
+  }
 };
 
 // Reads a pending dossier back from Tavily; a finished or failed one is
@@ -109,11 +137,8 @@ export const readIdeaDossier = async (
   if (current.status !== "pending") {
     return current;
   }
-  const state = await readDossier(
-    actor.core.tavily,
-    current.requestId,
-    actor.log
-  );
+  const timedOut = now - Date.parse(current.startedAt) > DOSSIER_TIMEOUT_MS;
+  const state = await stateOf(actor, current.requestId, timedOut);
   if (state.status === "done") {
     return await save(actor, row, {
       ...current,
@@ -121,9 +146,6 @@ export const readIdeaDossier = async (
       status: "done",
     });
   }
-  const timedOut =
-    state.status === "pending" &&
-    now - Date.parse(current.startedAt) > DOSSIER_TIMEOUT_MS;
   if (state.status === "failed" || timedOut) {
     const error =
       state.status === "failed"
