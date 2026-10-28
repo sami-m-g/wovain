@@ -50,6 +50,11 @@ config:
     refundReservePct: 2
     salesTaxPct: 7
     shipping: 5
+    sizeSurcharges:
+      2XL: 2
+      3XL: 4
+      4XL: 6
+      5XL: 8
   wovain-next:billingCatalog:
     creditCost:
       assist: 1

@@ -18,6 +18,7 @@ import {
   productsRouter,
   runsRouter,
 } from "./seller";
+import { storeRouter } from "./store";
 import { voiceRouter } from "./voice";
 
 export const appRouter = {
@@ -36,6 +37,7 @@ export const appRouter = {
   onboarding: onboardingRouter,
   products: productsRouter,
   runs: runsRouter,
+  store: storeRouter,
   targeting: targetingRouter,
   voice: voiceRouter,
 };

@@ -171,7 +171,7 @@ export const pickBlank = async (
 };
 
 // Per-item failures sit next to the successes in Fourthwall's bulk replies.
-const throwBulkErrors = (reply: unknown) => {
+export const throwBulkErrors = (reply: unknown) => {
   const [failed] = findAll(z.object({ bulkError: z.string().min(1) }), reply);
   if (failed !== undefined) {
     throw new Error(`Fourthwall refused: ${failed.bulkError.slice(0, 200)}`);

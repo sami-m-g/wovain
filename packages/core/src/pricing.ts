@@ -20,6 +20,9 @@ export const pricingRulesSchema = z.strictObject({
   refundReservePct: pct,
   salesTaxPct: pct,
   shipping: dollars,
+  // Optional: dollars added to the price of larger sizes, which cost more
+  // to make, e.g. { "2XL": 2, "3XL": 4 }. Absent, every size has one price.
+  sizeSurcharges: z.record(z.string().min(1), dollars).optional(),
 });
 
 export type PricingRules = z.infer<typeof pricingRulesSchema>;
@@ -74,3 +77,37 @@ export const priceFor = (baseCost: number) => {
   }
   return price;
 };
+
+// The price of each surcharged size, from the product's base price. Sizes
+// without a surcharge keep the base price, so they are not listed.
+export const sizePrices = (
+  price: number,
+  surcharges: Record<string, number> = pricingRules().sizeSurcharges ?? {}
+) =>
+  Object.entries(surcharges)
+    .filter(([, extra]) => extra > 0)
+    .map(([size, extra]) => ({ price: price + extra, size }));
+
+// The most a blank could have cost for wovain to have priced it at `price`:
+// prices are the cost-plus floor (priceFor), so this bounds the base cost
+// when only the price is known. Searched to the cent.
+export const baseCostCeiling = (price: number) => {
+  let low = 0;
+  let high = price;
+  const CENT = 0.01;
+  while (high - low > CENT) {
+    const mid = (low + high) / 2;
+    if (priceFor(mid) <= price) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
+};
+
+// Whether a percentage discount keeps every sale of this price from losing
+// money: the profit left after the discount, fees and the refund reserve,
+// at the highest base cost the price allows, is not below zero.
+export const discountKeepsProfit = (price: number, percentage: number) =>
+  profitPerSale(price * (1 - percent(percentage)), baseCostCeiling(price)) >= 0;

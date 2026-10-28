@@ -20,6 +20,7 @@ import {
   RUN_WORKFLOW_ID,
 } from "./run";
 import type { RunServices } from "./run";
+import { createStoreFunctions } from "./store";
 
 // The durable engine behind runs: Mastra workflows executed by Inngest
 // (docs/adr/0001-durable-runs.md). Mastra keeps workflow snapshots (what a
@@ -180,6 +181,7 @@ export const createRunEngine = ({
       // The ads optimizer (openspec ads-optimizer) enqueues approvals, so
       // its steps send wovain's events too.
       ...createOptimizerFunctions(inngest, { ...services, events }),
+      ...createStoreFunctions(inngest, services),
     ],
     inngest,
     mastra,
