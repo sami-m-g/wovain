@@ -12,17 +12,19 @@
 //     and imports it when it isn't in the state yet (legacy.ts). An `up`
 //     writes those flags to the state; the
 //     pull request that then deletes the declaration deletes the resource.
+//   - "deleted": a "code" resource whose declaration is gone, so the next
+//     `up` deletes it.
 //
 // Keys are `<project>::<type>::<name>`, a URN without its stack.
 
-export type Release = "code" | "unprotect";
+export type Release = "code" | "deleted" | "unprotect";
 
 // GitLab's pools, providers and accounts and the GitHub mirror's deploy key
 // pair are released by unprotecting them. The App Hosting backend (with its
 // account, sources bucket, image repository and Cloud Run service), the
 // secrets only its build read (WorkOS, GitLab's OTLP settings, the docs
 // chat's OpenRouter key) and Firebase's Admin SDK account are released in
-// code (legacy.ts).
+// code (legacy.ts), then deleted.
 export const RETIRED: Record<string, Release> = {
   "wovain-bootstrap::gcp:iam/workloadIdentityPool:WorkloadIdentityPool::gitlab":
     "unprotect",
@@ -35,17 +37,18 @@ export const RETIRED: Record<string, Release> = {
   "wovain-bootstrap::gcp:serviceaccount/account:Account::gitlab-preview":
     "unprotect",
   "wovain::gcp:artifactregistry/repository:Repository::apphosting-images":
-    "code",
-  "wovain::gcp:cloudrun/service:Service::apphosting-app": "code",
-  "wovain::gcp:firebase/appHostingBackend:AppHostingBackend::app": "code",
-  "wovain::gcp:secretmanager/secret:Secret::openrouter-api-key": "code",
+    "deleted",
+  "wovain::gcp:cloudrun/service:Service::apphosting-app": "deleted",
+  "wovain::gcp:firebase/appHostingBackend:AppHostingBackend::app": "deleted",
+  "wovain::gcp:secretmanager/secret:Secret::openrouter-api-key": "deleted",
   "wovain::gcp:secretmanager/secret:Secret::otel-exporter-otlp-endpoint":
-    "code",
-  "wovain::gcp:secretmanager/secret:Secret::otel-exporter-otlp-headers": "code",
-  "wovain::gcp:secretmanager/secret:Secret::workos-api-key": "code",
-  "wovain::gcp:serviceaccount/account:Account::app-hosting": "code",
-  "wovain::gcp:serviceaccount/account:Account::firebase-adminsdk": "code",
+    "deleted",
+  "wovain::gcp:secretmanager/secret:Secret::otel-exporter-otlp-headers":
+    "deleted",
+  "wovain::gcp:secretmanager/secret:Secret::workos-api-key": "deleted",
+  "wovain::gcp:serviceaccount/account:Account::app-hosting": "deleted",
+  "wovain::gcp:serviceaccount/account:Account::firebase-adminsdk": "deleted",
   "wovain::gcp:serviceaccount/account:Account::gitlab-ops": "unprotect",
-  "wovain::gcp:storage/bucket:Bucket::apphosting-sources": "code",
+  "wovain::gcp:storage/bucket:Bucket::apphosting-sources": "deleted",
   "wovain::tls:index/privateKey:PrivateKey::github-mirror": "unprotect",
 };
