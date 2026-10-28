@@ -157,10 +157,10 @@ jobs:
             gcloud run deploy "$DOCS_SERVICE" --image "$GCP_IMAGE_REPOSITORY/docs:$GITHUB_SHA" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet
           fi
       # Registers the new revision's run workflow with the environment's own
-      # Inngest app (docs/adr/0001-durable-runs.md); fails until its keys are
-      # set.
+      # Inngest app (docs/adr/0001-durable-runs.md). A failure here is a real
+      # one and fails the deploy (it fails until the env's keys are set); a
+      # revision that is still starting gets a few retries.
       - name: Sync Inngest
-        continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL }}
-        run: curl -sSf -X PUT "$SITE_URL/api/inngest"
+        run: curl -sSf --retry 5 --retry-all-errors --retry-delay 10 -X PUT "$SITE_URL/api/inngest"

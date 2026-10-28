@@ -5,8 +5,10 @@ import * as random from "@pulumi/random";
 import { appEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
+import { previewEnvironment } from "./github-preview.ts";
 import { githubRepository } from "./github.ts";
 import { retainLegacy } from "./legacy.ts";
+import { polarPromoSecrets } from "./polar.ts";
 import { configurePostHog, environmentProject } from "./posthog/program.ts";
 import { ResendApiKey, ResendDomain, ResendVerification } from "./resend.ts";
 import {
@@ -133,7 +135,8 @@ const dbUser = new gcp.sql.User("wovain", {
 // (`pulumi config set --secret <id>` in infra/) or, for the two below, a
 // generated one; Cloud Run mounts only the secrets that have a version, since
 // a revision won't start on an empty secret.
-// fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
+// fal-key, meta-app-* (the Meta app's id and secret, from the stack secrets
+// `meta-app-id` and `meta-app-secret`), nebius-api-key, qloo-api-key, tavily-api-key and
 // wovain-allowed-emails were created by main; the others are new. fal-key
 // is no longer read (fal runs on each merchant's own key); it stays until
 // its value is retired, since dropping it here would delete the secret.
@@ -186,11 +189,20 @@ const generated = new Map<string, pulumi.Output<string>>([
 
 const secrets = new Map<string, gcp.secretmanager.Secret>();
 const populated = new Map<string, pulumi.Resource>();
+// The Meta app's credentials were added by hand as version 1 of each secret;
+// their stack secrets hold the same values, so Pulumi adopts those versions
+// instead of adding new ones.
+const adoptedVersions = new Map([
+  ["meta-app-id", `projects/${project}/secrets/meta-app-id/versions/1`],
+  ["meta-app-secret", `projects/${project}/secrets/meta-app-secret/versions/1`],
+]);
 for (const id of secretIds) {
+  const adopted = adoptedVersions.get(id);
   const { secret, version } = secretWithValue(
     id,
     config.getSecret(id) ?? generated.get(id),
-    kept
+    kept,
+    adopted === undefined ? undefined : { import: adopted }
   );
   secrets.set(id, secret);
   if (version !== undefined) {
@@ -210,19 +222,13 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
-// Secrets whose versions live in Secret Manager outside Pulumi (the Meta app
-// credentials, added by hand): mounted without a SecretVersion here, so
-// `pulumi up` never touches their values. Each must keep an enabled version:
-// Cloud Run refuses a revision whose secret has no `latest` version.
-// Without them, connecting Meta answers META_NOT_CONFIGURED.
-const externalSecretIds = ["meta-app-id", "meta-app-secret"] as const;
 // wovain-allowed-emails is no longer read (the allowlist is gone); its secret
 // stays, unmounted, until it is retired, since dropping it from secretIds
 // would delete a protected resource.
 const unmountedSecretIds = new Set(["wovain-allowed-emails"]);
-const mountedSecretIds = [
-  ...new Set([...populated.keys(), ...externalSecretIds]),
-].filter((id) => !unmountedSecretIds.has(id));
+const mountedSecretIds = [...populated.keys()].filter(
+  (id) => !unmountedSecretIds.has(id)
+);
 
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
@@ -663,6 +669,12 @@ new gcp.billing.Budget(
 );
 
 retainLegacy({ project });
+polarPromoSecrets(project, kept);
+// Who approves a pull request's infra preview (GitHub user ids): the owner,
+// sami-m-g (`gh api users/sami-m-g --jq .id`), by default.
+previewEnvironment(
+  config.getObject<number[]>("previewReviewerIds") ?? [106_979_416]
+);
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
