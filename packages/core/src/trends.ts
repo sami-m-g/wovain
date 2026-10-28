@@ -9,7 +9,14 @@ import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
 import { priceFor, pricingRules } from "./pricing";
-import type { Qloo, QlooAffinity, QlooEntity, QlooTheme, Taste } from "./qloo";
+import type {
+  AffinityType,
+  Qloo,
+  QlooAffinity,
+  QlooEntity,
+  QlooTheme,
+  Taste,
+} from "./qloo";
 import {
   ipSafetyOf,
   marginOf,
@@ -82,6 +89,9 @@ export type QlooStatus = "used" | "no_match" | "failed" | "off";
 // fans also like in other domains, with each seed entity's share.
 export interface TasteMap {
   affinities: QlooAffinity[];
+  // Domains Qloo couldn't load affinities from (logged at error level).
+  // Ideas saved before this field have none.
+  failedDomains?: AffinityType[] | undefined;
   seeds: QlooEntity[];
   status: QlooStatus;
   tag?: QlooTheme | undefined;
@@ -113,6 +123,7 @@ const tasteMapOf = (
   status: QlooStatus
 ): TasteMap => ({
   affinities: taste.affinities ?? [],
+  failedDomains: taste.failedDomains ?? [],
   seeds: taste.seeds ?? [],
   status,
   ...(theme.id !== undefined && {

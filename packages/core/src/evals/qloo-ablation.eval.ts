@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { armMetrics, meanMetrics, themeOverlap } from "../ablation";
 import type { ArmMetrics } from "../ablation";
@@ -87,9 +87,24 @@ describe.skipIf(!ready)("with Qloo vs LLM-only", () => {
   });
 
   // A Qloo failure fails the eval: an ablation with a broken arm says
-  // nothing.
+  // nothing. A failed brand, film or TV call is caught inside tasteOf, so
+  // the logger collects it and the seed throws.
   const seedReport = async (seed: string): Promise<SeedReport> => {
-    const taste = await qloo.tasteOf(seed, undefined, { crossDomain: true });
+    const errors: Error[] = [];
+    const taste = await qloo.tasteOf(
+      seed,
+      {
+        error: (error) =>
+          errors.push(error instanceof Error ? error : new Error(error)),
+        set: vi.fn(),
+      },
+      { crossDomain: true }
+    );
+    if (errors.length > 0 || (taste.failedDomains ?? []).length > 0) {
+      throw new Error(
+        `Qloo failed for "${seed}" (${(taste.failedDomains ?? []).join(", ")}): ${errors.map(({ message }) => message).join("; ")}`
+      );
+    }
     const [withQloo, llmOnly] = await Promise.all([
       themesFor(seed, taste.themes, ask),
       themesFor(seed, [], ask),

@@ -42,12 +42,12 @@ With the `model-routing` flag on (dev and next.wovain.com; off in production for
 
 ## Qloo-powered
 
-Qloo's taste graph decides what a drop is about. Behind the `qloo-taste-map` flag (on in development and next, off in production), every run calls Qloo, whatever the plan:
+Qloo's taste graph decides what a drop is about. Every run calls Qloo, whatever the plan; the `trends-qloo` flag is only a kill switch. The cross-domain taste map, the "Why this idea" panel and the LLM-only switch sit behind the `qloo-taste-map` flag (on in development and next, off in production):
 
 1. **Seed entities.** `/search` resolves the brief to up to 3 Qloo entities (artists, films, books, brands …).
 2. **Themes.** `/v2/insights` with `filter.type=urn:tag` returns the genre and keyword tags those fans share. The tags become the themes Tavily researches, and each idea keeps its tag and affinity.
 3. **Cross-domain affinities.** `/v2/insights` runs for `urn:entity:brand`, `movie` and `tv_show` with `feature.explainability=true` and `bias.trends=low`. Each affinity keeps the share each seed entity contributed. Their style and mood words (a brand's `personal_style` and `emotional_tone`, a film's style and subgenre tags) go into the design brief. Their names never do.
-4. **Why this idea.** Each idea card has a panel with the seed entities, the theme's tag and affinity, the affinities with their contributing entities, and the style cues sent to the brief. When Qloo fails, matches nothing or is off, the panel says so. The failure is also logged at error level and goes to PostHog Error Tracking.
+4. **Why this idea.** Each idea card has a panel with the seed entities, the theme's tag and affinity, the affinities with their contributing entities, and the style cues sent to the brief. When Qloo fails, matches nothing or is off, the panel says so, and it names any domain (brands, films, TV) whose call failed. The failure is also logged at error level and goes to PostHog Error Tracking.
 5. **With Qloo vs LLM-only.** A "Use Qloo taste data" switch on the brief step starts a run without Qloo, so the two sets of ideas can be compared. `pnpm --filter @wovain/core run evals` (with `QLOO_API_KEY`, `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) runs 8 seeds through both arms. It writes `packages/core/src/evals/qloo-ablation.report.v1.json` with each arm's grounding, explanation, cue count and distance from the seed, plus the themes the two arms share.
 
 A live trace of steps 1 to 3 for the brief "Studio Ghibli", run on 2026-10-28 (the key is redacted, entity IDs are shortened, and the timings are as measured):
@@ -75,7 +75,7 @@ Known limitations:
 - `bias.trends=medium` replaced the Ghibli fans' brands with unrelated trending ones (a medical association, a bank), so the bias is `low`.
 - `/search` takes the top 3 matches. For "Studio Ghibli", two of them are books about the studio, which pulls the affinities toward documentaries.
 - Tags carry no explainability, so the "why" for a theme is its tag's affinity with the seed entities' fans. The per-entity shares come from the cross-domain affinities.
-- Qloo's hackathon terms limit it to free and demo plans. Running it on every plan in production waits for the founder's confirmation of the license terms.
+- Qloo's hackathon terms limit it to free and demo plans until 2026-11-05. Only Free is sold (`billing-paid-plans` is off everywhere), so no merchant is on a paid plan yet. Opening paid plans waits for a commercial Qloo licence.
 
 Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.mdx).
 

@@ -469,6 +469,12 @@
       "whyFailed": "Qloo n'a pas répondu pour ce lancement : ces thèmes viennent de votre brief seul.",
       "whyNoMatch": "Qloo n'a rien reconnu dans votre brief : ces thèmes viennent de votre brief seul.",
       "whyOff": "Ce lancement s'est passé de Qloo : le modèle de langage a choisi ces thèmes seul.",
+      "whyDomainsFailed": "Qloo n'a pas pu charger {domains} qu'aiment ces fans : cette carte ne les montre pas.",
+      "domainPlural": {
+        "brand": "les marques",
+        "movie": "les films",
+        "tv_show": "les séries"
+      },
       "domain": {
         "brand": "Marque",
         "movie": "Film",

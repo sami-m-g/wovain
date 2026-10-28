@@ -94,7 +94,7 @@ export interface Actor {
   events?: EventSender | undefined;
   log?: Logger | undefined;
   mailer: Mailer;
-  // The merchant's plan, for plan-gated flags (trends-qloo). Billing (MR
+  // The merchant's plan, for flag targeting and plan-gated flags. Billing (MR
   // !116) sets it from the subscription; unset counts as free, the only plan
   // sold at launch.
   plan?: FlagPlan | undefined;

@@ -141,6 +141,7 @@ describe("createTrends", () => {
               type: "brand",
             },
           ],
+          failedDomains: ["movie"],
           names: ["Studio Ghibli", "Zozotown"],
           seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
           themes: [
@@ -164,6 +165,8 @@ describe("createTrends", () => {
     const anime = research.ideas.find((idea) => idea.theme === "anime");
     expect(anime?.taste).toEqual({
       affinities: [expect.objectContaining({ name: "Zozotown" })],
+      // The film call failed: the panel says so.
+      failedDomains: ["movie"],
       seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
       status: "used",
       tag: { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
@@ -193,6 +196,7 @@ describe("createTrends", () => {
     );
     expect(off.ideas[0]?.taste).toEqual({
       affinities: [],
+      failedDomains: [],
       seeds: [],
       status: "off",
     });

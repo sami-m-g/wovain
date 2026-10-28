@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "e775b7b9-ff24-4012-ae62-66efdd0871c1",
+  "prevIds": [
+    "97755300-d5b6-4374-aab0-481a961a9006"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "run",
+        "qloo"
+      ],
+      "writes": [
+        "s|col|public.run.qloo",
+        "n|col|public.run.qloo",
+        "e|col|public.run.qloo"
+      ],
+      "reads": [
+        "n|tbl|public.run",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "run",
+        "name": "qloo",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

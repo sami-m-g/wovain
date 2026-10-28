@@ -6,16 +6,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { Actor } from "./actor";
 import { researchSourcesFor } from "./ideas";
 
-// Flags as a merchant on a paid plan sees them: trends-qloo is limited to
-// free and demo plans, so it is off whenever the plan is passed.
+// A merchant on a paid plan.
 const actorWith = (on: Partial<Record<FlagName, boolean>>) => {
   const isOn = vi.fn(
-    async (name: FlagName, context?: FlagContext) =>
-      await Promise.resolve(
-        name === "trends-qloo" && context?.plan === "studio"
-          ? false
-          : (on[name] ?? false)
-      )
+    async (name: FlagName, _context?: FlagContext) =>
+      await Promise.resolve(on[name] ?? false)
   );
   const actor = {
     core: { flags: { isOn } } as unknown as Core,
@@ -40,14 +35,25 @@ describe("researchSourcesFor", () => {
     });
   });
 
-  it("keeps the plan limit with the taste map off", async () => {
+  it("runs Qloo on every plan with the taste map off", async () => {
     const { actor } = actorWith({ "trends-qloo": true, "trends-tavily": true });
 
     expect(await researchSourcesFor(actor)).toEqual({
-      qloo: false,
+      qloo: true,
       tasteMap: false,
       tavily: true,
     });
+  });
+
+  it("passes the merchant's real plan to every flag", async () => {
+    const { actor, isOn } = actorWith({ "trends-tavily": true });
+
+    await researchSourcesFor(actor);
+
+    expect(isOn).toHaveBeenCalledTimes(3);
+    for (const [, context] of isOn.mock.calls) {
+      expect(context).toEqual({ plan: "studio", userId: "u1" });
+    }
   });
 
   it("runs without Qloo when the merchant turns it off", async () => {
@@ -62,6 +68,14 @@ describe("researchSourcesFor", () => {
       tasteMap: true,
       tavily: true,
     });
+  });
+
+  it("ignores the merchant's choice while the taste map is off", async () => {
+    const { actor } = actorWith({ "trends-qloo": true, "trends-tavily": true });
+
+    const sources = await researchSourcesFor(actor, { qloo: false });
+
+    expect(sources.qloo).toBe(true);
   });
 
   it("keeps trends-qloo as the kill switch", async () => {

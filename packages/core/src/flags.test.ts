@@ -140,17 +140,24 @@ describe("createFlags", () => {
     expect(await flags.isOn("app-ui-v2", { userId: "u1" })).toBe(false);
   });
 
-  it("keeps Qloo off for paid plans whatever PostHog says", async () => {
+  it("runs Qloo for every plan, sending each merchant's real plan", async () => {
     const posthog = fakePostHog(true, { "trends-qloo": true });
     const flags = createFlags(configured, { posthog });
 
-    expect(await flags.isOn("trends-qloo", { plan: "studio" })).toBe(false);
-    expect(await flags.isOn("trends-qloo", { plan: "label" })).toBe(false);
-    expect(await flags.isOn("trends-qloo", { plan: "demo" })).toBe(true);
-    expect(await flags.isOn("trends-qloo", { plan: "free" })).toBe(true);
-    // No plan counts as free, the only plan sold at launch.
-    expect(await flags.isOn("trends-qloo")).toBe(true);
-    expect(posthog.evaluateFlags).toHaveBeenCalledTimes(3);
+    const plans = ["free", "demo", "studio", "label"] as const;
+    const answers = await Promise.all(
+      plans.map(
+        async (plan) => await flags.isOn("trends-qloo", { plan, userId: "u1" })
+      )
+    );
+
+    expect(answers).toEqual([true, true, true, true]);
+    for (const plan of plans) {
+      expect(posthog.evaluateFlags).toHaveBeenCalledWith("u1", {
+        flagKeys: ["trends-qloo"],
+        personProperties: { environment: "production", plan },
+      });
+    }
   });
 
   it("answers from the registry without a secret key, production only for flags on for everyone", async () => {
@@ -226,7 +233,9 @@ describe("the flag registry", () => {
     expect(flag.rollout.development.kind).toBe("off");
   });
 
-  it("limits Qloo to free and demo plans until judging ends", () => {
-    expect(FLAGS["trends-qloo"].plans).toEqual(["free", "demo"]);
+  it("keeps trends-qloo a pure kill switch, with no plan limit", () => {
+    const flag: { plans?: unknown; type: string } = FLAGS["trends-qloo"];
+    expect(flag.type).toBe("kill-switch");
+    expect(flag.plans).toBeUndefined();
   });
 });

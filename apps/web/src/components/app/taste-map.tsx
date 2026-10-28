@@ -54,6 +54,11 @@ export const TasteMapPanel = ({ taste }: { taste: TasteMap }) => {
   const cues = [
     ...new Set(taste.affinities.flatMap((affinity) => affinity.cues)),
   ].slice(0, 8);
+  // Domains whose Qloo call failed for the run (logged at error level).
+  const failedDomains = format.list(
+    (taste.failedDomains ?? []).map((domain) => t(`domainPlural.${domain}`)),
+    { type: "conjunction" }
+  );
 
   return (
     <details className="group bg-muted/50 rounded-md px-3 py-2 text-xs">
@@ -118,6 +123,15 @@ export const TasteMapPanel = ({ taste }: { taste: TasteMap }) => {
             </ul>
           </div>
         ) : null}
+        {failedDomains === "" ? null : (
+          <p className="text-muted-foreground flex items-start gap-1.5">
+            <CircleAlert
+              aria-hidden="true"
+              className="mt-px size-3.5 shrink-0"
+            />
+            <span>{t("whyDomainsFailed", { domains: failedDomains })}</span>
+          </p>
+        )}
       </div>
     </details>
   );

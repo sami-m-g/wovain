@@ -12,22 +12,18 @@ export interface ResearchOptions {
   qloo?: boolean | undefined;
 }
 
-// Which sources a run's research uses. With qloo-taste-map on, Qloo runs
-// for every plan and trends-qloo is only its kill switch; with it off,
-// Qloo's hackathon terms keep it to free and demo plans, so trends-qloo is
-// evaluated for the merchant's plan and paid plans get Tavily-only trends
-// (docs/adr/0001-progressive-delivery.md).
+// Which sources a run's research uses. Qloo runs for every plan, and
+// trends-qloo is only its kill switch. With qloo-taste-map on, the run also
+// saves the taste map and the merchant may run without Qloo (the LLM-only
+// comparison).
 export const researchSourcesFor = async (
   actor: Actor,
   options: ResearchOptions = {}
 ): Promise<TrendSources> => {
   const context = flagContextOf(actor);
-  const tasteMap = await actor.core.flags.isOn("qloo-taste-map", context);
-  const [qlooOn, tavilyOn] = await Promise.all([
-    actor.core.flags.isOn(
-      "trends-qloo",
-      tasteMap ? { userId: actor.userId } : context
-    ),
+  const [qlooOn, tasteMap, tavilyOn] = await Promise.all([
+    actor.core.flags.isOn("trends-qloo", context),
+    actor.core.flags.isOn("qloo-taste-map", context),
     actor.core.flags.isOn("trends-tavily", context),
   ]);
   return {

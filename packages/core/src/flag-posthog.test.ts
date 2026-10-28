@@ -97,7 +97,11 @@ describe("the registry as PostHog flags", () => {
   });
 
   it("adds the plan allowlist to every condition", () => {
-    const { groups } = posthogFlag(FLAGS["trends-qloo"]);
+    // No registry flag has an allowlist today.
+    const { groups } = posthogFlag({
+      ...FLAGS["trends-qloo"],
+      plans: ["free", "demo"],
+    });
 
     expect(groups).toHaveLength(3);
     for (const group of groups) {

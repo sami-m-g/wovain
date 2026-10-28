@@ -45,7 +45,8 @@ const THEME_MAX = 120;
 // hackathon server refuses artist insights from artist signals, and trend
 // bias for books and games (tried live on 2026-10-28), so brands, films and
 // TV carry it.
-const AFFINITY_TYPES = ["brand", "movie", "tv_show"] as const;
+export const AFFINITY_TYPES = ["brand", "movie", "tv_show"] as const;
+export type AffinityType = (typeof AFFINITY_TYPES)[number];
 const AFFINITIES_PER_TYPE = "3";
 const CUES_PER_AFFINITY = 5;
 const CUE_MAX = 40;
@@ -145,6 +146,9 @@ export interface QlooAffinity extends QlooEntity {
 export interface Taste {
   // Cross-domain affinities, when asked for (TasteOptions.crossDomain).
   affinities?: QlooAffinity[] | undefined;
+  // Domains whose affinities call failed (logged at error level), when
+  // cross-domain affinities were asked for.
+  failedDomains?: AffinityType[] | undefined;
   // Brands, artists and titles Qloo matched: ideas must never print them.
   names: string[];
   // The entities Qloo matched for the seed, when asked for.
@@ -270,13 +274,18 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     return schema.parse(await response.json());
   };
 
-  // One domain's affinities. Best effort: a failure is logged at error level
-  // and the rest of the taste stands.
+  // One domain's affinities. Best effort: a failure is logged at error level,
+  // recorded as `failed` so the taste map can say so, and the rest of the
+  // taste stands.
   const affinitiesIn = async (
-    type: string,
+    type: AffinityType,
     seeds: QlooEntity[],
     log?: Logger
-  ): Promise<QlooAffinity[]> => {
+  ): Promise<{
+    affinities: QlooAffinity[];
+    failed: boolean;
+    type: AffinityType;
+  }> => {
     try {
       const reply = await external(
         log,
@@ -294,10 +303,14 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
             entitiesSchema
           )
       );
-      return affinitiesOf(type, reply.results.entities, seeds);
+      return {
+        affinities: affinitiesOf(type, reply.results.entities, seeds),
+        failed: false,
+        type,
+      };
     } catch (error) {
       log?.error?.(error instanceof Error ? error : new Error(String(error)));
-      return [];
+      return { affinities: [], failed: true, type };
     }
   };
 
@@ -316,7 +329,13 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       );
       if (entities.length === 0) {
         return crossDomain
-          ? { affinities: [], names: [], seeds: [], themes: [] }
+          ? {
+              affinities: [],
+              failedDomains: [],
+              names: [],
+              seeds: [],
+              themes: [],
+            }
           : { names: [], themes: [] };
       }
       const seeds = entities.map((entity) => ({
@@ -346,9 +365,12 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       if (!crossDomain) {
         return { names, themes: themesFrom(tags) };
       }
-      const affinities = domains.flat();
+      const affinities = domains.flatMap((domain) => domain.affinities);
       return {
         affinities,
+        failedDomains: domains
+          .filter(({ failed }) => failed)
+          .map(({ type }) => type),
         names: [...names, ...affinities.map(({ name }) => name)],
         seeds,
         themes: themesFrom(tags),

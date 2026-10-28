@@ -469,6 +469,12 @@
       "whyFailed": "Qloo no respondió en esta ejecución, así que estos temas salen solo de tu brief.",
       "whyNoMatch": "Qloo no reconoció nada de tu brief, así que estos temas salen solo de tu brief.",
       "whyOff": "Esta ejecución no usó Qloo: el modelo de lenguaje eligió estos temas por sí solo.",
+      "whyDomainsFailed": "Qloo no pudo cargar {domains} que les gustan a estos fans, así que este mapa no las incluye.",
+      "domainPlural": {
+        "brand": "las marcas",
+        "movie": "las películas",
+        "tv_show": "las series"
+      },
       "domain": {
         "brand": "Marca",
         "movie": "Película",

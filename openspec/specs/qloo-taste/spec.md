@@ -8,9 +8,14 @@ How Qloo's taste graph shapes the ideas a run researches, how each idea explains
 
 ### Requirement: Qloo in every run
 
-While the `qloo-taste-map` flag is on, research SHALL call Qloo in every run, whatever the merchant's plan, unless the `trends-qloo` kill switch is off or the merchant turned Qloo off for that run. A Qloo failure SHALL be logged at error level, SHALL NOT fail the run, and SHALL be recorded on each idea of the run.
+Research SHALL call Qloo in every run, whatever the merchant's plan, unless the `trends-qloo` kill switch is off or the merchant turned Qloo off for that run while `qloo-taste-map` is on. `trends-qloo` SHALL have no plan limit, and every flag SHALL be evaluated with the merchant's real plan. A Qloo failure SHALL be logged at error level, SHALL NOT fail the run, and SHALL be recorded on each idea of the run.
 
-#### Scenario: Paid plan with the flag on
+#### Scenario: Paid plan
+
+- **WHEN** a merchant on a paid plan starts a run
+- **THEN** research calls Qloo, and the flag evaluations carry the merchant's paid plan
+
+#### Scenario: Paid plan with the taste map on
 
 - **WHEN** a merchant on a paid plan starts a run while `qloo-taste-map` is on
 - **THEN** research calls Qloo and the ideas carry Qloo's taste map
@@ -43,9 +48,28 @@ Each idea card SHALL show a "Why this idea" panel with the seed entities Qloo ma
 - **WHEN** a designer views an idea from a run started with Qloo off
 - **THEN** the panel says the run used LLM-only themes
 
+### Requirement: Failed affinity domains
+
+When the affinities call for one domain (brands, films or TV) fails, the error SHALL be logged at error level, the other domains SHALL stand, the idea's taste map SHALL record the failed domains, and the "Why this idea" panel SHALL name the domains it couldn't load.
+
+#### Scenario: One domain fails
+
+- **WHEN** Qloo answers the films call with an error and the brand and TV calls succeed
+- **THEN** the error is logged at error level, the idea's taste map lists `movie` as a failed domain with the brand and TV affinities, and the panel says Qloo couldn't load films
+
 ### Requirement: With-Qloo and LLM-only comparison
 
-A merchant SHALL be able to start a run with Qloo off while `qloo-taste-map` is on. An offline eval SHALL research the same seeds with Qloo and without it and SHALL report, for each arm, the share of themes grounded in a Qloo tag, the share of ideas explained by Qloo entities, the number of aesthetic cues, and how far the themes move from the seed's own words.
+A merchant SHALL be able to start a run with Qloo off while `qloo-taste-map` is on. The run SHALL keep that choice, and retrying a failed run SHALL reuse it. An offline eval SHALL research the same seeds with Qloo and without it and SHALL report, for each arm, the share of themes grounded in a Qloo tag, the share of ideas explained by Qloo entities, the number of aesthetic cues, and how far the themes move from the seed's own words.
+
+#### Scenario: Retry an LLM-only run
+
+- **WHEN** a merchant retries a failed run that was started with Qloo off
+- **THEN** the new run also runs without Qloo
+
+#### Scenario: Qloo fails during the eval
+
+- **WHEN** any Qloo call fails for a seed during the eval, a single domain's affinities included
+- **THEN** the eval fails instead of reporting an understated with-Qloo arm
 
 #### Scenario: Eval without keys
 

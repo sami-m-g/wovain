@@ -205,8 +205,9 @@ it("explains the cross-domain affinities of the seed's fans", async () => {
   ]);
   // Affinity names are protected like the seed's own matches.
   expect(taste.names).toContain("Zozotown");
-  // The TV call failed: logged, and the rest of the taste stands.
+  // The TV call failed: logged, recorded, and the rest of the taste stands.
   expect(error).toHaveBeenCalledTimes(1);
+  expect(taste.failedDomains).toEqual(["tv_show"]);
   expect(taste.themes.map((theme) => theme.name)).toEqual(["anime animation"]);
   const entityCalls = fetchMock.mock.calls
     .map(([url]) => url.searchParams)
@@ -229,4 +230,32 @@ it("makes no cross-domain calls unless asked", async () => {
 
   expect(fetchMock).toHaveBeenCalledTimes(2);
   expect(taste.affinities).toBeUndefined();
+  expect(taste.failedDomains).toBeUndefined();
+});
+
+it("records a domain whose affinities call fails, and keeps the others", async () => {
+  const fetchMock = vi.fn(async (url: URL) => {
+    if (url.searchParams.get("filter.type") === "urn:entity:movie") {
+      return await Promise.resolve(new Response("down", { status: 500 }));
+    }
+    return await routed({
+      ...LIVE_LIKE,
+      "/v2/insights:urn:entity:tv_show": { results: { entities: [] } },
+    })(url);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const error = vi.fn();
+
+  const taste = await createQloo({
+    apiKey: "k",
+    baseURL: "https://qloo.example",
+  }).tasteOf("ghibli", { error, set: vi.fn() }, { crossDomain: true });
+
+  expect(error).toHaveBeenCalledTimes(1);
+  expect(error).toHaveBeenCalledWith(
+    expect.objectContaining({ message: expect.stringContaining("500") })
+  );
+  expect(taste.failedDomains).toEqual(["movie"]);
+  expect(taste.affinities?.map(({ id }) => id)).toEqual(["B1"]);
+  expect(taste.themes.map((theme) => theme.name)).toEqual(["anime animation"]);
 });

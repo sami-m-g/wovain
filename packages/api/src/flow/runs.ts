@@ -583,6 +583,8 @@ export const startRun = async (actor: Actor, input: RunInput) => {
     .insert(run)
     .values({
       autopilot: input.autopilot,
+      // Kept so a retry reuses the merchant's with-Qloo or LLM-only choice.
+      qloo: input.qloo !== false,
       seed: input.seed,
       userId: actor.userId,
     })

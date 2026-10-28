@@ -497,11 +497,16 @@ export const useDropFlow = (
     },
     /**
      * "Try again" on a failed run: runs are not resumable once failed, so
-     * this starts a new run from the same brief.
+     * this starts a new run from the same brief, with or without Qloo as
+     * the failed run was.
      */
     handleRetryRun: () => {
       if (run && !budgetInvalid) {
-        startRun({ autopilot: run.autopilot, seed: run.seed });
+        startRun({
+          autopilot: run.autopilot,
+          seed: run.seed,
+          ...(tasteMap && { qloo: run.qloo }),
+        });
       }
     },
     handleSubmitBrief: () => {
