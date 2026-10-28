@@ -4,6 +4,8 @@
 // a `polar-promo-<id>` secret, the only copy outside Polar, and reads it to
 // know whether the code is stored. Pulumi owns the secret; its versions are
 // the seed's, so `pulumi up` never touches a code. No app reads them.
+// These are production's; next's seed (POLAR_METADATA_KEY=wovain:next) writes
+// its own `polar-promo-<id>-next` secrets (packages/billing/src/plans.ts).
 import * as gcp from "@pulumi/gcp";
 import type * as pulumi from "@pulumi/pulumi";
 

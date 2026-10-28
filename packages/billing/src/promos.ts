@@ -7,13 +7,15 @@
 //
 // The repository is public, so no code value lives in it or in the config:
 // the seed generates a random code for each promo the first time, keeps it
-// only in Polar and Secret Manager (polar-promo-<id>), and never prints it.
-// Read a code with `gcloud secrets versions access latest
-// --secret=polar-promo-<id>` or in the Polar dashboard (Products >
-// Discounts). Node runs the seed directly, so imports carry extensions.
+// only in Polar and Secret Manager (polar-promo-<id> for production,
+// polar-promo-<id>-next for next), and never prints it. Read a code with
+// `gcloud secrets versions access latest --secret=<that secret>` or in the
+// Polar dashboard (Products > Discounts). Node runs the seed directly, so
+// imports carry extensions.
 
 import { billingCatalog } from "./catalog.ts";
 import type { Promo } from "./catalog.ts";
+import { environmentSecretId } from "./plans.ts";
 
 export type { Promo } from "./catalog.ts";
 
@@ -38,8 +40,10 @@ export const promoPriceCents = (promo: Pick<Promo, "credits">) =>
   promo.credits * billingCatalog().promoCentsPerCredit;
 
 // Where the seed keeps a promo's code: a Secret Manager secret in CI, or a
-// line in a gitignored env file locally.
-export const promoSecretId = (id: string) => `polar-promo-${id}`;
+// line in a gitignored env file locally. Each environment has its own
+// (environmentSecretId): polar-promo-<id> for production, -next for next.
+export const promoSecretId = (id: string, metadataKey?: string) =>
+  environmentSecretId(`polar-promo-${id}`, metadataKey);
 
 // Whether the account with this email may redeem the promo: any account
 // unless the promo names its accounts.
