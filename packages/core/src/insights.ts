@@ -186,22 +186,36 @@ const FIELDS = [
   "purchase_roas",
 ];
 
-/** Meta's metrics for wovain's campaigns on one ad account. */
+/**
+ * Meta's metrics for wovain's campaigns (or, at `level: "ad"`, their ads)
+ * on one ad account, over a range or, with `day` (YYYY-MM-DD), that one day.
+ */
 export const campaignInsights = async (
   call: ToolCall,
   {
     adAccountId,
     campaignIds,
+    day,
+    level = "campaign",
     range,
-  }: { adAccountId: string; campaignIds: string[]; range: InsightRange }
+  }: {
+    adAccountId: string;
+    /** The campaign IDs, or the ad IDs at `level: "ad"`. */
+    campaignIds: string[];
+    day?: string | undefined;
+    level?: "ad" | "campaign" | undefined;
+    range: InsightRange;
+  }
 ): Promise<CampaignInsight[]> => {
   const reply = await call("ads_get_ad_entities", {
     ad_account_id: adAccountId,
     advertiser_job: "report_measure_or_look_up",
     client_conversation_id: conversationId(),
-    date_preset: `last_${DAYS[range]}d`,
+    ...(day === undefined
+      ? { date_preset: `last_${DAYS[range]}d` }
+      : { time_range: JSON.stringify({ since: day, until: day }) }),
     fields: FIELDS,
-    level: "campaign",
+    level,
     object_ids: campaignIds,
     reporting_purpose: ["metric_lookup"],
   });

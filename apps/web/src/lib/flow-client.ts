@@ -29,6 +29,7 @@ export type OnboardingReady = Extract<OnboardingStatus, { enabled: true }>;
 export type ProviderHealth = OnboardingReady["connections"][number];
 export type ResolvedReference =
   Outputs["onboarding"]["resolveReferences"][number];
+export type Learned = Outputs["feedback"]["learned"];
 
 export const PROVIDERS = [
   "fourthwall",

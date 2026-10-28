@@ -31,6 +31,7 @@ import { ProviderLogo } from "@/components/app/provider-logo";
 import { ShuttleLoader } from "@/components/brand/shuttle-mark";
 import { KpiFrame } from "@/components/insights/kpi-cards";
 import { SalesChart } from "@/components/insights/sales-chart";
+import { WhatWeLearned } from "@/components/insights/what-we-learned";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { InsightRange, Insights } from "@/lib/flow-client";
 import { connectUrl, describeProblem } from "@/lib/flow-client";
@@ -441,7 +442,12 @@ const DashboardSkeleton = () => (
  * The merchant's KPI dashboard: shop sales, ad results and quality per drop
  * for a period. Each source fails or stays empty on its own.
  */
-export const InsightsDashboard = () => {
+export const InsightsDashboard = ({
+  learning = false,
+}: {
+  // The feedback-loop flag: shows "What we learned".
+  learning?: boolean;
+}) => {
   const t = useTranslations("Insights");
   const [range, setRange] = useState<InsightRange>("28d");
   const { data, error, isFetching, isPending } = useQuery(
@@ -501,6 +507,7 @@ export const InsightsDashboard = () => {
           <DropsSection drops={data.drops} scoring={data.scoring} />
         </motion.div>
       ) : null}
+      {learning ? <WhatWeLearned /> : null}
     </div>
   );
 };

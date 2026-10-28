@@ -4,6 +4,7 @@ import { InsightsDashboard } from "@/components/insights/insights-dashboard";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
+import { core } from "@/services";
 
 export const generateMetadata = async ({
   params,
@@ -22,8 +23,11 @@ const InsightsPage = async ({
   params,
 }: PageProps<"/[locale]/dashboard/insights">) => {
   const locale = await enterLocale(params);
-  await requireSession(locale, "/dashboard/insights");
-  return <InsightsDashboard />;
+  const session = await requireSession(locale, "/dashboard/insights");
+  const learning = await core.flags.isOn("feedback-loop", {
+    userId: session.user.id,
+  });
+  return <InsightsDashboard learning={learning} />;
 };
 
 export default InsightsPage;

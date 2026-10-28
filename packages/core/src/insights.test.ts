@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   amountOf,
@@ -97,6 +97,24 @@ describe("campaignInsights", () => {
     });
     expect(rest).toHaveLength(0);
     expect(only).toMatchObject({ cpa: 2, ctr: 1.8, id: "cmp_1", spend: 30 });
+  });
+
+  it("reads one day at the ad level for the feedback loop", async () => {
+    const call = vi.fn<ToolCall>().mockResolvedValue({ ad_entities: [] });
+    await campaignInsights(call, {
+      adAccountId: "1",
+      campaignIds: ["ad_1"],
+      day: "2026-10-27",
+      level: "ad",
+      range: "7d",
+    });
+    const [, args] = call.mock.calls[0] ?? [];
+    expect(args).toMatchObject({
+      level: "ad",
+      object_ids: ["ad_1"],
+      time_range: '{"since":"2026-10-27","until":"2026-10-27"}',
+    });
+    expect(args).not.toHaveProperty("date_preset");
   });
 });
 

@@ -757,6 +757,35 @@
       "emptyTitle": "No drops yet",
       "empty": "Start a drop; its sales, spend and scores land here.",
       "emptyCta": "Start a drop"
+    },
+    "learned": {
+      "title": "What we learned",
+      "lead": "What sold, what didn't, and how wovain now ranks ideas for your brand. Your next research runs use this.",
+      "refresh": "Check results now",
+      "refreshing": "Checking…",
+      "updated": "Updated {date}",
+      "sold": "Sold",
+      "unsold": "Didn't sell",
+      "noneSold": "Nothing has sold yet.",
+      "noneUnsold": "Every idea we counted has sold at least once.",
+      "notEnough": "wovain starts adjusting once {minSamples, number} ideas have had a product for sale for {minLiveDays, number} days or more. So far: {samples, number}.",
+      "weightsTitle": "How ideas are scored",
+      "weightsLead": "Version {version, number}, fit on {samples, number} ideas. The defaults are the starting point, and a weight moves at most half its default.",
+      "defaultsLead": "The defaults (version 0). They change once enough ideas have results.",
+      "term": "Signal",
+      "now": "Now",
+      "default": "Default",
+      "up": "Higher than the default",
+      "down": "Lower than the default",
+      "terms": {
+        "demand": "Taste fit (Qloo)",
+        "momentum": "News momentum",
+        "recency": "Fresh news",
+        "relevance": "Search relevance",
+        "openness": "Room in the market",
+        "margin": "Margin",
+        "ipSafety": "Safe from brand names"
+      }
     }
   },
   "Models": {
