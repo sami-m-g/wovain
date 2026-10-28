@@ -1,0 +1,93 @@
+# Spec Delta
+
+## Purpose
+
+Running the designer's Fourthwall store after products exist: readiness, the product lifecycle, drop collections, launch promotions, order exceptions, samples and per-size prices, with every write through the approval queue.
+
+## ADDED Requirements
+
+### Requirement: Store writes go through the approval queue
+
+Every write wovain makes to the designer's store SHALL be an action in the approval queue, settled by the autonomy policy or by the designer, and SHALL be performed at most once after it is approved. A failed action SHALL be recorded on its approval and SHALL reach Error Tracking. The whole capability SHALL be off unless the `store-management` flag is on.
+
+#### Scenario: Delivered twice
+
+- **WHEN** the same approval decision is delivered twice
+- **THEN** the store action runs once and the second delivery does nothing
+
+#### Scenario: Flag off
+
+- **WHEN** the `store-management` flag is off
+- **THEN** the store procedures answer not found and the products page is not shown
+
+### Requirement: Store readiness
+
+The system SHALL report whether the shop is ready to sell: the site is live, the shop is not held for verification, the connected user is an owner or manager, shipping is on with at least one profile, and payouts are set up. Payouts SHALL only warn. Publishing SHALL fail with the failing checks named while any blocking check fails.
+
+#### Scenario: Shop coming soon
+
+- **WHEN** an approved drop publish runs while the shop's site is "coming soon"
+- **THEN** nothing is published and the approval is recorded as failed with the reason
+
+### Requirement: Product lifecycle
+
+A product SHALL be draft, in review, live, paused or retired. Publish SHALL start from draft, in review or paused. Unpublish SHALL start from live and leave it paused. Retire SHALL archive it on Fourthwall, and a retired product SHALL NOT be published again.
+
+#### Scenario: Move not allowed
+
+- **WHEN** the designer asks to unpublish a product that isn't live
+- **THEN** the request is refused and nothing is queued
+
+### Requirement: One collection per drop
+
+Each drop SHALL have one Fourthwall collection, created hidden with the drop's products, and published together with them.
+
+#### Scenario: Drop published
+
+- **WHEN** a drop's publish runs
+- **THEN** its products and its collection are public and the drop is live
+
+### Requirement: Scheduled launch promotions
+
+A launch code for a drop SHALL be created switched off. Switching it on SHALL be its own action. Once approved, the code SHALL be switched on at its start and off at its end. A discount that would make a sale of any of the drop's products lose money SHALL be refused.
+
+#### Scenario: Code planned
+
+- **WHEN** the designer plans 15% off a drop from Friday to Sunday
+- **THEN** the code exists but is off, and an activation action for Friday to Sunday is queued
+
+### Requirement: Refunds and cancels wait for the designer
+
+Refunds and order cancels SHALL always wait for the designer's explicit confirm, at every autonomy level. The approval SHALL show Fourthwall's cost preview, including any charge to the shop's card. A cancel that Fourthwall says is no longer possible SHALL be refused before it is queued. A refund or cancel SHALL NOT be retried automatically.
+
+#### Scenario: Refund at the highest autonomy level
+
+- **WHEN** a designer at `publish_ads_paused` asks to refund $32.50 and $5.00 would be charged to the shop's card
+- **THEN** the refund waits for their confirm and the card shows the $5.00 charge
+
+### Requirement: Orders without customer contact details
+
+The orders list SHALL show each order's number, status, total and items, and SHALL NOT include the customer's email, address or message.
+
+#### Scenario: Orders page
+
+- **WHEN** the designer opens their orders
+- **THEN** they see the latest orders without customer contact details
+
+### Requirement: Samples
+
+The designer SHALL be able to get a Fourthwall checkout link to order one of a product's variants as a sample at cost. They pay on Fourthwall, and wovain moves no money.
+
+#### Scenario: Order a sample
+
+- **WHEN** the designer picks a variant of a draft product
+- **THEN** a Fourthwall sample checkout opens
+
+### Requirement: Per-size prices
+
+When the pricing rules give size surcharges, a product's larger sizes SHALL cost the base price plus their surcharge. Sizes the product doesn't have SHALL NOT be sent.
+
+#### Scenario: 2XL surcharge
+
+- **WHEN** the rules add $2 to 2XL and a $30 tee is priced
+- **THEN** its 2XL variants cost $32 and its other sizes $30

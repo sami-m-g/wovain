@@ -35,7 +35,8 @@
     "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
     "billingTitle": "Billing",
     "onboardingTitle": "Get set up",
-    "autopilotTitle": "Autopilot"
+    "autopilotTitle": "Autopilot",
+    "productsTitle": "Products"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -317,7 +318,8 @@
       "insights": "Insights",
       "billing": "Billing",
       "onboarding": "Get set up",
-      "autopilot": "Autopilot"
+      "autopilot": "Autopilot",
+      "products": "Products"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -1194,5 +1196,109 @@
     "rejectDesignWhy": "Reject the design “{design}” because {reason}",
     "approveAction": "Approve “{action}”",
     "rejectAction": "Reject “{action}”"
+  },
+  "Store": {
+    "title": "Products",
+    "lead": "Publish, pause and retire products, plan launch codes and handle orders. Every change goes through your approvals.",
+    "queued": "Sent to your approvals.",
+    "approved": "Approved. wovain is on it.",
+    "readiness": {
+      "title": "Shop readiness",
+      "ready": "Your shop can take orders.",
+      "notReady": "Fix these before anything goes public.",
+      "passed": "(done)",
+      "failed": "(to fix)",
+      "site_live": {
+        "label": "Shop is live",
+        "fix": "In Fourthwall, set your site status to Live."
+      },
+      "verified": {
+        "label": "Shop is verified",
+        "fix": "Fourthwall is still reviewing your shop. Contact Fourthwall support to finish it."
+      },
+      "store_role": {
+        "label": "You can manage the shop",
+        "fix": "Reconnect Fourthwall as the shop's owner or a manager."
+      },
+      "shipping": {
+        "label": "Shipping is on",
+        "fix": "In Fourthwall, turn on shipping and add at least one shipping profile."
+      },
+      "payouts": {
+        "label": "Payouts are set up",
+        "fix": "In Fourthwall, finish your payout account so sales reach you."
+      }
+    },
+    "queue": {
+      "title": "Store approvals",
+      "lead": "What wovain wants to do in your shop. Refunds and cancels always wait for you.",
+      "empty": "Nothing waiting.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "status": {
+        "pending": "Waiting",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "denied": "Refused",
+        "expired": "Expired",
+        "executing": "Running",
+        "done": "Done",
+        "failed": "Failed",
+        "reverted": "Undone"
+      }
+    },
+    "drops": {
+      "title": "Drops",
+      "empty": "No drops yet. A run makes one when you approve its designs.",
+      "products": "{count, plural, one {# product} other {# products}}",
+      "publish": "Publish drop",
+      "code": "Launch code",
+      "percentage": "% off",
+      "maxUses": "Max uses",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "planPromotion": "Plan launch code"
+    },
+    "dropStatus": {
+      "draft": "Draft",
+      "in_review": "In review",
+      "live": "Live",
+      "paused": "Paused",
+      "retired": "Retired"
+    },
+    "products": {
+      "title": "Products",
+      "lead": "Larger sizes cost more to make, so they carry a surcharge on top of the price.",
+      "empty": "No products yet.",
+      "mockupAlt": "{title} mockup",
+      "view": "View in shop",
+      "price": "Price (USD)",
+      "reprice": "Reprice",
+      "sample": "Order a sample",
+      "sampleLead": "Pick a variant. You pay at cost on Fourthwall:",
+      "move": {
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "retire": "Retire"
+      }
+    },
+    "productStatus": {
+      "hidden": "Draft",
+      "in_review": "In review",
+      "public": "Live",
+      "paused": "Paused",
+      "retired": "Retired"
+    },
+    "orders": {
+      "title": "Orders",
+      "lead": "The latest orders from Fourthwall. Customer details stay in Fourthwall.",
+      "empty": "No orders yet.",
+      "refund": "Refund",
+      "cancel": "Cancel order",
+      "reason": "Reason",
+      "previewRefund": "See refund cost",
+      "previewCancel": "See cancel cost",
+      "back": "Back"
+    }
   }
 }

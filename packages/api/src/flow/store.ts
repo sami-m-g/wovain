@@ -130,11 +130,32 @@ export const proposeStoreAction = async (
 // approval card.
 const HUMAN_CONFIRM: ReadonlySet<string> = new Set(["R3", "R4"]);
 
+// An earlier request with the same key that ended without running: asking
+// again queues a new action instead of returning the old one. A done action
+// is returned as is, so a refund is never repeated by a double click.
+const RETRYABLE: ReadonlySet<string> = new Set([
+  "denied",
+  "expired",
+  "failed",
+  "rejected",
+]);
+
 export const merchantAction = async (actor: Actor, proposal: StoreProposal) => {
-  const queued = await proposeStoreAction(actor, {
+  let queued = await proposeStoreAction(actor, {
     ...proposal,
     proposedBy: "merchant",
   });
+  if (
+    !queued.created &&
+    proposal.idempotencyKey !== undefined &&
+    RETRYABLE.has(queued.approval.status)
+  ) {
+    queued = await proposeStoreAction(actor, {
+      ...proposal,
+      idempotencyKey: `${proposal.idempotencyKey}:${Date.now()}`,
+      proposedBy: "merchant",
+    });
+  }
   const { approval } = queued;
   if (approval.status !== "pending" || HUMAN_CONFIRM.has(approval.risk)) {
     return approval;
@@ -177,7 +198,12 @@ export const stageRunDrop = async (
     return;
   }
   const rows = await actor.db
-    .select({ id: product.id, offerId: product.offerId, title: design.brief })
+    .select({
+      catalogProductId: product.catalogProductId,
+      id: product.id,
+      offerId: product.offerId,
+      title: design.brief,
+    })
     .from(product)
     .innerJoin(design, eq(design.id, product.designId))
     .where(
@@ -209,10 +235,9 @@ export const stageRunDrop = async (
   const have = new Set(known.map((row) => row.productId));
   const fresh = rows.filter((row) => !have.has(row.id));
   if (fresh.length > 0) {
-    const firstProduct = await getProduct(actor, fresh[0]?.id ?? "");
     await actor.db.insert(dropItem).values(
       fresh.map((row, index) => ({
-        catalogProductId: firstProduct.catalogProductId,
+        catalogProductId: row.catalogProductId,
         dropId,
         position: known.length + index,
         productId: row.id,
@@ -281,6 +306,27 @@ export const listDrops = async (actor: Actor) => {
       .filter((item) => item.dropId === row.id)
       .flatMap((item) => (item.productId === null ? [] : [item.productId])),
   }));
+};
+
+// The products page: each product with its design's title and its drop.
+export const storeProducts = async (actor: Actor) => {
+  const rows = await actor.db
+    .select({
+      brief: design.brief,
+      dropId: dropItem.dropId,
+      id: product.id,
+      mockups: product.mockups,
+      offerId: product.offerId,
+      price: product.price,
+      productUrl: product.productUrl,
+      status: product.status,
+    })
+    .from(product)
+    .innerJoin(design, eq(design.id, product.designId))
+    .leftJoin(dropItem, eq(dropItem.productId, product.id))
+    .where(eq(product.userId, actor.userId))
+    .orderBy(desc(product.createdAt));
+  return rows.map(({ brief, ...row }) => ({ ...row, title: brief.title }));
 };
 
 const getDrop = async (actor: Actor, dropId: string) => {
@@ -795,11 +841,6 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
     }
   }
 };
-
-// Store actions the executor below runs; activation has its own schedule.
-export const SCHEDULED_ACTIONS: readonly ActionType[] = [
-  "store.promotion.activate",
-];
 
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);

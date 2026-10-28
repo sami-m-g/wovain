@@ -5,7 +5,6 @@ import {
 } from "@wovain/core/store";
 import { z } from "zod";
 
-import { listProducts } from "../flow/products";
 import {
   listDrops,
   listStoreOrders,
@@ -18,6 +17,7 @@ import {
   requestReprice,
   requireStoreManagement,
   sampleLink,
+  storeProducts,
   storeReadiness,
 } from "../flow/store";
 import { protectedProcedure } from "../index";
@@ -97,7 +97,7 @@ export const storeRouter = {
     )
     .handler(guarded(listStoreOrders)),
   products: protectedProcedure.handler(
-    guarded(async (context) => await listProducts(context))
+    guarded(async (context) => await storeProducts(context))
   ),
   publishDrop: protectedProcedure
     .input(z.object({ dropId: id }))

@@ -6,7 +6,7 @@ import {
 } from "@wovain/ui/components/sidebar";
 import { TooltipProvider } from "@wovain/ui/components/tooltip";
 import { getTranslations } from "next-intl/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { CSSProperties } from "react";
 import { Suspense } from "react";
 
@@ -24,6 +24,7 @@ import { AppToaster } from "@/components/toaster";
 import { ENV } from "@/env.server";
 import { enterLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
+import { auth, core } from "@/services";
 
 // The sidebar component remembers open/collapsed in this cookie.
 const SIDEBAR_COOKIE = "sidebar_state";
@@ -40,11 +41,17 @@ const DashboardLayout = async ({
   const common = await getTranslations("Common");
   const jar = await cookies();
   const sidebarOpen = jar.get(SIDEBAR_COOKIE)?.value !== "false";
+  // The Products page shows in the rail only while store-management is on.
+  const session = await auth.api.getSession({ headers: await headers() });
+  const products =
+    session?.user === undefined
+      ? false
+      : await core.flags.isOn("store-management", { userId: session.user.id });
 
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarOpen} style={RAIL_WIDTH}>
-        <AppSidebar docsUrl={ENV.DOCS_URL} />
+        <AppSidebar docsUrl={ENV.DOCS_URL} products={products} />
         {/* Session replays mask the merchant's text here (ph-mask): shop
             names, briefs, emails. Inputs are masked everywhere. */}
         <SidebarInset className="ph-mask outline-none" id="main" tabIndex={-1}>

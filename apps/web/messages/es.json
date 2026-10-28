@@ -35,7 +35,8 @@
     "pricingDescription": "Empieza gratis con créditos cada mes. Studio, Label y los packs de créditos llegan pronto. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
     "billingTitle": "Facturación",
     "onboardingTitle": "Configuración",
-    "autopilotTitle": "Piloto automático"
+    "autopilotTitle": "Piloto automático",
+    "productsTitle": "Productos"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -317,7 +318,8 @@
       "insights": "Estadísticas",
       "billing": "Facturación",
       "onboarding": "Configuración",
-      "autopilot": "Piloto automático"
+      "autopilot": "Piloto automático",
+      "products": "Productos"
     },
     "docs": "Docs",
     "docsLabel": "Docs (se abre en una pestaña nueva)",
@@ -1194,5 +1196,109 @@
     "rejectDesignWhy": "Rechazar el diseño «{design}» porque {reason}",
     "approveAction": "Aprobar «{action}»",
     "rejectAction": "Rechazar «{action}»"
+  },
+  "Store": {
+    "title": "Productos",
+    "lead": "Publica, pausa y retira productos, planifica códigos de lanzamiento y gestiona pedidos. Cada cambio pasa por tus aprobaciones.",
+    "queued": "Enviado a tus aprobaciones.",
+    "approved": "Aprobado. wovain se encarga.",
+    "readiness": {
+      "title": "Tienda lista",
+      "ready": "Tu tienda puede recibir pedidos.",
+      "notReady": "Corrige esto antes de publicar nada.",
+      "passed": "(hecho)",
+      "failed": "(por corregir)",
+      "site_live": {
+        "label": "La tienda está en línea",
+        "fix": "En Fourthwall, pon el estado del sitio en Live."
+      },
+      "verified": {
+        "label": "La tienda está verificada",
+        "fix": "Fourthwall aún revisa tu tienda. Contacta con el soporte de Fourthwall para terminar."
+      },
+      "store_role": {
+        "label": "Puedes gestionar la tienda",
+        "fix": "Vuelve a conectar Fourthwall como propietario o gestor de la tienda."
+      },
+      "shipping": {
+        "label": "Los envíos están activos",
+        "fix": "En Fourthwall, activa los envíos y añade al menos un perfil de envío."
+      },
+      "payouts": {
+        "label": "Los pagos están configurados",
+        "fix": "En Fourthwall, completa tu cuenta de pagos para recibir tus ventas."
+      }
+    },
+    "queue": {
+      "title": "Aprobaciones de la tienda",
+      "lead": "Lo que wovain quiere hacer en tu tienda. Los reembolsos y cancelaciones siempre te esperan.",
+      "empty": "Nada pendiente.",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "status": {
+        "pending": "Pendiente",
+        "approved": "Aprobado",
+        "rejected": "Rechazado",
+        "denied": "Denegado",
+        "expired": "Caducado",
+        "executing": "En curso",
+        "done": "Hecho",
+        "failed": "Falló",
+        "reverted": "Deshecho"
+      }
+    },
+    "drops": {
+      "title": "Drops",
+      "empty": "Aún no hay drops. Una ejecución crea uno cuando apruebas sus diseños.",
+      "products": "{count, plural, one {# producto} other {# productos}}",
+      "publish": "Publicar drop",
+      "code": "Código de lanzamiento",
+      "percentage": "% de descuento",
+      "maxUses": "Usos máximos",
+      "startsAt": "Empieza",
+      "endsAt": "Termina",
+      "planPromotion": "Planificar código"
+    },
+    "dropStatus": {
+      "draft": "Borrador",
+      "in_review": "En revisión",
+      "live": "Publicado",
+      "paused": "En pausa",
+      "retired": "Retirado"
+    },
+    "products": {
+      "title": "Productos",
+      "lead": "Las tallas grandes cuestan más de fabricar, así que llevan un recargo sobre el precio.",
+      "empty": "Aún no hay productos.",
+      "mockupAlt": "Maqueta de {title}",
+      "view": "Ver en la tienda",
+      "price": "Precio (USD)",
+      "reprice": "Cambiar precio",
+      "sample": "Pedir una muestra",
+      "sampleLead": "Elige una variante. Pagas a precio de coste en Fourthwall:",
+      "move": {
+        "publish": "Publicar",
+        "unpublish": "Despublicar",
+        "retire": "Retirar"
+      }
+    },
+    "productStatus": {
+      "hidden": "Borrador",
+      "in_review": "En revisión",
+      "public": "Publicado",
+      "paused": "En pausa",
+      "retired": "Retirado"
+    },
+    "orders": {
+      "title": "Pedidos",
+      "lead": "Los últimos pedidos de Fourthwall. Los datos del cliente se quedan en Fourthwall.",
+      "empty": "Aún no hay pedidos.",
+      "refund": "Reembolsar",
+      "cancel": "Cancelar pedido",
+      "reason": "Motivo",
+      "previewRefund": "Ver coste del reembolso",
+      "previewCancel": "Ver coste de la cancelación",
+      "back": "Volver"
+    }
   }
 }

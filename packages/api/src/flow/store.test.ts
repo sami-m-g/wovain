@@ -19,6 +19,7 @@ import { setAutonomy } from "./approvals";
 import {
   executeStoreApproval,
   requestCancel,
+  requestDropPublish,
   requestProductMove,
   requestRefund,
   stageRunDrop,
@@ -281,6 +282,11 @@ describe("the executor", () => {
     expect(row?.status).toBe("failed");
     expect(row?.error).toContain("isn't ready");
     expect(ctx.shop.count("ecommerce_update-offer-status")).toBe(0);
+
+    // Once the shop is fixed, asking again queues a fresh publish.
+    const again = await requestDropPublish(ctx.actor, row?.dropId ?? "");
+    expect(again.id).not.toBe(approvalId);
+    expect(again.status).toBe("approved");
   });
 });
 
