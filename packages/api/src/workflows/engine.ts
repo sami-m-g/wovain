@@ -6,7 +6,6 @@ import { serve } from "inngest/next";
 import { z } from "zod";
 
 import type { EventSender, RunEngine } from "../flow/actor";
-import { expoTransport } from "../flow/push";
 import type { PushTransport } from "../flow/push";
 import { finishRun } from "../flow/runs";
 import { createAutopilotFunctions } from "./autopilot";
@@ -81,7 +80,7 @@ export const createRunEngine = ({
   cloudTrace,
   mastraFor,
   otlpEndpoint,
-  push = expoTransport(process.env["EXPO_ACCESS_TOKEN"]),
+  push,
   services,
   storage,
 }: {
@@ -93,8 +92,9 @@ export const createRunEngine = ({
   mastraFor: (userId: string) => Promise<boolean>;
   // Also export them to this OTLP endpoint.
   otlpEndpoint?: string | undefined;
-  // Where push notifications go (the Expo Push Service by default).
-  push?: PushTransport;
+  // Where push notifications go: the Expo Push Service in the app
+  // (expoTransport with the app's EXPO_ACCESS_TOKEN), a fake in tests.
+  push: PushTransport;
   services: RunServices;
   storage: PostgresStore;
 }) => {

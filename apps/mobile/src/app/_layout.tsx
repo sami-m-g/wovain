@@ -9,6 +9,7 @@ import { authClient } from "@/lib/auth-client";
 import { routeOf } from "@/lib/format";
 import { queryClient } from "@/lib/orpc";
 import { usePush } from "@/lib/session";
+import { identify } from "@/lib/telemetry";
 import { COLORS } from "@/lib/theme";
 
 const styles = StyleSheet.create({
@@ -33,6 +34,12 @@ const useNotificationRoute = (signedIn: boolean) => {
 const Navigation = () => {
   const { data: session, isPending } = authClient.useSession();
   const signedIn = session !== null && session !== undefined;
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (userId !== undefined) {
+      identify(userId);
+    }
+  }, [userId]);
   usePush(signedIn);
   useNotificationRoute(signedIn);
 

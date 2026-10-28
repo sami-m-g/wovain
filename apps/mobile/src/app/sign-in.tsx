@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Body, Button } from "@/components/ui";
 import { authClient } from "@/lib/auth-client";
+import { reportError } from "@/lib/telemetry";
 import { COLORS, RADIUS, SPACE } from "@/lib/theme";
 
 const styles = StyleSheet.create({
@@ -29,6 +30,26 @@ const styles = StyleSheet.create({
   title: { color: COLORS.ink, fontSize: 34, fontWeight: "800" },
 });
 
+// Runs a sign-in and answers what to show when it fails. A refused sign-in
+// (wrong password, unverified email) comes back as result.error. A thrown
+// one (offline, the browser flow failing) is reported to Error Tracking, and
+// never leaves the buttons disabled.
+const failureOf = async (
+  attempt: () => Promise<{ error: unknown }>
+): Promise<string | undefined> => {
+  try {
+    const result = await attempt();
+    if (result.error === null || result.error === undefined) {
+      return undefined;
+    }
+    const { message } = result.error as { message?: string };
+    return message ?? "Sign-in failed. Try again.";
+  } catch (error) {
+    reportError(error, "sign-in");
+    return "Couldn't reach wovain. Check your connection and try again.";
+  }
+};
+
 // Sign-in with the website's accounts: email and password, or Google.
 // New accounts are made on the website, which verifies the email first.
 const SignIn = () => {
@@ -40,12 +61,9 @@ const SignIn = () => {
   const run = async (attempt: () => Promise<{ error: unknown }>) => {
     setBusy(true);
     setError(undefined);
-    const result = await attempt();
+    const failure = await failureOf(attempt);
     setBusy(false);
-    if (result.error !== null && result.error !== undefined) {
-      const { message } = result.error as { message?: string };
-      setError(message ?? "Sign-in failed. Try again.");
-    }
+    setError(failure);
   };
 
   const withEmail = () =>

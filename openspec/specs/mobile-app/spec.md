@@ -52,10 +52,26 @@ The app SHALL register the device's Expo push token with `devices.register` afte
 
 An `approval.requested` event SHALL become a notify event of kind `approval` with the approval's title. A `trigger.fired` event that carries a `suggestionId` SHALL become a notify event of kind `suggestion` with the suggestion's title and rationale.
 
+Nothing sends `trigger.fired` or saves `suggestion` rows yet. Suggestion pushes, and suggestions in the inbox, start once the autopilot-triggers workstream saves a suggestion and sends `EVENTS.triggerFired` with its `suggestionId`.
+
 #### Scenario: Approval waits
 
 - **WHEN** an agent enqueues an action that needs the merchant's approval
 - **THEN** the merchant's phones get a push with the approval's title, and tapping it opens the approvals tab
+
+### Requirement: App errors reach Error Tracking
+
+Every failed query and mutation in the app, a failed push registration or unregistration, and a sign-in that throws SHALL be sent to PostHog Error Tracking (`posthog-react-native`, `EXPO_PUBLIC_POSTHOG_KEY`), as well as shown on screen. A failed push unregistration SHALL NOT block sign-out.
+
+#### Scenario: Offline sign-out
+
+- **WHEN** the merchant signs out and `devices.unregister` fails
+- **THEN** the error is reported, and the merchant is still signed out
+
+#### Scenario: Sign-in throws
+
+- **WHEN** the sign-in request throws (offline, or the browser flow fails)
+- **THEN** the error is reported, a message is shown, and the sign-in buttons work again
 
 ### Requirement: Push delivery
 
