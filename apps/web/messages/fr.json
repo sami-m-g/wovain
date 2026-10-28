@@ -466,6 +466,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Texte imprimé : {text}",
       "approve": "Valider",
+      "approveAnyway": "Valider quand même",
+      "flagged": "La vérification a signalé ce design. Vérifiez ces points avant de le vendre :",
       "approved": "Validé",
       "reject": "Refuser",
       "rejected": "Refusé",
@@ -475,10 +477,12 @@
       "error": "Validez au moins un visuel.",
       "submit": "Créer les produits",
       "artAlt": "Visuel : {title}",
-      "shirtAlt": "Visuel sur un t-shirt : {title}",
+      "shirtAlt": "Visuel sur un t-shirt, tel que Fourthwall le génère : {title}",
       "viewShirt": "Sur un t-shirt",
       "viewFlat": "Visuel seul",
-      "viewLabel": "Vue du visuel"
+      "viewLabel": "Vue du visuel",
+      "mockupUnavailable": "Fourthwall n'a pas pu afficher ce visuel sur le t-shirt. Voici le visuel à plat.",
+      "mockupNotConnected": "Connectez Fourthwall pour voir ce visuel sur le t-shirt."
     },
     "products": {
       "title": "Publier les produits",

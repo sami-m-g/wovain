@@ -15,4 +15,4 @@
 
 - [ ] 3.1 Browser check on a preview, including the ChatGPT OAuth login and consent
 - [ ] 3.2 English error messages on every auth screen
-- [ ] 3.3 Merge, then archive this change
+- [x] 3.3 Merge, then archive this change
