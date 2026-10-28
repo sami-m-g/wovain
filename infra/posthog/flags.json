@@ -810,15 +810,6 @@
               "value": [
                 "production"
               ]
-            },
-            {
-              "key": "plan",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "free",
-                "demo"
-              ]
             }
           ],
           "rollout_percentage": 100
@@ -832,15 +823,6 @@
               "type": "person",
               "value": [
                 "next"
-              ]
-            },
-            {
-              "key": "plan",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "free",
-                "demo"
               ]
             }
           ],
@@ -856,21 +838,12 @@
               "value": [
                 "development"
               ]
-            },
-            {
-              "key": "plan",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "free",
-                "demo"
-              ]
             }
           ],
           "rollout_percentage": 100
         }
       ],
-      "name": "Qloo taste themes in trend research. Qloo hackathon terms: free and demo plans only until judging ends on 2026-11-05; paid plans get Tavily-only trends (owner: growth, expires 2026-11-05). Managed in packages/core/src/flag-registry.ts.",
+      "name": "Qloo taste themes in trend research, for every plan (founder decision, 2026-10-28). A kill switch only: off cuts Qloo and research runs on Tavily and the language model (owner: growth, expires 2027-06-30). Managed in packages/core/src/flag-registry.ts.",
       "tags": [
         "registry",
         "kill-switch"

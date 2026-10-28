@@ -43,6 +43,7 @@ import {
   awaitApproval,
   eachSettled,
   finishRun,
+  startRun,
 } from "./runs";
 import { transitionErrors } from "./transitions";
 
@@ -1300,5 +1301,36 @@ describe("fal connection", () => {
     await expect(listConnections(actor)).resolves.toEqual([
       expect.objectContaining({ needsReconnect: true, provider: "fal" }),
     ]);
+  });
+});
+
+describe("startRun", () => {
+  it("keeps the merchant's with-Qloo or LLM-only choice on the run", async () => {
+    const { actor, db } = await setup({});
+    await db.insert(connection).values({
+      provider: "fal",
+      sealedTokens: "sealed",
+      userId: USER_ID,
+    });
+    const runs = engine();
+    const withRuns = { ...actor, runs };
+    const input = {
+      autopilot: false,
+      countries: ["US"],
+      dailyBudget: 5,
+      seed: "cozy reading",
+    };
+
+    const llmOnly = await startRun(withRuns, { ...input, qloo: false });
+    const withQloo = await startRun(withRuns, input);
+
+    expect(llmOnly.qloo).toBe(false);
+    expect(withQloo.qloo).toBe(true);
+    expect(runs.start).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({ qloo: false }),
+        runId: llmOnly.id,
+      })
+    );
   });
 });

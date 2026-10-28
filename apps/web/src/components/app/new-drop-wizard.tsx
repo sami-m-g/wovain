@@ -139,7 +139,9 @@ const DropFlow = ({
         error={drop.briefError}
         onBudget={drop.handleBudget}
         onChange={drop.handleBrief}
+        onQloo={drop.handleQloo}
         onSubmit={actions.handleSubmitBrief}
+        qloo={drop.qloo}
       />
     ),
     campaign: (

@@ -216,12 +216,11 @@ export const FLAGS = {
   ),
   "trends-qloo": {
     description:
-      "Qloo taste themes in trend research. Qloo hackathon terms: free and demo plans only until judging ends on 2026-11-05; paid plans get Tavily-only trends",
-    expires: "2026-11-05",
+      "Qloo taste themes in trend research, for every plan (founder decision, 2026-10-28). A kill switch only: off cuts Qloo and research runs on Tavily and the language model",
+    expires: "2027-06-30",
     guarded: false,
     initiallyActive: true,
     owner: { gitlab: OWNER, team: "growth" },
-    plans: ["free", "demo"],
     rollout: {
       development: { kind: "all" },
       next: { kind: "all" },

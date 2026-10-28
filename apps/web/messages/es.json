@@ -443,7 +443,9 @@
       "placeholder": "Merch acogedor y de naturaleza para mi canal de plantas",
       "error": "Escribe al menos unas palabras (10 caracteres o más).",
       "submit": "Investigar tendencias",
-      "submitAutopilot": "Lanzar en piloto automático"
+      "submitAutopilot": "Lanzar en piloto automático",
+      "qloo": "Usar los datos de gustos de Qloo",
+      "qlooHint": "Desactívalo para usar solo el modelo de lenguaje y comparar las ideas."
     },
     "trends": {
       "title": "Elige las ideas",
@@ -457,7 +459,27 @@
       "sources": "Fuentes",
       "hasDesign": "Diseño listo",
       "error": "Elige al menos una idea.",
-      "submit": "Ver diseños"
+      "submit": "Ver diseños",
+      "why": "Por qué esta idea",
+      "whyTag": "A los fans de {seeds} les une el gusto «{tag}».",
+      "whyNoTag": "Este tema sale de tu brief. El mapa de gustos de Qloo de abajo es del drop entero.",
+      "whyAlso": "A los mismos fans también les gusta",
+      "whyShare": "{share} por {name}",
+      "whyCues": "Pistas de estilo para el brief del diseño",
+      "whyFailed": "Qloo no respondió en esta ejecución, así que estos temas salen solo de tu brief.",
+      "whyNoMatch": "Qloo no reconoció nada de tu brief, así que estos temas salen solo de tu brief.",
+      "whyOff": "Esta ejecución no usó Qloo: el modelo de lenguaje eligió estos temas por sí solo.",
+      "whyDomainsFailed": "Qloo no pudo cargar {domains} que les gustan a estos fans, así que este mapa no las incluye.",
+      "domainPlural": {
+        "brand": "las marcas",
+        "movie": "las películas",
+        "tv_show": "las series"
+      },
+      "domain": {
+        "brand": "Marca",
+        "movie": "Película",
+        "tv_show": "Serie"
+      }
     },
     "designs": {
       "title": "Aprueba los diseños",

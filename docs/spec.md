@@ -156,7 +156,7 @@ wovain/
 | Service | Use | Who pays | Key | Notes |
 | --- | --- | --- | --- | --- |
 | Nebius Token Factory | Nemotron brief, judge, ad copy and autopilot, OpenAI-compatible at `NEBIUS_BASE_URL` | wovain, from credits | `NEBIUS_API_KEY` | Pay per token |
-| Qloo | `/search` and `/v2/insights` at `QLOO_API_URL` | wovain, from credits | `QLOO_API_KEY` | Hackathon key; commercial licence to confirm |
+| Qloo | `/search` and `/v2/insights` (tags; brand, film and TV affinities with `feature.explainability`) at `QLOO_API_URL` | wovain, from credits | `QLOO_API_KEY` | Hackathon key; commercial licence to confirm |
 | Tavily | Live search of news and marketplaces | wovain, from credits | `TAVILY_API_KEY` | Rate limited |
 | fal | Print art with GPT Image on fal, through fal's MCP relay | Merchant (own fal account) | OAuth per merchant | Pay per image |
 | Fourthwall | Catalog, previews, products and publish through its MCP server | Merchant (own shop) | OAuth per merchant | Merchant of record for product sales |

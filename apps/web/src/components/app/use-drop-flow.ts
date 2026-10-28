@@ -269,6 +269,10 @@ export const useDropFlow = (
 
   // Inputs and choices the merchant hasn't sent yet: the only local state.
   const [autopilotDraft, setAutopilotDraft] = useState(false);
+  // With Qloo (the default) or LLM-only, while qloo-taste-map is on.
+  const [qloo, setQloo] = useState(true);
+  const tasteMap =
+    useQuery(orpc.ideas.tasteMap.queryOptions()).data?.enabled === true;
   const [brief, setBrief] = useState(initialBrief);
   const [briefError, setBriefError] = useState<string>();
   const [picked, setPicked] = useState<string[]>([]);
@@ -327,7 +331,11 @@ export const useDropFlow = (
     }));
 
   /** Starts a run; the flow remounts on it and reads it from the cache. */
-  const startRun = (input: { autopilot: boolean; seed: string }) => {
+  const startRun = (input: {
+    autopilot: boolean;
+    qloo?: boolean | undefined;
+    seed: string;
+  }) => {
     showProblem();
     calls.start.mutate(
       { ...input, dailyBudget: budgetValue },
@@ -489,11 +497,16 @@ export const useDropFlow = (
     },
     /**
      * "Try again" on a failed run: runs are not resumable once failed, so
-     * this starts a new run from the same brief.
+     * this starts a new run from the same brief, with or without Qloo as
+     * the failed run was.
      */
     handleRetryRun: () => {
       if (run && !budgetInvalid) {
-        startRun({ autopilot: run.autopilot, seed: run.seed });
+        startRun({
+          autopilot: run.autopilot,
+          seed: run.seed,
+          ...(tasteMap && { qloo: run.qloo }),
+        });
       }
     },
     handleSubmitBrief: () => {
@@ -505,7 +518,11 @@ export const useDropFlow = (
         return;
       }
       setBriefError(undefined);
-      startRun({ autopilot, seed: brief.trim() });
+      startRun({
+        autopilot,
+        seed: brief.trim(),
+        ...(tasteMap && { qloo }),
+      });
     },
     handleToggleIdea: (id: string, checked: boolean) =>
       setPicked((previous) =>
@@ -528,9 +545,12 @@ export const useDropFlow = (
     handleBudget: setBudget,
     // Closes the paywall a refused step opened.
     handleDismissProblem: () => showProblem(),
+    // Undefined hides the Qloo switch: qloo-taste-map is off.
+    handleQloo: tasteMap ? setQloo : undefined,
     loading: cache.loading,
     picked,
     problem,
+    qloo,
     reasons,
     run,
     starting: calls.start.isPending,

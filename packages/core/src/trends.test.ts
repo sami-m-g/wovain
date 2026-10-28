@@ -126,6 +126,91 @@ describe("createTrends", () => {
     expect(top?.signals.marketHits).toBe(2);
   });
 
+  it("puts Qloo's taste map on each idea when asked", async () => {
+    const { client } = fakeTavily();
+    const tasteOf = vi.fn<Qloo["tasteOf"]>(
+      async () =>
+        await Promise.resolve({
+          affinities: [
+            {
+              affinity: 0.9,
+              because: [{ id: "E1", name: "Studio Ghibli", share: 1 }],
+              cues: ["Minimalist"],
+              id: "B1",
+              name: "Zozotown",
+              type: "brand",
+            },
+          ],
+          failedDomains: ["movie"],
+          names: ["Studio Ghibli", "Zozotown"],
+          seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
+          themes: [
+            { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
+            { affinity: 0.2, id: "urn:tag:style:cozy", name: "cozy" },
+            { affinity: 0.1, id: "urn:tag:style:pastel", name: "pastel" },
+          ],
+        })
+    );
+    const trends = createTrends(client, qlooWith(tasteOf));
+
+    const research = await trends.research("ghibli", undefined, {
+      qloo: true,
+      tasteMap: true,
+      tavily: true,
+    });
+
+    expect(tasteOf).toHaveBeenCalledWith("ghibli", undefined, {
+      crossDomain: true,
+    });
+    const anime = research.ideas.find((idea) => idea.theme === "anime");
+    expect(anime?.taste).toEqual({
+      affinities: [expect.objectContaining({ name: "Zozotown" })],
+      // The film call failed: the panel says so.
+      failedDomains: ["movie"],
+      seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
+      status: "used",
+      tag: { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
+    });
+  });
+
+  it("records on each idea that Qloo failed or was off", async () => {
+    const { client } = fakeTavily();
+    const { ask } = fakeNemotron(HALLOWEEN_THEMES);
+
+    const failed = await createTrends(client, qlooDown, ask).research(
+      BRIEF,
+      { error: vi.fn(), set: vi.fn() },
+      { qloo: true, tasteMap: true, tavily: true }
+    );
+    const off = await createTrends(client, qlooDown, ask).research(
+      BRIEF,
+      undefined,
+      { qloo: false, tasteMap: true, tavily: true }
+    );
+
+    expect(failed.ideas.map((idea) => idea.taste?.status)).toEqual(
+      failed.ideas.map(() => "failed")
+    );
+    expect(off.ideas.map((idea) => idea.taste?.status)).toEqual(
+      off.ideas.map(() => "off")
+    );
+    expect(off.ideas[0]?.taste).toEqual({
+      affinities: [],
+      failedDomains: [],
+      seeds: [],
+      status: "off",
+    });
+  });
+
+  it("leaves the taste map out unless asked", async () => {
+    const { client } = fakeTavily();
+    const { ask } = fakeNemotron(HALLOWEEN_THEMES);
+
+    const research = await createTrends(client, qlooDown, ask).research(BRIEF);
+
+    expect(research.ideas.every((idea) => idea.taste === undefined)).toBe(true);
+  });
+
   // #62: one idea whose title echoed the brief.
   it("splits a brief into 3 to 5 distinct themes when Qloo fails", async () => {
     const { client, search } = fakeTavily();

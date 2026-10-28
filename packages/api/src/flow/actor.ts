@@ -57,6 +57,9 @@ export interface RunInput {
   autopilot: boolean;
   countries: string[];
   dailyBudget: number;
+  // false: research without Qloo, to compare with a Qloo run
+  // (qloo-taste-map). Undefined means with Qloo.
+  qloo?: boolean | undefined;
   seed: string;
 }
 
@@ -91,7 +94,7 @@ export interface Actor {
   events?: EventSender | undefined;
   log?: Logger | undefined;
   mailer: Mailer;
-  // The merchant's plan, for plan-gated flags (trends-qloo). Billing (MR
+  // The merchant's plan, for flag targeting and plan-gated flags. Billing (MR
   // !116) sets it from the subscription; unset counts as free, the only plan
   // sold at launch.
   plan?: FlagPlan | undefined;

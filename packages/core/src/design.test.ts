@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { pickIdea, reviewDesign } from "./autopilot";
 import {
   applyFacts,
+  draftBrief,
   judgeDesign,
   judgeReplySchema,
   printFacts,
@@ -264,5 +265,56 @@ describe("autopilot", () => {
     const { idea: chosen } = await pickIdea(ask, ideas);
 
     expect(chosen.theme).toBe("first");
+  });
+});
+
+describe("draftBrief", () => {
+  it("passes Qloo's aesthetic cues to the brief, never the names", async () => {
+    const { ask, asked } = fakeAgents({ design_brief: [brief] });
+    const tasted: TrendIdea = {
+      ...idea("anime", 0.9),
+      taste: {
+        affinities: [
+          {
+            affinity: 0.9,
+            because: [{ id: "E1", name: "Studio Ghibli", share: 1 }],
+            cues: ["Minimalist", "Trendy"],
+            id: "B1",
+            name: "Zozotown",
+            type: "brand",
+          },
+          {
+            affinity: 0.8,
+            because: [],
+            cues: ["minimalist", "Cinematic"],
+            id: "M1",
+            name: "Mirai",
+            type: "movie",
+          },
+        ],
+        seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
+        status: "used",
+        tag: { affinity: 0.9, id: "urn:tag:x", name: "anime" },
+      },
+    };
+
+    await draftBrief(ask, { avoidNames: [], idea: tasted });
+
+    const prompt = asked[0]?.prompt ?? "";
+    expect(JSON.parse(prompt).taste).toEqual({
+      cues: ["Minimalist", "Trendy", "Cinematic"],
+      domains: ["brand", "movie"],
+    });
+    expect(prompt).not.toContain("Zozotown");
+    expect(prompt).not.toContain("Mirai");
+    expect(prompt).not.toContain("Studio Ghibli");
+  });
+
+  it("sends no taste when Qloo didn't shape the idea", async () => {
+    const { ask, asked } = fakeAgents({ design_brief: [brief] });
+
+    await draftBrief(ask, { avoidNames: [], idea: idea("anime", 0.9) });
+
+    expect(JSON.parse(asked[0]?.prompt ?? "{}").taste).toBeUndefined();
   });
 });

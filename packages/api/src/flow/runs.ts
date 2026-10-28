@@ -89,7 +89,9 @@ export const researchStep = async (
   input: RunInput
 ) => {
   await markRun(actor, runId, { step: "research" });
-  const ideas = await researchIdeas(actor, input.seed, runId);
+  const ideas = await researchIdeas(actor, input.seed, runId, {
+    qloo: input.qloo,
+  });
   const ranked = ideas.map((row) => row.id);
   if (ranked.length === 0 || !input.autopilot) {
     return { ideaIds: ranked };
@@ -581,6 +583,8 @@ export const startRun = async (actor: Actor, input: RunInput) => {
     .insert(run)
     .values({
       autopilot: input.autopilot,
+      // Kept so a retry reuses the merchant's with-Qloo or LLM-only choice.
+      qloo: input.qloo !== false,
       seed: input.seed,
       userId: actor.userId,
     })

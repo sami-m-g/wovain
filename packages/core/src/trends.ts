@@ -9,7 +9,14 @@ import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
 import { priceFor, pricingRules } from "./pricing";
-import type { Qloo, Taste } from "./qloo";
+import type {
+  AffinityType,
+  Qloo,
+  QlooAffinity,
+  QlooEntity,
+  QlooTheme,
+  Taste,
+} from "./qloo";
 import {
   ipSafetyOf,
   marginOf,
@@ -69,26 +76,60 @@ export interface TrendIdea {
   score: number;
   signals: IdeaSignals;
   sources: Source[];
+  // Why this idea: what Qloo's taste graph said (the qloo-taste-map flag).
+  taste?: TasteMap | undefined;
   theme: string;
+}
+
+// off: the trends-qloo flag said no, or the merchant ran without Qloo.
+export type QlooStatus = "used" | "no_match" | "failed" | "off";
+
+// What Qloo contributed to one idea: the entities it matched for the seed,
+// the theme's Qloo tag when the theme came from Qloo, and what the seed's
+// fans also like in other domains, with each seed entity's share.
+export interface TasteMap {
+  affinities: QlooAffinity[];
+  // Domains Qloo couldn't load affinities from (logged at error level).
+  // Ideas saved before this field have none.
+  failedDomains?: AffinityType[] | undefined;
+  seeds: QlooEntity[];
+  status: QlooStatus;
+  tag?: QlooTheme | undefined;
 }
 
 export interface TrendResearch {
   // Names Qloo matched: never put them on a product.
   avoidNames: string[];
   ideas: TrendIdea[];
-  // off: the trends-qloo flag said no (a paid plan, or switched off).
-  qloo: "used" | "no_match" | "failed" | "off";
+  qloo: QlooStatus;
 }
 
 // Which sources a run may use: the trends-qloo and trends-tavily flags,
-// evaluated by the caller for the merchant (packages/api/src/flow/ideas.ts).
+// evaluated by the caller for the merchant (packages/api/src/flow/ideas.ts),
+// and the merchant's own choice to run without Qloo. tasteMap asks Qloo for
+// cross-domain affinities and saves the taste map on each idea.
 export interface TrendSources {
   qloo: boolean;
+  tasteMap?: boolean | undefined;
   tavily: boolean;
 }
 
 const ALL_SOURCES: TrendSources = { qloo: true, tavily: true };
 const NO_TASTE: Taste & { failed?: boolean } = { names: [], themes: [] };
+
+const tasteMapOf = (
+  theme: Theme,
+  taste: Taste,
+  status: QlooStatus
+): TasteMap => ({
+  affinities: taste.affinities ?? [],
+  failedDomains: taste.failedDomains ?? [],
+  seeds: taste.seeds ?? [],
+  status,
+  ...(theme.id !== undefined && {
+    tag: { affinity: theme.affinity ?? 0, id: theme.id, name: theme.name },
+  }),
+});
 
 const qlooStatus = (taste: Taste & { failed?: boolean }) => {
   if (taste.failed === true) {
@@ -313,8 +354,12 @@ export const createTrends = (
       };
     }
     // Qloo sharpens the themes; the brief tops them up to MIN_THEMES.
+    const tasteOf = async () =>
+      sources.tasteMap === true
+        ? await qloo.tasteOf(seed, log, { crossDomain: true })
+        : await qloo.tasteOf(seed, log);
     const taste = sources.qloo
-      ? await qloo.tasteOf(seed, log).catch((error: unknown) => {
+      ? await tasteOf().catch((error: unknown) => {
           // Research goes on without Qloo, but the failure still reaches
           // the error sink (PostHog Error Tracking).
           log?.error?.(
@@ -333,6 +378,7 @@ export const createTrends = (
     const protectedNames = avoidNames.filter(
       (name) => name.toLowerCase() !== seed.toLowerCase()
     );
+    const status = sources.qloo ? qlooStatus(taste) : "off";
     const ideas = themes
       .flatMap((theme, index) => {
         const found = searched[index];
@@ -340,14 +386,19 @@ export const createTrends = (
           found === undefined
             ? undefined
             : ideaOf(theme, found, protectedNames);
-        return idea === undefined ? [] : [idea];
+        if (idea === undefined) {
+          return [];
+        }
+        return sources.tasteMap === true
+          ? [{ ...idea, taste: tasteMapOf(theme, taste, status) }]
+          : [idea];
       })
       .toSorted((a, b) => b.score - a.score)
       .map((idea, index) => ({ ...idea, rank: index + 1 }));
     return {
       avoidNames: avoidNames.slice(0, 3),
       ideas,
-      qloo: sources.qloo ? qlooStatus(taste) : "off",
+      qloo: status,
     };
   },
 });

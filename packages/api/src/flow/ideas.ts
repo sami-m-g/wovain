@@ -1,3 +1,4 @@
+import type { TrendSources } from "@wovain/core/trends";
 import { idea } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq } from "drizzle-orm";
 
@@ -6,11 +7,42 @@ import { notFound } from "./actor";
 import { flagContextOf } from "./flags";
 import { charge } from "./spend";
 
+export interface ResearchOptions {
+  // false: the merchant runs without Qloo (the LLM-only comparison).
+  qloo?: boolean | undefined;
+}
+
+// Which sources a run's research uses. Qloo runs for every plan, and
+// trends-qloo is only its kill switch. With qloo-taste-map on, the run also
+// saves the taste map and the merchant may run without Qloo (the LLM-only
+// comparison).
+export const researchSourcesFor = async (
+  actor: Actor,
+  options: ResearchOptions = {}
+): Promise<TrendSources> => {
+  const context = flagContextOf(actor);
+  const [qlooOn, tasteMap, tavilyOn] = await Promise.all([
+    actor.core.flags.isOn("trends-qloo", context),
+    actor.core.flags.isOn("qloo-taste-map", context),
+    actor.core.flags.isOn("trends-tavily", context),
+  ]);
+  return {
+    qloo: qlooOn && (!tasteMap || options.qloo !== false),
+    tasteMap,
+    tavily: tavilyOn,
+  };
+};
+
+export const tasteMapStatus = async (actor: Actor) => ({
+  enabled: await actor.core.flags.isOn("qloo-taste-map", flagContextOf(actor)),
+});
+
 // Trend research (Qloo × Tavily), saved as ranked ideas.
 export const researchIdeas = async (
   actor: Actor,
   seed: string,
-  runId?: string
+  runId?: string,
+  options: ResearchOptions = {}
 ) => {
   // A run's research step retried after it saved its ideas keeps them.
   if (runId !== undefined) {
@@ -23,15 +55,7 @@ export const researchIdeas = async (
       return saved;
     }
   }
-  // Qloo's hackathon terms allow it on free and demo plans only, so
-  // trends-qloo is evaluated for the merchant's plan; paid plans get
-  // Tavily-only trends (docs/adr/0001-progressive-delivery.md).
-  const context = flagContextOf(actor);
-  const [qlooOn, tavilyOn] = await Promise.all([
-    actor.core.flags.isOn("trends-qloo", context),
-    actor.core.flags.isOn("trends-tavily", context),
-  ]);
-  const sources = { qloo: qlooOn, tavily: tavilyOn };
+  const sources = await researchSourcesFor(actor, options);
   // Without Tavily there's nothing to rank: don't spend the merchant's credits.
   if (!sources.tavily) {
     actor.log?.set({ trends: { ideas: 0, sources } });
