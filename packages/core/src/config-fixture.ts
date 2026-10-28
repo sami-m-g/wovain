@@ -8,6 +8,7 @@ import type { pricingRulesSchema } from "./pricing";
 export const TEST_PRICING_RULES = {
   cardFeeFixed: 0.3,
   cardFeePct: 2.9,
+  defaultBaseCost: 12,
   minMarginPct: 30,
   minProfit: 10,
   refundReservePct: 2,

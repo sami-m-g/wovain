@@ -8,6 +8,7 @@ import type { billingCatalogSchema } from "./catalog.ts";
 export const TEST_CATALOG = {
   creditCost: { assist: 1, design: 2, research: 3 },
   creditPack: { credits: 100, name: "Credit pack", priceCents: 1000 },
+  designsPerRun: 3,
   plans: {
     free: {
       autopilot: false,

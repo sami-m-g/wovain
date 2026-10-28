@@ -28,6 +28,7 @@ export interface CoreConfig extends FlagsConfig {
   GUARDRAILS?: "off" | "on" | undefined;
   META_APP_ID?: string | undefined;
   META_APP_SECRET?: string | undefined;
+  META_MCP_SCOPE: string;
   META_MCP_URL: string;
   NEBIUS_API_KEY?: string | undefined;
   NEBIUS_BASE_URL: string;
@@ -96,6 +97,7 @@ export const createCore = (
       appUrl: env.BETTER_AUTH_URL,
       metaAppId: env.META_APP_ID,
       metaAppSecret: env.META_APP_SECRET,
+      metaScope: env.META_MCP_SCOPE,
       serverUrls: {
         fal: env.FAL_MCP_URL,
         fourthwall: env.FOURTHWALL_MCP_URL,

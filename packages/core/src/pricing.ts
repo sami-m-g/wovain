@@ -13,6 +13,8 @@ const pct = z.number().min(0).max(100);
 export const pricingRulesSchema = z.strictObject({
   cardFeeFixed: dollars,
   cardFeePct: pct,
+  // A typical tee's base cost, when the catalog doesn't say.
+  defaultBaseCost: dollars.positive(),
   minMarginPct: pct.max(99),
   minProfit: dollars,
   refundReservePct: pct,
@@ -48,9 +50,6 @@ export const pricingRules = (): PricingRules => {
   loaded ??= parsePricingRules(process.env[PRICING_RULES_VAR]);
   return loaded;
 };
-
-// A typical tee's base cost when the catalog doesn't say.
-export const DEFAULT_BASE_COST = 12;
 
 const percent = (value: number) => value / 100;
 

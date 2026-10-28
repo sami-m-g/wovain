@@ -8,7 +8,7 @@ import {
   setOfferPrice,
   uploadArtwork,
 } from "@wovain/core/fourthwall";
-import { DEFAULT_BASE_COST, priceFor } from "@wovain/core/pricing";
+import { priceFor, pricingRules } from "@wovain/core/pricing";
 import { product } from "@wovain/db/schema/seller";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -114,7 +114,7 @@ export const createDesignProduct = async (
           title,
         }),
     });
-    const price = priceFor(blank.baseCost ?? DEFAULT_BASE_COST);
+    const price = priceFor(blank.baseCost ?? pricingRules().defaultBaseCost);
     await setOfferPrice(call, offerId, price);
     return {
       ...preview,

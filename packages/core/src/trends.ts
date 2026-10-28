@@ -8,7 +8,7 @@ import type {
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
-import { DEFAULT_BASE_COST, priceFor } from "./pricing";
+import { priceFor, pricingRules } from "./pricing";
 import type { Qloo, Taste } from "./qloo";
 import {
   ipSafetyOf,
@@ -265,7 +265,7 @@ const ideaOf = (
   const signals: IdeaSignals = {
     affinity: theme.affinity,
     ipSafety: ipSafetyOf(theme.name, avoidNames),
-    margin: marginOf(median(prices), priceFor(DEFAULT_BASE_COST)),
+    margin: marginOf(median(prices), priceFor(pricingRules().defaultBaseCost)),
     marketHits: market.results.length,
     newsHits: news.results.length,
     recency: recencyOf(news.results.map((hit) => hit.publishedDate)),

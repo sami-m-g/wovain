@@ -251,7 +251,7 @@
       "processorsTitle": "Who processes it",
       "processorsBody": "Briefs and designs are sent to the services that do the work: Nebius, Qloo, Tavily, fal, Fourthwall and Meta. Each handles data under its own policy.",
       "deleteTitle": "Deleting your data",
-      "deleteBody": "Email privacy@wovain.com from your account's address and we delete your account, runs and stored connections within 30 days."
+      "deleteBody": "Email {privacyEmail} from your account's address and we delete your account, runs and stored connections within 30 days."
     },
     "terms": {
       "title": "Terms",
@@ -263,7 +263,7 @@
       "spendTitle": "Ads and spend",
       "spendBody": "Campaigns are created paused. Any ad spend starts only when you turn a campaign on in Meta, and it is billed by Meta to your ad account.",
       "contactTitle": "Contact",
-      "contactBody": "Questions about these terms go to support@wovain.com."
+      "contactBody": "Questions about these terms go to {supportEmail}."
     }
   },
   "Auth": {

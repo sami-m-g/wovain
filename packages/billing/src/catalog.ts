@@ -68,6 +68,8 @@ export const billingCatalogSchema = z.strictObject({
       priceCents: cents,
     })
     .transform((pack) => ({ ...pack, code: CREDIT_PACK_CODE })),
+  // The designs a run draws, one for each of its top ideas; each is charged.
+  designsPerRun: z.int().positive(),
   plans: z
     .strictObject({ free: planSchema, label: planSchema, studio: planSchema })
     .transform(({ free, label, studio }) => ({
@@ -125,7 +127,8 @@ export const billingCatalog = (): BillingCatalog => {
 export const publicCatalog = ({
   creditCost,
   creditPack,
+  designsPerRun,
   plans,
-}: BillingCatalog) => ({ creditCost, creditPack, plans });
+}: BillingCatalog) => ({ creditCost, creditPack, designsPerRun, plans });
 
 export type PublicCatalog = ReturnType<typeof publicCatalog>;

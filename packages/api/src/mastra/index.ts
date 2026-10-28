@@ -28,6 +28,7 @@ const env = z
     GUARDRAIL_INJECTION_THRESHOLD: z.coerce.number().min(0).max(1),
     GUARDRAIL_MODERATION_THRESHOLD: z.coerce.number().min(0).max(1),
     GUARDRAIL_PII_THRESHOLD: z.coerce.number().min(0).max(1),
+    META_MCP_SCOPE: z.string().min(1),
     META_MCP_URL: z.url(),
     NEBIUS_API_KEY: z.string().optional(),
     NEBIUS_BASE_URL: z.url().default("https://api.tokenfactory.nebius.com/v1/"),

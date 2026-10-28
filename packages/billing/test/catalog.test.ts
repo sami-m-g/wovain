@@ -46,6 +46,7 @@ it("keeps the promos out of what the browser sees", () => {
   expect(Object.keys(publicCatalog(billingCatalog())).toSorted()).toEqual([
     "creditCost",
     "creditPack",
+    "designsPerRun",
     "plans",
   ]);
 });

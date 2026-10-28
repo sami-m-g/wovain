@@ -161,6 +161,7 @@ const setup = (relay: Partial<Relay>, grant: Grant) => {
     fetch: fakeFetch(fake),
     metaAppId: undefined,
     metaAppSecret: undefined,
+    metaScope: "ads_read",
     serverUrls: {
       fal: RELAY,
       fourthwall: "https://fourthwall.example/mcp",

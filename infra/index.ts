@@ -326,9 +326,11 @@ const appSettings: Record<string, string> = {
     GUARDRAIL_INJECTION_THRESHOLD: "guardrailInjectionThreshold",
     GUARDRAIL_MODERATION_THRESHOLD: "guardrailModerationThreshold",
     GUARDRAIL_PII_THRESHOLD: "guardrailPiiThreshold",
+    META_MCP_SCOPE: "metaMcpScope",
     META_MCP_URL: "metaMcpUrl",
     NEMOTRON_INPUT_PRICE: "nemotronInputPrice",
     NEMOTRON_OUTPUT_PRICE: "nemotronOutputPrice",
+    PRIVACY_EMAIL: "privacyEmail",
     SUPPORT_EMAIL: "supportEmail",
   }),
   BILLING_CATALOG: JSON.stringify(config.requireObject("billingCatalog")),
@@ -375,7 +377,7 @@ const googleEnv =
 
 // Polar's environment (apps/web/.env.schema): sandbox until the business
 // is registered (`pulumi config set polarEnvironment production`).
-const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
+const polarEnvironment = config.require("polarEnvironment");
 
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
@@ -464,7 +466,7 @@ const resendDomain =
     : new ResendDomain("resend", {
         apiKey: resendApiKey,
         name: domain,
-        region: config.get("resendRegion") ?? "us-east-1",
+        region: config.require("resendRegion"),
       });
 
 // dev.wovain.com (dev.ts).
@@ -498,10 +500,7 @@ const site = configureDomain({
   // show every record it feeds as changed (adding an unrelated API did).
   after: [api.dns, api.run, api.siteverification],
   apex: domain,
-  caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
-    "pki.goog",
-    "letsencrypt.org",
-  ],
+  caaIssuers: config.requireObject<string[]>("caaIssuers"),
   dmarcRua: config.get("dmarcRua"),
   googleDkim: config.get("googleDkim"),
   googleSiteVerification: config.get("googleSiteVerification"),

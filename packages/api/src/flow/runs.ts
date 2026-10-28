@@ -1,4 +1,4 @@
-import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { pickIdea } from "@wovain/core/autopilot";
 import { NEMOTRON_MODEL } from "@wovain/core/nemotron";
 import type { DesignFacts } from "@wovain/core/step-scorers";
@@ -22,7 +22,7 @@ import { assertAutopilot, assertCredits, charge } from "./spend";
 // products → publish → PAUSED campaigns. The request only saves the run and
 // queues it; a durable workflow (../workflows/run) calls the steps below,
 // each retried on its own and each safe to run twice. The run draws one
-// design for each of the top ideas (DESIGNS_PER_RUN), so the merchant
+// design for each of the top ideas (BILLING_CATALOG's designsPerRun), so the merchant
 // compares options. Without autopilot the run waits at the approval gate
 // until every design is decided, then lists each approved one; with
 // autopilot, Nemotron picks the lead idea and decides each design.
@@ -89,7 +89,7 @@ export const researchStep = async (
   const ideas = await researchIdeas(actor, input.seed, runId);
   const ranked = ideas.map((row) => row.id);
   if (ranked.length === 0 || !input.autopilot) {
-    return { ideaIds: ranked.slice(0, DESIGNS_PER_RUN) };
+    return { ideaIds: ranked.slice(0, billingCatalog().designsPerRun) };
   }
   const chosen = await charge(
     actor,
@@ -106,7 +106,7 @@ export const researchStep = async (
   return {
     ideaIds: [lead, ...ranked.filter((id) => id !== lead)].slice(
       0,
-      DESIGNS_PER_RUN
+      billingCatalog().designsPerRun
     ),
   };
 };

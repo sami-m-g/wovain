@@ -55,9 +55,9 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   fourthwall: {
     title: "Fourthwall",
   },
+  // Meta's scope is per-environment config (UpstreamConfig.metaScope,
+  // META_MCP_SCOPE).
   meta: {
-    scope:
-      "ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads",
     title: "Meta",
   },
 };
@@ -68,6 +68,8 @@ export interface UpstreamConfig {
   // Meta has no client metadata documents: its app is registered by hand.
   metaAppId: string | undefined;
   metaAppSecret: string | undefined;
+  // The scope asked of Meta's MCP server (space separated).
+  metaScope: string;
   // Each provider's MCP server URL.
   serverUrls: Record<ProviderId, string>;
   // Tests answer the providers' HTTP; the global fetch otherwise.
@@ -333,7 +335,8 @@ export type ToolCall = (
 
 export const createUpstream = (config: UpstreamConfig) => {
   const authOptions = (provider: ProviderId) => {
-    const { scope } = PROVIDERS[provider];
+    const scope =
+      provider === "meta" ? config.metaScope : PROVIDERS[provider].scope;
     return {
       serverUrl: config.serverUrls[provider],
       ...(scope === undefined ? {} : { scope }),

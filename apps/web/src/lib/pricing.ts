@@ -1,9 +1,4 @@
-import {
-  DEFAULT_BASE_COST,
-  priceFor,
-  pricingRules,
-  profitPerSale,
-} from "@wovain/core/pricing";
+import { priceFor, pricingRules, profitPerSale } from "@wovain/core/pricing";
 
 const percent = (value: number) => value / 100;
 const cents = (value: number) => Math.round(value * 100) / 100;
@@ -33,4 +28,4 @@ export const EXAMPLE_BASE_COSTS = [8, 12, 15, 20, 25] as const;
 export type PriceBreakdown = ReturnType<typeof priceBreakdown>;
 
 /** A typical tee's price, for the landing page's examples. */
-export const exampleTee = () => priceBreakdown(DEFAULT_BASE_COST);
+export const exampleTee = () => priceBreakdown(pricingRules().defaultBaseCost);

@@ -3,9 +3,6 @@
 // the credit costs are per-environment config (src/catalog.ts). Node runs the
 // seed directly, so this file imports nothing.
 
-// The designs a run draws, one for each of its top ideas; each is charged.
-export const DESIGNS_PER_RUN = 3;
-
 // The metered steps (their costs are BILLING_CATALOG's creditCost).
 export type CreditStep = "assist" | "design" | "research";
 

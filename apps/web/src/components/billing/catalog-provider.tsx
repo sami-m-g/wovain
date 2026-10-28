@@ -30,10 +30,10 @@ export const useCatalog = (): PublicCatalog => {
  * copy for one approved design; autopilot adds its pick and a review per
  * design.
  */
-export const dropCredits = (
-  { creditCost }: Pick<PublicCatalog, "creditCost">,
-  designsPerRun: number
-) => {
+export const dropCredits = ({
+  creditCost,
+  designsPerRun,
+}: Pick<PublicCatalog, "creditCost" | "designsPerRun">) => {
   const manual =
     creditCost.research + designsPerRun * creditCost.design + creditCost.assist;
   return {

@@ -1,6 +1,5 @@
 "use client";
 
-import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
 import { useTranslations } from "next-intl";
 
 import { dropCredits, useCatalog } from "@/components/billing/catalog-provider";
@@ -12,7 +11,7 @@ export const CreditTag = ({ className = "" }: { className?: string }) => {
   const credits = (count: number) => t("credits", { count });
   const catalog = useCatalog();
   const { creditCost } = catalog;
-  const drop = dropCredits(catalog, DESIGNS_PER_RUN);
+  const drop = dropCredits(catalog);
   return (
     <HangTag
       className={className}

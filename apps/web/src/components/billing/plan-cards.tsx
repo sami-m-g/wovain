@@ -1,7 +1,6 @@
 "use client";
 
 import type { PlanCode } from "@wovain/billing/plans";
-import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
 import { Card, CardContent } from "@wovain/ui/components/card";
 import { Separator } from "@wovain/ui/components/separator";
 import { cn } from "@wovain/ui/lib/utils";
@@ -81,7 +80,7 @@ export const PlanCards = ({
   const t = useTranslations("Billing");
   const money = useMoney();
   const catalog = useCatalog();
-  const drop = dropCredits(catalog, DESIGNS_PER_RUN);
+  const drop = dropCredits(catalog);
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
   return (
