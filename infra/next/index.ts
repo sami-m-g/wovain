@@ -76,6 +76,9 @@ const environment = appEnvironment({
       shared: sharedSettings(config),
     }),
     ...settingEnvs(settings),
+    // next shares production's Polar sandbox organization, so its catalog
+    // carries its own metadata key (packages/billing/src/plans.ts).
+    { name: "POLAR_METADATA_KEY", value: "wovain:next" },
   ],
   kept: { protect: true },
   name: NAME,
