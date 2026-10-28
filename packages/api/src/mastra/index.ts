@@ -53,6 +53,8 @@ const env = z
     TAVILY_API_KEY: z.string().optional(),
     TAVILY_RESEARCH_MODEL: z.enum(RESEARCH_MODELS),
     TOKEN_ENCRYPTION_KEY: z.string().min(44),
+    VOICE_STT_FALLBACK_MODEL: z.string().min(1),
+    VOICE_STT_MODEL: z.string().min(1),
   })
   .parse(process.env);
 

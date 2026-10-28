@@ -46,6 +46,7 @@ export const AGENT_IDS = [
   "brand_proxies",
   "research_themes",
   "ads_optimizer_review",
+  "voice_intent",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
@@ -67,6 +68,8 @@ export const AGENT_ROLES = {
   design_judge: "reasoning",
   design_vision: "vision",
   research_themes: "default",
+  // Maps a spoken command, in any of the app's languages, to one action.
+  voice_intent: "default",
 } as const satisfies Record<AgentId, ModelRole>;
 
 // The agents that read images, on the vision model.
@@ -82,6 +85,11 @@ export const REMEMBERING: ReadonlySet<AgentId> = new Set([
   "ad_copy",
   "design_brief",
 ]);
+
+// The agents that read what the merchant said aloud (./voice): PostHog gets
+// no input or output from their calls (privacy mode), and their Mastra
+// traces hide both (./nemotron).
+export const PRIVATE: ReadonlySet<AgentId> = new Set(["voice_intent"]);
 
 // Request-context keys a call sets for tracing and routing (./nemotron).
 export const TRACE_KEYS = {
@@ -202,6 +210,7 @@ export const createAgentKit = ({
             outputCost: pricePerMillion.output / TOKENS_PER_MILLION,
           },
         }),
+        posthogPrivacyMode: PRIVATE.has(span),
         posthogProperties: {
           $ai_span_name: span,
           environment,

@@ -52,6 +52,7 @@
     "DOCS_URL",
     "EMAIL_FROM",
     "FAL_IMAGE_MODEL",
+    "FAL_KEY",
     "FAL_MCP_URL",
     "FOURTHWALL_DEFAULT_PRODUCT_ID",
     "FOURTHWALL_MCP_URL",
@@ -86,6 +87,8 @@
     "TAVILY_API_KEY",
     "TAVILY_RESEARCH_MODEL",
     "TOKEN_ENCRYPTION_KEY",
+    "VOICE_STT_FALLBACK_MODEL",
+    "VOICE_STT_MODEL",
     "_VARLOCK_ENV_KEY"
   ],
   "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"]

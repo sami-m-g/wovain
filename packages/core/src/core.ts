@@ -15,6 +15,7 @@ import { createSealer } from "./sealing";
 import { createTrends, tavilyClient } from "./trends";
 import { createUpstream } from "./upstream";
 import type { ToolCall } from "./upstream";
+import { createTranscriber } from "./voice";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
@@ -49,8 +50,9 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   NEMOTRON_VISION_MODEL: string;
   // The fal endpoint that draws the print art (apps/web/.env.schema).
   FAL_IMAGE_MODEL: string;
-  // wovain's own fal key: designs draw on it, paid by credits, while the
-  // onboarding-wizard flag is on (packages/api/src/flow/connections.ts).
+  // wovain's own fal key: it transcribes voice commands (./voice), and
+  // designs draw on it, paid by credits, while the onboarding-wizard flag is
+  // on (packages/api/src/flow/connections.ts). Voice commands fail without it.
   FAL_KEY?: string | undefined;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
@@ -62,6 +64,10 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   // Tavily Research's model for idea dossiers (apps/web/.env.schema).
   TAVILY_RESEARCH_MODEL: ResearchModel;
   TOKEN_ENCRYPTION_KEY: string;
+  // The fal speech-to-text endpoints for voice commands (./voice), the
+  // fallback answering when the first fails.
+  VOICE_STT_MODEL: string;
+  VOICE_STT_FALLBACK_MODEL: string;
 }
 
 export const createCore = (
@@ -145,6 +151,12 @@ export const createCore = (
       tavily,
     }),
     tavily,
+    // Speech to text for voice commands, on wovain's fal key (./voice).
+    transcriber: createTranscriber({
+      apiKey: env.FAL_KEY,
+      fallbackModel: env.VOICE_STT_FALLBACK_MODEL,
+      model: env.VOICE_STT_MODEL,
+    }),
     trends: createTrends(
       tavily,
       qloo,

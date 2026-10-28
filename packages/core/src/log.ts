@@ -93,6 +93,8 @@ const unconfigured = (provider: Provider, variable: string) =>
   });
 
 export const notConfigured = {
+  // wovain's own fal key, for voice transcription (./voice).
+  fal: unconfigured("fal", "FAL_KEY"),
   meta: unconfigured("meta", "META_APP_ID and META_APP_SECRET"),
   nebius: unconfigured("nebius", "NEBIUS_API_KEY"),
   qloo: unconfigured("qloo", "QLOO_API_KEY"),

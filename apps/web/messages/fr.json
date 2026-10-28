@@ -253,6 +253,8 @@
       "connectionsBody": "Quand vous connectez Fourthwall, Meta ou fal, nous conservons l'accès qu'ils accordent pour que wovain agisse pour vous. Vous pouvez les déconnecter à tout moment depuis Connexions.",
       "processorsTitle": "Qui traite vos données",
       "processorsBody": "Les briefs et visuels sont envoyés aux services qui font le travail : Nebius, Qloo, Tavily, fal, Fourthwall et Meta. Chacun les traite selon sa propre politique.",
+      "voiceTitle": "Commandes vocales",
+      "voiceBody": "Quand vous maintenez le bouton du micro, votre enregistrement part chez fal pour devenir du texte, puis le texte part chez Nebius pour que wovain comprenne votre demande. Nous demandons à fal de ne pas garder la requête, et wovain ne garde ni l’enregistrement ni le texte. Les statistiques n’enregistrent que le type de commande, jamais ce que vous avez dit.",
       "deleteTitle": "Supprimer vos données",
       "deleteBody": "Écrivez à {privacyEmail} depuis l'adresse de votre compte : nous supprimons votre compte, vos exécutions et vos connexions sous 30 jours."
     },
@@ -1168,5 +1170,26 @@
     },
     "scans": "Analyses sans nouveauté",
     "scanNothing": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité, déjà suggérée cette semaine.} other {# recherches ont trouvé de l'actualité, déjà suggérée cette semaine.}}"
+  },
+  "Voice": {
+    "hold": "Maintenez pour parler",
+    "listening": "À l'écoute… relâchez pour envoyer",
+    "thinking": "wovain comprend ce que vous avez dit…",
+    "disclosureTitle": "Avant de parler à wovain",
+    "disclosure": "Votre enregistrement part chez fal pour devenir du texte, puis le texte part chez Nebius pour que wovain comprenne votre demande. Personne ne garde l'enregistrement, et rien ne se passe avant votre confirmation.",
+    "disclosureOk": "Compris",
+    "noMic": "wovain ne peut pas utiliser votre micro. Autorisez-le dans les réglages du site de votre navigateur, puis réessayez.",
+    "confirmTitle": "C'est bien ça ?",
+    "notUnderstood": "wovain n'a pas compris",
+    "heard": "Vous avez dit : « {transcript} »",
+    "confirm": "Confirmer",
+    "done": "C'est fait.",
+    "startDrop": "Lancer un nouveau drop : {brief}",
+    "approveIdeas": "Approuver {count, plural, one {cette idée} other {ces # idées}} et dessiner les designs : {ideas}",
+    "approveDesign": "Approuver le design « {design} »",
+    "rejectDesign": "Refuser le design « {design} »",
+    "rejectDesignWhy": "Refuser le design « {design} » parce que {reason}",
+    "approveAction": "Approuver « {action} »",
+    "rejectAction": "Refuser « {action} »"
   }
 }
