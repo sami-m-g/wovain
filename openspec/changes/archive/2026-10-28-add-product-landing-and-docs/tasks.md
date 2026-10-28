@@ -8,7 +8,7 @@
 
 - [x] 2.1 Rebuild the landing page from registry blocks themed with wovain tokens
 - [x] 2.2 Render the logo only through `<Logo/>`
-- [ ] 2.3 Respect reduced motion in the timeline block's scroll fade
+- [x] 2.3 Respect reduced motion in the timeline block's scroll fade
 - [ ] 2.4 Rewrite the SEO integration, use-case and guide pages in the same voice
 
 ## 3. Docs
@@ -18,4 +18,4 @@
 
 ## 4. Merge
 
-- [ ] 4.1 Merge, then archive this change
+- [x] 4.1 Merge, then archive this change

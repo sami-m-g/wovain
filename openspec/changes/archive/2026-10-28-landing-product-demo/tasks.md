@@ -18,4 +18,4 @@
 
 - [x] 3.1 Check at 1440 and 390 wide, light and dark
 - [x] 3.2 `pnpm run check`, `check-types`, `knip`, `spec:validate`
-- [ ] 3.3 Link the GitHub issue and archive the change on merge
+- [x] 3.3 Link the GitHub issue and archive the change on merge
