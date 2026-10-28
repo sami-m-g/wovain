@@ -4,6 +4,7 @@ import {
   assessCampaign,
   learningReasons,
   OPTIMIZER_RULES,
+  pauseBlockedBy,
   posteriorOf,
   probabilityAbove,
   probabilityBest,
@@ -142,6 +143,27 @@ describe("the breakdown-effect guard", () => {
     expect(result.proposal?.type).not.toBe("media.ad.pause");
   });
 
+  it("falls back to impressions when Meta returns no spend", () => {
+    // The Meta field for spend went missing: every ad reads 0.
+    const result = assess(
+      state({ ads: [ad("a1", 60, 2000, 0), ad("a2", 5, 4000, 0)] })
+    );
+    expect(result.scores.find((s) => s.adId === "a2")?.protectedBy).toBe(
+      "most_delivery"
+    );
+    expect(result.proposal?.type).not.toBe("media.ad.pause");
+  });
+
+  it("says why an approved pause can no longer run", () => {
+    const ads = [ad("a1", 60, 2000, 3000), ad("a2", 5, 2000, 1000)];
+    expect(pauseBlockedBy(ads, "a2")).toBeUndefined();
+    expect(pauseBlockedBy(ads, "a1")).toBe("most_delivery");
+    expect(pauseBlockedBy([ads[0] as AdStats], "a1")).toBe("last_active_ad");
+    expect(
+      pauseBlockedBy([ads[0] as AdStats, ad("a2", 5, 2000, 1000, false)], "a2")
+    ).toBe("not_active");
+  });
+
   it("never judges an ad with too little delivery", () => {
     const result = assess(
       state({ ads: [ad("a1", 60, 2000, 3000), ad("a2", 0, 900, 100)] })
@@ -259,13 +281,18 @@ describe("reading Meta", () => {
       ad: {
         data: [
           {
-            amount_spent: "12.5",
             clicks: "40",
             effective_status: "ACTIVE",
             id: "a1",
             impressions: "1500",
+            spend: "12.5",
           },
-          { effective_status: "PAUSED", id: 2, impressions: 10 },
+          {
+            amount_spent: "0.4",
+            effective_status: "PAUSED",
+            id: 2,
+            impressions: 10,
+          },
           { id: "other", impressions: 9 },
         ],
       },
@@ -300,7 +327,13 @@ describe("reading Meta", () => {
           impressions: 1500,
           spendCents: 1250,
         },
-        { active: false, adId: "2", clicks: 0, impressions: 10, spendCents: 0 },
+        {
+          active: false,
+          adId: "2",
+          clicks: 0,
+          impressions: 10,
+          spendCents: 40,
+        },
         { active: false, adId: "a3", clicks: 0, impressions: 0, spendCents: 0 },
       ],
       dailyBudgetCents: 1500,

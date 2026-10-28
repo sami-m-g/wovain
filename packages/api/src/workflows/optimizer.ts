@@ -6,9 +6,10 @@ import type { z } from "zod";
 
 import type { Actor } from "../flow/actor";
 import {
-  executeOptimizerApproval,
+  finishOptimizerApproval,
   OPTIMIZER_ACTIONS,
   optimizeMerchant,
+  writeOptimizerApproval,
 } from "../flow/optimizer";
 import type { RunServices } from "./run";
 
@@ -100,10 +101,21 @@ export const createOptimizerFunctions = (
         EVENTS.approvalDecided,
         event.data
       );
-      return await step.run(
-        "execute",
-        async () => await executeOptimizerApproval(actorFor(userId), approvalId)
+      // Two steps: once Meta is written, a retry redoes only the
+      // bookkeeping, never the write.
+      const write = await step.run(
+        "write",
+        async () => await writeOptimizerApproval(actorFor(userId), approvalId)
       );
+      if (write.kind !== "written") {
+        return write.kind;
+      }
+      await step.run(
+        "finish",
+        async () =>
+          await finishOptimizerApproval(actorFor(userId), approvalId, write)
+      );
+      return "done";
     }
   );
 

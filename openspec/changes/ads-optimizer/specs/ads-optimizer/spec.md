@@ -38,11 +38,16 @@ The optimizer SHALL propose no change to a campaign while its ad set is learning
 
 The optimizer SHALL judge ads within one ad set at the ad set level. It SHALL NOT pause:
 
-- the ad with the most spend in the ad set
+- the ad with the most spend in the ad set, or, when Meta returns no spend for any ad, the ad with the most impressions
 - an ad with fewer than 1,000 impressions
 - the last active ad
 
 It SHALL pause an ad only when its probability of being best is below 0.05.
+
+#### Scenario: No spend data
+
+- **WHEN** Meta returns no spend for the ads of an ad set
+- **THEN** the optimizer does not propose pausing the ad with the most impressions
 
 #### Scenario: Meta favors the ad with the worse average
 
@@ -85,6 +90,45 @@ Each reviewed proposal SHALL be enqueued as an approval proposed by `optimizer`,
 
 - **WHEN** a merchant at level `suggest` gets a proposed ad pause
 - **THEN** the approval waits for the merchant and nothing changes on Meta
+
+### Requirement: One outstanding approval per campaign
+
+The optimizer SHALL NOT propose a change to a campaign while one of its optimizer approvals is pending and not expired, approved or executing. Each optimizer approval SHALL expire 24 hours after it is queued.
+
+#### Scenario: Merchant hasn't decided yet
+
+- **WHEN** an optimizer approval for a campaign has waited 12 hours
+- **THEN** the next run proposes nothing for that campaign and records the hold `approval_outstanding`
+
+### Requirement: Guards checked again before a write
+
+Before it writes to Meta, the executor SHALL check on Meta's latest data:
+
+- the learning floor
+- that the ad to pause can still be paused
+- that the daily budget still equals the one the change was proposed on
+- that a raise still keeps wovain's daily budgets within the daily cap
+
+If any check fails, it SHALL record the approval as `failed` with the reason and SHALL NOT write to Meta.
+
+#### Scenario: Two approvals on one campaign
+
+- **WHEN** two optimizer approvals for one campaign are approved and the first is executed
+- **THEN** the second is not written to Meta, because the first edit restarted the learning floor
+
+#### Scenario: Budget moved since the proposal
+
+- **WHEN** an approved budget change was proposed on $8 and Meta now reports $10
+- **THEN** the executor records it as `failed` and does not change the budget
+
+### Requirement: Bookkeeping after a write
+
+Once Meta is written, the executor SHALL NOT record the approval as `failed`. If the bookkeeping after the write fails, it SHALL log the error at error level and retry only the bookkeeping.
+
+#### Scenario: Database error after the write
+
+- **WHEN** Meta accepts a pause and saving the edit fails
+- **THEN** the approval stays `executing`, the error is logged, and the retry marks the ad set edited and the approval `done`
 
 ### Requirement: Decision trace
 

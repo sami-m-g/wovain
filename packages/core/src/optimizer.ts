@@ -9,7 +9,8 @@ import type { Nemotron } from "./nemotron";
 // its proposals safe:
 // - Meta's learning phase is a floor: no edit while the ad set learns.
 // - The breakdown effect: ads in one ad set are judged at the ad set level,
-//   so the ad Meta delivers most is never paused and an ad with little
+//   so the ad Meta delivers most (by spend, else by impressions) is never
+//   paused and an ad with little
 //   delivery is never judged.
 // - Spend caps are hard limits: a raise never takes wovain's total daily
 //   budget past the merchant's daily cap.
@@ -243,12 +244,59 @@ export const learningReasons = (
   return why;
 };
 
+// The ads Meta delivers most: by spend, or by impressions when no ad has
+// spend (the MCP may not return it). Ties all count.
+const mostDelivered = (active: readonly AdStats[]) => {
+  const spend = active.reduce((total, ad) => total + ad.spendCents, 0);
+  const measure = (ad: AdStats) => (spend > 0 ? ad.spendCents : ad.impressions);
+  const top = Math.max(0, ...active.map(measure));
+  return new Set(
+    top > 0
+      ? active.filter((ad) => measure(ad) === top).map((ad) => ad.adId)
+      : []
+  );
+};
+
+type Protection = NonNullable<AdScore["protectedBy"]>;
+
+const protectionOf = (
+  ad: AdStats,
+  active: readonly AdStats[],
+  top: ReadonlySet<string>
+): Protection | undefined => {
+  if (active.length <= 1) {
+    return "last_active_ad";
+  }
+  if (top.has(ad.adId)) {
+    // Meta chose this ad on marginal cost: its average isn't the verdict.
+    return "most_delivery";
+  }
+  if (ad.impressions < OPTIMIZER_RULES.minImpressionsToJudge) {
+    return "too_little_delivery";
+  }
+  return undefined;
+};
+
+// Why `adId` can't be paused now, from Meta's latest counts; undefined when
+// it can. The executor checks this again before an approved pause.
+export const pauseBlockedBy = (
+  ads: readonly AdStats[],
+  adId: string
+): Protection | "not_active" | undefined => {
+  const active = ads.filter((ad) => ad.active);
+  const target = active.find((ad) => ad.adId === adId);
+  if (target === undefined) {
+    return "not_active";
+  }
+  return protectionOf(target, active, mostDelivered(active));
+};
+
 const scoreAds = (ads: AdStats[], rng: Rng): AdScore[] => {
   const active = ads.filter((ad) => ad.active);
   const posteriors = active.map((ad) => posteriorOf(ad.clicks, ad.impressions));
   const best = probabilityBest(posteriors, rng);
   const spend = active.reduce((total, ad) => total + ad.spendCents, 0);
-  const topSpend = Math.max(0, ...active.map((ad) => ad.spendCents));
+  const top = mostDelivered(active);
   return active.map((ad, index) => {
     const score: AdScore = {
       adId: ad.adId,
@@ -256,13 +304,9 @@ const scoreAds = (ads: AdStats[], rng: Rng): AdScore[] => {
       probabilityBest: best[index] ?? 0,
       spendShare: spend > 0 ? ad.spendCents / spend : 0,
     };
-    if (active.length <= 1) {
-      score.protectedBy = "last_active_ad";
-    } else if (ad.spendCents === topSpend && topSpend > 0) {
-      // Meta chose this ad on marginal cost: its average isn't the verdict.
-      score.protectedBy = "most_delivery";
-    } else if (ad.impressions < OPTIMIZER_RULES.minImpressionsToJudge) {
-      score.protectedBy = "too_little_delivery";
+    const protectedBy = protectionOf(ad, active, top);
+    if (protectedBy !== undefined) {
+      score.protectedBy = protectedBy;
     }
     return score;
   });

@@ -110,6 +110,7 @@ export const readCampaign = async (
         "effective_status",
         "impressions",
         "clicks",
+        "spend",
         "amount_spent",
       ],
       level: "ad",
@@ -138,7 +139,10 @@ export const readCampaign = async (
         clicks: amountOf(ad?.clicks) ?? 0,
         impressions: amountOf(ad?.impressions) ?? 0,
         spendCents: Math.round(
-          (amountOf(ad?.amount_spent ?? ad?.amountSpent) ?? 0) * CENTS
+          // Ad-level spend is the insights field `spend`; `amount_spent` is
+          // the account field, kept in case the MCP maps it.
+          (amountOf(ad?.spend ?? ad?.amount_spent ?? ad?.amountSpent) ?? 0) *
+            CENTS
         ),
       };
     }),

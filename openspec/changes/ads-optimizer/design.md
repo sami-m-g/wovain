@@ -44,7 +44,7 @@ There is no pixel, so purchases are not known. The bandit's reward is a link cli
 2. **One edit per campaign per run.** Meta resets learning on significant edits, and two edits at once can't be told apart. A pause goes before a budget change.
 3. **Learning floor from three signals.** Meta's `learning_stage_info` when the MCP returns it. Otherwise fewer than 50 results in the last 7 days, from the 7-day ad set insights. Wovain's own last edit (`params.lastEditAt` on the state rows) counts too. Any one of the three blocks changes.
 4. **Breakdown-effect rules** are adapted from mathiaschu/meta-ads-analyzer (MIT): ads in one ad set are evaluated at the ad set level, and average cost per result in a breakdown is never used alone. So:
-   - The top-spend ad is never paused.
+   - The top-spend ad is never paused. When no ad has spend (the MCP field may be missing), the ad with the most impressions is protected instead. The ad read asks for the insights field `spend`, with `amount_spent` as a fallback.
    - An ad needs 1,000 impressions of its own before it is judged.
    - At least one ad stays active.
 5. **Budget rule.**
@@ -59,6 +59,9 @@ There is no pixel, so purchases are not known. The bandit's reward is a link cli
    - The tick enqueues; the executor listens for `wovain/approval.decided` with status `approved` and an optimizer action type.
    - It handles only approvals with `proposedBy = "optimizer"`, so another workstream's executor for the same action types won't double-run.
    - `record` moves `approved → executing → done | failed`. A retry of an approval no longer `approved` is a no-op.
+   - One outstanding approval per campaign: the tick holds a campaign (`approval_outstanding`) while an optimizer approval for it is pending, approved or executing. Optimizer approvals expire after 24 hours.
+   - Before writing, the executor reads Meta again and re-checks the learning floor, the pause guards, the budget the change was based on, and the daily-cap clamp for a raise. A stale approval is recorded `failed` with the reason.
+   - Two Inngest steps: `write` (re-check and Meta write) and `finish` (mark edited, saved budget, `done`). A bookkeeping failure is logged (`ADS_OPTIMIZER_POST_WRITE_FAILED`) and retried, and the approval is never recorded `failed` after Meta changed.
 8. **Inngest layout.**
    - `ads-optimizer-cron` (every 6 h) fans out one `optimizer.tick` per merchant with a campaign.
    - `ads-optimizer-tick` handles the tick with concurrency 1 per merchant.

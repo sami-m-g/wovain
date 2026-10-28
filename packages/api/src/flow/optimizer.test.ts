@@ -15,13 +15,19 @@ import {
   decisionTrace,
 } from "@wovain/db/schema/autonomy";
 import { campaign, design, idea, product } from "@wovain/db/schema/seller";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Actor } from "./actor";
-import { setAutonomy } from "./approvals";
-import { executeOptimizerApproval, optimizeMerchant } from "./optimizer";
+import { approvalsFor, autonomyOf, setAutonomy } from "./approvals";
+import {
+  executeOptimizerApproval,
+  finishOptimizerApproval,
+  optimizeMerchant,
+  writeOptimizerApproval,
+} from "./optimizer";
 
 // The optimizer's flow on real Postgres (PGlite, the app's migrations), with
 // a fake Meta and a fake reviewer.
@@ -31,10 +37,11 @@ const MIGRATIONS = fileURLToPath(
 );
 const USER_ID = "user_1";
 const NOW = new Date("2026-10-28T12:00:00Z");
+const DAY_MS = 86_400_000;
 const REASONING_MODEL = "nvidia/reasoning-test";
 
 interface MetaAd {
-  amount_spent: string;
+  spend: string;
   clicks: number;
   effective_status: string;
   id: string;
@@ -75,18 +82,18 @@ const fakeMeta = (ads: MetaAd[], campaignStatus = "ACTIVE") => {
 
 const WINNER_AND_LOSER: MetaAd[] = [
   {
-    amount_spent: "30",
     clicks: 60,
     effective_status: "ACTIVE",
     id: "ad1",
     impressions: 2000,
+    spend: "30",
   },
   {
-    amount_spent: "10",
     clicks: 5,
     effective_status: "ACTIVE",
     id: "ad2",
     impressions: 2000,
+    spend: "10",
   },
 ];
 
@@ -335,11 +342,11 @@ describe("the ads optimizer flow", () => {
         impressions: 3000,
       } as MetaAd,
       {
-        amount_spent: "29",
         clicks: 100,
         effective_status: "ACTIVE",
         id: "ad2",
         impressions: 3000,
+        spend: "29",
       },
     ];
     const [outcome] = (await optimizeMerchant(
@@ -353,6 +360,197 @@ describe("the ads optimizer flow", () => {
       actionType: "media.budget.change",
       policyReason: "over_monthly_cap",
     });
+  });
+
+  it("proposes nothing new while an optimizer approval is outstanding", async () => {
+    const first = await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(fakeMeta(WINNER_AND_LOSER))
+    );
+    expect(first).toMatchObject([{ outcome: "enqueued", status: "pending" }]);
+    const [queued] = await ctx.db.select().from(approval);
+    expect(queued?.expiresAt).toEqual(new Date(NOW.getTime() + DAY_MS));
+
+    // Half a day later the first still waits, so nothing new is proposed.
+    // Two days later it has lapsed, and the optimizer proposes again.
+    const nextDay = await optimizeMerchant(
+      ctx.actor,
+      {},
+      {
+        ...deps(fakeMeta(WINNER_AND_LOSER)),
+        now: () => new Date(NOW.getTime() + DAY_MS / 2),
+      }
+    );
+    expect(nextDay).toMatchObject([
+      { hold: "approval_outstanding", outcome: "held" },
+    ]);
+    expect(await ctx.db.select().from(approval)).toHaveLength(1);
+
+    const later = await optimizeMerchant(
+      ctx.actor,
+      {},
+      {
+        ...deps(fakeMeta(WINNER_AND_LOSER)),
+        now: () => new Date(NOW.getTime() + 2 * DAY_MS),
+      }
+    );
+    expect(later).toMatchObject([{ outcome: "enqueued", status: "pending" }]);
+  });
+
+  it("runs only the first of two approvals on one campaign", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 0,
+      level: "draft",
+      monthlySpendCapCents: 0,
+      paused: false,
+    });
+    const meta = fakeMeta(WINNER_AND_LOSER);
+    const [outcome] = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Exclude<Awaited<ReturnType<typeof optimizeMerchant>>, "flag_off">;
+    const firstId = outcome?.outcome === "enqueued" ? outcome.approvalId : "";
+    // A second approval for the same campaign, as an older queue could hold.
+    const { approval: second } = await approvalsFor(ctx.actor).enqueue(
+      {
+        idempotencyKey: "optimizer:stacked",
+        payload: {
+          adAccountId: "act1",
+          adId: "ad2",
+          campaignId: ctx.campaignId,
+        },
+        proposedBy: "optimizer",
+        title: "Pause a weak ad",
+        type: "media.ad.pause",
+        userId: USER_ID,
+      },
+      await autonomyOf(ctx.actor)
+    );
+    expect(second.status).toBe("approved");
+
+    expect(await executeOptimizerApproval(ctx.actor, firstId, deps(meta))).toBe(
+      "done"
+    );
+    // The first edit restarted learning: the second is not run.
+    expect(
+      await executeOptimizerApproval(ctx.actor, second.id, deps(meta))
+    ).toBe("stale");
+    expect(meta.writes).toHaveLength(1);
+    const [stale] = await ctx.db
+      .select()
+      .from(approval)
+      .where(eq(approval.id, second.id));
+    expect(stale?.status).toBe("failed");
+    expect(stale?.error).toContain("stale");
+  });
+
+  it("doesn't apply a budget change made stale by a moved budget or the cap", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 1100,
+      level: "suggest",
+      monthlySpendCapCents: 100_000,
+      paused: false,
+    });
+    const approvals = approvalsFor(ctx.actor);
+    const settings = await autonomyOf(ctx.actor);
+    const approveBudget = async (fromCents: number, toCents: number) => {
+      const { approval: queued } = await approvals.enqueue(
+        {
+          idempotencyKey: `optimizer:budget:${fromCents}:${toCents}`,
+          payload: {
+            adAccountId: "act1",
+            campaignId: ctx.campaignId,
+            fromCents,
+            metaCampaignId: "mc1",
+            toCents,
+          },
+          proposedBy: "optimizer",
+          spendCents: Math.max(0, toCents - fromCents),
+          title: "Change the daily budget",
+          type: "media.budget.change",
+          userId: USER_ID,
+        },
+        settings
+      );
+      await approvals.decide(
+        {
+          approvalId: queued.id,
+          approve: true,
+          decidedBy: USER_ID,
+          userId: USER_ID,
+        },
+        settings
+      );
+      return queued.id;
+    };
+    const meta = fakeMeta(WINNER_AND_LOSER);
+    // Proposed on $8; Meta now says $10.
+    const moved = await approveBudget(800, 640);
+    expect(await executeOptimizerApproval(ctx.actor, moved, deps(meta))).toBe(
+      "stale"
+    );
+    // $12 is past the $11 daily cap.
+    const pastCap = await approveBudget(1000, 1200);
+    expect(await executeOptimizerApproval(ctx.actor, pastCap, deps(meta))).toBe(
+      "stale"
+    );
+    expect(meta.writes).toEqual([]);
+    // A cut on the current budget runs.
+    const cut = await approveBudget(1000, 800);
+    expect(await executeOptimizerApproval(ctx.actor, cut, deps(meta))).toBe(
+      "done"
+    );
+    const [saved] = await ctx.db.select().from(campaign);
+    expect(saved?.dailyBudgetCents).toBe(800);
+  });
+
+  it("keeps a written action out of failed when the bookkeeping fails", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 0,
+      level: "draft",
+      monthlySpendCapCents: 0,
+      paused: false,
+    });
+    const meta = fakeMeta(WINNER_AND_LOSER);
+    const [outcome] = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Exclude<Awaited<ReturnType<typeof optimizeMerchant>>, "flag_off">;
+    const approvalId =
+      outcome?.outcome === "enqueued" ? outcome.approvalId : "";
+    const write = await writeOptimizerApproval(
+      ctx.actor,
+      approvalId,
+      deps(meta)
+    );
+    expect(write.kind).toBe("written");
+    if (write.kind !== "written") {
+      return;
+    }
+    const brokenDb = new Proxy(ctx.actor.db, {
+      get: (target, key) =>
+        key === "update"
+          ? () => {
+              throw new Error("database down");
+            }
+          : Reflect.get(target, key),
+    });
+    await expect(
+      finishOptimizerApproval({ ...ctx.actor, db: brokenDb }, approvalId, write)
+    ).rejects.toThrow("database down");
+    const [waiting] = await ctx.db.select().from(approval);
+    expect(waiting?.status).toBe("executing");
+
+    // The Inngest retry redoes only the bookkeeping.
+    await finishOptimizerApproval(ctx.actor, approvalId, write);
+    const [done] = await ctx.db.select().from(approval);
+    expect(done?.status).toBe("done");
+    expect(meta.writes).toHaveLength(1);
+    const states = await ctx.db.select().from(adOptimizerState);
+    expect(states.every((row) => "lastEditAt" in row.params)).toBe(true);
   });
 
   it("logs and records a failed Meta write", async () => {

@@ -1,6 +1,11 @@
 import type { Approval } from "@wovain/core/approvals";
 import type { ActionType } from "@wovain/core/autonomy";
-import { assessCampaign, reviewProposal } from "@wovain/core/optimizer";
+import {
+  assessCampaign,
+  learningReasons,
+  pauseBlockedBy,
+  reviewProposal,
+} from "@wovain/core/optimizer";
 import type { Assessment, Proposal, Rng } from "@wovain/core/optimizer";
 import {
   pauseAd,
@@ -9,9 +14,12 @@ import {
 } from "@wovain/core/optimizer-meta";
 import { DecisionTrace } from "@wovain/core/trace";
 import type { ToolCall } from "@wovain/core/upstream";
-import { adOptimizerState } from "@wovain/db/schema/autonomy";
+import {
+  adOptimizerState,
+  approval as approvalTable,
+} from "@wovain/db/schema/autonomy";
 import { campaign } from "@wovain/db/schema/seller";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { log as evlog } from "evlog";
 import { z } from "zod";
 
@@ -40,6 +48,10 @@ export const OPTIMIZER_ACTIONS = [
 
 const AGENT = "optimizer";
 
+// An optimizer approval the merchant hasn't decided within a day lapses:
+// the next tick proposes again from fresh data.
+const APPROVAL_TTL_MS = 86_400_000;
+
 type CampaignRow = typeof campaign.$inferSelect;
 
 export interface OptimizerDeps {
@@ -66,6 +78,8 @@ const metaOf =
     deps.meta === undefined
       ? await withProvider(actor, "meta", work)
       : await deps.meta(work);
+
+const nowOf = (deps: OptimizerDeps) => (deps.now ?? (() => new Date()))();
 
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -94,6 +108,37 @@ const stateRows = async ({ db, userId }: Actor, campaignId: string) =>
         eq(adOptimizerState.campaignId, campaignId)
       )
     );
+
+// The campaign's optimizer approval still waiting or running, if any. One
+// change per campaign: while one is outstanding, nothing new is proposed.
+const outstandingApproval = async (
+  { db, userId }: Actor,
+  campaignId: string,
+  now: Date
+) => {
+  const [row] = await db
+    .select({ id: approvalTable.id })
+    .from(approvalTable)
+    .where(
+      and(
+        eq(approvalTable.userId, userId),
+        eq(approvalTable.proposedBy, "optimizer"),
+        sql`${approvalTable.payload}->>'campaignId' = ${campaignId}`,
+        or(
+          inArray(approvalTable.status, ["approved", "executing"]),
+          and(
+            eq(approvalTable.status, "pending"),
+            or(
+              isNull(approvalTable.expiresAt),
+              gt(approvalTable.expiresAt, now)
+            )
+          )
+        )
+      )
+    )
+    .limit(1);
+  return row?.id;
+};
 
 const saveScores = async (
   actor: Actor,
@@ -131,14 +176,25 @@ const saveScores = async (
   }
 };
 
+// Keeps the saved daily budget at Meta's latest, so the cap check before
+// an approved raise sums current budgets.
+const saveBudget = async (actor: Actor, campaignId: string, cents: number) => {
+  await actor.db
+    .update(campaign)
+    .set({ dailyBudgetCents: cents })
+    .where(and(eq(campaign.userId, actor.userId), eq(campaign.id, campaignId)));
+};
+
 const enqueueInput = (
   actor: Actor,
   row: CampaignRow,
   proposal: Proposal,
   review: string,
-  day: string
+  now: Date
 ) => {
+  const day = isoDay(now);
   const base = {
+    expiresAt: new Date(now.getTime() + APPROVAL_TTL_MS),
     proposedBy: "optimizer" as const,
     reason: `${proposal.reason} Reviewer: ${review}`,
     userId: actor.userId,
@@ -217,6 +273,9 @@ const optimizeCampaign = async (
     );
     const dailyBudgetCents = read.dailyBudgetCents ?? row.dailyBudgetCents;
     context.budgets.set(row.id, dailyBudgetCents);
+    if (dailyBudgetCents !== row.dailyBudgetCents) {
+      await saveBudget(actor, row.id, dailyBudgetCents);
+    }
     const [settings, spent, rows] = await Promise.all([
       autonomyOf(actor),
       spendToDate(actor, now),
@@ -265,6 +324,21 @@ const optimizeCampaign = async (
         outcome: "held",
       };
     }
+    const outstanding = await outstandingApproval(actor, row.id, now);
+    if (outstanding !== undefined) {
+      trace.add({
+        agent: AGENT,
+        inputSummary: `${proposal.type} while approval ${outstanding} is outstanding`,
+        output: { hold: "approval_outstanding", outstanding },
+        sources: [{ provider: "rule", title: "One change per campaign" }],
+        step: "guard",
+      });
+      return {
+        campaignId: row.id,
+        hold: "approval_outstanding",
+        outcome: "held",
+      };
+    }
     const review = await trace.call(
       {
         agent: "ads_optimizer_review",
@@ -284,7 +358,7 @@ const optimizeCampaign = async (
       return { campaignId: row.id, outcome: "vetoed", reason: review.reason };
     }
     const { approval, decision } = await approvalsFor(actor).enqueue(
-      enqueueInput(actor, row, proposal, review.reason, isoDay(now)),
+      enqueueInput(actor, row, proposal, review.reason, now),
       settings,
       spent
     );
@@ -330,7 +404,7 @@ export const optimizeMerchant = async (
   // Every campaign's saved budget, replaced by Meta's as each is read: the
   // daily cap holds across all of them.
   const budgets = new Map(rows.map((row) => [row.id, row.dailyBudgetCents]));
-  const now = (deps.now ?? (() => new Date()))();
+  const now = nowOf(deps);
   return await metaOf(
     actor,
     deps
@@ -374,9 +448,11 @@ const pausePayload = z.object({
 const budgetPayload = z.object({
   adAccountId: z.string(),
   campaignId: z.string(),
+  fromCents: z.number().int().nonnegative(),
   metaCampaignId: z.string(),
   toCents: z.number().int().positive(),
 });
+const campaignPayload = z.object({ campaignId: z.string() }).loose();
 
 const isOptimizerAction = (type: string) =>
   (OPTIMIZER_ACTIONS as readonly string[]).includes(type);
@@ -402,10 +478,90 @@ const markEdited = async (
   }
 };
 
+// The daily budgets of the merchant's other wovain campaigns, as saved.
+const otherBudgetsOf = async (actor: Actor, campaignId: string) => {
+  const rows = await actor.db
+    .select({ cents: campaign.dailyBudgetCents })
+    .from(campaign)
+    .where(and(eq(campaign.userId, actor.userId), ne(campaign.id, campaignId)));
+  return rows.reduce((total, row) => total + row.cents, 0);
+};
+
+// Why an approved action may no longer run: the guards it was proposed
+// under, checked again on Meta's latest data. An approval can wait a while,
+// and another change may have landed since.
+const staleReasons = async (
+  actor: Actor,
+  call: ToolCall,
+  approval: Approval,
+  now: Date
+): Promise<string[]> => {
+  const { campaignId } = campaignPayload.parse(approval.payload);
+  const [row] = await actor.db
+    .select()
+    .from(campaign)
+    .where(and(eq(campaign.userId, actor.userId), eq(campaign.id, campaignId)));
+  if (row === undefined) {
+    return [`campaign ${campaignId} no longer exists`];
+  }
+  const [read, rows] = await Promise.all([
+    readCampaign(call, {
+      adAccountId: row.adAccountId,
+      adIds: row.adIds,
+      adSetId: row.adSetId,
+      metaCampaignId: row.metaCampaignId,
+    }),
+    stateRows(actor, row.id),
+  ]);
+  const why = learningReasons(
+    {
+      lastEditAt: lastEditOf(rows),
+      metaLearning: read.metaLearning,
+      resultsLast7d: read.resultsLast7d,
+    },
+    now
+  );
+  if (!read.live) {
+    why.push("the campaign is not active on Meta");
+  }
+  if (approval.actionType === "media.ad.pause") {
+    const { adId } = pausePayload.parse(approval.payload);
+    const blocked = pauseBlockedBy(read.ads, adId);
+    if (blocked !== undefined) {
+      why.push(`ad ${adId} can't be paused now (${blocked})`);
+    }
+    return why;
+  }
+  const { fromCents, toCents } = budgetPayload.parse(approval.payload);
+  const current = read.dailyBudgetCents ?? row.dailyBudgetCents;
+  if (current !== fromCents) {
+    why.push(
+      `the daily budget is ${current}c, not the ${fromCents}c the change was proposed on`
+    );
+  }
+  // A cut only lowers spend; a raise must still fit under the daily cap.
+  if (toCents > fromCents) {
+    const [settings, others] = await Promise.all([
+      autonomyOf(actor),
+      otherBudgetsOf(actor, row.id),
+    ]);
+    if (toCents + others > settings.dailySpendCapCents) {
+      why.push(
+        `${toCents}c plus the other campaigns' ${others}c is past the ${settings.dailySpendCapCents}c daily cap`
+      );
+    }
+  }
+  return why;
+};
+
 const perform = async (
   call: ToolCall,
   approval: Approval
-): Promise<{ campaignId: string; pausedAdId?: string }> => {
+): Promise<{
+  campaignId: string;
+  dailyBudgetCents?: number;
+  pausedAdId?: string;
+}> => {
   if (approval.actionType === "media.ad.pause") {
     const payload = pausePayload.parse(approval.payload);
     await pauseAd(call, payload);
@@ -417,17 +573,34 @@ const perform = async (
     campaignId: payload.metaCampaignId,
     dailyBudgetCents: payload.toCents,
   });
-  return { campaignId: payload.campaignId };
+  return {
+    campaignId: payload.campaignId,
+    dailyBudgetCents: payload.toCents,
+  };
 };
 
-// Performs one approved optimizer action on Meta and records the outcome.
+// What the Meta-write half of the executor did. JSON-safe, so an Inngest
+// step can memoize it.
+export type OptimizerWrite =
+  | { kind: "skipped" | "failed" | "stale" }
+  | {
+      at: string;
+      campaignId: string;
+      dailyBudgetCents?: number;
+      kind: "written";
+      pausedAdId?: string;
+    };
+
+// Checks an approved optimizer action again and performs it on Meta.
 // Anything else (another proposer, a status past approved) is left alone,
-// so a retried or duplicate event is a no-op.
-export const executeOptimizerApproval = async (
+// so a retried or duplicate event is a no-op. A stale action (learning
+// again, the budget moved, past the cap, the ad now the one Meta favors)
+// is recorded failed and not written.
+export const writeOptimizerApproval = async (
   actor: Actor,
   approvalId: string,
   deps: OptimizerDeps = {}
-): Promise<"skipped" | "done" | "failed"> => {
+): Promise<OptimizerWrite> => {
   const approvals = approvalsFor(actor);
   const approval = await approvals.get(actor.userId, approvalId);
   if (
@@ -435,7 +608,7 @@ export const executeOptimizerApproval = async (
     approval.status !== "approved" ||
     !isOptimizerAction(approval.actionType)
   ) {
-    return "skipped";
+    return { kind: "skipped" };
   }
   const trace = new DecisionTrace(
     { approvalId, userId: actor.userId },
@@ -447,29 +620,59 @@ export const executeOptimizerApproval = async (
     status: "executing",
     userId: actor.userId,
   });
+  const now = nowOf(deps);
   try {
-    const done = await trace.call(
-      {
-        agent: AGENT,
-        inputSummary: `${approval.actionType} ${JSON.stringify(approval.payload)}`,
-        step: "meta.write",
-      },
-      async () => await metaOf(actor, deps)((call) => perform(call, approval)),
-      (result) => ({
-        output: result,
-        sources: [{ id: result.pausedAdId, provider: "meta" as const }],
-      })
-    );
-    const at = (deps.now ?? (() => new Date()))();
-    await markEdited(actor, done.campaignId, at, done.pausedAdId);
-    await approvals.record({
-      actor: AGENT,
-      approvalId,
-      result: done,
-      status: "done",
-      userId: actor.userId,
+    const outcome = await metaOf(
+      actor,
+      deps
+    )(async (call) => {
+      const stale = await trace.call(
+        {
+          agent: AGENT,
+          inputSummary: `${approval.actionType} approved ${approval.decidedAt?.toISOString() ?? ""}`,
+          step: "recheck",
+        },
+        async () => await staleReasons(actor, call, approval, now),
+        (result) => ({
+          output: result,
+          sources: [{ provider: "rule" as const, title: "Guards, again" }],
+        })
+      );
+      if (stale.length > 0) {
+        return { stale };
+      }
+      const done = await trace.call(
+        {
+          agent: AGENT,
+          inputSummary: `${approval.actionType} ${JSON.stringify(approval.payload)}`,
+          step: "meta.write",
+        },
+        async () => await perform(call, approval),
+        (result) => ({
+          output: result,
+          sources: [{ id: result.pausedAdId, provider: "meta" as const }],
+        })
+      );
+      return { done };
     });
-    return "done";
+    if ("stale" in outcome) {
+      evlog.warn({
+        actionType: approval.actionType,
+        approvalId,
+        error: "ADS_OPTIMIZER_APPROVAL_STALE",
+        reason: outcome.stale.join("; "),
+        userId: actor.userId,
+      });
+      await approvals.record({
+        actor: AGENT,
+        approvalId,
+        error: `Not run, the approval is stale: ${outcome.stale.join("; ")}`,
+        status: "failed",
+        userId: actor.userId,
+      });
+      return { kind: "stale" };
+    }
+    return { at: now.toISOString(), kind: "written", ...outcome.done };
   } catch (error) {
     evlog.error({
       actionType: approval.actionType,
@@ -485,8 +688,63 @@ export const executeOptimizerApproval = async (
       status: "failed",
       userId: actor.userId,
     });
-    return "failed";
+    return { kind: "failed" };
   } finally {
     await trace.flush();
   }
+};
+
+// The bookkeeping after a Meta write: the learning floor starts again, the
+// saved budget follows, then the approval is done. Safe to retry: a failure
+// here is logged and thrown, never recorded as a failed write, since Meta
+// already changed.
+export const finishOptimizerApproval = async (
+  actor: Actor,
+  approvalId: string,
+  write: Extract<OptimizerWrite, { kind: "written" }>
+) => {
+  try {
+    await markEdited(
+      actor,
+      write.campaignId,
+      new Date(write.at),
+      write.pausedAdId
+    );
+    if (write.dailyBudgetCents !== undefined) {
+      await saveBudget(actor, write.campaignId, write.dailyBudgetCents);
+    }
+    const approvals = approvalsFor(actor);
+    const current = await approvals.get(actor.userId, approvalId);
+    if (current.status === "executing") {
+      await approvals.record({
+        actor: AGENT,
+        approvalId,
+        result: write,
+        status: "done",
+        userId: actor.userId,
+      });
+    }
+  } catch (error) {
+    evlog.error({
+      approvalId,
+      error: "ADS_OPTIMIZER_POST_WRITE_FAILED",
+      reason: messageOf(error),
+      userId: actor.userId,
+    });
+    throw error;
+  }
+};
+
+// Performs one approved optimizer action and records the outcome.
+export const executeOptimizerApproval = async (
+  actor: Actor,
+  approvalId: string,
+  deps: OptimizerDeps = {}
+): Promise<"skipped" | "done" | "failed" | "stale"> => {
+  const write = await writeOptimizerApproval(actor, approvalId, deps);
+  if (write.kind !== "written") {
+    return write.kind;
+  }
+  await finishOptimizerApproval(actor, approvalId, write);
+  return "done";
 };
