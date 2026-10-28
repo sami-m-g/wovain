@@ -35,5 +35,5 @@ wovain made products and then stopped. A run created each product and published 
 - `packages/api`: `flow/store.ts`, `routers/store.ts`, `workflows/store.ts` (Inngest executor and promotion schedule), `flow/runs.ts` (publish gate), `flow/products.ts` (per-size prices, no republish of a retired product), `workflows/engine.ts` (registers the functions)
 - `packages/db`: `product.status` gains `in_review`, `paused` and `retired`. It is a text column, so there is no migration.
 - `apps/web`: the products page, the sidebar entry (only while the flag is on), messages in en, es and fr
-- `infra/Pulumi.prod.yaml`: `sizeSurcharges` in the dev and next pricing rules. Production is unchanged.
+- `infra/Pulumi.prod.yaml` (dev) and `infra/next/Pulumi.next.yaml` (next): `sizeSurcharges` in the pricing rules. Production is unchanged.
 - Stacks on the foundation PR (#60) and must merge after it.
