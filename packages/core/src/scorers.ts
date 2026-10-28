@@ -69,6 +69,7 @@ export type AnyScorer = MastraScorers[string]["scorer"];
 const DOMAIN: Record<AgentId, JudgeId[]> = {
   ad_copy: ["ad_copy_quality", "meta_policy", "brand_fit"],
   ad_judge: [],
+  ads_optimizer_review: [],
   autopilot_pick_idea: ["trend_fit"],
   autopilot_review_design: [],
   brand_proxies: [],
@@ -84,6 +85,7 @@ const BUILT_INS: Record<AgentId, string[]> = {
   ad_copy: ["answer_relevancy", "prompt_alignment", "toxicity", "bias"],
   // A judge itself: its verdict is the score.
   ad_judge: [],
+  ads_optimizer_review: ["answer_relevancy"],
   autopilot_pick_idea: ["answer_relevancy", "prompt_alignment"],
   autopilot_review_design: ["answer_relevancy", "prompt_alignment", "bias"],
   // The names it lists must come from the web results in its prompt.
