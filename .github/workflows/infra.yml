@@ -1,9 +1,11 @@
 # Pulumi from GitHub Actions (infra/README.md, "How infra changes ship").
 #
-# Pull request: a read-only preview of both stacks, on a copy of the state
-#   (infra/scripts/pulumi.ts), as infra-preview, which Google trusts only
-#   from this repository's pull_request events and which can read but not
-#   change anything (infra/bootstrap/preview.ts). The plan, and the guard's
+# Pull request (same repository only): a read-only preview of both stacks,
+#   on a copy of the state (infra/scripts/pulumi.ts), in the
+#   `infrastructure-preview` environment, which needs the owner's approval,
+#   as infra-preview, which Google trusts only from that environment on this
+#   repository's pull_request events and which can read but not change
+#   anything (infra/bootstrap/preview.ts). The plan, and the guard's
 #   verdict (infra/policy/guard.ts), go to the job summary.
 # main: `pulumi up` of the prod stack in the `infrastructure` environment, as
 #   gitlab-infra (infra/bootstrap), after the same preview and guard; then
@@ -48,6 +50,9 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # The owner approves each run: the preview decrypts the stack secrets,
+    # and Google trusts infra-preview only from this environment.
+    environment: infrastructure-preview
     permissions:
       contents: read
       id-token: write

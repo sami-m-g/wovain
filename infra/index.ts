@@ -5,6 +5,7 @@ import * as random from "@pulumi/random";
 import { devEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
+import { previewEnvironment } from "./github-preview.ts";
 import { githubRepository } from "./github.ts";
 import { retainLegacy } from "./legacy.ts";
 import { polarPromoSecrets } from "./polar.ts";
@@ -578,6 +579,11 @@ new gcp.billing.Budget(
 
 retainLegacy({ project, projectNumber, region });
 polarPromoSecrets(project, kept);
+// Who approves a pull request's infra preview (GitHub user ids): the owner,
+// sami-m-g (`gh api users/sami-m-g --jq .id`), by default.
+previewEnvironment(
+  config.getObject<number[]>("previewReviewerIds") ?? [106_979_416]
+);
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
