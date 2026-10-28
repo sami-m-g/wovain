@@ -1,0 +1,43 @@
+# Known vulnerabilities in the lockfiles (OSV database), with Google's
+# reusable workflows. They need the permissions below on the calling job.
+# A pull request scans only what it changes; main and the schedule scan
+# everything.
+name: osv
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Daily, 05:41 UTC.
+    - cron: "41 5 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  osv-pr:
+    name: osv (pull request)
+    if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    with:
+      scan-args: |-
+        --lockfile=pnpm-lock.yaml
+        --lockfile=infra/pnpm-lock.yaml
+
+  osv-scheduled:
+    name: osv (scheduled)
+    if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    with:
+      scan-args: |-
+        --lockfile=pnpm-lock.yaml
+        --lockfile=infra/pnpm-lock.yaml

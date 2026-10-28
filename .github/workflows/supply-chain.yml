@@ -1,0 +1,89 @@
+# Dependency and license checks. dependency-review judges what a pull request
+# adds (vulnerabilities, licenses); licenses is the whole tree
+# (scripts/check-licenses.ts); ggshield scans the commits for secrets.
+name: supply-chain
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: supply-chain-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: dependency-review
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Blocks a pull request that adds a high or critical vulnerability, or a
+      # license outside the allowlist (OSI-permissive, MIT-compatible).
+      # allow-dependencies-licenses are scripts/check-licenses.ts's exceptions:
+      # packages whose manifest has no license, and data or binaries under
+      # other terms.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+          allow-licenses: >-
+            MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Unlicense, CC0-1.0, BlueOak-1.0.0, Python-2.0, MPL-2.0
+          allow-dependencies-licenses: >-
+            pkg:npm/%40better-auth-ui/core, pkg:npm/%40better-auth-ui/locales, pkg:npm/%40better-auth-ui/react, pkg:npm/%40mastra/inngest, pkg:npm/%40polar-sh/better-auth, pkg:npm/%40img/sharp-libvips-darwin-arm64, pkg:npm/%40img/sharp-libvips-darwin-x64, pkg:npm/%40img/sharp-libvips-linux-arm, pkg:npm/%40img/sharp-libvips-linux-arm64, pkg:npm/%40img/sharp-libvips-linux-ppc64, pkg:npm/%40img/sharp-libvips-linux-riscv64, pkg:npm/%40img/sharp-libvips-linux-s390x, pkg:npm/%40img/sharp-libvips-linux-x64, pkg:npm/%40img/sharp-libvips-linuxmusl-arm64, pkg:npm/%40img/sharp-libvips-linuxmusl-x64, pkg:npm/caniuse-lite, pkg:npm/geoip-country, pkg:npm/postal-mime
+      # MPL-2.0 is allowed above; this second pass only reports it as a
+      # warning, because it is file-level copyleft worth a look.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          deny-licenses: MPL-2.0
+          warn-only: true
+          comment-summary-in-pr: never
+
+  licenses:
+    name: licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # The check reads the lockfile and the store; the postinstall's env
+      # codegen is not needed.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run licenses:check
+
+  # The GitGuardian GitHub App can be uninstalled once this runs. Needs the
+  # GITGUARDIAN_API_KEY Actions secret (infra/README.md, "GitGuardian").
+  # Skipped on pull requests from forks, which get no secrets.
+  ggshield:
+    name: ggshield
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # ggshield walks the commits of the push or pull request.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: GitGuardian/ggshield-action@5cc1ed2be3e8bf625d354c7170731880670f74de # v1.56.1
+        env:
+          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}

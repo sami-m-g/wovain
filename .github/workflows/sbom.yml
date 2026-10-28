@@ -1,0 +1,31 @@
+# A CycloneDX SBOM of the repository's lockfiles, attached to the GitHub
+# Release when it is published (a release tag is cut as a release).
+name: sbom
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: sbom
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # Attaching the file to the release.
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: wovain-sbom.cdx.json
+          artifact-name: wovain-sbom.cdx.json
+          upload-artifact: true
+          upload-release-assets: true

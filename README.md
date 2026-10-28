@@ -1,5 +1,7 @@
 # wovain
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sami-m-g/wovain/badge)](https://scorecard.dev/viewer/?uri=github.com/sami-m-g/wovain)
+
 **An agentic print-on-demand app: Qloo finds who would buy, Tavily finds why now, Nemotron judges the designs, and you approve Fourthwall products and a paused Meta campaign.**
 
 Demo: _URL placeholder, to be added before submission_
