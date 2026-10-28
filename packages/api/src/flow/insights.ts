@@ -9,8 +9,13 @@ import {
   rangeDates,
   shopInsights,
 } from "@wovain/core/insights";
+import { externalWrite } from "@wovain/db/schema/durable";
+import { campaign } from "@wovain/db/schema/seller";
+import { and, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 
 import type { Actor } from "./actor";
+import { adScoreKey } from "./campaigns";
 import { listConnections, withProvider } from "./connections";
 
 // The merchant's KPI dashboard: shop sales from Fourthwall's reports, ad
@@ -18,9 +23,10 @@ import { listConnections, withProvider } from "./connections";
 // drops (runs). The page only renders what this returns.
 
 /**
- * Quality scores another service computes (the Mastra scorers). Until that
- * lands, `pendingScores` answers "not scored yet" and the page says so;
- * design scores already come from each design's judgment.
+ * Quality scores: design scores come from each design's judgment; ad
+ * scores from the ad judges, which score a campaign's copy when it is
+ * staged with model routing on (./campaigns adScoreKey). A campaign staged
+ * without them stays unscored, and the page says so.
  */
 export interface QualityScorer {
   /** Ad copy scores (0 to 100) by wovain campaign ID. */
@@ -30,8 +36,47 @@ export interface QualityScorer {
   ) => Promise<Map<string, number>>;
 }
 
-export const pendingScores: QualityScorer = {
-  adScores: async () => await Promise.resolve(new Map<string, number>()),
+const adScoreSchema = z.object({ score: z.number().min(0).max(100) });
+
+export const storedAdScores: QualityScorer = {
+  adScores: async ({ db, userId }, campaignIds) => {
+    if (campaignIds.length === 0) {
+      return new Map<string, number>();
+    }
+    const staged = await db
+      .select({ id: campaign.id, key: campaign.idempotencyKey })
+      .from(campaign)
+      .where(
+        and(eq(campaign.userId, userId), inArray(campaign.id, campaignIds))
+      );
+    const byKey = new Map(
+      staged.flatMap((row) =>
+        row.key === null ? [] : [[adScoreKey(row.key), row.id] as const]
+      )
+    );
+    if (byKey.size === 0) {
+      return new Map<string, number>();
+    }
+    const scored = await db
+      .select({ key: externalWrite.key, result: externalWrite.result })
+      .from(externalWrite)
+      .where(
+        and(
+          eq(externalWrite.userId, userId),
+          eq(externalWrite.state, "done"),
+          inArray(externalWrite.key, [...byKey.keys()])
+        )
+      );
+    return new Map(
+      scored.flatMap((row) => {
+        const id = byKey.get(row.key);
+        const parsed = adScoreSchema.safeParse(row.result);
+        return id === undefined || !parsed.success
+          ? []
+          : [[id, parsed.data.score] as const];
+      })
+    );
+  },
 };
 
 /** A source's part of the dashboard: its data, or why there is none. */
@@ -177,7 +222,7 @@ const dropRow = (
 export const getInsights = async (
   actor: Actor,
   range: InsightRange,
-  scorer: QualityScorer = pendingScores
+  scorer: QualityScorer = storedAdScores
 ) => {
   const [drops, connections] = await Promise.all([
     loadDrops(actor),

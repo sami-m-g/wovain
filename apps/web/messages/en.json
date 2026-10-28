@@ -30,6 +30,7 @@
     "guidesTitle": "Guides for print-on-demand labels",
     "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads.",
     "insightsTitle": "Insights",
+    "modelsTitle": "Models",
     "pricingTitle": "Pricing: plans and credits for merch drops",
     "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
     "billingTitle": "Billing"
@@ -387,7 +388,8 @@
     "emptyTitle": "No runs yet",
     "brief": "Brief",
     "status": "Status",
-    "progress": "Progress"
+    "progress": "Progress",
+    "models": "Models"
   },
   "Connections": {
     "title": "Connections",
@@ -677,12 +679,64 @@
       "profit": "Profit",
       "spend": "Ad spend",
       "units": "Units",
-      "scorePending": "Ad scores appear once wovain's scorers rate your ad copy.",
+      "scorePending": "Ad scores appear for campaigns created after wovain's ad judges went live.",
       "notScored": "Not scored",
       "emptyTitle": "No drops yet",
       "empty": "Start a drop; its sales, spend and scores land here.",
       "emptyCta": "Start a drop"
     }
+  },
+  "Models": {
+    "title": "Which model did what",
+    "lead": "Each AI step in a drop runs on an NVIDIA Nemotron model on Nebius Token Factory, picked for its job. Here is every step, the model it used and how long it took.",
+    "byJob": "Models by job",
+    "roles": {
+      "default": {
+        "name": "Writer",
+        "job": "Design briefs, research themes and ad copy"
+      },
+      "reasoning": {
+        "name": "Reasoner",
+        "job": "The design judge's verdict and autopilot's go or no-go"
+      },
+      "vision": {
+        "name": "Vision",
+        "job": "Looks at the drawn artwork before the judge scores it"
+      },
+      "fast": {
+        "name": "Fast",
+        "job": "Ad judges, scorers and guardrails"
+      },
+      "safety": {
+        "name": "Safety",
+        "job": "Moderates what you publish"
+      }
+    },
+    "runTitle": "Run trace",
+    "runLead": "{calls, plural, one {# step} other {# steps}} for “{seed}”, in order.",
+    "step": "Step",
+    "job": "Job",
+    "model": "Model",
+    "time": "Time",
+    "result": "Result",
+    "ok": "Done",
+    "failed": "Failed",
+    "rule": "Rule",
+    "noModel": "None (a rule in code)",
+    "seconds": "{seconds} s",
+    "agents": {
+      "ad_copy": "Ad copy",
+      "ad_judge": "Ad judge",
+      "autopilot_pick_idea": "Autopilot picks an idea",
+      "autopilot_review_design": "Autopilot reviews a design",
+      "design_brief": "Design brief",
+      "design_judge": "Design judge",
+      "design_vision": "Design judge looks at the art",
+      "grounding_guard": "Numbers and claims check",
+      "research_themes": "Research themes"
+    },
+    "emptyTitle": "No traced runs yet",
+    "empty": "Start a drop. Each AI step it takes shows up here with its model."
   },
   "Billing": {
     "perMonth": "/ month",

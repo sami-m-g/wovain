@@ -104,6 +104,8 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
   });
   const core = {
     defaultCatalogProductId: "pro_default",
+    // Every flag off: the flows as they ran before their flags.
+    flags: { isOn: async () => await Promise.resolve(false) },
     nemotron: ask,
     upstream: {
       session: async (

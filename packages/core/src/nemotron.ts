@@ -6,8 +6,10 @@ import type { z } from "zod";
 
 import { REMEMBERING, TRACE_KEYS } from "./agents";
 import type { AgentId, AgentKit } from "./agents";
+import { unsupportedClaims } from "./grounding";
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
+import type { DecisionTrace } from "./trace";
 
 // wovain's own model calls (design briefs, the design judge, ad copy and
 // autopilot's decisions) all go through `ask`, which runs the named Mastra
@@ -17,7 +19,12 @@ import type { Logger } from "./log";
 // merchant read and keep the merchant's memory.
 
 export interface LlmTrace {
+  // Records every agent call (packages/api saves it as the decision trace).
+  decisions?: DecisionTrace | undefined;
   distinctId: string;
+  // The model-routing flag, evaluated for this merchant: each agent runs on
+  // its job's model (./agents AGENT_ROLES) and the grounding guard is on.
+  routed?: boolean | undefined;
   traceId: string;
 }
 const traces = new AsyncLocalStorage<LlmTrace>();
@@ -28,6 +35,9 @@ export const withLlmTrace = async <T>(
 ): Promise<T> => await traces.run(trace, run);
 
 export interface Ask<T extends z.ZodType> {
+  // The text of the answer a buyer reads. When routed, every number and
+  // claim in it must appear in the prompt (./grounding).
+  grounded?: ((reply: z.output<T>) => string) | undefined;
   // https image URLs the agent looks at with the prompt (a vision agent).
   images?: readonly string[] | undefined;
   log?: Logger | undefined;
@@ -82,9 +92,39 @@ const blocked = (agent: string, reason: string) =>
     why: reason,
   });
 
+// An answer stated numbers or claims no tool gave the agent, twice.
+const ungrounded = (agent: string, unsupported: string[]) =>
+  createError({
+    code: "UNGROUNDED_CLAIM",
+    fix: "Retry; if it repeats, the research didn't back what the copy wanted to say.",
+    message: `${agent} stated what no tool produced: ${unsupported.join(", ")}`,
+    status: 422,
+    why: "Every number and claim in buyer-facing text must come from a tool result.",
+  });
+
+const GROUND_RULE =
+  "Only state numbers and claims that appear in the input. Leave these out:";
+
+// A PII-free summary of a call's input for the decision trace: the input's
+// top-level fields (never their values) and how many images it shows.
+const fieldsOf = (prompt: string) => {
+  try {
+    const parsed: unknown = JSON.parse(prompt);
+    return typeof parsed === "object" && parsed !== null
+      ? Object.keys(parsed).join(", ")
+      : "text";
+  } catch {
+    // Plain text, not JSON.
+    return "text";
+  }
+};
+const summaryOf = (prompt: string, images: readonly string[]) =>
+  `input: ${fieldsOf(prompt)}${images.length === 0 ? "" : `; ${images.length} image(s)`}`;
+
 export const createNemotron =
   (kit: AgentKit | undefined) =>
   async <T extends z.ZodType>({
+    grounded,
     images = [],
     log,
     name,
@@ -97,12 +137,14 @@ export const createNemotron =
       throw notConfigured.nebius();
     }
     const trace = traces.getStore();
+    const routed = trace?.routed === true;
     const requestContext = new RequestContext(
       trace === undefined
         ? []
         : [
             [TRACE_KEYS.distinctId, trace.distinctId],
             [TRACE_KEYS.traceId, trace.traceId],
+            [TRACE_KEYS.routed, routed],
           ]
     );
     // Mastra trace IDs are 32 hex characters: a run's UUID without dashes.
@@ -123,14 +165,12 @@ export const createNemotron =
               role: "user" as const,
             },
           ];
-    return await external(
-      log,
-      { operation: name, provider: "nebius" },
-      async () => {
+    const answer = async (instructions: string) =>
+      await external(log, { operation: name, provider: "nebius" }, async () => {
         const generate = async (remember: boolean) =>
           await kit.agents[name].generate(input, {
             abortSignal: AbortSignal.timeout(TIMEOUT_MS),
-            instructions: system,
+            instructions,
             modelSettings: { temperature },
             requestContext,
             structuredOutput: { schema },
@@ -174,9 +214,58 @@ export const createNemotron =
         if (reply.object === undefined || reply.object === null) {
           throw new Error("Nemotron returned no structured answer");
         }
-        return schema.parse(reply.object);
+        return schema.parse(reply.object) as z.output<T>;
+      });
+    const decisions = trace?.decisions;
+    const call = async (instructions: string): Promise<z.output<T>> => {
+      if (decisions === undefined) {
+        return await answer(instructions);
       }
+      const model = kit.modelFor(name, routed);
+      return await decisions.call(
+        {
+          agent: name,
+          inputSummary: summaryOf(prompt, images),
+          model,
+          step: name,
+        },
+        async () => await answer(instructions),
+        (output) => ({
+          output,
+          sources: [{ provider: "nebius", title: model }],
+        })
+      );
+    };
+    const first = await call(system);
+    if (!routed || grounded === undefined) {
+      return first;
+    }
+    // The grounding guard: a number or claim the prompt (the tools'
+    // results) doesn't hold sends the answer back once, naming them.
+    const check = (reply: z.output<T>) => {
+      const unsupported = unsupportedClaims(grounded(reply), prompt);
+      decisions?.add({
+        agent: "grounding_guard",
+        inputSummary: `${name} answer`,
+        ok: unsupported.length === 0,
+        output: { unsupported },
+        sources: [{ provider: "rule", title: "numbers and claims from tools" }],
+        step: name,
+      });
+      return unsupported;
+    };
+    const unsupported = check(first);
+    if (unsupported.length === 0) {
+      return first;
+    }
+    const second = await call(
+      `${system}\n\n${GROUND_RULE} ${unsupported.join(", ")}.`
     );
+    const still = check(second);
+    if (still.length > 0) {
+      throw ungrounded(name, still);
+    }
+    return second;
   };
 
 export type Nemotron = ReturnType<typeof createNemotron>;

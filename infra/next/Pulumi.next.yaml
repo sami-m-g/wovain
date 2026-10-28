@@ -30,7 +30,7 @@ config:
   # The Nemotron model per job (packages/core/src/model-router.ts).
   wovain-next:nemotronModelFast: nvidia/Nemotron-3_5-Lightning
   wovain-next:nemotronModelDefault: nvidia/Nemotron-3.5-Super-VL
-  wovain-next:nemotronModelReasoning: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronModelReasoning: nvidia/Nemotron-3-Ultra-550b-a55b
   wovain-next:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
   wovain-next:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
   wovain-next:guardrailInjectionThreshold: "0.8"

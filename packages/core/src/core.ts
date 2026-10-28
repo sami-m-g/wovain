@@ -59,6 +59,7 @@ export const createCore = (
   // The merchants' memory (./taste), when the app has Mastra storage.
   { memory }: { memory?: Memory | undefined } = {}
 ) => {
+  const models = createModelRouter(env);
   const agents = createAgentKit({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,
@@ -77,6 +78,7 @@ export const createCore = (
       input: env.NEMOTRON_INPUT_PRICE,
       output: env.NEMOTRON_OUTPUT_PRICE,
     },
+    router: models,
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
     visionModel: env.NEMOTRON_VISION_MODEL,
   });
@@ -98,7 +100,7 @@ export const createCore = (
     model: env.NEMOTRON_MODEL,
     // The Nemotron model per job (fast, default, reasoning, vision,
     // safety), from NEMOTRON_MODEL_* (./model-router.ts).
-    models: createModelRouter(env),
+    models,
     nemotron,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(

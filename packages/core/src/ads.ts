@@ -2,6 +2,7 @@ import { createHash, randomInt } from "node:crypto";
 
 import { z } from "zod";
 
+import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
 import { findAll, findOne } from "./upstream";
@@ -33,6 +34,10 @@ export const writeAdCopy = async (
   log?: Logger
 ): Promise<AdCopy> => {
   const { variants } = await ask({
+    grounded: (reply) =>
+      reply.variants
+        .map((variant) => `${variant.headline}\n${variant.message}`)
+        .join("\n"),
     log,
     name: "ad_copy",
     prompt: JSON.stringify(product),
@@ -42,6 +47,62 @@ export const writeAdCopy = async (
     temperature: 0.8,
   });
   return variants;
+};
+
+// The ad judges every variant faces (./judges): a clear, honest angle, and
+// Meta's rules on personal attributes and misleading claims.
+const AD_JUDGES = ["ad_copy_quality", "meta_policy"] as const;
+const PERCENT = 100;
+
+export interface AdScore {
+  // Share of passed judge verdicts across the variants, 0 to 100.
+  score: number;
+  verdicts: {
+    critique: string;
+    judge: (typeof AD_JUDGES)[number];
+    pass: boolean;
+    variant: number;
+  }[];
+}
+
+// Each variant of the ad copy, judged by the binary ad judges on the fast
+// model: the share of passes is the copy's score on the insights page.
+export const scoreAdCopy = async (
+  ask: Nemotron,
+  { copy, title }: { copy: AdCopy; title: string },
+  log?: Logger
+): Promise<AdScore> => {
+  const verdicts = await Promise.all(
+    copy.flatMap((variant, index) =>
+      AD_JUDGES.map(async (judge) => {
+        const verdict = await ask({
+          log,
+          name: "ad_judge",
+          prompt: judgePrompt(
+            judge === "ad_copy_quality" ? { title } : {},
+            variant
+          ),
+          schema: verdictSchema,
+          system: judgeInstructions(judge),
+          temperature: 0,
+        });
+        return {
+          critique: verdict.critique,
+          judge,
+          pass: verdict.result === "Pass",
+          variant: index,
+        };
+      })
+    )
+  );
+  const passed = verdicts.filter((verdict) => verdict.pass).length;
+  return {
+    score:
+      verdicts.length === 0
+        ? 0
+        : Math.round((passed / verdicts.length) * PERCENT),
+    verdicts,
+  };
 };
 
 export interface CampaignPlan {

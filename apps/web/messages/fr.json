@@ -30,6 +30,7 @@
     "guidesTitle": "Guides pour les marques en print-on-demand",
     "guidesDescription": "Des guides pratiques pour les marques indépendantes en print-on-demand : fixer le prix de chaque pièce pour qu'elle rapporte, et lancer une capsule de l'idée aux annonces.",
     "insightsTitle": "Statistiques",
+    "modelsTitle": "Modèles",
     "pricingTitle": "Tarifs : formules et crédits pour vos drops de merch",
     "pricingDescription": "Commencez gratuitement avec des crédits chaque mois. Studio, Label et les packs de crédits arrivent bientôt. Les crédits paient la recherche et les vérifications IA ; fal, Meta et Fourthwall vous facturent directement.",
     "billingTitle": "Facturation"
@@ -387,7 +388,8 @@
     "emptyTitle": "Aucune exécution pour l'instant",
     "brief": "Brief",
     "status": "Statut",
-    "progress": "Avancement"
+    "progress": "Avancement",
+    "models": "Modèles"
   },
   "Connections": {
     "title": "Connexions",
@@ -677,12 +679,64 @@
       "profit": "Bénéfice",
       "spend": "Dépenses pub",
       "units": "Unités",
-      "scorePending": "Les scores d'annonce apparaîtront quand les évaluateurs de wovain auront noté vos textes.",
+      "scorePending": "Les scores d'annonce apparaissent pour les campagnes créées depuis l'arrivée des juges d'annonces de wovain.",
       "notScored": "Non noté",
       "emptyTitle": "Pas encore de drop",
       "empty": "Lancez un drop ; ses ventes, dépenses et scores arriveront ici.",
       "emptyCta": "Lancer un drop"
     }
+  },
+  "Models": {
+    "title": "Quel modèle a fait quoi",
+    "lead": "Chaque étape d'IA d'un drop tourne sur un modèle NVIDIA Nemotron de Nebius Token Factory, choisi pour sa tâche. Voici chaque étape, le modèle utilisé et sa durée.",
+    "byJob": "Modèles par tâche",
+    "roles": {
+      "default": {
+        "name": "Rédacteur",
+        "job": "Briefs de design, thèmes de recherche et textes d'annonce"
+      },
+      "reasoning": {
+        "name": "Raisonnement",
+        "job": "Le verdict du juge de design et le feu vert de l'autopilote"
+      },
+      "vision": {
+        "name": "Vision",
+        "job": "Regarde l'illustration avant que le juge ne la note"
+      },
+      "fast": {
+        "name": "Rapide",
+        "job": "Juges d'annonces, évaluateurs et garde-fous"
+      },
+      "safety": {
+        "name": "Sécurité",
+        "job": "Modère ce que vous publiez"
+      }
+    },
+    "runTitle": "Trace du run",
+    "runLead": "{calls, plural, one {# étape} other {# étapes}} pour « {seed} », dans l'ordre.",
+    "step": "Étape",
+    "job": "Tâche",
+    "model": "Modèle",
+    "time": "Durée",
+    "result": "Résultat",
+    "ok": "Fait",
+    "failed": "Échec",
+    "rule": "Règle",
+    "noModel": "Aucun (une règle dans le code)",
+    "seconds": "{seconds} s",
+    "agents": {
+      "ad_copy": "Texte d'annonce",
+      "ad_judge": "Juge d'annonce",
+      "autopilot_pick_idea": "L'autopilote choisit une idée",
+      "autopilot_review_design": "L'autopilote relit un design",
+      "design_brief": "Brief de design",
+      "design_judge": "Juge de design",
+      "design_vision": "Le juge regarde l'illustration",
+      "grounding_guard": "Contrôle des chiffres et affirmations",
+      "research_themes": "Thèmes de recherche"
+    },
+    "emptyTitle": "Aucun run tracé pour l'instant",
+    "empty": "Lancez un drop. Chaque étape d'IA apparaît ici avec son modèle."
   },
   "Billing": {
     "perMonth": "/ mois",

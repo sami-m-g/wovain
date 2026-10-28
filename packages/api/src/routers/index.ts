@@ -5,6 +5,7 @@ import { approvalsRouter, autonomyRouter } from "./approvals";
 import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
 import { insightsRouter } from "./insights";
+import { modelsRouter } from "./models";
 import {
   campaignsRouter,
   designsRouter,
@@ -23,6 +24,7 @@ export const appRouter = {
   healthCheck: publicProcedure.handler(() => "OK"),
   ideas: ideasRouter,
   insights: insightsRouter,
+  models: modelsRouter,
   products: productsRouter,
   runs: runsRouter,
 };

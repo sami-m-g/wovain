@@ -1,8 +1,8 @@
-import { withLlmTrace } from "@wovain/core/nemotron";
 import { run } from "@wovain/db/schema/seller";
 import { and, eq } from "drizzle-orm";
 
 import type { Actor, RunEngine } from "../flow/actor";
+import { withAgentTrace } from "../flow/agent-trace";
 import {
   autopilotRejection,
   autopilotStep,
@@ -29,8 +29,9 @@ const failOnError = async (
   work: () => Promise<void>
 ) => {
   try {
-    await withLlmTrace(
-      { distinctId: actor.userId, traceId: runId },
+    await withAgentTrace(
+      actor,
+      { runId, traceId: runId },
       async () => await work()
     );
   } catch (error) {
