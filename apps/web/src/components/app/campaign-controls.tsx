@@ -19,8 +19,10 @@ import { orpc } from "@/utils/orpc";
  */
 
 const CENTS = 100;
-const RUNNING = new Set(["active", "in_review", "publishing"]);
 const STARTABLE = new Set(["draft", "paused"]);
+// Every status that may still deliver, including "with_issues" (some ads
+// can still spend) and "unknown": only draft, paused and archived can't.
+const CANNOT_SPEND = new Set(["draft", "paused", "archived"]);
 
 type Status = Campaign["status"];
 
@@ -115,7 +117,7 @@ export const CampaignControls = ({ campaign }: { campaign: Campaign }) => {
             {t("start")}
           </Button>
         ) : null}
-        {RUNNING.has(status) ? (
+        {CANNOT_SPEND.has(status) ? null : (
           <Button
             className="h-9 px-4"
             disabled={busy}
@@ -126,7 +128,7 @@ export const CampaignControls = ({ campaign }: { campaign: Campaign }) => {
           >
             {t("pause")}
           </Button>
-        ) : null}
+        )}
         <Button
           className="h-9 px-4"
           disabled={busy}

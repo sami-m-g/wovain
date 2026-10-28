@@ -112,6 +112,27 @@ describe("findSalesPixel", () => {
     const none = fakeMeta({ ads_get_datasets: { data: [] } });
     await expect(findSalesPixel(none.call, "222")).resolves.toBeUndefined();
   });
+
+  it("counts only the listed datasets, not nested objects with an id and a name", async () => {
+    const owner = { id: "biz_9", name: "Owner business" };
+    const nested = fakeMeta({
+      ads_get_datasets: {
+        data: [
+          {
+            creator: { id: "u_7", name: "Creator" },
+            id: "px_1",
+            name: "Shop pixel",
+            owner_business: owner,
+          },
+        ],
+      },
+    });
+    await expect(findSalesPixel(nested.call, "222")).resolves.toBe("px_1");
+    const noPixel = fakeMeta({
+      ads_get_datasets: { data: [], owner_business: owner },
+    });
+    await expect(findSalesPixel(noPixel.call, "222")).resolves.toBeUndefined();
+  });
 });
 
 describe("stagePausedCampaign with media buying", () => {

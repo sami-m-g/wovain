@@ -2,14 +2,20 @@ import { EVENTS, eventSchemas } from "@wovain/core/events";
 import { eventType } from "inngest";
 import type { Inngest } from "inngest";
 
-import { executeMediaApproval } from "../flow/media";
+import {
+  claimMediaApproval,
+  performMediaApproval,
+  recordMediaOutcome,
+} from "../flow/media";
 import type { RunServices } from "./run";
 
 // The media executor (openspec change media-buying-live): when a media
 // approval is approved, by the merchant or settled by the policy, it
 // publishes or pauses the Meta campaign and records the outcome on the
-// approval. Each delivery is safe to repeat: the approval moves to
-// "executing" once, and a second delivery finds it taken.
+// approval. Three steps, so a retry resumes after the last one that
+// finished: claim (the approval moves to "executing" once, and a second
+// delivery finds it taken), perform (the Meta call and the read-back) and
+// record (done or failed).
 
 const approvalDecided = eventType(EVENTS.approvalDecided, {
   schema: eventSchemas[EVENTS.approvalDecided],
@@ -31,12 +37,24 @@ export const createMediaFunctions = (
       if (domain !== "media" || status !== "approved") {
         return { skipped: true };
       }
-      const outcome = await step.run(
-        "execute",
+      const actor = { ...services, userId };
+      const claimed = await step.run(
+        "claim",
         async () =>
-          await executeMediaApproval({ ...services, userId }, approvalId)
+          await claimMediaApproval(actor, approvalId, { resume: true })
       );
-      return { approvalId, status: outcome.status };
+      if (!claimed) {
+        return { approvalId, skipped: true };
+      }
+      const outcome = await step.run(
+        "perform",
+        async () => await performMediaApproval(actor, approvalId)
+      );
+      const recorded = await step.run(
+        "record",
+        async () => await recordMediaOutcome(actor, approvalId, outcome)
+      );
+      return { approvalId, status: recorded.status };
     }
   ),
 ];

@@ -30,7 +30,10 @@ import {
 } from "./approvals";
 import { createProductCampaign } from "./campaigns";
 import {
+  claimMediaApproval,
   executeMediaApproval,
+  performMediaApproval,
+  recordMediaOutcome,
   pauseCampaignNow,
   requestCampaignActivation,
   syncCampaignStatus,
@@ -49,7 +52,10 @@ const AGAIN = "0b8c6a4e-1d2f-4a3b-8c9d-7e6f5a4b3c2d";
 
 // Meta in draft mode: creates stage DRAFT objects; publishing them as
 // active makes them live, IN_PROCESS (Meta's review), then ACTIVE.
-const draftMeta = ({ pixels = ["px_1"] }: { pixels?: string[] } = {}) => {
+const draftMeta = ({
+  pixels = ["px_1"],
+  readBackFails = false,
+}: { pixels?: string[]; readBackFails?: boolean } = {}) => {
   const made: { id: string; level: string }[] = [];
   let live: "none" | "active" | "paused" = "none";
   const calls: { args: Record<string, unknown>; tool: string }[] = [];
@@ -83,6 +89,9 @@ const draftMeta = ({ pixels = ["px_1"] }: { pixels?: string[] } = {}) => {
       }
       if (live === "none") {
         return { ad_entities: [] };
+      }
+      if (readBackFails) {
+        throw new Error("ads_get_ad_entities: timed out");
       }
       return {
         ad_entities: objects
@@ -259,7 +268,9 @@ const seedProduct = async (db: Db) => {
 const CAPS = {
   dailySpendCapCents: 2000,
   level: "draft" as const,
-  monthlySpendCapCents: 30_000,
+  // Room for $20 a day on every day of any month, so the tests don't
+  // depend on today's date.
+  monthlySpendCapCents: 100_000,
   paused: false,
 };
 
@@ -392,6 +403,144 @@ describe("live media buying", () => {
     expect(meta.calls.some((item) => item.tool === "ads_activate_entity")).toBe(
       false
     );
+  });
+
+  it("counts campaigns already committed against the daily cap", async () => {
+    // $20 a day across every campaign: one $15 campaign fits, two don't.
+    await setAutonomy(ctx.actor, CAPS);
+    const first = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+      requestId: REQUEST,
+    });
+    const second = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+      requestId: AGAIN,
+    });
+    expect(second.id).not.toBe(first.id);
+    const asked = await requestCampaignActivation(ctx.actor, {
+      campaignId: first.id,
+      requestId: REQUEST,
+    });
+    await decide(ctx.actor, asked.id);
+
+    // Approved but not yet on Meta: its budget is committed already.
+    const waiting = await requestCampaignActivation(ctx.actor, {
+      campaignId: second.id,
+      requestId: REQUEST,
+    });
+    expect(waiting).toMatchObject({
+      policyReason: "over_daily_cap",
+      status: "denied",
+    });
+
+    await executeMediaApproval(ctx.actor, asked.id);
+    const live = await requestCampaignActivation(ctx.actor, {
+      campaignId: second.id,
+      requestId: AGAIN,
+    });
+    expect(live).toMatchObject({
+      policyReason: "over_daily_cap",
+      status: "denied",
+    });
+    await expect(spendToDate(ctx.actor)).resolves.toMatchObject({
+      todayCents: 1500,
+    });
+  });
+
+  it("checks the monthly cap against every day left in the month", async () => {
+    // Oct 28: four days left, so $15 a day commits $60 of a $50 month.
+    await setAutonomy(ctx.actor, { ...CAPS, monthlySpendCapCents: 5000 });
+    const staged = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+    const spent = await spendToDate(
+      ctx.actor,
+      new Date("2026-10-28T12:00:00Z")
+    );
+    expect(spent).toEqual({ daysLeftInMonth: 4, monthCents: 0, todayCents: 0 });
+    const { approval: asked } = await approvalsFor(ctx.actor).enqueue(
+      {
+        payload: { campaignId: staged.id },
+        proposedBy: "merchant",
+        spendCents: 1500,
+        title: "Start",
+        type: "media.campaign.activate",
+        userId: USER_ID,
+      },
+      await autonomyOf(ctx.actor),
+      spent
+    );
+    expect(asked).toMatchObject({
+      policyReason: "over_monthly_cap",
+      status: "denied",
+    });
+  });
+
+  it("records an activation as done when Meta took it but the read-back failed", async () => {
+    const flaky = draftMeta({ readBackFails: true });
+    const own = await setup(flaky.call);
+    const ownProduct = await seedProduct(own.db);
+    await setAutonomy(own.actor, CAPS);
+    const staged = await createProductCampaign(own.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId: ownProduct,
+    });
+    const asked = await requestCampaignActivation(own.actor, {
+      campaignId: staged.id,
+      requestId: REQUEST,
+    });
+    await decide(own.actor, asked.id);
+
+    const done = await executeMediaApproval(own.actor, asked.id);
+
+    expect(flaky.argsOf("ads_activate_entity")).toBeDefined();
+    expect(done).toMatchObject({
+      error: null,
+      result: { campaignId: staged.id, status: "publishing", verified: false },
+      status: "done",
+    });
+    const [row] = await own.db
+      .select()
+      .from(campaign)
+      .where(eq(campaign.id, staged.id));
+    // Wovain says it may spend: Pause is offered, Start isn't.
+    expect(row?.status).toBe("publishing");
+  });
+
+  it("resumes an approval a crashed executor left executing", async () => {
+    await setAutonomy(ctx.actor, CAPS);
+    const staged = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+    const asked = await requestCampaignActivation(ctx.actor, {
+      campaignId: staged.id,
+      requestId: REQUEST,
+    });
+    await decide(ctx.actor, asked.id);
+    // The first attempt claimed it, then died before it recorded anything.
+    await expect(claimMediaApproval(ctx.actor, asked.id)).resolves.toBe(true);
+
+    // A second delivery doesn't take it; the retry of the same run does.
+    await expect(claimMediaApproval(ctx.actor, asked.id)).resolves.toBe(false);
+    await expect(
+      claimMediaApproval(ctx.actor, asked.id, { resume: true })
+    ).resolves.toBe(true);
+    const outcome = await performMediaApproval(ctx.actor, asked.id);
+    const done = await recordMediaOutcome(ctx.actor, asked.id, outcome);
+
+    expect(done.status).toBe("done");
+    // Recording again (a retried step) changes nothing.
+    const again = await recordMediaOutcome(ctx.actor, asked.id, outcome);
+    expect(again.status).toBe("done");
   });
 
   it("pauses a live campaign at once and syncs its status", async () => {

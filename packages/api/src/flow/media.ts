@@ -163,17 +163,70 @@ export const requestCampaignActivation = async (
   return approval;
 };
 
-const perform = async (
+// What the executor did with an approved media action.
+export type MediaOutcome =
+  // Meta took the change. `verified` is false when wovain couldn't read the
+  // campaign back or save it: Meta has it all the same.
+  | { ok: true; campaignId: string; status: CampaignStatus; verified: boolean }
+  // Meta refused it, or it never reached Meta: nothing changed there.
+  | { ok: false; error: string };
+
+const logMediaError = (
+  code: string,
+  summary: string,
+  error: unknown,
+  media: Record<string, unknown>
+) => {
+  const message = error instanceof Error ? error.message : String(error);
+  log.error({
+    error: {
+      code,
+      message: `${summary}: ${message}`,
+      name: "MediaActionFailed",
+      ...(error instanceof Error && error.stack !== undefined
+        ? { stack: error.stack }
+        : {}),
+    },
+    media,
+  });
+  return message;
+};
+
+// Runs `work` after Meta took the change: a failure here is logged at
+// error level and never turns the action into a failed one.
+const afterApplied = async <T>(
+  item: Approval,
+  what: string,
+  work: () => Promise<T>
+): Promise<T | undefined> => {
+  try {
+    return await work();
+  } catch (error) {
+    logMediaError(
+      "MEDIA_AFTER_APPLY_FAILED",
+      `${item.actionType} reached Meta, but ${what} failed`,
+      error,
+      { actionType: item.actionType, approvalId: item.id }
+    );
+    return undefined;
+  }
+};
+
+// Calls Meta, then reads the campaign back. Once Meta took the change the
+// campaign row says so at once ("publishing", or "paused"), whatever the
+// read-back does after.
+const applyOnMeta = async (
   actor: Actor,
   item: Approval,
-  row: CampaignRow
-): Promise<CampaignStatus> => {
+  row: CampaignRow,
+  applied: { done: boolean }
+): Promise<{ status: CampaignStatus; verified: boolean }> => {
   const staged = stagedOf(row);
+  const activate = item.actionType === "media.campaign.activate";
   const trace = new DecisionTrace(
     { approvalId: item.id, userId: actor.userId },
     traceSinkFor(actor)
   );
-  const activate = item.actionType === "media.campaign.activate";
   try {
     return await trace.call(
       {
@@ -186,23 +239,68 @@ const perform = async (
           await (activate
             ? activateCampaign(call, staged)
             : pauseCampaign(call, staged));
-          return await readCampaignStatus(call, staged);
+          applied.done = true;
+          const assumed: CampaignStatus = activate ? "publishing" : "paused";
+          const saved = await afterApplied(
+            item,
+            "saving its status",
+            async () => await saveStatus(actor, row.id, assumed)
+          );
+          const read = await afterApplied(
+            item,
+            "reading its status back",
+            async () => await readCampaignStatus(call, staged)
+          );
+          if (read === undefined) {
+            return { status: assumed, verified: false };
+          }
+          const kept = await afterApplied(
+            item,
+            "saving its status",
+            async () => await saveStatus(actor, row.id, read)
+          );
+          return {
+            status: read,
+            verified: saved !== undefined && kept !== undefined,
+          };
         }),
-      (status) => ({
-        output: { status },
+      ({ status, verified }) => ({
+        output: { status, verified },
         sources: [{ id: row.metaCampaignId, provider: "meta" as const }],
       })
     );
   } finally {
-    await trace.flush();
+    await afterApplied(item, "saving its trace", async () => {
+      await trace.flush();
+    });
   }
 };
 
-const startExecuting = async (actor: Actor, item: Approval) => {
+// Step 1: takes an approved media action for execution. True when this
+// caller owns it. `resume` (the Inngest executor) also takes one left
+// "executing" by an earlier attempt that died before it recorded the
+// outcome; the action is then carried out again, which Meta treats as the
+// same change.
+export const claimMediaApproval = async (
+  actor: Actor,
+  approvalId: string,
+  { resume = false }: { resume?: boolean } = {}
+): Promise<boolean> => {
+  const approvals = approvalsFor(actor);
+  const item = await approvals.get(actor.userId, approvalId);
+  if (!MEDIA_ACTIONS.has(item.actionType)) {
+    return false;
+  }
+  if (item.status === "executing") {
+    return resume;
+  }
+  if (item.status !== "approved") {
+    return false;
+  }
   try {
-    await approvalsFor(actor).record({
+    await approvals.record({
       actor: EXECUTOR,
-      approvalId: item.id,
+      approvalId,
       status: "executing",
       userId: actor.userId,
     });
@@ -216,60 +314,92 @@ const startExecuting = async (actor: Actor, item: Approval) => {
   }
 };
 
-// Carries out an approved media action once: publishes or pauses the
-// campaign, reads its status back and records the outcome. A failure is
-// logged at error level and recorded on the approval.
-export const executeMediaApproval = async (
+// Step 2: publishes or pauses the campaign on Meta and reads its status
+// back. Never throws: a failure before Meta took the change is logged at
+// error level and returned; one after it is logged and the change stands.
+export const performMediaApproval = async (
   actor: Actor,
   approvalId: string
-): Promise<Approval> => {
-  const approvals = approvalsFor(actor);
-  const item = await approvals.get(actor.userId, approvalId);
-  if (!MEDIA_ACTIONS.has(item.actionType) || item.status !== "approved") {
-    return item;
-  }
-  if (!(await startExecuting(actor, item))) {
-    return await approvals.get(actor.userId, approvalId);
-  }
+): Promise<MediaOutcome> => {
+  const applied = { done: false };
+  let actionType = "media action";
+  let campaignId = "";
   try {
+    const item = await approvalsFor(actor).get(actor.userId, approvalId);
+    ({ actionType } = item);
     if (
       item.actionType === "media.campaign.activate" &&
       !(await isMediaBuyingLive(actor))
     ) {
       throw mediaBuyingOff();
     }
-    const campaignId = String(item.payload["campaignId"] ?? "");
-    const row = await campaignOf(actor, campaignId);
-    const status = await perform(actor, item, row);
-    await saveStatus(actor, row.id, status);
-    return await approvals.record({
-      actor: EXECUTOR,
-      approvalId,
-      result: { campaignId: row.id, status },
-      status: "done",
-      userId: actor.userId,
-    });
+    const row = await campaignOf(
+      actor,
+      String(item.payload["campaignId"] ?? "")
+    );
+    campaignId = row.id;
+    const { status, verified } = await applyOnMeta(actor, item, row, applied);
+    return { campaignId, ok: true, status, verified };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    log.error({
-      error: {
-        code: "MEDIA_ACTION_FAILED",
-        message: `${item.actionType} failed: ${message}`,
-        name: "MediaActionFailed",
-        ...(error instanceof Error && error.stack !== undefined
-          ? { stack: error.stack }
-          : {}),
-      },
-      media: { actionType: item.actionType, approvalId },
-    });
-    return await approvals.record({
-      actor: EXECUTOR,
-      approvalId,
-      error: message,
-      status: "failed",
-      userId: actor.userId,
-    });
+    const message = logMediaError(
+      "MEDIA_ACTION_FAILED",
+      `${actionType} failed`,
+      error,
+      { actionType, applied: applied.done, approvalId }
+    );
+    if (applied.done) {
+      const status: CampaignStatus =
+        actionType === "media.campaign.activate" ? "publishing" : "paused";
+      return { campaignId, ok: true, status, verified: false };
+    }
+    return { error: message, ok: false };
   }
+};
+
+// Step 3: records the outcome on the approval. A repeat finds it recorded.
+export const recordMediaOutcome = async (
+  actor: Actor,
+  approvalId: string,
+  outcome: MediaOutcome
+): Promise<Approval> => {
+  const approvals = approvalsFor(actor);
+  const current = await approvals.get(actor.userId, approvalId);
+  if (current.status !== "executing") {
+    return current;
+  }
+  return outcome.ok
+    ? await approvals.record({
+        actor: EXECUTOR,
+        approvalId,
+        result: {
+          campaignId: outcome.campaignId,
+          status: outcome.status,
+          verified: outcome.verified,
+        },
+        status: "done",
+        userId: actor.userId,
+      })
+    : await approvals.record({
+        actor: EXECUTOR,
+        approvalId,
+        error: outcome.error,
+        status: "failed",
+        userId: actor.userId,
+      });
+};
+
+// Carries out an approved media action once, in one go: claim, perform,
+// record. The Inngest executor (../workflows/media.ts) runs the same three
+// as separate steps, so a retry resumes where it stopped.
+export const executeMediaApproval = async (
+  actor: Actor,
+  approvalId: string
+): Promise<Approval> => {
+  if (!(await claimMediaApproval(actor, approvalId))) {
+    return await approvalsFor(actor).get(actor.userId, approvalId);
+  }
+  const outcome = await performMediaApproval(actor, approvalId);
+  return await recordMediaOutcome(actor, approvalId, outcome);
 };
 
 // The merchant pauses their own campaign: queued and audited like every

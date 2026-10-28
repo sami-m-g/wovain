@@ -157,7 +157,7 @@ describe("approvals on Postgres", () => {
       ]);
     expect(
       await spendToDate(ctx.actor, new Date("2026-10-28T18:00:00Z"))
-    ).toEqual({ monthCents: 6000, todayCents: 2000 });
+    ).toEqual({ daysLeftInMonth: 4, monthCents: 6000, todayCents: 2000 });
   });
 
   it("saves a decision trace", async () => {

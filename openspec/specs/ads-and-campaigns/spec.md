@@ -72,9 +72,37 @@ With the `media-buying-live` and `autonomy-approvals` flags on, a request to sta
 - **WHEN** Meta rejects the activation
 - **THEN** the approval ends `failed` with Meta's reason, the error is logged at error level, and the campaign keeps its status
 
+### Requirement: Spend caps across campaigns
+
+The spend caps SHALL count the daily budgets wovain has already committed: every campaign that is not draft, paused or archived, and every approved activation not yet carried out. The monthly cap SHALL count each committed daily budget, and the new one, for every day left in the month.
+
+#### Scenario: Caps across campaigns
+
+- **WHEN** one campaign is live or approved to start, and the merchant asks to start a second whose budget fits the daily cap alone but not with the first
+- **THEN** the second approval is `denied` with reason `over_daily_cap`
+
+#### Scenario: Monthly cap over the rest of the month
+
+- **WHEN** on October 28 the merchant asks to start a $15-a-day campaign under a $50 monthly cap
+- **THEN** the approval is `denied` with reason `over_monthly_cap`, since four days at $15 is $60
+
+### Requirement: Durable media execution
+
+Once Meta accepts an activation, wovain SHALL save the campaign as `publishing` at once and SHALL NOT record the approval `failed`. The executor SHALL run as separate durable steps (claim, perform, record), so a retry resumes an approval left `executing`.
+
+#### Scenario: Read-back fails after Meta accepted
+
+- **WHEN** Meta accepts the activation but reading the status back fails
+- **THEN** the error is logged at error level, the campaign reads `publishing`, and the approval ends `done` with the result marked unverified
+
+#### Scenario: Executor died while executing
+
+- **WHEN** the executor's retry finds the approval it claimed still `executing`
+- **THEN** it carries the action out and records the outcome
+
 ### Requirement: Pause and status sync
 
-A merchant SHALL be able to pause a campaign at once. The pause SHALL be queued and audited, approved by the merchant in the same request, and sent to Meta as a status-only update. A merchant SHALL be able to refresh a campaign's status from Meta.
+A merchant SHALL be able to pause any campaign that may spend (every status except draft, paused and archived, including `with_issues` and `unknown`) at once. The pause SHALL be queued and audited, approved by the merchant in the same request, and sent to Meta as a status-only update. A merchant SHALL be able to refresh a campaign's status from Meta.
 
 #### Scenario: Pause
 
@@ -83,7 +111,7 @@ A merchant SHALL be able to pause a campaign at once. The pause SHALL be queued 
 
 ### Requirement: Measurable delivery
 
-With the `media-buying-live` flag on, a campaign SHALL optimize for `PURCHASE` on the pixel (`OUTCOME_SALES`) when the ad account has exactly one pixel or the caller names one, and for landing page views otherwise. Every ad link SHALL carry `utm_source`, `utm_medium`, `utm_campaign` (the Meta campaign ID) and `utm_content` (the variant).
+With the `media-buying-live` flag on, a campaign SHALL optimize for `PURCHASE` on the pixel (`OUTCOME_SALES`) when the ad account has exactly one pixel or the caller names one, and for landing page views otherwise. Only the datasets listed in the top-level `data` of Meta's reply SHALL count as pixels. Every ad link SHALL carry `utm_source`, `utm_medium`, `utm_campaign` (the Meta campaign ID) and `utm_content` (the variant).
 
 #### Scenario: Shop with one pixel
 

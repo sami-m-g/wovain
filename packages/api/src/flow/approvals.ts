@@ -1,11 +1,13 @@
 import { createApprovals } from "@wovain/core/approvals";
 import type {
   Approval,
+  ApprovalStatus,
   ApprovalStore,
   AuditEntry,
 } from "@wovain/core/approvals";
 import { DEFAULT_AUTONOMY } from "@wovain/core/autonomy";
 import type { AutonomySettings, SpendToDate } from "@wovain/core/autonomy";
+import type { CampaignStatus } from "@wovain/core/media-buying";
 import type { TraceSink } from "@wovain/core/trace";
 import {
   approval,
@@ -14,6 +16,7 @@ import {
   decisionTrace,
   performanceSnapshot,
 } from "@wovain/db/schema/autonomy";
+import { campaign } from "@wovain/db/schema/seller";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { createError } from "evlog";
 
@@ -148,31 +151,102 @@ export const setAutonomy = async (
 
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
-// Meta ad spend already committed today and this month (UTC), from the
-// campaign-level performance snapshots.
+// Campaigns that can spend, or may be: Meta delivers (or reviews, or
+// publishes) them, or wovain can't tell. A campaign that's draft, paused or
+// archived spends nothing.
+const SPENDING: CampaignStatus[] = [
+  "active",
+  "in_review",
+  "publishing",
+  "with_issues",
+  "unknown",
+];
+// Activations approved but not yet on Meta: their budget is committed too.
+const COMMITTING: ApprovalStatus[] = ["approved", "executing"];
+
+// The daily budgets wovain has committed, one per campaign: campaigns that
+// can spend, plus approved activations still on their way to Meta.
+const committedDailyCents = async ({
+  db,
+  userId,
+}: Pick<Actor, "db" | "userId">) => {
+  const [running, starting] = await Promise.all([
+    db
+      .select({ cents: campaign.dailyBudgetCents, id: campaign.id })
+      .from(campaign)
+      .where(
+        and(eq(campaign.userId, userId), inArray(campaign.status, SPENDING))
+      ),
+    db
+      .select({ payload: approval.payload })
+      .from(approval)
+      .where(
+        and(
+          eq(approval.userId, userId),
+          eq(approval.actionType, "media.campaign.activate"),
+          inArray(approval.status, COMMITTING)
+        )
+      ),
+  ]);
+  const budgets = new Map(running.map((row) => [row.id, row.cents]));
+  for (const { payload } of starting) {
+    const id = payload["campaignId"];
+    const cents = payload["spendCents"];
+    if (typeof id === "string" && typeof cents === "number") {
+      budgets.set(id, Math.max(budgets.get(id) ?? 0, cents));
+    }
+  }
+  let total = 0;
+  for (const cents of budgets.values()) {
+    total += cents;
+  }
+  return total;
+};
+
+const daysInMonth = (now: Date) =>
+  new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+
+// Ad spend wovain has committed today and this month (UTC), across every
+// campaign: the caps (@wovain/core/autonomy) are checked against it.
+// - Today: the committed daily budgets, or Meta's reported spend for today
+//   when that is higher (a campaign paused today has already spent).
+// - Month: Meta's reported spend before today, plus today, plus the
+//   committed daily budgets for each day left after today.
+// Meta's spend comes from the campaign-level performance snapshots.
 export const spendToDate = async (
   actor: Pick<Actor, "db" | "userId">,
   now = new Date()
 ): Promise<SpendToDate> => {
   const monthStart = `${isoDay(now).slice(0, 7)}-01`;
   const today = isoDay(now);
-  const [row] = await actor.db
-    .select({
-      monthCents: sql<number>`coalesce(sum(${performanceSnapshot.spendCents}), 0)::int`,
-      todayCents: sql<number>`coalesce(sum(${performanceSnapshot.spendCents}) filter (where ${performanceSnapshot.date} = ${today}), 0)::int`,
-    })
-    .from(performanceSnapshot)
-    .where(
-      and(
-        eq(performanceSnapshot.userId, actor.userId),
-        eq(performanceSnapshot.source, "meta"),
-        eq(performanceSnapshot.level, "campaign"),
-        gte(performanceSnapshot.date, monthStart)
-      )
-    );
+  const [[row], committed] = await Promise.all([
+    actor.db
+      .select({
+        beforeTodayCents: sql<number>`coalesce(sum(${performanceSnapshot.spendCents}) filter (where ${performanceSnapshot.date} < ${today}), 0)::int`,
+        todayCents: sql<number>`coalesce(sum(${performanceSnapshot.spendCents}) filter (where ${performanceSnapshot.date} = ${today}), 0)::int`,
+      })
+      .from(performanceSnapshot)
+      .where(
+        and(
+          eq(performanceSnapshot.userId, actor.userId),
+          eq(performanceSnapshot.source, "meta"),
+          eq(performanceSnapshot.level, "campaign"),
+          gte(performanceSnapshot.date, monthStart)
+        )
+      ),
+    committedDailyCents(actor),
+  ]);
+  const daysLeftInMonth = daysInMonth(now) - now.getUTCDate() + 1;
+  const todayCents = Math.max(Number(row?.todayCents ?? 0), committed);
   return {
-    monthCents: Number(row?.monthCents ?? 0),
-    todayCents: Number(row?.todayCents ?? 0),
+    daysLeftInMonth,
+    monthCents:
+      Number(row?.beforeTodayCents ?? 0) +
+      todayCents +
+      committed * (daysLeftInMonth - 1),
+    todayCents,
   };
 };
 

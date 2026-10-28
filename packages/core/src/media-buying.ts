@@ -37,19 +37,28 @@ const meta =
       ...args,
     });
 
-// The account's pixel, when it has exactly one: with several, wovain does
-// not guess which one the shop fires.
+// The Graph API list envelope of `ads_get_datasets`: the account's datasets
+// (pixels) in the top-level `data`. Only that list counts: an id and a name
+// nested elsewhere (an owner business, a creator) isn't a pixel.
+const datasetList = z.object({
+  data: z.array(
+    z.object({ id: z.union([z.string(), z.number()]), name: z.string() })
+  ),
+});
+
+// The account's pixel, when it has exactly one: with several, or a reply
+// wovain can't read, it does not guess which one the shop fires.
 export const findSalesPixel = async (call: ToolCall, adAccountId: string) => {
   const reply = await meta(
     call,
     adAccountId,
     "create_and_launch_new_ads"
   )("ads_get_datasets", { ad_account_id: adAccountId });
-  const pixels = findAll(
-    z.object({ id: z.union([z.string(), z.number()]), name: z.string() }),
-    reply
-  );
-  const ids = [...new Set(pixels.map((pixel) => String(pixel.id)))];
+  const parsed = datasetList.safeParse(reply);
+  if (!parsed.success) {
+    return;
+  }
+  const ids = [...new Set(parsed.data.data.map((pixel) => String(pixel.id)))];
   return ids.length === 1 ? ids[0] : undefined;
 };
 

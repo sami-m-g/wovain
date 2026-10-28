@@ -115,10 +115,15 @@ export interface PolicyAction {
   spendCents?: number | undefined;
 }
 
-// Ad spend already committed, in US cents, from performance snapshots.
+// Ad spend already committed, in US cents: today's, and the month's to
+// date plus what running campaigns will spend before it ends.
 export interface SpendToDate {
   todayCents: number;
   monthCents: number;
+  // Days left in the month, today included: a new daily budget runs on
+  // each of them, so the monthly cap is checked against that many days.
+  // Absent means one day.
+  daysLeftInMonth?: number | undefined;
 }
 
 export type PolicyVerdict = "allow" | "needs_approval" | "deny";
@@ -170,7 +175,8 @@ export const canAutoExecute = (
     if (spent.todayCents + spend > settings.dailySpendCapCents) {
       return { reason: "over_daily_cap", verdict: "deny" };
     }
-    if (spent.monthCents + spend > settings.monthlySpendCapCents) {
+    const days = Math.max(1, spent.daysLeftInMonth ?? 1);
+    if (spent.monthCents + spend * days > settings.monthlySpendCapCents) {
       return { reason: "over_monthly_cap", verdict: "deny" };
     }
   }
