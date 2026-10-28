@@ -87,7 +87,10 @@ jobs:
           node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY"
 
   up:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # Manual only while production is frozen (until the Transcend winners,
+    # ~2026-11-16): a merge to main never applies. Switch back to push by
+    # dropping the event_name check.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: infrastructure
