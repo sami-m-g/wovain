@@ -23,6 +23,28 @@
     "fourthwall": {
       "type": "http",
       "url": "https://mcp.fourthwall.com/app"
+    },
+    "qloo-docs": {
+      "type": "http",
+      "url": "https://docs.qloo.com/mcp"
+    },
+    "qloo": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@qloo/qloo-harness", "mcp"],
+      "env": { "QLOO_API_KEY": "${QLOO_API_KEY}" }
+    },
+    "tavily": {
+      "type": "http",
+      "url": "https://mcp.tavily.com/mcp"
+    },
+    "inngest-dev": {
+      "type": "http",
+      "url": "http://127.0.0.1:8288/mcp"
+    },
+    "pulumi": {
+      "type": "http",
+      "url": "https://mcp.ai.pulumi.com/mcp"
     }
   }
 }
