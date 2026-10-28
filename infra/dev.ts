@@ -1,35 +1,35 @@
 // apps/web's non-production environments, in the same project and stack as
-// production, so they ship through the same preview and policy gate and share
-// what costs money or can't be duplicated: the Cloud SQL instance (each its
-// own database and user), the DNS zone and, unless overridden, the provider
-// API keys. Each gets its own auth secret, token key, database URL, bucket and
-// runtime account, and scales to zero.
+// production, so they ship through the same preview and policy gate. Each
+// owns its resources and holds nothing of production's: its own database
+// and user, its own `<id>-<name>` secret for every key the app reads (none
+// of production's secrets is mounted), its own bucket and runtime account,
+// and it scales to zero. What they share with production is the project,
+// the DNS zone and the PostHog project (events carry their environment).
 //
 // - dev.wovain.com (`dev`): rolled out by hand (`gcloud run deploy
-//   wovain-web-dev`); no workflow deploys it.
-// - qloo.wovain.com (`qloo`): where main deploys while production is frozen
-//   (docs/adr/0004-release-branch.md), for the Qloo and Nebius judges. It is
-//   `isolated`: its own Inngest keys and Polar credentials, never
-//   production's, optional keys of its own for the metered providers, its
-//   own image repository and its own deploy account, which can roll out only
-//   this service and read only this environment's database URL.
+//   wovain-web-dev`); no workflow deploys it. Its database stays on
+//   production's instance: moving it would replace a protected database.
+// - next.wovain.com (`next`): where main deploys while production is frozen
+//   (docs/adr/0004-release-branch.md). Its own Cloud SQL instance, image
+//   repository and deploy account, which can roll out only this service and
+//   read only this environment's database URL.
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
-import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
+import {
+  cloudRunService,
+  postgresInstance,
+  secretEnv,
+  secretWithValue,
+} from "./resources.ts";
 
-interface Isolation {
-  // Values for the secrets that never fall back to production's, by
-  // production's id; each is mounted once it has one.
-  ownSecrets: Record<string, pulumi.Input<string> | undefined>;
-  // Values for metered provider keys; an id without one mounts production's.
-  ownKeys: Record<string, pulumi.Input<string> | undefined>;
+// Who may deploy an environment from GitHub Actions.
+interface Deploy {
   // The GitHub environment whose jobs may deploy it (infra/github.ts).
   githubEnvironment: string;
   // The workload identity pool that trusts GitHub Actions (infra/bootstrap).
   pool: string;
-  afterApis: pulumi.CustomResourceOptions;
 }
 
 interface EnvironmentArgs {
@@ -38,28 +38,29 @@ interface EnvironmentArgs {
   project: string;
   region: string;
   url: string;
-  sql: gcp.sql.DatabaseInstance;
-  // Production's KMS key (no longer read by the app); dev kept its grant,
-  // an isolated environment gets none.
-  connectionsKey?: gcp.kms.CryptoKey;
-  // Production's secrets by id, and the ids that have a value.
-  secrets: Map<string, gcp.secretmanager.Secret>;
-  populated: string[];
-  // Shared env values (name to value), from production's service.
+  // The instance its database lives on; its own instance if unset.
+  sql?: gcp.sql.DatabaseInstance;
+  // Plain env values (name to value), none of them a secret.
   envs: { name: string; value: pulumi.Input<string> }[];
+  // This environment's value for each provider secret, by production's id
+  // (the env variable stays the same). Each is created as `<id>-<name>`; one
+  // without a value stays empty and unmounted, since Cloud Run won't start
+  // a revision on a secret with no version.
+  providerSecrets: Record<string, pulumi.Input<string> | undefined>;
   // Data and identity options (protect), as in index.ts.
   kept: pulumi.CustomResourceOptions;
-  isolation?: Isolation;
+  afterApis: pulumi.CustomResourceOptions;
+  deploy?: Deploy;
 }
 
-// The deploy account and image repository of an isolated environment.
+// The deploy account and image repository of an environment main deploys.
 const deployAccess = (
-  args: EnvironmentArgs & { isolation: Isolation },
+  args: EnvironmentArgs & { deploy: Deploy },
   runner: gcp.serviceaccount.Account,
   service: gcp.cloudrunv2.Service,
   databaseUrl: gcp.secretmanager.Secret
 ) => {
-  const { isolation, kept, name, project, region } = args;
+  const { afterApis, deploy, kept, name, project, region } = args;
   // Apart from production's repository: these builds never push
   // production's live image out of its cleanup policy, and this deploy
   // account can't write production's tags.
@@ -93,7 +94,7 @@ const deployAccess = (
     kept
   );
   new gcp.serviceaccount.IAMMember(`deploy-${name}-from-github`, {
-    member: `principalSet://iam.googleapis.com/${isolation.pool}/attribute.environment/${isolation.githubEnvironment}`,
+    member: `principalSet://iam.googleapis.com/${deploy.pool}/attribute.environment/${deploy.githubEnvironment}`,
     role: "roles/iam.workloadIdentityUser",
     serviceAccountId: deployer.name,
   });
@@ -124,7 +125,7 @@ const deployAccess = (
       repository: images.name,
       role: "roles/artifactregistry.writer",
     },
-    isolation.afterApis
+    afterApis
   );
   new gcp.secretmanager.SecretIamMember(`deploy-${name}-database-url`, {
     member: deployer.member,
@@ -143,7 +144,10 @@ const deployAccess = (
 };
 
 export const appEnvironment = (args: EnvironmentArgs) => {
-  const { isolation, kept, name, region, sql } = args;
+  const { kept, name, region } = args;
+  const sql =
+    args.sql ??
+    postgresInstance(`postgres-${name}`, `wovain-${name}`, region, kept);
   const database = new gcp.sql.Database(
     `wovain-${name}`,
     { instance: sql.name, name: `wovain_${name}` },
@@ -158,8 +162,7 @@ export const appEnvironment = (args: EnvironmentArgs) => {
     name: `wovain_${name}`,
     password: password.result,
   });
-  // The environment's own secrets, by production's id (the env variable
-  // stays the same).
+  // Generated here; the provider secrets come from the caller.
   const values: Record<string, pulumi.Input<string> | undefined> = {
     "better-auth-secret": new random.RandomPassword(
       `better-auth-secret-${name}`,
@@ -170,6 +173,7 @@ export const appEnvironment = (args: EnvironmentArgs) => {
       `token-encryption-key-${name}`,
       { length: 32 }
     ).base64,
+    ...args.providerSecrets,
   };
 
   const runner = new gcp.serviceaccount.Account(
@@ -185,13 +189,6 @@ export const appEnvironment = (args: EnvironmentArgs) => {
       member: runner.member,
       project: args.project,
       role,
-    });
-  }
-  if (args.connectionsKey !== undefined) {
-    new gcp.kms.CryptoKeyIAMMember(`runner-${name}-connections`, {
-      cryptoKeyId: args.connectionsKey.id,
-      member: runner.member,
-      role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
     });
   }
   const bucket = new gcp.storage.Bucket(
@@ -210,40 +207,22 @@ export const appEnvironment = (args: EnvironmentArgs) => {
     role: "roles/storage.objectAdmin",
   });
 
-  // `<id>-<name>` for its own secrets, production's for the shared API keys.
+  // Every secret is `<id>-<name>`; only those with a value are mounted.
   const versions: pulumi.Resource[] = [];
   const mounted = new Map<string, gcp.secretmanager.Secret>();
+  let databaseUrl: gcp.secretmanager.Secret | undefined;
   for (const [id, value] of Object.entries(values)) {
     const { secret, version } = secretWithValue(`${id}-${name}`, value, kept);
+    if (id === "database-url") {
+      databaseUrl = secret;
+    }
     if (version !== undefined) {
       versions.push(version);
-    }
-    mounted.set(id, secret);
-  }
-  // An isolated environment's own secrets and keys exist only once their
-  // stack secret is set, so no empty secret is created.
-  const own = isolation === undefined ? {} : isolation.ownSecrets;
-  const keys = isolation === undefined ? {} : isolation.ownKeys;
-  for (const [id, value] of Object.entries({ ...own, ...keys })) {
-    if (value !== undefined) {
-      const { secret, version } = secretWithValue(`${id}-${name}`, value, kept);
-      if (version !== undefined) {
-        versions.push(version);
-      }
       mounted.set(id, secret);
     }
   }
-  const databaseUrl = mounted.get("database-url");
   if (databaseUrl === undefined) {
     throw new Error(`${name} has no database-url secret`);
-  }
-  for (const id of args.populated.filter(
-    (i) => !mounted.has(i) && !(i in own)
-  )) {
-    const secret = args.secrets.get(id);
-    if (secret !== undefined) {
-      mounted.set(id, secret);
-    }
   }
   // The service waits for these: Cloud Run checks access to every mounted
   // secret when it rolls out a revision.
@@ -275,8 +254,13 @@ export const appEnvironment = (args: EnvironmentArgs) => {
     serviceAccount: runner.email,
   });
   const deploy =
-    isolation === undefined
+    args.deploy === undefined
       ? undefined
-      : deployAccess({ ...args, isolation }, runner, service, databaseUrl);
-  return { databaseUrl, deploy, runner, service };
+      : deployAccess(
+          { ...args, deploy: args.deploy },
+          runner,
+          service,
+          databaseUrl
+        );
+  return { databaseUrl, deploy, runner, service, sql };
 };

@@ -1,4 +1,4 @@
-# ADR 0004: Production deploys from a release branch; main deploys to qloo.wovain.com
+# ADR 0004: Production deploys from a release branch; main deploys to next.wovain.com
 
 - Status: proposed
 - Date: 2026-10-28
@@ -24,40 +24,43 @@ Work on main goes on for the Qloo hackathon (judging November 2 to 5) and the Ne
 - Until about 2026-11-16, the release path is for emergencies only: a fix that keeps the judged build working, and only after the hackathon allows it in writing (Devpost). Every other fix goes to main.
 - `pulumi up` from main never rolls out a new production revision while `wovain:freezeProduction` is true (the default). The `wovain-web` and `wovain-docs` templates (image, env, secrets, scaling) stay as they are live.
 
-**main** deploys to **qloo.wovain.com** (Cloud Run `wovain-web-qloo`) in the `qloo` GitHub environment, with no approval. It is a new environment, isolated from production:
+**main** deploys to **next.wovain.com** (Cloud Run `wovain-web-next`) in the `next` GitHub environment, with no approval. It is a new environment that owns all its resources and shares nothing with production:
 
-|  | Production | qloo |
+|  | Production | next |
 | --- | --- | --- |
-| Database | `wovain` on the `wovain` instance | `wovain_qloo` on the same instance, with its own user and password |
-| Migrations | from the release branch, with `database-url` | from main, with `database-url-qloo` only |
-| Auth | `better-auth-secret`, `https://wovain.com` | `better-auth-secret-qloo`, `https://qloo.wovain.com`; cookies are host-only (no `crossSubDomainCookies`) |
-| Inngest | production's keys | its own keys from a separate Inngest environment (`inngest-*-key-qloo`); never production's |
-| Polar | production's sandbox org | its own (`polar-*-qloo`); never production's |
-| Nebius, Qloo, Tavily | production's keys | `<id>-qloo` if set, else production's |
-| Images | `wovain` repository | `wovain-qloo` repository |
-| Deploy account | `gitlab-deploy` (from `Production`) | `wovain-deploy-qloo` (from `qloo`): `run.developer` on `wovain-web-qloo` only |
-| PostHog | `environment: production` | `environment: qloo`, excluded by the test account filter |
+| Database | `wovain` on the `wovain` instance | `wovain_next` on its own instance, `wovain-next` (`db-f1-micro`) |
+| Migrations | from the release branch, with `database-url` | from main, with `database-url-next` only |
+| Auth | `better-auth-secret`, `https://wovain.com` | `better-auth-secret-next`, `https://next.wovain.com`; cookies are host-only (no `crossSubDomainCookies`) |
+| Inngest | production's keys, app `wovain` | its own environment's keys (`inngest-*-key-next`), app `wovain-next` |
+| Polar | production's sandbox org | its own sandbox org (`polar-*-next`) |
+| Nebius, Qloo, Tavily, Google, Meta | production's keys | `<id>-next` only; a feature without its key is off |
+| Resend | production's key | its own sending-only key, made by Pulumi |
+| Images | `wovain` repository | `wovain-next` repository |
+| Deploy account | `gitlab-deploy` (from `Production`) | `wovain-deploy-next` (from `next`): `run.developer` on `wovain-web-next` only |
+| PostHog | project 687269, `APP_ENV=production` | its own project, `APP_ENV=next` |
 
-dev.wovain.com is unchanged and still rolled out by hand.
+dev.wovain.com gets the same treatment except its database, which stays on production's instance until a separate migration: its own `<id>-dev` secrets, PostHog project, Inngest app id, deploy account (from the `dev` GitHub environment) and no grant on production's secrets or KMS key. Production's deploy account loses its grants on dev.
 
-**Why a new host and not dev.wovain.com:** dev.wovain.com shares production's Inngest and Polar keys and is used by hand. A new environment can be isolated from the start, with pure additions in Pulumi and no changes to existing resources. A scale-to-zero Cloud Run service, a database on the existing instance, a bucket and secrets cost almost nothing. A second Cloud SQL instance would cost about $10 a month, half the budget.
+**Why a new host and not dev.wovain.com:** dev.wovain.com was rolled out by hand and still had production's keys mounted. A new environment can be isolated from the start, with pure additions in Pulumi and no changes to production.
 
-**Why share the Cloud SQL instance:** a separate database and user keep the data apart, and the qloo deploy account can read only its own password. The shared resource is the `db-f1-micro` CPU and its connections. If qloo traffic puts production at risk, move qloo to its own instance.
+**Why its own Cloud SQL instance:** every environment owns its resources. A database on production's instance would share its `db-f1-micro` CPU, connections and maintenance with production while judges use it. The instance costs about $10 a month, so the project now runs close to the $20 budget (`infra/index.ts` alerts at 50%, 90% and 100%).
+
+**How the app knows its environment:** `APP_ENV` (`production`, `next`, `development`), set on each Cloud Run service by Pulumi, not the host name. Feature flags have a `next` rollout that follows production's.
 
 ## Shipping
 
-- **A normal fix or feature:** a pull request to main. Merging deploys it to qloo.wovain.com.
+- **A normal fix or feature:** a pull request to main. Merging deploys it to next.wovain.com.
 - **A production emergency (until about 2026-11-16, with written approval):** a pull request to `release/transcend` that cherry-picks the smallest fix (`git cherry-pick -x <sha>`). After it merges, the deploy run waits for approval in `Production`. The same fix also goes to main.
 - **Infra:** applied from main as before. While production is frozen, a change to a production resource (secrets, Cloud SQL, DNS, services) waits until after the announcement, unless it is an emergency.
 
 ## Convergence
 
-- **After about 2026-11-16 (Transcend winners announced):** set `wovain:freezeProduction false` (or delete the freeze), point the `Production` deployment policy at main (or fast-forward the release branch to main), and deploy main to wovain.com. The GitLab flags and OTLP settings leave production then. qloo.wovain.com stays for Nebius.
-- **After 2026-12-15 (Nebius judging ends):** retire qloo.wovain.com (unprotect, then remove `appEnvironment("qloo")`) or keep it as staging, and delete the `release` ruleset and branch if production then deploys from main.
+- **After about 2026-11-16 (Transcend winners announced):** set `wovain:freezeProduction false` (or delete the freeze), point the `Production` deployment policy at main (or fast-forward the release branch to main), and deploy main to wovain.com. The GitLab flags and OTLP settings leave production then. next.wovain.com stays for Nebius.
+- **After 2026-12-15 (Nebius judging ends):** retire next.wovain.com (unprotect, then remove `appEnvironment` for `next`) or keep it as staging, and delete the `release` ruleset and branch if production then deploys from main.
 
 ## Consequences
 
 - Two branches can drift. Cherry-pick only emergency fixes. `deploy.yml` is the same file on both branches.
 - `infra/bootstrap` must be applied (provider condition) before a release deploy can get a Google token.
-- Before the first qloo run, the owner creates the Inngest environment and a Polar sandbox organization and sets their keys as stack secrets. Until then, qloo serves pages but cannot start runs or checkouts.
-- OAuth providers (Google, Meta, Fourthwall) need qloo.wovain.com's redirect URIs added next to production's in their consoles. None is in IaC.
+- Before the first next run, the owner pastes the values only a provider console hands out (Inngest environment keys, a Polar sandbox token, OAuth clients, metered API keys; `infra/README.md` lists each and why). Until then, next serves pages but cannot start runs or checkouts.
+- next has its own Google OAuth client and Meta app, made in their consoles: neither has an API or IaC provider.

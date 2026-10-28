@@ -4,7 +4,6 @@ import { after } from "next/server";
 import { PostHog } from "posthog-node";
 
 import { ENV } from "@/env.server";
-import { analyticsEnvironment } from "@/lib/analytics-environment";
 
 // Server-side funnel and run events (posthog.com/docs/libraries/node), keyed
 // by user id: the same distinct id the browser identifies with. Each event
@@ -16,9 +15,10 @@ const posthog =
   key === undefined
     ? undefined
     : new PostHog(key, { host: ENV.NEXT_PUBLIC_POSTHOG_HOST });
-// The same property the browser adds to its events (src/lib/analytics-client.ts).
+// The same property the browser adds to its events (src/lib/analytics-client.ts):
+// the deployment, APP_ENV.
 const site = new URL(ENV.BETTER_AUTH_URL).hostname;
-const environment = analyticsEnvironment(site);
+const environment = ENV.APP_ENV;
 
 /**
  * Sends a server error to PostHog Error Tracking as a `$exception` event

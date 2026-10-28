@@ -3,8 +3,9 @@
 // change only through a pull request whose checks pass (ci.yml), and
 // deploy.yml reaches Google Cloud through Workload Identity Federation as the
 // accounts in the Actions variables below: production from the `Production`
-// environment on the release branch, after approval; qloo.wovain.com from the
-// `qloo` environment on main (docs/adr/0004-release-branch.md). The provider
+// environment on the release branch, after approval; next.wovain.com from the
+// `next` environment on main (docs/adr/0004-release-branch.md); dev.wovain.com
+// from `dev`, and infra from `infrastructure`, both on main only. The provider
 // authenticates with the `github:token` stack secret and `github:owner`.
 import * as github from "@pulumi/github";
 import type * as pulumi from "@pulumi/pulumi";
@@ -19,7 +20,7 @@ interface RepositoryArgs {
   // Shared by every workflow and environment.
   variables: Variables;
   // Each deploy environment's own: where it deploys, and as whom.
-  environments: { production: Variables; qloo: Variables };
+  environments: { production: Variables; dev: Variables; next: Variables };
   // The branch production deploys from, e.g. `release/transcend`.
   releaseBranch: string;
   // GitHub user ids who may approve a production deploy.
@@ -159,21 +160,30 @@ export const githubRepository = ({
     repository: repository.name,
   });
 
-  // main deploys to qloo.wovain.com from this environment, with no approval.
-  // Google trusts only qloo's own deploy account from it (infra/dev.ts).
-  const qloo = new github.RepositoryEnvironment("qloo", {
-    deploymentBranchPolicy: {
-      customBranchPolicies: true,
-      protectedBranches: false,
-    },
-    environment: "qloo",
-    repository: repository.name,
-  });
-  new github.RepositoryEnvironmentDeploymentPolicy("qloo-main", {
-    branchPattern: "main",
-    environment: qloo.environment,
-    repository: repository.name,
-  });
+  // Environments that only main may use, with no approval: next.wovain.com
+  // (deploy.yml), dev.wovain.com, and `infrastructure`, the one Google trusts
+  // as the infrastructure account (infra/bootstrap), for when a workflow
+  // runs `pulumi up`. Google trusts each deploy account only from its own
+  // environment (infra/dev.ts).
+  const mainOnly = (name: string) => {
+    const environment = new github.RepositoryEnvironment(name, {
+      deploymentBranchPolicy: {
+        customBranchPolicies: true,
+        protectedBranches: false,
+      },
+      environment: name,
+      repository: repository.name,
+    });
+    new github.RepositoryEnvironmentDeploymentPolicy(`${name}-main`, {
+      branchPattern: "main",
+      environment: environment.environment,
+      repository: repository.name,
+    });
+    return environment;
+  };
+  const next = mainOnly("next");
+  const dev = mainOnly("dev");
+  mainOnly("infrastructure");
 
   // What the workflows read as `vars.<NAME>`; none is a secret.
   for (const [variableName, value] of Object.entries(variables)) {
@@ -185,7 +195,8 @@ export const githubRepository = ({
   }
   const byEnvironment = [
     ["production", production, environments.production],
-    ["qloo", qloo, environments.qloo],
+    ["dev", dev, environments.dev],
+    ["next", next, environments.next],
   ] as const;
   for (const [key, environment, values] of byEnvironment) {
     for (const [variableName, value] of Object.entries(values)) {

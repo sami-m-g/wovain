@@ -30,10 +30,10 @@ const stackSecrets = `projects/${project}/locations/${region}/keyRings/pulumi/cr
 // its release branch in the `Production` environment only (production
 // deploys from the release branch, docs/adr/0004-release-branch.md): no pull
 // request, other branch or tag gets a Google token, and the release branch
-// can't reach `infrastructure` or `qloo`. Each account trusts one GitHub
-// environment of the pool: gitlab-deploy `Production` (infra/index.ts),
-// wovain-deploy-qloo `qloo` (infra/dev.ts) and gitlab-infra `infrastructure`
-// (below).
+// can't reach `infrastructure`, `next` or `dev`. Each account trusts one
+// GitHub environment of the pool: gitlab-deploy `Production`
+// (infra/index.ts), wovain-deploy-next `next` and wovain-deploy-dev `dev`
+// (infra/dev.ts), and gitlab-infra `infrastructure` (below).
 const releaseBranch = config.get("releaseBranch") ?? "release/transcend";
 const pool = new gcp.iam.WorkloadIdentityPool(
   "github",

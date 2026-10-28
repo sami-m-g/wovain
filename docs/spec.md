@@ -54,7 +54,7 @@ PRD ref: `prd.md > The Core Journey`.
 ## Where It Runs and How Someone Tries It
 
 - **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>. Production deploys from the `release/transcend` branch after an approval. It stays frozen at the Transcend deadline build until about 2026-11-16 ([ADR 0004](adr/0004-release-branch.md)).
-- **Staging for the Qloo and Nebius hackathons:** <https://qloo.wovain.com>. CI deploys every merge to `main` there, to its own database, and runs migrations first.
+- **Staging for the Qloo and Nebius hackathons:** <https://next.wovain.com>. CI deploys every merge to `main` there, to its own Cloud SQL instance, and runs migrations first.
 - **ChatGPT:** add a connector with the URL `https://mcp.wovain.com/api/mcp`. OAuth discovery is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`; the designer signs in and approves access on the consent page.
 - **Locally:** Node.js (see `.nvmrc`), pnpm and Docker for PostgreSQL.
 

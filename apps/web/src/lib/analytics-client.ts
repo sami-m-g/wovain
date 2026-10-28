@@ -2,7 +2,6 @@ import { posthog } from "posthog-js";
 
 import type { Visitor } from "@/app/api/visitor/route";
 import { ENV } from "@/env";
-import { analyticsEnvironment } from "@/lib/analytics-environment";
 import { consentRequired } from "@/lib/consent";
 import { analyticsStarted } from "@/lib/consent-store";
 
@@ -57,7 +56,8 @@ const detectBot = async () => {
 const visitorProperties = async () => {
   const [visitor, botCheck] = await Promise.all([fetchVisitor(), detectBot()]);
   return {
-    environment: analyticsEnvironment(window.location.hostname),
+    // The deployment (APP_ENV), which only the server knows.
+    ...(visitor && { environment: visitor.environment }),
     ...(visitor?.country && {
       $geoip_country_code: visitor.country.code,
       $geoip_country_name: visitor.country.name,

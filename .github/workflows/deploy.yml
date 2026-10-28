@@ -1,5 +1,5 @@
 # One workflow, two targets (docs/adr/0004-release-branch.md):
-#   main               -> `qloo` environment       -> qloo.wovain.com  (wovain-web-qloo)
+#   main               -> `next` environment       -> next.wovain.com  (wovain-web-next)
 #   release/transcend  -> `Production` environment -> wovain.com       (wovain-web)
 #                                                     docs.wovain.com  (wovain-docs)
 # The same file lives on both branches, so a cherry-pick never conflicts in
@@ -10,7 +10,7 @@
 # until the Transcend winners are announced (about 2026-11-16): approve one
 # only for an emergency fix the hackathon allowed in writing.
 #
-# Manual only until infra/ and infra/bootstrap are applied (the `qloo` and
+# Manual only until infra/ and infra/bootstrap are applied (the `next` and
 # `Production` environments, their variables and Google's trust in them):
 # see infra/README.md. Then uncomment the push trigger.
 #
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'qloo' || 'Production' }}
+      name: ${{ github.ref == 'refs/heads/main' && 'next' || 'Production' }}
       url: ${{ vars.SITE_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

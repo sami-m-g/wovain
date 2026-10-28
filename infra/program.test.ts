@@ -81,41 +81,65 @@ test("the program registers every resource once, without throwing", async () => 
     "gcp:dns/recordSet:RecordSet::rsend-wovain-com-cname"
   );
   // GitHub is the primary repository: its main and release rulesets, the
-  // production and qloo environments and the Actions variables deploy.yml
+  // Production, next, dev and infrastructure environments and the Actions
+  // variables deploy.yml
   // reads (docs/adr/0004-release-branch.md).
   for (const urn of [
     "github:index/repositoryRuleset:RepositoryRuleset::main",
     "github:index/repositoryRuleset:RepositoryRuleset::release",
     "github:index/repositoryEnvironment:RepositoryEnvironment::production",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::production-release",
-    "github:index/repositoryEnvironment:RepositoryEnvironment::qloo",
-    "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::qloo-main",
+    "github:index/repositoryEnvironment:RepositoryEnvironment::next",
+    "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::next-main",
+    "github:index/repositoryEnvironment:RepositoryEnvironment::dev",
+    "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::dev-main",
+    "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure",
+    "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::infrastructure-main",
     "github:index/actionsVariable:ActionsVariable::GCP_WORKLOAD_IDENTITY_PROVIDER",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::production-GCP_DEPLOY_SERVICE_ACCOUNT",
-    "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::qloo-GCP_DEPLOY_SERVICE_ACCOUNT",
+    "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::next-GCP_DEPLOY_SERVICE_ACCOUNT",
+    "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::next-GCP_SQL_INSTANCE",
+    "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::dev-GCP_DEPLOY_SERVICE_ACCOUNT",
     "gcp:serviceaccount/iAMMember:IAMMember::deployer-from-github",
-    // qloo.wovain.com: its own service, database, deploy account and images.
-    "gcp:cloudrunv2/service:Service::web-qloo",
-    "gcp:sql/database:Database::wovain-qloo",
-    "gcp:serviceaccount/account:Account::deploy-qloo",
-    "gcp:artifactregistry/repository:Repository::images-qloo",
+    // next.wovain.com: its own service, Cloud SQL instance, database,
+    // deploy account, images, PostHog project and Resend key.
+    "gcp:cloudrunv2/service:Service::web-next",
+    "gcp:sql/databaseInstance:DatabaseInstance::postgres-next",
+    "gcp:sql/database:Database::wovain-next",
+    "gcp:serviceaccount/account:Account::deploy-next",
+    "gcp:artifactregistry/repository:Repository::images-next",
+    "posthog:index/project:Project::project-next",
+    "pulumi-nodejs:dynamic/resend:ApiKey::resend-next",
+    // dev deploys as its own account, never production's.
+    "gcp:serviceaccount/account:Account::deploy-dev",
+    "posthog:index/project:Project::project-dev",
   ]) {
     expect(registered).toContain(urn);
   }
   // main never deploys production: GitHub's `production-main` policy is
-  // gone, and qloo never mounts production's Inngest or Polar secrets.
+  // gone; production's deploy account has no grant on dev; and neither dev
+  // nor next mounts any of production's secrets: each has its own.
   expect(registered).not.toContain(
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::production-main"
   );
-  for (const id of [
-    "inngest-event-key",
-    "inngest-signing-key",
-    "polar-access-token",
-    "polar-webhook-secret",
+  for (const urn of [
+    "gcp:serviceaccount/iAMMember:IAMMember::deployer-acts-as-runner-dev",
+    "gcp:secretmanager/secretIamMember:SecretIamMember::deployer-database-url-dev",
+    "gcp:kms/cryptoKeyIAMMember:CryptoKeyIAMMember::runner-dev-connections",
   ]) {
-    expect(registered).not.toContain(
-      `gcp:secretmanager/secretIamMember:SecretIamMember::runner-qloo-${id}`
-    );
+    expect(registered).not.toContain(urn);
+  }
+  for (const env of ["dev", "next"]) {
+    for (const id of [
+      "inngest-event-key",
+      "inngest-signing-key",
+      "polar-access-token",
+      "nebius-api-key",
+    ]) {
+      expect(registered).toContain(
+        `gcp:secretmanager/secret:Secret::${id}-${env}`
+      );
+    }
   }
   // Nothing GitLab is left: the project is read-only, so Pulumi must never
   // plan a change to it (infra/README.md, "Leaving GitLab").
