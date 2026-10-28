@@ -23,6 +23,23 @@ Wovain calls **NVIDIA Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, t
 
 Details: [docs/integrations/nebius-nemotron](apps/fumadocs/content/docs/integrations/nebius-nemotron.mdx).
 
+### Which Nemotron model does what
+
+With the `model-routing` flag on (dev and next.wovain.com; off in production for now), each agent asks for a job, not a model, and the job's model comes from an env var set per environment in Pulumi config (`packages/core/src/model-router.ts`, `AGENT_ROLES` in `packages/core/src/agents.ts`):
+
+| Job | Env var | Model on next.wovain.com | What runs on it |
+| --- | --- | --- | --- |
+| Default | `NEMOTRON_MODEL_DEFAULT` | Nemotron 3.5 Super VL (`nvidia/Nemotron-3.5-Super-VL`) | Design brief and listing, research themes, ad copy |
+| Reasoning | `NEMOTRON_MODEL_REASONING` | Nemotron 3 Ultra (`nvidia/Nemotron-3-Ultra-550b-a55b`) | The design judge's verdict, autopilot's idea pick and go/no-go |
+| Vision | `NEMOTRON_MODEL_VISION` | Nemotron 3.5 Super VL | The judge's eyes: it reads the drawn PNG (garment, background, printed words, contrast per shirt color) before the verdict |
+| Fast | `NEMOTRON_MODEL_FAST` | Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`) | Ad judges (copy quality, Meta policy), Mastra scorers, prompt-injection and PII guardrails |
+| Safety | `NEMOTRON_MODEL_SAFETY` | Nemotron 3.5 Lightning | Mastra moderation on what the merchant publishes |
+
+- **Grounding guard.** Ad copy and listing text may only state numbers and claims (prices, percentages, "best-selling", "#1"…) that appear in what the tools returned. One that doesn't sends the answer back once, naming it; a second miss fails the step (`packages/core/src/grounding.ts`).
+- **Real ad scores.** The fast model judges every ad variant with the binary ad judges; the share of passes is the ad score on the Insights page.
+- **Which model did what.** Every agent call of a run is saved to its decision trace with the model, the job, the time it took and its result, and shown at `/dashboard/models?run=<id>` (linked from Runs).
+- **Where Token Factory helped.** One OpenAI-compatible endpoint and one key serve all three Nemotron sizes, including the vision model that takes an https image URL directly, so routing by job is a config change, not a new provider. Token Factory serves no Nemotron content-safety model yet (checked 2026-10-28), so safety runs on Lightning through Mastra's moderation processor.
+
 ## How wovain uses Qloo
 
 Qloo is the first step of every run. The seed is resolved to Qloo entities (`/search`), their cross-domain taste tags (`/v2/insights`) become the design themes, and the names Qloo matched are saved as names never to print. Ideas are ranked in code with the inputs saved alongside. Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.mdx).

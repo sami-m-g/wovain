@@ -1,12 +1,12 @@
 import { init } from "@mastra/inngest";
 import { billingCatalog } from "@wovain/billing/catalog";
-import { withLlmTrace } from "@wovain/core/nemotron";
 import { stepScorers } from "@wovain/core/step-scorers";
 import { NonRetriableError } from "inngest";
 import type { Inngest } from "inngest";
 import { z } from "zod";
 
 import type { Actor } from "../flow/actor";
+import { withAgentTrace } from "../flow/agent-trace";
 import {
   approvedDesigns,
   autopilotRejection,
@@ -119,9 +119,11 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     <T>(work: (actor: Actor, from: Carry) => Promise<T>) =>
     async (from: Carry) => {
       try {
-        return await withLlmTrace(
-          { distinctId: from.userId, traceId: from.runId },
-          async () => await work(actorFor(from.userId), from)
+        const actor = actorFor(from.userId);
+        return await withAgentTrace(
+          actor,
+          { runId: from.runId, traceId: from.runId },
+          async () => await work(actor, from)
         );
       } catch (error) {
         throw permanentOrRetried(error);

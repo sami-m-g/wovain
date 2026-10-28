@@ -114,6 +114,8 @@ export const draftBrief = async (
   log?: Logger
 ) =>
   await ask({
+    // The listing a buyer reads; the art prompt only steers the artist.
+    grounded: (brief) => `${brief.title}\n${brief.description}`,
     log,
     name: "design_brief",
     prompt: JSON.stringify({

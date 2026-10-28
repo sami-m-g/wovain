@@ -155,7 +155,7 @@ export const RecentRuns = ({ limit }: { limit: number }) => {
   return <RunItems runs={data.slice(0, limit)} />;
 };
 
-const useColumns = (): DataColumn<Run>[] => {
+const useColumns = (showModels: boolean): DataColumn<Run>[] => {
   const t = useTranslations("Runs");
   const stages = useTranslations("Stages");
   return useMemo(
@@ -206,15 +206,39 @@ const useColumns = (): DataColumn<Run>[] => {
         cell: ({ row }) => <Started at={row.original.createdAt} />,
         header: t("started"),
       },
+      ...(showModels
+        ? [
+            {
+              cell: ({ row }: { row: { original: Run } }) => (
+                <Link
+                  className="text-sm hover:underline"
+                  href={{
+                    pathname: "/dashboard/models" as const,
+                    query: { run: row.original.id },
+                  }}
+                >
+                  {t("models")}
+                </Link>
+              ),
+              header: t("models"),
+              id: "models",
+            } satisfies DataColumn<Run>,
+          ]
+        : []),
     ],
-    [stages, t]
+    [showModels, stages, t]
   );
 };
 
 /** Every run as a ReUI data grid, newest first; rows on phones. */
-export const RunsTable = () => {
+export const RunsTable = ({
+  showModels = false,
+}: {
+  /** Links each run to its model trace (the model-routing flag). */
+  showModels?: boolean;
+}) => {
   const { data, error, isPending } = useRuns();
-  const columns = useColumns();
+  const columns = useColumns(showModels);
 
   if (isPending) {
     return <Skeleton className="h-72 w-full rounded-xl" />;

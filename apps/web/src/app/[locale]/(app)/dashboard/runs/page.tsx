@@ -5,6 +5,7 @@ import { RunsTable } from "@/components/app/runs-list";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
+import { core } from "@/services";
 
 export const generateMetadata = async ({
   params,
@@ -20,8 +21,11 @@ export const generateMetadata = async ({
 
 const RunsPage = async ({ params }: PageProps<"/[locale]/dashboard/runs">) => {
   const locale = await enterLocale(params);
-  await requireSession(locale, "/dashboard/runs");
+  const session = await requireSession(locale, "/dashboard/runs");
   const t = await getTranslations("Runs");
+  const showModels = await core.flags.isOn("model-routing", {
+    userId: session.user.id,
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -31,7 +35,7 @@ const RunsPage = async ({ params }: PageProps<"/[locale]/dashboard/runs">) => {
         </h1>
         <p className="text-muted-foreground mt-2">{t("lead")}</p>
       </div>
-      <RunsTable />
+      <RunsTable showModels={showModels} />
     </div>
   );
 };

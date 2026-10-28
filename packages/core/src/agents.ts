@@ -11,6 +11,8 @@ import type { Memory } from "@mastra/memory";
 import { withTracing } from "@posthog/ai/vercel";
 import { PostHog } from "posthog-node";
 
+import { MODEL_ROLES } from "./model-router";
+import type { ModelRole, ModelRouter } from "./model-router";
 import { createScorers } from "./scorers";
 import type { AnyScorer } from "./scorers";
 
@@ -24,7 +26,13 @@ import type { AnyScorer } from "./scorers";
 // which read the drawn artwork in ./design inspectArtwork) in
 // apps/web/.env.schema, set per environment through Pulumi config
 // (infra/index.ts). Their list price is NEMOTRON_INPUT_PRICE and
-// NEMOTRON_OUTPUT_PRICE (AgentKitConfig.pricePerMillion).
+// NEMOTRON_OUTPUT_PRICE (AgentKitConfig.pricePerMillion), NEMOTRON_MODEL's
+// price: routed calls on other models carry no price override.
+//
+// With the model-routing flag on for the call (LlmTrace.routed, set by
+// packages/api), each agent runs on the model for its job instead
+// (AGENT_ROLES, ./model-router): the guardrails and scorers on the fast
+// model and moderation on the safety model.
 const TOKENS_PER_MILLION = 1_000_000;
 
 export const AGENT_IDS = [
@@ -32,11 +40,28 @@ export const AGENT_IDS = [
   "design_judge",
   "design_vision",
   "ad_copy",
+  "ad_judge",
   "autopilot_pick_idea",
   "autopilot_review_design",
   "research_themes",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
+
+// Which job each agent does, so which Nemotron model it runs on when routed:
+// - default: what the merchant publishes (briefs, ad copy) and research.
+// - reasoning: verdicts (the design judge, autopilot's go/no-go).
+// - vision: looking at the drawn PNG.
+// - fast: short binary checks (the ad judges).
+export const AGENT_ROLES = {
+  ad_copy: "default",
+  ad_judge: "fast",
+  autopilot_pick_idea: "reasoning",
+  autopilot_review_design: "reasoning",
+  design_brief: "default",
+  design_judge: "reasoning",
+  design_vision: "vision",
+  research_themes: "default",
+} as const satisfies Record<AgentId, ModelRole>;
 
 // The agents that read images, on the vision model.
 const SEEING: ReadonlySet<AgentId> = new Set(["design_vision"]);
@@ -47,8 +72,15 @@ export const REMEMBERING: ReadonlySet<AgentId> = new Set([
   "design_brief",
 ]);
 
-// Request-context keys a call sets for tracing (./nemotron).
-export const TRACE_KEYS = { distinctId: "distinctId", traceId: "traceId" };
+// Request-context keys a call sets for tracing and routing (./nemotron).
+export const TRACE_KEYS = {
+  distinctId: "distinctId",
+  routed: "modelRouting",
+  traceId: "traceId",
+};
+
+const isRouted = (requestContext: RequestContext | undefined) =>
+  requestContext?.get(TRACE_KEYS.routed) === true;
 
 export interface AgentKitConfig {
   apiKey: string | undefined;
@@ -64,6 +96,8 @@ export interface AgentKitConfig {
   model: string;
   // The Nebius model ID the agents that read images call.
   visionModel: string;
+  // The model per job, for calls the model-routing flag routes.
+  router?: ModelRouter | undefined;
   posthogHost: string;
   posthogKey?: string | undefined;
   // The model's list price, USD per million tokens (NEMOTRON_*_PRICE), for
@@ -86,6 +120,7 @@ export const createAgentKit = ({
   posthogHost,
   posthogKey,
   pricePerMillion,
+  router,
   scoreSampleRate = 0.1,
   visionModel,
 }: AgentKitConfig): AgentKit | undefined => {
@@ -103,13 +138,34 @@ export const createAgentKit = ({
   // passes the URL through: a 2880 px PNG isn't downloaded and inlined, and
   // an image Nebius can't fetch fails the call instead of being replaced by
   // a placeholder the model never sees.
-  const vision = createOpenAICompatible({
+  const seeing = createOpenAICompatible({
     apiKey,
     baseURL,
     name: "nebius",
     supportedUrls: () => ({ "image/*": [HTTPS_URL] }),
     supportsStructuredOutputs: true,
-  }).chatModel(visionModel);
+  });
+  const vision = seeing.chatModel(visionModel);
+  // The model ID an agent calls: its job's model when the call is routed,
+  // else the one model (or the vision model for the agents that see).
+  const modelFor = (id: AgentId, routed: boolean) => {
+    if (routed && router !== undefined) {
+      return router.modelFor(AGENT_ROLES[id]);
+    }
+    return SEEING.has(id) ? visionModel : model;
+  };
+  // Routed models, one per role, all able to read image URLs.
+  const roleModel = (role: ModelRole) =>
+    router === undefined ? base : seeing.chatModel(router.modelFor(role));
+  const routedModels = Object.fromEntries(
+    MODEL_ROLES.map((role) => [role, roleModel(role)])
+  ) as Record<ModelRole, ReturnType<typeof roleModel>>;
+  const modelOf = (id: AgentId, routed: boolean) => {
+    if (routed && router !== undefined) {
+      return routedModels[AGENT_ROLES[id]];
+    }
+    return SEEING.has(id) ? vision : base;
+  };
   const posthog = new PostHog(posthogKey ?? "off", {
     disabled: posthogKey === undefined,
     host: posthogHost,
@@ -121,14 +177,25 @@ export const createAgentKit = ({
     ({ requestContext }: { requestContext: RequestContext }) => {
       const distinctId = requestContext.get(TRACE_KEYS.distinctId);
       const traceId = requestContext.get(TRACE_KEYS.traceId);
-      return withTracing(SEEING.has(span) ? vision : base, posthog, {
+      const routed = isRouted(requestContext);
+      // The list price is NEMOTRON_MODEL's. A routed call on another model
+      // (Ultra, Lightning) sends no override, so PostHog prices it from its
+      // own model table instead of at the wrong model's price.
+      const priced = !routed || modelFor(span, true) === model;
+      return withTracing(modelOf(span, routed), posthog, {
         // Cloud Run throttles CPU after the response: send it now.
         posthogCaptureImmediate: true,
-        posthogCostOverride: {
-          inputCost: pricePerMillion.input / TOKENS_PER_MILLION,
-          outputCost: pricePerMillion.output / TOKENS_PER_MILLION,
+        ...(priced && {
+          posthogCostOverride: {
+            inputCost: pricePerMillion.input / TOKENS_PER_MILLION,
+            outputCost: pricePerMillion.output / TOKENS_PER_MILLION,
+          },
+        }),
+        posthogProperties: {
+          $ai_span_name: span,
+          environment,
+          ...(routed && { model_role: AGENT_ROLES[span] }),
         },
-        posthogProperties: { $ai_span_name: span, environment },
         ...(typeof distinctId === "string" && {
           posthogDistinctId: distinctId,
         }),
@@ -136,40 +203,60 @@ export const createAgentKit = ({
       });
     };
   const scorers = createScorers(base, scoreSampleRate);
+  // Routed, the scorers judge on the fast model.
+  const fastScorers =
+    router === undefined
+      ? scorers
+      : createScorers(routedModels.fast, scoreSampleRate);
   // Web text inside ideas is untrusted: injected instructions are blocked
   // and personal data redacted before the brief writer reads it. What the
   // merchant publishes is moderated and must carry no personal data.
-  const guard = {
+  // Routed, the injection and PII checks run on the fast model and
+  // moderation on the safety model.
+  const guardsOn = (
+    checks: MastraModelConfig,
+    moderator: MastraModelConfig
+  ) => ({
     injection: new PromptInjectionDetector({
-      model: base,
+      model: checks,
       strategy: "block",
       threshold: guardThresholds.injection,
     }),
     moderation: new ModerationProcessor({
-      model: base,
+      model: moderator,
       strategy: "block",
       threshold: guardThresholds.moderation,
     }),
     pii: new PIIDetector({
-      model: base,
+      model: checks,
       strategy: "block",
       threshold: guardThresholds.pii,
     }),
-  };
+  });
+  const guard = guardsOn(base, base);
+  const routedGuard =
+    router === undefined
+      ? guard
+      : guardsOn(routedModels.fast, routedModels.safety);
+  const guardsOf = (set: typeof guard) => ({
+    ad_copy: { input: [], output: [set.moderation, set.pii] },
+    design_brief: { input: [set.injection], output: [set.moderation] },
+  });
+  const guarded = { legacy: guardsOf(guard), routed: guardsOf(routedGuard) };
   const guardsFor = (id: AgentId) => {
-    if (!guardrails) {
+    if (!guardrails || !(id === "ad_copy" || id === "design_brief")) {
       return {};
     }
-    if (id === "design_brief") {
-      return {
-        inputProcessors: [guard.injection],
-        outputProcessors: [guard.moderation],
-      };
-    }
-    if (id === "ad_copy") {
-      return { outputProcessors: [guard.moderation, guard.pii] };
-    }
-    return {};
+    const legacy = guarded.legacy[id];
+    const routed = guarded.routed[id];
+    const pick = ({ requestContext }: { requestContext?: RequestContext }) =>
+      isRouted(requestContext) ? routed : legacy;
+    return {
+      inputProcessors: (context: { requestContext?: RequestContext }) =>
+        pick(context).input,
+      outputProcessors: (context: { requestContext?: RequestContext }) =>
+        pick(context).output,
+    };
   };
   const agents = Object.fromEntries(
     AGENT_IDS.map((id) => [
@@ -181,18 +268,21 @@ export const createAgentKit = ({
         instructions: `wovain ${id.replaceAll("_", " ")}: answer with JSON only.`,
         model: tracedModel(id),
         name: id,
-        scorers: scorers.forAgent(id),
+        scorers: ({ requestContext }: { requestContext?: RequestContext }) =>
+          (isRouted(requestContext) ? fastScorers : scorers).forAgent(id),
         ...(memory !== undefined && REMEMBERING.has(id) && { memory }),
         ...guardsFor(id),
       }),
     ])
   ) as Record<AgentId, Agent>;
-  return { agents, model: base, scorers: scorers.all };
+  return { agents, model: base, modelFor, scorers: scorers.all };
 };
 
 export interface AgentKit {
   agents: Record<AgentId, Agent>;
   // The judges' model (no PostHog wrapper: scoring isn't a merchant call).
   model: MastraModelConfig;
+  // The model ID an agent calls, routed by job or not.
+  modelFor: (id: AgentId, routed: boolean) => string;
   scorers: Record<string, AnyScorer>;
 }

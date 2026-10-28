@@ -3,13 +3,13 @@ import { randomUUID } from "node:crypto";
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
-import { withLlmTrace } from "@wovain/core/nemotron";
 import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
+import { withAgentTrace } from "./agent-trace";
 import { requireFal, withProvider } from "./connections";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
@@ -135,8 +135,9 @@ export const generateDesign = async (
     });
     return { artwork: art, ...judged };
   };
-  const { artwork, brief, judgment } = await withLlmTrace(
-    { distinctId: actor.userId, traceId: runId ?? ideaId },
+  const { artwork, brief, judgment } = await withAgentTrace(
+    actor,
+    { runId, traceId: runId ?? ideaId },
     async () => {
       const first = await draw();
       if (first.judgment.verdict === "ready") {

@@ -1,16 +1,18 @@
 import {
   archiveCampaign,
+  scoreAdCopy,
   stagePausedCampaign,
   writeAdCopy,
 } from "@wovain/core/ads";
-import type { WriteOnce } from "@wovain/core/ads";
-import { withLlmTrace } from "@wovain/core/nemotron";
+import type { AdCopy, WriteOnce } from "@wovain/core/ads";
 import { externalWrite } from "@wovain/db/schema/durable";
 import { campaign } from "@wovain/db/schema/seller";
 import { and, desc, eq, inArray, like } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { Actor } from "./actor";
 import { notReady } from "./actor";
+import { withAgentTrace } from "./agent-trace";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
 import { once } from "./once";
@@ -41,6 +43,55 @@ const byKey = async ({ db, userId }: Actor, key: string) =>
     where: { idempotencyKey: key, userId },
   });
 
+// Where a campaign's ad score is kept: next to its copy, under its key.
+export const adScoreKey = (campaignKey: string) => `${campaignKey}:score`;
+
+// With model routing on, the ad judges score the copy once per campaign
+// (@wovain/core/ads scoreAdCopy); the insights page shows the score. A
+// failed scoring leaves the campaign unscored and goes to error tracking:
+// it doesn't stop the ads.
+const scoreCopy = async (
+  actor: Actor,
+  {
+    copy,
+    key,
+    runId,
+    title,
+    traceId,
+  }: {
+    copy: AdCopy;
+    key: string;
+    runId: string | null;
+    title: string;
+    traceId: string;
+  }
+) => {
+  try {
+    await withAgentTrace(actor, { runId, traceId }, async (routed) => {
+      if (!routed) {
+        return;
+      }
+      await once(actor, {
+        key: adScoreKey(key),
+        operation: "ad_score",
+        perform: async () =>
+          await scoreAdCopy(actor.core.nemotron, { copy, title }, actor.log),
+        provider: "nebius",
+        runId,
+      });
+    });
+  } catch (error) {
+    actor.log?.set({ adScore: { scored: false } });
+    log.error({
+      adScore: {
+        key,
+        reason: error instanceof Error ? error.message : String(error),
+      },
+      error: "AD_SCORE_FAILED",
+    });
+  }
+};
+
 export const createProductCampaign = async (
   actor: Actor,
   input: CampaignInput
@@ -70,8 +121,9 @@ export const createProductCampaign = async (
         "assist",
         { runId },
         async () =>
-          await withLlmTrace(
-            { distinctId: actor.userId, traceId: runId ?? source.id },
+          await withAgentTrace(
+            actor,
+            { runId, traceId: runId ?? source.id },
             async () =>
               await writeAdCopy(
                 actor.core.nemotron,
@@ -86,6 +138,13 @@ export const createProductCampaign = async (
       ),
     provider: "nebius",
     runId,
+  });
+  await scoreCopy(actor, {
+    copy,
+    key,
+    runId,
+    title: source.brief.title,
+    traceId: runId ?? source.id,
   });
   const dailyBudgetCents = Math.round(input.dailyBudget * 100);
   const metaOnce: WriteOnce = async (name, perform, recover) =>

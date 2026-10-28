@@ -22,6 +22,7 @@ export type Campaign = Outputs["campaigns"]["create"];
 export type BillingStatus = Outputs["billing"]["status"];
 export type Insights = Outputs["insights"]["overview"];
 export type InsightRange = Insights["range"]["key"];
+export type ModelTrace = Outputs["models"]["trace"];
 
 export const PROVIDERS = [
   "fourthwall",

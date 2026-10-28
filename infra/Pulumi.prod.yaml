@@ -158,7 +158,7 @@ config:
   wovain:nemotronOutputPrice-dev: "0.9"
   wovain:nemotronModelFast-dev: nvidia/Nemotron-3_5-Lightning
   wovain:nemotronModelDefault-dev: nvidia/Nemotron-3.5-Super-VL
-  wovain:nemotronModelReasoning-dev: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelReasoning-dev: nvidia/Nemotron-3-Ultra-550b-a55b
   wovain:nemotronModelVision-dev: nvidia/Nemotron-3.5-Super-VL
   wovain:nemotronModelSafety-dev: nvidia/Nemotron-3_5-Lightning
   wovain:guardrailInjectionThreshold-dev: "0.8"
