@@ -66,7 +66,7 @@ interface RepositoryArgs {
   releaseReviewerIds: number[];
   // ggshield's API key (.github/workflows/supply-chain.yml), from the
   // `gitguardian-api-key` stack secret. Left out, no secret is declared.
-  gitguardianApiKey?: pulumi.Input<string>;
+  gitguardianApiKey?: pulumi.Input<string> | undefined;
 }
 
 export const githubRepository = ({
