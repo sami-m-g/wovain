@@ -156,7 +156,11 @@ const ensureMeter = async (polar: PolarCore) => {
       conjunction: "and",
     },
     metadata: tagged("credits"),
-    name: CREDIT_METER.name,
+    // Another environment's meter in the same organization has its own name.
+    name:
+      POLAR_METADATA_KEY === "wovain"
+        ? CREDIT_METER.name
+        : `${CREDIT_METER.name} (${POLAR_METADATA_KEY})`,
   });
 };
 
