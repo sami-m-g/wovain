@@ -445,7 +445,7 @@
     },
     "trends": {
       "title": "Choisir les idées",
-      "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. Les meilleures idées ont déjà un visuel ; choisissez-en d'autres pour les dessiner aussi.",
+      "lead": "Notées selon l'affinité de goûts, la dynamique de la semaine et la concurrence sur les annonces. Choisissez celles que vous vendriez : wovain ne dessine des visuels que pour celles-ci, quand vous cliquez sur « Voir les visuels ».",
       "score": "Score {score}",
       "affinity": "Affinité",
       "affinityUnavailable": "Indisponible",
@@ -530,7 +530,7 @@
       "another": "Écrire un nouveau brief"
     },
     "working": {
-      "research": "Recherche des tendances et premiers visuels…",
+      "research": "Recherche des tendances…",
       "autopilot": "Le pilote automatique recherche, crée, publie et prépare la campagne…",
       "designs": "Création des visuels…",
       "review": "Enregistrement de votre décision…",

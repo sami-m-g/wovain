@@ -445,7 +445,7 @@
     },
     "trends": {
       "title": "Elige las ideas",
-      "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. Las mejores ideas ya tienen diseño; elige más para diseñarlas también.",
+      "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. Elige las que venderías: wovain solo dibuja diseños para esas, cuando pulses «Ver diseños».",
       "score": "Puntuación {score}",
       "affinity": "Afinidad",
       "affinityUnavailable": "No disponible",
@@ -530,7 +530,7 @@
       "another": "Escribir un nuevo brief"
     },
     "working": {
-      "research": "Investigando tendencias y creando los primeros diseños…",
+      "research": "Investigando tendencias…",
       "autopilot": "El piloto automático está investigando, diseñando, publicando y creando la campaña…",
       "designs": "Creando diseños…",
       "review": "Guardando tu decisión…",

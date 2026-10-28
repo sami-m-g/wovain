@@ -11,6 +11,7 @@ import {
   autopilotRejection,
   autopilotStep,
   awaitApproval,
+  awaitIdeas,
   campaignStep,
   designStep,
   finishRun,
@@ -24,11 +25,13 @@ import {
 // run again. Each step is safe to run twice (the flow keys its writes), so a
 // crash between a provider's answer and the step's checkpoint costs nothing.
 //
-// The approval gate suspends the run: Mastra saves it to Postgres and the
-// Inngest function ends, costing nothing while the merchant decides.
-// decideDesign resumes it with the merchant's call.
+// The two gates suspend the run: Mastra saves it to Postgres and the Inngest
+// function ends, costing nothing while the merchant decides. approveIdeas
+// resumes the ideas gate with the ideas to draw ("See designs"), and
+// decideDesign the approval gate with the merchant's call.
 
 export const RUN_WORKFLOW_ID = "seller-run";
+export const IDEAS_STEP_ID = "ideas";
 export const APPROVAL_STEP_ID = "approval";
 
 // The services a step's Actor gets; the merchant comes from the run.
@@ -57,6 +60,9 @@ const carry = trigger.extend({
   productIds: z.array(z.string()).optional(),
 });
 type Carry = z.infer<typeof carry>;
+
+// The ideas the merchant approved: the only ones the run draws.
+const chosenIdeas = z.object({ ideaIds: z.array(z.string()).min(1) });
 
 const decision = z.object({
   approve: z.boolean(),
@@ -140,6 +146,29 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     inputSchema: trigger,
     outputSchema: carry,
     retries: RETRIES,
+  });
+
+  // The ideas gate. Autopilot goes on with the ideas research ranked behind
+  // its pick: the merchant turned it on to make this call. A merchant's run
+  // suspends with nothing drawn, and goes on with only the ideas they
+  // approved.
+  const ideas = createStep({
+    execute: async ({ inputData, resumeData, suspend }) => {
+      if (inputData.input.autopilot) {
+        return inputData;
+      }
+      if (resumeData === undefined) {
+        await awaitIdeas(actorFor(inputData.userId), inputData.runId);
+        return await suspend({ ideaIds: inputData.ideaIds ?? [] });
+      }
+      return { ...inputData, ideaIds: resumeData.ideaIds };
+    },
+    id: IDEAS_STEP_ID,
+    inputSchema: carry,
+    outputSchema: carry,
+    resumeSchema: chosenIdeas,
+    retries: RETRIES,
+    suspendSchema: z.object({ ideaIds: z.array(z.string()) }),
   });
 
   const design = createStep({
@@ -259,6 +288,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     })
       /* oxlint-disable promise/prefer-await-to-then -- Mastra's step builder, not a promise */
       .then(research)
+      .then(ideas)
       .then(design)
       .then(approval)
       .then(product)

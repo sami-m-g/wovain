@@ -253,13 +253,21 @@ const commitDecision = async (
       return { anyApproved: approve, row, waitingRunId: undefined };
     }
     const approvedSome = decisions.some((item) => item.status === "approved");
+    // Only a run waiting at this gate: one waiting for its ideas (a design
+    // drawn by hand meanwhile) is resumed by approveIdeas, not here.
     const [waiting] = await tx
       .update(run)
       .set({
         status: "running",
         step: approvedSome ? "approved" : "rejected",
       })
-      .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
+      .where(
+        and(
+          eq(run.id, row.runId),
+          eq(run.status, "awaiting_approval"),
+          eq(run.step, "approval")
+        )
+      )
       .returning({ id: run.id });
     if (waiting === undefined) {
       return { anyApproved: approvedSome, row, waitingRunId: undefined };
