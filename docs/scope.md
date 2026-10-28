@@ -11,7 +11,7 @@ Live at <https://wovain.com> (website and ChatGPT app, on Cloud Run). Docs at <h
 
 ## The Unique Kernel
 
-Taste times moment, with bounded autonomy, inside the designer's own accounts. Qloo's taste graph says who the drop is for and what else they love; Tavily's live search says why now; Nemotron on Nebius Token Factory drafts and judges, and in autopilot decides, but only inside gates that code enforces (the print size, a price floor from the blank's base cost, a daily budget range, and a design the judge says to revise is never approved). Every step is scored, and nothing spends money until the designer starts the campaign.
+Taste times moment, with bounded autonomy, inside the designer's own accounts. Qloo's taste graph says who the drop is for and what else they love; Tavily's live search says why now; Nemotron on Nebius Token Factory drafts and judges, and in autopilot decides, but only inside gates that code enforces (the print size, a price floor from the blank's base cost, a daily budget range, and a design the judge says to revise is never approved). Every step is scored, and nothing spends money until the designer approves it: campaigns are staged paused, and wovain starts one only after an approval, inside the designer's daily and monthly spend caps.
 
 ## Who It's For
 
@@ -66,6 +66,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | Judging | Nemotron on Nebius Token Factory, code-checked print size | Live |
 | Publishing | Hidden Fourthwall products, published by a separate step | Live |
 | Ads | Up to three ad variants per product and a paused Meta campaign | Live |
+| Media buying | Start and pause a campaign from wovain through an approval, within spend caps; sales objective on the pixel, UTM links, status read back from Meta | In progress (dev and next) |
 | Autopilot | End-to-end run where Nemotron decides and code gates; scheduled Qloo and Tavily triggers that suggest drops and act within the autonomy level | Run mode internal-only in production; triggers in dev and next only (`autopilot-triggers` flag) |
 | Accounts | Better Auth with Google and email; Better Auth UI screens and account settings | Google live; UI in review |
 | Connectors | Merchant's own Fourthwall and Meta (OAuth); merchant's own fal key | Fourthwall and Meta live; fal in progress |
@@ -89,5 +90,5 @@ The builder wants wovain to be a real product that independent designers pay for
 | Apparel-on-demand and cut-and-sew | wovain is print-on-demand only; production stays with Fourthwall |
 | A custom image or video model | Reuse providers; the merchant's own fal account draws the art |
 | A custom media-buying engine | Meta's own delivery already optimizes campaigns |
-| Automatic activation of ad spend | The designer must stay in control of money; campaigns are created paused |
+| Ad spend without an approval | The designer must stay in control of money: campaigns are created paused, and wovain starts one only after the designer approves it, inside their spend caps |
 | Customer, user, sales, revenue or testimonial claims | There are no paying customers, sales or testimonials yet, and none are invented. Pricing is a proposal, not a result |

@@ -202,7 +202,22 @@ export const campaign = pgTable(
     productId: text("product_id")
       .notNull()
       .references(() => product.id, { onDelete: "cascade" }),
-    status: text("status", { enum: ["paused"] })
+    // Meta's delivery as last read back (@wovain/core/media-buying): staged
+    // campaigns are "draft" or "paused"; only an approved activation makes
+    // one "publishing", "in_review" or "active". A text column, so a new
+    // state needs no migration.
+    status: text("status", {
+      enum: [
+        "draft",
+        "paused",
+        "publishing",
+        "in_review",
+        "active",
+        "with_issues",
+        "archived",
+        "unknown",
+      ],
+    })
       .default("paused")
       .notNull(),
     userId: owner(),

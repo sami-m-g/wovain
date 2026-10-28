@@ -78,7 +78,8 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 
 - En tant que créateur, je veux approuver avant que quoi que ce soit soit publié ou dépensé.
   - [x] Un produit est créé masqué sur Fourthwall et publié seulement par une étape distincte.
-  - [x] Chaque objet Meta est créé en pause ; wovain n'active jamais de dépense.
+  - [x] Chaque objet Meta est créé en pause, et wovain le relit pour le vérifier.
+  - [ ] wovain ne lance une campagne qu'après une approbation, dans les plafonds de dépenses quotidiens et mensuels du créateur (en cours, derrière `media-buying-live`).
   - [x] Le budget quotidien est compris entre 1 $ et 500 $ et le ciblage est limité aux pays choisis.
 
 ### Exécutions, approbation et autopilot
@@ -151,7 +152,7 @@ TikTok Shop et publicités TikTok ; propre clé Nebius sur Label ; données dém
 
 - Pas de vêtements à la demande ni de fabrication sur mesure : uniquement de l'impression à la demande.
 - Pas d'achat média maison : Meta optimise déjà la diffusion.
-- Pas d'activation automatique des dépenses publicitaires : le créateur lance les campagnes.
+- Pas de dépense publicitaire sans approbation : wovain ne lance une campagne qu'après l'approbation du créateur, dans ses plafonds.
 - Pas de clients, utilisateurs, ventes, revenus ni témoignages inventés.
 
 ## Questions ouvertes

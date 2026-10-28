@@ -1,10 +1,12 @@
 import {
+  adAccountFor,
   archiveCampaign,
   scoreAdCopy,
   stagePausedCampaign,
   writeAdCopy,
 } from "@wovain/core/ads";
 import type { AdCopy, WriteOnce } from "@wovain/core/ads";
+import { findSalesPixel, verifyStagedPaused } from "@wovain/core/media-buying";
 import { externalWrite } from "@wovain/db/schema/durable";
 import { campaign } from "@wovain/db/schema/seller";
 import { and, desc, eq, inArray, like } from "drizzle-orm";
@@ -13,15 +15,19 @@ import { log } from "evlog";
 import type { Actor } from "./actor";
 import { notReady } from "./actor";
 import { withAgentTrace } from "./agent-trace";
+import { audienceFor as brandAudienceFor } from "./audience";
 import { audienceFor, qlooAudiencesOn } from "./audiences";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
+import { isMediaBuyingLive } from "./media";
 import { once } from "./once";
 import { getProduct } from "./products";
 import { charge } from "./spend";
 
-// A published product gets varied ads in a PAUSED Meta campaign: the
-// merchant reviews and starts it in Ads Manager.
+// A published product gets varied ads in a PAUSED Meta campaign. Without
+// the media-buying-live flag the merchant starts it in Ads Manager; with
+// it, wovain reads the staging back and starts it only through the
+// approval queue (./media).
 //
 // Staging takes 2 + 2n Meta writes. Each is keyed (./once), so a staging
 // that fails partway resumes where it stopped when it is retried, and a run
@@ -32,6 +38,9 @@ export interface CampaignInput {
   countries: string[];
   dailyBudget: number;
   pageId?: string | undefined;
+  // The Meta pixel the shop fires (Fourthwall's Meta integration); the ad
+  // account's only pixel if unset (media-buying-live).
+  pixelId?: string | undefined;
   productId: string;
   // The caller's request ID; one campaign per product without it.
   requestId?: string | undefined;
@@ -173,28 +182,47 @@ export const createProductCampaign = async (
       recover,
       runId,
     });
-  const made = await withProvider(
-    actor,
-    "meta",
-    async (call) =>
-      await stagePausedCampaign(
-        call,
-        {
-          adAccountId: input.adAccountId,
-          copy,
-          countries: input.countries,
-          dailyBudgetCents,
-          imageUrl: live.mockups[0] ?? source.artworkUrl,
-          linkUrl,
-          name: `wovain · ${source.brief.title}`,
-          pageId: input.pageId,
-          // Short and stable: it ends every object's name on Meta.
-          tag: `w-${live.id.slice(0, 8)}`,
-          targeting: audience?.targeting,
-        },
-        metaOnce
-      )
-  );
+  // Live media buying: the sales objective on the account's pixel, an
+  // audience suggestion, UTM links, and a read-back proving nothing spends.
+  const mediaBuying = await isMediaBuyingLive(actor);
+  const targeting = mediaBuying
+    ? await brandAudienceFor(actor, {
+        countries: input.countries,
+        productId: live.id,
+      })
+    : undefined;
+  const { made, status } = await withProvider(actor, "meta", async (call) => {
+    const plan = {
+      adAccountId: input.adAccountId,
+      copy,
+      countries: input.countries,
+      dailyBudgetCents,
+      imageUrl: live.mockups[0] ?? source.artworkUrl,
+      linkUrl,
+      name: `wovain · ${source.brief.title}`,
+      pageId: input.pageId,
+      // Short and stable: it ends every object's name on Meta.
+      tag: `w-${live.id.slice(0, 8)}`,
+      // qloo-audiences: Qloo's ages, gender and interests as suggestions.
+      targeting: audience?.targeting,
+    };
+    if (targeting === undefined) {
+      return {
+        made: await stagePausedCampaign(call, plan, metaOnce),
+        status: "paused" as const,
+      };
+    }
+    const adAccountId = await adAccountFor(call, plan.tag, input.adAccountId);
+    const pixelId = input.pixelId ?? (await findSalesPixel(call, adAccountId));
+    const stagedNow = await stagePausedCampaign(
+      call,
+      { ...plan, adAccountId, media: { pixelId, targeting } },
+      metaOnce
+    );
+    // Throws (after pausing it) when anything came back able to spend.
+    const verified = await verifyStagedPaused(call, stagedNow);
+    return { made: stagedNow, status: verified.state };
+  });
   await actor.db
     .insert(campaign)
     .values({
@@ -208,6 +236,7 @@ export const createProductCampaign = async (
       metaCampaignId: made.campaignId,
       pageId: made.pageId,
       productId: live.id,
+      status,
       userId: actor.userId,
     })
     .onConflictDoNothing({ target: campaign.idempotencyKey });

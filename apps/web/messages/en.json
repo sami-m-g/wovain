@@ -545,7 +545,28 @@
       "variants": "Ad variants",
       "open": "Open in Ads Manager",
       "another": "Start another drop",
-      "history": "See all runs"
+      "history": "See all runs",
+      "media": {
+        "start": "Start ads",
+        "pause": "Pause ads",
+        "refresh": "Refresh status",
+        "confirm": "Start this campaign at {budget} a day? Meta bills your ad account directly. You can pause it at any time.",
+        "approve": "Approve and start",
+        "notNow": "Not now",
+        "starting": "Approved. Meta reviews new ads before they run, which can take a few hours.",
+        "overCap": "This would go over your daily or monthly ad spend cap. Raise the cap in your autonomy settings to start it.",
+        "failed": "That didn't work: {reason}",
+        "status": {
+          "draft": "Staged, not running",
+          "paused": "Paused",
+          "publishing": "Publishing",
+          "in_review": "In Meta review",
+          "active": "Running",
+          "with_issues": "Needs attention in Meta",
+          "archived": "Archived",
+          "unknown": "Status unknown"
+        }
+      }
     },
     "failed": {
       "title": "The drop stopped during {stage}",

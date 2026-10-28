@@ -545,7 +545,28 @@
       "variants": "Variantes de anuncio",
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
-      "history": "Ver todas las ejecuciones"
+      "history": "Ver todas las ejecuciones",
+      "media": {
+        "start": "Iniciar anuncios",
+        "pause": "Pausar anuncios",
+        "refresh": "Actualizar estado",
+        "confirm": "¿Iniciar esta campaña a {budget} al día? Meta cobra directamente a tu cuenta publicitaria. Puedes pausarla cuando quieras.",
+        "approve": "Aprobar e iniciar",
+        "notNow": "Ahora no",
+        "starting": "Aprobado. Meta revisa los anuncios nuevos antes de publicarlos, lo que puede tardar unas horas.",
+        "overCap": "Esto superaría tu límite diario o mensual de gasto en anuncios. Súbelo en tus ajustes de autonomía para iniciarla.",
+        "failed": "No funcionó: {reason}",
+        "status": {
+          "draft": "Preparada, sin publicar",
+          "paused": "En pausa",
+          "publishing": "Publicando",
+          "in_review": "En revisión de Meta",
+          "active": "En curso",
+          "with_issues": "Revisar en Meta",
+          "archived": "Archivada",
+          "unknown": "Estado desconocido"
+        }
+      }
     },
     "failed": {
       "title": "El drop se detuvo en el paso {stage}",
