@@ -159,7 +159,7 @@ export const createMcpServer = (
       _meta: widget("trends"),
       annotations: writes,
       description:
-        "Research what sells now around a seed (a fandom, hobby or niche): Qloo's taste graph names the themes its fans love, Tavily searches this week's news and the marketplaces live, and code ranks the ideas. Returns saved ideas with their evidence.",
+        "Research what sells now around a seed (a fandom, hobby or niche): Qloo's taste graph names the themes its fans love, Tavily searches the past month's news and the marketplaces live, and code ranks the ideas. Returns saved ideas with their evidence.",
       inputSchema: z.object({ seed: fields.seed }),
       title: "Research trends",
     },

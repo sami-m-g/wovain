@@ -63,6 +63,9 @@ export const createCore = (
   { memory }: { memory?: Memory | undefined } = {}
 ) => {
   const models = createModelRouter(env);
+  // Tavily's search, extract and research, called live (./trends.ts,
+  // ./evidence.ts).
+  const tavily = tavilyClient(env.TAVILY_API_KEY);
   const agents = createAgentKit({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,
@@ -118,8 +121,9 @@ export const createCore = (
     // Qloo's Taste API (./qloo): trends, demographics and audiences.
     qloo,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
+    tavily,
     trends: createTrends(
-      tavilyClient(env.TAVILY_API_KEY),
+      tavily,
       qloo,
       // Without a Nebius key, research themes fall back to design angles.
       agents === undefined ? undefined : nemotron

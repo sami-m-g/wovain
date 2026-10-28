@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { trademarkNote } from "./evidence";
+import type { TrademarkCheck } from "./evidence";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
 import type { TrendIdea } from "./trends";
@@ -76,6 +78,8 @@ export const JUDGE_RULES = [
   "background",
   "printed_text",
   "contrast",
+  // The printed words against trademark records (Tavily, ./evidence.ts).
+  "trademark",
 ] as const;
 type JudgeRule = (typeof JUDGE_RULES)[number];
 
@@ -100,7 +104,7 @@ const checkSchema = z.object({
   note: z.string(),
   pass: z.boolean(),
 });
-type JudgeCheck = z.infer<typeof checkSchema>;
+export type JudgeCheck = z.infer<typeof checkSchema>;
 
 export const judgeReplySchema = z.object({
   checks: z.array(checkSchema).max(10),
@@ -117,6 +121,8 @@ export interface Judgment extends JudgeReply {
   // What the vision model saw in the art, in one line; absent on designs
   // judged before the judge looked at images.
   seen?: string | undefined;
+  // The trademark guardrail's result with its citations, when it ran.
+  trademark?: TrademarkCheck | undefined;
   verdict: "ready" | "revise";
 }
 
@@ -168,7 +174,17 @@ const FACT_ONLY: ReadonlySet<JudgeRule> = new Set([
   "background",
   "printed_text",
   "contrast",
+  "trademark",
 ]);
+
+// The trademark guardrail as a fact: a printed phrase that matches a
+// trademark record, or that couldn't be checked, sends the design back, and
+// the redraw's brief changes the words.
+export const trademarkFact = (check: TrademarkCheck): JudgeCheck => ({
+  note: trademarkNote(check),
+  pass: check.pass,
+  rule: "trademark",
+});
 
 export const printFacts = (artwork: Artwork): JudgeCheck[] => {
   const sharp = artwork.width >= REQUIRED_PX;
@@ -347,11 +363,21 @@ export const judgeDesign = async (
     artwork,
     brief,
     idea,
-  }: { artwork: Artwork; brief: DesignBrief; idea: string },
+    trademark,
+  }: {
+    artwork: Artwork;
+    brief: DesignBrief;
+    idea: string;
+    trademark?: TrademarkCheck | undefined;
+  },
   log?: Logger
 ): Promise<{ brief: DesignBrief; judgment: Judgment }> => {
   const sight = await inspectArtwork(ask, { artwork, brief }, log);
-  const facts = [...printFacts(artwork), ...sight.facts];
+  const facts = [
+    ...printFacts(artwork),
+    ...sight.facts,
+    ...(trademark === undefined ? [] : [trademarkFact(trademark)]),
+  ];
   const reply = await ask({
     log,
     name: "design_judge",
@@ -362,6 +388,10 @@ export const judgeDesign = async (
   });
   return {
     brief: { ...brief, garmentColors: sight.garmentColors },
-    judgment: { ...applyFacts(reply, facts), seen: sight.seen },
+    judgment: {
+      ...applyFacts(reply, facts),
+      seen: sight.seen,
+      ...(trademark !== undefined && { trademark }),
+    },
   };
 };

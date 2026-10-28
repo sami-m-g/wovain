@@ -11,9 +11,20 @@ Tavily est appelé **à l'exécution**, à chaque recherche de tendances, et pas
 
 - **Thèmes.** Chaque exécution étudie 3 à 5 thèmes distincts : ceux de Qloo, complétés par l'agent `research_themes` (Nemotron) quand Qloo en nomme moins de 3 (`packages/core/src/themes.ts`). Un thème n'est jamais le brief lui-même ; sans modèle, des angles de design sur le sujet du brief prennent le relais.
 - **Moment.** Pour chaque thème, chercher l'actualité du dernier mois (`topic: "news"`, `searchDepth: "advanced"`) et renvoyer des sources. Le code écarte les pages d'archives et de tags, les résultats de plus de 31 jours, ceux que Tavily note sous 0,4 et ceux qui ne partagent aucun mot avec la requête du thème, puis dédoublonne pages et titres et classe par pertinence et fraîcheur. C'est la ligne « pourquoi maintenant » affichée sur une idée.
-- **Saturation.** Chercher sur les places de marché (etsy.com, redbubble.com, fourthwall.com) les annonces correspondantes. Peu de correspondances donnent un meilleur score.
+- **Saturation.** Chercher sur les places de marché (etsy.com, redbubble.com, teepublic.com, fourthwall.com) les annonces correspondantes. Peu de correspondances donnent un meilleur score.
 
 Le texte du web n'est pas fiable : les idées gardent leurs liens de sources, et les prompts indiquent à Nemotron de traiter le texte des idées comme de simples données.
+
+## Couche de preuves (flag `tavily-evidence`)
+
+`packages/core/src/evidence.ts` fait de Tavily la preuve derrière trois décisions. Le flag est actif en development et next, et coupé en production.
+
+- **Échecs par recherche.** Les recherches d'actualités et de places de marché de chaque thème aboutissent séparément. Une recherche en échec est journalisée au niveau error et l'idée repose sur l'autre ; la carte indique laquelle a échoué. L'étape de recherche n'échoue (et ne rend ses crédits) que si toutes échouent.
+- **Prix des concurrents.** Tavily Extract lit jusqu'à 5 annonces Redbubble, TeePublic et Etsy trouvées par la recherche de places de marché et retient le premier prix plausible de chacune (de 8 à 120 $). Les pages que Tavily ne peut pas lire (`failed_results`) sont comptées dans l'événement, et la marge revient aux extraits de recherche. La carte affiche la médiane et les annonces d'où elle vient.
+- **Dossier d'étude.** Sur une carte d'idée, « Étudier cette idée » lance Tavily Research (`model: "mini"`) avec un `output_schema` de `why_now`, `saturation`, `price_band`, `risks` et `citations`. Le thème et l'affinité Qloo de l'idée, et les entités et l'audience Qloo du profil de marque, sont joints en `qloo-taste.json` pour que Tavily raisonne dessus. L'app relit le résultat toutes les quelques secondes et l'enregistre sur l'idée. Un dossier encore en attente après 15 minutes est marqué en échec et journalisé.
+- **Garde-fou des marques.** Avant la décision du juge, chaque phrase imprimée par un design est cherchée comme phrase exacte (`exact_match`) sur uspto.gov, trademarkia.com, trademarks.justia.com et euipo.europa.eu, et sur Redbubble, TeePublic, Etsy et Amazon. Une page de registre dont le titre contient la phrase fait échouer le contrôle `trademark` : le brief est réécrit une fois avec d'autres mots. Les correspondances sur les places de marché sont signalées comme mise en garde. Une phrase non vérifiée fait aussi échouer le contrôle (le garde-fou échoue fermé) et le marchand peut approuver après avoir lu les citations. Les mots isolés de moins de 5 lettres ne sont pas cherchés.
+
+C'est une recherche, pas une validation juridique : un résultat net signifie que Tavily n'a trouvé aucun enregistrement.
 
 ## Configuration
 

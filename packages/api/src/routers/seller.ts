@@ -8,6 +8,7 @@ import {
   getDesign,
   listDesigns,
 } from "../flow/designs";
+import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
 import { listIdeas, researchIdeas, tasteMapStatus } from "../flow/ideas";
 import {
   browseCatalog,
@@ -44,6 +45,13 @@ const byId = z.object({ id });
 const byRun = z.object({ runId: id.optional() });
 
 export const ideasRouter = {
+  // The idea's research dossier (tavily-evidence), read back from Tavily
+  // while it's pending; null before one is started.
+  dossier: protectedProcedure
+    .input(z.object({ ideaId: id }))
+    .handler(
+      async ({ context, input }) => await readIdeaDossier(context, input.ideaId)
+    ),
   list: protectedProcedure
     .input(byRun)
     .handler(
@@ -58,6 +66,12 @@ export const ideasRouter = {
   tasteMap: protectedProcedure.handler(
     async ({ context }) => await tasteMapStatus(context)
   ),
+  startDossier: protectedProcedure
+    .input(z.object({ ideaId: id }))
+    .handler(
+      async ({ context, input }) =>
+        await startIdeaDossier(context, input.ideaId)
+    ),
 };
 
 export const designsRouter = {

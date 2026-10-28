@@ -11,9 +11,20 @@ Tavily is called at **runtime**, on every trend research, not only during develo
 
 - **Themes.** Each run researches 3 to 5 distinct themes: Qloo's, topped up by the `research_themes` agent (Nemotron) when Qloo names fewer than 3 (`packages/core/src/themes.ts`). A theme is never the brief itself; without a model, design angles on the brief's subject stand in.
 - **Moment.** For each theme, search the past month's news (`topic: "news"`, `searchDepth: "advanced"`) and return sources. Code drops archive and tag pages, results older than 31 days, results Tavily scores below 0.4 and results that share no word with the theme's query, then dedupes pages and headlines and ranks by relevance and freshness. This is the "why now" shown on an idea.
-- **Saturation.** Search marketplaces (etsy.com, redbubble.com, fourthwall.com) for matching listings. Few matches score higher.
+- **Saturation.** Search marketplaces (etsy.com, redbubble.com, teepublic.com, fourthwall.com) for matching listings. Few matches score higher.
 
 Web text is untrusted: the ideas carry their source links, and the model prompts tell Nemotron to treat idea text as data only.
+
+## Evidence layer (`tavily-evidence` flag)
+
+`packages/core/src/evidence.ts` makes Tavily the evidence behind three decisions. The flag is on in development and next, and off in production.
+
+- **Per-search failures.** Each theme's news and marketplace searches settle separately. A failed search is logged at error level and the idea stands on the other one; the card says which search failed. Only when every search fails does the research step fail (and its credits come back).
+- **Competitor prices.** Tavily Extract reads up to 5 Redbubble, TeePublic and Etsy listing pages the marketplace search found and takes the first plausible price on each ($8 to $120). Pages Tavily can't read (`failed_results`) are counted in the wide event, and the margin falls back to the search snippets. The idea card shows the median and the listings it came from.
+- **Research dossier.** On an idea card, "Research this idea" starts Tavily Research (`model: "mini"`) with an `output_schema` of `why_now`, `saturation`, `price_band`, `risks` and `citations`. The idea's Qloo theme and affinity and the brand profile's Qloo entities and audience are attached as `qloo-taste.json`, so Tavily reasons over them. The app reads the result back every few seconds and saves it on the idea. A dossier still pending after 15 minutes is marked failed and logged.
+- **Trademark guardrail.** Before the judge decides, every phrase a design prints is searched as an exact phrase (`exact_match`) on uspto.gov, trademarkia.com, trademarks.justia.com and euipo.europa.eu, and on Redbubble, TeePublic, Etsy and Amazon. A register page whose title carries the phrase fails the `trademark` check, so the brief is rewritten once with new words. Marketplace matches are shown as a caution. A phrase that couldn't be checked also fails the check (the guardrail fails closed) and the merchant can still approve after reading the citations. Single words under 5 letters aren't searched.
+
+This is a search, not legal clearance: a clear result means Tavily found no matching record.
 
 ## Configuration
 

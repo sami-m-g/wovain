@@ -81,7 +81,7 @@ Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.m
 
 ## How wovain uses Tavily at runtime
 
-Inside the seller flow, Tavily searches the past week's news within Qloo's themes (the "why now"), and checks marketplace saturation on Etsy, Redbubble and Fourthwall. Results keep their source links. Details: [docs/integrations/tavily](apps/fumadocs/content/docs/integrations/tavily.mdx).
+Inside the seller flow, Tavily searches the past month's news within Qloo's themes (the "why now"), and checks marketplace saturation on Etsy, Redbubble, TeePublic and Fourthwall. Results keep their source links. Behind the `tavily-evidence` flag, Tavily is also the evidence layer: Extract reads competitors' listing prices for the margin score, Research writes a cited dossier per idea over the merchant's Qloo taste data, and every printed slogan is searched as an exact phrase on trademark registers before a design is ready. Details: [docs/integrations/tavily](apps/fumadocs/content/docs/integrations/tavily.mdx).
 
 ## Architecture
 

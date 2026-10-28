@@ -1210,7 +1210,7 @@ const draftOf = (title: string, artPrompt: string) => ({
   artPrompt,
   description: "For quiet nights in. Soft lines.",
   garmentColors: ["black", "sand"],
-  printedText: [],
+  printedText: [] as string[],
   title,
 });
 
@@ -1223,8 +1223,15 @@ const sight = (cat: boolean) => ({
   ],
   garment: { note: cat ? "A cat." : "A pink T-shirt.", pass: cat },
   printedText: { note: "None, as asked.", pass: true },
-  read: [],
+  read: [] as string[],
   subject: cat ? "A cat reading." : "A pink cropped tee.",
+});
+
+// A cat that prints the brief's words, read back as printed.
+const printing = (text: string) => ({
+  ...sight(true),
+  printedText: { note: "As asked.", pass: true },
+  read: [text],
 });
 
 describe("generateDesign", () => {
@@ -1248,7 +1255,17 @@ describe("generateDesign", () => {
     score: 80,
   };
 
-  const draw = async (sights: ReturnType<typeof sight>[]) => {
+  const draw = async (
+    sights: ReturnType<typeof sight>[],
+    {
+      briefs = [tee, cat],
+      tavily,
+    }: {
+      briefs?: ReturnType<typeof draftOf>[];
+      // With Tavily, tavily-evidence is on and the trademark check runs.
+      tavily?: Pick<Core["tavily"], "search">;
+    } = {}
+  ) => {
     const fal = fakeProvider({
       check_job: { status: "COMPLETED" },
       get_job_result: ({ request_id }: Record<string, unknown>) => ({
@@ -1275,7 +1292,7 @@ describe("generateDesign", () => {
       .from(idea)
       .where(eq(idea.runId, runId));
     const agents = fakeAgents({
-      design_brief: [tee, cat],
+      design_brief: briefs,
       design_judge: [verdict],
       design_vision: sights,
     });
@@ -1283,6 +1300,13 @@ describe("generateDesign", () => {
       ...ctx.actor,
       core: {
         ...ctx.actor.core,
+        ...(tavily !== undefined && {
+          flags: {
+            isOn: async (flag: string) =>
+              await Promise.resolve(flag === "tavily-evidence"),
+          },
+          tavily,
+        }),
         artist: (call: ToolCall) =>
           createArtist(call, {
             model: "test/text-to-image",
@@ -1316,6 +1340,49 @@ describe("generateDesign", () => {
     const briefs = agents.asked.filter((call) => call.name === "design_brief");
     expect(briefs[1]?.prompt).toContain('"previous"');
     expect(briefs[1]?.prompt).toContain("A pink T-shirt.");
+  });
+
+  it("sends back printed words that match a trademark record", async () => {
+    const search = vi.fn(async (query: string) => {
+      const marked = query.includes("Night Shift Crew");
+      return await Promise.resolve({
+        images: [],
+        query,
+        requestId: "t1",
+        responseTime: 0.1,
+        results: marked
+          ? [
+              {
+                content: "",
+                id: "1",
+                publishedDate: "",
+                score: 0.9,
+                title: "NIGHT SHIFT CREW Trademark of Acme",
+                url: "https://www.trademarkia.com/night-shift-crew-1",
+              },
+            ]
+          : [],
+      });
+    });
+    const { agents, made } = await draw(
+      [printing("Night Shift Crew"), printing("Lamp Light Reader")],
+      {
+        briefs: [
+          { ...cat, printedText: ["Night Shift Crew"] },
+          { ...cat, printedText: ["Lamp Light Reader"] },
+        ],
+        tavily: { search },
+      }
+    );
+
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(search.mock.calls[0]?.[0]).toBe('"Night Shift Crew" trademark');
+    // The redraw's brief is told the words are someone's mark.
+    const briefs = agents.asked.filter((call) => call.name === "design_brief");
+    expect(briefs[1]?.prompt).toContain("trademarkia.com");
+    expect(made.brief.printedText).toEqual(["Lamp Light Reader"]);
+    expect(made.judgment.verdict).toBe("ready");
+    expect(made.judgment.trademark?.pass).toBe(true);
   });
 
   it("saves a redraw still sent back, pending and flagged revise", async () => {

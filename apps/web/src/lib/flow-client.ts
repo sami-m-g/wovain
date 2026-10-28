@@ -16,6 +16,7 @@ export type Connection = Outputs["connections"]["list"][number];
 export type Run = Outputs["runs"]["list"][number];
 export type RunDetail = Outputs["runs"]["get"];
 export type Idea = RunDetail["ideas"][number];
+export type IdeaDossierRecord = NonNullable<Outputs["ideas"]["dossier"]>;
 export type Design = Outputs["designs"]["get"];
 export type Product = Outputs["products"]["create"];
 export type Campaign = Outputs["campaigns"]["create"];

@@ -44,7 +44,9 @@ import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useId } from "react";
 
+import { Citations } from "@/components/app/citations";
 import { DesignPreview } from "@/components/app/design-preview";
+import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
 import {
   NextButton,
@@ -217,6 +219,45 @@ const Signal = ({
   </div>
 );
 
+// What competitors charge, read off their listings, and any search that
+// failed for this idea: the evidence behind the margin and the listings
+// count.
+const IdeaEvidence = ({ research }: { research: Idea["research"] }) => {
+  const t = useTranslations("Wizard.evidence");
+  const format = useFormatter();
+  const { failedSearches = [], prices } = research;
+  const extracted =
+    prices?.source === "extract" && prices.median !== undefined
+      ? prices
+      : undefined;
+  if (extracted === undefined && failedSearches.length === 0) {
+    return null;
+  }
+  return (
+    <div className="flex flex-col gap-1 px-1 text-xs">
+      {extracted === undefined ? null : (
+        <>
+          <p className="text-muted-foreground">
+            {t("competitorPrice", {
+              count: extracted.count,
+              price: format.number(extracted.median ?? 0, {
+                currency: "USD",
+                style: "currency",
+              }),
+            })}
+          </p>
+          <Citations citations={extracted.citations} />
+        </>
+      )}
+      {failedSearches.map((kind) => (
+        <p className="text-muted-foreground" key={kind}>
+          {kind === "news" ? t("newsFailed") : t("marketFailed")}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 export const IdeasStep = ({
   ideas,
   picked,
@@ -327,6 +368,8 @@ export const IdeasStep = ({
                 {research.taste ? (
                   <TasteMapPanel taste={research.taste} />
                 ) : null}
+                <IdeaEvidence research={research} />
+                <IdeaDossier ideaId={idea.id} />
               </li>
             );
           })}
@@ -338,6 +381,43 @@ export const IdeasStep = ({
         </NextButton>
       </StepActions>
     </div>
+  );
+};
+
+// The trademark guardrail's findings on the printed words, with the pages
+// that matched. Clear phrases aren't listed.
+const TrademarkEvidence = ({
+  trademark,
+}: {
+  trademark: Design["judgment"]["trademark"];
+}) => {
+  const t = useTranslations("Wizard.evidence");
+  const flagged = (trademark?.checks ?? []).filter(
+    (check) => check.verdict !== "clear"
+  );
+  if (flagged.length === 0) {
+    return null;
+  }
+  const label = {
+    blocked: t("trademarkBlocked"),
+    caution: t("trademarkCaution"),
+    unchecked: t("trademarkUnchecked"),
+  } as const;
+  return (
+    <section aria-label={t("trademarkTitle")} className="flex flex-col gap-1">
+      <h4 className="text-xs font-semibold">{t("trademarkTitle")}</h4>
+      <ul className="flex flex-col gap-1 text-xs">
+        {flagged.map((check) => (
+          <li className="flex flex-col gap-1" key={check.phrase}>
+            <span>
+              “{check.phrase}”:{" "}
+              {check.verdict === "clear" ? null : label[check.verdict]}
+            </span>
+            <Citations citations={check.citations} max={3} />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 };
 
@@ -421,6 +501,7 @@ const DesignCard = ({
               </AlertDescription>
             </Alert>
           ) : null}
+          <TrademarkEvidence trademark={judgment.trademark} />
           {design.status === "pending_approval" ? (
             <Field>
               <FieldLabel className="text-xs" htmlFor={reasonId}>

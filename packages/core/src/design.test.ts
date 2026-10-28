@@ -9,6 +9,7 @@ import {
   printFacts,
   REQUIRED_PX,
   sightFacts,
+  trademarkFact,
   visionReplySchema,
 } from "./design";
 import type { DesignBrief, VisionReply } from "./design";
@@ -109,6 +110,38 @@ describe("the design judge", () => {
 
     const sharp = applyFacts(passingReply, printFacts(sharpArt));
     expect(sharp.verdict).toBe("ready");
+  });
+
+  it("sends back printed words that match a trademark record", () => {
+    const blocked = trademarkFact({
+      checks: [
+        {
+          citations: [
+            {
+              title: "NOT TODAY Trademark",
+              url: "https://www.trademarkia.com/not-today-1",
+            },
+          ],
+          phrase: "NOT TODAY",
+          verdict: "blocked",
+        },
+      ],
+      pass: false,
+    });
+    const judgment = applyFacts(passingReply, [
+      ...printFacts(sharpArt),
+      blocked,
+    ]);
+    expect(judgment.verdict).toBe("revise");
+    expect(blocked.note).toContain("trademarkia.com");
+
+    const clear = trademarkFact({
+      checks: [{ citations: [], phrase: "NOT TODAY", verdict: "clear" }],
+      pass: true,
+    });
+    expect(
+      applyFacts(passingReply, [...printFacts(sharpArt), clear]).verdict
+    ).toBe("ready");
   });
 
   it("looks at the drawn artwork before it judges the brief", async () => {
