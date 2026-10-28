@@ -3,7 +3,7 @@ title: Nebius et Nemotron
 description: Comment wovain utilise NVIDIA Nemotron sur Nebius Token Factory pour rédiger les briefs, évaluer les designs, écrire les textes publicitaires et décider en autopilot.
 ---
 
-Wovain appelle **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`, la constante `NEMOTRON_MODEL` dans `packages/core/src/nemotron.ts`) sur **Nebius Token Factory**. Le point d'accès est compatible OpenAI : `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` par défaut, authentifié avec `NEBIUS_API_KEY`. Chaque réponse est validée par un schéma Zod.
+Wovain appelle **NVIDIA Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, la variable d'environnement `NEMOTRON_MODEL`, définie par environnement dans la configuration Pulumi) sur **Nebius Token Factory**. Le point d'accès est compatible OpenAI : `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` par défaut, authentifié avec `NEBIUS_API_KEY`. Chaque réponse est validée par un schéma Zod.
 
 Nemotron a quatre rôles. Il ne remplace jamais les contrôles faits par le code.
 
@@ -13,9 +13,13 @@ Nemotron a quatre rôles. Il ne remplace jamais les contrôles faits par le code
 
 ## 2. Juge de design
 
-`judgeDesign` reçoit le brief, la fiche et les faits sur l'illustration, et renvoie un verdict (`ready` ou `revise`), un score de 0 à 100, un contrôle réussi ou échoué pour le titre, la description, l'adéquation à l'idée et l'originalité, jusqu'à cinq corrections et une phrase de coaching.
+`judgeDesign` reçoit le brief, la fiche et les faits sur l'illustration, et renvoie un verdict (`ready` ou `revise`), un score de 0 à 100, un contrôle réussi ou échoué pour le titre, la description, l'adéquation à l'idée, l'originalité et le vêtement (le sujet du prompt n'est pas un vêtement, une maquette ou un habit), jusqu'à cinq corrections et une phrase de coaching.
+
+D'abord, `inspectArtwork` montre le PNG dessiné à **Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, `NEMOTRON_VISION_MODEL`, même clé et même prix). Il vérifie que le sujet n'est pas un vêtement, qu'il n'y a ni fond ni recadrage, que les mots imprimés correspondent au brief et que l'illustration se voit sur chaque couleur de vêtement listée. Le code retire les couleurs sur lesquelles elle disparaît, et fait échouer le design s'il n'en reste aucune. Ces contrôles sont des faits : le modèle texte ne peut pas les contredire.
 
 La règle de taille d'impression est tranchée par le code (`printFacts`, `applyFacts`) : une illustration de moins de 2880 px échoue quoi que dise le modèle, et le verdict devient `revise`.
+
+Un design renvoyé par le juge est redessiné une fois, à partir d'un nouveau brief qui applique les corrections, sans nouveau débit. Si le nouveau dessin est encore `revise`, il passe en validation signalé : la carte liste les contrôles échoués et le bouton indique « Valider quand même ».
 
 ## 3. Textes publicitaires
 
@@ -37,7 +41,7 @@ La raison de chaque décision est enregistrée sur le design, et une exécution 
 
 ## 5. Chat de la documentation
 
-Le chat IA du site de documentation (`apps/fumadocs`) utilise le même endpoint Token Factory et `NEBIUS_API_KEY`, avec le plus petit Nemotron, **Nemotron 3 Nano 30B-A3B** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`, 0,06 $ en entrée et 0,24 $ en sortie par million de tokens). Il cherche dans la documentation, puis répond à partir de trois courts extraits. Pour limiter la dépense, la réponse est plafonnée à 400 tokens, seuls les quatre derniers messages sont envoyés, les questions vides, trop longues ou hors sujet sont refusées sans appeler le modèle, et chaque visiteur est limité à 10 messages par 10 minutes et 50 par jour, avec un plafond quotidien global. Chaque appel est un événement PostHog `$ai_generation` avec tokens et coût, sans le texte des messages.
+Le chat IA du site de documentation (`apps/fumadocs`) utilise le même endpoint Token Factory et `NEBIUS_API_KEY`, avec **Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`, la variable d'environnement `DOCS_CHAT_MODEL`, 0,06 $ en entrée et 0,24 $ en sortie par million de tokens). Il cherche dans la documentation, puis répond à partir de trois courts extraits. Pour limiter la dépense, la réponse est plafonnée à 400 tokens, seuls les quatre derniers messages sont envoyés, les questions vides, trop longues ou hors sujet sont refusées sans appeler le modèle, et chaque visiteur est limité à 10 messages par 10 minutes et 50 par jour, avec un plafond quotidien global. Chaque appel est un événement PostHog `$ai_generation` avec tokens et coût, sans le texte des messages.
 
 ## Pourquoi Nemotron
 

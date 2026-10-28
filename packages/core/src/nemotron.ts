@@ -9,8 +9,6 @@ import type { AgentId, AgentKit } from "./agents";
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 
-export { NEMOTRON_MODEL } from "./agents";
-
 // wovain's own model calls (design briefs, the design judge, ad copy and
 // autopilot's decisions) all go through `ask`, which runs the named Mastra
 // agent (./agents) and returns schema-checked JSON. Inside a run, the call
@@ -30,6 +28,8 @@ export const withLlmTrace = async <T>(
 ): Promise<T> => await traces.run(trace, run);
 
 export interface Ask<T extends z.ZodType> {
+  // https image URLs the agent looks at with the prompt (a vision agent).
+  images?: readonly string[] | undefined;
   log?: Logger | undefined;
   // The agent that answers; it names the call in logs and in PostHog.
   name: AgentId;
@@ -85,6 +85,7 @@ const blocked = (agent: string, reason: string) =>
 export const createNemotron =
   (kit: AgentKit | undefined) =>
   async <T extends z.ZodType>({
+    images = [],
     log,
     name,
     prompt,
@@ -106,12 +107,28 @@ export const createNemotron =
     );
     // Mastra trace IDs are 32 hex characters: a run's UUID without dashes.
     const traceId = trace?.traceId.replaceAll("-", "");
+    const input =
+      images.length === 0
+        ? prompt
+        : [
+            {
+              content: [
+                ...images.map((image) => ({
+                  image: new URL(image),
+                  mimeType: "image/png",
+                  type: "image" as const,
+                })),
+                { text: prompt, type: "text" as const },
+              ],
+              role: "user" as const,
+            },
+          ];
     return await external(
       log,
       { operation: name, provider: "nebius" },
       async () => {
         const generate = async (remember: boolean) =>
-          await kit.agents[name].generate(prompt, {
+          await kit.agents[name].generate(input, {
             abortSignal: AbortSignal.timeout(TIMEOUT_MS),
             instructions: system,
             modelSettings: { temperature },

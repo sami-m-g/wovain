@@ -7,10 +7,12 @@ import {
   judgeReplySchema,
   printFacts,
   REQUIRED_PX,
+  sightFacts,
+  visionReplySchema,
 } from "./design";
-import type { DesignBrief } from "./design";
+import type { DesignBrief, VisionReply } from "./design";
 import { artInput } from "./fal";
-import { fakeNemotron } from "./test-doubles";
+import { fakeAgents, fakeNemotron } from "./test-doubles";
 import type { TrendIdea } from "./trends";
 
 const brief: DesignBrief = {
@@ -27,6 +29,7 @@ const passingReply = judgeReplySchema.parse({
     { note: "Two lines.", pass: true, rule: "description" },
     { note: "On idea.", pass: true, rule: "idea_fit" },
     { note: "Original.", pass: true, rule: "originality" },
+    { note: "A cat, not a garment.", pass: true, rule: "garment" },
     // The model can't overrule code on print size.
     { note: "Looks big enough.", pass: true, rule: "print_size" },
   ],
@@ -51,10 +54,49 @@ const idea = (theme: string, score: number): TrendIdea => ({
   theme,
 });
 
+// What the vision model sees in good art: a cat that prints "NOT TODAY" and
+// shows on both listed colors.
+const clearSight: VisionReply = visionReplySchema.parse({
+  background: { note: "Stands alone.", pass: true },
+  contrast: [
+    { color: "black", note: "Cream lines pop.", visible: true },
+    { color: "sand", note: "Dark outline reads.", visible: true },
+  ],
+  garment: { note: "A cat.", pass: true },
+  printedText: { note: "Matches.", pass: true },
+  read: ["NOT", "TODAY"],
+  subject: "A cat reading under a lamp with the words NOT TODAY.",
+});
+
+const sharpArt = {
+  height: REQUIRED_PX,
+  url: "https://fal.media/b.png",
+  width: REQUIRED_PX,
+};
+
+const judgeWith = async (
+  sight: VisionReply,
+  { reply = passingReply, under = brief } = {}
+) => {
+  const fake = fakeAgents({ design_judge: [reply], design_vision: [sight] });
+  const judged = await judgeDesign(fake.ask, {
+    artwork: sharpArt,
+    brief: under,
+    idea: "cozy reading",
+  });
+  return { ...judged, asked: fake.asked };
+};
+
+const failed = (judgment: { checks: { pass: boolean; rule: string }[] }) =>
+  judgment.checks.filter((check) => !check.pass).map((check) => check.rule);
+
 describe("the design judge", () => {
   it("lets code decide print size over the model's word", async () => {
-    const { ask } = fakeNemotron(passingReply);
-    const small = await judgeDesign(ask, {
+    const { ask } = fakeAgents({
+      design_judge: [passingReply],
+      design_vision: [clearSight],
+    });
+    const { judgment: small } = await judgeDesign(ask, {
       artwork: { height: 1024, url: "https://fal.media/a.png", width: 1024 },
       brief,
       idea: "cozy reading",
@@ -64,15 +106,115 @@ describe("the design judge", () => {
       small.checks.find((check) => check.rule === "print_size")?.pass
     ).toBe(false);
 
-    const sharp = applyFacts(
-      passingReply,
-      printFacts({
-        height: REQUIRED_PX,
-        url: "https://fal.media/b.png",
-        width: REQUIRED_PX,
-      })
-    );
+    const sharp = applyFacts(passingReply, printFacts(sharpArt));
     expect(sharp.verdict).toBe("ready");
+  });
+
+  it("looks at the drawn artwork before it judges the brief", async () => {
+    const { asked, judgment } = await judgeWith(clearSight);
+
+    expect(asked).toMatchObject([
+      { images: [sharpArt.url], name: "design_vision" },
+      { images: [], name: "design_judge" },
+    ]);
+    expect(judgment.verdict).toBe("ready");
+    expect(judgment.seen).toContain("cat");
+    expect(failed(judgment)).toEqual([]);
+  });
+
+  it("fails art that is a picture of a garment", async () => {
+    // The pink tee that reached approval: the image is a T-shirt.
+    const { judgment } = await judgeWith(
+      {
+        ...clearSight,
+        garment: {
+          note: "The subject is a pink cropped T-shirt silhouette.",
+          pass: false,
+        },
+        read: [],
+        subject: "A pink cropped tee silhouette in line art.",
+      },
+      { under: { ...brief, printedText: [] } }
+    );
+
+    expect(judgment.verdict).toBe("revise");
+    expect(failed(judgment)).toEqual(["garment"]);
+  });
+
+  it("fails a brief whose art prompt draws a garment, whatever the image", async () => {
+    const reply = judgeReplySchema.parse({
+      ...passingReply,
+      checks: passingReply.checks.map((check) =>
+        check.rule === "garment"
+          ? { note: "The subject is a tee.", pass: false, rule: "garment" }
+          : check
+      ),
+    });
+    const { judgment } = await judgeWith(clearSight, { reply });
+
+    expect(failed(judgment)).toEqual(["garment"]);
+  });
+
+  it("drops the garment colors dark art disappears on", async () => {
+    const { brief: kept, judgment } = await judgeWith({
+      ...clearSight,
+      contrast: [
+        { color: "Black", note: "A black cat vanishes.", visible: false },
+        { color: "sand", note: "Reads well.", visible: true },
+      ],
+    });
+
+    expect(kept.garmentColors).toEqual(["sand"]);
+    expect(judgment.verdict).toBe("ready");
+    expect(
+      judgment.checks.find((check) => check.rule === "contrast")?.note
+    ).toContain("dropped black");
+  });
+
+  it("fails art that shows on no listed color", async () => {
+    const { brief: kept, judgment } = await judgeWith(
+      {
+        ...clearSight,
+        contrast: [
+          { color: "black", note: "Vanishes.", visible: false },
+          { color: "navy", note: "Vanishes.", visible: false },
+        ],
+      },
+      { under: { ...brief, garmentColors: ["black", "navy"] } }
+    );
+
+    expect(failed(judgment)).toEqual(["contrast"]);
+    expect(kept.garmentColors).toEqual(["black", "navy"]);
+  });
+
+  it("fails printed text the brief doesn't print, even when the model passed it", () => {
+    const sight = sightFacts(
+      { ...clearSight, read: ["TEE", "TIME"] },
+      { ...brief, printedText: [] }
+    );
+    const check = sight.facts.find((fact) => fact.rule === "printed_text");
+
+    expect(check?.pass).toBe(false);
+    expect(check?.note).toContain('Read "TEE TIME"');
+  });
+
+  it("never lets the text model overrule what the image shows", async () => {
+    const reply = judgeReplySchema.parse({
+      ...passingReply,
+      checks: [
+        ...passingReply.checks,
+        { note: "Looks fine.", pass: true, rule: "background" },
+      ],
+    });
+    const { judgment } = await judgeWith(
+      {
+        ...clearSight,
+        background: { note: "A filled pink square.", pass: false },
+      },
+      { reply }
+    );
+
+    expect(failed(judgment)).toEqual(["background"]);
   });
 
   it("asks fal for transparent art that prints only the brief's words", () => {

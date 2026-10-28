@@ -18,6 +18,20 @@
           "rollout_percentage": 100
         },
         {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
           "internal": false,
           "properties": [
             {
@@ -50,6 +64,20 @@
               "type": "person",
               "value": [
                 "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
               ]
             }
           ],
@@ -109,6 +137,20 @@
           "rollout_percentage": 100
         },
         {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
           "internal": false,
           "properties": [
             {
@@ -141,6 +183,20 @@
               "type": "person",
               "value": [
                 "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
               ]
             }
           ],
@@ -193,6 +249,34 @@
               "type": "person",
               "value": [
                 "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 10
+        },
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
               ]
             }
           ],
@@ -253,6 +337,29 @@
               "operator": "exact",
               "type": "person",
               "value": [
+                "next"
+              ]
+            },
+            {
+              "key": "plan",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "free",
+                "demo"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
                 "development"
               ]
             },
@@ -287,6 +394,20 @@
               "type": "person",
               "value": [
                 "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
               ]
             }
           ],

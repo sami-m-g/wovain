@@ -7,7 +7,6 @@ import {
 } from "@mastra/evals/scorers/utils";
 import { describe, expect, it } from "vitest";
 
-import { NEMOTRON_MODEL } from "../agents";
 import { agreement, splitOf, trusted } from "../calibration";
 import type { Agreement, Verdict } from "../calibration";
 import { JUDGE_IDS, LABELED } from "../judges";
@@ -20,11 +19,17 @@ import baseline from "./baseline.v1.json" with { type: "json" };
 // (`pnpm --filter @wovain/core evals`). For each judge it measures TPR and
 // TNR against the labels on the dev and test splits, writes the report, and
 // fails when a judge drops below its recorded baseline (baseline.v1.json) by
-// more than the tolerance. Without NEBIUS_API_KEY the suite is skipped.
+// more than the tolerance. Without NEBIUS_API_KEY the suite is skipped; with
+// it, NEMOTRON_MODEL names the model.
 
 const apiKey = process.env["NEBIUS_API_KEY"];
 const baseURL =
   process.env["NEBIUS_BASE_URL"] ?? "https://api.tokenfactory.nebius.com/v1/";
+// The model under test: required with a key, as in the app.
+const modelId = process.env["NEMOTRON_MODEL"];
+if (apiKey !== undefined && modelId === undefined) {
+  throw new Error("Set NEMOTRON_MODEL to the Nebius model the judges run on");
+}
 const TOLERANCE = 0.05;
 const REPORT = new URL("report.v1.json", import.meta.url);
 
@@ -60,7 +65,7 @@ describe.skipIf(apiKey === undefined)("judge agreement with labels", () => {
     baseURL,
     name: "nebius",
     supportsStructuredOutputs: true,
-  }).chatModel(NEMOTRON_MODEL);
+  }).chatModel(modelId ?? "");
   const report: Record<string, Agreement & { trusted: boolean }> = {};
 
   it.each(JUDGE_IDS)(
@@ -89,7 +94,7 @@ describe.skipIf(apiKey === undefined)("judge agreement with labels", () => {
       }
       await writeFile(
         REPORT,
-        `${JSON.stringify({ dataset: LABELED.version, judges: report, model: NEMOTRON_MODEL }, null, 2)}\n`
+        `${JSON.stringify({ dataset: LABELED.version, judges: report, model: modelId }, null, 2)}\n`
       );
     },
     600_000

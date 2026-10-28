@@ -22,7 +22,7 @@ Réf. PRD : `prd.md > The Core Journey`.
 1. Le créateur se connecte → Better Auth (`/api/auth`, Google ou e-mail) crée une session dans PostgreSQL. ChatGPT se connecte plutôt via le serveur OAuth de Better Auth et appelle `POST /api/mcp` avec un jeton d'accès.
 2. Il connecte ses fournisseurs → `/api/connections/[provider]/start` et `callback` exécutent l'OAuth du fournisseur ; `packages/core/src/sealing.ts` scelle les jetons dans `connection`.
 3. Il décrit une collection → la page ou l'outil MCP `research_trends` appelle `ideas.research` → `researchIdeas` (`packages/api/src/flow/ideas.ts`) utilise Qloo et Tavily depuis `packages/core` → les idées classées sont enregistrées. Les étapes payantes sont mesurées (`flow/spend.ts` ).
-4. Il choisit une idée → `designs.generate` (`generateDesign`) → brief Nemotron (`draftBrief`), visuel fal (`createArtist`), prix (`priceFor`), juge Nemotron (`judgeDesign`) → le design est enregistré en `pending_approval`.
+4. L'exécution attend à sa porte d'idées sans rien dessiner ; Voir les visuels → `runs.approveIdeas` (`approveIdeas`) la reprend, et elle dessine un design pour chaque idée approuvée seulement → `generateDesign` → brief Nemotron (`draftBrief`), visuel fal (`createArtist`), prix (`priceFor`), juge Nemotron (`judgeDesign`) → le design est enregistré en `pending_approval`.
 5. Il approuve → `designs.approve` (`decideDesign`). Cible : le workflow Mastra de l'exécution est suspendu ici et `resume()` le poursuit.
 6. `products.create` (`createDesignProduct`) appelle Fourthwall via la connexion scellée ; `products.publish` le rend public.
 7. `campaigns.create` (`createProductCampaign`) → texte publicitaire Nemotron (`writeAdCopy`) → `stagePausedCampaign` crée la campagne, l'ensemble de publicités et les publicités en pause sur Meta.
@@ -47,11 +47,12 @@ Réf. PRD : `prd.md > The Core Journey`.
 | Spécifications | OpenSpec (`openspec/`) pour les specs de capacités et les changements | En ligne | [https://github.com/Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) |
 | Infra | Pulumi (GCP, Resend, PostHog), GitHub Actions | En ligne | [https://www.pulumi.com/docs](https://www.pulumi.com/docs) |
 | Site de documentation | Fumadocs en anglais, français et espagnol | En ligne | [https://fumadocs.dev](https://fumadocs.dev) |
-| Modèles | NVIDIA Nemotron 3 Super (`NEMOTRON_MODEL`) sur Nebius Token Factory | En ligne | [https://docs.tokenfactory.nebius.com](https://docs.tokenfactory.nebius.com) |
+| Modèles | NVIDIA Nemotron 3.5 Super VL (`NEMOTRON_MODEL`) sur Nebius Token Factory | En ligne | [https://docs.tokenfactory.nebius.com](https://docs.tokenfactory.nebius.com) |
 
 ## Où cela s'exécute et comment l'essayer
 
-- **Production :** Cloud Run sur [https://wovain.com](https://wovain.com) ; documentation sur [https://docs.wovain.com](https://docs.wovain.com). La CI déploie à chaque fusion sur `main` et exécute d'abord les migrations.
+- **Production :** Cloud Run sur [https://wovain.com](https://wovain.com) ; documentation sur [https://docs.wovain.com](https://docs.wovain.com). La production est déployée depuis la branche `release/transcend` après une approbation. Elle reste figée sur la version remise à Transcend jusque vers le 2026-11-16.
+- **Préproduction pour les hackathons Qloo et Nebius :** [https://next.wovain.com](https://next.wovain.com). La CI y déploie chaque fusion sur `main`, sur sa propre instance Cloud SQL, et exécute d'abord les migrations.
 - **ChatGPT :** ajoutez un connecteur avec l'URL `https://mcp.wovain.com/api/mcp`. La découverte OAuth est servie sur `/.well-known/oauth-protected-resource` et `/.well-known/oauth-authorization-server` ; le créateur se connecte et approuve l'accès sur la page de consentement.
 - **En local :** Node.js (voir `.nvmrc`), pnpm et Docker pour PostgreSQL.
 

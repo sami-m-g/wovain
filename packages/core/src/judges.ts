@@ -49,7 +49,7 @@ const SPECS: Record<JudgeId, JudgeSpec> = {
   },
   design_quality: {
     context: "The trend idea the design was made for.",
-    fail: "A vague or generic art prompt, a garment, mockup, photo or background in the art prompt, printed text too long for a chest print (over about 8 words), a generic title, or a description about fabric, fit or care.",
+    fail: "A vague or generic art prompt, an art prompt whose subject is a garment or clothing item (a tee, hoodie or cap, or its silhouette or outline, even as line art), a mockup, photo or background in the art prompt, printed text too long for a chest print (over about 8 words), a generic title, or a description about fabric, fit or care.",
     pass: "A specific, printable art prompt (one clear subject, transparent background, nothing cropped), short printed text or none, a title that leads with the main keyword, and a description in two short on-brand lines.",
     task: "You evaluate whether a print-on-demand design brief will produce sellable, printable art and a usable listing.",
   },
