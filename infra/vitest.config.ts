@@ -5,7 +5,7 @@ export default defineConfig({
     // Node's own import and type stripping, as `pulumi up` runs index.ts, so
     // failures only Node shows (dynamic provider serialization) show up here.
     experimental: { viteModuleRunner: false },
-    include: ["*.test.ts", "bootstrap/*.test.ts"],
+    include: ["*.test.ts", "bootstrap/*.test.ts", "next/*.test.ts"],
     testTimeout: 60_000,
   },
 });

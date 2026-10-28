@@ -1,0 +1,15 @@
+# next.wovain.com, the environment main deploys to (infra/README.md, "dev.wovain.com
+# and next.wovain.com"). Its own stack, apart from `wovain`'s production, so
+# its preview and `up` can't plan a change to production. Runs on infra/'s
+# packages (`pnpm run infra:install`).
+name: wovain-next
+description: next.wovain.com, the environment main deploys to
+# Explicit, so the language host never falls back to infra/package.json's main.
+main: index.ts
+runtime:
+  name: nodejs
+  options:
+    typescript: false
+    packagemanager: pnpm
+backend:
+  url: gs://wovain-pulumi-state

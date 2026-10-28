@@ -32,6 +32,8 @@
     "infra:check-types": "pnpm --dir infra run check-types",
     "infra:bootstrap:preview": "node infra/scripts/pulumi.ts preview infra/bootstrap",
     "infra:bootstrap:up": "node infra/scripts/pulumi.ts up infra/bootstrap",
+    "infra:next:preview": "node infra/scripts/pulumi.ts preview infra/next",
+    "infra:next:up": "node infra/scripts/pulumi.ts up infra/next",
     "infra:preview": "node infra/scripts/pulumi.ts preview infra",
     "infra:test": "pnpm --dir infra run test",
     "infra:up": "node infra/scripts/pulumi.ts up infra"

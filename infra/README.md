@@ -101,35 +101,60 @@ CI's account, its roles and the workload identity pool live in `bootstrap/`, not
 
 `dev.ts` declares the non-production environments with `appEnvironment`. Each owns its resources and holds nothing of production's: it runs `wovain-web-<name>` (scales to zero) as its own runtime account, with its own bucket, database and user, `<id>-<name>` secret for every key the app reads, PostHog project (`posthog/program.ts`), Inngest app id (`INNGEST_APP_ID=wovain-<name>`), `APP_ENV`, image repository and deploy account, which only its own GitHub environment may use. Neither has a grant on production's secrets, its `connections` KMS key or its deploy account; production's deploy account has none on them.
 
-- **next** (next.wovain.com, `APP_ENV=next`): where main deploys. Its own Cloud SQL instance, `wovain-next` (`db-f1-micro`, like production's).
+- **next** (next.wovain.com, `APP_ENV=next`): where main deploys. Its own stack, `next` of the `wovain-next` project (`next/`), so applying it can't plan a change to production (below). Its own Cloud SQL instance, `wovain-next` (`db-f1-micro`, like production's).
 - **dev** (dev.wovain.com, `APP_ENV=development`): rolled out by hand, or from the `dev` GitHub environment as `wovain-deploy-dev`. Its database `wovain_dev` stays on production's instance: moving it means a dump and restore and replacing a protected database, so it is a separate change.
 
 What they still share with production: the Google Cloud project, the `wovain-com` DNS zone, the Resend sending domain (each has its own sending-only key) and the PostHog organization.
 
+### next.wovain.com's own stack (`next/`)
+
+`next/index.ts` declares only next's resources (every name has `next` in it, and `next/next.test.ts` fails otherwise): `appEnvironment` (`dev.ts`), its PostHog project, its Resend sending key, the `next.wovain.com` domain mapping and CNAME, and the `next` GitHub environment with its policy and Actions variables. Its config is plain keys in `next/Pulumi.next.yaml` (`pulumi config set --cwd infra/next --stack next emailFrom ...`). It reads, and never changes, the enabled APIs, the `wovain-com` zone, the `github` pool (`bootstrap/`), Search Console's verification of wovain.com and the Resend domain (`resendDomainId`).
+
+It holds no credential of production's. Its provider credentials are its own stack secrets, each made for next, and a preview without one fails naming it:
+
+| Stack secret | Create it in | Scope |
+| --- | --- | --- |
+| `resendAdminKey` | Resend > API Keys, "wovain next admin", Full access | Resend makes an API key only with a full-access one; the program uses it once, to make next's sending-only key for wovain.com (`resend-api-key-next`). Revoke it separately from production's. |
+| `github:token` | a fine-grained token for sami-m-g/wovain with read and write on Environments and Variables only | The `next` environment, its branch policy and its Actions variables. Production's token also needs Administration and Dependabot, which next must not have. |
+| `posthog:apiKey` | a personal API key in the PostHog organization, with `project:write` (organization scope) | Creating next's project is an organization action, so this key is organization-level; it is next's own key, revocable without touching production's. |
+
+```sh
+pulumi config set --secret --cwd infra/next --stack next resendAdminKey <key>
+pulumi config set --secret --cwd infra/next --stack next github:token <token>
+pulumi config set --secret --cwd infra/next --stack next posthog:apiKey <key>
+```
+
+A preview of a stack not yet in the state starts from an empty one, and `up` creates it (`scripts/pulumi.ts`):
+
+```sh
+pnpm run infra:install
+pnpm run infra:bootstrap:preview   # the `github` pool next's deploy account trusts
+pnpm run infra:bootstrap:up
+pnpm run infra:next:preview        # creates only
+pnpm run infra:next:up
+```
+
 ### Values only a provider's console hands out (one time, per environment)
 
-Pulumi creates every `<id>-<name>` secret, empty until it has a value; an empty one is not mounted, since Cloud Run won't start a revision on a secret with no version. These values have no API or IaC provider to create them, so you paste each once as a stack secret (`pulumi config set --secret --cwd infra --stack prod <id>-<name> <value>`), for `<name>` = `next` and `dev`:
+Pulumi creates every `<id>-<name>` secret, empty until it has a value; an empty one is not mounted, since Cloud Run won't start a revision on a secret with no version. These values have no API or IaC provider to create them, so you paste each once as a stack secret: dev's as `pulumi config set --secret --cwd infra --stack prod <id>-dev <value>`, next's without the suffix in its own stack, `pulumi config set --secret --cwd infra/next --stack next <id> <value>` (the Secret Manager id is still `<id>-next`):
 
 | Stack secret | From | Why it can't be created in code |
 | --- | --- | --- |
 | `inngest-event-key-<name>`, `inngest-signing-key-<name>` | a new Inngest environment per name (Inngest dashboard > Environments > Create) | Inngest has no Terraform or Pulumi provider, and its REST API can't create environments or their keys. |
-| `polar-access-token-<name>` | an organization token of a new Polar sandbox organization per name | Polar's API creates neither organizations nor organization tokens (dashboard only; the sandbox at sandbox.polar.sh is its own environment with its own sign-in), and the community Terraform providers need that token themselves. `polar-webhook-secret-<name>` then gets a placeholder version, and `POLAR_WEBHOOK_URL=https://<host>/api/auth/polar/webhooks POLAR_WEBHOOK_SECRET_ID=polar-webhook-secret-<name> pnpm polar:seed` (with that token) creates the endpoint and writes its real secret. |
-| `google-client-secret-<name>` and the plain config `googleClientId-<name>` | a new OAuth client per name in Google Auth Platform, with `https://<host>/api/auth/callback/google` as its redirect URI | Google's sign-in OAuth clients have no API: the Google provider's `gcp.iam.OauthClient` is for Workforce Identity Federation, and IAP's OAuth clients went away with the IAP OAuth Admin API. |
+| `polar-access-token-<name>` | an organization token of a new Polar sandbox organization per name, never production's | Polar's API creates neither organizations nor organization tokens (dashboard only; the sandbox at sandbox.polar.sh is its own environment with its own sign-in), and the community Terraform providers need that token themselves. `polar-webhook-secret-<name>` then gets a placeholder version, and `POLAR_WEBHOOK_URL=https://<host>/api/auth/polar/webhooks POLAR_WEBHOOK_SECRET_ID=polar-webhook-secret-<name> pnpm polar:seed` (with that token) creates the endpoint and writes its real secret. |
+| `google-client-secret-<name>` and the plain config `googleClientId-<name>` (next: `googleClientId`) | a new OAuth client per name in Google Auth Platform, with `https://<host>/api/auth/callback/google` as its redirect URI | Google's sign-in OAuth clients have no API: the Google provider's `gcp.iam.OauthClient` is for Workforce Identity Federation, and IAP's OAuth clients went away with the IAP OAuth Admin API. |
 | `meta-app-id-<name>`, `meta-app-secret-<name>` | a Meta app per name (or a test app of production's), with `https://<host>/api/connections/meta/callback` | Meta has no API or IaC provider that creates apps; only the developer console does. |
 | `nebius-api-key-<name>`, `tavily-api-key-<name>`, `qloo-api-key-<name>` | each provider's console (Qloo's hackathon key comes from Qloo) | None has an API that creates keys. |
 | `posthog-secret-key-<name>` | the environment's PostHog project > Settings > Secret API keys (`feature_flag:read`) | PostHog's Terraform provider has no secret key resource. Without it the flag registry answers, which is the safe state. |
 
-Created in code, nothing to paste: `better-auth-secret-<name>`, `token-encryption-key-<name>`, `database-url-<name>` (generated), `resend-api-key-<name>` (a sending-only Resend key made with production's full-access key, `resend.ts`), and each PostHog project and its public token.
+Created in code, nothing to paste: `better-auth-secret-<name>`, `token-encryption-key-<name>`, `database-url-<name>` (generated), `resend-api-key-<name>` (a sending-only Resend key, `resend.ts`, made with production's full-access key for dev and with next's own `resendAdminKey` for next), and each PostHog project and its public token.
 
 Until the Inngest keys are set, an environment serves pages but cannot start runs; until the Polar token is set, it cannot check out. Fourthwall needs no app (each merchant connects their own).
 
-### What the preview for this change shows
+### What the previews show
 
-Creates only, for next, dev's new resources and GitHub, plus deletes of dev's old grants. For production: no update and no replace.
-
-- **Creates:** next's instance, database, user, secrets, bucket, runtime and deploy accounts, image repository, service, domain mapping and DNS record; dev's own `<id>-dev` secrets, deploy account and image repository; the two PostHog projects and two Resend keys; the `next`, `dev` and `infrastructure` environments with their main-only policies and variables.
-- **Updates:** `web-dev` (its env: `APP_ENV`, `INNGEST_APP_ID`, its own PostHog token, and only its own secrets).
-- **Deletes:** dev's grants on production's secrets (`runner-dev-<id>` for every provider secret), on production's `connections` KMS key (`runner-dev-connections`; the app no longer reads `WOVAIN_KMS_KEY`), and production's deploy account's grants on dev (`deployer-acts-as-runner-dev`, `deployer-database-url-dev`). These are bindings, not production resources: production's own grants are unchanged.
+- **`next`** (`pnpm run infra:next:preview`): creates only, every one of them next's. No update, replace or delete.
+- **`prod`**: next's resources are no longer in it. Its plan still holds production changes that wait for the freeze to end (about 2026-11-16): the apex TXT record's Search Console token, the delete of `status.wovain.com`'s mapping and record, the GitHub `Production` environment and rulesets, the PostHog project's settings and dashboards, and the retired App Hosting resources, which the state still protects (#47's `up` never ran before #48 merged), so the preview fails until they are unprotected. Don't apply `prod` while production is frozen.
 
 ## PostHog (`posthog/`)
 

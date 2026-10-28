@@ -1,6 +1,6 @@
 # Pulumi from GitHub Actions (infra/README.md, "How infra changes ship").
 #
-# Pull request (same repository only): a read-only preview of both stacks,
+# Pull request (same repository only): a read-only preview of every stack,
 #   on a copy of the state (infra/scripts/pulumi.ts), in the
 #   `infrastructure-preview` environment, which needs the owner's approval,
 #   as infra-preview, which Google trusts only from that environment on this
@@ -9,7 +9,11 @@
 #   verdict (infra/policy/guard.ts), go to the job summary.
 # main: `pulumi up` of the prod stack in the `infrastructure` environment, as
 #   gitlab-infra (infra/bootstrap), after the same preview and guard; then
-#   the Polar catalog seed (packages/billing/src/seed.ts).
+#   the Polar catalog seed (packages/billing/src/seed.ts), which is
+#   production's Polar organization, so it is skipped while
+#   `wovain:freezeProduction` is on.
+# next.wovain.com's stack (infra/next) is previewed here and applied from a
+#   laptop (`pnpm run infra:next:up`, infra/README.md).
 #
 # The bootstrap stack is CI's own identity, so CI only previews it; a project
 # owner applies it (`pnpm run infra:bootstrap:up`).
@@ -85,6 +89,11 @@ jobs:
           node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json"
           echo "### prod" >> "$GITHUB_STEP_SUMMARY"
           node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preview next
+        run: |
+          node infra/scripts/pulumi.ts preview infra/next -- --json > "$RUNNER_TEMP/next.json"
+          echo "### next" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/next.json" >> "$GITHUB_STEP_SUMMARY"
 
   up:
     # Manual only while production is frozen (until the Transcend winners,
@@ -103,6 +112,7 @@ jobs:
       cancel-in-progress: false
     outputs:
       polar-environment: ${{ steps.polar.outputs.environment }}
+      production-frozen: ${{ steps.polar.outputs.frozen }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -129,7 +139,9 @@ jobs:
         run: node infra/scripts/pulumi.ts up infra -- --yes --skip-preview
       - id: polar
         name: Read Polar's environment
-        run: echo "environment=$(pulumi config get polarEnvironment --cwd infra --stack prod 2>/dev/null || echo sandbox)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "environment=$(pulumi config get polarEnvironment --cwd infra --stack prod 2>/dev/null || echo sandbox)" >> "$GITHUB_OUTPUT"
+          echo "frozen=$(pulumi config get freezeProduction --cwd infra --stack prod 2>/dev/null || echo true)" >> "$GITHUB_OUTPUT"
 
   # wovain's plans, packs and promos in Polar, from packages/billing. The
   # seed is idempotent: it finds what it made by metadata, keeps an existing
@@ -137,6 +149,9 @@ jobs:
   # webhook's secret only to Secret Manager, never to the log.
   polar-seed:
     needs: up
+    # Production's Polar organization and webhook: left alone while
+    # production is frozen (infra/index.ts, freezeProduction).
+    if: needs.up.outputs.production-frozen == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: infrastructure

@@ -74,6 +74,78 @@ const SITE_VERIFICATION_SCOPES = [
   "https://www.googleapis.com/auth/siteverification",
 ];
 
+// A record set in the zone, named after its host and type.
+const recordSet = (
+  zone: { name: string; project: string },
+  name: string,
+  type: string,
+  rrdatas: pulumi.Input<pulumi.Input<string>[]>,
+  dependsOn: pulumi.Resource[]
+) =>
+  new gcp.dns.RecordSet(
+    `${name.replaceAll(".", "-")}-${type.toLowerCase()}`,
+    {
+      // The zone's name as a plain string, so it is known in every preview:
+      // managedZone can't change in place, and an unknown one would show
+      // every record set as replaced.
+      managedZone: zone.name,
+      name: `${name}.`,
+      project: zone.project,
+      rrdatas,
+      ttl: TTL_SECONDS,
+      type,
+    },
+    { dependsOn }
+  );
+
+interface HostArgs extends Route {
+  apex: string;
+  project: string;
+  region: string;
+  zone: string;
+  // What the mapping waits on. Whoever runs `pulumi up` must be a verified
+  // owner of the apex in Search Console.
+  dependsOn: pulumi.Resource[];
+  // What its records wait on besides the mapping.
+  recordsDependOn: pulumi.Resource[];
+}
+
+// A host served by a Cloud Run service: its domain mapping, with a
+// Google-managed certificate, and the records the mapping asks for.
+export const mappedHost = (args: HostArgs) => {
+  const { apex, host, project, region } = args;
+  const mapping = new gcp.cloudrun.DomainMapping(
+    host.replaceAll(".", "-"),
+    {
+      location: region,
+      metadata: { namespace: project },
+      name: host,
+      spec: { routeName: args.service },
+    },
+    { dependsOn: args.dependsOn }
+  );
+  // A resource's name can't wait on an output, so the types are known
+  // here and the values are the ones the mapping lists for each type.
+  for (const type of host === apex ? APEX_TYPES : SUBDOMAIN_TYPES) {
+    recordSet(
+      { name: args.zone, project },
+      host,
+      type,
+      // Empty until Google has created the mapping (and in the mocks).
+      mapping.statuses.apply(
+        (
+          statuses: gcp.types.output.cloudrun.DomainMappingStatus[] | undefined
+        ) =>
+          (statuses?.[0]?.resourceRecords ?? [])
+            .filter((r) => r.type === type)
+            .map((r) => r.rrdata)
+      ),
+      [...args.recordsDependOn, mapping]
+    );
+  }
+  return mapping.name;
+};
+
 export const configureDomain = (args: DomainArgs) => {
   const { apex, project, region } = args;
   const record = (
@@ -83,21 +155,10 @@ export const configureDomain = (args: DomainArgs) => {
     // What it waits on besides the APIs.
     dependsOn: pulumi.Resource[] = []
   ) =>
-    new gcp.dns.RecordSet(
-      `${name.replaceAll(".", "-")}-${type.toLowerCase()}`,
-      {
-        // The zone's name as a plain string, so it is known in every preview:
-        // managedZone can't change in place, and an unknown one would show
-        // every record set as replaced.
-        managedZone: args.zone,
-        name: `${name}.`,
-        project,
-        rrdatas,
-        ttl: TTL_SECONDS,
-        type,
-      },
-      { dependsOn: [...args.after, ...dependsOn] }
-    );
+    recordSet({ name: args.zone, project }, name, type, rrdatas, [
+      ...args.after,
+      ...dependsOn,
+    ]);
 
   // Search Console: the token goes into the apex TXT set, then the
   // verification makes whoever runs `pulumi up` (the gitlab-infra account in CI) a
@@ -149,39 +210,18 @@ export const configureDomain = (args: DomainArgs) => {
     );
   }
 
-  const mappings = args.routes.map(({ host, service }) => {
-    const mapping = new gcp.cloudrun.DomainMapping(
-      host.replaceAll(".", "-"),
-      {
-        location: region,
-        metadata: { namespace: project },
-        name: host,
-        spec: { routeName: service },
-      },
-      { dependsOn: [verified, ...args.after] }
-    );
-    // A resource's name can't wait on an output, so the types are known
-    // here and the values are the ones the mapping lists for each type.
-    for (const type of host === apex ? APEX_TYPES : SUBDOMAIN_TYPES) {
-      record(
-        host,
-        type,
-        // Empty until Google has created the mapping (and in the mocks).
-        mapping.statuses.apply(
-          (
-            statuses:
-              | gcp.types.output.cloudrun.DomainMappingStatus[]
-              | undefined
-          ) =>
-            (statuses?.[0]?.resourceRecords ?? [])
-              .filter((r) => r.type === type)
-              .map((r) => r.rrdata)
-        ),
-        [mapping]
-      );
-    }
-    return mapping.name;
-  });
+  const mappings = args.routes.map(({ host, service }) =>
+    mappedHost({
+      apex,
+      dependsOn: [verified, ...args.after],
+      host,
+      project,
+      recordsDependOn: args.after,
+      region,
+      service,
+      zone: args.zone,
+    })
+  );
 
   // Only the listed authorities may issue certificates for the domain.
   record(

@@ -16,11 +16,50 @@ const GITHUB_ACTIONS_APP_ID = 15_368;
 
 type Variables = Record<string, pulumi.Input<string>>;
 
+// An environment only main may use, with no approval. Google trusts each
+// deploy account only from its own environment (infra/dev.ts).
+export const mainOnlyEnvironment = (
+  name: string,
+  repository: pulumi.Input<string>
+) => {
+  const environment = new github.RepositoryEnvironment(name, {
+    deploymentBranchPolicy: {
+      customBranchPolicies: true,
+      protectedBranches: false,
+    },
+    environment: name,
+    repository,
+  });
+  new github.RepositoryEnvironmentDeploymentPolicy(`${name}-main`, {
+    branchPattern: "main",
+    environment: environment.environment,
+    repository,
+  });
+  return environment;
+};
+
+// What a deploy environment's jobs read as `vars.<NAME>`; none is a secret.
+export const environmentVariables = (
+  key: string,
+  environment: github.RepositoryEnvironment,
+  values: Variables
+) => {
+  for (const [variableName, value] of Object.entries(values)) {
+    new github.ActionsEnvironmentVariable(`${key}-${variableName}`, {
+      environment: environment.environment,
+      repository: environment.repository,
+      value,
+      variableName,
+    });
+  }
+};
+
 interface RepositoryArgs {
   // Shared by every workflow and environment.
   variables: Variables;
   // Each deploy environment's own: where it deploys, and as whom.
-  environments: { production: Variables; dev: Variables; next: Variables };
+  // next.wovain.com's `next` environment is its own stack's (infra/next).
+  environments: { production: Variables; dev: Variables };
   // The branch production deploys from, e.g. `release/transcend`.
   releaseBranch: string;
   // GitHub user ids who may approve a production deploy.
@@ -160,30 +199,11 @@ export const githubRepository = ({
     repository: repository.name,
   });
 
-  // Environments that only main may use, with no approval: next.wovain.com
-  // (deploy.yml), dev.wovain.com, and `infrastructure`, the one Google trusts
-  // as the infrastructure account (infra/bootstrap), for when a workflow
-  // runs `pulumi up`. Google trusts each deploy account only from its own
-  // environment (infra/dev.ts).
-  const mainOnly = (name: string) => {
-    const environment = new github.RepositoryEnvironment(name, {
-      deploymentBranchPolicy: {
-        customBranchPolicies: true,
-        protectedBranches: false,
-      },
-      environment: name,
-      repository: repository.name,
-    });
-    new github.RepositoryEnvironmentDeploymentPolicy(`${name}-main`, {
-      branchPattern: "main",
-      environment: environment.environment,
-      repository: repository.name,
-    });
-    return environment;
-  };
-  const next = mainOnly("next");
-  const dev = mainOnly("dev");
-  mainOnly("infrastructure");
+  // Environments that only main may use, with no approval: dev.wovain.com,
+  // and `infrastructure`, the one Google trusts as the infrastructure
+  // account (infra/bootstrap), for when a workflow runs `pulumi up`.
+  const dev = mainOnlyEnvironment("dev", repository.name);
+  mainOnlyEnvironment("infrastructure", repository.name);
   // The label .github/dependabot.yml puts on every update pull request;
   // Dependabot doesn't create it, and a missing label is an error there.
   new github.IssueLabel("dependencies", {
@@ -201,19 +221,6 @@ export const githubRepository = ({
       variableName,
     });
   }
-  const byEnvironment = [
-    ["production", production, environments.production],
-    ["dev", dev, environments.dev],
-    ["next", next, environments.next],
-  ] as const;
-  for (const [key, environment, values] of byEnvironment) {
-    for (const [variableName, value] of Object.entries(values)) {
-      new github.ActionsEnvironmentVariable(`${key}-${variableName}`, {
-        environment: environment.environment,
-        repository: repository.name,
-        value,
-        variableName,
-      });
-    }
-  }
+  environmentVariables("production", production, environments.production);
+  environmentVariables("dev", dev, environments.dev);
 };

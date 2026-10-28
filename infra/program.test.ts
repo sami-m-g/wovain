@@ -81,16 +81,14 @@ test("the program registers every resource once, without throwing", async () => 
     "gcp:dns/recordSet:RecordSet::rsend-wovain-com-cname"
   );
   // GitHub is the primary repository: its main and release rulesets, the
-  // Production, next, dev and infrastructure environments and the Actions
-  // variables deploy.yml
-  // reads (docs/adr/0004-release-branch.md).
+  // Production, dev and infrastructure environments and the Actions
+  // variables deploy.yml reads (docs/adr/0004-release-branch.md). next's
+  // environment is its own stack's (next/next.test.ts).
   for (const urn of [
     "github:index/repositoryRuleset:RepositoryRuleset::main",
     "github:index/repositoryRuleset:RepositoryRuleset::release",
     "github:index/repositoryEnvironment:RepositoryEnvironment::production",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::production-release",
-    "github:index/repositoryEnvironment:RepositoryEnvironment::next",
-    "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::next-main",
     "github:index/repositoryEnvironment:RepositoryEnvironment::dev",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::dev-main",
     "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure",
@@ -98,19 +96,8 @@ test("the program registers every resource once, without throwing", async () => 
     "github:index/issueLabel:IssueLabel::dependencies",
     "github:index/actionsVariable:ActionsVariable::GCP_WORKLOAD_IDENTITY_PROVIDER",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::production-GCP_DEPLOY_SERVICE_ACCOUNT",
-    "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::next-GCP_DEPLOY_SERVICE_ACCOUNT",
-    "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::next-GCP_SQL_INSTANCE",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::dev-GCP_DEPLOY_SERVICE_ACCOUNT",
     "gcp:serviceaccount/iAMMember:IAMMember::deployer-from-github",
-    // next.wovain.com: its own service, Cloud SQL instance, database,
-    // deploy account, images, PostHog project and Resend key.
-    "gcp:cloudrunv2/service:Service::web-next",
-    "gcp:sql/databaseInstance:DatabaseInstance::postgres-next",
-    "gcp:sql/database:Database::wovain-next",
-    "gcp:serviceaccount/account:Account::deploy-next",
-    "gcp:artifactregistry/repository:Repository::images-next",
-    "posthog:index/project:Project::project-next",
-    "pulumi-nodejs:dynamic/resend:ApiKey::resend-next",
     // dev deploys as its own account, never production's.
     "gcp:serviceaccount/account:Account::deploy-dev",
     "posthog:index/project:Project::project-dev",
@@ -130,7 +117,10 @@ test("the program registers every resource once, without throwing", async () => 
   ]) {
     expect(registered).not.toContain(urn);
   }
-  for (const env of ["dev", "next"]) {
+  // next.wovain.com is its own stack (next/): nothing of it is declared
+  // here, so applying production's stack never touches it, and the reverse.
+  expect(registered.filter((r) => r.includes("next"))).toEqual([]);
+  for (const env of ["dev"]) {
     for (const id of [
       "inngest-event-key",
       "inngest-signing-key",
