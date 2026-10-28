@@ -104,5 +104,30 @@ config:
       attempts: 5
       windowSeconds: 600
     runsPerMerchant: 2
+  wovain-next:resendAdminKey:
+    secure: v1:eeLzvm96z2no3YkZ:ahof9d8TCAM5bfaWkYDuCslP2qQoktrxzLOAaU19/YcYMdULjMri2rmAkgoPsVltFyh2KA==
+  github:token:
+    secure: v1:M1rdtZUvR8tOml9T:mWBKQ+/0BtYXTTCCQVBx5sHwg5oMl265myEukDeOdpy8+xLv5beLPj+Zx7yPzAimxbtwzlCn71xQ0ALF0ptHj5ubmPfKwJzab2aBOyFuQzJ4D3vSnD+M97q9sw0GLHAfM+YhCfvfv7j9jXul1w==
+  posthog:apiKey:
+    secure: v1:k4UTkir3RQ9iw0Zr:kCiVPEMImHiQjyBYm+8/Kf0zuSVnJ/ajfeojlscAz/SvaEhcyxj27Sj54EfOc/HBIWL+AGEEOhgS8dsjoi6b1+qiPWE=
+  wovain-next:nebius-api-key:
+    secure: v1:bH7RTmULY9psQ4e9:Vc8Ir/foU9VzQLwD93sn6EisSDQ/O/605yYYg23hx9Nkpl7MesxYdAUmqSwUz2+W65mgDEeFPtz1FALL4mEBPVhnmW3H64xmFf/nL3lqN3q50vDkzFKG54T6s57TttrDF2rV6xEY69tiq7iejFRGge2v+pgP72b38tSCdJdsQHbyQaZ4CFSF7gDxCaJ1U3BC1HwRVCitG1HIXxHPcPwD7QK+YMRhPw/bsNyffVDJuMX8Qvn2d2/Pd5uVmj/OySpgCI89j3OkIa8513PwxS+6iyxRmrATn95Mi5dut7uVAQhZvHr1+9r5dRJENuomCfmhiS65LTCm5fG0ym4=
+  wovain-next:fal-key:
+    secure: v1:3qWEGxYaEGu/V1f2:P13DXzYBAsGm74Jjok3FLf3jUfV1iDyua4fbSh/PgJSjdPyUGRIs+bKkCX+Rh7AUmQJfl1ra34mi7OCzx9N93GX46x0uBIBseX1+a6XdjvahNVtf/GBZLg==
+  wovain-next:tavily-api-key:
+    secure: v1:JlHmRUp5nnKYEdBC:IMPCfHmNtY69TxNh41n9fSHN/QKLF39QGKlJcQhZpxOz66/SCZ8DByjanzsuCijd7ESzM4vPJiP5
+  wovain-next:inngest-event-key:
+    secure: v1:R/eZvgbaAb99klVI:+6E/RcREINkovXHE2oQ6lXk/3xu7qV9Uy1FwU/eKi3AIu8Ic0S/IZZ0+o0loWmNHzmZ5e7DtZj4p+qYOypu5C1YeGzz/k0ley0Js9DyDPVDz5bviONxoYjO80HLodBA4jDvcuNLm
+  wovain-next:inngest-signing-key:
+    secure: v1:fkVDMZ7WC9Q1AM7V:5+wIelYvPnW5wOnRM9O6gc8xz9Iv8edeqeGua3okdUREctiM9Ik3PMQlNzAwK9aCLUe6Quo8Wr6zcVLH6EcHkNBuXvgfRW4jQG3XV7fh0P+quLoHMo7bBDJaw6Y0
+  wovain-next:qloo-api-key:
+    secure: v1:yDGsDzE6Rd9pmbNM:iqR0AaQjGO6EzQnqWRY/8eW93aKQiFo3MAFuzEehsGGGxHzz3UrtDA1X9Qt+9rYD0two2c4AbNL8zamdbw==
+  wovain-next:meta-app-id:
+    secure: v1:/HiE9PWSBntrBndO:XnpXrjh0ZRBt9UpxFz38e4SNqf73iO2Pn80qhpr8Wg==
+  wovain-next:meta-app-secret:
+    secure: v1:7nyeRkBgIWFoeAbQ:6PQCNdRIofxhiVyZReFwm6tUWevDVSC8hrA0wrmCEc+x2+qZWbXqV5fpDPtiEBAY
+  wovain-next:google-client-secret:
+    secure: v1:TvOS3BBiq+efx/Zp:fGjc/ir431tm0PZk3GthUaaZrbqsnW/BKcRxDjsBRkf+GikdUQNXGJGCxz7DSywIsEbh
+  wovain-next:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtTJYD7hIO8Y9PlLFQLiZQEO3hZPd1sPgYdfWsO9bZ38SSQDNTiaDXHGtxz0oHJGmgDvoIcNvBJwZkwoAO0CtPWHzXGt+zsZU9gJXdhJP/QwdHl58V24OZc5ZxLHhZw5+igC+hzvIQQyz3uA=
