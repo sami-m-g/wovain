@@ -89,7 +89,9 @@ export const researchStep = async (
   input: RunInput
 ) => {
   await markRun(actor, runId, { step: "research" });
-  const ideas = await researchIdeas(actor, input.seed, runId);
+  const ideas = await researchIdeas(actor, input.seed, runId, {
+    qloo: input.qloo,
+  });
   const ranked = ideas.map((row) => row.id);
   if (ranked.length === 0 || !input.autopilot) {
     return { ideaIds: ranked };

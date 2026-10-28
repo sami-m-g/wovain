@@ -443,7 +443,9 @@
       "placeholder": "Cozy outdoorsy merch for my houseplant channel",
       "error": "Write at least a few words (10 characters or more).",
       "submit": "Research trends",
-      "submitAutopilot": "Run on autopilot"
+      "submitAutopilot": "Run on autopilot",
+      "qloo": "Use Qloo taste data",
+      "qlooHint": "Turn it off to run on the language model alone and compare the ideas."
     },
     "trends": {
       "title": "Pick the ideas",
@@ -457,7 +459,21 @@
       "sources": "Sources",
       "hasDesign": "Design ready",
       "error": "Pick at least one idea.",
-      "submit": "See designs"
+      "submit": "See designs",
+      "why": "Why this idea",
+      "whyTag": "Fans of {seeds} share the taste “{tag}”.",
+      "whyNoTag": "This theme came from your brief. Qloo's taste map below is for the whole drop.",
+      "whyAlso": "The same fans also like",
+      "whyShare": "{share} from {name}",
+      "whyCues": "Style cues sent to the design brief",
+      "whyFailed": "Qloo didn't answer for this run, so these themes come from your brief alone.",
+      "whyNoMatch": "Qloo didn't recognise anything in your brief, so these themes come from your brief alone.",
+      "whyOff": "This run skipped Qloo, so the language model alone picked these themes.",
+      "domain": {
+        "brand": "Brand",
+        "movie": "Film",
+        "tv_show": "TV"
+      }
     },
     "designs": {
       "title": "Approve the designs",

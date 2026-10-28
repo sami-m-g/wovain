@@ -8,7 +8,7 @@ import {
   getDesign,
   listDesigns,
 } from "../flow/designs";
-import { listIdeas, researchIdeas } from "../flow/ideas";
+import { listIdeas, researchIdeas, tasteMapStatus } from "../flow/ideas";
 import {
   browseCatalog,
   createDesignProduct,
@@ -54,6 +54,10 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) => await researchIdeas(context, input.seed)
     ),
+  // Whether runs show Qloo's taste map and offer an LLM-only run.
+  tasteMap: protectedProcedure.handler(
+    async ({ context }) => await tasteMapStatus(context)
+  ),
 };
 
 export const designsRouter = {
@@ -162,6 +166,8 @@ export const runsRouter = {
         autopilot: z.boolean().default(false),
         countries: countries.default(["US"]),
         dailyBudget: dailyBudget.default(15),
+        // false: an LLM-only run, to compare with Qloo (qloo-taste-map).
+        qloo: z.boolean().optional(),
         seed,
       })
     )

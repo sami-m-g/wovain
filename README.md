@@ -40,9 +40,44 @@ With the `model-routing` flag on (dev and next.wovain.com; off in production for
 - **Which model did what.** Every agent call of a run is saved to its decision trace with the model, the job, the time it took and its result, and shown at `/dashboard/models?run=<id>` (linked from Runs).
 - **Where Token Factory helped.** One OpenAI-compatible endpoint and one key serve all three Nemotron sizes, including the vision model that takes an https image URL directly, so routing by job is a config change, not a new provider. Token Factory serves no Nemotron content-safety model yet (checked 2026-10-28), so safety runs on Lightning through Mastra's moderation processor.
 
-## How wovain uses Qloo
+## Qloo-powered
 
-Qloo is the first step of every run. The seed is resolved to Qloo entities (`/search`), their cross-domain taste tags (`/v2/insights`) become the design themes, and the names Qloo matched are saved as names never to print. Ideas are ranked in code with the inputs saved alongside. Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.mdx).
+Qloo's taste graph decides what a drop is about. Behind the `qloo-taste-map` flag (on in development and next, off in production), every run calls Qloo, whatever the plan:
+
+1. **Seed entities.** `/search` resolves the brief to up to 3 Qloo entities (artists, films, books, brands …).
+2. **Themes.** `/v2/insights` with `filter.type=urn:tag` returns the genre and keyword tags those fans share. The tags become the themes Tavily researches, and each idea keeps its tag and affinity.
+3. **Cross-domain affinities.** `/v2/insights` runs for `urn:entity:brand`, `movie` and `tv_show` with `feature.explainability=true` and `bias.trends=low`. Each affinity keeps the share each seed entity contributed. Their style and mood words (a brand's `personal_style` and `emotional_tone`, a film's style and subgenre tags) go into the design brief. Their names never do.
+4. **Why this idea.** Each idea card has a panel with the seed entities, the theme's tag and affinity, the affinities with their contributing entities, and the style cues sent to the brief. When Qloo fails, matches nothing or is off, the panel says so. The failure is also logged at error level and goes to PostHog Error Tracking.
+5. **With Qloo vs LLM-only.** A "Use Qloo taste data" switch on the brief step starts a run without Qloo, so the two sets of ideas can be compared. `pnpm --filter @wovain/core run evals` (with `QLOO_API_KEY`, `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) runs 8 seeds through both arms. It writes `packages/core/src/evals/qloo-ablation.report.v1.json` with each arm's grounding, explanation, cue count and distance from the seed, plus the themes the two arms share.
+
+A live trace of steps 1 to 3 for the brief "Studio Ghibli", run on 2026-10-28 (the key is redacted, entity IDs are shortened, and the timings are as measured):
+
+```text
+GET /search?query=Studio Ghibli&take=3&types=urn:entity:artist,…,urn:entity:videogame   200  1536 ms
+  → Studio Ghibli (artist), Studio Ghibli: The Films of Hayao Miyazaki and Isao Takahata (book),
+    Sharing a House with the Never-Ending Man: 15 Years at Studio Ghibli (book)
+GET /v2/insights?filter.type=urn:tag&filter.tag.types=urn:tag:genre:media,urn:tag:genre:music,urn:tag:keyword:media
+    &signal.interests.entities=D1222FA1…,6E9076C7…,832C1302…&take=10&bias.trends=low          200   252 ms
+  → J-pop 1.00 · anime 1.00 · J-rock 1.00 · Video-Game Music 0.99 · soundtrack 0.99 · Visual-kei 0.98
+GET /v2/insights?filter.type=urn:entity:movie&feature.explainability=true&bias.trends=low&take=3 …   200  1624 ms
+  → Wolfwalkers 0.81, because: Studio Ghibli 35% · the Ghibli films book 33% · the Ghibli memoir 32%
+    cues sent to the brief: Atmospheric, Adventure, Two tone visual dichotomy
+GET /v2/insights?filter.type=urn:entity:tv_show&feature.explainability=true&bias.trends=low&take=3 … 200   711 ms
+  → The Underground Railroad 0.85, Old Enough! 0.85, 63 Up 0.85
+    cues: Magical realism, Close up intimacy, Childs eye perspective, Minimalist interview framing
+GET /v2/insights?filter.type=urn:entity:brand&feature.explainability=true&bias.trends=low&take=3 …   200   383 ms
+  → Vulture 0.83, MacRumors 0.83, Wired 0.83 · cues: Witty, Insightful, Bold, Analytical
+```
+
+Known limitations:
+
+- The hackathon server refuses artist insights from an artist seed, and trend bias for books and games, so the cross-domain affinities are brands, films and TV only (no music).
+- `bias.trends=medium` replaced the Ghibli fans' brands with unrelated trending ones (a medical association, a bank), so the bias is `low`.
+- `/search` takes the top 3 matches. For "Studio Ghibli", two of them are books about the studio, which pulls the affinities toward documentaries.
+- Tags carry no explainability, so the "why" for a theme is its tag's affinity with the seed entities' fans. The per-entity shares come from the cross-domain affinities.
+- Qloo's hackathon terms limit it to free and demo plans. Running it on every plan in production waits for the founder's confirmation of the license terms.
+
+Details: [docs/integrations/qloo](apps/fumadocs/content/docs/integrations/qloo.mdx).
 
 ## How wovain uses Tavily at runtime
 

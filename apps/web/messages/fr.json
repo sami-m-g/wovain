@@ -443,7 +443,9 @@
       "placeholder": "Du merch nature et cosy pour ma chaîne sur les plantes",
       "error": "Écrivez au moins quelques mots (10 caractères ou plus).",
       "submit": "Rechercher des tendances",
-      "submitAutopilot": "Lancer en pilote automatique"
+      "submitAutopilot": "Lancer en pilote automatique",
+      "qloo": "Utiliser les données de goût Qloo",
+      "qlooHint": "Désactivez-le pour n'utiliser que le modèle de langage et comparer les idées."
     },
     "trends": {
       "title": "Choisir les idées",
@@ -457,7 +459,21 @@
       "sources": "Sources",
       "hasDesign": "Visuel prêt",
       "error": "Choisissez au moins une idée.",
-      "submit": "Voir les visuels"
+      "submit": "Voir les visuels",
+      "why": "Pourquoi cette idée",
+      "whyTag": "Les fans de {seeds} partagent le goût « {tag} ».",
+      "whyNoTag": "Ce thème vient de votre brief. La carte des goûts Qloo ci-dessous vaut pour tout le drop.",
+      "whyAlso": "Ces mêmes fans aiment aussi",
+      "whyShare": "{share} via {name}",
+      "whyCues": "Indices de style envoyés au brief du visuel",
+      "whyFailed": "Qloo n'a pas répondu pour ce lancement : ces thèmes viennent de votre brief seul.",
+      "whyNoMatch": "Qloo n'a rien reconnu dans votre brief : ces thèmes viennent de votre brief seul.",
+      "whyOff": "Ce lancement s'est passé de Qloo : le modèle de langage a choisi ces thèmes seul.",
+      "domain": {
+        "brand": "Marque",
+        "movie": "Film",
+        "tv_show": "Série"
+      }
     },
     "designs": {
       "title": "Valider les visuels",
