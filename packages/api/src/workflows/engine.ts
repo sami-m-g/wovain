@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
 import { createAutopilotFunctions } from "./autopilot";
+import { createDropFunctions } from "./drops";
 import { createFeedbackFunctions } from "./feedback";
 import { createMediaFunctions } from "./media";
 import { createObservability } from "./observability";
@@ -182,6 +183,7 @@ export const createRunEngine = ({
       // its steps send wovain's events too.
       ...createOptimizerFunctions(inngest, { ...services, events }),
       ...createStoreFunctions(inngest, services),
+      ...createDropFunctions(inngest, services),
     ],
     inngest,
     mastra,

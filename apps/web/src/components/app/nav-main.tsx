@@ -19,6 +19,7 @@ export interface NavItem {
   key:
     | "overview"
     | "newDrop"
+    | "drops"
     | "insights"
     | "products"
     | "runs"

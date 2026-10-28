@@ -16,6 +16,7 @@ import {
   ChartLine,
   CreditCard,
   History,
+  Layers,
   LayoutGrid,
   PlugZap,
   Plus,
@@ -47,17 +48,19 @@ const PRODUCTS: NavItem = {
   icon: Store,
   key: "products",
 };
-const WITH_PRODUCTS: readonly NavItem[] = [
-  ...NAV.slice(0, 3),
-  PRODUCTS,
-  ...NAV.slice(3),
-];
 
 // Shown only while the autopilot-triggers flag is on for the merchant.
 const AUTOPILOT: NavItem = {
   href: "/dashboard/autopilot",
   icon: Bot,
   key: "autopilot",
+};
+
+// Drops (design-drops), shown only while the flag is on for the merchant.
+const DROPS: NavItem = {
+  href: "/dashboard/drops",
+  icon: Layers,
+  key: "drops",
 };
 
 const MARK_SIZE = 20;
@@ -69,14 +72,21 @@ const MARK_SIZE = 20;
  */
 export const AppSidebar = ({
   docsUrl,
+  drops = false,
   products = false,
 }: {
   docsUrl: string;
+  drops?: boolean;
   products?: boolean;
 }) => {
   const common = useTranslations("Common");
   const autopilot = useQuery(orpc.autopilot.status.queryOptions());
-  const base = products ? WITH_PRODUCTS : NAV;
+  // Drops after New drop, Products after Insights, Autopilot after Runs.
+  const withDrops = drops ? NAV.toSpliced(2, 0, DROPS) : NAV;
+  const insightsIndex = withDrops.findIndex((item) => item.key === "insights");
+  const base = products
+    ? withDrops.toSpliced(insightsIndex + 1, 0, PRODUCTS)
+    : withDrops;
   const runsIndex = base.findIndex((item) => item.key === "runs");
   const items =
     autopilot.data?.enabled === true

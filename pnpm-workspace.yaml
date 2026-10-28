@@ -16,6 +16,7 @@ overrides:
   ip-address: ^10.7.4
 catalog:
   zod: ^4.6.7
+  sharp: ^0.35.5
   "@base-ui/react": ^1.9.0
   vitest: ^5.0.5
   typescript: npm:@typescript/typescript6@^6.0.2

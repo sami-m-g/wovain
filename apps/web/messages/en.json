@@ -36,7 +36,8 @@
     "billingTitle": "Billing",
     "onboardingTitle": "Get set up",
     "autopilotTitle": "Autopilot",
-    "productsTitle": "Products"
+    "productsTitle": "Products",
+    "dropsTitle": "Drops"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -319,7 +320,8 @@
       "billing": "Billing",
       "onboarding": "Get set up",
       "autopilot": "Autopilot",
-      "products": "Products"
+      "products": "Products",
+      "drops": "Drops"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -1300,6 +1302,66 @@
       "previewRefund": "See refund cost",
       "previewCancel": "See cancel cost",
       "back": "Back"
+    }
+  },
+  "Drops": {
+    "title": "Drops",
+    "intro": "A drop is 4 to 6 products that share one palette and one mark. Qloo's taste tags pick the style and the product mix. Each product gets its own placements, mockups and price.",
+    "planTitle": "Plan a drop",
+    "planIntro": "Pick an idea from a run. wovain chooses the products, draws the art for each placement and prices every product from what Fourthwall charges to make it.",
+    "noIdeas": "Start a run first. Its ideas show up here.",
+    "ideaLabel": "Idea",
+    "ideaPlaceholder": "Choose an idea",
+    "plan": "Plan drop",
+    "planning": "Planning…",
+    "emptyTitle": "No drops yet",
+    "emptyBody": "Plan one from an idea above.",
+    "listLabel": "Your drops",
+    "building": "Drawing and placing the art. Products appear here as they're ready.",
+    "reviewPass": "The vision check passed: placements, hierarchy and a shared look.",
+    "publish": "Publish drop",
+    "live": "Live: {slug}",
+    "chosenBy": "Style chosen from these Qloo tags: {tags}",
+    "chosenByDefault": "No Qloo tag matched a style, so this drop uses streetwear.",
+    "factsPass": "Print checks passed",
+    "placements": "Placements",
+    "placement": "{art} on {region}",
+    "colors": "Colors",
+    "sizes": "Sizes",
+    "price": "Price",
+    "costSource": {
+      "customization": "costs {cost} to make",
+      "catalog": "about {cost} to make (catalog prices)"
+    },
+    "mockupAlt": "Mockup {index} of {title}",
+    "itemStatus": {
+      "draft": "building",
+      "ready": "ready",
+      "published": "published",
+      "failed": "failed"
+    },
+    "status": {
+      "draft": "Building",
+      "in_review": "Ready to review",
+      "live": "Live",
+      "paused": "Paused",
+      "retired": "Retired"
+    },
+    "family": {
+      "skate_punk": "Skate and punk",
+      "indie_folk": "Indie folk",
+      "anime_gaming": "Anime and gaming",
+      "quiet_luxury": "Quiet luxury",
+      "sports_varsity": "Varsity",
+      "streetwear": "Streetwear"
+    },
+    "art": {
+      "graphic": "Back graphic",
+      "mark": "Mark",
+      "typographic": "Type",
+      "pattern": "All-over pattern",
+      "embroidery": "Embroidery",
+      "label": "Label"
     }
   }
 }

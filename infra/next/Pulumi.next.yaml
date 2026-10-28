@@ -38,6 +38,13 @@ config:
   # Voice commands' speech to text on fal (packages/core/src/voice.ts).
   wovain-next:voiceSttModel: nvidia/nemotron-asr-multilingual/asr
   wovain-next:voiceSttFallbackModel: fal-ai/wizper
+  # A drop's fal models per art type (packages/core/src/art.ts).
+  wovain-next:falArtModels:
+    cutout: fal-ai/birefnet/v2
+    pattern: ideogram/v4/tiling/lora
+    typographic: ideogram/vector/text-to-vector
+    upscale: fal-ai/recraft/upscale/crisp
+    vector: fal-ai/recraft/v4.1/text-to-vector
   wovain-next:guardrailInjectionThreshold: "0.8"
   wovain-next:guardrailModerationThreshold: "0.7"
   wovain-next:guardrailPiiThreshold: "0.7"

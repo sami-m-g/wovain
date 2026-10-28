@@ -19,6 +19,7 @@ import { withProvider } from "./connections";
 import { getDesign } from "./designs";
 import { flagContextOf } from "./flags";
 import { once } from "./once";
+import { previewKey, variantsFor } from "./variants";
 
 // An approved design becomes a Fourthwall product: the art goes to the
 // shop's media library, the product is created hidden at wovain's price, and
@@ -90,15 +91,20 @@ export const createDesignProduct = async (
         }),
       provider: "fourthwall",
     });
+    const variants = await variantsFor(actor, call, {
+      garmentColors: approved.brief.garmentColors,
+      slug: blank.slug,
+    });
     const preview = await once(actor, {
       ...write,
-      key: `${key}:preview`,
+      key: previewKey(`${key}:preview`, variants),
       operation: "preview_design",
       perform: async () =>
         await previewDesign(call, {
           catalogProductId: blank.id,
           mediaUri,
           region: blank.region,
+          ...variants,
         }),
       provider: "fourthwall",
     });

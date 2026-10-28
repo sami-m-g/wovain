@@ -10,6 +10,7 @@ import { log } from "evlog";
 import type { Actor } from "./actor";
 import { withProvider } from "./connections";
 import { once } from "./once";
+import { previewKey, variantsFor } from "./variants";
 
 // Fourthwall's placement preview of a design: the art on the blank its
 // product will use (the same pick as ./products), so the merchant approves
@@ -50,15 +51,20 @@ const renderMockups = async (actor: Actor, row: DesignRow) =>
           width: row.artworkWidth,
         }),
     });
+    const variants = await variantsFor(actor, call, {
+      garmentColors: row.brief.garmentColors,
+      slug: blank.slug,
+    });
     const preview = await once(actor, {
       ...write,
-      key: `${key}:preview:${blank.id}`,
+      key: previewKey(`${key}:preview:${blank.id}`, variants),
       operation: "preview_design",
       perform: async () =>
         await previewDesign(call, {
           catalogProductId: blank.id,
           mediaUri,
           region: blank.region,
+          ...variants,
         }),
     });
     if (preview.mockups.length === 0) {

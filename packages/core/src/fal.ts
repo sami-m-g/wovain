@@ -60,64 +60,84 @@ const WAIT_MS = 4 * 60 * 1000;
 
 const statusSchema = z.object({ status: z.string() });
 
-// Two calls, so a durable step can key the paid one: `submit` queues the
-// drawing (submit_job) and returns fal's request ID; `result` waits for that
-// request (check_job) and reads its image (get_job_result), as often as a
-// retry needs, without drawing again. `call` is a session on the merchant's
-// fal grant; `model` is the fal endpoint ID that draws.
+// Any fal model as two calls, so a durable step can key the paid one:
+// `submit` queues the job (submit_job) and returns fal's request ID;
+// `result` waits for that request (check_job) and returns its output
+// (get_job_result), as often as a retry needs, without paying again.
+// `call` is a session on the merchant's fal grant.
+export const createFalJobs = (
+  call: ToolCall,
+  { wait = sleep }: { wait?: (ms: number) => Promise<unknown> } = {}
+) => ({
+  result: async (model: string, requestId: string): Promise<unknown> => {
+    const job = { endpoint_id: model, request_id: requestId };
+    const deadline = Date.now() + WAIT_MS;
+    for (;;) {
+      // Polled one at a time: each check waits for the last.
+      // oxlint-disable-next-line no-await-in-loop
+      const reply = await call("check_job", job);
+      const { status } = findOne(statusSchema, reply, "job status");
+      if (status === "COMPLETED") {
+        break;
+      }
+      if (Date.now() > deadline) {
+        throw new Error(`fal is still drawing (${status})`);
+      }
+      // oxlint-disable-next-line no-await-in-loop
+      await wait(POLL_MS);
+    }
+    return await call("get_job_result", job);
+  },
+  submit: async (model: string, input: Record<string, unknown>) =>
+    findOne(
+      z.object({ request_id: z.string().min(1) }),
+      await call("submit_job", {
+        endpoint_id: model,
+        input,
+        // The prompt is the merchant's design: fal needn't keep it.
+        store_payload: false,
+      }),
+      "request ID"
+    ).request_id,
+});
+
+export type FalJobs = ReturnType<typeof createFalJobs>;
+
+// One design's print art, on createFalJobs; `model` is the fal endpoint ID
+// that draws.
 export const createArtist = (
   call: ToolCall,
   {
     model,
     wait = sleep,
   }: { model: string; wait?: (ms: number) => Promise<unknown> }
-) => ({
-  result: async (requestId: string, log?: Logger): Promise<Artwork> =>
-    await external(
-      log,
-      { operation: "generate_art", provider: "fal" },
-      async () => {
-        const job = { endpoint_id: model, request_id: requestId };
-        const deadline = Date.now() + WAIT_MS;
-        for (;;) {
-          // Polled one at a time: each check waits for the last.
-          // oxlint-disable-next-line no-await-in-loop
-          const reply = await call("check_job", job);
-          const { status } = findOne(statusSchema, reply, "job status");
-          if (status === "COMPLETED") {
-            break;
+) => {
+  const jobs = createFalJobs(call, { wait });
+  return {
+    result: async (requestId: string, log?: Logger): Promise<Artwork> =>
+      await external(
+        log,
+        { operation: "generate_art", provider: "fal" },
+        async () => {
+          const [drawn] = findAll(
+            imageSchema,
+            await jobs.result(model, requestId)
+          );
+          const [image] = drawn?.images ?? [];
+          if (image === undefined) {
+            throw new Error("fal returned no image");
           }
-          if (Date.now() > deadline) {
-            throw new Error(`fal is still drawing (${status})`);
-          }
-          // oxlint-disable-next-line no-await-in-loop
-          await wait(POLL_MS);
+          return image;
         }
-        const [drawn] = findAll(imageSchema, await call("get_job_result", job));
-        const [image] = drawn?.images ?? [];
-        if (image === undefined) {
-          throw new Error("fal returned no image");
-        }
-        return image;
-      }
-    ),
-  submit: async (brief: DesignBrief, log?: Logger): Promise<string> =>
-    await external(
-      log,
-      { operation: "submit_art", provider: "fal" },
-      async () =>
-        findOne(
-          z.object({ request_id: z.string().min(1) }),
-          await call("submit_job", {
-            endpoint_id: model,
-            input: artInput(brief),
-            // The prompt is the merchant's design: fal needn't keep it.
-            store_payload: false,
-          }),
-          "request ID"
-        ).request_id
-    ),
-});
+      ),
+    submit: async (brief: DesignBrief, log?: Logger): Promise<string> =>
+      await external(
+        log,
+        { operation: "submit_art", provider: "fal" },
+        async () => await jobs.submit(model, artInput(brief))
+      ),
+  };
+};
 
 export type Artist = ReturnType<typeof createArtist>;
 

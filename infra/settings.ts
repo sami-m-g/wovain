@@ -68,6 +68,8 @@ export const appSettings = (config: pulumi.Config, key: SettingKey) => {
     BILLING_CATALOG: JSON.stringify(
       config.requireObject(key("billingCatalog"))
     ),
+    // A drop's fal models per art type (packages/core/src/art.ts).
+    FAL_ART_MODELS: JSON.stringify(config.requireObject(key("falArtModels"))),
     MCP_WIDGET_RESOURCE_DOMAINS: config
       .requireObject<string[]>(key("mcpWidgetResourceDomains"))
       .join(","),

@@ -338,6 +338,9 @@ catalogs:
     resend:
       specifier: 6.34.1
       version: 6.34.1
+    sharp:
+      specifier: ^0.35.5
+      version: 0.35.5
     sonner:
       specifier: ^2.0.8
       version: 2.0.8
@@ -791,6 +794,9 @@ importers:
       mastra:
         specifier: 'catalog:'
         version: 1.35.0(@hono/node-server@1.19.17(hono@4.13.13))(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(@opentelemetry/api@1.10.0)(zod@4.6.7)
+      sharp:
+        specifier: 'catalog:'
+        version: 0.35.5(@types/node@26.6.5)
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
@@ -933,6 +939,9 @@ importers:
       posthog-node:
         specifier: 'catalog:'
         version: 5.57.2(@opentelemetry/api@1.10.0)
+      sharp:
+        specifier: 'catalog:'
+        version: 0.35.5(@types/node@26.6.5)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -11451,8 +11460,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       hono: 4.13.13
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.5':
     optionalDependencies:
@@ -18558,7 +18566,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
       '@types/node': 26.6.5
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

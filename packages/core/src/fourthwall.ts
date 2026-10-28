@@ -239,10 +239,14 @@ export interface DesignPreview {
 }
 
 // Renders the design on the blank: the customization the product is made
-// from, and its mockups.
+// from, and its mockups. Without `colors` and `sizes` Fourthwall uses only
+// the blank's first color and size (design-drops passes them).
 export const previewDesign = async (
   call: ToolCall,
-  product: Pick<NewProduct, "catalogProductId" | "mediaUri" | "region">
+  product: Pick<NewProduct, "catalogProductId" | "mediaUri" | "region"> & {
+    colors?: string[] | undefined;
+    sizes?: string[] | undefined;
+  }
 ): Promise<DesignPreview> => {
   const previews = await call("ecommerce_generate-product-design-previews", {
     products: [
@@ -250,6 +254,8 @@ export const previewDesign = async (
         productId: product.catalogProductId,
         regionNames: [product.region],
         regionUrls: [product.mediaUri],
+        ...(product.colors === undefined ? {} : { colors: product.colors }),
+        ...(product.sizes === undefined ? {} : { sizes: product.sizes }),
       },
     ],
   });

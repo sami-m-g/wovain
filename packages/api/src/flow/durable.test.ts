@@ -80,6 +80,9 @@ const fakeProvider = (replies: Record<string, Reply>) => {
   return { call, calls, count };
 };
 
+// The flags a test turned on; every other flag is off.
+const flagsOn = new Set<string>();
+
 const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
   const client = new PGlite();
   const db = drizzle({ client, relations });
@@ -107,9 +110,10 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
   });
   const core = {
     defaultCatalogProductId: "pro_default",
-    // Every flag off: the flows as they ran before their flags, so these
-    // tests stage campaigns targeted by country only.
-    flags: { isOn: async () => await Promise.resolve(false) },
+    // Every flag off unless a test turns it on (flagsOn).
+    flags: {
+      isOn: async (name: string) => await Promise.resolve(flagsOn.has(name)),
+    },
     nemotron: ask,
     upstream: {
       session: async (
@@ -527,6 +531,49 @@ describe("previewPlacement", () => {
       .from(design)
       .where(eq(design.id, row.id));
     expect(saved?.mockups).toEqual([MOCKUP]);
+    vi.unstubAllGlobals();
+  });
+
+  it("sells every size and the brief's colors with design-drops on", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => await Promise.resolve(new Response("png")))
+    );
+    flagsOn.add("design-drops");
+    const shop = fourthwall({
+      "ecommerce_generate-product-design-previews": {
+        results: [{ customizationId: "cus_1", images: [{ url: MOCKUP }] }],
+      },
+      "ecommerce_get-catalog-product-details": [
+        {
+          colors: ["White", "Black", "Sand Dune"],
+          sizes: ["S", "M", "L", "2XL"],
+          slug: "tee",
+        },
+      ],
+    });
+    const ctx = await setup({ fourthwall: shop.call });
+    await connectFourthwall(ctx.db);
+    const row = await seededDesign(ctx.db);
+
+    await previewPlacement(ctx.actor, row);
+
+    expect(
+      shop.calls.find(
+        (item) => item.tool === "ecommerce_generate-product-design-previews"
+      )?.args
+    ).toEqual({
+      products: [
+        {
+          colors: ["Black"],
+          productId: "prd_tee",
+          regionNames: ["front"],
+          regionUrls: ["https://cdn.fourthwall.com/m/1.png"],
+          sizes: ["S", "M", "L", "2XL"],
+        },
+      ],
+    });
+    flagsOn.clear();
     vi.unstubAllGlobals();
   });
 

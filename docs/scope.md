@@ -76,11 +76,12 @@ The builder wants wovain to be a real product that independent designers pay for
 | Quality | Mastra scorers on every agent and step, calibrated LLM judges, guardrails | Planned with the Mastra migration |
 | Analytics | PostHog; North Star "activated merchants per week" | Dashboards built; some events planned |
 | Voice | Hold-to-talk commands: NVIDIA Nemotron ASR on fal, a Nemotron agent picks the action, the merchant confirms once. wovain keeps no audio. Web first; mobile follows the app (#88) | In review, dev and next only |
+| Drops | Capsules of 4 to 6 products chosen from Qloo tags: back print, chest mark, sleeve text, embroidery and label, each drawn by the model that suits it, checked in code and priced from Fourthwall's cost | In review, behind `design-drops` (dev and next) |
 
 ## Later
 
 - An optimizer that reads campaign results and proposes changes, once there is spend data.
-- Multi-product sets per drop (several designs times several blanks) with varied ads.
+- Varied ads per product of a drop.
 - Organizations and seats for labels with more than one person.
 - Annual plans, and bring-your-own Nebius key as a Label option.
 - TikTok Shop and TikTok ads.

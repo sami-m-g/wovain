@@ -36,7 +36,8 @@
     "billingTitle": "Facturación",
     "onboardingTitle": "Configuración",
     "autopilotTitle": "Piloto automático",
-    "productsTitle": "Productos"
+    "productsTitle": "Productos",
+    "dropsTitle": "Drops"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -319,7 +320,8 @@
       "billing": "Facturación",
       "onboarding": "Configuración",
       "autopilot": "Piloto automático",
-      "products": "Productos"
+      "products": "Productos",
+      "drops": "Drops"
     },
     "docs": "Docs",
     "docsLabel": "Docs (se abre en una pestaña nueva)",
@@ -1300,6 +1302,66 @@
       "previewRefund": "Ver coste del reembolso",
       "previewCancel": "Ver coste de la cancelación",
       "back": "Volver"
+    }
+  },
+  "Drops": {
+    "title": "Drops",
+    "intro": "Un drop son de 4 a 6 productos con una misma paleta y una misma marca. Las etiquetas de gusto de Qloo eligen el estilo y los productos. Cada producto tiene sus propias ubicaciones, mockups y precio.",
+    "planTitle": "Planifica un drop",
+    "planIntro": "Elige una idea de una ejecución. wovain elige los productos, dibuja el arte de cada ubicación y pone precio a cada producto según lo que Fourthwall cobra por fabricarlo.",
+    "noIdeas": "Primero inicia una ejecución. Sus ideas aparecen aquí.",
+    "ideaLabel": "Idea",
+    "ideaPlaceholder": "Elige una idea",
+    "plan": "Planificar drop",
+    "planning": "Planificando…",
+    "emptyTitle": "Aún no hay drops",
+    "emptyBody": "Planifica uno a partir de una idea.",
+    "listLabel": "Tus drops",
+    "building": "Dibujando y colocando el arte. Los productos aparecen aquí cuando están listos.",
+    "reviewPass": "La revisión visual pasó: ubicaciones, jerarquía y un estilo común.",
+    "publish": "Publicar drop",
+    "live": "Publicado: {slug}",
+    "chosenBy": "Estilo elegido a partir de estas etiquetas de Qloo: {tags}",
+    "chosenByDefault": "Ninguna etiqueta de Qloo coincidió con un estilo, así que este drop usa streetwear.",
+    "factsPass": "Las comprobaciones de impresión pasaron",
+    "placements": "Ubicaciones",
+    "placement": "{art} en {region}",
+    "colors": "Colores",
+    "sizes": "Tallas",
+    "price": "Precio",
+    "costSource": {
+      "customization": "fabricarlo cuesta {cost}",
+      "catalog": "fabricarlo cuesta unos {cost} (precios del catálogo)"
+    },
+    "mockupAlt": "Mockup {index} de {title}",
+    "itemStatus": {
+      "draft": "en preparación",
+      "ready": "listo",
+      "published": "publicado",
+      "failed": "falló"
+    },
+    "status": {
+      "draft": "En preparación",
+      "in_review": "Listo para revisar",
+      "live": "Publicado",
+      "paused": "En pausa",
+      "retired": "Retirado"
+    },
+    "family": {
+      "skate_punk": "Skate y punk",
+      "indie_folk": "Indie folk",
+      "anime_gaming": "Anime y videojuegos",
+      "quiet_luxury": "Lujo discreto",
+      "sports_varsity": "Universitario",
+      "streetwear": "Streetwear"
+    },
+    "art": {
+      "graphic": "Gráfico trasero",
+      "mark": "Marca",
+      "typographic": "Texto",
+      "pattern": "Estampado completo",
+      "embroidery": "Bordado",
+      "label": "Etiqueta"
     }
   }
 }

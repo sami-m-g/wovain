@@ -23,6 +23,7 @@
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
     "posthog-node": "catalog:",
+    "sharp": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

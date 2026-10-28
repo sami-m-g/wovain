@@ -41,17 +41,25 @@ const DashboardLayout = async ({
   const common = await getTranslations("Common");
   const jar = await cookies();
   const sidebarOpen = jar.get(SIDEBAR_COOKIE)?.value !== "false";
-  // The Products page shows in the rail only while store-management is on.
+  // The Products and Drops pages show in the rail only while
+  // store-management and design-drops are on for the merchant.
   const session = await auth.api.getSession({ headers: await headers() });
   const products =
     session?.user === undefined
       ? false
       : await core.flags.isOn("store-management", { userId: session.user.id });
+  const drops =
+    session?.user !== undefined &&
+    (await core.flags.isOn("design-drops", { userId: session.user.id }));
 
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarOpen} style={RAIL_WIDTH}>
-        <AppSidebar docsUrl={ENV.DOCS_URL} products={products} />
+        <AppSidebar
+          docsUrl={ENV.DOCS_URL}
+          drops={drops}
+          products={products}
+        />
         {/* Session replays mask the merchant's text here (ph-mask): shop
             names, briefs, emails. Inputs are masked everywhere. */}
         <SidebarInset className="ph-mask outline-none" id="main" tabIndex={-1}>

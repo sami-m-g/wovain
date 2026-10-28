@@ -51,6 +51,7 @@
     "DOCS_CHAT_REASONING_EFFORT",
     "DOCS_URL",
     "EMAIL_FROM",
+    "FAL_ART_MODELS",
     "FAL_IMAGE_MODEL",
     "FAL_KEY",
     "FAL_MCP_URL",
