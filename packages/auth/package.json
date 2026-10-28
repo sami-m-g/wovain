@@ -16,6 +16,7 @@
     "@better-auth/cimd": "catalog:",
     "@better-auth/core": "catalog:",
     "@better-auth/drizzle-adapter": "catalog:",
+    "@better-auth/expo": "catalog:",
     "@better-auth/mcp": "catalog:",
     "@better-auth/oauth-provider": "catalog:",
     "@polar-sh/better-auth": "catalog:",

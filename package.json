@@ -22,7 +22,7 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./packages/db/",
+    "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/fumadocs/ && varlock codegen --path ./apps/mobile/ && varlock codegen --path ./packages/db/",
     "postinstall": "pnpm run env:generate",
     "auth:generate": "pnpm --filter web run auth:generate",
     "polar:seed": "pnpm --filter web run polar:seed",

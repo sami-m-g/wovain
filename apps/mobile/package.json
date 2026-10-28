@@ -1,0 +1,46 @@
+{
+  "name": "mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "check-types": "tsc -b ../../packages/api && tsc --noEmit",
+    "env:generate": "varlock codegen",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@better-auth/expo": "catalog:",
+    "@orpc/client": "catalog:",
+    "@orpc/tanstack-query": "catalog:",
+    "@tanstack/react-query": "^5.104.2",
+    "better-auth": "catalog:",
+    "expo": "~58.0.20",
+    "expo-constants": "~58.0.13",
+    "expo-device": "~58.0.5",
+    "expo-linking": "~58.0.14",
+    "expo-network": "~58.0.4",
+    "expo-notifications": "~58.1.6",
+    "expo-router": "~58.0.27",
+    "expo-secure-store": "~58.0.2",
+    "expo-symbols": "~58.0.4",
+    "expo-web-browser": "~58.0.7",
+    "react": "catalog:mobile",
+    "react-native": "catalog:mobile",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-parameters": "^7.29.7",
+    "@types/react": "catalog:",
+    "@typescript/native": "catalog:",
+    "@varlock/expo-integration": "^1.2.2",
+    "@wovain/api": "workspace:*",
+    "babel-preset-expo": "~58.0.21",
+    "typescript": "catalog:",
+    "varlock": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,7 @@
+/src/env.ts
+.expo/
+expo-env.d.ts
+/ios
+/android
+/dist
+*.tsbuildinfo

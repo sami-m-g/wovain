@@ -1,6 +1,7 @@
 import { cimd } from "@better-auth/cimd";
 import { fetchClientMetadataResource } from "@better-auth/cimd/node";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
+import { expo } from "@better-auth/expo";
 import { mcp } from "@better-auth/mcp";
 import type { Scope } from "@better-auth/oauth-provider";
 import { polar as polarAuth, webhooks } from "@polar-sh/better-auth";
@@ -50,9 +51,26 @@ const MCP_SCOPES: Scope[] = ["openid", "profile", "email", "offline_access"];
 // The MCP endpoint ChatGPT connects to: access tokens are bound to it.
 export const mcpResource = (env: Pick<AuthConfig, "MCP_URL">) => env.MCP_URL;
 
-// The app's origin, plus the MCP host's when it differs.
-const trustedOrigins = (env: AuthConfig) => [
-  ...new Set([env.BETTER_AUTH_URL, new URL(mcpResource(env)).origin]),
+// The mobile app's deep link scheme (apps/mobile/app.config.ts): Better
+// Auth sends the merchant back to it after a social sign-in.
+export const MOBILE_SCHEME = "wovain://";
+
+// Expo Go and development builds open on exp://<LAN IP>; trusted only in
+// development, as Better Auth's Expo guide advises.
+const expoDevOrigins = (nodeEnv: string | undefined) =>
+  nodeEnv === "development" ? ["exp://", "exp://**"] : [];
+
+// The app's origin, the MCP host's when it differs, and the mobile app.
+export const trustedOrigins = (
+  env: AuthConfig,
+  nodeEnv = process.env["NODE_ENV"]
+) => [
+  ...new Set([
+    env.BETTER_AUTH_URL,
+    new URL(mcpResource(env)).origin,
+    MOBILE_SCHEME,
+    ...expoDevOrigins(nodeEnv),
+  ]),
 ];
 
 // The merchant's language for an email: the one saved on their account,
@@ -364,6 +382,9 @@ export const createAuth = (
         metadataProfile: "mcp-2026-07-28",
       }),
       ...polarPlugin(env, database, polar, analytics),
+      // The mobile app (@better-auth/expo): reads its expo-origin header as
+      // the request's origin and lets social sign-in return to wovain://.
+      expo(),
       nextCookies(),
     ],
     // On in every environment and kept in Postgres, so each Cloud Run

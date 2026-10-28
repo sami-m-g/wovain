@@ -6,12 +6,15 @@ import { serve } from "inngest/next";
 import { z } from "zod";
 
 import type { EventSender, RunEngine } from "../flow/actor";
+import { expoTransport } from "../flow/push";
+import type { PushTransport } from "../flow/push";
 import { finishRun } from "../flow/runs";
 import { createAutopilotFunctions } from "./autopilot";
 import { createFeedbackFunctions } from "./feedback";
 import { createMediaFunctions } from "./media";
 import { createObservability } from "./observability";
 import { createOptimizerFunctions } from "./optimizer";
+import { createPushFunctions } from "./push";
 import { createLegacyRunEngine, createRunRouter } from "./rollout";
 import {
   APPROVAL_STEP_ID,
@@ -78,6 +81,7 @@ export const createRunEngine = ({
   cloudTrace,
   mastraFor,
   otlpEndpoint,
+  push = expoTransport(process.env["EXPO_ACCESS_TOKEN"]),
   services,
   storage,
 }: {
@@ -89,6 +93,8 @@ export const createRunEngine = ({
   mastraFor: (userId: string) => Promise<boolean>;
   // Also export them to this OTLP endpoint.
   otlpEndpoint?: string | undefined;
+  // Where push notifications go (the Expo Push Service by default).
+  push?: PushTransport;
   services: RunServices;
   storage: PostgresStore;
 }) => {
@@ -180,6 +186,7 @@ export const createRunEngine = ({
       // The ads optimizer (openspec ads-optimizer) enqueues approvals, so
       // its steps send wovain's events too.
       ...createOptimizerFunctions(inngest, { ...services, events }),
+      ...createPushFunctions(inngest, services, push),
     ],
     inngest,
     mastra,
