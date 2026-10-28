@@ -21,6 +21,7 @@ const SECTIONS = {
   "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
   "/dashboard/onboarding": "onboarding",
+  "/dashboard/products": "products",
   "/dashboard/runs": "runs",
 } as const;
 

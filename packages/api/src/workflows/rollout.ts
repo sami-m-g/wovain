@@ -105,7 +105,8 @@ export const createLegacyRunEngine = (services: RunServices): RunEngine => {
         const { productIds } = await productStep(
           actor,
           runId,
-          decided.approvedIds
+          decided.approvedIds,
+          { autopilot: true }
         );
         await campaignStep(actor, runId, { input, productIds });
         await finishRun(actor, runId, { status: "completed" });

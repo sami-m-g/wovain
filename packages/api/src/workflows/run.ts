@@ -238,7 +238,9 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     execute: async ({ inputData }) => {
       const made = await body(
         async (actor, from) =>
-          await productStep(actor, from.runId, from.designIds ?? [])
+          await productStep(actor, from.runId, from.designIds ?? [], {
+            autopilot: from.input.autopilot,
+          })
       )(inputData);
       return { ...inputData, facts: made.facts, productIds: made.productIds };
     },

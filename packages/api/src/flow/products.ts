@@ -8,7 +8,8 @@ import {
   setOfferPrice,
   uploadArtwork,
 } from "@wovain/core/fourthwall";
-import { priceFor, pricingRules } from "@wovain/core/pricing";
+import { priceFor, pricingRules, sizePrices } from "@wovain/core/pricing";
+import { setSizePrices } from "@wovain/core/store";
 import { product } from "@wovain/db/schema/seller";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -16,6 +17,7 @@ import type { Actor } from "./actor";
 import { notFound, notReady } from "./actor";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
+import { flagContextOf } from "./flags";
 import { once } from "./once";
 
 // An approved design becomes a Fourthwall product: the art goes to the
@@ -63,6 +65,10 @@ export const createDesignProduct = async (
     });
   }
   const write = { runId: approved.runId };
+  const bySize = await actor.core.flags.isOn(
+    "store-management",
+    flagContextOf(actor)
+  );
   const created = await withProvider(actor, "fourthwall", async (call) => {
     const blank = await pickBlank(call, {
       defaultProductId: actor.core.defaultCatalogProductId,
@@ -115,7 +121,11 @@ export const createDesignProduct = async (
         }),
     });
     const price = priceFor(blank.baseCost ?? pricingRules().defaultBaseCost);
-    await setOfferPrice(call, offerId, price);
+    // With store-management on, larger sizes carry their surcharge
+    // (PRICING_RULES sizeSurcharges); otherwise one price on every size.
+    await (bySize
+      ? setSizePrices(call, offerId, price, sizePrices(price))
+      : setOfferPrice(call, offerId, price));
     return {
       ...preview,
       catalogProductId: blank.id,
@@ -153,6 +163,12 @@ export const publishDesignProduct = async (actor: Actor, id: string) => {
   const hidden = await getProduct(actor, id);
   if (hidden.status === "public" && hidden.productUrl !== null) {
     return hidden;
+  }
+  if (hidden.status === "retired") {
+    throw notReady({
+      fix: "A retired product is archived on Fourthwall: make a new one from its design.",
+      message: "The product is retired",
+    });
   }
   const productUrl = await withProvider(
     actor,

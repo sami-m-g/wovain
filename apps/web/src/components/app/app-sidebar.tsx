@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   PlugZap,
   Plus,
+  Store,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -40,13 +41,24 @@ const NAV: readonly NavItem[] = [
   { href: "/dashboard/billing", icon: CreditCard, key: "billing" },
 ];
 
+// Store management, while its flag is on (openspec store-management).
+const PRODUCTS: NavItem = {
+  href: "/dashboard/products",
+  icon: Store,
+  key: "products",
+};
+const WITH_PRODUCTS: readonly NavItem[] = [
+  ...NAV.slice(0, 3),
+  PRODUCTS,
+  ...NAV.slice(3),
+];
+
 // Shown only while the autopilot-triggers flag is on for the merchant.
 const AUTOPILOT: NavItem = {
   href: "/dashboard/autopilot",
   icon: Bot,
   key: "autopilot",
 };
-const RUNS_INDEX = NAV.findIndex((item) => item.key === "runs");
 
 const MARK_SIZE = 20;
 
@@ -55,13 +67,21 @@ const MARK_SIZE = 20;
  * icons on desktop (Cmd/Ctrl+B or the rail edge) and becomes a sheet on
  * phones. The rail is dark in both themes, so the logo uses its dark tone.
  */
-export const AppSidebar = ({ docsUrl }: { docsUrl: string }) => {
+export const AppSidebar = ({
+  docsUrl,
+  products = false,
+}: {
+  docsUrl: string;
+  products?: boolean;
+}) => {
   const common = useTranslations("Common");
   const autopilot = useQuery(orpc.autopilot.status.queryOptions());
+  const base = products ? WITH_PRODUCTS : NAV;
+  const runsIndex = base.findIndex((item) => item.key === "runs");
   const items =
     autopilot.data?.enabled === true
-      ? NAV.toSpliced(RUNS_INDEX + 1, 0, AUTOPILOT)
-      : NAV;
+      ? base.toSpliced(runsIndex + 1, 0, AUTOPILOT)
+      : base;
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>

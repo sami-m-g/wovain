@@ -174,7 +174,13 @@ export const product = pgTable(
     offerId: text("offer_id").notNull(),
     price: real("price").notNull(),
     productUrl: text("product_url"),
-    status: text("status", { enum: ["hidden", "public"] })
+    // The lifecycle (@wovain/core/store PRODUCT_STATUSES): hidden is the
+    // draft, in_review waits for the publish approval, public is live,
+    // paused is hidden again after going live, retired is archived. A plain
+    // text column: new values need no migration.
+    status: text("status", {
+      enum: ["hidden", "in_review", "public", "paused", "retired"],
+    })
       .default("hidden")
       .notNull(),
     updatedAt: updatedAt(),

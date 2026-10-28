@@ -20,6 +20,7 @@ export interface NavItem {
     | "overview"
     | "newDrop"
     | "insights"
+    | "products"
     | "runs"
     | "autopilot"
     | "connections"

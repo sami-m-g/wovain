@@ -2,9 +2,9 @@ import { billingCatalog } from "@wovain/billing/catalog";
 import { pickIdea } from "@wovain/core/autopilot";
 import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
-import { design, idea, run } from "@wovain/db/schema/seller";
+import { design, idea, product, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { Actor, RunInput } from "./actor";
@@ -16,6 +16,7 @@ import { getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
+import { stageRunDrop, storeManagementOn } from "./store";
 import { runNotAtIdeas, runNotWaiting } from "./transitions";
 
 // A run takes a seed through the flow: research → ideas → designs →
@@ -314,23 +315,34 @@ export const approvedDesigns = async (actor: Actor, runId: string) => {
   return rows.map((row) => row.id);
 };
 
-// A product for each approved design, published.
+// A product for each approved design. With store-management on, the
+// products stay hidden as a drop in review, and publishing it is an action
+// in the approval queue (./store stageRunDrop): the autonomy level decides
+// whether it runs alone. Without the flag, each product is published here.
 export const productStep = async (
   actor: Actor,
   runId: string,
-  designIds: string[]
+  designIds: string[],
+  { autopilot = false }: { autopilot?: boolean } = {}
 ) => {
   await markRun(actor, runId, { status: "running", step: "product" });
+  const gated = await storeManagementOn(actor);
   const made = await eachSettled(
     runId,
     "product",
     designIds,
     async (designId) => {
       const created = await createDesignProduct(actor, { designId });
-      return await publishDesignProduct(actor, created.id);
+      return gated ? created : await publishDesignProduct(actor, created.id);
     }
   );
   await markRun(actor, runId, { step: "publish" });
+  if (gated) {
+    await stageRunDrop(actor, runId, {
+      autopilot,
+      productIds: made.map((item) => item.id),
+    });
+  }
   return {
     facts: made.map((item) => ({ price: item.price })),
     productIds: made.map((item) => item.id),
@@ -344,10 +356,22 @@ export const campaignStep = async (
   { input, productIds }: { input: RunInput; productIds: string[] }
 ) => {
   await markRun(actor, runId, { step: "campaign" });
+  // Ads only point at live products: a drop still waiting for its publish
+  // approval gets its campaigns from the products page once it is live.
+  const live = await actor.db
+    .select({ id: product.id })
+    .from(product)
+    .where(
+      and(
+        eq(product.userId, actor.userId),
+        inArray(product.id, productIds),
+        isNotNull(product.productUrl)
+      )
+    );
   const staged = await eachSettled(
     runId,
     "campaign",
-    productIds,
+    live.map((row) => row.id),
     async (productId) =>
       await createProductCampaign(actor, {
         countries: input.countries,

@@ -65,6 +65,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | Design | Brief, transparent print art (fal), pricing from the blank's base cost | Live |
 | Judging | Nemotron on Nebius Token Factory, code-checked print size | Live |
 | Publishing | Hidden Fourthwall products, published by a separate step | Live |
+| Store management | Readiness check, drops with a collection, publish, pause and retire, launch codes on a schedule, orders with refunds and cancels (always approved, with Fourthwall's cost preview), samples, per-size prices; every write through the approval queue | In review, behind a flag (dev and next) |
 | Ads | Up to three ad variants per product and a paused Meta campaign | Live |
 | Media buying | Start and pause a campaign from wovain through an approval, within spend caps; sales objective on the pixel, UTM links, status read back from Meta | In progress (dev and next) |
 | Autopilot | End-to-end run where Nemotron decides and code gates; scheduled Qloo and Tavily triggers that suggest drops and act within the autonomy level | Run mode internal-only in production; triggers in dev and next only (`autopilot-triggers` flag) |

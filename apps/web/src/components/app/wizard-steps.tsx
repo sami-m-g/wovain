@@ -59,6 +59,12 @@ import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
 
 const CENTS = 100;
 const IMAGE_SIZE = 640;
+
+// The products step's badge per product status. In review is a publish
+// queued with store-management on; the rest read as hidden.
+const STATUS_KEY: Partial<
+  Record<Product["status"], "public" | "inReview" | "hidden">
+> = { in_review: "inReview", public: "public" };
 export const MAX_BRIEF = 200;
 const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
@@ -628,6 +634,9 @@ export const ProductsStep = ({
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => {
           const live = product.status === "public";
+          // With store-management on, a publish is queued: in review until
+          // the executor puts it live.
+          const queued = product.status === "in_review";
           const title = titles[product.designId] ?? "";
           const [mockup] = product.mockups;
           return (
@@ -651,7 +660,7 @@ export const ProductsStep = ({
                       {title}
                     </h3>
                     <Badge variant={live ? "default" : "outline"}>
-                      {live ? t("public") : t("hidden")}
+                      {t(STATUS_KEY[product.status] ?? "hidden")}
                     </Badge>
                   </CardTitle>
                   <CardDescription>
@@ -678,7 +687,7 @@ export const ProductsStep = ({
                   ) : (
                     <Button
                       className="h-9 w-full"
-                      disabled={Boolean(busyLabel) || live}
+                      disabled={Boolean(busyLabel) || live || queued}
                       onClick={() => onPublish(product)}
                       variant="outline"
                     >

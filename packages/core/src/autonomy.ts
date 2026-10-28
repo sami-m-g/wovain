@@ -9,7 +9,8 @@
 //   activate a promotion or a campaign, change a budget.
 // - R3 destructive or hard to undo: archive, take the site live, change a
 //   shipping address.
-// - R4 money-moving and irreversible: refund, cancel, gift cards.
+// - R4 money-moving and irreversible: refund, cancel, gift cards, sample
+//   checkouts (the designer pays).
 //
 // The merchant's autonomy level (set in the brand wizard) says how far up
 // that scale wovain acts alone:
@@ -65,6 +66,9 @@ export const ACTIONS = {
   "media.creative.refresh": spec("media", "R1"),
   "store.collection.publish": spec("store", "R2"),
   "store.drop.publish": spec("store", "R2"),
+  // The undo of store.drop.publish: hides the drop's products and its
+  // collection again.
+  "store.drop.unpublish": spec("store", "R2"),
   "store.gift_card.create": spec("store", "R4"),
   "store.listing.edit": spec("store", "R1"),
   "store.order.cancel": spec("store", "R4"),
@@ -80,6 +84,8 @@ export const ACTIONS = {
   "store.promotion.create": spec("store", "R1"),
   "store.promotion.deactivate": spec("store", "R2"),
   "store.report.read": spec("store", "R0"),
+  // The designer pays for a sample on Fourthwall's checkout.
+  "store.sample.checkout": spec("store", "R4"),
   "store.site.set_status": spec("store", "R3"),
 } as const satisfies Record<string, ActionSpec>;
 

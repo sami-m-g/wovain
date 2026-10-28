@@ -243,7 +243,7 @@ export const createMcpServer = (
       _meta: widget("product"),
       annotations: writes,
       description:
-        "Make a product public on the merchant's Fourthwall shop and return its page. Ask the merchant first.",
+        "Ask to make a product public on the merchant's Fourthwall shop. Ask the merchant first. Returns the product; when `approval` is set, the publish went to the merchant's approval queue instead of happening now: status pending means the merchant approves it in wovain, approved means it goes live shortly once the shop passes its readiness check. Don't say it is live until status is public.",
       inputSchema: z.object({ productId: id }),
       title: "Publish product",
     },

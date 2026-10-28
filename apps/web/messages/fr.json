@@ -35,7 +35,8 @@
     "pricingDescription": "Commencez gratuitement avec des crédits chaque mois. Studio, Label et les packs de crédits arrivent bientôt. Les crédits paient la recherche et les vérifications IA ; fal, Meta et Fourthwall vous facturent directement.",
     "billingTitle": "Facturation",
     "onboardingTitle": "Configuration",
-    "autopilotTitle": "Pilote automatique"
+    "autopilotTitle": "Pilote automatique",
+    "productsTitle": "Produits"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -317,7 +318,8 @@
       "insights": "Statistiques",
       "billing": "Facturation",
       "onboarding": "Configuration",
-      "autopilot": "Pilote automatique"
+      "autopilot": "Pilote automatique",
+      "products": "Produits"
     },
     "docs": "Docs",
     "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",
@@ -525,6 +527,7 @@
       "lead": "De vrais supports Fourthwall, au prix qui garantit au moins 10 $ de bénéfice par vente après frais. Ils restent masqués jusqu'à la publication.",
       "price": "Prix",
       "hidden": "Masqué",
+      "inReview": "En attente de publication",
       "public": "En ligne",
       "view": "Voir sur Fourthwall",
       "error": "Publiez d'abord au moins un produit.",
@@ -1194,5 +1197,109 @@
     "rejectDesignWhy": "Refuser le design « {design} » parce que {reason}",
     "approveAction": "Approuver « {action} »",
     "rejectAction": "Refuser « {action} »"
+  },
+  "Store": {
+    "title": "Produits",
+    "lead": "Publiez, mettez en pause et retirez des produits, planifiez des codes de lancement et gérez les commandes. Chaque changement passe par vos validations.",
+    "queued": "Envoyé dans vos validations.",
+    "approved": "Validé. wovain s'en occupe.",
+    "readiness": {
+      "title": "Boutique prête",
+      "ready": "Votre boutique peut recevoir des commandes.",
+      "notReady": "Corrigez ces points avant toute publication.",
+      "passed": "(fait)",
+      "failed": "(à corriger)",
+      "site_live": {
+        "label": "La boutique est en ligne",
+        "fix": "Dans Fourthwall, passez le statut du site à Live."
+      },
+      "verified": {
+        "label": "La boutique est vérifiée",
+        "fix": "Fourthwall examine encore votre boutique. Contactez le support Fourthwall pour finaliser."
+      },
+      "store_role": {
+        "label": "Vous pouvez gérer la boutique",
+        "fix": "Reconnectez Fourthwall en tant que propriétaire ou gestionnaire de la boutique."
+      },
+      "shipping": {
+        "label": "La livraison est activée",
+        "fix": "Dans Fourthwall, activez la livraison et ajoutez au moins un profil de livraison."
+      },
+      "payouts": {
+        "label": "Les versements sont configurés",
+        "fix": "Dans Fourthwall, finalisez votre compte de versement pour recevoir vos ventes."
+      }
+    },
+    "queue": {
+      "title": "Validations de la boutique",
+      "lead": "Ce que wovain veut faire dans votre boutique. Les remboursements et annulations vous attendent toujours.",
+      "empty": "Rien en attente.",
+      "approve": "Valider",
+      "reject": "Refuser",
+      "status": {
+        "pending": "En attente",
+        "approved": "Validé",
+        "rejected": "Refusé",
+        "denied": "Bloqué",
+        "expired": "Expiré",
+        "executing": "En cours",
+        "done": "Terminé",
+        "failed": "Échec",
+        "reverted": "Annulé"
+      }
+    },
+    "drops": {
+      "title": "Drops",
+      "empty": "Pas encore de drop. Une exécution en crée un quand vous validez ses designs.",
+      "products": "{count, plural, one {# produit} other {# produits}}",
+      "publish": "Publier le drop",
+      "code": "Code de lancement",
+      "percentage": "% de remise",
+      "maxUses": "Utilisations max.",
+      "startsAt": "Début",
+      "endsAt": "Fin",
+      "planPromotion": "Planifier le code"
+    },
+    "dropStatus": {
+      "draft": "Brouillon",
+      "in_review": "En revue",
+      "live": "En ligne",
+      "paused": "En pause",
+      "retired": "Retiré"
+    },
+    "products": {
+      "title": "Produits",
+      "lead": "Les grandes tailles coûtent plus cher à fabriquer : elles ont un supplément sur le prix.",
+      "empty": "Pas encore de produit.",
+      "mockupAlt": "Maquette de {title}",
+      "view": "Voir dans la boutique",
+      "price": "Prix (USD)",
+      "reprice": "Changer le prix",
+      "sample": "Commander un échantillon",
+      "sampleLead": "Choisissez une variante. Vous payez au prix coûtant sur Fourthwall :",
+      "move": {
+        "publish": "Publier",
+        "unpublish": "Dépublier",
+        "retire": "Retirer"
+      }
+    },
+    "productStatus": {
+      "hidden": "Brouillon",
+      "in_review": "En revue",
+      "public": "En ligne",
+      "paused": "En pause",
+      "retired": "Retiré"
+    },
+    "orders": {
+      "title": "Commandes",
+      "lead": "Les dernières commandes Fourthwall. Les données client restent dans Fourthwall.",
+      "empty": "Pas encore de commande.",
+      "refund": "Rembourser",
+      "cancel": "Annuler la commande",
+      "reason": "Motif",
+      "previewRefund": "Voir le coût du remboursement",
+      "previewCancel": "Voir le coût de l'annulation",
+      "back": "Retour"
+    }
   }
 }
