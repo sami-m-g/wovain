@@ -111,7 +111,7 @@ CI's account, its roles and the workload identity pool live in `bootstrap/`, not
 
 - an insight and an alert per KPI in `kpis.yml`;
 - the "wovain health" dashboard and the Growth, Retention, Agent quality and cost, and Web vitals dashboards, with the insights in `dashboards.ts`;
-- the project settings (cookieless hashing, no stored IPs, the default test account filters) and the run-rating survey (created as a draft);
+- the project settings (cookieless hashing, no stored IPs, the default test account filters, the authorized domains, session replay, heatmaps, exceptions and web vitals) and the run-rating survey (created as a draft);
 - the app's feature flags, from `flags.json`. `packages/core/src/flag-posthog.test.ts` writes that file from the typed registry, and fails while they differ. A flag's Status (`active`) is set once at creation and then ignored (`ignoreChanges`): it is the kill switch, flipped in PostHog without drift.
 
 Stack config:
