@@ -23,6 +23,7 @@ const env = z
     GUARDRAILS: z.enum(["on", "off"]).default("on"),
     NEBIUS_API_KEY: z.string().optional(),
     NEBIUS_BASE_URL: z.url().default("https://api.tokenfactory.nebius.com/v1/"),
+    NEMOTRON_MODEL: z.string().min(1),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
     QLOO_API_KEY: z.string().optional(),
     QLOO_API_URL: z.url().default("https://hackathon.api.qloo.com"),

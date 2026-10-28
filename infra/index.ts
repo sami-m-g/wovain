@@ -304,10 +304,12 @@ export const docsUrl = `https://docs.${domain}`;
 export const mcpUrl = `https://mcp.${domain}/api/mcp`;
 const serviceName = "wovain-web";
 
-// Settings production and dev (dev.ts) share.
+// Settings production and dev (dev.ts) share. NEMOTRON_MODEL is the Nebius
+// model the agents call (`pulumi config set nemotronModel <id>`).
 const sharedEnvs = {
   GITLAB_FEATURE_FLAGS_URL: `https://gitlab.com/api/v4/feature_flags/unleash/${gitlabProjectId}`,
   NEBIUS_BASE_URL: "https://api.tokenfactory.nebius.com/v1/",
+  NEMOTRON_MODEL: config.require("nemotronModel"),
   QLOO_API_URL: "https://hackathon.api.qloo.com",
 };
 
@@ -369,6 +371,7 @@ const service = cloudRunService("web", {
   envs: [
     { name: "BETTER_AUTH_URL", value: siteUrl },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
+    { name: "NEMOTRON_MODEL", value: sharedEnvs.NEMOTRON_MODEL },
     { name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT", value: "production" },
     {
       name: "GITLAB_FEATURE_FLAGS_URL",
@@ -412,8 +415,8 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-// The smallest Nemotron on Token Factory ($0.06 in, $0.24 out per 1M tokens).
-const DOCS_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B";
+// The docs chat's Nebius model (`pulumi config set docsChatModel <id>`).
+const docsChatModel = config.require("docsChatModel");
 const nebiusKey = secrets.get("nebius-api-key");
 const nebiusVersion = populated.get("nebius-api-key");
 if (nebiusKey === undefined) {
@@ -430,7 +433,7 @@ const docsService = cloudRunService("docs", {
   envs: [
     { name: "SITE_URL", value: docsUrl },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
-    { name: "NEBIUS_MODEL", value: DOCS_MODEL },
+    { name: "DOCS_CHAT_MODEL", value: docsChatModel },
     ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
   location: region,

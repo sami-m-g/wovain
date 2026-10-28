@@ -21,6 +21,8 @@ export interface CoreConfig extends FlagsConfig {
   META_APP_SECRET?: string | undefined;
   NEBIUS_API_KEY?: string | undefined;
   NEBIUS_BASE_URL: string;
+  // The Nebius model ID wovain's agents call (apps/web/.env.schema).
+  NEMOTRON_MODEL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
@@ -45,6 +47,7 @@ export const createCore = (
         : "development",
     guardrails: env.GUARDRAILS !== "off",
     memory,
+    model: env.NEMOTRON_MODEL,
     posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
@@ -60,6 +63,8 @@ export const createCore = (
     // GitLab feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
+    // The model ID, for analytics events (packages/api/src/flow).
+    model: env.NEMOTRON_MODEL,
     nemotron,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(
