@@ -1,3 +1,4 @@
+import { expoTransport } from "@wovain/api/flow/push";
 import { createRunEngine } from "@wovain/api/workflows/engine";
 import { createMastraStorage } from "@wovain/api/workflows/storage";
 import { createAuth } from "@wovain/auth";
@@ -39,6 +40,8 @@ export const {
   mastraFor: (userId) => core.flags.isOn("mastra-runs", { userId }),
   // The OTLP backend gets them too when it's configured (src/lib/otel.ts).
   otlpEndpoint: process.env["OTEL_EXPORTER_OTLP_ENDPOINT"],
+  // Pushes to the mobile app go through the Expo Push Service.
+  push: expoTransport(ENV.EXPO_ACCESS_TOKEN),
   services: { analytics, billing, core, db, mailer },
   storage,
 });

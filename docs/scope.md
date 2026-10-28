@@ -61,6 +61,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | Area | In | Status |
 | --- | --- | --- |
 | Surfaces | Next.js 16 website and ChatGPT app (MCP server with widgets) in one app on Cloud Run | Live |
+| Mobile | Expo app: suggestions inbox, approvals queue, drops and designs review, KPIs, push notifications; mic slot for voice | In review, internal TestFlight and Play testing only |
 | Research | Qloo taste graph and Tavily web search | Live |
 | Design | Brief, transparent print art (fal), pricing from the blank's base cost | Live |
 | Judging | Nemotron on Nebius Token Factory, code-checked print size | Live |

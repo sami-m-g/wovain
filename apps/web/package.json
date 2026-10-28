@@ -32,7 +32,7 @@
     "@orpc/zod": "catalog:",
     "@stepperize/react": "^8.0.1",
     "@tanstack/react-form": "^1.33.5",
-    "@tanstack/react-query": "^5.104.2",
+    "@tanstack/react-query": "catalog:",
     "@tanstack/react-table": "catalog:",
     "@varlock/nextjs-integration": "catalog:",
     "@wovain/api": "workspace:*",
