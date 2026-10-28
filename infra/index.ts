@@ -1,5 +1,3 @@
-// First: holds production while it is frozen (freeze.ts).
-import "./freeze.ts";
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";

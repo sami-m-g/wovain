@@ -3,9 +3,12 @@
 // resource that isn't retainOnDelete or retired (retired.ts): a policy never
 // sees deletes, and the engine's protect only covers what's already
 // protected in the state. Also fails when the plan changes a resource that
-// is frozen (../freeze.json).
+// is frozen: wovain-web or wovain-docs while `wovain:freezeProduction` is
+// on in Pulumi.prod.yaml (on unless set to false; infra/index.ts holds them).
 // Usage: node infra/policy/guard.ts < preview.json > preview.md
 import { readFileSync } from "node:fs";
+
+import { parse } from "yaml";
 
 import { RETIRED } from "./retired.ts";
 import { STATEFUL } from "./types.ts";
@@ -35,14 +38,23 @@ const lost = changes.filter(
     oldState.retainOnDelete !== true &&
     !(key(urn) in RETIRED)
 );
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- our own file
-const freeze = JSON.parse(
-  readFileSync(new URL("../freeze.json", import.meta.url), "utf-8")
-) as { until: string; resources: string[] };
-const frozen =
-  new Date() < new Date(freeze.until)
-    ? changes.filter(({ urn }) => freeze.resources.includes(key(urn)))
-    : [];
+// Production's services while it is frozen (`wovain:freezeProduction`, on
+// unless the stack sets it to false). infra/index.ts makes Pulumi leave
+// their templates as they are live; this catches any change that still
+// gets through.
+const FROZEN = new Set([
+  "wovain::gcp:cloudrunv2/service:Service::web",
+  "wovain::gcp:cloudrunv2/service:Service::docs",
+]);
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's stack file
+const { config: stackConfig } = parse(
+  readFileSync(new URL("../Pulumi.prod.yaml", import.meta.url), "utf-8")
+) as { config?: Record<string, unknown> };
+const productionFrozen =
+  String(stackConfig?.["wovain:freezeProduction"] ?? "true") !== "false";
+const frozen = productionFrozen
+  ? changes.filter(({ urn }) => FROZEN.has(key(urn)))
+  : [];
 const errors = (preview.diagnostics ?? []).filter(
   (d) => d.severity === "error"
 );
@@ -68,7 +80,7 @@ const lines = [
   ...lost.map((step) => `- **Blocked:** ${step.op} of \`${name(step.urn)}\``),
   ...frozen.map(
     (step) =>
-      `- **Frozen until ${freeze.until}:** ${step.op} of \`${name(step.urn)}\``
+      `- **Frozen (wovain:freezeProduction):** ${step.op} of \`${name(step.urn)}\``
   ),
   ...errors.map((d) => `- **Error:** ${d.message.trim()}`),
 ];
@@ -81,7 +93,7 @@ if (lost.length > 0) {
 }
 if (frozen.length > 0) {
   process.stderr.write(
-    `Frozen until ${freeze.until}: the plan changes ${frozen.map((step) => name(step.urn)).join(", ")}. infra/freeze.ts should hold them.\n`
+    `Frozen: the plan changes ${frozen.map((step) => name(step.urn)).join(", ")} while wovain:freezeProduction is on.\n`
   );
   process.exitCode = 1;
 }
