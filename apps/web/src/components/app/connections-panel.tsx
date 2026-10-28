@@ -142,15 +142,24 @@ const ProviderItem = ({
   );
 };
 
+// The providers this merchant connects: fal drops out while wovain draws
+// on its own key (the onboarding-wizard flag).
+const useShownProviders = () => {
+  const { data } = useQuery(orpc.onboarding.status.queryOptions());
+  const wovainDraws = data?.enabled === true && data.wovainDraws;
+  return PROVIDERS.filter((provider) => !(provider === "fal" && wovainDraws));
+};
+
 export const ConnectionsPanel = () => {
   const { data, error, isPending } = useQuery(
     orpc.connections.list.queryOptions()
   );
+  const providers = useShownProviders();
 
   if (isPending) {
     return (
       <ul className="flex flex-col gap-3">
-        {PROVIDERS.map((provider) => (
+        {providers.map((provider) => (
           <li key={provider}>
             <Skeleton className="h-24 w-full rounded-xl" />
           </li>
@@ -163,7 +172,7 @@ export const ConnectionsPanel = () => {
     return <FlowProblemNotice problem={describeProblem(error)} />;
   }
 
-  const firstMissing = PROVIDERS.find(
+  const firstMissing = providers.find(
     (provider) =>
       !data.some((item) => item.provider === provider && !item.needsReconnect)
   );
@@ -171,7 +180,7 @@ export const ConnectionsPanel = () => {
   return (
     <div className="flex flex-col">
       <ul className="flex w-full flex-col gap-3">
-        {PROVIDERS.map((provider) => (
+        {providers.map((provider) => (
           <ProviderItem
             connection={data.find((item) => item.provider === provider)}
             key={provider}
@@ -189,6 +198,7 @@ export const ConnectionsSummary = () => {
   const t = useTranslations("Connections");
   const dashboard = useTranslations("Dashboard");
   const { data, isPending } = useQuery(orpc.connections.list.queryOptions());
+  const providers = useShownProviders();
 
   if (isPending) {
     return <Skeleton className="h-36 w-full rounded-xl" />;
@@ -196,7 +206,7 @@ export const ConnectionsSummary = () => {
 
   return (
     <ul className="border-border bg-card divide-border flex w-full flex-col divide-y rounded-xl border">
-      {PROVIDERS.map((provider) => {
+      {providers.map((provider) => {
         const found = data?.find((item) => item.provider === provider);
         const expired = found?.needsReconnect === true;
         return (

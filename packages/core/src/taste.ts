@@ -34,7 +34,7 @@ export const createMerchantMemory = (storage: MastraCompositeStore) =>
     storage,
   });
 
-const tasteThread = (userId: string) => `taste:${userId}`;
+export const tasteThread = (userId: string) => `taste:${userId}`;
 
 // Adds one decision to the merchant's working memory.
 export const recordTaste = async (

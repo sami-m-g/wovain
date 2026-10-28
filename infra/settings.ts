@@ -88,10 +88,12 @@ export const buildEnv = (settings: Record<string, string>, mcp: string) =>
     .join("\n");
 
 // The provider secrets every non-production environment holds its own of
-// (`<id>-<name>` in Secret Manager, dev.ts), never production's. fal-key and
-// wovain-allowed-emails are no longer read. infra/README.md lists where each
-// value comes from.
+// (`<id>-<name>` in Secret Manager, dev.ts), never production's. fal-key is
+// wovain's own fal key, which designs draw on while the onboarding-wizard
+// flag is on (`fal-key-next`); wovain-allowed-emails is no longer read.
+// infra/README.md lists where each value comes from.
 const ENVIRONMENT_SECRET_IDS = [
+  "fal-key",
   "google-client-secret",
   "inngest-event-key",
   "inngest-signing-key",

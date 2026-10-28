@@ -148,6 +148,41 @@ const entitiesSchema = z.object({
 });
 
 const QLOO_TAG = /^urn:tag:[\w.:-]+$/u;
+const QLOO_ENTITY = /^urn:entity:[\w.:-]+$/u;
+
+// What a designer names as a taste reference: artists, films and brands,
+// and the people, books and games behind an aesthetic.
+const REFERENCE_TYPES = [
+  "urn:entity:artist",
+  "urn:entity:book",
+  "urn:entity:brand",
+  "urn:entity:movie",
+  "urn:entity:person",
+  "urn:entity:podcast",
+  "urn:entity:tv_show",
+  "urn:entity:videogame",
+].join(",");
+
+const entitySearchSchema = z.object({
+  results: z.array(
+    z.object({
+      entity_id: z.string().max(128),
+      name: z.string().max(300),
+      popularity: z.number().optional(),
+      types: z.array(z.string().max(100)).optional(),
+    })
+  ),
+});
+
+// An entity Qloo matched for the seed ("artist", "movie", "brand" …) or for
+// a taste reference (search).
+export interface QlooEntity {
+  id: string;
+  name: string;
+  popularity?: number;
+  // The entity's Qloo type, e.g. urn:entity:movie; empty when Qloo gave none.
+  type: string;
+}
 
 export interface QlooTheme {
   affinity: number;
@@ -168,13 +203,6 @@ export interface QlooSearchEntity {
   id: string;
   name: string;
   types: string[];
-}
-
-// An entity Qloo matched for the seed: "artist", "movie", "brand" …
-export interface QlooEntity {
-  id: string;
-  name: string;
-  type: string;
 }
 
 // What the seed's fans also like in another domain, and why: each seed
@@ -502,7 +530,29 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       }));
     });
 
-  return { audienceAffinity, demographicsOf, searchEntities, tasteOf };
+  // Qloo entities named like the query, best match first, across every
+  // entity a designer can name as a taste reference.
+  const search = async (
+    query: string,
+    { log, take = 1 }: { log?: Logger | undefined; take?: number } = {}
+  ): Promise<QlooEntity[]> =>
+    await external(log, { operation: "search", provider: "qloo" }, async () => {
+      const { results } = await get(
+        "/search",
+        { query, take: String(take), types: REFERENCE_TYPES },
+        entitySearchSchema
+      );
+      return results.map((entity) => ({
+        id: entity.entity_id,
+        name: entity.name,
+        type: entity.types?.find((type) => QLOO_ENTITY.test(type)) ?? "",
+        ...(entity.popularity === undefined
+          ? {}
+          : { popularity: entity.popularity }),
+      }));
+    });
+
+  return { audienceAffinity, demographicsOf, search, searchEntities, tasteOf };
 };
 
 export type Qloo = ReturnType<typeof createQloo>;

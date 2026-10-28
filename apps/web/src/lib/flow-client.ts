@@ -24,6 +24,11 @@ export type BillingStatus = Outputs["billing"]["status"];
 export type Insights = Outputs["insights"]["overview"];
 export type InsightRange = Insights["range"]["key"];
 export type ModelTrace = Outputs["models"]["trace"];
+type OnboardingStatus = Outputs["onboarding"]["status"];
+export type OnboardingReady = Extract<OnboardingStatus, { enabled: true }>;
+export type ProviderHealth = OnboardingReady["connections"][number];
+export type ResolvedReference =
+  Outputs["onboarding"]["resolveReferences"][number];
 
 export const PROVIDERS = [
   "fourthwall",

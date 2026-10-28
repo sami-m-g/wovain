@@ -33,7 +33,8 @@
     "modelsTitle": "Models",
     "pricingTitle": "Pricing: plans and credits for merch drops",
     "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
-    "billingTitle": "Billing"
+    "billingTitle": "Billing",
+    "onboardingTitle": "Get set up"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -311,7 +312,8 @@
       "runs": "Runs",
       "connections": "Connections",
       "insights": "Insights",
-      "billing": "Billing"
+      "billing": "Billing",
+      "onboarding": "Get set up"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -363,7 +365,8 @@
       "drop": {
         "title": "Start your first drop",
         "body": "One sentence about who it's for. wovain researches trends, then draws designs with your fal account. Fourthwall publishes them and Meta runs the ads.",
-        "action": "Start"
+        "action": "Start",
+        "bodyWovainDraws": "One sentence about who it's for. wovain researches trends and draws the designs, paid from your credits. Fourthwall publishes them and Meta runs the ads."
       },
       "missing": "Still to connect:",
       "needs": {
@@ -372,7 +375,12 @@
         "meta": "Meta, for ads"
       },
       "lead": "Three steps, then wovain can take a brief all the way to a paused campaign.",
-      "next": "Next"
+      "next": "Next",
+      "brand": {
+        "title": "Describe your brand",
+        "body": "Name 3 to 5 artists, films or brands your work sits next to. wovain looks them up on Qloo and designs with that taste.",
+        "action": "Open"
+      }
     }
   },
   "Runs": {
@@ -924,6 +932,115 @@
         "question": "When can I buy Studio, Label or credits?",
         "answer": "Soon. For now every account is on Free. Press Notify me on the plan you want, so we know which one to open first."
       }
+    }
+  },
+  "Onboarding": {
+    "title": "Set up wovain",
+    "progress": "Step {step, number} of {total, number}",
+    "off": {
+      "title": "Setup isn't on for your account yet",
+      "body": "You can still connect your accounts from Connections and start a drop.",
+      "back": "Back to overview"
+    },
+    "health": {
+      "state": {
+        "connected": "Connected",
+        "expired": "Sign-in expired",
+        "missing": "Not connected"
+      },
+      "neededFor": {
+        "publish": "Publishes your products to your shop.",
+        "ads": "Builds your ad campaigns, paused until you approve them.",
+        "art": "Draws your designs on your fal account."
+      },
+      "optional": "You can add it later."
+    },
+    "connect": {
+      "title": "Connect your shop and your ads",
+      "lead": "wovain works inside your own accounts. Each takes one click, and you can disconnect at any time.",
+      "leadWovainDraws": "wovain works inside your own accounts. Each takes one click. You don't need a fal account: wovain draws your designs and takes the cost from your credits.",
+      "ready": "You can start a drop now.",
+      "notReady": "Connect Fourthwall before your first drop.",
+      "next": "Next",
+      "later": "Skip for now"
+    },
+    "brand": {
+      "title": "Your brand",
+      "lead": "Name the artists, films and brands your work sits next to. wovain looks each one up on Qloo, and your research and ads start from that taste.",
+      "referencesLegend": "Taste references",
+      "referencesHelp": "Between 3 and 5: a musician, a director, a label you admire.",
+      "referenceLabel": "Reference {number, number}",
+      "placeholder": {
+        "first": "Wes Anderson",
+        "second": "Comme des Garçons",
+        "third": "Studio Ghibli"
+      },
+      "addReference": "Add another",
+      "resolve": "Look up on Qloo",
+      "resolving": "Looking up…",
+      "resolveFailed": "The lookup didn't finish: {message}",
+      "status": {
+        "direct": "Found on Qloo",
+        "proxy": "Found through related names",
+        "unresolved": "Not found"
+      },
+      "entities": "Qloo matches",
+      "notFound": "Qloo doesn't know this one, and the web search turned up nothing it knows. It stays in your references.",
+      "failed": "The lookup failed for this one. Try again in a minute.",
+      "readFrom": "Related names from",
+      "voiceLabel": "Voice",
+      "voicePlaceholder": "dry, lowercase, no emoji",
+      "paletteLabel": "Palette",
+      "paletteHelp": "Up to {max, number} hex colors, separated by commas.",
+      "paletteInvalid": "{color} isn't a hex color like #1A1A1A.",
+      "nichesLabel": "Niches",
+      "nichesPlaceholder": "y2k racing, cottagecore",
+      "skip": "Skip",
+      "save": "Save and continue",
+      "saving": "Saving…",
+      "saveFailed": "Saving didn't work: {message}",
+      "notRemembered": "Your brand is saved. wovain couldn't add it to its memory this time, so save it again later."
+    },
+    "autonomy": {
+      "title": "How much wovain does on its own",
+      "lead": "Pick how far wovain goes before it asks you. Anything that spends money waits for your approval.",
+      "levelLegend": "Autonomy",
+      "levels": {
+        "suggest": {
+          "title": "Suggest",
+          "body": "wovain suggests drops and changes. You start everything."
+        },
+        "draft": {
+          "title": "Draft",
+          "body": "wovain drafts designs and hidden products. Nothing goes live until you approve it."
+        },
+        "publish_ads_paused": {
+          "title": "Publish, with ads paused",
+          "body": "wovain publishes products and builds paused campaigns. You approve any spend."
+        }
+      },
+      "capsLegend": "Ad spend limits",
+      "capsHelp": "In US dollars. wovain never spends past them, even with your approval. 0 means no ad spend.",
+      "daily": "Per day",
+      "monthly": "Per month",
+      "capInvalid": "Enter an amount between $0 and $1,000,000.",
+      "monthlyBelowDaily": "The monthly limit can't be lower than the daily one.",
+      "skip": "Skip",
+      "save": "Save and continue",
+      "saving": "Saving…",
+      "saveFailed": "Saving didn't work: {message}"
+    },
+    "done": {
+      "title": "You're set up",
+      "lead": "Come back to this page any time to change your brand or your limits.",
+      "items": {
+        "connect": "Fourthwall and Meta connected",
+        "brand": "Brand references saved",
+        "autonomy": "Autonomy and spend limits set"
+      },
+      "doneLabel": "(done)",
+      "openLabel": "(not yet)",
+      "startDrop": "Start a drop"
     }
   }
 }

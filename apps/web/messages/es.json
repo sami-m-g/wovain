@@ -33,7 +33,8 @@
     "modelsTitle": "Modelos",
     "pricingTitle": "Precios: planes y créditos para tus drops de merch",
     "pricingDescription": "Empieza gratis con créditos cada mes. Studio, Label y los packs de créditos llegan pronto. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
-    "billingTitle": "Facturación"
+    "billingTitle": "Facturación",
+    "onboardingTitle": "Configuración"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -311,7 +312,8 @@
       "runs": "Ejecuciones",
       "connections": "Conexiones",
       "insights": "Estadísticas",
-      "billing": "Facturación"
+      "billing": "Facturación",
+      "onboarding": "Configuración"
     },
     "docs": "Docs",
     "docsLabel": "Docs (se abre en una pestaña nueva)",
@@ -363,7 +365,8 @@
       "drop": {
         "title": "Lanza tu primer drop",
         "body": "Una frase sobre para quién es. wovain investiga las tendencias y luego dibuja los diseños con tu cuenta de fal. Fourthwall los publica y Meta lanza los anuncios.",
-        "action": "Empezar"
+        "action": "Empezar",
+        "bodyWovainDraws": "Una frase sobre para quién es. wovain investiga tendencias y dibuja los diseños con tus créditos. Fourthwall los publica y Meta lleva los anuncios."
       },
       "missing": "Falta conectar:",
       "needs": {
@@ -372,7 +375,12 @@
         "meta": "Meta, para los anuncios"
       },
       "lead": "Tres pasos y wovain podrá llevar un brief hasta una campaña en pausa.",
-      "next": "Siguiente"
+      "next": "Siguiente",
+      "brand": {
+        "title": "Describe tu marca",
+        "body": "Nombra de 3 a 5 artistas, películas o marcas cercanas a tu trabajo. wovain las busca en Qloo y diseña con ese gusto.",
+        "action": "Abrir"
+      }
     }
   },
   "Runs": {
@@ -924,6 +932,115 @@
         "question": "¿Cuándo podré comprar Studio, Label o créditos?",
         "answer": "Pronto. Por ahora todas las cuentas están en Free. Pulsa Avísame en el plan que quieras y sabremos cuál abrir primero."
       }
+    }
+  },
+  "Onboarding": {
+    "title": "Configura wovain",
+    "progress": "Paso {step, number} de {total, number}",
+    "off": {
+      "title": "La configuración aún no está activa en tu cuenta",
+      "body": "Puedes conectar tus cuentas desde Conexiones y empezar un drop.",
+      "back": "Volver al resumen"
+    },
+    "health": {
+      "state": {
+        "connected": "Conectado",
+        "expired": "Sesión caducada",
+        "missing": "Sin conectar"
+      },
+      "neededFor": {
+        "publish": "Publica tus productos en tu tienda.",
+        "ads": "Crea tus campañas, en pausa hasta que las apruebes.",
+        "art": "Dibuja tus diseños en tu cuenta de fal."
+      },
+      "optional": "Puedes añadirla más tarde."
+    },
+    "connect": {
+      "title": "Conecta tu tienda y tus anuncios",
+      "lead": "wovain trabaja dentro de tus propias cuentas. Cada una es un clic y puedes desconectarla cuando quieras.",
+      "leadWovainDraws": "wovain trabaja dentro de tus propias cuentas. Cada una es un clic. No necesitas cuenta de fal: wovain dibuja tus diseños y descuenta el coste de tus créditos.",
+      "ready": "Ya puedes empezar un drop.",
+      "notReady": "Conecta Fourthwall antes de tu primer drop.",
+      "next": "Siguiente",
+      "later": "Omitir por ahora"
+    },
+    "brand": {
+      "title": "Tu marca",
+      "lead": "Nombra los artistas, películas y marcas cercanos a tu trabajo. wovain busca cada uno en Qloo, y tu investigación y tus anuncios parten de ese gusto.",
+      "referencesLegend": "Referencias de gusto",
+      "referencesHelp": "Entre 3 y 5: un músico, un director, una marca que admiras.",
+      "referenceLabel": "Referencia {number, number}",
+      "placeholder": {
+        "first": "Wes Anderson",
+        "second": "Comme des Garçons",
+        "third": "Studio Ghibli"
+      },
+      "addReference": "Añadir otra",
+      "resolve": "Buscar en Qloo",
+      "resolving": "Buscando…",
+      "resolveFailed": "La búsqueda no terminó: {message}",
+      "status": {
+        "direct": "Encontrada en Qloo",
+        "proxy": "Encontrada por nombres relacionados",
+        "unresolved": "No encontrada"
+      },
+      "entities": "Coincidencias en Qloo",
+      "notFound": "Qloo no la conoce y la búsqueda web no dio nada que Qloo conozca. Se queda en tus referencias.",
+      "failed": "La búsqueda falló para esta. Inténtalo de nuevo en un minuto.",
+      "readFrom": "Nombres relacionados de",
+      "voiceLabel": "Tono",
+      "voicePlaceholder": "seco, en minúsculas, sin emojis",
+      "paletteLabel": "Paleta",
+      "paletteHelp": "Hasta {max, number} colores hex, separados por comas.",
+      "paletteInvalid": "{color} no es un color hex como #1A1A1A.",
+      "nichesLabel": "Nichos",
+      "nichesPlaceholder": "y2k racing, cottagecore",
+      "skip": "Omitir",
+      "save": "Guardar y seguir",
+      "saving": "Guardando…",
+      "saveFailed": "No se pudo guardar: {message}",
+      "notRemembered": "Tu marca está guardada. wovain no pudo añadirla a su memoria esta vez; vuelve a guardarla más tarde."
+    },
+    "autonomy": {
+      "title": "Cuánto hace wovain por su cuenta",
+      "lead": "Elige hasta dónde llega wovain antes de preguntarte. Todo lo que gasta dinero espera tu aprobación.",
+      "levelLegend": "Autonomía",
+      "levels": {
+        "suggest": {
+          "title": "Sugerir",
+          "body": "wovain sugiere drops y cambios. Tú lo inicias todo."
+        },
+        "draft": {
+          "title": "Borrador",
+          "body": "wovain prepara diseños y productos ocultos. Nada se publica hasta que lo apruebes."
+        },
+        "publish_ads_paused": {
+          "title": "Publicar, con anuncios en pausa",
+          "body": "wovain publica productos y crea campañas en pausa. Tú apruebas cualquier gasto."
+        }
+      },
+      "capsLegend": "Límites de gasto en anuncios",
+      "capsHelp": "En dólares estadounidenses. wovain nunca los supera, ni siquiera con tu aprobación. 0 significa sin gasto en anuncios.",
+      "daily": "Por día",
+      "monthly": "Por mes",
+      "capInvalid": "Introduce un importe entre 0 $ y 1.000.000 $.",
+      "monthlyBelowDaily": "El límite mensual no puede ser menor que el diario.",
+      "skip": "Omitir",
+      "save": "Guardar y seguir",
+      "saving": "Guardando…",
+      "saveFailed": "No se pudo guardar: {message}"
+    },
+    "done": {
+      "title": "Todo listo",
+      "lead": "Vuelve a esta página cuando quieras para cambiar tu marca o tus límites.",
+      "items": {
+        "connect": "Fourthwall y Meta conectados",
+        "brand": "Referencias de marca guardadas",
+        "autonomy": "Autonomía y límites de gasto fijados"
+      },
+      "doneLabel": "(hecho)",
+      "openLabel": "(pendiente)",
+      "startDrop": "Empezar un drop"
     }
   }
 }

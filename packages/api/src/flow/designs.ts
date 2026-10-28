@@ -11,7 +11,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
 import { withAgentTrace } from "./agent-trace";
-import { requireFal, withProvider } from "./connections";
+import { requireFal, withArtistCall } from "./connections";
 import { flagContextOf } from "./flags";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
@@ -76,8 +76,9 @@ export const generateDesign = async (
   }
   const source = await getIdea(actor, ideaId);
   const { runId } = source;
-  // The merchant's own fal account draws; checked first, so a missing grant
-  // stops the step before any model call.
+  // The merchant's own fal account draws, or wovain's key while the
+  // onboarding-wizard flag is on; checked first, so a missing grant stops
+  // the step before any model call.
   await requireFal(actor);
   const { artist, nemotron } = actor.core;
   // tavily-evidence: the printed words are checked against trademark
@@ -104,9 +105,8 @@ export const generateDesign = async (
       runId,
     });
     const submit = async () =>
-      await withProvider(
+      await withArtistCall(
         actor,
-        "fal",
         async (call) => await artist(call).submit(drafted, actor.log)
       );
     const requested = await once(actor, {
@@ -123,9 +123,8 @@ export const generateDesign = async (
       runId,
     });
     // Reading fal's answer again is free: no key needed.
-    const art = await withProvider(
+    const art = await withArtistCall(
       actor,
-      "fal",
       async (call) => await artist(call).result(requested, actor.log)
     );
     // Keyed too, so a retried step makes the same call on redrawing. The
