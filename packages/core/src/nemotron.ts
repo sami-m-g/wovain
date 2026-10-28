@@ -9,8 +9,6 @@ import type { AgentId, AgentKit } from "./agents";
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 
-export { NEMOTRON_MODEL } from "./agents";
-
 // wovain's own model calls (design briefs, the design judge, ad copy and
 // autopilot's decisions) all go through `ask`, which runs the named Mastra
 // agent (./agents) and returns schema-checked JSON. Inside a run, the call

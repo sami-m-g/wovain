@@ -18,10 +18,13 @@ const env = z
   .object({
     BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1),
+    FAL_IMAGE_MODEL: z.string().min(1),
     GUARDRAILS: z.enum(["on", "off"]).default("on"),
     INNGEST_APP_ID: z.string().min(1).default(DEFAULT_INNGEST_APP_ID),
     NEBIUS_API_KEY: z.string().optional(),
     NEBIUS_BASE_URL: z.url().default("https://api.tokenfactory.nebius.com/v1/"),
+    NEMOTRON_MODEL: z.string().min(1),
+    NEMOTRON_VISION_MODEL: z.string().min(1),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
     QLOO_API_KEY: z.string().optional(),
     QLOO_API_URL: z.url().default("https://hackathon.api.qloo.com"),

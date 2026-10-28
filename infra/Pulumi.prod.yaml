@@ -33,6 +33,12 @@ config:
   wovain:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
   wovain:google-client-secret:
     secure: v1:nqv2CnxFDtU9Gjcb:jhd9smV7Z5Z+eALSTk6NFf/6KJhk5XaVfXvCeLn2dFY/ByjoO/YFh9eRSmTB5jRf+7OT
+  wovain:nemotronModel: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
+  wovain:docsChatModel: nvidia/Nemotron-3_5-Lightning
+  wovain:docsChatReasoningEffort: none
+  wovain:docsChatMaxOutputTokens: "400"
+  wovain:falImageModel: openai/gpt-image-2.5/flare/text-to-image
   wovain:googleSiteVerification: 9zjZZMGJ_se_dHp548YFhL1EJ59QCsbvuEDKhIuDibM
   wovain:googleDkim: v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAphtR+jKyW3mzKAGa9TWWrHhRK/ZbKvXlVehIIiepiCzUfIrOfkPirv25j+MewKlZGwJ5jrhgZZ9L4X77rZNddWP74NxaYlryoAbMZk5nHBkCw0P2Sischl6hSl4XBpBXB1oCTC5QXsffQ3z91y5G5WAwLy54ZsZfVsIIuPuj2o/4c64oV7h9kOYHCJq4K0G8fM2Bh6s2EQjErGVADevvVG+2VWw9dYIr9bQXA+9M8dljBfQDDCh8MoSNmk4cWtjtrYrOzFO2aB8apcamk1IbzxtQGPBFoEGFTM4xNUhPxPLgqe1612djnVYpJImv8xiWYLiWncebUNQZ8iTl0a1ehQIDAQAB
   posthog:apiKey:

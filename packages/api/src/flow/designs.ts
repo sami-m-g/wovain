@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
-import { NEMOTRON_MODEL, withLlmTrace } from "@wovain/core/nemotron";
+import { withLlmTrace } from "@wovain/core/nemotron";
 import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
 import { and, count, desc, eq } from "drizzle-orm";
@@ -45,7 +45,7 @@ const reportDesign = async (
     .where(eq(design.ideaId, row.ideaId));
   await track(actor, "design_generated", {
     design_id: row.id,
-    model: NEMOTRON_MODEL,
+    model: actor.core.model,
     run_id: row.runId,
     variant_index: Math.max((drawn?.n ?? 1) - 1, 0),
   });

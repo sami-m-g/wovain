@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { stagePausedCampaign } from "./ads";
-import { createArtist, TEXT_TO_IMAGE } from "./fal";
+import { createArtist } from "./fal";
 import {
   createProduct,
   DEFAULT_CATALOG_PRODUCT_ID,
@@ -268,8 +268,11 @@ describe("fal", () => {
       },
       submit_job: { request_id: "req_1" },
     });
-    const artist = createArtist(call, async () => {
-      await Promise.resolve();
+    const artist = createArtist(call, {
+      model: "test/text-to-image",
+      wait: async () => {
+        await Promise.resolve();
+      },
     });
 
     const requestId = await artist.submit(brief);
@@ -282,7 +285,7 @@ describe("fal", () => {
       width: 2880,
     });
     expect(calls.filter((item) => item.tool === "submit_job")).toHaveLength(1);
-    expect(calls[0]?.args).toMatchObject({ endpoint_id: TEXT_TO_IMAGE });
+    expect(calls[0]?.args).toMatchObject({ endpoint_id: "test/text-to-image" });
   });
 });
 
