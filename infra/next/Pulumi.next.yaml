@@ -107,6 +107,18 @@ config:
         id: judges-2026
         maxRedemptions: 50
         name: Judges 2026
+      # The shared judges' demo login (openspec judges-demo-account): only
+      # that account can redeem it, so its code is worthless to anyone else.
+      # 300 credits are about 17 full drops at 17 credits each.
+      - audience: "The judges' shared demo account on next.wovain.com: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        emails:
+          - judges@wovain.com
+        enabled: true
+        endsAt: "2026-12-31T23:59:59Z"
+        id: judges-account-2026
+        maxRedemptions: 1
+        name: Judges account 2026
       - audience: "Launch: a public code for the first creators, once paid plans are on."
         credits: 50
         enabled: false

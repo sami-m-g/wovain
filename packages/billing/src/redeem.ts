@@ -11,7 +11,7 @@ import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 import { billingCatalog } from "./catalog";
 import { merchantOf, promoRedeemed } from "./mirror";
 import { POLAR_METADATA_KEY } from "./plans";
-import { promoOfTag, promoPriceCents, promoTag } from "./promos";
+import { promoAllows, promoOfTag, promoPriceCents, promoTag } from "./promos";
 import type { Promo } from "./promos";
 
 // Redeeming a promo code (src/promos.ts): the code is checked against Polar's
@@ -255,7 +255,13 @@ export const redeemPromo = async (
     merchant === undefined || normalizeCode(input.code) === ""
       ? undefined
       : await gateway.findDiscount(input.code);
-  if (merchant === undefined || found === undefined) {
+  // A promo that names its accounts reads as an unknown code to everyone
+  // else, so its code reveals nothing.
+  if (
+    merchant === undefined ||
+    found === undefined ||
+    !promoAllows(found.promo, merchant.email)
+  ) {
     return await refuse("invalid");
   }
   const { promo } = found;

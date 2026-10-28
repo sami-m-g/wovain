@@ -1,5 +1,6 @@
 import type { models } from "@polar-sh/sdk/2026-10";
 import type { Database } from "@wovain/db";
+import { user } from "@wovain/db/schema/auth";
 import { promoAttempt } from "@wovain/db/schema/billing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
@@ -197,6 +198,36 @@ it("refuses an expired, used up or disabled code", () => {
       { now: NOW, paidPlans: false }
     )
   ).toStrictEqual({ refused: "invalid" });
+});
+
+it("redeems a promo that names its accounts only for those accounts", async () => {
+  const account = billingCatalog().promos.find(
+    (promo) => promo.id === "judges-account-2026"
+  );
+  if (account === undefined) {
+    throw new Error("The test catalog has no account promo");
+  }
+  const other = gateway(discountFor(account));
+  // To anyone else it reads as an unknown code: no promo id comes back.
+  expect(await redeem(other)).toStrictEqual({
+    refused: "invalid",
+    status: "refused",
+  });
+  expect(other.createCheckout).not.toHaveBeenCalled();
+  // The same check, case aside, for the account it names.
+  await db.insert(user).values({
+    email: "Judges@wovain.com",
+    emailVerified: true,
+    id: "judges",
+    name: "Judges",
+  });
+  expect(
+    await redeem(gateway(discountFor(account)), { userId: "judges" })
+  ).toStrictEqual({
+    credits: 300,
+    promoId: "judges-account-2026",
+    status: "redeemed",
+  });
 });
 
 it("refuses a code that isn't free while paid plans are off", async () => {

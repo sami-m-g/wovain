@@ -357,7 +357,7 @@
     "setupBody": "Conecta {count, plural, one {# servicio más} other {# servicios más}} para lanzar un drop completo.",
     "allConnected": "Todo está conectado.",
     "setup": {
-      "title": "Ponte en marcha",
+      "title": "Empieza aquí",
       "progress": "{done, number} de {total, number} hechos",
       "done": "hecho",
       "fourthwall": {

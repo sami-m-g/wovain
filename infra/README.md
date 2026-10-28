@@ -155,6 +155,24 @@ Created in code, nothing to paste: `better-auth-secret-<name>`, `token-encryptio
 
 Until the Inngest keys are set, an environment serves pages but cannot start runs; until the Polar token is set, it cannot check out. Fourthwall needs no app (each merchant connects their own).
 
+### The judges' demo account on next (one time, by a project owner)
+
+Hackathon judges share one account on next.wovain.com, `judges@wovain.com` (openspec `judges-demo-account`). Its credits come from the `judges-account-2026` promo in `next/Pulumi.next.yaml`, which only that email can redeem. Apply `pnpm run infra:next:up` only after next runs a build that knows the promo's `emails` field: older builds refuse the catalog.
+
+1. Seed the account through the Cloud SQL Auth Proxy, on the same `/cloudsql` socket the deploy's migrate step uses. The URL goes from Secret Manager straight into the command and is never printed:
+
+   ```sh
+   sudo mkdir -p /cloudsql && sudo chown "$(id -u)" /cloudsql
+   cloud-sql-proxy --unix-socket /cloudsql wovain:us-central1:wovain-next &
+   DATABASE_URL="$(gcloud secrets versions access latest --secret database-url-next --project wovain)" \
+   DATABASE_URL_SECRET=database-url-next \
+     pnpm --filter @wovain/auth seed:judges --env next
+   ```
+
+   It prints the password once: paste it into Devpost's testing instructions, never into the repository. A second run changes nothing and keeps the password; add `--reset-password` to set a new one (it signs the old one out). The seed refuses production's instance (`wovain`), user (`wovain`) and secret (`database-url`) before it connects, and refuses any server whose database isn't `wovain_next` once connected.
+
+2. Create the promo in next's Polar sandbox organization: `pnpm polar:seed` with next's `POLAR_ACCESS_TOKEN` (`polar-access-token-next`) and next's `BILLING_CATALOG`. Without `GCP_PROJECT_ID` the code goes to the gitignored `.env.polar-promos`; set `POLAR_PROMO_CODE_JUDGES_ACCOUNT_2026` to choose it. Give the code to the judges with the password, or redeem it once yourself as the judges on Billing > Redeem a code.
+
 ### What the previews show
 
 - **`next`** (`pnpm run infra:next:preview`): creates only, every one of them next's. No update, replace or delete.

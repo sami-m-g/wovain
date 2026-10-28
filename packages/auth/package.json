@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc -b",
     "check-types": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:judges": "tsx src/seed-judges.ts"
   },
   "dependencies": {
     "@better-auth/cimd": "catalog:",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

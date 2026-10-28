@@ -357,7 +357,7 @@
     "setupBody": "Connect {count, plural, one {# more service} other {# more services}} to run a full drop.",
     "allConnected": "Everything is connected.",
     "setup": {
-      "title": "Get set up",
+      "title": "Start here",
       "progress": "{done, number} of {total, number} done",
       "done": "done",
       "fourthwall": {
