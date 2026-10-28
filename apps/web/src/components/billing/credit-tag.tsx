@@ -1,29 +1,31 @@
-import { CREDIT_COST } from "@wovain/billing/plans";
+"use client";
+
+import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
 import { useTranslations } from "next-intl";
 
-import {
-  AUTOPILOT_DROP_CREDITS,
-  MANUAL_DROP_CREDITS,
-} from "@/components/billing/plan-cards";
+import { dropCredits, useCatalog } from "@/components/billing/catalog-provider";
 import { HangTag } from "@/components/product/hang-tag";
 
 /** What a credit buys, as the hang tag's ruled spec lines. */
 export const CreditTag = ({ className = "" }: { className?: string }) => {
   const t = useTranslations("Billing.creditTag");
   const credits = (count: number) => t("credits", { count });
+  const catalog = useCatalog();
+  const { creditCost } = catalog;
+  const drop = dropCredits(catalog, DESIGNS_PER_RUN);
   return (
     <HangTag
       className={className}
       footer={t("footer")}
       lines={[
-        { label: t("research"), value: credits(CREDIT_COST.research) },
-        { label: t("design"), value: credits(CREDIT_COST.design) },
-        { label: t("assist"), value: credits(CREDIT_COST.assist) },
-        { label: t("manualDrop"), value: credits(MANUAL_DROP_CREDITS) },
+        { label: t("research"), value: credits(creditCost.research) },
+        { label: t("design"), value: credits(creditCost.design) },
+        { label: t("assist"), value: credits(creditCost.assist) },
+        { label: t("manualDrop"), value: credits(drop.manual) },
         {
           emphasis: true,
           label: t("autopilotDrop"),
-          value: credits(AUTOPILOT_DROP_CREDITS),
+          value: credits(drop.autopilot),
         },
       ]}
       string

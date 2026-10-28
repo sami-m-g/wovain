@@ -50,13 +50,11 @@ import {
 import { HangTag } from "@/components/product/hang-tag";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import type { Stage } from "@/components/product/run-tape";
-import { priceBreakdown } from "@/lib/pricing";
+import type { PriceBreakdown } from "@/lib/pricing";
 
 /** The clock the whole sequence runs on, in milliseconds. */
 const TICK = 50;
 const EXPO_OUT = [0.16, 1, 0.3, 1] as const;
-/** A typical tee's base cost (core's DEFAULT_BASE_COST). */
-const EXAMPLE_BASE_COST = 12;
 
 // Beats inside each scene, in milliseconds from the scene's start.
 const TYPE_START = 350;
@@ -477,14 +475,19 @@ const DesignsScene = ({
   );
 };
 
-const LaunchScene = ({ elapsed }: { elapsed: number }) => {
+const LaunchScene = ({
+  elapsed,
+  tag,
+}: {
+  elapsed: number;
+  tag: PriceBreakdown;
+}) => {
   const t = useTranslations("Home");
   const home = useTranslations("Home");
   const wizard = useTranslations("Wizard");
   const format = useFormatter();
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
-  const tag = priceBreakdown(EXAMPLE_BASE_COST);
   const withTag = elapsed < TAG_OUT;
   const withAd = elapsed >= AD_IN;
   const working = !withTag && !withAd;
@@ -629,10 +632,12 @@ const cursorPhase = (beat: Beat, elapsed: number) => {
 const SceneView = ({
   beat,
   elapsed,
+  tag,
   target,
 }: {
   beat: Beat;
   elapsed: number;
+  tag: PriceBreakdown;
   target: RefObject<HTMLButtonElement | null>;
 }) => {
   if (beat.kind === "work") {
@@ -647,7 +652,7 @@ const SceneView = ({
   if (beat.scene === "designs") {
     return <DesignsScene elapsed={elapsed} target={target} />;
   }
-  return <LaunchScene elapsed={elapsed} />;
+  return <LaunchScene elapsed={elapsed} tag={tag} />;
 };
 
 /** The tape's passage and whether the run is done, at this point of the loop. */
@@ -694,7 +699,17 @@ const useHoverFocus = (ref: RefObject<HTMLElement | null>) => {
  * finished frame, still, to visitors who ask for reduced motion. The picture
  * is hidden from assistive tech; the caption carries the same story in words.
  */
-export const HeroDemo = ({ className }: { className?: string }) => {
+/**
+ * `tag` is a typical tee's price, worked out on the server from the pricing
+ * rules (src/lib/pricing.ts).
+ */
+export const HeroDemo = ({
+  className,
+  tag,
+}: {
+  className?: string;
+  tag: PriceBreakdown;
+}) => {
   const t = useTranslations("Home");
   const wizard = useTranslations("Wizard");
   const shell = useTranslations("Shell.nav");
@@ -813,7 +828,12 @@ export const HeroDemo = ({ className }: { className?: string }) => {
                     initial={{ opacity: 0 }}
                     key={`${clock.index}-${key}`}
                   >
-                    <SceneView beat={beat} elapsed={elapsed} target={target} />
+                    <SceneView
+                      beat={beat}
+                      elapsed={elapsed}
+                      tag={tag}
+                      target={target}
+                    />
                   </motion.div>
                 </AnimatePresence>
               </div>

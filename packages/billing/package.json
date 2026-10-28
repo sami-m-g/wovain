@@ -16,7 +16,8 @@
     "@polar-sh/sdk": "catalog:",
     "@wovain/db": "workspace:*",
     "drizzle-orm": "catalog:",
-    "evlog": "catalog:"
+    "evlog": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@electric-sql/pglite": "catalog:",

@@ -1,4 +1,4 @@
-import { CREDIT_PACK, PLANS } from "@wovain/billing/plans";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
 import type { Metadata } from "next";
@@ -50,19 +50,20 @@ const PricingPage = async ({ params }: Props) => {
   const seo = await getTranslations("Seo");
   const t = await getTranslations("Pricing");
   const billing = await getTranslations("Billing");
+  const { creditPack, plans } = billingCatalog();
   const crumbs = [
     { name: seo("home"), path: "/" },
     { name: t("crumb"), path: "/pricing" },
   ];
   const faq: Faq[] = FAQ_KEYS.map((key) => ({
     answer: t(`faq.${key}.answer`, {
-      freeCredits: PLANS.free.monthlyCredits,
-      packCredits: CREDIT_PACK.credits,
+      freeCredits: plans.free.monthlyCredits,
+      packCredits: creditPack.credits,
     }),
     question: t(`faq.${key}.question`),
   }));
   const offers = [
-    ...Object.values(PLANS).map((plan) => ({
+    ...Object.values(plans).map((plan) => ({
       "@type": "Offer",
       availability: plan.priceCents === 0 ? AVAILABLE : NOT_YET,
       name: plan.name,
@@ -79,8 +80,8 @@ const PricingPage = async ({ params }: Props) => {
     {
       "@type": "Offer",
       availability: NOT_YET,
-      name: CREDIT_PACK.name,
-      price: (CREDIT_PACK.priceCents / 100).toFixed(2),
+      name: creditPack.name,
+      price: (creditPack.priceCents / 100).toFixed(2),
       priceCurrency: "USD",
       url: localizedUrl("/pricing", locale),
     },
@@ -103,7 +104,7 @@ const PricingPage = async ({ params }: Props) => {
       <PageHero
         aside={<CreditTag className="mx-auto mt-14 w-full max-w-72 lg:mt-20" />}
         crumbs={<Breadcrumbs items={crumbs} />}
-        lead={t("lead", { credits: PLANS.free.monthlyCredits })}
+        lead={t("lead", { credits: plans.free.monthlyCredits })}
         title={t("title")}
       />
 

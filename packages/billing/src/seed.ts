@@ -1,5 +1,5 @@
-// Creates or updates wovain's catalog in Polar from src/plans.ts and
-// src/promos.ts: the credits meter, one meter-credit benefit and one product
+// Creates or updates wovain's catalog in Polar from BILLING_CATALOG
+// (src/catalog.ts): the credits meter, one meter-credit benefit and one product
 // per plan, pack and promo, each promo's 100%-off discount code, and, when
 // POLAR_WEBHOOK_URL is set, the webhook endpoint. It is idempotent: it finds
 // what it made before by `wovain` metadata, so running it again only applies
@@ -12,8 +12,8 @@
 // POLAR_PROMO_CODE_JUDGES_2026, when set) and is never printed: it goes to
 // Secret Manager as polar-promo-<id> in CI, else to .env.polar-promos.
 //
-// Node runs this file directly, so it imports only the SDK, plans.ts and
-// promos.ts.
+// Node runs this file directly, so it imports only the SDKs, zod (through
+// catalog.ts), plans.ts and promos.ts.
 
 import { randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
@@ -49,15 +49,15 @@ import {
   updateWebhookEndpointWebhooks,
 } from "@polar-sh/sdk/2026-10/services/webhooks";
 
+import { billingCatalog } from "./catalog.ts";
+import type { BillingCatalog } from "./catalog.ts";
 import {
   CREDIT_METER,
-  CREDIT_PACK,
-  PLANS,
   PLAN_CODES,
   POLAR_METADATA_KEY,
   POLAR_WEBHOOK_EVENTS,
 } from "./plans.ts";
-import { PROMOS, promoPriceCents, promoSecretId, promoTag } from "./promos.ts";
+import { promoPriceCents, promoSecretId, promoTag } from "./promos.ts";
 import type { Promo } from "./promos.ts";
 
 interface Item {
@@ -78,9 +78,9 @@ interface Item {
 
 const dollars = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
-const ITEMS: Item[] = [
+const itemsOf = ({ creditPack, plans }: BillingCatalog): Item[] => [
   ...PLAN_CODES.map((code) => {
-    const plan = PLANS[code];
+    const plan = plans[code];
     return {
       code,
       credits: plan.monthlyCredits,
@@ -98,17 +98,17 @@ const ITEMS: Item[] = [
     };
   }),
   {
-    code: CREDIT_PACK.code,
-    credits: CREDIT_PACK.credits,
-    description: `${CREDIT_PACK.credits} wovain credits that never expire`,
-    name: `wovain ${CREDIT_PACK.name}`,
-    priceCents: CREDIT_PACK.priceCents,
+    code: creditPack.code,
+    credits: creditPack.credits,
+    description: `${creditPack.credits} wovain credits that never expire`,
+    name: `wovain ${creditPack.name}`,
+    priceCents: creditPack.priceCents,
     recurring: false,
     rollover: true,
   },
 ];
 
-const PROMO_ITEMS: Item[] = PROMOS.map((promo) => ({
+const promoItemOf = (promo: Promo): Item => ({
   archived: !promo.enabled,
   code: promoTag(promo.id),
   credits: promo.credits,
@@ -118,7 +118,7 @@ const PROMO_ITEMS: Item[] = PROMOS.map((promo) => ({
   recurring: false,
   rollover: true,
   visibility: "private",
-}));
+});
 
 const tagged = (code: string) => ({ [POLAR_METADATA_KEY]: code });
 
@@ -495,9 +495,10 @@ const main = async () => {
   const polar = createPolarCore({ accessToken, environment });
   // Matches the app's billing-paid-plans flag: off until paid plans launch.
   const paid = process.env["POLAR_PAID_PLANS"] === "on";
+  const catalog = billingCatalog();
   const meter = await ensureMeter(polar);
   console.info(`polar:${environment} meter ${meter.name} ${meter.id}`);
-  for (const item of ITEMS) {
+  for (const item of itemsOf(catalog)) {
     // In order: each product links the benefit made just before it.
     // oxlint-disable-next-line no-await-in-loop
     const benefit = await ensureBenefit(polar, meter.id, item);
@@ -509,11 +510,8 @@ const main = async () => {
       `polar:${environment} ${item.code} ${dollars(item.priceCents)} product ${product.id}${product.is_archived ? " (archived)" : ""} benefit ${benefit.id}`
     );
   }
-  for (const [index, promo] of PROMOS.entries()) {
-    const item = PROMO_ITEMS[index];
-    if (item === undefined) {
-      continue;
-    }
+  for (const promo of catalog.promos) {
+    const item = promoItemOf(promo);
     // In order, like the plans: the discount needs the product.
     // oxlint-disable-next-line no-await-in-loop
     const benefit = await ensureBenefit(polar, meter.id, item);

@@ -1,6 +1,6 @@
 import { usd } from "./analytics";
 import type { BillingEvent } from "./analytics";
-import { PLANS } from "./plans";
+import { billingCatalog } from "./catalog";
 import type { PlanCode } from "./plans";
 
 // Which revenue events a subscription change means, from the copy stored
@@ -46,7 +46,8 @@ export const subscriptionEvents = (
       event: "subscription_changed",
       properties: {
         amount_usd_delta: usd(
-          PLANS[next.plan].priceCents - PLANS[prior.plan].priceCents
+          billingCatalog().plans[next.plan].priceCents -
+            billingCatalog().plans[prior.plan].priceCents
         ),
         from_plan: prior.plan,
         to_plan: next.plan,

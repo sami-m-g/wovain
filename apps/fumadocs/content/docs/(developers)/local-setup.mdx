@@ -35,6 +35,8 @@ The web app needs:
 | `BETTER_AUTH_URL` | Public URL of the web app |
 | `DATABASE_URL` | PostgreSQL connection string (Cloud SQL in production) |
 
+It also needs the per-environment settings, which have no defaults: `MCP_URL`, `DOCS_URL`, `SUPPORT_EMAIL`, `EMAIL_FROM`, the providers' MCP URLs, `BILLING_CATALOG` and `PRICING_RULES` (JSON), the Nemotron prices and the guardrail thresholds. `apps/web/.env.schema` describes each one; production's values are in `infra/Pulumi.prod.yaml`, where Pulumi sets them per environment.
+
 The docs app has one optional key, `NEBIUS_API_KEY`, for the AI chat (Nemotron on Nebius Token Factory; `NEBIUS_MODEL` and `NEBIUS_BASE_URL` have defaults). Without the key the chat endpoint answers 503.
 
 Provider keys for the integrations (Nebius, Qloo, Tavily, fal) are described on each [integration page](/docs/integrations).

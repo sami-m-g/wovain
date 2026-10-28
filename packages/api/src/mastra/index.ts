@@ -12,15 +12,27 @@ import { createMastraStorage } from "../workflows/storage";
 // Mastra Studio's entry (`pnpm --filter @wovain/api studio`, AGENTS.md): the
 // same agents, scorers, memory, workflow and storage as the app, built from
 // the environment, for local inspection only. The app builds its instance
-// in apps/web/src/services.ts.
+// in apps/web/src/services.ts. Per-environment settings have no defaults
+// here either: set them as apps/web/.env.schema describes (BILLING_CATALOG
+// and PRICING_RULES are read where they are used).
 
 const env = z
   .object({
     BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1),
+    EMAIL_FROM: z.string().min(1),
+    FAL_MCP_URL: z.url(),
+    FOURTHWALL_DEFAULT_PRODUCT_ID: z.string().min(1),
+    FOURTHWALL_MCP_URL: z.url(),
     GUARDRAILS: z.enum(["on", "off"]).default("on"),
+    GUARDRAIL_INJECTION_THRESHOLD: z.coerce.number().min(0).max(1),
+    GUARDRAIL_MODERATION_THRESHOLD: z.coerce.number().min(0).max(1),
+    GUARDRAIL_PII_THRESHOLD: z.coerce.number().min(0).max(1),
+    META_MCP_URL: z.url(),
     NEBIUS_API_KEY: z.string().optional(),
     NEBIUS_BASE_URL: z.url().default("https://api.tokenfactory.nebius.com/v1/"),
+    NEMOTRON_INPUT_PRICE: z.coerce.number().nonnegative(),
+    NEMOTRON_OUTPUT_PRICE: z.coerce.number().nonnegative(),
     NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
     QLOO_API_KEY: z.string().optional(),
     QLOO_API_URL: z.url().default("https://hackathon.api.qloo.com"),
@@ -46,7 +58,7 @@ export const mastra = createMastra({
     db,
     mailer: createMailer({
       apiKey: undefined,
-      from: "wovain <support@wovain.com>",
+      from: env.EMAIL_FROM,
       siteUrl: env.BETTER_AUTH_URL,
     }),
   },

@@ -309,6 +309,51 @@ const sharedEnvs = {
   QLOO_API_URL: "https://hackathon.api.qloo.com",
 };
 
+// apps/web's per-environment settings (apps/web/.env.schema gives none a
+// default), from this stack's config: plain keys, and objects for the JSON
+// ones. Both services get them at runtime and the image build gets them
+// through the WEB_BUILD_ENV Actions variable below.
+const fromConfig = (keys: Record<string, string>) =>
+  Object.fromEntries(
+    Object.entries(keys).map(([name, key]) => [name, config.require(key)])
+  );
+const appSettings: Record<string, string> = {
+  ...fromConfig({
+    EMAIL_FROM: "emailFrom",
+    FAL_MCP_URL: "falMcpUrl",
+    FOURTHWALL_DEFAULT_PRODUCT_ID: "fourthwallDefaultProductId",
+    FOURTHWALL_MCP_URL: "fourthwallMcpUrl",
+    GUARDRAIL_INJECTION_THRESHOLD: "guardrailInjectionThreshold",
+    GUARDRAIL_MODERATION_THRESHOLD: "guardrailModerationThreshold",
+    GUARDRAIL_PII_THRESHOLD: "guardrailPiiThreshold",
+    META_MCP_URL: "metaMcpUrl",
+    NEMOTRON_INPUT_PRICE: "nemotronInputPrice",
+    NEMOTRON_OUTPUT_PRICE: "nemotronOutputPrice",
+    SUPPORT_EMAIL: "supportEmail",
+  }),
+  BILLING_CATALOG: JSON.stringify(config.requireObject("billingCatalog")),
+  DOCS_URL: docsUrl,
+  MCP_WIDGET_RESOURCE_DOMAINS: config
+    .requireObject<string[]>("mcpWidgetResourceDomains")
+    .join(","),
+  PRICING_RULES: JSON.stringify(config.requireObject("pricingRules")),
+};
+const appSettingEnvs = Object.entries(appSettings).map(([name, value]) => ({
+  name,
+  value,
+}));
+// The build's env file (.github/workflows/deploy.yml): Varlock reads
+// backquoted values as is, apart from escapes, so none may hold a backquote
+// or a backslash.
+const webBuildEnv = Object.entries({ ...appSettings, MCP_URL: mcpUrl })
+  .map(([name, value]) => {
+    if (/[`\\]/u.test(value)) {
+      throw new Error(`${name} can't hold a backquote or a backslash`);
+    }
+    return `${name}=\`${value}\``;
+  })
+  .join("\n");
+
 // PostHog product analytics (apps/web/.env.schema). The public project token
 // (`pulumi config set posthogKey phc_...`) overrides the schema's default at
 // runtime and, through the NEXT_PUBLIC_POSTHOG_KEY Actions variable below, in
@@ -338,6 +383,7 @@ const service = cloudRunService("web", {
   dependsOn: [...populated.values()],
   envs: [
     { name: "BETTER_AUTH_URL", value: siteUrl },
+    ...appSettingEnvs,
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
     { name: "MCP_URL", value: mcpUrl },
     { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
@@ -427,6 +473,8 @@ const dev = devEnvironment({
   connectionsKey,
   envs: [
     ...Object.entries(sharedEnvs).map(([name, value]) => ({ name, value })),
+    // Production's settings, for now; dev sets its own MCP_URL.
+    ...appSettingEnvs,
     // The same Google OAuth client (dev.wovain.com is a registered origin).
     ...googleEnv,
     // The same PostHog project; events say "development" by host.
@@ -590,6 +638,7 @@ githubRepository({
   GCP_WORKLOAD_IDENTITY_PROVIDER: `${pool}/providers/github`,
   ...(posthogKey === undefined ? {} : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
   SITE_URL: siteUrl,
+  WEB_BUILD_ENV: webBuildEnv,
 });
 
 // The PostHog project: KPIs and alerts, dashboards, the run-rating survey,

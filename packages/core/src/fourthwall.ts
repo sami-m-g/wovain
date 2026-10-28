@@ -49,10 +49,6 @@ const frontRegion = (areas: z.infer<typeof printAreaSchema>[]) => {
   return (front.find((area) => area.type === "front_large") ?? front[0])?.type;
 };
 
-// Comfort Colors 1717, a front-printable tee that Fourthwall lists for every
-// shop. A search that comes back empty falls back to it.
-export const DEFAULT_CATALOG_PRODUCT_ID = "pro_8be1acca2fe7403f89";
-
 const REPLY_PREVIEW = 200;
 const MAX_KEYS = 10;
 
@@ -121,14 +117,16 @@ const BLANK_RETRY_MS = 400;
 
 // One blank to print on. A reply with nothing usable is retried (Fourthwall
 // can answer a good call with an empty page); a search that stays empty falls
-// back to the default blank. A blank that can't be found is an error that
-// says what Fourthwall answered.
+// back to the default blank (FOURTHWALL_DEFAULT_PRODUCT_ID, a front-printable
+// tee Fourthwall lists for every shop). A blank that can't be found is an
+// error that says what Fourthwall answered.
 export const pickBlank = async (
   call: ToolCall,
   {
+    defaultProductId,
     productId,
     retryMs = BLANK_RETRY_MS,
-  }: { productId?: string; retryMs?: number } = {}
+  }: { defaultProductId: string; productId?: string; retryMs?: number }
 ): Promise<CatalogProduct> => {
   const tried: string[] = [];
   const attempt = async (
@@ -152,9 +150,7 @@ export const pickBlank = async (
   };
   const found =
     (await attempt(productId)) ??
-    (productId === undefined
-      ? await attempt(DEFAULT_CATALOG_PRODUCT_ID)
-      : undefined);
+    (productId === undefined ? await attempt(defaultProductId) : undefined);
   if (found !== undefined) {
     return found;
   }

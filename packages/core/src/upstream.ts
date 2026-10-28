@@ -39,27 +39,25 @@ export type ProviderId = (typeof providerIds)[number];
 interface ProviderInfo {
   // Asked for instead of every scope the server advertises.
   scope?: string;
-  serverUrl: string;
   title: string;
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
-  // fal's model relay (fal.ai/docs/documentation/setting-up/mcp); its
+  // Each server's URL is per-environment config (UpstreamConfig.serverUrls:
+  // FAL_MCP_URL, FOURTHWALL_MCP_URL and META_MCP_URL in apps/web/.env.schema).
+  // fal's is its model relay (fal.ai/docs/documentation/setting-up/mcp); its
   // authorization server, AuthKit, takes wovain's client metadata document.
   // offline_access is what gets a refresh token.
   fal: {
     scope: "openid profile email offline_access",
-    serverUrl: "https://mcp.fal.ai/mcp-relay",
     title: "fal",
   },
   fourthwall: {
-    serverUrl: "https://mcp.fourthwall.com/app",
     title: "Fourthwall",
   },
   meta: {
     scope:
       "ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads",
-    serverUrl: "https://mcp.facebook.com/ads",
     title: "Meta",
   },
 };
@@ -70,6 +68,8 @@ export interface UpstreamConfig {
   // Meta has no client metadata documents: its app is registered by hand.
   metaAppId: string | undefined;
   metaAppSecret: string | undefined;
+  // Each provider's MCP server URL.
+  serverUrls: Record<ProviderId, string>;
   // Tests answer the providers' HTTP; the global fetch otherwise.
   fetch?: FetchLike;
 }
@@ -331,12 +331,14 @@ export type ToolCall = (
   args: Record<string, unknown>
 ) => Promise<unknown>;
 
-const authOptions = (provider: ProviderId) => {
-  const { scope, serverUrl } = PROVIDERS[provider];
-  return { serverUrl, ...(scope === undefined ? {} : { scope }) };
-};
-
 export const createUpstream = (config: UpstreamConfig) => {
+  const authOptions = (provider: ProviderId) => {
+    const { scope } = PROVIDERS[provider];
+    return {
+      serverUrl: config.serverUrls[provider],
+      ...(scope === undefined ? {} : { scope }),
+    };
+  };
   const fetchFn = config.fetch === undefined ? {} : { fetchFn: config.fetch };
   // The provider's consent page for a new connection, and the flow state
   // the caller keeps until the callback.
@@ -430,7 +432,7 @@ export const createUpstream = (config: UpstreamConfig) => {
     };
     const client = new Client({ name: "wovain", version: "0.1.0" });
     const transport = new StreamableHTTPClientTransport(
-      new URL(PROVIDERS[provider].serverUrl),
+      new URL(config.serverUrls[provider]),
       {
         authProvider: oauth,
         ...(config.fetch === undefined ? {} : { fetch: config.fetch }),

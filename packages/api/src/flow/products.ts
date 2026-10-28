@@ -64,10 +64,12 @@ export const createDesignProduct = async (
   }
   const write = { runId: approved.runId };
   const created = await withProvider(actor, "fourthwall", async (call) => {
-    const blank = await pickBlank(
-      call,
-      catalogProductId === undefined ? {} : { productId: catalogProductId }
-    );
+    const blank = await pickBlank(call, {
+      defaultProductId: actor.core.defaultCatalogProductId,
+      ...(catalogProductId === undefined
+        ? {}
+        : { productId: catalogProductId }),
+    });
     // A second upload only adds a copy to the media library, but keying it
     // keeps the product on the first one.
     const mediaUri = await once(actor, {

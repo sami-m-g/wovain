@@ -41,6 +41,7 @@ beforeEach(async () => {
     {
       BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-32",
       BETTER_AUTH_URL: URL_BASE,
+      MCP_URL: `${URL_BASE}/api/mcp`,
       POLAR_WEBHOOK_SECRET: SECRET,
     },
     db,

@@ -2,7 +2,7 @@ import { createScorer } from "@mastra/core/evals";
 import { z } from "zod";
 
 import { REQUIRED_PX } from "./design";
-import { DEFAULT_BASE_COST, PRICING, profitPerSale } from "./pricing";
+import { DEFAULT_BASE_COST, pricingRules, profitPerSale } from "./pricing";
 
 // Code scorers on the run workflow's steps: facts code can check without a
 // model. Each step puts what it made in its output's `facts` (one item, or
@@ -55,7 +55,7 @@ export const designChecks = (facts: DesignFacts) => {
 
 // Without the blank's own cost, the default tee's cost is the floor's base.
 export const priceClearsFloor = (price: number) =>
-  profitPerSale(price, DEFAULT_BASE_COST) >= PRICING.minProfit;
+  profitPerSale(price, DEFAULT_BASE_COST) >= pricingRules().minProfit;
 
 export const copyChecks = ({ variants }: z.infer<typeof copyFactsSchema>) =>
   variants.flatMap((variant) => [

@@ -15,12 +15,25 @@ import { createUpstream } from "./upstream";
 // needs it, with a NOT_CONFIGURED error naming the variable.
 export interface CoreConfig extends FlagsConfig {
   BETTER_AUTH_URL: string;
+  // The providers' MCP servers (apps/web/.env.schema).
+  FAL_MCP_URL: string;
+  // The blank a Fourthwall catalog search that stays empty falls back to.
+  FOURTHWALL_DEFAULT_PRODUCT_ID: string;
+  FOURTHWALL_MCP_URL: string;
+  // The guardrails' block thresholds, 0 to 1.
+  GUARDRAIL_INJECTION_THRESHOLD: number;
+  GUARDRAIL_MODERATION_THRESHOLD: number;
+  GUARDRAIL_PII_THRESHOLD: number;
   // Guardrail processors on model inputs and outputs ("off" to skip them).
   GUARDRAILS?: "off" | "on" | undefined;
   META_APP_ID?: string | undefined;
   META_APP_SECRET?: string | undefined;
+  META_MCP_URL: string;
   NEBIUS_API_KEY?: string | undefined;
   NEBIUS_BASE_URL: string;
+  // Nemotron's list price, USD per million tokens, for LLM analytics.
+  NEMOTRON_INPUT_PRICE: number;
+  NEMOTRON_OUTPUT_PRICE: number;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
@@ -43,10 +56,19 @@ export const createCore = (
       new URL(env.BETTER_AUTH_URL).hostname === "wovain.com"
         ? "production"
         : "development",
+    guardThresholds: {
+      injection: env.GUARDRAIL_INJECTION_THRESHOLD,
+      moderation: env.GUARDRAIL_MODERATION_THRESHOLD,
+      pii: env.GUARDRAIL_PII_THRESHOLD,
+    },
     guardrails: env.GUARDRAILS !== "off",
     memory,
     posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
+    pricePerMillion: {
+      input: env.NEMOTRON_INPUT_PRICE,
+      output: env.NEMOTRON_OUTPUT_PRICE,
+    },
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
   });
   const nemotron = createNemotron(agents);
@@ -57,6 +79,8 @@ export const createCore = (
     // fal runs on the merchant's own fal account (an MCP grant), never on
     // wovain's.
     artist: createArtist,
+    // The blank pickBlank falls back to (./fourthwall.ts).
+    defaultCatalogProductId: env.FOURTHWALL_DEFAULT_PRODUCT_ID,
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
@@ -72,6 +96,11 @@ export const createCore = (
       appUrl: env.BETTER_AUTH_URL,
       metaAppId: env.META_APP_ID,
       metaAppSecret: env.META_APP_SECRET,
+      serverUrls: {
+        fal: env.FAL_MCP_URL,
+        fourthwall: env.FOURTHWALL_MCP_URL,
+        meta: env.META_MCP_URL,
+      },
     }),
   };
 };

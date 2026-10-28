@@ -1,4 +1,4 @@
-import { PLANS } from "@wovain/billing/plans";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { BlurFade } from "@wovain/ui/components/blur-fade";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
@@ -22,7 +22,7 @@ import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { priceBreakdown } from "@/lib/pricing";
+import { exampleTee } from "@/lib/pricing";
 
 /** A page on the docs site, in the visitor's language (English has no prefix). */
 const docsHref = async (path: string) => {
@@ -31,8 +31,6 @@ const docsHref = async (path: string) => {
   return new URL(`${prefix}/docs/${path}`, ENV.DOCS_URL).toString();
 };
 
-/** A typical tee's base cost (core's DEFAULT_BASE_COST). */
-const EXAMPLE_BASE_COST = 12;
 const SIZES = ["S", "M", "L", "XL"] as const;
 const PICKED_SIZE = "M";
 const REVEAL_STAGGER = 0.12;
@@ -90,7 +88,7 @@ export const Results = async () => {
   const format = await getFormatter();
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
-  const tag = priceBreakdown(EXAMPLE_BASE_COST);
+  const tag = exampleTee();
   return (
     <section
       aria-labelledby="results-title"
@@ -164,7 +162,7 @@ export const Results = async () => {
             index={2}
             label={t("results.insights")}
           >
-            <ExampleInsights />
+            <ExampleInsights tee={tag} />
           </Result>
         </div>
       </div>
@@ -238,7 +236,9 @@ export const FreeToStart = async () => {
       >
         <SectionHead
           id="free"
-          lead={t("free.body", { credits: PLANS.free.monthlyCredits })}
+          lead={t("free.body", {
+            credits: billingCatalog().plans.free.monthlyCredits,
+          })}
           title={t("free.title")}
         />
         <Link

@@ -28,21 +28,10 @@ const widgetUri = (name: WidgetName) =>
 
 const widget = (name: WidgetName) => ({ ui: { resourceUri: widgetUri(name) } });
 
-// Widgets run sandboxed and only load images from these hosts: fal's art
-// and Fourthwall's mockups.
-const ui = {
-  csp: {
-    resourceDomains: [
-      "https://fal.media",
-      "https://*.fal.media",
-      "https://cdn.fourthwall.com",
-      "https://imgproxy.fourthwall.dev",
-    ],
-  },
-  prefersBorder: true,
-};
-
-const registerWidgets = (server: McpServer) => {
+// Widgets run sandboxed and only load images from `resourceDomains`: fal's
+// art and Fourthwall's mockups (MCP_WIDGET_RESOURCE_DOMAINS).
+const registerWidgets = (server: McpServer, resourceDomains: string[]) => {
+  const ui = { csp: { resourceDomains }, prefersBorder: true };
   for (const name of widgetNames) {
     const uri = widgetUri(name);
     registerAppResource(
@@ -111,7 +100,7 @@ const failure = (error: unknown, connectUrl: (provider: string) => string) => {
 
 export const createMcpServer = (
   client: RouterClient<AppRouter>,
-  appUrl: string
+  { appUrl, resourceDomains }: { appUrl: string; resourceDomains: string[] }
 ) => {
   const connectUrl = (provider: string) =>
     `${appUrl}/api/connections/${provider}/start`;
@@ -128,7 +117,7 @@ export const createMcpServer = (
   );
   const reads = { openWorldHint: false, readOnlyHint: true };
   const writes = { destructiveHint: false, openWorldHint: true };
-  registerWidgets(server);
+  registerWidgets(server, resourceDomains);
 
   server.registerTool(
     "list_connections",

@@ -161,6 +161,11 @@ const setup = (relay: Partial<Relay>, grant: Grant) => {
     fetch: fakeFetch(fake),
     metaAppId: undefined,
     metaAppSecret: undefined,
+    serverUrls: {
+      fal: RELAY,
+      fourthwall: "https://fourthwall.example/mcp",
+      meta: "https://meta.example/mcp",
+    },
   });
   const held = memoryGrant(grant);
   const submit = async () =>

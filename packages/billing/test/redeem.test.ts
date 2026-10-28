@@ -4,10 +4,11 @@ import { promoAttempt } from "@wovain/db/schema/billing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
+import { billingCatalog } from "../src/catalog";
 import { applyGrant } from "../src/mirror";
-import { PROMOS, promoTag } from "../src/promos";
+import { promoTag } from "../src/promos";
 import type { Promo } from "../src/promos";
-import { REDEEM_LIMIT, judgePromo, redeemPromo } from "../src/redeem";
+import { judgePromo, redeemLimit, redeemPromo } from "../src/redeem";
 import type { PromoDiscount, PromoGateway, RedeemInput } from "../src/redeem";
 import { addUser, createTestDb } from "../src/testing";
 
@@ -15,7 +16,11 @@ import { addUser, createTestDb } from "../src/testing";
 // (PGlite): the checks, the rate limit and one redemption per merchant.
 
 const NOW = new Date("2026-10-26T10:00:00Z");
-const [JUDGES] = PROMOS;
+const [JUDGES] = billingCatalog().promos;
+if (JUDGES === undefined) {
+  throw new Error("The test catalog has no promo");
+}
+const REDEEM_LIMIT = redeemLimit();
 
 let db: Database;
 let close: () => Promise<void>;
@@ -121,20 +126,6 @@ const input = (overrides: Partial<RedeemInput> = {}): RedeemInput => ({
 
 const redeem = async (polar: PromoGateway, overrides?: Partial<RedeemInput>) =>
   await redeemPromo(db, polar, input(overrides));
-
-it("defines the judges' code and a disabled launch code, with no code values", () => {
-  expect(JUDGES).toMatchObject({
-    credits: 300,
-    enabled: true,
-    endsAt: "2026-12-16T23:59:59Z",
-    id: "judges-2026",
-    maxRedemptions: 50,
-  });
-  expect(PROMOS.filter((promo) => !promo.enabled)).toHaveLength(1);
-  for (const promo of PROMOS) {
-    expect(Object.keys(promo)).not.toContain("code");
-  }
-});
 
 it("confirms a free code in place, with the merchant on the checkout", async () => {
   const polar = gateway(discountFor(JUDGES));

@@ -8,6 +8,7 @@ import type { Database } from "@wovain/db";
 import { promoAttempt } from "@wovain/db/schema/billing";
 import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 
+import { billingCatalog } from "./catalog";
 import { merchantOf, promoRedeemed } from "./mirror";
 import { POLAR_METADATA_KEY } from "./plans";
 import { promoOfTag, promoPriceCents, promoTag } from "./promos";
@@ -32,9 +33,13 @@ export type PromoRefusal =
   | "not_free"
   | "used_up";
 
-// Attempts per merchant in a sliding window, refused or not: enough for a
-// typo or two, too few to guess a code.
-export const REDEEM_LIMIT = { attempts: 5, windowMs: 10 * 60 * 1000 } as const;
+// Attempts per merchant in a sliding window, refused or not
+// (BILLING_CATALOG's redeemLimit).
+const MS_PER_S = 1000;
+export const redeemLimit = () => {
+  const { attempts, windowSeconds } = billingCatalog().redeemLimit;
+  return { attempts, windowMs: windowSeconds * MS_PER_S };
+};
 
 // A code as typed: Polar's codes are case insensitive.
 export const normalizeCode = (code: string) => code.trim().toUpperCase();
@@ -152,6 +157,7 @@ export const claimAttempt = async (
   }: { now: Date; surface: RedeemSurface; userId: string }
 ) =>
   await db.transaction(async (tx) => {
+    const limit = redeemLimit();
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
     const [row] = await tx
       .select({ attempts: count() })
@@ -159,13 +165,10 @@ export const claimAttempt = async (
       .where(
         and(
           eq(promoAttempt.userId, userId),
-          gte(
-            promoAttempt.createdAt,
-            new Date(now.getTime() - REDEEM_LIMIT.windowMs)
-          )
+          gte(promoAttempt.createdAt, new Date(now.getTime() - limit.windowMs))
         )
       );
-    if ((row?.attempts ?? 0) >= REDEEM_LIMIT.attempts) {
+    if ((row?.attempts ?? 0) >= limit.attempts) {
       return;
     }
     const [claimed] = await tx

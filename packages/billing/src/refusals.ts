@@ -1,6 +1,6 @@
 import { createError } from "evlog";
 
-import { CREDIT_PACK, PLANS } from "./plans";
+import { billingCatalog } from "./catalog";
 
 // Why a paid step can't run, worded for the merchant in their language (en,
 // fr or es). The web app reads `code` to show the upgrade screen. While paid
@@ -23,7 +23,8 @@ type Words = Record<
   }
 >;
 
-const { studio } = PLANS;
+const studio = () => billingCatalog().plans.studio;
+const packCredits = () => billingCatalog().creditPack.credits;
 
 const COPY: Words = {
   en: {
@@ -33,13 +34,13 @@ const COPY: Words = {
     },
     out_of_credits: (needed, available, paid) => ({
       fix: paid
-        ? `Upgrade to ${studio.name} for ${studio.monthlyCredits} credits a month, or add a pack of ${CREDIT_PACK.credits}.`
+        ? `Upgrade to ${studio().name} for ${studio().monthlyCredits} credits a month, or add a pack of ${packCredits()}.`
         : "Your free credits refresh every month. More credits are coming soon.",
       message: `This step needs ${needed} credits and you have ${available} left`,
     }),
     plan_required: (paid) => ({
       fix: paid
-        ? `Autopilot comes with ${studio.name}. Until then, run the drop yourself and approve each step.`
+        ? `Autopilot comes with ${studio().name}. Until then, run the drop yourself and approve each step.`
         : "Autopilot is coming soon with paid plans. Until then, run the drop yourself and approve each step.",
       message: paid ? "Autopilot is on paid plans" : "Autopilot is coming soon",
     }),
@@ -51,13 +52,13 @@ const COPY: Words = {
     },
     out_of_credits: (needed, available, paid) => ({
       fix: paid
-        ? `Pásate a ${studio.name} para tener ${studio.monthlyCredits} créditos al mes, o añade un paquete de ${CREDIT_PACK.credits}.`
+        ? `Pásate a ${studio().name} para tener ${studio().monthlyCredits} créditos al mes, o añade un paquete de ${packCredits()}.`
         : "Tus créditos gratuitos se renuevan cada mes. Pronto habrá más créditos.",
       message: `Este paso necesita ${needed} créditos y te quedan ${available}`,
     }),
     plan_required: (paid) => ({
       fix: paid
-        ? `El piloto automático viene con ${studio.name}. Mientras tanto, lanza el drop tú y aprueba cada paso.`
+        ? `El piloto automático viene con ${studio().name}. Mientras tanto, lanza el drop tú y aprueba cada paso.`
         : "El piloto automático llegará pronto con los planes de pago. Mientras tanto, lanza el drop tú y aprueba cada paso.",
       message: paid
         ? "El piloto automático es de los planes de pago"
@@ -71,13 +72,13 @@ const COPY: Words = {
     },
     out_of_credits: (needed, available, paid) => ({
       fix: paid
-        ? `Passez à ${studio.name} pour ${studio.monthlyCredits} crédits par mois, ou ajoutez un pack de ${CREDIT_PACK.credits}.`
+        ? `Passez à ${studio().name} pour ${studio().monthlyCredits} crédits par mois, ou ajoutez un pack de ${packCredits()}.`
         : "Vos crédits gratuits se renouvellent chaque mois. D'autres crédits arrivent bientôt.",
       message: `Cette étape demande ${needed} crédits et il vous en reste ${available}`,
     }),
     plan_required: (paid) => ({
       fix: paid
-        ? `Le pilote automatique est inclus dans ${studio.name}. En attendant, lancez le drop vous-même et validez chaque étape.`
+        ? `Le pilote automatique est inclus dans ${studio().name}. En attendant, lancez le drop vous-même et validez chaque étape.`
         : "Le pilote automatique arrive bientôt avec les offres payantes. En attendant, lancez le drop vous-même et validez chaque étape.",
       message: paid
         ? "Le pilote automatique est réservé aux offres payantes"
@@ -122,7 +123,7 @@ export const refusalError = (
   const data: Record<string, unknown> =
     reason === "out_of_credits" ? { available, needed, paidPlans: paid } : {};
   if (reason === "plan_required") {
-    data["plan"] = studio.code;
+    data["plan"] = studio().code;
     data["paidPlans"] = paid;
   }
   return createError({
