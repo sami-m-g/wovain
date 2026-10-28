@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
+import type { MastraDBMessage } from "@mastra/core/agent";
 import { RequestContext } from "@mastra/core/request-context";
 import { createError, log as evlog } from "evlog";
 import type { z } from "zod";
@@ -102,6 +103,34 @@ const ungrounded = (agent: string, unsupported: string[]) =>
     why: "Every number and claim in buyer-facing text must come from a tool result.",
   });
 
+// Memory failed; the call goes on without it and the failure is logged.
+const memoryUnavailable = (
+  log: Logger | undefined,
+  agent: string,
+  failed: string,
+  error: unknown
+) => {
+  const memory = {
+    agent,
+    failed,
+    reason: error instanceof Error ? error.message : String(error),
+  };
+  log?.set({ memory });
+  evlog.error({ error: "MASTRA_MEMORY_UNAVAILABLE", memory });
+};
+
+// The messages a call added (its input and its answer), without the
+// history it read from memory: what memory would have saved.
+const newMessages = (reply: {
+  messages: MastraDBMessage[];
+  rememberedMessages: MastraDBMessage[];
+}) => {
+  const read = new Set(reply.rememberedMessages.map((message) => message.id));
+  return reply.messages.filter(
+    (message) => !read.has(message.id) && message.role !== "system"
+  );
+};
+
 const GROUND_RULE =
   "Only state numbers and claims that appear in the input. Leave these out:";
 
@@ -165,18 +194,29 @@ export const createNemotron =
               role: "user" as const,
             },
           ];
+    // The grounding guard runs on this call: an answer may be sent back.
+    const guarded = routed && grounded !== undefined;
+    const remember = trace !== undefined && REMEMBERING.has(name);
+    // A guarded call reads its memory but keeps none of its attempts; only
+    // the answer the guard accepts is saved (keep), so a rejected answer
+    // never comes back as history in a later call of the run.
+    let accepted: MastraDBMessage[] = [];
     const answer = async (instructions: string) =>
       await external(log, { operation: name, provider: "nebius" }, async () => {
-        const generate = async (remember: boolean) =>
+        const generate = async (withMemory: boolean) =>
           await kit.agents[name].generate(input, {
             abortSignal: AbortSignal.timeout(TIMEOUT_MS),
             instructions,
             modelSettings: { temperature },
             requestContext,
             structuredOutput: { schema },
-            ...(remember &&
+            ...(withMemory &&
               trace !== undefined && {
-                memory: { resource: trace.distinctId, thread: trace.traceId },
+                memory: {
+                  resource: trace.distinctId,
+                  thread: trace.traceId,
+                  ...(guarded && { options: { readOnly: true } }),
+                },
               }),
             tracingOptions: {
               metadata: {
@@ -186,8 +226,8 @@ export const createNemotron =
               ...(traceId !== undefined && HEX_ID.test(traceId) && { traceId }),
             },
           });
-        const remember = trace !== undefined && REMEMBERING.has(name);
         let reply: Awaited<ReturnType<typeof generate>>;
+        let keepable = remember && guarded;
         try {
           reply = await generate(remember);
         } catch (error) {
@@ -199,13 +239,8 @@ export const createNemotron =
           if (failedStore === undefined) {
             throw error;
           }
-          const memory = {
-            agent: name,
-            failed: failedStore,
-            reason: error instanceof Error ? error.message : String(error),
-          };
-          log?.set({ memory });
-          evlog.error({ error: "MASTRA_MEMORY_UNAVAILABLE", memory });
+          memoryUnavailable(log, name, failedStore, error);
+          keepable = false;
           reply = await generate(false);
         }
         if (reply.tripwire !== undefined) {
@@ -214,8 +249,27 @@ export const createNemotron =
         if (reply.object === undefined || reply.object === null) {
           throw new Error("Nemotron returned no structured answer");
         }
+        accepted = keepable ? newMessages(reply) : [];
         return schema.parse(reply.object) as z.output<T>;
       });
+    // Saves the accepted answer's exchange to the merchant's memory.
+    const keep = async () => {
+      if (trace === undefined || accepted.length === 0) {
+        return;
+      }
+      try {
+        const memory = await kit.agents[name].getMemory();
+        await memory?.saveMessages({
+          messages: accepted.map((message) => ({
+            ...message,
+            resourceId: trace.distinctId,
+            threadId: trace.traceId,
+          })),
+        });
+      } catch (error) {
+        memoryUnavailable(log, name, storageErrorOf(error) ?? "save", error);
+      }
+    };
     const decisions = trace?.decisions;
     const call = async (instructions: string): Promise<z.output<T>> => {
       if (decisions === undefined) {
@@ -256,6 +310,7 @@ export const createNemotron =
     };
     const unsupported = check(first);
     if (unsupported.length === 0) {
+      await keep();
       return first;
     }
     const second = await call(
@@ -265,6 +320,7 @@ export const createNemotron =
     if (still.length > 0) {
       throw ungrounded(name, still);
     }
+    await keep();
     return second;
   };
 

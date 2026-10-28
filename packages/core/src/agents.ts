@@ -26,7 +26,8 @@ import type { AnyScorer } from "./scorers";
 // which read the drawn artwork in ./design inspectArtwork) in
 // apps/web/.env.schema, set per environment through Pulumi config
 // (infra/index.ts). Their list price is NEMOTRON_INPUT_PRICE and
-// NEMOTRON_OUTPUT_PRICE (AgentKitConfig.pricePerMillion).
+// NEMOTRON_OUTPUT_PRICE (AgentKitConfig.pricePerMillion), NEMOTRON_MODEL's
+// price: routed calls on other models carry no price override.
 //
 // With the model-routing flag on for the call (LlmTrace.routed, set by
 // packages/api), each agent runs on the model for its job instead
@@ -177,13 +178,19 @@ export const createAgentKit = ({
       const distinctId = requestContext.get(TRACE_KEYS.distinctId);
       const traceId = requestContext.get(TRACE_KEYS.traceId);
       const routed = isRouted(requestContext);
+      // The list price is NEMOTRON_MODEL's. A routed call on another model
+      // (Ultra, Lightning) sends no override, so PostHog prices it from its
+      // own model table instead of at the wrong model's price.
+      const priced = !routed || modelFor(span, true) === model;
       return withTracing(modelOf(span, routed), posthog, {
         // Cloud Run throttles CPU after the response: send it now.
         posthogCaptureImmediate: true,
-        posthogCostOverride: {
-          inputCost: pricePerMillion.input / TOKENS_PER_MILLION,
-          outputCost: pricePerMillion.output / TOKENS_PER_MILLION,
-        },
+        ...(priced && {
+          posthogCostOverride: {
+            inputCost: pricePerMillion.input / TOKENS_PER_MILLION,
+            outputCost: pricePerMillion.output / TOKENS_PER_MILLION,
+          },
+        }),
         posthogProperties: {
           $ai_span_name: span,
           environment,

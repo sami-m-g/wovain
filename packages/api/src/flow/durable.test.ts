@@ -33,6 +33,7 @@ import type { Actor, RunEngine } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
 import { listConnections, requireFal, withProvider } from "./connections";
 import { decideDesign, generateDesign } from "./designs";
+import { getInsights, storedAdScores } from "./insights";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
 import { createDesignProduct } from "./products";
@@ -709,6 +710,93 @@ describe("createProductCampaign", () => {
     expect(await compensateRun(ctx.actor, runId)).toEqual([]);
     const [ended] = await ctx.db.select().from(run).where(eq(run.id, runId));
     expect(ended?.status).toBe("failed");
+  });
+});
+
+// With model routing on, staging scores the copy with the ad judges and the
+// insights page reads the score back (./campaigns adScoreKey, ./insights
+// storedAdScores). Without it, or when scoring fails, the campaign is
+// staged and shows unscored.
+describe("ad scores on insights", () => {
+  const copy = [
+    { angle: "humor", headline: "Not today", message: "For quiet nights." },
+    { angle: "gift", headline: "Gift a reader", message: "They'll love it." },
+  ];
+  const pass = { critique: "Clear and honest.", result: "Pass" };
+  const fail = { critique: "Vague angle.", result: "Fail" };
+
+  const stage = async ({
+    judge,
+    routed,
+  }: {
+    judge: readonly unknown[];
+    routed: boolean;
+  }) => {
+    const ads = meta({ loseAdSetAnswer: false });
+    const ctx = await setup({ meta: ads.call });
+    const agents = fakeAgents({
+      ad_copy: [{ variants: copy }],
+      ad_judge: judge,
+    });
+    ctx.actor.core = {
+      ...ctx.actor.core,
+      flags: {
+        isOn: async (name: string) =>
+          await Promise.resolve(routed && name === "model-routing"),
+      },
+      nemotron: agents.ask,
+    } as unknown as Core;
+    const { designId } = await seedRun(ctx.db, "running");
+    const productId = await publishedProduct(ctx.db, designId);
+    const staged = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+    return { agents, ctx, staged };
+  };
+
+  it("shows the ad judges' score for a campaign staged with routing on", async () => {
+    // Two variants, two judges each: 3 of 4 verdicts pass.
+    const { agents, ctx, staged } = await stage({
+      judge: [pass, pass, pass, fail],
+      routed: true,
+    });
+    expect(
+      agents.asked.filter((call) => call.name === "ad_judge")
+    ).toHaveLength(4);
+
+    const insights = await getInsights(ctx.actor, "28d");
+    expect(insights.scoring.ads).toBe("ready");
+    expect(insights.drops[0]?.campaigns).toBe(1);
+    expect(insights.drops[0]?.adScore).toBe(75);
+    const scores = await storedAdScores.adScores(ctx.actor, [staged.id]);
+    expect(scores.get(staged.id)).toBe(75);
+  });
+
+  it("leaves a campaign staged with routing off unscored", async () => {
+    const { agents, ctx } = await stage({ judge: [pass], routed: false });
+    expect(agents.asked.map((call) => call.name)).toEqual(["ad_copy"]);
+
+    const insights = await getInsights(ctx.actor, "28d");
+    expect(insights.scoring.ads).toBe("pending");
+    expect(insights.drops[0]?.campaigns).toBe(1);
+    expect(insights.drops[0]?.adScore).toBeUndefined();
+  });
+
+  it("stages the campaign and logs AD_SCORE_FAILED when scoring fails", async () => {
+    const errorLog = vi.spyOn(log, "error").mockImplementation(() => {});
+    // No ad_judge reply: every judge call throws.
+    const { ctx, staged } = await stage({ judge: [], routed: true });
+    expect(staged.metaCampaignId).toBeTruthy();
+    expect(errorLog).toHaveBeenCalledWith(
+      expect.objectContaining({ error: "AD_SCORE_FAILED" })
+    );
+    errorLog.mockRestore();
+
+    const insights = await getInsights(ctx.actor, "28d");
+    expect(insights.scoring.ads).toBe("pending");
+    expect(insights.drops[0]?.adScore).toBeUndefined();
   });
 });
 

@@ -55,4 +55,19 @@ describe("unsupportedClaims", () => {
       )
     ).toEqual([]);
   });
+
+  it("doesn't read a longer word or rank in the evidence as the claim", () => {
+    expect(
+      unsupportedClaims(
+        "The #1 official, certified tee",
+        '{"sources":["Top #10 tees","officially licensed","uncertified dye"],"ink":"#1a2b3c"}'
+      )
+    ).toEqual(["#1", "official", "certified"]);
+  });
+
+  it("reads claims as whole words in the text", () => {
+    expect(
+      unsupportedClaims("Officially #10 of the uncertified bestsellers", "#10")
+    ).toEqual(["bestsellers"]);
+  });
 });

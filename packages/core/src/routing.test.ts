@@ -1,6 +1,8 @@
 import { Agent } from "@mastra/core/agent";
 import type { MastraModelConfig } from "@mastra/core/llm";
+import { InMemoryStore } from "@mastra/core/storage";
 import { createMockModel } from "@mastra/core/test-utils/llm-mock";
+import { Memory } from "@mastra/memory";
 import { describe, expect, it, vi } from "vitest";
 
 import { scoreAdCopy, writeAdCopy } from "./ads";
@@ -82,6 +84,50 @@ const adKit = (variants: unknown) => {
   return { generate, kit };
 };
 
+// A kit whose ad_copy agent remembers (in memory storage) and answers each
+// of `answers` in turn.
+const rememberingAdKit = (answers: unknown[]) => {
+  const memory = new Memory({ storage: new InMemoryStore() });
+  // The next answer moves on once the model has answered.
+  let answered = 0;
+  const models = answers.map(
+    (variants) =>
+      createMockModel({
+        mockText: { variants },
+        spyGenerate: () => {
+          answered += 1;
+        },
+        version: "v2",
+      }) as MastraModelConfig
+  );
+  const agent = new Agent({
+    id: "ad_copy",
+    instructions: "Answer with JSON only.",
+    memory,
+    model: () => {
+      const model = models[Math.min(answered, models.length - 1)];
+      if (model === undefined) {
+        throw new Error("No mock answer");
+      }
+      return model;
+    },
+    name: "ad_copy",
+  });
+  const kit = {
+    agents: { ad_copy: agent },
+    modelFor: () => "m-default",
+  } as unknown as AgentKit;
+  return { kit, memory };
+};
+
+const remembered = async (memory: Memory) => {
+  const { messages } = await memory.recall({
+    resourceId: "u1",
+    threadId: "r1",
+  });
+  return messages;
+};
+
 const product = { description: "Two lines.", idea: "moths", title: "Moth tee" };
 const honest = [
   { angle: "humor", headline: "Moths love it", message: "A moth tee." },
@@ -136,6 +182,30 @@ describe("routed agent calls", () => {
       { unsupported: ["10,000", "Best-selling"] },
       { unsupported: ["10,000", "Best-selling"] },
     ]);
+  });
+
+  it("remembers only the answer the guard accepts", async () => {
+    const { kit, memory } = rememberingAdKit([invented, honest]);
+    const { result } = traced(
+      true,
+      async () => await writeAdCopy(createNemotron(kit), product)
+    );
+    await expect(result).resolves.toEqual(honest);
+    const kept = await remembered(memory);
+    expect(kept.map((message) => message.role)).toEqual(["user", "assistant"]);
+    expect(JSON.stringify(kept)).toContain("Moths love it");
+    expect(JSON.stringify(kept)).not.toContain("10,000");
+  });
+
+  it("remembers a first answer the guard accepts", async () => {
+    const { kit, memory } = rememberingAdKit([honest]);
+    const { result } = traced(
+      true,
+      async () => await writeAdCopy(createNemotron(kit), product)
+    );
+    await expect(result).resolves.toEqual(honest);
+    const kept = await remembered(memory);
+    expect(kept.map((message) => message.role)).toEqual(["user", "assistant"]);
   });
 
   it("leaves unrouted calls unguarded, as before", async () => {
