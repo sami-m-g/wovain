@@ -44,6 +44,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useId } from "react";
 
+import { CampaignControls } from "@/components/app/campaign-controls";
 import { Citations } from "@/components/app/citations";
 import { DesignPreview } from "@/components/app/design-preview";
 import { IdeaDossier } from "@/components/app/idea-dossier";
@@ -797,6 +798,7 @@ export const DoneStep = ({
             {t("open")}
             <ExternalLink aria-hidden="true" data-icon="inline-end" />
           </a>
+          <CampaignControls campaign={campaign} />
         </section>
       ))}
       <div className="flex flex-wrap gap-3">

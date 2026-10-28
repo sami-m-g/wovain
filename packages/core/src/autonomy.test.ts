@@ -108,6 +108,19 @@ describe("canAutoExecute", () => {
     ).toEqual({ reason: "over_monthly_cap", verdict: "deny" });
   });
 
+  it("checks a daily budget against every day left in the month", () => {
+    const spend = { spendCents: 2000, type: "media.campaign.activate" };
+    const spent = { monthCents: 0, todayCents: 0 };
+    const caps = settings("publish_ads_paused");
+    // $20 a day for 25 days is $500: at the $500 monthly cap, not past it.
+    expect(
+      canAutoExecute(spend, caps, { ...spent, daysLeftInMonth: 25 }).verdict
+    ).toBe("needs_approval");
+    expect(
+      canAutoExecute(spend, caps, { ...spent, daysLeftInMonth: 26 })
+    ).toEqual({ reason: "over_monthly_cap", verdict: "deny" });
+  });
+
   it("denies any spend with the default caps of zero", () => {
     expect(
       canAutoExecute(

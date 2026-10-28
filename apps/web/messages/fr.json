@@ -545,7 +545,28 @@
       "variants": "Variantes publicitaires",
       "open": "Ouvrir le Gestionnaire de publicités",
       "another": "Lancer un autre drop",
-      "history": "Voir toutes les exécutions"
+      "history": "Voir toutes les exécutions",
+      "media": {
+        "start": "Lancer les publicités",
+        "pause": "Mettre en pause",
+        "refresh": "Actualiser le statut",
+        "confirm": "Lancer cette campagne à {budget} par jour ? Meta facture directement votre compte publicitaire. Vous pouvez la mettre en pause à tout moment.",
+        "approve": "Approuver et lancer",
+        "notNow": "Pas maintenant",
+        "starting": "Approuvé. Meta examine les nouvelles publicités avant leur diffusion, ce qui peut prendre quelques heures.",
+        "overCap": "Cela dépasserait votre plafond de dépenses publicitaires quotidien ou mensuel. Relevez-le dans vos réglages d'autonomie pour lancer la campagne.",
+        "failed": "Ça n'a pas marché : {reason}",
+        "status": {
+          "draft": "Préparée, pas diffusée",
+          "paused": "En pause",
+          "publishing": "Publication en cours",
+          "in_review": "En examen chez Meta",
+          "active": "Diffusée",
+          "with_issues": "À vérifier dans Meta",
+          "archived": "Archivée",
+          "unknown": "Statut inconnu"
+        }
+      }
     },
     "failed": {
       "title": "Le drop s'est arrêté à l'étape {stage}",

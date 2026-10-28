@@ -80,7 +80,8 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 
 - As a designer, I want to approve before anything is published or spent.
   - [x] A product is created hidden on Fourthwall and published only by a separate step.
-  - [x] Every Meta object is created paused; wovain never activates spend.
+  - [x] Every Meta object is created paused, and wovain reads it back to check.
+  - [ ] wovain starts a campaign only through an approval, inside the designer's daily and monthly spend caps, and pauses it on request (in progress, behind `media-buying-live`).
   - [x] Daily budget is between $1 and $500 and targeting is limited to the chosen countries.
 
 ### Runs, approval and autopilot
@@ -130,7 +131,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 - Polar as merchant of record, with credits sized to drops — handles tax and invoices; credits match the steps wovain pays for. The numbers are a proposal.
 - All-in on Mastra for agents, workflows, memory, scorers and tracing — one framework instead of hand-rolled orchestration, with suspend/resume for the approval gate.
 - Models decide, code gates — the print size, price floor, budget range and paused state are code, not model output.
-- Paused by default — the designer keeps every spending decision.
+- Paused by default: the designer approves every start of spend, inside caps they set.
 - One app serves the website and the ChatGPT app — a single set of procedures keeps the surfaces identical.
 - Activated merchants per week is the North Star — it is the core action and leads publish, campaign and payment.
 
@@ -153,7 +154,7 @@ TikTok Shop and ads; bring-your-own Nebius key on Label; Qloo audience demograph
 
 - No apparel-on-demand or cut-and-sew: print-on-demand only.
 - No custom media buying: Meta already optimizes delivery.
-- No automatic activation of ad spend: the designer starts campaigns.
+- No ad spend without an approval: wovain starts a campaign only after the designer approves it, inside their caps.
 - No fabricated customers, users, sales, revenue or testimonials.
 
 ## Open Questions

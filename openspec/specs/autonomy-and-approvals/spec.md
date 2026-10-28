@@ -41,7 +41,7 @@ Every write an agent proposes SHALL be a type from the closed action catalog, wi
 
 ### Requirement: Hard limits and the pause switch
 
-The policy SHALL deny an unknown action type and any action that commits ad spend past the daily or the monthly cap. While the merchant has paused the agent, every write SHALL need approval.
+The policy SHALL deny an unknown action type and any action that commits ad spend past the daily or the monthly cap. A new daily budget SHALL count against the monthly cap once for each day left in the month. While the merchant has paused the agent, every write SHALL need approval.
 
 #### Scenario: Unknown action
 

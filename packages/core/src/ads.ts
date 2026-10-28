@@ -2,6 +2,8 @@ import { createHash, randomInt } from "node:crypto";
 
 import { z } from "zod";
 
+import { adSetTargeting, deliveryOf, withUtm } from "./ad-delivery";
+import type { MediaBuying } from "./ad-delivery";
 import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
@@ -11,8 +13,10 @@ import type { ToolCall } from "./upstream";
 
 // Meta ads for a published product, through the Meta Ads MCP server on the
 // merchant's own account: Nemotron writes varied ad copy, then wovain stages
-// a traffic campaign with one ad set and one ad per variant. Everything is
-// created PAUSED (or as a draft); wovain never activates spend.
+// a campaign with one ad set and one ad per variant. Everything is created
+// PAUSED (or as a draft). With the media-buying-live flag (`media`), the
+// campaign optimizes for purchases on the pixel, suggests an audience and
+// tags its links, and ./media-buying takes it live after an approval.
 
 export const copySchema = z.object({
   variants: z
@@ -124,6 +128,8 @@ export interface CampaignPlan {
   dailyBudgetCents: number;
   imageUrl: string;
   linkUrl: string;
+  // Live media buying (./ad-delivery); the legacy traffic staging without it.
+  media?: MediaBuying | undefined;
   name: string;
   // The Page the ads run as; the ad account's first Page if unset.
   pageId?: string | undefined;
@@ -198,6 +204,22 @@ const resolveAccount = async (call: ToolCall, given?: string) => {
   return String(account.ad_account_id);
 };
 
+// The ad account a staging with this tag will use, looked up the same way.
+export const adAccountFor = async (
+  call: ToolCall,
+  tag: string,
+  given?: string
+) =>
+  await resolveAccount(
+    async (tool, args) =>
+      await call(tool, {
+        advertiser_job: "create_and_launch_new_ads",
+        client_conversation_id: conversationId(tag),
+        ...args,
+      }),
+    given
+  );
+
 const resolvePage = async (
   call: ToolCall,
   adAccountId: string,
@@ -248,6 +270,7 @@ export const stagePausedCampaign = async (
   const account = { ad_account_id: adAccountId };
   const named = (suffix: string) => `${plan.name} · ${suffix} · ${plan.tag}`;
   const campaignName = named("campaign");
+  const delivery = deliveryOf(plan.media);
   // Named with its account, which archiving it again needs.
   const campaignId = await once(
     `campaign@${adAccountId}`,
@@ -258,16 +281,25 @@ export const stagePausedCampaign = async (
           buying_type: "AUCTION",
           campaign_daily_budget: plan.dailyBudgetCents,
           campaign_name: campaignName,
-          objective: "OUTCOME_TRAFFIC",
+          objective: delivery.objective,
           special_ad_categories: "[]",
         }),
         "campaign_id"
       ),
     async () => await findByName(meta, adAccountId, "campaign", campaignName)
   );
-  const targeting: MetaTargeting = {
+  // media-buying-live: Advantage+ audience with the brand's ages and
+  // genders; otherwise the chosen countries. Qloo's ages, gender and
+  // interests (qloo-audiences) ride on top as suggestions; the countries
+  // stay the hard limit either way.
+  const base =
+    plan.media === undefined
+      ? { geo_locations: { countries: plan.countries } }
+      : adSetTargeting(plan.media.targeting);
+  const targeting: Omit<MetaTargeting, "geo_locations"> & typeof base = {
+    ...base,
     ...plan.targeting,
-    geo_locations: { countries: plan.countries },
+    geo_locations: base.geo_locations,
   };
   // "broad" keeps the name an earlier staging of the same plan used.
   const adSetName = named(plan.targeting === undefined ? "broad" : "qloo");
@@ -277,11 +309,11 @@ export const stagePausedCampaign = async (
       idOf(
         await meta("ads_create_ad_set", {
           ...account,
+          ...delivery.adSet,
           ad_set_name: adSetName,
           billing_event: "IMPRESSIONS",
           campaign_id: campaignId,
           destination_type: "WEBSITE",
-          optimization_goal: "LINK_CLICKS",
           targeting: JSON.stringify(targeting),
         }),
         "ad_set_id"
@@ -292,6 +324,13 @@ export const stagePausedCampaign = async (
   const adIds: string[] = [];
   for (const [index, variant] of plan.copy.entries()) {
     const name = named(`${variant.angle} ${index + 1}`);
+    const linkUrl =
+      plan.media === undefined
+        ? plan.linkUrl
+        : withUtm(plan.linkUrl, {
+            campaign: campaignId,
+            content: `${variant.angle}-${index + 1}`,
+          });
     // One at a time: Meta's draft takes its objects in order. A creative
     // made twice is harmless (it serves only through an ad), so it has no
     // lookup.
@@ -303,7 +342,7 @@ export const stagePausedCampaign = async (
           call_to_action_type: "SHOP_NOW",
           headline: variant.headline,
           image_url: plan.imageUrl,
-          link_url: plan.linkUrl,
+          link_url: linkUrl,
           message: variant.message,
           name,
           page_id: pageId,

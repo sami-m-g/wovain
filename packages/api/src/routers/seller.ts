@@ -145,6 +145,7 @@ export const campaignsRouter = {
         countries: countries.default(["US"]),
         dailyBudget: dailyBudget.default(15),
         pageId: z.string().regex(/^\d+$/u).optional(),
+        pixelId: z.string().regex(/^\d+$/u).optional(),
         productId: id,
         requestId: requestId.optional(),
       })

@@ -11,7 +11,7 @@ Last updated 2026-10-26. "Live" means on `main` and deployed; "in review" means 
 
 One Next.js 16 app runs on Google Cloud Run at <https://wovain.com>. It serves the website, an API and an MCP server that ChatGPT connects to. The website and ChatGPT call the same API procedures, so they always do the same thing. A PostgreSQL database on Cloud SQL remembers users, connections, runs, ideas, designs, products, campaigns and usage.
 
-When a designer describes a drop, the API asks Qloo which themes the audience loves and asks Tavily what is in the news and on marketplaces inside those themes. Nemotron, hosted on Nebius Token Factory, writes the design brief and listing; fal draws the art on the designer's own fal account (in progress; today the platform key); Nemotron judges it, and code re-checks the print size. On approval the API creates a hidden Fourthwall product on the designer's shop and, later, a Meta campaign on their ad account, always paused.
+When a designer describes a drop, the API asks Qloo which themes the audience loves and asks Tavily what is in the news and on marketplaces inside those themes. Nemotron, hosted on Nebius Token Factory, writes the design brief and listing; fal draws the art on the designer's own fal account (in progress; today the platform key); Nemotron judges it, and code re-checks the print size. On approval the API creates a hidden Fourthwall product on the designer's shop and, later, a Meta campaign on their ad account, staged paused. With media buying on, wovain starts it only after the designer approves it in the approval queue, inside their spend caps.
 
 Today each run is a chain of function calls inside one web request. The target, in progress, is Mastra: each step becomes a Mastra workflow step, the approval gate is a workflow suspend that resumes when the designer decides, runs are stored in Postgres so they survive restarts, and Mastra scorers grade every agent and step. Billing (in review) charges paid steps in credits through Polar.
 
@@ -160,7 +160,7 @@ wovain/
 | Tavily | Live search of news and marketplaces | wovain, from credits | `TAVILY_API_KEY` | Rate limited |
 | fal | Print art with GPT Image on fal, through fal's MCP relay | Merchant (own fal account) | OAuth per merchant | Pay per image |
 | Fourthwall | Catalog, previews, products and publish through its MCP server | Merchant (own shop) | OAuth per merchant | Merchant of record for product sales |
-| Meta Ads | Campaign, ad set and ads, created paused, through its MCP server | Merchant (own ad account) | `META_APP_ID`, `META_APP_SECRET`, OAuth per merchant | App review may be needed |
+| Meta Ads | Campaign, ad set and ads, created paused through its MCP server; started only after an approval | Merchant (own ad account) | `META_APP_ID`, `META_APP_SECRET`, OAuth per merchant | App review may be needed |
 | Polar | Subscriptions, credit packs, checkout, portal, webhooks | wovain (4% + 40¢) | `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET` | In review |
 | PostHog | Product analytics, LLM analytics, errors | wovain | `NEXT_PUBLIC_POSTHOG_KEY` |  |
 | Cloud SQL, Cloud Run | PostgreSQL and hosting | wovain | GCP project |  |
@@ -175,7 +175,7 @@ wovain/
 ## What Was Simplified and Why
 
 - **One app** instead of separate API and MCP services — one set of procedures keeps surfaces consistent.
-- **Paused campaigns** instead of live launches — removes the risk of unintended spend.
+- **Paused campaigns, started only through an approval within caps**: removes the risk of unintended spend while letting wovain run the campaign.
 - **Three designs per run, one blank each** instead of a multi-product set — the merchant compares options and approves one or more; several blanks per design come later.
 - **Runs inside the request** until the Mastra migration lands — simple, but bounded by the request timeout.
 - **One user per account** instead of organizations — enough for a solo designer; labels with seats come later.
