@@ -310,3 +310,39 @@ it("records a domain whose affinities call fails, and keeps the others", async (
   expect(taste.affinities?.map(({ id }) => id)).toEqual(["B1"]);
   expect(taste.themes.map((theme) => theme.name)).toEqual(["anime animation"]);
 });
+
+it("searches every reference type and keeps each entity's Qloo type", async () => {
+  const fetchMock = vi.fn(
+    async () =>
+      await Promise.resolve(
+        Response.json({
+          results: [
+            {
+              entity_id: "Q-WES",
+              name: "Wes Anderson",
+              popularity: 0.9,
+              types: ["urn:entity:person", "urn:entity:director"],
+            },
+          ],
+        })
+      )
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  const found = await createQloo({
+    apiKey: "test-key",
+    baseURL: "https://qloo.example",
+  }).search("Wes Anderson");
+
+  expect(found).toEqual([
+    {
+      id: "Q-WES",
+      name: "Wes Anderson",
+      popularity: 0.9,
+      type: "urn:entity:person",
+    },
+  ]);
+  const [url] = fetchMock.mock.calls[0] as unknown as [URL];
+  expect(url.searchParams.get("types")).toContain("urn:entity:movie");
+  expect(url.searchParams.get("take")).toBe("1");
+});

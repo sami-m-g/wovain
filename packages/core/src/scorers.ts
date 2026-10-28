@@ -71,6 +71,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   ad_judge: [],
   autopilot_pick_idea: ["trend_fit"],
   autopilot_review_design: [],
+  brand_proxies: [],
   design_brief: ["design_quality", "brand_fit", "trend_fit", "ip_risk"],
   design_judge: [],
   design_vision: [],
@@ -85,6 +86,8 @@ const BUILT_INS: Record<AgentId, string[]> = {
   ad_judge: [],
   autopilot_pick_idea: ["answer_relevancy", "prompt_alignment"],
   autopilot_review_design: ["answer_relevancy", "prompt_alignment", "bias"],
+  // The names it lists must come from the web results in its prompt.
+  brand_proxies: ["faithfulness", "hallucination"],
   design_brief: [
     "answer_relevancy",
     "faithfulness",

@@ -43,6 +43,7 @@ export const AGENT_IDS = [
   "ad_judge",
   "autopilot_pick_idea",
   "autopilot_review_design",
+  "brand_proxies",
   "research_themes",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];

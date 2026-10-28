@@ -9,6 +9,7 @@ import { defineError } from "evlog";
 import { z } from "zod";
 
 import type { Actor } from "./actor";
+import { flagContextOf } from "./flags";
 
 // The merchant's connections: Fourthwall, Meta and fal grants sealed in the
 // database with the authorization flows that create them. A grant the
@@ -129,7 +130,29 @@ const falError = (code: keyof typeof connectionErrors) =>
     status: connectionErrors[code].status,
   });
 
-export const requireFal = async ({ db, userId }: Actor) => {
+// While the onboarding-wizard flag is on and FAL_KEY is set, fal draws on
+// wovain's own key, paid by the design's credits: no merchant grant needed.
+export const platformFal = async (actor: Actor) =>
+  actor.core.falKey !== undefined &&
+  (await actor.core.flags.isOn("onboarding-wizard", flagContextOf(actor)));
+
+// Runs the artist's fal calls on wovain's key or the merchant's grant.
+export const withArtistCall = async <T>(
+  actor: Actor,
+  work: (call: ToolCall) => Promise<T>
+) => {
+  const { falKey } = actor.core;
+  if (falKey !== undefined && (await platformFal(actor))) {
+    return await work(falKey);
+  }
+  return await withProvider(actor, "fal", work);
+};
+
+export const requireFal = async (actor: Actor) => {
+  if (await platformFal(actor)) {
+    return;
+  }
+  const { db, userId } = actor;
   const [row] = await db
     .select({ needsReconnect: connection.needsReconnect })
     .from(connection)

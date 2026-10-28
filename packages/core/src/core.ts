@@ -2,7 +2,7 @@ import type { Memory } from "@mastra/memory";
 
 import { createAgentKit } from "./agents";
 import type { ResearchModel } from "./evidence";
-import { createArtist } from "./fal";
+import { createArtist, falKeyCall } from "./fal";
 import { createFlags } from "./flags";
 import type { FlagsConfig } from "./flags";
 import { createMetaInterests } from "./meta-interests";
@@ -48,6 +48,9 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   NEMOTRON_VISION_MODEL: string;
   // The fal endpoint that draws the print art (apps/web/.env.schema).
   FAL_IMAGE_MODEL: string;
+  // wovain's own fal key: designs draw on it, paid by credits, while the
+  // onboarding-wizard flag is on (packages/api/src/flow/connections.ts).
+  FAL_KEY?: string | undefined;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
@@ -100,12 +103,18 @@ export const createCore = (
     // The Mastra agents and scorers, registered on the app's Mastra
     // instance; undefined without a Nebius key.
     agents,
-    // fal runs on the merchant's own fal account (an MCP grant), never on
-    // wovain's.
+    // Draws on the merchant's own fal account (an MCP grant) or, while the
+    // onboarding-wizard flag is on, on wovain's key (falKey).
     artist: (call: ToolCall) =>
       createArtist(call, { model: env.FAL_IMAGE_MODEL }),
     // The blank pickBlank falls back to (./fourthwall.ts).
     defaultCatalogProductId: env.FOURTHWALL_DEFAULT_PRODUCT_ID,
+    // fal on wovain's own key (FAL_KEY), a ToolCall the artist draws with;
+    // undefined without the key.
+    falKey:
+      env.FAL_KEY === undefined || env.FAL_KEY === ""
+        ? undefined
+        : falKeyCall(env.FAL_KEY),
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
@@ -121,7 +130,9 @@ export const createCore = (
     // safety), from NEMOTRON_MODEL_* (./model-router.ts).
     models,
     nemotron,
-    // Qloo's Taste API (./qloo): trends, demographics and audiences.
+    // Qloo's Taste API (./qloo.ts): trends, demographics and audiences,
+    // and Tavily's search, which the brand wizard resolves references with
+    // (./brand-identity.ts).
     qloo,
     // Tavily Research's model for idea dossiers (./evidence.ts).
     researchModel: env.TAVILY_RESEARCH_MODEL,

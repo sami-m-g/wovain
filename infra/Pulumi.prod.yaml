@@ -180,7 +180,7 @@ config:
   wovain:billingCatalog-dev:
     creditCost:
       assist: 1
-      design: 2
+      design: 4
       research: 3
     designsPerRun: 3
     creditPack:
@@ -190,21 +190,21 @@ config:
     plans:
       free:
         autopilot: false
-        monthlyCredits: 15
+        monthlyCredits: 25
         name: Free
         priceCents: 0
         rank: 0
         rollover: false
       label:
         autopilot: true
-        monthlyCredits: 1000
+        monthlyCredits: 800
         name: Label
         priceCents: 7900
         rank: 2
         rollover: true
       studio:
         autopilot: true
-        monthlyCredits: 300
+        monthlyCredits: 250
         name: Studio
         priceCents: 2900
         rank: 1

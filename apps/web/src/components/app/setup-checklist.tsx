@@ -37,6 +37,11 @@ export const SetupChecklist = () => {
   const t = useTranslations("Dashboard.setup");
   const connections = useQuery(orpc.connections.list.queryOptions());
   const runs = useQuery(orpc.runs.list.queryOptions());
+  // The onboarding wizard, when its flag is on: a brand step, and no fal
+  // connection while wovain draws on its own key.
+  const onboarding = useQuery(orpc.onboarding.status.queryOptions());
+  const wizard =
+    onboarding.data?.enabled === true ? onboarding.data : undefined;
 
   if (
     connections.isPending ||
@@ -52,7 +57,8 @@ export const SetupChecklist = () => {
     );
   // What a drop needs that isn't connected yet, in the order the run uses it.
   const missing = (["fal", "fourthwall", "meta"] as const).filter(
-    (provider) => !connected(provider)
+    (provider) =>
+      !connected(provider) && !(provider === "fal" && wizard?.wovainDraws)
   );
   const items = [
     {
@@ -61,6 +67,15 @@ export const SetupChecklist = () => {
       key: "fourthwall",
     },
     { done: connected("meta"), href: "/dashboard/connections", key: "meta" },
+    ...(wizard === undefined
+      ? []
+      : [
+          {
+            done: wizard.steps.brand,
+            href: "/dashboard/onboarding",
+            key: "brand",
+          } as const,
+        ]),
     { done: runs.data.length > 0, href: "/dashboard/new", key: "drop" },
   ] as const;
   const remaining = items.filter((item) => !item.done).length;
@@ -119,7 +134,9 @@ export const SetupChecklist = () => {
                       ) : null}
                     </ItemTitle>
                     <ItemDescription className="line-clamp-none">
-                      {t(`${item.key}.body`)}
+                      {item.key === "drop" && wizard?.wovainDraws
+                        ? t("drop.bodyWovainDraws")
+                        : t(`${item.key}.body`)}
                     </ItemDescription>
                     {item.key === "drop" && missing.length > 0 ? (
                       <p className="text-muted-foreground text-sm">

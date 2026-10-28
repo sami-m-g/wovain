@@ -7,6 +7,7 @@ import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
 import { insightsRouter } from "./insights";
 import { modelsRouter } from "./models";
+import { onboardingRouter } from "./onboarding";
 import {
   campaignsRouter,
   designsRouter,
@@ -26,6 +27,7 @@ export const appRouter = {
   ideas: ideasRouter,
   insights: insightsRouter,
   models: modelsRouter,
+  onboarding: onboardingRouter,
   products: productsRouter,
   runs: runsRouter,
   targeting: targetingRouter,

@@ -23,6 +23,7 @@ const env = z
     DATABASE_URL: z.string().min(1),
     EMAIL_FROM: z.string().min(1),
     FAL_IMAGE_MODEL: z.string().min(1),
+    FAL_KEY: z.string().optional(),
     FAL_MCP_URL: z.url(),
     FOURTHWALL_DEFAULT_PRODUCT_ID: z.string().min(1),
     FOURTHWALL_MCP_URL: z.url(),
