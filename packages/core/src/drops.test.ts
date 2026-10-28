@@ -73,6 +73,26 @@ describe("DROP_MIX", () => {
   });
 });
 
+describe("PRODUCT_KINDS", () => {
+  it("keeps every piece inside its print area", () => {
+    for (const [kind, spec] of Object.entries(PRODUCT_KINDS)) {
+      for (const piece of spec.pieces as readonly {
+        fraction: number;
+        offset?: { x: number; y: number };
+      }[]) {
+        const shift = Math.max(
+          Math.abs(piece.offset?.x ?? 0),
+          Math.abs(piece.offset?.y ?? 0)
+        );
+        expect(
+          piece.fraction + 2 * shift,
+          `${kind}: fraction ${piece.fraction}, offset ${shift}`
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
 describe("planPlacements", () => {
   it("puts a big back print and a left-chest mark on the hero tee", () => {
     const { missing, pieces } = planPlacements("hero_tee", TEE_AREAS);

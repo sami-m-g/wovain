@@ -77,13 +77,14 @@ config:
   wovain:guardrailInjectionThreshold: "0.8"
   wovain:guardrailModerationThreshold: "0.7"
   wovain:guardrailPiiThreshold: "0.7"
-  # Dollars and percentages (packages/core/src/pricing.ts).
+  # fal models per art type (packages/core/src/art.ts).
   wovain:falArtModels:
     cutout: fal-ai/birefnet/v2
     pattern: ideogram/v4/tiling/lora
     typographic: ideogram/vector/text-to-vector
     upscale: fal-ai/recraft/upscale/crisp
     vector: fal-ai/recraft/v4.1/text-to-vector
+  # Dollars and percentages (packages/core/src/pricing.ts).
   wovain:pricingRules:
     cardFeeFixed: 0.3
     cardFeePct: 2.9

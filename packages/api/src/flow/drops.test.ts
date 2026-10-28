@@ -389,8 +389,9 @@ describe("drops", () => {
       await buildDropItem(ctx.actor, planned.id, item.id);
     }
     const falCalls = ctx.providers.fal;
-    // The drop's art is drawn once per source: graphic, mark, type.
-    expect(falCalls?.count("submit_job")).toBe(3);
+    // The drop's art is drawn once per source: graphic, mark, type, and the
+    // beanie's embroidery (its own prompt, at the beanie's wide ratio).
+    expect(falCalls?.count("submit_job")).toBe(4);
     const built = await dropItems(ctx.actor, planned.id);
     expect(built.every((item) => item.status === "ready")).toBe(true);
     const [builtTee] = built;

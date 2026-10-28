@@ -36,12 +36,17 @@ Each product SHALL carry a placement plan resolved against its blank's print are
 
 ### Requirement: Art per art type
 
-Each art type SHALL be drawn by the model suited to it, with model IDs set per environment (`FAL_IMAGE_MODEL`, `FAL_ART_MODELS`), once per drop. Code SHALL finish each placement as a PNG at the region's pixels with hard alpha edges: SVG rasterized, embroidery limited to 6 colors, patterns tiled, raster art without transparency cut out, and raster art below the method's DPI upscaled.
+Each art type SHALL be drawn by the model suited to it, with model IDs set per environment (`FAL_IMAGE_MODEL`, `FAL_ART_MODELS`), once per drop, and embroidery once per aspect ratio with an embroidery prompt. Code SHALL finish each placement as a PNG at the region's pixels with hard alpha edges: SVG rasterized, embroidery limited to 6 palette colors in the final PNG, patterns tiled, raster art without transparency cut out, and raster art below the method's DPI upscaled.
 
 #### Scenario: Shared art
 
 - **WHEN** a drop's products are built
-- **THEN** the graphic, the mark and the sleeve type are each drawn once, and the embroidery reuses the mark
+- **THEN** the graphic, the mark and the sleeve type are each drawn once, and the embroidery once per aspect ratio (a wide hat front, a square chest)
+
+#### Scenario: Embroidery colors
+
+- **WHEN** an embroidery SVG with curved fills of 3 colors is rasterized
+- **THEN** the finished PNG has at most 6 distinct opaque colors and its thread colors check passes
 
 #### Scenario: Opaque raster
 
@@ -50,12 +55,17 @@ Each art type SHALL be drawn by the model suited to it, with model IDs set per e
 
 ### Requirement: Composition and placement checks
 
-Code SHALL record facts for every placement: DPI at print size, aspect against the region, transparency, whether the art is a solid rectangle, and thread colors on embroidery. Nemotron's vision model SHALL check one mockup per product for placement fit and hierarchy, and the drop for cohesion. A product the vision model doesn't answer for SHALL fail its checks. The page SHALL show every failed check.
+Code SHALL record facts for every placement: whether the art prints anything (at least 0.5% of the canvas opaque), DPI at print size, aspect against the region, transparency, whether the art is a solid rectangle, and thread colors on embroidery. Nemotron's vision model SHALL check one mockup per product for placement fit and hierarchy, and the drop for cohesion. A product the vision model doesn't answer for SHALL fail its checks. The page SHALL show every failed check.
 
 #### Scenario: Square image on a shirt
 
 - **WHEN** a back graphic fills more than 90% of its bounding box
 - **THEN** its slab check fails and the page shows it
+
+#### Scenario: Empty art
+
+- **WHEN** a placement's PNG has no opaque pixels (a label whose font is missing)
+- **THEN** its has-art check fails and the page shows it
 
 ### Requirement: Mockups and price
 

@@ -1,4 +1,9 @@
-import { artRequest, finishArt, outputUrl } from "@wovain/core/art";
+import {
+  artRequest,
+  artSourceKey,
+  finishArt,
+  outputUrl,
+} from "@wovain/core/art";
 import type { PieceCheck } from "@wovain/core/art";
 import {
   dropArtOf,
@@ -432,13 +437,9 @@ export const listDrops = async ({ db, userId }: Actor) =>
     .orderBy(desc(drop.createdAt))
     .limit(50);
 
-// The art a piece starts from: marks and embroidery share the drop's one
-// mark, so every product carries the same one.
-const sourceOf = (artType: ArtType): ArtType =>
-  artType === "embroidery" ? "mark" : artType;
-
 // The drop's art of one type: drawn once per drop (charged as one design),
-// re-read for free after that. Undefined for labels, which code draws.
+// re-read for free after that; embroidery once per aspect ratio, with the
+// embroidery prompt (artSourceKey). Undefined for labels, which code draws.
 const drawnArt = async (
   actor: Actor,
   row: DropRow,
@@ -447,7 +448,7 @@ const drawnArt = async (
 ) => {
   const models = actor.core.artModels();
   const request = artRequest(
-    sourceOf(artType),
+    artType,
     dropArtOf(dropStateOf(row).brief),
     models,
     pixels
@@ -456,7 +457,7 @@ const drawnArt = async (
     return;
   }
   const requestId = await once(actor, {
-    key: `drop:${row.id}:art:${sourceOf(artType)}`,
+    key: `drop:${row.id}:art:${artSourceKey(artType, pixels)}`,
     operation: "submit_art",
     perform: async () =>
       await charge(

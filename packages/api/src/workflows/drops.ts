@@ -131,27 +131,27 @@ export const createDropFunctions = (
         );
         return live;
       } catch (error) {
-        log.error({
-          approval: { id: approvalId },
-          drop: { id: dropId },
-          error: {
-            code: "DROP_PUBLISH_FAILED",
-            message: `Publishing a drop failed: ${error instanceof Error ? error.message : String(error)}`,
-            name: "DropPublishFailed",
-          },
-          userId,
+        const message = error instanceof Error ? error.message : String(error);
+        // Logged inside the step, so a replay doesn't log it again.
+        await step.run("failed", async () => {
+          log.error({
+            approval: { id: approvalId },
+            drop: { id: dropId },
+            error: {
+              code: "DROP_PUBLISH_FAILED",
+              message: `Publishing a drop failed: ${message}`,
+              name: "DropPublishFailed",
+            },
+            userId,
+          });
+          return await approvals.record({
+            actor: "store_agent",
+            approvalId,
+            error: message,
+            status: "failed",
+            userId,
+          });
         });
-        await step.run(
-          "failed",
-          async () =>
-            await approvals.record({
-              actor: "store_agent",
-              approvalId,
-              error: error instanceof Error ? error.message : String(error),
-              status: "failed",
-              userId,
-            })
-        );
         throw error;
       }
     }

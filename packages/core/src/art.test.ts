@@ -10,9 +10,9 @@ import {
   nearestRatio,
   parseArtModels,
   pieceFacts,
+  artSourceKey,
   rasterizeSvg,
-  snapSvgColors,
-  svgColors,
+  snapToPalette,
 } from "./art";
 import type { ArtModels, DropArt } from "./art";
 import type { FalJobs } from "./fal";
@@ -115,11 +115,24 @@ describe("artRequest", () => {
   it("draws embroidery as a vector in at most 6 palette colors", () => {
     const request = artRequest("embroidery", ART, MODELS, pixels);
     expect(request).toMatchObject({ model: "vector-model", output: "svg" });
+    expect(String(request?.input.prompt)).toContain("thick strokes");
+    expect(request?.input.image_size).toEqual({ height: 1024, width: 768 });
     expect(request?.input.colors).toEqual([
       { b: 17, g: 17, r: 17 },
       { b: 213, g: 232, r: 242 },
       { b: 43, g: 57, r: 192 },
     ]);
+  });
+
+  it("draws embroidery wide for a hat and keys it per ratio", () => {
+    const hat = { height: 300, width: 600 };
+    const request = artRequest("embroidery", ART, MODELS, hat);
+    expect(request?.input.image_size).toEqual({ height: 512, width: 1024 });
+    expect(artSourceKey("embroidery", hat)).toBe("embroidery:2x1");
+    expect(artSourceKey("embroidery", { height: 600, width: 600 })).toBe(
+      "embroidery:1x1"
+    );
+    expect(artSourceKey("mark", hat)).toBe("mark");
   });
 
   it("sets sleeve type at the sleeve's ratio", () => {
@@ -141,21 +154,6 @@ describe("artRequest", () => {
 describe("nearestRatio", () => {
   it("rounds to a supported ratio", () => {
     expect(nearestRatio({ height: 1000, width: 1800 })).toBe("16:9");
-  });
-});
-
-describe("svg colors", () => {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect fill="#fff" width="5" height="5"/><rect fill="#101010" x="5" width="5" height="5"/><rect fill="#c03030" y="5" width="5" height="5"/></svg>';
-
-  it("lists every color", () => {
-    expect(svgColors(svg)).toEqual(new Set(["#ffffff", "#101010", "#c03030"]));
-  });
-
-  it("snaps colors to the palette", () => {
-    expect(svgColors(snapSvgColors(svg, ["#111111", "#c0392b"]))).toEqual(
-      new Set(["#111111", "#c0392b"])
-    );
   });
 });
 
@@ -198,6 +196,7 @@ describe("pieceFacts", () => {
     fill: 0.5,
     hasAlpha: true,
     height: 2400,
+    opaqueShare: 0.3,
     transparentShare: 0.4,
     width: 1800,
   };
@@ -219,6 +218,17 @@ describe("pieceFacts", () => {
     );
     expect(facts.filter((fact) => !fact.pass).map((fact) => fact.rule)).toEqual(
       ["print_dpi", "transparency", "slab"]
+    );
+  });
+
+  it("fails art with nothing to print", () => {
+    const facts = pieceFacts(
+      back,
+      { height: 3328, vector: false, width: 2496 },
+      { ...clean, colors: 0, fill: 0, opaqueShare: 0, transparentShare: 1 }
+    );
+    expect(facts.filter((fact) => !fact.pass).map((fact) => fact.rule)).toEqual(
+      ["has_art"]
     );
   });
 
@@ -305,5 +315,48 @@ describe("finishArt", () => {
     expect(done.facts.find((fact) => fact.rule === "print_dpi")?.pass).toBe(
       true
     );
+    expect(done.facts.find((fact) => fact.rule === "has_art")?.pass).toBe(true);
+  });
+});
+
+describe("embroidery colors", () => {
+  // Three concentric circles: rasterizing blends colors along every curve.
+  const rings =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="48" fill="rgb(16,16,16)"/><circle cx="50" cy="50" r="32" fill="#f2e8d5"/><circle cx="50" cy="50" r="16" fill="crimson"/></svg>';
+
+  it("blends edges when rasterized, so the SVG's colors aren't enough", async () => {
+    const png = await rasterizeSvg(rings, { height: 600, width: 600 });
+    const seen = await inspectPng(png);
+    expect(seen.colors).toBeGreaterThan(6);
+  });
+
+  it("leaves at most the palette's colors in the PNG", async () => {
+    const png = await snapToPalette(
+      await rasterizeSvg(rings, { height: 600, width: 600 }),
+      ART.palette
+    );
+    const seen = await inspectPng(png);
+    expect(seen.colors).toBeLessThanOrEqual(ART.palette.length);
+    expect(seen.colors).toBeGreaterThan(1);
+  });
+
+  it("finishes embroidery with at most 6 thread colors", async () => {
+    const { jobs } = fakeJobs({});
+    const done = await finishArt({
+      art: ART,
+      fetchFn: serve({ "https://fal.test/rings.svg": Buffer.from(rings) }),
+      jobs,
+      models: MODELS,
+      piece: {
+        artType: "embroidery",
+        method: "embroidery",
+        pixels: { height: 300, width: 600 },
+        printInches: { h: 2, w: 4 },
+      },
+      sourceUrl: "https://fal.test/rings.svg",
+    });
+    expect(
+      done.facts.find((fact) => fact.rule === "thread_colors")
+    ).toMatchObject({ pass: true });
   });
 });

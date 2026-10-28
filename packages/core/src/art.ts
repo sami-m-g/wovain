@@ -85,6 +85,9 @@ const textRule = (text: readonly string[]) =>
 
 const HEX = /^#?(?<hex>[\da-f]{6})$/iu;
 const BYTE = 255;
+// A pixel's RGB as one number: r·65536 + g·256 + b.
+const RED = 65_536;
+const GREEN = 256;
 
 const rgbOf = (hex: string) => {
   const digits = HEX.exec(hex.trim())?.groups?.hex;
@@ -173,6 +176,35 @@ export const nearestRatio = ({
   return best;
 };
 
+// Vector art's longest side, in the region's aspect: Recraft takes any
+// size, and the SVG scales to the print anyway.
+const VECTOR_SIDE = 1024;
+
+export const vectorSize = ({
+  height,
+  width,
+}: {
+  height: number;
+  width: number;
+}) => {
+  const scale = VECTOR_SIDE / Math.max(width, height);
+  return {
+    height: toStep(height * scale),
+    width: toStep(width * scale),
+  };
+};
+
+// Which drawn art a piece uses: one per art type per drop, so every
+// product carries the same art. Embroidery is drawn per aspect ratio (a
+// wide hat front, a square chest), with the embroidery prompt.
+export const artSourceKey = (
+  artType: ArtType,
+  pixels: { height: number; width: number }
+) =>
+  artType === "embroidery"
+    ? `embroidery:${nearestRatio(pixels).replace(":", "x")}`
+    : artType;
+
 const ORIGINAL =
   "Original art only: never name or imitate a brand, artist, character or title.";
 
@@ -206,14 +238,23 @@ export const artRequest = (
         output: "raster",
       };
     }
-    case "mark":
+    case "mark": {
+      return {
+        input: {
+          colors,
+          image_size: { height: VECTOR_SIDE, width: VECTOR_SIDE },
+          prompt: `${art.markPrompt}. A small, bold logo mark that reads at 3 inches, centered, on nothing. Flat solid colors, no gradients. ${ORIGINAL}`,
+        },
+        model: models.vector,
+        output: "svg",
+      };
+    }
     case "embroidery": {
-      const embroidery = artType === "embroidery";
       return {
         input: {
           colors: colors.slice(0, MAX_THREAD_COLORS),
-          image_size: { height: 1024, width: 1024 },
-          prompt: `${art.markPrompt}. A small, bold logo mark that reads at 3 inches, centered, on nothing. ${embroidery ? `Flat embroidery-ready shapes: thick strokes, no gradients, no shading, no fine detail, at most ${MAX_THREAD_COLORS} solid colors.` : "Flat solid colors, no gradients."} ${ORIGINAL}`,
+          image_size: vectorSize(pixels),
+          prompt: `${art.markPrompt}. A bold logo mark for embroidery, centered, filling the frame's shape, on nothing. Flat embroidery-ready shapes: thick strokes, no gradients, no shading, no thin lines, no fine detail, no small text, at most ${MAX_THREAD_COLORS} solid colors. ${ORIGINAL}`,
         },
         model: models.vector,
         output: "svg",
@@ -279,53 +320,7 @@ const LABEL_MAX = 24;
 export const labelSvg = (text: string, palette: readonly string[]) => {
   const color = palette[0] ?? "#111111";
   const name = escapeXml(text.slice(0, LABEL_MAX).toUpperCase());
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><text x="300" y="290" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="72" fill="${color}">${name}</text><text x="300" y="370" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="36" fill="${color}">MADE TO ORDER</text></svg>`;
-};
-
-const SVG_HEX = /#(?<hex>[\da-f]{6}|[\da-f]{3})\b/giu;
-
-const expand = (hex: string) =>
-  hex.length === 3 ? [...hex].map((digit) => `${digit}${digit}`).join("") : hex;
-
-// The distinct colors an SVG paints with, as #rrggbb.
-export const svgColors = (svg: string) =>
-  new Set(
-    [...svg.matchAll(SVG_HEX)].map(
-      (match) => `#${expand(match.groups?.hex ?? "").toLowerCase()}`
-    )
-  );
-
-const distance = (
-  a: { b: number; g: number; r: number },
-  b: { b: number; g: number; r: number }
-) => (a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2;
-
-const hexOf = ({ b, g, r }: { b: number; g: number; r: number }) =>
-  `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
-
-// Every SVG color snapped to its nearest palette color, so the art has at
-// most as many colors as the palette.
-export const snapSvgColors = (svg: string, palette: readonly string[]) => {
-  const targets = paletteRgb(palette);
-  if (targets.length === 0) {
-    return svg;
-  }
-  return svg.replaceAll(SVG_HEX, (_match, hex: string) => {
-    const rgb = rgbOf(expand(hex));
-    if (rgb === undefined) {
-      return `#${hex}`;
-    }
-    let [nearest] = targets;
-    for (const candidate of targets) {
-      if (
-        nearest === undefined ||
-        distance(candidate, rgb) < distance(nearest, rgb)
-      ) {
-        nearest = candidate;
-      }
-    }
-    return nearest === undefined ? `#${hex}` : hexOf(nearest);
-  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><text x="300" y="290" text-anchor="middle" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-weight="700" font-size="72" fill="${color}">${name}</text><text x="300" y="370" text-anchor="middle" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="36" fill="${color}">MADE TO ORDER</text></svg>`;
 };
 
 const ALPHA_CUT = 128;
@@ -339,6 +334,59 @@ const hardenAlpha = async (png: Buffer) => {
     .toBuffer({ resolveWithObject: true });
   for (let index = 3; index < data.length; index += CHANNELS) {
     data[index] = (data[index] ?? 0) >= ALPHA_CUT ? BYTE : 0;
+  }
+  return await sharp(data, {
+    raw: { channels: CHANNELS, height: info.height, width: info.width },
+  })
+    .png()
+    .toBuffer();
+};
+
+const colorDistance = (
+  a: { b: number; g: number; r: number },
+  b: { b: number; g: number; r: number }
+) => (a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2;
+
+// Every opaque pixel set to its nearest palette color, so the PNG has at
+// most as many colors as the palette. Runs on the raster, after the alpha
+// is hard, because rasterizing blends colors where two fills meet, and it
+// catches any color syntax the SVG used (hex, rgb(), names).
+export const snapToPalette = async (
+  png: Buffer,
+  palette: readonly string[]
+) => {
+  const targets = paletteRgb(palette);
+  const [first] = targets;
+  if (first === undefined) {
+    return png;
+  }
+  const { data, info } = await sharp(png)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const nearestOf = new Map<number, { b: number; g: number; r: number }>();
+  for (let at = 0; at < data.length; at += CHANNELS) {
+    if ((data[at + 3] ?? 0) >= ALPHA_CUT) {
+      const rgb = {
+        b: data[at + 2] ?? 0,
+        g: data[at + 1] ?? 0,
+        r: data[at] ?? 0,
+      };
+      const packed = rgb.r * RED + rgb.g * GREEN + rgb.b;
+      let nearest = nearestOf.get(packed);
+      if (nearest === undefined) {
+        nearest = first;
+        for (const candidate of targets) {
+          if (colorDistance(candidate, rgb) < colorDistance(nearest, rgb)) {
+            nearest = candidate;
+          }
+        }
+        nearestOf.set(packed, nearest);
+      }
+      data[at] = nearest.r;
+      data[at + 1] = nearest.g;
+      data[at + 2] = nearest.b;
+    }
   }
   return await sharp(data, {
     raw: { channels: CHANNELS, height: info.height, width: info.width },
@@ -402,9 +450,6 @@ export const fitRaster = async (
 };
 
 const SAMPLE_SIDE = 512;
-// A pixel's RGB as one number: r·65536 + g·256 + b.
-const RED = 65_536;
-const GREEN = 256;
 const MAX_COUNTED_COLORS = 4096;
 
 export interface Inspection {
@@ -415,6 +460,9 @@ export interface Inspection {
   // Opaque pixels in the art's bounding box, 0 to 1: near 1 means a solid
   // rectangle (a square image on a shirt).
   fill: number;
+  // Share of opaque pixels: near 0 means nothing prints (a label whose
+  // font is missing, an empty cutout).
+  opaqueShare: number;
   // Share of fully transparent pixels.
   transparentShare: number;
   width: number;
@@ -465,6 +513,7 @@ export const inspectPng = async (png: Buffer): Promise<Inspection> => {
     fill: box === 0 ? 0 : opaque / box,
     hasAlpha: meta.hasAlpha === true,
     height: meta.height ?? info.height,
+    opaqueShare: opaque / (info.width * info.height),
     transparentShare: clear / (info.width * info.height),
     width: meta.width ?? info.width,
   };
@@ -473,6 +522,7 @@ export const inspectPng = async (png: Buffer): Promise<Inspection> => {
 // The checks code decides for a placed piece; final, like the design
 // judge's print facts.
 export const PIECE_RULES = [
+  "has_art",
   "print_dpi",
   "aspect_fit",
   "transparency",
@@ -488,6 +538,8 @@ export interface PieceCheck {
   rule: PieceRule;
 }
 
+// Art that covers less of its canvas than this prints next to nothing.
+const MIN_OPAQUE = 0.005;
 // Art whose box is this full is a rectangle, not a print.
 const SLAB_FILL = 0.9;
 // The source may be this much smaller than the print and still pass.
@@ -522,6 +574,11 @@ export const pieceFacts = (
     sourceRatio / regionRatio
   );
   const checks: PieceCheck[] = [
+    {
+      note: `${(final.opaqueShare * 100).toFixed(1)}% of the canvas prints.`,
+      pass: final.opaqueShare >= MIN_OPAQUE,
+      rule: "has_art",
+    },
     {
       note: source.vector
         ? "Vector art, rasterized at print size."
@@ -605,6 +662,11 @@ export const finishArt = async ({
   sourceUrl,
 }: FinishInput): Promise<FinishedArt> => {
   const { pixels } = piece;
+  // Embroidery stitches at most MAX_THREAD_COLORS palette colors.
+  const threads = async (png: Buffer) =>
+    piece.artType === "embroidery"
+      ? await snapToPalette(png, art.palette.slice(0, MAX_THREAD_COLORS))
+      : png;
   if (piece.artType === "label" || sourceUrl === undefined) {
     const png = await rasterizeSvg(
       labelSvg(art.labelText, art.palette),
@@ -621,11 +683,9 @@ export const finishArt = async ({
   const raw = await download(sourceUrl, fetchFn);
   const isSvg = raw.subarray(0, 512).toString("utf-8").includes("<svg");
   if (isSvg) {
-    let svg = raw.toString("utf-8");
-    if (piece.artType === "embroidery") {
-      svg = snapSvgColors(svg, art.palette.slice(0, MAX_THREAD_COLORS));
-    }
-    const png = await rasterizeSvg(svg, pixels);
+    const png = await threads(
+      await rasterizeSvg(raw.toString("utf-8"), pixels)
+    );
     const source = { height: pixels.height, vector: true, width: pixels.width };
     return {
       facts: pieceFacts(piece, source, await inspectPng(png)),
@@ -655,7 +715,7 @@ export const finishArt = async ({
   }
   const png = pattern
     ? await tilePattern(image, pixels)
-    : await fitRaster(image, pixels, { opaque: false });
+    : await threads(await fitRaster(image, pixels, { opaque: false }));
   const scale = pattern ? TILES_ACROSS : 1;
   const source = {
     height: (meta.height ?? 0) * scale,

@@ -157,7 +157,10 @@ export interface PieceSpec {
   placementId?: string | undefined;
   // Size as a fraction of the region (or the placement).
   fraction: number;
-  // Moves the art's centre: y = -0.18 sits high on the back.
+  // Moves the art's centre, as a fraction of the region: y = -0.18 sits
+  // high on the back. The art's canvas spans fraction/2 each side of its
+  // centre, so fraction + 2 * |offset| must stay at most 1, or the edge
+  // falls outside the print area.
   offset?: { x: number; y: number } | undefined;
   // Fill every spot the region prints (both sides of a mug).
   fillAll?: boolean | undefined;
@@ -178,7 +181,8 @@ export interface KindSpec {
 
 const BACK_STATEMENT: PieceSpec = {
   artType: "graphic",
-  fraction: 0.9,
+  // 0.64 + 2 * 0.18 = 1: the top edge meets the region's top edge.
+  fraction: 0.64,
   offset: { x: 0, y: -0.18 },
   regions: ["back_large", "back"],
 };
