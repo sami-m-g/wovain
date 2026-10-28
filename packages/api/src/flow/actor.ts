@@ -67,6 +67,9 @@ export interface RunEngine {
     runId: string;
     userId: string;
   }) => Promise<void>;
+  // Continues a run waiting at its ideas gate: it draws a design for each
+  // of these ideas, and for no other.
+  approveIdeas: (runId: string, ideaIds: string[]) => Promise<void>;
   // Continues a run waiting at its approval gate.
   resume: (runId: string, decision: RunDecision) => Promise<void>;
 }

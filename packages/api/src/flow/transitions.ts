@@ -18,6 +18,13 @@ export const transitionErrors = {
     message: "This design was already decided",
     status: CONFLICT,
   },
+  // Ideas approved on a run that no longer waits for them: its designs are
+  // already being drawn, or it ended.
+  RUN_NOT_AT_IDEAS: {
+    data: z.object({ runId: z.string() }),
+    message: "The run isn't waiting for its ideas to be approved",
+    status: CONFLICT,
+  },
   // A decision arrived while the run was still saving its approval gate.
   RUN_NOT_WAITING: {
     data: z.object({ runId: z.string() }),
@@ -33,6 +40,13 @@ export const designAlreadyDecided = (data: {
   new ORPCError("DESIGN_ALREADY_DECIDED", {
     data,
     message: transitionErrors.DESIGN_ALREADY_DECIDED.message,
+    status: CONFLICT,
+  });
+
+export const runNotAtIdeas = (runId: string) =>
+  new ORPCError("RUN_NOT_AT_IDEAS", {
+    data: { runId },
+    message: transitionErrors.RUN_NOT_AT_IDEAS.message,
     status: CONFLICT,
   });
 

@@ -27,7 +27,7 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 import { createError, log } from "evlog";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createRunRouter } from "../workflows/rollout";
+import { createLegacyRunEngine, createRunRouter } from "../workflows/rollout";
 import { isPermanent } from "../workflows/run";
 import type { Actor, RunEngine } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
@@ -36,7 +36,13 @@ import { decideDesign, generateDesign } from "./designs";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
 import { createDesignProduct } from "./products";
-import { approvedDesigns, awaitApproval, eachSettled, finishRun } from "./runs";
+import {
+  approvedDesigns,
+  approveIdeas,
+  awaitApproval,
+  eachSettled,
+  finishRun,
+} from "./runs";
 import { transitionErrors } from "./transitions";
 
 // Steps and state transitions of a durable run against real Postgres
@@ -189,10 +195,58 @@ const seedRun = async (
   return { designId: drafted.id, runId: started.id };
 };
 
-const engine = (resume: RunEngine["resume"] = vi.fn()): RunEngine => ({
+const engine = (
+  resume: RunEngine["resume"] = vi.fn(),
+  approve: RunEngine["approveIdeas"] = vi.fn()
+): RunEngine => ({
+  approveIdeas: approve,
   resume,
   start: vi.fn(),
 });
+
+// A merchant's run waiting at its ideas gate with `count` ideas, nothing
+// drawn.
+const seedIdeasGate = async (
+  db: Awaited<ReturnType<typeof setup>>["db"],
+  count: number
+) => {
+  const [started] = await db
+    .insert(run)
+    .values({
+      seed: "cozy reading",
+      status: "awaiting_approval",
+      step: "ideas",
+      userId: USER_ID,
+    })
+    .returning();
+  if (started === undefined) {
+    throw new Error("seed failed");
+  }
+  const rows = await db
+    .insert(idea)
+    .values(
+      Array.from({ length: count }, (_, index) => ({
+        avoidNames: [],
+        rank: index + 1,
+        research: {
+          answer: "a",
+          moment: "m",
+          rank: index + 1,
+          score: 80 - index,
+          signals: { marketHits: 0, newsHits: 0 },
+          sources: [],
+          theme: `Theme ${index + 1}`,
+        } as never,
+        runId: started.id,
+        score: 80 - index,
+        seed: "cozy reading",
+        theme: `Theme ${index + 1}`,
+        userId: USER_ID,
+      }))
+    )
+    .returning();
+  return { ideaIds: rows.map((row) => row.id), runId: started.id };
+};
 
 describe("once", () => {
   it("sends a write once, and finds what a lost attempt made before sending it again", async () => {
@@ -843,6 +897,118 @@ describe("several designs per run", () => {
     );
     expect(await eachSettled("run_1", "design", [], work)).toEqual([]);
     logged.mockRestore();
+  });
+});
+
+describe("ideas gate", () => {
+  let ctx: Awaited<ReturnType<typeof setup>>;
+  beforeEach(async () => {
+    ctx = await setup({});
+  });
+
+  const designCount = async (runId: string) => {
+    const rows = await ctx.db
+      .select()
+      .from(design)
+      .where(eq(design.runId, runId));
+    return rows.length;
+  };
+
+  it("draws only the ideas the merchant approved, once", async () => {
+    const { ideaIds, runId } = await seedIdeasGate(ctx.db, 5);
+    const approve = vi.fn(async () => {
+      await Promise.resolve();
+    });
+    const actor = { ...ctx.actor, runs: engine(vi.fn(), approve) };
+    const [first, , third] = ideaIds;
+    const chosen = [first ?? "", third ?? ""];
+
+    await approveIdeas(actor, runId, [...chosen, first ?? ""]);
+
+    expect(approve).toHaveBeenCalledTimes(1);
+    expect(approve).toHaveBeenCalledWith(runId, chosen);
+    const [after] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(after).toMatchObject({ status: "running", step: "design" });
+
+    // A second click finds the run no longer waiting for ideas.
+    await expect(approveIdeas(actor, runId, chosen)).rejects.toMatchObject({
+      code: "RUN_NOT_AT_IDEAS",
+      data: { runId },
+      status: transitionErrors.RUN_NOT_AT_IDEAS.status,
+    });
+    expect(approve).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses an idea from another run before the run moves", async () => {
+    const { runId } = await seedIdeasGate(ctx.db, 2);
+    const other = await seedIdeasGate(ctx.db, 1);
+    const approve = vi.fn();
+    const actor = { ...ctx.actor, runs: engine(vi.fn(), approve) };
+
+    await expect(
+      approveIdeas(actor, runId, other.ideaIds)
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    expect(approve).not.toHaveBeenCalled();
+    const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(row).toMatchObject({ status: "awaiting_approval", step: "ideas" });
+  });
+
+  it("waits at the ideas gate again when the run can't be resumed", async () => {
+    const { ideaIds, runId } = await seedIdeasGate(ctx.db, 2);
+    const actor = {
+      ...ctx.actor,
+      runs: engine(vi.fn(), async () => {
+        await Promise.resolve();
+        throw new Error("not suspended yet");
+      }),
+    };
+
+    await expect(approveIdeas(actor, runId, ideaIds)).rejects.toMatchObject({
+      code: "RUN_NOT_WAITING",
+      data: { runId },
+    });
+
+    const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(row).toMatchObject({ status: "awaiting_approval", step: "ideas" });
+  });
+
+  it("never opens the design gate while the run waits for ideas", async () => {
+    const { designId, runId } = await seedRun(ctx.db);
+    await ctx.db.update(run).set({ step: "ideas" }).where(eq(run.id, runId));
+    const resume = vi.fn();
+    const actor = { ...ctx.actor, runs: engine(resume) };
+
+    await decideDesign(actor, designId, { approve: true, by: "merchant" });
+
+    expect(resume).not.toHaveBeenCalled();
+    const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(row).toMatchObject({ status: "awaiting_approval", step: "ideas" });
+  });
+
+  it("stops a legacy manual run after research with nothing drawn", async () => {
+    const { runId } = await seedIdeasGate(ctx.db, 3);
+    await ctx.db
+      .update(run)
+      .set({ status: "running", step: null })
+      .where(eq(run.id, runId));
+    const { db, ...services } = ctx.actor;
+    const legacy = createLegacyRunEngine({ ...services, db });
+
+    await legacy.start({
+      input: {
+        autopilot: false,
+        countries: ["US"],
+        dailyBudget: 15,
+        seed: "cozy reading",
+      },
+      runId,
+      userId: USER_ID,
+    });
+
+    const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(row).toMatchObject({ status: "awaiting_approval", step: "ideas" });
+    expect(await designCount(runId)).toBe(0);
   });
 });
 

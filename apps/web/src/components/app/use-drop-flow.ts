@@ -62,8 +62,16 @@ const resumeStep = (run?: RunDetail): Step => {
   if (run.products.length > 0) {
     return "products";
   }
-  return run.designs.length > 0 ? "designs" : "ideas";
+  // Drawing the ideas the merchant approved: their designs land here.
+  if (run.designs.length > 0 || run.step === "design") {
+    return "designs";
+  }
+  return "ideas";
 };
+
+/** The run waits for the merchant's ideas and has drawn nothing yet. */
+const atIdeasGate = (run?: RunDetail) =>
+  run?.status === "awaiting_approval" && run.step === "ideas";
 
 /** What a run working in the background is doing, for the busy label. */
 const runWork = (run?: RunDetail): Work | undefined => {
@@ -150,6 +158,8 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   const start = useMutation(
     orpc.runs.start.mutationOptions({ onSettled: refreshList })
   );
+  // "See designs" at the run's ideas gate: the run draws the approved ideas.
+  const approveIdeas = useMutation(orpc.runs.approveIdeas.mutationOptions());
   const approve = useMutation(orpc.designs.approve.mutationOptions());
   const reject = useMutation(orpc.designs.reject.mutationOptions());
   const publishProduct = useMutation(orpc.products.publish.mutationOptions());
@@ -210,6 +220,7 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   });
   const all = [
     start,
+    approveIdeas,
     generate,
     approve,
     reject,
@@ -219,7 +230,7 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   ];
   const busy: [boolean, Work][] = [
     [start.isPending, start.variables?.autopilot ? "autopilot" : "research"],
-    [generate.isPending, "designs"],
+    [approveIdeas.isPending || generate.isPending, "designs"],
     [approve.isPending || reject.isPending, "review"],
     [createProducts.isPending, "products"],
     [publishProduct.isPending, "publish"],
@@ -227,6 +238,7 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   ];
   return {
     approve,
+    approveIdeas,
     createCampaigns,
     createProducts,
     failed: all.find((mutation) => mutation.error)?.error,
@@ -345,6 +357,24 @@ export const useDropFlow = (
       });
     },
     handleDesignPicked: () => {
+      // Nothing is drawn before this click, and only the picked ideas are.
+      if (run && atIdeasGate(run)) {
+        if (picked.length === 0) {
+          showProblem({ kind: "other", message: t("trends.error") });
+          return;
+        }
+        showProblem();
+        calls.approveIdeas.mutate(
+          { id: run.id, ideaIds: picked },
+          {
+            onSuccess: (drawing) => {
+              cache.seed(drawing);
+              stepper.goTo("designs");
+            },
+          }
+        );
+        return;
+      }
       const designed = new Set(designs.map((item) => item.ideaId));
       const todo = picked.filter((ideaId) => !designed.has(ideaId));
       if (todo.length === 0 && designs.length === 0) {
