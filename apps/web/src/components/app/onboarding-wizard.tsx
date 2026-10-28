@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { buttonVariants } from "@wovain/ui/components/button";
 import {
   Empty,
@@ -14,7 +14,7 @@ import { cn } from "@wovain/ui/lib/utils";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { ConnectionHealth } from "@/components/app/connection-health";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
@@ -81,6 +81,17 @@ const DoneStep = ({
   status: OnboardingReady;
 }) => {
   const t = useTranslations("Onboarding.done");
+  // Reaching this step ends the first run: the overview stops sending the
+  // merchant back here.
+  const { mutate: finish } = useMutation(
+    orpc.onboarding.finish.mutationOptions()
+  );
+  const { finished } = status;
+  useEffect(() => {
+    if (!finished) {
+      finish({});
+    }
+  }, [finish, finished]);
   const items = [
     { done: status.steps.connect, key: "connect" },
     { done: status.steps.brand, key: "brand" },

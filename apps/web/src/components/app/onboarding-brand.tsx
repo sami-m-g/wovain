@@ -295,13 +295,11 @@ export const BrandStep = ({
     if (!canSave) {
       return;
     }
+    // The server resolves the references with Qloo on save (reusing the
+    // ones already looked up), so the saved entities match them.
     save.mutate({
       niches: listOf(niches),
       palette: colors,
-      qlooEntities:
-        results === undefined
-          ? (brand?.qlooEntities ?? [])
-          : results.flatMap((result) => result.entities),
       tasteReferences: filled,
       ...(voice.trim() === "" ? {} : { voice: voice.trim() }),
     });
@@ -314,7 +312,11 @@ export const BrandStep = ({
         onResolved={setResults}
         references={references}
         results={results}
-        setReferences={setReferences}
+        setReferences={(next) => {
+          // What Qloo found belongs to the old references.
+          setReferences(next);
+          setResults(undefined);
+        }}
       />
       <FieldGroup>
         <Field>

@@ -36,6 +36,8 @@ it("draws through fal's queue on wovain's key", async () => {
   expect(queue.submit).toHaveBeenCalledWith(
     "fal-ai/gpt-image-1",
     expect.objectContaining({
+      // The merchant's design stays out of fal's request history.
+      headers: { "X-Fal-Store-IO": "0" },
       input: expect.objectContaining({ background: "transparent" }),
     })
   );
@@ -49,4 +51,13 @@ it("refuses a tool fal's queue doesn't have", async () => {
   const call = falKeyCall("key", { queue: {} } as never);
 
   await expect(call("cancel_job", {})).rejects.toThrow(/no tool cancel_job/u);
+});
+
+it("keeps fal's default storage when the caller doesn't turn it off", async () => {
+  const submit = vi.fn(async () => await Promise.resolve({ request_id: "R2" }));
+  const call = falKeyCall("key", { queue: { submit } } as never);
+
+  await call("submit_job", { endpoint_id: "fal-ai/x", input: { a: 1 } });
+
+  expect(submit).toHaveBeenCalledWith("fal-ai/x", { input: { a: 1 } });
 });

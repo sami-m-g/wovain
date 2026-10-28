@@ -189,25 +189,34 @@ const resolveOne = async (
   return direct.failed ? { ...proxied, failed: true } : proxied;
 };
 
-// Every reference resolves on its own: one failing never stops the rest.
-export const resolveReferences = async (
-  deps: ReferenceDeps,
-  references: readonly string[]
-): Promise<ResolvedReference[]> => {
-  // The first spelling of each reference wins.
+// Two spellings of one reference ("Kenzo", " kenzo") share a key.
+export const referenceKey = (reference: string) =>
+  reference.trim().toLowerCase();
+
+// The references trimmed, blanks and repeats dropped; the first spelling of
+// each wins.
+export const distinctReferences = (references: readonly string[]) => {
   const seen = new Set<string>();
-  const distinct = references
+  return references
     .map((reference) => reference.trim())
     .filter((reference) => {
-      const key = reference.toLowerCase();
+      const key = referenceKey(reference);
       const fresh = key !== "" && !seen.has(key);
       seen.add(key);
       return fresh;
     });
-  return await Promise.all(
-    distinct.map(async (reference) => await resolveOne(deps, reference))
-  );
 };
+
+// Every reference resolves on its own: one failing never stops the rest.
+export const resolveReferences = async (
+  deps: ReferenceDeps,
+  references: readonly string[]
+): Promise<ResolvedReference[]> =>
+  await Promise.all(
+    distinctReferences(references).map(
+      async (reference) => await resolveOne(deps, reference)
+    )
+  );
 
 export interface BrandMemory {
   niches: readonly string[];

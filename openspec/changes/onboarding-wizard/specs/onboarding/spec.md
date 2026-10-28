@@ -11,6 +11,11 @@ While the `onboarding-wizard` flag is on, the system SHALL offer a signed-in des
 - **WHEN** a designer with no connections and no brand profile opens the wizard
 - **THEN** the first step shows Fourthwall and Meta as missing, each with one connect button
 
+#### Scenario: Sent to the wizard until it is finished
+
+- **WHEN** a designer whose flag is on signs up or signs in and lands on the overview before ever reaching the done step
+- **THEN** the overview redirects to the wizard, and once the done step has been shown it no longer does
+
 #### Scenario: Flag off
 
 - **WHEN** the flag is off for the designer
@@ -46,12 +51,36 @@ Each Qloo, Tavily or Nemotron failure while resolving a reference SHALL be logge
 
 ### Requirement: Brand profile saved to memory
 
-Saving the brand step SHALL upsert the designer's `brand_profile` (references, Qloo entities, voice, palette, niches) and SHALL write the Voice, Palette and typography, and Niches lines of the designer's taste memory, keeping the approved and rejected designs already there.
+Saving the brand step SHALL resolve the saved references on the server and SHALL upsert the designer's `brand_profile` (references, the Qloo entities those references resolved to, voice, palette, niches). The system SHALL NOT accept Qloo entities from the client. Saving SHALL write the Voice, Palette and typography, and Niches lines of the designer's taste memory, keeping the approved and rejected designs already there.
 
 #### Scenario: Save the brand
 
 - **WHEN** the designer saves the voice "dry, lowercase", the palette "#1A1A1A" and the niche "y2k racing"
 - **THEN** `brand_profile` holds them and the taste memory reads `- Voice: dry, lowercase`, `- Palette and typography: #1A1A1A` and `- Niches: y2k racing`
+
+#### Scenario: Saved without pressing Resolve
+
+- **WHEN** the designer saves three references they never resolved
+- **THEN** `brand_profile` holds the Qloo entities of exactly those three references
+
+#### Scenario: Reference replaced after resolving
+
+- **WHEN** the designer resolves "Kenzo", replaces it with "Prada" and saves
+- **THEN** `brand_profile` holds Prada's entities and none of Kenzo's
+
+### Requirement: Reference lookups cached and limited
+
+The system SHALL keep each resolved reference in a cache shared by all designers, keyed by the trimmed, lowercase reference, and SHALL reuse it for 30 days, or for 10 minutes when a provider failed on it. Only references the cache does not hold SHALL reach Qloo, Tavily or Nemotron, and each designer SHALL start at most 20 such lookups an hour. Over the limit, `onboarding.resolveReferences` and `onboarding.saveBrand` SHALL answer 429 without calling a provider.
+
+#### Scenario: Resolve, then save
+
+- **WHEN** the designer resolves three references and then saves them
+- **THEN** the save calls no provider
+
+#### Scenario: Lookups in a loop
+
+- **WHEN** a designer has started 20 new lookups in the last hour and asks for 5 more
+- **THEN** the call answers 429 and no provider is called, while references already cached still resolve
 
 ### Requirement: Connection health
 

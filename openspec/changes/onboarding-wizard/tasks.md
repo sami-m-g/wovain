@@ -29,3 +29,11 @@
 - [x] 4.1 `fal-key` per environment in `infra/index.ts`
 - [x] 4.2 dev and next billing catalogs: research 3, design 4, assist 1; Free 25, Studio 250, Label 800
 - [x] 4.3 `pnpm run check`, `check-types`, `knip`, `spec:validate` and package tests pass
+
+## 5. Review fixes (PR #76)
+
+- [x] 5.1 `saveBrand` resolves the references on the server; the client no longer sends Qloo entities; the brand step clears stale results
+- [x] 5.2 `taste_reference` cache and a 20-lookups-an-hour limit per designer (429)
+- [x] 5.3 `onboarding.finish` and `brand_profile.onboarded_at`; `/dashboard` redirects to the wizard until the done step is reached
+- [x] 5.4 `falKeyCall` passes `store_payload: false` as fal's `X-Fal-Store-IO: 0` header
+- [x] 5.5 Tests for 5.1 to 5.4

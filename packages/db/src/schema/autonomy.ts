@@ -86,6 +86,9 @@ export const brandProfile = pgTable("brand_profile", {
   id: id(),
   // Market niches, e.g. "y2k racing", "cottagecore".
   niches: jsonb("niches").$type<string[]>().default([]).notNull(),
+  // When the merchant reached the wizard's last step; until then the
+  // overview sends them back to the wizard.
+  onboardedAt: timestamp("onboarded_at"),
   // Up to 6 hex colors, e.g. "#1A1A1A".
   palette: jsonb("palette").$type<string[]>().default([]).notNull(),
   qlooEntities: jsonb("qloo_entities")
@@ -102,6 +105,38 @@ export const brandProfile = pgTable("brand_profile", {
   // Tone of voice for copy, e.g. "dry, lowercase, no emoji".
   voice: text("voice"),
 });
+
+// Each taste reference wovain has resolved to Qloo entities
+// (@wovain/core/brand-identity), one row per reference (trimmed, lowercase),
+// shared by every merchant. It saves repeat calls to Qloo, Tavily and
+// Nemotron, and counts the lookups each merchant started, for the rate limit.
+export const tasteReference = pgTable(
+  "taste_reference",
+  {
+    createdAt: createdAt(),
+    entities: jsonb("entities").$type<QlooEntityRef[]>().default([]).notNull(),
+    // A provider failed while resolving it: it is looked up again soon.
+    failed: boolean("failed").default(false).notNull(),
+    id: id(),
+    key: text("key").notNull().unique(),
+    // The spelling it was first resolved from.
+    reference: text("reference").notNull(),
+    resolvedAt: timestamp("resolved_at").defaultNow().notNull(),
+    // The merchant whose lookup resolved it last.
+    resolvedBy: text("resolved_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    sources: jsonb("sources").$type<TraceSource[]>().default([]).notNull(),
+    status: text("status").$type<"direct" | "proxy" | "unresolved">().notNull(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("taste_reference_resolved_by_idx").on(
+      table.resolvedBy,
+      table.resolvedAt
+    ),
+  ]
+);
 
 // How far wovain acts alone (@wovain/core/autonomy), one row per merchant.
 // No row means DEFAULT_AUTONOMY.

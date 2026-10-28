@@ -1,11 +1,20 @@
 import {
+  distinctReferences,
+  referenceKey,
   resolveReferences,
   writeBrandMemory,
 } from "@wovain/core/brand-identity";
-import type { BrandEntity } from "@wovain/core/brand-identity";
+import type {
+  BrandEntity,
+  ResolvedReference,
+} from "@wovain/core/brand-identity";
 import type { ProviderId } from "@wovain/core/upstream";
-import { autonomySetting, brandProfile } from "@wovain/db/schema/autonomy";
-import { eq } from "drizzle-orm";
+import {
+  autonomySetting,
+  brandProfile,
+  tasteReference,
+} from "@wovain/db/schema/autonomy";
+import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
 import { createError, log as evlog } from "evlog";
 
 import type { Actor } from "./actor";
@@ -32,7 +41,6 @@ export interface BrandInput {
   displayName?: string | undefined;
   niches: string[];
   palette: string[];
-  qlooEntities: BrandEntity[];
   tasteReferences: string[];
   voice?: string | undefined;
 }
@@ -122,6 +130,8 @@ export const onboardingStatus = async (actor: Actor) => {
     ),
     connections,
     enabled: true as const,
+    // The merchant reached the wizard's last step.
+    finished: (brand?.onboardedAt ?? null) !== null,
     steps: {
       autonomy: autonomyRow !== undefined,
       brand: brand !== undefined && brand.tasteReferences.length > 0,
@@ -131,30 +141,188 @@ export const onboardingStatus = async (actor: Actor) => {
   };
 };
 
+// The merchant reached the wizard's last step: the overview stops sending
+// them to the wizard. The first time counts.
+export const finishOnboarding = async (actor: Actor) => {
+  await requireOnboarding(actor);
+  await actor.db
+    .insert(brandProfile)
+    .values({ onboardedAt: new Date(), userId: actor.userId })
+    .onConflictDoUpdate({
+      set: {
+        onboardedAt: sql`coalesce(${brandProfile.onboardedAt}, excluded.onboarded_at)`,
+      },
+      target: brandProfile.userId,
+    });
+  return { finished: true as const };
+};
+
+const MINUTE_MS = 60_000;
+// A resolved reference is reused for 30 days; one a provider failed on is
+// looked up again after 10 minutes.
+const FRESH_MS = 30 * 24 * 60 * MINUTE_MS;
+const RETRY_FAILED_MS = 10 * MINUTE_MS;
+// Each lookup that misses the cache costs up to one Qloo search, one Tavily
+// search, one Nemotron call and five more Qloo searches on wovain's keys, so
+// each merchant starts at most 20 an hour (four full sets of references).
+const LOOKUP_WINDOW_MS = 60 * MINUTE_MS;
+const LOOKUPS_PER_HOUR = 20;
+
+const lookupsExhausted = () =>
+  createError({
+    code: "ONBOARDING_LOOKUPS_EXHAUSTED",
+    fix: "Wait an hour, or keep the references you already looked up.",
+    message: "You've looked up a lot of references this hour",
+    status: 429,
+    why: `Each merchant looks up at most ${LOOKUPS_PER_HOUR} new taste references an hour.`,
+  });
+
+type CachedRow = typeof tasteReference.$inferSelect;
+
+const isFresh = (row: CachedRow, now: number) =>
+  now - row.resolvedAt.getTime() < (row.failed ? RETRY_FAILED_MS : FRESH_MS);
+
+// The cached answer in this merchant's spelling of the reference.
+const asResolved = (reference: string, row: CachedRow): ResolvedReference => ({
+  entities: row.entities.map((entity) =>
+    entity.from === undefined ? entity : { ...entity, from: reference }
+  ),
+  failed: row.failed,
+  reference,
+  sources: row.sources,
+  status: row.status,
+});
+
+// Merchant-started lookups that reached the providers in the last hour.
+const lookupsUsed = async (actor: Actor, now: number) => {
+  const [used] = await actor.db
+    .select({ lookups: count() })
+    .from(tasteReference)
+    .where(
+      and(
+        eq(tasteReference.resolvedBy, actor.userId),
+        gt(tasteReference.resolvedAt, new Date(now - LOOKUP_WINDOW_MS))
+      )
+    );
+  return used?.lookups ?? 0;
+};
+
+// Looks the references up with Qloo, Tavily and Nemotron and keeps the
+// answers in the cache.
+const lookUpAndKeep = async (
+  actor: Actor,
+  references: readonly string[],
+  now: number
+) => {
+  if ((await lookupsUsed(actor, now)) + references.length > LOOKUPS_PER_HOUR) {
+    throw lookupsExhausted();
+  }
+  const { core, log } = actor;
+  const resolved = await resolveReferences(
+    { ask: core.nemotron, log, search: core.qloo.search, web: core.tavily },
+    references
+  );
+  if (resolved.length > 0) {
+    await actor.db
+      .insert(tasteReference)
+      .values(
+        resolved.map((one) => ({
+          entities: one.entities,
+          failed: one.failed,
+          key: referenceKey(one.reference),
+          reference: one.reference,
+          resolvedAt: new Date(now),
+          resolvedBy: actor.userId,
+          sources: one.sources,
+          status: one.status,
+        }))
+      )
+      .onConflictDoUpdate({
+        set: {
+          entities: sql`excluded.entities`,
+          failed: sql`excluded.failed`,
+          reference: sql`excluded.reference`,
+          resolvedAt: sql`excluded.resolved_at`,
+          resolvedBy: sql`excluded.resolved_by`,
+          sources: sql`excluded.sources`,
+          status: sql`excluded.status`,
+        },
+        target: tasteReference.key,
+      });
+  }
+  return resolved;
+};
+
+// Resolves the references through the shared cache: only the ones it
+// doesn't hold, or holds stale, reach the providers, within the merchant's
+// hourly limit. One answer per distinct reference, in the order given.
+const resolveCached = async (
+  actor: Actor,
+  references: readonly string[]
+): Promise<ResolvedReference[]> => {
+  const distinct = distinctReferences(references);
+  if (distinct.length === 0) {
+    return [];
+  }
+  const now = Date.now();
+  const rows = await actor.db
+    .select()
+    .from(tasteReference)
+    .where(inArray(tasteReference.key, distinct.map(referenceKey)));
+  const cached = new Map(
+    rows.filter((row) => isFresh(row, now)).map((row) => [row.key, row])
+  );
+  const missing = distinct.filter(
+    (reference) => !cached.has(referenceKey(reference))
+  );
+  const looked =
+    missing.length === 0 ? [] : await lookUpAndKeep(actor, missing, now);
+  const fetched = new Map(
+    looked.map((one) => [referenceKey(one.reference), one])
+  );
+  return distinct.flatMap((reference) => {
+    const key = referenceKey(reference);
+    const row = cached.get(key);
+    if (row !== undefined) {
+      return [asResolved(reference, row)];
+    }
+    const one = fetched.get(key);
+    return one === undefined ? [] : [one];
+  });
+};
+
 export const resolveBrandReferences = async (
   actor: Actor,
   references: string[]
 ) => {
   await requireOnboarding(actor);
-  const { core, log } = actor;
-  return await resolveReferences(
-    {
-      ask: core.nemotron,
-      log,
-      search: core.qloo.search,
-      web: core.tavily,
-    },
-    references
+  return await resolveCached(actor, references);
+};
+
+// The brand's Qloo entities, each once, from what its references resolved
+// to. They only ever come from Qloo, never from the client.
+const entitiesOf = (resolved: readonly ResolvedReference[]): BrandEntity[] => {
+  const seen = new Set<string>();
+  return resolved.flatMap(({ entities }) =>
+    entities.filter((entity) => {
+      const fresh = !seen.has(entity.id);
+      seen.add(entity.id);
+      return fresh;
+    })
   );
 };
 
+// The references are resolved here, on the server, so the saved entities
+// always match the saved references; the ones already looked up come from
+// the cache.
 export const saveBrand = async (actor: Actor, input: BrandInput) => {
   await requireOnboarding(actor);
+  const references = await resolveCached(actor, input.tasteReferences);
   const values = {
     displayName: input.displayName ?? null,
     niches: input.niches,
     palette: input.palette,
-    qlooEntities: input.qlooEntities,
+    qlooEntities: entitiesOf(references),
     tasteReferences: input.tasteReferences,
     voice: input.voice ?? null,
   };
@@ -179,5 +347,5 @@ export const saveBrand = async (actor: Actor, input: BrandInput) => {
       });
     }
   }
-  return { remembered, saved: true as const };
+  return { references, remembered, saved: true as const };
 };

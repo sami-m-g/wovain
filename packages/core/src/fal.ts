@@ -121,6 +121,9 @@ export const createArtist = (
 
 export type Artist = ReturnType<typeof createArtist>;
 
+// https://fal.ai/docs/documentation/model-apis/common-parameters#x-fal-store-io
+const STORE_IO = "X-Fal-Store-IO";
+
 // fal on wovain's own key (FAL_KEY), paid by the design's credits: the same
 // three tools the merchant's fal relay answers, on fal's queue API through
 // @fal-ai/client, so createArtist draws the same way on either.
@@ -130,12 +133,22 @@ export const falKeyCall = (
 ): ToolCall => {
   const job = z.object({ endpoint_id: z.string().min(1) });
   const queued = job.extend({ request_id: z.string().min(1) });
-  const submitted = job.extend({ input: z.record(z.string(), z.unknown()) });
+  const submitted = job.extend({
+    input: z.record(z.string(), z.unknown()),
+    store_payload: z.boolean().optional(),
+  });
   return async (tool, args) => {
     if (tool === "submit_job") {
-      const { endpoint_id: endpoint, input } = submitted.parse(args);
+      const {
+        endpoint_id: endpoint,
+        input,
+        store_payload: store,
+      } = submitted.parse(args);
+      // store_payload: false keeps the request out of fal's request history,
+      // as the relay's submit_job does (fal's X-Fal-Store-IO header).
       const { request_id: requestId } = await client.queue.submit(endpoint, {
         input,
+        ...(store === false ? { headers: { [STORE_IO]: "0" } } : {}),
       });
       return { request_id: requestId };
     }

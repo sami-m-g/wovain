@@ -1,4 +1,5 @@
 import { Button } from "@wovain/ui/components/button";
+import { log } from "evlog";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -10,6 +11,7 @@ import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link, redirect } from "@/i18n/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
+import { client } from "@/utils/orpc";
 
 export const generateMetadata = async ({
   params,
@@ -25,6 +27,20 @@ export const generateMetadata = async ({
 
 const RUN_ID = /^[\w-]{1,64}$/u;
 
+// The overview still shows when the check fails; the failure is logged.
+const onboardingOpen = async () => {
+  try {
+    const status = await client.onboarding.status();
+    return status.enabled && !status.finished;
+  } catch (error) {
+    log.error({
+      error: "ONBOARDING_STATUS_FAILED",
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+};
+
 const DashboardPage = async ({
   params,
   searchParams,
@@ -39,6 +55,11 @@ const DashboardPage = async ({
     });
   }
   const session = await requireSession(locale, "/dashboard");
+  // With the onboarding-wizard flag on, a merchant starts in the wizard (after
+  // sign-up and sign-in both land here) until they reach its last step.
+  if (await onboardingOpen()) {
+    redirect({ href: "/dashboard/onboarding", locale });
+  }
   const t = await getTranslations("Dashboard");
 
   return (
