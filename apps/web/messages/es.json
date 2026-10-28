@@ -568,7 +568,27 @@
     },
     "autopilotLocked": "El piloto automático viene con Studio y Label. En Free, apruebas cada paso.",
     "autopilotUpgrade": "Ver planes",
-    "autopilotSoon": "El piloto automático llega pronto con los planes de pago. En Free, apruebas cada paso."
+    "autopilotSoon": "El piloto automático llega pronto con los planes de pago. En Free, apruebas cada paso.",
+    "evidence": {
+      "sources": "Fuentes",
+      "competitorPrice": "Camisetas parecidas se venden por unos {price} ({count, plural, one {# anuncio leído} other {# anuncios leídos}}).",
+      "newsFailed": "La búsqueda de noticias falló, así que esta idea se basa solo en anuncios de marketplaces.",
+      "marketFailed": "La búsqueda en marketplaces falló, así que faltan anuncios y precios para esta idea.",
+      "dossierStart": "Investigar esta idea",
+      "dossierRetry": "Investigar de nuevo",
+      "dossierHint": "Tavily lee la web y tus datos de gusto de Qloo, y te dice por qué ahora, cuánta competencia hay, a qué precio se venden las camisetas y los riesgos. Tarda alrededor de un minuto.",
+      "dossierPending": "Investigando. Tarda alrededor de un minuto.",
+      "dossierFailed": "La investigación no terminó.",
+      "dossierTitle": "Investigación",
+      "whyNow": "Por qué ahora",
+      "saturation": "Cuánta competencia",
+      "priceBand": "A qué precio se venden",
+      "risks": "Riesgos",
+      "trademarkTitle": "Revisión de marcas",
+      "trademarkBlocked": "coincide con una marca registrada. Cambia el texto antes de vender.",
+      "trademarkCaution": "ya se vende en marketplaces.",
+      "trademarkUnchecked": "no se pudo revisar. Búscalo tú antes de vender."
+    }
   },
   "NotFound": {
     "title": "Esta página no está aquí",

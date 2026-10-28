@@ -6,7 +6,7 @@ import type { Qloo } from "./qloo";
 import { fakeNemotron } from "./test-doubles";
 import { MIN_THEMES } from "./themes";
 import { createTrends, MAX_NEWS_AGE_DAYS, rankSources } from "./trends";
-import type { TavilySearch } from "./trends";
+import type { TavilyTrends } from "./trends";
 
 const DAY_MS = 86_400_000;
 const NOW = Date.parse("2026-10-26T20:10:00Z");
@@ -62,7 +62,27 @@ const fakeTavily = () => {
             ])
       )
   );
-  return { client: { search } satisfies TavilySearch, search };
+  // Extract reads one listing at $26 and can't reach the other.
+  const extract = vi.fn(
+    async (urls: string[]) =>
+      await Promise.resolve({
+        failedResults: urls
+          .slice(1)
+          .map((url) => ({ error: "Failed to fetch", url })),
+        requestId: "e1",
+        responseTime: 0.1,
+        results: urls.slice(0, 1).map((url) => ({
+          rawContent: "Classic T-Shirt $26.00",
+          title: "Listing",
+          url,
+        })),
+      })
+  );
+  return {
+    client: { extract, search } satisfies TavilyTrends,
+    extract,
+    search,
+  };
 };
 
 const qlooWith = (tasteOf: Qloo["tasteOf"]): Pick<Qloo, "tasteOf"> => ({
@@ -337,6 +357,73 @@ describe("createTrends", () => {
       timeRange: "month",
       topic: "news",
     });
+  });
+
+  it("keeps a theme whose marketplace search failed, and logs the failure", async () => {
+    const { client, search } = fakeTavily();
+    search.mockImplementation(async (query, options) => {
+      if (options?.topic !== "news") {
+        throw new Error("Tavily 432: plan limit");
+      }
+      return await Promise.resolve(
+        reply(query, [hit(`https://news.example/${query}`, `${query} news`)])
+      );
+    });
+    const error = vi.fn();
+    const trends = createTrends(client, qlooDown);
+
+    const research = await trends.research("pickleball", {
+      error,
+      set: vi.fn(),
+    });
+
+    expect(research.ideas.length).toBeGreaterThan(0);
+    expect(research.ideas[0]?.failedSearches).toEqual(["market"]);
+    expect(research.ideas[0]?.signals.marketHits).toBe(0);
+    // Qloo's failure plus one per failed marketplace search.
+    expect(error.mock.calls.length).toBeGreaterThan(research.ideas.length);
+  });
+
+  it("fails the step when every search fails", async () => {
+    const { client, search } = fakeTavily();
+    search.mockRejectedValue(new Error("Tavily is down"));
+    const trends = createTrends(client, qlooDown);
+
+    await expect(trends.research("pickleball")).rejects.toThrow(
+      "Tavily is down"
+    );
+  });
+
+  it("prices the margin from the listings Extract read when evidence is on", async () => {
+    const { client, extract } = fakeTavily();
+    const trends = createTrends(client, qlooDown);
+
+    const research = await trends.research("pickleball", undefined, {
+      evidence: true,
+      qloo: false,
+      tavily: true,
+    });
+
+    expect(extract).toHaveBeenCalled();
+    const [idea] = research.ideas;
+    expect(idea?.prices).toMatchObject({
+      count: 1,
+      median: 26,
+      source: "extract",
+    });
+    expect(idea?.prices?.citations[0]?.url).toBe(
+      "https://www.etsy.com/listing/1"
+    );
+  });
+
+  it("leaves Extract alone when evidence is off", async () => {
+    const { client, extract } = fakeTavily();
+    const trends = createTrends(client, qlooDown);
+
+    const research = await trends.research("pickleball");
+
+    expect(extract).not.toHaveBeenCalled();
+    expect(research.ideas[0]?.prices).toBeUndefined();
   });
 
   it("returns no ideas and calls nothing when trends-tavily is off", async () => {

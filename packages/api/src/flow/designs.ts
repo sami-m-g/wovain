@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
-import { draftBrief, judgeDesign } from "@wovain/core/design";
+import { draftBrief, judgeDesign, redrawCanFix } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
+import { checkTrademarks } from "@wovain/core/evidence";
 import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
 import { and, count, desc, eq } from "drizzle-orm";
@@ -11,6 +12,7 @@ import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
 import { withAgentTrace } from "./agent-trace";
 import { requireFal, withProvider } from "./connections";
+import { flagContextOf } from "./flags";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
 import { once } from "./once";
@@ -78,6 +80,12 @@ export const generateDesign = async (
   // stops the step before any model call.
   await requireFal(actor);
   const { artist, nemotron } = actor.core;
+  // tavily-evidence: the printed words are checked against trademark
+  // records before the judge decides, and a match sends the design back.
+  const guarded = await actor.core.flags.isOn(
+    "tavily-evidence",
+    flagContextOf(actor)
+  );
   // One drawing: a brief, fal's art and the judge's look at both. Each paid
   // call is keyed, so a retried step reuses it; `previous` makes it the
   // redraw of a design the judge sent back.
@@ -120,14 +128,27 @@ export const generateDesign = async (
       "fal",
       async (call) => await artist(call).result(requested, actor.log)
     );
-    // Keyed too, so a retried step makes the same call on redrawing.
+    // Keyed too, so a retried step makes the same call on redrawing. The
+    // trademark check rides in the same key: its result is saved with the
+    // judgment.
     const judged = await once(actor, {
       key: `${at}:judge`,
       operation: "design_judge",
       perform: async () =>
         await judgeDesign(
           nemotron,
-          { artwork: art, brief: drafted, idea: source.theme },
+          {
+            artwork: art,
+            brief: drafted,
+            idea: source.theme,
+            trademark: guarded
+              ? await checkTrademarks(
+                  actor.core.tavily,
+                  drafted.printedText,
+                  actor.log
+                )
+              : undefined,
+          },
           actor.log
         ),
       provider: "nebius",
@@ -140,7 +161,9 @@ export const generateDesign = async (
     { runId, traceId: runId ?? ideaId },
     async () => {
       const first = await draw();
-      if (first.judgment.verdict === "ready") {
+      // Ready, or held for something a redraw can't fix (a phrase the
+      // trademark check couldn't reach): saved as it is.
+      if (first.judgment.verdict === "ready" || !redrawCanFix(first.judgment)) {
         return first;
       }
       // Sent back: redrawn once from the judge's fixes. A redraw still sent

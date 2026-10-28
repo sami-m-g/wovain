@@ -33,6 +33,8 @@ config:
   wovain-next:nemotronModelReasoning: nvidia/Nemotron-3-Ultra-550b-a55b
   wovain-next:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
   wovain-next:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
+  # Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
+  wovain-next:tavilyResearchModel: mini
   wovain-next:guardrailInjectionThreshold: "0.8"
   wovain-next:guardrailModerationThreshold: "0.7"
   wovain-next:guardrailPiiThreshold: "0.7"

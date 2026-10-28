@@ -212,7 +212,7 @@ export const FLAGS = {
   ),
   "tavily-evidence": workstream(
     "growth",
-    "Tavily evidence with citations: per-search failures logged, trademark and claim checks"
+    "Tavily evidence with citations: per-search failures logged, competitor prices, research dossiers and the trademark check"
   ),
   "trends-qloo": {
     description:

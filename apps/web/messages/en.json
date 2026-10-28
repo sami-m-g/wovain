@@ -568,7 +568,27 @@
     },
     "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
     "autopilotUpgrade": "See plans",
-    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step."
+    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step.",
+    "evidence": {
+      "sources": "Sources",
+      "competitorPrice": "Similar shirts sell for about {price} ({count, plural, one {# listing read} other {# listings read}}).",
+      "newsFailed": "The news search failed, so this idea rests on marketplace listings only.",
+      "marketFailed": "The marketplace search failed, so listings and prices are missing for this idea.",
+      "dossierStart": "Research this idea",
+      "dossierRetry": "Research again",
+      "dossierHint": "Tavily reads the web and your Qloo taste data, then reports why now, how crowded it is, what shirts sell for and the risks. Takes about a minute.",
+      "dossierPending": "Researching. This takes about a minute.",
+      "dossierFailed": "The research didn't finish.",
+      "dossierTitle": "Research",
+      "whyNow": "Why now",
+      "saturation": "How crowded",
+      "priceBand": "What shirts sell for",
+      "risks": "Risks",
+      "trademarkTitle": "Trademark check",
+      "trademarkBlocked": "matches a trademark record. Change the words before you sell.",
+      "trademarkCaution": "already sells on marketplaces.",
+      "trademarkUnchecked": "couldn't be checked. Search it yourself before you sell."
+    }
   },
   "NotFound": {
     "title": "This page isn't here",

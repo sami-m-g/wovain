@@ -5,6 +5,8 @@ import type {
   TavilySearchResponse,
 } from "@tavily/core";
 
+import { competitorPrices } from "./evidence";
+import type { Citation, DossierRecord, TavilyWeb } from "./evidence";
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
@@ -38,7 +40,12 @@ import type { Theme } from "./themes";
 const TIMEOUT_S = 20;
 const TEXT_MAX = 1200;
 const PRICE = /\$(?<amount>\d{1,4}(?:\.\d{2})?)/u;
-const MARKETPLACES = ["etsy.com", "redbubble.com", "fourthwall.com"];
+const MARKETPLACES = [
+  "etsy.com",
+  "redbubble.com",
+  "teepublic.com",
+  "fourthwall.com",
+];
 // Sources an idea shows, after filtering and ranking.
 const SOURCES_SHOWN = 3;
 // Tavily's relevance score (0..1) a news result needs to count as evidence.
@@ -55,6 +62,8 @@ const INDEX_TITLE = /^(?:archives?|all posts|category|tag)\b|\barchives?\b/iu;
 const WORD = /[\p{L}\p{N}]{3,}/gu;
 
 export type TavilySearch = Pick<TavilyClient, "search">;
+// Research reads listings' prices with Extract when evidence is on.
+export type TavilyTrends = Pick<TavilyClient, "extract" | "search">;
 type Hit = TavilySearchResponse["results"][number];
 
 export interface Source {
@@ -63,11 +72,29 @@ export interface Source {
   url: string;
 }
 
+// What competitors charge for the theme: read off the listing pages by
+// Tavily Extract, or off the search snippets when Extract found none.
+export interface PriceEvidence {
+  citations: Citation[];
+  count: number;
+  median?: number | undefined;
+  source: "extract" | "snippets";
+}
+
+// A search that failed for one theme: the idea stands on the other one.
+export type SearchKind = "market" | "news";
+
 export interface TrendIdea {
   // Tavily's one-paragraph answer to "why now".
   answer?: string | undefined;
   // This week's headline that makes the theme timely.
   moment?: string | undefined;
+  // Tavily Research's dossier on the theme, when the merchant asked.
+  dossier?: DossierRecord | undefined;
+  // Searches that failed for this theme; the idea stands on the rest.
+  failedSearches?: SearchKind[] | undefined;
+  // Competitor prices behind the margin signal (evidence on).
+  prices?: PriceEvidence | undefined;
   // Qloo tag ID, when the theme came from Qloo.
   qlooTag?: string | undefined;
   rank: number;
@@ -109,6 +136,8 @@ export interface TrendResearch {
 // and the merchant's own choice to run without Qloo. tasteMap asks Qloo for
 // cross-domain affinities and saves the taste map on each idea.
 export interface TrendSources {
+  // tavily-evidence: competitor prices read off the listings by Extract.
+  evidence?: boolean | undefined;
   qloo: boolean;
   tasteMap?: boolean | undefined;
   tavily: boolean;
@@ -240,14 +269,25 @@ const search = async (
     };
   });
 
+const NO_RESULTS = {
+  answer: undefined,
+  images: [] as string[],
+  results: [] as Hit[],
+};
+
+const asError = (error: unknown) =>
+  error instanceof Error ? error : new Error(String(error));
+
 // The news search reads Tavily's reranked "advanced" snippets from the past
-// month; the marketplace search only counts and prices listings.
+// month; the marketplace search only counts and prices listings. Each search
+// settles on its own: a failed one is logged at error level and the theme
+// stands on the other.
 const searchTheme = async (
   client: TavilySearch,
   theme: Theme,
   log?: Logger
 ) => {
-  const [news, market] = await Promise.all([
+  const [news, market] = await Promise.allSettled([
     search(
       client,
       theme.query,
@@ -273,14 +313,30 @@ const searchTheme = async (
       log
     ),
   ]);
+  const failed: SearchKind[] = [];
+  const errors: Error[] = [];
+  const settle = (kind: SearchKind, outcome: typeof news) => {
+    if (outcome.status === "fulfilled") {
+      return outcome.value;
+    }
+    const error = asError(outcome.reason);
+    log?.error?.(error);
+    failed.push(kind);
+    errors.push(error);
+    return NO_RESULTS;
+  };
+  const newsFound = settle("news", news);
+  const marketFound = settle("market", market);
   return {
+    errors,
+    failed,
     market: {
-      ...market,
-      results: rankSources(market.results, theme.query, { minScore: 0 }),
+      ...marketFound,
+      results: rankSources(marketFound.results, theme.query, { minScore: 0 }),
     },
     news: {
-      ...news,
-      results: rankSources(news.results, theme.query, {
+      ...newsFound,
+      results: rankSources(newsFound.results, theme.query, {
         maxAgeDays: MAX_NEWS_AGE_DAYS,
         minScore: MIN_RELEVANCE,
       }),
@@ -290,23 +346,63 @@ const searchTheme = async (
 
 type Searched = Awaited<ReturnType<typeof searchTheme>>;
 
+const snippetPrices = (hits: Hit[]) =>
+  hits.flatMap((hit) => {
+    const amount = PRICE.exec(hit.content)?.groups?.["amount"];
+    return amount === undefined ? [] : [Number(amount)];
+  });
+
+// Prices read off the listing pages; the snippets stand in when Extract
+// finds none or fails (logged at error level).
+const priceEvidence = async (
+  client: TavilyTrends,
+  hits: Hit[],
+  log?: Logger
+): Promise<PriceEvidence> => {
+  const fromSnippets = (): PriceEvidence => {
+    const prices = snippetPrices(hits);
+    return {
+      citations: [],
+      count: prices.length,
+      median: median(prices),
+      source: "snippets",
+    };
+  };
+  try {
+    const read = await competitorPrices(
+      client,
+      hits.map((hit) => hit.url),
+      log
+    );
+    return read.prices.length === 0
+      ? fromSnippets()
+      : {
+          citations: read.citations,
+          count: read.prices.length,
+          median: read.median,
+          source: "extract",
+        };
+  } catch (error) {
+    log?.error?.(asError(error));
+    return fromSnippets();
+  }
+};
+
 const ideaOf = (
   theme: Theme,
-  { market, news }: Searched,
-  avoidNames: string[]
+  { failed, market, news }: Searched,
+  avoidNames: string[],
+  prices?: PriceEvidence
 ): Omit<TrendIdea, "rank"> | undefined => {
   const sources = news.results.length > 0 ? news.results : market.results;
   if (sources.length === 0) {
     return undefined;
   }
-  const prices = market.results.flatMap((hit) => {
-    const amount = PRICE.exec(hit.content)?.groups?.["amount"];
-    return amount === undefined ? [] : [Number(amount)];
-  });
+  const medianPrice = prices?.median ?? median(snippetPrices(market.results));
   const signals: IdeaSignals = {
     affinity: theme.affinity,
     ipSafety: ipSafetyOf(theme.name, avoidNames),
-    margin: marginOf(median(prices), priceFor(pricingRules().defaultBaseCost)),
+    margin: marginOf(medianPrice, priceFor(pricingRules().defaultBaseCost)),
     marketHits: market.results.length,
     newsHits: news.results.length,
     recency: recencyOf(news.results.map((hit) => hit.publishedDate)),
@@ -317,7 +413,9 @@ const ideaOf = (
   return {
     // Tavily's answer stands only when its news held up.
     answer: news.results.length > 0 ? news.answer : undefined,
+    ...(failed.length > 0 && { failedSearches: failed }),
     moment: news.results[0]?.title,
+    ...(prices !== undefined && { prices }),
     qlooTag: theme.id,
     references: news.images.slice(0, 4),
     score: scoreIdea(signals),
@@ -334,7 +432,7 @@ const ideaOf = (
 };
 
 export const createTrends = (
-  client: TavilySearch,
+  client: TavilyTrends,
   qloo: Pick<Qloo, "tasteOf">,
   // Splits a brief into themes when Qloo names too few; without it, design
   // angles on the brief's subject stand in (./themes).
@@ -372,6 +470,23 @@ export const createTrends = (
     const searched = await Promise.all(
       themes.map(async (theme) => await searchTheme(client, theme, log))
     );
+    // Every search failed: Tavily is down or out of credits, and an empty
+    // list would read as "no trends". The step fails (and refunds) instead.
+    const [firstError] = searched.flatMap((found) => found.errors);
+    if (
+      firstError !== undefined &&
+      searched.every((found) => found.failed.length === 2)
+    ) {
+      throw firstError;
+    }
+    const prices = sources.evidence
+      ? await Promise.all(
+          searched.map(
+            async (found) =>
+              await priceEvidence(client, found.market.results, log)
+          )
+        )
+      : [];
     // Names Qloo matched never go on a product, but the merchant's own seed
     // doesn't count against itself ("Pickleball" is also a game title).
     const avoidNames = [...new Set(taste.names)];
@@ -385,7 +500,7 @@ export const createTrends = (
         const idea =
           found === undefined
             ? undefined
-            : ideaOf(theme, found, protectedNames);
+            : ideaOf(theme, found, protectedNames, prices[index]);
         if (idea === undefined) {
           return [];
         }
@@ -405,13 +520,21 @@ export const createTrends = (
 
 export type Trends = ReturnType<typeof createTrends>;
 
+const missingKey = () => {
+  throw notConfigured.tavily();
+};
+
 // The official Tavily SDK; without a key it would fall back to reading
 // process.env itself, so a missing key fails loudly instead.
-export const tavilyClient = (apiKey: string | undefined): TavilySearch =>
-  apiKey === undefined
-    ? {
-        search: () => {
-          throw notConfigured.tavily();
-        },
-      }
-    : tavily({ apiKey });
+export const tavilyClient = (apiKey: string | undefined): TavilyWeb => {
+  if (apiKey !== undefined) {
+    return tavily({ apiKey });
+  }
+  const missing = missingKey;
+  return {
+    extract: missing,
+    getResearch: missing,
+    research: missing,
+    search: missing,
+  };
+};

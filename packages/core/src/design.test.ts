@@ -7,8 +7,10 @@ import {
   judgeDesign,
   judgeReplySchema,
   printFacts,
+  redrawCanFix,
   REQUIRED_PX,
   sightFacts,
+  trademarkFact,
   visionReplySchema,
 } from "./design";
 import type { DesignBrief, VisionReply } from "./design";
@@ -91,6 +93,21 @@ const judgeWith = async (
 const failed = (judgment: { checks: { pass: boolean; rule: string }[] }) =>
   judgment.checks.filter((check) => !check.pass).map((check) => check.rule);
 
+// A judgment whose one failed check is the trademark check on one phrase.
+const judgedTrademark = (verdict: "blocked" | "unchecked") => {
+  const trademark = {
+    checks: [{ citations: [], phrase: "NOT TODAY", verdict }],
+    pass: false,
+  };
+  return {
+    ...applyFacts(passingReply, [
+      ...printFacts(sharpArt),
+      trademarkFact(trademark),
+    ]),
+    trademark,
+  };
+};
+
 describe("the design judge", () => {
   it("lets code decide print size over the model's word", async () => {
     const { ask } = fakeAgents({
@@ -109,6 +126,56 @@ describe("the design judge", () => {
 
     const sharp = applyFacts(passingReply, printFacts(sharpArt));
     expect(sharp.verdict).toBe("ready");
+  });
+
+  it("sends back printed words that match a trademark record", () => {
+    const blocked = trademarkFact({
+      checks: [
+        {
+          citations: [
+            {
+              title: "NOT TODAY Trademark",
+              url: "https://www.trademarkia.com/not-today-1",
+            },
+          ],
+          phrase: "NOT TODAY",
+          verdict: "blocked",
+        },
+      ],
+      pass: false,
+    });
+    const judgment = applyFacts(passingReply, [
+      ...printFacts(sharpArt),
+      blocked,
+    ]);
+    expect(judgment.verdict).toBe("revise");
+    expect(blocked.note).toContain("trademarkia.com");
+
+    const clear = trademarkFact({
+      checks: [{ citations: [], phrase: "NOT TODAY", verdict: "clear" }],
+      pass: true,
+    });
+    expect(
+      applyFacts(passingReply, [...printFacts(sharpArt), clear]).verdict
+    ).toBe("ready");
+  });
+
+  it("redraws for a matched mark, not for a phrase it couldn't check", () => {
+    const unchecked = judgedTrademark("unchecked");
+    // Held for the merchant all the same.
+    expect(unchecked.verdict).toBe("revise");
+    expect(redrawCanFix(unchecked)).toBe(false);
+    expect(redrawCanFix(judgedTrademark("blocked"))).toBe(true);
+    // Anything else the judge failed still gets its redraw.
+    expect(
+      redrawCanFix({
+        ...unchecked,
+        checks: [
+          ...unchecked.checks,
+          { note: "Too small.", pass: false, rule: "print_size" },
+        ],
+      })
+    ).toBe(true);
   });
 
   it("looks at the drawn artwork before it judges the brief", async () => {

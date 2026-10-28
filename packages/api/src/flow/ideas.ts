@@ -21,12 +21,14 @@ export const researchSourcesFor = async (
   options: ResearchOptions = {}
 ): Promise<TrendSources> => {
   const context = flagContextOf(actor);
-  const [qlooOn, tasteMap, tavilyOn] = await Promise.all([
+  const [qlooOn, tasteMap, tavilyOn, evidenceOn] = await Promise.all([
     actor.core.flags.isOn("trends-qloo", context),
     actor.core.flags.isOn("qloo-taste-map", context),
     actor.core.flags.isOn("trends-tavily", context),
+    actor.core.flags.isOn("tavily-evidence", context),
   ]);
   return {
+    evidence: evidenceOn,
     qloo: qlooOn && (!tasteMap || options.qloo !== false),
     tasteMap,
     tavily: tavilyOn,
