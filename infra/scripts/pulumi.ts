@@ -8,12 +8,13 @@
 //    resources from the state, since GitLab is archived and Pulumi must
 //    never call it, and unprotect what policy/retired.ts retires that way.
 //    Each step checks the state first, so running it again does nothing.
-// 2. The policy pack, always. (Frozen resources, ../freeze.json, are held
-//    by ../freeze.ts in the program itself.)
+// 2. The policy pack, always.
 //
 // A preview never writes the real state: it runs on a copy in a local
 // backend, with step 1 applied to the copy, so it shows what `up` will do.
-// Only `up` migrates the real state, then applies.
+// `up` first runs that preview through the guard (policy/guard.ts), which
+// stops on a delete of stateful data or a change to frozen production; only
+// then does it migrate the real state and apply.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -147,19 +148,35 @@ const localCopy = () => {
   return env;
 };
 
-const env = command === "preview" ? localCopy() : process.env;
-migrateState(env);
-execFileSync(
-  "pulumi",
-  [
-    command,
-    "--cwd",
-    cwd,
-    "--stack",
-    STACK,
-    "--policy-pack",
-    path.join(repo, "infra/policy"),
-    ...extra,
-  ],
-  { env, stdio: "inherit" }
-);
+const policyArgs = [
+  "--cwd",
+  cwd,
+  "--stack",
+  STACK,
+  "--policy-pack",
+  path.join(repo, "infra/policy"),
+];
+const previewEnv = localCopy();
+migrateState(previewEnv);
+if (command === "preview") {
+  execFileSync("pulumi", ["preview", ...policyArgs, ...extra], {
+    env: previewEnv,
+    stdio: "inherit",
+  });
+} else {
+  const plan = execFileSync("pulumi", ["preview", ...policyArgs, "--json"], {
+    encoding: "utf-8",
+    env: previewEnv,
+    maxBuffer: 256 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  // Exits non-zero, with the reason on stderr, when the plan is blocked.
+  execFileSync("node", [path.join(repo, "infra/policy/guard.ts")], {
+    input: plan,
+    stdio: ["pipe", "inherit", "inherit"],
+  });
+  migrateState(process.env);
+  execFileSync("pulumi", ["up", ...policyArgs, ...extra], {
+    stdio: "inherit",
+  });
+}

@@ -3,7 +3,7 @@
 // (policy/retired.ts).
 //
 // gitlab-feature-flags-instance-id stays: production's frozen revision still
-// mounts it (freeze.json), so it and wovain-web's access to it stay,
+// mounts it (`wovain:freezeProduction`), so it and wovain-web's access to it stay,
 // retained, until production next deploys.
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
