@@ -67,7 +67,32 @@ const internalOnly = {
   production: { kind: "internal" },
 } as const satisfies Record<FlagEnvironment, Rollout>;
 
+// New work for the Qloo and Nebius demo on next.wovain.com: on in dev and
+// next, off in production (frozen until 2026-11-16).
+const devAndNext = {
+  development: { kind: "all" },
+  next: { kind: "all" },
+  production: { kind: "off" },
+} as const satisfies Record<FlagEnvironment, Rollout>;
+
+// The flags of the workstreams that build on foundation-autonomy-approvals,
+// declared together so their pull requests don't conflict on this file.
+const workstream = (team: string, description: string) =>
+  ({
+    description,
+    expires: "2027-01-31",
+    guarded: true,
+    initiallyActive: true,
+    owner: { gitlab: OWNER, team },
+    rollout: devAndNext,
+    type: "release",
+  }) as const satisfies FlagDefinition;
+
 export const FLAGS = {
+  "ads-optimizer": workstream(
+    "media",
+    "Thompson-sampling optimizer over ads: reallocation proposals inside the spend caps"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",
@@ -77,16 +102,30 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
-  autopilot: {
+  "autonomy-approvals": {
     description:
-      "Autopilot: idea, product set, ads and a paused campaign without a human step",
-    expires: "2026-12-31",
+      "The shared approval queue and the merchant's autonomy settings (openspec foundation-autonomy-approvals)",
+    expires: "2027-01-31",
     guarded: true,
-    initiallyActive: false,
+    initiallyActive: true,
     owner: { gitlab: OWNER, team: "runs" },
-    rollout: internalOnly,
+    rollout: devAndNext,
     type: "release",
   },
+  autopilot: {
+    description:
+      "Autopilot: idea, product set, ads and a paused campaign without a human step. On for every plan, Free included, in dev and next (foundation-autonomy-approvals)",
+    expires: "2026-12-31",
+    guarded: true,
+    initiallyActive: true,
+    owner: { gitlab: OWNER, team: "runs" },
+    rollout: { ...devAndNext, production: { kind: "internal" } },
+    type: "release",
+  },
+  "autopilot-triggers": workstream(
+    "runs",
+    "Autopilot fires on trend and Qloo triggers and files suggestions"
+  ),
   "billing-paid-plans": {
     description:
       "Paid plans: checkout, plan changes and credit pack purchases (MR !116). Off at launch: only Free is sold",
@@ -111,6 +150,10 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
+  "design-drops": workstream(
+    "design",
+    "Drops: a capsule of products sharing a palette, mark and style family"
+  ),
   "fal-oauth": {
     description:
       "Connect fal with OAuth instead of a pasted key (openspec add-fal-byo-connector)",
@@ -121,6 +164,10 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
+  "feedback-loop": workstream(
+    "growth",
+    "Performance snapshots feed scores, taste and the next suggestions"
+  ),
   "mastra-runs": {
     description:
       "New runs go through the Mastra workflow; the legacy run steps are the fallback",
@@ -135,6 +182,38 @@ export const FLAGS = {
     },
     type: "release",
   },
+  "media-buying-live": workstream(
+    "media",
+    "Launch Meta campaigns live after an approval, inside the merchant's spend caps"
+  ),
+  "mobile-app": workstream(
+    "mobile",
+    "The Expo app: approval inbox, push notifications and the store pulse"
+  ),
+  "model-routing": workstream(
+    "agents",
+    "Route each agent to a Nemotron model by job (NEMOTRON_MODEL_FAST, _DEFAULT, _REASONING, _VISION, _SAFETY)"
+  ),
+  "onboarding-wizard": workstream(
+    "growth",
+    "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
+  ),
+  "qloo-audiences": workstream(
+    "growth",
+    "Qloo audience demographics drive Meta targeting and the ad persona"
+  ),
+  "qloo-taste-map": workstream(
+    "growth",
+    "The Qloo taste map: the entities, tags and cross-domain links behind each idea"
+  ),
+  "store-management": workstream(
+    "store",
+    "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"
+  ),
+  "tavily-evidence": workstream(
+    "growth",
+    "Tavily evidence with citations: per-search failures logged, trademark and claim checks"
+  ),
   "trends-qloo": {
     description:
       "Qloo taste themes in trend research. Qloo hackathon terms: free and demo plans only until judging ends on 2026-11-05; paid plans get Tavily-only trends",
@@ -164,6 +243,10 @@ export const FLAGS = {
     },
     type: "kill-switch",
   },
+  "voice-input": workstream(
+    "mobile",
+    "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
+  ),
 } as const satisfies Record<string, FlagDefinition>;
 
 export type FlagName = keyof typeof FLAGS;

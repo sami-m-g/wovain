@@ -48,8 +48,16 @@ export const billingStatus = async (actor: Actor) => {
   await startFreePlan(actor);
   const current = await entitlement(actor.db, actor.userId);
   const { subscription } = current;
+  // Autopilot comes with the plan, or with the autopilot flag (on for every
+  // plan, Free included, in dev and next).
+  const autopilot =
+    billingCatalog().plans[current.plan].autopilot ||
+    (await actor.core.flags.isOn("autopilot", {
+      plan: current.plan,
+      userId: actor.userId,
+    }));
   return {
-    autopilot: billingCatalog().plans[current.plan].autopilot,
+    autopilot,
     credits: await creditBalance(actor.db, actor.userId),
     enabled: polar !== undefined,
     paidPlans: await actor.billing.paidPlans(),

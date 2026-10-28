@@ -63,6 +63,12 @@ config:
   # Nebius Token Factory's list price, USD per million tokens.
   wovain:nemotronInputPrice: "0.3"
   wovain:nemotronOutputPrice: "0.9"
+  # The Nemotron model per job (packages/core/src/model-router.ts).
+  wovain:nemotronModelFast: nvidia/Nemotron-3_5-Lightning
+  wovain:nemotronModelDefault: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelReasoning: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
   wovain:guardrailInjectionThreshold: "0.8"
   wovain:guardrailModerationThreshold: "0.7"
   wovain:guardrailPiiThreshold: "0.7"
@@ -150,6 +156,11 @@ config:
   wovain:fourthwallDefaultProductId-dev: pro_8be1acca2fe7403f89
   wovain:nemotronInputPrice-dev: "0.3"
   wovain:nemotronOutputPrice-dev: "0.9"
+  wovain:nemotronModelFast-dev: nvidia/Nemotron-3_5-Lightning
+  wovain:nemotronModelDefault-dev: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelReasoning-dev: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelVision-dev: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronModelSafety-dev: nvidia/Nemotron-3_5-Lightning
   wovain:guardrailInjectionThreshold-dev: "0.8"
   wovain:guardrailModerationThreshold-dev: "0.7"
   wovain:guardrailPiiThreshold-dev: "0.7"

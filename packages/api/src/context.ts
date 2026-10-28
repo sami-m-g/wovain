@@ -5,7 +5,7 @@ import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
 import type { EvlogOrpcContext } from "evlog/orpc";
 
-import type { Analytics, RunEngine } from "./flow/actor";
+import type { Analytics, EventSender, RunEngine } from "./flow/actor";
 
 export type { FunnelEvent } from "./flow/actor";
 
@@ -18,6 +18,8 @@ export interface Context extends Partial<EvlogOrpcContext> {
   billing: Billing;
   core: Core;
   db: Database;
+  // Sends wovain's Inngest events (approvals, triggers, the optimizer).
+  events?: EventSender | undefined;
   mailer: Mailer;
   // The merchant behind an MCP access token (ChatGPT), which has no session.
   mcpUserId?: string;

@@ -4,6 +4,8 @@ import { createAgentKit } from "./agents";
 import { createArtist } from "./fal";
 import { createFlags } from "./flags";
 import type { FlagsConfig } from "./flags";
+import { createModelRouter } from "./model-router";
+import type { ModelRouterConfig } from "./model-router";
 import { createNemotron } from "./nemotron";
 import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
@@ -14,7 +16,7 @@ import type { ToolCall } from "./upstream";
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
 // needs it, with a NOT_CONFIGURED error naming the variable.
-export interface CoreConfig extends FlagsConfig {
+export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   BETTER_AUTH_URL: string;
   // The providers' MCP servers (apps/web/.env.schema).
   FAL_MCP_URL: string;
@@ -94,6 +96,9 @@ export const createCore = (
     memory,
     // The model ID, for analytics events (packages/api/src/flow).
     model: env.NEMOTRON_MODEL,
+    // The Nemotron model per job (fast, default, reasoning, vision,
+    // safety), from NEMOTRON_MODEL_* (./model-router.ts).
+    models: createModelRouter(env),
     nemotron,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(

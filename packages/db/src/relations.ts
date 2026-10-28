@@ -1,10 +1,11 @@
 import { defineRelations } from "drizzle-orm";
 
 import * as auth from "./schema/auth";
+import * as autonomy from "./schema/autonomy";
 import * as seller from "./schema/seller";
 
 export const relations = {
-  ...defineRelations({ ...auth, ...seller }, (r) => ({
+  ...defineRelations({ ...auth, ...autonomy, ...seller }, (r) => ({
     // A run's output, step by step: ideas → designs → products → campaigns.
     design: {
       products: r.many.product({ from: r.design.id, to: r.product.designId }),

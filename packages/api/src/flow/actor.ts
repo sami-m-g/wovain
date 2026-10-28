@@ -1,6 +1,7 @@
 import type { BillingEvent } from "@wovain/billing/analytics";
 import type { Billing } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
+import type { WovainEvent } from "@wovain/core/events";
 import type { FlagPlan } from "@wovain/core/flag-registry";
 import type { Logger } from "@wovain/core/log";
 import type { Database } from "@wovain/db";
@@ -74,6 +75,11 @@ export interface RunEngine {
   resume: (runId: string, decision: RunDecision) => Promise<void>;
 }
 
+// Sends wovain's Inngest events (@wovain/core/events).
+export interface EventSender {
+  send: (event: WovainEvent) => Promise<unknown>;
+}
+
 // Who a flow step runs for, and with what. `runs` is absent inside a run's
 // own steps, which never start or resume runs.
 export interface Actor {
@@ -81,6 +87,8 @@ export interface Actor {
   billing: Billing;
   core: Core;
   db: Database;
+  // Inngest events (approvals, triggers, the optimizer); absent in tests.
+  events?: EventSender | undefined;
   log?: Logger | undefined;
   mailer: Mailer;
   // The merchant's plan, for plan-gated flags (trends-qloo). Billing (MR
