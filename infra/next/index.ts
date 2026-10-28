@@ -103,13 +103,20 @@ mappedHost({
   zone: "wovain-com",
 });
 
-// The repository itself, its rulesets and the shared variables are the
-// `wovain` stack's (infra/github.ts); this stack owns only its environment.
+// The repository itself and its rulesets are the `wovain` stack's
+// (infra/github.ts); this stack owns only its environment. The repository's
+// shared variables are the `wovain` stack's too, but it is not applied while
+// production is frozen, so next also sets them on its own environment (an
+// environment variable wins over a repository one, with the same value).
 environmentVariables(NAME, mainOnlyEnvironment(NAME, "wovain"), {
   DATABASE_URL_SECRET: environment.databaseUrl.secretId,
+  DOCS_SITE_URL: `https://docs.${APEX}`,
   GCP_DEPLOY_SERVICE_ACCOUNT: deploy.deployer.email,
   GCP_IMAGE_REPOSITORY: deploy.imageRepository,
+  GCP_PROJECT_ID: project,
+  GCP_REGION: region,
   GCP_SQL_INSTANCE: environment.sql.connectionName,
+  GCP_WORKLOAD_IDENTITY_PROVIDER: `${pool}/providers/github`,
   NEXT_PUBLIC_POSTHOG_KEY: posthog.apiToken,
   SITE_URL: url,
   WEB_BUILD_ENV: buildEnv(settings, mcpUrl),
