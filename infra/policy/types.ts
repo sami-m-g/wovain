@@ -18,4 +18,5 @@ export const STATEFUL = new Set([
   "gcp:sql/databaseInstance:DatabaseInstance",
   "gcp:storage/bucket:Bucket",
   "github:index/repository:Repository",
+  "posthog:index/project:Project",
 ]);

@@ -1,3 +1,4 @@
+import { ENV } from "@/env.server";
 import { countryName, visitorCountry } from "@/lib/geo";
 
 // What the browser's analytics can't know on their own, for PostHog
@@ -8,6 +9,9 @@ import { countryName, visitorCountry } from "@/lib/geo";
 // src/lib/geo.ts; the IP address is neither stored, logged nor returned.
 
 export interface Visitor {
+  // The deployment (APP_ENV): production, next or development. One image
+  // runs in several environments, so the browser can't tell on its own.
+  environment: (typeof ENV)["APP_ENV"];
   // ISO 3166-1 alpha-2 code (FR) and English name (France), the values
   // PostHog's own GeoIP would set; null when unknown (local, private IP).
   country: { code: string; name: string } | null;
@@ -17,6 +21,7 @@ export const GET = (request: Request) => {
   const code = visitorCountry(request.headers);
   const visitor: Visitor = {
     country: code === undefined ? null : { code, name: countryName(code) },
+    environment: ENV.APP_ENV,
   };
   // Per visitor: never cached by a browser or a shared cache.
   return Response.json(visitor, {

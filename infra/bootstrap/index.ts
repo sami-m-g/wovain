@@ -6,6 +6,9 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { pullRequestPreviews } from "./preview.ts";
+import { pulumiState } from "./state.ts";
+
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
 const project = gcpConfig.require("project");
@@ -23,13 +26,19 @@ const { billingAccount } = await gcp.organizations.getProject({
 // Deleting or replacing any of these would cut CI off (infra/policy).
 const kept = { protect: true };
 const workloadIdentityUser = "roles/iam.workloadIdentityUser";
-// Pulumi's stack secrets key, made once with gcloud.
-const stackSecrets = `projects/${project}/locations/${region}/keyRings/pulumi/cryptoKeys/stack-secrets`;
+// The state bucket and the stack secrets key (state.ts).
+const state = pulumiState(project, region);
+const stackSecrets = state.stackSecrets.id;
 
-// GitHub Actions' OIDC tokens, from this repository's main branch only: no
-// pull request, other branch or tag gets a Google token. Each account trusts
-// one GitHub environment of the pool: gitlab-deploy `Production`
-// (infra/index.ts) and gitlab-infra `infrastructure` (below).
+// GitHub Actions' OIDC tokens, from this repository's main branch, and from
+// its release branch in the `Production` environment only (production
+// deploys from the release branch, docs/adr/0004-release-branch.md): no pull
+// request, other branch or tag gets a Google token, and the release branch
+// can't reach `infrastructure`, `next` or `dev`. Each account trusts one
+// GitHub environment of the pool: gitlab-deploy `Production`
+// (infra/index.ts), wovain-deploy-next `next` and wovain-deploy-dev `dev`
+// (infra/dev.ts), and gitlab-infra `infrastructure` (below).
+const releaseBranch = config.get("releaseBranch") ?? "release/transcend";
 const pool = new gcp.iam.WorkloadIdentityPool(
   "github",
   { displayName: "GitHub Actions", workloadIdentityPoolId: "github" },
@@ -43,7 +52,7 @@ export const workloadIdentityProvider =
         `assertion.repository == "${githubRepository}"`,
         `assertion.repository_id == "${githubRepositoryId}"`,
         `assertion.repository_owner_id == "${githubOwnerId}"`,
-        `assertion.ref == "refs/heads/main"`,
+        `(assertion.ref == "refs/heads/main" || (assertion.ref == "refs/heads/${releaseBranch}" && assertion.environment == "Production"))`,
       ].join(" && "),
       attributeMapping: {
         "attribute.environment": "assertion.environment",
@@ -106,3 +115,15 @@ new gcp.billing.AccountIamMember("infra-budgets", {
   member: infra.member,
   role: "roles/billing.costsManager",
 });
+
+// Read-only previews of pull requests (preview.ts).
+const previews = pullRequestPreviews({
+  bucket: state.bucket,
+  githubOwnerId,
+  githubRepository,
+  githubRepositoryId,
+  project,
+  stackSecrets: state.stackSecrets,
+});
+export const previewServiceAccount = previews.account;
+export const previewWorkloadIdentityProvider = previews.provider;

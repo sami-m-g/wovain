@@ -153,3 +153,92 @@ export class ResendVerification extends pulumi.dynamic.Resource {
     );
   }
 }
+
+interface ApiKeyInputs {
+  // A full-access key, which may create keys (production's resend-api-key).
+  apiKey: string;
+  domainId: string;
+  name: string;
+}
+
+interface ApiKeyOutputs extends ApiKeyInputs {
+  token: string;
+}
+
+// A sending-only key for one environment (resend.com/docs/api-reference/
+// api-keys), so dev and next never hold production's key. Resend shows the
+// token only when it creates the key, so any change is a new key.
+const apiKeyProvider: pulumi.dynamic.ResourceProvider<
+  ApiKeyInputs,
+  ApiKeyOutputs
+> = {
+  async create(inputs) {
+    const response = await fetch("https://api.resend.com/api-keys", {
+      body: JSON.stringify({
+        domain_id: inputs.domainId,
+        name: inputs.name,
+        permission: "sending_access",
+      }),
+      headers: {
+        authorization: `Bearer ${inputs.apiKey}`,
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Resend refused the API key: ${response.status} ${await response.text()}`
+      );
+    }
+    const key = (await response.json()) as { id: string; token: string };
+    return { id: key.id, outs: { ...inputs, token: key.token } };
+  },
+  async delete(id, props) {
+    // A fixed host; id is the key id Resend returned at create.
+    const url = `https://api.resend.com/api-keys/${encodeURIComponent(id)}`;
+    // nosemgrep
+    const response = await fetch(url, {
+      headers: { authorization: `Bearer ${props.apiKey}` },
+      method: "DELETE",
+    });
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Resend kept the API key: ${response.status}`);
+    }
+  },
+  // A rotated admin key changes nothing; a new name or domain is a new key.
+  diff(_id, olds, news) {
+    const replaces = (["domainId", "name"] as const).filter(
+      (key) => olds[key] !== news[key]
+    );
+    return Promise.resolve({
+      changes: replaces.length > 0 || olds.apiKey !== news.apiKey,
+      replaces,
+    });
+  },
+  update(_id, olds, news) {
+    return Promise.resolve({ outs: { ...olds, apiKey: news.apiKey } });
+  },
+};
+
+export class ResendApiKey extends pulumi.dynamic.Resource {
+  declare readonly token: pulumi.Output<string>;
+
+  constructor(
+    name: string,
+    args: {
+      apiKey: pulumi.Input<string>;
+      domainId: pulumi.Input<string>;
+      name: pulumi.Input<string>;
+    },
+    opts?: pulumi.CustomResourceOptions
+  ) {
+    super(
+      apiKeyProvider,
+      name,
+      { ...args, token: undefined },
+      { ...opts, additionalSecretOutputs: ["apiKey", "token"] },
+      "resend",
+      "ApiKey"
+    );
+  }
+}

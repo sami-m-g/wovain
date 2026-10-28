@@ -14,9 +14,11 @@
 export const PLAN_CODES = ["free", "demo", "studio", "label"] as const;
 export type FlagPlan = (typeof PLAN_CODES)[number];
 
-// The environments a rollout is set for. The app passes its own as the
-// `environment` property: production on wovain.com, development elsewhere.
-export const FLAG_ENVIRONMENTS = ["production", "development"] as const;
+// The environments a rollout is set for. The app passes its own, APP_ENV
+// (set per Cloud Run service by infra/), as the `environment` property:
+// production on wovain.com, next on next.wovain.com (main, for judges, so
+// it follows production's rollouts), development elsewhere.
+export const FLAG_ENVIRONMENTS = ["production", "next", "development"] as const;
 export type FlagEnvironment = (typeof FLAG_ENVIRONMENTS)[number];
 
 // How far a flag is rolled out in one environment:
@@ -61,6 +63,7 @@ export interface FlagDefinition {
 const OWNER = "sami-m-g";
 const internalOnly = {
   development: { kind: "all" },
+  next: { kind: "internal" },
   production: { kind: "internal" },
 } as const satisfies Record<FlagEnvironment, Rollout>;
 
@@ -91,7 +94,11 @@ export const FLAGS = {
     guarded: true,
     initiallyActive: false,
     owner: { gitlab: OWNER, team: "billing" },
-    rollout: { development: { kind: "off" }, production: { kind: "off" } },
+    rollout: {
+      development: { kind: "off" },
+      next: { kind: "off" },
+      production: { kind: "off" },
+    },
     type: "permission",
   },
   "billing-polar": {
@@ -123,6 +130,7 @@ export const FLAGS = {
     owner: { gitlab: OWNER, team: "runs" },
     rollout: {
       development: { kind: "all" },
+      next: { kind: "percent", percent: 10 },
       production: { kind: "percent", percent: 10 },
     },
     type: "release",
@@ -137,6 +145,7 @@ export const FLAGS = {
     plans: ["free", "demo"],
     rollout: {
       development: { kind: "all" },
+      next: { kind: "all" },
       production: { kind: "all" },
     },
     type: "kill-switch",
@@ -150,6 +159,7 @@ export const FLAGS = {
     owner: { gitlab: OWNER, team: "growth" },
     rollout: {
       development: { kind: "all" },
+      next: { kind: "all" },
       production: { kind: "all" },
     },
     type: "kill-switch",

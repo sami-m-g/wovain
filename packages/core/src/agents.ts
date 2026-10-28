@@ -20,18 +20,26 @@ import type { AnyScorer } from "./scorers";
 // the merchant's brand and taste. The Mastra instance (packages/api) stores
 // their scores, memory and traces in Postgres.
 
-export const NEMOTRON_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+// The models are NEMOTRON_MODEL and NEMOTRON_VISION_MODEL (the judge's eyes,
+// which read the drawn artwork in ./design inspectArtwork) in
+// apps/web/.env.schema, set per environment through Pulumi config
+// (infra/index.ts). Their list price is NEMOTRON_INPUT_PRICE and
+// NEMOTRON_OUTPUT_PRICE (AgentKitConfig.pricePerMillion).
 const TOKENS_PER_MILLION = 1_000_000;
 
 export const AGENT_IDS = [
   "design_brief",
   "design_judge",
+  "design_vision",
   "ad_copy",
   "autopilot_pick_idea",
   "autopilot_review_design",
   "research_themes",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
+
+// The agents that read images, on the vision model.
+const SEEING: ReadonlySet<AgentId> = new Set(["design_vision"]);
 
 // The two agents that write for the merchant read their brand and taste.
 export const REMEMBERING: ReadonlySet<AgentId> = new Set([
@@ -52,6 +60,10 @@ export interface AgentKitConfig {
   guardThresholds: { injection: number; moderation: number; pii: number };
   // Brand and taste memory per merchant; none without storage.
   memory?: Memory | undefined;
+  // The Nebius model ID every agent, scorer and guardrail calls.
+  model: string;
+  // The Nebius model ID the agents that read images call.
+  visionModel: string;
   posthogHost: string;
   posthogKey?: string | undefined;
   // The model's list price, USD per million tokens (NEMOTRON_*_PRICE), for
@@ -61,6 +73,8 @@ export interface AgentKitConfig {
   scoreSampleRate?: number | undefined;
 }
 
+const HTTPS_URL = /^https:\/\/.+$/u;
+
 export const createAgentKit = ({
   apiKey,
   baseURL,
@@ -68,10 +82,12 @@ export const createAgentKit = ({
   guardrails = true,
   guardThresholds,
   memory,
+  model,
   posthogHost,
   posthogKey,
   pricePerMillion,
   scoreSampleRate = 0.1,
+  visionModel,
 }: AgentKitConfig): AgentKit | undefined => {
   if (apiKey === undefined) {
     return;
@@ -82,7 +98,18 @@ export const createAgentKit = ({
     name: "nebius",
     supportsStructuredOutputs: true,
   });
-  const base = nebius.chatModel(NEMOTRON_MODEL);
+  const base = nebius.chatModel(model);
+  // Nebius fetches the artwork from its https URL itself, so the AI SDK
+  // passes the URL through: a 2880 px PNG isn't downloaded and inlined, and
+  // an image Nebius can't fetch fails the call instead of being replaced by
+  // a placeholder the model never sees.
+  const vision = createOpenAICompatible({
+    apiKey,
+    baseURL,
+    name: "nebius",
+    supportedUrls: () => ({ "image/*": [HTTPS_URL] }),
+    supportsStructuredOutputs: true,
+  }).chatModel(visionModel);
   const posthog = new PostHog(posthogKey ?? "off", {
     disabled: posthogKey === undefined,
     host: posthogHost,
@@ -90,11 +117,11 @@ export const createAgentKit = ({
   // Each call's model is wrapped for PostHog LLM analytics with the call's
   // merchant and run: $ai_generation with $ai_trace_id = the run's ID.
   const tracedModel =
-    (span: string) =>
+    (span: AgentId) =>
     ({ requestContext }: { requestContext: RequestContext }) => {
       const distinctId = requestContext.get(TRACE_KEYS.distinctId);
       const traceId = requestContext.get(TRACE_KEYS.traceId);
-      return withTracing(base, posthog, {
+      return withTracing(SEEING.has(span) ? vision : base, posthog, {
         // Cloud Run throttles CPU after the response: send it now.
         posthogCaptureImmediate: true,
         posthogCostOverride: {

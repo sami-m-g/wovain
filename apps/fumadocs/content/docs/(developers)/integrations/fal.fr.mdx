@@ -3,7 +3,7 @@ title: fal
 description: fal dessine l'illustration d'impression transparente, sur le compte fal du marchand.
 ---
 
-fal exécute le modèle d'images (`TEXT_TO_IMAGE` dans `packages/core/src/fal.ts`, GPT Image sur fal).
+fal exécute le modèle d'images (GPT Image sur fal, la variable d'environnement `FAL_IMAGE_MODEL`, définie par environnement dans la configuration Pulumi).
 
 - **Illustration.** `createArtist` transforme le prompt d'illustration du brief en illustration d'impression carrée et transparente qui n'imprime que les mots du brief (`artInput`).
 - **Taille d'impression.** Le juge vérifie le résultat par rapport à l'exigence de 2880 px, dans le code.

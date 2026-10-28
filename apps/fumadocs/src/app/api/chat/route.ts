@@ -13,7 +13,7 @@ import type { DocumentData } from "flexsearch";
 import { Document } from "flexsearch";
 import { after } from "next/server";
 import { PostHog } from "posthog-node";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 import { z } from "zod";
 
 import type { ChatUIMessage, SearchTool } from "@/components/ai/search";
@@ -62,10 +62,10 @@ const createSearchServer = async () => {
 
 const searchServer = createSearchServer();
 
-// The docs chat is kept cheap: the smallest Nemotron on Token Factory
-// ($0.06 in / $0.24 out per 1M tokens), a short prompt, capped output, three
-// short search results, four messages of history and per-visitor limits.
-const MAX_OUTPUT_TOKENS = 400;
+// The docs chat is kept cheap: a small Nemotron on Token Factory
+// ($0.06 in / $0.24 out per 1M tokens), a short prompt, capped output
+// (DOCS_CHAT_MAX_OUTPUT_TOKENS), three short search results, four messages of
+// history and per-visitor limits.
 const MAX_HISTORY_MESSAGES = 4;
 const MAX_SEARCH_RESULTS = 3;
 const MAX_SNIPPET_CHARS = 700;
@@ -160,8 +160,13 @@ const overLimit = async (ip: string) => {
       globalDaily.consume("all"),
     ]);
     return false;
-  } catch {
-    return true;
+  } catch (error) {
+    // The limiter rejects with a RateLimiterRes when points run out; anything
+    // else is a real failure and must reach error tracking, not read as a 429.
+    if (error instanceof RateLimiterRes) {
+      return true;
+    }
+    throw error;
   }
 };
 
@@ -224,7 +229,7 @@ export const POST = async (req: Request, _ctx: RouteContext<"/api/chat">) => {
   }
 
   // Each model call is a PostHog $ai_generation event: tokens and cost, no text.
-  const model = withTracing(nebius.chatModel(ENV.NEBIUS_MODEL), posthog, {
+  const model = withTracing(nebius.chatModel(ENV.DOCS_CHAT_MODEL), posthog, {
     posthogCaptureImmediate: true,
     posthogCostOverride: MODEL_PRICE,
     posthogDistinctId: "docs-chat",
@@ -234,7 +239,7 @@ export const POST = async (req: Request, _ctx: RouteContext<"/api/chat">) => {
 
   const result = streamText({
     instructions: systemPrompt,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
+    maxOutputTokens: ENV.DOCS_CHAT_MAX_OUTPUT_TOKENS,
     messages: await convertToModelMessages<ChatUIMessage>(
       recentMessages(messages),
       {
@@ -249,6 +254,9 @@ export const POST = async (req: Request, _ctx: RouteContext<"/api/chat">) => {
       }
     ),
     model,
+    providerOptions: {
+      nebius: { reasoningEffort: ENV.DOCS_CHAT_REASONING_EFFORT },
+    },
     stopWhen: stepCountIs(3),
     toolChoice: "auto",
     tools: {

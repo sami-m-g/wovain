@@ -9,6 +9,7 @@ import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
 import { createTrends, tavilyClient } from "./trends";
 import { createUpstream } from "./upstream";
+import type { ToolCall } from "./upstream";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
@@ -35,6 +36,12 @@ export interface CoreConfig extends FlagsConfig {
   // Nemotron's list price, USD per million tokens, for LLM analytics.
   NEMOTRON_INPUT_PRICE: number;
   NEMOTRON_OUTPUT_PRICE: number;
+  // The Nebius model ID wovain's agents call (apps/web/.env.schema).
+  NEMOTRON_MODEL: string;
+  // The Nebius vision model the design judge reads the art with.
+  NEMOTRON_VISION_MODEL: string;
+  // The fal endpoint that draws the print art (apps/web/.env.schema).
+  FAL_IMAGE_MODEL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
@@ -53,10 +60,7 @@ export const createCore = (
   const agents = createAgentKit({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,
-    environment:
-      new URL(env.BETTER_AUTH_URL).hostname === "wovain.com"
-        ? "production"
-        : "development",
+    environment: env.APP_ENV ?? "development",
     guardThresholds: {
       injection: env.GUARDRAIL_INJECTION_THRESHOLD,
       moderation: env.GUARDRAIL_MODERATION_THRESHOLD,
@@ -64,6 +68,7 @@ export const createCore = (
     },
     guardrails: env.GUARDRAILS !== "off",
     memory,
+    model: env.NEMOTRON_MODEL,
     posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
     pricePerMillion: {
@@ -71,6 +76,7 @@ export const createCore = (
       output: env.NEMOTRON_OUTPUT_PRICE,
     },
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
+    visionModel: env.NEMOTRON_VISION_MODEL,
   });
   const nemotron = createNemotron(agents);
   return {
@@ -79,12 +85,15 @@ export const createCore = (
     agents,
     // fal runs on the merchant's own fal account (an MCP grant), never on
     // wovain's.
-    artist: createArtist,
+    artist: (call: ToolCall) =>
+      createArtist(call, { model: env.FAL_IMAGE_MODEL }),
     // The blank pickBlank falls back to (./fourthwall.ts).
     defaultCatalogProductId: env.FOURTHWALL_DEFAULT_PRODUCT_ID,
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
+    // The model ID, for analytics events (packages/api/src/flow).
+    model: env.NEMOTRON_MODEL,
     nemotron,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(

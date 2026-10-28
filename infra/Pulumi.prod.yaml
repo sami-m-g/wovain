@@ -29,9 +29,16 @@ config:
   wovain:gitlab-feature-flags-instance-id:
     secure: v1:7vvbp/rU3SEHGPOk:DknbpnKBI8yQHOUj5fb/7fkHkUNJcfTzEgP76y2GRZv2a+//uZtDpYB8Cg==
   wovain:resendDomain: "true"
+  wovain:posthogKey: phc_mME2j3q9bo7cE2Kn2tiZbQqZAfMmHR2HmmeWKzuMxZNo
   wovain:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
   wovain:google-client-secret:
     secure: v1:nqv2CnxFDtU9Gjcb:jhd9smV7Z5Z+eALSTk6NFf/6KJhk5XaVfXvCeLn2dFY/ByjoO/YFh9eRSmTB5jRf+7OT
+  wovain:nemotronModel: nvidia/Nemotron-3.5-Super-VL
+  wovain:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
+  wovain:docsChatModel: nvidia/Nemotron-3_5-Lightning
+  wovain:docsChatReasoningEffort: none
+  wovain:docsChatMaxOutputTokens: "400"
+  wovain:falImageModel: openai/gpt-image-2.5/flare/text-to-image
   wovain:googleSiteVerification: 9zjZZMGJ_se_dHp548YFhL1EJ59QCsbvuEDKhIuDibM
   wovain:googleDkim: v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAphtR+jKyW3mzKAGa9TWWrHhRK/ZbKvXlVehIIiepiCzUfIrOfkPirv25j+MewKlZGwJ5jrhgZZ9L4X77rZNddWP74NxaYlryoAbMZk5nHBkCw0P2Sischl6hSl4XBpBXB1oCTC5QXsffQ3z91y5G5WAwLy54ZsZfVsIIuPuj2o/4c64oV7h9kOYHCJq4K0G8fM2Bh6s2EQjErGVADevvVG+2VWw9dYIr9bQXA+9M8dljBfQDDCh8MoSNmk4cWtjtrYrOzFO2aB8apcamk1IbzxtQGPBFoEGFTM4xNUhPxPLgqe1612djnVYpJImv8xiWYLiWncebUNQZ8iTl0a1ehQIDAQAB
   wovain:emailFrom: wovain <support@wovain.com>
@@ -124,8 +131,177 @@ config:
       attempts: 5
       windowSeconds: 600
     runsPerMerchant: 2
+  wovain:docsUrl: https://docs.wovain.com
+  # dev.wovain.com and next.wovain.com: their own settings, never production's
+  # (infra/index.ts appSettings). Today they hold the same values.
+  wovain:docsUrl-dev: https://docs.wovain.com
+  wovain:emailFrom-dev: wovain <support@wovain.com>
+  wovain:supportEmail-dev: support@wovain.com
+  wovain:privacyEmail-dev: privacy@wovain.com
+  wovain:falMcpUrl-dev: https://mcp.fal.ai/mcp-relay
+  wovain:fourthwallMcpUrl-dev: https://mcp.fourthwall.com/app
+  wovain:metaMcpUrl-dev: https://mcp.facebook.com/ads
+  wovain:metaMcpScope-dev: ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads
+  wovain:mcpWidgetResourceDomains-dev:
+    - https://fal.media
+    - https://*.fal.media
+    - https://cdn.fourthwall.com
+    - https://imgproxy.fourthwall.dev
+  wovain:fourthwallDefaultProductId-dev: pro_8be1acca2fe7403f89
+  wovain:nemotronInputPrice-dev: "0.3"
+  wovain:nemotronOutputPrice-dev: "0.9"
+  wovain:guardrailInjectionThreshold-dev: "0.8"
+  wovain:guardrailModerationThreshold-dev: "0.7"
+  wovain:guardrailPiiThreshold-dev: "0.7"
+  wovain:pricingRules-dev:
+    cardFeeFixed: 0.3
+    cardFeePct: 2.9
+    defaultBaseCost: 12
+    minMarginPct: 30
+    minProfit: 10
+    refundReservePct: 2
+    salesTaxPct: 7
+    shipping: 5
+  wovain:billingCatalog-dev:
+    creditCost:
+      assist: 1
+      design: 2
+      research: 3
+    designsPerRun: 3
+    creditPack:
+      credits: 100
+      name: Credit pack
+      priceCents: 1000
+    plans:
+      free:
+        autopilot: false
+        monthlyCredits: 15
+        name: Free
+        priceCents: 0
+        rank: 0
+        rollover: false
+      label:
+        autopilot: true
+        monthlyCredits: 1000
+        name: Label
+        priceCents: 7900
+        rank: 2
+        rollover: true
+      studio:
+        autopilot: true
+        monthlyCredits: 300
+        name: Studio
+        priceCents: 2900
+        rank: 1
+        rollover: false
+    promoCentsPerCredit: 10
+    promos:
+      - audience: "Hackathon judges: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        enabled: true
+        endsAt: "2026-12-16T23:59:59Z"
+        id: judges-2026
+        maxRedemptions: 50
+        name: Judges 2026
+      - audience: "Launch: a public code for the first creators, once paid plans are on."
+        credits: 50
+        enabled: false
+        endsAt: "2027-03-31T23:59:59Z"
+        id: launch-2027
+        maxRedemptions: 500
+        name: Launch 2027
+        startsAt: "2027-01-15T00:00:00Z"
+    redeemLimit:
+      attempts: 5
+      windowSeconds: 600
+    runsPerMerchant: 2
+  wovain:docsUrl-next: https://docs.wovain.com
+  wovain:emailFrom-next: wovain <support@wovain.com>
+  wovain:supportEmail-next: support@wovain.com
+  wovain:privacyEmail-next: privacy@wovain.com
+  wovain:falMcpUrl-next: https://mcp.fal.ai/mcp-relay
+  wovain:fourthwallMcpUrl-next: https://mcp.fourthwall.com/app
+  wovain:metaMcpUrl-next: https://mcp.facebook.com/ads
+  wovain:metaMcpScope-next: ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads
+  wovain:mcpWidgetResourceDomains-next:
+    - https://fal.media
+    - https://*.fal.media
+    - https://cdn.fourthwall.com
+    - https://imgproxy.fourthwall.dev
+  wovain:fourthwallDefaultProductId-next: pro_8be1acca2fe7403f89
+  wovain:nemotronInputPrice-next: "0.3"
+  wovain:nemotronOutputPrice-next: "0.9"
+  wovain:guardrailInjectionThreshold-next: "0.8"
+  wovain:guardrailModerationThreshold-next: "0.7"
+  wovain:guardrailPiiThreshold-next: "0.7"
+  wovain:pricingRules-next:
+    cardFeeFixed: 0.3
+    cardFeePct: 2.9
+    defaultBaseCost: 12
+    minMarginPct: 30
+    minProfit: 10
+    refundReservePct: 2
+    salesTaxPct: 7
+    shipping: 5
+  wovain:billingCatalog-next:
+    creditCost:
+      assist: 1
+      design: 2
+      research: 3
+    designsPerRun: 3
+    creditPack:
+      credits: 100
+      name: Credit pack
+      priceCents: 1000
+    plans:
+      free:
+        autopilot: false
+        monthlyCredits: 15
+        name: Free
+        priceCents: 0
+        rank: 0
+        rollover: false
+      label:
+        autopilot: true
+        monthlyCredits: 1000
+        name: Label
+        priceCents: 7900
+        rank: 2
+        rollover: true
+      studio:
+        autopilot: true
+        monthlyCredits: 300
+        name: Studio
+        priceCents: 2900
+        rank: 1
+        rollover: false
+    promoCentsPerCredit: 10
+    promos:
+      - audience: "Hackathon judges: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        enabled: true
+        endsAt: "2026-12-16T23:59:59Z"
+        id: judges-2026
+        maxRedemptions: 50
+        name: Judges 2026
+      - audience: "Launch: a public code for the first creators, once paid plans are on."
+        credits: 50
+        enabled: false
+        endsAt: "2027-03-31T23:59:59Z"
+        id: launch-2027
+        maxRedemptions: 500
+        name: Launch 2027
+        startsAt: "2027-01-15T00:00:00Z"
+    redeemLimit:
+      attempts: 5
+      windowSeconds: 600
+    runsPerMerchant: 2
   posthog:apiKey:
     secure: v1:/xAcHqkoya1F3fFx:0beEqxIy9q0+apm93lVO7dlhu8ovv5kPSNA8kgS71lzFoDf4PMxjEAvscoGAjRi1w4klx+l0Ojjp1tOaEcekxWsgPdY=
   posthog:projectId: "687269"
+  wovain:meta-app-id:
+    secure: v1:ra3iNA/gphxekhdp:wVHpw3DvAwknNmbzTcM2XaT6ButyXISpOlnrMB6oEA==
+  wovain:meta-app-secret:
+    secure: v1:gQjl0tDIuR+9zO6J:X84+fxZpY3rHpgDqHlHfiz4PLWc2iSY25tp7nBev3Y2I4hmvMlgJ3kicP7FILTi6
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=

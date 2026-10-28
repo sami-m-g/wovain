@@ -8,5 +8,11 @@
     "moduleResolution": "nodenext",
     "types": ["node"]
   },
-  "include": ["*.ts", "bootstrap/*.ts", "policy/*.ts", "posthog/*.ts"]
+  "include": [
+    "*.ts",
+    "bootstrap/*.ts",
+    "policy/*.ts",
+    "posthog/*.ts",
+    "scripts/*.ts"
+  ]
 }

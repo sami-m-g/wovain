@@ -528,8 +528,10 @@ const main = async () => {
   }
   const webhookUrl = process.env["POLAR_WEBHOOK_URL"];
   if (webhookUrl !== undefined && webhookUrl !== "") {
+    // Each environment's own secret, e.g. polar-webhook-secret-next
+    // (infra/dev.ts); production's by default.
     const sink = sinkFor(
-      "polar-webhook-secret",
+      process.env["POLAR_WEBHOOK_SECRET_ID"] ?? "polar-webhook-secret",
       process.env["POLAR_WEBHOOK_SECRET_OUT"] ?? ".env.polar-webhook"
     );
     const outcome = await ensureWebhook(polar, webhookUrl, sink);
