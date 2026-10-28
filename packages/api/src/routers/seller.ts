@@ -62,16 +62,16 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) => await researchIdeas(context, input.seed)
     ),
-  // Whether runs show Qloo's taste map and offer an LLM-only run.
-  tasteMap: protectedProcedure.handler(
-    async ({ context }) => await tasteMapStatus(context)
-  ),
   startDossier: protectedProcedure
     .input(z.object({ ideaId: id }))
     .handler(
       async ({ context, input }) =>
         await startIdeaDossier(context, input.ideaId)
     ),
+  // Whether runs show Qloo's taste map and offer an LLM-only run.
+  tasteMap: protectedProcedure.handler(
+    async ({ context }) => await tasteMapStatus(context)
+  ),
 };
 
 export const designsRouter = {

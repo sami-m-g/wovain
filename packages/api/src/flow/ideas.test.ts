@@ -24,11 +24,13 @@ describe("researchSourcesFor", () => {
   it("runs Qloo on every plan with the taste map on", async () => {
     const { actor } = actorWith({
       "qloo-taste-map": true,
+      "tavily-evidence": true,
       "trends-qloo": true,
       "trends-tavily": true,
     });
 
     expect(await researchSourcesFor(actor)).toEqual({
+      evidence: true,
       qloo: true,
       tasteMap: true,
       tavily: true,
@@ -39,6 +41,7 @@ describe("researchSourcesFor", () => {
     const { actor } = actorWith({ "trends-qloo": true, "trends-tavily": true });
 
     expect(await researchSourcesFor(actor)).toEqual({
+      evidence: false,
       qloo: true,
       tasteMap: false,
       tavily: true,
@@ -50,7 +53,7 @@ describe("researchSourcesFor", () => {
 
     await researchSourcesFor(actor);
 
-    expect(isOn).toHaveBeenCalledTimes(3);
+    expect(isOn).toHaveBeenCalledTimes(4);
     for (const [, context] of isOn.mock.calls) {
       expect(context).toEqual({ plan: "studio", userId: "u1" });
     }
@@ -64,6 +67,7 @@ describe("researchSourcesFor", () => {
     });
 
     expect(await researchSourcesFor(actor, { qloo: false })).toEqual({
+      evidence: false,
       qloo: false,
       tasteMap: true,
       tavily: true,
