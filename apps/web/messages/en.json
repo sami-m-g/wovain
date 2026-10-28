@@ -475,10 +475,12 @@
       "error": "Approve at least one design.",
       "submit": "Make products",
       "artAlt": "Design: {title}",
-      "shirtAlt": "Design on a shirt: {title}",
+      "shirtAlt": "Design on a shirt, as Fourthwall renders it: {title}",
       "viewShirt": "On a shirt",
       "viewFlat": "Flat art",
-      "viewLabel": "Artwork view"
+      "viewLabel": "Artwork view",
+      "mockupUnavailable": "Fourthwall couldn't render this design on the shirt. Showing the flat art.",
+      "mockupNotConnected": "Connect Fourthwall to see this design on the shirt."
     },
     "products": {
       "title": "Publish the products",
