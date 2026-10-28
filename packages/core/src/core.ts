@@ -1,6 +1,7 @@
 import type { Memory } from "@mastra/memory";
 
 import { createAgentKit } from "./agents";
+import { createSignals } from "./autopilot-signals";
 import type { ResearchModel } from "./evidence";
 import { createArtist, falKeyCall } from "./fal";
 import { createFlags } from "./flags";
@@ -137,6 +138,12 @@ export const createCore = (
     // Tavily Research's model for idea dossiers (./evidence.ts).
     researchModel: env.TAVILY_RESEARCH_MODEL,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
+    // Autopilot's triggers: Qloo's rising brands and this week's news
+    // (./autopilot-signals.ts).
+    signals: createSignals({
+      qloo: { apiKey: env.QLOO_API_KEY, baseURL: env.QLOO_API_URL },
+      tavily,
+    }),
     tavily,
     trends: createTrends(
       tavily,

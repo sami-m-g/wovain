@@ -15,6 +15,7 @@ import { Fragment } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 
 const SECTIONS = {
+  "/dashboard/autopilot": "autopilot",
   "/dashboard/billing": "billing",
   "/dashboard/connections": "connections",
   "/dashboard/insights": "insights",

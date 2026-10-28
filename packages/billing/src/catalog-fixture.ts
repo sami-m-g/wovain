@@ -12,6 +12,7 @@ export const TEST_CATALOG = {
   plans: {
     free: {
       autopilot: false,
+      autopilotDailyCredits: 15,
       monthlyCredits: 15,
       name: "Free",
       priceCents: 0,
@@ -20,6 +21,7 @@ export const TEST_CATALOG = {
     },
     label: {
       autopilot: true,
+      autopilotDailyCredits: 100,
       monthlyCredits: 1000,
       name: "Label",
       priceCents: 7900,
@@ -28,6 +30,7 @@ export const TEST_CATALOG = {
     },
     studio: {
       autopilot: true,
+      autopilotDailyCredits: 30,
       monthlyCredits: 300,
       name: "Studio",
       priceCents: 2900,

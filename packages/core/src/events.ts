@@ -15,6 +15,9 @@ export const EVENTS = {
   approvalDecided: "wovain/approval.decided",
   // An action waits for the merchant: notify them (push, email).
   approvalRequested: "wovain/approval.requested",
+  // Scan one brand for autopilot triggers (Qloo, Tavily): the cron fans
+  // out one per brand, and "Scan now" sends one.
+  autopilotScan: "wovain/autopilot.scan",
   // Send one notification to the merchant's devices (push, then email).
   notify: "wovain/notify",
   // Re-score the merchant's ads and propose reallocations.
@@ -65,6 +68,11 @@ export const eventSchemas = {
     approvalId: z.string(),
     domain: z.enum(ACTION_DOMAINS),
     risk: z.enum(RISK_CLASSES),
+    userId: z.string(),
+  }),
+  [EVENTS.autopilotScan]: z.object({
+    // cron or the merchant's "Scan now".
+    reason: z.enum(["schedule", "manual"]),
     userId: z.string(),
   }),
   [EVENTS.notify]: z.object({

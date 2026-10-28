@@ -34,7 +34,8 @@
     "pricingTitle": "Tarifs : formules et crédits pour vos drops de merch",
     "pricingDescription": "Commencez gratuitement avec des crédits chaque mois. Studio, Label et les packs de crédits arrivent bientôt. Les crédits paient la recherche et les vérifications IA ; fal, Meta et Fourthwall vous facturent directement.",
     "billingTitle": "Facturation",
-    "onboardingTitle": "Configuration"
+    "onboardingTitle": "Configuration",
+    "autopilotTitle": "Pilote automatique"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -313,7 +314,8 @@
       "connections": "Connexions",
       "insights": "Statistiques",
       "billing": "Facturation",
-      "onboarding": "Configuration"
+      "onboarding": "Configuration",
+      "autopilot": "Pilote automatique"
     },
     "docs": "Docs",
     "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",
@@ -1042,5 +1044,76 @@
       "openLabel": "(à faire)",
       "startDrop": "Lancer un drop"
     }
+  },
+  "Autopilot": {
+    "title": "Pilote automatique",
+    "lead": "Ce que wovain a repéré pour votre marque, ce qu'il a fait et pourquoi.",
+    "scanNow": "Analyser maintenant",
+    "scanRequested": "Analyse demandée. Les nouvelles suggestions arrivent ici d'ici une ou deux minutes. Vous pouvez analyser une fois toutes les 6 heures.",
+    "scanFailed": "L'analyse n'a pas démarré. Réessayez dans un instant.",
+    "actionFailed": "Ça n'a pas marché : {message}",
+    "levels": {
+      "suggest": "Suggérer seulement",
+      "draft": "Préparer des brouillons",
+      "publish_ads_paused": "Publier, publicités en pause"
+    },
+    "levelHints": {
+      "suggest": "Le pilote suggère des drops. Vous lancez chacun.",
+      "draft": "Le pilote lance l'exécution, puis attend que vous choisissiez les idées.",
+      "publish_ads_paused": "Le pilote fait le drop et le publie. Les publicités restent en pause jusqu'à ce que vous les activiez."
+    },
+    "paused": "Vous avez mis l'agent en pause. Les suggestions vous attendent.",
+    "credits": "{used, number} sur {cap, number} crédits du pilote utilisés aujourd'hui. Un drop coûte environ {estimate, number}.",
+    "notEntitled": "Le pilote automatique n'est pas encore dans votre offre : chaque suggestion vous attend.",
+    "noBrand": "Le pilote a besoin du profil de votre marque (niches et références) pour savoir quoi surveiller.",
+    "emptyTitle": "Pas encore de suggestion",
+    "empty": "Toutes les 6 heures, le pilote compare Qloo et l'actualité de la semaine à votre marque. Les correspondances arrivent ici avec leurs sources.",
+    "accept": "Lancer le drop",
+    "dismiss": "Ignorer",
+    "openRun": "Ouvrir l'exécution",
+    "evidence": "Sources",
+    "log": "Ce qui s'est passé",
+    "triggers": {
+      "qloo": "Tendance Qloo",
+      "trend": "Dans l'actualité"
+    },
+    "statuses": {
+      "new": "Nouvelle",
+      "accepted": "Lancée",
+      "dismissed": "Ignorée",
+      "expired": "Expirée"
+    },
+    "approvals": {
+      "pending": "Vous attend",
+      "approved": "Approuvée",
+      "executing": "Démarrage",
+      "done": "Exécution lancée",
+      "failed": "N'a pas démarré",
+      "rejected": "Refusée",
+      "denied": "Bloquée",
+      "expired": "Expirée",
+      "reverted": "Annulée"
+    },
+    "steps": {
+      "scan": "Analyse de votre marque : {input}.",
+      "qlooRising": "Demandé à Qloo ce qui monte auprès de votre public : {names}.",
+      "qlooNone": "Demandé à Qloo ce qui monte auprès de votre public. Rien n'est revenu.",
+      "qlooFailed": "Qloo n'a pas répondu : cette analyse n'a utilisé que l'actualité.",
+      "tavily": "Recherché l'actualité de la semaine sur « {query} » : {count, plural, =0 {rien de récent} one {# article} other {# articles}}.",
+      "tavilyFailed": "La recherche d'actualité sur « {query} » a échoué.",
+      "match": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité cette semaine.} other {# recherches ont trouvé de l'actualité cette semaine.}}",
+      "suggest": "Suggéré un drop sur {subject}.",
+      "policyAllow": "Votre niveau d'autonomie permet au pilote de lancer cette exécution.",
+      "policyWait": "Votre niveau d'autonomie demande de vous consulter d'abord.",
+      "policyDeny": "La politique a bloqué cette exécution.",
+      "notEntitled": "Le pilote n'est pas dans votre offre : ceci vous attend.",
+      "creditCap": "Les crédits du pilote du jour sont épuisés ({used, number} sur {cap, number}) : ceci vous attend.",
+      "runIdeas": "Exécution lancée. Elle attend que vous choisissiez les idées.",
+      "runAutopilot": "Exécution lancée en pilote automatique. Il choisit, approuve et publie ; les publicités restent en pause.",
+      "runFailed": "L'exécution n'a pas démarré : {error}",
+      "other": "{step}"
+    },
+    "scans": "Analyses sans nouveauté",
+    "scanNothing": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité, déjà suggérée cette semaine.} other {# recherches ont trouvé de l'actualité, déjà suggérée cette semaine.}}"
   }
 }

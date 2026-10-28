@@ -49,11 +49,19 @@ export const assertCredits = async (actor: Actor, step: CreditStep) => {
   }
 };
 
-// Autopilot is a paid-plan feature.
+// Autopilot comes with the plan, or with the autopilot flag (on for every
+// plan, Free included, in dev and next).
+export const autopilotEntitled = async (actor: Actor) => {
+  const { plan } = await entitlement(actor.db, actor.userId);
+  return (
+    billingCatalog().plans[plan].autopilot ||
+    (await actor.core.flags.isOn("autopilot", { plan, userId: actor.userId }))
+  );
+};
+
 export const assertAutopilot = async (actor: Actor) => {
   const merchant = await merchantOf(actor);
-  const { plan } = await entitlement(actor.db, actor.userId);
-  if (!billingCatalog().plans[plan].autopilot) {
+  if (!(await autopilotEntitled(actor))) {
     throw refusalError("plan_required", merchant.locale, {
       paid: await actor.billing.paidPlans(),
     });
