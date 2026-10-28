@@ -294,9 +294,14 @@ export const docsUrl = `https://docs.${domain}`;
 export const mcpUrl = `https://mcp.${domain}/api/mcp`;
 const serviceName = "wovain-web";
 
-// Settings production and dev (dev.ts) share.
+// Settings production and dev (dev.ts) share. NEMOTRON_MODEL is the Nebius
+// model the agents call (`pulumi config set nemotronModel <id>`) and
+// FAL_IMAGE_MODEL the fal endpoint that draws (`falImageModel`).
 const sharedEnvs = {
+  FAL_IMAGE_MODEL: config.require("falImageModel"),
   NEBIUS_BASE_URL: "https://api.tokenfactory.nebius.com/v1/",
+  NEMOTRON_MODEL: config.require("nemotronModel"),
+  NEMOTRON_VISION_MODEL: config.require("nemotronVisionModel"),
   QLOO_API_URL: "https://hackathon.api.qloo.com",
 };
 
@@ -344,6 +349,12 @@ const service = cloudRunService("web", {
     { name: "BETTER_AUTH_URL", value: siteUrl },
     { name: "INNGEST_APP_ID", value: "wovain" },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
+    { name: "NEMOTRON_MODEL", value: sharedEnvs.NEMOTRON_MODEL },
+    {
+      name: "NEMOTRON_VISION_MODEL",
+      value: sharedEnvs.NEMOTRON_VISION_MODEL,
+    },
+    { name: "FAL_IMAGE_MODEL", value: sharedEnvs.FAL_IMAGE_MODEL },
     { name: "MCP_URL", value: mcpUrl },
     { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
     ...googleEnv,
@@ -383,8 +394,14 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-// The smallest Nemotron on Token Factory ($0.06 in, $0.24 out per 1M tokens).
-const DOCS_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B";
+// The docs chat's Nebius model, its reasoning effort and its answer cap
+// (`pulumi config set docsChatModel <id>`, docsChatReasoningEffort,
+// docsChatMaxOutputTokens).
+const docsChat = Object.entries({
+  DOCS_CHAT_MAX_OUTPUT_TOKENS: "docsChatMaxOutputTokens",
+  DOCS_CHAT_MODEL: "docsChatModel",
+  DOCS_CHAT_REASONING_EFFORT: "docsChatReasoningEffort",
+}).map(([name, key]) => ({ name, value: config.require(key) }));
 const nebiusKey = secrets.get("nebius-api-key");
 const nebiusVersion = populated.get("nebius-api-key");
 if (nebiusKey === undefined) {
@@ -401,7 +418,7 @@ const docsService = cloudRunService("docs", {
   envs: [
     { name: "SITE_URL", value: docsUrl },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
-    { name: "NEBIUS_MODEL", value: DOCS_MODEL },
+    ...docsChat,
     ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
   frozen: productionFrozen,
@@ -651,7 +668,7 @@ new gcp.billing.Budget(
   afterApis
 );
 
-retainLegacy({ project, projectNumber, region });
+retainLegacy({ project });
 polarPromoSecrets(project, kept);
 // Who approves a pull request's infra preview (GitHub user ids): the owner,
 // sami-m-g (`gh api users/sami-m-g --jq .id`), by default.

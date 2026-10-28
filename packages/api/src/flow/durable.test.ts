@@ -1124,8 +1124,11 @@ describe("generateDesign", () => {
       core: {
         ...ctx.actor.core,
         artist: (call: ToolCall) =>
-          createArtist(call, async () => {
-            await Promise.resolve();
+          createArtist(call, {
+            model: "test/text-to-image",
+            wait: async () => {
+              await Promise.resolve();
+            },
           }),
         nemotron: agents.ask,
       } as unknown as Core,

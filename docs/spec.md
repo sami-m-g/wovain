@@ -49,7 +49,7 @@ PRD ref: `prd.md > The Core Journey`.
 | Specs | OpenSpec (`openspec/`) for capability specs and changes | Live | <https://github.com/Fission-AI/OpenSpec> |
 | Infra | Pulumi (GCP, Resend, PostHog), GitHub Actions | Live | <https://www.pulumi.com/docs> |
 | Docs site | Fumadocs with en, fr and es | Live | <https://fumadocs.dev> |
-| Models | NVIDIA Nemotron 3 Super (`NEMOTRON_MODEL`) on Nebius Token Factory | Live | <https://docs.tokenfactory.nebius.com> |
+| Models | NVIDIA Nemotron 3.5 Super VL (`NEMOTRON_MODEL`) on Nebius Token Factory | Live | <https://docs.tokenfactory.nebius.com> |
 
 ## Where It Runs and How Someone Tries It
 

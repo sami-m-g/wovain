@@ -1,6 +1,5 @@
 import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
 import { pickIdea } from "@wovain/core/autopilot";
-import { NEMOTRON_MODEL } from "@wovain/core/nemotron";
 import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
 import { design, idea, run } from "@wovain/db/schema/seller";
@@ -440,7 +439,7 @@ const reportEnd = async (
   await track(actor, "run_completed", {
     ...common,
     design_count: drawn?.n ?? 0,
-    model: NEMOTRON_MODEL,
+    model: actor.core.model,
     step_count: STEPS.indexOf(step ?? "") + 1,
   });
 };

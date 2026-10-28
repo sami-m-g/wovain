@@ -12,8 +12,8 @@ import type { ToolCall } from "./upstream";
 // Print art on fal, through fal's MCP relay on the merchant's own fal
 // account (they pay fal directly): GPT Image draws on a transparent
 // background at print size, told to print exactly the brief's words and
-// nothing else.
-export const TEXT_TO_IMAGE = "openai/gpt-image-2.5/flare/text-to-image";
+// nothing else. The fal endpoint is FAL_IMAGE_MODEL (apps/web/.env.schema),
+// set per environment through Pulumi config (infra/index.ts).
 
 const imageSchema = z.object({
   images: z
@@ -62,17 +62,20 @@ const statusSchema = z.object({ status: z.string() });
 // drawing (submit_job) and returns fal's request ID; `result` waits for that
 // request (check_job) and reads its image (get_job_result), as often as a
 // retry needs, without drawing again. `call` is a session on the merchant's
-// fal grant.
+// fal grant; `model` is the fal endpoint ID that draws.
 export const createArtist = (
   call: ToolCall,
-  wait: (ms: number) => Promise<unknown> = sleep
+  {
+    model,
+    wait = sleep,
+  }: { model: string; wait?: (ms: number) => Promise<unknown> }
 ) => ({
   result: async (requestId: string, log?: Logger): Promise<Artwork> =>
     await external(
       log,
       { operation: "generate_art", provider: "fal" },
       async () => {
-        const job = { endpoint_id: TEXT_TO_IMAGE, request_id: requestId };
+        const job = { endpoint_id: model, request_id: requestId };
         const deadline = Date.now() + WAIT_MS;
         for (;;) {
           // Polled one at a time: each check waits for the last.
@@ -104,7 +107,7 @@ export const createArtist = (
         findOne(
           z.object({ request_id: z.string().min(1) }),
           await call("submit_job", {
-            endpoint_id: TEXT_TO_IMAGE,
+            endpoint_id: model,
             input: artInput(brief),
             // The prompt is the merchant's design: fal needn't keep it.
             store_payload: false,

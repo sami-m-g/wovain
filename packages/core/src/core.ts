@@ -9,6 +9,7 @@ import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
 import { createTrends, tavilyClient } from "./trends";
 import { createUpstream } from "./upstream";
+import type { ToolCall } from "./upstream";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
@@ -21,6 +22,12 @@ export interface CoreConfig extends FlagsConfig {
   META_APP_SECRET?: string | undefined;
   NEBIUS_API_KEY?: string | undefined;
   NEBIUS_BASE_URL: string;
+  // The Nebius model ID wovain's agents call (apps/web/.env.schema).
+  NEMOTRON_MODEL: string;
+  // The Nebius vision model the design judge reads the art with.
+  NEMOTRON_VISION_MODEL: string;
+  // The fal endpoint that draws the print art (apps/web/.env.schema).
+  FAL_IMAGE_MODEL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
@@ -42,9 +49,11 @@ export const createCore = (
     environment: env.APP_ENV ?? "development",
     guardrails: env.GUARDRAILS !== "off",
     memory,
+    model: env.NEMOTRON_MODEL,
     posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
+    visionModel: env.NEMOTRON_VISION_MODEL,
   });
   const nemotron = createNemotron(agents);
   return {
@@ -53,10 +62,13 @@ export const createCore = (
     agents,
     // fal runs on the merchant's own fal account (an MCP grant), never on
     // wovain's.
-    artist: createArtist,
+    artist: (call: ToolCall) =>
+      createArtist(call, { model: env.FAL_IMAGE_MODEL }),
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
+    // The model ID, for analytics events (packages/api/src/flow).
+    model: env.NEMOTRON_MODEL,
     nemotron,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(
