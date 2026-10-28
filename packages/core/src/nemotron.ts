@@ -5,7 +5,7 @@ import { RequestContext } from "@mastra/core/request-context";
 import { createError, log as evlog } from "evlog";
 import type { z } from "zod";
 
-import { REMEMBERING, TRACE_KEYS } from "./agents";
+import { PRIVATE, REMEMBERING, TRACE_KEYS } from "./agents";
 import type { AgentId, AgentKit } from "./agents";
 import { unsupportedClaims } from "./grounding";
 import { external, notConfigured } from "./log";
@@ -219,6 +219,8 @@ export const createNemotron =
                 },
               }),
             tracingOptions: {
+              // The merchant's spoken words stay out of every trace.
+              ...(PRIVATE.has(name) && { hideInput: true, hideOutput: true }),
               metadata: {
                 runId: trace?.traceId,
                 userId: trace?.distinctId,

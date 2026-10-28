@@ -57,6 +57,10 @@ export const appSettings = (config: pulumi.Config, key: SettingKey) => {
       SUPPORT_EMAIL: "supportEmail",
       // Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
       TAVILY_RESEARCH_MODEL: "tavilyResearchModel",
+      // Voice commands' fal speech-to-text endpoints
+      // (packages/core/src/voice.ts).
+      VOICE_STT_FALLBACK_MODEL: "voiceSttFallbackModel",
+      VOICE_STT_MODEL: "voiceSttModel",
     }).map(([env, base]) => [env, config.require(key(base))])
   );
   return {
@@ -89,8 +93,9 @@ export const buildEnv = (settings: Record<string, string>, mcp: string) =>
 
 // The provider secrets every non-production environment holds its own of
 // (`<id>-<name>` in Secret Manager, dev.ts), never production's. fal-key is
-// wovain's own fal key, which designs draw on while the onboarding-wizard
-// flag is on (`fal-key-next`); wovain-allowed-emails is no longer read.
+// wovain's own fal key: voice commands transcribe on it, and designs draw
+// on it while the onboarding-wizard flag is on (`fal-key-next`);
+// wovain-allowed-emails is no longer read.
 // infra/README.md lists where each value comes from.
 const ENVIRONMENT_SECRET_IDS = [
   "fal-key",

@@ -30,6 +30,7 @@ export type ProviderHealth = OnboardingReady["connections"][number];
 export type ResolvedReference =
   Outputs["onboarding"]["resolveReferences"][number];
 export type Learned = Outputs["feedback"]["learned"];
+export type VoiceCommand = Outputs["voice"]["command"];
 
 export const PROVIDERS = [
   "fourthwall",

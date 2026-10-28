@@ -35,6 +35,9 @@ config:
   wovain-next:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
   # Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
   wovain-next:tavilyResearchModel: mini
+  # Voice commands' speech to text on fal (packages/core/src/voice.ts).
+  wovain-next:voiceSttModel: nvidia/nemotron-asr-multilingual/asr
+  wovain-next:voiceSttFallbackModel: fal-ai/wizper
   wovain-next:guardrailInjectionThreshold: "0.8"
   wovain-next:guardrailModerationThreshold: "0.7"
   wovain-next:guardrailPiiThreshold: "0.7"

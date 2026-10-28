@@ -18,6 +18,7 @@ import {
   productsRouter,
   runsRouter,
 } from "./seller";
+import { voiceRouter } from "./voice";
 
 export const appRouter = {
   approvals: approvalsRouter,
@@ -36,6 +37,7 @@ export const appRouter = {
   products: productsRouter,
   runs: runsRouter,
   targeting: targetingRouter,
+  voice: voiceRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

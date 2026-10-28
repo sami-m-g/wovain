@@ -12,6 +12,7 @@ const DOCS = {
       ["privacy.analyticsTitle", "privacy.analyticsBody"],
       ["privacy.connectionsTitle", "privacy.connectionsBody"],
       ["privacy.processorsTitle", "privacy.processorsBody"],
+      ["privacy.voiceTitle", "privacy.voiceBody"],
       ["privacy.deleteTitle", "privacy.deleteBody"],
     ],
     title: "privacy.title",

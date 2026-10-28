@@ -253,6 +253,8 @@
       "connectionsBody": "When you connect Fourthwall, Meta or fal, we store the access they grant so wovain can act for you. You can disconnect any of them at any time from Connections.",
       "processorsTitle": "Who processes it",
       "processorsBody": "Briefs and designs are sent to the services that do the work: Nebius, Qloo, Tavily, fal, Fourthwall and Meta. Each handles data under its own policy.",
+      "voiceTitle": "Voice commands",
+      "voiceBody": "When you hold the microphone button, fal turns your recording into text, and Nebius reads the text so wovain can work out what you asked. wovain doesn't store the recording or the text. fal and Nebius handle them under their own terms. Analytics only records which kind of command it was, never what you said.",
       "deleteTitle": "Deleting your data",
       "deleteBody": "Email {privacyEmail} from your account's address and we delete your account, runs and stored connections within 30 days."
     },
@@ -1168,5 +1170,29 @@
     },
     "scans": "Scans with nothing new",
     "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}"
+  },
+  "Voice": {
+    "hold": "Hold to talk",
+    "listening": "Listening… release to send",
+    "thinking": "Working out what you said…",
+    "disclosureTitle": "Before you talk to wovain",
+    "disclosure": "wovain doesn't store your recording. fal turns it into text, and Nebius reads the text to work out what you asked. Nothing happens until you confirm.",
+    "disclosureOk": "Got it",
+    "noMic": "wovain can't use your microphone. Allow it in your browser's site settings, then try again.",
+    "recordFailed": "wovain couldn't record in this browser. Try again, or use another browser.",
+    "confirmTitle": "Is this right?",
+    "notUnderstood": "wovain didn't get that",
+    "notHeard": "wovain didn't catch that. Hold the button and try again.",
+    "canDo": "You can start a drop, or approve or reject ideas, designs and queued actions.",
+    "heard": "You said: “{transcript}”",
+    "confirm": "Confirm",
+    "done": "Done.",
+    "startDrop": "Start a new drop: {brief}",
+    "approveIdeas": "Approve {count, plural, one {this idea} other {these # ideas}} and draw designs: {ideas}",
+    "approveDesign": "Approve the design “{design}”",
+    "rejectDesign": "Reject the design “{design}”",
+    "rejectDesignWhy": "Reject the design “{design}” because {reason}",
+    "approveAction": "Approve “{action}”",
+    "rejectAction": "Reject “{action}”"
   }
 }

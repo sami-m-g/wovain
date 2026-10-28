@@ -146,8 +146,10 @@ const dbUser = new gcp.sql.User("wovain", {
 // fal-key, meta-app-* (the Meta app's id and secret, from the stack secrets
 // `meta-app-id` and `meta-app-secret`), nebius-api-key, qloo-api-key, tavily-api-key and
 // wovain-allowed-emails were created by main; the others are new. fal-key
-// (FAL_KEY) is read only while the onboarding-wizard flag is on, which is
-// off in production; otherwise fal runs on each merchant's own key.
+// is wovain's own fal key: FAL_KEY transcribes voice commands
+// (packages/core/src/voice.ts), and art draws on it only while the
+// onboarding-wizard flag is on, which is off in production; otherwise fal
+// runs on each merchant's own key.
 // inngest-event-key and inngest-signing-key come from the Inngest app
 // (docs/adr/0001-durable-runs.md): runs can't start until both are set.
 // polar-access-token and polar-webhook-secret are wovain's own billing

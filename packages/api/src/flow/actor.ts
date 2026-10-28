@@ -29,13 +29,16 @@ export type RunEvent =
   | "run_completed"
   | "run_failed";
 
+// Voice commands (./voice): the intent kind and the outcome, never the words.
+export type VoiceEvent = "voice_command_confirmed" | "voice_command_proposed";
+
 export interface Analytics {
   // Resolves once PostHog has the event, and never rejects: a caller awaits
   // it before answering, because Cloud Run throttles the CPU of work left
   // after the response.
   capture: (event: {
     distinctId: string;
-    event: FunnelEvent | RunEvent;
+    event: FunnelEvent | RunEvent | VoiceEvent;
     properties?: Record<string, unknown>;
   }) => Promise<void>;
   // Sets person properties (`$set`), such as the merchant's plan.

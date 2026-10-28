@@ -74,6 +74,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | Agent runtime | Mastra agents, workflows with suspend/resume for approval, durable runs, memory on `@mastra/pg`, tracing | In progress |
 | Quality | Mastra scorers on every agent and step, calibrated LLM judges, guardrails | Planned with the Mastra migration |
 | Analytics | PostHog; North Star "activated merchants per week" | Dashboards built; some events planned |
+| Voice | Hold-to-talk commands: NVIDIA Nemotron ASR on fal, a Nemotron agent picks the action, the merchant confirms once. wovain keeps no audio. Web first; mobile follows the app (#88) | In review, dev and next only |
 
 ## Later
 

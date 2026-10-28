@@ -16,6 +16,7 @@ import { AppBreadcrumb } from "@/components/app/app-breadcrumb";
 import { AppMotion } from "@/components/app/app-motion";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { ConnectionToasts } from "@/components/app/connection-toasts";
+import { VoiceButton } from "@/components/app/voice-button";
 import { AuthSession } from "@/components/auth-session";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -72,6 +73,10 @@ const DashboardLayout = async ({
             </Link>
             <AppBreadcrumb />
             <div className="ms-auto flex items-center gap-2">
+              {/* Hold to talk, while the voice-input flag is on. */}
+              <Suspense>
+                <VoiceButton />
+              </Suspense>
               <LocaleSwitcher />
               <ModeToggle />
             </div>

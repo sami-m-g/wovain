@@ -77,6 +77,8 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   design_judge: [],
   design_vision: [],
   research_themes: [],
+  // The merchant's own words: never judged, so never sent to scorers.
+  voice_intent: [],
 };
 
 // Built-ins per agent. Faithfulness and hallucination read the research the
@@ -103,6 +105,7 @@ const BUILT_INS: Record<AgentId, string[]> = {
   // The text scorers can't see the image the answer is about.
   design_vision: [],
   research_themes: ["answer_relevancy", "prompt_alignment"],
+  voice_intent: [],
 };
 
 export const createScorers = (model: MastraModelConfig, rate: number) => {
