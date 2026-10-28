@@ -12,6 +12,7 @@ vi.mock(import("evlog"), async (original) => {
 });
 
 const configured: FlagsConfig = {
+  APP_ENV: "production",
   BETTER_AUTH_URL: "https://wovain.com",
   NEXT_PUBLIC_POSTHOG_HOST: "https://us.i.posthog.com",
   NEXT_PUBLIC_POSTHOG_KEY: "phc_test",
@@ -165,11 +166,12 @@ describe("createFlags", () => {
     expect(await flags.isOn("billing-paid-plans")).toBe(false);
   });
 
-  it("uses the development rollout outside wovain.com without a secret key", async () => {
+  it("uses the development rollout when APP_ENV is unset, without a secret key", async () => {
     const exposures: Exposure[] = [];
     const flags = createFlags(
       {
         ...configured,
+        APP_ENV: undefined,
         BETTER_AUTH_URL: "http://localhost:3000",
         NEXT_PUBLIC_POSTHOG_KEY: undefined,
         POSTHOG_SECRET_KEY: undefined,
@@ -184,6 +186,17 @@ describe("createFlags", () => {
       environment: "development",
       reason: "local",
     });
+  });
+
+  it("follows production's registry answers on next", async () => {
+    const flags = createFlags({
+      ...configured,
+      APP_ENV: "next",
+      NEXT_PUBLIC_POSTHOG_KEY: undefined,
+      POSTHOG_SECRET_KEY: undefined,
+    });
+
+    expect(await flags.isOn("mastra-runs")).toBe(false);
   });
 
   it("snapshots every registered flag", async () => {

@@ -47,7 +47,8 @@ export interface FlagContext {
 }
 
 export interface FlagsConfig {
-  // wovain.com is production; every other host is development.
+  // Which deployment this is (apps/web/.env.schema); development if unset.
+  APP_ENV?: FlagEnvironment | undefined;
   BETTER_AUTH_URL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
@@ -81,22 +82,19 @@ const SEEN_MAX = 10_000;
 // The distinct ID of evaluations without a user.
 export const ANONYMOUS = "wovain-anonymous";
 
-const environmentOf = (siteUrl: string): FlagEnvironment =>
-  new URL(siteUrl).hostname === "wovain.com" ? "production" : "development";
-
 // What a flag is for a plan: free when unknown.
 const allowedFor = (flag: FlagDefinition, plan: FlagPlan | undefined) =>
   flag.plans === undefined || flag.plans.includes(plan ?? "free");
 
 // The registry's answer when PostHog has none: development follows its
-// rollout; production only a flag rolled out to everyone (a kill switch such
-// as trends-tavily).
+// rollout; production and next only a flag rolled out to everyone (a kill
+// switch such as trends-tavily).
 const registryAnswer = (flag: FlagDefinition, environment: FlagEnvironment) => {
   const { kind } = flag.rollout[environment];
   if (!flag.initiallyActive) {
     return false;
   }
-  return environment === "production" ? kind === "all" : kind !== "off";
+  return environment === "development" ? kind !== "off" : kind === "all";
 };
 
 export interface Flags {
@@ -113,7 +111,7 @@ export const createFlags = (
     onExposure?: (exposure: Exposure) => void;
   } = {}
 ): Flags => {
-  const environment = environmentOf(config.BETTER_AUTH_URL);
+  const environment = config.APP_ENV ?? "development";
   const key = config.NEXT_PUBLIC_POSTHOG_KEY;
   const secretKey = config.POSTHOG_SECRET_KEY;
   const posthog: FlagClient | undefined =

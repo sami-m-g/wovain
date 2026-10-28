@@ -15,7 +15,7 @@ import {
   listProducts,
   publishDesignProduct,
 } from "../flow/products";
-import { getRun, listRuns, startRun } from "../flow/runs";
+import { approveIdeas, getRun, listRuns, startRun } from "../flow/runs";
 import { transitionErrors } from "../flow/transitions";
 import { funnelProcedure, protectedProcedure } from "../index";
 
@@ -32,6 +32,8 @@ const countries = z
   .max(25);
 // Makes a create idempotent (AIP-155): the same ID returns the same row.
 const requestId = z.uuid();
+// The ideas one "See designs" may approve; research saves fewer.
+const MAX_IDEAS = 20;
 // Dollars a day; the upper bound stops a typo from staging a runaway budget.
 const dailyBudget = z.number().min(1).max(500);
 
@@ -138,6 +140,15 @@ export const campaignsRouter = {
 };
 
 export const runsRouter = {
+  // "See designs": the run draws a design for each of these ideas, and for
+  // no other. Returns the run, now drawing.
+  approveIdeas: protectedProcedure
+    .errors(transitionErrors)
+    .input(z.object({ id, ideaIds: z.array(id).min(1).max(MAX_IDEAS) }))
+    .handler(async ({ context, input }) => {
+      await approveIdeas(context, input.id, input.ideaIds);
+      return await getRun(context, input.id);
+    }),
   get: protectedProcedure
     .input(byId)
     .handler(async ({ context, input }) => await getRun(context, input.id)),

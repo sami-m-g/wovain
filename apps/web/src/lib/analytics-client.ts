@@ -18,13 +18,6 @@ import { analyticsStarted } from "@/lib/consent-store";
 // through this site's /ingest rewrite (next.config.ts). Without a key,
 // analytics are off and every posthog.* call is a no-op.
 
-// wovain.com and the hosts that serve the same app (www redirects to it,
-// mcp serves ChatGPT) are production; dev.wovain.com and localhost are not.
-const PRODUCTION_HOSTS = new Set([
-  "wovain.com",
-  "www.wovain.com",
-  "mcp.wovain.com",
-]);
 // How long the page waits for /api/visitor before PostHog starts without it.
 const VISITOR_TIMEOUT_MS = 1500;
 
@@ -63,11 +56,8 @@ const detectBot = async () => {
 const visitorProperties = async () => {
   const [visitor, botCheck] = await Promise.all([fetchVisitor(), detectBot()]);
   return {
-    // One image serves wovain.com and dev.wovain.com, so the host, not a
-    // build-time value, tells their events apart.
-    environment: PRODUCTION_HOSTS.has(window.location.hostname)
-      ? "production"
-      : "development",
+    // The deployment (APP_ENV), which only the server knows.
+    ...(visitor && { environment: visitor.environment }),
     ...(visitor?.country && {
       $geoip_country_code: visitor.country.code,
       $geoip_country_name: visitor.country.name,

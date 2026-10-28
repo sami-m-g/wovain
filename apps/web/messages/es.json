@@ -445,7 +445,7 @@
     },
     "trends": {
       "title": "Elige las ideas",
-      "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. Las mejores ideas ya tienen diseño; elige más para diseñarlas también.",
+      "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. Elige las que venderías: wovain solo dibuja diseños para esas, cuando pulses «Ver diseños».",
       "score": "Puntuación {score}",
       "affinity": "Afinidad",
       "affinityUnavailable": "No disponible",
@@ -466,6 +466,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Texto impreso: {text}",
       "approve": "Aprobar",
+      "approveAnyway": "Aprobar de todos modos",
+      "flagged": "La revisión marcó este diseño. Revisa esto antes de venderlo:",
       "approved": "Aprobado",
       "reject": "Rechazar",
       "rejected": "Rechazado",
@@ -475,10 +477,12 @@
       "error": "Aprueba al menos un diseño.",
       "submit": "Crear productos",
       "artAlt": "Diseño: {title}",
-      "shirtAlt": "Diseño en una camiseta: {title}",
+      "shirtAlt": "Diseño en una camiseta, tal como lo genera Fourthwall: {title}",
       "viewShirt": "En camiseta",
       "viewFlat": "Arte plano",
-      "viewLabel": "Vista del diseño"
+      "viewLabel": "Vista del diseño",
+      "mockupUnavailable": "Fourthwall no pudo mostrar este diseño en la camiseta. Se muestra el arte plano.",
+      "mockupNotConnected": "Conecta Fourthwall para ver este diseño en la camiseta."
     },
     "products": {
       "title": "Publica los productos",
@@ -530,7 +534,7 @@
       "another": "Escribir un nuevo brief"
     },
     "working": {
-      "research": "Investigando tendencias y creando los primeros diseños…",
+      "research": "Investigando tendencias…",
       "autopilot": "El piloto automático está investigando, diseñando, publicando y creando la campaña…",
       "designs": "Creando diseños…",
       "review": "Guardando tu decisión…",

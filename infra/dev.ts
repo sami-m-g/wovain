@@ -1,124 +1,241 @@
-// dev.wovain.com: apps/web's development environment, in the same project
-// and stack as production, so it ships through the same preview and policy
-// gate and shares what costs money or can't be duplicated: the Cloud SQL
-// instance (its own database and user), the DNS zone, the provider API keys.
-// It gets its own auth secret, token key, database URL, bucket and runtime
-// account, and scales to zero. Images are rolled out to it by hand
-// (`gcloud run deploy wovain-web-dev`); no workflow deploys it yet.
+// apps/web's non-production environments, in the same project and stack as
+// production, so they ship through the same preview and policy gate. Each
+// owns its resources and holds nothing of production's: its own database
+// and user, its own `<id>-<name>` secret for every key the app reads (none
+// of production's secrets is mounted), its own bucket and runtime account,
+// and it scales to zero. What they share with production is the project,
+// the DNS zone and the PostHog project (events carry their environment).
+//
+// - dev.wovain.com (`dev`): rolled out by hand (`gcloud run deploy
+//   wovain-web-dev`); no workflow deploys it. Its database stays on
+//   production's instance: moving it would replace a protected database.
+// - next.wovain.com (`next`): where main deploys while production is frozen
+//   (docs/adr/0004-release-branch.md). Its own Cloud SQL instance, image
+//   repository and deploy account, which can roll out only this service and
+//   read only this environment's database URL.
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
-import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
+import {
+  cloudRunService,
+  postgresInstance,
+  secretEnv,
+  secretWithValue,
+} from "./resources.ts";
 
-interface DevArgs {
+// Who may deploy an environment from GitHub Actions.
+interface Deploy {
+  // The GitHub environment whose jobs may deploy it (infra/github.ts).
+  githubEnvironment: string;
+  // The workload identity pool that trusts GitHub Actions (infra/bootstrap).
+  pool: string;
+}
+
+interface EnvironmentArgs {
+  // Short name: the suffix of every resource name, e.g. `dev`.
+  name: string;
   project: string;
   region: string;
   url: string;
-  sql: gcp.sql.DatabaseInstance;
-  connectionsKey: gcp.kms.CryptoKey;
-  // Production's secrets by id, and the ids that have a value.
-  secrets: Map<string, gcp.secretmanager.Secret>;
-  populated: string[];
-  // Shared env values (name to value), from production's service.
+  // The instance its database lives on; its own instance if unset.
+  sql?: gcp.sql.DatabaseInstance;
+  // Plain env values (name to value), none of them a secret.
   envs: { name: string; value: pulumi.Input<string> }[];
+  // This environment's value for each provider secret, by production's id
+  // (the env variable stays the same). Each is created as `<id>-<name>`; one
+  // without a value stays empty and unmounted, since Cloud Run won't start
+  // a revision on a secret with no version.
+  providerSecrets: Record<string, pulumi.Input<string> | undefined>;
   // Data and identity options (protect), as in index.ts.
   kept: pulumi.CustomResourceOptions;
+  afterApis: pulumi.CustomResourceOptions;
+  deploy?: Deploy;
 }
 
-export const devEnvironment = (args: DevArgs) => {
-  const { kept, region, sql } = args;
-  const database = new gcp.sql.Database(
-    "wovain-dev",
-    { instance: sql.name, name: "wovain_dev" },
+// The deploy account and image repository of an environment main deploys.
+const deployAccess = (
+  args: EnvironmentArgs & { deploy: Deploy },
+  runner: gcp.serviceaccount.Account,
+  service: gcp.cloudrunv2.Service,
+  databaseUrl: gcp.secretmanager.Secret
+) => {
+  const { afterApis, deploy, kept, name, project, region } = args;
+  // Apart from production's repository: these builds never push
+  // production's live image out of its cleanup policy, and this deploy
+  // account can't write production's tags.
+  const images = new gcp.artifactregistry.Repository(
+    `images-${name}`,
+    {
+      cleanupPolicies: [
+        {
+          action: "KEEP",
+          id: "keep-recent",
+          mostRecentVersions: { keepCount: 5 },
+        },
+        {
+          action: "DELETE",
+          condition: { tagState: "ANY" },
+          id: "delete-rest",
+        },
+      ],
+      format: "DOCKER",
+      location: region,
+      repositoryId: `wovain-${name}`,
+    },
     kept
   );
-  const password = new random.RandomPassword("postgres-wovain-dev", {
+  const deployer = new gcp.serviceaccount.Account(
+    `deploy-${name}`,
+    {
+      accountId: `wovain-deploy-${name}`,
+      displayName: `CI deploys main to ${name} (GitHub Actions)`,
+    },
+    kept
+  );
+  new gcp.serviceaccount.IAMMember(`deploy-${name}-from-github`, {
+    member: `principalSet://iam.googleapis.com/${deploy.pool}/attribute.environment/${deploy.githubEnvironment}`,
+    role: "roles/iam.workloadIdentityUser",
+    serviceAccountId: deployer.name,
+  });
+  // cloudsql.client lets the migrate step reach the instance; it can log in
+  // only as this environment's user, the one password it can read.
+  for (const role of [
+    "roles/cloudsql.client",
+    "roles/serviceusage.serviceUsageConsumer",
+  ]) {
+    new gcp.projects.IAMMember(`deploy-${name}-${role.split("/")[1]}`, {
+      member: deployer.member,
+      project,
+      role,
+    });
+  }
+  // On this service only, not the project.
+  new gcp.cloudrunv2.ServiceIamMember(`deploy-${name}-run-developer`, {
+    location: region,
+    member: deployer.member,
+    name: service.name,
+    role: "roles/run.developer",
+  });
+  new gcp.artifactregistry.RepositoryIamMember(
+    `deploy-${name}-images`,
+    {
+      location: images.location,
+      member: deployer.member,
+      repository: images.name,
+      role: "roles/artifactregistry.writer",
+    },
+    afterApis
+  );
+  new gcp.secretmanager.SecretIamMember(`deploy-${name}-database-url`, {
+    member: deployer.member,
+    role: "roles/secretmanager.secretAccessor",
+    secretId: databaseUrl.id,
+  });
+  new gcp.serviceaccount.IAMMember(`deploy-${name}-acts-as-runner`, {
+    member: deployer.member,
+    role: "roles/iam.serviceAccountUser",
+    serviceAccountId: runner.name,
+  });
+  return {
+    deployer,
+    imageRepository: pulumi.interpolate`${region}-docker.pkg.dev/${project}/${images.repositoryId}`,
+  };
+};
+
+export const appEnvironment = (args: EnvironmentArgs) => {
+  const { kept, name, region } = args;
+  const sql =
+    args.sql ??
+    postgresInstance(`postgres-${name}`, `wovain-${name}`, region, kept);
+  const database = new gcp.sql.Database(
+    `wovain-${name}`,
+    { instance: sql.name, name: `wovain_${name}` },
+    kept
+  );
+  const password = new random.RandomPassword(`postgres-wovain-${name}`, {
     length: 32,
     special: false,
   });
-  const user = new gcp.sql.User("wovain-dev", {
+  const user = new gcp.sql.User(`wovain-${name}`, {
     instance: sql.name,
-    name: "wovain_dev",
+    name: `wovain_${name}`,
     password: password.result,
   });
-  // Dev's own secrets, by production's id (the env variable stays the same).
-  const values: Record<string, pulumi.Input<string>> = {
-    "better-auth-secret": new random.RandomPassword("better-auth-secret-dev", {
-      length: 48,
-      special: false,
-    }).result,
+  // Generated here; the provider secrets come from the caller.
+  const values: Record<string, pulumi.Input<string> | undefined> = {
+    "better-auth-secret": new random.RandomPassword(
+      `better-auth-secret-${name}`,
+      { length: 48, special: false }
+    ).result,
     "database-url": pulumi.interpolate`postgresql://${user.name}:${password.result}@localhost/${database.name}?host=/cloudsql/${sql.connectionName}`,
-    "token-encryption-key": new random.RandomBytes("token-encryption-key-dev", {
-      length: 32,
-    }).base64,
+    "token-encryption-key": new random.RandomBytes(
+      `token-encryption-key-${name}`,
+      { length: 32 }
+    ).base64,
+    ...args.providerSecrets,
   };
 
   const runner = new gcp.serviceaccount.Account(
-    "web-runner-dev",
-    { accountId: "wovain-web-dev", displayName: "wovain web dev (Cloud Run)" },
+    `web-runner-${name}`,
+    {
+      accountId: `wovain-web-${name}`,
+      displayName: `wovain web ${name} (Cloud Run)`,
+    },
     kept
   );
   for (const role of ["roles/cloudsql.client", "roles/logging.logWriter"]) {
-    new gcp.projects.IAMMember(`runner-dev-${role.split("/")[1]}`, {
+    new gcp.projects.IAMMember(`runner-${name}-${role.split("/")[1]}`, {
       member: runner.member,
       project: args.project,
       role,
     });
   }
-  new gcp.kms.CryptoKeyIAMMember("runner-dev-connections", {
-    cryptoKeyId: args.connectionsKey.id,
-    member: runner.member,
-    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-  });
   const bucket = new gcp.storage.Bucket(
-    "media-dev",
+    `media-${name}`,
     {
       location: region.toUpperCase(),
-      name: `${args.project}-media-dev`,
+      name: `${args.project}-media-${name}`,
       publicAccessPrevention: "enforced",
       uniformBucketLevelAccess: true,
     },
     kept
   );
-  new gcp.storage.BucketIAMMember("runner-dev-media", {
+  new gcp.storage.BucketIAMMember(`runner-${name}-media`, {
     bucket: bucket.name,
     member: runner.member,
     role: "roles/storage.objectAdmin",
   });
 
-  // `<id>-dev` for its own secrets, production's for the shared API keys.
+  // Every secret is `<id>-<name>`; only those with a value are mounted.
   const versions: pulumi.Resource[] = [];
   const mounted = new Map<string, gcp.secretmanager.Secret>();
+  let databaseUrl: gcp.secretmanager.Secret | undefined;
   for (const [id, value] of Object.entries(values)) {
-    const { secret, version } = secretWithValue(`${id}-dev`, value, kept);
+    const { secret, version } = secretWithValue(`${id}-${name}`, value, kept);
+    if (id === "database-url") {
+      databaseUrl = secret;
+    }
     if (version !== undefined) {
       versions.push(version);
-    }
-    mounted.set(id, secret);
-  }
-  const databaseUrl = mounted.get("database-url");
-  if (databaseUrl === undefined) {
-    throw new Error("dev has no database-url secret");
-  }
-  for (const id of args.populated.filter((i) => !(i in values))) {
-    const secret = args.secrets.get(id);
-    if (secret !== undefined) {
       mounted.set(id, secret);
     }
+  }
+  if (databaseUrl === undefined) {
+    throw new Error(`${name} has no database-url secret`);
   }
   // The service waits for these: Cloud Run checks access to every mounted
   // secret when it rolls out a revision.
   const access = [...mounted].map(
     ([id, secret]) =>
-      new gcp.secretmanager.SecretIamMember(`runner-dev-${id}`, {
+      new gcp.secretmanager.SecretIamMember(`runner-${name}-${id}`, {
         member: runner.member,
         role: "roles/secretmanager.secretAccessor",
         secretId: secret.id,
       })
   );
 
-  const service = cloudRunService("web-dev", {
+  const service = cloudRunService(`web-${name}`, {
     cloudSqlInstance: sql.connectionName,
     dependsOn: [...versions, ...access],
     envs: [
@@ -132,9 +249,18 @@ export const devEnvironment = (args: DevArgs) => {
     maxInstances: 1,
     // The same app as production's, with Mastra's agents in-process.
     memory: "1Gi",
-    name: "wovain-web-dev",
+    name: `wovain-web-${name}`,
     port: 3001,
     serviceAccount: runner.email,
   });
-  return { databaseUrl, runner, service };
+  const deploy =
+    args.deploy === undefined
+      ? undefined
+      : deployAccess(
+          { ...args, deploy: args.deploy },
+          runner,
+          service,
+          databaseUrl
+        );
+  return { databaseUrl, deploy, runner, service, sql };
 };
