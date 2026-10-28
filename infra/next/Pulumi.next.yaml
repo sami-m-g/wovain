@@ -156,5 +156,8 @@ config:
   wovain-next:google-client-secret:
     secure: v1:TvOS3BBiq+efx/Zp:fGjc/ir431tm0PZk3GthUaaZrbqsnW/BKcRxDjsBRkf+GikdUQNXGJGCxz7DSywIsEbh
   wovain-next:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
+  wovain-next:polar-access-token:
+    secure: v1:YhuZSVgou55EGC1C:+15urloUPssNpCvIPxVHN66eEUGmXVFavuM2Yr69LWc55RgDP3D3mQpzWn+NISn3qSY5gjHdtO1mupJAVAPcsp2XkAt3
+  wovain-next:polarEnvironment: sandbox
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtTJYD7hIO8Y9PlLFQLiZQEO3hZPd1sPgYdfWsO9bZ38SSQDNTiaDXHGtxz0oHJGmgDvoIcNvBJwZkwoAO0CtPWHzXGt+zsZU9gJXdhJP/QwdHl58V24OZc5ZxLHhZw5+igC+hzvIQQyz3uA=
