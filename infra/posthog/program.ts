@@ -64,9 +64,6 @@ const INTERNAL_COHORT_ID = 663_838;
 // The founder, who subscribed the first alerts.
 const DEFAULT_ALERT_SUBSCRIBERS = [413_837];
 
-const numericId = (resource: pulumi.CustomResource) =>
-  resource.id.apply(Number);
-
 export const configurePostHog = () => {
   const config = new pulumi.Config();
   const posthogConfig = new pulumi.Config("posthog");
@@ -140,7 +137,10 @@ export const configurePostHog = () => {
     ...HEALTH_DASHBOARD,
     tags: ["wovain"],
   });
-  const healthId = numericId(health);
+  // The provider's numeric id output, not Number(resource.id): in a preview an
+  // updated resource's id can be Pulumi's unknown placeholder string, and
+  // Number() of it is NaN, which crashes the bridged provider's Check.
+  const healthId = health.dashboardId;
   for (const [key, insight] of Object.entries(HEALTH_INSIGHTS)) {
     new posthog.Insight(`health-${key}`, {
       dashboardIds: [healthId],
@@ -163,7 +163,7 @@ export const configurePostHog = () => {
     ])
   ) as Record<DashboardKey, posthog.Dashboard>;
   const onDashboards = (keys: DashboardKey[]) =>
-    keys.map((key) => numericId(dashboards[key]));
+    keys.map((key) => dashboards[key].dashboardId);
 
   for (const [key, insight] of Object.entries(QUERY_INSIGHTS)) {
     new posthog.Insight(`insight-${key}`, {
@@ -222,7 +222,7 @@ export const configurePostHog = () => {
       column: "value",
       conditionType: "absolute_value",
       evaluation: "first_row",
-      insight: numericId(insight),
+      insight: insight.insightId,
       name: `kpi:${kpi.id}`,
       subscribedUsers: alertSubscribers,
       thresholdLower: kpi.direction === "up" ? kpi.target : undefined,
