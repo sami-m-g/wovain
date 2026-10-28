@@ -7,7 +7,7 @@ State lives in `gs://wovain-pulumi-state`; stack secrets are encrypted with the 
 ## How infra changes ship
 
 1. **Pull request.** CI's `infra` job type-checks and runs both programs against mocks with no credentials (`*.test.ts`). This catches missing config, code that throws, duplicate URNs and dynamic providers that don't serialize.
-2. **Preview** locally with real credentials before merging: `pnpm run infra:preview` (with the policy pack). Review the plan; `node infra/policy/guard.ts < preview.json` fails on a delete or replace of a stateful resource.
+2. **Preview** locally with real credentials before merging: `pnpm run infra:preview` (with the policy pack, on a copy of the state). Review the plan; `node infra/policy/guard.ts < preview.json` fails on a delete or replace of a stateful resource.
 3. **Apply** with `pnpm run infra:up` from main. No workflow runs `pulumi up` yet; `gitlab-infra` already trusts GitHub Actions jobs in an `infrastructure` environment on main, for when one does.
 
 The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
@@ -33,80 +33,33 @@ The provider authenticates with the `github:token` stack secret. A fine-grained 
 
 Google trusts GitHub Actions through the `github` workload identity pool (`bootstrap/index.ts`). Its provider accepts only tokens from sami-m-g/wovain (by name, repository id and owner id) on `refs/heads/main`, or on `refs/heads/release/transcend` in the `Production` environment. `gitlab-deploy` trusts only jobs in the `Production` environment, `wovain-deploy-next` only jobs in `next`, `wovain-deploy-dev` only jobs in `dev`, and `gitlab-infra` only jobs in `infrastructure`. The two accounts keep their old ids: renaming would replace protected accounts.
 
-## Leaving GitLab (one time, before the next `pulumi up`)
+## Leaving GitLab and retiring leftovers
 
-The GitLab project is archived and read-only, so Pulumi must never try to change or delete what it created there: GitLab would refuse, and the update would stop. This program declares nothing in GitLab anymore. Before the next `pulumi preview` or `pulumi up`, a project owner drops the GitLab resources from the state (GitLab keeps them, untouched), releases the Google and GitHub resources that went with GitLab, then applies `bootstrap` before `prod`. Run from the repository root, with `gcloud auth application-default login` done.
+The GitLab project is archived and read-only, so Pulumi must never try to change or delete what it created there. `scripts/pulumi.ts`, which `pnpm run infra:preview` and `pnpm run infra:up` call, does the state changes no program can make before it runs Pulumi. Each checks the state first, so a second run does nothing:
 
-### 1. Drop every GitLab resource from the `prod` state
+- It drops every GitLab resource from the state (`pulumi state delete --target-dependents` on the `gitlab` and `graphql` providers). Nothing is called in GitLab.
+- It runs `pulumi state unprotect` on what `policy/retired.ts` releases that way: GitLab's pools, providers and accounts, and the mirror's deploy key pair.
 
-Each GitLab variable, environment, label, board, schedule, feature flag and Duo trigger (about 90 resources) uses one of two providers. `--target-dependents` deletes a provider and every resource that uses it from the state, and `--force` covers the four protected GitLab environments. Nothing is called in GitLab.
+A preview runs on a copy of the state in a throwaway local backend, with those changes applied to the copy, so it never writes the real state and shows exactly what `up` will do. Only `up` changes the real state.
 
-```sh
-pulumi state delete --cwd infra --stack prod --yes --force --target-dependents \
-  'urn:pulumi:prod::wovain::pulumi:providers:gitlab::default_10_4_0'
-pulumi state delete --cwd infra --stack prod --yes --force --target-dependents \
-  'urn:pulumi:prod::wovain::pulumi:providers:graphql::gitlab-graphql'
-# Must print nothing.
-pulumi stack export --cwd infra --stack prod \
-  | jq -r '.deployment.resources[] | select(.type | test("^(gitlab|graphql):|^pulumi:providers:(gitlab|graphql)$")) | .urn'
-```
+Everything else `policy/retired.ts` lists is released in code: `legacy.ts` declares it without `protect` or `retainOnDelete`, and adopts with `import` what Pulumi never managed (Firebase's Admin SDK account and its roles, the default compute account's Editor role, App Hosting's Cloud Run service and image repository, and Vercel's `Preview` GitHub environment). The policy pack lets those be unprotected, and the guard lets a plan delete them. Once an `up` has written that to the state, the follow-up pull request removes the declarations, and its `up` deletes them.
 
-If the check still prints URNs, delete each one it prints, then the two providers, and run the check again:
+Apply `bootstrap` before `prod`:
 
 ```sh
-pulumi stack export --cwd infra --stack prod \
-  | jq -r '.deployment.resources[] | select(.type | test("^(gitlab|graphql):")) | .urn' \
-  | while read -r urn; do pulumi state delete --cwd infra --stack prod --yes --force --target-dependents "$urn" || true; done
-```
-
-### 2. Release what Pulumi may now delete
-
-These are in Google Cloud and GitHub, which Pulumi can still change. They are protected, so the engine refuses to delete them until they are unprotected; the next `up` then deletes them.
-
-```sh
-# prod: the ops job's account (its three viewer grants and its trust go with it),
-# and the GitHub mirror's deploy key pair (no external effect).
-pulumi state unprotect --cwd infra --stack prod --yes \
-  'urn:pulumi:prod::wovain::gcp:serviceaccount/account:Account::gitlab-ops'
-pulumi state unprotect --cwd infra --stack prod --yes \
-  'urn:pulumi:prod::wovain::tls:index/privateKey:PrivateKey::github-mirror'
-# bootstrap: GitLab's two workload identity pools and providers, and the merge
-# request preview account.
-for urn in \
-  'urn:pulumi:prod::wovain-bootstrap::gcp:iam/workloadIdentityPool:WorkloadIdentityPool::gitlab' \
-  'urn:pulumi:prod::wovain-bootstrap::gcp:iam/workloadIdentityPoolProvider:WorkloadIdentityPoolProvider::gitlab' \
-  'urn:pulumi:prod::wovain-bootstrap::gcp:iam/workloadIdentityPool:WorkloadIdentityPool::gitlab-mr' \
-  'urn:pulumi:prod::wovain-bootstrap::gcp:iam/workloadIdentityPoolProvider:WorkloadIdentityPoolProvider::gitlab-mr' \
-  'urn:pulumi:prod::wovain-bootstrap::gcp:serviceaccount/account:Account::gitlab-preview'; do
-  pulumi state unprotect --cwd infra/bootstrap --stack prod --yes "$urn"
-done
+pnpm run infra:install
+pnpm run infra:bootstrap:preview
+pnpm run infra:bootstrap:up
+pulumi import --cwd infra --stack prod --file posthog/import.json --generate-code=false --protect=false --yes
+pnpm run infra:preview
+pnpm run infra:up
 ```
 
 Deleted workload identity pools stay soft-deleted for 30 days, so the ids `gitlab` and `gitlab-mr` can't be reused until then.
 
-### 3. Apply bootstrap, then prod
+### Production freeze
 
-```sh
-pnpm run infra:install
-pulumi preview --cwd infra/bootstrap --stack prod --policy-pack ../policy
-pulumi up --cwd infra/bootstrap --stack prod --policy-pack ../policy
-# Adopt the PostHog objects that already exist (see "PostHog" below).
-pulumi import --cwd infra --stack prod --file posthog/import.json --generate-code=false --protect=false --yes
-pulumi preview --cwd infra --stack prod --refresh --policy-pack policy
-pulumi up --cwd infra --stack prod --refresh --policy-pack policy
-```
-
-What the `bootstrap` preview should show: creates the `github` pool and provider and `infra-from-github`; deletes the GitLab pools and providers, `gitlab-preview` with its grants, and `infra-from-gitlab`.
-
-What the `prod` preview should show:
-
-- **Creates:** the PostHog objects not in `posthog/import.json` (see "PostHog" below), the `posthog-secret-key` secret (mounted once it has a value), `deployer-from-github`, the `main` ruleset, the `Production` environment and its main-only branch policy, Dependabot security updates, and one `ActionsVariable` per variable above.
-- **Updates:** the imported PostHog objects (names, descriptions, tags, `kpi:<id>` alert names, project settings), the repository (description, homepage https://wovain.com, topics, issues on, vulnerability alerts), the `gitlab-deploy` display name, the web services' env (no `GITLAB_FEATURE_FLAGS_*` or GitLab Observability `OTEL_*`; the refresh also drops a leftover `FAULT_INJECTION_REVISION`), and `gitlab-feature-flags-instance-id` (unmounted, retained in `legacy.ts`).
-- **Deletes:** the mirror's deploy key, its private key and the "main is mirrored from GitLab" ruleset; `gitlab-ops` and its grants; the GitLab-pool grants (`deployer-from-gitlab*`, `gitlab-*-database-url`); `deployer-logging.viewer` (only the canary used it); the runners' access to `gitlab-feature-flags-instance-id`; and the `status.wovain.com` domain mapping and its DNS record (the status page was GitLab Pages).
-
-The old ruleset lets only the mirror's deploy key update main, so on GitHub no pull request can merge until this `up` replaces it. To merge the pull request that brings this change first, set the ruleset's enforcement to Disabled (Settings > Rules > Rulesets) and merge; the `up` deletes it.
-
-The stack config no longer has `gitlab:token`, `gitlab-ci-token`, `renovate-token`, the Duo triggers or the GitLab project and Observability ids. `deploy.yml` stays `workflow_dispatch` only until this is applied; run it once by hand, then give it a push trigger.
+Production (wovain.com) is frozen for the Transcend judging while `wovain:freezeProduction` is on (the default; the release-branch change, #25, adds it to `index.ts`, which then leaves the `wovain-web` and `wovain-docs` templates as they are live). The guard fails any plan that still changes either service, and `scripts/pulumi.ts up` runs that preview and guard before it applies, so a laptop `up` can't roll production either. `legacy.ts` also keeps `gitlab-feature-flags-instance-id` and wovain-web's access to it, since the live revision still mounts it. Retire both after production's next deploy.
 
 ## Bootstrap (one time, by a project owner)
 
