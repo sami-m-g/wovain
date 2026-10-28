@@ -7,9 +7,9 @@ import { autopilotRouter } from "./autopilot";
 import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
 import { insightsRouter } from "./insights";
+import { mediaCampaignsRouter } from "./media";
 import { modelsRouter } from "./models";
 import { onboardingRouter } from "./onboarding";
-import { mediaCampaignsRouter } from "./media";
 import {
   campaignsRouter,
   designsRouter,

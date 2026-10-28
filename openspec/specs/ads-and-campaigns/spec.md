@@ -26,7 +26,7 @@ The system SHALL write up to three ad variants per product, each with an angle, 
 
 ### Requirement: Paused campaigns
 
-Every Meta campaign, ad set and ad SHALL be staged so that it cannot spend: in the ad account's draft, or live and PAUSED. Each SHALL target the chosen countries as a hard control, with a daily budget between $1 and $500. When the `qloo-audiences` flag is on, the ad set SHALL also carry Qloo's ages, gender and Meta interests (audience-targeting) as Advantage+ audience suggestions, and the ad copy SHALL be written for that audience. When the `media-buying-live` flag is on, wovain SHALL read every staged object back. If any object could spend, wovain SHALL pause the campaign and fail the staging. wovain SHALL activate spend only as described in "Activation through approvals".
+Every Meta campaign, ad set and ad SHALL be staged so that it cannot spend: in the ad account's draft, or live and PAUSED. Each SHALL target the chosen countries as a hard control, with a daily budget between $1 and $500. When the `media-buying-live` flag is on, wovain SHALL read every staged object back. If any object could spend, wovain SHALL pause the campaign and fail the staging. wovain SHALL activate spend only as described in "Activation through approvals".
 
 #### Scenario: Budget out of range
 
@@ -38,15 +38,19 @@ Every Meta campaign, ad set and ad SHALL be staged so that it cannot spend: in t
 - **WHEN** a campaign is created
 - **THEN** it appears as a draft or paused in Meta Ads Manager, its status is saved, and a `campaign_created` event is captured
 
-#### Scenario: Qloo targeting
-
-- **WHEN** a campaign is created with `qloo-audiences` on for a brand with Qloo entities
-- **THEN** the ad set targets the chosen countries plus Qloo's ages, gender and matched interests, and a retry of the staging sends the same targeting
-
 #### Scenario: Staging came back live
 
 - **WHEN** the read-back finds a staged object that is not a draft and not PAUSED
 - **THEN** wovain pauses the campaign and the staging fails
+
+### Requirement: Qloo audience suggestions
+
+When the `qloo-audiences` flag is on, the ad set SHALL also carry Qloo's ages, gender and Meta interests (audience-targeting) as Advantage+ audience suggestions, and the ad copy SHALL be written for that audience; otherwise it SHALL target the chosen countries only.
+
+#### Scenario: Qloo targeting
+
+- **WHEN** a campaign is created with `qloo-audiences` on for a brand with Qloo entities
+- **THEN** the ad set targets the chosen countries plus Qloo's ages, gender and matched interests, and a retry of the staging sends the same targeting
 
 ### Requirement: Activation through approvals
 
