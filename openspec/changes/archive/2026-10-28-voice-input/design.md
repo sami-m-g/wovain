@@ -17,8 +17,8 @@
 **Non-Goals:**
 
 - Streaming partial transcripts, spoken replies (TTS), multi-turn chat.
-- Voice consent stored on the user row: it would need a migration. The web keeps the acknowledgement in local storage for now.
-- Per-user rate limits beyond the 30-second clip cap and sign-in.
+- Voice consent stored on the user row (#90). The web keeps the acknowledgement in local storage for now.
+- The mobile hold-to-talk component (#88) and suggestion intents (#89).
 
 ## Decisions
 
@@ -31,6 +31,7 @@
 - We call one documented endpoint with `fetch`. The `@fal-ai/client` SDK isn't added: its upload helpers are the part we must avoid.
 - wovain's key is used because voice is a platform feature. The merchant's fal grant (MCP) pays for art only.
 - Model IDs: `VOICE_STT_MODEL=nvidia/nemotron-asr-multilingual/asr` and `VOICE_STT_FALLBACK_MODEL=fal-ai/wizper`, set from Pulumi config.
+- Wizper's `language` defaults to `"en"`. The fallback request sends `language: null`, so Whisper detects the language as Nemotron ASR does, and a Spanish or French command isn't decoded as English.
 
 ### A dedicated `voice_intent` Mastra agent
 
@@ -44,7 +45,7 @@
   - `approve_design {designId}`
   - `reject_design {designId, reason?}`
   - `decide_approval {approvalId, approve, note?}`
-  - `none {reason}`
+  - `none {code, reason?}`: `code` is `not_heard` or `not_understood`, which the client translates; `reason` is the model's own reply, shown as an extra.
 - The prompt lists the items on screen, numbered and labelled (an idea's theme, a design's title, an approval's title). "The first one" therefore resolves without the client. The transcript sits in a quoted block marked as data.
 - Model routing: the agent uses the kit's default model, like every agent today. The model-routing PR (#74) can map it to the `fast` role.
 
@@ -54,11 +55,16 @@
 - The server loads the run's ideas and its designs that are pending approval, plus the merchant's pending approvals when `autonomy-approvals` is on.
 - `resolveProposal` drops any ID the model invents, so the client can't point voice at someone else's rows. The flow functions check ownership again anyway.
 
-### Sealed proposal, no new table
+### Sealed proposal, confirmed once
 
-- The proposal `{userId, intent, expiresAt}` is sealed with the existing AES-256-GCM sealer (`TOKEN_ENCRYPTION_KEY`). The context string is `voice:<userId>`, so a token from another merchant doesn't open.
+- The proposal `{jti, intent, expiresAt}` is sealed with the existing AES-256-GCM sealer (`TOKEN_ENCRYPTION_KEY`). The context string is `voice:<userId>`, so a token from another merchant doesn't open.
 - Confirm opens the token, checks the expiry (5 minutes) and runs the action. It calls the button's own oRPC procedure with oRPC's `call`, so input validation, credits, funnel events and typed errors are the same as a tap (the pattern the MCP server already uses with its router client).
-- No migration is needed. A proposal could be replayed within its 5 minutes, which is harmless: every action is idempotent or refused on a second try (the gates move on, an approval is no longer pending).
+- A token is confirmed at most once. `voice_command` holds one row per command (who and when, no audio or words), and its id is the token's `jti`. Confirm runs `UPDATE voice_command SET confirmed_at = now() WHERE id = jti AND user_id = me AND confirmed_at IS NULL RETURNING id` before the action. A retry, a second tab or a resent request finds no row and gets 409, so a `start_drop` can't start a second run or spend credits twice. The mark stays if the action then fails; the merchant says the command again.
+
+### Rate limit and clip size
+
+- `voice.command` claims a `voice_command` row before any paid call, under a per-merchant advisory lock (the promo redeem limit's pattern). Past 6 a minute or 60 an hour it fails with 429. Rows older than an hour are deleted on the merchant's next command.
+- Clients record at 48 kbit/s. The server caps the clip at 30 s at 64 kbit/s plus 10% container room (264 KB, about 352 K base64 characters), so a longer clip at the client's bitrate is refused. Reading the duration from the container isn't reliable for Chrome's WebM, which carries none; a clip recorded far below the bitrate is bounded by the rate limit instead.
 - Alternative considered: enqueue the proposal in the approval queue with `proposedBy: "voice"`. Rejected because:
   - the policy would auto-approve R1 actions at the `draft` level, which skips the merchant's confirmation
   - there is no executor for `autopilot.run.start` yet
@@ -79,11 +85,12 @@
 
 - [Nemotron ASR accuracy on fashion jargon] → The fallback covers outright failures only. The confirm step shows the transcript, so a mishearing is caught before anything runs.
 - [fal sync endpoint latency, up to a few seconds] → Acceptable for hold-to-talk. The button shows a busy state.
-- [Data URIs inflate the request (about 1.33×)] → A 30 s Opus clip is about 120 KB, and the cap is 1.5 MB of base64.
+- [Data URIs inflate the request (about 1.33×)] → A 30 s clip at 48 kbit/s is about 180 KB, and the cap is about 352 K base64 characters.
+- [fal's retention terms aren't confirmed] → The copy says only what wovain controls: wovain doesn't store the recording. It doesn't promise that fal keeps nothing.
 - [Mobile app not started] → The API is client-agnostic. The mobile component is a follow-up on the mobile branch.
 
 ## Migration Plan
 
-- No database migration.
+- One migration adds `voice_command` (`pnpm run db:generate`).
 - Before the first demo on next.wovain.com, set the Pulumi config keys `voiceSttModel-next` and `voiceSttFallbackModel-next` (already in `Pulumi.prod.yaml`) and the secret `fal-key-next`.
 - Rollback: turn the `voice-input` flag off.

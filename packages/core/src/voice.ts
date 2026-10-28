@@ -15,10 +15,29 @@ import type { Sealer } from "./sealing";
 // Privacy: the audio goes to fal inline (a data URI, never fal storage) with
 // payload storage off, and wovain writes it nowhere.
 
-// 30 s of Opus is about 120 KB; AAC from a phone about 250 KB. 1.5 MB of
-// base64 leaves room and refuses anything longer than a command.
-export const MAX_AUDIO_BASE64 = 1_500_000;
 export const MAX_CLIP_SECONDS = 30;
+// The highest bitrate a client may record at. The web records at 48 kbit/s
+// (apps/web voice-button.tsx), and the mobile app should do the same. The size
+// cap is 30 s at this bitrate plus room for the container, so a longer clip
+// at a client's bitrate is refused. A clip recorded far below it could still
+// be longer; the per-merchant rate limit (api flow/voice.ts) bounds that.
+export const MAX_AUDIO_BITS_PER_SECOND = 64_000;
+const CONTAINER_ROOM = 1.1;
+const BITS_PER_BYTE = 8;
+const BASE64_BYTES = 3;
+const BASE64_CHARS = 4;
+export const MAX_AUDIO_BYTES = Math.ceil(
+  ((MAX_CLIP_SECONDS * MAX_AUDIO_BITS_PER_SECOND) / BITS_PER_BYTE) *
+    CONTAINER_ROOM
+);
+export const MAX_AUDIO_BASE64 =
+  Math.ceil(MAX_AUDIO_BYTES / BASE64_BYTES) * BASE64_CHARS;
+// Voice commands one merchant may send: each one can cost two speech-to-text
+// calls and a Nemotron call on wovain's own keys.
+export const VOICE_RATE_LIMIT = {
+  perHour: 60,
+  perMinute: 6,
+} as const;
 // A proposal the merchant doesn't confirm in this time is dropped.
 export const PROPOSAL_TTL_MS = 5 * 60 * 1000;
 
@@ -46,6 +65,11 @@ export const audioTypeOf = (mimeType: string): string | undefined => {
 
 export const isAudioClip = (audio: string) =>
   audio.length > 0 && audio.length <= MAX_AUDIO_BASE64 && BASE64.test(audio);
+
+// The fallback is a Whisper model (fal-ai/wizper), whose `language` defaults
+// to English. null makes it detect the language, as Nemotron ASR does, so a
+// Spanish or French command isn't decoded as English.
+export const FALLBACK_INPUT = { language: null } as const;
 
 export interface Clip {
   // The recording, base64 encoded.
@@ -92,13 +116,19 @@ export const createTranscriber = ({
   fetch: send = fetch,
   model,
 }: TranscriberConfig) => {
-  const run = async (endpoint: string, clip: Clip, type: string) => {
+  const run = async (
+    endpoint: string,
+    clip: Clip,
+    type: string,
+    input: Record<string, unknown>
+  ) => {
     if (apiKey === undefined) {
       throw notConfigured.fal();
     }
     const response = await send(`${FAL_RUN_URL}/${endpoint}`, {
       body: JSON.stringify({
         audio_url: `data:${type};base64,${clip.audio}`,
+        ...input,
       }),
       headers: {
         Authorization: `Key ${apiKey}`,
@@ -124,14 +154,14 @@ export const createTranscriber = ({
       if (type === undefined || !isAudioClip(clip.audio)) {
         throw new Error("The clip isn't audio fal can read");
       }
-      const call = async (endpoint: string) =>
+      const call = async (endpoint: string, input: Record<string, unknown>) =>
         await external(
           log,
           { operation: "transcribe", provider: "fal" },
-          async () => await run(endpoint, clip, type)
+          async () => await run(endpoint, clip, type, input)
         );
       try {
-        const text = await call(model);
+        const text = await call(model, {});
         if (text !== "") {
           return { fallback: false, model, text };
         }
@@ -146,7 +176,7 @@ export const createTranscriber = ({
           },
         });
       }
-      const text = await call(fallbackModel);
+      const text = await call(fallbackModel, FALLBACK_INPUT);
       return { fallback: true, model: fallbackModel, text };
     },
   };
@@ -230,18 +260,29 @@ export const proposalSchema = z.discriminatedUnion("kind", [
     label,
     note: z.string().max(MAX_REASON).optional(),
   }),
-  z.object({ kind: z.literal("none"), reason: z.string().max(MAX_REASON) }),
+  z.object({
+    // Why there's nothing to confirm, as a code the client says in the
+    // merchant's language. not_heard: no speech; not_understood: no action.
+    code: z.enum(["not_heard", "not_understood"]),
+    kind: z.literal("none"),
+    // The model's own short reply, when it gave one: an optional extra.
+    reason: z.string().max(MAX_REASON).optional(),
+  }),
 ]);
 export type VoiceProposal = z.infer<typeof proposalSchema>;
 export type VoiceProposalKind = VoiceProposal["kind"];
 
-const NOT_UNDERSTOOD =
-  "I can start a drop and approve or reject ideas, designs and queued actions.";
-
-const notUnderstood = (reason?: string | null): VoiceProposal => ({
+export const notHeard = (): VoiceProposal => ({
+  code: "not_heard",
   kind: "none",
-  reason: (reason ?? "").trim().slice(0, MAX_REASON) || NOT_UNDERSTOOD,
 });
+
+const notUnderstood = (reason?: string | null): VoiceProposal => {
+  const said = (reason ?? "").trim().slice(0, MAX_REASON);
+  return said === ""
+    ? { code: "not_understood", kind: "none" }
+    : { code: "not_understood", kind: "none", reason: said };
+};
 
 // The 1-based item, or undefined when the number isn't on the list.
 const pick = (items: VoiceItem[], number: number | null) =>
@@ -366,17 +407,28 @@ export const voicePrompt = (transcript: string, context: VoiceContext) =>
 
 // A proposal sealed for one merchant, so the client can't change the action
 // or hand it to someone else. It opens until PROPOSAL_TTL_MS after sealing.
-const sealedSchema = z.object({ exp: z.number(), p: proposalSchema });
+// `jti` names the command it came from: the server lets one confirm use it
+// (api flow/voice.ts), so a replayed token runs nothing.
+const sealedSchema = z.object({
+  exp: z.number(),
+  jti: z.string().min(1),
+  p: proposalSchema,
+});
 const sealContext = (userId: string) => `voice:${userId}`;
+
+export interface SealedProposal {
+  jti: string;
+  proposal: VoiceProposal;
+}
 
 export const sealProposal = (
   sealer: Sealer,
   userId: string,
-  proposal: VoiceProposal,
+  { jti, proposal }: SealedProposal,
   now = Date.now()
 ) =>
   sealer.seal(
-    JSON.stringify({ exp: now + PROPOSAL_TTL_MS, p: proposal }),
+    JSON.stringify({ exp: now + PROPOSAL_TTL_MS, jti, p: proposal }),
     sealContext(userId)
   );
 
@@ -399,7 +451,7 @@ export const openProposal = (
   userId: string,
   token: string,
   now = Date.now()
-): VoiceProposal => {
+): SealedProposal => {
   let sealed: z.infer<typeof sealedSchema>;
   try {
     sealed = sealedSchema.parse(
@@ -411,5 +463,5 @@ export const openProposal = (
   if (sealed.exp < now) {
     throw new VoiceProposalError("EXPIRED");
   }
-  return sealed.p;
+  return { jti: sealed.jti, proposal: sealed.p };
 };

@@ -14,6 +14,7 @@ import { Spinner } from "@wovain/ui/components/spinner";
 import { Mic } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { posthog } from "posthog-js";
 import { useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { toast } from "sonner";
@@ -31,6 +32,11 @@ import { orpc } from "@/utils/orpc";
 
 // Matches the server's cap (packages/core/src/voice.ts MAX_CLIP_SECONDS).
 const MAX_CLIP_MS = 30_000;
+// Plenty for speech, and under the server's MAX_AUDIO_BITS_PER_SECOND, so a
+// 30 s clip fits the server's size cap.
+const RECORDING_BITS_PER_SECOND = 48_000;
+// A refused or missing microphone is the merchant's to fix, not a bug.
+const EXPECTED_MIC_ERRORS = new Set(["NotAllowedError", "NotFoundError"]);
 // The first type this browser records in: Opus in WebM (Chrome, Firefox),
 // AAC in MP4 (Safari).
 const RECORDING_TYPES = [
@@ -98,9 +104,30 @@ const ProposalText = ({ command }: { command: VoiceCommand }) => {
         : t("rejectAction", { action: proposal.label });
     }
     default: {
-      return proposal.reason;
+      return proposal.code === "not_heard" ? t("notHeard") : t("canDo");
     }
   }
+};
+
+// What wovain heard, and the model's own reply when it found nothing to do
+// (an optional extra under the translated message).
+const Heard = ({ command }: { command: VoiceCommand }) => {
+  const t = useTranslations("Voice");
+  const { proposal, transcript } = command;
+  const reply =
+    proposal.kind === "none" && proposal.reason !== undefined
+      ? proposal.reason
+      : undefined;
+  return (
+    <>
+      {reply === undefined ? null : <p className="text-sm">{reply}</p>}
+      {transcript === "" ? null : (
+        <p className="text-muted-foreground text-sm">
+          {t("heard", { transcript })}
+        </p>
+      )}
+    </>
+  );
 };
 
 export const VoiceButton = () => {
@@ -161,10 +188,10 @@ export const VoiceButton = () => {
       return;
     }
     const type = recordingType();
-    const media = new MediaRecorder(
-      stream,
-      type === "" ? {} : { mimeType: type }
-    );
+    const media = new MediaRecorder(stream, {
+      audioBitsPerSecond: RECORDING_BITS_PER_SECOND,
+      ...(type === "" ? {} : { mimeType: type }),
+    });
     const chunks: Blob[] = [];
     media.addEventListener("dataavailable", (event) => chunks.push(event.data));
     media.addEventListener("stop", () => {
@@ -183,10 +210,22 @@ export const VoiceButton = () => {
     timer.current = setTimeout(stop, MAX_CLIP_MS);
   };
 
-  // A refused or missing microphone is the merchant's to fix, not an error.
+  // A refused or missing microphone is the merchant's to fix. Anything else
+  // (no MediaRecorder, a busy device, an unsupported type) breaks voice, so
+  // it goes to PostHog Error Tracking before the merchant sees a toast.
   const listen = useMutation({
     mutationFn: record,
-    onError: () => toast.error(t("noMic")),
+    onError: (error) => {
+      if (
+        error instanceof DOMException &&
+        EXPECTED_MIC_ERRORS.has(error.name)
+      ) {
+        toast.error(t("noMic"));
+        return;
+      }
+      posthog.captureException(error, { feature: "voice-input" });
+      toast.error(t("recordFailed"));
+    },
   });
 
   if (status.data?.enabled !== true) {
@@ -294,11 +333,7 @@ export const VoiceButton = () => {
               )}
             </DialogDescription>
           </DialogHeader>
-          {command?.transcript ? (
-            <p className="text-muted-foreground text-sm">
-              {t("heard", { transcript: command.transcript })}
-            </p>
-          ) : null}
+          {command === undefined ? null : <Heard command={command} />}
           <DialogFooter showCloseButton>
             {command?.token === undefined ? null : (
               <Button

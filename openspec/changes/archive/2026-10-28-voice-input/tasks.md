@@ -34,3 +34,13 @@
 ## 5. Verify
 
 - [x] 5.1 `pnpm run check`, `check-types`, `knip`, `spec:validate`, and the core and api tests.
+
+## 6. Review fixes (PR #85)
+
+- [x] 6.1 Single-use tokens: a `jti` in the sealed payload, recorded in `voice_command` before the action; a replay gets 409.
+- [x] 6.2 Per-merchant rate limit (6 a minute, 60 an hour) in Postgres, and a clip size cap of 30 s at 64 kbit/s; the web records at 48 kbit/s.
+- [x] 6.3 The fallback speech model detects the language (`language: null`).
+- [x] 6.4 "Nothing to confirm" is a code the client translates; the model's reply is an extra.
+- [x] 6.5 Unexpected recorder errors go to PostHog Error Tracking.
+- [x] 6.6 The disclosure and privacy copy no longer promise fal's retention.
+- [x] 6.7 Follow-up issues #88, #89 and #90.

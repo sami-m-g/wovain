@@ -1,7 +1,9 @@
 import {
+  notHeard,
   openProposal,
   resolveProposal,
   sealProposal,
+  VOICE_RATE_LIMIT,
   VOICE_SYSTEM,
   voicePrompt,
   voiceReplySchema,
@@ -15,7 +17,8 @@ import type {
   VoiceScreen,
 } from "@wovain/core/voice";
 import { design, idea, run } from "@wovain/db/schema/seller";
-import { and, asc, eq } from "drizzle-orm";
+import { voiceCommand } from "@wovain/db/schema/voice";
+import { and, asc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { createError } from "evlog";
 
 import type { Actor } from "./actor";
@@ -122,7 +125,65 @@ export const voiceContextOf = async (
   };
 };
 
-const NOT_HEARD = "I didn't catch that. Hold the button and try again.";
+const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+
+export const voiceRateLimited = () =>
+  createError({
+    code: "VOICE_RATE_LIMITED",
+    fix: "Wait a minute, then hold the button again.",
+    message: "Too many voice commands. Wait a minute and try again",
+    status: 429,
+    why: `Voice allows ${VOICE_RATE_LIMIT.perMinute} commands a minute and ${VOICE_RATE_LIMIT.perHour} an hour per merchant.`,
+  });
+
+// Claims one voice command for the merchant, or refuses it past the rate
+// limit. Counted in Postgres under a per-merchant lock, so every Cloud Run
+// instance sees the same count (the promo redeem limit's pattern,
+// packages/billing/src/redeem.ts). The row's id becomes the proposal's jti.
+export const claimVoiceCommand = async (actor: Actor, now = new Date()) =>
+  await actor.db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`voice:${actor.userId}`}))`
+    );
+    const hourAgo = new Date(now.getTime() - MS_PER_HOUR);
+    const minuteAgo = new Date(now.getTime() - MS_PER_MINUTE);
+    // Older rows count for nothing: their tokens expired long ago.
+    await tx
+      .delete(voiceCommand)
+      .where(
+        and(
+          eq(voiceCommand.userId, actor.userId),
+          lt(voiceCommand.createdAt, hourAgo)
+        )
+      );
+    const [used] = await tx
+      .select({
+        hour: sql<number>`count(*)::int`,
+        minute: sql<number>`(count(*) filter (where ${voiceCommand.createdAt} >= ${minuteAgo}))::int`,
+      })
+      .from(voiceCommand)
+      .where(
+        and(
+          eq(voiceCommand.userId, actor.userId),
+          gte(voiceCommand.createdAt, hourAgo)
+        )
+      );
+    if (
+      (used?.minute ?? 0) >= VOICE_RATE_LIMIT.perMinute ||
+      (used?.hour ?? 0) >= VOICE_RATE_LIMIT.perHour
+    ) {
+      throw voiceRateLimited();
+    }
+    const [claimed] = await tx
+      .insert(voiceCommand)
+      .values({ createdAt: now, userId: actor.userId })
+      .returning({ id: voiceCommand.id });
+    if (claimed === undefined) {
+      throw new Error("The voice command wasn't recorded");
+    }
+    return claimed.id;
+  });
 
 export interface VoiceCommand {
   proposal: VoiceProposal;
@@ -138,10 +199,12 @@ export const proposeVoiceCommand = async (
   await requireVoice(actor);
   // Built first: a run the merchant doesn't own fails before any paid call.
   const context = await voiceContextOf(actor, input);
+  // Counted before any paid call, refused past the limit.
+  const jti = await claimVoiceCommand(actor);
   const heard = await actor.core.transcriber.transcribe(input, actor.log);
   const proposal: VoiceProposal =
     heard.text === ""
-      ? { kind: "none", reason: NOT_HEARD }
+      ? notHeard()
       : resolveProposal(
           await actor.core.nemotron({
             log: actor.log,
@@ -176,7 +239,7 @@ export const proposeVoiceCommand = async (
     token:
       proposal.kind === "none"
         ? undefined
-        : sealProposal(actor.core.sealer, actor.userId, proposal),
+        : sealProposal(actor.core.sealer, actor.userId, { jti, proposal }),
     transcript: heard.text,
   };
 };
@@ -200,4 +263,40 @@ export const openVoiceProposal = (actor: Actor, token: string) => {
     }
     throw error;
   }
+};
+
+export const voiceAlreadyConfirmed = () =>
+  createError({
+    code: "VOICE_ALREADY_CONFIRMED",
+    fix: "Hold the button and say the command again.",
+    message: "This voice command was already confirmed",
+    status: 409,
+    why: "A voice proposal runs at most once.",
+  });
+
+// Opens the token and marks its command confirmed, atomically: only the first
+// confirm of a token gets the proposal, so a retry, a second tab or a resent
+// request runs nothing and spends no credits. The mark stays even if the
+// action then fails: the merchant says the command again.
+export const confirmVoiceProposal = async (
+  actor: Actor,
+  token: string,
+  now = new Date()
+): Promise<VoiceProposal> => {
+  const { jti, proposal } = openVoiceProposal(actor, token);
+  const [marked] = await actor.db
+    .update(voiceCommand)
+    .set({ confirmedAt: now })
+    .where(
+      and(
+        eq(voiceCommand.id, jti),
+        eq(voiceCommand.userId, actor.userId),
+        isNull(voiceCommand.confirmedAt)
+      )
+    )
+    .returning({ id: voiceCommand.id });
+  if (marked === undefined) {
+    throw voiceAlreadyConfirmed();
+  }
+  return proposal;
 };

@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import type { Context } from "../context";
 import {
-  openVoiceProposal,
+  confirmVoiceProposal,
   proposeVoiceCommand,
   requireVoice,
   voiceEnabled,
@@ -94,7 +94,8 @@ export const voiceRouter = {
     .input(z.object({ token: z.string().min(1).max(8192) }))
     .handler(async ({ context, input }) => {
       await requireVoice(context);
-      const proposal = openVoiceProposal(context, input.token);
+      // Refuses a token that was already confirmed (409), before any work.
+      const proposal = await confirmVoiceProposal(context, input.token);
       const done = await execute(proposal, context);
       await context.analytics?.capture({
         distinctId: context.userId,

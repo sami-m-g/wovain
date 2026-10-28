@@ -7,6 +7,9 @@ import {
   audioTypeOf,
   createTranscriber,
   MAX_AUDIO_BASE64,
+  MAX_AUDIO_BITS_PER_SECOND,
+  MAX_AUDIO_BYTES,
+  MAX_CLIP_SECONDS,
   openProposal,
   PROPOSAL_TTL_MS,
   resolveProposal,
@@ -20,7 +23,7 @@ const FALLBACK = "fal-ai/wizper";
 const clip = { audio: "UklGRg==", mimeType: "audio/webm;codecs=opus" };
 
 interface Sent {
-  body: { audio_url: string };
+  body: { audio_url: string; language?: string | null };
   headers: Record<string, string>;
   url: string;
 }
@@ -84,6 +87,23 @@ describe("transcribe", () => {
     });
   });
 
+  it("lets the fallback detect the language instead of assuming English", async () => {
+    const fal = fakeFal({
+      [FALLBACK]: () => json({ text: "aprueba este" }),
+      [PRIMARY]: () => new Response("busy", { status: 503 }),
+    });
+    await transcriber(fal.send).transcribe(clip);
+    const [primary, fallback] = fal.sent;
+    expect(primary?.body).toEqual({
+      audio_url: "data:audio/webm;base64,UklGRg==",
+    });
+    expect(fallback?.url).toBe(`https://fal.run/${FALLBACK}`);
+    expect(fallback?.body).toEqual({
+      audio_url: "data:audio/webm;base64,UklGRg==",
+      language: null,
+    });
+  });
+
   it("falls back when Nemotron hears nothing", async () => {
     const fal = fakeFal({
       [FALLBACK]: () => json({ text: "" }),
@@ -121,6 +141,20 @@ describe("transcribe", () => {
     await expect(transcriber(fal.send).transcribe(clip)).rejects.toThrow(
       /fal/u
     );
+  });
+});
+
+const bytesAt = (seconds: number, bitsPerSecond: number) =>
+  (seconds * bitsPerSecond) / 8;
+
+describe("clip size cap", () => {
+  it("fits 30 s at the client bitrate and refuses a minute", () => {
+    const webBitrate = 48_000;
+    expect(bytesAt(MAX_CLIP_SECONDS, MAX_AUDIO_BITS_PER_SECOND)).toBeLessThan(
+      MAX_AUDIO_BYTES
+    );
+    expect(bytesAt(60, webBitrate)).toBeGreaterThan(MAX_AUDIO_BYTES);
+    expect(MAX_AUDIO_BASE64).toBeLessThan(400_000);
   });
 });
 
@@ -229,12 +263,14 @@ describe("resolveProposal", () => {
     });
   });
 
-  it("answers not understood with a default reason", () => {
-    const proposal = resolveProposal(reply({ kind: "none" }), context);
-    expect(proposal.kind).toBe("none");
-    expect(proposal.kind === "none" && proposal.reason).toMatch(
-      /start a drop/u
-    );
+  it("answers not understood as a code the client translates", () => {
+    expect(resolveProposal(reply({ kind: "none" }), context)).toEqual({
+      code: "not_understood",
+      kind: "none",
+    });
+    expect(
+      resolveProposal(reply({ kind: "none", reason: " ¿Cuál? " }), context)
+    ).toEqual({ code: "not_understood", kind: "none", reason: "¿Cuál?" });
   });
 });
 
@@ -250,23 +286,24 @@ describe("voicePrompt", () => {
 describe("sealed proposals", () => {
   const sealer = createSealer(randomBytes(32).toString("base64"));
   const proposal = { brief: "Y2K racing tees", kind: "start_drop" } as const;
+  const sealed = { jti: "cmd_1", proposal };
 
-  it("open for the same merchant before they expire", () => {
-    const token = sealProposal(sealer, "u1", proposal, 1000);
+  it("open for the same merchant before they expire, with their jti", () => {
+    const token = sealProposal(sealer, "u1", sealed, 1000);
     expect(openProposal(sealer, "u1", token, 1000 + PROPOSAL_TTL_MS)).toEqual(
-      proposal
+      sealed
     );
   });
 
   it("don't open for another merchant", () => {
-    const token = sealProposal(sealer, "u1", proposal, 1000);
+    const token = sealProposal(sealer, "u1", sealed, 1000);
     expect(() => openProposal(sealer, "u2", token, 1000)).toThrow(
       /can't be confirmed/u
     );
   });
 
   it("don't open once expired or tampered with", () => {
-    const token = sealProposal(sealer, "u1", proposal, 1000);
+    const token = sealProposal(sealer, "u1", sealed, 1000);
     expect(() =>
       openProposal(sealer, "u1", token, 1001 + PROPOSAL_TTL_MS)
     ).toThrow(/expired/u);

@@ -9,12 +9,18 @@ import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { design, idea, run } from "@wovain/db/schema/seller";
+import { voiceCommand } from "@wovain/db/schema/voice";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { Actor } from "./actor";
-import { openVoiceProposal, proposeVoiceCommand } from "./voice";
+import {
+  claimVoiceCommand,
+  confirmVoiceProposal,
+  openVoiceProposal,
+  proposeVoiceCommand,
+} from "./voice";
 
 // Voice commands on real Postgres (PGlite, with the app's migrations): the
 // context comes from the merchant's own rows, the proposal is sealed for
@@ -130,6 +136,11 @@ beforeAll(async () => {
   });
 });
 
+// Each test starts under the rate limit.
+beforeEach(async () => {
+  await db.delete(voiceCommand);
+});
+
 describe("proposeVoiceCommand", () => {
   it("resolves ordinals against the run's ideas and seals the proposal", async () => {
     const { actor, captured, prompts } = actorWith({
@@ -147,7 +158,7 @@ describe("proposeVoiceCommand", () => {
       runId,
     });
     expect(prompts[0]).toContain("DESIGNS:\n1. Anime Tee");
-    expect(openProposal(sealer, USER_ID, command.token ?? "")).toEqual(
+    expect(openProposal(sealer, USER_ID, command.token ?? "").proposal).toEqual(
       command.proposal
     );
     expect(captured).toEqual([
@@ -186,7 +197,7 @@ describe("proposeVoiceCommand", () => {
       ...clip,
       screen: "home",
     });
-    expect(command.proposal.kind).toBe("none");
+    expect(command.proposal).toEqual({ code: "not_heard", kind: "none" });
     expect(command.token).toBeUndefined();
     expect(prompts).toHaveLength(0);
   });
@@ -219,9 +230,63 @@ describe("openVoiceProposal", () => {
     expect(() => openVoiceProposal(other, token ?? "")).toThrow(
       /can't be confirmed/u
     );
-    expect(openVoiceProposal(actor, token ?? "")).toEqual({
+    expect(openVoiceProposal(actor, token ?? "").proposal).toEqual({
       brief: "cats",
       kind: "start_drop",
     });
+  });
+});
+
+describe("confirmVoiceProposal", () => {
+  it("returns the proposal once, and refuses a replayed token", async () => {
+    const { actor } = actorWith({
+      reply: { ...empty, brief: "cats", kind: "start_drop" },
+    });
+    const { token } = await proposeVoiceCommand(actor, {
+      ...clip,
+      screen: "home",
+    });
+    const confirms = await Promise.allSettled([
+      confirmVoiceProposal(actor, token ?? ""),
+      confirmVoiceProposal(actor, token ?? ""),
+    ]);
+    expect(confirms.filter((c) => c.status === "fulfilled")).toEqual([
+      { status: "fulfilled", value: { brief: "cats", kind: "start_drop" } },
+    ]);
+    await expect(
+      confirmVoiceProposal(actor, token ?? "")
+    ).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe("claimVoiceCommand", () => {
+  it("refuses a merchant past the per-minute limit, before any paid call", async () => {
+    const { actor } = actorWith({ userId: OTHER_ID });
+    const now = new Date();
+    await Promise.all(
+      Array.from({ length: 6 }, () => claimVoiceCommand(actor, now))
+    );
+    await expect(claimVoiceCommand(actor, now)).rejects.toMatchObject({
+      status: 429,
+    });
+    // A minute later the merchant may talk again.
+    await expect(
+      claimVoiceCommand(actor, new Date(now.getTime() + 61_000))
+    ).resolves.toBeTypeOf("string");
+  });
+
+  it("caps a merchant at an hour's limit too", async () => {
+    const { actor } = actorWith({ userId: OTHER_ID });
+    const start = Date.now();
+    // 60 commands over the last 50 minutes, none in the last minute.
+    await db.insert(voiceCommand).values(
+      Array.from({ length: 60 }, (_, sent) => ({
+        createdAt: new Date(start - (sent + 2) * 50_000),
+        userId: OTHER_ID,
+      }))
+    );
+    await expect(
+      claimVoiceCommand(actor, new Date(start))
+    ).rejects.toMatchObject({ status: 429 });
   });
 });
