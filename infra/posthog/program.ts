@@ -66,6 +66,24 @@ const DEFAULT_ALERT_SUBSCRIBERS = [413_837];
 const numericId = (resource: pulumi.CustomResource) =>
   resource.id.apply(Number);
 
+// wovain's PostHog organization, which every environment's project is in.
+const ORGANIZATION_ID = "019c4bfe-a649-0000-5b0f-2266161045fc";
+
+// An environment's own PostHog project (dev, next), so its events, replays
+// and errors never mix with production's. It has none of production's
+// dashboards or flags: without a POSTHOG_SECRET_KEY the app's flag registry
+// answers (packages/core/src/flags.ts). Its public token is apiToken.
+export const environmentProject = (name: string) =>
+  new posthog.Project(
+    `project-${name}`,
+    {
+      name: `wovain ${name}`,
+      organizationId: ORGANIZATION_ID,
+      timezone: "UTC",
+    },
+    { protect: true }
+  );
+
 export const configurePostHog = () => {
   const config = new pulumi.Config();
   const posthogConfig = new pulumi.Config("posthog");
@@ -104,12 +122,12 @@ export const configurePostHog = () => {
         type: "cohort",
         value: INTERNAL_COHORT_ID,
       },
-      // dev.wovain.com and localhost.
+      // Any event not from production (APP_ENV, apps/web/.env.schema).
       {
         key: "environment",
         operator: "is_not",
         type: "event",
-        value: ["development"],
+        value: ["development", "next"],
       },
       // Headless and automated browsers (BotD).
       {

@@ -24,7 +24,10 @@ import type { RunServices } from "./run";
 // INNGEST_SIGNING_KEY from the environment; INNGEST_DEV=1 points it at the
 // local Dev Server (`npx inngest-cli dev`).
 
-export const INNGEST_APP_ID = "wovain";
+// The Inngest app id, one per environment (INNGEST_APP_ID, set per Cloud Run
+// service by infra/): each environment has its own Inngest keys too, so a
+// sync of one environment's /api/inngest never repoints another's app.
+export const DEFAULT_INNGEST_APP_ID = "wovain";
 
 // What Inngest sends when a function fails for good, after every retry:
 // the original trigger event rides along.
@@ -67,12 +70,15 @@ export const createMastra = ({
   });
 
 export const createRunEngine = ({
+  appId,
   cloudTrace,
   mastraFor,
   otlpEndpoint,
   services,
   storage,
 }: {
+  // The Inngest app id (INNGEST_APP_ID).
+  appId: string;
   // Export Mastra traces to Cloud Trace (on Google Cloud).
   cloudTrace: boolean;
   // Whether the merchant's runs go to this engine (the mastra-runs flag).
@@ -82,7 +88,7 @@ export const createRunEngine = ({
   services: RunServices;
   storage: PostgresStore;
 }) => {
-  const inngest = new Inngest({ id: INNGEST_APP_ID });
+  const inngest = new Inngest({ id: appId });
   const mastra = createMastra({
     cloudTrace,
     inngest,

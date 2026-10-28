@@ -41,6 +41,39 @@ export const secretWithValue = (
   return { secret, version };
 };
 
+// A Postgres instance for apps/web (packages/db), one per environment that
+// owns one. Public IP with no authorized networks: only the Cloud SQL Auth
+// Proxy reaches it, which Cloud Run's /cloudsql socket and `cloud-sql-proxy`
+// both use, authorized by IAM (roles/cloudsql.client).
+export const postgresInstance = (
+  logicalName: string,
+  name: string,
+  region: string,
+  opts: pulumi.CustomResourceOptions
+) =>
+  new gcp.sql.DatabaseInstance(
+    logicalName,
+    {
+      databaseVersion: "POSTGRES_18",
+      deletionProtection: true,
+      name,
+      region,
+      settings: {
+        availabilityType: "ZONAL",
+        backupConfiguration: { enabled: true, startTime: "07:00" },
+        deletionProtectionEnabled: true,
+        diskAutoresize: true,
+        diskSize: 10,
+        // Shared-core tiers need the Enterprise edition (Postgres 16+
+        // defaults to Enterprise Plus).
+        edition: "ENTERPRISE",
+        ipConfiguration: { ipv4Enabled: true, sslMode: "ENCRYPTED_ONLY" },
+        tier: "db-f1-micro",
+      },
+    },
+    opts
+  );
+
 interface ServiceArgs {
   // The Cloud Run service's own name.
   name: string;
@@ -60,6 +93,10 @@ interface ServiceArgs {
   memory?: string;
   // Extra CPU while an instance starts, for shorter cold starts.
   startupCpuBoost?: boolean;
+  // Pulumi leaves the whole revision template as it is live: no `pulumi up`
+  // rolls a new revision, so only a deploy changes what the service runs.
+  // For production while a judged release must not change (index.ts).
+  frozen?: boolean;
 }
 
 // Pulumi owns a service's settings; CI rolls out each image with `gcloud run
@@ -110,6 +147,7 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
         "clientVersion",
         "template.containers[0].image",
         "traffics",
+        ...(args.frozen === true ? ["template"] : []),
       ],
     }
   );
