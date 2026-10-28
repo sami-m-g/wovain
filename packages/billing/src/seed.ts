@@ -10,7 +10,9 @@
 //
 // A promo's code is random (or POLAR_PROMO_CODE_<ID>, e.g.
 // POLAR_PROMO_CODE_JUDGES_2026, when set) and is never printed: it goes to
-// Secret Manager as polar-promo-<id> in CI, else to .env.polar-promos.
+// Secret Manager as polar-promo-<id> in CI, else to .env.polar-promos. An
+// environment with its own POLAR_METADATA_KEY writes its own secrets
+// (environmentSecretId): `wovain:next` writes polar-promo-<id>-next.
 //
 // Node runs this file directly, so it imports only the SDKs, zod (through
 // catalog.ts), plans.ts and promos.ts.
@@ -54,6 +56,7 @@ import type { BillingCatalog } from "./catalog.ts";
 import {
   CREDIT_METER,
   PLAN_CODES,
+  environmentSecretId,
   POLAR_METADATA_KEY,
   POLAR_WEBHOOK_EVENTS,
 } from "./plans.ts";
@@ -533,9 +536,10 @@ const main = async () => {
   const webhookUrl = process.env["POLAR_WEBHOOK_URL"];
   if (webhookUrl !== undefined && webhookUrl !== "") {
     // Each environment's own secret, e.g. polar-webhook-secret-next
-    // (infra/dev.ts); production's by default.
+    // (infra/dev.ts); by default this environment's (environmentSecretId).
     const sink = sinkFor(
-      process.env["POLAR_WEBHOOK_SECRET_ID"] ?? "polar-webhook-secret",
+      process.env["POLAR_WEBHOOK_SECRET_ID"] ??
+        environmentSecretId("polar-webhook-secret"),
       process.env["POLAR_WEBHOOK_SECRET_OUT"] ?? ".env.polar-webhook"
     );
     const outcome = await ensureWebhook(polar, webhookUrl, sink);

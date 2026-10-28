@@ -28,6 +28,31 @@ export const POLAR_METADATA_KEY =
     ? DEFAULT_METADATA_KEY
     : metadataKey;
 
+const NOT_SECRET_ID_CHARACTERS = /[^\w-]+/gu;
+
+// A Secret Manager ID the seed writes (a promo's code, the webhook's signing
+// secret), per environment, so a seed never adds a version to another
+// environment's secret. Production's plain `wovain` key keeps the ID as it
+// is; another key adds its environment: `wovain:next` makes `<id>-next`.
+export const environmentSecretId = (
+  id: string,
+  key: string = POLAR_METADATA_KEY
+) => {
+  if (key === DEFAULT_METADATA_KEY) {
+    return id;
+  }
+  const prefix = `${DEFAULT_METADATA_KEY}:`;
+  const environment = (
+    key.startsWith(prefix) ? key.slice(prefix.length) : key
+  ).replaceAll(NOT_SECRET_ID_CHARACTERS, "-");
+  if (environment === "" || environment === "-") {
+    throw new Error(
+      `POLAR_METADATA_KEY ${key} names no environment for secret IDs`
+    );
+  }
+  return `${id}-${environment}`;
+};
+
 // Polar's usage meter: the sum of `credits` over `credits_used` events, one per
 // settled step (src/polar.ts ingests them).
 export const CREDIT_METER = {
