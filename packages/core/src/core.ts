@@ -125,14 +125,14 @@ export const createCore = (
       createArtist(call, { model: env.FAL_IMAGE_MODEL }),
     // The blank pickBlank falls back to (./fourthwall.ts).
     defaultCatalogProductId: env.FOURTHWALL_DEFAULT_PRODUCT_ID,
+    // Any fal model as a keyed submit and a free re-read (./fal.ts).
+    falJobs: (call: ToolCall) => createFalJobs(call),
     // fal on wovain's own key (FAL_KEY), a ToolCall the artist draws with;
     // undefined without the key.
     falKey:
       env.FAL_KEY === undefined || env.FAL_KEY === ""
         ? undefined
         : falKeyCall(env.FAL_KEY),
-    // Any fal model as a keyed submit and a free re-read (./fal.ts).
-    falJobs: (call: ToolCall) => createFalJobs(call),
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,

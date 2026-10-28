@@ -55,11 +55,7 @@ const DashboardLayout = async ({
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarOpen} style={RAIL_WIDTH}>
-        <AppSidebar
-          docsUrl={ENV.DOCS_URL}
-          drops={drops}
-          products={products}
-        />
+        <AppSidebar docsUrl={ENV.DOCS_URL} drops={drops} products={products} />
         {/* Session replays mask the merchant's text here (ph-mask): shop
             names, briefs, emails. Inputs are masked everywhere. */}
         <SidebarInset className="ph-mask outline-none" id="main" tabIndex={-1}>
