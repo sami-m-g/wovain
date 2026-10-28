@@ -36,6 +36,13 @@ const promoSchema = z.strictObject({
   audience: z.string().min(1),
   // Credits one redemption grants. They never expire, like a pack's.
   credits: credits.positive(),
+  // The only accounts that may redeem it, by email; absent means any
+  // merchant. A code for one shared account (the judges' demo login) is then
+  // worthless to anyone else who sees it.
+  emails: z
+    .array(z.email().transform((email) => email.toLowerCase()))
+    .min(1)
+    .optional(),
   // Off: the seed archives the product and deletes the discount, and the app
   // refuses the code.
   enabled: z.boolean(),

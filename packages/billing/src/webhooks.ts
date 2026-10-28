@@ -16,7 +16,7 @@ import {
 } from "./mirror";
 import { CREDIT_PACK_CODE, POLAR_METADATA_KEY, isPlanCode } from "./plans";
 import { ensureFreePlan } from "./polar";
-import { promoOfTag } from "./promos";
+import { promoAllows, promoOfTag } from "./promos";
 import { redeemSurface } from "./redeem";
 
 // Polar's webhooks, as the Better Auth plugin hands them over after checking
@@ -64,12 +64,39 @@ const creditsOf = (grant: Grant) => {
   };
 };
 
+// Why a promo grant brings no credits, if it doesn't.
+const promoBlocked = async (
+  db: Database,
+  {
+    grant,
+    grantId,
+    promoId,
+    userId,
+  }: NonNullable<ReturnType<typeof creditsOf>>,
+  email: string
+) => {
+  if (promoId === undefined) {
+    return;
+  }
+  // A promo that names its accounts credits no one else, whatever checkout
+  // brought it. The redeem endpoint already refuses them.
+  const promo = promoOfTag(grant.benefit.metadata[POLAR_METADATA_KEY]);
+  if (promo !== undefined && !promoAllows(promo, email)) {
+    return "not_allowed";
+  }
+  // One redemption per merchant per promo: a second one (two checkouts
+  // finished at once) brings no credits. Polar's per-customer limit should
+  // already have refused it.
+  if (await promoRedeemed(db, { exceptGrantId: grantId, promoId, userId })) {
+    return "already_redeemed";
+  }
+};
+
 const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
   const credits = creditsOf(grant);
-  if (
-    credits === undefined ||
-    (await merchantOf(db, credits.userId)) === undefined
-  ) {
+  const merchant =
+    credits === undefined ? undefined : await merchantOf(db, credits.userId);
+  if (credits === undefined || merchant === undefined) {
     return "skipped";
   }
   const { grant: data, ...ref } = credits;
@@ -84,18 +111,9 @@ const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
   }
   const units =
     data.properties.last_credited_units ?? data.benefit.properties.units;
-  // One redemption per merchant per promo: a second one (two checkouts
-  // finished at once) brings no credits. Polar's per-customer limit should
-  // already have refused it.
-  if (
-    ref.promoId !== undefined &&
-    (await promoRedeemed(db, {
-      exceptGrantId: ref.grantId,
-      promoId: ref.promoId,
-      userId: ref.userId,
-    }))
-  ) {
-    return "already_redeemed";
+  const blocked = await promoBlocked(db, credits, merchant.email);
+  if (blocked !== undefined) {
+    return blocked;
   }
   const applied = await applyGrant(db, { ...ref, periodKey, units });
   if (applied && ref.promoId !== undefined) {

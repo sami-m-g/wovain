@@ -40,3 +40,12 @@ export const promoPriceCents = (promo: Pick<Promo, "credits">) =>
 // Where the seed keeps a promo's code: a Secret Manager secret in CI, or a
 // line in a gitignored env file locally.
 export const promoSecretId = (id: string) => `polar-promo-${id}`;
+
+// Whether the account with this email may redeem the promo: any account
+// unless the promo names its accounts.
+export const promoAllows = (
+  promo: Pick<Promo, "emails">,
+  email: string | undefined
+) =>
+  promo.emails === undefined ||
+  (email !== undefined && promo.emails.includes(email.toLowerCase()));

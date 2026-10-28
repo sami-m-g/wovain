@@ -6,6 +6,17 @@
 
 Demo: _URL placeholder, to be added before submission_
 
+## Demo login
+
+Judges share one ready account on [next.wovain.com](https://next.wovain.com):
+
+1. Open https://next.wovain.com/login.
+2. Sign in with `judges@wovain.com` and the password in the Devpost testing instructions.
+3. You land on the overview. Its **Start here** checklist shows what's left: the brand is set, and the agent drafts only (hidden products, paused campaigns) within a $5 daily spend cap.
+4. On **Billing**, redeem the judges' code from the Devpost testing instructions if the credits aren't there yet. It works only on this account and covers about 17 full drops.
+
+The password and the code are never in this repository. The owner seeds the account with `pnpm --filter @wovain/auth seed:judges --env next` ([infra/README.md](infra/README.md#the-judges-demo-account-on-next-one-time-by-a-project-owner)).
+
 The seller flow runs on the website and in ChatGPT, both backed by one Next.js 16 app:
 
 Qloo + Tavily trends → designs → Nemotron judge and autopilot on Nebius Token Factory → approve → Fourthwall products → Meta ad variants → paused campaign.

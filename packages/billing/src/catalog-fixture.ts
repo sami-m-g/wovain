@@ -61,6 +61,17 @@ export const TEST_CATALOG = {
       name: "Launch 2027",
       startsAt: "2027-01-15T00:00:00Z",
     },
+    {
+      audience:
+        "The judges' shared demo account on next.wovain.com: the code is shared only in Devpost's private testing instructions.",
+      credits: 300,
+      emails: ["judges@wovain.com"],
+      enabled: true,
+      endsAt: "2026-12-31T23:59:59Z",
+      id: "judges-account-2026",
+      maxRedemptions: 1,
+      name: "Judges account 2026",
+    },
   ],
   redeemLimit: { attempts: 5, windowSeconds: 600 },
   runsPerMerchant: 2,

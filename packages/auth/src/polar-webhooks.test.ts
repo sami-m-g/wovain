@@ -366,3 +366,18 @@ it("gives a merchant a promo's credits only once, even from two orders", async (
   expect(await creditBalance(db, userId)).toMatchObject({ pack: 300 });
   expect(capture).toHaveBeenCalledOnce();
 });
+
+it("credits a promo that names its accounts to no one else", async () => {
+  const response = await deliver(
+    grantEvent("benefit_grant.created", {
+      code: "promo:judges-account-2026",
+      grantId: "grant_account_promo",
+      order: true,
+      rollover: true,
+      units: 300,
+    })
+  );
+  expect(response.status).toBe(200);
+  expect(await creditBalance(db, userId)).toMatchObject({ available: 0 });
+  expect(capture).not.toHaveBeenCalled();
+});
