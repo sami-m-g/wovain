@@ -20,4 +20,4 @@
 
 - [x] 3.1 Empty, loading and error states on each screen
 - [x] 3.2 Phone width, light and dark, keyboard and screen reader checks
-- [ ] 3.3 Open the PR linked to its GitHub issue; merge, then archive this change
+- [x] 3.3 Open the PR linked to its GitHub issue; merge, then archive this change

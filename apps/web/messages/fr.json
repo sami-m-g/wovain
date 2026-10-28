@@ -477,10 +477,12 @@
       "error": "Validez au moins un visuel.",
       "submit": "Créer les produits",
       "artAlt": "Visuel : {title}",
-      "shirtAlt": "Visuel sur un t-shirt : {title}",
+      "shirtAlt": "Visuel sur un t-shirt, tel que Fourthwall le génère : {title}",
       "viewShirt": "Sur un t-shirt",
       "viewFlat": "Visuel seul",
-      "viewLabel": "Vue du visuel"
+      "viewLabel": "Vue du visuel",
+      "mockupUnavailable": "Fourthwall n'a pas pu afficher ce visuel sur le t-shirt. Voici le visuel à plat.",
+      "mockupNotConnected": "Connectez Fourthwall pour voir ce visuel sur le t-shirt."
     },
     "products": {
       "title": "Publier les produits",

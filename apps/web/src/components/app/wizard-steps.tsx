@@ -352,6 +352,8 @@ const DesignCard = ({
         <DesignPreview
           artworkUrl={design.artworkUrl}
           dimmed={rejected}
+          mockupStatus={design.mockupStatus}
+          mockups={design.mockups}
           title={brief.title}
         />
         <CardHeader>

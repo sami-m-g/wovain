@@ -34,6 +34,7 @@ import { compensateRun, createProductCampaign } from "./campaigns";
 import { listConnections, requireFal, withProvider } from "./connections";
 import { decideDesign, generateDesign } from "./designs";
 import { once } from "./once";
+import { previewPlacement } from "./placements";
 import { createDesignProduct } from "./products";
 import { approvedDesigns, awaitApproval, eachSettled, finishRun } from "./runs";
 import { transitionErrors } from "./transitions";
@@ -254,7 +255,28 @@ describe("decideDesign", () => {
     expect(after?.status).toBe("running");
   });
 
-  it("refuses a second decision with a typed error", async () => {
+  it("answers a repeat of the same decision without resuming twice", async () => {
+    const { designId } = await seedRun(ctx.db);
+    const resume = vi.fn(async () => {
+      await Promise.resolve();
+    });
+    const actor = { ...ctx.actor, runs: engine(resume) };
+    const first = await decideDesign(actor, designId, {
+      approve: true,
+      by: "merchant",
+    });
+
+    const again = await decideDesign(actor, designId, {
+      approve: true,
+      by: "merchant",
+    });
+
+    expect(again.id).toBe(first.id);
+    expect(again.status).toBe("approved");
+    expect(resume).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a conflicting second decision with a typed error", async () => {
     const { designId } = await seedRun(ctx.db);
     const actor = { ...ctx.actor, runs: engine() };
     await decideDesign(actor, designId, { approve: true, by: "merchant" });
@@ -303,7 +325,7 @@ describe("decideDesign", () => {
 });
 
 // Fourthwall: the blank, the upload route, the preview, the offer.
-const fourthwall = () => {
+const fourthwall = (overrides: Record<string, Reply> = {}) => {
   let offers = 0;
   return fakeProvider({
     "confirm-image-upload": { url: "https://cdn.fourthwall.com/u/1.png" },
@@ -340,6 +362,7 @@ const fourthwall = () => {
       signedUrl: "https://upload.example.com/1",
       uploadId: "up_1",
     },
+    ...overrides,
   });
 };
 
@@ -376,6 +399,139 @@ describe("createDesignProduct", () => {
     expect(replayed.offerId).toBe("off_1");
     expect(shop.count("ecommerce_create-offers-from-designs")).toBe(1);
     vi.unstubAllGlobals();
+  });
+});
+
+const connectFourthwall = async (
+  db: Awaited<ReturnType<typeof setup>>["db"]
+) => {
+  await db.insert(connection).values({
+    provider: "fourthwall",
+    sealedTokens: "sealed",
+    userId: USER_ID,
+  });
+};
+
+// The seeded run's design, as generateDesign hands it to previewPlacement.
+const seededDesign = async (db: Awaited<ReturnType<typeof setup>>["db"]) => {
+  const { designId } = await seedRun(db, "running");
+  const [row] = await db.select().from(design).where(eq(design.id, designId));
+  if (row === undefined) {
+    throw new Error("seed failed");
+  }
+  return row;
+};
+
+describe("previewPlacement", () => {
+  const MOCKUP = "https://cdn.fourthwall.com/mock/front.png";
+
+  it("saves Fourthwall's mockups of the art on the blank's front, once", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => await Promise.resolve(new Response("png")))
+    );
+    const shop = fourthwall({
+      "ecommerce_generate-product-design-previews": {
+        results: [{ customizationId: "cus_1", images: [{ url: MOCKUP }] }],
+      },
+    });
+    const ctx = await setup({ fourthwall: shop.call });
+    await connectFourthwall(ctx.db);
+    const row = await seededDesign(ctx.db);
+
+    const previewed = await previewPlacement(ctx.actor, row);
+    const again = await previewPlacement(ctx.actor, previewed);
+
+    expect(previewed).toMatchObject({
+      mockupStatus: "ready",
+      mockups: [MOCKUP],
+    });
+    expect(again.mockups).toEqual([MOCKUP]);
+    expect(shop.count("ecommerce_generate-product-design-previews")).toBe(1);
+    expect(
+      shop.calls.find(
+        (item) => item.tool === "ecommerce_generate-product-design-previews"
+      )?.args
+    ).toEqual({
+      products: [
+        {
+          productId: "prd_tee",
+          regionNames: ["front"],
+          regionUrls: ["https://cdn.fourthwall.com/m/1.png"],
+        },
+      ],
+    });
+    const [saved] = await ctx.db
+      .select()
+      .from(design)
+      .where(eq(design.id, row.id));
+    expect(saved?.mockups).toEqual([MOCKUP]);
+    vi.unstubAllGlobals();
+  });
+
+  it("logs a failed preview at error level and keeps the design", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => await Promise.resolve(new Response("png")))
+    );
+    const errorLog = vi.spyOn(log, "error").mockImplementation(() => {});
+    const shop = fourthwall({
+      "ecommerce_generate-product-design-previews": () => {
+        throw new Error("region front not found");
+      },
+    });
+    const ctx = await setup({ fourthwall: shop.call });
+    await connectFourthwall(ctx.db);
+    const row = await seededDesign(ctx.db);
+
+    const previewed = await previewPlacement(ctx.actor, row);
+
+    expect(previewed).toMatchObject({ mockupStatus: "failed", mockups: [] });
+    expect(errorLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        design: expect.objectContaining({ id: row.id }),
+        error: expect.objectContaining({
+          code: "PLACEMENT_PREVIEW_FAILED",
+          message: expect.stringContaining("region front not found"),
+        }),
+      })
+    );
+    errorLog.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it("treats a preview with no mockups as failed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => await Promise.resolve(new Response("png")))
+    );
+    const errorLog = vi.spyOn(log, "error").mockImplementation(() => {});
+    const shop = fourthwall();
+    const ctx = await setup({ fourthwall: shop.call });
+    await connectFourthwall(ctx.db);
+
+    const previewed = await previewPlacement(
+      ctx.actor,
+      await seededDesign(ctx.db)
+    );
+
+    expect(previewed.mockupStatus).toBe("failed");
+    expect(errorLog).toHaveBeenCalledTimes(1);
+    errorLog.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it("asks to connect Fourthwall, without calling it, when there is no shop", async () => {
+    const shop = fourthwall();
+    const ctx = await setup({ fourthwall: shop.call });
+
+    const previewed = await previewPlacement(
+      ctx.actor,
+      await seededDesign(ctx.db)
+    );
+
+    expect(previewed.mockupStatus).toBe("not_connected");
+    expect(shop.calls).toHaveLength(0);
   });
 });
 

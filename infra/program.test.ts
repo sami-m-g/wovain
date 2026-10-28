@@ -85,6 +85,7 @@ test("the program registers every resource once, without throwing", async () => 
   for (const urn of [
     "github:index/repositoryRuleset:RepositoryRuleset::main",
     "github:index/repositoryEnvironment:RepositoryEnvironment::production",
+    "github:index/issueLabel:IssueLabel::dependencies",
     "github:index/actionsVariable:ActionsVariable::GCP_WORKLOAD_IDENTITY_PROVIDER",
     "github:index/actionsVariable:ActionsVariable::GCP_DEPLOY_SERVICE_ACCOUNT",
     "gcp:serviceaccount/iAMMember:IAMMember::deployer-from-github",
