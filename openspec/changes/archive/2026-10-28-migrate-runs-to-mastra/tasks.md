@@ -32,5 +32,5 @@ Design: `docs/adr/0001-durable-runs.md`, `docs/adr/0002-agent-quality.md`.
 
 ## 4. Ship
 
-- [ ] 4.1 Open the PR linked to its GitHub issue; update `docs/spec.md` in the same PR
-- [ ] 4.2 Merge, then archive this change
+- [x] 4.1 Open the PR linked to its GitHub issue; update `docs/spec.md` in the same PR
+- [x] 4.2 Merge, then archive this change

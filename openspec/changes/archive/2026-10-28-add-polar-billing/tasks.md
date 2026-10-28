@@ -17,7 +17,7 @@
 - [x] 3.1 `billing-paid-plans` flag (off): checkout refuses, paid products archived, pricing shows coming soon
 - [x] 3.2 Existing merchants get Free on first use
 - [x] 3.3 `polar:seed` writes the webhook secret to Secret Manager
-- [ ] 3.4 Swap the flag read onto the typed registry from !121
+- [x] 3.4 Swap the flag read onto the typed registry from !121
 
 ## 4. Before paid plans
 

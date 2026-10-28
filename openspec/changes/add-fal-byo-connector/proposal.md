@@ -1,6 +1,6 @@
 # Proposal
 
-PR: none yet. Status: in progress. Blocks `add-polar-billing` going live.
+Issue: https://github.com/sami-m-g/wovain/issues/42. PR: none yet. Status: in progress. Blocks `add-polar-billing` going live.
 
 ## Why
 
