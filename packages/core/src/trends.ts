@@ -517,7 +517,13 @@ export const createTrends = (
         const idea =
           found === undefined
             ? undefined
-            : ideaOf(theme, found, protectedNames, prices[index], feedback.weights);
+            : ideaOf(
+                theme,
+                found,
+                protectedNames,
+                prices[index],
+                feedback.weights
+              );
         if (idea === undefined) {
           return [];
         }
