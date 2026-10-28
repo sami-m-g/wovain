@@ -52,6 +52,57 @@ it("keeps one theme per Qloo tag spelling, highest affinity first", async () => 
   );
 });
 
+it("reads Qloo's demographics and an audience's affinity for brands", async () => {
+  const replies = [
+    {
+      results: {
+        demographics: [
+          {
+            entity_id: "B1",
+            query: {
+              age: { "24_and_younger": 0.28, "25_to_29": -0.04 },
+              gender: { female: 0.31, male: -0.31 },
+            },
+          },
+        ],
+      },
+    },
+    {
+      results: {
+        entities: [
+          { entity_id: "B1", name: "Supreme", query: { affinity: 0.92 } },
+        ],
+      },
+    },
+  ];
+  const fetchMock = vi.fn(
+    async () => await Promise.resolve(Response.json(replies.shift()))
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "k", baseURL: "https://qloo.example" });
+
+  expect(await qloo.demographicsOf(["B1"])).toEqual([
+    {
+      age: { "24_and_younger": 0.28, "25_to_29": -0.04 },
+      gender: { female: 0.31, male: -0.31 },
+      id: "B1",
+    },
+  ]);
+  expect(
+    await qloo.audienceAffinity(
+      "urn:audience:hobbies_and_interests:sneakerheads",
+      "urn:entity:brand",
+      ["B1"]
+    )
+  ).toEqual([0.92]);
+  const [first, second] = fetchMock.mock.calls as unknown as [[URL], [URL]];
+  expect(first[0].searchParams.get("filter.type")).toBe("urn:demographics");
+  expect(second[0].searchParams.get("signal.demographics.audiences")).toBe(
+    "urn:audience:hobbies_and_interests:sneakerheads"
+  );
+  expect(second[0].searchParams.get("filter.results.entities")).toBe("B1");
+});
+
 it("asks for entities and theme tags a shirt can use, not places", async () => {
   const replies = [
     { results: [{ entity_id: "E1", name: "Hiking Thru" }] },

@@ -19,6 +19,9 @@ export type SettingKey = (base: string) => string;
 // FAL_IMAGE_MODEL the fal endpoint that draws (`falImageModel`).
 export const sharedSettings = (config: pulumi.Config) => ({
   FAL_IMAGE_MODEL: config.require("falImageModel"),
+  // Meta's interest search for Qloo audience targeting
+  // (packages/core/src/meta-interests.ts).
+  META_GRAPH_URL: "https://graph.facebook.com/v24.0",
   NEBIUS_BASE_URL: "https://api.tokenfactory.nebius.com/v1/",
   NEMOTRON_MODEL: config.require("nemotronModel"),
   NEMOTRON_VISION_MODEL: config.require("nemotronVisionModel"),

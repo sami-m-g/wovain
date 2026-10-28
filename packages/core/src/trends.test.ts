@@ -65,7 +65,9 @@ const fakeTavily = () => {
   return { client: { search } satisfies TavilySearch, search };
 };
 
-const qlooWith = (tasteOf: Qloo["tasteOf"]): Qloo => ({ tasteOf });
+const qlooWith = (tasteOf: Qloo["tasteOf"]): Pick<Qloo, "tasteOf"> => ({
+  tasteOf,
+});
 const qlooDown = qlooWith(
   async () => await Promise.reject(new Error("Qloo is down"))
 );

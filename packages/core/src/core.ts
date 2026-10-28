@@ -4,6 +4,7 @@ import { createAgentKit } from "./agents";
 import { createArtist } from "./fal";
 import { createFlags } from "./flags";
 import type { FlagsConfig } from "./flags";
+import { createMetaInterests } from "./meta-interests";
 import { createModelRouter } from "./model-router";
 import type { ModelRouterConfig } from "./model-router";
 import { createNemotron } from "./nemotron";
@@ -31,6 +32,8 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   GUARDRAILS?: "off" | "on" | undefined;
   META_APP_ID?: string | undefined;
   META_APP_SECRET?: string | undefined;
+  // Meta's Graph API with its version, for interest search (./meta-interests).
+  META_GRAPH_URL: string;
   META_MCP_SCOPE: string;
   META_MCP_URL: string;
   NEBIUS_API_KEY?: string | undefined;
@@ -83,6 +86,10 @@ export const createCore = (
     visionModel: env.NEMOTRON_VISION_MODEL,
   });
   const nemotron = createNemotron(agents);
+  const qloo = createQloo({
+    apiKey: env.QLOO_API_KEY,
+    baseURL: env.QLOO_API_URL,
+  });
   return {
     // The Mastra agents and scorers, registered on the app's Mastra
     // instance; undefined without a Nebius key.
@@ -96,16 +103,24 @@ export const createCore = (
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
+    // Meta's interest search, with wovain's app token (./meta-interests).
+    metaInterests: createMetaInterests({
+      appId: env.META_APP_ID,
+      appSecret: env.META_APP_SECRET,
+      graphUrl: env.META_GRAPH_URL,
+    }),
     // The model ID, for analytics events (packages/api/src/flow).
     model: env.NEMOTRON_MODEL,
     // The Nemotron model per job (fast, default, reasoning, vision,
     // safety), from NEMOTRON_MODEL_* (./model-router.ts).
     models,
     nemotron,
+    // Qloo's Taste API (./qloo): trends, demographics and audiences.
+    qloo,
     sealer: createSealer(env.TOKEN_ENCRYPTION_KEY),
     trends: createTrends(
       tavilyClient(env.TAVILY_API_KEY),
-      createQloo({ apiKey: env.QLOO_API_KEY, baseURL: env.QLOO_API_URL }),
+      qloo,
       // Without a Nebius key, research themes fall back to design angles.
       agents === undefined ? undefined : nemotron
     ),

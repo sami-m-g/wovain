@@ -5,6 +5,7 @@ import { z } from "zod";
 import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
+import type { AudiencePersona, MetaTargeting } from "./targeting";
 import { findAll, findOne } from "./upstream";
 import type { ToolCall } from "./upstream";
 
@@ -28,10 +29,18 @@ export const copySchema = z.object({
 });
 export type AdCopy = z.infer<typeof copySchema>["variants"];
 
+const COPY_RULES =
+  "You write Meta ads for a print-on-demand t-shirt. Write 2 or 3 variants, each with a different angle, a headline under 40 characters and primary text under 250. No prices, no claims you can't back, no brand or celebrity names.";
+// With Qloo's audience (./targeting): who the ads reach, so the copy speaks
+// to them. The interests are Meta interest names, never printed.
+const PERSONA_RULES =
+  " The audience field says who the ads reach (ages, gender lean, Qloo audiences and interests): write in a voice and with references that land with them, without naming any brand, person or interest from it.";
+
 export const writeAdCopy = async (
   ask: Nemotron,
   product: { description: string; idea: string; title: string },
-  log?: Logger
+  log?: Logger,
+  audience?: AudiencePersona
 ): Promise<AdCopy> => {
   const { variants } = await ask({
     grounded: (reply) =>
@@ -40,10 +49,11 @@ export const writeAdCopy = async (
         .join("\n"),
     log,
     name: "ad_copy",
-    prompt: JSON.stringify(product),
+    prompt: JSON.stringify(
+      audience === undefined ? product : { ...product, audience }
+    ),
     schema: copySchema,
-    system:
-      "You write Meta ads for a print-on-demand t-shirt. Write 2 or 3 variants, each with a different angle, a headline under 40 characters and primary text under 250. No prices, no claims you can't back, no brand or celebrity names.",
+    system: audience === undefined ? COPY_RULES : COPY_RULES + PERSONA_RULES,
     temperature: 0.8,
   });
   return variants;
@@ -120,6 +130,9 @@ export interface CampaignPlan {
   // Stable across retries of one staging: it names every object, so an
   // object whose create got no answer can be found again on Meta.
   tag: string;
+  // Qloo's audience as Meta targeting (./targeting); countries only when
+  // unset. Its countries are the plan's.
+  targeting?: MetaTargeting | undefined;
 }
 
 export interface StagedCampaign {
@@ -252,7 +265,12 @@ export const stagePausedCampaign = async (
       ),
     async () => await findByName(meta, adAccountId, "campaign", campaignName)
   );
-  const adSetName = named("broad");
+  const targeting: MetaTargeting = {
+    ...plan.targeting,
+    geo_locations: { countries: plan.countries },
+  };
+  // "broad" keeps the name an earlier staging of the same plan used.
+  const adSetName = named(plan.targeting === undefined ? "broad" : "qloo");
   const adSetId = await once(
     "ad_set",
     async () =>
@@ -264,9 +282,7 @@ export const stagePausedCampaign = async (
           campaign_id: campaignId,
           destination_type: "WEBSITE",
           optimization_goal: "LINK_CLICKS",
-          targeting: JSON.stringify({
-            geo_locations: { countries: plan.countries },
-          }),
+          targeting: JSON.stringify(targeting),
         }),
         "ad_set_id"
       ),

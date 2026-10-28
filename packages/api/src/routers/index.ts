@@ -2,6 +2,7 @@ import type { RouterClient } from "@orpc/server";
 
 import { publicProcedure } from "../index";
 import { approvalsRouter, autonomyRouter } from "./approvals";
+import { targetingRouter } from "./audiences";
 import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
 import { insightsRouter } from "./insights";
@@ -27,6 +28,7 @@ export const appRouter = {
   models: modelsRouter,
   products: productsRouter,
   runs: runsRouter,
+  targeting: targetingRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;

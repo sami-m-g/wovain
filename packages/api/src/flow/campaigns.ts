@@ -13,6 +13,7 @@ import { log } from "evlog";
 import type { Actor } from "./actor";
 import { notReady } from "./actor";
 import { withAgentTrace } from "./agent-trace";
+import { audienceFor, qlooAudiencesOn } from "./audiences";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
 import { once } from "./once";
@@ -111,6 +112,21 @@ export const createProductCampaign = async (
   const linkUrl = live.productUrl;
   const source = await getDesign(actor, live.designId);
   const { runId } = source;
+  // Qloo's audience as the ad set's targeting and the copy's persona, kept
+  // with the key so a retry stages the same ad set (./audiences).
+  const audience = (await qlooAudiencesOn(actor))
+    ? await once(actor, {
+        key: `${key}:audience`,
+        operation: "audience",
+        perform: async () =>
+          await audienceFor(actor, {
+            countries: input.countries,
+            runId: runId ?? undefined,
+          }),
+        provider: "meta",
+        runId,
+      })
+    : undefined;
   // The copy is kept with the key too: a retry stages the same ads.
   const copy = await once(actor, {
     key: `${key}:copy`,
@@ -132,7 +148,8 @@ export const createProductCampaign = async (
                   idea: source.brief.artPrompt,
                   title: source.brief.title,
                 },
-                actor.log
+                actor.log,
+                audience?.persona
               )
           )
       ),
@@ -173,6 +190,7 @@ export const createProductCampaign = async (
           pageId: input.pageId,
           // Short and stable: it ends every object's name on Meta.
           tag: `w-${live.id.slice(0, 8)}`,
+          targeting: audience?.targeting,
         },
         metaOnce
       )
