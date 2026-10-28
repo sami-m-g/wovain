@@ -31,7 +31,7 @@ The GitLab project is archived and read-only, so Pulumi must never try to change
 
 A preview runs on a copy of the state in a throwaway local backend, with those changes applied to the copy, so it never writes the real state and shows exactly what `up` will do. Only `up` changes the real state.
 
-Everything else `policy/retired.ts` lists is released in code: `legacy.ts` declares it without `protect` or `retainOnDelete`, and adopts with `import` what Pulumi never managed (Firebase's Admin SDK account and its roles, the default compute account's Editor role, App Hosting's Cloud Run service and image repository, and Vercel's `Preview` GitHub environment). The policy pack lets those be unprotected, and the guard lets a plan delete them. Once an `up` has written that to the state, the follow-up pull request removes the declarations, and its `up` deletes them.
+Everything else `policy/retired.ts` lists is released in code: `legacy.ts` declares it without `protect` or `retainOnDelete`, and adopts with `import` what Pulumi never managed (Firebase's Admin SDK account and its roles, the default compute account's Editor role, App Hosting's Cloud Run service and image repository, and Vercel's `Preview` GitHub environment). The policy pack lets those be unprotected, and the guard lets a plan delete them. Once an `up` had written that to the state, the follow-up pull request removed the declarations (`retired.ts` marks them `deleted`), and its `up` deleted them.
 
 Apply `bootstrap` before `prod`:
 

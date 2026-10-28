@@ -573,7 +573,7 @@ new gcp.billing.Budget(
   afterApis
 );
 
-retainLegacy({ project, projectNumber, region });
+retainLegacy({ project });
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
