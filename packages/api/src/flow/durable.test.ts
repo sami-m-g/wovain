@@ -103,6 +103,7 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
     ],
   });
   const core = {
+    defaultCatalogProductId: "pro_default",
     nemotron: ask,
     upstream: {
       session: async (

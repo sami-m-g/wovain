@@ -9,9 +9,7 @@ import { HangTag } from "@/components/product/hang-tag";
 import { AppToaster } from "@/components/toaster";
 import { enterLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { priceBreakdown } from "@/lib/pricing";
-
-const EXAMPLE_BASE_COST = 12;
+import { exampleTee } from "@/lib/pricing";
 
 const AuthAside = async () => {
   const t = await getTranslations("Auth");
@@ -19,7 +17,7 @@ const AuthAside = async () => {
   const format = await getFormatter();
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
-  const tag = priceBreakdown(EXAMPLE_BASE_COST);
+  const tag = exampleTee();
   return (
     <aside className="bg-muted border-border relative hidden flex-col justify-between gap-12 overflow-hidden border-s p-12 lg:sticky lg:top-0 lg:flex lg:h-svh">
       <div className="flex max-w-md flex-col gap-4">

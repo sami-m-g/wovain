@@ -305,6 +305,61 @@ const sharedEnvs = {
   QLOO_API_URL: "https://hackathon.api.qloo.com",
 };
 
+// apps/web's per-environment settings (apps/web/.env.schema gives none a
+// default), from this stack's config: production's under plain keys, and
+// dev's and next's under `<key>-<name>` (`pulumi config set
+// emailFrom-next ...`), never shared with production's. The JSON ones are
+// objects. Each service gets them at runtime and each GitHub environment's
+// image build through its WEB_BUILD_ENV variable.
+const appSettings = (name?: "dev" | "next") => {
+  const key = (base: string) => (name === undefined ? base : `${base}-${name}`);
+  const plain = Object.fromEntries(
+    Object.entries({
+      DOCS_URL: "docsUrl",
+      EMAIL_FROM: "emailFrom",
+      FAL_MCP_URL: "falMcpUrl",
+      FOURTHWALL_DEFAULT_PRODUCT_ID: "fourthwallDefaultProductId",
+      FOURTHWALL_MCP_URL: "fourthwallMcpUrl",
+      GUARDRAIL_INJECTION_THRESHOLD: "guardrailInjectionThreshold",
+      GUARDRAIL_MODERATION_THRESHOLD: "guardrailModerationThreshold",
+      GUARDRAIL_PII_THRESHOLD: "guardrailPiiThreshold",
+      META_MCP_SCOPE: "metaMcpScope",
+      META_MCP_URL: "metaMcpUrl",
+      NEMOTRON_INPUT_PRICE: "nemotronInputPrice",
+      NEMOTRON_OUTPUT_PRICE: "nemotronOutputPrice",
+      PRIVACY_EMAIL: "privacyEmail",
+      SUPPORT_EMAIL: "supportEmail",
+    }).map(([env, base]) => [env, config.require(key(base))])
+  );
+  return {
+    ...plain,
+    BILLING_CATALOG: JSON.stringify(
+      config.requireObject(key("billingCatalog"))
+    ),
+    MCP_WIDGET_RESOURCE_DOMAINS: config
+      .requireObject<string[]>(key("mcpWidgetResourceDomains"))
+      .join(","),
+    PRICING_RULES: JSON.stringify(config.requireObject(key("pricingRules"))),
+  } as Record<string, string>;
+};
+const settingEnvs = (settings: Record<string, string>) =>
+  Object.entries(settings).map(([name, value]) => ({ name, value }));
+// An image build's env file (.github/workflows/deploy.yml): Varlock reads
+// backquoted values as is, apart from escapes, so none may hold a backquote
+// or a backslash.
+const buildEnv = (settings: Record<string, string>, mcp: string) =>
+  Object.entries({ ...settings, MCP_URL: mcp })
+    .map(([name, value]) => {
+      if (/[`\\]/u.test(value)) {
+        throw new Error(`${name} can't hold a backquote or a backslash`);
+      }
+      return `${name}=\`${value}\``;
+    })
+    .join("\n");
+const prodSettings = appSettings();
+const devSettings = appSettings("dev");
+const nextSettings = appSettings("next");
+
 // PostHog product analytics (apps/web/.env.schema, which has no default):
 // production's public project token (`pulumi config set posthogKey phc_...`),
 // at runtime and, through the `Production` environment's
@@ -327,7 +382,7 @@ const googleEnv =
 
 // Polar's environment (apps/web/.env.schema): sandbox until the business
 // is registered (`pulumi config set polarEnvironment production`).
-const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
+const polarEnvironment = config.require("polarEnvironment");
 
 // Production runs release/transcend (docs/adr/0004-release-branch.md), the
 // build judges saw at the Transcend deadline, until winners are announced
@@ -347,6 +402,7 @@ const service = cloudRunService("web", {
   envs: [
     { name: "APP_ENV", value: "production" },
     { name: "BETTER_AUTH_URL", value: siteUrl },
+    ...settingEnvs(prodSettings),
     { name: "INNGEST_APP_ID", value: "wovain" },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
     { name: "NEMOTRON_MODEL", value: sharedEnvs.NEMOTRON_MODEL },
@@ -442,7 +498,7 @@ const resendDomain =
     : new ResendDomain("resend", {
         apiKey: resendApiKey,
         name: domain,
-        region: config.get("resendRegion") ?? "us-east-1",
+        region: config.require("resendRegion"),
       });
 
 // The provider secrets every other environment holds its own of
@@ -518,7 +574,10 @@ const devPostHog = environmentProject("dev");
 const dev = appEnvironment({
   afterApis,
   deploy: { githubEnvironment: "dev", pool },
-  envs: environmentEnvs("dev", "development", devPostHog.apiToken),
+  envs: [
+    ...environmentEnvs("dev", "development", devPostHog.apiToken),
+    ...settingEnvs(devSettings),
+  ],
   kept,
   name: "dev",
   project,
@@ -537,7 +596,10 @@ const nextPostHog = environmentProject("next");
 const next = appEnvironment({
   afterApis,
   deploy: { githubEnvironment: "next", pool },
-  envs: environmentEnvs("next", "next", nextPostHog.apiToken),
+  envs: [
+    ...environmentEnvs("next", "next", nextPostHog.apiToken),
+    ...settingEnvs(nextSettings),
+  ],
   kept,
   name: "next",
   project,
@@ -559,10 +621,7 @@ const site = configureDomain({
   // show every record it feeds as changed (adding an unrelated API did).
   after: [api.dns, api.run, api.siteverification],
   apex: domain,
-  caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
-    "pki.goog",
-    "letsencrypt.org",
-  ],
+  caaIssuers: config.requireObject<string[]>("caaIssuers"),
   dmarcRua: config.get("dmarcRua"),
   googleDkim: config.get("googleDkim"),
   googleSiteVerification: config.get("googleSiteVerification"),
@@ -694,6 +753,7 @@ githubRepository({
       GCP_SQL_INSTANCE: dev.sql.connectionName,
       NEXT_PUBLIC_POSTHOG_KEY: devPostHog.apiToken,
       SITE_URL: devUrl,
+      WEB_BUILD_ENV: buildEnv(devSettings, `${devUrl}/api/mcp`),
       WEB_SERVICE: dev.service.name,
     },
     next: {
@@ -703,6 +763,7 @@ githubRepository({
       GCP_SQL_INSTANCE: next.sql.connectionName,
       NEXT_PUBLIC_POSTHOG_KEY: nextPostHog.apiToken,
       SITE_URL: nextUrl,
+      WEB_BUILD_ENV: buildEnv(nextSettings, `${nextUrl}/api/mcp`),
       WEB_SERVICE: next.service.name,
     },
     production: {
@@ -712,6 +773,7 @@ githubRepository({
       GCP_IMAGE_REPOSITORY: imageRepository,
       GCP_SQL_INSTANCE: sql.connectionName,
       SITE_URL: siteUrl,
+      WEB_BUILD_ENV: buildEnv(prodSettings, mcpUrl),
       WEB_SERVICE: service.name,
       ...(posthogKey === undefined
         ? {}

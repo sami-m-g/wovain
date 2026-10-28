@@ -23,11 +23,9 @@ import type { AnyScorer } from "./scorers";
 // The models are NEMOTRON_MODEL and NEMOTRON_VISION_MODEL (the judge's eyes,
 // which read the drawn artwork in ./design inspectArtwork) in
 // apps/web/.env.schema, set per environment through Pulumi config
-// (infra/index.ts).
-// Nebius Token Factory's list price, USD per token ($0.30 and $0.90 per 1M),
-// the same for nvidia/Nemotron-3.5-Super-VL and the Nemotron 3 Super it
-// replaces.
-const PRICE = { input: 0.3e-6, output: 0.9e-6 } as const;
+// (infra/index.ts). Their list price is NEMOTRON_INPUT_PRICE and
+// NEMOTRON_OUTPUT_PRICE (AgentKitConfig.pricePerMillion).
+const TOKENS_PER_MILLION = 1_000_000;
 
 export const AGENT_IDS = [
   "design_brief",
@@ -58,6 +56,8 @@ export interface AgentKitConfig {
   environment: string;
   // Guardrails on model inputs and outputs; on unless turned off.
   guardrails?: boolean | undefined;
+  // The guardrails' block thresholds, 0 to 1 (GUARDRAIL_*_THRESHOLD).
+  guardThresholds: { injection: number; moderation: number; pii: number };
   // Brand and taste memory per merchant; none without storage.
   memory?: Memory | undefined;
   // The Nebius model ID every agent, scorer and guardrail calls.
@@ -66,23 +66,26 @@ export interface AgentKitConfig {
   visionModel: string;
   posthogHost: string;
   posthogKey?: string | undefined;
+  // The model's list price, USD per million tokens (NEMOTRON_*_PRICE), for
+  // PostHog's LLM cost.
+  pricePerMillion: { input: number; output: number };
   // Share of live calls the scorers judge (0 to 1).
   scoreSampleRate?: number | undefined;
 }
 
 const HTTPS_URL = /^https:\/\/.+$/u;
 
-const GUARD_THRESHOLD = { injection: 0.8, moderation: 0.7, pii: 0.7 };
-
 export const createAgentKit = ({
   apiKey,
   baseURL,
   environment,
   guardrails = true,
+  guardThresholds,
   memory,
   model,
   posthogHost,
   posthogKey,
+  pricePerMillion,
   scoreSampleRate = 0.1,
   visionModel,
 }: AgentKitConfig): AgentKit | undefined => {
@@ -122,8 +125,8 @@ export const createAgentKit = ({
         // Cloud Run throttles CPU after the response: send it now.
         posthogCaptureImmediate: true,
         posthogCostOverride: {
-          inputCost: PRICE.input,
-          outputCost: PRICE.output,
+          inputCost: pricePerMillion.input / TOKENS_PER_MILLION,
+          outputCost: pricePerMillion.output / TOKENS_PER_MILLION,
         },
         posthogProperties: { $ai_span_name: span, environment },
         ...(typeof distinctId === "string" && {
@@ -140,17 +143,17 @@ export const createAgentKit = ({
     injection: new PromptInjectionDetector({
       model: base,
       strategy: "block",
-      threshold: GUARD_THRESHOLD.injection,
+      threshold: guardThresholds.injection,
     }),
     moderation: new ModerationProcessor({
       model: base,
       strategy: "block",
-      threshold: GUARD_THRESHOLD.moderation,
+      threshold: guardThresholds.moderation,
     }),
     pii: new PIIDetector({
       model: base,
       strategy: "block",
-      threshold: GUARD_THRESHOLD.pii,
+      threshold: guardThresholds.pii,
     }),
   };
   const guardsFor = (id: AgentId) => {

@@ -1,4 +1,5 @@
 import { init } from "@mastra/inngest";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { withLlmTrace } from "@wovain/core/nemotron";
 import { stepScorers } from "@wovain/core/step-scorers";
 import { NonRetriableError } from "inngest";
@@ -82,7 +83,6 @@ const RETRY_DELAY_MS = 5000;
 // Inngest re-invokes the whole function (memoized steps skip) with its own
 // exponential backoff when an invocation dies: a crash, a timeout, a deploy.
 const FUNCTION_RETRIES = 4;
-const RUNS_PER_MERCHANT = 2;
 const CLIENT_ERROR = 400;
 const SERVER_ERROR = 500;
 
@@ -268,7 +268,10 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   return (
     createWorkflow({
       // One merchant can't flood the queue; others' runs go on.
-      concurrency: { key: "event.data.resourceId", limit: RUNS_PER_MERCHANT },
+      concurrency: {
+        key: "event.data.resourceId",
+        limit: billingCatalog().runsPerMerchant,
+      },
       id: RUN_WORKFLOW_ID,
       inputSchema: trigger,
       options: {

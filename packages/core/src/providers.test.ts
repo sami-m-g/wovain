@@ -4,7 +4,6 @@ import { stagePausedCampaign } from "./ads";
 import { createArtist } from "./fal";
 import {
   createProduct,
-  DEFAULT_CATALOG_PRODUCT_ID,
   pickBlank,
   publishProduct,
   searchCatalog,
@@ -300,6 +299,7 @@ const sequence = (replies: unknown[]) => {
 };
 
 describe("pickBlank", () => {
+  const DEFAULT_PRODUCT_ID = "pro_default";
   const tee = {
     id: "prd_tee",
     name: "Tee",
@@ -315,22 +315,32 @@ describe("pickBlank", () => {
 
   it("retries an empty reply", async () => {
     const { call, calls } = sequence([empty, { data: [tee] }]);
-    const blank = await pickBlank(call, { retryMs: 0 });
+    const blank = await pickBlank(call, {
+      defaultProductId: DEFAULT_PRODUCT_ID,
+      retryMs: 0,
+    });
     expect(blank.id).toBe("prd_tee");
     expect(calls).toHaveLength(2);
   });
 
   it("falls back to the default blank when the search stays empty", async () => {
     const { call, calls } = sequence([empty, empty, empty, { data: [tee] }]);
-    const blank = await pickBlank(call, { retryMs: 0 });
+    const blank = await pickBlank(call, {
+      defaultProductId: DEFAULT_PRODUCT_ID,
+      retryMs: 0,
+    });
     expect(blank.id).toBe("prd_tee");
-    expect(calls.at(-1)?.productIds).toEqual([DEFAULT_CATALOG_PRODUCT_ID]);
+    expect(calls.at(-1)?.productIds).toEqual([DEFAULT_PRODUCT_ID]);
   });
 
   it("names what Fourthwall answered when nothing can print", async () => {
     const { call } = sequence(["no.", "no.", "no."]);
     await expect(
-      pickBlank(call, { productId: "prd_x", retryMs: 0 })
+      pickBlank(call, {
+        defaultProductId: DEFAULT_PRODUCT_ID,
+        productId: "prd_x",
+        retryMs: 0,
+      })
     ).rejects.toMatchObject({
       code: "FOURTHWALL_NO_BLANK",
       message: "That Fourthwall product can't print this design",

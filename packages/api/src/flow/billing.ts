@@ -1,6 +1,6 @@
+import { billingCatalog } from "@wovain/billing/catalog";
 import { creditBalance } from "@wovain/billing/credits";
 import { entitlement } from "@wovain/billing/mirror";
-import { PLANS } from "@wovain/billing/plans";
 import type { Offer } from "@wovain/billing/plans";
 import { checkoutUrl, portalUrl } from "@wovain/billing/polar";
 import type { Billing } from "@wovain/billing/service";
@@ -49,7 +49,7 @@ export const billingStatus = async (actor: Actor) => {
   const current = await entitlement(actor.db, actor.userId);
   const { subscription } = current;
   return {
-    autopilot: PLANS[current.plan].autopilot,
+    autopilot: billingCatalog().plans[current.plan].autopilot,
     credits: await creditBalance(actor.db, actor.userId),
     enabled: polar !== undefined,
     paidPlans: await actor.billing.paidPlans(),

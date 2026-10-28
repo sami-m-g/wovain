@@ -3,6 +3,7 @@ import { creditReservation } from "@wovain/db/schema/billing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 
+import { billingCatalog } from "../src/catalog";
 import {
   creditBalance,
   releaseCredits,
@@ -10,7 +11,6 @@ import {
   settleCredits,
 } from "../src/credits";
 import { applyGrant, revokeGrant } from "../src/mirror";
-import { CREDIT_COST } from "../src/plans";
 import { addUser, createTestDb, ledgerTotals } from "../src/testing";
 
 let db: Database;
@@ -60,7 +60,7 @@ it("has no credits until Polar grants some", async () => {
   const held = await reserveCredits(db, { step: "research", userId });
   expect(held).toStrictEqual({
     available: 0,
-    needed: CREDIT_COST.research,
+    needed: billingCatalog().creditCost.research,
     ok: false,
   });
 });
@@ -74,7 +74,7 @@ it("reserves a step's credits and settles them once", async () => {
     return;
   }
   expect(await settleCredits(db, held.id)).toMatchObject({
-    credits: CREDIT_COST.research,
+    credits: billingCatalog().creditCost.research,
     step: "research",
     userId,
   });
@@ -91,7 +91,9 @@ it("gives a failed step's credits back, once", async () => {
   if (!held.ok) {
     throw new Error("expected a reservation");
   }
-  expect(await releaseCredits(db, held.id)).toBe(CREDIT_COST.design);
+  expect(await releaseCredits(db, held.id)).toBe(
+    billingCatalog().creditCost.design
+  );
   expect(await releaseCredits(db, held.id)).toBe(0);
   expect(await creditBalance(db, userId)).toMatchObject({ available: 15 });
   const [row] = await db

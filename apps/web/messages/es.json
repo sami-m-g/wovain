@@ -251,7 +251,7 @@
       "processorsTitle": "Quién los procesa",
       "processorsBody": "Los briefs y diseños se envían a los servicios que hacen el trabajo: Nebius, Qloo, Tavily, fal, Fourthwall y Meta. Cada uno los trata según su propia política.",
       "deleteTitle": "Eliminar tus datos",
-      "deleteBody": "Escribe a privacy@wovain.com desde la dirección de tu cuenta y eliminaremos tu cuenta, tus ejecuciones y tus conexiones en un plazo de 30 días."
+      "deleteBody": "Escribe a {privacyEmail} desde la dirección de tu cuenta y eliminaremos tu cuenta, tus ejecuciones y tus conexiones en un plazo de 30 días."
     },
     "terms": {
       "title": "Términos",
@@ -263,7 +263,7 @@
       "spendTitle": "Anuncios y gasto",
       "spendBody": "Las campañas se crean en pausa. El gasto en anuncios solo empieza cuando activas una campaña en Meta, que lo factura a tu cuenta publicitaria.",
       "contactTitle": "Contacto",
-      "contactBody": "Las preguntas sobre estos términos van a support@wovain.com."
+      "contactBody": "Las preguntas sobre estos términos van a {supportEmail}."
     }
   },
   "Auth": {

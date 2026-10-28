@@ -251,7 +251,7 @@
       "processorsTitle": "Qui traite vos données",
       "processorsBody": "Les briefs et visuels sont envoyés aux services qui font le travail : Nebius, Qloo, Tavily, fal, Fourthwall et Meta. Chacun les traite selon sa propre politique.",
       "deleteTitle": "Supprimer vos données",
-      "deleteBody": "Écrivez à privacy@wovain.com depuis l'adresse de votre compte : nous supprimons votre compte, vos exécutions et vos connexions sous 30 jours."
+      "deleteBody": "Écrivez à {privacyEmail} depuis l'adresse de votre compte : nous supprimons votre compte, vos exécutions et vos connexions sous 30 jours."
     },
     "terms": {
       "title": "Conditions",
@@ -263,7 +263,7 @@
       "spendTitle": "Publicités et dépenses",
       "spendBody": "Les campagnes sont créées en pause. Aucune dépense publicitaire ne commence avant que vous activiez une campagne dans Meta, qui la facture à votre compte publicitaire.",
       "contactTitle": "Contact",
-      "contactBody": "Pour toute question sur ces conditions, écrivez à support@wovain.com."
+      "contactBody": "Pour toute question sur ces conditions, écrivez à {supportEmail}."
     }
   },
   "Auth": {

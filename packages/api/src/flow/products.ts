@@ -8,7 +8,7 @@ import {
   setOfferPrice,
   uploadArtwork,
 } from "@wovain/core/fourthwall";
-import { DEFAULT_BASE_COST, priceFor } from "@wovain/core/pricing";
+import { priceFor, pricingRules } from "@wovain/core/pricing";
 import { product } from "@wovain/db/schema/seller";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -64,10 +64,12 @@ export const createDesignProduct = async (
   }
   const write = { runId: approved.runId };
   const created = await withProvider(actor, "fourthwall", async (call) => {
-    const blank = await pickBlank(
-      call,
-      catalogProductId === undefined ? {} : { productId: catalogProductId }
-    );
+    const blank = await pickBlank(call, {
+      defaultProductId: actor.core.defaultCatalogProductId,
+      ...(catalogProductId === undefined
+        ? {}
+        : { productId: catalogProductId }),
+    });
     // A second upload only adds a copy to the media library, but keying it
     // keeps the product on the first one.
     const mediaUri = await once(actor, {
@@ -112,7 +114,7 @@ export const createDesignProduct = async (
           title,
         }),
     });
-    const price = priceFor(blank.baseCost ?? DEFAULT_BASE_COST);
+    const price = priceFor(blank.baseCost ?? pricingRules().defaultBaseCost);
     await setOfferPrice(call, offerId, price);
     return {
       ...preview,

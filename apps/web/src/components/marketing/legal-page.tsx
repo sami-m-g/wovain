@@ -1,5 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { ENV } from "@/env.server";
+
 const LAST_UPDATED = new Date("2026-10-26T00:00:00.000Z");
 
 const DOCS = {
@@ -30,6 +32,11 @@ export const LegalPage = async ({ doc }: { doc: keyof typeof DOCS }) => {
   const t = await getTranslations("Legal");
   const format = await getFormatter();
   const { title, intro, sections } = DOCS[doc];
+  // The addresses some sections name (PRIVACY_EMAIL, SUPPORT_EMAIL).
+  const contacts = {
+    privacyEmail: ENV.PRIVACY_EMAIL,
+    supportEmail: ENV.SUPPORT_EMAIL,
+  };
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:py-24">
@@ -46,7 +53,7 @@ export const LegalPage = async ({ doc }: { doc: keyof typeof DOCS }) => {
             {t(heading)}
           </h2>
           <p className="text-muted-foreground mt-3 max-w-[65ch] leading-relaxed">
-            {t(body)}
+            {t(body, contacts)}
           </p>
         </section>
       ))}

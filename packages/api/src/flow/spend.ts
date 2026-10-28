@@ -1,10 +1,10 @@
+import { billingCatalog } from "@wovain/billing/catalog";
 import {
   releaseCredits,
   reserveCredits,
   settleCredits,
 } from "@wovain/billing/credits";
 import { entitlement } from "@wovain/billing/mirror";
-import { CREDIT_COST, PLANS } from "@wovain/billing/plans";
 import type { CreditStep } from "@wovain/billing/plans";
 import { reportUsage } from "@wovain/billing/polar";
 import { refusalError } from "@wovain/billing/refusals";
@@ -38,11 +38,12 @@ const merchantOf = async ({ db, userId }: Actor) => {
 // step (a run's research). The step itself still reserves its credits.
 export const assertCredits = async (actor: Actor, step: CreditStep) => {
   const merchant = await merchantOf(actor);
-  const available = await awaitFreeCredits(actor, CREDIT_COST[step]);
-  if (available < CREDIT_COST[step]) {
+  const needed = billingCatalog().creditCost[step];
+  const available = await awaitFreeCredits(actor, needed);
+  if (available < needed) {
     throw refusalError("out_of_credits", merchant.locale, {
       available,
-      needed: CREDIT_COST[step],
+      needed,
       paid: await actor.billing.paidPlans(),
     });
   }
@@ -52,7 +53,7 @@ export const assertCredits = async (actor: Actor, step: CreditStep) => {
 export const assertAutopilot = async (actor: Actor) => {
   const merchant = await merchantOf(actor);
   const { plan } = await entitlement(actor.db, actor.userId);
-  if (!PLANS[plan].autopilot) {
+  if (!billingCatalog().plans[plan].autopilot) {
     throw refusalError("plan_required", merchant.locale, {
       paid: await actor.billing.paidPlans(),
     });

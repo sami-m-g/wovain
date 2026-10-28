@@ -36,7 +36,9 @@ const renderMockups = async (actor: Actor, row: DesignRow) =>
   await withProvider(actor, "fourthwall", async (call) => {
     const key = `placement:${row.id}`;
     const write = { provider: "fourthwall" as const, runId: row.runId };
-    const blank = await pickBlank(call);
+    const blank = await pickBlank(call, {
+      defaultProductId: actor.core.defaultCatalogProductId,
+    });
     const mediaUri = await once(actor, {
       ...write,
       key: `${key}:media`,

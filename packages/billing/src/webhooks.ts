@@ -3,6 +3,7 @@ import type { Database } from "@wovain/db";
 
 import { usd } from "./analytics";
 import type { BillingAnalytics } from "./analytics";
+import { billingCatalog } from "./catalog";
 import { subscriptionEvents } from "./kpis";
 import {
   applyGrant,
@@ -13,7 +14,7 @@ import {
   storedSubscription,
   upsertSubscription,
 } from "./mirror";
-import { CREDIT_PACK, POLAR_METADATA_KEY, isPlanCode } from "./plans";
+import { CREDIT_PACK_CODE, POLAR_METADATA_KEY, isPlanCode } from "./plans";
 import { ensureFreePlan } from "./polar";
 import { promoOfTag } from "./promos";
 import { redeemSurface } from "./redeem";
@@ -56,7 +57,7 @@ const creditsOf = (grant: Grant) => {
     promoId: promo?.id,
     rollover: grant.benefit.properties.rollover,
     source:
-      code === "pack" || promo !== undefined
+      code === CREDIT_PACK_CODE || promo !== undefined
         ? ("pack" as const)
         : ("plan" as const),
     userId,
@@ -116,9 +117,9 @@ const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
       distinctId: ref.userId,
       event: "credits_purchased",
       properties: {
-        amount_usd: usd(CREDIT_PACK.priceCents),
+        amount_usd: usd(billingCatalog().creditPack.priceCents),
         credits: units,
-        pack: CREDIT_PACK.code,
+        pack: CREDIT_PACK_CODE,
       },
     });
   }

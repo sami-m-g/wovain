@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import { contentMetadata, ogImages } from "@/lib/seo";
 
 vi.mock("@/env.server", () => ({
-  ENV: { BETTER_AUTH_URL: "https://wovain.com", MCP_URL: undefined },
+  ENV: {
+    BETTER_AUTH_URL: "https://wovain.com",
+    MCP_URL: "https://mcp.wovain.com/api/mcp",
+  },
 }));
 vi.mock("@/i18n/navigation", () => ({
   getPathname: ({ href, locale }: { href: string; locale: string }) =>

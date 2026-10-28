@@ -1,4 +1,4 @@
-import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { pickIdea } from "@wovain/core/autopilot";
 import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
@@ -26,7 +26,7 @@ import { runNotAtIdeas, runNotWaiting } from "./transitions";
 // merchant approves ideas ("See designs"), then draws one design for each
 // approved idea and no other; it waits at the approval gate until every
 // design is decided, then lists each approved one. With autopilot, Nemotron
-// picks the lead idea, the run draws the top ideas (DESIGNS_PER_RUN) and
+// picks the lead idea, the run draws the top ideas (BILLING_CATALOG's designsPerRun) and
 // Nemotron decides each design.
 
 const ACTIVE: RunStatus[] = ["running", "awaiting_approval"];
@@ -109,7 +109,7 @@ export const researchStep = async (
   return {
     ideaIds: [lead, ...ranked.filter((id) => id !== lead)].slice(
       0,
-      DESIGNS_PER_RUN
+      billingCatalog().designsPerRun
     ),
   };
 };

@@ -1,3 +1,4 @@
+import { billingCatalog, publicCatalog } from "@wovain/billing/catalog";
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
@@ -7,6 +8,7 @@ import "@/index.css";
 import "@/lib/orpc.server";
 import { BRAND_CSS, PALETTE } from "@/brand/brand";
 import { fontVariables } from "@/brand/fonts";
+import { CatalogProvider } from "@/components/billing/catalog-provider";
 import { ConsentBanner } from "@/components/consent-banner";
 import Providers from "@/components/providers";
 import { enterLocale, requireLocale } from "@/i18n/locale";
@@ -79,7 +81,9 @@ const LocaleLayout = async ({
         </a>
         <NextIntlClientProvider>
           <Providers>
-            {children}
+            <CatalogProvider catalog={publicCatalog(billingCatalog())}>
+              {children}
+            </CatalogProvider>
             <ConsentBanner />
           </Providers>
         </NextIntlClientProvider>

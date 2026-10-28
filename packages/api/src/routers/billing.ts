@@ -1,5 +1,6 @@
+import { billingCatalog } from "@wovain/billing/catalog";
 import { OFFERS } from "@wovain/billing/plans";
-import { REDEEM_LIMIT, REDEEM_SURFACES } from "@wovain/billing/redeem";
+import { REDEEM_SURFACES } from "@wovain/billing/redeem";
 import { z } from "zod";
 
 import { billingStatus, openPortal, startCheckout } from "../flow/billing";
@@ -57,7 +58,9 @@ export const billingRouter = {
       switch (result.status) {
         case "rate_limited": {
           throw errors.TOO_MANY_REQUESTS({
-            data: { retryAfterSeconds: REDEEM_LIMIT.windowMs / 1000 },
+            data: {
+              retryAfterSeconds: billingCatalog().redeemLimit.windowSeconds,
+            },
           });
         }
         case "refused": {

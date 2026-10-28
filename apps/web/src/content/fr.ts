@@ -1,4 +1,5 @@
 import type { SiteContent } from "@/content/types";
+import { ENV } from "@/env.server";
 
 const content: SiteContent = {
   cases: {
@@ -482,11 +483,10 @@ const content: SiteContent = {
         "graphic-tees",
         "streetwear-drops",
       ],
-      setup:
-        "Dans ChatGPT, activez le mode développeur, ajoutez un connecteur personnalisé avec https://mcp.wovain.com/api/mcp, puis connectez-vous à wovain et autorisez l'accès.",
+      setup: `Dans ChatGPT, activez le mode développeur, ajoutez un connecteur personnalisé avec ${ENV.MCP_URL}, puis connectez-vous à wovain et autorisez l'accès.`,
       steps: [
         {
-          body: "Dans les paramètres de ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé avec l'URL https://mcp.wovain.com/api/mcp.",
+          body: `Dans les paramètres de ChatGPT, activez le mode développeur et ajoutez un connecteur personnalisé avec l'URL ${ENV.MCP_URL}.`,
           title: "Ajouter wovain à ChatGPT",
         },
         {

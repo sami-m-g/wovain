@@ -8,8 +8,8 @@ import { routing } from "@/i18n/routing";
 
 export const siteUrl = new URL(ENV.BETTER_AUTH_URL);
 
-/** The MCP endpoint ChatGPT connects to (MCP_URL in production). */
-export const mcpUrl = ENV.MCP_URL ?? new URL("/api/mcp", siteUrl).toString();
+/** The MCP endpoint ChatGPT connects to. */
+export const mcpUrl = ENV.MCP_URL;
 
 /** Absolute URL of a path in a locale (the default locale has no prefix). */
 export const localizedUrl = (path: string, locale: Locale) =>
