@@ -9,6 +9,10 @@
 - Docs: https://docs.wovain.com, or `apps/fumadocs` locally
 - License: [MIT](LICENSE)
 
+The seller flow runs on the website and in ChatGPT, both backed by one Next.js 16 app:
+
+Qloo taste graph → Tavily evidence → you pick ideas → Nemotron brief → fal draws the art → the Nemotron judge looks at it → you approve → Fourthwall products → Nemotron ad copy → a paused Meta campaign targeted from Qloo demographics.
+
 ## Demo login
 
 Judges share one ready account on [next.wovain.com](https://next.wovain.com):
@@ -19,20 +23,6 @@ Judges share one ready account on [next.wovain.com](https://next.wovain.com):
 4. On **Billing**, redeem the judges' code from the Devpost testing instructions if the credits aren't there yet. It works only on this account and covers about 17 full drops.
 
 The password and the code are never in this repository. The owner seeds the account with `pnpm --filter @wovain/auth seed:judges --env next` ([infra/README.md](infra/README.md#the-judges-demo-account-on-next-one-time-by-a-project-owner)).
-
-The seller flow runs on the website and in ChatGPT, both backed by one Next.js 16 app:
-
-Qloo taste graph → Tavily evidence → you pick ideas → Nemotron brief → fal draws the art → the Nemotron judge looks at it → you approve → Fourthwall products → Nemotron ad copy → a paused Meta campaign targeted from Qloo demographics.
-
-## Demo login
-
-|          |                            |
-| -------- | -------------------------- |
-| URL      | https://next.wovain.com    |
-| Email    | `[FOUNDER: demo email]`    |
-| Password | `[FOUNDER: demo password]` |
-
-The demo account is on the Free plan with fal, a Fourthwall test shop and a Meta ad account connected `[FOUNDER: confirm which are connected]`. Runs cost judges nothing, and nothing spends money: wovain creates Meta campaigns paused.
 
 A 3-minute path:
 
@@ -162,10 +152,12 @@ Details: [Tavily](apps/fumadocs/content/docs/%28developers%29/integrations/tavil
 
 ## Limitations
 
-- **Two builds.** wovain.com stays on the 2026-10-27 build until 2026-11-16. Model routing, the Qloo taste map and audiences, and the Tavily evidence layer run on next.wovain.com only.
-- **No spend.** Meta campaigns are created paused, and no procedure activates one. Live media buying, the ads optimizer, scheduled autopilot triggers, store management, the mobile app and voice input were open pull requests on 2026-10-28 and are not on the demo.
+- **Two builds.** wovain.com stays on the 2026-10-27 build until 2026-11-16. Everything this README describes past that build runs on next.wovain.com only, behind flags that are on in development and next and off in production.
+- **Spend only through approvals.** Meta campaigns are staged paused. With `media-buying-live`, a campaign starts only when the merchant approves it inside their daily and monthly caps; the demo account's cap is $5 a day and its autonomy level drafts only. The ads optimizer proposes reallocations through the same queue and never moves money on its own.
+- **No mobile app yet.** The Expo app (#86) is not merged: its dependencies need a license exception for `react-native` and an OSV decision on the zod 3 that `@expo/cli` pulls in. Voice input works on the web only.
 - **Meta interest search is untested live.** wovain calls Graph `search?type=adinterest` with the app token. If Meta refuses it, the step fails visibly and the ad set keeps Qloo's ages and gender.
-- **fal is the merchant's account.** Each merchant connects their own fal account, and fal bills them for the art. The demo account has one connected.
+- **fal.** With the onboarding wizard on, designs draw on wovain's own fal key and the design's credits pay for them; without it, each merchant connects their own fal account. Voice commands always transcribe on wovain's key.
+- **Feedback needs history.** The feedback loop and the ads optimizer learn from sales and ad results, so a new account starts on the default weights.
 - **Small evals.** The judge set has 20 scored cases. The Qloo ablation report and a judge run on the routed models (Ultra, Lightning) are not in the repo yet, because both need the provider keys.
 - **Ultra's latency.** Nemotron 3 Ultra must answer within the 90 s agent timeout. If it doesn't, `nemotronModelReasoning` on next goes back to Super VL, which is a config change.
 - **Tavily images.** The news search returns images, and wovain doesn't use them yet.
@@ -181,7 +173,7 @@ The repository's first commit is from 2026-10-06. All of wovain was built after 
 | Oct 19–23 | The first MCP app for ChatGPT: ideas, designs, Fourthwall products and ad concepts. Qloo taste signals and Tavily search in trend research. The design judge and autopilot on Nemotron through Nebius. Fourthwall, fal and Meta connections, with grants sealed by Cloud KMS |
 | Oct 25–26 | The web app on Cloud Run and Cloud SQL, with Better Auth, Google sign-in and email verification. The seller flow as oRPC procedures and MCP tools. Mastra agents with scorers, guardrails, memory and tracing, and runs as a durable Mastra workflow on Inngest. Credits and the Polar catalog (Free only). The docs site in en, es and fr with a Nemotron docs chat. The Build With AI: Basics submission (tag `submission/basics`) |
 | Oct 27 | Development moved to GitHub: Actions CI, Dependabot, and PostHog feature flags managed by Pulumi |
-| Oct 28 | Model IDs as env vars per environment, ahead of Nebius's 2026-11-09 removals (#28). The judge looks at the drawn art (#23). Designs only for the ideas the merchant approves (#21). next.wovain.com in its own Pulumi stack (#25, #57). Autonomy levels, one approval queue and decision traces (#60). Nemotron routing by job, the grounding guard, real ad scores and the models page (#74). The Qloo taste map with explainability, cross-domain cues and the LLM-only ablation (#79). Qloo demographics and audiences driving Meta targeting and the ad persona (#75). Tavily as the evidence layer: per-search failures, competitor prices, research dossiers and the trademark check (#73). SAST, dependency, license, secret and SBOM scanning (#61) |
+| Oct 28 | Model IDs as env vars per environment, ahead of Nebius's 2026-11-09 removals (#28). The judge looks at the drawn art (#23). Designs only for the ideas the merchant approves (#21). next.wovain.com in its own Pulumi stack (#25, #57). Autonomy levels, one approval queue and decision traces (#60). Nemotron routing by job, the grounding guard, real ad scores and the models page (#74). The Qloo taste map with explainability, cross-domain cues and the LLM-only ablation (#79). Qloo demographics and audiences driving Meta targeting and the ad persona (#75). Tavily as the evidence layer: per-search failures, competitor prices, research dossiers and the trademark check (#73). SAST, dependency, license, secret and SBOM scanning (#61). The onboarding wizard (#76), scheduled autopilot triggers (#78), live media buying through approvals (#72), the ads optimizer (#70), the feedback loop (#83), voice input (#85), store management (#87), design drops (#91) and the judges' demo account (#97) |
 
 ## Setup from a clean clone
 
