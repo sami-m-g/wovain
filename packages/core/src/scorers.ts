@@ -72,6 +72,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   autopilot_review_design: [],
   design_brief: ["design_quality", "brand_fit", "trend_fit", "ip_risk"],
   design_judge: [],
+  design_vision: [],
   research_themes: [],
 };
 
@@ -91,6 +92,8 @@ const BUILT_INS: Record<AgentId, string[]> = {
     "completeness",
   ],
   design_judge: ["answer_relevancy", "prompt_alignment", "completeness"],
+  // The text scorers can't see the image the answer is about.
+  design_vision: [],
   research_themes: ["answer_relevancy", "prompt_alignment"],
 };
 

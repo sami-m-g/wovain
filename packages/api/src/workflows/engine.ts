@@ -9,7 +9,12 @@ import type { RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
 import { createObservability } from "./observability";
 import { createLegacyRunEngine, createRunRouter } from "./rollout";
-import { APPROVAL_STEP_ID, createRunWorkflow, RUN_WORKFLOW_ID } from "./run";
+import {
+  APPROVAL_STEP_ID,
+  createRunWorkflow,
+  IDEAS_STEP_ID,
+  RUN_WORKFLOW_ID,
+} from "./run";
 import type { RunServices } from "./run";
 
 // The durable engine behind runs: Mastra workflows executed by Inngest
@@ -122,6 +127,15 @@ export const createRunEngine = ({
   );
 
   const durable: RunEngine = {
+    approveIdeas: async (runId, ideaIds) => {
+      const resumed = await mastra
+        .getWorkflow(RUN_WORKFLOW_ID)
+        .createRun({ runId });
+      await resumed.resumeAsync({
+        resumeData: { ideaIds },
+        step: IDEAS_STEP_ID,
+      });
+    },
     resume: async (runId, decision) => {
       const resumed = await mastra
         .getWorkflow(RUN_WORKFLOW_ID)

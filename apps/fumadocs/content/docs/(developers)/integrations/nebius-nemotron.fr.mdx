@@ -13,9 +13,13 @@ Nemotron a quatre rôles. Il ne remplace jamais les contrôles faits par le code
 
 ## 2. Juge de design
 
-`judgeDesign` reçoit le brief, la fiche et les faits sur l'illustration, et renvoie un verdict (`ready` ou `revise`), un score de 0 à 100, un contrôle réussi ou échoué pour le titre, la description, l'adéquation à l'idée et l'originalité, jusqu'à cinq corrections et une phrase de coaching.
+`judgeDesign` reçoit le brief, la fiche et les faits sur l'illustration, et renvoie un verdict (`ready` ou `revise`), un score de 0 à 100, un contrôle réussi ou échoué pour le titre, la description, l'adéquation à l'idée, l'originalité et le vêtement (le sujet du prompt n'est pas un vêtement, une maquette ou un habit), jusqu'à cinq corrections et une phrase de coaching.
+
+D'abord, `inspectArtwork` montre le PNG dessiné à **Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, `NEMOTRON_VISION_MODEL`, même clé et même prix). Il vérifie que le sujet n'est pas un vêtement, qu'il n'y a ni fond ni recadrage, que les mots imprimés correspondent au brief et que l'illustration se voit sur chaque couleur de vêtement listée. Le code retire les couleurs sur lesquelles elle disparaît, et fait échouer le design s'il n'en reste aucune. Ces contrôles sont des faits : le modèle texte ne peut pas les contredire.
 
 La règle de taille d'impression est tranchée par le code (`printFacts`, `applyFacts`) : une illustration de moins de 2880 px échoue quoi que dise le modèle, et le verdict devient `revise`.
+
+Un design renvoyé par le juge est redessiné une fois, à partir d'un nouveau brief qui applique les corrections, sans nouveau débit. Si le nouveau dessin est encore `revise`, il passe en validation signalé : la carte liste les contrôles échoués et le bouton indique « Valider quand même ».
 
 ## 3. Textes publicitaires
 

@@ -184,6 +184,14 @@ export const githubRepository = ({
   const next = mainOnly("next");
   const dev = mainOnly("dev");
   mainOnly("infrastructure");
+  // The label .github/dependabot.yml puts on every update pull request;
+  // Dependabot doesn't create it, and a missing label is an error there.
+  new github.IssueLabel("dependencies", {
+    color: "0366d6",
+    description: "Pull requests that update a dependency",
+    name: "dependencies",
+    repository: repository.name,
+  });
 
   // What the workflows read as `vars.<NAME>`; none is a secret.
   for (const [variableName, value] of Object.entries(variables)) {
