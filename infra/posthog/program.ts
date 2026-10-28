@@ -6,8 +6,9 @@
 //   - the "wovain health" dashboard and the Growth, Retention, Agent quality
 //     and cost, and Web vitals dashboards with their insights (./dashboards.ts)
 //   - the run-rating survey
-//   - the project settings: cookieless hashing, no stored IPs, and the default
-//     filters that leave out the team, dev traffic and bots
+//   - the project settings: cookieless hashing, no stored IPs, the default
+//     filters that leave out the team, dev traffic and bots, the authorized
+//     domains, session replay, heatmaps, exceptions and web vitals
 //   - the app's feature flags, from flags.json
 // Objects first created through PostHog's API are adopted once with
 // `pulumi import --file posthog/import.json` (infra/README.md, "PostHog").
@@ -63,9 +64,6 @@ const INTERNAL_COHORT_ID = 663_838;
 // The founder, who subscribed the first alerts.
 const DEFAULT_ALERT_SUBSCRIBERS = [413_837];
 
-const numericId = (resource: pulumi.CustomResource) =>
-  resource.id.apply(Number);
-
 // wovain's PostHog organization, which every environment's project is in.
 const ORGANIZATION_ID = "019c4bfe-a649-0000-5b0f-2266161045fc";
 
@@ -98,17 +96,30 @@ export const configurePostHog = () => {
   const internalUserIds =
     config.getObject<string[]>("posthogInternalUserIds") ?? [];
 
-  // Project settings that decide what wovain's analytics count and keep.
-  // Settings left out here (authorized domains, replay, heatmaps) stay as set
-  // in PostHog.
+  // Project settings that decide what wovain's analytics count and keep,
+  // and what the browser SDK records.
   new posthog.ProjectSettings("wovain", {
     // Never keep a visitor's IP address. Cookieless events lose it before
     // PostHog's GeoIP step, so apps/web's /api/visitor sends their country;
     // consented events keep it only until GeoIP has run.
     anonymizeIps: true,
+    // Authorized domains: where the toolbar, heatmaps and web analytics
+    // count the site's pages. dev.wovain.com and localhost stay out, as in
+    // the test account filters below.
+    appUrls: ["https://wovain.com", "https://docs.wovain.com"],
+    // Exceptions and web vitals from the browser SDK (apps/web).
+    autocaptureExceptionsOptIn: true,
+    autocaptureWebVitalsOptIn: true,
+    // Network timings in replays.
+    capturePerformanceOptIn: true,
     // Until a visitor consents, PostHog is cookieless (apps/web/src/lib/
     // analytics-client.ts) and counts them with a daily server-side hash.
     cookielessServerHashMode: 1,
+    // Heatmaps, from the same pages.
+    heatmapsOptIn: true,
+    // Session replay (apps/web/src/lib/analytics-client.ts sets what it
+    // masks).
+    sessionRecordingOptIn: true,
     // "Filter out internal and test users", on by default in every insight,
     // dashboard and web analytics. Cookieless events also lose the user
     // agent, so PostHog's own bot detection ($virt_is_bot) sees every one of
@@ -144,7 +155,10 @@ export const configurePostHog = () => {
     ...HEALTH_DASHBOARD,
     tags: ["wovain"],
   });
-  const healthId = numericId(health);
+  // The provider's numeric id output, not Number(resource.id): in a preview an
+  // updated resource's id can be Pulumi's unknown placeholder string, and
+  // Number() of it is NaN, which crashes the bridged provider's Check.
+  const healthId = health.dashboardId;
   for (const [key, insight] of Object.entries(HEALTH_INSIGHTS)) {
     new posthog.Insight(`health-${key}`, {
       dashboardIds: [healthId],
@@ -167,7 +181,7 @@ export const configurePostHog = () => {
     ])
   ) as Record<DashboardKey, posthog.Dashboard>;
   const onDashboards = (keys: DashboardKey[]) =>
-    keys.map((key) => numericId(dashboards[key]));
+    keys.map((key) => dashboards[key].dashboardId);
 
   for (const [key, insight] of Object.entries(QUERY_INSIGHTS)) {
     new posthog.Insight(`insight-${key}`, {
@@ -226,7 +240,7 @@ export const configurePostHog = () => {
       column: "value",
       conditionType: "absolute_value",
       evaluation: "first_row",
-      insight: numericId(insight),
+      insight: insight.insightId,
       name: `kpi:${kpi.id}`,
       subscribedUsers: alertSubscribers,
       thresholdLower: kpi.direction === "up" ? kpi.target : undefined,
