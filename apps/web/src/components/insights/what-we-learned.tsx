@@ -31,13 +31,48 @@ const TERMS = [
   "ipSafety",
 ] as const satisfies readonly (keyof Learned["weights"])[];
 
+const CENTS = 100;
+
+type IdeaResult = Learned["learned"]["sold"][number];
+
+// One idea's results in the reader's language. Revenue is in USD, as on
+// the rest of the Insights page.
+const ResultLine = ({ result }: { result: IdeaResult }) => {
+  const t = useTranslations("Insights.learned");
+  const format = useFormatter();
+  const revenue = format.number(result.revenueCents / CENTS, {
+    currency: "USD",
+    style: "currency",
+  });
+  let detail = t("noSales");
+  if (result.units > 0) {
+    detail =
+      result.ctr === undefined
+        ? t("result", { revenue, units: result.units })
+        : t("resultCtr", {
+            ctr: format.number(result.ctr, {
+              maximumFractionDigits: 1,
+              style: "percent",
+            }),
+            revenue,
+            units: result.units,
+          });
+  }
+  return (
+    <li className="text-pretty">
+      <span className="font-medium">{result.theme}</span>
+      <span className="text-muted-foreground"> · {detail}</span>
+    </li>
+  );
+};
+
 const LearningList = ({
   empty,
   items,
   title,
 }: {
   empty: string;
-  items: string[];
+  items: IdeaResult[];
   title: string;
 }) => (
   <FramePanel className="flex flex-col gap-2">
@@ -45,9 +80,7 @@ const LearningList = ({
     {items.length > 0 ? (
       <ul className="flex flex-col gap-1.5 text-sm">
         {items.map((item) => (
-          <li className="text-pretty" key={item}>
-            {item}
-          </li>
+          <ResultLine key={item.ideaId} result={item} />
         ))}
       </ul>
     ) : (

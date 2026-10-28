@@ -33,9 +33,26 @@ export interface WeightFit extends WeightsVersion {
   correlations: ScoreWeights;
 }
 
+/** What sold and what didn't, as plain lines for taste memory and prompts. */
 export interface Learnings {
   sold: string[];
   unsold: string[];
+}
+
+/** One idea's results, as numbers: the UI formats them in the reader's locale. */
+export interface IdeaResult {
+  /** Click-through rate, 0 to 1, once the ads had enough impressions. */
+  ctr?: number | undefined;
+  ideaId: string;
+  revenueCents: number;
+  theme: string;
+  units: number;
+}
+
+/** What sold (most units first) and what didn't, as numbers. */
+export interface LearnedResults {
+  sold: IdeaResult[];
+  unsold: IdeaResult[];
 }
 
 export const DEFAULT_WEIGHTS_VERSION: WeightsVersion = {
@@ -172,33 +189,53 @@ export const fitWeights = (
   };
 };
 
+const resultOf = (outcome: IdeaOutcome): IdeaResult => {
+  const ctr = ctrOf(outcome);
+  return {
+    ...(ctr === undefined || outcome.impressions < MIN_IMPRESSIONS
+      ? {}
+      : { ctr: round(ctr) }),
+    ideaId: outcome.ideaId,
+    revenueCents: outcome.revenueCents,
+    theme: outcome.theme,
+    units: outcome.units,
+  };
+};
+
+/** What sold (most units first) and what didn't, up to SHOWN of each. */
+export const learnedOf = (outcomes: IdeaOutcome[]): LearnedResults => ({
+  sold: outcomes
+    .filter((item) => item.units > 0)
+    .toSorted((a, b) => b.units - a.units || b.revenueCents - a.revenueCents)
+    .slice(0, SHOWN)
+    .map(resultOf),
+  unsold: outcomes
+    .filter((item) => item.units === 0)
+    .slice(0, SHOWN)
+    .map(resultOf),
+});
+
+// Taste memory and the research prompt are English, for the model; the UI
+// formats IdeaResult itself, in the reader's language.
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", {
     currency: "USD",
     style: "currency",
   }).format(cents / CENTS);
 
-const soldLine = (outcome: IdeaOutcome) => {
-  const ctr = ctrOf(outcome);
+const soldLine = (result: IdeaResult) => {
   const parts = [
-    `${outcome.units} sold`,
-    `${money(outcome.revenueCents)} revenue`,
-    ...(ctr === undefined || outcome.impressions < MIN_IMPRESSIONS
+    `${result.units} sold`,
+    `${money(result.revenueCents)} revenue`,
+    ...(result.ctr === undefined
       ? []
-      : [`CTR ${round(ctr * PERCENT)}%`]),
+      : [`CTR ${round(result.ctr * PERCENT)}%`]),
   ];
-  return `${outcome.theme}: ${parts.join(", ")}`;
+  return `${result.theme}: ${parts.join(", ")}`;
 };
 
-/** What sold (most units first) and what didn't, as plain lines. */
-export const learningsOf = (outcomes: IdeaOutcome[]): Learnings => ({
-  sold: outcomes
-    .filter((item) => item.units > 0)
-    .toSorted((a, b) => b.units - a.units || b.revenueCents - a.revenueCents)
-    .slice(0, SHOWN)
-    .map(soldLine),
-  unsold: outcomes
-    .filter((item) => item.units === 0)
-    .slice(0, SHOWN)
-    .map((item) => `${item.theme}: no sales`),
+/** The results as plain lines, for taste memory and the research prompt. */
+export const learningsOf = (learned: LearnedResults): Learnings => ({
+  sold: learned.sold.map(soldLine),
+  unsold: learned.unsold.map((item) => `${item.theme}: no sales`),
 });

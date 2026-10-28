@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_WEIGHTS_VERSION,
   fitWeights,
+  learnedOf,
   learningsOf,
   MAX_SHIFT,
   MIN_SAMPLES,
@@ -112,17 +113,43 @@ describe("fitWeights", () => {
   });
 });
 
-describe("learningsOf", () => {
-  it("lists what sold (most first) and what didn't", () => {
-    const learned = learningsOf([
-      outcome("Moth tees", 0),
-      outcome("Retro slasher VHS", 4, { clicks: 18, impressions: 1000 }),
-      outcome("Cottagecore frogs", 1),
-    ]);
-    expect(learned.sold).toEqual([
+describe("learnedOf and learningsOf", () => {
+  const learned = learnedOf([
+    outcome("Moth tees", 0),
+    outcome("Retro slasher VHS", 4, { clicks: 18, impressions: 1000 }),
+    outcome("Cottagecore frogs", 1, { clicks: 1, impressions: 100 }),
+  ]);
+
+  it("returns what sold (most first) and what didn't as numbers", () => {
+    expect(learned).toEqual({
+      sold: [
+        {
+          ctr: 0.018,
+          ideaId: "Retro slasher VHS",
+          revenueCents: 9600,
+          theme: "Retro slasher VHS",
+          units: 4,
+        },
+        // Too few impressions for a CTR.
+        {
+          ideaId: "Cottagecore frogs",
+          revenueCents: 2400,
+          theme: "Cottagecore frogs",
+          units: 1,
+        },
+      ],
+      unsold: [
+        { ideaId: "Moth tees", revenueCents: 0, theme: "Moth tees", units: 0 },
+      ],
+    });
+  });
+
+  it("writes them as plain lines for memory and the prompt", () => {
+    const lines = learningsOf(learned);
+    expect(lines.sold).toEqual([
       "Retro slasher VHS: 4 sold, $96.00 revenue, CTR 1.8%",
       "Cottagecore frogs: 1 sold, $24.00 revenue",
     ]);
-    expect(learned.unsold).toEqual(["Moth tees: no sales"]);
+    expect(lines.unsold).toEqual(["Moth tees: no sales"]);
   });
 });

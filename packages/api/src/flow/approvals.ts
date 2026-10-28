@@ -252,7 +252,7 @@ export const spendToDate = async (
 
 // Saves a DecisionTrace's entries (@wovain/core/trace) for this merchant.
 export const traceSinkFor =
-  (actor: Pick<Actor, "db">): TraceSink =>
+  (actor: { db: Pick<Actor["db"], "insert"> }): TraceSink =>
   async (scope, entries) => {
     if (entries.length === 0) {
       return;

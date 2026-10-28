@@ -2,10 +2,15 @@ import { EVENTS } from "@wovain/core/events";
 import {
   DEFAULT_WEIGHTS_VERSION,
   fitWeights,
+  learnedOf,
   learningsOf,
   MIN_SAMPLES,
 } from "@wovain/core/feedback";
-import type { IdeaOutcome, Learnings, WeightFit } from "@wovain/core/feedback";
+import type {
+  IdeaOutcome,
+  LearnedResults,
+  WeightFit,
+} from "@wovain/core/feedback";
 import { campaignInsights, shopInsights } from "@wovain/core/insights";
 import type { CampaignInsight, ProductSales } from "@wovain/core/insights";
 import { SCORE_TERMS, SCORE_WEIGHTS } from "@wovain/core/score";
@@ -15,8 +20,8 @@ import { DecisionTrace } from "@wovain/core/trace";
 import type { TraceSource } from "@wovain/core/trace";
 import type { ResearchFeedback } from "@wovain/core/trends";
 import { decisionTrace, performanceSnapshot } from "@wovain/db/schema/autonomy";
-import { idea } from "@wovain/db/schema/seller";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { idea, product as productTable } from "@wovain/db/schema/seller";
+import { and, desc, eq, inArray, min, sql } from "drizzle-orm";
 import { createError, log } from "evlog";
 import { z } from "zod";
 
@@ -35,14 +40,28 @@ const AGENT = "feedback_loop";
 const WEIGHTS_STEP = "score_weights";
 // Days read back on each snapshot: Meta and Fourthwall revise recent days.
 export const SNAPSHOT_DAYS = 3;
-// Snapshots an idea's outcome sums.
+// A product's outcome sums its first OUTCOME_DAYS days for sale, and a
+// source's first snapshot reads back this far, so products already for sale
+// have their whole window.
 export const OUTCOME_DAYS = 28;
 // A product counts once it has been for sale this long.
 export const MIN_LIVE_DAYS = 3;
+// "Check results now" reuses a fit younger than this.
+export const LEARN_COOLDOWN_MS = 5 * 60_000;
+// Days read from a provider at once, so a backfill stays within its limits.
+const DAYS_AT_ONCE = 4;
 const DAY_MS = 86_400_000;
 const CENTS = 100;
 
 type Snapshot = typeof performanceSnapshot.$inferInsert;
+type Source = "fourthwall" | "meta";
+
+// What the loop reads and writes with: the app's database, or the
+// transaction a fit runs in.
+interface Store {
+  db: Pick<Actor["db"], "execute" | "insert" | "query" | "select">;
+  userId: string;
+}
 
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -51,6 +70,23 @@ export const lastDays = (count: number, now = new Date()) =>
   Array.from({ length: count }, (_, index) =>
     isoDay(new Date(now.getTime() - (count - 1 - index) * DAY_MS))
   );
+
+// Runs `work` on each item, DAYS_AT_ONCE at a time, in order.
+const inBatches = async <T, R>(
+  items: T[],
+  work: (item: T) => Promise<R>
+): Promise<R[]> => {
+  const results: R[] = [];
+  for (let at = 0; at < items.length; at += DAYS_AT_ONCE) {
+    // Batches run one after another on purpose: providers rate-limit.
+    // oxlint-disable-next-line no-await-in-loop
+    const batch = await Promise.all(
+      items.slice(at, at + DAYS_AT_ONCE).map(work)
+    );
+    results.push(...batch);
+  }
+  return results;
+};
 
 const cents = (dollars: number) => Math.round(dollars * CENTS);
 
@@ -95,7 +131,7 @@ export const requireFeedbackLoop = async (actor: Actor) => {
 };
 
 // What wovain made for the merchant: runs → designs → products → campaigns.
-const loadMade = async ({ db, userId }: Pick<Actor, "db" | "userId">) =>
+const loadMade = async ({ db, userId }: Store) =>
   await db.query.run.findMany({
     where: { userId },
     with: {
@@ -260,19 +296,17 @@ const dayRange = (date: string) => ({
 
 const fourthwallRows = async (actor: Actor, made: Made, days: string[]) =>
   await withProvider(actor, "fourthwall", async (call) => {
-    const perDay = await Promise.all(
-      days.map(async (date) => {
-        const shop = await shopInsights(call, dayRange(date));
-        return shopRows(actor.userId, made, date, shop.products);
-      })
-    );
+    const perDay = await inBatches(days, async (date) => {
+      const shop = await shopInsights(call, dayRange(date));
+      return shopRows(actor.userId, made, date, shop.products);
+    });
     return perDay.flat();
   });
 
 const metaRows = async (actor: Actor, made: Made, days: string[]) => {
   const campaigns = made.flatMap((run) =>
     run.designs.flatMap((design) =>
-      design.products.flatMap((product) => product.campaigns)
+      design.products.flatMap((item) => item.campaigns)
     )
   );
   if (campaigns.length === 0) {
@@ -294,37 +328,39 @@ const metaRows = async (actor: Actor, made: Made, days: string[]) => {
     byAccount.set(staged.adAccountId, account);
   }
   return await withProvider(actor, "meta", async (call) => {
-    const reads = [...byAccount].flatMap(([adAccountId, ids]) =>
-      days.flatMap((date) =>
-        (["campaign", "ad"] as const).map(async (level) => {
-          const objectIds = level === "ad" ? ids.ads : ids.campaigns;
-          if (objectIds.length === 0) {
-            return [];
-          }
-          const results = await campaignInsights(call, {
-            adAccountId,
-            campaignIds: objectIds,
-            day: date,
-            level,
-            range: "7d",
-          });
-          return adRows(actor.userId, date, level, results, productOf);
-        })
-      )
-    );
-    const pages = await Promise.all(reads);
-    return pages.flat();
+    const perDay = await inBatches(days, async (date) => {
+      const reads = await Promise.all(
+        [...byAccount].flatMap(([adAccountId, ids]) =>
+          (["campaign", "ad"] as const).map(async (level) => {
+            const objectIds = level === "ad" ? ids.ads : ids.campaigns;
+            if (objectIds.length === 0) {
+              return [];
+            }
+            const results = await campaignInsights(call, {
+              adAccountId,
+              campaignIds: objectIds,
+              day: date,
+              level,
+              range: "7d",
+            });
+            return adRows(actor.userId, date, level, results, productOf);
+          })
+        )
+      );
+      return reads.flat();
+    });
+    return perDay.flat();
   });
 };
 
 export interface SnapshotResult {
-  failed: ("fourthwall" | "meta")[];
+  failed: Source[];
   saved: { fourthwall: number; meta: number };
 }
 
 const notify = async (
   actor: Actor,
-  source: "fourthwall" | "meta",
+  source: Source,
   date: string,
   snapshotIds: string[]
 ) => {
@@ -341,19 +377,64 @@ const notify = async (
   }
 };
 
+/** Each source's first snapshot day: its rows cover every day since. */
+export const coverageOf = async (
+  store: Store
+): Promise<Partial<Record<Source, string>>> => {
+  const rows = await store.db
+    .select({
+      from: min(performanceSnapshot.date),
+      source: performanceSnapshot.source,
+    })
+    .from(performanceSnapshot)
+    .where(eq(performanceSnapshot.userId, store.userId))
+    .groupBy(performanceSnapshot.source);
+  return Object.fromEntries(
+    rows.flatMap(({ from, source }) =>
+      from === null ? [] : [[source, from] as const]
+    )
+  );
+};
+
 /**
- * Saves the last SNAPSHOT_DAYS of results for what wovain made. Each
- * provider settles on its own: a failure is logged and the other one saves.
+ * The days a snapshot reads: the last SNAPSHOT_DAYS once a source has rows.
+ * A source's first snapshot reads back to the oldest public product, at
+ * most OUTCOME_DAYS, so products already for sale get their whole window.
+ */
+export const daysToRead = (
+  made: Made,
+  coveredFrom: string | undefined,
+  now = new Date()
+) => {
+  if (coveredFrom !== undefined) {
+    return lastDays(SNAPSHOT_DAYS, now);
+  }
+  const launched = made
+    .flatMap((run) => run.designs.flatMap((design) => design.products))
+    .filter((item) => item.status === "public")
+    .map((item) => Date.parse(`${isoDay(item.createdAt)}T00:00:00.000Z`));
+  if (launched.length === 0) {
+    return lastDays(SNAPSHOT_DAYS, now);
+  }
+  const today = Date.parse(`${isoDay(now)}T00:00:00.000Z`);
+  const back = Math.round((today - Math.min(...launched)) / DAY_MS) + 1;
+  return lastDays(Math.min(Math.max(back, SNAPSHOT_DAYS), OUTCOME_DAYS), now);
+};
+
+/**
+ * Saves the results for what wovain made: the last SNAPSHOT_DAYS, or a
+ * backfill on a source's first snapshot (daysToRead). Each provider settles
+ * on its own: a failure is logged and the other one saves.
  */
 export const snapshotPerformance = async (
   actor: Actor,
   now = new Date()
 ): Promise<SnapshotResult> => {
-  const [made, connections] = await Promise.all([
+  const [made, connections, covered] = await Promise.all([
     loadMade(actor),
     listConnections(actor),
+    coverageOf(actor),
   ]);
-  const days = lastDays(SNAPSHOT_DAYS, now);
   const result: SnapshotResult = {
     failed: [],
     saved: { fourthwall: 0, meta: 0 },
@@ -367,6 +448,7 @@ export const snapshotPerformance = async (
   await Promise.all(
     sources.map(async ({ provider, read }) => {
       try {
+        const days = daysToRead(made, covered[provider], now);
         const saved = await saveRows(actor, await read(actor, made, days));
         result.saved[provider] = saved.length;
         await notify(
@@ -407,20 +489,29 @@ interface SnapshotSums {
 
 /**
  * Each idea's outcome: the sums of its products' sales and their campaigns'
- * results, for ideas with a public product live at least MIN_LIVE_DAYS.
+ * results over each product's first OUTCOME_DAYS for sale. An idea counts
+ * once a public product has been for sale MIN_LIVE_DAYS, and only products
+ * the sales snapshots cover from their first day (`salesFrom`) count: a
+ * product launched before them would read as unsold.
  */
 export const outcomesOf = (
   made: Made,
   ideas: { id: string; signals: IdeaSignals; theme: string }[],
   sums: { sales: Map<string, SnapshotSums>; ads: Map<string, SnapshotSums> },
+  salesFrom: string | undefined,
   now = new Date()
 ): IdeaOutcome[] => {
+  if (salesFrom === undefined) {
+    return [];
+  }
   const liveBefore = now.getTime() - MIN_LIVE_DAYS * DAY_MS;
   const productsOf = new Map<string, Product[]>();
   for (const design of made.flatMap((run) => run.designs)) {
     const live = design.products.filter(
-      (product) =>
-        product.status === "public" && product.createdAt.getTime() <= liveBefore
+      (item) =>
+        item.status === "public" &&
+        item.createdAt.getTime() <= liveBefore &&
+        isoDay(item.createdAt) >= salesFrom
     );
     productsOf.set(design.ideaId, [
       ...(productsOf.get(design.ideaId) ?? []),
@@ -433,10 +524,7 @@ export const outcomesOf = (
       return [];
     }
     const total = (map: Map<string, SnapshotSums>, key: keyof SnapshotSums) =>
-      products.reduce(
-        (sum, product) => sum + (map.get(product.id)?.[key] ?? 0),
-        0
-      );
+      products.reduce((sum, live) => sum + (map.get(live.id)?.[key] ?? 0), 0);
     return [
       {
         clicks: total(sums.ads, "clicks"),
@@ -452,13 +540,14 @@ export const outcomesOf = (
   });
 };
 
-const sumsBy = async (
-  actor: Pick<Actor, "db" | "userId">,
-  source: "fourthwall" | "meta",
-  level: "campaign" | "product",
-  since: string
+// Sums per product over its first OUTCOME_DAYS days for sale (UTC).
+const windowSums = async (
+  store: Store,
+  source: Source,
+  level: "campaign" | "product"
 ) => {
-  const rows = await actor.db
+  const launched = sql`(${productTable.createdAt})::date`;
+  const rows = await store.db
     .select({
       clicks: sql<number>`coalesce(sum(${performanceSnapshot.clicks}), 0)::int`,
       impressions: sql<number>`coalesce(sum(${performanceSnapshot.impressions}), 0)::int`,
@@ -468,12 +557,14 @@ const sumsBy = async (
       units: sql<number>`coalesce(sum(${performanceSnapshot.units}), 0)::int`,
     })
     .from(performanceSnapshot)
+    .innerJoin(productTable, eq(productTable.id, performanceSnapshot.productId))
     .where(
       and(
-        eq(performanceSnapshot.userId, actor.userId),
+        eq(performanceSnapshot.userId, store.userId),
         eq(performanceSnapshot.source, source),
         eq(performanceSnapshot.level, level),
-        gte(performanceSnapshot.date, since)
+        sql`${performanceSnapshot.date} >= ${launched}`,
+        sql`${performanceSnapshot.date} < ${launched} + ${OUTCOME_DAYS}::int`
       )
     )
     .groupBy(performanceSnapshot.productId);
@@ -497,8 +588,8 @@ const sumsBy = async (
   );
 };
 
-const loadOutcomes = async (actor: Actor, now: Date) => {
-  const made = await loadMade(actor);
+const loadOutcomes = async (store: Store, now: Date) => {
+  const made = await loadMade(store);
   const ideaIds = [
     ...new Set(
       made.flatMap((run) => run.designs.map((design) => design.ideaId))
@@ -507,14 +598,14 @@ const loadOutcomes = async (actor: Actor, now: Date) => {
   if (ideaIds.length === 0) {
     return [];
   }
-  const since = isoDay(new Date(now.getTime() - OUTCOME_DAYS * DAY_MS));
-  const [rows, sales, ads] = await Promise.all([
-    actor.db
+  const [rows, sales, ads, covered] = await Promise.all([
+    store.db
       .select({ id: idea.id, research: idea.research, theme: idea.theme })
       .from(idea)
-      .where(and(eq(idea.userId, actor.userId), inArray(idea.id, ideaIds))),
-    sumsBy(actor, "fourthwall", "product", since),
-    sumsBy(actor, "meta", "campaign", since),
+      .where(and(eq(idea.userId, store.userId), inArray(idea.id, ideaIds))),
+    windowSums(store, "fourthwall", "product"),
+    windowSums(store, "meta", "campaign"),
+    coverageOf(store),
   ]);
   const ideas = rows.flatMap((row) => {
     const parsed = signalsSchema.safeParse(row.research.signals);
@@ -522,12 +613,12 @@ const loadOutcomes = async (actor: Actor, now: Date) => {
       ? [{ id: row.id, signals: parsed.data, theme: row.theme }]
       : [];
   });
-  return outcomesOf(made, ideas, { ads, sales }, now);
+  return outcomesOf(made, ideas, { ads, sales }, covered.fourthwall, now);
 };
 
 /** A saved fit: the trace output of a score_weights step. */
 export interface WeightsRecord extends WeightFit {
-  learned: Learnings;
+  learned: LearnedResults;
 }
 
 const weightsSchema = z.object(
@@ -537,12 +628,20 @@ const weightsSchema = z.object(
   >
 );
 
+const resultSchema = z.object({
+  ctr: z.number().optional(),
+  ideaId: z.string(),
+  revenueCents: z.number(),
+  theme: z.string(),
+  units: z.number(),
+});
+
 const recordSchema = z.object({
   changed: z.boolean(),
   correlations: weightsSchema,
   learned: z.object({
-    sold: z.array(z.string()),
-    unsold: z.array(z.string()),
+    sold: z.array(resultSchema),
+    unsold: z.array(resultSchema),
   }),
   samples: z.number(),
   version: z.number(),
@@ -550,13 +649,13 @@ const recordSchema = z.object({
 });
 
 /** The merchant's newest fit, or undefined before the first. */
-export const latestFit = async (actor: Pick<Actor, "db" | "userId">) => {
-  const [row] = await actor.db
+export const latestFit = async (store: Store) => {
+  const [row] = await store.db
     .select({ at: decisionTrace.at, output: decisionTrace.output })
     .from(decisionTrace)
     .where(
       and(
-        eq(decisionTrace.userId, actor.userId),
+        eq(decisionTrace.userId, store.userId),
         eq(decisionTrace.agent, AGENT),
         eq(decisionTrace.step, WEIGHTS_STEP),
         eq(decisionTrace.ok, true)
@@ -579,13 +678,16 @@ const versionOf = (fit: Awaited<ReturnType<typeof latestFit>>) =>
         weights: fit.record.weights,
       };
 
-const writeMemory = async (actor: Actor, learned: Learnings) => {
+const writeMemory = async (actor: Actor, learned: LearnedResults) => {
   const { memory } = actor.core;
   if (memory === undefined) {
     return;
   }
   try {
-    await recordLearnings(memory, { learned, userId: actor.userId });
+    await recordLearnings(memory, {
+      learned: learningsOf(learned),
+      userId: actor.userId,
+    });
   } catch (error) {
     logFailure("FEEDBACK_MEMORY_FAILED", error, { user_id: actor.userId });
   }
@@ -600,46 +702,61 @@ const sourcesOf = (snapshot: SnapshotResult): TraceSource[] => [
     : []),
 ];
 
+// One fit at a time per merchant: the daily run and "Check results now"
+// read the latest version and write the next, so they take turns. The lock
+// ends with the transaction.
+const lockFits = async (store: Store) => {
+  await store.db.execute(
+    sql`select pg_advisory_xact_lock(hashtext(${`${AGENT}:${store.userId}`}))`
+  );
+};
+
 /**
  * The whole loop for one merchant: snapshot, outcomes, re-fit (a new
- * version only on a change), the decision trace, and taste memory.
+ * version only on a change), the decision trace, and taste memory. The fit
+ * and its trace run in one transaction under a per-merchant lock, so two
+ * fits never share a version.
  */
 export const learnFromResults = async (actor: Actor, now = new Date()) => {
   const snapshot = await snapshotPerformance(actor, now);
-  const [outcomes, previous] = await Promise.all([
-    loadOutcomes(actor, now),
-    latestFit(actor),
-  ]);
-  const fit = fitWeights(outcomes, versionOf(previous));
-  const learned = learningsOf(outcomes);
-  const record: WeightsRecord = { ...fit, learned };
-  const trace = new DecisionTrace(
-    { userId: actor.userId },
-    traceSinkFor(actor),
-    () => now
-  );
-  trace.add({
-    agent: AGENT,
-    inputSummary: `Last ${SNAPSHOT_DAYS} days from ${
-      Object.entries(snapshot.saved)
-        .filter(([, count]) => count > 0)
-        .map(([provider]) => provider)
-        .join(" and ") || "no provider"
-    }`,
-    ok: snapshot.failed.length === 0,
-    output: snapshot,
-    sources: sourcesOf(snapshot),
-    step: "snapshot",
+  const { fit, record } = await actor.db.transaction(async (tx) => {
+    const store: Store = { db: tx, userId: actor.userId };
+    await lockFits(store);
+    const [outcomes, previous] = await Promise.all([
+      loadOutcomes(store, now),
+      latestFit(store),
+    ]);
+    const fitted = fitWeights(outcomes, versionOf(previous));
+    const saved: WeightsRecord = { ...fitted, learned: learnedOf(outcomes) };
+    const trace = new DecisionTrace(
+      { userId: actor.userId },
+      traceSinkFor(store),
+      () => now
+    );
+    trace.add({
+      agent: AGENT,
+      inputSummary: `Last ${SNAPSHOT_DAYS} days from ${
+        Object.entries(snapshot.saved)
+          .filter(([, count]) => count > 0)
+          .map(([provider]) => provider)
+          .join(" and ") || "no provider"
+      }`,
+      ok: snapshot.failed.length === 0,
+      output: snapshot,
+      sources: sourcesOf(snapshot),
+      step: "snapshot",
+    });
+    trace.add({
+      agent: AGENT,
+      inputSummary: `${outcomes.length} ideas for sale ${MIN_LIVE_DAYS}+ days, each over its first ${OUTCOME_DAYS} days`,
+      output: saved,
+      sources: [{ provider: "rule", title: "Bounded weight fit" }],
+      step: WEIGHTS_STEP,
+    });
+    await trace.flush();
+    return { fit: fitted, record: saved };
   });
-  trace.add({
-    agent: AGENT,
-    inputSummary: `${outcomes.length} ideas live for ${MIN_LIVE_DAYS}+ days, last ${OUTCOME_DAYS} days`,
-    output: record,
-    sources: [{ provider: "rule", title: "Bounded weight fit" }],
-    step: WEIGHTS_STEP,
-  });
-  await trace.flush();
-  await writeMemory(actor, learned);
+  await writeMemory(actor, record.learned);
   actor.log?.set({
     feedback: {
       samples: fit.samples,
@@ -660,7 +777,10 @@ export const researchFeedbackOf = async (
   const fit = await latestFit(actor);
   return fit === undefined
     ? undefined
-    : { learned: fit.record.learned, weights: fit.record.weights };
+    : {
+        learned: learningsOf(fit.record.learned),
+        weights: fit.record.weights,
+      };
 };
 
 /** "What we learned": the newest fit against the defaults. */
@@ -677,4 +797,18 @@ export const whatWeLearned = async (actor: Actor) => {
     version: record?.version ?? 0,
     weights: record?.weights ?? (SCORE_WEIGHTS as ScoreWeights),
   };
+};
+
+/**
+ * "Check results now": a fresh snapshot and fit, unless the last fit is
+ * younger than LEARN_COOLDOWN_MS, then what we learned.
+ */
+export const learnOnDemand = async (actor: Actor, now = new Date()) => {
+  const last = await latestFit(actor);
+  const fresh =
+    last !== undefined && now.getTime() - last.at.getTime() < LEARN_COOLDOWN_MS;
+  if (!fresh) {
+    await learnFromResults(actor, now);
+  }
+  return await whatWeLearned(actor);
 };
