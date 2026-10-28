@@ -4,6 +4,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
+import { researchFeedbackOf } from "./feedback";
 import { flagContextOf } from "./flags";
 import { charge } from "./spend";
 
@@ -63,11 +64,15 @@ export const researchIdeas = async (
     actor.log?.set({ trends: { ideas: 0, sources } });
     return [];
   }
+  // With the feedback loop on, the merchant's re-fit weights score the
+  // ideas and what sold before steers the themes (./feedback).
+  const feedback = await researchFeedbackOf(actor);
   const { avoidNames, ideas, qloo } = await charge(
     actor,
     "research",
     { runId },
-    async () => await actor.core.trends.research(seed, actor.log, sources)
+    async () =>
+      await actor.core.trends.research(seed, actor.log, sources, feedback)
   );
   actor.log?.set({ trends: { ideas: ideas.length, qloo, sources } });
   if (ideas.length === 0) {

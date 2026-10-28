@@ -757,6 +757,38 @@
       "emptyTitle": "Pas encore de drop",
       "empty": "Lancez un drop ; ses ventes, dépenses et scores arriveront ici.",
       "emptyCta": "Lancer un drop"
+    },
+    "learned": {
+      "title": "Ce que nous avons appris",
+      "lead": "Ce qui s'est vendu, ce qui ne s'est pas vendu, et comment wovain classe désormais les idées pour votre marque. Vos prochaines recherches s'en servent.",
+      "refresh": "Vérifier les résultats",
+      "refreshing": "Vérification…",
+      "updated": "Mis à jour le {date}",
+      "sold": "Vendu",
+      "unsold": "Pas vendu",
+      "noneSold": "Rien ne s'est encore vendu.",
+      "noneUnsold": "Chaque idée comptée s'est vendue au moins une fois.",
+      "result": "{units, plural, one {# vendu} other {# vendus}}, {revenue}",
+      "resultCtr": "{units, plural, one {# vendu} other {# vendus}}, {revenue}, taux de clic de {ctr}",
+      "noSales": "Aucune vente",
+      "notEnough": "wovain commence à ajuster quand {minSamples, number} idées ont un produit en vente depuis {minLiveDays, number} jours ou plus. Pour l'instant : {samples, number}.",
+      "weightsTitle": "Comment les idées sont notées",
+      "weightsLead": "Version {version, number}, ajustée sur {samples, number} idées. Les valeurs par défaut servent de point de départ, et un poids ne bouge pas de plus de la moitié de sa valeur.",
+      "defaultsLead": "Les valeurs par défaut (version 0). Elles changent quand assez d'idées ont des résultats.",
+      "term": "Signal",
+      "now": "Actuel",
+      "default": "Par défaut",
+      "up": "Plus haut que la valeur par défaut",
+      "down": "Plus bas que la valeur par défaut",
+      "terms": {
+        "demand": "Affinité de goût (Qloo)",
+        "momentum": "Élan dans l'actualité",
+        "recency": "Actualité récente",
+        "relevance": "Pertinence de recherche",
+        "openness": "Place sur le marché",
+        "margin": "Marge",
+        "ipSafety": "Sans noms de marques"
+      }
     }
   },
   "Models": {

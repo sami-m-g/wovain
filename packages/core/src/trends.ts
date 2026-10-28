@@ -7,6 +7,7 @@ import type {
 
 import { competitorPrices } from "./evidence";
 import type { Citation, DossierRecord, TavilyWeb } from "./evidence";
+import type { Learnings } from "./feedback";
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
@@ -27,7 +28,7 @@ import {
   recencyOf,
   scoreIdea,
 } from "./score";
-import type { IdeaSignals } from "./score";
+import type { IdeaSignals, ScoreWeights } from "./score";
 import { themesFor } from "./themes";
 import type { Theme } from "./themes";
 
@@ -141,6 +142,14 @@ export interface TrendSources {
   qloo: boolean;
   tasteMap?: boolean | undefined;
   tavily: boolean;
+}
+
+// What the merchant's past ideas taught (./feedback), when the
+// feedback-loop flag is on: learnings for the themes prompt and the
+// merchant's re-fit score weights.
+export interface ResearchFeedback {
+  learned?: Learnings | undefined;
+  weights?: ScoreWeights | undefined;
 }
 
 const ALL_SOURCES: TrendSources = { qloo: true, tavily: true };
@@ -392,7 +401,8 @@ const ideaOf = (
   theme: Theme,
   { failed, market, news }: Searched,
   avoidNames: string[],
-  prices?: PriceEvidence
+  prices?: PriceEvidence,
+  weights?: ScoreWeights
 ): Omit<TrendIdea, "rank"> | undefined => {
   const sources = news.results.length > 0 ? news.results : market.results;
   if (sources.length === 0) {
@@ -418,7 +428,7 @@ const ideaOf = (
     ...(prices !== undefined && { prices }),
     qlooTag: theme.id,
     references: news.images.slice(0, 4),
-    score: scoreIdea(signals),
+    score: scoreIdea(signals, weights),
     signals,
     sources: sources
       .slice(0, SOURCES_SHOWN)
@@ -441,7 +451,8 @@ export const createTrends = (
   research: async (
     seed: string,
     log?: Logger,
-    sources: TrendSources = ALL_SOURCES
+    sources: TrendSources = ALL_SOURCES,
+    feedback: ResearchFeedback = {}
   ): Promise<TrendResearch> => {
     // Tavily is the evidence: without it there is nothing to rank.
     if (!sources.tavily) {
@@ -466,7 +477,13 @@ export const createTrends = (
           return { failed: true, names: [], themes: [] };
         })
       : NO_TASTE;
-    const themes = await themesFor(seed, taste.themes, ask, log);
+    const themes = await themesFor(
+      seed,
+      taste.themes,
+      ask,
+      log,
+      feedback.learned
+    );
     const searched = await Promise.all(
       themes.map(async (theme) => await searchTheme(client, theme, log))
     );
@@ -500,7 +517,13 @@ export const createTrends = (
         const idea =
           found === undefined
             ? undefined
-            : ideaOf(theme, found, protectedNames, prices[index]);
+            : ideaOf(
+                theme,
+                found,
+                protectedNames,
+                prices[index],
+                feedback.weights
+              );
         if (idea === undefined) {
           return [];
         }

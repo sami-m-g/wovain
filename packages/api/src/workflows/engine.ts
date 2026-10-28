@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
 import { createAutopilotFunctions } from "./autopilot";
+import { createFeedbackFunctions } from "./feedback";
 import { createMediaFunctions } from "./media";
 import { createObservability } from "./observability";
 import { createOptimizerFunctions } from "./optimizer";
@@ -175,6 +176,7 @@ export const createRunEngine = ({
       onRunFailed,
       ...createAutopilotFunctions({ events, inngest, runs, services }),
       ...createMediaFunctions(inngest, services),
+      ...createFeedbackFunctions(inngest, services),
       // The ads optimizer (openspec ads-optimizer) enqueues approvals, so
       // its steps send wovain's events too.
       ...createOptimizerFunctions(inngest, { ...services, events }),

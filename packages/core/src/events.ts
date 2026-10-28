@@ -18,6 +18,8 @@ export const EVENTS = {
   // Scan one brand for autopilot triggers (Qloo, Tavily): the cron fans
   // out one per brand, and "Scan now" sends one.
   autopilotScan: "wovain/autopilot.scan",
+  // Run the feedback loop for one merchant (the daily fan-out).
+  feedbackLearn: "wovain/feedback.learn",
   // Send one notification to the merchant's devices (push, then email).
   notify: "wovain/notify",
   // Re-score the merchant's ads and propose reallocations.
@@ -75,6 +77,7 @@ export const eventSchemas = {
     reason: z.enum(["schedule", "manual"]),
     userId: z.string(),
   }),
+  [EVENTS.feedbackLearn]: z.object({ userId: z.string() }),
   [EVENTS.notify]: z.object({
     // Deep link actions on the notification, e.g. approve or open.
     actions: z

@@ -1,5 +1,6 @@
-// An idea's score from its signals, with fixed weights so real sales can
-// recalibrate them later. Code ranks ideas; no model does.
+// An idea's score from its signals. SCORE_WEIGHTS are the defaults; the
+// feedback loop (./feedback) re-fits them per merchant from real sales and
+// ad results, around these defaults. Code ranks ideas; no model does.
 
 export interface IdeaSignals {
   // Qloo affinity of the theme with the seed's fans (0..1).
@@ -25,6 +26,10 @@ export const SCORE_WEIGHTS = {
   recency: 0.1,
   relevance: 0.1,
 } as const;
+
+export type ScoreTerm = keyof typeof SCORE_WEIGHTS;
+export type ScoreWeights = Record<ScoreTerm, number>;
+export const SCORE_TERMS = Object.keys(SCORE_WEIGHTS) as ScoreTerm[];
 
 const DAY_MS = 86_400_000;
 const NEUTRAL = 0.5;
@@ -71,15 +76,25 @@ export const ipSafetyOf = (theme: string, names: string[]) => {
     : 1;
 };
 
-export const scoreIdea = (signals: IdeaSignals) => {
-  const w = SCORE_WEIGHTS;
-  const score =
-    w.demand * unit(signals.affinity ?? NEUTRAL) +
-    w.ipSafety * unit(signals.ipSafety) +
-    w.margin * unit(signals.margin) +
-    w.momentum * unit(signals.newsHits / 5) +
-    w.openness * (1 - unit(signals.marketHits / 10)) +
-    w.recency * unit(signals.recency) +
-    w.relevance * unit(signals.relevance);
+// Each term of the score, 0 to 1, before its weight.
+export const scoreFeatures = (signals: IdeaSignals): ScoreWeights => ({
+  demand: unit(signals.affinity ?? NEUTRAL),
+  ipSafety: unit(signals.ipSafety),
+  margin: unit(signals.margin),
+  momentum: unit(signals.newsHits / 5),
+  openness: 1 - unit(signals.marketHits / 10),
+  recency: unit(signals.recency),
+  relevance: unit(signals.relevance),
+});
+
+export const scoreIdea = (
+  signals: IdeaSignals,
+  weights: ScoreWeights = SCORE_WEIGHTS
+) => {
+  const features = scoreFeatures(signals);
+  const score = SCORE_TERMS.reduce(
+    (total, term) => total + weights[term] * features[term],
+    0
+  );
   return Math.round(score * 1000) / 1000;
 };

@@ -6,6 +6,7 @@ import { targetingRouter } from "./audiences";
 import { autopilotRouter } from "./autopilot";
 import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
+import { feedbackRouter } from "./feedback";
 import { insightsRouter } from "./insights";
 import { mediaCampaignsRouter } from "./media";
 import { modelsRouter } from "./models";
@@ -26,6 +27,7 @@ export const appRouter = {
   campaigns: { ...campaignsRouter, ...mediaCampaignsRouter },
   connections: connectionsRouter,
   designs: designsRouter,
+  feedback: feedbackRouter,
   healthCheck: publicProcedure.handler(() => "OK"),
   ideas: ideasRouter,
   insights: insightsRouter,
