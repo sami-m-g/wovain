@@ -28,7 +28,11 @@ export const auth = createAuth(ENV, db, mailer, analytics, billing.polar);
 // Runs execute on the durable engine (Inngest calls /api/inngest for each
 // step, docs/adr/0001-durable-runs.md) while the mastra-runs flag is on for
 // the merchant, and on the legacy in-request flow otherwise.
-export const { handler: inngestHandler, runs } = createRunEngine({
+export const {
+  events,
+  handler: inngestHandler,
+  runs,
+} = createRunEngine({
   appId: ENV.INNGEST_APP_ID,
   // Cloud Run sets K_SERVICE: there, traces go to Cloud Trace.
   cloudTrace: process.env["K_SERVICE"] !== undefined,

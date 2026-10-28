@@ -1,7 +1,7 @@
 import type { Context as ApiContext } from "@wovain/api/context";
 
 import { analytics } from "./lib/analytics";
-import { auth, billing, core, db, mailer, runs } from "./services";
+import { auth, billing, core, db, events, mailer, runs } from "./services";
 
 // The services every procedure call gets; callers spread it and add who the
 // call acts for (a session, or an MCP merchant) and, in a request, its logger.
@@ -10,6 +10,7 @@ export const baseContext = {
   billing,
   core,
   db,
+  events,
   mailer,
   runs,
 } satisfies Omit<ApiContext, "session">;

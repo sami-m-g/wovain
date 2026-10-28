@@ -22,7 +22,7 @@
 
 - `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/api studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
   - The entry `packages/api/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
-  - Required: `NEMOTRON_MODEL`, `NEMOTRON_VISION_MODEL` and `FAL_IMAGE_MODEL` (as in `apps/web/.env.schema`), `DATABASE_URL` (`postgresql://postgres:password@localhost:5432/wovain` with the Docker database) and `TOKEN_ENCRYPTION_KEY`.
+  - Required: `NEMOTRON_MODEL`, `NEMOTRON_VISION_MODEL`, `NEMOTRON_MODEL_{FAST,DEFAULT,REASONING,VISION,SAFETY}` and `FAL_IMAGE_MODEL` (as in `apps/web/.env.schema`), `DATABASE_URL` (`postgresql://postgres:password@localhost:5432/wovain` with the Docker database) and `TOKEN_ENCRYPTION_KEY`.
   - Also the per-environment settings in `apps/web/.env.schema` (`BILLING_CATALOG`, `PRICING_RULES`, the MCP URLs, `EMAIL_FROM` and the rest), set in `apps/web/.env.local`.
   - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.
 - Running the workflow needs the Inngest Dev Server: `INNGEST_DEV=1` and `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`, with `pnpm dev:web` running.

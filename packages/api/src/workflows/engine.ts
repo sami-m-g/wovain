@@ -5,7 +5,7 @@ import { Inngest } from "inngest";
 import { serve } from "inngest/next";
 import { z } from "zod";
 
-import type { RunEngine } from "../flow/actor";
+import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
 import { createObservability } from "./observability";
 import { createLegacyRunEngine, createRunRouter } from "./rollout";
@@ -168,5 +168,10 @@ export const createRunEngine = ({
     mastraFor,
   });
 
-  return { handler, runs };
+  // wovain's own events (@wovain/core/events) on the same Inngest app.
+  const events: EventSender = {
+    send: async (event) => await inngest.send(event),
+  };
+
+  return { events, handler, runs };
 };

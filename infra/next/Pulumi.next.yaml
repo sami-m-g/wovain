@@ -27,6 +27,12 @@ config:
   wovain-next:fourthwallDefaultProductId: pro_8be1acca2fe7403f89
   wovain-next:nemotronInputPrice: "0.3"
   wovain-next:nemotronOutputPrice: "0.9"
+  # The Nemotron model per job (packages/core/src/model-router.ts).
+  wovain-next:nemotronModelFast: nvidia/Nemotron-3_5-Lightning
+  wovain-next:nemotronModelDefault: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronModelReasoning: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
   wovain-next:guardrailInjectionThreshold: "0.8"
   wovain-next:guardrailModerationThreshold: "0.7"
   wovain-next:guardrailPiiThreshold: "0.7"

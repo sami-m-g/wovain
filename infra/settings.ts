@@ -43,6 +43,12 @@ export const appSettings = (config: pulumi.Config, key: SettingKey) => {
       META_MCP_SCOPE: "metaMcpScope",
       META_MCP_URL: "metaMcpUrl",
       NEMOTRON_INPUT_PRICE: "nemotronInputPrice",
+      // The Nemotron model per job (packages/core/src/model-router.ts).
+      NEMOTRON_MODEL_DEFAULT: "nemotronModelDefault",
+      NEMOTRON_MODEL_FAST: "nemotronModelFast",
+      NEMOTRON_MODEL_REASONING: "nemotronModelReasoning",
+      NEMOTRON_MODEL_SAFETY: "nemotronModelSafety",
+      NEMOTRON_MODEL_VISION: "nemotronModelVision",
       NEMOTRON_OUTPUT_PRICE: "nemotronOutputPrice",
       PRIVACY_EMAIL: "privacyEmail",
       SUPPORT_EMAIL: "supportEmail",
