@@ -73,7 +73,7 @@ A manual run SHALL draw one design for each idea the merchant approved; an autop
 
 ### Requirement: Gate waits for every design
 
-In manual mode the run SHALL wait at its approval gate until every design of the run is decided, and SHALL then make a product, publish it and stage a paused campaign for each approved design. The decision that opens the gate SHALL resume the run only after it is committed. When every design was decided before the run reached its gate, the gate SHALL open at once.
+In manual mode the run SHALL wait at its approval gate until every design of the run is decided, and SHALL then make a product for each approved design; without the `store-management` flag it SHALL also publish each product and stage a paused campaign for it. The decision that opens the gate SHALL resume the run only after it is committed. When every design was decided before the run reached its gate, the gate SHALL open at once.
 
 #### Scenario: Approve one, reject the rest
 
@@ -84,6 +84,15 @@ In manual mode the run SHALL wait at its approval gate until every design of the
 
 - **WHEN** the designer's calls on the last two pending designs land together
 - **THEN** the run resumes exactly once
+
+### Requirement: Publish gate for runs
+
+With the `store-management` flag on, a run's products SHALL stay hidden as a drop in review, the drop's publish SHALL be queued as an approval, and the run SHALL stage campaigns only for products already live.
+
+#### Scenario: Publish gate
+
+- **WHEN** a run with `store-management` on makes its products and the designer's level is `suggest`
+- **THEN** the products stay hidden, the drop is in review, and a drop publish waits in the designer's approvals
 
 ### Requirement: Ideas gate before any design
 
