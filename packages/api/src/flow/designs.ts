@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
 import { draftBrief, judgeDesign } from "@wovain/core/design";
+import type { Previous } from "@wovain/core/design";
 import { withLlmTrace } from "@wovain/core/nemotron";
 import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
@@ -13,11 +14,13 @@ import { requireFal, withProvider } from "./connections";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
 import { once } from "./once";
+import { previewPlacement } from "./placements";
 import { charge } from "./spend";
 import { designAlreadyDecided, runNotWaiting } from "./transitions";
 
 // An idea becomes a design: Nemotron writes the brief, fal draws the art,
-// Nemotron judges it. The merchant (or autopilot) then approves or rejects.
+// Nemotron judges both, looking at the art itself. A design the judge sends
+// back is redrawn once. The merchant (or autopilot) then approves or rejects.
 
 // The judge scores 0 to 100; agent_score is 0 to 1.
 const JUDGE_SCALE = 100;
@@ -66,7 +69,8 @@ export const generateDesign = async (
   const key = `design:${actor.userId}:${requestId}`;
   const made = await byKey(actor, key);
   if (made !== undefined) {
-    return made;
+    // A retried step that crashed before the preview renders it now.
+    return await previewPlacement(actor, made);
   }
   const source = await getIdea(actor, ideaId);
   const { runId } = source;
@@ -74,56 +78,81 @@ export const generateDesign = async (
   // stops the step before any model call.
   await requireFal(actor);
   const { artist, nemotron } = actor.core;
-  const { artwork, brief, judgment } = await withLlmTrace(
-    { distinctId: actor.userId, traceId: runId ?? ideaId },
-    async () => {
-      const drafted = await once(actor, {
-        key: `${key}:brief`,
-        operation: "design_brief",
-        perform: async () =>
-          await draftBrief(
-            nemotron,
-            { avoidNames: source.avoidNames, idea: source.research },
-            actor.log
-          ),
-        provider: "nebius",
-        runId,
-      });
-      const requested = await once(actor, {
-        key: `${key}:art`,
-        operation: "submit_art",
-        // The design's credits pay for the art: charged once, when fal is
-        // asked to draw, and given back if the request fails.
-        perform: async () =>
-          await charge(
-            actor,
-            "design",
-            { runId },
-            async () =>
-              await withProvider(
-                actor,
-                "fal",
-                async (call) => await artist(call).submit(drafted, actor.log)
-              )
-          ),
-        provider: "fal",
-        runId,
-      });
-      // Reading fal's answer again is free: no key needed.
-      const art = await withProvider(
+  // One drawing: a brief, fal's art and the judge's look at both. Each paid
+  // call is keyed, so a retried step reuses it; `previous` makes it the
+  // redraw of a design the judge sent back.
+  const draw = async (previous?: Previous) => {
+    const at = previous === undefined ? key : `${key}:redraw`;
+    const drafted = await once(actor, {
+      key: `${at}:brief`,
+      operation: "design_brief",
+      perform: async () =>
+        await draftBrief(
+          nemotron,
+          { avoidNames: source.avoidNames, idea: source.research, previous },
+          actor.log
+        ),
+      provider: "nebius",
+      runId,
+    });
+    const submit = async () =>
+      await withProvider(
         actor,
         "fal",
-        async (call) => await artist(call).result(requested, actor.log)
+        async (call) => await artist(call).submit(drafted, actor.log)
       );
-      return {
-        artwork: art,
-        brief: drafted,
-        judgment: await judgeDesign(
+    const requested = await once(actor, {
+      key: `${at}:art`,
+      operation: "submit_art",
+      // The design's credits pay for the art: charged once, when fal is
+      // asked to draw, and given back if the request fails. A redraw is
+      // wovain's quality cost and isn't charged again.
+      perform:
+        previous === undefined
+          ? async () => await charge(actor, "design", { runId }, submit)
+          : submit,
+      provider: "fal",
+      runId,
+    });
+    // Reading fal's answer again is free: no key needed.
+    const art = await withProvider(
+      actor,
+      "fal",
+      async (call) => await artist(call).result(requested, actor.log)
+    );
+    // Keyed too, so a retried step makes the same call on redrawing.
+    const judged = await once(actor, {
+      key: `${at}:judge`,
+      operation: "design_judge",
+      perform: async () =>
+        await judgeDesign(
           nemotron,
           { artwork: art, brief: drafted, idea: source.theme },
           actor.log
         ),
-      };
+      provider: "nebius",
+      runId,
+    });
+    return { artwork: art, ...judged };
+  };
+  const { artwork, brief, judgment } = await withLlmTrace(
+    { distinctId: actor.userId, traceId: runId ?? ideaId },
+    async () => {
+      const first = await draw();
+      if (first.judgment.verdict === "ready") {
+        return first;
+      }
+      // Sent back: redrawn once from the judge's fixes. A redraw still sent
+      // back is saved as it is, and the merchant sees it flagged.
+      actor.log?.set({
+        design: {
+          failed: first.judgment.checks
+            .filter((check) => !check.pass)
+            .map((check) => check.rule),
+          redrawn: true,
+        },
+      });
+      return await draw({ brief: first.brief, judgment: first.judgment });
     }
   );
   await actor.db
@@ -145,7 +174,7 @@ export const generateDesign = async (
     throw new Error("The design wasn't saved");
   }
   await reportDesign(actor, row);
-  return row;
+  return await previewPlacement(actor, row);
 };
 
 export const getDesign = async ({ db, userId }: Actor, id: string) => {
@@ -172,8 +201,9 @@ export interface Decision extends RunDecision {
 }
 
 // The only move out of pending_approval: approve or reject, once. A design
-// already decided answers DESIGN_ALREADY_DECIDED, so a second click, a
-// second client or a late retry can't flip it. A run draws several designs,
+// already decided the same way answers that decision again (a second click
+// or a retry is harmless); decided the other way it answers
+// DESIGN_ALREADY_DECIDED, so nothing can flip it. A run draws several designs,
 // and its gate opens on the merchant's call on the last pending one: that
 // call resumes the run once the decision is committed: the resume writes the
 // run row from its own connection, so resuming inside the transaction that
@@ -186,6 +216,7 @@ const commitDecision = async (
 ) => {
   const {
     anyApproved,
+    replay,
     row: decided,
     waitingRunId,
   } = await actor.db.transaction(async (tx) => {
@@ -235,13 +266,30 @@ const commitDecision = async (
       if (current === undefined) {
         throw notFound.design({ id });
       }
+      const decidedStatus =
+        current.status === "approved" ? "approved" : "rejected";
+      // The same call again (a second click, a retry whose answer was lost)
+      // finds its own decision: answer it, change nothing.
+      if (decidedStatus === (approve ? "approved" : "rejected")) {
+        return {
+          anyApproved: approve,
+          replay: true,
+          row: current,
+          waitingRunId: undefined,
+        };
+      }
       throw designAlreadyDecided({
         designId: current.id,
-        status: current.status === "approved" ? "approved" : "rejected",
+        status: decidedStatus,
       });
     }
     if (by !== "merchant" || row.runId === null) {
-      return { anyApproved: approve, row, waitingRunId: undefined };
+      return {
+        anyApproved: approve,
+        replay: false,
+        row,
+        waitingRunId: undefined,
+      };
     }
     // The gate opens once every design of the run is decided: the merchant
     // approves one or more and rejects the rest.
@@ -250,27 +298,50 @@ const commitDecision = async (
       .from(design)
       .where(and(eq(design.runId, row.runId), eq(design.userId, actor.userId)));
     if (decisions.some((item) => item.status === "pending_approval")) {
-      return { anyApproved: approve, row, waitingRunId: undefined };
+      return {
+        anyApproved: approve,
+        replay: false,
+        row,
+        waitingRunId: undefined,
+      };
     }
     const approvedSome = decisions.some((item) => item.status === "approved");
+    // Only a run waiting at this gate: one waiting for its ideas (a design
+    // drawn by hand meanwhile) is resumed by approveIdeas, not here.
     const [waiting] = await tx
       .update(run)
       .set({
         status: "running",
         step: approvedSome ? "approved" : "rejected",
       })
-      .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
+      .where(
+        and(
+          eq(run.id, row.runId),
+          eq(run.status, "awaiting_approval"),
+          eq(run.step, "approval")
+        )
+      )
       .returning({ id: run.id });
     if (waiting === undefined) {
-      return { anyApproved: approvedSome, row, waitingRunId: undefined };
+      return {
+        anyApproved: approvedSome,
+        replay: false,
+        row,
+        waitingRunId: undefined,
+      };
     }
     if (actor.runs === undefined) {
       throw new Error("No run engine to resume the run");
     }
-    return { anyApproved: approvedSome, row, waitingRunId: waiting.id };
+    return {
+      anyApproved: approvedSome,
+      replay: false,
+      row,
+      waitingRunId: waiting.id,
+    };
   });
   if (waitingRunId === undefined || actor.runs === undefined) {
-    return decided;
+    return { replay, row: decided };
   }
   try {
     // The run reads which designs were approved; the call says whether any.
@@ -309,7 +380,7 @@ const commitDecision = async (
     }
     throw runNotWaiting(waitingRunId, error);
   }
-  return decided;
+  return { replay, row: decided };
 };
 
 // The merchant's call teaches the agents their taste (@wovain/core/taste).
@@ -342,8 +413,9 @@ export const decideDesign = async (
   id: string,
   decision: Decision
 ) => {
-  const decided = await commitDecision(actor, id, decision);
-  if (decision.by === "merchant") {
+  const { replay, row: decided } = await commitDecision(actor, id, decision);
+  // A replayed decision taught the agents the first time.
+  if (decision.by === "merchant" && !replay) {
     await learnTaste(actor, decided, decision.approve);
   }
   return decided;

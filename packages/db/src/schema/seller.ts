@@ -135,6 +135,12 @@ export const design = pgTable(
     // the same key gets this row back instead of a second one.
     idempotencyKey: text("idempotency_key").unique(),
     judgment: jsonb("judgment").$type<Judgment>().notNull(),
+    // Fourthwall's placement preview: the art on the blank its product will
+    // use. Null on designs drawn before previews existed.
+    mockupStatus: text("mockup_status", {
+      enum: ["ready", "failed", "not_connected"],
+    }),
+    mockups: jsonb("mockups").$type<string[]>().default([]).notNull(),
     runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
     status: text("status", {
       enum: ["pending_approval", "approved", "rejected"],

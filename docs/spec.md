@@ -24,7 +24,7 @@ PRD ref: `prd.md > The Core Journey`.
 1. The designer signs in → Better Auth (`/api/auth`, Google or email) creates a session in PostgreSQL. ChatGPT instead signs in through Better Auth's OAuth server and calls `POST /api/mcp` with an access token.
 2. They connect providers → `/api/connections/[provider]/start` and `callback` run the provider's OAuth; `packages/core/src/sealing.ts` seals the tokens into `connection`.
 3. They describe a drop → the page or the MCP tool `research_trends` calls `ideas.research` → `researchIdeas` (`packages/api/src/flow/ideas.ts`) uses Qloo and Tavily from `packages/core` → ranked ideas are saved. Paid steps are metered (`flow/spend.ts`).
-4. The run draws a design for each of the top three ideas, and they can pick more → `designs.generate` (`generateDesign`) → Nemotron brief (`draftBrief`), fal art (`createArtist`), price (`priceFor`), Nemotron judge (`judgeDesign`) → the design is saved as `pending_approval`.
+4. The run waits at its ideas gate with nothing drawn; See designs → `runs.approveIdeas` (`approveIdeas`) resumes it, and it draws a design for each approved idea only → `generateDesign` → Nemotron brief (`draftBrief`), fal art (`createArtist`), price (`priceFor`), Nemotron judge (`judgeDesign`) → the design is saved as `pending_approval`.
 5. They approve → `designs.approve` (`decideDesign`). Target: the Mastra run workflow is suspended here and `resume()` continues it.
 6. `products.create` (`createDesignProduct`) calls Fourthwall through the sealed connection; `products.publish` makes it public.
 7. `campaigns.create` (`createProductCampaign`) → Nemotron ad copy (`writeAdCopy`) → `stagePausedCampaign` creates the campaign, ad set and ads paused on Meta.
@@ -53,7 +53,8 @@ PRD ref: `prd.md > The Core Journey`.
 
 ## Where It Runs and How Someone Tries It
 
-- **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>. CI deploys on merge to `main` and runs migrations first.
+- **Production:** Cloud Run at <https://wovain.com>; docs at <https://docs.wovain.com>. Production deploys from the `release/transcend` branch after an approval. It stays frozen at the Transcend deadline build until about 2026-11-16 ([ADR 0004](adr/0004-release-branch.md)).
+- **Staging for the Qloo and Nebius hackathons:** <https://next.wovain.com>. CI deploys every merge to `main` there, to its own Cloud SQL instance, and runs migrations first.
 - **ChatGPT:** add a connector with the URL `https://mcp.wovain.com/api/mcp`. OAuth discovery is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`; the designer signs in and approves access on the consent page.
 - **Locally:** Node.js (see `.nvmrc`), pnpm and Docker for PostgreSQL.
 

@@ -13,9 +13,13 @@ Nemotron hace cuatro trabajos. Nunca sustituye las comprobaciones que hace el c�
 
 ## 2. Juez de diseño
 
-`judgeDesign` recibe el brief, la ficha y los datos de la ilustración, y devuelve un veredicto (`ready` o `revise`), una puntuación de 0 a 100, una comprobación superada o fallida para título, descripción, encaje con la idea y originalidad, hasta cinco correcciones y una frase de coaching.
+`judgeDesign` recibe el brief, la ficha y los datos de la ilustración, y devuelve un veredicto (`ready` o `revise`), una puntuación de 0 a 100, una comprobación superada o fallida para título, descripción, encaje con la idea, originalidad y prenda (el motivo del prompt no es una prenda, una maqueta ni ropa), hasta cinco correcciones y una frase de coaching.
+
+Primero, `inspectArtwork` muestra el PNG dibujado a **Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, `NEMOTRON_VISION_MODEL`, misma clave y mismo precio). Comprueba que el motivo no sea una prenda, que no haya fondo ni recortes, que las palabras impresas coincidan con el brief y que el arte se vea en cada color de prenda de la lista. El código quita los colores en los que el arte desaparece y hace fallar el diseño si no queda ninguno. Estas comprobaciones son hechos: el modelo de texto no puede contradecirlas.
 
 La regla del tamaño de impresión la decide el código (`printFacts`, `applyFacts`): un arte de menos de 2880 px falla diga lo que diga el modelo, y el veredicto pasa a `revise`.
+
+Un diseño que el juez devuelve se vuelve a dibujar una vez, con un nuevo brief que aplica las correcciones, sin volver a cobrar. Si sigue en `revise`, pasa a aprobación marcado: la tarjeta enumera las comprobaciones fallidas y el botón dice «Aprobar de todos modos».
 
 ## 3. Textos de anuncios
 

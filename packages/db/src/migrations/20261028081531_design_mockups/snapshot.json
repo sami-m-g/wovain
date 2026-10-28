@@ -1,0 +1,81 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "07daea36-bd47-4b77-bef2-d586e23be1e2",
+  "prevIds": [
+    "fe864c92-1db3-4de7-b6bf-893e5757dbbd"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "design",
+        "mockup_status"
+      ],
+      "writes": [
+        "s|col|public.design.mockup_status",
+        "n|col|public.design.mockup_status",
+        "e|col|public.design.mockup_status"
+      ],
+      "reads": [
+        "n|tbl|public.design",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "design",
+        "mockups"
+      ],
+      "writes": [
+        "s|col|public.design.mockups",
+        "n|col|public.design.mockups",
+        "e|col|public.design.mockups"
+      ],
+      "reads": [
+        "n|tbl|public.design",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "design",
+        "name": "mockup_status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "design",
+        "name": "mockups",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'[]'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

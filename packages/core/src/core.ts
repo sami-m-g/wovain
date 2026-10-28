@@ -24,6 +24,8 @@ export interface CoreConfig extends FlagsConfig {
   NEBIUS_BASE_URL: string;
   // The Nebius model ID wovain's agents call (apps/web/.env.schema).
   NEMOTRON_MODEL: string;
+  // The Nebius vision model the design judge reads the art with.
+  NEMOTRON_VISION_MODEL: string;
   // The fal endpoint that draws the print art (apps/web/.env.schema).
   FAL_IMAGE_MODEL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
@@ -44,16 +46,14 @@ export const createCore = (
   const agents = createAgentKit({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,
-    environment:
-      new URL(env.BETTER_AUTH_URL).hostname === "wovain.com"
-        ? "production"
-        : "development",
+    environment: env.APP_ENV ?? "development",
     guardrails: env.GUARDRAILS !== "off",
     memory,
     model: env.NEMOTRON_MODEL,
     posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,
     posthogKey: env.NEXT_PUBLIC_POSTHOG_KEY,
     scoreSampleRate: env.SCORER_SAMPLE_RATE,
+    visionModel: env.NEMOTRON_VISION_MODEL,
   });
   const nemotron = createNemotron(agents);
   return {

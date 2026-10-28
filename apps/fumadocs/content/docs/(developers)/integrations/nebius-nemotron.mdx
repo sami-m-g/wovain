@@ -13,9 +13,13 @@ Nemotron does four jobs. It never replaces the checks that code makes.
 
 ## 2. Design judge
 
-`judgeDesign` receives the brief, listing and artwork facts and returns a verdict (`ready` or `revise`), a 0 to 100 score, a pass or fail check for title, description, idea fit and originality, up to five fixes and a one-line coach note.
+`judgeDesign` receives the brief, listing and artwork facts and returns a verdict (`ready` or `revise`), a 0 to 100 score, a pass or fail check for title, description, idea fit, originality and garment (the art prompt's subject is not a garment, mockup or clothing), up to five fixes and a one-line coach note.
+
+First, `inspectArtwork` shows the drawn PNG to **Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, `NEMOTRON_VISION_MODEL`, same key and price). It checks that the art's subject is not a garment, that it has no background and nothing is cropped, that the words it prints match the brief, and that it shows on each garment color the brief lists. Code drops the colors the art disappears on, and fails the design when none is left. These checks are facts: the text model can't overrule them.
 
 The print-size rule is decided by code (`printFacts`, `applyFacts`): art narrower than 2880 px fails whatever the model says, and the verdict becomes `revise`.
+
+A design the judge sends back is redrawn once, from a new brief that applies the fixes, and the redraw isn't charged again. If the redraw is still `revise`, it goes to approval flagged: the card lists the failed checks and the button reads "Approve anyway".
 
 ## 3. Ad copy
 

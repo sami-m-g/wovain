@@ -14,7 +14,7 @@ Source: `scope.md > What "Working" Looks Like`.
 1. The designer signs in at <https://wovain.com> with Google or email (or adds the wovain app in ChatGPT and signs in there).
 2. They connect their own Fourthwall shop and Meta ad account, and, once shipped, their own fal key. Free accounts start with 15 credits a month (proposal).
 3. They describe a drop. wovain asks Qloo for the direction's entities and taste themes, then Tavily for this week's news and marketplace listings inside those themes, and saves ranked ideas with evidence.
-4. wovain draws a design for each of the top three ideas, and they can pick more. For each, Nemotron writes a design brief and listing, fal draws transparent print art, and the price comes from the blank's base cost.
+4. They pick the ideas they like and click See designs: wovain draws a design for each picked idea and for no other (nothing is drawn before that click). For each, Nemotron writes a design brief and listing, fal draws transparent print art, and the price comes from the blank's base cost.
 5. Nemotron judges the design and scorers grade it. Code checks the print size itself; a `revise` verdict lists the fixes.
 6. The designer approves or rejects the design (with a reason). The run waits for this decision.
 7. An approved design becomes a Fourthwall product, hidden. The designer publishes it as a separate step.
@@ -81,7 +81,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 - As a designer, I want a priced, checked design before I approve.
   - [x] Price is at least $10 profit and 30% margin after card fees, sales tax and a refund reserve.
   - [x] The print-size check is computed by code and overrides Nemotron.
-  - [x] The judge checks title, description, idea fit and originality and returns a verdict, score and up to five fixes.
+  - [x] The judge checks title, description, idea fit, originality and that the subject is not a garment, looks at the drawn art (no garment or mockup, no background or cropping, the printed words, contrast on each garment color) and returns a verdict, score and up to five fixes. A design sent back is redrawn once, then shown flagged.
 
 ### Publishing and ads
 

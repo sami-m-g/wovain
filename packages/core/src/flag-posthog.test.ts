@@ -10,7 +10,11 @@ const flag = (overrides: Partial<FlagDefinition>): FlagDefinition => ({
   guarded: true,
   initiallyActive: true,
   owner: { gitlab: "owner", team: "team" },
-  rollout: { development: { kind: "off" }, production: { kind: "off" } },
+  rollout: {
+    development: { kind: "off" },
+    next: { kind: "off" },
+    production: { kind: "off" },
+  },
   type: "release",
   ...overrides,
 });
@@ -35,6 +39,7 @@ describe("the registry as PostHog flags", () => {
       flag({
         rollout: {
           development: { kind: "all" },
+          next: { kind: "off" },
           production: { kind: "percent", percent: 10 },
         },
       })
@@ -64,6 +69,7 @@ describe("the registry as PostHog flags", () => {
       flag({
         rollout: {
           development: { kind: "off" },
+          next: { kind: "internal" },
           production: { kind: "internal" },
         },
       })
@@ -73,6 +79,11 @@ describe("the registry as PostHog flags", () => {
       {
         internal: true,
         properties: [environment("production")],
+        rollout_percentage: 100,
+      },
+      {
+        internal: true,
+        properties: [environment("next")],
         rollout_percentage: 100,
       },
     ]);
@@ -88,7 +99,7 @@ describe("the registry as PostHog flags", () => {
   it("adds the plan allowlist to every condition", () => {
     const { groups } = posthogFlag(FLAGS["trends-qloo"]);
 
-    expect(groups).toHaveLength(2);
+    expect(groups).toHaveLength(3);
     for (const group of groups) {
       expect(group.properties).toContainEqual({
         key: "plan",

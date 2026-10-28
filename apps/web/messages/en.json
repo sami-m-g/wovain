@@ -445,7 +445,7 @@
     },
     "trends": {
       "title": "Pick the ideas",
-      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top ideas already have designs; pick more to draw them too.",
+      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. Pick the ones you'd sell: wovain draws designs only for those, when you click See designs.",
       "score": "Score {score}",
       "affinity": "Taste affinity",
       "affinityUnavailable": "Not available",
@@ -466,6 +466,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Prints: {text}",
       "approve": "Approve",
+      "approveAnyway": "Approve anyway",
+      "flagged": "The design check flagged this design. Check these before you sell it:",
       "approved": "Approved",
       "reject": "Reject",
       "rejected": "Rejected",
@@ -475,10 +477,12 @@
       "error": "Approve at least one design.",
       "submit": "Make products",
       "artAlt": "Design: {title}",
-      "shirtAlt": "Design on a shirt: {title}",
+      "shirtAlt": "Design on a shirt, as Fourthwall renders it: {title}",
       "viewShirt": "On a shirt",
       "viewFlat": "Flat art",
-      "viewLabel": "Artwork view"
+      "viewLabel": "Artwork view",
+      "mockupUnavailable": "Fourthwall couldn't render this design on the shirt. Showing the flat art.",
+      "mockupNotConnected": "Connect Fourthwall to see this design on the shirt."
     },
     "products": {
       "title": "Publish the products",
@@ -530,7 +534,7 @@
       "another": "Write a new brief"
     },
     "working": {
-      "research": "Researching trends and drafting the first designs…",
+      "research": "Researching trends…",
       "autopilot": "Autopilot is researching, designing, publishing and building the campaign…",
       "designs": "Making designs…",
       "review": "Saving your decision…",

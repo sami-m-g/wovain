@@ -57,6 +57,19 @@
       "note": "Asks for a garment mockup with a background, and the description is care details."
     },
     {
+      "id": "design_quality-005",
+      "judge": "design_quality",
+      "label": "fail",
+      "input": { "idea": "Pastel Y2K cropped tees are back" },
+      "output": {
+        "title": "Y2K Cropped Tee Shirt, Pink Line Art Baby Tee",
+        "description": "A nod to the baby tee. Pastel, playful and very 2003.",
+        "artPrompt": "A simple line drawing of a pink cropped tee silhouette, thin clean outline, centered, transparent background",
+        "printedText": []
+      },
+      "note": "From production: the art's subject is a garment (a cropped tee silhouette), so the printed shirt shows a picture of a shirt. Clean line art on a transparent background doesn't save it."
+    },
+    {
       "id": "brand_fit-001",
       "judge": "brand_fit",
       "label": "pass",

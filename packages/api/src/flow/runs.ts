@@ -2,7 +2,7 @@ import { DESIGNS_PER_RUN } from "@wovain/billing/plans";
 import { pickIdea } from "@wovain/core/autopilot";
 import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
-import { design, run } from "@wovain/db/schema/seller";
+import { design, idea, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import { log } from "evlog";
@@ -16,15 +16,18 @@ import { getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
+import { runNotAtIdeas, runNotWaiting } from "./transitions";
 
-// A run takes a seed through the flow: research → designs → approval →
-// products → publish → PAUSED campaigns. The request only saves the run and
-// queues it; a durable workflow (../workflows/run) calls the steps below,
-// each retried on its own and each safe to run twice. The run draws one
-// design for each of the top ideas (DESIGNS_PER_RUN), so the merchant
-// compares options. Without autopilot the run waits at the approval gate
-// until every design is decided, then lists each approved one; with
-// autopilot, Nemotron picks the lead idea and decides each design.
+// A run takes a seed through the flow: research → ideas → designs →
+// approval → products → publish → PAUSED campaigns. The request only saves
+// the run and queues it; a durable workflow (../workflows/run) calls the
+// steps below, each retried on its own and each safe to run twice. Without
+// autopilot the run waits at its ideas gate and draws nothing until the
+// merchant approves ideas ("See designs"), then draws one design for each
+// approved idea and no other; it waits at the approval gate until every
+// design is decided, then lists each approved one. With autopilot, Nemotron
+// picks the lead idea, the run draws the top ideas (DESIGNS_PER_RUN) and
+// Nemotron decides each design.
 
 const ACTIVE: RunStatus[] = ["running", "awaiting_approval"];
 
@@ -78,7 +81,8 @@ export const eachSettled = async <R>(
   return done;
 };
 
-// Research, then the ideas to draw: the top ones, led by autopilot's pick.
+// Research, then the ideas to draw: with autopilot the top ones, led by its
+// pick. Without it every idea, for the merchant to choose from at the gate.
 export const researchStep = async (
   actor: Actor,
   runId: string,
@@ -88,7 +92,7 @@ export const researchStep = async (
   const ideas = await researchIdeas(actor, input.seed, runId);
   const ranked = ideas.map((row) => row.id);
   if (ranked.length === 0 || !input.autopilot) {
-    return { ideaIds: ranked.slice(0, DESIGNS_PER_RUN) };
+    return { ideaIds: ranked };
   }
   const chosen = await charge(
     actor,
@@ -180,6 +184,85 @@ export const autopilotStep = async (
 // Why an autopilot run stopped: it approved none of its designs.
 export const autopilotRejection = (reasons: string[]) =>
   `Autopilot rejected the designs: ${reasons.join("; ")}`;
+
+// Stops a merchant's run at its ideas gate: nothing is drawn until they
+// approve ideas (approveIdeas).
+export const awaitIdeas = async (actor: Actor, runId: string) => {
+  await markRun(actor, runId, { status: "awaiting_approval", step: "ideas" });
+};
+
+// The merchant's "See designs": the ideas they approved, checked against the
+// run, then the run moves from its ideas gate to drawing, once (the run row
+// is the lock: a second call finds it no longer waiting). The move commits
+// before the run is resumed; if the resume fails, the run waits at its ideas
+// gate again and the merchant is asked to try again.
+export const approveIdeas = async (
+  actor: Actor,
+  runId: string,
+  ideaIds: string[]
+) => {
+  if (actor.runs === undefined) {
+    throw new Error("No run engine to resume the run");
+  }
+  const wanted = [...new Set(ideaIds)];
+  const known = await actor.db
+    .select({ id: idea.id })
+    .from(idea)
+    .where(
+      and(
+        eq(idea.runId, runId),
+        eq(idea.userId, actor.userId),
+        inArray(idea.id, wanted)
+      )
+    );
+  const found = new Set(known.map((row) => row.id));
+  const stranger = wanted.find((id) => !found.has(id));
+  if (stranger !== undefined) {
+    throw notFound.idea({ id: stranger });
+  }
+  const [moved] = await actor.db
+    .update(run)
+    .set({ status: "running", step: "design" })
+    .where(
+      and(
+        eq(run.id, runId),
+        eq(run.userId, actor.userId),
+        eq(run.status, "awaiting_approval"),
+        eq(run.step, "ideas")
+      )
+    )
+    .returning({ id: run.id });
+  if (moved === undefined) {
+    throw runNotAtIdeas(runId);
+  }
+  actor.log?.set({ run: { approvedIdeas: wanted.length, id: runId } });
+  try {
+    await actor.runs.approveIdeas(runId, wanted);
+  } catch (error) {
+    // Undo only what this call set, and only while nothing has moved on.
+    try {
+      await actor.db
+        .update(run)
+        .set({ status: "awaiting_approval", step: "ideas" })
+        .where(
+          and(
+            eq(run.id, runId),
+            eq(run.status, "running"),
+            eq(run.step, "design")
+          )
+        );
+    } catch (undoError) {
+      throw runNotWaiting(
+        runId,
+        new AggregateError(
+          [error, undoError],
+          "Resume failed and reopening the ideas gate failed"
+        )
+      );
+    }
+    throw runNotWaiting(runId, error);
+  }
+};
 
 // Stops the run at its gate. Answers false when the merchant already decided
 // every design (they can while later ones are still drawn): the gate opens
