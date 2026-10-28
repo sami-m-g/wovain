@@ -54,6 +54,13 @@
 - Code, issues and pull requests live on GitHub (`sami-m-g/wovain`). CI is GitHub Actions.
 - Work on a branch and open a pull request against `main`. The PR says `Closes #<issue>`.
 
+## Tooling (project scope)
+
+- Declared in `.mcp.json`, `.claude/settings.json` and `skills-lock.json`; never install at user or global scope.
+- MCP: `qloo-docs` (docs), `qloo` (harness, reads `QLOO_API_KEY`), `tavily` (OAuth, or `TAVILY_API_KEY` for the CLI skills), `inngest-dev` (Dev Server on 127.0.0.1:8288), `pulumi` (OAuth).
+- Plugins: `superpowers`, `inngest`, `playwright`.
+- Skills: `tavily-*`, `remotion-*`, `pulumi-*`, `investor-materials`, `investor-outreach`.
+
 ## Feature flags
 
 - Add a flag to the registry in `packages/core/src/flag-registry.ts` with an owner, an expiry and a rollout per environment, then read it with `core.flags.isOn("<name>", { userId, plan })` (`isFlagOn` in `apps/web`). Names are typed; never pass a string you built.
