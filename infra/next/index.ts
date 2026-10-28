@@ -24,6 +24,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { appEnvironment } from "../dev.ts";
 import { mappedHost } from "../domains.ts";
 import { environmentVariables, mainOnlyEnvironment } from "../github.ts";
+import { environmentPromoSecrets } from "../polar.ts";
 import { environmentProject } from "../posthog/program.ts";
 import {
   appSettings,
@@ -94,6 +95,17 @@ const { deploy } = environment;
 if (deploy === undefined) {
   throw new Error("next needs its deploy account");
 }
+
+// Where `pnpm polar:seed` with POLAR_METADATA_KEY=wovain:next keeps next's
+// promo codes (packages/billing/src/promos.ts): `polar-promo-<id>-next`, never
+// production's `polar-promo-<id>`.
+environmentPromoSecrets(
+  NAME,
+  config.requireObject<{ promos?: { enabled: boolean; id: string }[] }>(
+    "billingCatalog"
+  ),
+  { protect: true }
+);
 
 mappedHost({
   apex: APEX,

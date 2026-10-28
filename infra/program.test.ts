@@ -120,6 +120,10 @@ test("the program registers every resource once, without throwing", async () => 
   // next.wovain.com is its own stack (next/): nothing of it is declared
   // here, so applying production's stack never touches it, and the reverse.
   expect(registered.filter((r) => r.includes("next"))).toEqual([]);
+  // Production's promo code secret keeps its id; next's are next's own.
+  expect(registered).toContain(
+    "gcp:secretmanager/secret:Secret::polar-promo-judges-2026"
+  );
   for (const env of ["dev"]) {
     for (const id of [
       "inngest-event-key",

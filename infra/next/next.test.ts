@@ -69,6 +69,10 @@ test("the next program declares only next.wovain.com's own resources", async () 
       "gcp:dns/recordSet:RecordSet::next-wovain-com-cname",
       "gcp:secretmanager/secret:Secret::inngest-event-key-next",
       "gcp:secretmanager/secret:Secret::polar-webhook-secret-next",
+      // The seed's promo codes: next's own, never production's
+      // polar-promo-judges-2026.
+      "gcp:secretmanager/secret:Secret::polar-promo-judges-2026-next",
+      "gcp:secretmanager/secret:Secret::polar-promo-judges-account-2026-next",
       "posthog:index/project:Project::project-next",
       "pulumi-nodejs:dynamic/resend:ApiKey::resend-next",
       "github:index/repositoryEnvironment:RepositoryEnvironment::next",

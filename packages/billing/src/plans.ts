@@ -21,7 +21,7 @@ export type Offer = (typeof OFFERS)[number];
 // copied from the dashboard. An environment that shares a Polar organization
 // with another one sets its own key (POLAR_METADATA_KEY, e.g. `wovain:next`),
 // so the seed and the app never find, change or archive the other's objects.
-const DEFAULT_METADATA_KEY = "wovain";
+export const DEFAULT_METADATA_KEY = "wovain";
 const metadataKey = process.env["POLAR_METADATA_KEY"];
 export const POLAR_METADATA_KEY =
   metadataKey === undefined || metadataKey === ""

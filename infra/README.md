@@ -171,7 +171,17 @@ Hackathon judges share one account on next.wovain.com, `judges@wovain.com` (open
 
    It prints the password once: paste it into Devpost's testing instructions, never into the repository. A second run changes nothing and keeps the password; add `--reset-password` to set a new one (it signs the old one out). The seed refuses production's instance (`wovain`), user (`wovain`) and secret (`database-url`) before it connects, and refuses any server whose database isn't `wovain_next` once connected.
 
-2. Create the promo in next's Polar sandbox organization: `pnpm polar:seed` with next's `POLAR_ACCESS_TOKEN` (`polar-access-token-next`), next's `BILLING_CATALOG` and `POLAR_METADATA_KEY=wovain:next`. next shares production's sandbox organization, and the seed finds and updates whatever carries its metadata key, so without `wovain:next` it would rewrite production's plans, benefits and promos. With it, the seed creates next's own meter, benefits, products and discounts, and the `POLAR_WEBHOOK_URL=https://next.wovain.com/api/auth/polar/webhooks POLAR_WEBHOOK_SECRET_ID=polar-webhook-secret-next` endpoint. Without `GCP_PROJECT_ID` the code goes to the gitignored `.env.polar-promos`; set `POLAR_PROMO_CODE_JUDGES_ACCOUNT_2026` to choose it. Give the code to the judges with the password, or redeem it once yourself as the judges on Billing > Redeem a code.
+2. Create the promo in next's Polar sandbox organization: `pnpm polar:seed` with next's `POLAR_ACCESS_TOKEN` (`polar-access-token-next`), next's `BILLING_CATALOG` and `POLAR_METADATA_KEY=wovain:next`. next shares production's sandbox organization, and the seed finds and updates whatever carries its metadata key, so without `wovain:next` it would rewrite production's plans, benefits and promos. With it, the seed creates next's own meter, benefits, products and discounts, and the `POLAR_WEBHOOK_URL=https://next.wovain.com/api/auth/polar/webhooks POLAR_WEBHOOK_SECRET_ID=polar-webhook-secret-next` endpoint. With `GCP_PROJECT_ID=wovain`, each code goes to next's own secret, `polar-promo-<id>-next` (`packages/billing/src/promos.ts`; this stack creates them from its `billingCatalog`), never to production's `polar-promo-<id>`. Without `GCP_PROJECT_ID` the code goes to the gitignored `.env.polar-promos`; set `POLAR_PROMO_CODE_JUDGES_ACCOUNT_2026` to choose it.
+
+   ```sh
+   POLAR_ACCESS_TOKEN="$(gcloud secrets versions access latest --secret polar-access-token-next --project wovain)" \
+   POLAR_METADATA_KEY=wovain:next GCP_PROJECT_ID=wovain \
+   BILLING_CATALOG="$(pulumi config get billingCatalog --cwd infra/next --stack next)" \
+   POLAR_WEBHOOK_URL=https://next.wovain.com/api/auth/polar/webhooks POLAR_WEBHOOK_SECRET_ID=polar-webhook-secret-next \
+     pnpm polar:seed
+   ```
+
+3. Read the code without printing it anywhere else: `gcloud secrets versions access latest --secret polar-promo-judges-account-2026-next --project wovain`. Give it to the judges with the password, or redeem it once yourself as the judges on Billing > Redeem a code.
 
 ### What the previews show
 

@@ -7,13 +7,15 @@
 //
 // The repository is public, so no code value lives in it or in the config:
 // the seed generates a random code for each promo the first time, keeps it
-// only in Polar and Secret Manager (polar-promo-<id>), and never prints it.
+// only in Polar and Secret Manager (polar-promo-<id>, or polar-promo-<id>-next
+// on next), and never prints it.
 // Read a code with `gcloud secrets versions access latest
 // --secret=polar-promo-<id>` or in the Polar dashboard (Products >
 // Discounts). Node runs the seed directly, so imports carry extensions.
 
 import { billingCatalog } from "./catalog.ts";
 import type { Promo } from "./catalog.ts";
+import { DEFAULT_METADATA_KEY, POLAR_METADATA_KEY } from "./plans.ts";
 
 export type { Promo } from "./catalog.ts";
 
@@ -38,8 +40,30 @@ export const promoPriceCents = (promo: Pick<Promo, "credits">) =>
   promo.credits * billingCatalog().promoCentsPerCredit;
 
 // Where the seed keeps a promo's code: a Secret Manager secret in CI, or a
-// line in a gitignored env file locally.
-export const promoSecretId = (id: string) => `polar-promo-${id}`;
+// line in a gitignored env file locally. Production (the plain `wovain`
+// key) keeps `polar-promo-<id>`; an environment that shares the GCP project
+// with its own key gets its own secret, e.g. `wovain:next` writes
+// `polar-promo-<id>-next`, so seeding it never adds a version to
+// production's code (infra/polar.ts declares both).
+const ENVIRONMENT_PREFIX = `${DEFAULT_METADATA_KEY}:`;
+const NOT_SECRET_ID = /[^a-z0-9-]+/gu;
+
+export const promoSecretIdFor = (id: string, metadataKey: string) => {
+  if (metadataKey === DEFAULT_METADATA_KEY) {
+    return `polar-promo-${id}`;
+  }
+  const environment = (
+    metadataKey.startsWith(ENVIRONMENT_PREFIX)
+      ? metadataKey.slice(ENVIRONMENT_PREFIX.length)
+      : metadataKey
+  )
+    .toLowerCase()
+    .replaceAll(NOT_SECRET_ID, "-");
+  return `polar-promo-${id}-${environment}`;
+};
+
+export const promoSecretId = (id: string) =>
+  promoSecretIdFor(id, POLAR_METADATA_KEY);
 
 // Whether the account with this email may redeem the promo: any account
 // unless the promo names its accounts.

@@ -22,7 +22,7 @@ Judges share one ready account on [next.wovain.com](https://next.wovain.com):
 3. You land on the overview. Its **Start here** checklist shows what's left: the brand is set, and the agent drafts only (hidden products, paused campaigns) within a $5 daily spend cap.
 4. On **Billing**, redeem the judges' code from the Devpost testing instructions if the credits aren't there yet. It works only on this account and covers about 17 full drops.
 
-The password and the code are never in this repository. The owner seeds the account with `pnpm --filter @wovain/auth seed:judges --env next` ([infra/README.md](infra/README.md#the-judges-demo-account-on-next-one-time-by-a-project-owner)).
+The password and the code are never in this repository. The owner seeds the account with `pnpm --filter @wovain/auth seed:judges --env next` and reads the code with `gcloud secrets versions access latest --secret polar-promo-judges-account-2026-next --project wovain` ([infra/README.md](infra/README.md#the-judges-demo-account-on-next-one-time-by-a-project-owner)).
 
 A 3-minute path:
 

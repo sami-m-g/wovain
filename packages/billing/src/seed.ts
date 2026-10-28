@@ -10,7 +10,8 @@
 //
 // A promo's code is random (or POLAR_PROMO_CODE_<ID>, e.g.
 // POLAR_PROMO_CODE_JUDGES_2026, when set) and is never printed: it goes to
-// Secret Manager as polar-promo-<id> in CI, else to .env.polar-promos.
+// Secret Manager as polar-promo-<id> in CI (polar-promo-<id>-next with
+// POLAR_METADATA_KEY=wovain:next, src/promos.ts), else to .env.polar-promos.
 //
 // Node runs this file directly, so it imports only the SDKs, zod (through
 // catalog.ts), plans.ts and promos.ts.
