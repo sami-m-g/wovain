@@ -69,6 +69,34 @@ const searchSchema = z.object({
   ),
 });
 
+const affinityMap = z.record(z.string().max(40), z.number()).default({});
+
+const demographicsSchema = z.object({
+  results: z.object({
+    demographics: z
+      .array(
+        z.object({
+          entity_id: z.string().max(200),
+          query: z.object({ age: affinityMap, gender: affinityMap }),
+        })
+      )
+      .default([]),
+  }),
+});
+
+const affinitySchema = z.object({
+  results: z.object({
+    entities: z
+      .array(
+        z.object({
+          entity_id: z.string().max(128),
+          query: z.object({ affinity: z.number().optional() }).optional(),
+        })
+      )
+      .default([]),
+  }),
+});
+
 const tagsSchema = z.object({
   results: z.object({
     tags: z
@@ -125,6 +153,21 @@ export interface QlooTheme {
   affinity: number;
   id: string;
   name: string;
+}
+
+// One entity's demographic lean: Qloo's age buckets ("24_and_younger",
+// "25_to_29" … "55_and_older") and genders ("male", "female"), -1 to 1.
+export interface QlooDemographics {
+  age: Record<string, number>;
+  gender: Record<string, number>;
+  id: string;
+}
+
+// An entity /search found for free text, with all its types.
+export interface QlooSearchEntity {
+  id: string;
+  name: string;
+  types: string[];
 }
 
 // An entity Qloo matched for the seed: "artist", "movie", "brand" …
@@ -377,7 +420,89 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       };
     });
 
-  return { tasteOf };
+  // Qloo's age and gender affinity for the given entities, one block per
+  // entity (urn:demographics, docs.qloo.com/reference/demographics-use-case).
+  // Scores run -1 to 1; positive means stronger than average.
+  const demographicsOf = async (
+    entityIds: readonly string[],
+    log?: Logger
+  ): Promise<QlooDemographics[]> =>
+    await external(
+      log,
+      { operation: "demographics", provider: "qloo" },
+      async () => {
+        if (entityIds.length === 0) {
+          return [];
+        }
+        const { results } = await get(
+          "/v2/insights",
+          {
+            "filter.type": "urn:demographics",
+            "signal.interests.entities": entityIds.join(","),
+          },
+          demographicsSchema
+        );
+        return results.demographics.map(({ entity_id: id, query }) => ({
+          age: query.age,
+          gender: query.gender,
+          id,
+        }));
+      }
+    );
+
+  // How much one Qloo audience (urn:audience:…) likes the given entities of
+  // one type, each 0 to 1. Qloo answers a flat baseline for entities it has
+  // no audience data on, so callers compare audiences, not raw values.
+  const audienceAffinity = async (
+    audienceId: string,
+    type: string,
+    entityIds: readonly string[],
+    log?: Logger
+  ): Promise<number[]> =>
+    await external(
+      log,
+      { operation: "audience_affinity", provider: "qloo" },
+      async () => {
+        if (entityIds.length === 0) {
+          return [];
+        }
+        const { results } = await get(
+          "/v2/insights",
+          {
+            "filter.results.entities": entityIds.join(","),
+            "filter.type": type,
+            "signal.demographics.audiences": audienceId,
+            take: String(entityIds.length),
+          },
+          affinitySchema
+        );
+        return results.entities.flatMap((entity) =>
+          entity.query?.affinity === undefined ? [] : [entity.query.affinity]
+        );
+      }
+    );
+
+  // Qloo entities for free text, e.g. a merchant's taste references.
+  const searchEntities = async (
+    query: string,
+    types: readonly string[],
+    take: number,
+    log?: Logger
+  ): Promise<QlooSearchEntity[]> =>
+    await external(log, { operation: "search", provider: "qloo" }, async () => {
+      const { results } = await get(
+        "/search",
+        { query, take: String(take), types: types.join(",") },
+        searchSchema
+      );
+      return results.map((entity) => ({
+        id: entity.entity_id,
+        name: entity.name,
+        types: entity.types ?? [],
+      }));
+    });
+
+  return { audienceAffinity, demographicsOf, searchEntities, tasteOf };
 };
 
 export type Qloo = ReturnType<typeof createQloo>;

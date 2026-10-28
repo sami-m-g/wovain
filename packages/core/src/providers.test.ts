@@ -239,6 +239,52 @@ describe("Meta", () => {
       ad_account_id: "222",
       campaign_daily_budget: 1500,
     });
+    const adSet = calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(JSON.parse(String(adSet?.args["targeting"]))).toEqual({
+      geo_locations: { countries: ["US"] },
+    });
+  });
+
+  it("targets the ad set with Qloo's audience, the plan's countries kept", async () => {
+    const { call, calls } = fakeServer({
+      ads_create_ad: { ad_id: "ad_1" },
+      ads_create_ad_set: { ad_set_id: "as_1" },
+      ads_create_campaign: { campaign_id: "c_1" },
+      ads_create_creative: { creative_id: "cr_1" },
+    });
+
+    await stagePausedCampaign(call, {
+      adAccountId: "222",
+      copy: [{ angle: "humor", headline: "h", message: "m" }],
+      countries: ["US", "CA"],
+      dailyBudgetCents: 1500,
+      imageUrl: "https://cdn.fourthwall.com/mock.png",
+      linkUrl: "https://shop.example.com/products/reading-cat",
+      name: "wovain · Reading Cat",
+      pageId: "p_1",
+      tag: "w-test",
+      targeting: {
+        age_max: 34,
+        age_min: 25,
+        flexible_spec: [
+          { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+        ],
+        genders: [1],
+        geo_locations: { countries: ["GB"] },
+      },
+    });
+
+    const adSet = calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(adSet?.args["ad_set_name"]).toContain("qloo");
+    expect(JSON.parse(String(adSet?.args["targeting"]))).toEqual({
+      age_max: 34,
+      age_min: 25,
+      flexible_spec: [
+        { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+      ],
+      genders: [1],
+      geo_locations: { countries: ["US", "CA"] },
+    });
   });
 });
 

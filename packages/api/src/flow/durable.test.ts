@@ -11,6 +11,7 @@ import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
+import { brandProfile, decisionTrace } from "@wovain/db/schema/autonomy";
 import { creditReservation } from "@wovain/db/schema/billing";
 import { externalWrite } from "@wovain/db/schema/durable";
 import {
@@ -106,7 +107,8 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
   });
   const core = {
     defaultCatalogProductId: "pro_default",
-    // Every flag off: the flows as they ran before their flags.
+    // Every flag off: the flows as they ran before their flags, so these
+    // tests stage campaigns targeted by country only.
     flags: { isOn: async () => await Promise.resolve(false) },
     nemotron: ask,
     upstream: {
@@ -679,6 +681,72 @@ describe("createProductCampaign", () => {
     expect(again.id).toBe(staged.id);
     expect(ads.calls).toHaveLength(calls);
     expect(await ctx.db.select().from(campaign)).toHaveLength(1);
+  });
+
+  it("targets the ad set with Qloo's audience and saves the trace when qloo-audiences is on", async () => {
+    const ads = meta({ loseAdSetAnswer: false });
+    const ctx = await setup({ meta: ads.call });
+    const { designId, runId } = await seedRun(ctx.db, "running");
+    const productId = await publishedProduct(ctx.db, designId);
+    await ctx.db.insert(brandProfile).values({
+      qlooEntities: [{ id: "B1", name: "Supreme", type: "urn:entity:brand" }],
+      userId: USER_ID,
+    });
+    const search = vi.fn(
+      async (query: string) =>
+        await Promise.resolve(
+          query === "Sneakers"
+            ? [{ id: "6003000000010", name: "Sneakers", path: [] }]
+            : []
+        )
+    );
+    ctx.actor.core = {
+      ...ctx.actor.core,
+      flags: {
+        isOn: async (name: string) =>
+          await Promise.resolve(name === "qloo-audiences"),
+      },
+      metaInterests: { search },
+      qloo: {
+        audienceAffinity: async (audienceId: string) =>
+          await Promise.resolve(
+            audienceId.endsWith("sneakerheads") ? [0.95] : [0.765]
+          ),
+        demographicsOf: async () =>
+          await Promise.resolve([
+            {
+              age: { "24_and_younger": 0.3, "25_to_29": 0.1 },
+              gender: { female: -0.2, male: 0.2 },
+              id: "B1",
+            },
+          ]),
+        searchEntities: async () => await Promise.resolve([]),
+      },
+    } as unknown as Core;
+
+    await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+
+    const adSet = ads.calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(JSON.parse(String(adSet?.args["targeting"]))).toEqual({
+      age_max: 29,
+      age_min: 18,
+      flexible_spec: [
+        { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+      ],
+      genders: [1],
+      geo_locations: { countries: ["US"] },
+    });
+    const steps = await ctx.db
+      .select()
+      .from(decisionTrace)
+      .where(eq(decisionTrace.runId, runId));
+    expect(steps.map((row) => row.step)).toEqual(
+      expect.arrayContaining(["qloo.demographics", "meta.targeting"])
+    );
   });
 
   it("archives a half-staged campaign when the run fails for good", async () => {

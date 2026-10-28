@@ -368,6 +368,7 @@ const service = cloudRunService("web", {
     ...googleEnv,
     ...posthogEnv,
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
+    { name: "META_GRAPH_URL", value: sharedEnvs.META_GRAPH_URL },
     { name: "WOVAIN_BUCKET", value: media.name },
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
     ...mountedSecretIds.map((id) => secretEnv(id)),

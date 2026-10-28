@@ -335,7 +335,7 @@ const ideaOf = (
 
 export const createTrends = (
   client: TavilySearch,
-  qloo: Qloo,
+  qloo: Pick<Qloo, "tasteOf">,
   // Splits a brief into themes when Qloo names too few; without it, design
   // angles on the brief's subject stand in (./themes).
   ask?: Nemotron
