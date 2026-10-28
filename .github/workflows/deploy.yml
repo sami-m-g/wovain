@@ -158,9 +158,10 @@ jobs:
           # send it all to the newest one.
           gcloud run services update-traffic wovain-web --to-latest --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet
       # Registers the new revision's run workflow with Inngest Cloud
-      # (docs/adr/0001-durable-runs.md); fails until the Inngest keys are set.
+      # (docs/adr/0001-durable-runs.md). The Inngest keys are Pulumi's
+      # (infra/index.ts), so a failure here is a real one and fails the
+      # deploy; a revision that is still starting gets a few retries.
       - name: Sync Inngest
-        continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL }}
-        run: curl -sSf -X PUT "$SITE_URL/api/inngest"
+        run: curl -sSf --retry 5 --retry-all-errors --retry-delay 10 -X PUT "$SITE_URL/api/inngest"

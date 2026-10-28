@@ -2,13 +2,13 @@
 
 Pulumi (TypeScript) for wovain's Google Cloud project, its DNS, its GitHub repository (github.com/sami-m-g/wovain) and its PostHog project. `index.ts` is the `prod` stack, which also holds dev.wovain.com (`dev.ts`). `bootstrap/` holds CI's own identities and the GitHub Actions workload identity pool, `policy/` is the CrossGuard policy pack, and `posthog/` is the PostHog project (part of the `prod` stack).
 
-State lives in `gs://wovain-pulumi-state`; stack secrets are encrypted with the `stack-secrets` Cloud KMS key.
+State lives in `gs://wovain-pulumi-state`; stack secrets are encrypted with the `stack-secrets` Cloud KMS key. Both were made with gcloud before any stack existed; `bootstrap/state.ts` adopts them (`import`), protected.
 
 ## How infra changes ship
 
 1. **Pull request.** CI's `infra` job type-checks and runs both programs against mocks with no credentials (`*.test.ts`). This catches missing config, code that throws, duplicate URNs and dynamic providers that don't serialize.
 2. **Preview** locally with real credentials before merging: `pnpm run infra:preview` (with the policy pack, on a copy of the state). Review the plan; `node infra/policy/guard.ts < preview.json` fails on a delete or replace of a stateful resource.
-3. **Apply** with `pnpm run infra:up` from main. No workflow runs `pulumi up` yet; `gitlab-infra` already trusts GitHub Actions jobs in an `infrastructure` environment on main, for when one does.
+3. **Apply**: `.github/workflows/infra.yml` runs `pulumi up` of `prod` on every push to main that touches infra, in the `infrastructure` environment, as `gitlab-infra`, after the same preview and guard. Then it runs `pnpm polar:seed` (`packages/billing/src/seed.ts`), which keeps Polar's catalog, promo codes and webhook endpoint as code. On a pull request, the same workflow previews both stacks read-only as `infra-preview` (`bootstrap/preview.ts`, a pool of its own that trusts only this repository's `pull_request` events) and writes the plan to the job summary. `pnpm run infra:up` does the same from a laptop.
 
 The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 

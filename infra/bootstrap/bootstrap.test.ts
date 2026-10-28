@@ -40,6 +40,12 @@ test("the bootstrap program registers CI's identities", async () => {
       "gcp:serviceaccount/iAMMember:IAMMember::infra-from-github",
       "gcp:projects/iAMMember:IAMMember::infra-editor",
       "gcp:billing/accountIamMember:AccountIamMember::infra-budgets",
+      // The state bucket and stack secrets key, adopted (state.ts).
+      "gcp:storage/bucket:Bucket::pulumi-state",
+      "gcp:kms/cryptoKey:CryptoKey::stack-secrets",
+      // Pull request previews (preview.ts).
+      "gcp:iam/workloadIdentityPool:WorkloadIdentityPool::github-pull-requests",
+      "gcp:serviceaccount/account:Account::infra-preview",
     ])
   );
 });

@@ -1,0 +1,170 @@
+# Pulumi from GitHub Actions (infra/README.md, "How infra changes ship").
+#
+# Pull request: a read-only preview of both stacks, on a copy of the state
+#   (infra/scripts/pulumi.ts), as infra-preview, which Google trusts only
+#   from this repository's pull_request events and which can read but not
+#   change anything (infra/bootstrap/preview.ts). The plan, and the guard's
+#   verdict (infra/policy/guard.ts), go to the job summary.
+# main: `pulumi up` of the prod stack in the `infrastructure` environment, as
+#   gitlab-infra (infra/bootstrap), after the same preview and guard; then
+#   the Polar catalog seed (packages/billing/src/seed.ts).
+#
+# The bootstrap stack is CI's own identity, so CI only previews it; a project
+# owner applies it (`pnpm run infra:bootstrap:up`).
+#
+# The ids below are infra/bootstrap's outputs. They are fixed: the first run
+# can't read Actions variables that its own `up` creates.
+name: infra
+
+on:
+  pull_request:
+    paths:
+      - infra/**
+      - .github/workflows/infra.yml
+      - packages/billing/src/**
+  push:
+    branches: [main]
+    paths:
+      - infra/**
+      - .github/workflows/infra.yml
+      - packages/billing/src/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GCP_PROJECT_ID: wovain
+  PREVIEW_WORKLOAD_IDENTITY_PROVIDER: projects/422330561934/locations/global/workloadIdentityPools/github-pull-requests/providers/github
+  PREVIEW_SERVICE_ACCOUNT: infra-preview@wovain.iam.gserviceaccount.com
+  INFRA_WORKLOAD_IDENTITY_PROVIDER: projects/422330561934/locations/global/workloadIdentityPools/github/providers/github
+  INFRA_SERVICE_ACCOUNT: gitlab-infra@wovain.iam.gserviceaccount.com
+  # Polar's webhook endpoint on production (packages/auth).
+  POLAR_WEBHOOK_URL: https://wovain.com/api/auth/polar/webhooks
+
+jobs:
+  preview:
+    # Fork pull requests get no OIDC token.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: infra-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: pulumi/setup-pulumi@b374ceb6168550de27c6eba92e01c1a774040e11 # v2.0.0
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.PREVIEW_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.PREVIEW_SERVICE_ACCOUNT }}
+      - run: pnpm run infra:install
+      - name: Preview bootstrap
+        run: |
+          node infra/scripts/pulumi.ts preview infra/bootstrap -- --json > "$RUNNER_TEMP/bootstrap.json"
+          echo "### bootstrap" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/bootstrap.json" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preview prod
+        run: |
+          node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json"
+          echo "### prod" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY"
+
+  up:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: infrastructure
+    permissions:
+      contents: read
+      id-token: write
+    # One apply at a time; a newer one waits instead of cancelling an apply.
+    concurrency:
+      group: infra-up
+      cancel-in-progress: false
+    outputs:
+      polar-environment: ${{ steps.polar.outputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: pulumi/setup-pulumi@b374ceb6168550de27c6eba92e01c1a774040e11 # v2.0.0
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.INFRA_SERVICE_ACCOUNT }}
+      - run: pnpm run infra:install
+      # The guard stops the apply on a delete of stateful data or a change to
+      # frozen production, before anything changes.
+      - name: Preview and guard
+        run: |
+          node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY"
+      - name: Apply
+        run: node infra/scripts/pulumi.ts up infra -- --yes --skip-preview
+      - id: polar
+        name: Read Polar's environment
+        run: echo "environment=$(pulumi config get polarEnvironment --cwd infra --stack prod 2>/dev/null || echo sandbox)" >> "$GITHUB_OUTPUT"
+
+  # wovain's plans, packs and promos in Polar, from packages/billing. The
+  # seed is idempotent: it finds what it made by metadata, keeps an existing
+  # webhook endpoint and its secret, and writes a promo's code or the
+  # webhook's secret only to Secret Manager, never to the log.
+  polar-seed:
+    needs: up
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: infrastructure
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # postinstall runs the Varlock codegen, which validates apps/web's env:
+      # throwaway values, as in ci.yml. The seed reads none of them.
+      - name: Generate placeholder env
+        run: |
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
+            echo "BETTER_AUTH_URL=http://localhost:3001"
+            echo "DATABASE_URL=postgresql://ci:$(openssl rand -hex 16)@localhost:5432/ci"
+            echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+          } >> "$GITHUB_ENV"
+      - run: pnpm install --frozen-lockfile
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.INFRA_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Seed Polar
+        env:
+          POLAR_ENVIRONMENT: ${{ needs.up.outputs.polar-environment }}
+        run: |
+          POLAR_ACCESS_TOKEN=$(gcloud secrets versions access latest --secret polar-access-token --project "$GCP_PROJECT_ID")
+          echo "::add-mask::$POLAR_ACCESS_TOKEN"
+          export POLAR_ACCESS_TOKEN
+          node packages/billing/src/seed.ts

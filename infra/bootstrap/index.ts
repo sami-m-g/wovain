@@ -6,6 +6,9 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { pullRequestPreviews } from "./preview.ts";
+import { pulumiState } from "./state.ts";
+
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
 const project = gcpConfig.require("project");
@@ -23,8 +26,9 @@ const { billingAccount } = await gcp.organizations.getProject({
 // Deleting or replacing any of these would cut CI off (infra/policy).
 const kept = { protect: true };
 const workloadIdentityUser = "roles/iam.workloadIdentityUser";
-// Pulumi's stack secrets key, made once with gcloud.
-const stackSecrets = `projects/${project}/locations/${region}/keyRings/pulumi/cryptoKeys/stack-secrets`;
+// The state bucket and the stack secrets key (state.ts).
+const state = pulumiState(project, region);
+const stackSecrets = state.stackSecrets.id;
 
 // GitHub Actions' OIDC tokens, from this repository's main branch only: no
 // pull request, other branch or tag gets a Google token. Each account trusts
@@ -106,3 +110,15 @@ new gcp.billing.AccountIamMember("infra-budgets", {
   member: infra.member,
   role: "roles/billing.costsManager",
 });
+
+// Read-only previews of pull requests (preview.ts).
+const previews = pullRequestPreviews({
+  bucket: state.bucket,
+  githubOwnerId,
+  githubRepository,
+  githubRepositoryId,
+  project,
+  stackSecrets: state.stackSecrets,
+});
+export const previewServiceAccount = previews.account;
+export const previewWorkloadIdentityProvider = previews.provider;
