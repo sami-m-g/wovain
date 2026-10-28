@@ -18,6 +18,9 @@ export const EVENTS = {
   // Scan one brand for autopilot triggers (Qloo, Tavily): the cron fans
   // out one per brand, and "Scan now" sends one.
   autopilotScan: "wovain/autopilot.scan",
+  // Draw, place, preview and price every product of a planned drop
+  // (design-drops).
+  dropBuildRequested: "wovain/drop.build.requested",
   // Run the feedback loop for one merchant (the daily fan-out).
   feedbackLearn: "wovain/feedback.learn",
   // Send one notification to the merchant's devices (push, then email).
@@ -88,6 +91,10 @@ export const eventSchemas = {
     kind: z.enum(NOTIFY_KINDS),
     runId: z.string().optional(),
     title: z.string(),
+    userId: z.string(),
+  }),
+  [EVENTS.dropBuildRequested]: z.object({
+    dropId: z.string(),
     userId: z.string(),
   }),
   [EVENTS.optimizerTick]: z.object({

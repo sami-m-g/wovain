@@ -39,6 +39,12 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3001
 
+# sharp's librsvg draws SVG <text> (the drop's neck label) with system
+# fonts; node:slim ships none, so the text would render as nothing.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs nextjs
 
 COPY --from=varlock --chown=nextjs:nodejs /varlock/node_modules ./node_modules

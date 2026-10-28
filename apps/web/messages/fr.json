@@ -36,7 +36,8 @@
     "billingTitle": "Facturation",
     "onboardingTitle": "Configuration",
     "autopilotTitle": "Pilote automatique",
-    "productsTitle": "Produits"
+    "productsTitle": "Produits",
+    "dropsTitle": "Drops"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -319,7 +320,8 @@
       "billing": "Facturation",
       "onboarding": "Configuration",
       "autopilot": "Pilote automatique",
-      "products": "Produits"
+      "products": "Produits",
+      "drops": "Drops"
     },
     "docs": "Docs",
     "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",
@@ -1300,6 +1302,66 @@
       "previewRefund": "Voir le coût du remboursement",
       "previewCancel": "Voir le coût de l'annulation",
       "back": "Retour"
+    }
+  },
+  "Drops": {
+    "title": "Drops",
+    "intro": "Un drop, c'est 4 à 6 produits qui partagent une palette et une marque. Les tags de goût de Qloo choisissent le style et les produits. Chaque produit a ses emplacements, ses maquettes et son prix.",
+    "planTitle": "Préparer un drop",
+    "planIntro": "Choisissez une idée d'une exécution. wovain choisit les produits, dessine l'art de chaque emplacement et fixe le prix de chaque produit selon ce que Fourthwall facture pour le fabriquer.",
+    "noIdeas": "Lancez d'abord une exécution. Ses idées apparaissent ici.",
+    "ideaLabel": "Idée",
+    "ideaPlaceholder": "Choisissez une idée",
+    "plan": "Préparer le drop",
+    "planning": "Préparation…",
+    "emptyTitle": "Aucun drop pour l'instant",
+    "emptyBody": "Préparez-en un à partir d'une idée.",
+    "listLabel": "Vos drops",
+    "building": "Dessin et placement de l'art. Les produits apparaissent ici dès qu'ils sont prêts.",
+    "reviewPass": "La vérification visuelle est passée : emplacements, hiérarchie et un style commun.",
+    "publish": "Publier le drop",
+    "live": "En ligne : {slug}",
+    "chosenBy": "Style choisi d'après ces tags Qloo : {tags}",
+    "chosenByDefault": "Aucun tag Qloo ne correspond à un style, ce drop utilise donc le streetwear.",
+    "factsPass": "Vérifications d'impression réussies",
+    "placements": "Emplacements",
+    "placement": "{art} sur {region}",
+    "colors": "Couleurs",
+    "sizes": "Tailles",
+    "price": "Prix",
+    "costSource": {
+      "customization": "coûte {cost} à fabriquer",
+      "catalog": "coûte environ {cost} à fabriquer (prix du catalogue)"
+    },
+    "mockupAlt": "Maquette {index} de {title}",
+    "itemStatus": {
+      "draft": "en préparation",
+      "ready": "prêt",
+      "published": "publié",
+      "failed": "échec"
+    },
+    "status": {
+      "draft": "En préparation",
+      "in_review": "Prêt à vérifier",
+      "live": "En ligne",
+      "paused": "En pause",
+      "retired": "Retiré"
+    },
+    "family": {
+      "skate_punk": "Skate et punk",
+      "indie_folk": "Indie folk",
+      "anime_gaming": "Anime et jeux vidéo",
+      "quiet_luxury": "Luxe discret",
+      "sports_varsity": "Varsity",
+      "streetwear": "Streetwear"
+    },
+    "art": {
+      "graphic": "Graphique dos",
+      "mark": "Marque",
+      "typographic": "Texte",
+      "pattern": "Motif intégral",
+      "embroidery": "Broderie",
+      "label": "Étiquette"
     }
   }
 }

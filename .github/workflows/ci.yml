@@ -44,6 +44,7 @@ jobs:
             echo "BILLING_CATALOG=$(fixture ./packages/billing/src/catalog-fixture.ts TEST_CATALOG)"
             echo "DOCS_URL=http://localhost:4000"
             echo "EMAIL_FROM=wovain <ci@example.com>"
+            echo "FAL_ART_MODELS=$(fixture ./packages/core/src/config-fixture.ts TEST_ART_MODELS)"
             echo "FAL_MCP_URL=https://fal.example.com/mcp"
             echo "FOURTHWALL_DEFAULT_PRODUCT_ID=pro_ci"
             echo "FOURTHWALL_MCP_URL=https://fourthwall.example.com/mcp"

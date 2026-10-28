@@ -1,5 +1,6 @@
 import type { z } from "zod";
 
+import type { artModelsSchema } from "./art";
 import type { pricingRulesSchema } from "./pricing";
 
 // The pricing rules the tests run with (vitest.config.ts sets PRICING_RULES
@@ -15,3 +16,13 @@ export const TEST_PRICING_RULES = {
   salesTaxPct: 7,
   shipping: 5,
 } satisfies z.input<typeof pricingRulesSchema>;
+
+// The fal models per art type CI builds with (FAL_ART_MODELS); deployed
+// environments get theirs from Pulumi config (`falArtModels`).
+export const TEST_ART_MODELS = {
+  cutout: "fal-ai/birefnet/v2",
+  pattern: "ideogram/v4/tiling/lora",
+  typographic: "ideogram/vector/text-to-vector",
+  upscale: "fal-ai/recraft/upscale/crisp",
+  vector: "fal-ai/recraft/v4.1/text-to-vector",
+} satisfies z.input<typeof artModelsSchema>;

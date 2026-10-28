@@ -1,9 +1,11 @@
 import type { Memory } from "@mastra/memory";
 
 import { createAgentKit } from "./agents";
+import { ART_MODELS_VAR, parseArtModels } from "./art";
+import type { ArtModels } from "./art";
 import { createSignals } from "./autopilot-signals";
 import type { ResearchModel } from "./evidence";
-import { createArtist, falKeyCall } from "./fal";
+import { createArtist, createFalJobs, falKeyCall } from "./fal";
 import { createFlags } from "./flags";
 import type { FlagsConfig } from "./flags";
 import { createMetaInterests } from "./meta-interests";
@@ -110,12 +112,21 @@ export const createCore = (
     // The Mastra agents and scorers, registered on the app's Mastra
     // instance; undefined without a Nebius key.
     agents,
+    // A drop's fal models per art type (./art.ts): GPT Image draws the
+    // graphics, FAL_ART_MODELS the rest. Read when a drop needs them, so a
+    // missing value fails only drops, naming the variable.
+    artModels: (): ArtModels => ({
+      ...parseArtModels(process.env[ART_MODELS_VAR]),
+      graphic: env.FAL_IMAGE_MODEL,
+    }),
     // Draws on the merchant's own fal account (an MCP grant) or, while the
     // onboarding-wizard flag is on, on wovain's key (falKey).
     artist: (call: ToolCall) =>
       createArtist(call, { model: env.FAL_IMAGE_MODEL }),
     // The blank pickBlank falls back to (./fourthwall.ts).
     defaultCatalogProductId: env.FOURTHWALL_DEFAULT_PRODUCT_ID,
+    // Any fal model as a keyed submit and a free re-read (./fal.ts).
+    falJobs: (call: ToolCall) => createFalJobs(call),
     // fal on wovain's own key (FAL_KEY), a ToolCall the artist draws with;
     // undefined without the key.
     falKey:
