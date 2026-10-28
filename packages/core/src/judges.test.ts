@@ -28,6 +28,18 @@ describe("judge prompts", () => {
     }
   });
 
+  it("fails art whose subject is a garment, and says so in the definition", () => {
+    // A picture of a pink tee reached approval in production.
+    const pinkTee = LABELED.cases.find(
+      (item) => item.id === "design_quality-005"
+    );
+    expect(pinkTee?.label).toBe("fail");
+    expect(String(pinkTee?.output.artPrompt)).toContain("tee silhouette");
+    expect(judgeInstructions("design_quality")).toContain(
+      "subject is a garment"
+    );
+  });
+
   it("keeps case IDs unique", () => {
     const ids = LABELED.cases.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);

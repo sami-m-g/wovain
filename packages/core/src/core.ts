@@ -39,10 +39,7 @@ export const createCore = (
   const agents = createAgentKit({
     apiKey: env.NEBIUS_API_KEY,
     baseURL: env.NEBIUS_BASE_URL,
-    environment:
-      new URL(env.BETTER_AUTH_URL).hostname === "wovain.com"
-        ? "production"
-        : "development",
+    environment: env.APP_ENV ?? "development",
     guardrails: env.GUARDRAILS !== "off",
     memory,
     posthogHost: env.NEXT_PUBLIC_POSTHOG_HOST,

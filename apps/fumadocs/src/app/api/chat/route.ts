@@ -13,7 +13,7 @@ import type { DocumentData } from "flexsearch";
 import { Document } from "flexsearch";
 import { after } from "next/server";
 import { PostHog } from "posthog-node";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 import { z } from "zod";
 
 import type { ChatUIMessage, SearchTool } from "@/components/ai/search";
@@ -160,8 +160,13 @@ const overLimit = async (ip: string) => {
       globalDaily.consume("all"),
     ]);
     return false;
-  } catch {
-    return true;
+  } catch (error) {
+    // The limiter rejects with a RateLimiterRes when points run out; anything
+    // else is a real failure and must reach error tracking, not read as a 429.
+    if (error instanceof RateLimiterRes) {
+      return true;
+    }
+    throw error;
   }
 };
 
