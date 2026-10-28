@@ -21,7 +21,7 @@ Source: `scope.md > What "Working" Looks Like`.
 8. Nemotron writes up to three ad variants (angle, headline, message) and wovain stages a Meta campaign, ad set and ads, all paused, for the countries and daily budget chosen.
 9. Success: the product is in the Fourthwall shop and the paused campaign is in Meta Ads Manager. The designer starts it when ready. Paid steps are charged in credits.
 
-Autopilot (a paid-plan feature in the pricing proposal) does steps 3 to 8 in one run: Nemotron picks the lead idea and reviews each design, and the run stops if it approves none; a design the judge says to revise is never approved.
+Autopilot (paid plans only in production; on for every plan, Free included, in dev and next) does steps 3 to 8 in one run: Nemotron picks the lead idea and reviews each design, and the run stops if it approves none; a design the judge says to revise is never approved.
 
 ```mermaid
 flowchart LR
@@ -99,6 +99,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
   - [x] The reason for each approval or rejection is stored on the design.
   - [ ] Runs are durable Mastra workflows: the run returns at once, suspends at approval and resumes to product and campaign after the decision, and survives a restart (in progress).
   - [ ] Each step is recorded on the run; a failed run shows where it stopped and why, and a retry does not duplicate a Fourthwall product or Meta campaign (in progress).
+  - [ ] Every 6 hours, autopilot scans each brand's Qloo audience and this week's Tavily news, saves up to two suggested drops with their sources, and queues each run in the approval queue within the designer's autonomy level and a daily credit cap; the designer starts or dismisses each one in the decision log (dev and next, `autopilot-triggers` flag).
 
 ### Quality
 
@@ -113,7 +114,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 - As a designer, I want a small free allowance and a clear price so that I can try a real drop before paying.
   - [ ] Polar is the merchant of record. Proposed plans: Free 15 credits a month, Studio $29 for 300, Label $79 for 1,000 (rolls over), and a 100-credit pack for $10.
   - [ ] Credits are reserved before a paid step and returned if it fails; research 3, design 2, assist 1 (proposal).
-  - [ ] Autopilot is on paid plans only (proposal).
+  - [ ] Autopilot is on paid plans only in production (proposal); in dev and next it is on for every plan, Free included.
 
 ### Analytics
 

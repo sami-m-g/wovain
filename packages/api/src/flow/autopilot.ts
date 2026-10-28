@@ -13,6 +13,7 @@ import type {
   SignalQuery,
 } from "@wovain/core/autopilot-signals";
 import { EVENTS } from "@wovain/core/events";
+import type { TriggerKind, WovainEvent } from "@wovain/core/events";
 import { DecisionTrace } from "@wovain/core/trace";
 import type { TraceEntry, TraceSource } from "@wovain/core/trace";
 import {
@@ -23,6 +24,7 @@ import {
   suggestion,
 } from "@wovain/db/schema/autonomy";
 import { creditReservation } from "@wovain/db/schema/billing";
+import { run } from "@wovain/db/schema/seller";
 import { and, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
 import { createError, log } from "evlog";
 
@@ -57,6 +59,21 @@ const MAX_COUNTRIES = 25;
 const LOG_SUGGESTIONS = 20;
 const LOG_SCANS = 10;
 const ACTION = "autopilot.run.start";
+// Autopilot owns only the drops its own scans suggest. Other workstreams
+// share the suggestion table and trigger.fired (retire, reprice, scale_ad
+// from performance or schedule triggers); autopilot never acts on those.
+export const AUTOPILOT_TRIGGERS = [
+  "qloo",
+  "trend",
+] as const satisfies readonly TriggerKind[];
+const OWN_KIND = "drop";
+const ownSuggestions = () =>
+  and(
+    eq(suggestion.kind, OWN_KIND),
+    inArray(suggestion.trigger, [...AUTOPILOT_TRIGGERS])
+  );
+// A run still going: it may reserve more credits.
+const OPEN_RUN = new Set(["running", "awaiting_approval"]);
 
 export type ScanReason = "schedule" | "manual";
 
@@ -114,43 +131,66 @@ export const runEstimate = () => {
   );
 };
 
-// What autopilot already used today (UTC): the credits its runs reserved,
-// plus an estimate for each run it queued that hasn't reserved yet.
+// What autopilot already used today (UTC), per autopilot.run.start it
+// queued today: the credits its run reserved, but at least the run's
+// estimate while the run hasn't started or is still going, since a run
+// reserves its credits one step at a time.
 export const autopilotCreditsToday = async (
   actor: Pick<Actor, "db" | "userId">,
   now = new Date()
 ) => {
-  const since = startOfUtcDay(now);
-  const mine = and(
-    eq(approval.userId, actor.userId),
-    eq(approval.actionType, ACTION),
-    eq(approval.proposedBy, "autopilot"),
-    gte(approval.createdAt, since)
-  );
-  const [reserved] = await actor.db
+  const queued = await actor.db
     .select({
-      credits: sql<number>`coalesce(sum(${creditReservation.credits}), 0)::int`,
+      runId: sql<string | null>`${approval.result}->>'runId'`,
+      status: approval.status,
     })
-    .from(creditReservation)
-    .innerJoin(
-      approval,
-      sql`${approval.result}->>'runId' = ${creditReservation.runId}`
-    )
+    .from(approval)
     .where(
       and(
-        mine,
-        eq(creditReservation.userId, actor.userId),
-        inArray(creditReservation.status, ["held", "settled"]),
-        gte(creditReservation.createdAt, since)
+        eq(approval.userId, actor.userId),
+        eq(approval.actionType, ACTION),
+        eq(approval.proposedBy, "autopilot"),
+        gte(approval.createdAt, startOfUtcDay(now)),
+        inArray(approval.status, ["approved", "executing", "done"])
       )
     );
-  const [queued] = await actor.db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(approval)
-    .where(and(mine, inArray(approval.status, ["approved", "executing"])));
-  return (
-    Number(reserved?.credits ?? 0) + Number(queued?.count ?? 0) * runEstimate()
-  );
+  const runIds = queued.flatMap(({ runId }) => (runId === null ? [] : [runId]));
+  const [reserved, runs] =
+    runIds.length === 0
+      ? [[], []]
+      : await Promise.all([
+          actor.db
+            .select({
+              credits: sql<number>`coalesce(sum(${creditReservation.credits}), 0)::int`,
+              runId: creditReservation.runId,
+            })
+            .from(creditReservation)
+            .where(
+              and(
+                eq(creditReservation.userId, actor.userId),
+                inArray(creditReservation.runId, runIds),
+                inArray(creditReservation.status, ["held", "settled"])
+              )
+            )
+            .groupBy(creditReservation.runId),
+          actor.db
+            .select({ id: run.id, status: run.status })
+            .from(run)
+            .where(and(eq(run.userId, actor.userId), inArray(run.id, runIds))),
+        ]);
+  const estimate = runEstimate();
+  let used = 0;
+  for (const { runId } of queued) {
+    const credits =
+      runId === null
+        ? 0
+        : Number(reserved.find((row) => row.runId === runId)?.credits ?? 0);
+    const status = runs.find(({ id }) => id === runId)?.status;
+    const open =
+      runId === null || (status !== undefined && OPEN_RUN.has(status));
+    used += open ? Math.max(credits, estimate) : credits;
+  }
+  return used;
 };
 
 const capOf = async (actor: Pick<Actor, "db" | "userId">) => {
@@ -222,6 +262,7 @@ const recentKeys = async (actor: Actor, now: Date) => {
     .where(
       and(
         eq(suggestion.userId, actor.userId),
+        ownSuggestions(),
         gte(
           suggestion.createdAt,
           new Date(now.getTime() - REPEAT_DAYS * DAY_MS)
@@ -329,80 +370,34 @@ const risingFor = async (
   };
 };
 
-const saveSuggestion = async (actor: Actor, match: SignalMatch) => {
-  const [row] = await actor.db
-    .insert(suggestion)
-    .values({
-      kind: "drop",
-      payload: {
-        entity: match.entity ?? null,
-        key: match.key,
-        news: match.news,
-        score: match.score,
-        seed: match.seed,
-        subject: match.subject,
-      },
-      rationale: match.rationale,
-      sources: match.sources,
-      title: match.title,
-      trigger: match.trigger,
-      userId: actor.userId,
-    })
-    .returning({ id: suggestion.id });
-  if (row === undefined) {
-    throw new Error("The suggestion wasn't saved");
-  }
-  return row.id;
-};
-
-// Tells the merchant's devices (the mobile workstream sends the push) and
-// autopilot (../workflows/autopilot) about a new suggestion.
-const announce = async (actor: Actor, id: string, match: SignalMatch) => {
-  await actor.events?.send({
-    data: {
-      kind: match.trigger,
-      payload: { subject: match.subject, title: match.title },
-      suggestionId: id,
-      userId: actor.userId,
-    },
-    name: EVENTS.triggerFired,
-  });
-  await actor.events?.send({
-    data: {
-      actions: [
-        { id: "accept", title: "Start the drop" },
-        { id: "dismiss", title: "Dismiss" },
-      ],
-      body: match.rationale,
-      kind: "suggestion",
-      title: match.title,
-      userId: actor.userId,
-    },
-    name: EVENTS.notify,
-  });
-};
-
-export interface ScanResult {
-  status: "off" | "no_brand" | "scanned";
-  suggestionIds: string[];
+// A match the scan picked, with the trace that explains it.
+export interface PickedMatch {
+  match: SignalMatch;
+  steps: Step[];
 }
 
-// One brand's scan. Qloo and Tavily failures are logged and traced, and the
-// scan goes on with what it has.
-export const scanBrand = async (
+export interface ScanSignals {
+  picked: PickedMatch[];
+  status: "off" | "no_brand" | "scanned";
+}
+
+// The read-only part of a scan: Qloo, Tavily and the match. Qloo and
+// Tavily failures are logged and traced, and the scan goes on with what
+// it has. A scan that picks nothing saves its trace here.
+export const scanSignals = async (
   actor: Actor,
   reason: ScanReason,
   now = new Date()
-): Promise<ScanResult> => {
+): Promise<ScanSignals> => {
   if (!(await autopilotTriggersOn(actor))) {
-    return { status: "off", suggestionIds: [] };
+    return { picked: [], status: "off" };
   }
   const [brand] = await actor.db
     .select()
     .from(brandProfile)
     .where(eq(brandProfile.userId, actor.userId));
   if (brand === undefined) {
-    return { status: "no_brand", suggestionIds: [] };
+    return { picked: [], status: "no_brand" };
   }
   const start = step(
     "scan",
@@ -439,40 +434,157 @@ export const scanBrand = async (
       ...searched.map(({ step: searchStep }) => searchStep),
       decided,
     ]);
-    return { status: "scanned", suggestionIds: [] };
+    return { picked: [], status: "scanned" };
   }
-  // At most MAX_MATCHES (2) suggestions, saved side by side.
-  const ids = await Promise.all(
-    picked.map(async (match) => {
-      const id = await saveSuggestion(actor, match);
+  // At most MAX_MATCHES (2) suggestions.
+  return {
+    picked: picked.map((match) => {
       const own = matches.find((found) => found.match.key === match.key);
-      await saveTrace(actor, { suggestionId: id }, [
-        ...shared,
-        ...(own === undefined ? [] : [own.searchStep]),
-        decided,
-        step(
-          "suggest",
-          match.subject,
-          {
-            rationale: match.rationale,
-            score: match.score,
-            trigger: match.trigger,
-          },
-          { sources: match.sources }
-        ),
-      ]);
-      await announce(actor, id, match);
+      return {
+        match,
+        steps: [
+          ...shared,
+          ...(own === undefined ? [] : [own.searchStep]),
+          decided,
+          step(
+            "suggest",
+            match.subject,
+            {
+              rationale: match.rationale,
+              score: match.score,
+              trigger: match.trigger,
+            },
+            { sources: match.sources }
+          ),
+        ],
+      };
+    }),
+    status: "scanned",
+  };
+};
+
+// Saves a picked match as a suggestion with its trace, once: a retry finds
+// the suggestion an earlier attempt saved for the same subject.
+export const saveScanSuggestion = async (
+  actor: Actor,
+  { match, steps }: PickedMatch,
+  now = new Date()
+) => {
+  const [earlier] = await actor.db
+    .select({ id: suggestion.id })
+    .from(suggestion)
+    .where(
+      and(
+        eq(suggestion.userId, actor.userId),
+        ownSuggestions(),
+        sql`${suggestion.payload}->>'key' = ${match.key}`,
+        gte(
+          suggestion.createdAt,
+          new Date(now.getTime() - REPEAT_DAYS * DAY_MS)
+        )
+      )
+    );
+  if (earlier !== undefined) {
+    return earlier.id;
+  }
+  const [row] = await actor.db
+    .insert(suggestion)
+    .values({
+      kind: OWN_KIND,
+      payload: {
+        entity: match.entity ?? null,
+        key: match.key,
+        news: match.news,
+        score: match.score,
+        seed: match.seed,
+        subject: match.subject,
+      },
+      rationale: match.rationale,
+      sources: match.sources,
+      title: match.title,
+      trigger: match.trigger,
+      userId: actor.userId,
+    })
+    .returning({ id: suggestion.id });
+  if (row === undefined) {
+    throw new Error("The suggestion wasn't saved");
+  }
+  await saveTrace(actor, { suggestionId: row.id }, steps);
+  return row.id;
+};
+
+// What tells the merchant's devices (the mobile workstream sends the push)
+// and autopilot (../workflows/autopilot) about a new suggestion. Each event
+// has an ID per suggestion, so Inngest drops a repeat send.
+export const announcementsFor = (
+  userId: string,
+  id: string,
+  match: Pick<SignalMatch, "rationale" | "subject" | "title" | "trigger">
+): (WovainEvent & { id: string })[] => [
+  {
+    data: {
+      kind: match.trigger,
+      payload: { subject: match.subject, title: match.title },
+      suggestionId: id,
+      userId,
+    },
+    id: `trigger:suggestion:${id}`,
+    name: EVENTS.triggerFired,
+  },
+  {
+    data: {
+      actions: [
+        { id: "accept", title: "Start the drop" },
+        { id: "dismiss", title: "Dismiss" },
+      ],
+      body: match.rationale,
+      kind: "suggestion",
+      title: match.title,
+      userId,
+    },
+    id: `notify:suggestion:${id}`,
+    name: EVENTS.notify,
+  },
+];
+
+export interface ScanResult {
+  status: "off" | "no_brand" | "scanned";
+  suggestionIds: string[];
+}
+
+// One brand's scan in one go: signals, then each suggestion saved and
+// announced. The Inngest function runs the same parts as separate steps.
+export const scanBrand = async (
+  actor: Actor,
+  reason: ScanReason,
+  now = new Date()
+): Promise<ScanResult> => {
+  const { picked, status } = await scanSignals(actor, reason, now);
+  const suggestionIds = await Promise.all(
+    picked.map(async (one) => {
+      const id = await saveScanSuggestion(actor, one, now);
+      await Promise.all(
+        announcementsFor(actor.userId, id, one.match).map(
+          async (event) => await actor.events?.send(event)
+        )
+      );
       return id;
     })
   );
-  return { status: "scanned", suggestionIds: ids };
+  return { status, suggestionIds };
 };
 
 const suggestionOf = async (actor: Actor, id: string) => {
   const [row] = await actor.db
     .select()
     .from(suggestion)
-    .where(and(eq(suggestion.userId, actor.userId), eq(suggestion.id, id)));
+    .where(
+      and(
+        eq(suggestion.userId, actor.userId),
+        eq(suggestion.id, id),
+        ownSuggestions()
+      )
+    );
   return row;
 };
 
@@ -484,7 +596,8 @@ const seedOf = (row: typeof suggestion.$inferSelect) => {
 const enqueueRun = async (
   actor: Actor,
   row: typeof suggestion.$inferSelect,
-  proposedBy: "autopilot" | "merchant"
+  proposedBy: "autopilot" | "merchant",
+  idempotencyKey = `suggestion:${row.id}`
 ) => {
   const [settings, spent] = await Promise.all([
     autonomyOf(actor),
@@ -499,7 +612,7 @@ const enqueueRun = async (
         currency: "USD",
         label: `About ${estimate} credits`,
       },
-      idempotencyKey: `suggestion:${row.id}`,
+      idempotencyKey,
       payload: { seed: seedOf(row), suggestionId: row.id },
       proposedBy,
       reason: row.rationale,
@@ -587,13 +700,44 @@ const countriesOf = async (actor: Actor) => {
   return countries.length > 0 ? countries : [DEFAULT_COUNTRY];
 };
 
+export type RunStartOutcome =
+  | { status: "skipped" }
+  | { error: string; status: "failed" }
+  | {
+      autopilot: boolean;
+      publishPolicy: string;
+      runId: string;
+      seed: string;
+      status: "started";
+    };
+
+const runSeedOf = (current: {
+  payload: Record<string, unknown>;
+  title: string;
+}) =>
+  typeof current.payload["seed"] === "string"
+    ? current.payload["seed"]
+    : current.title;
+
+const traceScopeOf = (
+  approvalId: string,
+  suggestionId: string | null
+): { approvalId: string; suggestionId?: string } =>
+  suggestionId === null ? { approvalId } : { approvalId, suggestionId };
+
 // Starts the run an approved `autopilot.run.start` asks for, once: the
-// approval goes approved → executing first, so a retry finds it taken.
-export const executeRunStart = async (actor: Actor, approvalId: string) => {
+// approval goes approved → executing first, so a retry finds it taken. Only
+// a failed start is recorded as failed; what follows a started run is
+// `finishRunStart`'s, so a failure there is retried, not taken for a run
+// that didn't start.
+export const startApprovedRun = async (
+  actor: Actor,
+  approvalId: string
+): Promise<RunStartOutcome> => {
   const approvals = approvalsFor(actor);
   const current = await approvals.get(actor.userId, approvalId);
   if (current.actionType !== ACTION || current.status !== "approved") {
-    return { status: "skipped" as const };
+    return { status: "skipped" };
   }
   await approvals.record({
     actor: AGENT,
@@ -601,50 +745,23 @@ export const executeRunStart = async (actor: Actor, approvalId: string) => {
     status: "executing",
     userId: actor.userId,
   });
-  const scope = {
-    approvalId,
-    ...(current.suggestionId === null
-      ? {}
-      : { suggestionId: current.suggestionId }),
-  };
   const settings = await autonomyOf(actor);
   // The run decides its own gates (and publishes) only where the policy
   // would let autopilot publish; otherwise it waits at the ideas gate.
   const publish = canAutoExecute({ type: "store.product.publish" }, settings);
   const decides =
     publish.verdict === "allow" && (await autopilotEntitled(actor));
-  const seed =
-    typeof current.payload["seed"] === "string"
-      ? current.payload["seed"]
-      : current.title;
+  const seed = runSeedOf(current);
+  const countries = await countriesOf(actor);
+  let runId: string;
   try {
     const started = await startRun(actor, {
       autopilot: decides,
-      countries: await countriesOf(actor),
+      countries,
       dailyBudget: DEFAULT_DAILY_BUDGET,
       seed,
     });
-    await approvals.record({
-      actor: AGENT,
-      approvalId,
-      result: { autopilot: decides, runId: started.id },
-      status: "done",
-      userId: actor.userId,
-    });
-    if (current.suggestionId !== null) {
-      await actor.db
-        .update(suggestion)
-        .set({ runId: started.id, status: "accepted" })
-        .where(eq(suggestion.id, current.suggestionId));
-    }
-    await saveTrace(actor, { ...scope, runId: started.id }, [
-      step("run.start", seed, {
-        mode: decides ? "autopilot" : "ideas_gate",
-        publishPolicy: publish.reason,
-        runId: started.id,
-      }),
-    ]);
-    return { runId: started.id, status: "done" as const };
+    runId = started.id;
   } catch (error) {
     logFailure("AUTOPILOT_RUN_START_FAILED", actor.userId, error, {
       approvalId,
@@ -656,11 +773,70 @@ export const executeRunStart = async (actor: Actor, approvalId: string) => {
       status: "failed",
       userId: actor.userId,
     });
-    await saveTrace(actor, scope, [
+    await saveTrace(actor, traceScopeOf(approvalId, current.suggestionId), [
       step("run.start", seed, { error: messageOf(error) }, { ok: false }),
     ]);
-    return { error: messageOf(error), status: "failed" as const };
+    return { error: messageOf(error), status: "failed" };
   }
+  return {
+    autopilot: decides,
+    publishPolicy: publish.reason,
+    runId,
+    seed,
+    status: "started",
+  };
+};
+
+// Records a started run: the approval done with the run ID, the suggestion
+// accepted with it, and the trace. Safe to retry: an approval already done
+// is left as it is.
+export const finishRunStart = async (
+  actor: Actor,
+  approvalId: string,
+  started: Extract<RunStartOutcome, { status: "started" }>
+) => {
+  const approvals = approvalsFor(actor);
+  const current = await approvals.get(actor.userId, approvalId);
+  if (current.status === "executing") {
+    await approvals.record({
+      actor: AGENT,
+      approvalId,
+      result: { autopilot: started.autopilot, runId: started.runId },
+      status: "done",
+      userId: actor.userId,
+    });
+  }
+  if (current.suggestionId !== null) {
+    await actor.db
+      .update(suggestion)
+      .set({ runId: started.runId, status: "accepted" })
+      .where(
+        and(
+          eq(suggestion.userId, actor.userId),
+          eq(suggestion.id, current.suggestionId)
+        )
+      );
+  }
+  await saveTrace(
+    actor,
+    { ...traceScopeOf(approvalId, current.suggestionId), runId: started.runId },
+    [
+      step("run.start", started.seed, {
+        mode: started.autopilot ? "autopilot" : "ideas_gate",
+        publishPolicy: started.publishPolicy,
+        runId: started.runId,
+      }),
+    ]
+  );
+  return { runId: started.runId, status: "done" as const };
+};
+
+// Both parts at once. The Inngest function runs them as separate steps.
+export const executeRunStart = async (actor: Actor, approvalId: string) => {
+  const outcome = await startApprovedRun(actor, approvalId);
+  return outcome.status === "started"
+    ? await finishRunStart(actor, approvalId, outcome)
+    : outcome;
 };
 
 const missingSuggestion = (id: string) =>
@@ -670,26 +846,68 @@ const missingSuggestion = (id: string) =>
     why: "This merchant has no open suggestion with that ID.",
   });
 
-// The merchant starts a suggestion's drop: its queued run is approved, or
-// a run is queued and approved for it.
+const notStarted = (status: string) =>
+  createError({
+    fix: "Check your spend caps and autonomy settings, then try again.",
+    message: "The drop didn't start",
+    status: 409,
+    why: `The run's approval is ${status}.`,
+  });
+
+// Approvals that ended without a run: accepting again queues a new one.
+const ENDED = new Set(["failed", "denied", "rejected", "expired", "reverted"]);
+// Approvals with a run queued or started.
+const GOING = new Set(["approved", "executing", "done"]);
+
+const attemptsOf = async (actor: Actor, id: string) => {
+  const [row] = await actor.db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(approval)
+    .where(
+      and(eq(approval.userId, actor.userId), eq(approval.suggestionId, id))
+    );
+  return Number(row?.count ?? 0);
+};
+
+// The approval a merchant's accept works on: the open one, or a new one
+// when there is none or the last one ended without a run.
+const approvalToAccept = async (
+  actor: Actor,
+  row: typeof suggestion.$inferSelect
+) => {
+  if (row.approvalId === null) {
+    return await enqueueRun(actor, row, "merchant");
+  }
+  const earlier = await approvalsFor(actor).get(actor.userId, row.approvalId);
+  if (ENDED.has(earlier.status)) {
+    const attempt = await attemptsOf(actor, row.id);
+    return await enqueueRun(
+      actor,
+      row,
+      "merchant",
+      `suggestion:${row.id}:retry:${attempt}`
+    );
+  }
+  const [settings, spent] = await Promise.all([
+    autonomyOf(actor),
+    spendToDate(actor),
+  ]);
+  return { approval: earlier, settings, spent };
+};
+
+// The merchant starts a suggestion's drop: its queued run is approved, or a
+// run is queued and approved for it (again, after a run start that failed
+// or an approval that ended). The suggestion is accepted only once a run is
+// queued or started; otherwise the merchant sees why.
 export const acceptSuggestion = async (actor: Actor, id: string) => {
   const row = await suggestionOf(actor, id);
   if (row === undefined || row.status !== "new") {
     throw missingSuggestion(id);
   }
-  const approvals = approvalsFor(actor);
-  const queued =
-    row.approvalId === null
-      ? await enqueueRun(actor, row, "merchant")
-      : {
-          approval: await approvals.get(actor.userId, row.approvalId),
-          ...(await Promise.all([autonomyOf(actor), spendToDate(actor)]).then(
-            ([settings, spent]) => ({ settings, spent })
-          )),
-        };
+  const queued = await approvalToAccept(actor, row);
   const decided =
     queued.approval.status === "pending"
-      ? await approvals.decide(
+      ? await approvalsFor(actor).decide(
           {
             approvalId: queued.approval.id,
             approve: true,
@@ -700,10 +918,13 @@ export const acceptSuggestion = async (actor: Actor, id: string) => {
           queued.spent
         )
       : queued.approval;
+  if (!GOING.has(decided.status)) {
+    throw notStarted(decided.status);
+  }
   await actor.db
     .update(suggestion)
     .set({ status: "accepted" })
-    .where(eq(suggestion.id, id));
+    .where(and(eq(suggestion.userId, actor.userId), eq(suggestion.id, id)));
   return decided;
 };
 
@@ -797,7 +1018,7 @@ export const autopilotLog = async (actor: Actor) => {
   const suggestions = await actor.db
     .select()
     .from(suggestion)
-    .where(eq(suggestion.userId, actor.userId))
+    .where(and(eq(suggestion.userId, actor.userId), ownSuggestions()))
     .orderBy(desc(suggestion.createdAt))
     .limit(LOG_SUGGESTIONS);
   const ids = suggestions.map(({ id }) => id);

@@ -4,9 +4,13 @@ import type { Inngest } from "inngest";
 import type { Actor, EventSender, RunEngine } from "../flow/actor";
 import {
   actOnSuggestion,
+  announcementsFor,
+  AUTOPILOT_TRIGGERS,
   brandsToScan,
-  executeRunStart,
-  scanBrand,
+  finishRunStart,
+  saveScanSuggestion,
+  scanSignals,
+  startApprovedRun,
 } from "../flow/autopilot";
 import type { RunServices } from "./run";
 
@@ -14,16 +18,22 @@ import type { RunServices } from "./run";
 // - autopilot-scan-schedule: every 6 hours, one scan event per brand.
 // - autopilot-scan: one brand's scan, at most once per 6 hours per brand
 //   and never two at once, so "Scan now" and the cron can't double up.
-// - autopilot-act: a new suggestion goes to the approval queue.
+// - autopilot-act: a new autopilot suggestion (a drop from a qloo or
+//   trend trigger) goes to the approval queue.
 // - autopilot-execute: an approved autopilot.run.start starts the run.
-// Each body runs inside step.run, so a retry after a crash skips what
-// already happened.
+// Each side effect is its own step, so a retry after a crash skips what
+// already happened: a scan saves each suggestion in one step and announces
+// it in another, with event IDs per suggestion, and a run start records
+// its run in a step after the one that started it.
 
 const SCAN_CRON = "0 */6 * * *";
 const SCAN_PERIOD = "6h";
 // Brands scanned at once across the app: Qloo and Tavily rate limits.
 const SCAN_CONCURRENCY = 5;
 const RUN_START = "autopilot.run.start";
+const OWN_TRIGGER = AUTOPILOT_TRIGGERS.map(
+  (kind) => `event.data.kind == "${kind}"`
+).join(" || ");
 
 export const createAutopilotFunctions = ({
   events,
@@ -82,10 +92,25 @@ export const createAutopilotFunctions = ({
       const { reason, userId } = eventSchemas[EVENTS.autopilotScan].parse(
         event.data
       );
-      return await step.run(
-        "scan",
-        async () => await scanBrand(actorFor(userId), reason)
+      const actor = actorFor(userId);
+      const { picked, status } = await step.run(
+        "signals",
+        async () => await scanSignals(actor, reason)
       );
+      const suggestionIds = await Promise.all(
+        picked.map(async (one) => {
+          const id = await step.run(
+            `save-${one.match.key}`,
+            async () => await saveScanSuggestion(actor, one)
+          );
+          await step.sendEvent(
+            `announce-${id}`,
+            announcementsFor(userId, id, one.match)
+          );
+          return id;
+        })
+      );
+      return { status, suggestionIds };
     }
   );
 
@@ -96,7 +121,7 @@ export const createAutopilotFunctions = ({
       triggers: [
         {
           event: EVENTS.triggerFired,
-          if: "event.data.suggestionId != null",
+          if: `event.data.suggestionId != null && (${OWN_TRIGGER})`,
         },
       ],
     },
@@ -130,9 +155,17 @@ export const createAutopilotFunctions = ({
       const { approvalId, userId } = eventSchemas[EVENTS.approvalDecided].parse(
         event.data
       );
-      return await step.run(
+      const actor = actorFor(userId);
+      const outcome = await step.run(
         "start-run",
-        async () => await executeRunStart(actorFor(userId), approvalId)
+        async () => await startApprovedRun(actor, approvalId)
+      );
+      if (outcome.status !== "started") {
+        return outcome;
+      }
+      return await step.run(
+        "record-run",
+        async () => await finishRunStart(actor, approvalId, outcome)
       );
     }
   );

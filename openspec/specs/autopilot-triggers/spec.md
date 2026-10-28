@@ -50,12 +50,26 @@ A scan SHALL create at most two suggestions, and SHALL skip a subject already su
 
 ### Requirement: Suggestion notifications
 
-Each new suggestion SHALL send a `wovain/trigger.fired` event with its ID and a `wovain/notify` event of kind `suggestion` with its title and rationale.
+Each new suggestion SHALL send a `wovain/trigger.fired` event with its ID and a `wovain/notify` event of kind `suggestion` with its title and rationale. Saving and announcing SHALL be separate durable steps, and each event SHALL carry an ID derived from the suggestion, so a retry neither loses nor repeats an announcement.
 
 #### Scenario: Suggestion saved
 
 - **WHEN** a scan saves a suggestion
 - **THEN** both events are sent for the merchant
+
+#### Scenario: Announcement retried
+
+- **WHEN** sending the events fails after the suggestion was saved
+- **THEN** the retry sends them for the saved suggestion and does not save it again
+
+### Requirement: Autopilot acts only on its own suggestions
+
+Autopilot SHALL act only on its own suggestions: kind `drop` with trigger `qloo` or `trend`. Suggestions from other workstreams (for example `scale_ad` from a `performance` trigger) SHALL NOT be queued as `autopilot.run.start` and SHALL NOT appear in the decision log.
+
+#### Scenario: Another workstream's suggestion
+
+- **WHEN** a `scale_ad` suggestion with trigger `performance` fires
+- **THEN** autopilot enqueues nothing and the decision log does not list it
 
 ### Requirement: Autopilot acts within the autonomy level
 
@@ -71,6 +85,11 @@ When a suggestion fires and the merchant is entitled to autopilot within the cre
 - **WHEN** a suggestion fires for a merchant on `draft`
 - **THEN** the policy approves it and a run starts that waits at the ideas gate
 
+#### Scenario: Recording a started run fails
+
+- **WHEN** the run starts but saving its run ID fails
+- **THEN** the approval is not recorded `failed`, and the retry records it `done` with the run ID
+
 #### Scenario: Publish level
 
 - **WHEN** a suggestion fires for a merchant on `publish_ads_paused`
@@ -78,18 +97,28 @@ When a suggestion fires and the merchant is entitled to autopilot within the cre
 
 ### Requirement: Autopilot credit cap
 
-Autopilot SHALL NOT start a run when the credits its runs reserved today plus the run's estimate would pass the plan's `autopilotDailyCredits`. The suggestion SHALL stay open for the merchant, and the trace SHALL say the cap was reached.
+Autopilot SHALL NOT start a run when the credits its runs used today plus the run's estimate would pass the plan's `autopilotDailyCredits`. Each `autopilot.run.start` queued today SHALL count as the credits its run reserved, and at least the run estimate while the run has not started or is still going. The suggestion SHALL stay open for the merchant, and the trace SHALL say the cap was reached.
 
 #### Scenario: Cap reached
 
 - **WHEN** autopilot already spent the day's cap
 - **THEN** no approval is enqueued and the suggestion stays `new`
 
+#### Scenario: Run still going
+
+- **WHEN** a merchant on Free has one autopilot run started today that has reserved no credits yet
+- **THEN** a second suggestion hits the cap
+
 ### Requirement: Decision log
 
-The merchant SHALL see their latest suggestions with their evidence, the policy's decision and the run started, narrated step by step from the decision trace, and SHALL be able to start or dismiss a suggestion and request a scan.
+The merchant SHALL see their latest suggestions with their evidence, the policy's decision and the run started, narrated step by step from the decision trace, and SHALL be able to start or dismiss a suggestion and request a scan. Starting a suggestion whose last approval ended without a run (failed, denied, rejected, expired) SHALL queue a new approval; the suggestion SHALL be accepted only once a run is queued or started, and otherwise the merchant SHALL see why.
 
 #### Scenario: Open the log
 
 - **WHEN** the merchant opens the autopilot page
 - **THEN** each suggestion lists its sources and a sentence for each traced step
+
+#### Scenario: Start after a failed run start
+
+- **WHEN** the merchant starts a suggestion whose run failed to start
+- **THEN** a new approval is queued and the suggestion is accepted once it is approved

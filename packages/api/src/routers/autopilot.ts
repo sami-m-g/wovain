@@ -9,6 +9,7 @@ import {
   requireAutopilotTriggers,
 } from "../flow/autopilot";
 import { protectedProcedure } from "../index";
+import { asOrpc } from "./approvals";
 
 // Autopilot's triggers and decision log (openspec autopilot-triggers),
 // behind the autopilot-triggers flag. `status` answers with enabled false
@@ -21,7 +22,13 @@ export const autopilotRouter = {
     .input(bySuggestion)
     .handler(async ({ context, input }) => {
       await requireAutopilotTriggers(context);
-      return await acceptSuggestion(context, input.suggestionId);
+      try {
+        return await acceptSuggestion(context, input.suggestionId);
+      } catch (error) {
+        // The queue's refusals (denied by a spend cap, expired) as oRPC
+        // errors the app shows.
+        return asOrpc(error);
+      }
     }),
   dismiss: protectedProcedure
     .input(bySuggestion)

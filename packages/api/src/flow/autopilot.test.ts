@@ -21,12 +21,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Actor } from "./actor";
 import { setAutonomy } from "./approvals";
 import {
+  acceptSuggestion,
   actOnSuggestion,
+  autopilotCreditsToday,
   autopilotLog,
   brandsToScan,
+  dismissSuggestion,
   executeRunStart,
+  finishRunStart,
   runEstimate,
+  saveScanSuggestion,
   scanBrand,
+  scanSignals,
+  startApprovedRun,
 } from "./autopilot";
 
 // Autopilot's triggers on real Postgres (PGlite, the app's migrations),
@@ -340,5 +347,154 @@ describe("autopilot triggers on Postgres", () => {
     expect(row).toMatchObject({ approvalId: null, status: "new" });
     const steps = await ctx.db.select().from(decisionTrace);
     expect(steps.some((entry) => entry.step === "credit_cap")).toBe(true);
+  });
+
+  it("leaves other workstreams' suggestions alone", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 0,
+      level: "publish_ads_paused",
+      monthlySpendCapCents: 0,
+      paused: false,
+    });
+    const [other] = await ctx.db
+      .insert(suggestion)
+      .values({
+        kind: "scale_ad",
+        rationale: "ROAS is 4.2 this week",
+        title: "Scale the Salomon ad",
+        trigger: "performance",
+        userId: USER_ID,
+      })
+      .returning({ id: suggestion.id });
+    const id = other?.id ?? "";
+    expect(await actOnSuggestion(ctx.actor, id, NOW)).toBe("missing");
+    expect(await ctx.db.select().from(approval)).toEqual([]);
+    await expect(acceptSuggestion(ctx.actor, id)).rejects.toThrow(
+      "No open suggestion"
+    );
+    const log = await autopilotLog(ctx.actor);
+    expect(log.suggestions).toEqual([]);
+    const [row] = await ctx.db.select().from(suggestion);
+    expect(row).toMatchObject({ approvalId: null, status: "new" });
+  });
+
+  it("counts a started run at its estimate until it finishes", async () => {
+    // Free: 15 credits a day; a run is about 13. Run 1 started and hasn't
+    // reserved anything yet.
+    await ctx.db
+      .insert(run)
+      .values({ id: "run_0", seed: "s", userId: USER_ID });
+    await ctx.db.insert(approval).values({
+      actionType: "autopilot.run.start",
+      domain: "autopilot",
+      policyReason: "within_level",
+      proposedBy: "autopilot",
+      result: { runId: "run_0" },
+      risk: "R1",
+      status: "done",
+      title: "Earlier drop",
+      userId: USER_ID,
+    });
+    expect(await autopilotCreditsToday(ctx.actor, new Date())).toBe(13);
+    const id = await suggest();
+    expect(await actOnSuggestion(ctx.actor, id, new Date())).toBe("credit_cap");
+    // Once the run is done, only what it reserved counts.
+    await ctx.db.update(run).set({ status: "completed" });
+    await ctx.db.insert(creditReservation).values({
+      credits: 3,
+      runId: "run_0",
+      status: "settled",
+      step: "research",
+      takes: [],
+      userId: USER_ID,
+    });
+    expect(await autopilotCreditsToday(ctx.actor, new Date())).toBe(3);
+  });
+
+  it("starts the drop when the merchant accepts", async () => {
+    const id = await suggest();
+    await actOnSuggestion(ctx.actor, id, NOW);
+    const accepted = await acceptSuggestion(ctx.actor, id);
+    expect(accepted).toMatchObject({ decidedBy: USER_ID, status: "approved" });
+    const [row] = await ctx.db.select().from(suggestion);
+    expect(row?.status).toBe("accepted");
+  });
+
+  it("dismisses a suggestion and rejects its pending run", async () => {
+    const id = await suggest();
+    await actOnSuggestion(ctx.actor, id, NOW);
+    await dismissSuggestion(ctx.actor, id);
+    const [queued] = await ctx.db.select().from(approval);
+    expect(queued?.status).toBe("rejected");
+    const [row] = await ctx.db.select().from(suggestion);
+    expect(row?.status).toBe("dismissed");
+  });
+
+  it("queues a new run when the merchant accepts after a failed start", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 0,
+      level: "draft",
+      monthlySpendCapCents: 0,
+      paused: false,
+    });
+    const id = await suggest();
+    await actOnSuggestion(ctx.actor, id, NOW);
+    const [first] = await ctx.db.select().from(approval);
+    startRun.mockRejectedValue(new Error("Connect fal first"));
+    await executeRunStart(ctx.actor, first?.id ?? "");
+    const [open] = await ctx.db.select().from(suggestion);
+    expect(open).toMatchObject({ approvalId: first?.id, status: "new" });
+
+    const retry = await acceptSuggestion(ctx.actor, id);
+    expect(retry.id).not.toBe(first?.id);
+    expect(retry).toMatchObject({
+      idempotencyKey: `suggestion:${id}:retry:1`,
+      proposedBy: "merchant",
+      status: "approved",
+    });
+    const [row] = await ctx.db.select().from(suggestion);
+    expect(row).toMatchObject({ approvalId: retry.id, status: "accepted" });
+  });
+
+  it("keeps a started run when recording it fails, and records it on retry", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 0,
+      level: "draft",
+      monthlySpendCapCents: 0,
+      paused: false,
+    });
+    const id = await suggest();
+    await actOnSuggestion(ctx.actor, id, NOW);
+    const [queued] = await ctx.db.select().from(approval);
+    await ctx.db
+      .insert(run)
+      .values({ id: "run_1", seed: "s", userId: USER_ID });
+    startRun.mockResolvedValue({ id: "run_1" });
+    const started = await startApprovedRun(ctx.actor, queued?.id ?? "");
+    expect(started).toMatchObject({ runId: "run_1", status: "started" });
+    // The step that records it hasn't run yet: the approval isn't failed.
+    const [executing] = await ctx.db.select().from(approval);
+    expect(executing?.status).toBe("executing");
+    if (started.status !== "started") {
+      throw new Error("Not started");
+    }
+    await finishRunStart(ctx.actor, queued?.id ?? "", started);
+    await finishRunStart(ctx.actor, queued?.id ?? "", started);
+    const [done] = await ctx.db.select().from(approval);
+    expect(done).toMatchObject({ result: { runId: "run_1" }, status: "done" });
+    const [row] = await ctx.db.select().from(suggestion);
+    expect(row).toMatchObject({ runId: "run_1", status: "accepted" });
+    expect(startRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves a scan's suggestion once when the save step is retried", async () => {
+    const { picked } = await scanSignals(ctx.actor, "manual", NOW);
+    const [one] = picked;
+    if (one === undefined) {
+      throw new Error("Nothing picked");
+    }
+    const first = await saveScanSuggestion(ctx.actor, one, NOW);
+    expect(await saveScanSuggestion(ctx.actor, one, NOW)).toBe(first);
+    expect(await ctx.db.select().from(suggestion)).toHaveLength(1);
   });
 });
