@@ -132,8 +132,8 @@ config:
       windowSeconds: 600
     runsPerMerchant: 2
   wovain:docsUrl: https://docs.wovain.com
-  # dev.wovain.com and next.wovain.com: their own settings, never production's
-  # (infra/index.ts appSettings). Today they hold the same values.
+  # dev.wovain.com: its own settings, never production's (infra/settings.ts
+  # appSettings). next.wovain.com's are its own stack's (infra/next).
   wovain:docsUrl-dev: https://docs.wovain.com
   wovain:emailFrom-dev: wovain <support@wovain.com>
   wovain:supportEmail-dev: support@wovain.com
@@ -163,87 +163,6 @@ config:
     salesTaxPct: 7
     shipping: 5
   wovain:billingCatalog-dev:
-    creditCost:
-      assist: 1
-      design: 2
-      research: 3
-    designsPerRun: 3
-    creditPack:
-      credits: 100
-      name: Credit pack
-      priceCents: 1000
-    plans:
-      free:
-        autopilot: false
-        monthlyCredits: 15
-        name: Free
-        priceCents: 0
-        rank: 0
-        rollover: false
-      label:
-        autopilot: true
-        monthlyCredits: 1000
-        name: Label
-        priceCents: 7900
-        rank: 2
-        rollover: true
-      studio:
-        autopilot: true
-        monthlyCredits: 300
-        name: Studio
-        priceCents: 2900
-        rank: 1
-        rollover: false
-    promoCentsPerCredit: 10
-    promos:
-      - audience: "Hackathon judges: the code is shared only in Devpost's private testing instructions."
-        credits: 300
-        enabled: true
-        endsAt: "2026-12-16T23:59:59Z"
-        id: judges-2026
-        maxRedemptions: 50
-        name: Judges 2026
-      - audience: "Launch: a public code for the first creators, once paid plans are on."
-        credits: 50
-        enabled: false
-        endsAt: "2027-03-31T23:59:59Z"
-        id: launch-2027
-        maxRedemptions: 500
-        name: Launch 2027
-        startsAt: "2027-01-15T00:00:00Z"
-    redeemLimit:
-      attempts: 5
-      windowSeconds: 600
-    runsPerMerchant: 2
-  wovain:docsUrl-next: https://docs.wovain.com
-  wovain:emailFrom-next: wovain <support@wovain.com>
-  wovain:supportEmail-next: support@wovain.com
-  wovain:privacyEmail-next: privacy@wovain.com
-  wovain:falMcpUrl-next: https://mcp.fal.ai/mcp-relay
-  wovain:fourthwallMcpUrl-next: https://mcp.fourthwall.com/app
-  wovain:metaMcpUrl-next: https://mcp.facebook.com/ads
-  wovain:metaMcpScope-next: ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads
-  wovain:mcpWidgetResourceDomains-next:
-    - https://fal.media
-    - https://*.fal.media
-    - https://cdn.fourthwall.com
-    - https://imgproxy.fourthwall.dev
-  wovain:fourthwallDefaultProductId-next: pro_8be1acca2fe7403f89
-  wovain:nemotronInputPrice-next: "0.3"
-  wovain:nemotronOutputPrice-next: "0.9"
-  wovain:guardrailInjectionThreshold-next: "0.8"
-  wovain:guardrailModerationThreshold-next: "0.7"
-  wovain:guardrailPiiThreshold-next: "0.7"
-  wovain:pricingRules-next:
-    cardFeeFixed: 0.3
-    cardFeePct: 2.9
-    defaultBaseCost: 12
-    minMarginPct: 30
-    minProfit: 10
-    refundReservePct: 2
-    salesTaxPct: 7
-    shipping: 5
-  wovain:billingCatalog-next:
     creditCost:
       assist: 1
       design: 2

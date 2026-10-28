@@ -3,6 +3,12 @@
 //
 //   node infra/scripts/pulumi.ts preview infra [-- pulumi args]
 //   node infra/scripts/pulumi.ts up infra/bootstrap [-- pulumi args, e.g. --yes]
+//   node infra/scripts/pulumi.ts up infra/next
+//
+// Each directory holds one stack, the one `Pulumi.<stack>.yaml` names: `prod`
+// in infra/ and infra/bootstrap, `next` in infra/next. A stack that isn't in
+// the state yet previews from an empty state, and `up` creates it with the
+// stack file's secrets provider.
 //
 // 1. State changes no program can make (migrateState below): drop GitLab's
 //    resources from the state, since GitLab is archived and Pulumi must
@@ -16,7 +22,7 @@
 // stops on a delete of stateful data or a change to frozen production; only
 // then does it migrate the real state and apply.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -24,7 +30,6 @@ import { parse } from "yaml";
 
 import { RETIRED } from "../policy/retired.ts";
 
-const STACK = "prod";
 const repo = path.resolve(import.meta.dirname, "../..");
 const [command, dir = "infra", ...rest] = process.argv.slice(2);
 if (command !== "preview" && command !== "up") {
@@ -40,6 +45,14 @@ const { name: project } = parse(
 ) as { name?: string };
 if (project === undefined) {
   throw new Error(`${cwd}/Pulumi.yaml has no name`);
+}
+const STACK_FILE = /^Pulumi\.(?<stack>[\w-]+)\.yaml$/u;
+const stacks = readdirSync(cwd).flatMap(
+  (file) => STACK_FILE.exec(file)?.groups?.["stack"] ?? []
+);
+const [STACK] = stacks;
+if (STACK === undefined || stacks.length > 1) {
+  throw new Error(`${cwd} needs exactly one Pulumi.<stack>.yaml`);
 }
 
 const pulumi = (args: string[], env: NodeJS.ProcessEnv = process.env) =>
@@ -116,22 +129,19 @@ const migrateState = (env: NodeJS.ProcessEnv) => {
   }
 };
 
-// A copy of the real state in a throwaway local backend. The stack file
-// (secrets provider, encrypted key) stays as it is in the checkout.
-const localCopy = () => {
-  const backend = mkdtempSync(path.join(tmpdir(), "pulumi-state-"));
-  const checkpoint = path.join(backend, "checkpoint.json");
-  writeFileSync(checkpoint, pulumi(["stack", "export", "--stack", STACK]));
-  const stackFile = path.join(cwd, `Pulumi.${STACK}.yaml`);
+const stackFile = path.join(cwd, `Pulumi.${STACK}.yaml`);
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's stack file
+const { secretsprovider: secretsProvider } = parse(
+  readFileSync(stackFile, "utf-8")
+) as { secretsprovider?: string };
+if (secretsProvider === undefined) {
+  throw new Error(`${stackFile} has no secretsprovider`);
+}
+
+// Creates the stack in a backend, keeping the stack file (secrets provider,
+// encrypted key, config) as it is in the checkout.
+const initStack = (env: NodeJS.ProcessEnv) => {
   const stackConfig = readFileSync(stackFile, "utf-8");
-  const env = { ...process.env, PULUMI_BACKEND_URL: `file://${backend}` };
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's stack file
-  const { secretsprovider: secretsProvider } = parse(stackConfig) as {
-    secretsprovider?: string;
-  };
-  if (secretsProvider === undefined) {
-    throw new Error(`${stackFile} has no secretsprovider`);
-  }
   pulumi(
     [
       "stack",
@@ -144,7 +154,25 @@ const localCopy = () => {
     env
   );
   writeFileSync(stackFile, stackConfig);
-  pulumi(["stack", "import", "--stack", STACK, "--file", checkpoint], env);
+};
+
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `pulumi stack ls --json`
+const existing = JSON.parse(pulumi(["stack", "ls", "--json"])) as {
+  name: string;
+}[];
+const stackExists = existing.some(({ name }) => name === STACK);
+
+// A copy of the real state in a throwaway local backend, or an empty stack
+// when the real one doesn't exist yet.
+const localCopy = () => {
+  const backend = mkdtempSync(path.join(tmpdir(), "pulumi-state-"));
+  const env = { ...process.env, PULUMI_BACKEND_URL: `file://${backend}` };
+  initStack(env);
+  if (stackExists) {
+    const checkpoint = path.join(backend, "checkpoint.json");
+    writeFileSync(checkpoint, pulumi(["stack", "export", "--stack", STACK]));
+    pulumi(["stack", "import", "--stack", STACK, "--file", checkpoint], env);
+  }
   return env;
 };
 
@@ -175,6 +203,9 @@ if (command === "preview") {
     input: plan,
     stdio: ["pipe", "inherit", "inherit"],
   });
+  if (!stackExists) {
+    initStack(process.env);
+  }
   migrateState(process.env);
   execFileSync("pulumi", ["up", ...policyArgs, ...extra], {
     stdio: "inherit",

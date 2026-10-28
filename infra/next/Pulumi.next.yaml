@@ -1,0 +1,96 @@
+config:
+  gcp:project: wovain
+  gcp:region: us-central1
+  gcp:billingProject: wovain
+  gcp:userProjectOverride: "true"
+  github:owner: sami-m-g
+  wovain-next:falImageModel: openai/gpt-image-2.5/flare/text-to-image
+  wovain-next:nemotronModel: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
+  # The Resend domain wovain.com (the `resend` resource in the wovain stack).
+  # Pulumi makes next its own sending-only key for it with next's own
+  # full-access key, the resendAdminKey stack secret (infra/README.md).
+  wovain-next:resendDomainId: 4ec14742-4f9e-4081-a61c-58f499366259
+  wovain-next:docsUrl: https://docs.wovain.com
+  wovain-next:emailFrom: wovain <support@wovain.com>
+  wovain-next:supportEmail: support@wovain.com
+  wovain-next:privacyEmail: privacy@wovain.com
+  wovain-next:falMcpUrl: https://mcp.fal.ai/mcp-relay
+  wovain-next:fourthwallMcpUrl: https://mcp.fourthwall.com/app
+  wovain-next:metaMcpUrl: https://mcp.facebook.com/ads
+  wovain-next:metaMcpScope: ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads
+  wovain-next:mcpWidgetResourceDomains:
+    - https://fal.media
+    - https://*.fal.media
+    - https://cdn.fourthwall.com
+    - https://imgproxy.fourthwall.dev
+  wovain-next:fourthwallDefaultProductId: pro_8be1acca2fe7403f89
+  wovain-next:nemotronInputPrice: "0.3"
+  wovain-next:nemotronOutputPrice: "0.9"
+  wovain-next:guardrailInjectionThreshold: "0.8"
+  wovain-next:guardrailModerationThreshold: "0.7"
+  wovain-next:guardrailPiiThreshold: "0.7"
+  wovain-next:pricingRules:
+    cardFeeFixed: 0.3
+    cardFeePct: 2.9
+    defaultBaseCost: 12
+    minMarginPct: 30
+    minProfit: 10
+    refundReservePct: 2
+    salesTaxPct: 7
+    shipping: 5
+  wovain-next:billingCatalog:
+    creditCost:
+      assist: 1
+      design: 2
+      research: 3
+    designsPerRun: 3
+    creditPack:
+      credits: 100
+      name: Credit pack
+      priceCents: 1000
+    plans:
+      free:
+        autopilot: false
+        monthlyCredits: 15
+        name: Free
+        priceCents: 0
+        rank: 0
+        rollover: false
+      label:
+        autopilot: true
+        monthlyCredits: 1000
+        name: Label
+        priceCents: 7900
+        rank: 2
+        rollover: true
+      studio:
+        autopilot: true
+        monthlyCredits: 300
+        name: Studio
+        priceCents: 2900
+        rank: 1
+        rollover: false
+    promoCentsPerCredit: 10
+    promos:
+      - audience: "Hackathon judges: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        enabled: true
+        endsAt: "2026-12-16T23:59:59Z"
+        id: judges-2026
+        maxRedemptions: 50
+        name: Judges 2026
+      - audience: "Launch: a public code for the first creators, once paid plans are on."
+        credits: 50
+        enabled: false
+        endsAt: "2027-03-31T23:59:59Z"
+        id: launch-2027
+        maxRedemptions: 500
+        name: Launch 2027
+        startsAt: "2027-01-15T00:00:00Z"
+    redeemLimit:
+      attempts: 5
+      windowSeconds: 600
+    runsPerMerchant: 2
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
+encryptedkey: CiQAr5FKtTJYD7hIO8Y9PlLFQLiZQEO3hZPd1sPgYdfWsO9bZ38SSQDNTiaDXHGtxz0oHJGmgDvoIcNvBJwZkwoAO0CtPWHzXGt+zsZU9gJXdhJP/QwdHl58V24OZc5ZxLHhZw5+igC+hzvIQQyz3uA=

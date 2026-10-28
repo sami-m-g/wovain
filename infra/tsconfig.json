@@ -11,6 +11,7 @@
   "include": [
     "*.ts",
     "bootstrap/*.ts",
+    "next/*.ts",
     "policy/*.ts",
     "posthog/*.ts",
     "scripts/*.ts"
