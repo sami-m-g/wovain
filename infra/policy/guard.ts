@@ -1,10 +1,13 @@
 // Reads `pulumi preview --json` on stdin and writes the plan as Markdown for
 // the pull request. Fails when the plan deletes or replaces a stateful
-// resource that isn't retainOnDelete: a policy never sees deletes, and the
-// engine's protect only covers what's already protected in the state.
+// resource that isn't retainOnDelete or retired (retired.ts): a policy never
+// sees deletes, and the engine's protect only covers what's already
+// protected in the state. Also fails when the plan changes a resource that
+// is frozen (../freeze.json).
 // Usage: node infra/policy/guard.ts < preview.json > preview.md
 import { readFileSync } from "node:fs";
 
+import { RETIRED } from "./retired.ts";
 import { STATEFUL } from "./types.ts";
 
 interface Step {
@@ -21,14 +24,25 @@ interface Preview {
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's preview JSON
 const preview = JSON.parse(readFileSync(0, "utf-8")) as Preview;
 const changes = (preview.steps ?? []).filter((step) => step.op !== "same");
+// project::type::name, without the stack.
+const key = (urn: string) => urn.split("::").slice(1).join("::");
 const LOSES_DATA = new Set(["delete", "delete-replaced", "replace"]);
 const lost = changes.filter(
-  ({ oldState, op }) =>
+  ({ oldState, op, urn }) =>
     LOSES_DATA.has(op) &&
     oldState !== undefined &&
     STATEFUL.has(oldState.type) &&
-    oldState.retainOnDelete !== true
+    oldState.retainOnDelete !== true &&
+    !(key(urn) in RETIRED)
 );
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- our own file
+const freeze = JSON.parse(
+  readFileSync(new URL("../freeze.json", import.meta.url), "utf-8")
+) as { until: string; resources: string[] };
+const frozen =
+  new Date() < new Date(freeze.until)
+    ? changes.filter(({ urn }) => freeze.resources.includes(key(urn)))
+    : [];
 const errors = (preview.diagnostics ?? []).filter(
   (d) => d.severity === "error"
 );
@@ -52,12 +66,22 @@ const lines = [
         "",
       ]),
   ...lost.map((step) => `- **Blocked:** ${step.op} of \`${name(step.urn)}\``),
+  ...frozen.map(
+    (step) =>
+      `- **Frozen until ${freeze.until}:** ${step.op} of \`${name(step.urn)}\``
+  ),
   ...errors.map((d) => `- **Error:** ${d.message.trim()}`),
 ];
 process.stdout.write(`${lines.join("\n")}\n`);
 if (lost.length > 0) {
   process.stderr.write(
     `Blocked: the plan deletes or replaces ${lost.map((step) => name(step.urn)).join(", ")}. Give it retainOnDelete to release it instead.\n`
+  );
+  process.exitCode = 1;
+}
+if (frozen.length > 0) {
+  process.stderr.write(
+    `Frozen until ${freeze.until}: the plan changes ${frozen.map((step) => name(step.urn)).join(", ")}. infra/freeze.ts should hold them.\n`
   );
   process.exitCode = 1;
 }

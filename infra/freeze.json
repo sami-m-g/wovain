@@ -1,0 +1,8 @@
+{
+  "$comment": "Production (wovain.com) is frozen for the Transcend judging until winners are announced. Until `until`, infra/freeze.ts makes the program ignore every change to these resources, and infra/policy/guard.ts fails a plan that changes one. Keys are <project>::<type>::<name>. Delete an entry (or the file's resources) when production may change again.",
+  "until": "2026-11-17T00:00:00Z",
+  "resources": [
+    "wovain::gcp:cloudrunv2/service:Service::web",
+    "wovain::gcp:cloudrunv2/service:Service::docs"
+  ]
+}

@@ -30,9 +30,11 @@
     "knip": "knip --config .config/knip.json",
     "infra:install": "pulumi install --cwd infra",
     "infra:check-types": "pnpm --dir infra run check-types",
-    "infra:preview": "pulumi preview --cwd infra --stack prod --refresh --policy-pack policy",
+    "infra:bootstrap:preview": "node infra/scripts/pulumi.ts preview infra/bootstrap",
+    "infra:bootstrap:up": "node infra/scripts/pulumi.ts up infra/bootstrap",
+    "infra:preview": "node infra/scripts/pulumi.ts preview infra",
     "infra:test": "pnpm --dir infra run test",
-    "infra:up": "pulumi up --cwd infra --stack prod --refresh --policy-pack policy"
+    "infra:up": "node infra/scripts/pulumi.ts up infra"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",

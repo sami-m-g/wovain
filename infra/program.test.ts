@@ -126,3 +126,21 @@ test("every PostHog object to adopt is one the program declares", () => {
     expect(registered).toContain(`${type}::${name}`);
   }
 });
+
+test("retired and frozen resources match what the program declares", async () => {
+  const { RETIRED } = await import("./policy/retired.ts");
+  for (const [key, release] of Object.entries(RETIRED)) {
+    const [project, ...rest] = key.split("::");
+    if (project !== "wovain") {
+      continue;
+    }
+    // Released in code: declared, so an `up` writes its flags. Released by
+    // `pulumi state unprotect`: not declared, so that `up` deletes it.
+    expect(registered.includes(rest.join("::"))).toBe(release === "code");
+  }
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- our own file
+  const freeze = JSON.parse(read("freeze.json")) as { resources: string[] };
+  for (const key of freeze.resources) {
+    expect(registered).toContain(key.replace(/^wovain::/u, ""));
+  }
+});
