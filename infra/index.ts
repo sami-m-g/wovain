@@ -304,8 +304,10 @@ export const mcpUrl = `https://mcp.${domain}/api/mcp`;
 const serviceName = "wovain-web";
 
 // Settings production and dev (dev.ts) share. NEMOTRON_MODEL is the Nebius
-// model the agents call (`pulumi config set nemotronModel <id>`).
+// model the agents call (`pulumi config set nemotronModel <id>`) and
+// FAL_IMAGE_MODEL the fal endpoint that draws (`falImageModel`).
 const sharedEnvs = {
+  FAL_IMAGE_MODEL: config.require("falImageModel"),
   NEBIUS_BASE_URL: "https://api.tokenfactory.nebius.com/v1/",
   NEMOTRON_MODEL: config.require("nemotronModel"),
   QLOO_API_URL: "https://hackathon.api.qloo.com",
@@ -342,6 +344,7 @@ const service = cloudRunService("web", {
     { name: "BETTER_AUTH_URL", value: siteUrl },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
     { name: "NEMOTRON_MODEL", value: sharedEnvs.NEMOTRON_MODEL },
+    { name: "FAL_IMAGE_MODEL", value: sharedEnvs.FAL_IMAGE_MODEL },
     { name: "MCP_URL", value: mcpUrl },
     { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
     ...googleEnv,
@@ -380,8 +383,14 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-// The docs chat's Nebius model (`pulumi config set docsChatModel <id>`).
-const docsChatModel = config.require("docsChatModel");
+// The docs chat's Nebius model, its reasoning effort and its answer cap
+// (`pulumi config set docsChatModel <id>`, docsChatReasoningEffort,
+// docsChatMaxOutputTokens).
+const docsChat = Object.entries({
+  DOCS_CHAT_MAX_OUTPUT_TOKENS: "docsChatMaxOutputTokens",
+  DOCS_CHAT_MODEL: "docsChatModel",
+  DOCS_CHAT_REASONING_EFFORT: "docsChatReasoningEffort",
+}).map(([name, key]) => ({ name, value: config.require(key) }));
 const nebiusKey = secrets.get("nebius-api-key");
 const nebiusVersion = populated.get("nebius-api-key");
 if (nebiusKey === undefined) {
@@ -398,7 +407,7 @@ const docsService = cloudRunService("docs", {
   envs: [
     { name: "SITE_URL", value: docsUrl },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
-    { name: "DOCS_CHAT_MODEL", value: docsChatModel },
+    ...docsChat,
     ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
   location: region,

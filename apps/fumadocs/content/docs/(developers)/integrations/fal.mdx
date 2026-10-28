@@ -3,7 +3,7 @@ title: fal
 description: fal draws the transparent print art, on the merchant's own fal account.
 ---
 
-fal runs the image model (`TEXT_TO_IMAGE` in `packages/core/src/fal.ts`, GPT Image on fal).
+fal runs the image model (GPT Image on fal, the `FAL_IMAGE_MODEL` env var, set per environment in Pulumi config).
 
 - **Art.** `createArtist` turns the design brief's art prompt into transparent, square print art that prints only the brief's words (`artInput`).
 - **Print size.** The judge checks the result against the 2880 px requirement in code.

@@ -9,6 +9,7 @@ import { createQloo } from "./qloo";
 import { createSealer } from "./sealing";
 import { createTrends, tavilyClient } from "./trends";
 import { createUpstream } from "./upstream";
+import type { ToolCall } from "./upstream";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
@@ -23,6 +24,8 @@ export interface CoreConfig extends FlagsConfig {
   NEBIUS_BASE_URL: string;
   // The Nebius model ID wovain's agents call (apps/web/.env.schema).
   NEMOTRON_MODEL: string;
+  // The fal endpoint that draws the print art (apps/web/.env.schema).
+  FAL_IMAGE_MODEL: string;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
   QLOO_API_KEY?: string | undefined;
@@ -59,7 +62,8 @@ export const createCore = (
     agents,
     // fal runs on the merchant's own fal account (an MCP grant), never on
     // wovain's.
-    artist: createArtist,
+    artist: (call: ToolCall) =>
+      createArtist(call, { model: env.FAL_IMAGE_MODEL }),
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,

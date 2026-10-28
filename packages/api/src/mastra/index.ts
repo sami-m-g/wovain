@@ -18,6 +18,7 @@ const env = z
   .object({
     BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1),
+    FAL_IMAGE_MODEL: z.string().min(1),
     GUARDRAILS: z.enum(["on", "off"]).default("on"),
     NEBIUS_API_KEY: z.string().optional(),
     NEBIUS_BASE_URL: z.url().default("https://api.tokenfactory.nebius.com/v1/"),
