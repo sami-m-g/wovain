@@ -11,6 +11,9 @@ allowBuilds:
   protobufjs: false
 overrides:
   "@next/env": npm:@varlock/nextjs-integration@1.2.5
+  # geoip-country pins ip-address 6.x (GHSA-mwp4-54f8-5fhr, high, and others);
+  # it does not import it at runtime. Remove once geoip-country moves to 10.x.
+  ip-address: ^10.7.4
 catalog:
   zod: ^4.6.7
   "@base-ui/react": ^1.9.0

@@ -1,0 +1,10 @@
+# ggshield's configuration (.github/workflows/supply-chain.yml).
+# https://docs.gitguardian.com/ggshield-docs/reference/configuration
+version: 2
+
+secret:
+  # Vendored skill directories (updated by their CLIs, never edited here) hold
+  # example tokens in their docs.
+  ignored-paths:
+    - ".agents/skills/**"
+    - ".claude/skills/**"

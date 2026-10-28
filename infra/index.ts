@@ -648,6 +648,7 @@ githubRepository({
         : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
     },
   },
+  gitguardianApiKey: config.getSecret("gitguardian-api-key"),
   releaseBranch: config.get("releaseBranch") ?? "release/transcend",
   // Who approves a production deploy (GitHub user ids): the owner by default.
   releaseReviewerIds: config.getObject<number[]>("releaseReviewerIds") ?? [

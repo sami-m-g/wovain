@@ -64,10 +64,14 @@ interface RepositoryArgs {
   releaseBranch: string;
   // GitHub user ids who may approve a production deploy.
   releaseReviewerIds: number[];
+  // ggshield's API key (.github/workflows/supply-chain.yml), from the
+  // `gitguardian-api-key` stack secret. Left out, no secret is declared.
+  gitguardianApiKey?: pulumi.Input<string>;
 }
 
 export const githubRepository = ({
   environments,
+  gitguardianApiKey,
   releaseBranch,
   releaseReviewerIds,
   variables,
@@ -110,8 +114,9 @@ export const githubRepository = ({
   );
 
   // The default branch: no deletion, no force-push, and every change through
-  // a pull request whose CI passed. No required approval: the maintainer
-  // merges their own pull requests.
+  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL and
+  // the dependency review (.github/workflows). No required approval: the
+  // maintainer merges their own pull requests.
   new github.RepositoryRuleset("main", {
     conditions: {
       refName: { excludes: [], includes: ["~DEFAULT_BRANCH"] },
@@ -130,10 +135,12 @@ export const githubRepository = ({
         requiredReviewThreadResolution: false,
       },
       requiredStatusChecks: {
-        requiredChecks: ["verify", "infra"].map((context) => ({
-          context,
-          integrationId: GITHUB_ACTIONS_APP_ID,
-        })),
+        requiredChecks: ["verify", "infra", "codeql", "dependency-review"].map(
+          (context) => ({
+            context,
+            integrationId: GITHUB_ACTIONS_APP_ID,
+          })
+        ),
         strictRequiredStatusChecksPolicy: false,
       },
     },
@@ -212,6 +219,16 @@ export const githubRepository = ({
     name: "dependencies",
     repository: repository.name,
   });
+
+  // The one repository secret: ggshield's key. It is a stack secret, so
+  // Pulumi keeps it encrypted in state; only the ggshield job reads it.
+  if (gitguardianApiKey !== undefined) {
+    new github.ActionsSecret("GITGUARDIAN_API_KEY", {
+      plaintextValue: gitguardianApiKey,
+      repository: repository.name,
+      secretName: "GITGUARDIAN_API_KEY",
+    });
+  }
 
   // What the workflows read as `vars.<NAME>`; none is a secret.
   for (const [variableName, value] of Object.entries(variables)) {

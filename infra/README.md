@@ -16,7 +16,7 @@ The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 
 ## GitHub
 
-`github.ts` manages the repository (adopted, protected and retained), Dependabot alerts and security updates, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request (no approval required) whose `verify` and `infra` checks from `.github/workflows/ci.yml` passed. It also owns a `release` ruleset for `release/transcend`, every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads:
+`github.ts` manages the repository (adopted, protected and retained), Dependabot alerts and security updates, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request (no approval required) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml` and `dependency-review` from `supply-chain.yml` passed. It also owns a `release` ruleset for `release/transcend`, every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads:
 
 | Environment | Deployment branches | Approval | Google trusts in it |
 | --- | --- | --- | --- |
@@ -26,6 +26,10 @@ The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 | `infrastructure` | `main` | none | `gitlab-infra` (`bootstrap/`) |
 
 `deploy.yml` uses `next` and `Production`; no workflow uses `dev` or `infrastructure` yet, but each is declared so Google's trust in it can't be claimed by an environment made by hand. None of the four existed on GitHub except `Production` (made by Vercel's integration; GitHub creates or updates an environment by name, so Pulumi adopts it as is). If one already exists when you apply, adopt it instead of recreating it, for example `pulumi import --cwd infra --stack prod github:index/repositoryEnvironment:RepositoryEnvironment infrastructure wovain:infrastructure` (the id is `<repository>:<environment>`). The repository-level `Preview` environment (Vercel's) is not used and not managed.
+
+### GitGuardian secret
+
+The repository's one secret is `GITGUARDIAN_API_KEY`, which the `ggshield` job in `.github/workflows/supply-chain.yml` reads. Set it as a stack secret and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set): `pulumi config set --secret --cwd infra --stack prod gitguardian-api-key <key>`, with a service-account API key from the GitGuardian dashboard (scope: scan). Don't set it by hand in the repository's settings. `.gitguardian.yaml` holds the scan's ignored paths. Until the key exists the `ggshield` job fails, so it is not a required check. Like the new required checks above, the secret lives in the `prod` stack: apply neither before the production freeze ends (about 2026-11-16).
 
 The repository's variables are `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_PROJECT_ID`, `GCP_REGION` and `DOCS_SITE_URL`. Each deploy environment has `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_IMAGE_REPOSITORY`, `GCP_SQL_INSTANCE`, `DATABASE_URL_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`, `SITE_URL` and `WEB_SERVICE`, and `Production` also has `DOCS_SERVICE`. See "Releases" below.
 
