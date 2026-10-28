@@ -5,11 +5,13 @@ import { ORPCError } from "@orpc/server";
 import { applyGrant } from "@wovain/billing/mirror";
 import { createBilling } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
-import { fakeNemotron } from "@wovain/core/test-doubles";
+import { createArtist } from "@wovain/core/fal";
+import { fakeAgents, fakeNemotron } from "@wovain/core/test-doubles";
 import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
+import { creditReservation } from "@wovain/db/schema/billing";
 import { externalWrite } from "@wovain/db/schema/durable";
 import {
   campaign,
@@ -30,7 +32,7 @@ import { isPermanent } from "../workflows/run";
 import type { Actor, RunEngine } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
 import { listConnections, requireFal, withProvider } from "./connections";
-import { decideDesign } from "./designs";
+import { decideDesign, generateDesign } from "./designs";
 import { once } from "./once";
 import { createDesignProduct } from "./products";
 import { approvedDesigns, awaitApproval, eachSettled, finishRun } from "./runs";
@@ -719,6 +721,124 @@ describe("mastra-runs rollout", () => {
     expect(legacy.resume).not.toHaveBeenCalled();
     const [row] = await ctx.db.select().from(run).where(eq(run.id, runId));
     expect(row?.engine).toBe("mastra");
+  });
+});
+
+const draftOf = (title: string, artPrompt: string) => ({
+  artPrompt,
+  description: "For quiet nights in. Soft lines.",
+  garmentColors: ["black", "sand"],
+  printedText: [],
+  title,
+});
+
+// What the vision model sees: a cat (passes) or a pink T-shirt (fails).
+const sight = (cat: boolean) => ({
+  background: { note: "Stands alone.", pass: true },
+  contrast: [
+    { color: "black", note: "Shows.", visible: true },
+    { color: "sand", note: "Shows.", visible: true },
+  ],
+  garment: { note: cat ? "A cat." : "A pink T-shirt.", pass: cat },
+  printedText: { note: "None, as asked.", pass: true },
+  read: [],
+  subject: cat ? "A cat reading." : "A pink cropped tee.",
+});
+
+describe("generateDesign", () => {
+  const tee = draftOf(
+    "Y2K Cropped Tee Shirt",
+    "A simple line drawing of a pink cropped tee silhouette, transparent background"
+  );
+  const cat = draftOf(
+    "Reading Cat Tee",
+    "A sleepy cat reading under a lamp, cream lines, transparent background"
+  );
+  const verdict = {
+    checks: [
+      { note: "Keyword first.", pass: true, rule: "title" },
+      { note: "Two lines.", pass: true, rule: "description" },
+      { note: "On idea.", pass: true, rule: "idea_fit" },
+      { note: "Original.", pass: true, rule: "originality" },
+    ],
+    coach: "Ready.",
+    fixes: ["Draw a subject, not a shirt."],
+    score: 80,
+  };
+
+  const draw = async (sights: ReturnType<typeof sight>[]) => {
+    const fal = fakeProvider({
+      check_job: { status: "COMPLETED" },
+      get_job_result: ({ request_id }: Record<string, unknown>) => ({
+        images: [
+          {
+            height: 2880,
+            url: `https://v3.fal.media/${String(request_id)}.png`,
+            width: 2880,
+          },
+        ],
+      }),
+      // The call is recorded before it answers: the count includes it.
+      submit_job: () => ({ request_id: `req_${fal.count("submit_job")}` }),
+    });
+    const ctx = await setup({ fal: fal.call });
+    await ctx.db.insert(connection).values({
+      provider: "fal",
+      sealedTokens: "sealed",
+      userId: USER_ID,
+    });
+    const { designId: _seeded, runId } = await seedRun(ctx.db, "running");
+    const [source] = await ctx.db
+      .select({ id: idea.id })
+      .from(idea)
+      .where(eq(idea.runId, runId));
+    const agents = fakeAgents({
+      design_brief: [tee, cat],
+      design_judge: [verdict],
+      design_vision: sights,
+    });
+    const actor: Actor = {
+      ...ctx.actor,
+      core: {
+        ...ctx.actor.core,
+        artist: (call: ToolCall) =>
+          createArtist(call, async () => {
+            await Promise.resolve();
+          }),
+        nemotron: agents.ask,
+      } as unknown as Core,
+    };
+    const made = await generateDesign(actor, source?.id ?? "");
+    const charged = await ctx.db
+      .select()
+      .from(creditReservation)
+      .where(eq(creditReservation.step, "design"));
+    return { agents, charged, fal, made };
+  };
+
+  it("redraws a design the judge sent back, once and uncharged", async () => {
+    const { agents, charged, fal, made } = await draw([
+      sight(false),
+      sight(true),
+    ]);
+
+    expect(made.brief.title).toBe("Reading Cat Tee");
+    expect(made.judgment.verdict).toBe("ready");
+    expect(made.artworkUrl).toBe("https://v3.fal.media/req_2.png");
+    expect(fal.count("submit_job")).toBe(2);
+    expect(charged).toHaveLength(1);
+    // The redraw's brief is written from the judge's failed checks.
+    const briefs = agents.asked.filter((call) => call.name === "design_brief");
+    expect(briefs[1]?.prompt).toContain('"previous"');
+    expect(briefs[1]?.prompt).toContain("A pink T-shirt.");
+  });
+
+  it("saves a redraw still sent back, pending and flagged revise", async () => {
+    const { fal, made } = await draw([sight(false), sight(false)]);
+
+    expect(made.status).toBe("pending_approval");
+    expect(made.judgment.verdict).toBe("revise");
+    expect(fal.count("submit_job")).toBe(2);
   });
 });
 

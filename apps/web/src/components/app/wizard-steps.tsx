@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, AlertDescription } from "@wovain/ui/components/alert";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import {
@@ -30,7 +31,14 @@ import {
 } from "@wovain/ui/components/input-group";
 import { Textarea } from "@wovain/ui/components/textarea";
 import { cn } from "@wovain/ui/lib/utils";
-import { Check, ExternalLink, RotateCcw, Upload, X } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  ExternalLink,
+  RotateCcw,
+  Upload,
+  X,
+} from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useId } from "react";
@@ -328,6 +336,10 @@ const DesignCard = ({
   const approved = design.status === "approved";
   const rejected = design.status === "rejected";
   const { judgment, brief } = design;
+  // A design the check sent back is never offered like a ready one: its
+  // failed checks are named and approving it reads "Approve anyway".
+  const flagged = judgment.verdict !== "ready";
+  const failedChecks = judgment.checks.filter((check) => !check.pass);
   return (
     <li className="flex">
       <Card
@@ -367,6 +379,19 @@ const DesignCard = ({
             </span>{" "}
             {judgment.coach}
           </p>
+          {flagged && design.status === "pending_approval" ? (
+            <Alert variant="destructive">
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription className="text-xs">
+                <p>{t("flagged")}</p>
+                <ul className="list-disc pl-4">
+                  {failedChecks.map((check) => (
+                    <li key={check.rule}>{check.note}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
           {design.status === "pending_approval" ? (
             <Field>
               <FieldLabel className="text-xs" htmlFor={reasonId}>
@@ -392,7 +417,7 @@ const DesignCard = ({
               variant="outline"
             >
               <Check aria-hidden="true" data-icon="inline-start" />
-              {t("approve")}
+              {flagged ? t("approveAnyway") : t("approve")}
             </Button>
             <Button
               className="h-9"

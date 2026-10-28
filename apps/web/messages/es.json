@@ -466,6 +466,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Texto impreso: {text}",
       "approve": "Aprobar",
+      "approveAnyway": "Aprobar de todos modos",
+      "flagged": "La revisión marcó este diseño. Revisa esto antes de venderlo:",
       "approved": "Aprobado",
       "reject": "Rechazar",
       "rejected": "Rechazado",

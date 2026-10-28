@@ -466,6 +466,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Texte imprimé : {text}",
       "approve": "Valider",
+      "approveAnyway": "Valider quand même",
+      "flagged": "La vérification a signalé ce design. Vérifiez ces points avant de le vendre :",
       "approved": "Validé",
       "reject": "Refuser",
       "rejected": "Refusé",
