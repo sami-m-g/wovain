@@ -252,7 +252,28 @@ describe("decideDesign", () => {
     expect(after?.status).toBe("running");
   });
 
-  it("refuses a second decision with a typed error", async () => {
+  it("answers a repeat of the same decision without resuming twice", async () => {
+    const { designId } = await seedRun(ctx.db);
+    const resume = vi.fn(async () => {
+      await Promise.resolve();
+    });
+    const actor = { ...ctx.actor, runs: engine(resume) };
+    const first = await decideDesign(actor, designId, {
+      approve: true,
+      by: "merchant",
+    });
+
+    const again = await decideDesign(actor, designId, {
+      approve: true,
+      by: "merchant",
+    });
+
+    expect(again.id).toBe(first.id);
+    expect(again.status).toBe("approved");
+    expect(resume).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a conflicting second decision with a typed error", async () => {
     const { designId } = await seedRun(ctx.db);
     const actor = { ...ctx.actor, runs: engine() };
     await decideDesign(actor, designId, { approve: true, by: "merchant" });

@@ -172,8 +172,9 @@ export interface Decision extends RunDecision {
 }
 
 // The only move out of pending_approval: approve or reject, once. A design
-// already decided answers DESIGN_ALREADY_DECIDED, so a second click, a
-// second client or a late retry can't flip it. A run draws several designs,
+// already decided the same way answers that decision again (a second click
+// or a retry is harmless); decided the other way it answers
+// DESIGN_ALREADY_DECIDED, so nothing can flip it. A run draws several designs,
 // and its gate opens on the merchant's call on the last pending one: that
 // call resumes the run once the decision is committed: the resume writes the
 // run row from its own connection, so resuming inside the transaction that
@@ -186,6 +187,7 @@ const commitDecision = async (
 ) => {
   const {
     anyApproved,
+    replay,
     row: decided,
     waitingRunId,
   } = await actor.db.transaction(async (tx) => {
@@ -235,13 +237,30 @@ const commitDecision = async (
       if (current === undefined) {
         throw notFound.design({ id });
       }
+      const decidedStatus =
+        current.status === "approved" ? "approved" : "rejected";
+      // The same call again (a second click, a retry whose answer was lost)
+      // finds its own decision: answer it, change nothing.
+      if (decidedStatus === (approve ? "approved" : "rejected")) {
+        return {
+          anyApproved: approve,
+          replay: true,
+          row: current,
+          waitingRunId: undefined,
+        };
+      }
       throw designAlreadyDecided({
         designId: current.id,
-        status: current.status === "approved" ? "approved" : "rejected",
+        status: decidedStatus,
       });
     }
     if (by !== "merchant" || row.runId === null) {
-      return { anyApproved: approve, row, waitingRunId: undefined };
+      return {
+        anyApproved: approve,
+        replay: false,
+        row,
+        waitingRunId: undefined,
+      };
     }
     // The gate opens once every design of the run is decided: the merchant
     // approves one or more and rejects the rest.
@@ -250,7 +269,12 @@ const commitDecision = async (
       .from(design)
       .where(and(eq(design.runId, row.runId), eq(design.userId, actor.userId)));
     if (decisions.some((item) => item.status === "pending_approval")) {
-      return { anyApproved: approve, row, waitingRunId: undefined };
+      return {
+        anyApproved: approve,
+        replay: false,
+        row,
+        waitingRunId: undefined,
+      };
     }
     const approvedSome = decisions.some((item) => item.status === "approved");
     const [waiting] = await tx
@@ -262,15 +286,25 @@ const commitDecision = async (
       .where(and(eq(run.id, row.runId), eq(run.status, "awaiting_approval")))
       .returning({ id: run.id });
     if (waiting === undefined) {
-      return { anyApproved: approvedSome, row, waitingRunId: undefined };
+      return {
+        anyApproved: approvedSome,
+        replay: false,
+        row,
+        waitingRunId: undefined,
+      };
     }
     if (actor.runs === undefined) {
       throw new Error("No run engine to resume the run");
     }
-    return { anyApproved: approvedSome, row, waitingRunId: waiting.id };
+    return {
+      anyApproved: approvedSome,
+      replay: false,
+      row,
+      waitingRunId: waiting.id,
+    };
   });
   if (waitingRunId === undefined || actor.runs === undefined) {
-    return decided;
+    return { replay, row: decided };
   }
   try {
     // The run reads which designs were approved; the call says whether any.
@@ -309,7 +343,7 @@ const commitDecision = async (
     }
     throw runNotWaiting(waitingRunId, error);
   }
-  return decided;
+  return { replay, row: decided };
 };
 
 // The merchant's call teaches the agents their taste (@wovain/core/taste).
@@ -342,8 +376,9 @@ export const decideDesign = async (
   id: string,
   decision: Decision
 ) => {
-  const decided = await commitDecision(actor, id, decision);
-  if (decision.by === "merchant") {
+  const { replay, row: decided } = await commitDecision(actor, id, decision);
+  // A replayed decision taught the agents the first time.
+  if (decision.by === "merchant" && !replay) {
     await learnTaste(actor, decided, decision.approve);
   }
   return decided;
