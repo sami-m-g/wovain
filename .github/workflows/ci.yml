@@ -1,0 +1,55 @@
+# release/transcend's CI: main's `verify` job, unchanged, on the code that
+# runs in production (docs/adr/0004-release-branch.md on main). No `infra`
+# job: infra/ is applied from main only.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [release/transcend]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Reads the pnpm version from the packageManager field in package.json.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Varlock validates env when Next loads its config (typegen and build).
+      # Throwaway values are generated per run; real ones exist only at runtime.
+      - name: Generate placeholder env
+        run: |
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
+            echo "BETTER_AUTH_URL=http://localhost:3001"
+            echo "DATABASE_URL=postgresql://ci:$(openssl rand -hex 16)@localhost:5432/ci"
+            echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+          } >> "$GITHUB_ENV"
+      # postinstall runs the Varlock codegen (env:generate).
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+      - run: pnpm run check
+      - run: pnpm run check-types
+      - run: pnpm run knip
+      - run: pnpm run spec:validate
+      - run: pnpm run test
+      - run: pnpm run build
