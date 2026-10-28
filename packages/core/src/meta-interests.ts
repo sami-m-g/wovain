@@ -11,7 +11,8 @@ import type { Logger } from "./log";
 // Pattern from mikusnuz/meta-ads-mcp (src/tools/targeting.ts,
 // search_targeting), MIT License: https://github.com/mikusnuz/meta-ads-mcp
 // Changes: TypeScript client without the MCP server, typed and checked
-// answers, and a match rule that keeps only interests named like the query.
+// answers, and a match rule that keeps only interests named like the query
+// (an exact name, or a broader name from an apparel-related category).
 
 export interface MetaInterestsConfig {
   appId: string | undefined;
@@ -52,10 +53,23 @@ const normal = (text: string) =>
     .replaceAll(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 
-// The interest that names what was asked, or none: an exact name first,
-// then a name that contains the query (or the query it), the largest
-// audience winning a tie. "Street fashion" matches "Street fashion" and
-// "Fashion" matches "Fashion design" but "Golf" never matches "Fashion".
+// Meta's interest categories a broader name may come from: an apparel brand's
+// buyers, not courts, places or people that share a word with it.
+const BROADER_CATEGORIES = new Set([
+  "hobbies and activities",
+  "shopping and fashion",
+]);
+
+const inBroaderCategory = ({ path }: MetaInterest) =>
+  normal(path[0] ?? "") === "interests" &&
+  BROADER_CATEGORIES.has(normal(path[1] ?? ""));
+
+// The interest that names what was asked, or none. An exact name first;
+// else, from Meta's apparel-related categories only, a name that holds the
+// query as whole words, in Meta's own ranking order. "Street fashion"
+// matches "Street fashion", "Fashion" matches "Fashion design" under
+// Shopping and fashion, "Supreme" never matches "Supreme Court of the
+// United States" and "Street fashion" never matches "Street".
 export const bestMatch = (
   query: string,
   found: readonly MetaInterest[]
@@ -71,14 +85,11 @@ export const bestMatch = (
   }
   // Whole words only: spaces around both sides.
   const words = ` ${wanted} `;
-  return valid
-    .filter((interest) => {
-      const name = ` ${normal(interest.name)} `;
-      return (
-        name.includes(words) || (name.trim() !== "" && words.includes(name))
-      );
-    })
-    .toSorted((a, b) => (b.audienceSize ?? 0) - (a.audienceSize ?? 0))[0];
+  return valid.find(
+    (interest) =>
+      inBroaderCategory(interest) &&
+      ` ${normal(interest.name)} `.includes(words)
+  );
 };
 
 export const createMetaInterests = ({

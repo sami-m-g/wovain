@@ -442,20 +442,24 @@ const audiencesStep = async (
         const settled = await mapLimit(
           QLOO_AUDIENCES,
           QLOO_CONCURRENCY,
-          async (audience) => ({
-            affinity: mean(
-              await deps.qloo.audienceAffinity(
-                audience.id,
-                BRAND_TYPE,
-                brands,
-                deps.log
-              )
-            ),
-            audience,
-          })
+          async (audience) => {
+            const affinities = await deps.qloo.audienceAffinity(
+              audience.id,
+              BRAND_TYPE,
+              brands,
+              deps.log
+            );
+            // No Qloo score is no evidence: left out, never counted as 0,
+            // so it can't pull the average down and lift the others.
+            return affinities.length === 0
+              ? undefined
+              : { affinity: mean(affinities), audience };
+          }
         );
         const scored = settled.flatMap((result) =>
-          result.status === "fulfilled" ? [result.value] : []
+          result.status === "fulfilled" && result.value !== undefined
+            ? [result.value]
+            : []
         );
         const failures = settled.flatMap((result) =>
           result.status === "rejected" ? [result.reason] : []

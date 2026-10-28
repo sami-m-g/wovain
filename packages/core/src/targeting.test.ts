@@ -109,28 +109,59 @@ it("builds Meta's spec: countries always, A+A's age minimum cap, gender codes", 
   });
 });
 
+const SHOPPING = ["Interests", "Shopping and fashion"];
+
 const interest = (
   id: string,
   name: string,
-  audienceSize?: number
+  audienceSize?: number,
+  path: string[] = []
 ): MetaInterest => ({
   audienceSize,
   id,
   name,
-  path: [],
+  path,
 });
 
 it("matches an interest only when Meta names it like the query", () => {
   const found = [
-    interest("6003000000001", "Fashion design", 100),
-    interest("6003000000002", "Street fashion", 50),
-    interest("6003000000003", "Golf", 900),
+    interest("6003000000003", "Golf", 900, ["Interests", "Sports"]),
+    interest("6003000000001", "Fashion design", 100, SHOPPING),
+    interest("6003000000004", "Fashion week", 5000, SHOPPING),
+    interest("6003000000002", "Street fashion", 50, SHOPPING),
   ];
   expect(bestMatch("Street Fashion", found)?.id).toBe("6003000000002");
+  // Meta's own order wins over the larger audience.
   expect(bestMatch("Fashion", found)?.id).toBe("6003000000001");
   expect(bestMatch("Tennis", found)).toBeUndefined();
   // Never an ID Meta's search didn't give.
   expect(bestMatch("Golf", [interest("x", "Golf")])).toBeUndefined();
+});
+
+it("never matches a broader name outside Meta's apparel categories", () => {
+  const court = interest(
+    "6003000000020",
+    "Supreme Court of the United States",
+    90_000_000,
+    ["Interests", "Additional interests"]
+  );
+  expect(bestMatch("Supreme", [court])).toBeUndefined();
+  // A broader name with no category path isn't trusted either.
+  expect(
+    bestMatch("Fashion", [interest("6003000000021", "Fashion design", 100)])
+  ).toBeUndefined();
+  // The exact name still matches, whatever its category.
+  expect(
+    bestMatch("Supreme", [court, interest("6003000000022", "Supreme", 10)])?.id
+  ).toBe("6003000000022");
+});
+
+it("never matches a shorter interest to a longer query", () => {
+  expect(
+    bestMatch("Street fashion", [
+      interest("6003000000030", "Street", 1_000_000, SHOPPING),
+    ])
+  ).toBeUndefined();
 });
 
 it("searches Meta's interests with the app token on the configured Graph", async () => {
@@ -192,8 +223,15 @@ const fakeDeps = (overrides: Partial<TargetingDeps> = {}) => {
         async (query: string) =>
           await Promise.resolve(
             query === "Sneakers"
-              ? [interest("6003000000010", "Sneakers", 5000)]
-              : [interest("6003000000011", `${query}ish`, 10)]
+              ? [interest("6003000000010", "Sneakers", 5000, SHOPPING)]
+              : [
+                  interest(
+                    "6003000000011",
+                    `${query} Court of the United States`,
+                    90_000_000,
+                    ["Interests", "Additional interests"]
+                  ),
+                ]
           )
       ),
     },
@@ -245,7 +283,8 @@ it("turns Qloo's audience into Meta targeting and keeps the evidence", async () 
     metaId: "6003000000010",
     qlooId: SNEAKERS,
   });
-  // "Supreme fans" isn't named like "Supreme": no interest, kept as unmatched.
+  // Meta's search for "Supreme" finds "Supreme Court of the United States",
+  // outside the apparel categories: no interest, kept as unmatched.
   expect(result.evidence.unmatched).toEqual([
     { from: "qloo_entity", qlooId: "B1", query: "Supreme" },
   ]);
@@ -314,4 +353,24 @@ it("targets countries only when the brand has no Qloo entities", async () => {
   });
   expect(result.targeting).toEqual({ geo_locations: { countries: ["CA"] } });
   expect(deps.interests.search).not.toHaveBeenCalled();
+});
+
+it("leaves out audiences Qloo has no score for", async () => {
+  const empty = new Set([
+    "urn:audience:hobbies_and_interests:street_fashion",
+    "urn:audience:hobbies_and_interests:high_fashion",
+    SNEAKERS,
+  ]);
+  const { deps } = fakeDeps();
+  deps.qloo.audienceAffinity = vi.fn(
+    async (audienceId: string) =>
+      await Promise.resolve(empty.has(audienceId) ? [] : [0.765, 0.765])
+  );
+  const result = await buildAudienceTargeting(deps, {
+    countries: ["US"],
+    entities: [SUPREME],
+  });
+  // Every scored audience sits at the same baseline: none stands out.
+  expect(result.evidence.audiences).toEqual([]);
+  expect(result.evidence.failed).toEqual([]);
 });
