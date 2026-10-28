@@ -5,7 +5,7 @@
 // pull request that then removes these declarations deletes them.
 //
 // gitlab-feature-flags-instance-id is the exception: production's frozen
-// revision still mounts it (freeze.json), so it and wovain-web's access to
+// revision still mounts it (`wovain:freezeProduction`), so it and wovain-web's access to
 // it stay, retained, until production next deploys.
 import * as gcp from "@pulumi/gcp";
 import * as github from "@pulumi/github";

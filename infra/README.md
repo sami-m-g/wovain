@@ -48,7 +48,7 @@ Deleted workload identity pools stay soft-deleted for 30 days, so the ids `gitla
 
 ### Production freeze
 
-Production (wovain.com) is frozen for the Transcend judging until the date in `freeze.json`. Until then `freeze.ts` makes the program ignore every change to the `wovain-web` and `wovain-docs` services, and the guard fails a plan that changes them anyway. `legacy.ts` also keeps `gitlab-feature-flags-instance-id` and wovain-web's access to it, since the live revision still mounts it. Retire both after production's next deploy.
+Production (wovain.com) is frozen for the Transcend judging while `wovain:freezeProduction` is on (the default; the release-branch change, #25, adds it to `index.ts`, which then leaves the `wovain-web` and `wovain-docs` templates as they are live). The guard fails any plan that still changes either service, and `scripts/pulumi.ts up` runs that preview and guard before it applies, so a laptop `up` can't roll production either. `legacy.ts` also keeps `gitlab-feature-flags-instance-id` and wovain-web's access to it, since the live revision still mounts it. Retire both after production's next deploy.
 
 ## Bootstrap (one time, by a project owner)
 
