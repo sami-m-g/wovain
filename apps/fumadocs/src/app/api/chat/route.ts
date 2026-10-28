@@ -224,7 +224,7 @@ export const POST = async (req: Request, _ctx: RouteContext<"/api/chat">) => {
   }
 
   // Each model call is a PostHog $ai_generation event: tokens and cost, no text.
-  const model = withTracing(nebius.chatModel(ENV.NEBIUS_MODEL), posthog, {
+  const model = withTracing(nebius.chatModel(ENV.DOCS_CHAT_MODEL), posthog, {
     posthogCaptureImmediate: true,
     posthogCostOverride: MODEL_PRICE,
     posthogDistinctId: "docs-chat",

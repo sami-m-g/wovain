@@ -3,7 +3,7 @@ title: Nebius y Nemotron
 description: Cómo usa wovain NVIDIA Nemotron en Nebius Token Factory para redactar briefs, evaluar diseños, escribir textos de anuncios y decidir en autopilot.
 ---
 
-Wovain llama a **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`, la constante `NEMOTRON_MODEL` en `packages/core/src/nemotron.ts`) en **Nebius Token Factory**. El endpoint es compatible con OpenAI: `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` por defecto, autenticado con `NEBIUS_API_KEY`. Cada respuesta se valida con un esquema de Zod.
+Wovain llama a **NVIDIA Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, la variable de entorno `NEMOTRON_MODEL`, definida por entorno en la configuración de Pulumi) en **Nebius Token Factory**. El endpoint es compatible con OpenAI: `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` por defecto, autenticado con `NEBIUS_API_KEY`. Cada respuesta se valida con un esquema de Zod.
 
 Nemotron hace cuatro trabajos. Nunca sustituye las comprobaciones que hace el código.
 
@@ -37,7 +37,7 @@ El motivo de cada decisión se guarda en el diseño y una ejecución registra su
 
 ## 5. Chat de la documentación
 
-El chat de IA del sitio de documentación (`apps/fumadocs`) usa el mismo endpoint de Token Factory y `NEBIUS_API_KEY`, con el Nemotron más pequeño, **Nemotron 3 Nano 30B-A3B** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`, 0,06 $ de entrada y 0,24 $ de salida por millón de tokens). Busca en la documentación y responde con tres fragmentos cortos. Para gastar poco, limita la respuesta a 400 tokens, envía solo los últimos cuatro mensajes, rechaza sin llamar al modelo las preguntas vacías, demasiado largas o fuera de tema, y limita a cada visitante a 10 mensajes cada 10 minutos y 50 al día, con un tope diario global. Cada llamada es un evento `$ai_generation` de PostHog con tokens y coste, sin el texto de los mensajes.
+El chat de IA del sitio de documentación (`apps/fumadocs`) usa el mismo endpoint de Token Factory y `NEBIUS_API_KEY`, con **Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`, la variable de entorno `DOCS_CHAT_MODEL`, 0,06 $ de entrada y 0,24 $ de salida por millón de tokens). Busca en la documentación y responde con tres fragmentos cortos. Para gastar poco, limita la respuesta a 400 tokens, envía solo los últimos cuatro mensajes, rechaza sin llamar al modelo las preguntas vacías, demasiado largas o fuera de tema, y limita a cada visitante a 10 mensajes cada 10 minutos y 50 al día, con un tope diario global. Cada llamada es un evento `$ai_generation` de PostHog con tokens y coste, sin el texto de los mensajes.
 
 ## Por qué Nemotron
 

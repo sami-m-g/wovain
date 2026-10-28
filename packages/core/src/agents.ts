@@ -20,8 +20,11 @@ import type { AnyScorer } from "./scorers";
 // the merchant's brand and taste. The Mastra instance (packages/api) stores
 // their scores, memory and traces in Postgres.
 
-export const NEMOTRON_MODEL = "nvidia/nemotron-3-super-120b-a12b";
-// Nebius Token Factory's list price, USD per token ($0.30 and $0.90 per 1M).
+// The model is NEMOTRON_MODEL (apps/web/.env.schema), set per environment
+// through Pulumi config (infra/index.ts).
+// Nebius Token Factory's list price, USD per token ($0.30 and $0.90 per 1M),
+// the same for nvidia/Nemotron-3.5-Super-VL and the Nemotron 3 Super it
+// replaces.
 const PRICE = { input: 0.3e-6, output: 0.9e-6 } as const;
 
 export const AGENT_IDS = [
@@ -51,6 +54,8 @@ export interface AgentKitConfig {
   guardrails?: boolean | undefined;
   // Brand and taste memory per merchant; none without storage.
   memory?: Memory | undefined;
+  // The Nebius model ID every agent, scorer and guardrail calls.
+  model: string;
   posthogHost: string;
   posthogKey?: string | undefined;
   // Share of live calls the scorers judge (0 to 1).
@@ -65,6 +70,7 @@ export const createAgentKit = ({
   environment,
   guardrails = true,
   memory,
+  model,
   posthogHost,
   posthogKey,
   scoreSampleRate = 0.1,
@@ -78,7 +84,7 @@ export const createAgentKit = ({
     name: "nebius",
     supportsStructuredOutputs: true,
   });
-  const base = nebius.chatModel(NEMOTRON_MODEL);
+  const base = nebius.chatModel(model);
   const posthog = new PostHog(posthogKey ?? "off", {
     disabled: posthogKey === undefined,
     host: posthogHost,

@@ -3,7 +3,7 @@ title: Nebius and Nemotron
 description: How wovain uses NVIDIA Nemotron on Nebius Token Factory to write briefs, judge designs, write ad copy and decide in autopilot.
 ---
 
-Wovain calls **NVIDIA Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`, the `NEMOTRON_MODEL` constant in `packages/core/src/nemotron.ts`) on **Nebius Token Factory**. The endpoint is OpenAI-compatible: `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` by default, authenticated with `NEBIUS_API_KEY`. Every reply is validated with a Zod schema.
+Wovain calls **NVIDIA Nemotron 3.5 Super VL** (`nvidia/Nemotron-3.5-Super-VL`, the `NEMOTRON_MODEL` env var, set per environment in Pulumi config) on **Nebius Token Factory**. The endpoint is OpenAI-compatible: `NEBIUS_BASE_URL`, `https://api.tokenfactory.nebius.com/v1/` by default, authenticated with `NEBIUS_API_KEY`. Every reply is validated with a Zod schema.
 
 Nemotron does four jobs. It never replaces the checks that code makes.
 
@@ -37,7 +37,7 @@ The reason for each decision is stored on the design, and a run records its step
 
 ## 5. Docs chat
 
-The AI chat on the docs site (`apps/fumadocs`) uses the same Token Factory endpoint and `NEBIUS_API_KEY`, with the smallest Nemotron, **Nemotron 3 Nano 30B-A3B** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`, $0.06 in and $0.24 out per 1M tokens). It searches the docs, then answers from three short results. To keep spend low it caps the answer at 400 tokens, sends only the last four messages, refuses empty, very long or off-topic prompts without calling the model, and limits each visitor to 10 messages per 10 minutes and 50 per day, with a global daily cap. Each call is a PostHog `$ai_generation` event with tokens and cost, and no message text.
+The AI chat on the docs site (`apps/fumadocs`) uses the same Token Factory endpoint and `NEBIUS_API_KEY`, with **Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`, the `DOCS_CHAT_MODEL` env var, $0.06 in and $0.24 out per 1M tokens). It searches the docs, then answers from three short results. To keep spend low it caps the answer at 400 tokens, sends only the last four messages, refuses empty, very long or off-topic prompts without calling the model, and limits each visitor to 10 messages per 10 minutes and 50 per day, with a global daily cap. Each call is a PostHog `$ai_generation` event with tokens and cost, and no message text.
 
 ## Why Nemotron
 
