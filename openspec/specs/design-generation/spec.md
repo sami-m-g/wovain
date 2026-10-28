@@ -37,8 +37,6 @@ A design SHALL have a Nemotron brief and listing, transparent print art from fal
 
 Nemotron SHALL judge title, description, idea fit, originality and the garment rule from the brief, and a vision model SHALL judge the drawn artwork image. The judge SHALL return `ready` or `revise`, a score and up to five fixes. The print-size check SHALL be computed by code and the image checks SHALL come from the vision model; both SHALL override the text model.
 
-The image checks SHALL be: the subject is not a garment, mockup or clothing; there is no background and nothing is cropped; readable printed text matches the brief; and the art shows on each listed garment color.
-
 #### Scenario: Art too small
 
 - **WHEN** the art does not meet the blank's print size
@@ -63,6 +61,15 @@ The image checks SHALL be: the subject is not a garment, mockup or clothing; the
 
 - **WHEN** the readable text in the art differs from the brief's printed text
 - **THEN** the `printed_text` check fails and the verdict is `revise`
+
+### Requirement: Image checks
+
+The vision model SHALL check that the drawn art's subject is not a garment, mockup or clothing; that it has no background and nothing is cropped; that its readable printed text matches the brief; and that it shows on each listed garment color.
+
+#### Scenario: Art disappears on a garment color
+
+- **WHEN** the art does not show on a listed garment color
+- **THEN** that color is dropped, and the design is `revise` when no color is left
 
 ### Requirement: Distinct research themes
 
