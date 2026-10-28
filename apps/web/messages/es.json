@@ -34,7 +34,8 @@
     "pricingTitle": "Precios: planes y créditos para tus drops de merch",
     "pricingDescription": "Empieza gratis con créditos cada mes. Studio, Label y los packs de créditos llegan pronto. Los créditos pagan la investigación y las revisiones con IA; fal, Meta y Fourthwall te cobran directamente.",
     "billingTitle": "Facturación",
-    "onboardingTitle": "Configuración"
+    "onboardingTitle": "Configuración",
+    "autopilotTitle": "Piloto automático"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -313,7 +314,8 @@
       "connections": "Conexiones",
       "insights": "Estadísticas",
       "billing": "Facturación",
-      "onboarding": "Configuración"
+      "onboarding": "Configuración",
+      "autopilot": "Piloto automático"
     },
     "docs": "Docs",
     "docsLabel": "Docs (se abre en una pestaña nueva)",
@@ -1042,5 +1044,76 @@
       "openLabel": "(pendiente)",
       "startDrop": "Empezar un drop"
     }
+  },
+  "Autopilot": {
+    "title": "Piloto automático",
+    "lead": "Lo que wovain vio para tu marca, lo que hizo y por qué.",
+    "scanNow": "Buscar ahora",
+    "scanRequested": "Búsqueda pedida. Las nuevas sugerencias aparecen aquí en un par de minutos. Puedes buscar una vez cada 6 horas.",
+    "scanFailed": "La búsqueda no empezó. Inténtalo de nuevo en un momento.",
+    "actionFailed": "No funcionó: {message}",
+    "levels": {
+      "suggest": "Solo sugerir",
+      "draft": "Preparar borradores",
+      "publish_ads_paused": "Publicar, anuncios en pausa"
+    },
+    "levelHints": {
+      "suggest": "El piloto sugiere drops. Tú empiezas cada uno.",
+      "draft": "El piloto empieza la ejecución y espera a que elijas ideas.",
+      "publish_ads_paused": "El piloto hace el drop y lo publica. Los anuncios siguen en pausa hasta que los actives."
+    },
+    "paused": "Pausaste el agente. Las sugerencias te esperan.",
+    "credits": "{used, number} de {cap, number} créditos del piloto usados hoy. Un drop cuesta unos {estimate, number}.",
+    "notEntitled": "El piloto automático aún no está en tu plan, así que cada sugerencia te espera.",
+    "noBrand": "El piloto necesita el perfil de tu marca (nichos y referencias) para saber qué vigilar.",
+    "emptyTitle": "Aún no hay sugerencias",
+    "empty": "Cada 6 horas el piloto compara Qloo y las noticias de la semana con tu marca. Las coincidencias aparecen aquí con sus fuentes.",
+    "accept": "Empezar el drop",
+    "dismiss": "Descartar",
+    "openRun": "Abrir la ejecución",
+    "evidence": "Fuentes",
+    "log": "Qué pasó",
+    "triggers": {
+      "qloo": "Tendencia en Qloo",
+      "trend": "En las noticias"
+    },
+    "statuses": {
+      "new": "Nueva",
+      "accepted": "Empezada",
+      "dismissed": "Descartada",
+      "expired": "Caducada"
+    },
+    "approvals": {
+      "pending": "Te espera",
+      "approved": "Aprobada",
+      "executing": "Empezando",
+      "done": "Ejecución iniciada",
+      "failed": "No empezó",
+      "rejected": "Rechazada",
+      "denied": "Denegada",
+      "expired": "Caducada",
+      "reverted": "Deshecha"
+    },
+    "steps": {
+      "scan": "Revisé tu marca: {input}.",
+      "qlooRising": "Pregunté a Qloo qué sube entre tu público: {names}.",
+      "qlooNone": "Pregunté a Qloo qué sube entre tu público. No devolvió nada.",
+      "qlooFailed": "Qloo no respondió, así que esta búsqueda usó solo las noticias.",
+      "tavily": "Busqué noticias de esta semana sobre “{query}”: {count, plural, =0 {nada reciente} one {# noticia} other {# noticias}}.",
+      "tavilyFailed": "Falló la búsqueda de noticias sobre “{query}”.",
+      "match": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias de esta semana.} other {# búsquedas encontraron noticias de esta semana.}}",
+      "suggest": "Sugerí un drop sobre {subject}.",
+      "policyAllow": "Tu nivel de autonomía deja que el piloto empiece esta ejecución.",
+      "policyWait": "Tu nivel de autonomía pide preguntarte primero.",
+      "policyDeny": "La política denegó esta ejecución.",
+      "notEntitled": "El piloto no está en tu plan, así que esto te espera.",
+      "creditCap": "Los créditos del piloto de hoy se acabaron ({used, number} de {cap, number}), así que esto te espera.",
+      "runIdeas": "Empezó la ejecución. Espera a que elijas ideas.",
+      "runAutopilot": "Empezó la ejecución en piloto automático. Elige, aprueba y publica; los anuncios siguen en pausa.",
+      "runFailed": "La ejecución no empezó: {error}",
+      "other": "{step}"
+    },
+    "scans": "Búsquedas sin nada nuevo",
+    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}"
   }
 }

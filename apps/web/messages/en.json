@@ -34,7 +34,8 @@
     "pricingTitle": "Pricing: plans and credits for merch drops",
     "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
     "billingTitle": "Billing",
-    "onboardingTitle": "Get set up"
+    "onboardingTitle": "Get set up",
+    "autopilotTitle": "Autopilot"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -313,7 +314,8 @@
       "connections": "Connections",
       "insights": "Insights",
       "billing": "Billing",
-      "onboarding": "Get set up"
+      "onboarding": "Get set up",
+      "autopilot": "Autopilot"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -1042,5 +1044,76 @@
       "openLabel": "(not yet)",
       "startDrop": "Start a drop"
     }
+  },
+  "Autopilot": {
+    "title": "Autopilot",
+    "lead": "What wovain noticed for your brand, what it did, and why.",
+    "scanNow": "Scan now",
+    "scanRequested": "Scan requested. New suggestions show up here in a minute or two. You can scan once every 6 hours.",
+    "scanFailed": "The scan didn't start. Try again in a moment.",
+    "actionFailed": "That didn't work: {message}",
+    "levels": {
+      "suggest": "Suggest only",
+      "draft": "Draft for me",
+      "publish_ads_paused": "Publish, ads paused"
+    },
+    "levelHints": {
+      "suggest": "Autopilot suggests drops. You start each one.",
+      "draft": "Autopilot starts the run, then waits for you to pick ideas.",
+      "publish_ads_paused": "Autopilot runs the drop and publishes it. Ads stay paused until you turn them on."
+    },
+    "paused": "You paused the agent. Suggestions wait for you.",
+    "credits": "{used, number} of {cap, number} autopilot credits used today. A drop costs about {estimate, number}.",
+    "notEntitled": "Autopilot isn't on your plan yet, so every suggestion waits for you.",
+    "noBrand": "Autopilot needs your brand profile (niches and taste references) to know what to watch.",
+    "emptyTitle": "No suggestions yet",
+    "empty": "Every 6 hours autopilot checks Qloo and this week's news against your brand. Matches show up here with their sources.",
+    "accept": "Start the drop",
+    "dismiss": "Dismiss",
+    "openRun": "Open the run",
+    "evidence": "Sources",
+    "log": "What happened",
+    "triggers": {
+      "qloo": "Qloo trend",
+      "trend": "In the news"
+    },
+    "statuses": {
+      "new": "New",
+      "accepted": "Started",
+      "dismissed": "Dismissed",
+      "expired": "Expired"
+    },
+    "approvals": {
+      "pending": "Waiting for you",
+      "approved": "Approved",
+      "executing": "Starting",
+      "done": "Run started",
+      "failed": "Didn't start",
+      "rejected": "Rejected",
+      "denied": "Refused",
+      "expired": "Expired",
+      "reverted": "Undone"
+    },
+    "steps": {
+      "scan": "Scanned your brand: {input}.",
+      "qlooRising": "Asked Qloo what's rising with your audience: {names}.",
+      "qlooNone": "Asked Qloo what's rising with your audience. Nothing came back.",
+      "qlooFailed": "Qloo didn't answer, so this scan used the news only.",
+      "tavily": "Searched this week's news for “{query}”: {count, plural, =0 {nothing recent} one {# story} other {# stories}}.",
+      "tavilyFailed": "The news search for “{query}” failed.",
+      "match": "{count, plural, =0 {No search found this week's news.} one {# search found this week's news.} other {# searches found this week's news.}}",
+      "suggest": "Suggested a drop on {subject}.",
+      "policyAllow": "Your autonomy level lets autopilot start this run.",
+      "policyWait": "Your autonomy level says to ask you first.",
+      "policyDeny": "The policy refused this run.",
+      "notEntitled": "Autopilot isn't on your plan, so this waits for you.",
+      "creditCap": "Today's autopilot credits are used up ({used, number} of {cap, number}), so this waits for you.",
+      "runIdeas": "Started the run. It waits for you to pick ideas.",
+      "runAutopilot": "Started the run on autopilot. It picks, approves and publishes; ads stay paused.",
+      "runFailed": "The run didn't start: {error}",
+      "other": "{step}"
+    },
+    "scans": "Scans with nothing new",
+    "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}"
   }
 }

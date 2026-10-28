@@ -27,7 +27,7 @@ const ORPC_CODE: Record<ApprovalErrorCode, string> = {
 };
 
 // The queue's refusals as oRPC errors the client can read by `data.reason`.
-const asOrpc = (error: unknown): never => {
+export const asOrpc = (error: unknown): never => {
   if (error instanceof ApprovalError) {
     throw new ORPCError(ORPC_CODE[error.code], {
       cause: error,

@@ -19,7 +19,7 @@ Source : `scope.md > What "Working" Looks Like`.
 8. Nemotron écrit jusqu'à trois variantes de publicité (angle, titre, message) et wovain prépare une campagne, un ensemble de publicités et des publicités Meta, tous en pause, pour les pays et le budget quotidien choisis.
 9. Réussite : le produit est dans la boutique Fourthwall et la campagne en pause est dans le gestionnaire de publicités Meta. Le créateur la lance quand il est prêt. Les étapes payantes sont facturées en crédits.
 
-L'autopilot (une fonction des forfaits payants dans la proposition de prix) enchaîne les étapes 3 à 8 en une exécution : Nemotron choisit l'idée principale et relit chaque design, et l'exécution s'arrête s'il n'en approuve aucun ; un design que le juge veut réviser n'est jamais approuvé.
+L'autopilot (réservé aux forfaits payants en production ; en dev et next, sur tous les forfaits, Free compris) enchaîne les étapes 3 à 8 en une exécution : Nemotron choisit l'idée principale et relit chaque design, et l'exécution s'arrête s'il n'en approuve aucun ; un design que le juge veut réviser n'est jamais approuvé.
 
 ```text
 Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
@@ -88,6 +88,7 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
   - [x] La raison de chaque approbation ou rejet est enregistrée sur le design.
   - [ ] Les exécutions sont des workflows Mastra durables : l'exécution répond tout de suite, se suspend à l'approbation, reprend vers le produit et la campagne après la décision, et survit à un redémarrage (en cours).
   - [ ] Chaque étape est enregistrée sur l'exécution ; une exécution échouée montre où elle s'est arrêtée et pourquoi, et une nouvelle tentative ne duplique ni le produit Fourthwall ni la campagne Meta (en cours).
+  - [ ] Toutes les 6 heures, l'autopilot analyse l'audience Qloo de chaque marque et l'actualité Tavily de la semaine, enregistre jusqu'à deux drops suggérés avec leurs sources et place chaque exécution dans la file d'approbation, dans le niveau d'autonomie du designer et un plafond quotidien de crédits ; le designer lance ou écarte chacun dans le journal des décisions (dev et next, flag `autopilot-triggers`).
 
 ### Qualité
 
@@ -102,7 +103,7 @@ Direction -> Idées (Qloo + Tavily) -> Design : brief, visuel, prix
 - En tant que créateur, je veux une petite allocation gratuite et un prix clair pour essayer une vraie collection avant de payer.
   - [ ] Polar est le marchand officiel. Forfaits proposés : Free 15 crédits par mois, Studio 29 $ pour 300, Label 79 $ pour 1 000 (reportés), et un pack de 100 crédits à 10 $.
   - [ ] Les crédits sont réservés avant une étape payante et rendus si elle échoue ; recherche 3, design 2, assistance 1 (proposition).
-  - [ ] L'autopilot est réservé aux forfaits payants (proposition).
+  - [ ] L'autopilot est réservé aux forfaits payants en production (proposition) ; en dev et next, il est sur tous les forfaits, Free compris.
 
 ### Analytique
 

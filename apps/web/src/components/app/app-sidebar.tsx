@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +12,7 @@ import {
   SidebarRail,
 } from "@wovain/ui/components/sidebar";
 import {
+  Bot,
   ChartLine,
   CreditCard,
   History,
@@ -27,6 +29,7 @@ import { NavSecondary } from "@/components/app/nav-secondary";
 import { NavUser } from "@/components/app/nav-user";
 import { Logo } from "@/components/brand/logo";
 import { Link } from "@/i18n/navigation";
+import { orpc } from "@/utils/orpc";
 
 const NAV: readonly NavItem[] = [
   { href: "/dashboard", icon: LayoutGrid, key: "overview" },
@@ -37,6 +40,14 @@ const NAV: readonly NavItem[] = [
   { href: "/dashboard/billing", icon: CreditCard, key: "billing" },
 ];
 
+// Shown only while the autopilot-triggers flag is on for the merchant.
+const AUTOPILOT: NavItem = {
+  href: "/dashboard/autopilot",
+  icon: Bot,
+  key: "autopilot",
+};
+const RUNS_INDEX = NAV.findIndex((item) => item.key === "runs");
+
 const MARK_SIZE = 20;
 
 /**
@@ -46,6 +57,11 @@ const MARK_SIZE = 20;
  */
 export const AppSidebar = ({ docsUrl }: { docsUrl: string }) => {
   const common = useTranslations("Common");
+  const autopilot = useQuery(orpc.autopilot.status.queryOptions());
+  const items =
+    autopilot.data?.enabled === true
+      ? NAV.toSpliced(RUNS_INDEX + 1, 0, AUTOPILOT)
+      : NAV;
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -74,7 +90,7 @@ export const AppSidebar = ({ docsUrl }: { docsUrl: string }) => {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={NAV} />
+        <NavMain items={items} />
         <NavSecondary docsUrl={docsUrl} />
       </SidebarContent>
       <SidebarFooter>

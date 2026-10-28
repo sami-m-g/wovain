@@ -18,6 +18,9 @@ const cents = z.int().nonnegative();
 const planSchema = z.strictObject({
   // Autopilot: Nemotron picks and approves, then publishes and stages ads.
   autopilot: z.boolean(),
+  // Credits autopilot may spend on the runs it starts itself (triggers),
+  // per UTC day. 0 (the default) means it never starts one.
+  autopilotDailyCredits: credits.default(0),
   // Credits granted at the start of every monthly cycle.
   monthlyCredits: credits,
   name: z.string().min(1),

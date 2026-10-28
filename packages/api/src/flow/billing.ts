@@ -1,4 +1,3 @@
-import { billingCatalog } from "@wovain/billing/catalog";
 import { creditBalance } from "@wovain/billing/credits";
 import { entitlement } from "@wovain/billing/mirror";
 import type { Offer } from "@wovain/billing/plans";
@@ -8,6 +7,7 @@ import { createError, defineError } from "evlog";
 
 import type { Actor } from "./actor";
 import { startFreePlan } from "./free-plan";
+import { autopilotEntitled } from "./spend";
 
 // The merchant's plan and credits, and the ways to change them: Polar's
 // hosted checkout and customer portal. The plan and credits shown are the
@@ -48,16 +48,8 @@ export const billingStatus = async (actor: Actor) => {
   await startFreePlan(actor);
   const current = await entitlement(actor.db, actor.userId);
   const { subscription } = current;
-  // Autopilot comes with the plan, or with the autopilot flag (on for every
-  // plan, Free included, in dev and next).
-  const autopilot =
-    billingCatalog().plans[current.plan].autopilot ||
-    (await actor.core.flags.isOn("autopilot", {
-      plan: current.plan,
-      userId: actor.userId,
-    }));
   return {
-    autopilot,
+    autopilot: await autopilotEntitled(actor),
     credits: await creditBalance(actor.db, actor.userId),
     enabled: polar !== undefined,
     paidPlans: await actor.billing.paidPlans(),

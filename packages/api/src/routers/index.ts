@@ -3,6 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { publicProcedure } from "../index";
 import { approvalsRouter, autonomyRouter } from "./approvals";
 import { targetingRouter } from "./audiences";
+import { autopilotRouter } from "./autopilot";
 import { billingRouter } from "./billing";
 import { connectionsRouter } from "./connections";
 import { insightsRouter } from "./insights";
@@ -19,6 +20,7 @@ import {
 export const appRouter = {
   approvals: approvalsRouter,
   autonomy: autonomyRouter,
+  autopilot: autopilotRouter,
   billing: billingRouter,
   campaigns: campaignsRouter,
   connections: connectionsRouter,

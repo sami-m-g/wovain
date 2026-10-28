@@ -189,7 +189,9 @@ config:
       priceCents: 1000
     plans:
       free:
-        autopilot: false
+        # Autopilot on Free in dev and next (openspec autopilot-triggers).
+        autopilot: true
+        autopilotDailyCredits: 15
         monthlyCredits: 25
         name: Free
         priceCents: 0
@@ -197,6 +199,7 @@ config:
         rollover: false
       label:
         autopilot: true
+        autopilotDailyCredits: 100
         monthlyCredits: 800
         name: Label
         priceCents: 7900
@@ -204,6 +207,7 @@ config:
         rollover: true
       studio:
         autopilot: true
+        autopilotDailyCredits: 30
         monthlyCredits: 250
         name: Studio
         priceCents: 2900

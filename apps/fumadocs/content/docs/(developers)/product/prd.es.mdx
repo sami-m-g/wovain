@@ -19,7 +19,7 @@ Fuente: `scope.md > What "Working" Looks Like`.
 8. Nemotron escribe hasta tres variantes de anuncio (enfoque, titular, mensaje) y wovain prepara una campaña, un conjunto de anuncios y anuncios en Meta, todos en pausa, para los países y el presupuesto diario elegidos.
 9. Éxito: el producto está en la tienda de Fourthwall y la campaña en pausa está en el administrador de anuncios de Meta. El diseñador la inicia cuando quiera. Los pasos de pago se cobran en créditos.
 
-El autopilot (una función de los planes de pago en la propuesta de precios) hace los pasos 3 a 8 en una ejecución: Nemotron elige la idea principal y revisa cada diseño, y la ejecución se detiene si no aprueba ninguno; un diseño que el juez pide revisar nunca se aprueba.
+El autopilot (solo en los planes de pago en producción; en dev y next, en todos los planes, Free incluido) hace los pasos 3 a 8 en una ejecución: Nemotron elige la idea principal y revisa cada diseño, y la ejecución se detiene si no aprueba ninguno; un diseño que el juez pide revisar nunca se aprueba.
 
 ```text
 Dirección -> Ideas (Qloo + Tavily) -> Diseño: brief, arte, precio
@@ -88,6 +88,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
   - [x] El motivo de cada aprobación o rechazo se guarda en el diseño.
   - [ ] Las ejecuciones son workflows duraderos de Mastra: la ejecución responde al instante, se suspende en la aprobación, continúa hacia el producto y la campaña tras la decisión y sobrevive a un reinicio (en curso).
   - [ ] Cada paso queda registrado en la ejecución; una ejecución fallida muestra dónde se detuvo y por qué, y un reintento no duplica el producto de Fourthwall ni la campaña de Meta (en curso).
+  - [ ] Cada 6 horas, el autopilot analiza la audiencia de Qloo de cada marca y las noticias de Tavily de la semana, guarda hasta dos drops sugeridos con sus fuentes y pone cada ejecución en la cola de aprobación, dentro del nivel de autonomía del diseñador y de un tope diario de créditos; el diseñador inicia o descarta cada una en el registro de decisiones (dev y next, flag `autopilot-triggers`).
 
 ### Calidad
 
@@ -102,7 +103,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 - Como diseñador, quiero una pequeña asignación gratuita y un precio claro para probar una colección real antes de pagar.
   - [ ] Polar es el comerciante registrado. Planes propuestos: Free 15 créditos al mes, Studio 29 $ por 300, Label 79 $ por 1.000 (se acumulan), y un paquete de 100 créditos por 10 $.
   - [ ] Los créditos se reservan antes de un paso de pago y se devuelven si falla; investigación 3, diseño 2, asistencia 1 (propuesta).
-  - [ ] El autopilot solo está en los planes de pago (propuesta).
+  - [ ] El autopilot solo está en los planes de pago en producción (propuesta); en dev y next está en todos los planes, Free incluido.
 
 ### Analítica
 

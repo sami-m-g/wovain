@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
+import { createAutopilotFunctions } from "./autopilot";
 import { createObservability } from "./observability";
 import { createLegacyRunEngine, createRunRouter } from "./rollout";
 import {
@@ -154,13 +155,6 @@ export const createRunEngine = ({
     },
   };
 
-  // The route Inngest calls: app/api/inngest/route.ts exports it.
-  const handler = createServe(serve)({
-    functions: [onRunFailed],
-    inngest,
-    mastra,
-  });
-
   const runs = createRunRouter({
     db: services.db,
     legacy: createLegacyRunEngine(services),
@@ -172,6 +166,16 @@ export const createRunEngine = ({
   const events: EventSender = {
     send: async (event) => await inngest.send(event),
   };
+
+  // The route Inngest calls: app/api/inngest/route.ts exports it.
+  const handler = createServe(serve)({
+    functions: [
+      onRunFailed,
+      ...createAutopilotFunctions({ events, inngest, runs, services }),
+    ],
+    inngest,
+    mastra,
+  });
 
   return { events, handler, runs };
 };
