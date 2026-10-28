@@ -1,4 +1,4 @@
-import { POLICY_DECIDER } from "@wovain/core/approvals";
+import { ApprovalError, POLICY_DECIDER } from "@wovain/core/approvals";
 import type { Approval, EnqueueInput } from "@wovain/core/approvals";
 import type { ActionType } from "@wovain/core/autonomy";
 import { discountKeepsProfit, sizePrices } from "@wovain/core/pricing";
@@ -8,7 +8,10 @@ import {
   canMove,
   createCollection,
   createInactivePromotion,
+  endFreshPromotion,
   evaluateReadiness,
+  findPromotionByCode,
+  hideCollection,
   listOrders,
   MAX_PROMO_USES,
   nextStatus,
@@ -140,23 +143,29 @@ const RETRYABLE: ReadonlySet<string> = new Set([
   "rejected",
 ]);
 
+// Queues a proposal; a key whose earlier action ended without running
+// (RETRYABLE) queues a fresh one.
+const queueAction = async (actor: Actor, proposal: StoreProposal) => {
+  const queued = await proposeStoreAction(actor, proposal);
+  if (
+    queued.created ||
+    proposal.idempotencyKey === undefined ||
+    !RETRYABLE.has(queued.approval.status)
+  ) {
+    return queued.approval;
+  }
+  const again = await proposeStoreAction(actor, {
+    ...proposal,
+    idempotencyKey: `${proposal.idempotencyKey}:${Date.now()}`,
+  });
+  return again.approval;
+};
+
 export const merchantAction = async (actor: Actor, proposal: StoreProposal) => {
-  let queued = await proposeStoreAction(actor, {
+  const approval = await queueAction(actor, {
     ...proposal,
     proposedBy: "merchant",
   });
-  if (
-    !queued.created &&
-    proposal.idempotencyKey !== undefined &&
-    RETRYABLE.has(queued.approval.status)
-  ) {
-    queued = await proposeStoreAction(actor, {
-      ...proposal,
-      idempotencyKey: `${proposal.idempotencyKey}:${Date.now()}`,
-      proposedBy: "merchant",
-    });
-  }
-  const { approval } = queued;
   if (approval.status !== "pending" || HUMAN_CONFIRM.has(approval.risk)) {
     return approval;
   }
@@ -277,7 +286,7 @@ export const stageRunDrop = async (
   const { approval } = await proposeStoreAction(actor, {
     dropId,
     idempotencyKey: `store.drop.publish:${dropId}`,
-    inverse: { dropId, type: "store.product.unpublish" },
+    inverse: { dropId, type: "store.drop.unpublish" },
     payload: { dropId },
     proposedBy: autopilot ? "autopilot" : "store_agent",
     reason:
@@ -408,12 +417,69 @@ export const requestProductMove = async (
   });
 };
 
+// products.publish with store-management on. From the website it is the
+// merchant's own request (decided in their name, like requestProductMove).
+// Through MCP (the publish_product tool and its widget) the caller may be
+// an agent, so the publish is queued under the autonomy policy and waits
+// for the merchant unless their level publishes alone. Either way the
+// executor checks readiness before anything goes live. A hidden product
+// moves to in review while it waits. Returns the product as it is now,
+// with its approval.
+export const proposeProductPublish = async (
+  actor: Actor,
+  productId: string,
+  { byMerchant }: { byMerchant: boolean }
+) => {
+  const row = await getProduct(actor, productId);
+  if (row.status === "public") {
+    return { ...row, approval: null };
+  }
+  if (!canMove(row.status, "publish")) {
+    throw storeError(
+      `A ${row.status} product can't be published`,
+      `Publish doesn't start from ${row.status}.`,
+      "Make a new product from its design."
+    );
+  }
+  const [reviewed] = canMove(row.status, "review")
+    ? await actor.db
+        .update(product)
+        .set({ status: nextStatus("review") })
+        .where(and(eq(product.id, productId), eq(product.userId, actor.userId)))
+        .returning()
+    : [row];
+  const current = reviewed ?? row;
+  const designRow = await actor.db.query.design.findFirst({
+    where: { id: current.designId, userId: actor.userId },
+  });
+  const proposal: StoreProposal = {
+    // One request per state of the product: asking twice returns the same
+    // approval; asking again after an unpublish queues a new one.
+    idempotencyKey: `store.product.publish:${productId}:${current.updatedAt.getTime()}`,
+    inverse: MOVE_INVERSE.publish?.(productId),
+    payload: { productId },
+    proposedBy: "store_agent",
+    reason: byMerchant
+      ? "Asked for in the drop flow."
+      : "Asked for through an agent tool.",
+    title: `Publish "${designRow?.brief.title ?? "product"}"`,
+    type: "store.product.publish",
+  };
+  const approval = byMerchant
+    ? await merchantAction(actor, proposal)
+    : await queueAction(actor, proposal);
+  return {
+    ...current,
+    approval: { id: approval.id, status: approval.status },
+  };
+};
+
 export const requestDropPublish = async (actor: Actor, dropId: string) => {
   const found = await getDrop(actor, dropId);
   return await merchantAction(actor, {
     dropId,
     idempotencyKey: `store.drop.publish:${dropId}`,
-    inverse: { dropId, type: "store.product.unpublish" },
+    inverse: { dropId, type: "store.drop.unpublish" },
     payload: { dropId },
     proposedBy: "merchant",
     title: `Publish the drop "${found.name}"`,
@@ -599,8 +665,36 @@ export const requestCancel = async (
 };
 
 // ---------------------------------------------------------------------------
-// Samples: not an action wovain performs. The merchant pays on Fourthwall's
-// checkout; wovain only prepares the link.
+// Samples (R4: the designer pays). wovain only prepares Fourthwall's
+// checkout link, and paying there is the designer's confirm. The request is
+// still an action in the queue, decided in the designer's name and
+// performed here at once, so it is audited like every other store write.
+
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+const logStoreFailure = (
+  actor: Actor,
+  approval: Approval,
+  error: unknown,
+  what: string
+) => {
+  log.error({
+    error: {
+      message: `Store action ${approval.actionType} ${what}: ${messageOf(error)}`,
+      name: "StoreActionFailed",
+      ...(error instanceof Error && error.stack !== undefined
+        ? { stack: error.stack }
+        : {}),
+    },
+    store: {
+      actionType: approval.actionType,
+      approvalId: approval.id,
+      decidedBy: approval.decidedBy ?? POLICY_DECIDER,
+    },
+    userId: actor.userId,
+  });
+};
 
 export const productVariants = async (actor: Actor, productId: string) => {
   const row = await getProduct(actor, productId);
@@ -619,17 +713,78 @@ export const sampleLink = async (
   if (!variants.some((variant) => variant.id === variantId)) {
     throw notFound.product({ id: variantId });
   }
-  const url = await withProvider(
-    actor,
-    "fourthwall",
-    async (call) =>
-      await sampleCheckout(call, {
-        baseUrl: await shopBaseUrl(call),
-        items: [{ quantity: 1, variantId }],
-      })
-  );
-  actor.log?.set({ store: { sample: { productId } } });
-  return { url };
+  const row = await getProduct(actor, productId);
+  const designRow = await actor.db.query.design.findFirst({
+    where: { id: row.designId, userId: actor.userId },
+  });
+  const approvals = approvalsFor(actor);
+  const { approval: queued } = await proposeStoreAction(actor, {
+    payload: { productId, variantId },
+    proposedBy: "merchant",
+    reason: "The designer pays for the sample on Fourthwall's checkout.",
+    title: `Order a sample of "${designRow?.brief.title ?? "product"}"`,
+    type: "store.sample.checkout",
+  });
+  const [settings, spent] = await Promise.all([
+    autonomyOf(actor),
+    spendToDate(actor),
+  ]);
+  const approval =
+    queued.status === "pending"
+      ? await approvals.decide(
+          {
+            approvalId: queued.id,
+            approve: true,
+            decidedBy: actor.userId,
+            note: "Requested by the designer, who confirms by paying on Fourthwall's checkout",
+            userId: actor.userId,
+          },
+          settings,
+          spent
+        )
+      : queued;
+  if (approval.status !== "approved") {
+    throw storeError(
+      "The sample couldn't be ordered",
+      `The sample request is ${approval.status}.`,
+      "Open your approvals to see why, then try again."
+    );
+  }
+  await approvals.record({
+    actor: "store_agent",
+    approvalId: approval.id,
+    status: "executing",
+    userId: actor.userId,
+  });
+  try {
+    const url = await withProvider(
+      actor,
+      "fourthwall",
+      async (call) =>
+        await sampleCheckout(call, {
+          baseUrl: await shopBaseUrl(call),
+          items: [{ quantity: 1, variantId }],
+        })
+    );
+    await approvals.record({
+      actor: "store_agent",
+      approvalId: approval.id,
+      result: { url },
+      status: "done",
+      userId: actor.userId,
+    });
+    return { approvalId: approval.id, url };
+  } catch (error) {
+    logStoreFailure(actor, approval, error, "failed");
+    await approvals.record({
+      actor: "store_agent",
+      approvalId: approval.id,
+      error: messageOf(error).slice(0, 500),
+      status: "failed",
+      userId: actor.userId,
+    });
+    throw error;
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -698,21 +853,63 @@ const publishDrop = async (actor: Actor, dropId: string) => {
   };
 };
 
+// The undo of a drop's publish: its collection and its live products are
+// hidden again, and the drop is paused.
+const unpublishDrop = async (actor: Actor, dropId: string) => {
+  const found = await getDrop(actor, dropId);
+  const products = await dropProducts(actor, dropId);
+  const live = products.filter((row) => canMove(row.status, "unpublish"));
+  const { collectionId } = found;
+  await withProvider(actor, "fourthwall", async (call) => {
+    if (collectionId !== null) {
+      await hideCollection(call, collectionId);
+    }
+    // One product at a time: Fourthwall rate-limits writes per shop.
+    for (const row of live) {
+      // oxlint-disable-next-line no-await-in-loop -- sequential on purpose
+      await setOfferVisibility(call, row.offerId, "HIDDEN");
+    }
+  });
+  if (live.length > 0) {
+    await actor.db
+      .update(product)
+      .set({ status: nextStatus("unpublish") })
+      .where(
+        and(
+          eq(product.userId, actor.userId),
+          inArray(
+            product.id,
+            live.map((row) => row.id)
+          )
+        )
+      );
+  }
+  await actor.db
+    .update(drop)
+    .set({ status: "paused" })
+    .where(and(eq(drop.id, dropId), eq(drop.userId, actor.userId)));
+  return { hidden: live.map((row) => row.id) };
+};
+
 const createPromotion = async (actor: Actor, approval: Approval) => {
   const { payload } = approval;
   const dropId = text(payload, "dropId");
   const products = await dropProducts(actor, dropId);
   const { maxUses } = payload;
+  const code = text(payload, "code");
   const promotionId = await withProvider(
     actor,
     "fourthwall",
     async (call) =>
       await once(actor, {
-        key: `approval:${approval.id}:promotion`,
+        // Keyed by the drop and the code, not the approval: a merchant's
+        // retry is a new approval, and must repair the code an earlier
+        // attempt made instead of creating it again.
+        key: `drop:${dropId}:promotion:${code}`,
         operation: "create_promotion",
         perform: async () =>
           await createInactivePromotion(call, {
-            code: text(payload, "code"),
+            code,
             maxUses:
               typeof maxUses === "number"
                 ? Math.min(maxUses, MAX_PROMO_USES)
@@ -721,6 +918,15 @@ const createPromotion = async (actor: Actor, approval: Approval) => {
             percentage: num(payload, "percentage"),
           }),
         provider: "fourthwall",
+        // An earlier attempt died after creating the code, which may still
+        // be live: find it by its code and finish switching it off.
+        recover: async () => {
+          const found = await findPromotionByCode(call, code);
+          if (found !== undefined) {
+            await endFreshPromotion(call, found, code);
+          }
+          return found;
+        },
       })
   );
   // Switching it on is visible to customers (R2): its own action, which the
@@ -750,6 +956,9 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
   switch (approval.actionType) {
     case "store.drop.publish": {
       return await publishDrop(actor, text(payload, "dropId"));
+    }
+    case "store.drop.unpublish": {
+      return await unpublishDrop(actor, text(payload, "dropId"));
     }
     case "store.product.publish": {
       await assertReady(actor);
@@ -842,8 +1051,25 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
   }
 };
 
-const messageOf = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+// Taking the `executing` lock failed. Only a lost race counts as taken: the
+// transition was refused and the approval has since moved on. Anything else
+// (a database outage, a missing approval) is a real error.
+const LOCK_HELD: ReadonlySet<string> = new Set(["executing", "done", "failed"]);
+
+const lostTheLock = async (
+  actor: Actor,
+  approvalId: string,
+  error: unknown
+) => {
+  const refused =
+    error instanceof ApprovalError &&
+    (error.code === "BAD_TRANSITION" || error.code === "NOT_PENDING");
+  if (!refused) {
+    return false;
+  }
+  const latest = await approvalsFor(actor).get(actor.userId, approvalId);
+  return LOCK_HELD.has(latest.status);
+};
 
 // Runs an approved store action once: `executing` is the lock (a second
 // delivery of the same decision finds it taken and does nothing). A failure
@@ -865,8 +1091,12 @@ export const executeStoreApproval = async (
       status: "executing",
       userId: actor.userId,
     });
-  } catch {
-    return { skipped: "taken" };
+  } catch (error) {
+    if (await lostTheLock(actor, approvalId, error)) {
+      return { skipped: "taken" };
+    }
+    logStoreFailure(actor, current, error, "couldn't start");
+    throw error;
   }
   try {
     const result = await perform(actor, current);
@@ -879,21 +1109,7 @@ export const executeStoreApproval = async (
     });
     return { done: approvalId };
   } catch (error) {
-    log.error({
-      error: {
-        message: `Store action ${current.actionType} failed: ${messageOf(error)}`,
-        name: "StoreActionFailed",
-        ...(error instanceof Error && error.stack !== undefined
-          ? { stack: error.stack }
-          : {}),
-      },
-      store: {
-        actionType: current.actionType,
-        approvalId,
-        decidedBy: current.decidedBy ?? POLICY_DECIDER,
-      },
-      userId: actor.userId,
-    });
+    logStoreFailure(actor, current, error, "failed");
     await approvals.record({
       actor: "store_agent",
       approvalId,

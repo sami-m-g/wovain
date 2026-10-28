@@ -238,6 +238,17 @@ export const publishCollection = async (
     : new URL(`/collections/${published.slug}`, baseUrl).href;
 };
 
+// Hides the collection again (the undo of a drop's publish). Its products
+// are hidden one by one by the caller, so only the collection moves here.
+export const hideCollection = async (call: ToolCall, collectionId: string) =>
+  throwBulkErrors(
+    await call("ecommerce_update-collection-state", {
+      collectionId,
+      shouldUpdateOffersStatus: false,
+      state: "HIDDEN",
+    })
+  );
+
 // ---------------------------------------------------------------------------
 // Launch promotions
 
@@ -267,6 +278,44 @@ export const deactivatePromotion = async (
     await call("ecommerce_deactivate-promotion", { promotionId })
   );
 
+// How often switching a fresh code off is tried before giving up: until it
+// is off, customers can use a discount nobody approved to go live.
+export const DEACTIVATE_ATTEMPTS = 3;
+
+// A code created but not switched off: it is live on the storefront with no
+// end. Its message says so, so the error tracked for it does too.
+export class PromotionLeftLiveError extends Error {
+  readonly promotionId: string;
+  constructor(promotionId: string, code: string, cause: unknown) {
+    super(
+      `The launch code ${code} (${promotionId}) was created but couldn't be switched off, so it is live: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { cause }
+    );
+    this.name = "PromotionLeftLiveError";
+    this.promotionId = promotionId;
+  }
+}
+
+// Switches a fresh code off, retrying a failed call; throws
+// PromotionLeftLiveError when every attempt fails.
+export const endFreshPromotion = async (
+  call: ToolCall,
+  promotionId: string,
+  code: string
+) => {
+  let last: unknown;
+  for (let attempt = 0; attempt < DEACTIVATE_ATTEMPTS; attempt += 1) {
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- retries in order
+      await deactivatePromotion(call, promotionId);
+      return;
+    } catch (error) {
+      last = error;
+    }
+  }
+  throw new PromotionLeftLiveError(promotionId, code, last);
+};
+
 // Creates the promotion and ends it at once, so it exists but nobody can
 // use it until the scheduled activation. Fourthwall has no start or end
 // date: wovain's Inngest schedule switches it on and off.
@@ -283,8 +332,39 @@ export const createInactivePromotion = async (
   });
   throwBulkErrors(created);
   const { id } = findOne(promotionSchema, created, "promotion");
-  await deactivatePromotion(call, id);
+  await endFreshPromotion(call, id, promo.code);
   return id;
+};
+
+// Pages of 10 read when looking a code up: get-promotions lists newest
+// first, and a launch code being repaired was made moments ago.
+const PROMOTION_PAGES = 5;
+const PROMOTION_PAGE_SIZE = 10;
+
+const codedPromotionSchema = z.object({
+  code: z.string().min(1),
+  id: z.string().min(1),
+});
+
+// The shop promotion with this code, if Fourthwall lists one: how a retry
+// finds a code an earlier attempt created before it failed.
+export const findPromotionByCode = async (call: ToolCall, code: string) => {
+  const wanted = code.toUpperCase();
+  for (let page = 0; page < PROMOTION_PAGES; page += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- pages in order, stop early
+    const reply = await call("ecommerce_get-promotions", {
+      page,
+      size: PROMOTION_PAGE_SIZE,
+    });
+    const listed = findAll(codedPromotionSchema, reply);
+    const found = listed.find((item) => item.code.toUpperCase() === wanted);
+    if (found !== undefined) {
+      return found.id;
+    }
+    if (listed.length < PROMOTION_PAGE_SIZE) {
+      return;
+    }
+  }
 };
 
 // ---------------------------------------------------------------------------

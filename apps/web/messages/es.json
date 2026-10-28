@@ -527,6 +527,7 @@
       "lead": "Prendas reales de Fourthwall, con un precio que deja al menos 10 US$ de beneficio por venta tras comisiones. Siguen ocultos hasta que los publiques.",
       "price": "Precio",
       "hidden": "Oculto",
+      "inReview": "Por publicar",
       "public": "Publicado",
       "view": "Ver en Fourthwall",
       "error": "Publica al menos un producto primero.",

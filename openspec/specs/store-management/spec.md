@@ -15,6 +15,30 @@ Every write wovain makes to the designer's store SHALL be an action in the appro
 - **WHEN** the same approval decision is delivered twice
 - **THEN** the store action runs once and the second delivery does nothing
 
+#### Scenario: Agent publishes a product
+
+- **WHEN** `products.publish` is called through MCP (the `publish_product` tool) with `store-management` on and the designer's level is `suggest`
+- **THEN** a product publish waits in the designer's approvals, the product is in review, and its Fourthwall offer stays hidden
+
+#### Scenario: Designer publishes from the drop flow
+
+- **WHEN** the designer clicks publish on a product in the website's drop flow with `store-management` on
+- **THEN** the publish is queued and approved in their name, and the product goes live only when the executor runs it after the readiness check
+
+### Requirement: Executor lock and undo
+
+Only a lost race for the executor's lock SHALL be skipped without an error; any other failure to start an action SHALL reach Error Tracking. Each publish action SHALL store an inverse that its executor can run.
+
+#### Scenario: Lock not taken for another reason
+
+- **WHEN** taking an approved action's `executing` lock fails and the approval has not moved on
+- **THEN** the error is logged at error level and thrown, and nothing is performed
+
+#### Scenario: Undo a drop's publish
+
+- **WHEN** a drop's publish is undone with its stored inverse
+- **THEN** the drop's live products and its collection are hidden and the drop is paused
+
 #### Scenario: Flag off
 
 - **WHEN** the `store-management` flag is off
@@ -56,6 +80,11 @@ A launch code for a drop SHALL be created switched off. Switching it on SHALL be
 - **WHEN** the designer plans 15% off a drop from Friday to Sunday
 - **THEN** the code exists but is off, and an activation action for Friday to Sunday is queued
 
+#### Scenario: Code could not be switched off
+
+- **WHEN** Fourthwall creates the code but switching it off fails every time it is tried
+- **THEN** the action fails with an error, tracked in Error Tracking, that says the code is live, and the designer's retry finds that code and switches it off instead of creating it again
+
 ### Requirement: Refunds and cancels wait for the designer
 
 Refunds and order cancels SHALL always wait for the designer's explicit confirm, at every autonomy level. The approval SHALL show Fourthwall's cost preview, including any charge to the shop's card. A cancel that Fourthwall says is no longer possible SHALL be refused before it is queued. A refund or cancel SHALL NOT be retried automatically.
@@ -76,12 +105,12 @@ The orders list SHALL show each order's number, status, total and items, and SHA
 
 ### Requirement: Samples
 
-The designer SHALL be able to get a Fourthwall checkout link to order one of a product's variants as a sample at cost. They pay on Fourthwall, and wovain moves no money.
+The designer SHALL be able to get a Fourthwall checkout link to order one of a product's variants as a sample at cost. They pay on Fourthwall, and wovain moves no money. Each sample request SHALL be an R4 action in the approval queue, decided in the designer's name (paying on Fourthwall's checkout is their confirm), with the link as its result.
 
 #### Scenario: Order a sample
 
 - **WHEN** the designer picks a variant of a draft product
-- **THEN** a Fourthwall sample checkout opens
+- **THEN** a Fourthwall sample checkout opens, and the request is recorded as done in the approval queue with the link
 
 ### Requirement: Per-size prices
 

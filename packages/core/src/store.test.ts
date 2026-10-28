@@ -10,8 +10,11 @@ import {
   canMove,
   cancelOrder,
   createInactivePromotion,
+  DEACTIVATE_ATTEMPTS,
   evaluateReadiness,
+  findPromotionByCode,
   listOrders,
+  PromotionLeftLiveError,
   nextStatus,
   offerVariants,
   previewRefund,
@@ -163,6 +166,60 @@ describe("createInactivePromotion", () => {
         tool: "ecommerce_deactivate-promotion",
       },
     ]);
+  });
+});
+
+describe("a launch code left live", () => {
+  const LAUNCH = { code: "DESERT15", offerIds: ["o1"], percentage: 15 };
+
+  it("retries switching a fresh code off", async () => {
+    let failures = 1;
+    const call = vi.fn<ToolCall>((tool) => {
+      if (tool === "ecommerce_deactivate-promotion" && failures > 0) {
+        failures -= 1;
+        return Promise.reject(new Error("socket hang up"));
+      }
+      return Promise.resolve(
+        tool === "ecommerce_create-shop-promotion" ? { id: "prm_1" } : {}
+      );
+    });
+    expect(await createInactivePromotion(call, LAUNCH)).toBe("prm_1");
+    expect(
+      call.mock.calls.filter(
+        ([tool]) => tool === "ecommerce_deactivate-promotion"
+      )
+    ).toHaveLength(2);
+  });
+
+  it("says the code is live when it can't be switched off", async () => {
+    const call = vi.fn<ToolCall>((tool) =>
+      Promise.resolve(
+        tool === "ecommerce_create-shop-promotion"
+          ? { id: "prm_1" }
+          : { bulkError: "Promotion is locked" }
+      )
+    );
+    const failed = createInactivePromotion(call, LAUNCH);
+    await expect(failed).rejects.toBeInstanceOf(PromotionLeftLiveError);
+    await expect(failed).rejects.toThrow("is live");
+    expect(
+      call.mock.calls.filter(
+        ([tool]) => tool === "ecommerce_deactivate-promotion"
+      )
+    ).toHaveLength(DEACTIVATE_ATTEMPTS);
+  });
+
+  it("finds a code an earlier attempt made", async () => {
+    const { call } = fake({
+      "ecommerce_get-promotions": {
+        results: [
+          { code: "OTHER", id: "prm_0" },
+          { code: "DESERT15", id: "prm_1" },
+        ],
+      },
+    });
+    expect(await findPromotionByCode(call, "desert15")).toBe("prm_1");
+    expect(await findPromotionByCode(call, "MISSING")).toBeUndefined();
   });
 });
 

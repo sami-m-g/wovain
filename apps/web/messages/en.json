@@ -527,6 +527,7 @@
       "lead": "Real Fourthwall blanks, priced to clear at least $10 profit per sale after fees. They stay hidden until you publish.",
       "price": "Price",
       "hidden": "Hidden",
+      "inReview": "Waiting to publish",
       "public": "Live",
       "view": "View on Fourthwall",
       "error": "Publish at least one product first.",

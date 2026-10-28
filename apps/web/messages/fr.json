@@ -527,6 +527,7 @@
       "lead": "De vrais supports Fourthwall, au prix qui garantit au moins 10 $ de bénéfice par vente après frais. Ils restent masqués jusqu'à la publication.",
       "price": "Prix",
       "hidden": "Masqué",
+      "inReview": "En attente de publication",
       "public": "En ligne",
       "view": "Voir sur Fourthwall",
       "error": "Publiez d'abord au moins un produit.",

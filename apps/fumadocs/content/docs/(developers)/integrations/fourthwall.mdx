@@ -6,5 +6,5 @@ description: Wovain creates and publishes products in the seller's Fourthwall sh
 Fourthwall is the print-on-demand platform and shop.
 
 - **Catalog.** `searchCatalog` in `packages/core/src/fourthwall.ts` reads real blanks and base costs, so price, profit and margin are real numbers (`priceFor`).
-- **Products.** `uploadArtwork`, `createProduct` and `publishProduct` run through Fourthwall's MCP server. A product is created hidden; `products.publish` (the `publish_product` tool) makes it public.
+- **Products.** `uploadArtwork`, `createProduct` and `publishProduct` run through Fourthwall's MCP server. A product is created hidden; `products.publish` (the `publish_product` tool) makes it public. With `store-management` on, it queues the publish in the approval queue instead, and the executor publishes it after the readiness check.
 - **Connection.** Each seller connects their own shop at `/api/connections/fourthwall/start`. Wovain identifies itself with an OAuth client metadata document and stores the grant sealed (`packages/core/src/upstream.ts`, `sealing.ts`). Fourthwall needs no app credentials.

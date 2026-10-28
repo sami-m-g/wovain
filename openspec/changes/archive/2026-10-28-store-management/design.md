@@ -21,6 +21,11 @@ The foundation change gave wovain one approval queue (`approval`, `audit_event`)
 7. **Per-size prices from config.** Fourthwall's catalog does not give a cost per size. The surcharges are `PRICING_RULES.sizeSurcharges`, set per environment from Pulumi config. Only sizes the product has are sent.
 8. **Lifecycle values.** `hidden` and `public` keep their names, because existing rows and the wizard use them, and they mean draft and live. `in_review`, `paused` and `retired` are added. The column is plain text, so there is no migration.
 9. **Readiness is read live.** It is not stored. The products page reads it, and every publish checks it again before it acts.
+10. **`products.publish` joins the queue.** With the flag on, it queues `store.product.publish` and returns the product with its approval. A website call (a session) is the merchant's own request and is decided in their name. An MCP call (the `publish_product` tool and its widget) may come from an agent, so it is left to the autonomy policy: at `suggest` or `draft` it waits for the merchant. Either way only the executor publishes, after the readiness check. Without the flag it publishes at once, as before.
+11. **The executor's lock.** Only a lost race (a refused transition, and the approval has moved to `executing`, `done` or `failed`) is skipped. Any other error while taking the lock is logged at error level and thrown.
+12. **Launch codes left live.** Fourthwall creates a code active. Switching it off is tried 3 times; if it still fails, the action fails with an error that says the code is live. The `once` key is the drop and the code, not the approval, so the merchant's retry looks the code up (`get-promotions`) and finishes switching it off instead of creating it again.
+13. **Drop undo.** A drop's publish stores `store.drop.unpublish` as its inverse. Its executor hides the collection and the drop's live products and pauses the drop.
+14. **Samples are audited.** A sample checkout is `store.sample.checkout` (R4). The request enqueues it, decides it in the designer's name (paying on Fourthwall's checkout is their confirm), creates the link and records it as the result. It runs in the request, not in the Inngest executor, because the designer needs the link at once.
 
 ## Risks / Trade-offs
 

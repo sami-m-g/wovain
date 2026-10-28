@@ -31,7 +31,9 @@ export const createStoreFunctions = (
 
   // Never retried: a refund or cancel must not run twice. The approval's
   // `executing` state is the lock; a failure is recorded on the approval
-  // and logged at error level (flow/store executeStoreApproval).
+  // and logged at error level (flow/store executeStoreApproval). A sample
+  // checkout is performed in the request that approves it (flow/store
+  // sampleLink), so it is not run here.
   const execute = inngest.createFunction(
     {
       id: "store-execute-approval",
@@ -40,7 +42,7 @@ export const createStoreFunctions = (
       triggers: [
         {
           event: EVENTS.approvalDecided,
-          if: `${APPROVED_STORE} && event.data.actionType != 'store.promotion.activate'`,
+          if: `${APPROVED_STORE} && event.data.actionType != 'store.promotion.activate' && event.data.actionType != 'store.sample.checkout'`,
         },
       ],
     },

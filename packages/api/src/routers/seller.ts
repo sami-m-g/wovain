@@ -17,6 +17,7 @@ import {
   publishDesignProduct,
 } from "../flow/products";
 import { approveIdeas, getRun, listRuns, startRun } from "../flow/runs";
+import { proposeProductPublish, storeManagementOn } from "../flow/store";
 import { transitionErrors } from "../flow/transitions";
 import { funnelProcedure, protectedProcedure } from "../index";
 
@@ -129,12 +130,33 @@ export const productsRouter = {
   list: protectedProcedure.handler(
     async ({ context }) => await listProducts(context)
   ),
-  publish: funnelProcedure("product_published")
+  // With store-management on, publishing is an action in the approval
+  // queue (flow/store proposeProductPublish): the product comes back as it
+  // is now, with its approval, and goes live when the executor runs it.
+  // Without the flag it is published at once (approval null).
+  publish: protectedProcedure
     .input(byId)
-    .handler(
-      async ({ context, input }) =>
-        await publishDesignProduct(context, input.id)
-    ),
+    .handler(async ({ context, input }) => {
+      const published = (await storeManagementOn(context))
+        ? await proposeProductPublish(context, input.id, {
+            byMerchant: context.mcpUserId === undefined,
+          })
+        : {
+            ...(await publishDesignProduct(context, input.id)),
+            approval: null,
+          };
+      // Counted only once it is live, whatever path it took.
+      if (published.status === "public") {
+        await context.analytics?.capture({
+          distinctId: context.userId,
+          event: "product_published",
+          properties: {
+            via: context.mcpUserId === undefined ? "web" : "chatgpt",
+          },
+        });
+      }
+      return published;
+    }),
 };
 
 export const campaignsRouter = {
