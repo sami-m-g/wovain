@@ -475,10 +475,12 @@
       "error": "Aprueba al menos un diseño.",
       "submit": "Crear productos",
       "artAlt": "Diseño: {title}",
-      "shirtAlt": "Diseño en una camiseta: {title}",
+      "shirtAlt": "Diseño en una camiseta, tal como lo genera Fourthwall: {title}",
       "viewShirt": "En camiseta",
       "viewFlat": "Arte plano",
-      "viewLabel": "Vista del diseño"
+      "viewLabel": "Vista del diseño",
+      "mockupUnavailable": "Fourthwall no pudo mostrar este diseño en la camiseta. Se muestra el arte plano.",
+      "mockupNotConnected": "Conecta Fourthwall para ver este diseño en la camiseta."
     },
     "products": {
       "title": "Publica los productos",

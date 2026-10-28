@@ -13,6 +13,7 @@ import { requireFal, withProvider } from "./connections";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
 import { once } from "./once";
+import { previewPlacement } from "./placements";
 import { charge } from "./spend";
 import { designAlreadyDecided, runNotWaiting } from "./transitions";
 
@@ -66,7 +67,8 @@ export const generateDesign = async (
   const key = `design:${actor.userId}:${requestId}`;
   const made = await byKey(actor, key);
   if (made !== undefined) {
-    return made;
+    // A retried step that crashed before the preview renders it now.
+    return await previewPlacement(actor, made);
   }
   const source = await getIdea(actor, ideaId);
   const { runId } = source;
@@ -145,7 +147,7 @@ export const generateDesign = async (
     throw new Error("The design wasn't saved");
   }
   await reportDesign(actor, row);
-  return row;
+  return await previewPlacement(actor, row);
 };
 
 export const getDesign = async ({ db, userId }: Actor, id: string) => {
