@@ -15,7 +15,7 @@ export interface TelegramMessage {
 }
 
 export interface TelegramBot {
-  // Points the bot's webhook at `url`, unless it already does.
+  // Points the bot's webhook at `url`, with the secret token.
   ensureWebhook: (url: string) => Promise<void>;
   send: (chatId: string, message: TelegramMessage) => Promise<void>;
   // The bot's @username, for the deep link.
@@ -37,11 +37,10 @@ export const telegramBot = (botToken: string): TelegramBot => {
   const secret = Buffer.from(webhookSecretOf(botToken));
   let me: Promise<string> | undefined;
   return {
+    // Set every time: Telegram doesn't show the secret token, so a rotated
+    // bot token (a new secret) can't be detected, and setWebhook is
+    // idempotent.
     ensureWebhook: async (url) => {
-      const info = await api.getWebhookInfo();
-      if (info.url === url) {
-        return;
-      }
       await api.setWebhook(url, {
         allowed_updates: ["message"],
         secret_token: secret.toString(),

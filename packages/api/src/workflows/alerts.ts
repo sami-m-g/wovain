@@ -148,9 +148,10 @@ export const createAlertFunctions = (
   const deliver = inngest.createFunction(
     {
       id: "alerts-deliver",
-      // A failure for good: logged at error level (PostHog Error Tracking)
-      // and kept on the delivery row.
-      onFailure: async ({ error, event }) => {
+      // The function failed for good (a channel's step spent its retries,
+      // or the plan failed): logged at error level for PostHog Error
+      // Tracking. Each failed channel is already recorded by the run.
+      onFailure: ({ error, event }) => {
         const original = eventSchemas[EVENTS.notify].safeParse(
           event.data.event.data
         );
@@ -165,24 +166,6 @@ export const createAlertFunctions = (
           },
           userId: original.success ? original.data.userId : undefined,
         });
-        if (!original.success) {
-          return;
-        }
-        const channel = /send-(?<channel>email|push|telegram)/u.exec(
-          error.message
-        )?.groups?.["channel"];
-        if (
-          channel === "email" ||
-          channel === "push" ||
-          channel === "telegram"
-        ) {
-          await recordAlertFailure(actorFor(original.data.userId), {
-            channel,
-            error: error.message,
-            key: original.data.dedupeKey ?? event.data.event.id ?? "",
-            kind: original.data.kind,
-          });
-        }
       },
       retries: RETRIES,
       triggers: [notify],
@@ -202,31 +185,52 @@ export const createAlertFunctions = (
           })
         )
       );
-      const results = await Promise.all(
+      // Every channel runs to its end, so one failing channel neither
+      // stops nor hides another.
+      const settled = await Promise.allSettled(
         plan.map(async ({ channel, holdUntil }) => {
           if (holdUntil !== undefined) {
             await step.sleepUntil(`quiet-${channel}`, holdUntil);
           }
-          try {
-            return {
-              channel,
-              ...(await step.run(
-                `send-${channel}`,
-                async () =>
-                  await deliverAlert(actor, {
-                    channel,
-                    key,
-                    notification: data,
-                  })
-              )),
-            };
-          } catch (error) {
-            // Names the channel for onFailure, which records it.
-            throw new Error(`send-${channel}: ${messageOf(error)}`, {
-              cause: error,
-            });
-          }
+          const sent = await step.run(
+            `send-${channel}`,
+            async () =>
+              await deliverAlert(actor, { channel, key, notification: data })
+          );
+          return { channel, ...sent };
         })
+      );
+      const failed = plan.flatMap(({ channel }, index) => {
+        const outcome = settled[index];
+        return outcome?.status === "rejected"
+          ? [{ channel, error: messageOf(outcome.reason) }]
+          : [];
+      });
+      // Each channel that failed for good, recorded on its own row.
+      await Promise.all(
+        failed.map(
+          async ({ channel, error }) =>
+            await step.run(
+              `record-${channel}`,
+              async () =>
+                await recordAlertFailure(actor, {
+                  channel,
+                  error,
+                  key,
+                  kind: data.kind,
+                })
+            )
+        )
+      );
+      if (failed.length > 0) {
+        throw new Error(
+          `Alert ${key} failed on ${failed
+            .map(({ channel, error }) => `${channel} (${error})`)
+            .join(", ")}`
+        );
+      }
+      const results = settled.flatMap((outcome) =>
+        outcome.status === "fulfilled" ? [outcome.value] : []
       );
       return { key, results };
     }

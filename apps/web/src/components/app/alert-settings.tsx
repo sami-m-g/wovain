@@ -48,13 +48,28 @@ const ChannelStatus = ({
       queryKey: orpc.alerts.settings.key(),
     });
   };
-  const connect = useMutation(
-    orpc.alerts.connectTelegram.mutationOptions({
-      onSuccess: ({ url }) => {
-        window.open(url, "_blank", "noopener");
-      },
-    })
-  );
+  const connect = useMutation(orpc.alerts.connectTelegram.mutationOptions());
+  // The window opens on the click itself, so Safari doesn't block it as a
+  // popup; it gets the t.me link once the server answers.
+  const openTelegram = () => {
+    const opened = window.open("", "_blank");
+    connect.mutate(
+      {},
+      {
+        onError: () => {
+          opened?.close();
+        },
+        onSuccess: ({ url }) => {
+          if (opened === null) {
+            window.location.assign(url);
+            return;
+          }
+          opened.opener = null;
+          opened.location.href = url;
+        },
+      }
+    );
+  };
   const disconnect = useMutation(
     orpc.alerts.disconnectTelegram.mutationOptions({ onSuccess: refresh })
   );
@@ -106,9 +121,7 @@ const ChannelStatus = ({
           <>
             <Button
               disabled={connect.isPending}
-              onClick={() => {
-                connect.mutate({});
-              }}
+              onClick={openTelegram}
               size="sm"
             >
               {t("telegramConnect")}
