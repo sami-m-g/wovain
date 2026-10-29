@@ -3,15 +3,17 @@ import type { MastraModelConfig } from "@mastra/core/llm";
 import { InMemoryStore } from "@mastra/core/storage";
 import { createMockModel } from "@mastra/core/test-utils/llm-mock";
 import { Memory } from "@mastra/memory";
+import { scoreAdCopy, writeAdCopy } from "@wovain/core/ads";
+import { AGENT_IDS, AGENT_ROLES } from "@wovain/core/agents";
+import { createModelRouter } from "@wovain/core/model-router";
+import { withLlmTrace } from "@wovain/core/nemotron";
+import { fakeAgents } from "@wovain/core/test-doubles";
+import { DecisionTrace } from "@wovain/core/trace";
 import { describe, expect, it, vi } from "vitest";
 
-import { scoreAdCopy, writeAdCopy } from "./ads";
-import { AGENT_IDS, AGENT_ROLES, createAgentKit } from "./agents";
-import type { AgentKit } from "./agents";
-import { createModelRouter } from "./model-router";
-import { createNemotron, withLlmTrace } from "./nemotron";
-import { fakeAgents } from "./test-doubles";
-import { DecisionTrace } from "./trace";
+import { createNemotron } from "./ask";
+import { createAgentKit } from "./kit";
+import type { AgentKit } from "./kit";
 
 // Model routing: with the model-routing flag on for a call, each agent runs
 // on its job's Nemotron model, the call lands in the decision trace with

@@ -1,24 +1,24 @@
 import type { Memory } from "@mastra/memory";
+import { ART_MODELS_VAR, parseArtModels } from "@wovain/core/art";
+import type { ArtModels } from "@wovain/core/art";
+import { createSignals } from "@wovain/core/autopilot-signals";
+import type { ResearchModel } from "@wovain/core/evidence";
+import { createArtist, createFalJobs, falKeyCall } from "@wovain/core/fal";
+import { createFlags } from "@wovain/core/flags";
+import type { FlagsConfig } from "@wovain/core/flags";
+import { createMetaGraph } from "@wovain/core/meta-graph";
+import { createMetaInterests } from "@wovain/core/meta-interests";
+import { createModelRouter } from "@wovain/core/model-router";
+import type { ModelRouterConfig } from "@wovain/core/model-router";
+import { createQloo } from "@wovain/core/qloo";
+import { createSealer } from "@wovain/core/sealing";
+import { createTrends, tavilyClient } from "@wovain/core/trends";
+import { createUpstream } from "@wovain/core/upstream";
+import type { ToolCall } from "@wovain/core/upstream";
+import { createTranscriber } from "@wovain/core/voice";
 
-import { createAgentKit } from "./agents";
-import { ART_MODELS_VAR, parseArtModels } from "./art";
-import type { ArtModels } from "./art";
-import { createSignals } from "./autopilot-signals";
-import type { ResearchModel } from "./evidence";
-import { createArtist, createFalJobs, falKeyCall } from "./fal";
-import { createFlags } from "./flags";
-import type { FlagsConfig } from "./flags";
-import { createMetaGraph } from "./meta-graph";
-import { createMetaInterests } from "./meta-interests";
-import { createModelRouter } from "./model-router";
-import type { ModelRouterConfig } from "./model-router";
-import { createNemotron } from "./nemotron";
-import { createQloo } from "./qloo";
-import { createSealer } from "./sealing";
-import { createTrends, tavilyClient } from "./trends";
-import { createUpstream } from "./upstream";
-import type { ToolCall } from "./upstream";
-import { createTranscriber } from "./voice";
+import { createNemotron } from "./agents/ask";
+import { createAgentKit } from "./agents/kit";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that

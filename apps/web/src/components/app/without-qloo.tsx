@@ -1,12 +1,12 @@
 "use client";
 
 import type { ArmMetrics } from "@wovain/core/ablation";
-import { qlooAblation } from "@wovain/core/ablation-report";
+import { qlooAblation } from "@wovain/mastra/evals/ablation-report";
 import { useFormatter, useTranslations } from "next-intl";
 import { useId } from "react";
 
 // "Without Qloo", greyed beside the ideas Qloo just decided: the committed
-// ablation (packages/core/src/evals/qloo-ablation.eval.ts) ran the same
+// ablation (packages/mastra/src/mastra/evals/qloo-ablation.eval.ts) ran the same
 // theme step on eight seeds with Qloo's taste graph and with Nemotron
 // alone. The figures say what each idea stands on, not how well it sells.
 

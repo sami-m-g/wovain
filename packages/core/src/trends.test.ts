@@ -574,6 +574,50 @@ describe("createTrends with the evidence gate", () => {
     expect(top?.score).toBe(top?.spot?.score);
   });
 
+  // The founder's typed brief on next (2026-10-29): Qloo names the themes and
+  // the marketplaces list them, but no listing shows a Bestseller badge or
+  // reviews. The gate dropped every theme, research came back empty and the
+  // run failed at Trends with "Research found no ideas for this seed".
+  it("never fails a typed brief because no theme proved demand", async () => {
+    const trends = createTrends(fakeTavily().client, qlooGhibli);
+    const research = await trends.research(BRIEF, undefined, {
+      evidenceGate: true,
+      tavily: true,
+    });
+    expect(research.ideas.map((idea) => idea.theme)).toStrictEqual([
+      "anime",
+      "cozy",
+      "pastel",
+    ]);
+    expect(research.ideas.map((idea) => idea.caution)).toStrictEqual([
+      "no_demand_proof",
+      "no_demand_proof",
+      "no_demand_proof",
+    ]);
+    expect(research.ideas.map((idea) => idea.rank)).toStrictEqual([1, 2, 3]);
+  });
+
+  it("calls a failed marketplace read unknown, not unproven", async () => {
+    const { client } = fakeTavily();
+    const search = vi.fn(
+      async (query: string, options?: TavilySearchOptions) => {
+        if (options?.includeDomains !== undefined && query.endsWith(" shirt")) {
+          throw new Error("Tavily answered 432");
+        }
+        return await client.search(query, options);
+      }
+    );
+    const trends = createTrends({ ...client, search }, qlooGhibli);
+    const research = await trends.research(BRIEF, undefined, {
+      evidenceGate: true,
+      tavily: true,
+    });
+    expect(research.ideas.length).toBeGreaterThan(0);
+    expect(
+      research.ideas.every((idea) => idea.caution === "demand_unknown")
+    ).toBe(true);
+  });
+
   it("leaves the old ranking alone with the gate off", async () => {
     const trends = createTrends(gatedTavily(), qlooGhibli);
     const research = await trends.research("ghibli");

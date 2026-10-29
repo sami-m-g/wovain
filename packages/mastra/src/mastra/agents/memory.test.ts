@@ -4,11 +4,12 @@ import type { MastraModelConfig } from "@mastra/core/llm";
 import { InMemoryStore } from "@mastra/core/storage";
 import { createMockModel } from "@mastra/core/test-utils/llm-mock";
 import { Memory } from "@mastra/memory";
+import { withLlmTrace } from "@wovain/core/nemotron";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import type { AgentKit } from "./agents";
-import { createNemotron, withLlmTrace } from "./nemotron";
+import { createNemotron } from "./ask";
+import type { AgentKit } from "./kit";
 
 // The brief writer remembers the merchant through Mastra memory. When
 // Mastra's store works, the run's thread is kept; when it fails (its schema

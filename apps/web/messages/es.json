@@ -2210,8 +2210,7 @@
     },
     "sell": {
       "title": "¿Qué vas a vender?",
-      "lead": "Elige una dirección y wovain escribe el brief. Cada una explica por qué crece ahora.",
-      "picked": "Tu brief: {brief}",
+      "lead": "Elige una dirección o escribe tu propio brief. Cada dirección explica por qué crece ahora.",
       "brand": "Añadir tu marca (opcional): las direcciones se adaptan a ella",
       "next": "Siguiente: tu tienda"
     },
@@ -2228,6 +2227,7 @@
     "design": {
       "title": "Aprobar un diseño",
       "lead": "wovain investiga «{brief}», elige las mejores ideas y dibuja sus diseños.",
+      "noBrief": "Primero elige qué vender: wovain lo investiga y dibuja sus diseños.",
       "start": "Buscar ideas y dibujar",
       "working": "wovain está investigando y dibujando. Abre tu drop para elegir ideas y aprobar diseños; este paso se marca cuando vuelvas.",
       "ready": "Tu drop te espera. Aprueba un diseño y vuelve aquí.",
@@ -2236,6 +2236,7 @@
     "ads": {
       "title": "Lanzar los anuncios",
       "lead": "Tus productos están listos. Revisa el anuncio y su presupuesto diario en tu drop, y lánzalo.",
+      "needsDesign": "Primero aprueba un diseño. Tu anuncio se hace a partir de él.",
       "open": "Revisar y lanzar anuncios"
     },
     "finished": {
@@ -2297,6 +2298,7 @@
     "dropped": {
       "no_qloo_evidence": "Sin evidencia de Qloo",
       "no_demand_proof": "Sin prueba de que se venda",
+      "demand_unknown": "Demanda desconocida",
       "no_competition_read": "No se pudo leer la competencia",
       "saturated": "Demasiado saturado: demasiados anuncios o productos similares",
       "no_title": "Sin un título respaldado por la evidencia"
@@ -2307,7 +2309,15 @@
       "crowded": "Saturado"
     },
     "sameBuyers": "Los mismos compradores que tu brief",
-    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil"
+    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil",
+    "caution": {
+      "demand_unknown": "Sin confirmar: no se pudo revisar la demanda, así que no se sabe si se vende.",
+      "no_demand_proof": "Sin confirmar: aún no hay superventas, reseñas ni anuncios de larga duración.",
+      "no_competition_read": "Sin confirmar: no se pudo revisar los anuncios, así que la competencia es desconocida.",
+      "saturated": "Saturado: muchos anuncios o anunciantes similares ya lo venden."
+    },
+    "unconfirmed": "Ninguno de estos temas ha probado demanda aún, así que cada uno dice qué falta. Elige uno para probar, o escribe el tuyo.",
+    "noneChecked": "No pudimos confirmar la demanda de estos temas. Esto es lo que revisamos:"
   },
   "Alerts": {
     "title": "Alertas",

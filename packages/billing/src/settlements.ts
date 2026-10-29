@@ -21,8 +21,9 @@ export interface Settlement {
   environment: SettlementEnvironment;
   // The settlement's id, and the key of its grant: `settle:<id>`.
   id: string;
-  // The Polar order whose grant was lost, for the audit trail.
-  polarOrderId: string;
+  // The Polar order whose grant was lost, for the audit trail; none when the
+  // credits were lost in the app (a failed run kept them, #232).
+  polarOrderId?: string | undefined;
   // The promo behind the credits, if they were a redeemed code's: it stops a
   // second redemption of the same promo.
   promoId?: string | undefined;
@@ -43,6 +44,25 @@ export const SETTLEMENTS: readonly Settlement[] = [
     source: "pack",
     units: 300,
     userId: "GQFdU22sUO1jYi2zJ40ucTdzHhZX5zsE",
+  },
+  // #232: research that found no ideas kept 3 credits a run. The QA
+  // accounts' charged runs on 2026-10-29, from their credits_consumed events.
+  {
+    environment: "next",
+    id: "232-uat1-research-refund",
+    reason:
+      "runs 1c44d528 and b1b0278c found no ideas but kept their research credits (#232)",
+    source: "pack",
+    units: 6,
+    userId: "kelrYQFgEtptlOMpoDPOsLDWucs4gYLK",
+  },
+  {
+    environment: "next",
+    id: "232-uat2-research-refund",
+    reason: "run e4b7317e found no ideas but kept its research credits (#232)",
+    source: "pack",
+    units: 3,
+    userId: "DRgOqrrDV1RlWipceUOSfZLX2zQURD5n",
   },
 ];
 

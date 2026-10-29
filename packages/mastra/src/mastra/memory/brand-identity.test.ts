@@ -1,5 +1,8 @@
 import { InMemoryStore } from "@mastra/core/storage";
 import { Memory } from "@mastra/memory";
+import type { QlooEntity } from "@wovain/core/qloo";
+import { fakeNemotron } from "@wovain/core/test-doubles";
+import type { TavilySearch } from "@wovain/core/trends";
 import { log as evlog } from "evlog";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -9,10 +12,7 @@ import {
   writeBrandMemory,
 } from "./brand-identity";
 import type { ReferenceDeps } from "./brand-identity";
-import type { QlooEntity } from "./qloo";
 import { TASTE_TEMPLATE, tasteThread } from "./taste";
-import { fakeNemotron } from "./test-doubles";
-import type { TavilySearch } from "./trends";
 
 afterEach(() => {
   vi.restoreAllMocks();

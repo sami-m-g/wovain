@@ -15,10 +15,13 @@ import {
   getCombinedSystemPrompt,
   getUserMessageFromRunInput,
 } from "@mastra/evals/scorers/utils";
-
-import type { AgentId } from "./agents";
-import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
-import type { JudgeId } from "./judges";
+import type { AgentId } from "@wovain/core/agents";
+import {
+  judgeInstructions,
+  judgePrompt,
+  verdictSchema,
+} from "@wovain/core/judges";
+import type { JudgeId } from "@wovain/core/judges";
 
 // The scorers on wovain's agents. Built-in Mastra scorers cover the generic
 // failure modes (relevancy, faithfulness to the research, hallucination,

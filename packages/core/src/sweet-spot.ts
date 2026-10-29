@@ -62,6 +62,8 @@ export interface SweetSpotInput {
 export const DROP_REASONS = [
   "no_qloo_evidence",
   "no_demand_proof",
+  // Every demand read failed: demand is unknown, not disproved.
+  "demand_unknown",
   "no_competition_read",
   "saturated",
   // Passed the gate, but its title and concept failed the grounding check
@@ -150,6 +152,11 @@ export const judgeIdea = (input: SweetSpotInput): Verdict => {
   if ((input.qlooAffinity ?? 0) <= 0) {
     return { kept: false, reason: "no_qloo_evidence" };
   }
+  // No demand read came back (the reads failed or none could run): what
+  // sells is unknown, which is not the same as nothing selling.
+  if (input.ads === undefined && input.market === undefined) {
+    return { kept: false, reason: "demand_unknown" };
+  }
   if (!provenDemand(input.ads, input.market)) {
     return { kept: false, reason: "no_demand_proof" };
   }
@@ -166,14 +173,45 @@ export const judgeIdea = (input: SweetSpotInput): Verdict => {
     : { kept: true, spot };
 };
 
+// The reasons an idea may still be shown, with that reason on it, when no
+// idea passes the gate: the evidence is missing or the market is crowded,
+// but Qloo found the audience. Best first: an unread market before an
+// unproven one, a crowded one last. Without Qloo evidence or a grounded
+// title an idea is never shown.
+export const CAUTION_ORDER = [
+  "demand_unknown",
+  "no_competition_read",
+  "no_demand_proof",
+  "saturated",
+] as const satisfies readonly DropReason[];
+export type Caution = (typeof CAUTION_ORDER)[number];
+
+export const cautionOf = (reason: DropReason): Caution | undefined =>
+  CAUTION_ORDER.find((one) => one === reason);
+
+// A shown-with-caution idea's rank: its Qloo fit, scaled down by how weak
+// its evidence is, so it never reads as proven.
+const CAUTION_WEIGHT: Record<Caution, number> = {
+  demand_unknown: 0.1,
+  no_competition_read: 0.08,
+  no_demand_proof: 0.05,
+  saturated: 0.02,
+};
+
+export const cautionScore = (caution: Caution, qlooAffinity: number) =>
+  Math.min(Math.max(qlooAffinity, 0), 1) * CAUTION_WEIGHT[caution];
+
 export interface Judged<T> {
   dropped: { item: T; reason: DropReason; spot?: SweetSpot | undefined }[];
-  // Best first; ties keep their order.
-  kept: { item: T; spot: SweetSpot }[];
+  // Best first; ties keep their order. With `caution`, nothing passed the
+  // gate and this idea is shown with the reason it didn't.
+  kept: { caution?: Caution | undefined; item: T; spot: SweetSpot }[];
 }
 
-// Gates and ranks a list, best first, at most `limit` kept. Never pads: a
-// short list stays short.
+// Gates and ranks a list, best first, at most `limit` kept. Never pads with
+// a guess: a short list stays short. When nothing passes, the ideas Qloo
+// backs come back with their caution instead of an empty list, so the
+// merchant sees what was checked rather than nothing.
 export const rankIdeas = <T>(
   items: readonly T[],
   inputOf: (item: T) => SweetSpotInput,
@@ -181,13 +219,35 @@ export const rankIdeas = <T>(
 ): Judged<T> => {
   const kept: Judged<T>["kept"] = [];
   const dropped: Judged<T>["dropped"] = [];
+  const cautious: (Judged<T>["kept"][number] & { weight: number })[] = [];
   for (const item of items) {
-    const verdict = judgeIdea(inputOf(item));
+    const input = inputOf(item);
+    const verdict = judgeIdea(input);
     if (verdict.kept) {
       kept.push({ item, spot: verdict.spot });
-    } else {
-      dropped.push({ item, reason: verdict.reason, spot: verdict.spot });
+      continue;
     }
+    dropped.push({ item, reason: verdict.reason, spot: verdict.spot });
+    const caution = cautionOf(verdict.reason);
+    if (caution !== undefined) {
+      cautious.push({
+        caution,
+        item,
+        spot: verdict.spot ?? sweetSpotOf(input),
+        weight: cautionScore(caution, input.qlooAffinity ?? 0),
+      });
+    }
+  }
+  if (kept.length === 0 && cautious.length > 0) {
+    const shown = cautious
+      .toSorted((first, second) => second.weight - first.weight)
+      .slice(0, limit);
+    return {
+      dropped: dropped.filter(
+        (one) => !shown.some((item) => item.item === one.item)
+      ),
+      kept: shown.map(({ caution, item, spot }) => ({ caution, item, spot })),
+    };
   }
   return {
     dropped,

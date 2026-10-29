@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-26
-- Scope: `packages/api/src/workflows`, `packages/api/src/flow/*`, `packages/core/src/nemotron.ts`, `apps/web/src/app/api/inngest`
+- Scope: `packages/api/src/workflows`, `packages/api/src/flow/*`, `packages/mastra/src/mastra/agents/ask.ts`, `apps/web/src/app/api/inngest`
 
 ## Context
 

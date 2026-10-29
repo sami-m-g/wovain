@@ -2,9 +2,9 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { ORPCError } from "@orpc/server";
+import { creditBalance, releaseCredits } from "@wovain/billing/credits";
 import { applyGrant } from "@wovain/billing/mirror";
 import { createBilling } from "@wovain/billing/service";
-import type { Core } from "@wovain/core/core";
 import { createArtist } from "@wovain/core/fal";
 import { fakeAgents, fakeNemotron } from "@wovain/core/test-doubles";
 import { createTrends } from "@wovain/core/trends";
@@ -23,6 +23,7 @@ import {
   product,
   run,
 } from "@wovain/db/schema/seller";
+import type { Core } from "@wovain/mastra/services";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -1708,6 +1709,34 @@ describe("startRun", () => {
         .from(creditReservation)
         .where(eq(creditReservation.status, "settled"))
     ).toEqual([]);
+    flagsOn.clear();
+  });
+
+  // QA #232: "Research found no ideas" kept 3 credits a run (25 to 19).
+  it("gives the credits back, once, when research finds no ideas", async () => {
+    flagsOn.add("trends-qloo");
+    flagsOn.add("trends-tavily");
+    const { actor, db } = await setup({});
+    const before = await creditBalance(actor.db, USER_ID);
+    actor.core = {
+      ...actor.core,
+      trends: {
+        research: async () =>
+          await Promise.resolve({ avoidNames: [], ideas: [] }),
+      },
+    } as unknown as Core;
+    const [started] = await db
+      .insert(run)
+      .values({ seed: "Studio Ghibli", status: "running", userId: USER_ID })
+      .returning();
+
+    await expect(
+      researchIdeas(actor, "Studio Ghibli", started?.id)
+    ).resolves.toEqual([]);
+    const [held] = await db.select().from(creditReservation);
+    expect(held?.status).toBe("released");
+    expect(await releaseCredits(actor.db, held?.id ?? "")).toBe(0);
+    expect(await creditBalance(actor.db, USER_ID)).toEqual(before);
     flagsOn.clear();
   });
 });

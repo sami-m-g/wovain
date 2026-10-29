@@ -5,6 +5,12 @@
 # blocking findings and approves once they are resolved. Linting, SAST,
 # secret and dependency scanning run in CI (.github/workflows), so its own
 # tools are off and only the LLM review runs, beside CI.
+#
+# Latency is a rate limit, not queueing: reviews are limited per developer per
+# hour (OSS plan: 1-10 by star count; docs.coderabbit.ai/management/plans),
+# and every push to a reviewed pull request uses one. This file already
+# keeps each review cheap (chill profile, no summaries, no tools, filtered
+# paths); the lever left is fewer pushes (AGENTS.md, "CodeRabbit review loop").
 # Reference: https://docs.coderabbit.ai/reference/configuration
 language: en-US
 reviews:
@@ -77,7 +83,7 @@ reviews:
     - "!packages/db/src/migrations/**"
     - "!packages/db/src/schema/auth.ts"
     - "!**/src/env.ts"
-    - "!packages/core/src/evals/report.v1.json"
+    - "!packages/mastra/src/mastra/evals/report.v1.json"
     # Prose, specs, translations and assets: docs, the Fumadocs content, the
     # OpenSpec specs and changes, the fr/es/en message catalogs, images.
     # A pull request that only changes these is approved without a review.

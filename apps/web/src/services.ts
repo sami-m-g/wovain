@@ -4,10 +4,10 @@ import { createRunEngine } from "@wovain/api/workflows/engine";
 import { createMastraStorage } from "@wovain/api/workflows/storage";
 import { createAuth } from "@wovain/auth";
 import { createBilling } from "@wovain/billing/service";
-import { createCore } from "@wovain/core/core";
-import { createMerchantMemory } from "@wovain/core/taste";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
+import { createMerchantMemory } from "@wovain/mastra/memory/taste";
+import { createCore } from "@wovain/mastra/services";
 
 import { ENV } from "./env.server";
 import { analytics } from "./lib/analytics";
