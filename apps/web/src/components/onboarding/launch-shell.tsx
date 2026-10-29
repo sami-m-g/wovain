@@ -78,7 +78,7 @@ const useLaunchUrl = () => {
   const step = OPEN_STEPS.find((each) => each === params.get("step"));
   const run = params.get("run") ?? undefined;
   const url: LaunchUrl = {
-    brief: params.get("brief") ?? undefined,
+    brief: params.get("brief")?.trim() || undefined,
     run: run !== undefined && RUN_ID.test(run) ? run : undefined,
     step,
   };
@@ -436,7 +436,7 @@ const StepPanel = ({
           title={t("ads.title")}
         />
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6" data-tour="drop-flow">
           <StepHeader lead={t("ads.needsDesign")} title={t("ads.title")} />
           <StepActions>
             <NextButton onClick={() => onOpen("design")}>
