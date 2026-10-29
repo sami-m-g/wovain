@@ -62,6 +62,7 @@ describe("choosing the dataset", () => {
 describe("dataset set-up on Graph", () => {
   it("creates it under the business and shares it with the ad account", async () => {
     const { graph, seen } = fakeGraph({
+      "GET /999/adspixels": { data: [{ id: "1", name: "Other" }] },
       "GET /act_222": { business: { id: "999" } },
       "POST /777/shared_accounts": { success: true },
       "POST /999/adspixels": { id: "777" },
@@ -72,10 +73,39 @@ describe("dataset set-up on Graph", () => {
     });
     expect(seen.map((each) => each.key)).toEqual([
       "GET /act_222",
+      "GET /999/adspixels",
       "POST /999/adspixels",
       "POST /777/shared_accounts",
     ]);
-    expect(seen[2]?.body).toBe("account_id=222&business=999");
+    expect(seen[3]?.body).toBe("account_id=222&business=999");
+  });
+
+  it("reuses the business's dataset an earlier set-up couldn't share", async () => {
+    const { graph, seen } = fakeGraph({
+      "GET /999/adspixels": { data: [{ id: "777", name: "wovain - Shop" }] },
+      "GET /act_222": { business: { id: "999" } },
+      "POST /777/shared_accounts": { success: true },
+    });
+    expect(await graph.createDataset("token", "222", "wovain - Shop")).toEqual({
+      businessId: "999",
+      id: "777",
+    });
+    expect(seen.map((each) => each.key)).not.toContain("POST /999/adspixels");
+  });
+
+  it("stops when the business has two datasets with the name", async () => {
+    const { graph } = fakeGraph({
+      "GET /999/adspixels": {
+        data: [
+          { id: "1", name: "wovain - Shop" },
+          { id: "2", name: "wovain - Shop" },
+        ],
+      },
+      "GET /act_222": { business: { id: "999" } },
+    });
+    await expect(
+      graph.createDataset("token", "222", "wovain - Shop")
+    ).rejects.toThrow("2 datasets");
   });
 
   it("creates it on a personal ad account, with nothing to share", async () => {

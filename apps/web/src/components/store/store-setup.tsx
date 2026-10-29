@@ -155,17 +155,10 @@ const SetupPixel = ({ again }: { again: boolean }) => {
 };
 
 /** The pixel's extra: Meta's Conversions API, which Fourthwall also runs. */
-const PixelSteps = ({
-  automation,
-  datasetId,
-}: {
-  automation: boolean;
-  datasetId: string;
-}) => {
+const PixelSteps = ({ datasetId }: { datasetId: string }) => {
   const t = useTranslations("Store.setup.pixel");
   return (
     <div className="text-muted-foreground flex flex-col gap-1.5 text-sm">
-      {automation ? <SetupPixel again /> : null}
       <p className="flex flex-wrap items-center gap-2">
         {t("paste")} <CopyId value={datasetId} />
       </p>
@@ -287,13 +280,30 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
 
 const StepDetail = ({ setup, step }: { setup: Setup; step: Step }) => {
   const t = useTranslations("Store.setup");
-  if (step.id === "pixel" && setup.pixel !== null && step.state !== "done") {
+  // With pixel automation, one SetupPixel stays mounted while the pixel
+  // goes from none to found, so its result (the test event code) stays.
+  if (
+    step.id === "pixel" &&
+    step.state !== "done" &&
+    setup.metaConnected &&
+    setup.pixelAutomation
+  ) {
     return (
-      <PixelSteps
-        automation={setup.pixelAutomation}
-        datasetId={setup.pixel.datasetId}
-      />
+      <div className="flex flex-col gap-2">
+        {setup.pixel === null ? (
+          <p className="text-muted-foreground text-sm">
+            {t("pixel.automationLead")}
+          </p>
+        ) : null}
+        <SetupPixel again={setup.pixel !== null} />
+        {setup.pixel === null ? null : (
+          <PixelSteps datasetId={setup.pixel.datasetId} />
+        )}
+      </div>
     );
+  }
+  if (step.id === "pixel" && setup.pixel !== null && step.state !== "done") {
+    return <PixelSteps datasetId={setup.pixel.datasetId} />;
   }
   if (
     step.id === "payouts" &&
@@ -307,14 +317,7 @@ const StepDetail = ({ setup, step }: { setup: Setup; step: Step }) => {
     );
   }
   if (step.id === "pixel" && setup.metaConnected && setup.pixel === null) {
-    return setup.pixelAutomation ? (
-      <div className="flex flex-col gap-2">
-        <p className="text-muted-foreground text-sm">
-          {t("pixel.automationLead")}
-        </p>
-        <SetupPixel again={false} />
-      </div>
-    ) : (
+    return (
       <p className="text-muted-foreground text-sm">{t("pixel.noDataset")}</p>
     );
   }
