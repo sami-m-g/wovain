@@ -53,6 +53,7 @@ import { DesignPreview } from "@/components/app/design-preview";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
+import { WhoBuysPanel } from "@/components/app/who-buys";
 import {
   NextButton,
   StepActions,
@@ -357,6 +358,7 @@ export const IdeasStep = ({
                 {research.taste ? (
                   <TasteMapPanel taste={research.taste} />
                 ) : null}
+                <WhoBuysPanel ideaId={idea.id} />
                 <IdeaEvidence research={research} />
                 <IdeaCompetition
                   competition={idea.competition}

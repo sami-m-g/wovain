@@ -676,6 +676,20 @@
       "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
       "retry": "Réessayer",
       "info": "À propos de {field}"
+    },
+    "whoBuys": {
+      "title": "Qui achète ça",
+      "buyers": "Surtout {age}, {gender}",
+      "unknownAge": "âge inconnu",
+      "unknownGender": "genre inconnu",
+      "audiences": "Centres d'intérêt :",
+      "where": "Où sont vos acheteurs",
+      "affinity": "Affinité Qloo {value}",
+      "brands": "Ils achètent aussi :",
+      "source": "D'après les données de goûts de Qloo. Les marques servent au ciblage, jamais au design.",
+      "loading": "Qloo cherche qui achète ça…",
+      "failed": "Nous n'avons pas pu joindre nos données de goûts pour dire qui achète ça.",
+      "retry": "Réessayer"
     }
   },
   "NotFound": {
