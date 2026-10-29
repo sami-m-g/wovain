@@ -114,9 +114,21 @@
           "allow": ["config", "domain", "data"]
         }
       },
+      "orchestration": {
+        "dependencies": {
+          "allow": ["config", "domain", "data"]
+        }
+      },
       "routing": {
         "dependencies": {
-          "allow": ["config", "domain", "data", "ui", "widgets"]
+          "allow": [
+            "config",
+            "domain",
+            "data",
+            "orchestration",
+            "ui",
+            "widgets"
+          ]
         }
       },
       "ui": {
@@ -131,7 +143,15 @@
       },
       "app": {
         "dependencies": {
-          "allow": ["config", "domain", "data", "routing", "ui", "widgets"]
+          "allow": [
+            "config",
+            "domain",
+            "data",
+            "orchestration",
+            "routing",
+            "ui",
+            "widgets"
+          ]
         }
       }
     }
