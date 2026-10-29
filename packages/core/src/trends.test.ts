@@ -98,6 +98,9 @@ const qlooBlank = qlooWith(
 );
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
+// #243: 64 characters, one clause.
+const LONG_BRIEF =
+  "Cozy botanical tees for houseplant lovers who love Studio Ghibli";
 const DARK_BRIEF =
   "Gothic botanical tees for plant lovers who like dark academia";
 
@@ -516,6 +519,75 @@ describe("createTrends", () => {
       terms: ["Gothic", "botanical", "plant", "dark academia"],
     });
   });
+
+  // #243: one clause over 60 characters left no search term, and the
+  // research ended in "Qloo found no audience".
+  it.each([
+    ["with the brief's concepts", true],
+    ["with its subject words when brief_terms is down", false],
+  ])(
+    "reaches Qloo for a long brief with no punctuation (%s)",
+    async (_, asked) => {
+      const searched: string[] = [];
+      vi.stubGlobal("fetch", async (url: URL) => {
+        const query =
+          url.searchParams.get("query") ??
+          url.searchParams.get("filter.query") ??
+          "";
+        if (url.pathname === "/search") {
+          searched.push(query);
+          return await Promise.resolve(
+            Response.json({
+              results:
+                query === "Studio Ghibli"
+                  ? [{ entity_id: "E-GHIBLI", name: "Studio Ghibli" }]
+                  : [],
+            })
+          );
+        }
+        const botanical =
+          query === "botanical"
+            ? [{ id: "urn:tag:keyword:media:botanical", name: "Botanical" }]
+            : [];
+        return await Promise.resolve(
+          Response.json({
+            results: {
+              entities: [],
+              tags:
+                url.pathname === "/v2/tags"
+                  ? botanical
+                  : tagsNamed([
+                      ["botany", 0.9],
+                      ["cottagecore", 0.8],
+                    ]),
+            },
+          })
+        );
+      });
+      const { client } = fakeTavily();
+      const ask = asked
+        ? fakeNemotron({
+            concepts: [
+              { name: "cozy", phrases: ["Cozy"] },
+              { name: "botanical", phrases: ["botanical", "houseplant"] },
+              { name: "Studio Ghibli", phrases: ["Studio Ghibli"] },
+            ],
+          }).ask
+        : undefined;
+      const qloo = createQloo({ apiKey: "k", baseURL: "https://qloo.example" });
+
+      const { ideas } = await createTrends(client, qloo, ask).research(
+        LONG_BRIEF
+      );
+
+      expect(searched.length).toBeGreaterThan(0);
+      expect(ideas.length).toBeGreaterThan(0);
+      if (asked) {
+        expect(searched).toContain("Studio Ghibli");
+      }
+      vi.unstubAllGlobals();
+    }
+  );
 
   // Next, run 783b6885: the ideas were "Academic", "Philosophy" and
   // "Academia", with nothing gothic or botanical.

@@ -547,7 +547,7 @@ const proofOf = async (
 // The share of the brief's concepts an idea carries; 1 when the brief had
 // one concept or none.
 const coverageOf = (idea: Pick<TrendIdea, "concepts">) =>
-  idea.concepts === undefined || idea.concepts.total === 0
+  idea.concepts === undefined || idea.concepts.total <= 1
     ? 1
     : idea.concepts.covered.length / idea.concepts.total;
 
