@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto";
+
 import {
   adAccountFor,
   archiveCampaign,
+  MAX_TEST_DESIGNS,
   scoreAdCopy,
   stagePausedCampaign,
   writeAdCopy,
@@ -8,6 +11,7 @@ import {
 import type { AdCopy, WriteOnce } from "@wovain/core/ads";
 import { adCompetition } from "@wovain/core/competition";
 import { findSalesPixel, verifyStagedPaused } from "@wovain/core/media-buying";
+import type { AudienceTargeting } from "@wovain/core/targeting";
 import { externalWrite } from "@wovain/db/schema/durable";
 import { campaign } from "@wovain/db/schema/seller";
 import { and, desc, eq, inArray, like } from "drizzle-orm";
@@ -106,41 +110,38 @@ const scoreCopy = async (
   }
 };
 
-export const createProductCampaign = async (
+// One design of a campaign: its live product, its brief and its copy.
+interface PreparedDesign {
+  copy: AdCopy;
+  imageUrl: string;
+  linkUrl: string;
+  productId: string;
+  title: string;
+}
+
+const prepareDesign = async (
   actor: Actor,
-  input: CampaignInput
-) => {
-  const key = `campaign:${actor.userId}:${input.requestId ?? input.productId}`;
-  const staged = await byKey(actor, key);
-  if (staged !== undefined) {
-    return staged;
+  {
+    audience,
+    copyKey,
+    productId,
+    scoreKey,
+  }: {
+    audience: AudienceTargeting;
+    copyKey: string;
+    productId: string;
+    scoreKey: string;
   }
-  const live = await getProduct(actor, input.productId);
+): Promise<PreparedDesign & { runId: string | null }> => {
+  const live = await getProduct(actor, productId);
   if (live.productUrl === null) {
     throw notReady({
       fix: "Publish the product before advertising it.",
       message: "The product isn't published",
     });
   }
-  const linkUrl = live.productUrl;
   const source = await getDesign(actor, live.designId);
   const { runId } = source;
-  // Qloo's audience as the ad set's targeting and the copy's persona, kept
-  // with the key so a retry stages the same ad set (./audiences). Without
-  // one nothing is staged: QLOO_AUDIENCE_MISSING, and the retry asks again.
-  const audience = await once(actor, {
-    key: `${key}:audience`,
-    operation: "audience",
-    perform: async () =>
-      requireQlooAudience(
-        await audienceFor(actor, {
-          countries: input.countries,
-          runId: runId ?? undefined,
-        })
-      ),
-    provider: "meta",
-    runId,
-  });
   // tavily-competition: the competitor angles the copy counter-positions.
   const competing = await isCompetitionOn(actor);
   const sourceIdea = competing
@@ -152,7 +153,7 @@ export const createProductCampaign = async (
   const style = await writerStyleFor(actor, source.ideaId);
   // The copy is kept with the key too: a retry stages the same ads.
   const copy = await once(actor, {
-    key: `${key}:copy`,
+    key: copyKey,
     operation: "ad_copy",
     perform: async () =>
       await charge(
@@ -183,11 +184,92 @@ export const createProductCampaign = async (
   });
   await scoreCopy(actor, {
     copy,
-    key,
+    key: scoreKey,
     runId,
     title: source.brief.title,
     traceId: runId ?? source.id,
   });
+  return {
+    copy,
+    imageUrl: live.mockups[0] ?? source.artworkUrl,
+    linkUrl: live.productUrl,
+    productId: live.id,
+    runId,
+    title: source.brief.title,
+  };
+};
+
+export interface DropCampaignInput extends Omit<CampaignInput, "productId"> {
+  // The drop's live products, one design each: 2 to 5 make a test.
+  productIds: string[];
+}
+
+// The key a campaign of these products is saved under. One product keeps
+// the key a product's campaign always had.
+const campaignKey = (actor: Actor, input: DropCampaignInput) => {
+  const [only] = input.productIds;
+  if (input.productIds.length === 1 && only !== undefined) {
+    return `campaign:${actor.userId}:${input.requestId ?? only}`;
+  }
+  return `campaign:${actor.userId}:${input.requestId ?? `test:${[...input.productIds].toSorted().join(",")}`}`;
+};
+
+// A drop launches as a small test (openspec ads-design-test): one campaign
+// on Meta's campaign budget, an ad set per design with a floor of the
+// budget, and an ad per copy variant. The profit rules (./ad-rules) pause
+// the designs that don't sell and scale the winner.
+export const createDropCampaign = async (
+  actor: Actor,
+  input: DropCampaignInput
+) => {
+  const productIds = [...new Set(input.productIds)];
+  if (productIds.length === 0 || productIds.length > MAX_TEST_DESIGNS) {
+    throw notReady({
+      fix: `Pick 1 to ${MAX_TEST_DESIGNS} live products for the campaign.`,
+      message: `A campaign tests 1 to ${MAX_TEST_DESIGNS} designs`,
+    });
+  }
+  const key = campaignKey(actor, { ...input, productIds });
+  const staged = await byKey(actor, key);
+  if (staged !== undefined) {
+    return staged;
+  }
+  const single = productIds.length === 1;
+  // The run of the first design names the trace and the Meta writes.
+  const first = await getProduct(actor, productIds[0] ?? "");
+  const { runId } = await getDesign(actor, first.designId);
+  // Qloo's audience as the ad sets' targeting and the copy's persona, kept
+  // with the key so a retry stages the same ad sets (./audiences). Without
+  // one nothing is staged: QLOO_AUDIENCE_MISSING, and the retry asks again.
+  const audience = await once(actor, {
+    key: `${key}:audience`,
+    operation: "audience",
+    perform: async () =>
+      requireQlooAudience(
+        await audienceFor(actor, {
+          countries: input.countries,
+          runId: runId ?? undefined,
+        })
+      ),
+    provider: "meta",
+    runId,
+  });
+  const designs: PreparedDesign[] = [];
+  for (const productId of productIds) {
+    // One at a time: each charges credits and writes through the same keys.
+    // oxlint-disable-next-line no-await-in-loop
+    const prepared = await prepareDesign(actor, {
+      audience,
+      copyKey: single ? `${key}:copy` : `${key}:copy:${productId}`,
+      productId,
+      scoreKey: single ? key : `${key}:${productId}`,
+    });
+    designs.push(prepared);
+  }
+  const [lead] = designs;
+  if (lead === undefined) {
+    throw new Error("A campaign needs a design");
+  }
   const dailyBudgetCents = Math.round(input.dailyBudget * 100);
   const metaOnce: WriteOnce = async (name, perform, recover) =>
     await once(actor, {
@@ -204,21 +286,35 @@ export const createProductCampaign = async (
   const targeting = mediaBuying
     ? await brandAudienceFor(actor, {
         countries: input.countries,
-        productId: live.id,
+        productId: lead.productId,
       })
     : undefined;
+  // Short and stable: it ends every object's name on Meta.
+  const tag = single
+    ? `w-${lead.productId.slice(0, 8)}`
+    : `w-${createHash("sha256").update(key).digest("hex").slice(0, 8)}`;
   const { made, status } = await withProvider(actor, "meta", async (call) => {
     const plan = {
       adAccountId: input.adAccountId,
-      copy,
+      copy: lead.copy,
       countries: input.countries,
       dailyBudgetCents,
-      imageUrl: live.mockups[0] ?? source.artworkUrl,
-      linkUrl,
-      name: `wovain · ${source.brief.title}`,
+      designs: single
+        ? undefined
+        : designs.map((design, index) => ({
+            copy: design.copy,
+            imageUrl: design.imageUrl,
+            key: design.productId,
+            label: `d${index + 1}`,
+            linkUrl: design.linkUrl,
+          })),
+      imageUrl: lead.imageUrl,
+      linkUrl: lead.linkUrl,
+      name: single
+        ? `wovain · ${lead.title}`
+        : `wovain · test of ${designs.length} designs`,
       pageId: input.pageId,
-      // Short and stable: it ends every object's name on Meta.
-      tag: `w-${live.id.slice(0, 8)}`,
+      tag,
       // Qloo's ages, gender and interests as suggestions.
       targeting: audience.targeting,
     };
@@ -239,19 +335,31 @@ export const createProductCampaign = async (
     const verified = await verifyStagedPaused(call, stagedNow);
     return { made: stagedNow, status: verified.state };
   });
+  const byProduct = new Map(
+    designs.map((design) => [design.productId, design])
+  );
   await actor.db
     .insert(campaign)
     .values({
       adAccountId: made.adAccountId,
       adIds: made.adIds,
       adSetId: made.adSetId,
-      copy,
+      copy: lead.copy,
       creativeIds: made.creativeIds,
       dailyBudgetCents,
+      designs: single
+        ? null
+        : (made.designs ?? []).map((design) => ({
+            adIds: design.adIds,
+            adSetId: design.adSetId,
+            copy: byProduct.get(design.key)?.copy ?? [],
+            creativeIds: design.creativeIds,
+            productId: design.key,
+          })),
       idempotencyKey: key,
       metaCampaignId: made.campaignId,
       pageId: made.pageId,
-      productId: live.id,
+      productId: lead.productId,
       status,
       userId: actor.userId,
     })
@@ -262,6 +370,12 @@ export const createProductCampaign = async (
   }
   return row;
 };
+
+// One product's campaign: a drop of one design.
+export const createProductCampaign = async (
+  actor: Actor,
+  { productId, ...input }: CampaignInput
+) => await createDropCampaign(actor, { ...input, productIds: [productId] });
 
 // The staging a Meta write belongs to: its key up to ":meta:".
 const stagingKey = (writeKey: string) =>

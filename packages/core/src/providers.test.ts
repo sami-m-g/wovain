@@ -225,6 +225,14 @@ describe("Meta", () => {
       adSetId: "as_1",
       campaignId: "c_1",
       creativeIds: ["cr_1", "cr_1"],
+      designs: [
+        {
+          adIds: ["ad_1", "ad_1"],
+          adSetId: "as_1",
+          creativeIds: ["cr_1", "cr_1"],
+          key: "w-test",
+        },
+      ],
       pageId: "p_1",
     });
     const tools = calls.map((item) => item.tool);

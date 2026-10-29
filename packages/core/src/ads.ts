@@ -142,10 +142,32 @@ export const scoreAdCopy = async (
   };
 };
 
+// One design in a test campaign: its own ad set, an ad per copy variant.
+export interface DesignAds {
+  copy: AdCopy;
+  imageUrl: string;
+  // The caller's id for it (the product), returned with what was staged.
+  key: string;
+  // Short and stable: it names the design's ad set and ads on Meta.
+  label: string;
+  linkUrl: string;
+}
+
+// A drop launches as a small test: 3 to 5 designs in one campaign.
+export const MAX_TEST_DESIGNS = 5;
+// Half the daily budget is split evenly as each design's floor, so every
+// design gets spend until the profit rules can judge it; Meta's campaign
+// budget (CBO) moves the other half to what sells.
+const FLOOR_SHARE = 0.5;
+export const designFloorCents = (dailyBudgetCents: number, designs: number) =>
+  Math.floor((dailyBudgetCents * FLOOR_SHARE) / designs);
+
 export interface CampaignPlan {
   // Numeric, without "act_"; the merchant's first MCP-enabled account if unset.
   adAccountId?: string | undefined;
   copy: AdCopy;
+  // A multi-design test; one design (copy, imageUrl, linkUrl) when unset.
+  designs?: DesignAds[] | undefined;
   // ISO country codes the ad set targets.
   countries: string[];
   dailyBudgetCents: number;
@@ -164,14 +186,52 @@ export interface CampaignPlan {
   targeting: MetaTargeting;
 }
 
+export interface StagedDesign {
+  adIds: string[];
+  adSetId: string;
+  creativeIds: string[];
+  key: string;
+}
+
 export interface StagedCampaign {
   adAccountId: string;
+  // Every design's ads; the first design's ad set.
   adIds: string[];
   adSetId: string;
   campaignId: string;
   creativeIds: string[];
+  // One per design; unset on a single-design campaign saved before tests.
+  designs?: StagedDesign[] | undefined;
   pageId: string;
 }
+
+// Every ad set of a staged campaign, one per design.
+export const adSetIdsOf = (
+  staged: Pick<StagedCampaign, "adSetId" | "designs">
+) =>
+  staged.designs === undefined || staged.designs.length === 0
+    ? [staged.adSetId]
+    : staged.designs.map((design) => design.adSetId);
+
+const designsOf = (plan: CampaignPlan): DesignAds[] => {
+  if (plan.designs !== undefined && plan.designs.length > 0) {
+    if (plan.designs.length > MAX_TEST_DESIGNS) {
+      throw new Error(
+        `A test campaign takes ${MAX_TEST_DESIGNS} designs at most, not ${plan.designs.length}`
+      );
+    }
+    return plan.designs;
+  }
+  return [
+    {
+      copy: plan.copy,
+      imageUrl: plan.imageUrl,
+      key: plan.tag,
+      label: plan.tag,
+      linkUrl: plan.linkUrl,
+    },
+  ];
+};
 
 // Runs one create at most once per staging. `recover` looks for the object
 // an earlier attempt may have made before it lost the answer. The default
@@ -324,73 +384,102 @@ export const stagePausedCampaign = async (
     ...plan.targeting,
     geo_locations: base.geo_locations,
   };
-  const adSetName = named("qloo");
-  const adSetId = await once(
-    "ad_set",
-    async () =>
-      idOf(
-        await meta("ads_create_ad_set", {
-          ...account,
-          ...delivery.adSet,
-          ad_set_name: adSetName,
-          billing_event: "IMPRESSIONS",
-          campaign_id: campaignId,
-          destination_type: "WEBSITE",
-          targeting: JSON.stringify(targeting),
-        }),
-        "ad_set_id"
-      ),
-    async () => await findByName(meta, adAccountId, "adset", adSetName)
-  );
-  const creativeIds: string[] = [];
-  const adIds: string[] = [];
-  for (const [index, variant] of plan.copy.entries()) {
-    const name = named(`${variant.angle} ${index + 1}`);
-    const linkUrl =
-      plan.media === undefined
-        ? plan.linkUrl
-        : withUtm(plan.linkUrl, {
-            campaign: campaignId,
-            content: `${variant.angle}-${index + 1}`,
-          });
-    // One at a time: Meta's draft takes its objects in order. A creative
-    // made twice is harmless (it serves only through an ad), so it has no
-    // lookup.
+  const designs = designsOf(plan);
+  // A test of several designs: each keeps a floor of the budget until the
+  // profit rules can judge it, and CBO moves the rest to what sells.
+  const minSpendCents =
+    designs.length > 1
+      ? designFloorCents(plan.dailyBudgetCents, designs.length)
+      : undefined;
+  const staged: StagedDesign[] = [];
+  for (const [slot, design] of designs.entries()) {
+    // One design keeps the names and keys a single-design staging always had.
+    const single = designs.length === 1;
+    const at = (name: string) => (single ? name : `${name}:${slot}`);
+    const adSetName = named(single ? "qloo" : `qloo ${design.label}`);
+    // One at a time: Meta's draft takes its objects in order.
     // oxlint-disable-next-line no-await-in-loop
-    const creativeId = await once(`creative:${index}`, async () =>
-      idOf(
-        await meta("ads_create_creative", {
-          ...account,
-          call_to_action_type: "SHOP_NOW",
-          headline: variant.headline,
-          image_url: plan.imageUrl,
-          link_url: linkUrl,
-          message: variant.message,
-          name,
-          page_id: pageId,
-        }),
-        "creative_id"
-      )
-    );
-    creativeIds.push(creativeId);
-    // oxlint-disable-next-line no-await-in-loop
-    const adId = await once(
-      `ad:${index}`,
+    const adSetId = await once(
+      at("ad_set"),
       async () =>
         idOf(
-          await meta("ads_create_ad", {
+          await meta("ads_create_ad_set", {
             ...account,
-            ad_name: name,
-            ad_set_id: adSetId,
-            creative: JSON.stringify({ creative_id: creativeId }),
+            ...delivery.adSet,
+            ad_set_name: adSetName,
+            billing_event: "IMPRESSIONS",
+            campaign_id: campaignId,
+            ...(minSpendCents === undefined
+              ? {}
+              : { daily_min_spend_target: minSpendCents }),
+            destination_type: "WEBSITE",
+            targeting: JSON.stringify(targeting),
           }),
-          "ad_id"
+          "ad_set_id"
         ),
-      async () => await findByName(meta, adAccountId, "ad", name)
+      async () => await findByName(meta, adAccountId, "adset", adSetName)
     );
-    adIds.push(adId);
+    const creativeIds: string[] = [];
+    const adIds: string[] = [];
+    for (const [index, variant] of design.copy.entries()) {
+      const label = single ? "" : `${design.label} `;
+      const name = named(`${label}${variant.angle} ${index + 1}`);
+      const content = single
+        ? `${variant.angle}-${index + 1}`
+        : `${design.label}-${variant.angle}-${index + 1}`;
+      const linkUrl =
+        plan.media === undefined
+          ? design.linkUrl
+          : withUtm(design.linkUrl, { campaign: campaignId, content });
+      // A creative made twice is harmless (it serves only through an ad), so
+      // it has no lookup.
+      // oxlint-disable-next-line no-await-in-loop
+      const creativeId = await once(
+        single ? `creative:${index}` : `creative:${slot}:${index}`,
+        async () =>
+          idOf(
+            await meta("ads_create_creative", {
+              ...account,
+              call_to_action_type: "SHOP_NOW",
+              headline: variant.headline,
+              image_url: design.imageUrl,
+              link_url: linkUrl,
+              message: variant.message,
+              name,
+              page_id: pageId,
+            }),
+            "creative_id"
+          )
+      );
+      creativeIds.push(creativeId);
+      // oxlint-disable-next-line no-await-in-loop
+      const adId = await once(
+        single ? `ad:${index}` : `ad:${slot}:${index}`,
+        async () =>
+          idOf(
+            await meta("ads_create_ad", {
+              ...account,
+              ad_name: name,
+              ad_set_id: adSetId,
+              creative: JSON.stringify({ creative_id: creativeId }),
+            }),
+            "ad_id"
+          ),
+        async () => await findByName(meta, adAccountId, "ad", name)
+      );
+      adIds.push(adId);
+    }
+    staged.push({ adIds, adSetId, creativeIds, key: design.key });
   }
-  return { adAccountId, adIds, adSetId, campaignId, creativeIds, pageId };
+  return {
+    adAccountId,
+    adIds: staged.flatMap((design) => design.adIds),
+    adSetId: staged[0]?.adSetId ?? "",
+    campaignId,
+    creativeIds: staged.flatMap((design) => design.creativeIds),
+    designs: staged,
+    pageId,
+  };
 };
 
 // Undoes a staging that can't finish: archiving the campaign archives its ad

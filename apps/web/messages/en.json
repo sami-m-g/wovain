@@ -148,6 +148,10 @@
         "answer": "A Fourthwall shop for the products, a fal account for the artwork and a Meta ad account for the campaign. You connect each one with its own sign-in after you create your account."
       },
       {
+        "question": "Will my shop be ready to sell?",
+        "answer": "Yes. The Store lists what your Fourthwall shop needs before it can take an order (payouts, shipping, going live, the Meta pixel), does what it can for you and links to the rest, then ticks each step off by itself. It also rewrites each product page the way an e-commerce copywriter would, and nothing changes until you approve it."
+      },
+      {
         "question": "How are prices set?",
         "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. You can change any price later in Fourthwall."
       },
@@ -170,6 +174,10 @@
       {
         "question": "What stops my ads from losing money?",
         "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
+      },
+      {
+        "question": "Which of my designs should I advertise?",
+        "answer": "All of them, at first. wovain tests up to five designs in one campaign, gives each a fair share of the budget, pauses the ones that lose money and shows you the winner, so the budget follows the design that sells."
       }
     ],
     "heroCta": "Start a drop",
@@ -633,6 +641,20 @@
           "limitLabel": "Loss limit (USD)",
           "save": "Save",
           "saveFailed": "The limit wasn't saved: {reason}"
+        },
+        "designs": {
+          "title": "Each design in the test",
+          "design": "Design",
+          "numbered": "Design {number, number}",
+          "spend": "Spend",
+          "ctr": "CTR",
+          "addToCarts": "Add-to-carts",
+          "purchases": "Sales",
+          "profit": "Profit",
+          "status": "Status",
+          "testing": "Testing",
+          "paused": "Paused",
+          "winner": "Winner"
         }
       }
     },
@@ -1682,6 +1704,7 @@
       "mockupAlt": "{title} mockup",
       "view": "View in shop",
       "editInFourthwall": "Edit in Fourthwall",
+      "rewrite": "Rewrite product page",
       "reprice": "Change price",
       "sample": "Order a sample",
       "move": {
@@ -1715,6 +1738,26 @@
       "back": "Cancel",
       "sent": "Done. wovain is on it.",
       "queuedCount": "{count, plural, one {# change waits} other {# changes wait}} in your approvals."
+    },
+    "listing": {
+      "title": "A product page that sells: {title}",
+      "note": "wovain rewrote the title and description the way an e-commerce copywriter would. Compare them as a buyer sees them. Nothing changes in your shop until you approve.",
+      "writing": "Writing the new page…",
+      "before": "Now",
+      "after": "With wovain",
+      "noDescription": "No description yet.",
+      "mockupAlt": "{title} mockup",
+      "issues": "Still to check by eye: {list}.",
+      "issue": {
+        "title_length": "the title is over 60 characters, so search results cut it",
+        "title_shouting": "the title is mostly capitals",
+        "ai_tell": "a phrase reads as machine-written",
+        "exclamation": "it uses an exclamation mark"
+      },
+      "practice": "Main keyword first in a title that fits a search result, one benefit per line, no claim your shop can't back, and the shipping time Fourthwall gives.",
+      "back": "Cancel",
+      "again": "Write another",
+      "confirm": "Use this page"
     },
     "reprice": {
       "title": "Change the price of {title}",
