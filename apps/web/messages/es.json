@@ -498,7 +498,12 @@
         "listings": "Revisando las noticias del mes y lo saturado que está…",
         "words": "Escribiendo las primeras sugerencias…"
       },
-      "elapsed": "{seconds, plural, one {# segundo} other {# segundos}}"
+      "elapsed": "{seconds, plural, one {# segundo} other {# segundos}}",
+      "proof": {
+        "ads": "{count, plural, one {# tienda} other {# tiendas}} lo anuncian desde hace {days}+ días",
+        "bestsellers": "{count, plural, one {un superventas} other {# superventas}} en los marketplaces",
+        "reviews": "{count, plural, one {# reseña} other {# reseñas}} en anuncios parecidos"
+      }
     },
     "trends": {
       "title": "Elige las ideas",

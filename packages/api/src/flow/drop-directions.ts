@@ -1,14 +1,19 @@
 import { createHash } from "node:crypto";
 
 import { EventPublisher } from "@orpc/server";
+import { conversationId } from "@wovain/core/ads";
+import { adDemandOf } from "@wovain/core/demand";
+import type { AdDemand } from "@wovain/core/demand";
 import { suggestDirections } from "@wovain/core/drop-directions";
 import type {
   DirectionEvent,
+  Directions,
   DirectionsAnswer,
   DirectionStep,
   DropDirection,
 } from "@wovain/core/drop-directions";
 import { EVENTS } from "@wovain/core/events";
+import type { ToolCall } from "@wovain/core/upstream";
 import { brandProfile, decisionTrace } from "@wovain/db/schema/autonomy";
 import { directionCache } from "@wovain/db/schema/seller";
 import { and, count, eq, gt } from "drizzle-orm";
@@ -16,6 +21,7 @@ import { createError, log as evlog } from "evlog";
 
 import type { Actor } from "./actor";
 import { localeOf, traced } from "./brand-discovery";
+import { listConnections, withProvider } from "./connections";
 import { flagContextOf } from "./flags";
 import { assertQlooOn } from "./ideas";
 
@@ -181,44 +187,85 @@ const requestRefresh = async (actor: Actor, input: DirectionsInput) => {
 };
 
 // Finds the directions now, reports progress, keeps the answer.
+// Whether the merchant's Meta account can be read for the Ad Library.
+const metaReady = async (actor: Actor) => {
+  const rows = await listConnections(actor);
+  return rows.some((row) => row.provider === "meta" && !row.needsReconnect);
+};
+
+// Finds the directions now, reports progress, keeps the answer. With Meta
+// connected, the Ad Library adds its proof through the merchant's Meta
+// session; a session that can't open is logged and the marketplaces alone
+// prove demand.
 const search = async (
   actor: Actor,
   input: DirectionsInput,
   onEvent?: (event: DirectionEvent) => void
 ): Promise<DirectionsAnswer> => {
-  const [brand, locale] = await Promise.all([
+  const [brand, locale, meta] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
+    metaReady(actor),
   ]);
   const scoped = brand !== undefined && !input.ignoreBrand;
-  const directions = await traced(
-    actor,
-    async (trace) =>
-      await suggestDirections(
-        {
-          ask: actor.core.nemotron,
-          locale,
-          log: actor.log,
-          onEvent,
-          qloo: actor.core.qloo,
-          tavily: actor.core.tavily,
-          trace,
+  const run = async (adLibrary?: (theme: string) => Promise<AdDemand>) =>
+    await traced(
+      actor,
+      async (trace) =>
+        await suggestDirections(
+          {
+            adLibrary,
+            ask: actor.core.nemotron,
+            locale,
+            log: actor.log,
+            onEvent,
+            qloo: actor.core.qloo,
+            tavily: actor.core.tavily,
+            trace,
+          },
+          {
+            brand: scoped
+              ? {
+                  ageAffinity: brand.demographics.ageAffinity,
+                  entities: brand.qlooEntities,
+                  genders: brand.demographics.genders,
+                  niches: brand.niches,
+                  voice: brand.voice,
+                }
+              : undefined,
+            round: input.round,
+            salt: actor.userId,
+          }
+        )
+    );
+  let directions: Directions;
+  if (meta) {
+    let started = false;
+    try {
+      directions = await withProvider(actor, "meta", async (call) => {
+        started = true;
+        const conversation = conversationId(`directions:${actor.userId}`);
+        const tagged: ToolCall = async (tool, args) =>
+          await call(tool, { ...args, client_conversation_id: conversation });
+        return await run(async (theme) => await adDemandOf(tagged, theme));
+      });
+    } catch (error) {
+      if (started) {
+        throw error;
+      }
+      evlog.error({
+        directions: { userId: actor.userId },
+        error: {
+          code: "DIRECTIONS_AD_LIBRARY_UNAVAILABLE",
+          message: error instanceof Error ? error.message : String(error),
+          name: "DirectionsAdLibraryUnavailable",
         },
-        {
-          brand: scoped
-            ? {
-                ageAffinity: brand.demographics.ageAffinity,
-                entities: brand.qlooEntities,
-                genders: brand.demographics.genders,
-                niches: brand.niches,
-                voice: brand.voice,
-              }
-            : undefined,
-          round: input.round,
-          salt: actor.userId,
-        }
-      )
-  );
+      });
+      directions = await run();
+    }
+  } else {
+    directions = await run();
+  }
   const answer = { ...directions, hasBrand: brand !== undefined };
   await writeCache(actor, cacheKeyOf(input, brand, locale), answer);
   return answer;

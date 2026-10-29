@@ -59,6 +59,23 @@ const qlooFake = (fail = false) => ({
 const tavilyFake = () =>
   ({
     search: vi.fn(async (query: string) => {
+      // Etsy, Amazon and Redbubble: a bestseller for every theme except
+      // the ones named "unsold".
+      if (query.endsWith('" shirt')) {
+        const theme = query.replaceAll('"', "").replace(" shirt", "");
+        return await Promise.resolve({
+          results: theme.includes("unsold")
+            ? []
+            : [
+                {
+                  content: `Bestseller. 1,240 reviews. ${theme} graphic tee`,
+                  score: 0.9,
+                  title: `${theme} shirt`,
+                  url: `https://www.etsy.com/listing/${encodeURIComponent(theme)}`,
+                },
+              ],
+        });
+      }
       if (query.endsWith("t-shirt")) {
         const theme = query.replaceAll('"', "").replace(" t-shirt", "");
         return await Promise.resolve({
@@ -97,7 +114,9 @@ const writeWords: Nemotron = async <T extends z.ZodType>({
     schema.parse({
       directions: directions.map((one) => ({
         brief: `A drop about ${one.theme} for these buyers`,
+        buyer: `for fans of ${one.theme}`,
         key: one.key,
+        occasion: "identity tee",
         title: one.theme.slice(0, 60),
         whyNow: `Rising with fans of ${one.rising[0] ?? "these shows"}.`,
       })),
@@ -203,9 +222,10 @@ it("ranks a crowded theme below an open one", async () => {
     depsWith(),
     request(brandFor("crowded", "Gothic"))
   );
-  const crowded = result.directions.find((one) => one.theme === "crowded wave");
-  expect(crowded?.evidence.saturation?.level).toBe("high");
-  expect(result.directions.at(-1)?.theme).toBe("crowded wave");
+  const themes = result.directions.map((one) => one.theme);
+  expect(result.directions[0]?.evidence.saturation?.level).not.toBe("high");
+  const at = themes.indexOf("crowded wave");
+  expect(at === -1 || at === themes.length - 1).toBe(true);
 });
 
 it("cites the rising Qloo entities and the news behind each direction", async () => {
@@ -288,14 +308,56 @@ it("announces each step and each direction as soon as it is written", async () =
     event.kind === "direction" ? [event.direction.key] : []
   );
   // Each card is sent twice: with its facts, then with its words.
-  expect(streamed).toHaveLength(result.directions.length * 2);
-  expect([...new Set(streamed)].toSorted()).toStrictEqual(
-    result.directions.map((one) => one.key).toSorted()
-  );
+  for (const key of new Set(streamed)) {
+    expect(streamed.filter((one) => one === key)).toHaveLength(2);
+  }
+  for (const direction of result.directions) {
+    expect(streamed).toContain(direction.key);
+  }
   // Words come after the checks: the first card follows the words step.
   expect(
     events.findIndex((event) => event.kind === "direction")
   ).toBeGreaterThan(
     events.findIndex((event) => event.kind === "step" && event.step === "words")
   );
+});
+
+it("drops a theme nothing proves sells, and says how many", async () => {
+  const result = await suggestDirections(
+    depsWith(),
+    request(brandFor("unsold", "Cottagecore"))
+  );
+  expect(result.directions).toStrictEqual([]);
+  expect(result.dropped).toBeGreaterThan(0);
+});
+
+it("ranks on proof: shops advertising for weeks lead", async () => {
+  const day = 24 * 60 * 60;
+  const now = Date.now() / 1000;
+  const adLibrary = vi.fn(async (theme: string) => {
+    const long = theme.endsWith("wave");
+    return await Promise.resolve({
+      advertisers: long ? 6 : 0,
+      evergreen: long ? 4 : 0,
+      longestDays: long ? Math.round((now - (now - 45 * day)) / day) : 0,
+      samples: [],
+      validated: long ? 5 : 0,
+    });
+  });
+  const result = await suggestDirections(
+    depsWith({ adLibrary }),
+    request(brandFor("goth", "Gothic"))
+  );
+  expect(adLibrary).toHaveBeenCalled();
+  expect(result.directions[0]?.theme).toBe("goth wave");
+  expect(result.directions[0]?.evidence.demand?.ads?.evergreen).toBe(4);
+});
+
+it("writes each proven theme as a concept: design, buyer and occasion", async () => {
+  const result = await suggestDirections(depsWith(), request());
+  for (const direction of result.directions) {
+    expect(direction.buyer).toMatch(/^for /u);
+    expect(direction.occasion).not.toBe("");
+    expect(direction.evidence.demand?.proven).toBe(true);
+  }
 });

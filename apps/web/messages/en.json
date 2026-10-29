@@ -498,7 +498,12 @@
         "listings": "Checking this month's news and how crowded it is…",
         "words": "Writing the first suggestions…"
       },
-      "elapsed": "{seconds, plural, one {# second} other {# seconds}}"
+      "elapsed": "{seconds, plural, one {# second} other {# seconds}}",
+      "proof": {
+        "ads": "{count, plural, one {# shop} other {# shops}} advertising it for {days}+ days",
+        "bestsellers": "{count, plural, one {a bestseller} other {# bestsellers}} on the marketplaces",
+        "reviews": "{count, plural, one {# review} other {# reviews}} on similar listings"
+      }
     },
     "trends": {
       "title": "Pick the ideas",

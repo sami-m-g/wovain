@@ -107,8 +107,20 @@ const StepLine = ({ seconds, step }: { seconds: number; step?: Step }) => {
 /** What backs a direction, in one line: who, what is rising, news, crowding. */
 const EvidenceLine = ({ evidence }: { evidence: Direction["evidence"] }) => {
   const t = useTranslations("Wizard.directions");
-  const { audience, momentum, rising, saturation } = evidence;
+  const { audience, demand, momentum, rising, saturation } = evidence;
   const parts = [
+    demand?.ads === undefined || demand.ads.validated === 0
+      ? undefined
+      : t("proof.ads", {
+          count: demand.ads.validated,
+          days: demand.ads.evergreen > 0 ? "30" : "14",
+        }),
+    demand?.market === undefined || demand.market.bestsellers === 0
+      ? undefined
+      : t("proof.bestsellers", { count: demand.market.bestsellers }),
+    demand?.market === undefined || demand.market.reviews === 0
+      ? undefined
+      : t("proof.reviews", { count: demand.market.reviews }),
     audience === undefined ? undefined : t("for", { audience }),
     rising.length === 0
       ? undefined
@@ -147,6 +159,13 @@ const DirectionRow = ({
       >
         <span className="flex flex-col gap-1">
           <span className="font-medium">{direction.title}</span>
+          {direction.buyer === undefined ? null : (
+            <span className="text-sm">
+              {direction.occasion === undefined
+                ? direction.buyer
+                : `${direction.buyer} · ${direction.occasion}`}
+            </span>
+          )}
           <span className="text-muted-foreground text-sm" id={`${id}-why`}>
             {direction.whyNow === ""
               ? t("whyFallback", { count: momentum?.hits ?? 0 })
