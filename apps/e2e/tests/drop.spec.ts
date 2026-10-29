@@ -12,21 +12,23 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
     page.getByRole("heading", { name: /^What to sell now/u })
   ).toBeVisible();
   const direction = page.getByRole("button", { name: "Start this drop" });
-  const empty = page.getByText(
-    /Qloo found nothing new rising right now|We couldn't reach our taste data/u
-  );
+  const empty = page.getByText(/Qloo found nothing new rising right now/u);
   await expect(direction.first().or(empty)).toBeVisible({ timeout: 60_000 });
-  // Real providers may honestly find nothing; the mocked ones always do.
+  // Real providers may honestly find nothing; the mocked ones always do. A
+  // failed Qloo read ("We couldn't reach our taste data") is no such state.
   if (isSmoke && (await empty.isVisible())) {
     return;
   }
   await expect(direction.first()).toBeVisible();
-  await expect(
-    page.getByText(/news stor(?:y|ies) this month|news not checked/u).first()
-  ).toBeVisible();
-  await expect(
-    page.getByText(/similar listings?|listings not checked/u).first()
-  ).toBeVisible();
+  // The mocked news and listings always come back; live ones may be skipped.
+  const news = isSmoke
+    ? /news stor(?:y|ies) this month|news not checked/u
+    : /\d+ news stor(?:y|ies) this month/u;
+  const listings = isSmoke
+    ? /similar listings?|listings not checked/u
+    : /reviews on similar listings/u;
+  await expect(page.getByText(news).first()).toBeVisible();
+  await expect(page.getByText(listings).first()).toBeVisible();
   await page.getByRole("button", { name: "Who buys this" }).first().click();
   await expect(page.getByText(/^Mostly /u).first()).toBeVisible();
 });
@@ -37,7 +39,7 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   page,
 }) => {
   // Real research and art take minutes on next; the mocks take seconds.
-  test.setTimeout(isSmoke ? 360_000 : 90_000);
+  test.setTimeout(isSmoke ? 480_000 : 90_000);
   await page.goto("/dashboard/new");
   await page
     .getByRole("textbox", { name: "What should this drop be about?" })

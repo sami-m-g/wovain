@@ -8,7 +8,7 @@
     "check-types": "turbo run check-types",
     "spec:validate": "openspec validate --all --strict",
     "test": "turbo run test",
-    "test:e2e": "pnpm --filter @wovain/e2e run test:e2e",
+    "test:e2e": "turbo run build --filter=web && pnpm --filter @wovain/e2e run test:e2e",
     "storybook": "pnpm --filter web run storybook",
     "build-storybook": "turbo run build-storybook",
     "test-storybook": "turbo run test-storybook",

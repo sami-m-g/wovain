@@ -40,7 +40,9 @@ export default defineConfig({
       grep: /@smoke/u,
       name: "smoke",
       retries: 1,
-      use: { ...devices["Desktop Chrome"], baseURL: smokeUrl },
+      // No trace: it would record the smoke account's password into the
+      // report deploy.yml uploads.
+      use: { ...devices["Desktop Chrome"], baseURL: smokeUrl, trace: "off" },
     },
   ],
   reporter: isCI

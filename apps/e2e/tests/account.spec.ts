@@ -45,10 +45,13 @@ test("Settings in the navigation @smoke", async ({
 }) => {
   await page.goto("/dashboard/billing");
   const rail = page.getByRole("link", { exact: true, name: "Settings" });
+  const account = page.getByRole("button", { name: /\(Account\)$/u });
+  // Wait for the shell, then take whichever entry it has.
+  await expect(rail.or(account)).toBeVisible();
   if (await rail.isVisible()) {
     await rail.click();
   } else {
-    await page.getByRole("button", { name: /\(Account\)$/u }).click();
+    await account.click();
     await page.getByRole("menuitem", { name: "Account settings" }).click();
   }
   await expect(page).toHaveURL(/\/dashboard\/settings/u);
