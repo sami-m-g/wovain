@@ -50,6 +50,19 @@ const businessSchema = z.object({
   business: z.object({ id: z.string() }).optional(),
 });
 const idSchema = z.object({ id: z.string() });
+const rulesSchema = z.object({
+  data: z.array(z.object({ id: z.string(), name: z.string() })).default([]),
+  paging: z
+    .object({
+      cursors: z.object({ after: z.string().optional() }).optional(),
+      next: z.string().optional(),
+    })
+    .optional(),
+});
+const RULES_PAGE = 500;
+// 10,000 rules: far past what one ad account holds; beyond it the list
+// can't be trusted, so the sync fails rather than duplicate rules.
+const RULES_MAX_PAGES = 20;
 const eventsSchema = z.object({ events_received: z.number() });
 
 const MS_PER_SECOND = 1000;
@@ -108,13 +121,15 @@ export const createMetaGraph = ({
     operation: string,
     token: string,
     path: string,
-    form?: URLSearchParams
+    form?: URLSearchParams,
+    method?: "DELETE"
   ): Promise<unknown> =>
     await external(log, { operation, provider: "meta" }, async () => {
       const response = await fetchFn(`${graphUrl}${path}`, {
         headers: { authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(TIMEOUT_MS),
         ...(form === undefined ? {} : { body: form, method: "POST" }),
+        ...(method === undefined ? {} : { method }),
       });
       const body: unknown = await response.json();
       if (response.ok) {
@@ -321,7 +336,91 @@ export const createMetaGraph = ({
     return reply.events_received;
   };
 
-  return { createDataset, datasets, readiness, sendTestEvent };
+  // The ad account's automated rules, by id and name.
+  // https://developers.facebook.com/docs/marketing-api/ad-rules/overview
+  const rules = async (
+    token: string,
+    adAccountId: string,
+    log?: Logger
+  ): Promise<{ id: string; name: string }[]> => {
+    const all: { id: string; name: string }[] = [];
+    let after: string | undefined;
+    for (let page = 0; page < RULES_MAX_PAGES; page += 1) {
+      const query = new URLSearchParams({
+        fields: "id,name",
+        limit: String(RULES_PAGE),
+        ...(after === undefined ? {} : { after }),
+      });
+      // Pages follow one another: each needs the cursor before it.
+      const reply = rulesSchema.parse(
+        // oxlint-disable-next-line no-await-in-loop
+        await get(
+          log,
+          "graph.adrules_library",
+          token,
+          `/act_${adAccountId}/adrules_library?${query.toString()}`
+        )
+      );
+      all.push(...reply.data);
+      after = reply.paging?.cursors?.after;
+      if (reply.paging?.next === undefined || after === undefined) {
+        return all;
+      }
+    }
+    throw new GraphRefusedError(
+      `The ad account has more than ${RULES_PAGE * RULES_MAX_PAGES} automated rules; wovain can't list them all`,
+      undefined
+    );
+  };
+
+  // Creates an enabled automated rule on the ad account.
+  const createRule = async (
+    token: string,
+    adAccountId: string,
+    rule: {
+      evaluation_spec: unknown;
+      execution_spec: unknown;
+      name: string;
+      schedule_spec: unknown;
+    },
+    log?: Logger
+  ): Promise<string> =>
+    idSchema.parse(
+      await post(
+        log,
+        "graph.create_rule",
+        token,
+        `/act_${adAccountId}/adrules_library`,
+        {
+          evaluation_spec: JSON.stringify(rule.evaluation_spec),
+          execution_spec: JSON.stringify(rule.execution_spec),
+          name: rule.name,
+          schedule_spec: JSON.stringify(rule.schedule_spec),
+          status: "ENABLED",
+        }
+      )
+    ).id;
+
+  const deleteRule = async (token: string, ruleId: string, log?: Logger) => {
+    await request(
+      log,
+      "graph.delete_rule",
+      token,
+      `/${ruleId}`,
+      undefined,
+      "DELETE"
+    );
+  };
+
+  return {
+    createDataset,
+    createRule,
+    datasets,
+    deleteRule,
+    readiness,
+    rules,
+    sendTestEvent,
+  };
 };
 
 export type MetaGraph = ReturnType<typeof createMetaGraph>;
