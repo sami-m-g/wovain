@@ -70,7 +70,7 @@
 
 ## PR shepherd
 
-- `.github/workflows/shepherd.yml` fixes a pull request after a failed check or CodeRabbit's change request, and `shepherd-scan.yml` re-checks open pull requests every 30 minutes. Both run on the founder's Claude subscription and push as the Claude GitHub App. The limits (`SHEPHERD_MAX_PER_PR`, `SHEPHERD_MAX_PER_DAY`, `SHEPHERD_MODE`) live in `infra/github.ts`. It never merges or approves, and it adds `needs-human` when a person must decide.
+- `.github/workflows/shepherd.yml` fixes a pull request after a failed check or CodeRabbit's change request, and `shepherd-scan.yml` re-checks open pull requests every 30 minutes. Both run on the founder's Claude subscription and push as the Claude GitHub App. The limits (`SHEPHERD_MAX_PER_PR`, `SHEPHERD_MAX_PER_DAY`, `SHEPHERD_MODE`) are in the workflow's `env`. It never merges or approves, and it adds `needs-human` when a person must decide.
 - To have Claude's cloud Auto-fix watch a pull request instead (`/autofix-pr`), add the `autofix` label. The shepherd then skips that pull request, so the two never push to the same branch.
 
 ## Tooling (project scope)
