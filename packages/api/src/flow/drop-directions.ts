@@ -49,6 +49,11 @@ export const KEEP_MS = 7 * 24 * HOUR_MS;
 export const directionsOn = async (actor: Actor) =>
   await actor.core.flags.isOn("drop-directions", flagContextOf(actor));
 
+// idea-evidence-gate: only directions with Qloo evidence, proof of demand
+// and a competition read, ranked by the sweet spot's lower bound.
+const gateOn = async (actor: Actor) =>
+  await actor.core.flags.isOn("idea-evidence-gate", flagContextOf(actor));
+
 const directionsOff = () =>
   createError({
     fix: "Turn on the drop-directions flag for this environment.",
@@ -93,6 +98,8 @@ export interface DirectionsInput {
 export type DirectionsChunk =
   | { kind: "step"; step: DirectionStep }
   | { direction: DropDirection; kind: "direction" }
+  // A card shown with its facts whose words then failed the check.
+  | { key: string; kind: "withdrawn" }
   | {
       answer: DirectionsAnswer;
       // Served from what was kept; `stale` when a refresh was started.
@@ -123,7 +130,9 @@ type SavedBrand = NonNullable<Awaited<ReturnType<typeof loadBrand>>>;
 export const cacheKeyOf = (
   input: DirectionsInput,
   brand: SavedBrand | undefined,
-  locale: string
+  locale: string,
+  // Answers made through the evidence gate are kept apart.
+  gated = false
 ) => {
   const scoped = brand !== undefined && !input.ignoreBrand;
   const state = scoped
@@ -139,7 +148,8 @@ export const cacheKeyOf = (
         .digest("hex")
         .slice(0, 16)
     : "none";
-  return `${scoped ? "brand" : "open"}:${input.round}:${locale}:${state}`;
+  const base = `${scoped ? "brand" : "open"}:${input.round}:${locale}:${state}`;
+  return gated ? `${base}:gated` : base;
 };
 
 const readCache = async (actor: Actor, key: string) => {
@@ -202,10 +212,11 @@ const search = async (
   input: DirectionsInput,
   onEvent?: (event: DirectionEvent) => void
 ): Promise<DirectionsAnswer> => {
-  const [brand, locale, meta] = await Promise.all([
+  const [brand, locale, meta, gate] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
     metaReady(actor),
+    gateOn(actor),
   ]);
   const scoped = brand !== undefined && !input.ignoreBrand;
   const run = async (adLibrary?: (theme: string) => Promise<AdDemand>) =>
@@ -216,6 +227,7 @@ const search = async (
           {
             adLibrary,
             ask: actor.core.nemotron,
+            gate,
             locale,
             log: actor.log,
             onEvent,
@@ -267,7 +279,7 @@ const search = async (
     directions = await run();
   }
   const answer = { ...directions, hasBrand: brand !== undefined };
-  await writeCache(actor, cacheKeyOf(input, brand, locale), answer);
+  await writeCache(actor, cacheKeyOf(input, brand, locale, gate), answer);
   return answer;
 };
 
@@ -302,11 +314,12 @@ export const streamDirections = async function* streamDirections(
     throw directionsOff();
   }
   await assertQlooOn(actor);
-  const [brand, locale] = await Promise.all([
+  const [brand, locale, gate] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
+    gateOn(actor),
   ]);
-  const kept = await readCache(actor, cacheKeyOf(input, brand, locale));
+  const kept = await readCache(actor, cacheKeyOf(input, brand, locale, gate));
   const age =
     kept === undefined
       ? Number.POSITIVE_INFINITY
@@ -357,11 +370,12 @@ export const warmDirections = async (actor: Actor) => {
     return { queued: false };
   }
   const input = { ignoreBrand: false, round: 0 };
-  const [brand, locale] = await Promise.all([
+  const [brand, locale, gate] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
+    gateOn(actor),
   ]);
-  const kept = await readCache(actor, cacheKeyOf(input, brand, locale));
+  const kept = await readCache(actor, cacheKeyOf(input, brand, locale, gate));
   if (kept !== undefined && Date.now() - kept.at.getTime() < FRESH_MS) {
     return { queued: false };
   }

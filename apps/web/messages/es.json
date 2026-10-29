@@ -2257,5 +2257,35 @@
         "create": "Crear el anuncio"
       }
     }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "Qué hacer",
+      "why": "Por qué se vende",
+      "audience": "Quién compra y dónde",
+      "competition": "Competencia"
+    },
+    "unavailable": {
+      "not_read": "Aún no se ha leído.",
+      "read_failed": "La lectura falló. Vuelve a investigar.",
+      "not_connected": "Conecta Meta para leer los anuncios que las tiendas mantienen activos.",
+      "none_found": "No se encontró nada para esta idea.",
+      "ungrounded": "Sin título: el texto afirmaba algo que la evidencia no muestra.",
+      "raw_tag": "Sin título: solo volvió la etiqueta de gusto original."
+    },
+    "dropped": {
+      "no_qloo_evidence": "Sin evidencia de Qloo",
+      "no_demand_proof": "Sin prueba de que se venda",
+      "no_competition_read": "No se pudo leer la competencia",
+      "saturated": "Demasiado saturado: demasiados anuncios o productos similares",
+      "no_title": "Sin un título respaldado por la evidencia"
+    },
+    "level": {
+      "open": "Abierto",
+      "sweet-spot": "Punto óptimo",
+      "crowded": "Saturado"
+    },
+    "sameBuyers": "Los mismos compradores que tu brief",
+    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil"
   }
 }
