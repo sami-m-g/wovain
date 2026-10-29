@@ -5,6 +5,7 @@ import type { DirectionsAnswer } from "@wovain/core/drop-directions";
 import type { DropStyle } from "@wovain/core/drop-style";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
+import type { WhoBuys } from "@wovain/core/who-buys";
 import {
   boolean,
   index,
@@ -122,6 +123,8 @@ export const idea = pgTable(
     style: jsonb("style").$type<DropStyle>(),
     theme: text("theme").notNull(),
     userId: owner(),
+    // Who buys the idea and where (who-buys), read from Qloo once and kept.
+    whoBuys: jsonb("who_buys").$type<WhoBuys>(),
   },
   (table) => [index("idea_user_idx").on(table.userId)]
 );
@@ -235,6 +238,21 @@ export const campaign = pgTable(
     userId: owner(),
   },
   (table) => [index("campaign_user_idx").on(table.userId)]
+);
+
+// The merchant's first time at each north star step (packages/api
+// flow/milestones): one row per merchant and step, so a step is reported to
+// PostHog once and the Insights page can time the journey.
+export const milestone = pgTable(
+  "milestone",
+  {
+    at: timestamp("at").defaultNow().notNull(),
+    name: text("name").notNull(),
+    userId: owner(),
+  },
+  (table) => [
+    uniqueIndex("milestone_user_name_idx").on(table.userId, table.name),
+  ]
 );
 
 // The new-drop step's suggestions (drop-directions), kept per merchant and

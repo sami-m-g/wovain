@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "0c214bdb-455f-4bdc-9502-fade49080387",
+  "prevIds": [
+    "96f194e1-fd8b-46b2-b7b8-3ab4ecad0a43"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "idea",
+        "who_buys"
+      ],
+      "writes": [
+        "s|col|public.idea.who_buys",
+        "n|col|public.idea.who_buys",
+        "e|col|public.idea.who_buys"
+      ],
+      "reads": [
+        "n|tbl|public.idea",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "idea",
+        "name": "who_buys",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

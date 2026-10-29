@@ -58,9 +58,10 @@
 ## Tooling (project scope)
 
 - Declared in `.mcp.json`, `.claude/settings.json` and `skills-lock.json`; never install at user or global scope.
-- MCP: `qloo-docs` (docs), `qloo` (harness, reads `QLOO_API_KEY`), `tavily` (OAuth, or `TAVILY_API_KEY` for the CLI skills), `inngest-dev` (Dev Server on 127.0.0.1:8288), `pulumi` (OAuth).
-- Plugins: `superpowers`, `inngest`, `playwright`.
-- Skills: `tavily-*`, `remotion-*`, `pulumi-*`, `investor-materials`, `investor-outreach`, `founder-board`, `office-hours` (gstack, single skill; its `~/.claude/skills/gstack` helpers are not installed), `validate-idea`. Founder skills write to `founder/` (git-ignored).
+- MCP: `qloo-docs` (docs), `qloo` (harness, reads `QLOO_API_KEY`), `tavily` (OAuth, or `TAVILY_API_KEY` for the CLI skills), `inngest-dev` (Dev Server on 127.0.0.1:8288), `pulumi` (OAuth), `meta-ads` (Meta's official Ads MCP at `https://mcp.facebook.com/ads`; Facebook Login OAuth per user, with the `ads_mcp_management` and `ads_read` or `ads_management` permissions).
+- Plugins: `superpowers`, `inngest`, `playwright`, `claude-ads` (AgriciDaniel/claude-ads, MIT: `ads-meta`, `ads-audit`, `ads-plan`, `ads-test`, `ads-math`, `ads-optimize`, `ads-landing` and more). To install it, run `/plugin marketplace add AgriciDaniel/claude-ads`, then `/plugin install claude-ads@ai-marketing-hub-claude-ads` and choose project scope, which writes it to `.claude/settings.json`; commit that change.
+- Skills: `tavily-*`, `remotion-*`, `pulumi-*`, `investor-materials`, `investor-outreach`, `founder-board`, `office-hours` (gstack, single skill; its `~/.claude/skills/gstack` helpers are not installed), `validate-idea`.
+- E-commerce skills from nexscope-ai/eCommerce-Skills (MIT): `dropshipping-product-research`, `etsy-print-on-demand`, `profit-margin-calculator-shopify`, `market-gap-analysis`, `ecommerce-landing-page`, `ecommerce-checkout-optimization`. The skills CLI skips its `ecommerce-ab-testing` because the skill has no frontmatter upstream; use claude-ads `ads-test` for test design. Founder skills write to `founder/` (git-ignored).
 
 ## Feature flags
 

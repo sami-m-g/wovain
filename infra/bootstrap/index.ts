@@ -6,6 +6,7 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { githubInfrastructure } from "./github.ts";
 import { nextInfrastructure } from "./next.ts";
 import { pullRequestPreviews } from "./preview.ts";
 import { pulumiState } from "./state.ts";
@@ -141,6 +142,20 @@ export const nextInfraServiceAccount = next.account;
 // Pull request previews of next decrypt its stack secrets too.
 new gcp.kms.CryptoKeyIAMMember("infra-preview-next-stack-secrets", {
   cryptoKeyId: next.stackSecrets.id,
+  member: pulumi.interpolate`serviceAccount:${previews.account}`,
+  role: "roles/cloudkms.cryptoKeyDecrypter",
+});
+
+// `pulumi up` of the github stack on every push to main (github.ts).
+const githubStack = githubInfrastructure({
+  githubPool: pool.name,
+  keyRing: state.stackSecrets.keyRing,
+  stateBucket: `${project}-pulumi-state`,
+});
+export const githubInfraServiceAccount = githubStack.account;
+// Pull request previews of the github stack decrypt its token too.
+new gcp.kms.CryptoKeyIAMMember("infra-preview-github-stack-secrets", {
+  cryptoKeyId: githubStack.stackSecrets.id,
   member: pulumi.interpolate`serviceAccount:${previews.account}`,
   role: "roles/cloudkms.cryptoKeyDecrypter",
 });

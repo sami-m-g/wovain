@@ -728,6 +728,20 @@
       "failed": "No pudimos sugerir tono y colores ahora.",
       "retry": "Reintentar",
       "info": "Sobre {field}"
+    },
+    "whoBuys": {
+      "title": "Quién compra esto",
+      "buyers": "Sobre todo {age}, {gender}",
+      "unknownAge": "edad desconocida",
+      "unknownGender": "género desconocido",
+      "audiences": "Les gusta:",
+      "where": "Dónde están tus compradores",
+      "affinity": "Afinidad de Qloo {value}",
+      "brands": "También compran:",
+      "source": "Según los datos de gustos de Qloo. Las marcas sirven solo para segmentar, nunca para el diseño.",
+      "loading": "Preguntando a Qloo quién compra esto…",
+      "failed": "No pudimos acceder a nuestros datos de gustos para saber quién compra esto.",
+      "retry": "Reintentar"
     }
   },
   "NotFound": {
@@ -812,6 +826,17 @@
       "7d": "7 días",
       "28d": "28 días",
       "90d": "90 días"
+    },
+    "journey": {
+      "title": "Tu primer drop",
+      "source": "Tiempo desde el registro hasta una campaña activa y un primer beneficio",
+      "liveCampaign": "Tiempo hasta la campaña activa",
+      "liveCampaignHint": "Del registro a la campaña activa. Objetivo {target, number} min",
+      "metaReview": "Espera de revisión de Meta",
+      "metaReviewHint": "De campaña activa a la primera impresión. Tiempo de Meta, no tuyo",
+      "firstProfit": "Tiempo hasta el primer beneficio",
+      "firstProfitHint": "De la primera impresión al beneficio tras el gasto en anuncios. Objetivo {target, number} min",
+      "minutes": "{value, number} min"
     },
     "updating": "Actualizando…",
     "shop": {
@@ -1416,8 +1441,7 @@
     "title": "Piloto automático",
     "lead": "Lo que wovain vio para tu marca, lo que hizo y por qué.",
     "scanNow": "Buscar ahora",
-    "scanRequested": "Búsqueda pedida. Las nuevas sugerencias aparecen aquí en un par de minutos. Puedes buscar una vez cada 6 horas.",
-    "scanFailed": "La búsqueda no empezó. Inténtalo de nuevo en un momento.",
+    "scanFailed": "El análisis no empezó.",
     "actionFailed": "No funcionó: {message}",
     "levels": {
       "suggest": "Solo sugerir",
@@ -1481,7 +1505,12 @@
       "other": "{step}"
     },
     "scans": "Búsquedas sin nada nuevo",
-    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}"
+    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}",
+    "scanning": "Analizando…",
+    "scanProgress": "Analizando, empezó hace {seconds, number} s",
+    "scanSlow": "Sigue analizando en segundo plano. Los resultados aparecerán aquí al terminar.",
+    "scanDone": "{count, plural, =0 {Análisis terminado. Nada nuevo esta vez.} one {Análisis terminado: # sugerencia nueva.} other {Análisis terminado: # sugerencias nuevas.}}",
+    "scanThrottled": "Analizaste {last}. El próximo análisis puede hacerse a partir de las {next}."
   },
   "Voice": {
     "hold": "Mantén pulsado para hablar",
@@ -1799,6 +1828,85 @@
         "EXPIRED": "Caducada",
         "DEACTIVATED": "Desactivada",
         "ARCHIVED": "Archivada"
+      }
+    },
+    "setup": {
+      "title": "Prepara tu tienda para vender",
+      "titleReady": "Tu tienda está lista para vender",
+      "show": "Ver pasos",
+      "hide": "Ocultar pasos",
+      "progress": "{done, number} de {total, number} hechos",
+      "progressLabel": "Progreso de la configuración",
+      "optional": "Opcional",
+      "copy": "Copiar {value}",
+      "copied": "Copiado.",
+      "state": {
+        "done": "(hecho)",
+        "todo": "(pendiente)",
+        "waiting": "(en espera)",
+        "check": "(por revisar)"
+      },
+      "connect": {
+        "label": "Tienda conectada",
+        "done": "Conectada como propietario o gestor de la tienda.",
+        "todo": "wovain necesita un propietario o gestor para llevar la tienda.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Revisa tu rol en Fourthwall.",
+        "action": "Reconectar Fourthwall"
+      },
+      "payouts": {
+        "label": "Pagos configurados",
+        "done": "Las ventas llegan a tu cuenta bancaria.",
+        "todo": "Termina tu cuenta de pagos en Fourthwall para recibir las ventas. Se marcará aquí cuando esté hecho.",
+        "waiting": "Fourthwall está terminando tu cuenta de pagos.",
+        "check": "Revisa tu cuenta de pagos.",
+        "action": "Configurar pagos"
+      },
+      "site_live": {
+        "label": "Tienda publicada",
+        "done": "Los compradores pueden visitarla y pedir.",
+        "todo": "Tu tienda está en «próximamente». wovain puede publicarla cuando lo confirmes.",
+        "waiting": "Fourthwall está revisando tu tienda. Solo el soporte de Fourthwall puede terminarlo.",
+        "check": "Revisa el estado de tu tienda.",
+        "support": "Contactar con el soporte de Fourthwall"
+      },
+      "shipping": {
+        "label": "Envíos activados",
+        "done": "Los compradores pueden pagar con envío.",
+        "todo": "Activa los envíos y añade un perfil de envío en Fourthwall. Se marcará aquí cuando esté hecho.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Revisa tus envíos.",
+        "action": "Configurar envíos"
+      },
+      "pixel": {
+        "label": "Píxel de Meta en tu tienda",
+        "done": "Tu píxel de Meta ve las visitas y ventas de tu tienda.",
+        "todo": "Añade tu píxel de Meta en los ajustes de Fourthwall y abre tu tienda una vez para enviar una visita de prueba. Se marcará cuando Meta la vea.",
+        "waiting": "Conecta Meta primero: wovain encuentra tu píxel allí.",
+        "check": "Revisa tu píxel.",
+        "action": "Añadir el píxel en Fourthwall",
+        "test": "Abrir tu tienda (visita de prueba)",
+        "paste": "ID del píxel para pegar:",
+        "noDataset": "Meta está conectado, pero wovain no encontró un único píxel en tu cuenta publicitaria. Crea o elige uno en la configuración de Meta.",
+        "connectMeta": "Conectar Meta"
+      },
+      "domain": {
+        "label": "Dominio propio",
+        "done": "Tu dominio está conectado.",
+        "todo": "Fourthwall aún está verificando los registros DNS de tu dominio.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Tu tienda vende en su dirección de Fourthwall. Un dominio propio es opcional.",
+        "action": "Ajustes de dominio",
+        "connected": "{domain} está conectado.",
+        "pending": "{domain}: {count, plural, one {# registro DNS} other {# registros DNS}} sin verificar."
+      },
+      "policies": {
+        "label": "Políticas de devoluciones, envíos y privacidad",
+        "done": "Las políticas están listas.",
+        "todo": "Añade tus políticas en Fourthwall.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Fourthwall añade políticas por defecto. Revísalas para que reflejen cómo vendes.",
+        "action": "Revisar políticas"
       }
     }
   },

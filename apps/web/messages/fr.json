@@ -728,6 +728,20 @@
       "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
       "retry": "Réessayer",
       "info": "À propos de {field}"
+    },
+    "whoBuys": {
+      "title": "Qui achète ça",
+      "buyers": "Surtout {age}, {gender}",
+      "unknownAge": "âge inconnu",
+      "unknownGender": "genre inconnu",
+      "audiences": "Centres d'intérêt :",
+      "where": "Où sont vos acheteurs",
+      "affinity": "Affinité Qloo {value}",
+      "brands": "Ils achètent aussi :",
+      "source": "D'après les données de goûts de Qloo. Les marques servent au ciblage, jamais au design.",
+      "loading": "Qloo cherche qui achète ça…",
+      "failed": "Nous n'avons pas pu joindre nos données de goûts pour dire qui achète ça.",
+      "retry": "Réessayer"
     }
   },
   "NotFound": {
@@ -812,6 +826,17 @@
       "7d": "7 jours",
       "28d": "28 jours",
       "90d": "90 jours"
+    },
+    "journey": {
+      "title": "Votre premier drop",
+      "source": "Délai de l'inscription à une campagne en ligne, puis à un premier bénéfice",
+      "liveCampaign": "Délai avant la campagne en ligne",
+      "liveCampaignHint": "De l'inscription à la campagne en ligne. Objectif {target, number} min",
+      "metaReview": "Attente de la revue Meta",
+      "metaReviewHint": "De la campagne en ligne à la première impression. Délai de Meta, pas le vôtre",
+      "firstProfit": "Délai avant le premier bénéfice",
+      "firstProfitHint": "De la première impression au bénéfice après les dépenses publicitaires. Objectif {target, number} min",
+      "minutes": "{value, number} min"
     },
     "updating": "Mise à jour…",
     "shop": {
@@ -1416,8 +1441,7 @@
     "title": "Pilote automatique",
     "lead": "Ce que wovain a repéré pour votre marque, ce qu'il a fait et pourquoi.",
     "scanNow": "Analyser maintenant",
-    "scanRequested": "Analyse demandée. Les nouvelles suggestions arrivent ici d'ici une ou deux minutes. Vous pouvez analyser une fois toutes les 6 heures.",
-    "scanFailed": "L'analyse n'a pas démarré. Réessayez dans un instant.",
+    "scanFailed": "L'analyse n'a pas démarré.",
     "actionFailed": "Ça n'a pas marché : {message}",
     "levels": {
       "suggest": "Suggérer seulement",
@@ -1481,7 +1505,12 @@
       "other": "{step}"
     },
     "scans": "Analyses sans nouveauté",
-    "scanNothing": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité, déjà suggérée cette semaine.} other {# recherches ont trouvé de l'actualité, déjà suggérée cette semaine.}}"
+    "scanNothing": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité, déjà suggérée cette semaine.} other {# recherches ont trouvé de l'actualité, déjà suggérée cette semaine.}}",
+    "scanning": "Analyse…",
+    "scanProgress": "Analyse en cours, lancée il y a {seconds, number} s",
+    "scanSlow": "L'analyse continue en arrière-plan. Les résultats s'afficheront ici une fois terminée.",
+    "scanDone": "{count, plural, =0 {Analyse terminée. Rien de nouveau cette fois.} one {Analyse terminée : # nouvelle suggestion.} other {Analyse terminée : # nouvelles suggestions.}}",
+    "scanThrottled": "Vous avez lancé une analyse {last}. La prochaine peut partir à partir de {next}."
   },
   "Voice": {
     "hold": "Maintenez pour parler",
@@ -1799,6 +1828,85 @@
         "EXPIRED": "Expirée",
         "DEACTIVATED": "Désactivée",
         "ARCHIVED": "Archivée"
+      }
+    },
+    "setup": {
+      "title": "Préparez votre boutique à vendre",
+      "titleReady": "Votre boutique est prête à vendre",
+      "show": "Voir les étapes",
+      "hide": "Masquer les étapes",
+      "progress": "{done, number} sur {total, number} faites",
+      "progressLabel": "Avancement de la configuration",
+      "optional": "Facultatif",
+      "copy": "Copier {value}",
+      "copied": "Copié.",
+      "state": {
+        "done": "(fait)",
+        "todo": "(à faire)",
+        "waiting": "(en attente)",
+        "check": "(à vérifier)"
+      },
+      "connect": {
+        "label": "Boutique connectée",
+        "done": "Connectée en tant que propriétaire ou gérant de la boutique.",
+        "todo": "wovain a besoin d'un propriétaire ou d'un gérant pour gérer la boutique.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Vérifiez votre rôle dans Fourthwall.",
+        "action": "Reconnecter Fourthwall"
+      },
+      "payouts": {
+        "label": "Versements configurés",
+        "done": "Les ventes arrivent sur votre compte bancaire.",
+        "todo": "Terminez votre compte de versement dans Fourthwall pour recevoir vos ventes. L'étape se coche ici une fois faite.",
+        "waiting": "Fourthwall finalise votre compte de versement.",
+        "check": "Vérifiez votre compte de versement.",
+        "action": "Configurer les versements"
+      },
+      "site_live": {
+        "label": "Boutique en ligne",
+        "done": "Les acheteurs peuvent la visiter et commander.",
+        "todo": "Votre boutique est en « bientôt disponible ». wovain peut la mettre en ligne dès que vous confirmez.",
+        "waiting": "Fourthwall examine votre boutique. Seul le support Fourthwall peut terminer cette étape.",
+        "check": "Vérifiez le statut de votre boutique.",
+        "support": "Contacter le support Fourthwall"
+      },
+      "shipping": {
+        "label": "Livraison activée",
+        "done": "Les acheteurs peuvent payer avec livraison.",
+        "todo": "Activez la livraison et ajoutez un profil de livraison dans Fourthwall. L'étape se coche ici une fois faite.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Vérifiez votre livraison.",
+        "action": "Configurer la livraison"
+      },
+      "pixel": {
+        "label": "Pixel Meta sur votre boutique",
+        "done": "Votre pixel Meta voit les visites et les ventes de votre boutique.",
+        "todo": "Ajoutez votre pixel Meta dans les réglages Fourthwall, puis ouvrez votre boutique une fois pour envoyer une visite test. L'étape se coche quand Meta la voit.",
+        "waiting": "Connectez d'abord Meta : wovain y trouve votre pixel.",
+        "check": "Vérifiez votre pixel.",
+        "action": "Ajouter le pixel dans Fourthwall",
+        "test": "Ouvrir votre boutique (visite test)",
+        "paste": "ID du pixel à coller :",
+        "noDataset": "Meta est connecté, mais wovain n'a pas trouvé un seul pixel sur votre compte publicitaire. Créez-en ou choisissez-en un dans la configuration Meta.",
+        "connectMeta": "Connecter Meta"
+      },
+      "domain": {
+        "label": "Domaine personnalisé",
+        "done": "Votre domaine est connecté.",
+        "todo": "Fourthwall vérifie encore les enregistrements DNS de votre domaine.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Votre boutique vend sur son adresse Fourthwall. Un domaine personnalisé est facultatif.",
+        "action": "Réglages du domaine",
+        "connected": "{domain} est connecté.",
+        "pending": "{domain} : {count, plural, one {# enregistrement DNS non vérifié} other {# enregistrements DNS non vérifiés}}."
+      },
+      "policies": {
+        "label": "Politiques de retour, de livraison et de confidentialité",
+        "done": "Les politiques sont en place.",
+        "todo": "Ajoutez vos politiques dans Fourthwall.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Fourthwall ajoute des politiques par défaut. Relisez-les pour qu'elles correspondent à votre façon de vendre.",
+        "action": "Relire les politiques"
       }
     }
   },

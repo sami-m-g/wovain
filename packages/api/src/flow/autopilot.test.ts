@@ -29,6 +29,7 @@ import {
   dismissSuggestion,
   executeRunStart,
   finishRunStart,
+  requestScan,
   runEstimate,
   saveScanSuggestion,
   scanBrand,
@@ -47,6 +48,7 @@ const MIGRATIONS = fileURLToPath(
 );
 const USER_ID = "user_1";
 const NOW = new Date("2026-10-28T12:00:00Z");
+const HOUR_MS = 3_600_000;
 
 const hit = (title: string, url: string, score = 0.8): NewsHit => ({
   publishedDate: "2026-10-27T10:00:00Z",
@@ -212,6 +214,33 @@ describe("autopilot triggers on Postgres", () => {
     expect(log.suggestions).toHaveLength(1);
     expect(log.scans).toHaveLength(1);
     expect(log.scans[0]?.output).toMatchObject({ repeats: ["gorpcore"] });
+  });
+
+  it("says when the next manual scan can run instead of dropping it", async () => {
+    await scanBrand(ctx.actor, "manual", NOW);
+    const log = await autopilotLog(ctx.actor);
+    expect(log.lastScanAt).not.toBeNull();
+    const scanned = new Date(log.lastScanAt ?? 0);
+    ctx.sent.length = 0;
+
+    const soon = await requestScan(
+      ctx.actor,
+      new Date(scanned.getTime() + HOUR_MS)
+    );
+    expect(soon).toMatchObject({
+      nextAt: new Date(scanned.getTime() + 6 * HOUR_MS).toISOString(),
+      requested: false,
+    });
+    expect(ctx.sent).toHaveLength(0);
+
+    const later = await requestScan(
+      ctx.actor,
+      new Date(scanned.getTime() + 7 * HOUR_MS)
+    );
+    expect(later.requested).toBe(true);
+    expect(ctx.sent.map((event) => event.name)).toEqual([
+      "wovain/autopilot.scan",
+    ]);
   });
 
   const suggest = async () => {
