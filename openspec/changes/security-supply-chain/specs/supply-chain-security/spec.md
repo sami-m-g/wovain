@@ -50,12 +50,17 @@ Publishing a GitHub Release SHALL attach a CycloneDX SBOM.
 
 ### Requirement: Secrets are scanned in commits
 
-`ggshield` SHALL scan the commits of every push and same-repository pull request, ignoring the vendored skill directories. Its API key SHALL be an Actions secret declared in `infra/github.ts` from a stack secret.
+The GitGuardian GitHub App SHALL scan the commits of every push and pull request. A false positive SHALL be ignored only through the `gitguardian-ignore` workflow, with a reason and a justification that its run records. The workflow's GitGuardian token SHALL have only the `incidents:write` scope and SHALL be an Actions secret declared in `infra/github.ts` from a stack secret.
 
 #### Scenario: Secret committed
 
 - **WHEN** a commit contains a detectable secret
-- **THEN** the `ggshield` check fails
+- **THEN** the `GitGuardian Security Checks` check fails
+
+#### Scenario: Placeholder flagged
+
+- **WHEN** GitGuardian flags a placeholder that is not a real secret
+- **THEN** a maintainer runs `gitguardian-ignore` on main with the incident id, a reason and a justification, and the run summary records who ignored it and why
 
 ### Requirement: Vulnerabilities are reported privately
 
