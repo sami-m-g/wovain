@@ -2297,6 +2297,7 @@
     "dropped": {
       "no_qloo_evidence": "No Qloo evidence",
       "no_demand_proof": "No proof that it sells",
+      "demand_unknown": "Demand unknown",
       "no_competition_read": "The competition couldn't be read",
       "saturated": "Too crowded: too many similar listings or advertisers",
       "no_title": "No title backed by the evidence"
@@ -2307,7 +2308,15 @@
       "crowded": "Crowded"
     },
     "sameBuyers": "Same buyers as your brief",
-    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence"
+    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence",
+    "caution": {
+      "demand_unknown": "Unconfirmed: the demand check couldn't run, so whether it sells is unknown.",
+      "no_demand_proof": "Unconfirmed: no bestseller, reviews or long-running ads found for it yet.",
+      "no_competition_read": "Unconfirmed: the listings check couldn't run, so the competition is unknown.",
+      "saturated": "Crowded: many similar listings or advertisers already sell it."
+    },
+    "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
+    "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:"
   },
   "Alerts": {
     "title": "Alerts",

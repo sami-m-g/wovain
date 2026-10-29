@@ -59,6 +59,15 @@
 - Code, issues and pull requests live on GitHub (`sami-m-g/wovain`). CI is GitHub Actions.
 - Work on a branch and open a pull request against `main`. The PR says `Closes #<issue>`.
 
+## CodeRabbit review loop
+
+- CodeRabbit's approval is required. Its limit is the cost: PR reviews are rate limited per developer per hour (OSS plan: 1-10 by star count; [rate limits](https://docs.coderabbit.ai/management/plans#rate-limits)), and every agent shares one developer. Each review, including each incremental review of a push, uses one; a comment "Your next included review will be available in N minutes" means the limit was hit. A blocked push costs none.
+- Keep a PR under about 400 changed lines. Review time grows with the diff, and a small PR leaves fewer comments to fix.
+- Fix all comments in one commit and push once. Do not push a commit per comment: each push is a review.
+- Resolve each thread you fixed (reply "Fixed in <sha>" and resolve), then comment `@coderabbitai review` once on the new head. CodeRabbit approves once its threads are resolved and the head is reviewed.
+- No review on the head commit after 10 minutes: comment `@coderabbitai full review`. After 10 more, read the PR for a rate-limit comment and wait the time it states. Do not re-ping inside the wait.
+- A stale CHANGES_REQUESTED stays until CodeRabbit reviews again: its comments are fixed and resolved, so the next review on the head approves.
+
 ## Tooling (project scope)
 
 - Declared in `.mcp.json`, `.claude/settings.json` and `skills-lock.json`; never install at user or global scope.
