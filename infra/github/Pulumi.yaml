@@ -1,0 +1,16 @@
+# The GitHub repository sami-m-g/wovain: its settings, rulesets, label and
+# repository secret (infra/README.md, "The github stack"). Its own stack,
+# applied on every push to main with only a GitHub token, so changing how
+# pull requests merge never waits on production's frozen stack. Runs on
+# infra/'s packages (`pnpm run infra:install`).
+name: wovain-github
+description: The GitHub repository sami-m-g/wovain
+# Explicit, so the language host never falls back to infra/package.json's main.
+main: index.ts
+runtime:
+  name: nodejs
+  options:
+    typescript: false
+    packagemanager: pnpm
+backend:
+  url: gs://wovain-pulumi-state

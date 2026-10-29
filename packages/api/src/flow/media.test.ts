@@ -38,6 +38,7 @@ import {
   requestCampaignActivation,
   syncCampaignStatus,
 } from "./media";
+import { QLOO_BRAND, qlooAudienceCore } from "./qloo-audience-fixture";
 
 // Live media buying against real Postgres (PGlite, with the app's
 // migrations) and a fake Meta Ads MCP server in draft mode: staging, the
@@ -164,6 +165,7 @@ const setup = async (
       isOn: async (name: string) => await Promise.resolve(flags.includes(name)),
     },
     nemotron: ask,
+    ...qlooAudienceCore,
     upstream: {
       session: async (
         provider: ProviderId,
@@ -292,6 +294,7 @@ describe("live media buying", () => {
     productId = await seedProduct(ctx.db);
     await ctx.db.insert(brandProfile).values({
       demographics: { ageMax: 34, ageMin: 22, genders: ["female"] },
+      qlooEntities: [QLOO_BRAND],
       userId: USER_ID,
     });
   });
@@ -373,7 +376,10 @@ describe("live media buying", () => {
     const activations = meta.calls.length;
     await executeMediaApproval(ctx.actor, asked.id);
     expect(meta.calls).toHaveLength(activations);
-    const traces = await ctx.db.select().from(decisionTrace);
+    const traces = await ctx.db
+      .select()
+      .from(decisionTrace)
+      .where(eq(decisionTrace.agent, "media_executor"));
     expect(traces.map((trace) => [trace.agent, trace.step, trace.ok])).toEqual([
       ["media_executor", "activate", true],
     ]);
@@ -486,6 +492,9 @@ describe("live media buying", () => {
     const flaky = draftMeta({ readBackFails: true });
     const own = await setup(flaky.call);
     const ownProduct = await seedProduct(own.db);
+    await own.db
+      .insert(brandProfile)
+      .values({ qlooEntities: [QLOO_BRAND], userId: USER_ID });
     await setAutonomy(own.actor, CAPS);
     const staged = await createProductCampaign(own.actor, {
       countries: ["US"],

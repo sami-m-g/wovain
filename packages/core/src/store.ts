@@ -30,6 +30,8 @@ export interface ShopFacts {
   baseUrl: string | undefined;
   // The shop's name, as buyers see it.
   name: string | undefined;
+  // The hosts the storefront answers on, lower-case.
+  hosts: string[];
 }
 
 export const READINESS_CHECKS = [
@@ -84,7 +86,12 @@ export const evaluateReadiness = (facts: ShopFacts): Readiness => {
 
 const shopSchema = z.object({
   baseUrl: z.string().optional(),
+  customDomains: z
+    .array(z.union([z.string(), z.object({ domain: z.string() })]))
+    .optional(),
+  internalDomain: z.string().optional(),
   name: z.string().optional(),
+  primaryDomain: z.string().optional(),
   status: z.string(),
   verificationRestrictions: z.array(z.string()).default([]),
 });
@@ -98,6 +105,31 @@ const shippingSchema = z.object({
 const payoutSchema = z.object({
   status: z.enum(["INACTIVE", "IN_PROGRESS", "ACTIVE"]),
 });
+
+// Every host the storefront answers on (its Fourthwall subdomain and any
+// custom domain), lower-case: what the Meta pixel's events must come from.
+const shopHosts = (site: z.infer<typeof shopSchema> | undefined) => {
+  if (site === undefined) {
+    return [];
+  }
+  const names = [
+    site.primaryDomain,
+    site.internalDomain,
+    ...(site.customDomains ?? []).map((each) =>
+      typeof each === "string" ? each : each.domain
+    ),
+  ];
+  if (site.baseUrl !== undefined && URL.canParse(site.baseUrl)) {
+    names.push(new URL(site.baseUrl).host);
+  }
+  return [
+    ...new Set(
+      names.flatMap((name) =>
+        name === undefined || name === "" ? [] : [name.toLowerCase()]
+      )
+    ),
+  ];
+};
 
 // Reads the four replies the readiness check needs, in parallel.
 export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
@@ -115,6 +147,7 @@ export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
     baseUrl: site?.baseUrl,
     enabledShippingProfiles:
       ship?.shippingProfiles.filter((profile) => profile.enabled).length ?? 0,
+    hosts: shopHosts(site),
     name: site?.name,
     payoutStatus: pay?.status,
     roles: roles?.groups ?? [],

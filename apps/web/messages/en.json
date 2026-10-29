@@ -162,6 +162,10 @@
       {
         "question": "Who owns the designs?",
         "answer": "You own your briefs and the designs you approve. wovain screens drafts for names and trademarks, but you stay responsible for what you publish."
+      },
+      {
+        "question": "Who sees my ads?",
+        "answer": "People who love what your label loves. Qloo picks that audience from the brands in your profile, and every ad is written for them. If wovain can't find that audience, it makes no ads and tells you what to add."
       }
     ],
     "heroCta": "Start a drop",
@@ -823,6 +827,17 @@
       "90d": "90 days"
     },
     "updating": "Updating…",
+    "journey": {
+      "title": "Your first drop",
+      "source": "Time from sign-up to a live campaign, then to a first profit",
+      "liveCampaign": "Time to live campaign",
+      "liveCampaignHint": "Sign-up to campaign live. Target {target, number} min",
+      "metaReview": "Meta review wait",
+      "metaReviewHint": "Campaign live to first impression. Meta's time, not yours",
+      "firstProfit": "Time to first profit",
+      "firstProfitHint": "First impression to profit after ad spend. Target {target, number} min",
+      "minutes": "{value, number} min"
+    },
     "shop": {
       "title": "Shop",
       "source": "Fourthwall reports, this period",
@@ -1086,7 +1101,7 @@
     "faq": {
       "credit": {
         "question": "What is a credit?",
-        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 10 credits. If a step fails, its credits come back."
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 5, a design takes 4, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 18 credits. If a step fails, its credits come back."
       },
       "yours": {
         "question": "What do I pay outside wovain?",
@@ -1425,8 +1440,7 @@
     "title": "Autopilot",
     "lead": "What wovain noticed for your brand, what it did, and why.",
     "scanNow": "Scan now",
-    "scanRequested": "Scan requested. New suggestions show up here in a minute or two. You can scan once every 6 hours.",
-    "scanFailed": "The scan didn't start. Try again in a moment.",
+    "scanFailed": "The scan didn't start.",
     "actionFailed": "That didn't work: {message}",
     "levels": {
       "suggest": "Suggest only",
@@ -1490,7 +1504,12 @@
       "other": "{step}"
     },
     "scans": "Scans with nothing new",
-    "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}"
+    "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}",
+    "scanning": "Scanning…",
+    "scanProgress": "Scanning, started {seconds, number} s ago",
+    "scanSlow": "Still scanning in the background. Results show up here when it's done.",
+    "scanDone": "{count, plural, =0 {Scan finished. Nothing new this time.} one {Scan finished: # new suggestion.} other {Scan finished: # new suggestions.}}",
+    "scanThrottled": "You scanned {last}. The next scan can run from {next}."
   },
   "Voice": {
     "hold": "Hold to talk",
@@ -1827,6 +1846,85 @@
         "EXPIRED": "Expired",
         "DEACTIVATED": "Deactivated",
         "ARCHIVED": "Archived"
+      }
+    },
+    "setup": {
+      "title": "Get your shop ready to sell",
+      "titleReady": "Your shop is ready to sell",
+      "show": "Show steps",
+      "hide": "Hide steps",
+      "progress": "{done, number} of {total, number} done",
+      "progressLabel": "Setup progress",
+      "optional": "Optional",
+      "copy": "Copy {value}",
+      "copied": "Copied.",
+      "state": {
+        "done": "(done)",
+        "todo": "(to do)",
+        "waiting": "(waiting)",
+        "check": "(to review)"
+      },
+      "connect": {
+        "label": "Shop connected",
+        "done": "Connected as the shop's owner or a manager.",
+        "todo": "wovain needs an owner or manager to run the shop.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Check your Fourthwall role.",
+        "action": "Reconnect Fourthwall"
+      },
+      "payouts": {
+        "label": "Payouts set up",
+        "done": "Sales reach your bank account.",
+        "todo": "Finish your payout account in Fourthwall so sales reach you. This ticks off here once it's done.",
+        "waiting": "Fourthwall is finishing your payout account.",
+        "check": "Check your payout account.",
+        "action": "Set up payouts"
+      },
+      "site_live": {
+        "label": "Shop is live",
+        "done": "Buyers can visit and order.",
+        "todo": "Your shop is coming soon. wovain can take it live once you confirm.",
+        "waiting": "Fourthwall is reviewing your shop. Only Fourthwall support can finish it.",
+        "check": "Check your site status.",
+        "support": "Contact Fourthwall support"
+      },
+      "shipping": {
+        "label": "Shipping is on",
+        "done": "Buyers can check out with shipping.",
+        "todo": "Turn on shipping and add a shipping profile in Fourthwall. This ticks off here once it's done.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Check your shipping.",
+        "action": "Set up shipping"
+      },
+      "pixel": {
+        "label": "Meta pixel on your shop",
+        "done": "Your Meta pixel sees visits and sales from your shop.",
+        "todo": "Add your Meta pixel in Fourthwall's settings, then open your storefront once to send a test visit. This ticks off when Meta sees it.",
+        "waiting": "Connect Meta first: wovain finds your pixel there.",
+        "check": "Check your pixel.",
+        "action": "Add the pixel in Fourthwall",
+        "test": "Open your storefront (test visit)",
+        "paste": "Pixel ID to paste:",
+        "noDataset": "Meta is connected, but wovain didn't find exactly one pixel on your ad account. Create or pick one in Meta setup.",
+        "connectMeta": "Connect Meta"
+      },
+      "domain": {
+        "label": "Custom domain",
+        "done": "Your domain is connected.",
+        "todo": "Fourthwall is still verifying your domain's DNS records.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Your shop sells on its Fourthwall address. A custom domain is optional.",
+        "action": "Domain settings",
+        "connected": "{domain} is connected.",
+        "pending": "{domain}: {count, plural, one {# DNS record} other {# DNS records}} not verified yet."
+      },
+      "policies": {
+        "label": "Returns, shipping and privacy policies",
+        "done": "Policies are in place.",
+        "todo": "Add your policies in Fourthwall.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Fourthwall adds default policies. Review them so they match how you sell.",
+        "action": "Review policies"
       }
     }
   },

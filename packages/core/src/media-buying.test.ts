@@ -154,6 +154,7 @@ describe("stagePausedCampaign with media buying", () => {
     name: "wovain · Reading Cat",
     pageId: "p_1",
     tag: "w-test",
+    targeting: { geo_locations: { countries: ["US"] } },
   };
 
   it("optimizes for purchases on the pixel and tags each link", async () => {

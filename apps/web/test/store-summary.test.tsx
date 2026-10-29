@@ -4,8 +4,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { StoreDashboard } from "@/components/store/store-dashboard";
+import { StoreSetup } from "@/components/store/store-setup";
 import { StoreSummary } from "@/components/store/store-summary";
-import type { StoreReadiness } from "@/lib/flow-client";
+import type { StoreReadiness, StoreSetup as Setup } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 import messages from "../messages/en.json";
@@ -130,5 +131,40 @@ describe("StoreDashboard", () => {
     expect(html).toContain("Connect Fourthwall to open your shop here");
     expect(html).not.toContain("Products</button>");
     expect(html).not.toContain('role="alert"');
+  });
+});
+
+const SETUP: Setup = {
+  domain: null,
+  metaConnected: true,
+  pixel: { datasetId: "939178269202011", firing: false },
+  shop: {
+    baseUrl: "https://atelier.fourthwall.com",
+    hosts: ["atelier.fourthwall.com"],
+    name: "Atelier",
+    siteStatus: "COMING_SOON",
+  },
+  steps: [
+    { how: "none", id: "connect", required: true, state: "done" },
+    { how: "link", id: "payouts", required: true, state: "todo" },
+    { how: "do_it", id: "site_live", required: true, state: "todo" },
+    { how: "none", id: "shipping", required: true, state: "done" },
+    { how: "link", id: "pixel", required: true, state: "todo" },
+    { how: "link", id: "domain", required: false, state: "check" },
+    { how: "link", id: "policies", required: false, state: "check" },
+  ],
+};
+
+describe("StoreSetup", () => {
+  it("lists each step with its way to get it done", () => {
+    const html = render(<StoreSetup />, (client) => {
+      client.setQueryData(orpc.store.setup.queryKey(), SETUP);
+    });
+    expect(html).toContain("Get your shop ready to sell");
+    expect(html).toContain("2 of 5 done");
+    expect(html).toContain("Go live");
+    expect(html).toContain("Set up payouts");
+    expect(html).toContain("939178269202011");
+    expect(html).toContain("Open your storefront (test visit)");
   });
 });
