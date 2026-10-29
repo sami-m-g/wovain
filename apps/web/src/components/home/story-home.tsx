@@ -44,7 +44,7 @@ export const NextAction = () => {
   // The drop in progress, else the latest one.
   const run =
     runs.data?.find((each) => OPEN.has(each.status)) ?? runs.data?.[0];
-  const { facts, ready, settled, store } = useLaunchFacts(run?.id);
+  const { facts, problem, ready, settled, store } = useLaunchFacts(run?.id);
 
   // Wait for every fact, so the card never shows an earlier step first.
   if (runs.isPending || !settled) {
@@ -52,6 +52,9 @@ export const NextAction = () => {
   }
   if (runs.error) {
     return <FlowProblemNotice problem={describeProblem(runs.error)} />;
+  }
+  if (problem !== undefined) {
+    return <FlowProblemNotice problem={describeProblem(problem)} />;
   }
   // Without the onboarding steps (their flag off), what sells now leads.
   if (ready === undefined) {
