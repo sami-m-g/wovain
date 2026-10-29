@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./locales": "./src/locales.ts",
+    "./unsubscribe": "./src/unsubscribe.ts",
     "./*": "./src/*.tsx"
   },
   "scripts": {
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/negotiator": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",

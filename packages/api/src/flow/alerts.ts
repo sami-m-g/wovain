@@ -11,6 +11,7 @@ import {
   device,
   telegramChat,
 } from "@wovain/db/schema/autonomy";
+import { emailOptOut } from "@wovain/db/schema/seller";
 import { pickLocale } from "@wovain/email/emails";
 import type { Locale } from "@wovain/email/locales";
 import { and, count, eq, gt } from "drizzle-orm";
@@ -266,6 +267,14 @@ const sendOn = async (
       .where(eq(user.id, actor.userId));
     if (account === undefined) {
       return { reason: "no account", status: "skipped" };
+    }
+    // The merchant unsubscribed from wovain's emails (/api/unsubscribe).
+    const [optedOut] = await actor.db
+      .select({ email: emailOptOut.email })
+      .from(emailOptOut)
+      .where(eq(emailOptOut.email, account.email));
+    if (optedOut !== undefined) {
+      return { reason: "unsubscribed", status: "skipped" };
     }
     await actor.mailer({
       locale: account.locale,

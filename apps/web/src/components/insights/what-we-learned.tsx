@@ -15,6 +15,7 @@ import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { OutcomeWhy } from "@/components/insights/outcome-why";
 import type { Learned } from "@/lib/flow-client";
 import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
@@ -88,6 +89,35 @@ const LearningList = ({
     )}
   </FramePanel>
 );
+
+// The angles the merchant's own designs proved or disproved, each with why.
+const Angles = ({ learned }: { learned: Learned }) => {
+  const t = useTranslations("Insights.learned");
+  return (
+    <FramePanel className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-medium">{t("anglesTitle")}</h3>
+        <p className="text-muted-foreground text-xs">
+          {t("anglesLead", {
+            designs: learned.trackRecord.designs,
+            wins: learned.trackRecord.wins,
+          })}
+        </p>
+      </div>
+      {learned.angles.length > 0 ? (
+        <ul className="flex flex-col gap-1.5">
+          {learned.angles.map((why) => (
+            <li key={`${why.kind}:${why.value}`}>
+              <OutcomeWhy why={why} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground text-sm">{t("anglesNone")}</p>
+      )}
+    </FramePanel>
+  );
+};
 
 const Weights = ({ learned }: { learned: Learned }) => {
   const t = useTranslations("Insights.learned");
@@ -247,6 +277,7 @@ export const WhatWeLearned = () => {
               title={t("unsold")}
             />
           </div>
+          <Angles learned={shown} />
           <Weights learned={shown} />
         </div>
       )}

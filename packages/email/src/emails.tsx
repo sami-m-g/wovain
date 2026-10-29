@@ -7,6 +7,7 @@ import {
   Heading,
   Html,
   Img,
+  Link,
   Preview,
   Text,
 } from "@react-email/components";
@@ -36,6 +37,11 @@ export const pickLocale = (value?: string | null): Locale => {
 // The statuses a run emails the merchant about: every one but "running".
 type RunStatus = Exclude<RunState, "running">;
 
+// Verification and reset email is essential: it carries no unsubscribe link.
+// Run updates and alerts are not.
+export const isEssential = (message: Message) =>
+  message.kind === "reset" || message.kind === "verify";
+
 export type Message =
   | { kind: "reset" | "verify"; url: string }
   | { kind: "run"; seed: string; status: RunStatus; url: string }
@@ -52,6 +58,7 @@ export type Message =
 interface AlertCopy {
   action: string;
   footer: string;
+  unsubscribe: string;
   heading: Record<AlertType, string>;
 }
 
@@ -66,7 +73,10 @@ const COPY: Record<
   {
     alert: AlertCopy;
     ignore: string;
+    // Before the link as plain text, for a mail client that blocks buttons.
+    paste: string;
     reset: Copy;
+    unsubscribe: string;
     run: Record<RunStatus, (seed: string) => Copy>;
     verify: Copy;
   }
@@ -84,8 +94,10 @@ const COPY: Record<
         scale_request: "A product is selling",
         updates: "News from wovain",
       },
+      unsubscribe: "Unsubscribe from wovain's emails",
     },
     ignore: "If you didn't ask for this, you can ignore this email.",
+    paste: "If the button doesn't work, open this link:",
     reset: {
       action: "Reset password",
       body: "Choose a new password for your wovain account. The link works for one hour.",
@@ -108,6 +120,7 @@ const COPY: Record<
         heading: "Your run stopped",
       }),
     },
+    unsubscribe: "Unsubscribe from run updates",
     verify: {
       action: "Verify email",
       body: "Confirm this address to finish setting up your wovain account.",
@@ -127,8 +140,10 @@ const COPY: Record<
         scale_request: "Un producto se está vendiendo",
         updates: "Novedades de wovain",
       },
+      unsubscribe: "Cancelar los correos de wovain",
     },
     ignore: "Si no lo pediste, puedes ignorar este correo.",
+    paste: "Si el botón no funciona, abre este enlace:",
     reset: {
       action: "Restablecer contraseña",
       body: "Elige una nueva contraseña para tu cuenta de wovain. El enlace es válido durante una hora.",
@@ -151,6 +166,7 @@ const COPY: Record<
         heading: "Tu ejecución se detuvo",
       }),
     },
+    unsubscribe: "Cancelar las notificaciones de ejecuciones",
     verify: {
       action: "Verificar correo",
       body: "Confirma esta dirección para terminar de configurar tu cuenta de wovain.",
@@ -170,9 +186,11 @@ const COPY: Record<
         scale_request: "Un produit se vend",
         updates: "Du nouveau sur wovain",
       },
+      unsubscribe: "Se désabonner des e-mails de wovain",
     },
     ignore:
       "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
+    paste: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
     reset: {
       action: "Réinitialiser le mot de passe",
       body: "Choisissez un nouveau mot de passe pour votre compte wovain. Le lien est valable une heure.",
@@ -195,6 +213,7 @@ const COPY: Record<
         heading: "Votre exécution s'est arrêtée",
       }),
     },
+    unsubscribe: "Se désabonner des notifications d'exécution",
     verify: {
       action: "Vérifier l'e-mail",
       body: "Confirmez cette adresse pour finir de configurer votre compte wovain.",
@@ -221,12 +240,16 @@ const Layout = ({
   footer,
   locale,
   logoUrl,
+  paste,
+  unsubscribe,
   url,
 }: {
   copy: Copy;
   footer: string | undefined;
   locale: Locale;
   logoUrl: string | undefined;
+  paste: string;
+  unsubscribe: { label: string; url: string } | undefined;
   url: string;
 }) => (
   <Html lang={locale}>
@@ -264,8 +287,16 @@ const Layout = ({
         >
           {copy.action}
         </Button>
+        <Text style={{ color: BRAND.muted, fontSize: 12 }}>
+          {paste} <Link href={url}>{url}</Link>
+        </Text>
         {footer !== undefined && (
           <Text style={{ color: BRAND.muted, fontSize: 12 }}>{footer}</Text>
+        )}
+        {unsubscribe === undefined ? null : (
+          <Text style={{ color: BRAND.muted, fontSize: 12 }}>
+            <Link href={unsubscribe.url}>{unsubscribe.label}</Link>
+          </Text>
         )}
       </Container>
     </Body>
@@ -274,7 +305,13 @@ const Layout = ({
 
 // The subject and the email itself, in the merchant's locale.
 // `siteUrl` makes the logo header absolute; without it the email has no logo.
-export const compose = (message: Message, locale: Locale, siteUrl?: string) => {
+// `unsubscribeUrl` adds the unsubscribe link to a non-essential email.
+export const compose = (
+  message: Message,
+  locale: Locale,
+  siteUrl?: string,
+  unsubscribeUrl?: string
+) => {
   const copy = COPY[locale];
   if (message.kind === "alert") {
     const heading = copy.alert.heading[message.alert];
@@ -290,6 +327,12 @@ export const compose = (message: Message, locale: Locale, siteUrl?: string) => {
           locale={locale}
           logoUrl={
             siteUrl === undefined ? undefined : new URL(LOGO.path, siteUrl).href
+          }
+          paste={copy.paste}
+          unsubscribe={
+            unsubscribeUrl === undefined
+              ? undefined
+              : { label: copy.alert.unsubscribe, url: unsubscribeUrl }
           }
           url={message.url}
         />
@@ -309,6 +352,12 @@ export const compose = (message: Message, locale: Locale, siteUrl?: string) => {
         locale={locale}
         logoUrl={
           siteUrl === undefined ? undefined : new URL(LOGO.path, siteUrl).href
+        }
+        paste={copy.paste}
+        unsubscribe={
+          unsubscribeUrl === undefined
+            ? undefined
+            : { label: copy.unsubscribe, url: unsubscribeUrl }
         }
         url={message.url}
       />

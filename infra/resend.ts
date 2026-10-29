@@ -242,3 +242,108 @@ export class ResendApiKey extends pulumi.dynamic.Resource {
     );
   }
 }
+
+interface TrackingInputs {
+  apiKey: string;
+  clickTracking: boolean;
+  domainId: string;
+  openTracking: boolean;
+}
+
+interface TrackingOutputs extends TrackingInputs {
+  // What the domain had before this resource set it, restored on delete.
+  previous: { clickTracking: boolean; openTracking: boolean };
+}
+
+// A fixed host; the id comes from Pulumi state and is encoded.
+const domainUrl = (domainId: string) =>
+  `https://api.resend.com/domains/${encodeURIComponent(domainId)}`;
+
+const setTracking = async (
+  inputs: Pick<
+    TrackingInputs,
+    "apiKey" | "clickTracking" | "domainId" | "openTracking"
+  >
+) => {
+  // nosemgrep
+  const response = await fetch(domainUrl(inputs.domainId), {
+    body: JSON.stringify({
+      click_tracking: inputs.clickTracking,
+      open_tracking: inputs.openTracking,
+    }),
+    headers: {
+      authorization: `Bearer ${inputs.apiKey}`,
+      "content-type": "application/json",
+    },
+    method: "PATCH",
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Resend refused the tracking settings: ${response.status} ${await response.text()}`
+    );
+  }
+};
+
+const readTracking = async (apiKey: string, domainId: string) => {
+  // nosemgrep
+  const response = await fetch(domainUrl(domainId), {
+    headers: { authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Resend wouldn't show the domain: ${response.status}`);
+  }
+  const domain = (await response.json()) as {
+    click_tracking?: boolean;
+    open_tracking?: boolean;
+  };
+  return {
+    clickTracking: domain.click_tracking ?? false,
+    openTracking: domain.open_tracking ?? false,
+  };
+};
+
+// Resend rewrites links (click tracking) and adds a pixel (open tracking)
+// per domain, not per send (resend.com/docs/api-reference/domains/update-
+// domain). Both hurt transactional deliverability: a rewritten link on a
+// tracking host looks like phishing to a spam filter, and a verify or reset
+// link must stay the link wovain wrote. This sets both for the domain, and
+// puts back what it found when the resource is removed.
+const trackingProvider: pulumi.dynamic.ResourceProvider<
+  TrackingInputs,
+  TrackingOutputs
+> = {
+  async create(inputs) {
+    const previous = await readTracking(inputs.apiKey, inputs.domainId);
+    await setTracking(inputs);
+    return { id: inputs.domainId, outs: { ...inputs, previous } };
+  },
+  async delete(_id, props) {
+    await setTracking({ ...props, ...props.previous });
+  },
+  async update(_id, olds, news) {
+    await setTracking(news);
+    return { outs: { ...news, previous: olds.previous } };
+  },
+};
+
+export class ResendTracking extends pulumi.dynamic.Resource {
+  constructor(
+    name: string,
+    args: {
+      apiKey: pulumi.Input<string>;
+      clickTracking: pulumi.Input<boolean>;
+      domainId: pulumi.Input<string>;
+      openTracking: pulumi.Input<boolean>;
+    },
+    opts?: pulumi.CustomResourceOptions
+  ) {
+    super(
+      trackingProvider,
+      name,
+      { ...args, previous: undefined },
+      { ...opts, additionalSecretOutputs: ["apiKey"] },
+      "resend",
+      "Tracking"
+    );
+  }
+}

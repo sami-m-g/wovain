@@ -29,6 +29,7 @@ describe("researchSourcesFor", () => {
 
     expect(await researchSourcesFor(actor)).toEqual({
       evidence: true,
+      evidenceGate: false,
       tavily: true,
     });
   });
@@ -38,7 +39,19 @@ describe("researchSourcesFor", () => {
 
     expect(await researchSourcesFor(actor)).toEqual({
       evidence: false,
+      evidenceGate: false,
       tavily: true,
+    });
+  });
+
+  it("turns the evidence gate on with its flag", async () => {
+    const { actor } = actorWith({
+      "idea-evidence-gate": true,
+      "trends-tavily": true,
+    });
+
+    expect(await researchSourcesFor(actor)).toMatchObject({
+      evidenceGate: true,
     });
   });
 
@@ -47,7 +60,7 @@ describe("researchSourcesFor", () => {
 
     await researchSourcesFor(actor);
 
-    expect(isOn).toHaveBeenCalledTimes(2);
+    expect(isOn).toHaveBeenCalledTimes(3);
     for (const [, context] of isOn.mock.calls) {
       expect(context).toEqual({ plan: "studio", userId: "u1" });
     }

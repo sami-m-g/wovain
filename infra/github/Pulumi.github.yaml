@@ -3,3 +3,6 @@ config:
   github:owner: sami-m-g
   # The branch production deploys from (docs/adr/0004-release-branch.md).
   wovain-github:releaseBranch: release/transcend
+  github:token:
+    secure: v1:uRg18LfYnBPGP8QV:W3VZMhtOyvpHmgNjroGwRxmXSg5cKESyDwy0n1gTXaLxV39R9YOUVZf2VS0PB2fRWbCCDRpbmj2zlV11HnCjcIV6MVEqeNR0zxtXbbmwE3aPdMtOdpb2h2rN4UPxyGhQmVPZEvNbNEPbvmnzjg==
+encryptedkey: CiQAmvsEjp6fi/c5PN5k1QERgqLVvzb0NYtwtVMZa/ttGwHawF0SSQDbnX24w6jwwVrUEOR02xeGbzmHOBzfjzBjEtrJrTvaoftqpxbelT/y6hWBk1wdTpu2ojrKVdU1PlapTP5mZVukv4nc4gwRsGs=

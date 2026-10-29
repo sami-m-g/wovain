@@ -283,3 +283,11 @@ export const directionCache = pgTable(
     uniqueIndex("direction_cache_user_key_idx").on(table.userId, table.key),
   ]
 );
+
+// An address that unsubscribed from non-essential email (run updates) with
+// the one-click link (RFC 8058). Verification and reset email is essential
+// and always sent. Keyed by address so a link works without a session.
+export const emailOptOut = pgTable("email_opt_out", {
+  createdAt: createdAt(),
+  email: text("email").primaryKey(),
+});
