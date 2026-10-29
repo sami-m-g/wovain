@@ -7,11 +7,11 @@ import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { campaign, design, idea, product } from "@wovain/db/schema/seller";
-import type { Core } from "@wovain/mastra/services";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { Core } from "../services";
 import type { Actor } from "./actor";
 import { setLossLimit } from "./ad-rules";
 import { requestBackstopSync, syncBackstop } from "./backstop";
@@ -20,7 +20,7 @@ import { requestBackstopSync, syncBackstop } from "./backstop";
 // and a fake Graph that keeps the ad account's automated rules.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 

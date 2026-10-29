@@ -4,19 +4,16 @@ import {
   brandProfile,
   tasteReference,
 } from "@wovain/db/schema/autonomy";
+import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
+import { createError, log as evlog } from "evlog";
+
 import {
   distinctReferences,
   referenceKey,
   resolveReferences,
   writeBrandMemory,
-} from "@wovain/mastra/memory/brand-identity";
-import type {
-  BrandEntity,
-  ResolvedReference,
-} from "@wovain/mastra/memory/brand-identity";
-import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
-import { createError, log as evlog } from "evlog";
-
+} from "../memory/brand-identity";
+import type { BrandEntity, ResolvedReference } from "../memory/brand-identity";
 import type { Actor } from "./actor";
 import { autonomyOf } from "./approvals";
 import { listConnections, platformFal } from "./connections";

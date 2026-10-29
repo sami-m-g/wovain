@@ -1,6 +1,6 @@
+import { modelTrace } from "@wovain/mastra/flow/model-trace";
 import { z } from "zod";
 
-import { modelTrace } from "../flow/model-trace";
 import { protectedProcedure } from "../index";
 
 // Which Nemotron model did what in a run (openspec model-routing), behind

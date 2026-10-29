@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { DirectionsChunk } from "@wovain/api/flow/drop-directions";
 import type { DropReason } from "@wovain/core/sweet-spot";
+import type { DirectionsChunk } from "@wovain/mastra/flow/drop-directions";
 import { Button } from "@wovain/ui/components/button";
 import { Label } from "@wovain/ui/components/label";
 import { Skeleton } from "@wovain/ui/components/skeleton";

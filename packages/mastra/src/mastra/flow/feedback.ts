@@ -21,11 +21,11 @@ import type { TraceSource } from "@wovain/core/trace";
 import type { ResearchFeedback } from "@wovain/core/trends";
 import { decisionTrace, performanceSnapshot } from "@wovain/db/schema/autonomy";
 import { idea, product as productTable } from "@wovain/db/schema/seller";
-import { recordLearnings } from "@wovain/mastra/memory/taste";
 import { and, desc, eq, inArray, min, sql } from "drizzle-orm";
 import { createError, log } from "evlog";
 import { z } from "zod";
 
+import { recordLearnings } from "../memory/taste";
 import type { Actor } from "./actor";
 import { traceSinkFor } from "./approvals";
 import { listConnections, withProvider } from "./connections";

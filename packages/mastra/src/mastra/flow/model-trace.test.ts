@@ -11,12 +11,12 @@ import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { decisionTrace } from "@wovain/db/schema/autonomy";
 import { run } from "@wovain/db/schema/seller";
-import { createNemotron } from "@wovain/mastra/agents/ask";
-import type { AgentKit } from "@wovain/mastra/agents/kit";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { describe, expect, it } from "vitest";
 
+import { createNemotron } from "../agents/ask";
+import type { AgentKit } from "../agents/kit";
 import type { Actor } from "./actor";
 import { withAgentTrace } from "./agent-trace";
 import { modelTrace } from "./model-trace";
@@ -26,7 +26,7 @@ import { modelTrace } from "./model-trace";
 // with the app's migrations), a mock Nemotron.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const RUN_ID = "run_1";

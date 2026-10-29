@@ -5,7 +5,7 @@ import {
   designChecks,
   priceClearsFloor,
   stepScorers,
-} from "./step-scorers";
+} from "./steps";
 
 const facts = {
   artworkWidth: 2880,

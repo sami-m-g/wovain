@@ -25,5 +25,5 @@ Spec only. No app code, schema or migration changes in this change.
 
 ## Impact
 
-- Follow-up changes: the onboarding brand step (`apps/web` onboarding wizard, `packages/api/src/flow/onboarding.ts`), idea research (`packages/core/src/trends.ts`, `ideas.research`), autopilot (`packages/api/src/flow/autopilot.ts`), ad targeting (`packages/api/src/flow/audience.ts`), `drop` fields in `packages/db`, and `drop-style.ts` from #122. The gaps are in `tasks.md`.
+- Follow-up changes: the onboarding brand step (`apps/web` onboarding wizard, `packages/mastra/src/mastra/flow/onboarding.ts`), idea research (`packages/core/src/trends.ts`, `ideas.research`), autopilot (`packages/mastra/src/mastra/flow/autopilot.ts`), ad targeting (`packages/mastra/src/mastra/flow/audience.ts`), `drop` fields in `packages/db`, and `drop-style.ts` from #122. The gaps are in `tasks.md`.
 - Builds on #113 (brand discovery) and #122 (drop style).

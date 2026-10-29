@@ -2,7 +2,8 @@ import {
   learnOnDemand,
   requireFeedbackLoop,
   whatWeLearned,
-} from "../flow/feedback";
+} from "@wovain/mastra/flow/feedback";
+
 import { protectedProcedure } from "../index";
 
 // The feedback loop: what wovain learned from the merchant's sales and ads,

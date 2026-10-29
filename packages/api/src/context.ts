@@ -2,17 +2,16 @@ import type { Session } from "@wovain/auth";
 import type { Billing } from "@wovain/billing/service";
 import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
-import type { Core } from "@wovain/mastra/services";
-import type { EvlogOrpcContext } from "evlog/orpc";
-
 import type {
   AlertTransports,
   Analytics,
   EventSender,
   RunEngine,
-} from "./flow/actor";
+} from "@wovain/mastra/flow/actor";
+import type { Core } from "@wovain/mastra/services";
+import type { EvlogOrpcContext } from "evlog/orpc";
 
-export type { FunnelEvent } from "./flow/actor";
+export type { FunnelEvent } from "@wovain/mastra/flow/actor";
 
 // `log` is the request logger when the caller runs inside an evlog-instrumented request
 export interface Context extends Partial<EvlogOrpcContext> {

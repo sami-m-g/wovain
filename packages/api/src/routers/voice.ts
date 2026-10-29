@@ -1,16 +1,16 @@
 import { call } from "@orpc/server";
 import { MAX_AUDIO_BASE64, VOICE_SCREENS } from "@wovain/core/voice";
 import type { VoiceProposal } from "@wovain/core/voice";
-import { z } from "zod";
-
-import type { Context } from "../context";
 import {
   confirmVoiceProposal,
   dictateClip,
   proposeVoiceCommand,
   requireVoice,
   voiceEnabled,
-} from "../flow/voice";
+} from "@wovain/mastra/flow/voice";
+import { z } from "zod";
+
+import type { Context } from "../context";
 import { protectedProcedure } from "../index";
 import { approvalsRouter } from "./approvals";
 import { designsRouter, runsRouter } from "./seller";

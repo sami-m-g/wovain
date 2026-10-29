@@ -15,12 +15,12 @@ import {
   decisionTrace,
 } from "@wovain/db/schema/autonomy";
 import { campaign, design, idea, product, run } from "@wovain/db/schema/seller";
-import type { Core } from "@wovain/mastra/services";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Core } from "../services";
 import type { Actor } from "./actor";
 import {
   approvalsFor,
@@ -45,7 +45,7 @@ import { QLOO_BRAND, qlooAudienceCore } from "./qloo-audience-fixture";
 // read-back, activation through the approval queue and pausing.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const REQUEST = "6f1c2c1e-6d55-4b8e-9b5e-2f5a3c1d9e01";

@@ -12,13 +12,13 @@ import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { approval, decisionTrace, drop } from "@wovain/db/schema/autonomy";
 import { connection, idea, run } from "@wovain/db/schema/seller";
-import type { Core } from "@wovain/mastra/services";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { Core } from "../services";
 import type { Actor } from "./actor";
 import {
   buildDropItem,
@@ -38,7 +38,7 @@ import {
 // and publishing waits for an approval.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 

@@ -74,7 +74,7 @@ const nextConfig: NextConfig = {
       { destination: `${posthogHost}/:path*`, source: "/ingest/:path*" },
     ],
   }),
-  // The durable run engine (packages/api/src/workflows) runs as plain
+  // The durable run engine (packages/mastra/src/mastra/workflows) runs as plain
   // Node: Mastra and Inngest load optional workers and native modules a
   // bundle can't resolve.
   serverExternalPackages: [

@@ -1,16 +1,18 @@
-import { expoTransport } from "@wovain/api/flow/push";
-import { telegramBot } from "@wovain/api/flow/telegram";
-import { createRunEngine } from "@wovain/api/workflows/engine";
-import { createMastraStorage } from "@wovain/api/workflows/storage";
 import { createAuth } from "@wovain/auth";
 import { createBilling } from "@wovain/billing/service";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
-import { createMerchantMemory } from "@wovain/mastra/memory/taste";
+import { expoTransport } from "@wovain/mastra/flow/push";
+import { telegramBot } from "@wovain/mastra/flow/telegram";
 import { createCore } from "@wovain/mastra/services";
+import { createRunEngine } from "@wovain/mastra/workflows/engine";
+import { createMastraStorage } from "@wovain/mastra/workflows/storage";
 
 import { ENV } from "./env.server";
 import { analytics } from "./lib/analytics";
+// Drains evlog's global `log` (packages/api) on every route that uses the
+// services, /api/inngest included.
+import "./lib/evlog";
 
 export const db = createDb(ENV);
 export const mailer = createMailer({
@@ -35,7 +37,7 @@ export const alerts = {
 // Mastra's store (snapshots, memory, scores, traces) on the same database,
 // in its own schema; the merchants' brand and taste memory lives there.
 const { storage } = createMastraStorage(db.$client);
-export const core = createCore(ENV, { memory: createMerchantMemory(storage) });
+export const core = createCore(ENV, { storage });
 // Billing reads its flags (billing-paid-plans) from the typed registry.
 export const billing = createBilling(ENV, (flag) => core.flags.isOn(flag));
 export const auth = createAuth(ENV, db, mailer, analytics, billing.polar);

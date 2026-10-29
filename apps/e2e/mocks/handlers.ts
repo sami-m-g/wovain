@@ -74,6 +74,11 @@ const tavilySearch = (query: string, topic: unknown) => ({
 const POLAR = "https://sandbox-api.polar.sh/v1";
 
 export const handlers = [
+  // Usage events for the credits meter.
+  http.post(`${POLAR}/events/ingest`, async ({ request }) => {
+    const { events } = (await request.json()) as { events: unknown[] };
+    return HttpResponse.json({ inserted: events.length });
+  }),
   http.get(`${POLAR}/discounts/`, () =>
     HttpResponse.json({
       items: [],
@@ -84,6 +89,10 @@ export const handlers = [
   ...fal,
   http.get("https://hackathon.api.qloo.com/search", () =>
     HttpResponse.json({ results: qlooInsights.results.entities })
+  ),
+  // Tag search reads the same `results.tags` as insights.
+  http.get("https://hackathon.api.qloo.com/v2/tags", () =>
+    HttpResponse.json(qlooInsights)
   ),
   http.get("https://hackathon.api.qloo.com/v2/insights", () =>
     HttpResponse.json(qlooInsights)

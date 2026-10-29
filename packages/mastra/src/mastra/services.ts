@@ -1,4 +1,4 @@
-import type { Memory } from "@mastra/memory";
+import type { MastraCompositeStore } from "@mastra/core/storage";
 import { ART_MODELS_VAR, parseArtModels } from "@wovain/core/art";
 import type { ArtModels } from "@wovain/core/art";
 import { createSignals } from "@wovain/core/autopilot-signals";
@@ -19,6 +19,7 @@ import { createTranscriber } from "@wovain/core/voice";
 
 import { createNemotron } from "./agents/ask";
 import { createAgentKit } from "./agents/kit";
+import { createMerchantMemory } from "./memory/taste";
 
 // Everything the seller flow calls out to, built once per server process
 // from the app's environment. A missing API key only fails the feature that
@@ -55,7 +56,7 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   FAL_IMAGE_MODEL: string;
   // wovain's own fal key: it transcribes voice commands (./voice), and
   // designs draw on it, paid by credits, while the onboarding-wizard flag is
-  // on (packages/api/src/flow/connections.ts). Voice commands fail without it.
+  // on (packages/mastra/src/mastra/flow/connections.ts). Voice commands fail without it.
   FAL_KEY?: string | undefined;
   NEXT_PUBLIC_POSTHOG_HOST: string;
   NEXT_PUBLIC_POSTHOG_KEY?: string | undefined;
@@ -75,9 +76,12 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
 
 export const createCore = (
   env: CoreConfig,
-  // The merchants' memory (./taste), when the app has Mastra storage.
-  { memory }: { memory?: Memory | undefined } = {}
+  // Mastra's store, when the app has one: the merchants' memory
+  // (memory/taste) lives there. The app and Studio pass the same store.
+  { storage }: { storage?: MastraCompositeStore | undefined } = {}
 ) => {
+  const memory =
+    storage === undefined ? undefined : createMerchantMemory(storage);
   const models = createModelRouter(env);
   // Tavily's search, extract and research, called live (./trends.ts,
   // ./evidence.ts).
@@ -145,7 +149,7 @@ export const createCore = (
       appSecret: env.META_APP_SECRET,
       graphUrl: env.META_GRAPH_URL,
     }),
-    // The model ID, for analytics events (packages/api/src/flow).
+    // The model ID, for analytics events (packages/mastra/src/mastra/flow).
     model: env.NEMOTRON_MODEL,
     // The Nemotron model per job (fast, default, reasoning, vision,
     // safety), from NEMOTRON_MODEL_* (./model-router.ts).
@@ -172,7 +176,7 @@ export const createCore = (
       model: env.VOICE_STT_MODEL,
     }),
     // Qloo names every theme; Tavily adds the evidence.
-    trends: createTrends(tavily, qloo),
+    trends: createTrends(tavily, qloo, nemotron),
     upstream: createUpstream({
       appUrl: env.BETTER_AUTH_URL,
       metaAppId: env.META_APP_ID,
