@@ -723,6 +723,20 @@
       "failed": "We couldn't suggest a tone and colours just now.",
       "retry": "Try again",
       "info": "About {field}"
+    },
+    "whoBuys": {
+      "title": "Who buys this",
+      "buyers": "Mostly {age}, {gender}",
+      "unknownAge": "age unknown",
+      "unknownGender": "gender lean unknown",
+      "audiences": "Into:",
+      "where": "Where your buyers are",
+      "affinity": "Qloo affinity {value}",
+      "brands": "They also buy:",
+      "source": "From Qloo's taste data. The brands are for targeting only, never for the design.",
+      "loading": "Asking Qloo who buys this…",
+      "failed": "We couldn't reach our taste data to say who buys this.",
+      "retry": "Try again"
     }
   },
   "NotFound": {

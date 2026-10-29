@@ -4,6 +4,7 @@ import type { DesignBrief, Judgment } from "@wovain/core/design";
 import type { DropStyle } from "@wovain/core/drop-style";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
+import type { WhoBuys } from "@wovain/core/who-buys";
 import {
   boolean,
   index,
@@ -121,6 +122,8 @@ export const idea = pgTable(
     style: jsonb("style").$type<DropStyle>(),
     theme: text("theme").notNull(),
     userId: owner(),
+    // Who buys the idea and where (who-buys), read from Qloo once and kept.
+    whoBuys: jsonb("who_buys").$type<WhoBuys>(),
   },
   (table) => [index("idea_user_idx").on(table.userId)]
 );
