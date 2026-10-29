@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change meta-setup-cards. Update Purpose after archive.
+Take a merchant's Meta account to ready-for-ads from inside wovain: the ad account, payment, Page and safety checks as cards that deep-link into Meta and tick off by polling.
 
 ## Requirements
 

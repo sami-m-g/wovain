@@ -13,6 +13,7 @@ import {
   Connectors,
   FreeToStart,
   HomeFaq,
+  HowItWorks,
   Results,
 } from "@/components/marketing/home-sections";
 import type { Faq } from "@/content/types";
@@ -100,7 +101,7 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
               </CtaLink>
               <Link
                 className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
-                href={{ hash: "results", pathname: "/" }}
+                href={{ hash: "how-it-works", pathname: "/" }}
               >
                 {t("heroSecondary")}
                 <ArrowDown aria-hidden="true" className="size-3.5" />
@@ -114,6 +115,7 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
         </div>
       </section>
 
+      <HowItWorks />
       <Results />
       <Connectors />
       <FreeToStart />

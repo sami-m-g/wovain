@@ -32,6 +32,7 @@ export interface LaunchFacts {
   fourthwallConnected: boolean;
   /** Every required store setup step is done (or store setup is off). */
   storeReady: boolean;
+  /** Meta connected and its required setup cards done (account, payment, Page). */
   metaConnected: boolean;
   /** Autonomy level and spend caps saved (or autonomy is off). */
   guardrailsSet: boolean;

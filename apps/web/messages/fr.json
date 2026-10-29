@@ -245,6 +245,37 @@
       "body": "Vous gardez chaque décision. wovain s'occupe de la production.",
       "button": "Lancer un drop",
       "secondary": "Voir les tarifs"
+    },
+    "how": {
+      "title": "De l'inscription aux publicités en 10 minutes environ",
+      "lead": "Un seul parcours guidé, avec un minuteur et une liste. Les étapes faites dans Fourthwall ou Meta reviennent et se cochent toutes seules.",
+      "guide": "Lire le guide pour bien démarrer",
+      "steps": {
+        "sell": {
+          "title": "Choisir quoi vendre",
+          "body": "Choisissez une des pistes de la semaine : ce qui monte auprès d'un public, et la concurrence en face."
+        },
+        "store": {
+          "title": "Préparer la boutique",
+          "body": "Connectez votre boutique Fourthwall et réglez paiements, livraison et le reste, carte par carte."
+        },
+        "meta": {
+          "title": "Connecter Meta, fixer des limites",
+          "body": "Votre compte publicitaire, le paiement et la Page, puis le maximum que wovain peut dépenser par jour et par mois."
+        },
+        "design": {
+          "title": "Approuver un design",
+          "body": "wovain étudie votre piste et dessine des designs. Vous approuvez ceux que vous vendriez."
+        },
+        "ads": {
+          "title": "Lancer les publicités",
+          "body": "Relisez la publicité et son budget quotidien, puis lancez-la. Rien ne dépasse vos limites."
+        },
+        "campaign": {
+          "title": "Voir votre campagne",
+          "body": "Produits, boutique, publicités, dépenses et résultats en direct, sur une seule page."
+        }
+      }
     }
   },
   "Legal": {

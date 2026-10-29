@@ -35,7 +35,7 @@ export const SiteFooter = async () => {
     {
       id: "footer-product",
       links: [
-        item("how", { hash: "results", pathname: "/" }, t("howItWorks")),
+        item("how", { hash: "how-it-works", pathname: "/" }, t("howItWorks")),
         item("pricing", "/pricing", t("pricing")),
         item("chatgpt", "/integrations/chatgpt", t("chatgpt")),
         item("sign-up", "/sign-up", t("signUp")),

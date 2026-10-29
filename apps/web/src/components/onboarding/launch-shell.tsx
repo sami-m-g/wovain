@@ -26,6 +26,7 @@ import {
   StepHeader,
 } from "@/components/app/wizard-parts";
 import { LaunchChecklist } from "@/components/shadcn-studio/blocks/onboarding-feed-01/onboarding-feed-01";
+import { MetaSetup } from "@/components/store/meta-setup";
 import { StoreSetup } from "@/components/store/store-setup";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { OnboardingReady, RunDetail } from "@/lib/flow-client";
@@ -173,24 +174,19 @@ const MetaStep = ({
   status,
   onBack,
   onNext,
-  returnQuery,
 }: {
   onBack: () => void;
   onNext: () => void;
-  returnQuery: string;
   status: OnboardingReady;
 }) => {
   const t = useTranslations("Launch.meta");
-  const meta = status.connections.filter((each) => each.provider === "meta");
   return (
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
+      {/* Ad account, payment, Page and safety rules, each a deep link that
+          ticks off by polling; connect and reconnect Meta here too. */}
       <div data-tour="meta">
-        <ConnectionHealth
-          connections={meta}
-          returnPath="/dashboard/onboarding"
-          returnQuery={returnQuery}
-        />
+        <MetaSetup />
       </div>
       {status.autonomy === null ? (
         <StepActions>
@@ -323,6 +319,11 @@ const useLaunchData = (
     refetchInterval: (query) =>
       (query.state.data?.campaigns.length ?? 0) > 0 ? false : RUN_POLL_MS,
   });
+  // The same query <MetaSetup /> polls, so the step ticks off with its cards.
+  const meta = useQuery({
+    ...orpc.store.metaSetup.queryOptions(),
+    retry: false,
+  });
   // Store setup answers 404 while its flag is off: connecting is enough then.
   const storeReady =
     store.isError ||
@@ -330,16 +331,25 @@ const useLaunchData = (
       .filter((step) => step.required)
       .every((step) => step.state === "done") ??
       false);
+  const metaLinked =
+    ready?.connections.some(
+      (each) => each.provider === "meta" && each.state === "connected"
+    ) ?? false;
+  // Without the Meta setup check (flag off), a connected Meta is enough.
+  const metaReady = meta.isError
+    ? metaLinked
+    : meta.data !== undefined &&
+      meta.data.connected &&
+      meta.data.steps
+        .filter((step) => step.required)
+        .every((step) => step.state === "done");
   const facts = {
     brief: brief ?? run.data?.seed,
     fourthwallConnected,
     guardrailsSet: ready
       ? ready.autonomy === null || ready.steps.autonomy
       : false,
-    metaConnected:
-      ready?.connections.some(
-        (each) => each.provider === "meta" && each.state === "connected"
-      ) ?? false,
+    metaConnected: metaReady,
     run: run.data,
     storeReady,
   };
@@ -393,7 +403,6 @@ const StepPanel = ({
         <MetaStep
           onBack={() => onOpen("store")}
           onNext={() => onOpen("design")}
-          returnQuery={returnQuery}
           status={ready}
         />
       );
@@ -437,7 +446,8 @@ export const LaunchShell = ({ startedAt }: { startedAt: string }) => {
   const active = url.step ?? next;
   const returnQuery = queryOf({ ...url, step: active });
 
-  useSpotlight(active, {
+  // Only once the step has rendered, not over the loading skeleton.
+  useSpotlight(data.ready === undefined ? undefined : active, {
     close: t("spotlight.close"),
     description: active ? t(`spotlight.${active}`) : "",
     selector: active ? SPOT_SELECTORS[active] : "",

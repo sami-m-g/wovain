@@ -272,6 +272,67 @@ export const HomeFaq = async ({ items }: { items: Faq[] }) => {
   );
 };
 
+const HOW_STEPS = [
+  "sell",
+  "store",
+  "meta",
+  "design",
+  "ads",
+  "campaign",
+] as const;
+
+/** The one guided flow: sign-in to a running campaign in about 10 minutes. */
+export const HowItWorks = async () => {
+  const t = await getTranslations("Home");
+  const guide = await docsHref("getting-started");
+  return (
+    <section
+      aria-labelledby="how-it-works-title"
+      className="scroll-mt-20 py-16 sm:py-20"
+      id="how-it-works"
+    >
+      <div className={cn(container, "flex flex-col gap-10")}>
+        <SectionHead
+          id="how-it-works"
+          lead={t("how.lead")}
+          title={t("how.title")}
+        >
+          <a
+            className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+            href={guide}
+          >
+            {t("how.guide")}
+            <ArrowRight
+              aria-hidden="true"
+              className="size-3.5 rtl:rotate-180"
+            />
+          </a>
+        </SectionHead>
+        <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {HOW_STEPS.map((step, index) => (
+            <li className="flex gap-4" key={step}>
+              <span
+                aria-hidden="true"
+                className="font-display figures bg-muted flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+              >
+                {index + 1}
+              </span>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-display text-base font-semibold">
+                  {t(`how.steps.${step}.title`)}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {t(`how.steps.${step}.body`)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+};
+
 export const ClosingCta = async () => {
   const t = await getTranslations("Home");
   return (

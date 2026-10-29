@@ -8,22 +8,32 @@ Take a new merchant from sign-up to a first drop: connect their accounts with a 
 
 ### Requirement: Onboarding wizard
 
-While the `onboarding-wizard` flag is on, the system SHALL offer a signed-in designer one wizard with these steps in order: connect Fourthwall and Meta, brand identity, autonomy level and spend caps, done. Each step SHALL be skippable and SHALL show what was saved when the designer comes back. With the flag off, the wizard's procedures SHALL answer 404 and the wizard SHALL NOT be linked.
+While the `onboarding-wizard` flag is on, the system SHALL offer a signed-in designer one guided flow with these steps in order: signed in, what to sell, store setup, Meta and guardrails, design approval, ads, and the campaign page. Steps that happen elsewhere SHALL be cards whose links come back to the flow, ticked off by polling. Each step SHALL be skippable. With the flag off, the wizard's procedures SHALL answer 404 and the wizard SHALL NOT be linked.
 
 #### Scenario: First visit
 
 - **WHEN** a designer with no connections and no brand profile opens the wizard
-- **THEN** the first step shows Fourthwall and Meta as missing, each with one connect button
+- **THEN** the checklist shows signed in as done, the timer is running, and the what-to-sell step is open with drop directions to pick from
 
 #### Scenario: Sent to the wizard until it is finished
 
-- **WHEN** a designer whose flag is on signs up or signs in and lands on the overview before ever reaching the done step
-- **THEN** the overview redirects to the wizard, and once the done step has been shown it no longer does
+- **WHEN** a designer whose flag is on signs up or signs in and lands on the overview before ever reaching the campaign page or skipping the flow
+- **THEN** the overview redirects to the wizard, and once the campaign page has been shown or the flow was skipped it no longer does
 
 #### Scenario: Flag off
 
 - **WHEN** the flag is off for the designer
 - **THEN** `onboarding.saveBrand` and `onboarding.resolveReferences` answer 404 and `onboarding.status` reports the wizard as off
+
+#### Scenario: Design approved in the drop flow
+
+- **WHEN** the designer follows the design approval card, approves a design in the drop flow and comes back
+- **THEN** the design approval step is ticked off without a reload and the ads step is open
+
+#### Scenario: Campaign page
+
+- **WHEN** the run's first campaign is created
+- **THEN** the timer stops, and the campaign page shows the run's products, the store link, the ads with their controls, the spend caps and the live KPIs
 
 ### Requirement: Taste references resolved with Qloo
 
@@ -94,3 +104,21 @@ The system SHALL report, for each provider a drop needs, whether it is connected
 
 - **WHEN** the Meta grant needs reconnecting
 - **THEN** Meta reads expired with a reconnect button, and a drop can still start because Meta is needed only to stage ads
+
+### Requirement: Checklist and timer
+
+The guided flow SHALL show a checklist of its steps with each step's state, with signed in already ticked, and a timer that counts from sign-up toward 10 minutes and stops when the first campaign is created.
+
+#### Scenario: Campaign created in 8 minutes
+
+- **WHEN** the first campaign is created 8 minutes and 30 seconds after sign-up
+- **THEN** the timer stops at 8:30, says the campaign went live in under 10 minutes, and the checklist shows every step done
+
+### Requirement: Guided highlights
+
+The flow SHALL highlight each step's next action once, the first time the step opens on that browser. The highlight SHALL be dismissable, and SHALL NOT show again for that step once seen or dismissed.
+
+#### Scenario: Returning to a step
+
+- **WHEN** a designer opens the store setup step a second time
+- **THEN** no highlight is shown

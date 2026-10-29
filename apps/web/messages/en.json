@@ -245,6 +245,37 @@
       "body": "You keep every decision. wovain does the production.",
       "button": "Start a drop",
       "secondary": "See pricing"
+    },
+    "how": {
+      "title": "From sign-up to ads running in about 10 minutes",
+      "lead": "One guided flow, with a timer and a checklist. Steps that happen in Fourthwall or Meta come back and tick off on their own.",
+      "guide": "Read the getting started guide",
+      "steps": {
+        "sell": {
+          "title": "Pick what to sell",
+          "body": "Choose one of this week's directions: what's rising with an audience, and how crowded it is."
+        },
+        "store": {
+          "title": "Set up your store",
+          "body": "Connect your Fourthwall shop and finish payouts, shipping and the rest, one card at a time."
+        },
+        "meta": {
+          "title": "Connect Meta, set limits",
+          "body": "Your ad account, payment and Page, then the most wovain may spend a day and a month."
+        },
+        "design": {
+          "title": "Approve a design",
+          "body": "wovain researches your direction and draws designs. You approve the ones you'd sell."
+        },
+        "ads": {
+          "title": "Launch your ads",
+          "body": "Review the ad and its daily budget, then start it. Nothing spends past your limits."
+        },
+        "campaign": {
+          "title": "See your campaign",
+          "body": "Products, store, ads, spend and live results, all on one page."
+        }
+      }
     }
   },
   "Legal": {

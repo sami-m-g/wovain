@@ -42,12 +42,20 @@ export const useSpotlight = (
       allowClose: true,
       onDestroyed: () => markSeen(key),
       overlayClickBehavior: "close",
-      showButtons: ["close"],
       stagePadding: 6,
     });
     tour.highlight({
       element: selector,
-      popover: { closeBtnLabel: close, description, title },
+      // One labelled button that ends the highlight ("Got it").
+      popover: {
+        closeBtnLabel: close,
+        description,
+        doneBtnText: close,
+        nextBtnText: close,
+        onNextClick: () => tour.destroy(),
+        showButtons: ["next", "close"],
+        title,
+      },
       skipMissingElement: true,
       waitForElement: WAIT_FOR_ELEMENT_MS,
     });
