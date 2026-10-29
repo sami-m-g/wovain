@@ -14,7 +14,6 @@ import {
   requestGiftCards,
   requestPromotionEnd,
   requestShopPromotion,
-  requestSiteLive,
   storeGiftCards,
   storePromotions,
   storeSales,
@@ -30,6 +29,7 @@ import {
   storeProducts,
   storeReadiness,
 } from "../flow/store";
+import { doSetupStep, storeSetup } from "../flow/store-setup";
 import { protectedProcedure } from "../index";
 
 // Running the store (openspec store-management), behind the
@@ -93,9 +93,6 @@ export const storeRouter = {
         async (context, input) => await storeGiftCards(context, input.page)
       )
     ),
-  goLive: protectedProcedure.handler(
-    guarded(async (context) => await requestSiteLive(context))
-  ),
   issueGiftCards: protectedProcedure
     .input(
       z.object({
@@ -185,6 +182,16 @@ export const storeRouter = {
   sample: protectedProcedure
     .input(z.object({ productId: id, variantId: id }))
     .handler(guarded(sampleLink)),
+  // Store setup: the tech checklist, polled by the page, and the steps
+  // wovain does for the merchant.
+  setup: protectedProcedure.handler(
+    guarded(async (context) => await storeSetup(context))
+  ),
+  setupStep: protectedProcedure
+    .input(z.object({ step: z.enum(["site_live"]) }))
+    .handler(
+      guarded(async (context, input) => await doSetupStep(context, input.step))
+    ),
   variants: protectedProcedure
     .input(z.object({ productId: id }))
     .handler(
