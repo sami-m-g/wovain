@@ -25,17 +25,22 @@ const roleOf = (agent: string) =>
   agent in AGENT_ROLES ? AGENT_ROLES[agent as keyof typeof AGENT_ROLES] : null;
 
 // A line on what a call returned, for the entries that need one: what the
-// grounding guard removed, or why a call failed.
+// grounding guard removed, why a call failed, or a step's own note.
 const noteOf = (output: unknown) => {
   if (typeof output !== "object" || output === null) {
     return null;
   }
-  const { error, unsupported } = output as {
+  const { error, note, unsupported } = output as {
     error?: unknown;
+    note?: unknown;
     unsupported?: unknown;
   };
   if (typeof error === "string") {
     return error;
+  }
+  // A non-model step's own line (the competition read).
+  if (typeof note === "string") {
+    return note;
   }
   if (Array.isArray(unsupported) && unsupported.length > 0) {
     return unsupported.join(", ");

@@ -47,6 +47,7 @@ export const AGENT_IDS = [
   "research_themes",
   "ads_optimizer_review",
   "voice_intent",
+  "competition_summary",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
@@ -64,6 +65,9 @@ export const AGENT_ROLES = {
   // Reads web results for a brand reference and names Qloo-searchable
   // proxies: research, on the default model.
   brand_proxies: "default",
+  // Reads competitors' listing pages and lists how they sell, each point
+  // with its page: research, on the default model.
+  competition_summary: "default",
   design_brief: "default",
   design_judge: "reasoning",
   design_vision: "vision",

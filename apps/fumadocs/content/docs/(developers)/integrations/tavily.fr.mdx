@@ -26,6 +26,18 @@ Le texte du web n'est pas fiable : les idées gardent leurs liens de sources, et
 
 C'est une recherche, pas une validation juridique : un résultat net signifie que Tavily n'a trouvé aucun enregistrement.
 
+## Paysage concurrentiel (flag `tavily-competition`)
+
+`packages/core/src/competition.ts` lit la concurrence de chaque thème Qloo pendant la recherche d'une exécution, avant le choix d'une idée. Le flag est actif en development et next, et inactif en production.
+
+- **Saturation.** Une recherche sur Redbubble, TeePublic, Etsy, Amazon, les boutiques Shopify, Threadless, Spreadshirt et Teespring (20 résultats) est filtrée en code : un résultat compte comme annonce quasi identique si sa pertinence est d'au moins 0,5 et si son titre ou son extrait porte tous les mots du thème. Moins de 4 est faible, de 4 à 7 moyen, 8 ou plus élevé (saturé). L'échantillon est cité.
+- **Comment ils vendent.** Tavily Extract lit les 5 premières annonces avec une `query` et 3 extraits par page ; `competitorPrices` lit leurs prix. Un résumeur Nemotron (`competition_summary`, tâche default du routeur de modèles) liste titres, accroches, affirmations, prix, styles et reproches des avis en JSON validé par Zod, chaque point avec sa page. Un point qui cite une page non lue est écarté.
+- **Lacunes.** Le code compare les signaux d'affinité Qloo du thème au texte des annonces ; ceux qu'aucune annonce ne mentionne sont les lacunes.
+- **Utilisé par les agents.** Le brief de design reçoit les styles à éviter et les lacunes ; le rédacteur d'annonces reçoit les angles concurrents avec leurs pages et écrit un texte contre-positionné, et le garde-fou d'ancrage n'accepte que les faits de ces lignes. Le pilote automatique ignore un thème saturé et enregistre la raison sur l'idée.
+- **Échecs.** Une recherche échouée marque l'idée « concurrence inconnue » et la carte propose de vérifier à nouveau ; si l'extraction, les prix ou le résumé échouent, cette partie manque et c'est indiqué. Chaque échec est journalisé au niveau error et chaque étape figure dans la trace de décision (/dashboard/models).
+
+Tavily ne peut pas lire les pages de la Bibliothèque publicitaire de Meta : wovain ne les recherche ni ne les extrait.
+
 ## Configuration
 
 ```bash

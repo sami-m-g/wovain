@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createProductCampaign, listCampaigns } from "../flow/campaigns";
+import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
 import { connectionErrors } from "../flow/connections";
 import {
   decideDesign,
@@ -46,6 +47,14 @@ const byId = z.object({ id });
 const byRun = z.object({ runId: id.optional() });
 
 export const ideasRouter = {
+  // Reads the idea's competition again (tavily-competition): a read that
+  // failed ("competition unknown") is retried; a finished one is returned.
+  competition: protectedProcedure
+    .input(z.object({ ideaId: id }))
+    .handler(
+      async ({ context, input }) =>
+        await readIdeaCompetition(context, input.ideaId)
+    ),
   // The idea's research dossier (tavily-evidence), read back from Tavily
   // while it's pending; null before one is started.
   dossier: protectedProcedure
@@ -160,6 +169,14 @@ export const productsRouter = {
 };
 
 export const campaignsRouter = {
+  // The competition the campaign's ads were written against, for the ad
+  // approval view (tavily-competition); null when none was read.
+  competition: protectedProcedure
+    .input(z.object({ campaignId: id }))
+    .handler(
+      async ({ context, input }) =>
+        await campaignCompetition(context, input.campaignId)
+    ),
   create: funnelProcedure("campaign_created")
     .input(
       z.object({

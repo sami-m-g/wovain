@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { adSetTargeting, deliveryOf, withUtm } from "./ad-delivery";
 import type { MediaBuying } from "./ad-delivery";
+import type { AdCompetition } from "./competition";
 import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
@@ -40,12 +41,23 @@ const COPY_RULES =
 const PERSONA_RULES =
   " The audience field says who the ads reach (ages, gender lean, Qloo audiences and interests): write in a voice and with references that land with them, without naming any brand, person or interest from it.";
 
+// With the competition (./competition, the tavily-competition flag): how
+// near-identical shirts are sold, each line with its page, so the copy
+// takes another angle. The lines are in the prompt, so the grounding guard
+// accepts a fact taken from them, and only from them.
+const COMPETITION_RULES =
+  " The competition field lists how near-identical shirts are already sold (angles, each with its source page) and what their buyers' audience likes that they miss (gaps): counter-position. Take an angle none of them uses, lean on a gap or answer a complaint, never reuse their wording and never name a competitor or a site.";
+
 export const writeAdCopy = async (
   ask: Nemotron,
   product: { description: string; idea: string; title: string },
   log?: Logger,
-  audience?: AudiencePersona
+  audience?: AudiencePersona,
+  competition?: AdCompetition
 ): Promise<AdCopy> => {
+  const system =
+    (audience === undefined ? COPY_RULES : COPY_RULES + PERSONA_RULES) +
+    (competition === undefined ? "" : COMPETITION_RULES);
   const { variants } = await ask({
     grounded: (reply) =>
       reply.variants
@@ -53,11 +65,13 @@ export const writeAdCopy = async (
         .join("\n"),
     log,
     name: "ad_copy",
-    prompt: JSON.stringify(
-      audience === undefined ? product : { ...product, audience }
-    ),
+    prompt: JSON.stringify({
+      ...product,
+      ...(audience !== undefined && { audience }),
+      ...(competition !== undefined && { competition }),
+    }),
     schema: copySchema,
-    system: audience === undefined ? COPY_RULES : COPY_RULES + PERSONA_RULES,
+    system,
     temperature: 0.8,
   });
   return variants;

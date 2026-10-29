@@ -10,6 +10,7 @@ import { log } from "evlog";
 import type { Actor, RunInput } from "./actor";
 import { notFound } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
+import { readRunCompetition, skipSaturated } from "./competition";
 import { requireFal } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { getIdea, researchIdeas } from "./ideas";
@@ -90,12 +91,21 @@ export const researchStep = async (
   input: RunInput
 ) => {
   await markRun(actor, runId, { step: "research" });
-  const ideas = await researchIdeas(actor, input.seed, runId, {
-    qloo: input.qloo,
-  });
+  // tavily-competition: each theme's competition is read and saved on its
+  // idea before anyone picks.
+  const researched = await readRunCompetition(
+    actor,
+    await researchIdeas(actor, input.seed, runId, { qloo: input.qloo })
+  );
+  if (researched.length === 0 || !input.autopilot) {
+    return { ideaIds: researched.map((row) => row.id) };
+  }
+  // Autopilot passes over saturated themes; the reason is saved on each.
+  const ideas = await skipSaturated(actor, researched);
   const ranked = ideas.map((row) => row.id);
-  if (ranked.length === 0 || !input.autopilot) {
-    return { ideaIds: ranked };
+  if (ranked.length === 0) {
+    actor.log?.set({ autopilot: { ideas: 0, reason: "saturated" } });
+    return { ideaIds: [] };
   }
   const chosen = await charge(
     actor,

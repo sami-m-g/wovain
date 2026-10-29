@@ -626,6 +626,33 @@
       "trademarkBlocked": "matches a trademark record. Change the words before you sell.",
       "trademarkCaution": "already sells on marketplaces.",
       "trademarkUnchecked": "couldn't be checked. Search it yourself before you sell."
+    },
+    "competition": {
+      "title": "Competition",
+      "adsTitle": "Competition these ads answer",
+      "unknown": "Competition unknown",
+      "unknownHint": "The marketplace search failed, so how crowded this theme is isn't known. {reason}",
+      "again": "Check again",
+      "level": {
+        "low": "Low saturation",
+        "medium": "Medium saturation",
+        "high": "Saturated"
+      },
+      "count": "{count, plural, one {# near-identical listing} other {# near-identical listings}} in {sampled, number} marketplace results.",
+      "listings": "Near-identical listings",
+      "saturatedTitle": "Saturated theme",
+      "saturated": "Too many near-identical shirts already sell. Autopilot skips this theme.",
+      "price": "They sell for about {price}.",
+      "kind": {
+        "hook": "Their hooks",
+        "claim": "Their claims",
+        "title": "Their titles",
+        "style": "Looks to avoid",
+        "price": "Their prices",
+        "complaint": "What buyers complain about"
+      },
+      "gaps": "What your audience likes that they miss",
+      "partial": "Some of the read failed ({steps}); the rest is shown."
     }
   },
   "NotFound": {

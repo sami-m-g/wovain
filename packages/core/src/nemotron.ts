@@ -35,6 +35,12 @@ export const withLlmTrace = async <T>(
   run: () => Promise<T>
 ): Promise<T> => await traces.run(trace, run);
 
+// The decision trace of the call in progress, so a non-model step (a Tavily
+// search) can record itself next to the agent calls; undefined outside a
+// traced call or with model routing off.
+export const currentDecisions = (): DecisionTrace | undefined =>
+  traces.getStore()?.decisions;
+
 export interface Ask<T extends z.ZodType> {
   // The text of the answer a buyer reads. When routed, every number and
   // claim in it must appear in the prompt (./grounding).

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
+import { briefCompetition } from "@wovain/core/competition";
 import { draftBrief, judgeDesign, redrawCanFix } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
 import { checkTrademarks } from "@wovain/core/evidence";
@@ -11,6 +12,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
 import { withAgentTrace } from "./agent-trace";
+import { isCompetitionOn } from "./competition";
 import { requireFal, withArtistCall } from "./connections";
 import { flagContextOf } from "./flags";
 import { getIdea } from "./ideas";
@@ -87,6 +89,7 @@ export const generateDesign = async (
     "tavily-evidence",
     flagContextOf(actor)
   );
+  const competing = await isCompetitionOn(actor);
   // One drawing: a brief, fal's art and the judge's look at both. Each paid
   // call is keyed, so a retried step reuses it; `previous` makes it the
   // redraw of a design the judge sent back.
@@ -98,7 +101,15 @@ export const generateDesign = async (
       perform: async () =>
         await draftBrief(
           nemotron,
-          { avoidNames: source.avoidNames, idea: source.research, previous },
+          {
+            avoidNames: source.avoidNames,
+            // tavily-competition: the looks to avoid and the gap to aim at.
+            competition: competing
+              ? briefCompetition(source.competition)
+              : undefined,
+            idea: source.research,
+            previous,
+          },
           actor.log
         ),
       provider: "nebius",

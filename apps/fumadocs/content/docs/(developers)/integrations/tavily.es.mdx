@@ -26,6 +26,18 @@ El texto de la web no es confiable: las ideas conservan sus enlaces de fuentes y
 
 Es una búsqueda, no una autorización legal: un resultado limpio significa que Tavily no encontró ningún registro.
 
+## Panorama competitivo (flag `tavily-competition`)
+
+`packages/core/src/competition.ts` lee la competencia de cada tema de Qloo mientras una ejecución investiga, antes de elegir una idea. El flag está activo en development y next, e inactivo en producción.
+
+- **Saturación.** Una búsqueda en Redbubble, TeePublic, Etsy, Amazon, tiendas Shopify, Threadless, Spreadshirt y Teespring (20 resultados) se filtra en código: cuenta como anuncio casi idéntico un resultado con relevancia de al menos 0,5 cuyo título o fragmento lleva todas las palabras del tema. Menos de 4 es baja, de 4 a 7 media, 8 o más alta (saturado). La muestra se cita.
+- **Cómo venden.** Tavily Extract lee los 5 primeros anuncios con una `query` y 3 fragmentos por página; `competitorPrices` lee sus precios. Un resumidor de Nemotron (`competition_summary`, trabajo default del router de modelos) lista títulos, ganchos, afirmaciones, precios, estilos y quejas en reseñas como JSON validado con Zod, cada punto con su página. Un punto que cita una página no leída se descarta.
+- **Huecos.** El código compara las señales de afinidad de Qloo del tema con el texto de los anuncios; las que ningún anuncio menciona son los huecos.
+- **Uso en los agentes.** El brief de diseño recibe los estilos a evitar y los huecos; el redactor de anuncios recibe los ángulos de la competencia con sus páginas y escribe un texto contrapuesto, y la guarda de fundamentación acepta solo hechos de esas líneas. El piloto automático omite un tema saturado y guarda el motivo en la idea.
+- **Fallos.** Una búsqueda fallida marca la idea como "competencia desconocida" y la tarjeta ofrece comprobar de nuevo; si falla la extracción, los precios o el resumen, esa parte falta y se indica. Cada fallo se registra a nivel error y cada paso queda en la traza de decisiones (/dashboard/models).
+
+Tavily no puede leer las páginas de la Biblioteca de anuncios de Meta, así que wovain no las busca ni las extrae.
+
 ## Configuración
 
 ```bash

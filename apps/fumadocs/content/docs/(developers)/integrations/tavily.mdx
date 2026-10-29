@@ -26,6 +26,18 @@ Web text is untrusted: the ideas carry their source links, and the model prompts
 
 This is a search, not legal clearance: a clear result means Tavily found no matching record.
 
+## Competitive landscape (`tavily-competition` flag)
+
+`packages/core/src/competition.ts` reads each Qloo theme's competition while a run researches, before anyone picks an idea. The flag is on in development and next, and off in production.
+
+- **Saturation.** One search (`include_domains`: Redbubble, TeePublic, Etsy, Amazon, Shopify stores, Threadless, Spreadshirt, Teespring; 20 results) is post-filtered in code: a result counts as a near-identical listing when its relevance score is at least 0.5 and its title or snippet carries every word of the theme. Fewer than 4 is low, 4 to 7 medium, 8 or more high (saturated). The sample is cited.
+- **How competitors sell.** Tavily Extract reads the top 5 listings with a `query` and 3 chunks per page; `competitorPrices` reads their prices. A Nemotron summarizer (`competition_summary`, the default job in the model router) lists titles, hooks, claims, prices, looks and review complaints as Zod-checked JSON, each point with its page. A point that cites a page wovain didn't read is dropped.
+- **Gaps.** Code compares the theme's Qloo affinity cues with the listings' text; the cues no listing mentions are the gaps.
+- **Used by the agents.** The design brief gets the looks to avoid and the gaps to aim at. The ad writer gets the competitor angles with their pages and writes counter-positioned copy; the lines are in its prompt, so the grounding guard accepts a fact from them and nothing else. Autopilot skips a saturated theme and saves why on the idea.
+- **Failures.** A failed search marks the idea "competition unknown" and the card offers to check again; a failed extract, price read or summary leaves that part out and says so. Every failure is logged at error level, and every step is in the run's decision trace (/dashboard/models).
+
+Meta Ad Library pages can't be read by Tavily, so wovain doesn't search or extract them.
+
 ## Configuration
 
 ```bash

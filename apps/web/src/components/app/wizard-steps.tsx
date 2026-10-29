@@ -46,6 +46,10 @@ import { useId } from "react";
 
 import { CampaignControls } from "@/components/app/campaign-controls";
 import { Citations } from "@/components/app/citations";
+import {
+  CampaignCompetition,
+  IdeaCompetition,
+} from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
@@ -376,6 +380,10 @@ export const IdeasStep = ({
                   <TasteMapPanel taste={research.taste} />
                 ) : null}
                 <IdeaEvidence research={research} />
+                <IdeaCompetition
+                  competition={idea.competition}
+                  ideaId={idea.id}
+                />
                 <IdeaDossier ideaId={idea.id} />
               </li>
             );
@@ -807,6 +815,7 @@ export const DoneStep = ({
             {t("open")}
             <ExternalLink aria-hidden="true" data-icon="inline-end" />
           </a>
+          <CampaignCompetition campaign={campaign} />
           <CampaignControls campaign={campaign} />
         </section>
       ))}
