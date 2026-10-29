@@ -1,13 +1,14 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { DirectionsChunk } from "@wovain/api/flow/drop-directions";
 import { Button } from "@wovain/ui/components/button";
 import { Label } from "@wovain/ui/components/label";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Switch } from "@wovain/ui/components/switch";
 import { ArrowRight, RefreshCw, Shuffle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { Citations } from "@/components/app/citations";
 import { Link } from "@/i18n/navigation";
@@ -15,14 +16,93 @@ import { orpc } from "@/utils/orpc";
 
 const NOT_FOUND = 404;
 const SKELETON_ROWS = ["a", "b", "c"] as const;
+const SECOND_MS = 1000;
 
 const statusOf = (error: unknown) =>
   typeof error === "object" && error !== null && "status" in error
     ? (error as { status?: unknown }).status
     : undefined;
 
-type Directions = Awaited<ReturnType<typeof orpc.runs.directions.call>>;
+type Directions = Extract<DirectionsChunk, { kind: "done" }>["answer"];
 type Direction = Directions["directions"][number];
+type Step = Extract<DirectionsChunk, { kind: "step" }>["step"];
+
+// What the chunks streamed so far add up to: the whole answer once done,
+// else the cards written so far (best first) and the step under way.
+const progressOf = (chunks: readonly DirectionsChunk[]) => {
+  let answer: Directions | undefined;
+  let step: Step | undefined;
+  // A card arrives with its facts, then again with its words: the last wins.
+  const cards = new Map<string, Direction>();
+  for (const chunk of chunks) {
+    if (chunk.kind === "done") {
+      ({ answer } = chunk);
+    } else if (chunk.kind === "step") {
+      ({ step } = chunk);
+    } else {
+      cards.set(chunk.direction.key, chunk.direction);
+    }
+  }
+  return {
+    answer,
+    cards: (answer?.directions ?? [...cards.values()]).toSorted(
+      (first, second) => second.score - first.score
+    ),
+    step,
+  };
+};
+
+/** Seconds since `running` turned on, ticking while it stays on. */
+const useElapsed = (running: boolean) => {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!running) {
+      return;
+    }
+    const started = Date.now();
+    const tick = () => {
+      setSeconds(Math.floor((Date.now() - started) / SECOND_MS));
+    };
+    // The first tick resets the count; then once a second.
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, SECOND_MS);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [running]);
+  return seconds;
+};
+
+/** A placeholder shaped like a direction card: title, why, evidence, links. */
+const CardSkeleton = () => (
+  <li
+    aria-hidden="true"
+    className="border-border bg-card flex flex-col gap-2 rounded-xl border p-4"
+  >
+    <div className="flex items-start justify-between gap-3">
+      <Skeleton className="h-5 w-2/5" />
+      <Skeleton className="h-4 w-24" />
+    </div>
+    <Skeleton className="h-4 w-4/5" />
+    <Skeleton className="h-3 w-3/5" />
+    <div className="flex gap-3">
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-3 w-20" />
+    </div>
+  </li>
+);
+
+/** The step under way and the seconds so far, read out politely. */
+const StepLine = ({ seconds, step }: { seconds: number; step?: Step }) => {
+  const t = useTranslations("Wizard.directions");
+  return (
+    <p aria-live="polite" className="text-muted-foreground text-xs">
+      {t(`steps.${step ?? "qloo"}`)}{" "}
+      <span className="figures">{t("elapsed", { seconds })}</span>
+    </p>
+  );
+};
 
 /** What backs a direction, in one line: who, what is rising, news, crowding. */
 const EvidenceLine = ({ evidence }: { evidence: Direction["evidence"] }) => {
@@ -120,61 +200,63 @@ const IgnoreBrandSwitch = ({
   );
 };
 
-/** The directions, or their loading, failure or empty state. */
+/** The cards so far, the loading state, or the failure. */
 const DirectionsBody = ({
-  data,
+  cards,
   disabled,
   error,
   loading,
   onRetry,
   onUse,
   retrying,
+  seconds,
+  step,
+  tavilyFailed,
 }: {
-  data: Directions | undefined;
+  cards: readonly Direction[];
   disabled: boolean;
   error: Error | undefined;
   loading: boolean;
   onRetry: () => Promise<void>;
   onUse: (brief: string) => void;
   retrying: boolean;
+  seconds: number;
+  step: Step | undefined;
+  tavilyFailed: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
+  if (error !== undefined) {
+    return (
+      <div
+        className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed p-4"
+        role="alert"
+      >
+        <p className="text-muted-foreground text-sm">
+          {error.message || t("failed")}
+        </p>
+        <Button
+          disabled={retrying}
+          onClick={onRetry}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <RefreshCw aria-hidden="true" data-icon="inline-start" />
+          {t("retry")}
+        </Button>
+      </div>
+    );
+  }
+  const waiting = loading ? SKELETON_ROWS.slice(cards.length) : [];
   return (
     <>
-      {error === undefined ? null : (
-        <div
-          className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed p-4"
-          role="alert"
-        >
-          <p className="text-muted-foreground text-sm">
-            {error.message || t("failed")}
-          </p>
-          <Button
-            disabled={retrying}
-            onClick={onRetry}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <RefreshCw aria-hidden="true" data-icon="inline-start" />
-            {t("retry")}
-          </Button>
-        </div>
-      )}
-      {loading ? (
-        <div aria-busy="true" className="flex flex-col gap-2">
-          <span className="sr-only">{t("loading")}</span>
-          {SKELETON_ROWS.map((key) => (
-            <Skeleton className="h-24 rounded-xl" key={key} />
-          ))}
-        </div>
-      ) : null}
-      {!loading && data?.directions.length === 0 ? (
+      {loading ? <StepLine seconds={seconds} step={step} /> : null}
+      {!loading && cards.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("none")}</p>
       ) : null}
-      {!loading && data !== undefined && data.directions.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {data.directions.map((direction) => (
+      {cards.length > 0 || waiting.length > 0 ? (
+        <ul aria-busy={loading} className="flex flex-col gap-2">
+          {cards.map((direction) => (
             <DirectionRow
               direction={direction}
               disabled={disabled}
@@ -182,9 +264,12 @@ const DirectionsBody = ({
               onUse={onUse}
             />
           ))}
+          {waiting.map((key) => (
+            <CardSkeleton key={key} />
+          ))}
         </ul>
       ) : null}
-      {!loading && data?.tavilyFailed ? (
+      {!loading && tavilyFailed ? (
         <p className="text-muted-foreground text-xs">{t("tavilyFailed")}</p>
       ) : null}
     </>
@@ -210,21 +295,23 @@ export const DropDirections = ({
   const headingId = useId();
   const [ignoreBrand, setIgnoreBrand] = useState(false);
   const [round, setRound] = useState(0);
+  // Kept suggestions arrive at once; a new search streams card by card.
   const directions = useQuery(
-    orpc.runs.directions.queryOptions({
+    orpc.runs.directions.experimental_streamedOptions({
       input: { ignoreBrand, round },
-      placeholderData: keepPreviousData,
+      queryFnOptions: { refetchMode: "reset" },
       retry: false,
       staleTime: Number.POSITIVE_INFINITY,
     })
   );
+  const { answer, cards, step } = progressOf(directions.data ?? []);
+  const loading = !directions.isError && answer === undefined;
+  const seconds = useElapsed(loading);
   // The drop-directions flag is off: nothing to show.
   if (directions.isError && statusOf(directions.error) === NOT_FOUND) {
     return null;
   }
-  const { data } = directions;
-  const loading =
-    !directions.isError && (data === undefined || directions.isPlaceholderData);
+  const data = answer;
   const within = data?.scope === "brand";
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
@@ -260,7 +347,7 @@ export const DropDirections = ({
         </div>
       </div>
       <DirectionsBody
-        data={data}
+        cards={cards}
         disabled={disabled}
         error={directions.isError ? directions.error : undefined}
         loading={loading}
@@ -269,6 +356,9 @@ export const DropDirections = ({
         }}
         onUse={onUse}
         retrying={directions.isFetching}
+        seconds={seconds}
+        step={step}
+        tavilyFailed={data?.tavilyFailed === true}
       />
       {data !== undefined && !data.hasBrand ? (
         <p className="text-muted-foreground text-xs">
@@ -283,4 +373,16 @@ export const DropDirections = ({
       ) : null}
     </section>
   );
+};
+
+/**
+ * Opening the app asks for the suggestions in the background when the kept
+ * ones are missing or stale, so the new-drop step opens at once.
+ */
+export const WarmDirections = () => {
+  const { mutate } = useMutation(orpc.runs.warmDirections.mutationOptions());
+  useEffect(() => {
+    mutate({});
+  }, [mutate]);
+  return null;
 };

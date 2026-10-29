@@ -25,7 +25,7 @@ import { orpc } from "@/utils/orpc";
 // shipping, the pixel) ticks off here by itself.
 const POLL_MS = 10_000;
 
-const StateIcon = ({ state }: { state: Step["state"] }) => {
+export const StateIcon = ({ state }: { state: Step["state"] }) => {
   if (state === "done") {
     return (
       <CircleCheck
