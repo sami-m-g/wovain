@@ -23,7 +23,7 @@ import type { Nemotron } from "./nemotron";
 import { outcomeScore } from "./outcomes";
 import type { OutcomeModel, OutcomeWhy } from "./outcomes";
 import type { InsightsQuery, Qloo, QlooInsight } from "./qloo";
-import { cautionOf, cautionScore, judgeIdea, sweetSpotOf } from "./sweet-spot";
+import { cautionOf, fallbackScore, judgeIdea, sweetSpotOf } from "./sweet-spot";
 import type {
   Caution,
   DropReason,
@@ -910,7 +910,7 @@ export const suggestDirections = async (
         caution,
         draft,
         spot: verdict.spot ?? sweetSpotOf(input),
-        weight: cautionScore(caution, input.qlooAffinity ?? 0),
+        weight: fallbackScore(input),
       });
     }
   };

@@ -1,4 +1,5 @@
-import { SATURATED_AT } from "./competition";
+import { SATURATED_AT, saturationOf } from "./competition";
+import type { SaturationLevel } from "./competition";
 import { PROVEN_REVIEWS } from "./demand";
 import type { AdDemand, MarketDemand } from "./demand";
 
@@ -46,8 +47,14 @@ const MAX_GAPS = 3;
 // 95% two-sided, as in Evan Miller's ranking.
 const Z = 1.96;
 
+const unit = (value: number | undefined, fallback = 0) =>
+  Math.min(Math.max(value ?? fallback, 0), 1);
+
 export interface SweetSpotInput {
   ads?: AdDemand | undefined;
+  // The share of the brief's key concepts the idea carries, 0 to 1; 1 when
+  // the brief has one concept or none (a direction).
+  coverage?: number | undefined;
   // Audience cues no listing covers.
   gaps: number;
   // Near-identical marketplace listings; undefined when not read.
@@ -80,7 +87,8 @@ export interface SweetSpot {
   lower: number;
   // demand / supply; null with no supply (kept JSON-safe).
   ratio: number | null;
-  // What the rank sorts on: lower x Qloo fit x the gap bonus.
+  // What the rank sorts on: lower x Qloo fit x brief coverage x the gap
+  // bonus.
   score: number;
   // Supply points: near-identical listings and advertisers.
   supply: number;
@@ -134,13 +142,13 @@ export const sweetSpotOf = (input: SweetSpotInput): SweetSpot => {
   const supply = supplyPoints(input.listings ?? 0, input.ads);
   const gaps = Math.min(Math.max(input.gaps, 0), MAX_GAPS);
   const lower = wilsonLower(demand, demand + supply);
-  const fit = Math.min(Math.max(input.qlooAffinity ?? 0, 0), 1);
+  const fit = unit(input.qlooAffinity);
   return {
     demand,
     gaps: input.gaps,
     lower,
     ratio: supply === 0 ? null : demand / supply,
-    score: lower * fit * (1 + GAP_BONUS * gaps),
+    score: lower * fit * unit(input.coverage, 1) * (1 + GAP_BONUS * gaps),
     supply,
   };
 };
@@ -189,17 +197,25 @@ export type Caution = (typeof CAUTION_ORDER)[number];
 export const cautionOf = (reason: DropReason): Caution | undefined =>
   CAUTION_ORDER.find((one) => one === reason);
 
-// A shown-with-caution idea's rank: its Qloo fit, scaled down by how weak
-// its evidence is, so it never reads as proven.
-const CAUTION_WEIGHT: Record<Caution, number> = {
-  demand_unknown: 0.1,
-  no_competition_read: 0.08,
-  no_demand_proof: 0.05,
-  saturated: 0.02,
+// How much room a market leaves, by its near-identical listings: an unread
+// market sits between a crowded one and an open one.
+const SATURATION_BAND: Record<SaturationLevel | "unknown", number> = {
+  high: 0.4,
+  low: 1,
+  medium: 0.7,
+  unknown: 0.6,
 };
 
-export const cautionScore = (caution: Caution, qlooAffinity: number) =>
-  Math.min(Math.max(qlooAffinity, 0), 1) * CAUTION_WEIGHT[caution];
+// A shown-with-caution idea's rank, when no idea proved demand: Qloo's fit
+// with the audience x the share of the brief's concepts it carries x the
+// room its market leaves. Demand is unconfirmed, so the rank stands on what
+// was read; the caution on the card says what wasn't.
+export const fallbackScore = (input: SweetSpotInput) =>
+  unit(input.qlooAffinity) *
+  unit(input.coverage, 1) *
+  SATURATION_BAND[
+    input.listings === undefined ? "unknown" : saturationOf(input.listings)
+  ];
 
 export interface Judged<T> {
   dropped: { item: T; reason: DropReason; spot?: SweetSpot | undefined }[];
@@ -234,7 +250,7 @@ export const rankIdeas = <T>(
         caution,
         item,
         spot: verdict.spot ?? sweetSpotOf(input),
-        weight: cautionScore(caution, input.qlooAffinity ?? 0),
+        weight: fallbackScore(input),
       });
     }
   }

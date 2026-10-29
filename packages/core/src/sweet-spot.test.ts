@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import type { AdDemand, MarketDemand } from "./demand";
 import {
   demandPoints,
+  fallbackScore,
   judgeIdea,
   rankIdeas,
   SATURATED_ADVERTISERS,
@@ -60,12 +61,27 @@ it("shows Qloo-backed ideas with their caution when none passes, never empty", (
     ],
     (one) => one
   );
+  // Ranked by Qloo affinity x brief coverage x saturation band.
   expect(kept.map((one) => one.caution)).toStrictEqual([
-    "demand_unknown",
     "no_demand_proof",
     "saturated",
+    "demand_unknown",
   ]);
   expect(dropped.map((one) => one.reason)).toStrictEqual(["no_qloo_evidence"]);
+});
+
+// Next, run 783b6885: every unconfirmed idea scored 0.04.
+it("tells unconfirmed ideas apart by fit, brief coverage and room", () => {
+  const unconfirmed = idea({ market: undefined, qlooAffinity: 0.9 });
+  const scores = [
+    fallbackScore({ ...unconfirmed, coverage: 1, listings: 1 }),
+    fallbackScore({ ...unconfirmed, coverage: 2 / 3, listings: 1 }),
+    fallbackScore({ ...unconfirmed, coverage: 2 / 3, listings: 5 }),
+    fallbackScore({ ...unconfirmed, coverage: 1 / 3, listings: undefined }),
+  ];
+  expect(scores).toStrictEqual(scores.toSorted((a, b) => b - a));
+  expect(new Set(scores).size).toBe(scores.length);
+  expect(scores[0]).toBeCloseTo(0.9);
 });
 
 it("drops an idea with no proof of demand", () => {
