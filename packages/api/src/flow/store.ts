@@ -55,6 +55,7 @@ import {
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
 import { once } from "./once";
+import { checkNewPrice } from "./price-check";
 import { getProduct, publishDesignProduct } from "./products";
 
 // Store management on Fourthwall (openspec store-management), behind the
@@ -536,6 +537,16 @@ export const requestReprice = async (
   price: number
 ) => {
   const row = await getProduct(actor, productId);
+  // A price that loses money on some size is refused, against Fourthwall's
+  // real cost per size.
+  const check = await checkNewPrice(actor, productId, price);
+  if (check?.verdict === "loss") {
+    throw storeError(
+      `At $${price.toFixed(2)}, a ${check.worst.size} sells at a loss`,
+      `Fourthwall charges $${check.worst.cost.toFixed(2)} to make it, which leaves $${check.worst.profit.toFixed(2)} after fees.`,
+      `Price it at $${check.floorPrice} or more.`
+    );
+  }
   return await merchantAction(actor, {
     costPreview: {
       amountCents: Math.round(price * CENTS),

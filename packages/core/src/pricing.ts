@@ -56,27 +56,39 @@ export const pricingRules = (): PricingRules => {
 
 const percent = (value: number) => value / 100;
 
-// What a sale leaves after the blank, fees and the refund reserve.
-export const profitPerSale = (price: number, baseCost: number) => {
-  const rules = pricingRules();
+// What a sale leaves after the blank, fees and the refund reserve, under
+// the given rules (pure: the Store's price check runs it in the browser).
+export const profitUnder = (
+  rules: PricingRules,
+  price: number,
+  baseCost: number
+) => {
   const tax = price * percent(rules.salesTaxPct);
   const orderValue = price + rules.shipping + tax;
   const cardFees = orderValue * percent(rules.cardFeePct) + rules.cardFeeFixed;
   return price - baseCost - cardFees - price * percent(rules.refundReservePct);
 };
 
-export const priceFor = (baseCost: number) => {
-  const rules = pricingRules();
+// The lowest whole-dollar price that clears the minimum profit and margin
+// under the given rules.
+export const priceUnder = (rules: PricingRules, baseCost: number) => {
   const floor = Math.max(
     baseCost + rules.minProfit,
     baseCost / (1 - percent(rules.minMarginPct))
   );
   let price = Math.ceil(floor);
-  while (profitPerSale(price, baseCost) < rules.minProfit) {
+  while (profitUnder(rules, price, baseCost) < rules.minProfit) {
     price += 1;
   }
   return price;
 };
+
+// What a sale leaves after the blank, fees and the refund reserve.
+export const profitPerSale = (price: number, baseCost: number) =>
+  profitUnder(pricingRules(), price, baseCost);
+
+export const priceFor = (baseCost: number) =>
+  priceUnder(pricingRules(), baseCost);
 
 // The price of each surcharged size, from the product's base price. Sizes
 // without a surcharge keep the base price, so they are not listed.

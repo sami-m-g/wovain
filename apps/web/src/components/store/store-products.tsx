@@ -32,6 +32,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { PriceCheck } from "@/components/store/store-price-check";
 import type { Tone } from "@/components/store/store-shared";
 import {
   AdminLink,
@@ -264,7 +265,6 @@ const RepriceDialog = ({
               <Label htmlFor="reprice-price">{t("price")}</Label>
               <Input
                 className="w-32"
-                defaultValue={product.price}
                 id="reprice-price"
                 max={1000}
                 min={1}
@@ -275,8 +275,10 @@ const RepriceDialog = ({
                 required
                 step="0.01"
                 type="number"
+                value={next}
               />
             </div>
+            <PriceCheck onPick={setPrice} price={next} productId={product.id} />
             <dl className="bg-muted figures grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg p-3 text-sm">
               <dt className="text-muted-foreground">{t("now")}</dt>
               <dd className="text-end">{money.dollars(current)}</dd>

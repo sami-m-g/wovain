@@ -34,6 +34,7 @@ import {
   requestGiftCards,
   requestPromotionEnd,
   requestRefund,
+  requestReprice,
   requestShopPromotion,
   requestSiteLive,
   sampleLink,
@@ -687,6 +688,23 @@ describe("the Store page's requests", () => {
         (entry) => entry.tool === "ecommerce_create-gift-cards"
       )?.args
     ).toEqual({ amount: 25, numberOfCards: 4 });
+  });
+
+  it("refuses a price that loses money in a size, against Fourthwall's cost", async () => {
+    const ctx = await setup({
+      "ecommerce_get-customization-pricing": {
+        sizes: [
+          { cost: 13, size: "M" },
+          { cost: 19, size: "2XL" },
+        ],
+      },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    await expect(requestReprice(ctx.actor, productId, 15)).rejects.toThrow(
+      "sells at a loss"
+    );
+    const queued = await requestReprice(ctx.actor, productId, 40);
+    expect(queued.status).toBe("approved");
   });
 
   it("takes a coming-soon shop live after the merchant confirms", async () => {

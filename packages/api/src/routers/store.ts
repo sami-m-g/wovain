@@ -8,6 +8,7 @@ import {
 } from "@wovain/core/store";
 import { z } from "zod";
 
+import { productCosts } from "../flow/price-check";
 import {
   listDrops,
   listStoreOrders,
@@ -137,6 +138,14 @@ export const storeRouter = {
       })
     )
     .handler(guarded(requestShopPromotion)),
+  // Fourthwall's cost per size and the pricing rules, for the price check.
+  priceCheck: protectedProcedure
+    .input(z.object({ productId: id }))
+    .handler(
+      guarded(
+        async (context, input) => await productCosts(context, input.productId)
+      )
+    ),
   products: protectedProcedure.handler(
     guarded(async (context) => await storeProducts(context))
   ),

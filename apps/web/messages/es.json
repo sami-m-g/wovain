@@ -149,7 +149,7 @@
       },
       {
         "question": "¿Cómo se fijan los precios?",
-        "answer": "Desde el coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, tras comisiones de tarjeta, impuesto sobre ventas y una reserva para reembolsos, redondeado al dólar superior. Puedes cambiar cualquier precio después en Fourthwall."
+        "answer": "Desde el coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, tras comisiones de tarjeta, impuesto sobre ventas y una reserva para reembolsos, redondeado al dólar superior. Cuando cambias un precio, wovain muestra tu beneficio en cada talla frente al coste real de Fourthwall y rechaza uno que pierda dinero."
       },
       {
         "question": "¿Cuánto cuesta?",
@@ -1699,6 +1699,25 @@
       "down": "Los compradores pagan {amount} menos por pieza. wovain rechaza un precio que venda con pérdidas.",
       "back": "Cancelar",
       "confirm": "Cambiar precio"
+    },
+    "priceCheck": {
+      "label": "Revisión del precio",
+      "verdict": {
+        "loss": "Pérdida: una {size} pierde {profit} por venta. wovain no enviará este precio.",
+        "below_floor": "Por debajo del mínimo de wovain: una {size} deja {profit} por venta.",
+        "thin": "Rentable, pero por debajo del {margin} de margen que las tiendas guardan para pagar anuncios. Una {size} deja {profit}.",
+        "healthy": "Sano: al menos {margin} de margen en cada talla. Una {size} deja {profit}."
+      },
+      "size": "Talla",
+      "cost": "Coste",
+      "price": "Precio",
+      "profit": "Beneficio",
+      "margin": "Margen",
+      "useFloor": "Usar {price} (mínimo de wovain)",
+      "useBenchmark": "Usar {price} ({margin} de margen)",
+      "source": "Coste: lo que Fourthwall cobra por fabricar cada talla. Beneficio: tras comisiones de tarjeta, impuestos y una reserva para reembolsos.",
+      "noCost": "Fourthwall no dio un coste para este producto, así que no se puede revisar el precio.",
+      "unavailable": "La revisión del precio no está disponible: {reason}"
     },
     "sample": {
       "title": "Pedir una muestra de {title}",
