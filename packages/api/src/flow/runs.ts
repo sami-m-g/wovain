@@ -490,10 +490,21 @@ const textField = (value: unknown, key: string) => {
   return typeof field === "string" && field !== "" ? field : undefined;
 };
 
+// A provider the merchant hasn't connected, or whose sign-in expired: by its
+// code (FOURTHWALL_NOT_CONNECTED, META_RECONNECT_NEEDED) or, when only the
+// stored message survived, by the wording upstream gives those errors.
+const MISSING_CODE = /^[A-Z]+_(?:NOT_CONNECTED|RECONNECT_NEEDED)$/u;
+const MISSING_TEXT =
+  /\b[A-Z]+_(?:NOT_CONNECTED|RECONNECT_NEEDED)\b|isn't connected|its sign-in expired/u;
+const missingConnection = (cause: unknown, reason: string) =>
+  MISSING_CODE.test(textField(cause, "code") ?? "") ||
+  MISSING_TEXT.test(reason);
+
 // Every failed run is an error-level event, so it reaches PostHog Error
 // Tracking (docs/flows.md, "One error sink"): the step, the provider and its
 // own words. The provider's status (often a 4xx, such as a refused grant)
-// rides in `run`, not on `error`, which error tracking would skip.
+// rides in `run`, not on `error`, which error tracking would skip. A missing
+// connection is the exception: expected, so a warning.
 const logRunFailure = (
   actor: Actor,
   runId: string,
@@ -509,7 +520,10 @@ const logRunFailure = (
   const reason =
     message ??
     (cause instanceof Error ? cause.message : String(cause ?? "unknown"));
-  log.error({
+  // A provider the merchant hasn't connected (or must reconnect) is
+  // expected: the app shows its connect state, so it's a warning.
+  const level = missingConnection(cause, reason) ? "warn" : "error";
+  log[level]({
     error: {
       code: textField(cause, "code") ?? "RUN_FAILED",
       message: `Run failed during ${step ?? "start"}: ${reason}`,

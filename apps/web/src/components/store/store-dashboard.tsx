@@ -25,12 +25,14 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ConnectState } from "@/components/app/connect-state";
 import type {
   StoreApproval,
   StoreDrop,
   StoreOrder,
   StoreProduct,
 } from "@/lib/flow-client";
+import { missingConnection } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 const THUMB = 56;
@@ -64,11 +66,31 @@ const useRequest = () => {
   };
 };
 
+/** No shop to read until Fourthwall is connected: the way to connect it. */
+const ShopConnect = ({ reconnect }: { reconnect: boolean }) => {
+  const t = useTranslations("Store.readiness");
+  return (
+    <section aria-labelledby="store-connect">
+      <ConnectState
+        body={t("connectBody")}
+        headingId="store-connect"
+        provider="fourthwall"
+        reconnect={reconnect}
+        title={reconnect ? undefined : t("connectTitle")}
+      />
+    </section>
+  );
+};
+
 const Readiness = () => {
   const t = useTranslations("Store.readiness");
   const query = useQuery(orpc.store.readiness.queryOptions());
   if (query.isPending) {
     return <Skeleton className="h-32 w-full" />;
+  }
+  const missing = missingConnection(query.error);
+  if (missing !== undefined) {
+    return <ShopConnect reconnect={missing.reconnect} />;
   }
   if (query.isError) {
     return (
@@ -629,17 +651,35 @@ const Orders = () => {
 /** The products page: readiness, the store's approval queue, drops, products and orders. */
 export const StoreDashboard = () => {
   const t = useTranslations("Store");
+  const connections = useQuery(orpc.connections.list.queryOptions());
+  const fourthwall = connections.data?.find(
+    (each) => each.provider === "fourthwall"
+  );
+  // Until Fourthwall is connected there is no shop to read: one connect
+  // state stands in for readiness, drops, products and orders.
+  const shopless =
+    connections.isSuccess &&
+    (fourthwall === undefined || fourthwall.needsReconnect);
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-1">
         <h1 className="font-display text-2xl font-semibold">{t("title")}</h1>
         <p className="text-muted-foreground">{t("lead")}</p>
       </header>
-      <Readiness />
-      <Queue />
-      <Drops />
-      <Products />
-      <Orders />
+      {shopless ? (
+        <>
+          <ShopConnect reconnect={fourthwall?.needsReconnect === true} />
+          <Queue />
+        </>
+      ) : (
+        <>
+          <Readiness />
+          <Queue />
+          <Drops />
+          <Products />
+          <Orders />
+        </>
+      )}
     </div>
   );
 };

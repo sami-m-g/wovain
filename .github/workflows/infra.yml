@@ -83,21 +83,32 @@ jobs:
           workload_identity_provider: ${{ env.PREVIEW_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.PREVIEW_SERVICE_ACCOUNT }}
       - run: pnpm run infra:install
+      # A failed preview still writes its JSON: scripts/pulumi.ts puts its
+      # errors in the log and the guard puts them in the job summary. Every
+      # stack is previewed, even after an earlier one fails.
       - name: Preview bootstrap
         run: |
-          node infra/scripts/pulumi.ts preview infra/bootstrap -- --json > "$RUNNER_TEMP/bootstrap.json"
+          status=0
+          node infra/scripts/pulumi.ts preview infra/bootstrap -- --json > "$RUNNER_TEMP/bootstrap.json" || status=$?
           echo "### bootstrap" >> "$GITHUB_STEP_SUMMARY"
-          node infra/policy/guard.ts < "$RUNNER_TEMP/bootstrap.json" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/bootstrap.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
       - name: Preview prod
+        if: ${{ !cancelled() }}
         run: |
-          node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json"
+          status=0
+          node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json" || status=$?
           echo "### prod" >> "$GITHUB_STEP_SUMMARY"
-          node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
       - name: Preview next
+        if: ${{ !cancelled() }}
         run: |
-          node infra/scripts/pulumi.ts preview infra/next -- --json > "$RUNNER_TEMP/next.json"
+          status=0
+          node infra/scripts/pulumi.ts preview infra/next -- --json > "$RUNNER_TEMP/next.json" || status=$?
           echo "### next" >> "$GITHUB_STEP_SUMMARY"
-          node infra/policy/guard.ts < "$RUNNER_TEMP/next.json" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/next.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
 
   up-next:
     # Every push to main (and a manual run on main) applies next only. The

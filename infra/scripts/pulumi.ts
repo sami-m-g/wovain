@@ -12,16 +12,23 @@
 //
 // 1. State changes no program can make (migrateState below): drop GitLab's
 //    resources from the state, since GitLab is archived and Pulumi must
-//    never call it, and unprotect what policy/retired.ts retires that way.
-//    Each step checks the state first, so running it again does nothing.
+//    never call it, unprotect what policy/retired.ts retires that way, and
+//    release the retired "deleted" resources the state still protects
+//    (scripts/state.ts, releaseDeleted). Each step checks the state first,
+//    so running it again does nothing.
 // 2. The policy pack, always.
 //
 // A preview never writes the real state: it runs on a copy in a local
 // backend, with step 1 applied to the copy, so it shows what `up` will do.
-// `up` first runs that preview through the guard (policy/guard.ts), which
-// stops on a delete of stateful data or a change to frozen production; only
-// then does it migrate the real state and apply.
-import { execFileSync } from "node:child_process";
+// Only `up`, which CI runs in the gated `infrastructure` environment,
+// migrates the real state. `up` first runs that preview through the guard
+// (policy/guard.ts), which stops on a delete of stateful data or a change to
+// frozen production; only then does it migrate the real state and apply.
+//
+// With --json, Pulumi writes its errors into the JSON on stdout, not to
+// stderr. When a preview fails, its error diagnostics also go to stderr, so
+// the CI log shows them (the guard puts them in the job summary).
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -29,6 +36,8 @@ import path from "node:path";
 import { parse } from "yaml";
 
 import { RETIRED } from "../policy/retired.ts";
+import { releaseDeleted } from "./state.ts";
+import type { Checkpoint } from "./state.ts";
 
 const repo = path.resolve(import.meta.dirname, "../..");
 const [command, dir = "infra", ...rest] = process.argv.slice(2);
@@ -63,12 +72,6 @@ const pulumi = (args: string[], env: NodeJS.ProcessEnv = process.env) =>
     stdio: ["ignore", "pipe", "inherit"],
   });
 
-interface StateResource {
-  protect?: boolean;
-  type: string;
-  urn: string;
-}
-
 // A state change: its output goes to stderr, so a preview's --json stays
 // clean on stdout.
 const change = (args: string[], env: NodeJS.ProcessEnv) =>
@@ -77,15 +80,11 @@ const change = (args: string[], env: NodeJS.ProcessEnv) =>
     stdio: ["ignore", process.stderr, "inherit"],
   });
 
-const resources = (env: NodeJS.ProcessEnv) => {
+const exportState = (env: NodeJS.ProcessEnv) =>
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's checkpoint format
-  const state = JSON.parse(
-    pulumi(["stack", "export", "--stack", STACK], env)
-  ) as {
-    deployment: { resources?: StateResource[] };
-  };
-  return state.deployment.resources ?? [];
-};
+  JSON.parse(pulumi(["stack", "export", "--stack", STACK], env)) as Checkpoint;
+const resources = (env: NodeJS.ProcessEnv) =>
+  exportState(env).deployment.resources ?? [];
 
 const GITLAB_PROVIDER = /^pulumi:providers:(?:gitlab|graphql)$/u;
 const urnFor = (key: string) => `urn:pulumi:${STACK}::${key}`;
@@ -126,6 +125,21 @@ const migrateState = (env: NodeJS.ProcessEnv) => {
       process.stderr.write(`state: unprotect ${urn}\n`);
       change(["state", "unprotect", urn, "--stack", STACK, "--yes"], env);
     }
+  }
+  // `pulumi state unprotect` can't clear retainOnDelete, so the release
+  // edits an export of the state and imports it back.
+  const checkpoint = exportState(env);
+  const released = releaseDeleted(checkpoint);
+  if (released.length > 0) {
+    for (const urn of released) {
+      process.stderr.write(`state: release ${urn}\n`);
+    }
+    const file = path.join(
+      mkdtempSync(path.join(tmpdir(), "pulumi-release-")),
+      "checkpoint.json"
+    );
+    writeFileSync(file, JSON.stringify(checkpoint));
+    change(["stack", "import", "--stack", STACK, "--file", file], env);
   }
 };
 
@@ -186,18 +200,73 @@ const policyArgs = [
 ];
 const previewEnv = localCopy();
 migrateState(previewEnv);
-if (command === "preview") {
+
+interface Diagnostic {
+  message?: string;
+  severity?: string;
+  urn?: string;
+}
+// A failed `pulumi preview --json`: its errors and the program's stderr
+// (severity `info#err`) go to stderr, then the script exits with Pulumi's
+// status.
+const reportFailure = (stdout: string, status: number) => {
+  let diagnostics: Diagnostic[] = [];
+  try {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's preview JSON
+    ({ diagnostics = [] } = JSON.parse(stdout) as {
+      diagnostics?: Diagnostic[];
+    });
+  } catch {
+    process.stderr.write(stdout);
+  }
+  process.stderr.write(`pulumi preview failed (exit ${status}):\n`);
+  for (const { message = "", severity = "", urn } of diagnostics) {
+    if (severity === "error" || severity === "info#err") {
+      const where = urn === undefined ? "" : ` ${urn}`;
+      process.stderr.write(`[${severity}]${where} ${message.trim()}\n`);
+    }
+  }
+  process.exit(status);
+};
+
+// `pulumi preview --json` on the local copy.
+const previewJson = (args: string[]) => {
+  const result = spawnSync(
+    "pulumi",
+    ["preview", ...policyArgs, ...args, "--json"],
+    {
+      encoding: "utf-8",
+      env: previewEnv,
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "inherit"],
+    }
+  );
+  if (result.error !== undefined) {
+    throw result.error;
+  }
+  return { status: result.status ?? 1, stdout: result.stdout };
+};
+
+if (command === "preview" && !extra.includes("--json")) {
   execFileSync("pulumi", ["preview", ...policyArgs, ...extra], {
     env: previewEnv,
     stdio: "inherit",
   });
+} else if (command === "preview") {
+  const { status, stdout } = previewJson(
+    extra.filter((arg) => arg !== "--json")
+  );
+  // The JSON goes to stdout even when the preview fails, so the guard can
+  // put its errors in the job summary.
+  process.stdout.write(stdout);
+  if (status !== 0) {
+    reportFailure(stdout, status);
+  }
 } else {
-  const plan = execFileSync("pulumi", ["preview", ...policyArgs, "--json"], {
-    encoding: "utf-8",
-    env: previewEnv,
-    maxBuffer: 256 * 1024 * 1024,
-    stdio: ["ignore", "pipe", "inherit"],
-  });
+  const { status, stdout: plan } = previewJson([]);
+  if (status !== 0) {
+    reportFailure(plan, status);
+  }
   // Exits non-zero, with the reason on stderr, when the plan is blocked.
   execFileSync("node", [path.join(repo, "infra/policy/guard.ts")], {
     input: plan,

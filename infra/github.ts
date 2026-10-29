@@ -64,8 +64,8 @@ interface RepositoryArgs {
   releaseBranch: string;
   // GitHub user ids who may approve a production deploy.
   releaseReviewerIds: number[];
-  // ggshield's API key (.github/workflows/supply-chain.yml), from the
-  // `gitguardian-api-key` stack secret. Left out, no secret is declared.
+  // GitGuardian's incidents:write token (.github/workflows/gitguardian-ignore.yml),
+  // from the `gitguardian-api-key` stack secret. Left out, no secret is declared.
   gitguardianApiKey?: pulumi.Input<string> | undefined;
 }
 
@@ -114,9 +114,13 @@ export const githubRepository = ({
   );
 
   // The default branch: no deletion, no force-push, and every change through
-  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL and
-  // the dependency review (.github/workflows). No required approval: the
-  // maintainer merges their own pull requests.
+  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,
+  // the dependency review and the full OSV scan (.github/workflows), with one
+  // approval that a new push dismisses. The maintainer works alone, so the
+  // approval comes from CodeRabbit (.coderabbit.yaml: it requests changes on
+  // blocking findings and approves once they are resolved). No one may
+  // bypass the rules. CodeRabbit is not a required check: its review runs
+  // beside CI, and its approval is what counts.
   new github.RepositoryRuleset("main", {
     conditions: {
       refName: { excludes: [], includes: ["~DEFAULT_BRANCH"] },
@@ -128,19 +132,24 @@ export const githubRepository = ({
       deletion: true,
       nonFastForward: true,
       pullRequest: {
-        dismissStaleReviewsOnPush: false,
+        dismissStaleReviewsOnPush: true,
         requireCodeOwnerReview: false,
         requireLastPushApproval: false,
-        requiredApprovingReviewCount: 0,
+        requiredApprovingReviewCount: 1,
         requiredReviewThreadResolution: false,
       },
       requiredStatusChecks: {
-        requiredChecks: ["verify", "infra", "codeql", "dependency-review"].map(
-          (context) => ({
-            context,
-            integrationId: GITHUB_ACTIONS_APP_ID,
-          })
-        ),
+        requiredChecks: [
+          "verify",
+          "infra",
+          "codeql",
+          "dependency-review",
+          // A reusable workflow's check is `<calling job> / <its job>`.
+          "osv / osv-scan",
+        ].map((context) => ({
+          context,
+          integrationId: GITHUB_ACTIONS_APP_ID,
+        })),
         strictRequiredStatusChecksPolicy: false,
       },
     },
@@ -220,8 +229,8 @@ export const githubRepository = ({
     repository: repository.name,
   });
 
-  // The one repository secret: ggshield's key. It is a stack secret, so
-  // Pulumi keeps it encrypted in state; only the ggshield job reads it.
+  // The one repository secret: GitGuardian's token. It is a stack secret, so
+  // Pulumi keeps it encrypted in state; only gitguardian-ignore reads it.
   if (gitguardianApiKey !== undefined) {
     new github.ActionsSecret("GITGUARDIAN_API_KEY", {
       plaintextValue: gitguardianApiKey,

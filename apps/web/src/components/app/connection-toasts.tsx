@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { PROVIDERS } from "@/lib/flow-client";
-import { orpc } from "@/utils/orpc";
 
 /**
  * Provider callbacks come back with `?connected=<provider>` or
@@ -35,9 +34,16 @@ export const ConnectionToasts = () => {
     } else if (failed !== null) {
       toast.error(t("failedToast", { code: failed }));
     }
-    queryClient.invalidateQueries({ queryKey: orpc.connections.key() });
-    router.replace(pathname);
-  }, [connected, failed, pathname, queryClient, router, t]);
+    // Every query: one that failed for want of this connection reads again.
+    queryClient.invalidateQueries();
+    // Keeps the rest of the URL (a run's `?run=`), so the merchant is back
+    // where they started connecting.
+    const rest = new URLSearchParams(searchParams.toString());
+    rest.delete("connected");
+    rest.delete("connection_error");
+    const query = rest.toString();
+    router.replace(query === "" ? pathname : `${pathname}?${query}`);
+  }, [connected, failed, pathname, queryClient, router, searchParams, t]);
 
   return null;
 };

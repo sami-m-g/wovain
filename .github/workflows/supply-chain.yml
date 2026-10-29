@@ -1,7 +1,7 @@
 # Dependency and license checks. dependency-review judges what a pull request
 # adds (vulnerabilities, licenses); licenses is the whole tree of both
-# lockfiles (OSV-Scanner, exceptions in osv-scanner.toml); ggshield scans the
-# commits for secrets.
+# lockfiles (OSV-Scanner, exceptions in osv-scanner.toml). Secrets in commits
+# are the GitGuardian GitHub App's check (`GitGuardian Security Checks`).
 name: supply-chain
 
 on:
@@ -72,24 +72,3 @@ jobs:
             --lockfile=infra/pnpm-lock.yaml
             --x-disable-plugins=vulnmatch/osvdev
             --licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,0BSD,Unlicense,CC0-1.0,BlueOak-1.0.0,Python-2.0,MPL-2.0
-
-  # The GitGuardian GitHub App can be uninstalled once this runs. Needs the
-  # GITGUARDIAN_API_KEY Actions secret (infra/README.md, "GitGuardian").
-  # Skipped on pull requests from forks, which get no secrets.
-  ggshield:
-    name: ggshield
-    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # ggshield walks the commits of the push or pull request.
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: GitGuardian/ggshield-action@5cc1ed2be3e8bf625d354c7170731880670f74de # v1.56.1
-        env:
-          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
-          GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
