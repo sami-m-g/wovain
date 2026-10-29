@@ -53,6 +53,57 @@ export const keyOf = (value: string) =>
 const asError = (error: unknown) =>
   error instanceof Error ? error : new Error(String(error));
 
+// Social posts: a caption with a call to action and a link, not a page
+// about the theme ("Dark As Night Shirt Shop the look → link in bio …").
+export const SOCIAL_DOMAINS = [
+  "facebook.com",
+  "instagram.com",
+  "pinterest.com",
+  "threads.net",
+  "tiktok.com",
+  "twitter.com",
+  "x.com",
+];
+
+// Separators page titles put between a name and the site's boilerplate.
+const TITLE_BREAKS = new Set(["|", "→", "»", "•", "·", "–", "—", "-"]);
+// Calls to action web titles end with.
+const CALLS_TO_ACTION = [
+  "buy now",
+  "click here",
+  "learn more",
+  "link in bio",
+  "order now",
+  "read more",
+  "shop now",
+  "shop the look",
+];
+
+const isLinkWord = (word: string) =>
+  word.startsWith("www.") || /^https?:/iu.test(word);
+
+// A source's title as the merchant reads it: its first part, without links
+// or a call to action; the page's host when nothing is left.
+export const sourceTitle = (title: string | null | undefined, url: string) => {
+  const words: string[] = [];
+  for (const word of (title ?? "").split(/\s+/u)) {
+    if (TITLE_BREAKS.has(word) && words.length > 0) {
+      break;
+    }
+    if (word !== "" && !isLinkWord(word) && !TITLE_BREAKS.has(word)) {
+      words.push(word);
+    }
+  }
+  let text = words.join(" ");
+  for (const call of CALLS_TO_ACTION) {
+    const at = text.toLowerCase().indexOf(call);
+    if (at !== -1) {
+      text = text.slice(0, at).trim();
+    }
+  }
+  return clip(text === "" ? hostOf(url) : text, TITLE_MAX);
+};
+
 export const citationsOf = (
   items: { title?: string | null | undefined; url: string }[]
 ) => {
@@ -62,7 +113,7 @@ export const citationsOf = (
       return [];
     }
     seen.add(url);
-    return [{ title: clip(title?.trim() || hostOf(url), TITLE_MAX), url }];
+    return [{ title: sourceTitle(title, url), url }];
   });
 };
 

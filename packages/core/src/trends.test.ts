@@ -479,6 +479,20 @@ describe("rankSources", () => {
     expect(kept.map(({ url }) => url)).toEqual(["https://good.example/a"]);
   });
 
+  it("drops social posts: a caption, not a page about the theme", () => {
+    const ranked = rankSources(
+      [
+        hit("https://www.instagram.com/p/abc", "Gothic tee link in bio", ""),
+        hit("https://news.example/gothic", "Gothic tees are back", ""),
+      ],
+      "gothic",
+      { minScore: 0 }
+    );
+    expect(ranked.map((one) => one.url)).toStrictEqual([
+      "https://news.example/gothic",
+    ]);
+  });
+
   it("dedupes pages and headlines and ranks fresh, relevant ones first", () => {
     const kept = rankSources(
       [
