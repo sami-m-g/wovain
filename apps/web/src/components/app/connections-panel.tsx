@@ -111,17 +111,33 @@ const ProviderItem = ({
       </ItemContent>
       <ItemActions className="w-full sm:w-auto">
         {connected ? (
-          <Button
-            className="h-9 w-full sm:w-auto"
-            disabled={disconnect.isPending}
-            onClick={() => disconnect.mutate({ provider })}
-            variant="outline"
-          >
-            {disconnect.isPending ? (
-              <Spinner aria-hidden="true" data-icon="inline-start" />
-            ) : null}
-            {t("disconnect", { name })}
-          </Button>
+          <>
+            {/* Signs in again over the same grant: asks for any permission
+                added since (Meta's safety rules), without disconnecting. */}
+            <a
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "h-9 w-full sm:w-auto"
+              )}
+              href={connectUrl(
+                provider,
+                getPathname({ href: "/dashboard/connections", locale })
+              )}
+            >
+              {t("reconnect", { name })}
+            </a>
+            <Button
+              className="h-9 w-full sm:w-auto"
+              disabled={disconnect.isPending}
+              onClick={() => disconnect.mutate({ provider })}
+              variant="outline"
+            >
+              {disconnect.isPending ? (
+                <Spinner aria-hidden="true" data-icon="inline-start" />
+              ) : null}
+              {t("disconnect", { name })}
+            </Button>
+          </>
         ) : (
           <a
             className={cn(

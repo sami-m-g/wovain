@@ -1880,6 +1880,70 @@
         "check": "Fourthwall ajoute des politiques par défaut. Relisez-les pour qu'elles correspondent à votre façon de vendre.",
         "action": "Relire les politiques"
       }
+    },
+    "metaSetup": {
+      "title": "Préparez votre compte Meta pour les publicités",
+      "titleReady": "Votre compte Meta est prêt pour les publicités",
+      "progressLabel": "Progression de la configuration Meta",
+      "progress": "{done, number} sur {total, number} terminés",
+      "optional": "Facultatif",
+      "connect": "Connecter Meta",
+      "reconnect": "Reconnecter Meta",
+      "disconnect": "Déconnecter Meta",
+      "disconnected": "Meta est déconnecté",
+      "notConnected": "Connectez votre compte Meta, et wovain vérifie ce qu'il manque encore pour que vos publicités puissent être diffusées.",
+      "expired": "La connexion à Meta a expiré. Reconnectez Meta pour voir où en est votre compte.",
+      "state": {
+        "done": "terminé",
+        "todo": "à faire",
+        "waiting": "en attente",
+        "check": "à vérifier vous-même"
+      },
+      "ad_account": {
+        "label": "Compte publicitaire",
+        "action": "Ouvrir les comptes publicitaires",
+        "altAction": "Ouvrir les comptes publicitaires",
+        "done": "Votre compte publicitaire est ouvert à wovain.",
+        "todo": "Il vous faut un compte publicitaire. Ouvrez la page des comptes publicitaires de Meta, choisissez Ajouter, puis Créer un compte publicitaire. Revenez ici : cette carte se coche toute seule.",
+        "waiting": "Meta a restreint ce compte publicitaire. Ouvrez Qualité du compte pour voir pourquoi et ce que Meta demande.",
+        "check": "Vérifiez votre compte publicitaire dans Meta."
+      },
+      "payment": {
+        "label": "Moyen de paiement",
+        "action": "Ajouter un moyen de paiement",
+        "altAction": "Ajouter un moyen de paiement",
+        "done": "Votre compte publicitaire a un moyen de paiement. Meta y facture vos dépenses publicitaires.",
+        "todo": "Meta facture les dépenses publicitaires sur une carte ou un compte PayPal de votre compte publicitaire. Ouvrez les paramètres de paiement de Meta, choisissez Ajouter un moyen de paiement et enregistrez-le. Revenez ici : cette carte se coche toute seule.",
+        "waiting": "Meta examine ce compte publicitaire, les paiements attendent donc. Ouvrez Qualité du compte pour voir ce dont Meta a besoin.",
+        "check": "Vérifiez le moyen de paiement dans Meta."
+      },
+      "page": {
+        "label": "Page Facebook",
+        "action": "Ajouter votre Page",
+        "altAction": "Créer une Page",
+        "done": "Vos publicités sont diffusées au nom de votre Page Facebook.",
+        "todo": "Les publicités sont diffusées au nom d'une Page Facebook. Si vous en avez une, ouvrez Pages dans les paramètres de l'entreprise de Meta, choisissez Ajouter et sélectionnez-la. Sinon, créez-en une d'abord (un nom et une photo suffisent). Revenez ici : cette carte se coche toute seule.",
+        "waiting": "Configurez d'abord votre compte publicitaire.",
+        "check": "Vérifiez votre Page dans Meta."
+      },
+      "instagram": {
+        "label": "Compte Instagram",
+        "action": "Ajouter Instagram",
+        "altAction": "Ajouter Instagram",
+        "done": "Vos publicités peuvent aussi être diffusées au nom de votre compte Instagram.",
+        "todo": "Facultatif : associez votre compte Instagram pour que vos publicités affichent aussi votre nom sur Instagram. Ouvrez Comptes Instagram dans les paramètres de l'entreprise de Meta et choisissez Ajouter.",
+        "waiting": "Configurez d'abord votre compte publicitaire.",
+        "check": "Facultatif : Meta n'a pas indiqué si un compte Instagram est associé. Vous pouvez le vérifier dans les paramètres de l'entreprise de Meta."
+      },
+      "safety_rules": {
+        "label": "Règles de sécurité",
+        "action": "Reconnecter Meta",
+        "altAction": "Reconnecter Meta",
+        "done": "Prêt. wovain peut créer les règles qui mettent vos publicités en pause, même quand wovain est hors ligne.",
+        "todo": "Reconnectez Meta et acceptez tout ce que Meta demande, pour que wovain puisse créer les règles qui mettent vos publicités en pause. Tant que Meta examine l'app de wovain, cela ne fonctionne que pour les comptes que Meta autorise à la tester.",
+        "waiting": "Disponible une fois votre compte publicitaire configuré.",
+        "check": "Reconnectez Meta pour vérifier les règles de sécurité."
+      }
     }
   },
   "Drops": {

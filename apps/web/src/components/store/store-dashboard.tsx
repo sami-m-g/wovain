@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { ConnectState } from "@/components/app/connect-state";
+import { MetaSetup } from "@/components/store/meta-setup";
 import {
   StoreApprovals,
   usePendingStoreApprovals,
@@ -165,6 +166,7 @@ export const StoreDashboard = () => {
         </Alert>
       ) : null}
       {readiness.data ? <StoreSetup /> : null}
+      {readiness.data ? <MetaSetup /> : null}
       {readiness.data ? (
         <StoreSummary
           onApprovals={() => setTab("approvals")}

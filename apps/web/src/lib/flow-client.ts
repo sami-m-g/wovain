@@ -40,6 +40,9 @@ export type StoreReadiness = Outputs["store"]["readiness"];
 export type StoreSetup = Outputs["store"]["setup"];
 /** One step of Store setup, with its status: for the onboarding checklist. */
 export type StoreSetupStep = StoreSetup["steps"][number];
+export type MetaSetup = Outputs["store"]["metaSetup"];
+/** One Meta setup card, for the onboarding shell to mount. */
+export type MetaSetupStep = MetaSetup["steps"][number];
 export type StoreOrder = Outputs["store"]["orders"][number];
 export type StoreApproval = Outputs["approvals"]["list"][number];
 
