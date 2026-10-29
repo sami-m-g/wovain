@@ -28,6 +28,7 @@ import {
 } from "@wovain/mastra/flow/evidence";
 import {
   listIdeas,
+  nameIdeas,
   researchErrors,
   researchIdeas,
 } from "@wovain/mastra/flow/ideas";
@@ -118,9 +119,14 @@ export const ideasRouter = {
   research: protectedProcedure
     .errors(researchErrors)
     .input(z.object({ seed }))
-    .handler(
-      async ({ context, input }) => await researchIdeas(context, input.seed)
-    ),
+    .handler(async ({ context, input }) => {
+      // Every idea shown is named first, never a raw Qloo tag.
+      const found = await researchIdeas(context, input.seed);
+      return await nameIdeas(
+        context,
+        found.map((row) => row.id)
+      );
+    }),
   startDossier: protectedProcedure
     .input(z.object({ ideaId: id }))
     .handler(

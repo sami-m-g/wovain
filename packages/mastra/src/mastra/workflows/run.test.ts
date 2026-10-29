@@ -112,10 +112,24 @@ describe("seller-run steps", () => {
     });
   });
 
-  it("name names the ideas and passes them through", async () => {
+  it("name names the ideas and passes on only the named ones", async () => {
+    vi.mocked(nameIdeas).mockResolvedValue([{ id: "i2" }] as never);
     const carry = { ...from, ideaIds: ["i1", "i2"] };
-    expect(await execute("name", carry)).toEqual(carry);
-    expect(nameIdeas).toHaveBeenCalledWith(expect.anything(), ["i1", "i2"]);
+    expect(await execute("name", carry)).toEqual({ ...carry, ideaIds: ["i2"] });
+    expect(nameIdeas).toHaveBeenCalledWith(
+      expect.anything(),
+      ["i1", "i2"],
+      "run_1"
+    );
+  });
+
+  it("name fails the run when no idea could be named", async () => {
+    vi.mocked(nameIdeas).mockResolvedValue([] as never);
+    expect(await execute("name", { ...from, ideaIds: ["i1"] })).toBe(BAILED);
+    expect(finishRun).toHaveBeenCalledWith(expect.anything(), "run_1", {
+      error: "No idea got a title its evidence supports.",
+      status: "failed",
+    });
   });
 
   it.each([

@@ -43,6 +43,7 @@ export const flow = defineStepper([
 export type Step = (typeof flow.steps)[number]["id"];
 type Work =
   | "research"
+  | "naming"
   | "autopilot"
   | "designs"
   | "review"
@@ -89,6 +90,10 @@ const runWork = (run?: RunDetail): Work | undefined => {
   }
   if (run.autopilot) {
     return "autopilot";
+  }
+  // Research is done: each idea gets its checked title before it shows.
+  if (run.step === "name") {
+    return "naming";
   }
   // The run draws several designs; the first can land before the others.
   if (run.step === "design") {
