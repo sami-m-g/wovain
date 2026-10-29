@@ -955,7 +955,10 @@
       "packTitle": "¿Necesitas unos créditos más?",
       "comingSoon": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan cada mes.",
       "comingSoonRenews": "Los planes de pago y los packs de créditos llegan pronto. Tus créditos Free se renuevan el {date}.",
-      "redeemSuccess": "Código canjeado. Tus créditos llegan en unos segundos y nunca caducan."
+      "redeemSuccess": "Código canjeado. Tus créditos llegan en unos segundos y nunca caducan.",
+      "setupRetrying": "Todavía no pudimos configurar tus créditos. Lo reintentamos; la página se actualiza sola.",
+      "setupLinked": "La facturación de este correo está vinculada a otra cuenta de wovain. Contacta con soporte para moverla.",
+      "setupUnverified": "Verifica tu correo para configurar tus créditos. Abre el enlace que te enviamos."
     },
     "paywall": {
       "creditsTitle": "No te quedan créditos para este paso",
@@ -990,6 +993,8 @@
         "alreadyRedeemed": "Ya has canjeado este código.",
         "notFree": "Por ahora solo funcionan los códigos de créditos gratuitos. Los planes de pago llegarán pronto.",
         "tooMany": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
+        "emailLinked": "La facturación de este correo está vinculada a otra cuenta de wovain. Contacta con soporte.",
+        "emailNotVerified": "Verifica primero tu correo y luego canjea el código.",
         "error": "No se pudo canjear el código. Inténtalo de nuevo en un momento."
       }
     }

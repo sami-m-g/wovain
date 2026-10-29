@@ -9,6 +9,12 @@ import { promoAttempt } from "@wovain/db/schema/billing";
 import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 
 import { billingCatalog } from "./catalog";
+import {
+  CustomerConflictError,
+  ensureCustomer,
+  polarCustomerGateway,
+} from "./customer";
+import type { CustomerConflictReason, CustomerMerchant } from "./customer";
 import { merchantOf, promoRedeemed } from "./mirror";
 import { POLAR_METADATA_KEY } from "./plans";
 import { promoAllows, promoOfTag, promoPriceCents, promoTag } from "./promos";
@@ -51,6 +57,9 @@ export interface PromoDiscount {
 
 // The Polar calls a redemption makes, so tests can stand in for Polar.
 export interface PromoGateway {
+  // The merchant's Polar customer, settled before a checkout so the grant
+  // lands on their id (throws CustomerConflictError when it can't be).
+  ensureCustomer: (merchant: CustomerMerchant) => Promise<void>;
   confirmFree: (
     checkout: models.Checkout,
     customer: { email: string; name: string }
@@ -66,7 +75,10 @@ export interface PromoGateway {
   findDiscount: (code: string) => Promise<PromoDiscount | undefined>;
 }
 
-export const polarPromoGateway = (polar: PolarCore): PromoGateway => ({
+export const polarPromoGateway = (
+  polar: PolarCore,
+  db: Database
+): PromoGateway => ({
   confirmFree: async (checkout, customer) => {
     await clientConfirmCheckouts(polar)(checkout.client_secret, {
       customer_email: customer.email,
@@ -84,6 +96,9 @@ export const polarPromoGateway = (polar: PolarCore): PromoGateway => ({
       return_url: input.returnUrl,
       success_url: input.successUrl,
     }),
+  ensureCustomer: async (merchant) => {
+    await ensureCustomer(db, polarCustomerGateway(polar), merchant);
+  },
   findDiscount: async (code) => {
     const wanted = normalizeCode(code);
     let found: PromoDiscount | undefined;
@@ -218,6 +233,9 @@ export type RedeemResult =
   // payment there.
   | { credits: number; promoId: string; status: "checkout"; url: string }
   | { promoId?: string; refused: PromoRefusal; status: "refused" }
+  // The merchant's email is already a Polar customer that isn't theirs to
+  // take over (see ensureCustomer): nothing was opened.
+  | { reason: CustomerConflictReason; status: "blocked" }
   | { status: "rate_limited" };
 
 export interface RedeemInput {
@@ -271,6 +289,15 @@ export const redeemPromo = async (
   }
   if (await promoRedeemed(db, { promoId: promo.id, userId })) {
     return await refuse("already_redeemed", promo.id);
+  }
+  try {
+    await gateway.ensureCustomer(merchant);
+  } catch (error) {
+    if (error instanceof CustomerConflictError) {
+      await settleAttempt(db, attemptId, "invalid", promo.id);
+      return { reason: error.reason, status: "blocked" };
+    }
+    throw error;
   }
   const checkout = await gateway.createCheckout({
     discountId: found.discount.id,

@@ -9,7 +9,7 @@ Only Free is live, so every merchant is on Free. This keeps wovain within the Ql
 - `/pricing` shows every tier. Studio, Label and the credit pack are marked **Coming soon**. They have no checkout button. Instead, "Notify me" sends a `paid_plan_interest` PostHog event, with no email form.
 - The server flag `billing-paid-plans` is **off** by default. While it is off, `billing.checkout` refuses with `PAID_PLANS_NOT_AVAILABLE`, so there are no plan changes and no pack purchases. The flag is read through `packages/billing/src/flags.ts`, so it can move onto the typed flag registry from feat/progressive-delivery.
 - When a merchant runs out of credits, the upgrade screens say "More credits are coming soon" and that Free's credits refresh every month. Nothing is sold.
-- Free runs on Polar (sandbox for now) and grants its 15 credits a month.
+- Free runs on Polar (sandbox for now) and grants its 25 credits a month.
 - `pnpm polar:seed` creates the paid products **archived**, so nobody can buy them. To launch them: get Qloo's written permission or a commercial licence, run `POLAR_PAID_PLANS=on pnpm polar:seed`, then turn `billing-paid-plans` on.
 
 ## Promo codes for credits (2026-10-26)
@@ -48,7 +48,7 @@ Credits are reserved before a step runs and come back if the step fails.
 |  | Free | Studio (recommended) | Label |
 | --- | --- | --- | --- |
 | Price | $0 | **$29 / month** | **$79 / month** |
-| Credits | **15 a month** (about 1 drop) | 300 a month (about 30 drops) | 1,000 a month (about 100 drops) |
+| Credits | **25 a month** (about 2 drops) | 300 a month (about 30 drops) | 1,000 a month (about 100 drops) |
 | Autopilot | no, you approve every step | yes | yes |
 | Unused credits | expire | expire | roll over |
 
@@ -57,7 +57,7 @@ There is also a **credit pack**: 100 credits for $10, one time, never expires. I
 Why these numbers:
 
 - **$29 is the anchor.** It sits with the tools a POD seller already pays for: Printify Premium is $39 a month (it was $29 until February 2026), Kittl Pro is about $15 and Expert about $30, Placeit is $14.95, and AI-merch apps cost $29 to $79 (PromptInk Starter $29, Unlimited $79; Autopictura $49). Unlike those tools, wovain also writes the ads and builds the campaign. The pricing skill's ~$10 / ~$100 buckets and its "avoid the $9 trap" rule point to the same place.
-- **Free stays minimal on purpose.** It is enough to see one or two real drops, and it costs wovain under $0.30 a month per user. Polar gives the credits through a free monthly subscription, so it is all code (`ensureFreePlan`). If you would rather make it a one-time credit, Free can become a one-time grant later.
+- **Free stays minimal on purpose.** It is enough to see one or two real drops, and it costs wovain under $0.50 a month per user. Polar gives the credits through a free monthly subscription, so it is all code (`ensureFreePlan`). If you would rather make it a one-time credit, Free can become a one-time grant later.
 - **Autopilot is the paid line.** It is the feature a seller notices, it costs more per drop, and it is the riskier action, so it belongs on a paid plan.
 - Annual billing (2 months free) is left out for v1. Each interval is its own Polar product, so annual is one more entry in `plans.ts` once monthly pricing is proven.
 

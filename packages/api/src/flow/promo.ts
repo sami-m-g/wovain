@@ -16,14 +16,18 @@ export const redeemCode = async (
 ): Promise<RedeemResult> => {
   const polar = requirePolar(actor);
   const returnUrl = `${actor.billing.appUrl}${BILLING_PATH}`;
-  const result = await redeemPromo(actor.db, polarPromoGateway(polar), {
-    code,
-    paidPlans: await actor.billing.paidPlans(),
-    returnUrl,
-    successUrl: `${returnUrl}?redeemed=1`,
-    surface,
-    userId: actor.userId,
-  });
+  const result = await redeemPromo(
+    actor.db,
+    polarPromoGateway(polar, actor.db),
+    {
+      code,
+      paidPlans: await actor.billing.paidPlans(),
+      returnUrl,
+      successUrl: `${returnUrl}?redeemed=1`,
+      surface,
+      userId: actor.userId,
+    }
+  );
   // The code itself stays out of the logs.
   actor.log?.set({
     billing: {
@@ -31,6 +35,7 @@ export const redeemCode = async (
         promo: "promoId" in result ? result.promoId : undefined,
         status: result.status,
         ...("refused" in result ? { refused: result.refused } : {}),
+        ...("reason" in result ? { blocked: result.reason } : {}),
       },
     },
   });
