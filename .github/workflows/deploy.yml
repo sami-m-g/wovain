@@ -156,12 +156,15 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
+          # Which environment's credit settlements apply to this database.
+          SETTLEMENT_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'next' || 'production' }}
         run: |
           DATABASE_URL=$(gcloud secrets versions access latest --secret "$DATABASE_URL_SECRET" --project "$GCP_PROJECT_ID")
           echo "::add-mask::$DATABASE_URL"
           export DATABASE_URL
           pnpm --filter @wovain/db exec drizzle-kit migrate
           pnpm --filter @wovain/api run storage:init
+          pnpm --filter @wovain/api run billing:settle
 
       # A new revision of each service, with all traffic; Pulumi owns every
       # other setting of the services (infra/index.ts, infra/dev.ts).

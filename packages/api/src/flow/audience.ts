@@ -5,10 +5,9 @@ import { eq } from "drizzle-orm";
 import type { Actor } from "./actor";
 
 // Who an ad set suggests to Meta's Advantage+ audience (openspec change
-// media-buying-live). This is the seam for workstream 2b (qloo-audiences):
-// it fills brand_profile.demographics from Qloo, or replaces
-// `audienceFor` with a Qloo-backed source of the same type. The merchant's
-// chosen countries always stay the hard limit.
+// media-buying-live). Qloo's targeting (./audiences) rides on top of it in
+// every campaign. The merchant's chosen countries always stay the hard
+// limit.
 
 export interface AudienceRequest {
   // ISO country codes the merchant chose for the campaign.

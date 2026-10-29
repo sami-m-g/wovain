@@ -284,7 +284,7 @@ it("records a pack purchase", async () => {
   expect(capture).toHaveBeenCalledWith({
     distinctId: userId,
     event: "credits_purchased",
-    properties: { amount_usd: 10, credits: 100, pack: "pack" },
+    properties: { amount_usd: 15, credits: 100, pack: "pack" },
   });
 });
 

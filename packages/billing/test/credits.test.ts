@@ -69,7 +69,8 @@ it("reserves a step's credits and settles them once", async () => {
   await grantPlan(15);
   const held = await reserveCredits(db, { step: "research", userId });
   expect(held.ok).toBe(true);
-  expect(await creditBalance(db, userId)).toMatchObject({ available: 12 });
+  const left = 15 - billingCatalog().creditCost.research;
+  expect(await creditBalance(db, userId)).toMatchObject({ available: left });
   if (!held.ok) {
     return;
   }
@@ -80,7 +81,7 @@ it("reserves a step's credits and settles them once", async () => {
   });
   expect(await settleCredits(db, held.id)).toBeUndefined();
   expect(await releaseCredits(db, held.id)).toBe(0);
-  expect(await creditBalance(db, userId)).toMatchObject({ available: 12 });
+  expect(await creditBalance(db, userId)).toMatchObject({ available: left });
   const totals = await ledgerTotals(db, userId);
   expect(totals.ledger).toBe(totals.grants);
 });
@@ -113,11 +114,17 @@ it("never overspends under concurrent steps", async () => {
       async () => await reserveCredits(db, { step: "design", userId })
     )
   );
-  // 15 credits buy seven 2-credit designs, with 1 credit left over.
-  expect(attempts.filter((attempt) => attempt.ok)).toHaveLength(7);
-  expect(await creditBalance(db, userId)).toMatchObject({ available: 1 });
+  // 15 credits buy as many designs as fit (three 4-credit ones), and the
+  // rest stays.
+  const { design } = billingCatalog().creditCost;
+  expect(attempts.filter((attempt) => attempt.ok)).toHaveLength(
+    Math.floor(15 / design)
+  );
+  expect(await creditBalance(db, userId)).toMatchObject({
+    available: 15 % design,
+  });
   const totals = await ledgerTotals(db, userId);
-  expect(totals).toStrictEqual({ grants: 1, ledger: 1 });
+  expect(totals).toStrictEqual({ grants: 15 % design, ledger: 15 % design });
 });
 
 it("spends plan credits before pack credits and splits across them", async () => {
@@ -125,9 +132,10 @@ it("spends plan credits before pack credits and splits across them", async () =>
   await grantPack(100);
   const held = await reserveCredits(db, { step: "research", userId });
   expect(held.ok).toBe(true);
+  const pack = 100 - (billingCatalog().creditCost.research - 2);
   expect(await creditBalance(db, userId)).toStrictEqual({
-    available: 99,
-    pack: 99,
+    available: pack,
+    pack,
     plan: 0,
   });
 });

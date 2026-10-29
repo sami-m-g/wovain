@@ -204,10 +204,6 @@ export const FLAGS = {
     "growth",
     "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
   ),
-  "qloo-audiences": workstream(
-    "growth",
-    "Qloo audience demographics drive Meta targeting and the ad persona"
-  ),
   "qloo-taste-map": workstream(
     "growth",
     "The Qloo taste map: the entities, tags and cross-domain links behind each idea"
