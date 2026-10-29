@@ -93,6 +93,10 @@ export const FLAGS = {
     "media",
     "Thompson-sampling optimizer over ads: reallocation proposals inside the spend caps"
   ),
+  "ads-profit-rules": workstream(
+    "media",
+    "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",
