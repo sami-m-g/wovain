@@ -1,0 +1,26 @@
+{
+  "name": "@wovain/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test:e2e": "playwright test --project=pr",
+    "test:smoke": "playwright test --project=smoke"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
+    "@playwright/test": "catalog:",
+    "@wovain/db": "workspace:*",
+    "better-auth": "catalog:",
+    "msw": "catalog:",
+    "sharp": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

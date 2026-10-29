@@ -67,3 +67,7 @@ founder/
 
 # Playwright MCP screenshots and console logs
 .playwright-mcp/
+
+# Playwright Test (apps/e2e)
+test-results/
+playwright-report/

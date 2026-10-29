@@ -8,6 +8,7 @@
     "check-types": "turbo run check-types",
     "spec:validate": "openspec validate --all --strict",
     "test": "turbo run test",
+    "test:e2e": "pnpm --filter @wovain/e2e run test:e2e",
     "dev:web": "turbo run dev -F web --",
     "db:push": "turbo run db:push -F @wovain/db --",
     "db:studio": "turbo run db:studio -F @wovain/db --",
