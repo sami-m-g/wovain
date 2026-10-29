@@ -174,7 +174,7 @@
       },
       {
         "question": "What stops my ads from losing money?",
-        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner. If wovain is down, Meta pauses the ads itself: wovain copies these rules into your ad account as Meta automated rules."
       },
       {
         "question": "Which of my designs should I advertise?",
