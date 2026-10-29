@@ -25,8 +25,9 @@ test("sign up, verify, sign out and sign in", async ({ page }) => {
   ).toBeVisible();
 
   await page.goto(await verificationLink(email));
-  // A new merchant lands on the setup guide.
-  await expect(page).toHaveURL(/\/dashboard\/onboarding/u);
+  // A new merchant lands on Home, or the setup guide before story-ui.
+  await expect(page).toHaveURL(/\/dashboard(?:\/onboarding)?$/u);
+  await page.waitForLoadState("networkidle");
 
   await page.getByRole("button", { name: /\(Account\)$/u }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
