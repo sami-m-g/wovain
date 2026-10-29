@@ -52,7 +52,8 @@ const conditional = (
     title: "next's Cloud SQL instance",
   },
   {
-    expression: `resource.name.startsWith("projects/${project}/locations/${region}/services/wovain-web-${NAME}")`,
+    // Cloud Run names the project by number in IAM conditions; accept both.
+    expression: `resource.name.startsWith("projects/${projectNumber}/locations/${region}/services/wovain-web-${NAME}") || resource.name.startsWith("projects/${project}/locations/${region}/services/wovain-web-${NAME}")`,
     role: "roles/run.admin",
     title: "next's Cloud Run service",
   },
