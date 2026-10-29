@@ -17,16 +17,23 @@ on:
   pull_request_review:
     types: [submitted]
   issues:
-    types: [opened, assigned, labeled]
+    types: [opened, labeled]
 
 permissions: {}
 
 jobs:
   claude:
     # Only the owner starts it: no bot, and no outsider's comment or issue
-    # starts a run (the action would reject them, but as a failed run).
+    # starts a run (the action would reject them, but as a failed run). An
+    # issue counts only when the owner wrote it: the action reads the whole
+    # issue, and `include_comments_by_actor` filters comments only.
     if: >-
-      github.actor == github.repository_owner && (contains(github.event.comment.body, '@claude') || contains(github.event.review.body, '@claude') || contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude') || github.event.label.name == 'claude')
+      github.actor == github.repository_owner && (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
+          (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude') || github.event.label.name == 'claude')))
     # One run per issue or pull request at a time.
     concurrency:
       group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
