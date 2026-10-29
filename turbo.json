@@ -116,12 +116,22 @@
       },
       "routing": {
         "dependencies": {
-          "allow": ["config", "domain", "data", "ui"]
+          "allow": ["config", "domain", "data", "ui", "widgets"]
         }
       },
       "ui": {
         "dependencies": {
+          "allow": ["config"]
+        }
+      },
+      "widgets": {
+        "dependencies": {
           "allow": ["config", "ui"]
+        }
+      },
+      "app": {
+        "dependencies": {
+          "allow": ["config", "domain", "data", "routing", "ui", "widgets"]
         }
       }
     }
