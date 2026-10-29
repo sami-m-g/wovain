@@ -10,6 +10,9 @@ import { createMastraStorage } from "@wovain/mastra/workflows/storage";
 
 import { ENV } from "./env.server";
 import { analytics } from "./lib/analytics";
+// Drains evlog's global `log` (packages/api) on every route that uses the
+// services, /api/inngest included.
+import "./lib/evlog";
 
 export const db = createDb(ENV);
 export const mailer = createMailer({

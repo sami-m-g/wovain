@@ -176,7 +176,7 @@ export const createCore = (
       model: env.VOICE_STT_MODEL,
     }),
     // Qloo names every theme; Tavily adds the evidence.
-    trends: createTrends(tavily, qloo),
+    trends: createTrends(tavily, qloo, nemotron),
     upstream: createUpstream({
       appUrl: env.BETTER_AUTH_URL,
       metaAppId: env.META_APP_ID,

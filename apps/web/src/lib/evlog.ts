@@ -1,3 +1,4 @@
+import { initLogger } from "evlog";
 import type { DrainContext } from "evlog";
 import { createFsDrain } from "evlog/fs";
 import { createEvlog } from "evlog/next";
@@ -61,6 +62,13 @@ export const { withEvlog, useLogger, log, createError } = createEvlog({
   service,
   ...output,
 });
+
+// createEvlog inits evlog's process-wide logger without a drain unless the
+// instrumentation locked it first. On next, nothing logged with `log` from
+// "evlog" outside a request (packages/api: a durable run's failure on
+// /api/inngest) reached Cloud Logging or PostHog (QA, 2026-10-29). The
+// global logger gets the app's drain here.
+initLogger({ env: { service }, ...output });
 
 // stderr lines (a library's console.error, such as Varlock's leak guard) become
 // error events, so plain text reaches error tracking too. stdout stays the
