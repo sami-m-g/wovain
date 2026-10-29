@@ -15,10 +15,10 @@ Issues #199, #200 and #201.
 
 ## 2. Drop page (#200)
 
-- [ ] 2.1 One page per drop, read top to bottom, with each section's state
-- [ ] 2.2 Decided by Qloo marker with its evidence at the audience and the targeting
-- [ ] 2.3 The autopilot switch leaves the drop header
-- [ ] 2.4 Messages, docs, tests; Playwright check at 1470 and 390 px
+- [x] 2.1 One page per drop, read top to bottom, with each section's state
+- [x] 2.2 Decided by Qloo marker with its evidence at the audience and the targeting
+- [x] 2.3 The autopilot switch leaves the drop header
+- [x] 2.4 Messages, docs, tests; Playwright check at 1470 and 390 px
 
 ## 3. Idea card (#201)
 

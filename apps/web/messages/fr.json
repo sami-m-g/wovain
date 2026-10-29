@@ -40,7 +40,8 @@
     "dropsTitle": "Drops",
     "campaignTitle": "Votre campagne",
     "settingsHubTitle": "Paramètres",
-    "alertsTitle": "Alertes"
+    "alertsTitle": "Alertes",
+    "dropTitle": "Drop"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -375,7 +376,8 @@
       "home": "Accueil",
       "settings": "Paramètres",
       "account": "Compte",
-      "security": "Sécurité"
+      "security": "Sécurité",
+      "drop": "Drop"
     },
     "docs": "Docs",
     "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",
@@ -2446,6 +2448,73 @@
         "label": "Suggestions et exécutions terminées",
         "hint": "Nouvelles idées du pilote automatique et exécutions terminées."
       }
+    }
+  },
+  "Qloo": {
+    "decided": "Décidé par Qloo",
+    "title": "Ce que Qloo a décidé"
+  },
+  "DropStory": {
+    "eyebrow": "Drop",
+    "started": "Lancé le {date}",
+    "review": "Revoir",
+    "notAvailable": "Indisponible : {reason}",
+    "state": {
+      "done": "Fait",
+      "waiting": "À vous",
+      "working": "En cours",
+      "stopped": "Arrêté",
+      "not_started": "Pas commencé"
+    },
+    "why": {
+      "title": "Pourquoi ça se vend",
+      "decision": "Qloo classe « {theme} » comme ce qui correspond le mieux aux acheteurs de ce que vous avez décrit.",
+      "affinity": "Affinité de goût (Qloo)",
+      "affinityMissing": "Indisponible : Qloo n'a renvoyé aucune affinité pour ce thème",
+      "news": "Actualité de la semaine",
+      "listings": "Annonces similaires",
+      "sources": "Sources",
+      "noIdea": "Qloo lit encore ce brief.",
+      "noMoment": "pas encore de résumé d'actualité pour ce thème.",
+      "noSources": "aucune source trouvée pour ce thème."
+    },
+    "who": {
+      "title": "Qui achète, et où",
+      "decision": "Ces acheteurs et ces lieux viennent de l'audience Qloo de « {theme} ».",
+      "audiences": "Audiences",
+      "places": "Lieux principaux",
+      "brands": "Ils aiment aussi",
+      "noIdea": "Qloo lit encore ce brief."
+    },
+    "ideas": {
+      "title": "Idées",
+      "summary": "{count, plural, one {# idée} other {# idées}}, {picked, number} choisies.",
+      "notStarted": "Les idées apparaissent une fois Qloo et l'actualité lus."
+    },
+    "designs": {
+      "title": "Visuels",
+      "summary": "{approved, number} visuels approuvés sur {count, number}.",
+      "notStarted": "Les visuels sont dessinés pour les idées que vous choisissez."
+    },
+    "products": {
+      "title": "Produit",
+      "summary": "{count, plural, one {# produit} other {# produits}} sur Fourthwall.",
+      "notStarted": "Les produits sont mis en vente une fois un visuel approuvé."
+    },
+    "campaign": {
+      "title": "Campagne",
+      "summary": "{count, plural, =0 {Pas encore de campagne.} one {# campagne, créée en pause.} other {# campagnes, créées en pause.}}",
+      "notStarted": "La campagne est créée en pause une fois vos produits en vente.",
+      "decision": "Vos publicités touchent l'audience Qloo de votre marque, associée à des centres d'intérêt Meta.",
+      "audiences": "Audiences Qloo",
+      "interests": "Centres d'intérêt Meta",
+      "agesLabel": "Âges",
+      "ages": "De {min, number} à {max, number} ans"
+    },
+    "results": {
+      "title": "Résultats",
+      "open": "Voir votre campagne et ses résultats",
+      "notStarted": "Les commandes, les dépenses et le bénéfice s'affichent ici une fois la campagne lancée."
     }
   }
 }
