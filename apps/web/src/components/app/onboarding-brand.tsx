@@ -58,7 +58,7 @@ import type {
   ResolvedReference,
   StarterCard,
 } from "@/lib/flow-client";
-import { orpc } from "@/utils/orpc";
+import { client, orpc } from "@/utils/orpc";
 
 const MIN_REFERENCES = 3;
 const MAX_REFERENCES = 5;
@@ -217,7 +217,7 @@ const ReferencesField = ({
   suggesting,
 }: {
   alternatives: readonly string[];
-  check: (reference: string) => void;
+  check: (reference: string) => Promise<void>;
   onSuggestRest?: (() => void) | undefined;
   references: string[];
   setReferences: (next: string[]) => void;
@@ -247,7 +247,9 @@ const ReferencesField = ({
               className="h-10"
               id={`${id}-ref-${index}`}
               maxLength={120}
-              onBlur={() => check(value)}
+              onBlur={async () => {
+                await check(value);
+              }}
               onChange={(event) => {
                 const next = [...references];
                 next[index] = event.target.value;
@@ -368,9 +370,7 @@ const BuyersPanelView = ({ references }: { references: string[] }) => {
         <div className="flex flex-col gap-1">
           <dt className="font-medium">{t("who")}</dt>
           <dd>{who}</dd>
-          <dd className="text-muted-foreground text-xs">
-            {t("whoMeaning", { who })}
-          </dd>
+          <dd className="text-muted-foreground text-xs">{t("whoMeaning")}</dd>
         </div>
         <div className="flex flex-col gap-1">
           <dt className="font-medium">{t("love")}</dt>
@@ -611,7 +611,7 @@ const StartChooser = ({
     >
       {STARTS.map(({ icon: Icon, value: option }) => (
         <ToggleGroupItem
-          className="aria-pressed:border-primary aria-pressed:bg-accent-soft h-auto flex-col items-start gap-1 rounded-xl border p-4 text-start whitespace-normal"
+          className="aria-pressed:border-primary aria-pressed:bg-accent-soft h-full flex-col items-start justify-start gap-1 self-stretch rounded-xl border p-4 text-start whitespace-normal"
           key={option}
           value={option}
         >
@@ -633,28 +633,28 @@ const EMPTY_ANSWERS: Answers = { audiences: [], loves: [] };
 /** Each reference's check, run once per spelling when its field loses focus. */
 const useReferenceChecks = () => {
   const [states, setStates] = useState<Map<string, RefState>>(() => new Map());
-  const resolve = useMutation(
-    orpc.onboarding.resolveReferences.mutationOptions()
-  );
   const setState = (key: string, state: RefState) =>
     setStates((current) => new Map(current).set(key, state));
-  const check = (reference: string) => {
+  const check = async (reference: string) => {
     const key = keyOf(reference);
     if (key === "" || states.has(key)) {
       return;
     }
     setState(key, { kind: "checking" });
-    resolve.mutate(
-      { references: [reference.trim()] },
-      {
-        onError: () => setState(key, { kind: "error" }),
-        onSuccess: ([result]) =>
-          setState(
-            key,
-            result === undefined ? { kind: "error" } : { kind: "done", result }
-          ),
-      }
-    );
+    // One call per reference, so each answer lands on its own field; a
+    // failure was already reported by the server and shows as "couldn't
+    // check" on the field.
+    try {
+      const [result] = await client.onboarding.resolveReferences({
+        references: [reference.trim()],
+      });
+      setState(
+        key,
+        result === undefined ? { kind: "error" } : { kind: "done", result }
+      );
+    } catch {
+      setState(key, { kind: "error" });
+    }
   };
   // Qloo named these, so they're already placed.
   const markPlaced = (names: readonly string[]) =>

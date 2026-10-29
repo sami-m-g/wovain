@@ -376,6 +376,15 @@ const MIN_QUERY = 2;
 const chip =
   "aria-pressed:border-primary aria-pressed:bg-accent-soft h-10 gap-2 rounded-lg border px-3";
 
+/** What kind of thing Qloo matched (film, artist …), to tell namesakes apart. */
+const EntityType = ({ type }: { type: string }) => {
+  const t = useTranslations("Onboarding.brand.entityTypes");
+  const key = type.split(":").at(-1) as Parameters<typeof t>[0];
+  return t.has(key) ? (
+    <span className="text-muted-foreground text-xs font-normal">{t(key)}</span>
+  ) : null;
+};
+
 /** Autocomplete over Qloo for "things you love". */
 const LovesStep = ({
   loves,
@@ -465,6 +474,7 @@ const LovesStep = ({
                   variant="outline"
                 >
                   {match.name}
+                  <EntityType type={match.type} />
                 </Button>
               </li>
             ))}

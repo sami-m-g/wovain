@@ -1255,7 +1255,7 @@
       "buyersPanel": {
         "title": "Tus compradores",
         "who": "Quiénes son",
-        "whoMeaning": "Diseña y escribe para {who}.",
+        "whoMeaning": "Diseña y escribe primero para ellos.",
         "love": "Qué más les encanta",
         "loveMeaning": "Toma el ambiente de estos para tu diseño, nunca sus nombres.",
         "themes": "Temas para probar",
@@ -1276,7 +1276,17 @@
       "saving": "Guardando…",
       "saveFailed": "No se pudo guardar: {message}",
       "notRemembered": "Tu marca está guardada. wovain no pudo añadirla a su memoria esta vez, así que vuelve a guardarla más tarde.",
-      "needReferences": "Añade al menos 3 referencias de gusto para guardar."
+      "needReferences": "Añade al menos 3 referencias de gusto para guardar.",
+      "entityTypes": {
+        "artist": "artista",
+        "book": "libro",
+        "brand": "marca",
+        "movie": "película",
+        "person": "persona",
+        "podcast": "pódcast",
+        "tv_show": "serie",
+        "videogame": "videojuego"
+      }
     },
     "autonomy": {
       "title": "Cuánto hace wovain por su cuenta",

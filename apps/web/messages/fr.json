@@ -1255,7 +1255,7 @@
       "buyersPanel": {
         "title": "Vos acheteurs",
         "who": "Qui ils sont",
-        "whoMeaning": "Créez et écrivez pour {who}.",
+        "whoMeaning": "Créez et écrivez d'abord pour eux.",
         "love": "Ce qu'ils aiment aussi",
         "loveMeaning": "Empruntez l'ambiance de ces références pour vos motifs, jamais leurs noms.",
         "themes": "Thèmes à essayer",
@@ -1276,7 +1276,17 @@
       "saving": "Enregistrement…",
       "saveFailed": "L'enregistrement n'a pas fonctionné : {message}",
       "notRemembered": "Votre marque est enregistrée. wovain n'a pas pu l'ajouter à sa mémoire cette fois, alors enregistrez-la de nouveau plus tard.",
-      "needReferences": "Ajoutez au moins 3 références de goût pour enregistrer."
+      "needReferences": "Ajoutez au moins 3 références de goût pour enregistrer.",
+      "entityTypes": {
+        "artist": "artiste",
+        "book": "livre",
+        "brand": "marque",
+        "movie": "film",
+        "person": "personne",
+        "podcast": "podcast",
+        "tv_show": "série",
+        "videogame": "jeu vidéo"
+      }
     },
     "autonomy": {
       "title": "Ce que wovain fait seul",

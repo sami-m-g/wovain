@@ -1,3 +1,5 @@
+import pLimit from "p-limit";
+import pRetry, { AbortError } from "p-retry";
 import { z } from "zod";
 
 import { external, notConfigured } from "./log";
@@ -19,6 +21,11 @@ export interface QlooConfig {
 }
 
 const TIMEOUT_MS = 15_000;
+const QLOO_CONCURRENCY = 4;
+const RETRIES = 2;
+const RETRY_MS = 500;
+const TOO_MANY = 429;
+const SERVER_ERROR = 500;
 
 // Entities a merchant's seed can name that fans have tastes about. Without
 // the filter, a word like "hiking" matches restaurants and trails (places),
@@ -122,7 +129,7 @@ const entitiesSchema = z.object({
         z.object({
           entity_id: z.string().max(128),
           name: z.string().max(300),
-          popularity: z.number().optional(),
+          popularity: z.number().nullish(),
           properties: z.record(z.string(), z.unknown()).nullish(),
           query: z
             .object({
@@ -345,6 +352,11 @@ const themesFrom = (tags: z.output<typeof tagsSchema>): QlooTheme[] => {
 };
 
 export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
+  // At most QLOO_CONCURRENCY requests in flight per client: the hackathon
+  // server answers 429 to a burst (brand discovery's twelve insights calls
+  // did, tried live on 2026-10-29). A 429 or 5xx is retried with backoff;
+  // any other failure is final.
+  const limit = pLimit(QLOO_CONCURRENCY);
   const get = async <T extends z.ZodType>(
     path: string,
     query: Record<string, string>,
@@ -353,19 +365,32 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     if (apiKey === undefined) {
       throw notConfigured.qloo();
     }
-    const response = await fetch(
-      // Qloo's configured base URL; path is one of this file's literals and
-      // query is encoded, so no input picks the host.
-      // nosemgrep
-      new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
-      {
-        headers: { Accept: "application/json", "X-Api-Key": apiKey },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      }
+    const response = await limit(
+      async () =>
+        await pRetry(
+          async () => {
+            const reply = await fetch(
+              // Qloo's configured base URL; path is one of this file's
+              // literals and query is encoded, so no input picks the host.
+              // nosemgrep
+              new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
+              {
+                headers: { Accept: "application/json", "X-Api-Key": apiKey },
+                signal: AbortSignal.timeout(TIMEOUT_MS),
+              }
+            );
+            const error = new Error(`Qloo ${path} answered ${reply.status}`);
+            if (reply.status === TOO_MANY || reply.status >= SERVER_ERROR) {
+              throw error;
+            }
+            if (!reply.ok) {
+              throw new AbortError(error);
+            }
+            return reply;
+          },
+          { minTimeout: RETRY_MS, retries: RETRIES }
+        )
     );
-    if (!response.ok) {
-      throw new Error(`Qloo ${path} answered ${response.status}`);
-    }
     return schema.parse(await response.json());
   };
 

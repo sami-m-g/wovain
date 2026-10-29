@@ -1255,7 +1255,7 @@
       "buyersPanel": {
         "title": "Your buyers",
         "who": "Who they are",
-        "whoMeaning": "Design and write for {who}.",
+        "whoMeaning": "Design and write for them first.",
         "love": "What else they love",
         "loveMeaning": "Borrow the mood of these in your art, never their names.",
         "themes": "Themes to try",
@@ -1276,7 +1276,17 @@
       "saving": "Saving…",
       "saveFailed": "Saving didn't work: {message}",
       "notRemembered": "Your brand is saved. wovain couldn't add it to its memory this time, so save it again later.",
-      "needReferences": "Add at least 3 taste references to save."
+      "needReferences": "Add at least 3 taste references to save.",
+      "entityTypes": {
+        "artist": "artist",
+        "book": "book",
+        "brand": "brand",
+        "movie": "film",
+        "person": "person",
+        "podcast": "podcast",
+        "tv_show": "TV show",
+        "videogame": "game"
+      }
     },
     "autonomy": {
       "title": "How much wovain does on its own",
