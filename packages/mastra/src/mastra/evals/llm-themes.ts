@@ -1,6 +1,4 @@
-import { z } from "zod";
-
-import type { Nemotron } from "../nemotron";
+import type { Nemotron } from "@wovain/core/nemotron";
 import {
   clip,
   distinctThemes,
@@ -8,8 +6,9 @@ import {
   NAME_MAX,
   QUERY_MAX,
   RUN_THEMES,
-} from "../themes";
-import type { Theme } from "../themes";
+} from "@wovain/core/themes";
+import type { Theme } from "@wovain/core/themes";
+import { z } from "zod";
 
 // The LLM-only arm of the Qloo ablation (./qloo-ablation.eval.ts), and only
 // that: Nemotron splits the brief into themes with no taste data. No product

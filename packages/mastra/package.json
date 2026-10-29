@@ -1,0 +1,33 @@
+{
+  "name": "@wovain/mastra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/mastra/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b",
+    "test": "vitest run",
+    "evals": "vitest run --config vitest.evals.config.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "catalog:",
+    "@mastra/core": "catalog:",
+    "@mastra/evals": "catalog:",
+    "@mastra/memory": "catalog:",
+    "@posthog/ai": "catalog:",
+    "@wovain/core": "workspace:*",
+    "evlog": "catalog:",
+    "posthog-node": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -39,11 +39,11 @@ wovain calls NVIDIA Nemotron on Nebius Token Factory through its OpenAI-compatib
 
 ### Which model does what
 
-With the `model-routing` flag on (dev and next.wovain.com; off in production), each agent asks for a job, and the job's env var names the model ([`packages/core/src/model-router.ts`](packages/core/src/model-router.ts), `AGENT_ROLES` in [`packages/core/src/agents.ts`](packages/core/src/agents.ts)):
+With the `model-routing` flag on (dev and next.wovain.com; off in production), each agent asks for a job, and the job's env var names the model ([`packages/core/src/model-router.ts`](packages/core/src/model-router.ts), `AGENT_ROLES` in [`packages/mastra/src/mastra/agents/kit.ts`](packages/mastra/src/mastra/agents/kit.ts)):
 
 | Job | Env var | Model on next.wovain.com | What runs on it |
 | --- | --- | --- | --- |
-| Default | `NEMOTRON_MODEL_DEFAULT` | Nemotron 3.5 Super VL (`nvidia/Nemotron-3.5-Super-VL`) | Design brief and listing ([`draftBrief`](packages/core/src/design.ts)), ad copy ([`writeAdCopy`](packages/core/src/ads.ts)), and the LLM-only arm of the offline Qloo ablation eval ([`llm-themes.ts`](packages/core/src/evals/llm-themes.ts)) |
+| Default | `NEMOTRON_MODEL_DEFAULT` | Nemotron 3.5 Super VL (`nvidia/Nemotron-3.5-Super-VL`) | Design brief and listing ([`draftBrief`](packages/core/src/design.ts)), ad copy ([`writeAdCopy`](packages/core/src/ads.ts)), and the LLM-only arm of the offline Qloo ablation eval ([`llm-themes.ts`](packages/mastra/src/mastra/evals/llm-themes.ts)) |
 | Reasoning | `NEMOTRON_MODEL_REASONING` | Nemotron 3 Ultra (`nvidia/Nemotron-3-Ultra-550b-a55b`) | The design judge's verdict ([`judgeDesign`](packages/core/src/design.ts)), autopilot's idea pick and go/no-go ([`pickIdea`, `reviewDesign`](packages/core/src/autopilot.ts)) |
 | Vision | `NEMOTRON_MODEL_VISION` | Nemotron 3.5 Super VL | The judge's eyes. It reads the drawn PNG for a garment or mockup as the subject, a background, cropping, printed words that differ from the brief, and art that disappears on a shirt color |
 | Fast | `NEMOTRON_MODEL_FAST` | Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`) | Ad judges (copy quality, Meta policy), Mastra scorers, prompt-injection and PII guardrails |
@@ -55,11 +55,11 @@ With the flag off, as in production, every agent uses `NEMOTRON_MODEL` (Nemotron
 
 - **Brief, judge and ad copy.** The brief writer turns an approved idea into a design brief and a listing. The judge returns a Zod-validated `ready` or `revise` verdict, a 0 to 100 score and up to five fixes. A `revise` design is redrawn once from the fixes at no extra credit; if it fails again, the card lists the failed checks. Code decides the print size and overrides the model.
 - **Grounding guard.** Ad copy and listing text may only state numbers and claims (prices, percentages, "best-selling", "#1") that appear in what the tools returned. An answer that breaks the rule goes back once with the problem named, and a second miss fails the step with `UNGROUNDED_CLAIM` ([`grounding.ts`](packages/core/src/grounding.ts)).
-- **Guardrails.** Web text from Tavily is untrusted. Before the brief writer reads it, a prompt-injection detector blocks injected instructions and a PII detector blocks personal data. Ad copy is moderated and checked for PII on the way out ([`agents.ts`](packages/core/src/agents.ts)).
+- **Guardrails.** Web text from Tavily is untrusted. Before the brief writer reads it, a prompt-injection detector blocks injected instructions and a PII detector blocks personal data. Ad copy is moderated and checked for PII on the way out ([`agents.ts`](packages/mastra/src/mastra/agents/kit.ts)).
 - **Ad scores.** The fast model runs the binary ad judges on every variant. The share of passes is the ad score on the Insights page.
 - **Autopilot.** With autopilot on, Nemotron picks the idea and approves or rejects the design, each with a stored reason. Code still gates the run: a design the judge sent back is never approved, the price keeps at least $10 profit and a 30% margin, the daily budget stays between $1 and $500, and every Meta object is created paused.
 - **Trace.** Every agent call and guard check of a run goes into its decision trace with the agent, model, duration and result. Only the input's field names are stored, never their values. `/dashboard/models?run=<id>` shows the trace, linked from Runs.
-- **Evals.** `pnpm --filter @wovain/core run evals` checks the six judges against a labeled set ([`judges.v1.json`](packages/core/src/evals/judges.v1.json)). On 2026-10-28, `nemotron-3-super-120b-a12b` and Nemotron 3.5 Super VL both agreed with all 20 scored labels. With a set this small, that is a smoke test.
+- **Evals.** `pnpm --filter @wovain/mastra run evals` checks the six judges against a labeled set ([`judges.v1.json`](packages/core/src/evals/judges.v1.json)). On 2026-10-28, `nemotron-3-super-120b-a12b` and Nemotron 3.5 Super VL both agreed with all 20 scored labels. With a set this small, that is a smoke test.
 
 ### Where Token Factory helped
 
@@ -86,7 +86,7 @@ Every call goes to `QLOO_API_URL` (`https://hackathon.api.qloo.com`) from [`pack
 | `GET /v2/insights` | `filter.type=urn:entity:brand`, `movie` or `tv_show`, `feature.explainability=true`, `bias.trends=low` | Cross-domain affinities, with the share each seed entity contributed. Their style and mood tags go into the design brief, and their names never do ([`design.ts`](packages/core/src/design.ts)) |
 | `GET /v2/insights` | `filter.type=urn:demographics` | Age and gender affinity of the brand's Qloo entities, mapped to the Meta ad set's `age_min`, `age_max` and `genders` ([`targeting.ts`](packages/core/src/targeting.ts)) |
 | `GET /v2/insights` | `filter.results.entities` with `signal.demographics.audiences` | Scores 27 apparel-relevant `urn:audience` IDs against the brand's Qloo brands and keeps up to 3 that beat the average ([`qloo-audiences.ts`](packages/core/src/qloo-audiences.ts)). Their names go to Meta's interest search and into the ad writer's persona |
-| `GET /search` | one taste reference, top 1 | Brand onboarding resolves each reference the designer names to a Qloo entity ([`brand-identity.ts`](packages/core/src/brand-identity.ts)). These are the brand's Qloo entities |
+| `GET /search` | one taste reference, top 1 | Brand onboarding resolves each reference the designer names to a Qloo entity ([`brand-identity.ts`](packages/mastra/src/mastra/memory/brand-identity.ts)). These are the brand's Qloo entities |
 | `GET /v2/insights` | `filter.type=urn:entity:brand`, `signal.interests.entities`, `bias.trends=high` | Autopilot's scan: brands rising with the brand's audience ([`autopilot-signals.ts`](packages/core/src/autopilot-signals.ts)) |
 
 A failed theme call (`/search` or the tag insights) fails the research step with `QLOO_FAILED`. The step retries, then the run fails and is logged at error level to PostHog Error Tracking. Nothing stands in for Qloo. A failed cross-domain, demographics or audience call is logged at error level, marked failed on the idea or in the run's decision trace, and left out. The "Why this idea" panel ([`taste-map.tsx`](apps/web/src/components/app/taste-map.tsx)) names any domain whose call failed.
@@ -107,7 +107,7 @@ Each Qloo call decides one part of a drop, and nothing else in wovain stands in 
 
 Tavily only adds evidence to Qloo's themes: news, marketplace listings, prices and research dossiers ([`trends.ts`](packages/core/src/trends.ts)). It never names a theme. With `trends-tavily` off, research returns no ideas.
 
-The comparison with an LLM-only run is an offline eval only. The product has no run without Qloo. [`qloo-ablation.eval.ts`](packages/core/src/evals/qloo-ablation.eval.ts) runs 8 seeds through the app's Qloo theme step and through an eval-only LLM arm ([`llm-themes.ts`](packages/core/src/evals/llm-themes.ts)). It reports each arm's grounding, explanation, cue count and distance from the seed, plus the themes the two arms share. Run it with `pnpm --filter @wovain/core run evals`. It needs `QLOO_API_KEY`, `NEBIUS_API_KEY` and `NEMOTRON_MODEL`, and writes `packages/core/src/evals/qloo-ablation.report.v1.json`.
+The comparison with an LLM-only run is an offline eval only. The product has no run without Qloo. [`qloo-ablation.eval.ts`](packages/mastra/src/mastra/evals/qloo-ablation.eval.ts) runs 8 seeds through the app's Qloo theme step and through an eval-only LLM arm ([`llm-themes.ts`](packages/mastra/src/mastra/evals/llm-themes.ts)). It reports each arm's grounding, explanation, cue count and distance from the seed, plus the themes the two arms share. Run it with `pnpm --filter @wovain/mastra run evals`. It needs `QLOO_API_KEY`, `NEBIUS_API_KEY` and `NEMOTRON_MODEL`, and writes `packages/mastra/src/mastra/evals/qloo-ablation.report.v1.json`.
 
 ### A live trace
 

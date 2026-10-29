@@ -1,5 +1,8 @@
 import { answersSchema } from "@wovain/core/brand-discovery";
-import { MAX_REFERENCES, MIN_REFERENCES } from "@wovain/core/brand-identity";
+import {
+  MAX_REFERENCES,
+  MIN_REFERENCES,
+} from "@wovain/mastra/memory/brand-identity";
 import { z } from "zod";
 
 import {

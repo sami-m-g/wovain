@@ -4,7 +4,6 @@ import { PGlite } from "@electric-sql/pglite";
 import { ORPCError } from "@orpc/server";
 import { applyGrant } from "@wovain/billing/mirror";
 import { createBilling } from "@wovain/billing/service";
-import type { Core } from "@wovain/core/core";
 import { createArtist } from "@wovain/core/fal";
 import { fakeAgents, fakeNemotron } from "@wovain/core/test-doubles";
 import { createTrends } from "@wovain/core/trends";
@@ -23,6 +22,7 @@ import {
   product,
   run,
 } from "@wovain/db/schema/seller";
+import type { Core } from "@wovain/mastra/services";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";

@@ -1,6 +1,6 @@
-import type { Core } from "@wovain/core/core";
 import type { FlagName } from "@wovain/core/flag-registry";
 import type { FlagContext } from "@wovain/core/flags";
+import type { Core } from "@wovain/mastra/services";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Actor } from "./actor";
