@@ -654,6 +654,20 @@
       },
       "gaps": "Ce que votre public aime et qu'ils ne couvrent pas",
       "partial": "Une partie de la lecture a échoué ({steps}) ; le reste est affiché."
+    },
+    "style": {
+      "title": "Ton et couleurs de ce drop",
+      "tone": "Ton",
+      "toneTip": "La façon dont la fiche et les pubs de ce drop parlent, par ex. pince-sans-rire, ou chaleureux et doux. Il part de la voix de votre marque et s'adapte à ses acheteurs ; les limites de votre marque restent.",
+      "colours": "Couleurs",
+      "coloursTip": "Les couleurs du vêtement et du motif pour ce drop, par ex. un motif rouille et crème sur un t-shirt sauge. Chaque couleur du motif est vérifiée pour ressortir sur le vêtement.",
+      "noColours": "Aucun ensemble de couleurs ne convient à ce support. Le design choisit les siennes.",
+      "checkedOn": "Vérifié sur le {blank}",
+      "guardrails": "La voix de votre marque s'applique toujours : {voice}",
+      "loading": "Suggestion d'un ton et de couleurs selon les acheteurs de ce drop…",
+      "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
+      "retry": "Réessayer",
+      "info": "À propos de {field}"
     }
   },
   "NotFound": {

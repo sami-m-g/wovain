@@ -78,6 +78,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   design_brief: ["design_quality", "brand_fit", "trend_fit", "ip_risk"],
   design_judge: [],
   design_vision: [],
+  drop_style: [],
   research_themes: [],
   // The merchant's own words: never judged, so never sent to scorers.
   voice_intent: [],
@@ -110,6 +111,7 @@ const BUILT_INS: Record<AgentId, string[]> = {
   design_judge: ["answer_relevancy", "prompt_alignment", "completeness"],
   // The text scorers can't see the image the answer is about.
   design_vision: [],
+  drop_style: ["answer_relevancy", "prompt_alignment"],
   research_themes: ["answer_relevancy", "prompt_alignment"],
   voice_intent: [],
 };

@@ -654,6 +654,20 @@
       },
       "gaps": "What your audience likes that they miss",
       "partial": "Some of the read failed ({steps}); the rest is shown."
+    },
+    "style": {
+      "title": "This drop's tone and colours",
+      "tone": "Tone",
+      "toneTip": "How this drop's listing and ads talk, e.g. dry and witty, or warm and cosy. It starts from your brand voice and adapts to this drop's buyers; your brand's limits still apply.",
+      "colours": "Colours",
+      "coloursTip": "The shirt colours and the art colours for this drop, e.g. rust and cream art on a sage tee. Every art colour is checked to stand out on the shirt.",
+      "noColours": "No colour set fits this blank. The design picks its own.",
+      "checkedOn": "Checked on the {blank}",
+      "guardrails": "Your brand voice still applies: {voice}",
+      "loading": "Suggesting a tone and colours from this drop's buyers…",
+      "failed": "We couldn't suggest a tone and colours just now.",
+      "retry": "Try again",
+      "info": "About {field}"
     }
   },
   "NotFound": {
