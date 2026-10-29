@@ -69,6 +69,10 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          # The runner is thrown away after the job: removing the builder
+          # only added about 30 s.
+          cleanup: false
       # Varlock validates env while Next builds, so each build gets an env
       # file as a BuildKit secret, never a layer: placeholders for the web
       # app's secrets (Cloud Run supplies the real ones), the public values
@@ -106,8 +110,13 @@ jobs:
           sbom: false
           secret-files: web_env=${{ runner.temp }}/web_env
           tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/web:${{ github.sha }}
-          cache-from: type=gha,scope=web-${{ github.ref_name }}
-          cache-to: type=gha,scope=web-${{ github.ref_name }},mode=max
+          # The layer cache lives in the environment's own registry, next to
+          # its images, as its own package (web-cache), so it never takes one
+          # of the image versions the cleanup policy keeps. The GitHub Actions
+          # cache it replaces never hit (no step was CACHED) and took about
+          # 150 s per run to export.
+          cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
       # Only production has a docs service (DOCS_SERVICE).
       - if: vars.DOCS_SERVICE != ''
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -119,8 +128,8 @@ jobs:
           sbom: false
           secret-files: docs_env=${{ runner.temp }}/docs_env
           tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/docs:${{ github.sha }}
-          cache-from: type=gha,scope=docs-${{ github.ref_name }}
-          cache-to: type=gha,scope=docs-${{ github.ref_name }},mode=max
+          cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
 
       # packages/db's Drizzle migrations, then Mastra's storage schema, on the
       # target's own database (DATABASE_URL_SECRET). The Cloud SQL Auth Proxy
@@ -132,7 +141,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - name: Start the Cloud SQL Auth Proxy
         env:
           GCP_SQL_INSTANCE: ${{ vars.GCP_SQL_INSTANCE }}

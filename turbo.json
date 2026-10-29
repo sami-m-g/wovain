@@ -11,7 +11,11 @@
       "outputs": ["dist/**", ".vendor-types/**"]
     },
     "test": {
+      "dependsOn": ["transit"],
       "outputs": ["junit.xml"]
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
     },
     "dev": {
       "cache": false,
