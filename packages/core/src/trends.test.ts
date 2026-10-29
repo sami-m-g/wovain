@@ -1,10 +1,8 @@
 import type { TavilySearchOptions, TavilySearchResponse } from "@tavily/core";
 import { describe, expect, it, vi } from "vitest";
 
-import type { Nemotron } from "./nemotron";
 import type { Qloo } from "./qloo";
-import { fakeNemotron } from "./test-doubles";
-import { MIN_THEMES } from "./themes";
+import { RUN_THEMES } from "./themes";
 import { createTrends, MAX_NEWS_AGE_DAYS, rankSources } from "./trends";
 import type { TavilyTrends } from "./trends";
 
@@ -91,51 +89,31 @@ const qlooWith = (tasteOf: Qloo["tasteOf"]): Pick<Qloo, "tasteOf"> => ({
 const qlooDown = qlooWith(
   async () => await Promise.reject(new Error("Qloo is down"))
 );
-
-const timedOut: Nemotron = async () =>
-  await Promise.reject(new Error("Nemotron timed out"));
+const qlooBlank = qlooWith(
+  async () => await Promise.resolve({ names: [], themes: [] })
+);
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
 
-// What Nemotron answers for the Halloween brief: one theme echoes the
-// brief and one repeats another, so code must drop both.
-const HALLOWEEN_THEMES = {
+// What Qloo answers for Studio Ghibli: three taste tags.
+const GHIBLI_TASTE = {
+  names: ["Studio Ghibli"],
   themes: [
-    { name: "Retro slasher VHS covers", query: "retro slasher VHS nostalgia" },
-    { name: BRIEF, query: BRIEF },
-    { name: "Cozy witch cottagecore", query: "cottagecore witch aesthetic" },
-    { name: "VHS covers, retro slasher", query: "slasher VHS covers" },
-    { name: "Haunted house humor", query: "haunted house memes Halloween" },
-    { name: "Day of the Dead skulls", query: "Dia de los Muertos skull art" },
+    { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
+    { affinity: 0.2, id: "urn:tag:style:cozy", name: "cozy" },
+    { affinity: 0.1, id: "urn:tag:style:pastel", name: "pastel" },
   ],
 };
+const qlooGhibli = qlooWith(async () => await Promise.resolve(GHIBLI_TASTE));
 
 describe("createTrends", () => {
   it("searches each Qloo theme on Tavily and ranks the ideas", async () => {
     const { client, search } = fakeTavily();
-    const { ask, asked } = fakeNemotron(HALLOWEEN_THEMES);
-    const trends = createTrends(
-      client,
-      qlooWith(
-        async () =>
-          await Promise.resolve({
-            names: ["Studio Ghibli"],
-            themes: [
-              { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
-              { affinity: 0.2, id: "urn:tag:style:cozy", name: "cozy" },
-              { affinity: 0.1, id: "urn:tag:style:pastel", name: "pastel" },
-            ],
-          })
-      ),
-      ask
-    );
+    const trends = createTrends(client, qlooGhibli);
 
     const research = await trends.research("ghibli");
 
-    // Qloo named enough themes: no model call.
-    expect(asked).toEqual([]);
     expect(search).toHaveBeenCalledTimes(6);
-    expect(research.qloo).toBe("used");
     expect(research.avoidNames).toEqual(["Studio Ghibli"]);
     expect(research.ideas.map((idea) => idea.rank)).toEqual([1, 2, 3]);
     expect(research.ideas[0]?.theme).toBe("anime");
@@ -146,6 +124,18 @@ describe("createTrends", () => {
     ).toBe(true);
     expect(top?.references).toEqual(["https://images.example/ref.png"]);
     expect(top?.signals.marketHits).toBe(2);
+  });
+
+  it("makes every idea a Qloo tag", async () => {
+    const { client } = fakeTavily();
+
+    const research = await createTrends(client, qlooGhibli).research("ghibli");
+
+    const tags = new Set(GHIBLI_TASTE.themes.map(({ id }) => id));
+    expect(research.ideas.length).toBeGreaterThan(0);
+    expect(research.ideas.every((idea) => tags.has(idea.qlooTag ?? ""))).toBe(
+      true
+    );
   });
 
   it("puts Qloo's taste map on each idea when asked", async () => {
@@ -166,17 +156,12 @@ describe("createTrends", () => {
           failedDomains: ["movie"],
           names: ["Studio Ghibli", "Zozotown"],
           seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
-          themes: [
-            { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
-            { affinity: 0.2, id: "urn:tag:style:cozy", name: "cozy" },
-            { affinity: 0.1, id: "urn:tag:style:pastel", name: "pastel" },
-          ],
+          themes: GHIBLI_TASTE.themes,
         })
     );
     const trends = createTrends(client, qlooWith(tasteOf));
 
     const research = await trends.research("ghibli", undefined, {
-      qloo: true,
       tasteMap: true,
       tavily: true,
     });
@@ -190,75 +175,62 @@ describe("createTrends", () => {
       // The film call failed: the panel says so.
       failedDomains: ["movie"],
       seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
-      status: "used",
       tag: { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
-    });
-  });
-
-  it("records on each idea that Qloo failed or was off", async () => {
-    const { client } = fakeTavily();
-    const { ask } = fakeNemotron(HALLOWEEN_THEMES);
-
-    const failed = await createTrends(client, qlooDown, ask).research(
-      BRIEF,
-      { error: vi.fn(), set: vi.fn() },
-      { qloo: true, tasteMap: true, tavily: true }
-    );
-    const off = await createTrends(client, qlooDown, ask).research(
-      BRIEF,
-      undefined,
-      { qloo: false, tasteMap: true, tavily: true }
-    );
-
-    expect(failed.ideas.map((idea) => idea.taste?.status)).toEqual(
-      failed.ideas.map(() => "failed")
-    );
-    expect(off.ideas.map((idea) => idea.taste?.status)).toEqual(
-      off.ideas.map(() => "off")
-    );
-    expect(off.ideas[0]?.taste).toEqual({
-      affinities: [],
-      failedDomains: [],
-      seeds: [],
-      status: "off",
     });
   });
 
   it("leaves the taste map out unless asked", async () => {
     const { client } = fakeTavily();
-    const { ask } = fakeNemotron(HALLOWEEN_THEMES);
 
-    const research = await createTrends(client, qlooDown, ask).research(BRIEF);
+    const research = await createTrends(client, qlooGhibli).research("ghibli");
 
     expect(research.ideas.every((idea) => idea.taste === undefined)).toBe(true);
   });
 
-  // #62: one idea whose title echoed the brief.
-  it("splits a brief into 3 to 5 distinct themes when Qloo fails", async () => {
+  it("stops with QLOO_NO_MATCH, and searches nothing, when Qloo matches nothing", async () => {
     const { client, search } = fakeTavily();
-    const { ask, asked } = fakeNemotron(HALLOWEEN_THEMES);
-    const trends = createTrends(client, qlooDown, ask);
+    const set = vi.fn();
 
-    const error = vi.fn();
-    const research = await trends.research(BRIEF, { error, set: vi.fn() });
+    const failure = createTrends(client, qlooBlank).research(BRIEF, { set });
 
-    expect(error).toHaveBeenCalledWith(expect.any(Error));
-    expect(research.qloo).toBe("failed");
-    expect(asked).toEqual(["research_themes"]);
-    const themes = research.ideas.map((idea) => idea.theme);
-    expect(themes).toHaveLength(4);
-    expect(themes).not.toContain(BRIEF);
-    expect(new Set(themes).size).toBe(themes.length);
-    expect(themes).not.toContain("VHS covers, retro slasher");
-    // Tavily searches the theme's query, never the whole brief.
-    const queries = search.mock.calls.map(([query]) => query);
-    expect(queries).not.toContain(BRIEF);
-    expect(queries).toContain("retro slasher VHS nostalgia");
+    await expect(failure).rejects.toMatchObject({
+      code: "QLOO_NO_MATCH",
+      message:
+        "Qloo found no audience for this brief; try naming a band, film, brand or place",
+      status: 422,
+    });
+    expect(search).not.toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith({ trends: { qloo: "no_match" } });
   });
 
-  it("tops up Qloo's few themes from the brief", async () => {
+  it("stops when Qloo's only tag is the brief itself", async () => {
+    const { client, search } = fakeTavily();
+    const echo = qlooWith(
+      async () =>
+        await Promise.resolve({
+          names: [],
+          themes: [{ affinity: 0.6, id: "urn:tag:genre:x", name: BRIEF }],
+        })
+    );
+
+    await expect(
+      createTrends(client, echo).research(BRIEF)
+    ).rejects.toMatchObject({ status: 422 });
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  it("fails when Qloo fails, and never researches without it", async () => {
+    const { client, search } = fakeTavily();
+
+    await expect(
+      createTrends(client, qlooDown).research(BRIEF)
+    ).rejects.toThrow("Qloo is down");
+    // Tavily can't name ideas on its own.
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  it("researches only Qloo's few themes, with no top-up from the brief", async () => {
     const { client } = fakeTavily();
-    const { ask } = fakeNemotron(HALLOWEEN_THEMES);
     const trends = createTrends(
       client,
       qlooWith(
@@ -271,81 +243,39 @@ describe("createTrends", () => {
               { affinity: 0.6, id: "urn:tag:genre:x", name: BRIEF },
             ],
           })
-      ),
-      ask
+      )
     );
 
     const research = await trends.research(BRIEF);
-    const themes = research.ideas.map((idea) => idea.theme);
 
-    expect(themes).toContain("Horror");
-    expect(themes).not.toContain(BRIEF);
-    expect(themes.length).toBeGreaterThanOrEqual(MIN_THEMES);
-    expect(themes.length).toBeLessThanOrEqual(5);
+    expect(research.ideas.map((idea) => idea.theme)).toEqual(["Horror"]);
   });
 
-  it("falls back to design angles, not the brief, without a model", async () => {
-    const { client, search } = fakeTavily();
-    const tasteOf = vi.fn<Qloo["tasteOf"]>();
-    const trends = createTrends(client, qlooWith(tasteOf));
-
-    const research = await trends.research(BRIEF, undefined, {
-      qloo: false,
-      tavily: true,
-    });
-
-    expect(tasteOf).not.toHaveBeenCalled();
-    expect(research.qloo).toBe("off");
-    expect(search).toHaveBeenCalledTimes(6);
-    const themes = research.ideas.map((idea) => idea.theme);
-    expect(themes).toHaveLength(MIN_THEMES);
-    expect(themes).not.toContain(BRIEF);
-    expect(themes.every((theme) => theme.includes("Halloween"))).toBe(true);
-  });
-
-  it("keeps the run going with design angles when the model fails", async () => {
+  it("caps a run at RUN_THEMES of Qloo's themes", async () => {
     const { client } = fakeTavily();
-    const set = vi.fn();
-    const trends = createTrends(client, qlooDown, timedOut);
-
-    const research = await trends.research("pickleball", { set });
-
-    expect(research.ideas.map((idea) => idea.theme).toSorted()).toEqual([
-      "Funny Pickleball",
-      "Minimalist Pickleball",
-      "Retro Pickleball",
-    ]);
-    expect(set).toHaveBeenCalledWith(
-      expect.objectContaining({
-        themes: expect.objectContaining({ reason: "Nemotron timed out" }),
-      })
+    const many = qlooWith(
+      async () =>
+        await Promise.resolve({
+          names: [],
+          themes: ["anime", "cozy", "pastel", "folk", "retro"].map(
+            (name, index) => ({
+              affinity: 1 - index / 10,
+              id: `urn:tag:style:${name}`,
+              name,
+            })
+          ),
+        })
     );
-  });
 
-  it("accepts a long theme name from the model", async () => {
-    const { client } = fakeTavily();
-    const long = `Retro slasher ${"VHS ".repeat(60)}covers`;
-    const { ask } = fakeNemotron({
-      themes: [
-        { name: long, query: "retro slasher VHS" },
-        { name: "Cozy witch", query: "cottagecore witch" },
-        { name: "Haunted humor", query: "haunted house memes" },
-      ],
-    });
-    const trends = createTrends(client, qlooDown, ask);
+    const research = await createTrends(client, many).research("ghibli");
 
-    const research = await trends.research(BRIEF);
-
-    expect(research.ideas).toHaveLength(3);
-    expect(
-      research.ideas.every((idea) => idea.theme.length <= 120)
-    ).toBeTruthy();
+    expect(research.ideas).toHaveLength(RUN_THEMES);
   });
 
   // #64: weak or off-topic sources.
   it("asks Tavily for recent, reranked news", async () => {
     const { client, search } = fakeTavily();
-    const trends = createTrends(client, qlooDown);
+    const trends = createTrends(client, qlooGhibli);
 
     await trends.research("pickleball");
 
@@ -359,6 +289,25 @@ describe("createTrends", () => {
     });
   });
 
+  it("searches each Qloo theme with the brief's subject, never the whole brief", async () => {
+    const { client, search } = fakeTavily();
+    const horror = qlooWith(
+      async () =>
+        await Promise.resolve({
+          names: [],
+          themes: [
+            { affinity: 0.7, id: "urn:tag:genre:horror", name: "Horror" },
+          ],
+        })
+    );
+
+    await createTrends(client, horror).research(BRIEF);
+
+    const queries = search.mock.calls.map(([query]) => query);
+    expect(queries).not.toContain(BRIEF);
+    expect(queries).toContain("Horror spooky halloween horror movie");
+  });
+
   it("keeps a theme whose marketplace search failed, and logs the failure", async () => {
     const { client, search } = fakeTavily();
     search.mockImplementation(async (query, options) => {
@@ -370,7 +319,7 @@ describe("createTrends", () => {
       );
     });
     const error = vi.fn();
-    const trends = createTrends(client, qlooDown);
+    const trends = createTrends(client, qlooGhibli);
 
     const research = await trends.research("pickleball", {
       error,
@@ -380,14 +329,16 @@ describe("createTrends", () => {
     expect(research.ideas.length).toBeGreaterThan(0);
     expect(research.ideas[0]?.failedSearches).toEqual(["market"]);
     expect(research.ideas[0]?.signals.marketHits).toBe(0);
-    // Qloo's failure plus one per failed marketplace search.
-    expect(error.mock.calls.length).toBeGreaterThan(research.ideas.length);
+    // One per failed marketplace search.
+    expect(error.mock.calls.length).toBeGreaterThanOrEqual(
+      research.ideas.length
+    );
   });
 
   it("fails the step when every search fails", async () => {
     const { client, search } = fakeTavily();
     search.mockRejectedValue(new Error("Tavily is down"));
-    const trends = createTrends(client, qlooDown);
+    const trends = createTrends(client, qlooGhibli);
 
     await expect(trends.research("pickleball")).rejects.toThrow(
       "Tavily is down"
@@ -396,11 +347,10 @@ describe("createTrends", () => {
 
   it("prices the margin from the listings Extract read when evidence is on", async () => {
     const { client, extract } = fakeTavily();
-    const trends = createTrends(client, qlooDown);
+    const trends = createTrends(client, qlooGhibli);
 
     const research = await trends.research("pickleball", undefined, {
       evidence: true,
-      qloo: false,
       tavily: true,
     });
 
@@ -418,7 +368,7 @@ describe("createTrends", () => {
 
   it("leaves Extract alone when evidence is off", async () => {
     const { client, extract } = fakeTavily();
-    const trends = createTrends(client, qlooDown);
+    const trends = createTrends(client, qlooGhibli);
 
     const research = await trends.research("pickleball");
 
@@ -432,7 +382,6 @@ describe("createTrends", () => {
     const trends = createTrends(client, qlooWith(tasteOf));
 
     const research = await trends.research("pickleball", undefined, {
-      qloo: true,
       tavily: false,
     });
 
@@ -441,7 +390,6 @@ describe("createTrends", () => {
     expect(research.ideas).toEqual([]);
   });
 });
-
 describe("rankSources", () => {
   const news = { maxAgeDays: MAX_NEWS_AGE_DAYS, minScore: 0.4 };
   const query = "retro slasher VHS nostalgia";

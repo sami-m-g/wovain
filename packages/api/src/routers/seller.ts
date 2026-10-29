@@ -10,7 +10,7 @@ import {
   listDesigns,
 } from "../flow/designs";
 import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
-import { listIdeas, researchIdeas, tasteMapStatus } from "../flow/ideas";
+import { listIdeas, researchErrors, researchIdeas } from "../flow/ideas";
 import {
   browseCatalog,
   createDesignProduct,
@@ -67,7 +67,10 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) => await listIdeas(context, input.runId)
     ),
+  // QLOO_OFF while the kill switch is off; QLOO_NO_MATCH when Qloo knows
+  // nothing in the seed.
   research: protectedProcedure
+    .errors(researchErrors)
     .input(z.object({ seed }))
     .handler(
       async ({ context, input }) => await researchIdeas(context, input.seed)
@@ -78,10 +81,6 @@ export const ideasRouter = {
       async ({ context, input }) =>
         await startIdeaDossier(context, input.ideaId)
     ),
-  // Whether runs show Qloo's taste map and offer an LLM-only run.
-  tasteMap: protectedProcedure.handler(
-    async ({ context }) => await tasteMapStatus(context)
-  ),
 };
 
 export const designsRouter = {
@@ -213,15 +212,15 @@ export const runsRouter = {
   list: protectedProcedure.handler(
     async ({ context }) => await listRuns(context)
   ),
+  // Every run's ideas come from Qloo: with the trends-qloo kill switch off
+  // it is refused (QLOO_OFF), and there is no switch to run without Qloo.
   start: funnelProcedure("run_started")
-    .errors(connectionErrors)
+    .errors({ ...connectionErrors, ...researchErrors })
     .input(
       z.object({
         autopilot: z.boolean().default(false),
         countries: countries.default(["US"]),
         dailyBudget: dailyBudget.default(15),
-        // false: an LLM-only run, to compare with Qloo (qloo-taste-map).
-        qloo: z.boolean().optional(),
         seed,
       })
     )

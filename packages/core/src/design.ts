@@ -50,7 +50,7 @@ const TASTE_CUES_MAX = 12;
 // Qloo's cross-domain taste for the brief: the style and mood cues, and the
 // domains they came from. Never the names: they are brands and titles.
 const tasteOf = (idea: TrendIdea) => {
-  const affinities = idea.taste?.status === "used" ? idea.taste.affinities : [];
+  const affinities = idea.taste?.affinities ?? [];
   const seen = new Set<string>();
   const cues = affinities
     .flatMap((affinity) => affinity.cues)

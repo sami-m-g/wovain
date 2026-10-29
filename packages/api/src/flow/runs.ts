@@ -13,7 +13,7 @@ import { compensateRun, createProductCampaign } from "./campaigns";
 import { readRunCompetition, skipSaturated } from "./competition";
 import { requireFal } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
-import { getIdea, researchIdeas } from "./ideas";
+import { assertQlooOn, getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
@@ -92,10 +92,11 @@ export const researchStep = async (
 ) => {
   await markRun(actor, runId, { step: "research" });
   // tavily-competition: each theme's competition is read and saved on its
-  // idea before anyone picks.
+  // idea before anyone picks. Every idea is a Qloo theme, so when Qloo
+  // matches nothing research throws QLOO_NO_MATCH and no read runs.
   const researched = await readRunCompetition(
     actor,
-    await researchIdeas(actor, input.seed, runId, { qloo: input.qloo })
+    await researchIdeas(actor, input.seed, runId)
   );
   if (researched.length === 0 || !input.autopilot) {
     return { ideaIds: researched.map((row) => row.id) };
@@ -607,7 +608,9 @@ export const startRun = async (actor: Actor, input: RunInput) => {
     throw new Error("No run engine to start the run");
   }
   // Refused before the run is saved, so a merchant who can't afford it, asks
-  // for autopilot on Free or has no fal key to draw with sees no run.
+  // for autopilot on Free or has no fal key to draw with sees no run. With
+  // the trends-qloo kill switch off there is no research, so no run either.
+  await assertQlooOn(actor);
   if (input.autopilot) {
     await assertAutopilot(actor);
   }
@@ -617,8 +620,6 @@ export const startRun = async (actor: Actor, input: RunInput) => {
     .insert(run)
     .values({
       autopilot: input.autopilot,
-      // Kept so a retry reuses the merchant's with-Qloo or LLM-only choice.
-      qloo: input.qloo !== false,
       seed: input.seed,
       userId: actor.userId,
     })

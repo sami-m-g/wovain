@@ -168,12 +168,8 @@ export const createCore = (
       fallbackModel: env.VOICE_STT_FALLBACK_MODEL,
       model: env.VOICE_STT_MODEL,
     }),
-    trends: createTrends(
-      tavily,
-      qloo,
-      // Without a Nebius key, research themes fall back to design angles.
-      agents === undefined ? undefined : nemotron
-    ),
+    // Qloo names every theme; Tavily adds the evidence.
+    trends: createTrends(tavily, qloo),
     upstream: createUpstream({
       appUrl: env.BETTER_AUTH_URL,
       metaAppId: env.META_APP_ID,

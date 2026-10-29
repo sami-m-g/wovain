@@ -26,12 +26,12 @@ The password and the code are never in this repository. The owner seeds the acco
 
 A 3-minute path:
 
-1. **New drop.** Type a brief, for example "cottagecore garden club for plant people", and start the run with "Use Qloo taste data" on.
+1. **New drop.** Type a brief that names something Qloo knows, for example "Studio Ghibli", and start the run.
 2. **Ideas.** Each idea card has a "Why this idea" panel with the Qloo entities, tag, affinities and style cues behind it, plus the Tavily sources, competitor prices and an on-demand research dossier. Tick two ideas and press **See designs**.
 3. **Designs.** Each design shows the judge's verdict, the checks the vision model ran on the drawn art, and any trademark findings with links. Approve one.
 4. **Products and ads.** wovain lists the approved design on Fourthwall, writes the ad variants and stages a paused Meta campaign.
 5. **Which model did what.** In **Runs**, open the run's **Models** link (`/dashboard/models?run=<id>`, "Which model did what") to see every agent call with its Nemotron model, time and result.
-6. **Without Qloo.** Start the same brief with "Use Qloo taste data" off and compare the ideas.
+6. **No Qloo match.** Start a brief Qloo can't place, like "asdf qwerty". The run stops with "Qloo found no audience for this brief; try naming a band, film, brand or place", shows suggestions with examples, and offers **Write a new brief**.
 
 ## Nemotron on Nebius Token Factory
 
@@ -43,7 +43,7 @@ With the `model-routing` flag on (dev and next.wovain.com; off in production), e
 
 | Job | Env var | Model on next.wovain.com | What runs on it |
 | --- | --- | --- | --- |
-| Default | `NEMOTRON_MODEL_DEFAULT` | Nemotron 3.5 Super VL (`nvidia/Nemotron-3.5-Super-VL`) | Design brief and listing ([`draftBrief`](packages/core/src/design.ts)), research themes ([`themes.ts`](packages/core/src/themes.ts)), ad copy ([`writeAdCopy`](packages/core/src/ads.ts)) |
+| Default | `NEMOTRON_MODEL_DEFAULT` | Nemotron 3.5 Super VL (`nvidia/Nemotron-3.5-Super-VL`) | Design brief and listing ([`draftBrief`](packages/core/src/design.ts)), ad copy ([`writeAdCopy`](packages/core/src/ads.ts)), and the LLM-only arm of the offline Qloo ablation eval ([`llm-themes.ts`](packages/core/src/evals/llm-themes.ts)) |
 | Reasoning | `NEMOTRON_MODEL_REASONING` | Nemotron 3 Ultra (`nvidia/Nemotron-3-Ultra-550b-a55b`) | The design judge's verdict ([`judgeDesign`](packages/core/src/design.ts)), autopilot's idea pick and go/no-go ([`pickIdea`, `reviewDesign`](packages/core/src/autopilot.ts)) |
 | Vision | `NEMOTRON_MODEL_VISION` | Nemotron 3.5 Super VL | The judge's eyes. It reads the drawn PNG for a garment or mockup as the subject, a background, cropping, printed words that differ from the brief, and art that disappears on a shirt color |
 | Fast | `NEMOTRON_MODEL_FAST` | Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`) | Ad judges (copy quality, Meta policy), Mastra scorers, prompt-injection and PII guardrails |
@@ -73,7 +73,7 @@ Details: [Nebius and Nemotron](apps/fumadocs/content/docs/%28developers%29/integ
 
 ## Qloo-powered
 
-Qloo's taste graph decides what a drop is about and who its ads reach. On next.wovain.com every run calls Qloo, whatever the plan, and the `trends-qloo` flag is only a kill switch. The cross-domain taste map, the "Why this idea" panel and the LLM-only switch are behind `qloo-taste-map`; Qloo-driven Meta targeting is behind `qloo-audiences`. Both are on in development and next and off in production.
+Qloo's taste graph decides what a drop is about and who its ads reach. Every idea is a Qloo taste tag, so without Qloo there are no ideas: no Qloo, no run. On next.wovain.com every run calls Qloo, whatever the plan. The `trends-qloo` flag is only an ops kill switch: when it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503), and no run starts. The cross-domain taste map and the "Why this idea" panel are behind `qloo-taste-map`; Qloo-driven Meta targeting is behind `qloo-audiences`. Both are on in development and next and off in production.
 
 ### Endpoints
 
@@ -86,20 +86,28 @@ Every call goes to `QLOO_API_URL` (`https://hackathon.api.qloo.com`) from [`pack
 | `GET /v2/insights` | `filter.type=urn:entity:brand`, `movie` or `tv_show`, `feature.explainability=true`, `bias.trends=low` | Cross-domain affinities, with the share each seed entity contributed. Their style and mood tags go into the design brief, and their names never do ([`design.ts`](packages/core/src/design.ts)) |
 | `GET /v2/insights` | `filter.type=urn:demographics` | Age and gender affinity of the brand's Qloo entities, mapped to the Meta ad set's `age_min`, `age_max` and `genders` ([`targeting.ts`](packages/core/src/targeting.ts)) |
 | `GET /v2/insights` | `filter.results.entities` with `signal.demographics.audiences` | Scores 27 apparel-relevant `urn:audience` IDs against the brand's Qloo brands and keeps up to 3 that beat the average ([`qloo-audiences.ts`](packages/core/src/qloo-audiences.ts)). Their names go to Meta's interest search and into the ad writer's persona |
+| `GET /search` | one taste reference, top 1 | Brand onboarding resolves each reference the designer names to a Qloo entity ([`brand-identity.ts`](packages/core/src/brand-identity.ts)). These are the brand's Qloo entities |
+| `GET /v2/insights` | `filter.type=urn:entity:brand`, `signal.interests.entities`, `bias.trends=high` | Autopilot's scan: brands rising with the brand's audience ([`autopilot-signals.ts`](packages/core/src/autopilot-signals.ts)) |
 
-A step that fails is logged at error level to PostHog Error Tracking, marked failed on the idea or in the run's decision trace, and left out. The "Why this idea" panel ([`taste-map.tsx`](apps/web/src/components/app/taste-map.tsx)) says when Qloo failed, matched nothing or was off, and names any domain whose call failed.
+A failed theme call (`/search` or the tag insights) fails the research step with `QLOO_FAILED`. The step retries, then the run fails and is logged at error level to PostHog Error Tracking. Nothing stands in for Qloo. A failed cross-domain, demographics or audience call is logged at error level, marked failed on the idea or in the run's decision trace, and left out. The "Why this idea" panel ([`taste-map.tsx`](apps/web/src/components/app/taste-map.tsx)) names any domain whose call failed.
 
-### What breaks without Qloo
+### Why wovain needs Qloo
 
-The "Use Qloo taste data" switch sends `qloo: false` to `runs.start`. The run still finishes, but these parts go generic:
+Each Qloo call decides one part of a drop, and nothing else in wovain stands in for it:
 
-- **Themes.** Nemotron splits the brief into themes. They stay close to the words the merchant typed, because nothing links them to what those fans also love.
-- **Ranking.** Ideas have no affinity, so the 30% demand weight sits at a neutral 0.5 for every idea, and Tavily's news and marketplace signals decide the order.
-- **The brief.** The brief writer gets no cross-domain style or mood cues.
-- **The evidence.** The "Why this idea" panel has nothing to show, and the Tavily research dossier gets no `qloo-taste.json`.
-- **Ads.** The Meta ad set targets countries only, without Qloo's ages, gender or audiences, and the ad writer gets no persona.
+- **`/search`: who the brief is about.** Qloo resolves the brief to up to 3 seed entities. When it matches nothing, the run stops with `QLOO_NO_MATCH` (422): "Qloo found no audience for this brief; try naming a band, film, brand or place". The wizard shows suggestions with examples and a **Write a new brief** button. wovain never makes up ideas instead.
+- **Tag insights: what the drop is about.** Each idea is one of Qloo's taste tags for the seed's fans, up to 3 per run (`RUN_THEMES`, [`qlooThemes`](packages/core/src/themes.ts)). Fewer than 3 tags means fewer ideas, never made-up ones. The tag's name is the idea's title.
+- **Tag affinity: which idea ranks first.** Each tag's affinity is the demand term, 30% of the idea's score ([`score.ts`](packages/core/src/score.ts)). The feedback loop re-weights these terms from sales, but it doesn't choose the themes.
+- **Seed names: what never goes on a product.** The names Qloo matched are saved on each idea as names never to print, and they lower its IP-safety score.
+- **Cross-domain affinities: how the art looks.** With `qloo-taste-map` on, Qloo names the brands, films and TV the seed's fans also like, with each seed entity's share. Their style and mood tags go into the design brief as cues, never their names ([`design.ts`](packages/core/src/design.ts)). The "Why this idea" panel shows them, and the Tavily research dossier gets them as `qloo-taste.json`.
+- **Tags: the drop's style family.** The Qloo tags of the run's ideas, then the brand's niches, pick a drop's style family and its product mix ([`drops.ts`](packages/api/src/flow/drops.ts)).
+- **Onboarding `/search`: the brand's taste.** The references a designer names become the brand's Qloo entities ([`onboarding.ts`](packages/api/src/flow/onboarding.ts)). Ads and autopilot start from them.
+- **Demographics and audiences: who the ads reach.** Qloo's age and gender affinity sets the Meta ad set's ages and gender, and its audiences become Meta interests and the ad writer's persona ([`targeting.ts`](packages/core/src/targeting.ts), [`qloo-audiences.ts`](packages/core/src/qloo-audiences.ts)).
+- **Rising brands: when autopilot suggests a drop.** Qloo names the brands rising with the brand's audience. When this week's news talks about one, autopilot suggests a drop ([`autopilot-signals.ts`](packages/core/src/autopilot-signals.ts)).
 
-[`qloo-ablation.eval.ts`](packages/core/src/evals/qloo-ablation.eval.ts) runs 8 seeds through both arms with the app's own theme step. It reports each arm's grounding, explanation, cue count and distance from the seed, plus the themes the two arms share. It needs `QLOO_API_KEY`, `NEBIUS_API_KEY` and `NEMOTRON_MODEL`, and writes `packages/core/src/evals/qloo-ablation.report.v1.json`.
+Tavily only adds evidence to Qloo's themes: news, marketplace listings, prices and research dossiers ([`trends.ts`](packages/core/src/trends.ts)). It never names a theme. With `trends-tavily` off, research returns no ideas.
+
+The comparison with an LLM-only run is an offline eval only. The product has no run without Qloo. [`qloo-ablation.eval.ts`](packages/core/src/evals/qloo-ablation.eval.ts) runs 8 seeds through the app's Qloo theme step and through an eval-only LLM arm ([`llm-themes.ts`](packages/core/src/evals/llm-themes.ts)). It reports each arm's grounding, explanation, cue count and distance from the seed, plus the themes the two arms share. Run it with `pnpm --filter @wovain/core run evals`. It needs `QLOO_API_KEY`, `NEBIUS_API_KEY` and `NEMOTRON_MODEL`, and writes `packages/core/src/evals/qloo-ablation.report.v1.json`.
 
 ### A live trace
 
@@ -162,7 +170,6 @@ Details: [Tavily](apps/fumadocs/content/docs/%28developers%29/integrations/tavil
 - **Ultra's latency.** Nemotron 3 Ultra must answer within the 90 s agent timeout. If it doesn't, `nemotronModelReasoning` on next goes back to Super VL, which is a config change.
 - **Tavily images.** The news search returns images, and wovain doesn't use them yet.
 - **Durable runs.** On next, 10% of runs use the Mastra workflow on Inngest and the rest use the earlier engine. Both run the same steps.
-- **Retry.** "Try again" on a failed run starts it with Qloo on, because the run doesn't store the switch.
 
 ## What changed since Aug 26 / Sep 30
 

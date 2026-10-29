@@ -15,7 +15,7 @@ import {
   EmptyTitle,
 } from "@wovain/ui/components/empty";
 import { cn } from "@wovain/ui/lib/utils";
-import { CircleAlert, Lightbulb } from "lucide-react";
+import { CircleAlert, Lightbulb, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
@@ -35,6 +35,55 @@ const FAILURE_COPY = {
   other: "other",
   rejected: "rejected",
 } as const;
+
+// Briefs Qloo's taste graph knows: a band, a film, a brand and a place.
+const QLOO_EXAMPLES = [
+  "Tame Impala",
+  "Studio Ghibli",
+  "Patagonia",
+  "Tokyo",
+] as const;
+
+/**
+ * Shown when Qloo matched nothing in the brief (QLOO_NO_MATCH). Every idea
+ * is a Qloo tag, so trying the same brief again can't help: it suggests
+ * naming something Qloo knows, with examples that start a new brief.
+ */
+const QlooNoMatchState = ({ onRestart }: { onRestart: () => void }) => {
+  const t = useTranslations("Wizard.qlooNoMatch");
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Search aria-hidden="true" />
+        </EmptyMedia>
+        <EmptyTitle id={STEP_TITLE_ID}>{t("title")}</EmptyTitle>
+        <EmptyDescription>{t("body")}</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <p className="text-muted-foreground text-xs">{t("examples")}</p>
+        <ul className="flex flex-wrap justify-center gap-2">
+          {QLOO_EXAMPLES.map((example) => (
+            <li key={example}>
+              <Link
+                className={cn(
+                  buttonVariants({ size: "sm", variant: "outline" }),
+                  "h-8"
+                )}
+                href={`/dashboard/new?brief=${encodeURIComponent(example)}`}
+              >
+                {example}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Button className="h-9 px-4" onClick={onRestart}>
+          {t("another")}
+        </Button>
+      </EmptyContent>
+    </Empty>
+  );
+};
 
 /**
  * Shown in place of any step when the run has failed: which step stopped, why
@@ -56,6 +105,9 @@ export const RunFailedState = ({
 }) => {
   const t = useTranslations("Wizard.failed");
   const stages = useTranslations("Stages");
+  if (failure.reason === "qloo_no_match") {
+    return <QlooNoMatchState onRestart={onRestart} />;
+  }
   const service =
     failure.reason === "not_connected" ? SERVICE_NAMES[failure.service] : "";
   // An expired sign-in the provider wouldn't refresh: reconnect, not connect.

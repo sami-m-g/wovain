@@ -459,9 +459,7 @@
       "placeholder": "Cozy outdoorsy merch for my houseplant channel",
       "error": "Write at least a few words (10 characters or more).",
       "submit": "Research trends",
-      "submitAutopilot": "Run on autopilot",
-      "qloo": "Use Qloo taste data",
-      "qlooHint": "Turn it off to run on the language model alone and compare the ideas."
+      "submitAutopilot": "Run on autopilot"
     },
     "trends": {
       "title": "Pick the ideas",
@@ -482,9 +480,6 @@
       "whyAlso": "The same fans also like",
       "whyShare": "{share} from {name}",
       "whyCues": "Style cues sent to the design brief",
-      "whyFailed": "Qloo didn't answer for this run, so these themes come from your brief alone.",
-      "whyNoMatch": "Qloo didn't recognise anything in your brief, so these themes come from your brief alone.",
-      "whyOff": "This run skipped Qloo, so the language model alone picked these themes.",
       "whyDomainsFailed": "Qloo couldn't load the {domains} these fans like, so this map leaves them out.",
       "domainPlural": {
         "brand": "brands",
@@ -593,6 +588,12 @@
       "title": "No ideas this time",
       "body": "Research came back empty for this brief. Try again, or write it differently.",
       "retry": "Try again",
+      "another": "Write a new brief"
+    },
+    "qlooNoMatch": {
+      "title": "Qloo found no audience for this brief",
+      "body": "Every idea comes from Qloo's taste data, so the brief needs something Qloo knows. Try naming a band, film, brand or place your fans love.",
+      "examples": "Start from one of these:",
       "another": "Write a new brief"
     },
     "working": {

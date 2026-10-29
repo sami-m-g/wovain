@@ -360,7 +360,6 @@ describe("draftBrief", () => {
           },
         ],
         seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
-        status: "used",
         tag: { affinity: 0.9, id: "urn:tag:x", name: "anime" },
       },
     };

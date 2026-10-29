@@ -37,8 +37,11 @@ const save = async (actor: Actor, id: string, competition: Competition) => {
 
 // Reads and saves one idea's competition. A saved read is kept unless
 // `again` (an unknown one read again from the card).
+// Only a Qloo theme is read: an idea saved before Qloo was required, with no
+// Qloo tag, keeps what it has.
 const readFor = async (actor: Actor, row: IdeaRow, again = false) => {
-  if (row.competition !== null && !again) {
+  const qlooTheme = row.research.qlooTag !== undefined;
+  if (!qlooTheme || (row.competition !== null && !again)) {
     return row.competition;
   }
   const competition = await withAgentTrace(
@@ -48,10 +51,7 @@ const readFor = async (actor: Actor, row: IdeaRow, again = false) => {
       await readCompetition(
         { ask: actor.core.nemotron, client: actor.core.tavily },
         {
-          affinities:
-            row.research.taste?.status === "used"
-              ? row.research.taste.affinities
-              : [],
+          affinities: row.research.taste?.affinities ?? [],
           theme: row.theme,
         },
         actor.log

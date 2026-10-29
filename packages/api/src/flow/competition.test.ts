@@ -29,6 +29,7 @@ const MIGRATIONS = fileURLToPath(
 const USER_ID = "user_1";
 
 const research: TrendIdea = {
+  qlooTag: "urn:tag:genre:halloween",
   rank: 1,
   references: [],
   score: 0.7,
@@ -171,6 +172,17 @@ describe("competition per theme", () => {
     const [saved] = await db.select().from(idea);
     await readIdeaCompetition(actor, saved?.id ?? "");
     expect(search).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads only Qloo themes, never an idea without a Qloo tag", async () => {
+    const { actor, rows, search } = await setup();
+    const untagged = rows.map((row) => ({
+      ...row,
+      research: { ...row.research, qlooTag: undefined },
+    }));
+    const [read] = await readRunCompetition(actor, untagged);
+    expect(read?.competition).toBeNull();
+    expect(search).not.toHaveBeenCalled();
   });
 
   it("does nothing with the flag off", async () => {

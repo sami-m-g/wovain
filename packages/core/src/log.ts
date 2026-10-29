@@ -92,6 +92,19 @@ const unconfigured = (provider: Provider, variable: string) =>
     why: `${variable} isn't set.`,
   });
 
+// Qloo matched nothing in the brief, so there is no audience and no theme
+// to research: every idea is a Qloo tag, and none is made up instead. A
+// 4xx, so the run fails at once rather than retrying. The merchant's fix is
+// a brief that names something Qloo knows.
+export const QLOO_NO_MATCH_MESSAGE =
+  "Qloo found no audience for this brief; try naming a band, film, brand or place";
+export const qlooNoMatch = defineError("QLOO_NO_MATCH", {
+  fix: "Name a band, film, brand or place your fans love, for example Studio Ghibli, Tame Impala or Patagonia.",
+  message: QLOO_NO_MATCH_MESSAGE,
+  status: 422,
+  why: "Qloo's taste graph matched no entity, or no taste tag, for the brief.",
+});
+
 export const notConfigured = {
   // wovain's own fal key, for voice transcription (./voice).
   fal: unconfigured("fal", "FAL_KEY"),

@@ -1,0 +1,35 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "7a06ee27-ed79-4668-a088-a33950d1f32c",
+  "prevIds": [
+    "16afcc04-b0ce-4fcc-9b47-f9f64cebebff"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "run",
+        "qloo"
+      ],
+      "writes": [
+        "s|col|public.run.qloo",
+        "n|col|public.run.qloo",
+        "e|col|public.run.qloo"
+      ],
+      "reads": [
+        "n|tbl|public.run",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"run\",\"qloo\"]"
+    }
+  ]
+}

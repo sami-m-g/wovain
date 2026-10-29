@@ -1,6 +1,9 @@
+import { ORPCError } from "@orpc/server";
+import { QLOO_NO_MATCH_MESSAGE } from "@wovain/core/log";
 import type { TrendSources } from "@wovain/core/trends";
 import { idea } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { EvlogError } from "evlog";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
@@ -8,44 +11,64 @@ import { researchFeedbackOf } from "./feedback";
 import { flagContextOf } from "./flags";
 import { charge } from "./spend";
 
-export interface ResearchOptions {
-  // false: the merchant runs without Qloo (the LLM-only comparison).
-  qloo?: boolean | undefined;
-}
+const UNAVAILABLE = 503;
+const UNPROCESSABLE = 422;
 
-// Which sources a run's research uses. Qloo runs for every plan, and
-// trends-qloo is only its kill switch. With qloo-taste-map on, the run also
-// saves the taste map and the merchant may run without Qloo (the LLM-only
-// comparison).
+// Every idea is a Qloo tag, so research without Qloo is refused, never run
+// on the brief alone. Procedures declare these (`.errors(researchErrors)`),
+// so clients read `error.code` instead of parsing messages.
+export const researchErrors = {
+  // Qloo matched nothing in the brief: the merchant names something it knows.
+  QLOO_NO_MATCH: {
+    message: QLOO_NO_MATCH_MESSAGE,
+    status: UNPROCESSABLE,
+  },
+  // The trends-qloo kill switch is off: no research, so no run, until it is
+  // back on.
+  QLOO_OFF: {
+    message:
+      "Trend research needs Qloo, and Qloo is switched off right now. Try again later.",
+    status: UNAVAILABLE,
+  },
+} as const;
+
+const researchError = (code: keyof typeof researchErrors, cause?: unknown) =>
+  new ORPCError(code, {
+    cause,
+    message: researchErrors[code].message,
+    status: researchErrors[code].status,
+  });
+
+// trends-qloo is an ops kill switch only: off, research and runs refuse to
+// start rather than run without Qloo.
+export const assertQlooOn = async (actor: Actor) => {
+  if (!(await actor.core.flags.isOn("trends-qloo", flagContextOf(actor)))) {
+    throw researchError("QLOO_OFF");
+  }
+};
+
+// What a run's research adds to Qloo's themes. With qloo-taste-map on, it
+// also saves the taste map on each idea.
 export const researchSourcesFor = async (
-  actor: Actor,
-  options: ResearchOptions = {}
+  actor: Actor
 ): Promise<TrendSources> => {
   const context = flagContextOf(actor);
-  const [qlooOn, tasteMap, tavilyOn, evidenceOn] = await Promise.all([
-    actor.core.flags.isOn("trends-qloo", context),
+  const [tasteMap, tavilyOn, evidenceOn] = await Promise.all([
     actor.core.flags.isOn("qloo-taste-map", context),
     actor.core.flags.isOn("trends-tavily", context),
     actor.core.flags.isOn("tavily-evidence", context),
   ]);
-  return {
-    evidence: evidenceOn,
-    qloo: qlooOn && (!tasteMap || options.qloo !== false),
-    tasteMap,
-    tavily: tavilyOn,
-  };
+  return { evidence: evidenceOn, tasteMap, tavily: tavilyOn };
 };
 
-export const tasteMapStatus = async (actor: Actor) => ({
-  enabled: await actor.core.flags.isOn("qloo-taste-map", flagContextOf(actor)),
-});
+const isNoMatch = (error: unknown) =>
+  EvlogError.isEvlogError(error) && error.code === "QLOO_NO_MATCH";
 
 // Trend research (Qloo × Tavily), saved as ranked ideas.
 export const researchIdeas = async (
   actor: Actor,
   seed: string,
-  runId?: string,
-  options: ResearchOptions = {}
+  runId?: string
 ) => {
   // A run's research step retried after it saved its ideas keeps them.
   if (runId !== undefined) {
@@ -58,23 +81,28 @@ export const researchIdeas = async (
       return saved;
     }
   }
-  const sources = await researchSourcesFor(actor, options);
+  // Checked again here: the switch may have flipped since the run started.
+  await assertQlooOn(actor);
+  const sources = await researchSourcesFor(actor);
   // Without Tavily there's nothing to rank: don't spend the merchant's credits.
   if (!sources.tavily) {
     actor.log?.set({ trends: { ideas: 0, sources } });
     return [];
   }
   // With the feedback loop on, the merchant's re-fit weights score the
-  // ideas and what sold before steers the themes (./feedback).
+  // ideas (./feedback).
   const feedback = await researchFeedbackOf(actor);
-  const { avoidNames, ideas, qloo } = await charge(
+  const { avoidNames, ideas } = await charge(
     actor,
     "research",
     { runId },
     async () =>
       await actor.core.trends.research(seed, actor.log, sources, feedback)
-  );
-  actor.log?.set({ trends: { ideas: ideas.length, qloo, sources } });
+  ).catch((error: unknown) => {
+    // The credits are released; the merchant gets the typed error.
+    throw isNoMatch(error) ? researchError("QLOO_NO_MATCH", error) : error;
+  });
+  actor.log?.set({ trends: { ideas: ideas.length, sources } });
   if (ideas.length === 0) {
     return [];
   }
