@@ -1094,7 +1094,7 @@
           "high": "Crowded: many shops sell this",
           "unknown": "Competition not checked"
         },
-        "listings": "{count, number} similar listings in {sampled, number} results",
+        "listings": "{count, plural, one {# similar listing} other {# similar listings}} in {sampled, number} results",
         "blankAssumed": "Colours shown on a classic tee. Connect Fourthwall to check them on your real blank.",
         "blankOn": "Colours checked on the {name}",
         "credit": "Taste data by Qloo",

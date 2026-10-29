@@ -108,6 +108,20 @@ export const useBuyersLine = () => {
 
 const percent = (value: number) => Math.round(value * 100) / 100;
 
+const WWW = /^www\./u;
+const hostOf = (url: string) => new URL(url).hostname.replace(WWW, "");
+
+// One cited page per site, so two stories from one site read as one source.
+const onePerHost = <T extends { url: string }>(sources: readonly T[]) => {
+  const seen = new Set<string>();
+  return sources.filter((source) => {
+    const host = hostOf(source.url);
+    const fresh = !seen.has(host);
+    seen.add(host);
+    return fresh;
+  });
+};
+
 /** One starter brand: who buys, their taste, colours, products and why. */
 const StarterCardItem = ({
   card,
@@ -216,17 +230,19 @@ const StarterCardItem = ({
             ) : (
               <>
                 {t("discover.news", { count: card.evidence.momentum.hits })}
-                {card.evidence.momentum.sources.slice(0, 2).map((source) => (
-                  <a
-                    className="ms-1.5 underline underline-offset-2"
-                    href={source.url}
-                    key={source.url}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {new URL(source.url).hostname.replace(/^www\./u, "")}
-                  </a>
-                ))}
+                {onePerHost(card.evidence.momentum.sources)
+                  .slice(0, 2)
+                  .map((source) => (
+                    <a
+                      className="ms-1.5 underline underline-offset-2"
+                      href={source.url}
+                      key={source.url}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {hostOf(source.url)}
+                    </a>
+                  ))}
               </>
             )}
           </li>

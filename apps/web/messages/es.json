@@ -1094,7 +1094,7 @@
           "high": "Saturado: muchas tiendas lo venden",
           "unknown": "Competencia sin comprobar"
         },
-        "listings": "{count, number} anuncios parecidos en {sampled, number} resultados",
+        "listings": "{count, plural, one {# anuncio parecido} other {# anuncios parecidos}} en {sampled, number} resultados",
         "blankAssumed": "Colores sobre una camiseta clásica. Conecta Fourthwall para comprobarlos en tu prenda real.",
         "blankOn": "Colores comprobados en {name}",
         "credit": "Datos de gustos de Qloo",

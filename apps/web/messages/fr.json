@@ -1094,7 +1094,7 @@
           "high": "Saturé : beaucoup de boutiques le vendent",
           "unknown": "Concurrence non vérifiée"
         },
-        "listings": "{count, number} annonces similaires sur {sampled, number} résultats",
+        "listings": "{count, plural, one {# annonce similaire} other {# annonces similaires}} sur {sampled, number} résultats",
         "blankAssumed": "Couleurs présentées sur un t-shirt classique. Connectez Fourthwall pour les vérifier sur votre vrai support.",
         "blankOn": "Couleurs vérifiées sur le {name}",
         "credit": "Données de goûts par Qloo",

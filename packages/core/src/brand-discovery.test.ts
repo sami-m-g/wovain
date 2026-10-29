@@ -93,39 +93,39 @@ const tavilyFake = (): DiscoveryDeps["tavily"] =>
 
 // Words that follow the Qloo facts in the prompt, as the real writer is
 // told to: the niche and palette come from each card's references.
+const shadeOf = (text: string, salt: number) =>
+  (
+    16 +
+    ([...text].reduce(
+      (sum, char) => sum * 31 + (char.codePointAt(0) ?? 0),
+      salt
+    ) %
+      200)
+  )
+    .toString(16)
+    .padStart(2, "0");
+
 const writeWords: Nemotron = async <T extends z.ZodType>({
   prompt,
   schema,
 }: Ask<T>) => {
-  const input = JSON.parse(prompt) as {
-    cards: { key: string; references: string[] }[];
-  };
+  const { card } = JSON.parse(prompt) as { card: { references: string[] } };
+  const [first = ""] = card.references;
   const reply = {
-    cards: input.cards.map((card, index) => {
-      const [first = ""] = card.references;
-      const shade = (16 + index * 45 + (first.length % 30))
-        .toString(16)
-        .padStart(2, "0");
-      return {
-        key: card.key,
-        name: `Brand ${first}`.slice(0, 40),
-        niche: `${first} people`.slice(0, 60),
-        nicheAlternatives: [`fans of ${first}`.slice(0, 60)],
-        palettes: [
-          {
-            garments: ["Ivory", "Navy"],
-            inks: [`#${shade}2030`, `#${shade}3A20`],
-            label: "warm earthy tones",
-          },
-        ],
-        products: [
-          { idea: "a hand-drawn crest", kind: "t-shirt" },
-          { idea: "a small patch", kind: "cap" },
-        ],
-        voiceLines: ["Made for slow Sundays."],
-        why: "Its fans share a strong taste and few shops serve them.",
-      };
-    }),
+    name: `Brand ${first}`.slice(0, 40),
+    niche: `${first} people`.slice(0, 60),
+    nicheAlternatives: [`fans of ${first}`.slice(0, 60)],
+    palettes: [1, 2].map((salt) => ({
+      garments: ["Ivory", "Navy"],
+      inks: [`#${shadeOf(first, salt)}2030`, `#${shadeOf(first, salt)}3A20`],
+      label: "warm earthy tones",
+    })),
+    products: [
+      { idea: "a hand-drawn crest", kind: "t-shirt" },
+      { idea: "a small patch", kind: "cap" },
+    ],
+    voiceLines: ["Made for slow Sundays."],
+    why: "Its fans share a strong taste and few shops serve them.",
   };
   return await Promise.resolve(schema.parse(reply));
 };
