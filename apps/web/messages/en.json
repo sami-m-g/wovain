@@ -38,7 +38,8 @@
     "autopilotTitle": "Autopilot",
     "storeTitle": "Store",
     "dropsTitle": "Drops",
-    "campaignTitle": "Your campaign"
+    "campaignTitle": "Your campaign",
+    "alertsTitle": "Alerts"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -65,7 +66,8 @@
       "fr": "Français",
       "es": "Español"
     },
-    "noData": "Nothing here yet."
+    "noData": "Nothing here yet.",
+    "alertSettings": "Alerts"
   },
   "Header": {
     "product": "How it works",
@@ -174,7 +176,7 @@
       },
       {
         "question": "What stops my ads from losing money?",
-        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner. If wovain is down, Meta pauses the ads itself: wovain copies these rules into your ad account as Meta automated rules."
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner. You get an alert each time, by email, on your phone or on Telegram. If wovain is down, Meta pauses the ads itself: wovain copies these rules into your ad account as Meta automated rules."
       },
       {
         "question": "Which of my designs should I advertise?",
@@ -2327,5 +2329,68 @@
     },
     "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
     "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:"
+  },
+  "Alerts": {
+    "title": "Alerts",
+    "lead": "wovain tells you when it pauses an ad, stops your campaigns, asks to raise a budget, needs your approval, makes your first sale or fails at something. Choose where each alert goes.",
+    "loading": "Loading your alerts…",
+    "off": "Alerts aren't available on your account yet.",
+    "channelsTitle": "Where alerts can go",
+    "gridTitle": "Which alerts go where",
+    "gridCaption": "Each alert type and the channels it goes to",
+    "typeColumn": "Alert",
+    "toggle": "Send {type} alerts by {channel}",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Couldn't save your alerts. Try again.",
+    "channels": {
+      "email": "Email",
+      "push": "Phone",
+      "telegram": "Telegram",
+      "emailNone": "No email address on your account.",
+      "pushNone": "No phone yet. Sign in to the wovain app and allow notifications.",
+      "pushDevices": "{count, plural, one {# phone} other {# phones}}",
+      "telegramUnavailable": "isn't set up on this site.",
+      "telegramConnect": "Connect Telegram",
+      "telegramCheck": "I've pressed Start",
+      "telegramConnected": "Connected.",
+      "telegramConnectedAs": "Connected as @{username}.",
+      "telegramDisconnect": "Disconnect",
+      "telegramFailed": "Telegram didn't answer. Try again in a minute."
+    },
+    "quiet": {
+      "title": "Quiet hours",
+      "lead": "During quiet hours, phone and Telegram alerts wait until the end. Email still goes at once.",
+      "on": "Hold phone and Telegram alerts at night",
+      "start": "From",
+      "end": "Until",
+      "timeZone": "In your time zone, {timeZone}."
+    },
+    "types": {
+      "rule_action": {
+        "label": "Ads paused or stopped",
+        "hint": "A rule paused an ad or a campaign, or stopped every campaign at a cap."
+      },
+      "scale_request": {
+        "label": "Budget raise requests",
+        "hint": "A product sells and a rule asks to raise its budget."
+      },
+      "approval": {
+        "label": "Approvals waiting",
+        "hint": "Another action waits for your yes or no."
+      },
+      "first_sale": {
+        "label": "First sale",
+        "hint": "Your shop makes its first sale."
+      },
+      "failure": {
+        "label": "Failures",
+        "hint": "A job failed after several tries."
+      },
+      "updates": {
+        "label": "Suggestions and finished runs",
+        "hint": "New ideas from autopilot, and runs that finish."
+      }
+    }
   }
 }

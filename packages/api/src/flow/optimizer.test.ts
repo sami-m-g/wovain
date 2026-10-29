@@ -657,7 +657,7 @@ describe("the ads profit rules", () => {
     });
     expect(queued?.payload).toMatchObject({ adId: "ad2", rule: "low_ctr" });
     const notified = ctx.sent.find((event) => event.name === "wovain/notify");
-    expect(notified?.data).toMatchObject({ kind: "anomaly" });
+    expect(notified?.data).toMatchObject({ kind: "rule_action" });
     // No reviewer for a money rule.
     expect(ctx.reviewer.asked).toEqual([]);
 

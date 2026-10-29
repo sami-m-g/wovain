@@ -118,6 +118,7 @@ const ENVIRONMENT_SECRET_IDS = [
   "qloo-api-key",
   "resend-api-key",
   "tavily-api-key",
+  "telegram-bot-token",
 ] as const;
 
 // Production's Resend domain and full-access key, with which Pulumi makes an

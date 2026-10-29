@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
+import { createAlertFunctions } from "./alerts";
 import { createAutopilotFunctions } from "./autopilot";
 import { createDirectionFunctions } from "./directions";
 import { createDropFunctions } from "./drops";
@@ -186,6 +187,9 @@ export const createRunEngine = ({
       ...createStoreFunctions(inngest, services),
       ...createDropFunctions(inngest, services),
       ...createDirectionFunctions(inngest, services),
+      // Alerts (openspec alerts) send wovain/notify for approvals and
+      // failed jobs, and deliver it.
+      ...createAlertFunctions(inngest, services),
     ],
     inngest,
     mastra,

@@ -17,7 +17,7 @@ import {
   useSidebar,
 } from "@wovain/ui/components/sidebar";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { ChevronsUpDown, LogOut, UserCog } from "lucide-react";
+import { Bell, ChevronsUpDown, LogOut, UserCog } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link, useRouter } from "@/i18n/navigation";
@@ -99,6 +99,14 @@ export const NavUser = () => {
               >
                 <UserCog aria-hidden="true" />
                 {t("accountSettings")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={
+                  <Link href="/dashboard/settings/alerts" prefetch={false} />
+                }
+              >
+                <Bell aria-hidden="true" />
+                {t("alertSettings")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {

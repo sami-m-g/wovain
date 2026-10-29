@@ -97,6 +97,10 @@ export const FLAGS = {
     "media",
     "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers"
   ),
+  alerts: workstream(
+    "media",
+    "Alerts on email, mobile push and Telegram for rule actions, approvals, a first sale and failures, with per-type channels and quiet hours (openspec alerts)"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",

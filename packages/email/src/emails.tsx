@@ -11,6 +11,7 @@ import {
   Preview,
   Text,
 } from "@react-email/components";
+import type { AlertType } from "@wovain/core/alerts";
 import type { RunStatus as RunState } from "@wovain/db/schema/seller";
 import Negotiator from "negotiator";
 
@@ -37,11 +38,29 @@ export const pickLocale = (value?: string | null): Locale => {
 type RunStatus = Exclude<RunState, "running">;
 
 // Verification and reset email is essential: it carries no unsubscribe link.
-export const isEssential = (message: Message) => message.kind !== "run";
+// Run updates and alerts are not.
+export const isEssential = (message: Message) =>
+  message.kind === "reset" || message.kind === "verify";
 
 export type Message =
   | { kind: "reset" | "verify"; url: string }
-  | { kind: "run"; seed: string; status: RunStatus; url: string };
+  | { kind: "run"; seed: string; status: RunStatus; url: string }
+  // An alert (openspec alerts): what happened, in the words of the rule or
+  // job that sent it, under a heading for its type.
+  | {
+      alert: AlertType;
+      body: string;
+      kind: "alert";
+      title: string;
+      url: string;
+    };
+
+interface AlertCopy {
+  action: string;
+  footer: string;
+  unsubscribe: string;
+  heading: Record<AlertType, string>;
+}
 
 interface Copy {
   action: string;
@@ -52,6 +71,7 @@ interface Copy {
 const COPY: Record<
   Locale,
   {
+    alert: AlertCopy;
     ignore: string;
     // Before the link as plain text, for a mail client that blocks buttons.
     paste: string;
@@ -62,6 +82,20 @@ const COPY: Record<
   }
 > = {
   en: {
+    alert: {
+      action: "Open wovain",
+      footer:
+        "You get this alert by email. Choose its channels and quiet hours in Settings > Alerts.",
+      heading: {
+        approval: "Waiting for your approval",
+        failure: "Something failed",
+        first_sale: "Your first sale",
+        rule_action: "wovain protected your ad spend",
+        scale_request: "A product is selling",
+        updates: "News from wovain",
+      },
+      unsubscribe: "Unsubscribe from wovain's emails",
+    },
     ignore: "If you didn't ask for this, you can ignore this email.",
     paste: "If the button doesn't work, open this link:",
     reset: {
@@ -94,6 +128,20 @@ const COPY: Record<
     },
   },
   es: {
+    alert: {
+      action: "Abrir wovain",
+      footer:
+        "Recibes esta alerta por correo. Elige sus canales y horas de silencio en Ajustes > Alertas.",
+      heading: {
+        approval: "Espera tu aprobación",
+        failure: "Algo falló",
+        first_sale: "Tu primera venta",
+        rule_action: "wovain protegió tu gasto en anuncios",
+        scale_request: "Un producto se está vendiendo",
+        updates: "Novedades de wovain",
+      },
+      unsubscribe: "Cancelar los correos de wovain",
+    },
     ignore: "Si no lo pediste, puedes ignorar este correo.",
     paste: "Si el botón no funciona, abre este enlace:",
     reset: {
@@ -126,6 +174,20 @@ const COPY: Record<
     },
   },
   fr: {
+    alert: {
+      action: "Ouvrir wovain",
+      footer:
+        "Vous recevez cette alerte par e-mail. Choisissez ses canaux et vos heures de silence dans Paramètres > Alertes.",
+      heading: {
+        approval: "En attente de votre validation",
+        failure: "Un échec est survenu",
+        first_sale: "Votre première vente",
+        rule_action: "wovain a protégé votre budget publicitaire",
+        scale_request: "Un produit se vend",
+        updates: "Du nouveau sur wovain",
+      },
+      unsubscribe: "Se désabonner des e-mails de wovain",
+    },
     ignore:
       "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
     paste: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
@@ -159,6 +221,9 @@ const COPY: Record<
     },
   },
 };
+
+// A title that already ends a sentence needs no full stop before the body.
+const ENDS_SENTENCE = /[.!?]$/u;
 
 // The brand: cochineal, plum ink and calico (apps/web/src/brand/brand.tsx).
 const BRAND = {
@@ -248,6 +313,33 @@ export const compose = (
   unsubscribeUrl?: string
 ) => {
   const copy = COPY[locale];
+  if (message.kind === "alert") {
+    const heading = copy.alert.heading[message.alert];
+    return {
+      element: (
+        <Layout
+          copy={{
+            action: copy.alert.action,
+            body: `${message.title}${ENDS_SENTENCE.test(message.title) ? "" : "."} ${message.body}`,
+            heading,
+          }}
+          footer={copy.alert.footer}
+          locale={locale}
+          logoUrl={
+            siteUrl === undefined ? undefined : new URL(LOGO.path, siteUrl).href
+          }
+          paste={copy.paste}
+          unsubscribe={
+            unsubscribeUrl === undefined
+              ? undefined
+              : { label: copy.alert.unsubscribe, url: unsubscribeUrl }
+          }
+          url={message.url}
+        />
+      ),
+      subject: `${heading}: ${message.title}`,
+    };
+  }
   const content =
     message.kind === "run"
       ? copy.run[message.status](message.seed)
