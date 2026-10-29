@@ -316,8 +316,8 @@ describe("autopilot triggers on Postgres", () => {
   });
 
   it("stops at the plan's daily credit cap", async () => {
-    // Free: 15 credits a day; a run is about 13.
-    expect(runEstimate()).toBe(13);
+    // Free: 25 credits a day; a run is about 21.
+    expect(runEstimate()).toBe(21);
     await ctx.db
       .insert(run)
       .values({ id: "run_0", seed: "s", userId: USER_ID });
@@ -379,7 +379,7 @@ describe("autopilot triggers on Postgres", () => {
   });
 
   it("counts a started run at its estimate until it finishes", async () => {
-    // Free: 15 credits a day; a run is about 13. Run 1 started and hasn't
+    // Free: 25 credits a day; a run is about 21. Run 1 started and hasn't
     // reserved anything yet.
     await ctx.db
       .insert(run)
@@ -395,7 +395,7 @@ describe("autopilot triggers on Postgres", () => {
       title: "Earlier drop",
       userId: USER_ID,
     });
-    expect(await autopilotCreditsToday(ctx.actor, new Date())).toBe(13);
+    expect(await autopilotCreditsToday(ctx.actor, new Date())).toBe(21);
     const id = await suggest();
     expect(await actOnSuggestion(ctx.actor, id, new Date())).toBe("credit_cap");
     // Once the run is done, only what it reserved counts.
