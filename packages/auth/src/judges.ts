@@ -263,24 +263,29 @@ export interface SeedResult {
   userId: string;
 }
 
-const ensureUser = async (
+export interface SeedAccount {
+  email: string;
+  name: string;
+  // A password chosen by the caller, set on every run; else one is chosen
+  // for a new account, or for an existing one with resetPassword.
+  password?: string | undefined;
+  resetPassword?: boolean | undefined;
+}
+
+// A verified email-and-password account, created or brought in line.
+export const ensureAccount = async (
   db: Database,
-  resetPassword: boolean
+  { email, name, password: given, resetPassword = false }: SeedAccount
 ): Promise<SeedResult> => {
   const auth = seedAuth(db);
   const context = await auth.$context;
-  const found = await context.internalAdapter.findUserByEmail(JUDGES_EMAIL, {
+  const found = await context.internalAdapter.findUserByEmail(email, {
     includeAccounts: true,
   });
   if (found === null) {
-    const password = newPassword();
+    const password = given ?? newPassword();
     const { user } = await auth.api.signUpEmail({
-      body: {
-        email: JUDGES_EMAIL,
-        locale: "en",
-        name: JUDGES_NAME,
-        password,
-      },
+      body: { email, locale: "en", name, password },
     });
     await context.internalAdapter.updateUser(user.id, { emailVerified: true });
     return { created: true, password, userId: user.id };
@@ -292,10 +297,10 @@ const ensureUser = async (
   const credential = accounts.find(
     (account) => account.providerId === "credential"
   );
-  if (!resetPassword && credential !== undefined) {
+  if (given === undefined && !resetPassword && credential !== undefined) {
     return { created: false, userId: user.id };
   }
-  const password = newPassword();
+  const password = given ?? newPassword();
   const hash = await context.password.hash(password);
   await (credential === undefined
     ? context.internalAdapter.linkAccount({
@@ -375,7 +380,11 @@ export const seedJudges = async (
   db: Database,
   { now = new Date(), resetPassword = false } = {}
 ): Promise<SeedResult> => {
-  const result = await ensureUser(db, resetPassword);
+  const result = await ensureAccount(db, {
+    email: JUDGES_EMAIL,
+    name: JUDGES_NAME,
+    resetPassword,
+  });
   await ensureBrand(db, result.userId, now);
   await ensureAutonomy(db, result.userId);
   return result;

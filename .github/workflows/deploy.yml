@@ -218,3 +218,36 @@ jobs:
         env:
           SITE_URL: ${{ vars.SITE_URL }}
         run: curl -sSf --retry 5 --retry-all-errors --retry-delay 10 -X PUT "$SITE_URL/api/inngest"
+
+      # The post-deploy smoke suite (apps/e2e, @smoke specs) on next only:
+      # only next's environment has E2E_SMOKE_PASSWORD_SECRET
+      # (infra/next/index.ts). It seeds the smoke account with that password
+      # through the proxy still running from Migrate, then signs in and runs
+      # against the live site with real providers. A failure fails the deploy
+      # and reaches PostHog Error Tracking (apps/e2e/src/posthog-reporter.ts).
+      - name: Smoke test
+        id: smoke
+        if: vars.E2E_SMOKE_PASSWORD_SECRET != ''
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
+          E2E_SMOKE_PASSWORD_SECRET: ${{ vars.E2E_SMOKE_PASSWORD_SECRET }}
+          E2E_BASE_URL: ${{ vars.SITE_URL }}
+          E2E_EMAIL: e2e-smoke@wovain.com
+          E2E_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+        run: |
+          E2E_PASSWORD=$(gcloud secrets versions access latest --secret "$E2E_SMOKE_PASSWORD_SECRET" --project "$GCP_PROJECT_ID")
+          echo "::add-mask::$E2E_PASSWORD"
+          DATABASE_URL=$(gcloud secrets versions access latest --secret "$DATABASE_URL_SECRET" --project "$GCP_PROJECT_ID")
+          echo "::add-mask::$DATABASE_URL"
+          export E2E_PASSWORD DATABASE_URL
+          pnpm --filter @wovain/e2e run seed:smoke
+          unset DATABASE_URL
+          pnpm --filter @wovain/e2e exec playwright install --with-deps chromium
+          pnpm --filter @wovain/e2e run test:smoke
+      - if: failure() && steps.smoke.conclusion == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-report
+          path: apps/e2e/playwright-report
+          retention-days: 7
