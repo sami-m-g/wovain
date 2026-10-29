@@ -151,6 +151,10 @@ export interface DesignAds {
   // Short and stable: it names the design's ad set and ads on Meta.
   label: string;
   linkUrl: string;
+  // Its share of the test's spend floor (feedback-loop, ./outcomes
+  // floorShares): angles that sold before get more. An even split when
+  // unset.
+  floorShare?: number | undefined;
 }
 
 // A drop launches as a small test: 3 to 5 designs in one campaign.
@@ -159,8 +163,11 @@ export const MAX_TEST_DESIGNS = 5;
 // design gets spend until the profit rules can judge it; Meta's campaign
 // budget (CBO) moves the other half to what sells.
 const FLOOR_SHARE = 0.5;
-export const designFloorCents = (dailyBudgetCents: number, designs: number) =>
-  Math.floor((dailyBudgetCents * FLOOR_SHARE) / designs);
+export const designFloorCents = (
+  dailyBudgetCents: number,
+  designs: number,
+  share = 1 / designs
+) => Math.floor(dailyBudgetCents * FLOOR_SHARE * share);
 
 export interface CampaignPlan {
   // Numeric, without "act_"; the merchant's first MCP-enabled account if unset.
@@ -387,12 +394,17 @@ export const stagePausedCampaign = async (
   const designs = designsOf(plan);
   // A test of several designs: each keeps a floor of the budget until the
   // profit rules can judge it, and CBO moves the rest to what sells.
-  const minSpendCents =
+  const floorOf = (design: DesignAds) =>
     designs.length > 1
-      ? designFloorCents(plan.dailyBudgetCents, designs.length)
+      ? designFloorCents(
+          plan.dailyBudgetCents,
+          designs.length,
+          design.floorShare ?? 1 / designs.length
+        )
       : undefined;
   const staged: StagedDesign[] = [];
   for (const [slot, design] of designs.entries()) {
+    const minSpendCents = floorOf(design);
     // One design keeps the names and keys a single-design staging always had.
     const single = designs.length === 1;
     const at = (name: string) => (single ? name : `${name}:${slot}`);

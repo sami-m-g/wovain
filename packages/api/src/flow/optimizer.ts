@@ -32,7 +32,6 @@ import {
   adRulesOf,
   applyCampaignRules,
   applyStop,
-  economicsOf,
   isAdRulesOn,
 } from "./ad-rules";
 import type { RuleOutcome } from "./ad-rules";
@@ -44,6 +43,7 @@ import {
 } from "./approvals";
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
+import { killEconomicsOf, recordAdOutcomes } from "./outcomes";
 
 // The ads optimizer's flow (openspec ads-optimizer): for each of the
 // merchant's wovain campaigns it reads Meta, saves each ad's bandit state,
@@ -562,16 +562,23 @@ const protect = async (
         });
       }
     }
-    const [settings, economics, autonomy, spent] = await Promise.all([
-      adRulesOf(actor),
-      economicsOf(actor, [
-        ...new Set(
-          rows.flatMap((row) => [
-            row.productId,
-            ...(row.designs ?? []).map((design) => design.productId),
-          ])
-        ),
-      ]),
+    // feedback-loop: each design's lifetime results, recorded as read.
+    await recordAdOutcomes(actor, reads, now);
+    const settings = await adRulesOf(actor);
+    const [economics, autonomy, spent] = await Promise.all([
+      // The kill rules read the real cost per sale once there is one.
+      killEconomicsOf(
+        actor,
+        [
+          ...new Set(
+            rows.flatMap((row) => [
+              row.productId,
+              ...(row.designs ?? []).map((design) => design.productId),
+            ])
+          ),
+        ],
+        settings
+      ),
       autonomyOf(actor),
       spendToDate(actor, now),
     ]);
