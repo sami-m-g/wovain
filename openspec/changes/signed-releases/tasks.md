@@ -16,8 +16,9 @@ Issue #188.
 ## 3. History
 
 - [x] 3.1 `backfill-releases.yml` for v0.1.0 to v0.31.0
-- [ ] 3.2 Run `backfill-releases` from main with `dry_run` off, after the merge
-- [ ] 3.3 Set the `RELEASE_PLEASE_TOKEN` Actions secret so the release pull request runs its checks
+- [x] 3.2 `backfill-releases` runs by itself when `.github/backfill-releases.pending` reaches main; delete the file in a later pull request
+- [x] 3.3 `RELEASE_PLEASE_TOKEN` declared in the `github` Pulumi stack from the `release-please-token` secret
+- [ ] 3.4 Set the `release-please-token` stack secret and apply the `github` stack (infra/README.md)
 
 ## 4. Best Practices
 

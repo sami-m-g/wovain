@@ -26,6 +26,7 @@ const config = new pulumi.Config();
 repositorySettings({
   gitguardianApiKey: config.getSecret("gitguardian-api-key"),
   releaseBranch: config.require("releaseBranch"),
+  releasePleaseToken: config.getSecret("release-please-token"),
 });
 // Google trusts infra-github only from jobs in this environment, on main.
 mainOnlyEnvironment("github-infrastructure", REPOSITORY);

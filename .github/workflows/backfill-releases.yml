@@ -1,15 +1,22 @@
 # One-off: GitHub Releases for the history before release-please. The tags
 # v0.1.0 to v0.28.0 exist from the GitLab era; v0.29.0 to v0.31.0 are the
 # milestones below. Each release gets notes from its conventional commits
-# (git-cliff, .config/cliff.toml), then is signed by sign-release.yml. Run it
-# by hand from main (workflow_dispatch). Safe to run again: a release that
-# exists is left as it is and only signed again.
+# (git-cliff, .config/cliff.toml), then is signed by sign-release.yml.
+#
+# It runs by itself once: the push that merges .github/backfill-releases.pending
+# into main starts it. Delete that file in a later pull request; the deletion
+# runs it again and changes nothing, because a release that exists with its
+# signature is left alone. It can also be run by hand from main
+# (workflow_dispatch, dry_run on by default).
 #
 # After v0.31.0, release-please (release.yml) takes over from
 # last-release-sha in release-please-config.json.
 name: backfill-releases
 
 on:
+  push:
+    branches: [main]
+    paths: [".github/backfill-releases.pending"]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -73,13 +80,20 @@ jobs:
             fi
             previous=$sha
           done
-          json=$(printf '%s\n' "${ordered[@]}" | jq -R . | jq -sc .)
+          # Only the releases that are not signed yet.
+          todo=()
+          for tag in "${ordered[@]}"; do
+            if [ "$DRY_RUN" = "true" ] || ! gh release view "$tag" --json assets --jq '.assets[].name' | grep -q '\.sigstore\.json$'; then
+              todo+=("$tag")
+            fi
+          done
+          json=$(printf '%s\n' "${todo[@]}" | jq -R . | jq -sc 'map(select(. != ""))')
           echo "tags=$json" >> "$GITHUB_OUTPUT"
 
   sign:
     name: sign ${{ matrix.tag }}
     needs: releases
-    if: ${{ !inputs.dry_run }}
+    if: ${{ !inputs.dry_run && needs.releases.outputs.tags != '[]' }}
     strategy:
       fail-fast: false
       max-parallel: 5
