@@ -16,6 +16,8 @@ const registered: string[] = [];
 // Project role grants, and who may act as an account.
 const projectRoles: { condition?: string; name: string; role: string }[] = [];
 const workloadUsers: string[] = [];
+// Bucket grants' conditions, by resource name.
+const bucketConditions = new Map<string, string | undefined>();
 await pulumi.runtime.setMocks(
   {
     call: ({ inputs }) => ({
@@ -31,6 +33,9 @@ await pulumi.runtime.setMocks(
           name,
           role: inputs["role"],
         });
+      }
+      if (type === "gcp:storage/bucketIAMMember:BucketIAMMember") {
+        bucketConditions.set(name, inputs["condition"]?.expression);
       }
       if (inputs["role"] === "roles/iam.workloadIdentityUser") {
         workloadUsers.push(inputs["member"]);
@@ -89,4 +94,21 @@ test("infra-next has no project role that reaches production", () => {
   expect(
     workloadUsers.filter((member) => member.endsWith("/next-infrastructure"))
   ).toHaveLength(1);
+});
+
+test("infra-next reads and writes only next's state, its locks included", () => {
+  const expression = bucketConditions.get("infra-next-state") ?? "";
+  const objects = "projects/_/buckets/wovain-pulumi-state/objects/.pulumi";
+  // Where Pulumi's GCS backend keeps the next stack: its locks sit under
+  // the stack's fully qualified name (`pulumi up` 403'd there before).
+  for (const prefix of [
+    "stacks/wovain-next/",
+    "locks/organization/wovain-next/",
+    "history/wovain-next/",
+    "backups/wovain-next/",
+  ]) {
+    expect(expression).toContain(`startsWith("${objects}/${prefix}")`);
+  }
+  // Nothing of production's or bootstrap's.
+  expect(expression).not.toMatch(/\/wovain\/|wovain-bootstrap/u);
 });
