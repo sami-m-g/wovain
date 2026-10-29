@@ -85,7 +85,7 @@ export const CampaignRules = ({ campaignId }: { campaignId: string }) => {
           </li>
           <li>
             {t("highCpc", {
-              clicks: settings.cpcMinClicks,
+              clicks: format.number(settings.cpcMinClicks),
               cpc: money(settings.maxCpcCents),
             })}
           </li>
@@ -104,8 +104,8 @@ export const CampaignRules = ({ campaignId }: { campaignId: string }) => {
           <p className="font-medium">{t("scaleIf")}</p>
           <p className="text-muted-foreground">
             {t("scale", {
-              hours: settings.scaleEveryHours,
-              purchases: settings.scaleMinPurchases,
+              hours: format.number(settings.scaleEveryHours),
+              purchases: format.number(settings.scaleMinPurchases),
               roas: format.number(targets.scaleRoas, {
                 maximumFractionDigits: 2,
               }),
