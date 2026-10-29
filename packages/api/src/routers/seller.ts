@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { audienceErrors } from "../flow/audiences";
 import { createProductCampaign, listCampaigns } from "../flow/campaigns";
 import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
 import { connectionErrors } from "../flow/connections";
@@ -199,6 +200,7 @@ export const campaignsRouter = {
         await campaignCompetition(context, input.campaignId)
     ),
   create: funnelProcedure("campaign_created")
+    .errors(audienceErrors)
     .input(
       z.object({
         adAccountId: z.string().regex(/^\d+$/u).optional(),
