@@ -11,7 +11,12 @@ import { gapsOf, readSaturation } from "./competition";
 import type { SaturationLevel } from "./competition";
 import { marketDemandOf } from "./demand";
 import type { MarketDemand } from "./demand";
-import { competitorPrices } from "./evidence";
+import {
+  competitorPrices,
+  onDomain,
+  SOCIAL_DOMAINS,
+  sourceTitle,
+} from "./evidence";
 import type { Citation, DossierRecord, TavilyWeb } from "./evidence";
 import type { IdeaWordsResult } from "./idea-words";
 import { external, notConfigured, qlooNoMatch } from "./log";
@@ -262,7 +267,12 @@ export const rankSources = (
     return hit.score * (1 + fresh);
   };
   const relevant = (hit: Hit) => {
-    if (!isWebUrl(hit.url) || isIndexPage(hit) || hit.score < minScore) {
+    if (
+      !isWebUrl(hit.url) ||
+      isIndexPage(hit) ||
+      onDomain(hit.url, SOCIAL_DOMAINS) ||
+      hit.score < minScore
+    ) {
       return false;
     }
     const age = ageDays(hit.publishedDate, now);
@@ -460,7 +470,10 @@ const ideaOf = (
     // Tavily's answer stands only when its news held up.
     answer: news.results.length > 0 ? news.answer : undefined,
     ...(failed.length > 0 && { failedSearches: failed }),
-    moment: news.results[0]?.title,
+    moment:
+      news.results[0] === undefined
+        ? undefined
+        : sourceTitle(news.results[0].title, news.results[0].url),
     ...(prices !== undefined && { prices }),
     qlooTag: theme.id,
     references: news.images.slice(0, 4),
@@ -470,7 +483,7 @@ const ideaOf = (
       .slice(0, SOURCES_SHOWN)
       .map(({ publishedDate, title, url }) => ({
         publishedDate,
-        title: clip(title, 300),
+        title: sourceTitle(title, url),
         url,
       })),
     theme: theme.name,

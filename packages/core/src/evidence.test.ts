@@ -7,6 +7,7 @@ import {
   dossierOf,
   priceOnPage,
   readDossier,
+  sourceTitle,
   startDossier,
   trademarkNote,
   verdictOf,
@@ -282,4 +283,34 @@ describe("dossier", () => {
       note: "No prices",
     });
   });
+});
+
+// Next, run 783b6885: the evidence read "Dark As Night Shirt Shop the look →
+// link in bio https://www. ...".
+it("shows a source's title without links, calls to action or boilerplate", () => {
+  expect(
+    sourceTitle(
+      "Dark As Night Shirt Shop the look → link in bio https://www. ...",
+      "https://shop.example/dark"
+    )
+  ).toBe("Dark As Night Shirt");
+  expect(sourceTitle("Gothic fern tee | Etsy", "https://etsy.com/l/1")).toBe(
+    "Gothic fern tee"
+  );
+  expect(sourceTitle("Gothic fern tee|Etsy", "https://etsy.com/l/1")).toBe(
+    "Gothic fern tee"
+  );
+  expect(
+    sourceTitle("Gothic tee (https://shop.example/item)", "https://a.example")
+  ).toBe("Gothic tee");
+  // A headline that only starts with a call to action keeps it.
+  expect(
+    sourceTitle(
+      "Buy Now, Pay Later: What Shoppers Need to Know",
+      "https://news.example/bnpl"
+    )
+  ).toBe("Buy Now, Pay Later: What Shoppers Need to Know");
+  expect(
+    sourceTitle("https://www.example.com/x", "https://example.com/x")
+  ).toBe("example.com");
 });
