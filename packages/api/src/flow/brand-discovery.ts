@@ -138,7 +138,7 @@ const withTimeout = async <T>(work: Promise<T>, fallback: T, ms: number) =>
 export const draftBlank = async (actor: Actor) =>
   await withTimeout(readBlank(actor), ASSUMED, BLANK_TIMEOUT_MS);
 
-const localeOf = async (actor: Actor) => {
+export const localeOf = async (actor: Actor) => {
   const [row] = await actor.db
     .select({ locale: user.locale })
     .from(user)
@@ -148,7 +148,7 @@ const localeOf = async (actor: Actor) => {
 
 // Runs one traced discovery step and saves the trace; a trace that won't
 // save is logged, the answer stands.
-const traced = async <T>(
+export const traced = async <T>(
   actor: Actor,
   run: (trace: DecisionTrace) => Promise<T>
 ): Promise<T> => {
