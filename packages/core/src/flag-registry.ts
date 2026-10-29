@@ -158,6 +158,10 @@ export const FLAGS = {
     "design",
     "Drops: a capsule of products sharing a palette, mark and style family"
   ),
+  "drop-directions": workstream(
+    "growth",
+    "Brand-aware directions in the new-drop step: 3 to 5 one-click directions from the brand's Qloo references, what is rising for its fans and Tavily momentum"
+  ),
   "fal-oauth": {
     description:
       "Connect fal with OAuth instead of a pasted key (openspec add-fal-byo-connector)",
