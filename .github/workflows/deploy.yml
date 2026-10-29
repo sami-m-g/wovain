@@ -115,8 +115,15 @@ jobs:
           # of the image versions the cleanup policy keeps. The GitHub Actions
           # cache it replaces never hit (no step was CACHED) and took about
           # 150 s per run to export.
+          # mode=min caches the final image's layers only (the runner stage:
+          # fonts, varlock). mode=max also exported the builder stage's
+          # node_modules, source and .next layers: 33-94 s per run, for an
+          # install layer that took as long to pull on a hit (about 40 s) as
+          # to install on a miss (25-38 s), and source and build layers that
+          # change on every commit. A failed cache export never fails the
+          # deploy (ignore-error).
           cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache
-          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
       # Only production has a docs service (DOCS_SERVICE).
       - if: vars.DOCS_SERVICE != ''
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -129,7 +136,7 @@ jobs:
           secret-files: docs_env=${{ runner.temp }}/docs_env
           tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/docs:${{ github.sha }}
           cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache
-          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
 
       # packages/db's Drizzle migrations, then Mastra's storage schema, on the
       # target's own database (DATABASE_URL_SECRET). The Cloud SQL Auth Proxy
