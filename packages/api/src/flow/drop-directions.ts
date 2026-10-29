@@ -159,6 +159,13 @@ export const cacheKeyOf = (
     : `${ranked}:record-${record.designs}-${record.wins}-${record.angles.length}`;
 };
 
+// Only a whole answer is kept: an empty one, or one whose news or listings
+// reads failed, would be served for a week as if nothing sold. A row like
+// that, kept before this rule, is read as missing and searched again.
+export const keepable = (
+  answer: Pick<Directions, "directions" | "tavilyFailed">
+) => answer.directions.length > 0 && !answer.tavilyFailed;
+
 const readCache = async (actor: Actor, key: string) => {
   const [row] = await actor.db
     .select({ at: directionCache.updatedAt, payload: directionCache.payload })
@@ -166,7 +173,7 @@ const readCache = async (actor: Actor, key: string) => {
     .where(
       and(eq(directionCache.userId, actor.userId), eq(directionCache.key, key))
     );
-  return row;
+  return row !== undefined && keepable(row.payload) ? row : undefined;
 };
 
 const writeCache = async (
@@ -174,6 +181,9 @@ const writeCache = async (
   key: string,
   payload: DirectionsAnswer
 ) => {
+  if (!keepable(payload)) {
+    return;
+  }
   await actor.db
     .insert(directionCache)
     .values({ key, payload, userId: actor.userId })
@@ -293,6 +303,16 @@ const search = async (
     directions = await run();
   }
   const answer = { ...directions, hasBrand: brand !== undefined };
+  // What the gate did, on the request's wide event: an empty or cautious
+  // answer is visible in the logs with each theme's reason.
+  actor.log?.set({
+    directionsGate: {
+      checked: directions.checked,
+      shown: directions.directions.length,
+      tavilyFailed: directions.tavilyFailed,
+      unconfirmed: directions.unconfirmed === true,
+    },
+  });
   await writeCache(
     actor,
     cacheKeyOf(input, brand, locale, gate, outcomes),
