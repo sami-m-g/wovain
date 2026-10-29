@@ -46,6 +46,7 @@ describe("targets", () => {
   it("takes the target CPA from the profit per sale", () => {
     expect(targets).toEqual({
       breakEvenRoas: 3,
+      real: false,
       scaleRoas: 3.9000000000000004,
       targetCpaCents: 1000,
     });

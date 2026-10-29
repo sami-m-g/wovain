@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
+import { createApprovals } from "@wovain/core/approvals";
 import type { WovainEvent } from "@wovain/core/events";
 import { seededRng } from "@wovain/core/optimizer";
 import { fakeNemotron } from "@wovain/core/test-doubles";
@@ -22,7 +23,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Actor } from "./actor";
 import { adRulesOf, setLossLimit } from "./ad-rules";
-import { approvalsFor, autonomyOf, setAutonomy } from "./approvals";
+import {
+  approvalsFor,
+  autonomyOf,
+  drizzleApprovalStore,
+  setAutonomy,
+} from "./approvals";
 import {
   executeOptimizerApproval,
   finishOptimizerApproval,
@@ -741,7 +747,11 @@ describe("the ads profit rules", () => {
     });
     expect(queued?.payload).toMatchObject({ fromCents: 1000, toCents: 1200 });
 
-    await approvalsFor(ctx.actor).decide(
+    // Decided at the tick's clock: the raise expires a day after NOW.
+    await createApprovals({
+      now: () => NOW,
+      store: drizzleApprovalStore(ctx.actor.db),
+    }).decide(
       {
         approvalId: queued?.id ?? "",
         approve: true,

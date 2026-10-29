@@ -461,3 +461,59 @@ export const performanceSnapshot = pgTable(
     ),
   ]
 );
+
+// One published design's outcome (openspec feedback-loop, "Outcomes per
+// design"): what it was made of (the angles the feedback loop learns per
+// merchant) against its lifetime Meta results and Fourthwall sales. One row
+// per product, upserted by the optimizer tick (Meta) and the daily loop
+// (Fourthwall, attributes), so a rerun overwrites.
+export const designOutcome = pgTable(
+  "design_outcome",
+  {
+    addToCarts: integer("add_to_carts").default(0).notNull(),
+    // The idea's top Qloo audience (who-buys), when read.
+    audience: text("audience"),
+    // The Fourthwall catalog product (the blank).
+    blank: text("blank").notNull(),
+    clicks: integer("clicks").default(0).notNull(),
+    createdAt: createdAt(),
+    designId: text("design_id")
+      .notNull()
+      .references(() => design.id, { onDelete: "cascade" }),
+    dropId: text("drop_id").references(() => drop.id, {
+      onDelete: "set null",
+    }),
+    id: id(),
+    ideaId: text("idea_id").notNull(),
+    impressions: integer("impressions").default(0).notNull(),
+    // When the product went on sale.
+    launchedAt: timestamp("launched_at").notNull(),
+    // When Meta's lifetime numbers were last read; null before any ad.
+    metaReadAt: timestamp("meta_read_at"),
+    // The drop's palette label (drop-style), when picked.
+    palette: text("palette"),
+    priceCents: integer("price_cents").notNull(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    // What one sale leaves after the blank, fees and the refund reserve.
+    profitPerSaleCents: integer("profit_per_sale_cents").notNull(),
+    purchases: integer("purchases").default(0).notNull(),
+    qlooEntities: jsonb("qloo_entities")
+      .$type<string[]>()
+      .default([])
+      .notNull(),
+    qlooTags: jsonb("qloo_tags").$type<string[]>().default([]).notNull(),
+    revenueCents: integer("revenue_cents").default(0).notNull(),
+    // Fourthwall's sales were snapshotted from the day it launched.
+    salesCovered: boolean("sales_covered").default(false).notNull(),
+    spendCents: integer("spend_cents").default(0).notNull(),
+    theme: text("theme").notNull(),
+    units: integer("units").default(0).notNull(),
+    updatedAt: updatedAt(),
+    userId: owner(),
+  },
+  (table) => [
+    uniqueIndex("design_outcome_product_idx").on(table.userId, table.productId),
+  ]
+);
