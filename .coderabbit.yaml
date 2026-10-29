@@ -20,9 +20,19 @@ reviews:
     enabled: true
     drafts: false
     base_branches: [main]
-  # A short walkthrough comment only, nothing written into the description.
+    # Each push is reviewed on its own commits only, not the whole pull
+    # request again.
+    auto_incremental_review: true
+    # Never pause after a number of reviewed commits (default 5): approval
+    # needs the latest commit reviewed, so a paused review would hold the
+    # required approval until someone runs `@coderabbitai review`.
+    auto_pause_after_reviewed_commits: 0
+  # A short walkthrough comment only, nothing written into the description,
+  # and no extra sections or summaries that each cost another pass.
   high_level_summary: false
-  high_level_summary_in_walkthrough: true
+  high_level_summary_in_walkthrough: false
+  changed_files_summary: false
+  assess_linked_issues: false
   poem: false
   sequence_diagrams: false
   in_progress_fortune: false
@@ -35,13 +45,28 @@ reviews:
   review_info: false
   review_details: false
   pre_merge_checks:
-    # commitlint checks titles; the code has no docstring convention.
+    # commitlint checks titles; the code has no docstring convention; the
+    # OpenSpec change says what the linked issue asks for. A failing check
+    # would also withhold the automatic approval.
     docstrings:
       mode: "off"
     title:
       mode: "off"
     description:
       mode: "off"
+    issue_assessment:
+      mode: "off"
+  # On-demand fixes (Fix comments, merge conflicts) stay; nothing that
+  # generates code or runs on its own.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    fix_ci:
+      enabled: false
   path_filters:
     # Lockfiles and the patches pnpm applies.
     - "!**/pnpm-lock.yaml"
@@ -53,6 +78,16 @@ reviews:
     - "!packages/db/src/schema/auth.ts"
     - "!**/src/env.ts"
     - "!packages/core/src/evals/report.v1.json"
+    # Prose, specs, translations and assets: docs, the Fumadocs content, the
+    # OpenSpec specs and changes, the fr/es/en message catalogs, images.
+    # A pull request that only changes these is approved without a review.
+    - "!**/*.md"
+    - "!**/*.mdx"
+    - "!docs/**"
+    - "!openspec/**"
+    - "!apps/web/messages/*.json"
+    - "!**/public/**"
+    - "!skills-lock.json"
     # Vendored, updated only with their CLIs (AGENTS.md, "Rules").
     - "!packages/ui/src/components/**"
     - "!packages/ui/src/hooks/**"
@@ -66,7 +101,7 @@ reviews:
     - "!apps/web/src/components/auth/**"
     - "!apps/web/src/lib/auth/**"
     - "!.agents/skills/**"
-    - "!.claude/skills/openspec-*/**"
+    - "!.claude/skills/**"
     - "!.claude/commands/opsx/**"
   path_instructions:
     - path: "**/*.{ts,tsx}"
@@ -149,3 +184,8 @@ reviews:
       enabled: false
 chat:
   art: false
+knowledge_base:
+  # Each review would also search the web; the repository's own docs and
+  # path_instructions are the context it needs.
+  web_search:
+    enabled: false
