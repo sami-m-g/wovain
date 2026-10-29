@@ -997,6 +997,28 @@
         "openness": "Room in the market",
         "margin": "Margin",
         "ipSafety": "Safe from brand names"
+      },
+      "anglesTitle": "What sells for you",
+      "anglesLead": "{wins, number} of your {designs, number} designs made a profit after ads. An angle shows here once the evidence is strong, so one sale moves it only a little.",
+      "anglesNone": "No angle stands out yet. Each design that has been for sale 3 days or more adds to this.",
+      "why": {
+        "up": "Why this: {count, plural, one {your last {value} drop} other {your last # {value} drops}} ({kind}) made {money}.",
+        "down": "Careful: {count, plural, one {your last {value} drop} other {your last # {value} drops}} ({kind}) lost {money}.",
+        "kinds": {
+          "theme": "theme",
+          "tag": "Qloo tag",
+          "entity": "Qloo entity",
+          "audience": "audience",
+          "palette": "palette",
+          "price": "price",
+          "blank": "blank"
+        },
+        "bands": {
+          "under-25": "under $25",
+          "25-35": "$25 to $35",
+          "35-50": "$35 to $50",
+          "50-up": "$50 and up"
+        }
       }
     }
   },

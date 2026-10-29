@@ -149,7 +149,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 
 ## What We're Building
 
-Everything in `scope.md > The POC Boundary`: sign-in with Google, own-account connectors, Qloo and Tavily research, designs with the Nemotron judge, approval, Fourthwall product and publish, Meta ad variants and a paused campaign, autopilot, the ChatGPT app and the docs site. In progress on top of the live loop: Better Auth UI, Polar billing, the fal connector, the Mastra migration with scorers, the app UI pass, and the feedback loop (sales and ad results re-fit the idea-score weights per brand and steer research; development and next only).
+Everything in `scope.md > The POC Boundary`: sign-in with Google, own-account connectors, Qloo and Tavily research, designs with the Nemotron judge, approval, Fourthwall product and publish, Meta ad variants and a paused campaign, autopilot, the ChatGPT app and the docs site. In progress on top of the live loop: Better Auth UI, Polar billing, the fal connector, the Mastra migration with scorers, the app UI pass, and the feedback loop (sales and ad results re-fit the idea-score weights per brand; each design's angles are scored per merchant with Beta-Binomial shrinkage, which ranks ideas, weights a test's spend floor, gives the kill rules a real cost per sale and explains itself on Insights; development and next only).
 
 ## Deferred From the POC
 
