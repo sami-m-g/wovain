@@ -9,6 +9,7 @@ import {
   getDesign,
   listDesigns,
 } from "../flow/designs";
+import { dropDirections } from "../flow/drop-directions";
 import { ideaStyle, pickStyle } from "../flow/drop-style";
 import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
 import { listIdeas, researchErrors, researchIdeas } from "../flow/ideas";
@@ -227,6 +228,19 @@ export const runsRouter = {
       await approveIdeas(context, input.id, input.ideaIds);
       return await getRun(context, input.id);
     }),
+  // What to sell next (drop-directions): from Qloo trends, within the
+  // saved brand unless ignored; never made without Qloo.
+  directions: protectedProcedure
+    .errors(researchErrors)
+    .input(
+      z.object({
+        ignoreBrand: z.boolean().default(false),
+        round: z.number().int().min(0).max(1000).default(0),
+      })
+    )
+    .handler(
+      async ({ context, input }) => await dropDirections(context, input)
+    ),
   get: protectedProcedure
     .input(byId)
     .handler(async ({ context, input }) => await getRun(context, input.id)),

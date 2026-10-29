@@ -21,7 +21,7 @@ export interface NavItem {
     | "newDrop"
     | "drops"
     | "insights"
-    | "products"
+    | "store"
     | "runs"
     | "autopilot"
     | "connections"
