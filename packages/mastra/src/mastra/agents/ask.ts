@@ -84,7 +84,16 @@ const memoryUnavailable = (
     reason: error instanceof Error ? error.message : String(error),
   };
   log?.set({ memory });
-  evlog.error({ error: "MASTRA_MEMORY_UNAVAILABLE", memory });
+  // The error as a record (code, message, stack), so PostHog groups it by
+  // its code and keeps the stack (apps/web/src/lib/error-tracking.ts).
+  evlog.error({
+    error: {
+      code: "MASTRA_MEMORY_UNAVAILABLE",
+      message: memory.reason,
+      ...(error instanceof Error && { name: error.name, stack: error.stack }),
+    },
+    memory,
+  });
 };
 
 // The messages a call added (its input and its answer), without the
