@@ -32,11 +32,17 @@ runs:
         fixture() {
           node --input-type=module -e "const m = await import('$1'); console.log(JSON.stringify(m['$2']))"
         }
+        # Derived from public strings, so the values are the same on every
+        # run without a key-shaped literal in the repository. Anyone can
+        # recompute them: they protect nothing and are used only in CI.
+        placeholder() {
+          printf 'wovain-ci-placeholder-%s' "$1" | sha256sum | cut -c1-64
+        }
         {
-          echo "BETTER_AUTH_SECRET=ci-placeholder-secret-never-used-outside-ci-00"
+          echo "BETTER_AUTH_SECRET=$(placeholder better-auth)"
           echo "BETTER_AUTH_URL=http://localhost:3001"
-          echo "DATABASE_URL=postgresql://ci:ci-placeholder@localhost:5432/ci"
-          echo "TOKEN_ENCRYPTION_KEY=Y2ktcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXktMDA="
+          echo "DATABASE_URL=postgresql://ci:$(placeholder database | cut -c1-32)@localhost:5432/ci"
+          echo "TOKEN_ENCRYPTION_KEY=$(placeholder token-encryption | xxd -r -p | base64)"
           echo "BILLING_CATALOG=$(fixture ./packages/billing/src/catalog-fixture.ts TEST_CATALOG)"
           echo "DOCS_URL=http://localhost:4000"
           echo "EMAIL_FROM=wovain <ci@example.com>"
