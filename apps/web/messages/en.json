@@ -170,6 +170,10 @@
       {
         "question": "What stops my ads from losing money?",
         "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
+      },
+      {
+        "question": "Which of my designs should I advertise?",
+        "answer": "All of them, at first. wovain tests up to five designs in one campaign, gives each a fair share of the budget, pauses the ones that lose money and shows you the winner, so the budget follows the design that sells."
       }
     ],
     "heroCta": "Start a drop",

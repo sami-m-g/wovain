@@ -170,6 +170,10 @@
       {
         "question": "¿Qué evita que mis anuncios pierdan dinero?",
         "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador."
+      },
+      {
+        "question": "¿Qué diseños debo anunciar?",
+        "answer": "Todos, al principio. wovain prueba hasta cinco diseños en una sola campaña, da a cada uno una parte justa del presupuesto, pausa los que pierden dinero y te muestra el ganador, para que el presupuesto siga al diseño que vende."
       }
     ],
     "heroCta": "Empezar un drop",
