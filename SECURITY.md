@@ -26,4 +26,4 @@ Only the current `main` branch and the version running on wovain.com are support
 
 ## How the repository is checked
 
-CodeQL and Semgrep (SAST), OSV-Scanner and dependency review (vulnerable dependencies), a license check, GitGuardian (secrets, its GitHub App), an SBOM on each release and OpenSSF Scorecard run in GitHub Actions. See `.github/workflows`.
+CodeQL and Semgrep (SAST), OSV-Scanner and dependency review (vulnerable dependencies), a license check, GitGuardian (secrets, its GitHub App), an SBOM on each release and OpenSSF Scorecard run in GitHub Actions. Each release carries a keyless cosign signature (`*.sigstore.json`) and SLSA build provenance (`*.intoto.jsonl`) for its source archive; the deployed container images are signed by digest. Check a download with `gh attestation verify <file> --repo sami-m-g/wovain`. See `.github/workflows`.

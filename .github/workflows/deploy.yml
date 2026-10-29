@@ -28,6 +28,10 @@ on:
       - "docs/**"
       - "founder/**"
       - "openspec/**"
+      # A release pull request only moves the version.
+      - ".release-please-manifest.json"
+      - "version.txt"
+      - ".github/backfill-releases.pending"
 
 permissions:
   contents: read
@@ -100,7 +104,8 @@ jobs:
             printf '%s\n' "$WEB_BUILD_ENV"
           } > "$RUNNER_TEMP/web_env"
           echo "SITE_URL=$DOCS_SITE_URL" > "$RUNNER_TEMP/docs_env"
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - id: web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/web/Dockerfile
@@ -125,7 +130,8 @@ jobs:
           cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache
           cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
       # Only production has a docs service (DOCS_SERVICE).
-      - if: vars.DOCS_SERVICE != ''
+      - id: docs
+        if: vars.DOCS_SERVICE != ''
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -137,6 +143,22 @@ jobs:
           tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/docs:${{ github.sha }}
           cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache
           cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
+      # Keyless cosign signature (this job's OIDC identity, recorded in the
+      # Sigstore log) on each image by digest, stored next to the image in
+      # the registry. Verify with `cosign verify <image>@<digest>
+      # --certificate-identity-regexp ... --certificate-oidc-issuer
+      # https://token.actions.githubusercontent.com`.
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Sign the images
+        env:
+          IMAGE_REPOSITORY: ${{ vars.GCP_IMAGE_REPOSITORY }}
+          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+          DOCS_DIGEST: ${{ steps.docs.outputs.digest }}
+        run: |
+          cosign sign --yes "$IMAGE_REPOSITORY/web@$WEB_DIGEST"
+          if [ -n "$DOCS_DIGEST" ]; then
+            cosign sign --yes "$IMAGE_REPOSITORY/docs@$DOCS_DIGEST"
+          fi
 
       # packages/db's Drizzle migrations, then Mastra's storage schema, on the
       # target's own database (DATABASE_URL_SECRET). The Cloud SQL Auth Proxy
