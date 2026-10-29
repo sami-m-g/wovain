@@ -1241,15 +1241,20 @@
         "palette": {
           "label": "Vos couleurs",
           "help": "Les couleurs du vêtement et les 2 à 5 couleurs du motif qui font qu'un drop ressemble à une seule marque. Facultatif : chaque drop les adapte.",
-          "tip": "Par exemple : un motif rouille et crème sur un t-shirt sauge. wovain vérifie que chaque couleur du motif ressort sur le vêtement.",
-          "none": "Pas encore de couleurs. Choisissez un ensemble ou passez : chaque drop propose les siennes.",
+          "tip": "Choisissez un ensemble, ou décrivez ce que vous voulez en mots simples : plus chaud, plus audacieux, ou rouille et crème. wovain vérifie que chaque couleur du motif ressort sur le vêtement.",
+          "none": "Pas encore de couleurs. Choisissez un ensemble, décrivez-les en quelques mots, ou passez : chaque drop propose les siennes.",
           "on": "sur {garments}",
           "adjusted": "Ajusté pour ressortir sur le vêtement",
           "advanced": "Avancé : saisir des codes couleur",
           "hexLabel": "Couleurs du motif en hexadécimal",
           "hexHelp": "Jusqu'à {max, number}, séparées par des virgules, comme #1A1A1A.",
           "hexInvalid": "{color} n'est pas un code couleur comme #1A1A1A.",
-          "clear": "Effacer les couleurs"
+          "clear": "Effacer les couleurs",
+          "wordsLabel": "Décrivez vos couleurs",
+          "wordsPlaceholder": "plus chaud, plus audacieux, ou rouille et crème",
+          "wordsSubmit": "Proposer des couleurs",
+          "wordsBusy": "Recherche de couleurs…",
+          "wordsNone": "Aucun ensemble pour ces mots ne ressort sur le vêtement. Essayez d'autres mots."
         }
       },
       "buyersPanel": {

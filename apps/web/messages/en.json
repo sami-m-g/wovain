@@ -1241,15 +1241,20 @@
         "palette": {
           "label": "Your colours",
           "help": "The shirt colours and the 2 to 5 art colours that make a drop look like one brand. Optional: each drop adapts them.",
-          "tip": "For example: rust and cream art on a sage tee. wovain checks every art colour stands out on the shirt colours.",
-          "none": "No colours yet. Pick a set, or skip: each drop suggests its own.",
+          "tip": "Pick a set, or describe what you want in plain words: warmer, bolder, or rust and cream. wovain checks every art colour stands out on the shirt colours.",
+          "none": "No colours yet. Pick a set, describe them in a few words, or skip: each drop suggests its own.",
           "on": "on {garments}",
           "adjusted": "Adjusted to stand out on the shirt",
           "advanced": "Advanced: enter colour codes",
           "hexLabel": "Art colours as hex codes",
           "hexHelp": "Up to {max, number}, separated by commas, like #1A1A1A.",
           "hexInvalid": "{color} isn't a colour code like #1A1A1A.",
-          "clear": "Clear colours"
+          "clear": "Clear colours",
+          "wordsLabel": "Describe your colours",
+          "wordsPlaceholder": "warmer, bolder, or rust and cream",
+          "wordsSubmit": "Suggest colours",
+          "wordsBusy": "Finding colours…",
+          "wordsNone": "No colour set for those words stands out on the shirt. Try other words."
         }
       },
       "buyersPanel": {
