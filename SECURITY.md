@@ -26,4 +26,4 @@ Only the current `main` branch and the version running on wovain.com are support
 
 ## How the repository is checked
 
-CodeQL and Semgrep (SAST), OSV-Scanner and dependency review (vulnerable dependencies), a license check, GitGuardian's ggshield (secrets), an SBOM on each release and OpenSSF Scorecard run in GitHub Actions. See `.github/workflows`.
+CodeQL and Semgrep (SAST), OSV-Scanner and dependency review (vulnerable dependencies), a license check, GitGuardian (secrets, its GitHub App), an SBOM on each release and OpenSSF Scorecard run in GitHub Actions. See `.github/workflows`.

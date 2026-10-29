@@ -64,8 +64,8 @@ interface RepositoryArgs {
   releaseBranch: string;
   // GitHub user ids who may approve a production deploy.
   releaseReviewerIds: number[];
-  // ggshield's API key (.github/workflows/supply-chain.yml), from the
-  // `gitguardian-api-key` stack secret. Left out, no secret is declared.
+  // GitGuardian's incidents:write token (.github/workflows/gitguardian-ignore.yml),
+  // from the `gitguardian-api-key` stack secret. Left out, no secret is declared.
   gitguardianApiKey?: pulumi.Input<string> | undefined;
 }
 
@@ -220,8 +220,8 @@ export const githubRepository = ({
     repository: repository.name,
   });
 
-  // The one repository secret: ggshield's key. It is a stack secret, so
-  // Pulumi keeps it encrypted in state; only the ggshield job reads it.
+  // The one repository secret: GitGuardian's token. It is a stack secret, so
+  // Pulumi keeps it encrypted in state; only gitguardian-ignore reads it.
   if (gitguardianApiKey !== undefined) {
     new github.ActionsSecret("GITGUARDIAN_API_KEY", {
       plaintextValue: gitguardianApiKey,

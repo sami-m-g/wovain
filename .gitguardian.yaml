@@ -1,4 +1,6 @@
-# ggshield's configuration (.github/workflows/supply-chain.yml).
+# ggshield's configuration, for scans run locally (`ggshield secret scan`).
+# In CI the GitGuardian GitHub App scans pushes and pull requests; its false
+# positives are ignored with .github/workflows/gitguardian-ignore.yml.
 # https://docs.gitguardian.com/ggshield-docs/reference/configuration
 version: 2
 

@@ -14,14 +14,14 @@ Issue #59.
 
 ## 2. Secrets
 
-- [x] 2.1 `.gitguardian.yaml` and the `ggshield` job
-- [x] 2.2 `GITGUARDIAN_API_KEY` declared in `infra/github.ts`, documented in `infra/README.md`
+- [x] 2.1 `.gitguardian.yaml`; the `ggshield` job is removed: the GitGuardian GitHub App is the one secret scan
+- [x] 2.2 `GITGUARDIAN_API_KEY` (`incidents:write`) declared in `infra/github.ts` for the `gitguardian-ignore` workflow, documented in `infra/README.md`
 
 ## 3. Branch protection
 
 - [x] 3.1 `codeql` and `dependency-review` required on main (`infra/github.ts`)
 - [ ] 3.2 Apply the `prod` stack after the production freeze (2026-11-16)
-- [ ] 3.3 Set the `gitguardian-api-key` stack secret, then uninstall the GitGuardian GitHub App
+- [ ] 3.3 Set the `gitguardian-api-key` stack secret; it reaches the repository with 3.2
 
 ## 4. Vulnerabilities
 
