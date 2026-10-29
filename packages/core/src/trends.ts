@@ -16,6 +16,8 @@ import type { IdeaWordsResult } from "./idea-words";
 import { external, notConfigured, qlooNoMatch } from "./log";
 import type { Logger } from "./log";
 import { currentDecisions } from "./nemotron";
+import { outcomeScore } from "./outcomes";
+import type { OutcomeModel, OutcomeWhy } from "./outcomes";
 import { priceFor, pricingRules } from "./pricing";
 import type {
   AffinityType,
@@ -123,6 +125,9 @@ export interface TrendIdea {
   failedSearches?: SearchKind[] | undefined;
   // Competitor prices behind the margin signal (evidence on).
   prices?: PriceEvidence | undefined;
+  // Why the merchant's own record favours or warns against the theme
+  // (feedback-loop on).
+  outcome?: OutcomeWhy | undefined;
   // The evidence gate's reads (idea-evidence-gate on).
   proof?: TrendProof | undefined;
   // The honest rank's numbers (idea-evidence-gate on).
@@ -180,6 +185,8 @@ export interface TrendSources {
 // What the merchant's past ideas taught (./feedback), when the
 // feedback-loop flag is on: the merchant's re-fit score weights.
 export interface ResearchFeedback {
+  // The merchant's track record: its multiplier scales each idea's rank.
+  outcomes?: OutcomeModel | undefined;
   weights?: ScoreWeights | undefined;
 }
 
@@ -521,13 +528,24 @@ const proofOf = async (
 // Shows only ideas with Qloo evidence, proof of demand and a competition
 // read, ranked best first by the sweet spot's lower bound; the others are
 // recorded in the decision trace with the reason, never shown.
-const gated = <T extends Omit<TrendIdea, "rank">>(ideas: T[]) => {
-  const { dropped, kept } = rankIdeas(ideas, (idea) => ({
+const gated = <T extends Omit<TrendIdea, "rank">>(
+  ideas: T[],
+  multiplierOf: (idea: T) => number
+) => {
+  const judged = rankIdeas(ideas, (idea) => ({
     gaps: idea.proof?.gaps.length ?? 0,
     listings: idea.proof?.supply?.count,
     market: idea.proof?.market,
     qlooAffinity: idea.signals.affinity,
   }));
+  const { dropped } = judged;
+  // The merchant's record scales the sweet-spot score; the spot stays as read.
+  const kept = judged.kept
+    .map((one) => ({
+      ...one,
+      weighed: one.spot.score * multiplierOf(one.item),
+    }))
+    .toSorted((first, second) => second.weighed - first.weighed);
   currentDecisions()?.add({
     agent: "trends",
     inputSummary: `${ideas.length} idea(s) through the evidence gate`,
@@ -548,10 +566,10 @@ const gated = <T extends Omit<TrendIdea, "rank">>(ideas: T[]) => {
     ],
     step: "ideas.gate",
   });
-  return kept.map(({ item, spot }, index) => ({
+  return kept.map(({ item, spot, weighed }, index) => ({
     ...item,
     rank: index + 1,
-    score: spot.score,
+    score: weighed,
     spot,
   }));
 };
@@ -614,6 +632,8 @@ export const createTrends = (
     const protectedNames = avoidNames.filter(
       (name) => name.toLowerCase() !== seed.toLowerCase()
     );
+    const outcomeOf = (theme: string) =>
+      outcomeScore({ qlooTags: [theme], theme }, feedback.outcomes);
     const ideas = themes.flatMap((theme, index) => {
       const found = searched[index];
       const idea =
@@ -631,6 +651,7 @@ export const createTrends = (
         : [
             {
               ...idea,
+              outcome: outcomeOf(idea.theme).why,
               proof: proofs[index],
               taste: tasteMapOf(theme, taste),
             },
@@ -640,11 +661,18 @@ export const createTrends = (
       return {
         avoidNames: avoidNames.slice(0, 3),
         ideas: ideas
+          .map((idea) => ({
+            ...idea,
+            score: idea.score * outcomeOf(idea.theme).multiplier,
+          }))
           .toSorted((a, b) => b.score - a.score)
           .map((idea, index) => ({ ...idea, rank: index + 1 })),
       };
     }
-    return { avoidNames: avoidNames.slice(0, 3), ideas: gated(ideas) };
+    return {
+      avoidNames: avoidNames.slice(0, 3),
+      ideas: gated(ideas, (idea) => outcomeOf(idea.theme).multiplier),
+    };
   },
 });
 

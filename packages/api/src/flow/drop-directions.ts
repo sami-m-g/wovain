@@ -24,6 +24,7 @@ import { localeOf, traced } from "./brand-discovery";
 import { listConnections, withProvider } from "./connections";
 import { flagContextOf } from "./flags";
 import { assertQlooOn } from "./ideas";
+import { outcomeModelFor, outcomesOn } from "./outcomes";
 
 // What to sell next, in the new-drop step (openspec drop-directions),
 // behind the drop-directions flag: 3 to 5 directions from Qloo trends with
@@ -203,6 +204,10 @@ const metaReady = async (actor: Actor) => {
   return rows.some((row) => row.provider === "meta" && !row.needsReconnect);
 };
 
+// The merchant's track record, when feedback-loop is on.
+const trackRecordOf = async (actor: Actor) =>
+  (await outcomesOn(actor)) ? await outcomeModelFor(actor) : undefined;
+
 // Finds the directions now, reports progress, keeps the answer. With Meta
 // connected, the Ad Library adds its proof through the merchant's Meta
 // session; a session that can't open is logged and the marketplaces alone
@@ -212,11 +217,13 @@ const search = async (
   input: DirectionsInput,
   onEvent?: (event: DirectionEvent) => void
 ): Promise<DirectionsAnswer> => {
-  const [brand, locale, meta, gate] = await Promise.all([
+  const [brand, locale, meta, gate, outcomes] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
     metaReady(actor),
     gateOn(actor),
+    // feedback-loop on: the merchant's track record scales each rank.
+    trackRecordOf(actor),
   ]);
   const scoped = brand !== undefined && !input.ignoreBrand;
   const run = async (adLibrary?: (theme: string) => Promise<AdDemand>) =>
@@ -231,6 +238,7 @@ const search = async (
             locale,
             log: actor.log,
             onEvent,
+            outcomes,
             qloo: actor.core.qloo,
             tavily: actor.core.tavily,
             trace,

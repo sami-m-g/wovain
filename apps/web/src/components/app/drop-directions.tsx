@@ -12,6 +12,7 @@ import { useEffect, useId, useState } from "react";
 
 import { Citations } from "@/components/app/citations";
 import { WhoBuysPanel } from "@/components/app/who-buys";
+import { OutcomeWhy } from "@/components/insights/outcome-why";
 import { Link } from "@/i18n/navigation";
 import { orpc } from "@/utils/orpc";
 
@@ -229,6 +230,9 @@ const DirectionRow = ({
           />
         </span>
       </button>
+      {direction.outcome === undefined ? null : (
+        <OutcomeWhy why={direction.outcome} />
+      )}
       <EvidenceLine evidence={direction.evidence} />
       <ProofLinks direction={direction} />
       {momentum === undefined ? null : (
