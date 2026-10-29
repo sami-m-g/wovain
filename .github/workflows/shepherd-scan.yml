@@ -49,7 +49,7 @@ jobs:
           while read -r pr; do
             n=$(jq -r .number <<<"$pr")
             if [ "$(jq -r .mergeable <<<"$pr")" = CONFLICTING ]; then
-              gh pr edit "$n" --add-label needs-human || echo "::warning::#$n: could not add needs-human"
+              gh pr edit "$n" --add-label needs-human || { echo "::warning::#$n: could not add needs-human"; continue; }
               gh pr comment "$n" --body "This pull request has a merge conflict. A person rebases it, or asks Claude to." ||
                 echo "::warning::#$n: could not comment"
               continue
@@ -57,9 +57,12 @@ jobs:
             head=$(jq -r .headRefOid <<<"$pr")
             detail=$(gh pr view "$n" --json reviews,comments,commits) || { echo "::warning::#$n: could not read"; continue; }
             failed=$(jq '[.statusCheckRollup[] | select(.conclusion == "FAILURE")] | length' <<<"$pr")
-            # Changes requested on this head only: the decision stays
-            # CHANGES_REQUESTED after a fix until the reviewer sees the new head.
-            changes=$(jq --arg h "$head" '[.reviews[] | select(.commit.oid == $h and .state == "CHANGES_REQUESTED")] | length' <<<"$detail")
+            # Each reviewer's latest decision on this head only: the decision
+            # stays CHANGES_REQUESTED after a fix until the reviewer sees the
+            # new head, and a later approval supersedes a change request.
+            changes=$(jq --arg h "$head" '[.reviews[]
+              | select(.commit.oid == $h and (.state == "APPROVED" or .state == "CHANGES_REQUESTED"))]
+              | group_by(.author.login) | map(last | select(.state == "CHANGES_REQUESTED")) | length' <<<"$detail")
             if [ "$failed" -gt 0 ] || [ "$changes" -gt 0 ]; then
               gh workflow run shepherd.yml -f pr="$n" || echo "::warning::#$n: dispatch failed"
               continue
