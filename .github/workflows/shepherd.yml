@@ -13,7 +13,7 @@
 # the default token would start no workflow, and the pull request would never
 # get its checks.
 #
-# Limits, from the github stack's Actions variables (infra/github.ts):
+# Limits, in `env` below so a change to them is a reviewed pull request:
 # SHEPHERD_MAX_PER_PR attempts per pull request, at most one per head commit,
 # and SHEPHERD_MAX_PER_DAY across the repository. Each attempt is a marker
 # comment the gate writes as github-actions[bot]; only that login's markers
@@ -36,6 +36,12 @@ on:
         required: true
 
 permissions: {}
+
+env:
+  # `shadow` until the first week shows the plans are right, then `live`.
+  SHEPHERD_MODE: shadow
+  SHEPHERD_MAX_PER_PR: 5
+  SHEPHERD_MAX_PER_DAY: 30
 
 jobs:
   gate:
@@ -62,8 +68,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
           REPOSITORY: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || inputs.pr }}
-          MAX_PER_PR: ${{ vars.SHEPHERD_MAX_PER_PR || '5' }}
-          MAX_PER_DAY: ${{ vars.SHEPHERD_MAX_PER_DAY || '30' }}
+          MAX_PER_PR: ${{ env.SHEPHERD_MAX_PER_PR }}
+          MAX_PER_DAY: ${{ env.SHEPHERD_MAX_PER_DAY }}
           HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
           REVIEW_COMMIT: ${{ github.event.review.commit_id }}
         run: |
@@ -135,7 +141,7 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ needs.gate.outputs.pr }}
             BRANCH: ${{ needs.gate.outputs.head }}
-            MODE: ${{ vars.SHEPHERD_MODE || 'shadow' }}
+            MODE: ${{ env.SHEPHERD_MODE }}
 
             You are the PR shepherd. Get this pull request green and approved with
             the smallest change. Read AGENTS.md first: its rules apply.
@@ -161,4 +167,4 @@ jobs:
                `@coderabbitai review`.
             Never merge, approve, dismiss a review, force-push or touch another branch.
           claude_args: >-
-            --model sonnet --max-turns 40 --disallowedTools "WebFetch,WebSearch" --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(git status),Bash(git diff:*),Bash(git log:*)${{ vars.SHEPHERD_MODE == 'live' && format(',Edit,Write,Bash(pnpm run check),Bash(pnpm run check-types),Bash(pnpm run knip),Bash(pnpm exec turbo run test:*),Bash(pnpm exec ultracite fix:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:{0})', needs.gate.outputs.head) || '' }}"
+            --model sonnet --max-turns 40 --disallowedTools "WebFetch,WebSearch" --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(git status),Bash(git diff:*),Bash(git log:*)${{ env.SHEPHERD_MODE == 'live' && format(',Edit,Write,Bash(pnpm run check),Bash(pnpm run check-types),Bash(pnpm run knip),Bash(pnpm exec turbo run test:*),Bash(pnpm exec ultracite fix:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:{0})', needs.gate.outputs.head) || '' }}"
