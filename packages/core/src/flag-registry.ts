@@ -152,6 +152,10 @@ export const FLAGS = {
     "design",
     "Drops: a capsule of products sharing a palette, mark and style family"
   ),
+  "drop-directions": workstream(
+    "growth",
+    "What to sell now in the new-drop step: 3 to 5 one-click directions from Qloo (across audiences, or within the brand), Tavily momentum and saturation"
+  ),
   "drop-style": workstream(
     "design",
     "Each drop's own tone and palette, suggested from its Qloo audience and the brand defaults, used by the brief and ad writers"

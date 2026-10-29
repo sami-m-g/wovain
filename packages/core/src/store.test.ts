@@ -9,11 +9,14 @@ import {
 import {
   canMove,
   cancelOrder,
+  createGiftCards,
   createInactivePromotion,
   DEACTIVATE_ATTEMPTS,
   evaluateReadiness,
   findPromotionByCode,
+  listGiftCards,
   listOrders,
+  listPromotions,
   PromotionLeftLiveError,
   nextStatus,
   offerVariants,
@@ -29,6 +32,7 @@ import type { ToolCall } from "./upstream";
 const READY: ShopFacts = {
   baseUrl: "https://shop.example",
   enabledShippingProfiles: 1,
+  name: "Atelier",
   payoutStatus: "ACTIVE",
   roles: ["OWNER"],
   shippingEnabled: true,
@@ -81,6 +85,7 @@ describe("readShopFacts", () => {
       "ecommerce_get-current-shop": {
         shop: {
           baseUrl: "https://shop.example",
+          name: "Atelier",
           status: "LIVE",
           verificationRestrictions: [],
         },
@@ -342,5 +347,79 @@ describe("launch discount guard", () => {
     const price = priceFor(12);
     expect(discountKeepsProfit(price, 10)).toBe(true);
     expect(discountKeepsProfit(price, 60)).toBe(false);
+  });
+});
+
+describe("promotions and gift cards", () => {
+  it("lists shop codes once each and leaves memberships out", async () => {
+    const { call, calls } = fake({
+      "ecommerce_get-promotions": {
+        results: [
+          {
+            code: "DUNE10",
+            discount: { percentage: 10 },
+            id: "prm_1",
+            status: "LIVE",
+            type: "SINGLE",
+            usageCount: 3,
+          },
+          {
+            codes: [{ code: "VIP1" }, { code: "VIP2" }],
+            id: "prm_2",
+            status: "ENDED",
+            type: "MULTI",
+          },
+          {
+            code: "FANS",
+            id: "prm_3",
+            status: "LIVE",
+            type: "MEMBERSHIPS_SINGLE",
+          },
+        ],
+      },
+    });
+    expect(await listPromotions(call, { page: 0 })).toEqual([
+      { code: "DUNE10", id: "prm_1", percentage: 10, status: "LIVE", uses: 3 },
+      {
+        code: "VIP1",
+        id: "prm_2",
+        percentage: null,
+        status: "ENDED",
+        uses: null,
+      },
+    ]);
+    expect(calls[0]?.args).toEqual({ page: 0, size: 10 });
+  });
+
+  it("lists gift cards with their balances in cents", async () => {
+    const { call } = fake({
+      "ecommerce_get-gift-cards": {
+        results: [
+          {
+            balance: { initial: 25, remaining: 10.5 },
+            code: "L3WQNU1MV4W9",
+            expiresAt: null,
+            id: "gc_1",
+            status: "PARTIALLY_USED",
+          },
+        ],
+      },
+    });
+    expect(await listGiftCards(call, { page: 0 })).toEqual([
+      {
+        code: "L3WQNU1MV4W9",
+        expiresAt: null,
+        id: "gc_1",
+        initialCents: 2500,
+        remainingCents: 1050,
+        status: "PARTIALLY_USED",
+      },
+    ]);
+  });
+
+  it("creates gift cards in dollars, with an expiry only when given", async () => {
+    const { call, calls } = fake({ "ecommerce_create-gift-cards": {} });
+    await createGiftCards(call, { amountUsd: 50, count: 2 });
+    expect(calls[0]?.args).toEqual({ amount: 50, numberOfCards: 2 });
   });
 });

@@ -347,6 +347,44 @@
         "release"
       ]
     },
+    "drop-directions": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "What to sell now in the new-drop step: 3 to 5 one-click directions from Qloo (across audiences, or within the brand), Tavily momentum and saturation (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
     "drop-style": {
       "active": true,
       "groups": [
