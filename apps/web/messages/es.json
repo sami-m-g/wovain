@@ -662,6 +662,20 @@
       },
       "gaps": "Lo que le gusta a tu público y ellos no cubren",
       "partial": "Parte de la lectura falló ({steps}); se muestra el resto."
+    },
+    "style": {
+      "title": "Tono y colores de este lanzamiento",
+      "tone": "Tono",
+      "toneTip": "Cómo hablan la ficha y los anuncios de este lanzamiento, p. ej. seco e ingenioso, o cálido y acogedor. Parte de la voz de tu marca y se adapta a sus compradores; los límites de tu marca se mantienen.",
+      "colours": "Colores",
+      "coloursTip": "Los colores de la prenda y del diseño para este lanzamiento, p. ej. diseño en óxido y crema sobre una camiseta salvia. Se comprueba que cada color del diseño destaque sobre la prenda.",
+      "noColours": "Ningún conjunto de colores encaja con esta prenda. El diseño elige los suyos.",
+      "checkedOn": "Comprobado en {blank}",
+      "guardrails": "La voz de tu marca se mantiene: {voice}",
+      "loading": "Sugiriendo tono y colores según los compradores de este lanzamiento…",
+      "failed": "No pudimos sugerir tono y colores ahora.",
+      "retry": "Reintentar",
+      "info": "Sobre {field}"
     }
   },
   "NotFound": {

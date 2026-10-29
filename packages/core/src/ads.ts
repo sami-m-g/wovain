@@ -5,6 +5,7 @@ import { z } from "zod";
 import { adSetTargeting, deliveryOf, withUtm } from "./ad-delivery";
 import type { MediaBuying } from "./ad-delivery";
 import type { AdCompetition } from "./competition";
+import type { WriterStyle } from "./drop-style";
 import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
@@ -48,16 +49,23 @@ const PERSONA_RULES =
 const COMPETITION_RULES =
   " The competition field lists how near-identical shirts are already sold (angles, each with its source page) and what their buyers' audience likes that they miss (gaps): counter-position. Take an angle none of them uses, lean on a gap or answer a complaint, never reuse their wording and never name a competitor or a site.";
 
+// With the drop's style (./drop-style): its tone, and the brand's voice as
+// limits the copy never breaks.
+const STYLE_RULES =
+  " The style field is this drop's tone: write every variant in it. Its guardrails are the brand's voice: never break anything they rule out.";
+
 export const writeAdCopy = async (
   ask: Nemotron,
   product: { description: string; idea: string; title: string },
   log?: Logger,
   audience?: AudiencePersona,
-  competition?: AdCompetition
+  competition?: AdCompetition,
+  style?: Pick<WriterStyle, "guardrails" | "tone">
 ): Promise<AdCopy> => {
   const system =
     (audience === undefined ? COPY_RULES : COPY_RULES + PERSONA_RULES) +
-    (competition === undefined ? "" : COMPETITION_RULES);
+    (competition === undefined ? "" : COMPETITION_RULES) +
+    (style === undefined ? "" : STYLE_RULES);
   const { variants } = await ask({
     grounded: (reply) =>
       reply.variants
@@ -69,6 +77,7 @@ export const writeAdCopy = async (
       ...product,
       ...(audience !== undefined && { audience }),
       ...(competition !== undefined && { competition }),
+      ...(style !== undefined && { style }),
     }),
     schema: copySchema,
     system,

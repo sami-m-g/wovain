@@ -133,6 +133,11 @@ const readBlank = async (actor: Actor): Promise<Blank> => {
 const withTimeout = async <T>(work: Promise<T>, fallback: T, ms: number) =>
   await Promise.race([work, delay(ms, fallback)]);
 
+// The tee a drop is drawn on and its colours, within BLANK_TIMEOUT_MS, else
+// the stated stand-in (./drop-style uses it too).
+export const draftBlank = async (actor: Actor) =>
+  await withTimeout(readBlank(actor), ASSUMED, BLANK_TIMEOUT_MS);
+
 const localeOf = async (actor: Actor) => {
   const [row] = await actor.db
     .select({ locale: user.locale })
@@ -221,7 +226,7 @@ export const discover = async (actor: Actor, input: DiscoverInput) => {
       await discoverBrands(
         {
           ask: actor.core.nemotron,
-          blank: withTimeout(readBlank(actor), ASSUMED, BLANK_TIMEOUT_MS),
+          blank: draftBlank(actor),
           locale,
           log: actor.log,
           qloo: actor.core.qloo,
