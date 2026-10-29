@@ -935,7 +935,10 @@
       "packTitle": "Need a few more credits?",
       "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
       "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}.",
-      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire."
+      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire.",
+      "setupRetrying": "Your credits couldn't be set up yet. We're retrying; this page updates on its own.",
+      "setupLinked": "This email's billing is linked to another wovain account. Contact support to move it.",
+      "setupUnverified": "Verify your email to set up your credits. Open the link we emailed you."
     },
     "paywall": {
       "creditsTitle": "You're out of credits for this step",
@@ -970,6 +973,8 @@
         "alreadyRedeemed": "You've already redeemed this code.",
         "notFree": "Only codes for free credits work for now. Paid plans are coming soon.",
         "tooMany": "Too many tries. Wait a few minutes, then try again.",
+        "emailLinked": "This email's billing is linked to another wovain account. Contact support.",
+        "emailNotVerified": "Verify your email first, then redeem the code.",
         "error": "The code didn't go through. Try again in a moment."
       }
     }

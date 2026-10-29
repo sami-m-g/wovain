@@ -96,7 +96,7 @@ describe("createFlags", () => {
     expect(await flags.isOn("trends-tavily", { userId: "u1" })).toBe(true);
     expect(await flags.isOn("trends-qloo", { userId: "u1" })).toBe(true);
     // Internal and percent rollouts stay closed.
-    expect(await flags.isOn("billing-polar", { userId: "u1" })).toBe(false);
+    expect(await flags.isOn("app-ui-v2", { userId: "u1" })).toBe(false);
     expect(await flags.isOn("mastra-runs", { userId: "u1" })).toBe(false);
     expect(await flags.isOn("billing-paid-plans", { userId: "u1" })).toBe(
       false
@@ -168,7 +168,7 @@ describe("createFlags", () => {
     });
 
     expect(await flags.isOn("trends-tavily")).toBe(true);
-    expect(await flags.isOn("billing-polar")).toBe(false);
+    expect(await flags.isOn("app-ui-v2")).toBe(false);
     expect(await flags.isOn("mastra-runs")).toBe(false);
     expect(await flags.isOn("billing-paid-plans")).toBe(false);
   });
@@ -186,7 +186,7 @@ describe("createFlags", () => {
       { onExposure: (e) => exposures.push(e) }
     );
 
-    expect(await flags.isOn("billing-polar")).toBe(true);
+    expect(await flags.isOn("app-ui-v2")).toBe(true);
     expect(await flags.isOn("mastra-runs")).toBe(true);
     expect(await flags.isOn("billing-paid-plans")).toBe(false);
     expect(exposures[0]).toMatchObject({

@@ -233,58 +233,6 @@
         "permission"
       ]
     },
-    "billing-polar": {
-      "active": true,
-      "groups": [
-        {
-          "internal": true,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "production"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
-          "internal": true,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "development"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        }
-      ],
-      "name": "Polar billing paths from MR !116: credits, the billing page and webhooks (owner: billing, expires 2026-12-15). Managed in packages/core/src/flag-registry.ts.",
-      "tags": [
-        "registry",
-        "release"
-      ]
-    },
     "brand-discovery": {
       "active": true,
       "groups": [

@@ -31,7 +31,13 @@ type MeterCreditGrant = models.BenefitGrantMeterCreditWebhook;
 export interface WebhookDeps {
   analytics?: BillingAnalytics | undefined;
   db: Database;
-  log?: { set: (fields: Record<string, unknown>) => void } | undefined;
+  log?:
+    | {
+        // Reaches error tracking (AGENTS.md): a grant that brings no credits.
+        error?: (fields: Record<string, unknown>) => void;
+        set: (fields: Record<string, unknown>) => void;
+      }
+    | undefined;
   polar: PolarCore;
 }
 
@@ -92,11 +98,31 @@ const promoBlocked = async (
   }
 };
 
-const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
+// Credits Polar granted to a customer no live user has: a stale link. Never
+// silent, so it reaches error tracking.
+const reportUnknownUser = (
+  log: WebhookDeps["log"],
+  { grantId, userId }: { grantId: string; userId: string }
+) => {
+  log?.error?.({
+    billing: { grantId, userId },
+    error: {
+      code: "POLAR_GRANT_UNKNOWN_USER",
+      message: "Polar granted credits to a customer that is no user",
+      name: "PolarGrantUnknownUser",
+    },
+  });
+};
+
+const onGrant = async ({ analytics, db, log }: WebhookDeps, grant: Grant) => {
   const credits = creditsOf(grant);
   const merchant =
     credits === undefined ? undefined : await merchantOf(db, credits.userId);
-  if (credits === undefined || merchant === undefined) {
+  if (credits === undefined) {
+    return "skipped";
+  }
+  if (merchant === undefined) {
+    reportUnknownUser(log, credits);
     return "skipped";
   }
   const { grant: data, ...ref } = credits;
@@ -191,7 +217,7 @@ const onSubscription = async (
   });
   // A paid plan that ended leaves the merchant on Free again.
   if (revoked && plan !== "free" && current.subscription === null) {
-    await ensureFreePlan(deps.polar, merchant);
+    await ensureFreePlan(deps.polar, deps.db, merchant);
   }
   return "mirrored";
 };
@@ -206,7 +232,7 @@ const onCustomer = async (deps: WebhookDeps, customer: models.Customer) => {
   if (merchant === undefined) {
     return "skipped";
   }
-  const started = await ensureFreePlan(deps.polar, merchant);
+  const started = await ensureFreePlan(deps.polar, deps.db, merchant);
   return started ? "free_plan" : "has_plan";
 };
 

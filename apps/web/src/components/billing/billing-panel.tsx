@@ -118,7 +118,8 @@ export const BillingPanel = () => {
   const status = useQuery(
     orpc.billing.status.queryOptions({
       refetchInterval: (query) =>
-        (returned || redeemed) && query.state.dataUpdateCount < POLLS
+        ((returned || redeemed) && query.state.dataUpdateCount < POLLS) ||
+        query.state.data?.freePlan === "retrying"
           ? POLL_MS
           : false,
     })
@@ -145,6 +146,13 @@ export const BillingPanel = () => {
       })
     : undefined;
   const pastDue = subscription?.status === "past_due";
+  const setupNote = {
+    blocked_email_not_verified: t("page.setupUnverified"),
+    blocked_linked_to_other_account: t("page.setupLinked"),
+    none: undefined,
+    retrying: t("page.setupRetrying"),
+    started: undefined,
+  }[status.data.freePlan];
   const recommended: PlanCode =
     offer === "label" || plan === "studio" ? "label" : "studio";
 
@@ -190,6 +198,12 @@ export const BillingPanel = () => {
           </AlertDescription>
         </Alert>
       ) : null}
+      {setupNote === undefined ? null : (
+        <Alert variant="destructive">
+          <CircleAlert aria-hidden="true" />
+          <AlertDescription className="text-sm">{setupNote}</AlertDescription>
+        </Alert>
+      )}
       {pastDue ? (
         <Alert variant="destructive">
           <CircleAlert aria-hidden="true" />
