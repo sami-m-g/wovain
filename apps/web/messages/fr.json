@@ -373,7 +373,9 @@
       "drops": "Drops",
       "home": "Accueil",
       "settings": "Paramètres",
-      "drop": "Drop"
+      "drop": "Drop",
+      "account": "Compte",
+      "security": "Sécurité"
     },
     "docs": "Docs",
     "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",

@@ -23,6 +23,8 @@ const SECTIONS = {
   "/dashboard/new": "newDrop",
   "/dashboard/onboarding": "onboarding",
   "/dashboard/settings": "settings",
+  "/dashboard/settings/account": "account",
+  "/dashboard/settings/security": "security",
   "/dashboard/store": "store",
 } as const;
 
@@ -33,11 +35,14 @@ const PARENTS: Partial<Record<Section, Section>> = {
   "/dashboard/new": "/dashboard/drops",
 };
 
-// In the story rail, connections and billing are parts of Settings.
+// In the story rail, connections, billing and the account are parts of
+// Settings.
 const STORY_PARENTS: Partial<Record<Section, Section>> = {
   ...PARENTS,
   "/dashboard/billing": "/dashboard/settings",
   "/dashboard/connections": "/dashboard/settings",
+  "/dashboard/settings/account": "/dashboard/settings",
+  "/dashboard/settings/security": "/dashboard/settings",
 };
 
 const DROP_PAGE = /^\/dashboard\/drops\/[\w-]+$/u;

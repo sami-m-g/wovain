@@ -9,6 +9,32 @@ import type { LaunchFacts } from "./launch-steps";
 // Polled while the run works, so a step ticks off when the merchant returns.
 const RUN_POLL_MS = 3000;
 
+/** Polls a run only while it is still on its way to a campaign. */
+const pollWhileActive = (
+  run: { campaigns: readonly unknown[]; status: string } | undefined
+) => {
+  const active =
+    run === undefined ||
+    run.status === "running" ||
+    run.status === "awaiting_approval";
+  return active && (run?.campaigns.length ?? 0) === 0 ? RUN_POLL_MS : false;
+};
+
+/** Meta is connected and its required setup cards are done. */
+const metaSetupDone = (
+  setup:
+    | {
+        connected: boolean;
+        steps: readonly { required: boolean; state: string }[];
+      }
+    | undefined
+) =>
+  setup !== undefined &&
+  setup.connected &&
+  setup.steps
+    .filter((step) => step.required)
+    .every((step) => step.state === "done");
+
 /**
  * What wovain knows about the merchant's way to a first campaign: the one
  * source of truth for setup. The onboarding flow and the Home's next action
@@ -30,8 +56,7 @@ export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
   const run = useQuery({
     ...orpc.runs.get.queryOptions({ input: { id: runId ?? "" } }),
     enabled: runId !== undefined,
-    refetchInterval: (query) =>
-      (query.state.data?.campaigns.length ?? 0) > 0 ? false : RUN_POLL_MS,
+    refetchInterval: (query) => pollWhileActive(query.state.data),
   });
   // The same query <MetaSetup /> polls, so the step ticks off with its cards.
   const meta = useQuery({
@@ -50,13 +75,7 @@ export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
       (each) => each.provider === "meta" && each.state === "connected"
     ) ?? false;
   // Without the Meta setup check (flag off), a connected Meta is enough.
-  const metaReady = meta.isError
-    ? metaLinked
-    : meta.data !== undefined &&
-      meta.data.connected &&
-      meta.data.steps
-        .filter((step) => step.required)
-        .every((step) => step.state === "done");
+  const metaReady = meta.isError ? metaLinked : metaSetupDone(meta.data);
   const facts: LaunchFacts = {
     brief: brief ?? run.data?.seed,
     fourthwallConnected,
@@ -67,10 +86,15 @@ export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
     run: run.data,
     storeReady,
   };
+  // Every fact the steps read has arrived: a disabled query (no run, no
+  // Fourthwall) is not loading, so it doesn't hold this back.
+  const settled =
+    !status.isPending && !run.isLoading && !store.isLoading && !meta.isLoading;
   return {
     facts,
     ready,
     run: run.data,
+    settled,
     status,
     store: {
       done: storeSteps.filter((step) => step.state === "done").length,
