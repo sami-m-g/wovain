@@ -245,6 +245,22 @@ describe("alerts on Postgres", () => {
     expect(await ctx.db.select().from(alertDelivery)).toHaveLength(2);
   });
 
+  it("skips a channel the merchant turned off after the alert was planned", async () => {
+    const defaults = await alertSettingsFor(ctx.actor);
+    await saveAlertSettings(ctx.actor, {
+      ...defaults,
+      channels: { ...defaults.channels, rule_action: ["push"] },
+    });
+    expect(
+      await deliverAlert(ctx.actor, {
+        channel: "email",
+        key: "k5",
+        notification,
+      })
+    ).toEqual({ reason: "turned off", status: "skipped" });
+    expect(ctx.mails).toEqual([]);
+  });
+
   it("unlinks a chat that blocked the bot", async () => {
     await linkTelegram(ctx);
     ctx.telegram.failure = new GrammyError(

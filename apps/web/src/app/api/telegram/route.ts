@@ -32,7 +32,17 @@ const handleUpdate = async (request: NextRequest) => {
   ) {
     return new Response(null, { status: 401 });
   }
-  const parsed = update.safeParse(await request.json());
+  // A body that isn't JSON is logged and acknowledged, so Telegram drops it.
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch (error) {
+    getRequestLogger().error(
+      error instanceof Error ? error : new Error(String(error))
+    );
+    return OK();
+  }
+  const parsed = update.safeParse(body);
   const message = parsed.success ? parsed.data.message : undefined;
   // Only private chats link: a group would show alerts to everyone in it.
   if (message === undefined || message.chat.type !== "private") {

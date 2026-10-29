@@ -364,7 +364,13 @@ export const deliverAlert = async (
   if (done !== undefined && done.status !== "failed") {
     return { status: "duplicate" };
   }
-  const outcome = await sendOn(actor, channel, notification);
+  // The merchant may have turned the channel off while quiet hours held it.
+  const settings = await alertSettingsFor(actor);
+  const outcome = settings.channels[alertTypeOf(notification.kind)].includes(
+    channel
+  )
+    ? await sendOn(actor, channel, notification)
+    : { reason: "turned off", status: "skipped" as const };
   await record(actor, {
     channel,
     error: outcome.reason,
