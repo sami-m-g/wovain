@@ -250,11 +250,23 @@ interface TrackingInputs {
   openTracking: boolean;
 }
 
-const setTracking = async (inputs: TrackingInputs) => {
-  // A fixed host; the id comes from Pulumi state and is encoded.
-  const url = `https://api.resend.com/domains/${encodeURIComponent(inputs.domainId)}`;
+interface TrackingOutputs extends TrackingInputs {
+  // What the domain had before this resource set it, restored on delete.
+  previous: { clickTracking: boolean; openTracking: boolean };
+}
+
+// A fixed host; the id comes from Pulumi state and is encoded.
+const domainUrl = (domainId: string) =>
+  `https://api.resend.com/domains/${encodeURIComponent(domainId)}`;
+
+const setTracking = async (
+  inputs: Pick<
+    TrackingInputs,
+    "apiKey" | "clickTracking" | "domainId" | "openTracking"
+  >
+) => {
   // nosemgrep
-  const response = await fetch(url, {
+  const response = await fetch(domainUrl(inputs.domainId), {
     body: JSON.stringify({
       click_tracking: inputs.clickTracking,
       open_tracking: inputs.openTracking,
@@ -272,22 +284,45 @@ const setTracking = async (inputs: TrackingInputs) => {
   }
 };
 
+const readTracking = async (apiKey: string, domainId: string) => {
+  // nosemgrep
+  const response = await fetch(domainUrl(domainId), {
+    headers: { authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Resend wouldn't show the domain: ${response.status}`);
+  }
+  const domain = (await response.json()) as {
+    click_tracking?: boolean;
+    open_tracking?: boolean;
+  };
+  return {
+    clickTracking: domain.click_tracking ?? false,
+    openTracking: domain.open_tracking ?? false,
+  };
+};
+
 // Resend rewrites links (click tracking) and adds a pixel (open tracking)
 // per domain, not per send (resend.com/docs/api-reference/domains/update-
 // domain). Both hurt transactional deliverability: a rewritten link on a
 // tracking host looks like phishing to a spam filter, and a verify or reset
-// link must stay the link wovain wrote. This sets both for the domain.
+// link must stay the link wovain wrote. This sets both for the domain, and
+// puts back what it found when the resource is removed.
 const trackingProvider: pulumi.dynamic.ResourceProvider<
   TrackingInputs,
-  TrackingInputs
+  TrackingOutputs
 > = {
   async create(inputs) {
+    const previous = await readTracking(inputs.apiKey, inputs.domainId);
     await setTracking(inputs);
-    return { id: inputs.domainId, outs: inputs };
+    return { id: inputs.domainId, outs: { ...inputs, previous } };
   },
-  async update(_id, _olds, news) {
+  async delete(_id, props) {
+    await setTracking({ ...props, ...props.previous });
+  },
+  async update(_id, olds, news) {
     await setTracking(news);
-    return { outs: news };
+    return { outs: { ...news, previous: olds.previous } };
   },
 };
 
@@ -305,7 +340,7 @@ export class ResendTracking extends pulumi.dynamic.Resource {
     super(
       trackingProvider,
       name,
-      args,
+      { ...args, previous: undefined },
       { ...opts, additionalSecretOutputs: ["apiKey"] },
       "resend",
       "Tracking"
