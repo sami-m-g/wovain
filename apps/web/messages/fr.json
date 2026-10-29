@@ -1047,7 +1047,7 @@
     "connect": {
       "title": "Connectez votre boutique et vos publicités",
       "lead": "wovain travaille dans vos propres comptes. Un clic pour chacun, et vous pouvez les déconnecter à tout moment.",
-      "leadWovainDraws": "wovain travaille dans vos propres comptes. Un clic pour chacun. Pas besoin de compte fal : wovain dessine vos designs et déduit le coût de vos crédits.",
+      "leadWovainDraws": "wovain travaille dans vos propres comptes. Un clic pour chacun. wovain dessine vos designs avec vos crédits.",
       "ready": "Vous pouvez lancer un drop.",
       "notReady": "Connectez Fourthwall avant votre premier drop.",
       "next": "Suivant",

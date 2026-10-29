@@ -1047,7 +1047,7 @@
     "connect": {
       "title": "Connect your shop and your ads",
       "lead": "wovain works inside your own accounts. Each takes one click, and you can disconnect at any time.",
-      "leadWovainDraws": "wovain works inside your own accounts. Each takes one click. You don't need a fal account: wovain draws your designs and takes the cost from your credits.",
+      "leadWovainDraws": "wovain works inside your own accounts. Each takes one click. wovain draws your designs from your credits.",
       "ready": "You can start a drop now.",
       "notReady": "Connect Fourthwall before your first drop.",
       "next": "Next",
