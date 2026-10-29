@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change idea-evidence. Update Purpose after archive.
+Decide whether a suggested drop idea has real evidence of demand and room in the market, rank it by the lower bound of its sweet spot, and show it as one idea card.
 
 ## Requirements
 
