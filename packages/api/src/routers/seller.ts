@@ -9,7 +9,7 @@ import {
   getDesign,
   listDesigns,
 } from "../flow/designs";
-import { dropDirections } from "../flow/drop-directions";
+import { streamDirections, warmDirections } from "../flow/drop-directions";
 import { ideaStyle, pickStyle } from "../flow/drop-style";
 import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
 import { listIdeas, researchErrors, researchIdeas } from "../flow/ideas";
@@ -238,9 +238,8 @@ export const runsRouter = {
         round: z.number().int().min(0).max(1000).default(0),
       })
     )
-    .handler(
-      async ({ context, input }) => await dropDirections(context, input)
-    ),
+    // Streams: what was kept at once, or each card as it is written.
+    .handler(({ context, input }) => streamDirections(context, input)),
   get: protectedProcedure
     .input(byId)
     .handler(async ({ context, input }) => await getRun(context, input.id)),
@@ -260,4 +259,9 @@ export const runsRouter = {
       })
     )
     .handler(async ({ context, input }) => await startRun(context, input)),
+  // Opening the app finds the suggestions in the background when the kept
+  // ones are missing or stale.
+  warmDirections: protectedProcedure.handler(
+    async ({ context }) => await warmDirections(context)
+  ),
 };

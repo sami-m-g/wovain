@@ -21,6 +21,9 @@ export interface QlooConfig {
 }
 
 const TIMEOUT_MS = 15_000;
+// How long a Qloo answer is reused, and how many are kept per client.
+const ANSWER_TTL_MS = 30 * 60_000;
+const ANSWERS_KEPT = 500;
 const QLOO_CONCURRENCY = 4;
 const RETRIES = 2;
 const RETRY_MS = 500;
@@ -357,14 +360,27 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
   // did, tried live on 2026-10-29). A 429 or 5xx is retried with backoff;
   // any other failure is final.
   const limit = pLimit(QLOO_CONCURRENCY);
-  const get = async <T extends z.ZodType>(
+  // Qloo's answers, kept a while per URL: the same request (a brand's
+  // references, an audience) is asked again within minutes by the new-drop
+  // suggestions, discovery and the taste map. A request in flight is
+  // shared; a failed one is forgotten.
+  const answers = new Map<string, { at: number; body: Promise<unknown> }>();
+  const remember = (key: string, body: Promise<unknown>) => {
+    answers.delete(key);
+    answers.set(key, { at: Date.now(), body });
+    for (const oldest of answers.keys()) {
+      if (answers.size <= ANSWERS_KEPT) {
+        break;
+      }
+      answers.delete(oldest);
+    }
+  };
+
+  const fetchJson = async (
     path: string,
     query: Record<string, string>,
-    schema: T
-  ): Promise<z.output<T>> => {
-    if (apiKey === undefined) {
-      throw notConfigured.qloo();
-    }
+    key: string
+  ): Promise<unknown> => {
     const response = await limit(
       async () =>
         await pRetry(
@@ -375,7 +391,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
               // nosemgrep
               new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
               {
-                headers: { Accept: "application/json", "X-Api-Key": apiKey },
+                headers: { Accept: "application/json", "X-Api-Key": key },
                 signal: AbortSignal.timeout(TIMEOUT_MS),
               }
             );
@@ -391,7 +407,30 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
           { minTimeout: RETRY_MS, retries: RETRIES }
         )
     );
-    return schema.parse(await response.json());
+    return await response.json();
+  };
+
+  const get = async <T extends z.ZodType>(
+    path: string,
+    query: Record<string, string>,
+    schema: T
+  ): Promise<z.output<T>> => {
+    if (apiKey === undefined) {
+      throw notConfigured.qloo();
+    }
+    const url = `${path}?${new URLSearchParams(query)}`;
+    const cached = answers.get(url);
+    if (cached !== undefined && Date.now() - cached.at < ANSWER_TTL_MS) {
+      return schema.parse(await cached.body);
+    }
+    const body = fetchJson(path, query, apiKey);
+    remember(url, body);
+    try {
+      return schema.parse(await body);
+    } catch (error) {
+      answers.delete(url);
+      throw error;
+    }
   };
 
   // One domain's affinities. Best effort: a failure is logged at error level,

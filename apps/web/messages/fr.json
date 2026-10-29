@@ -487,13 +487,18 @@
       },
       "listingsUnknown": "annonces non vérifiées",
       "sources": "Actualité pour {title}",
-      "loading": "Recherche de quoi vendre maintenant…",
       "failed": "Nous n'avons pas pu joindre nos données de goûts : pas encore de suggestions.",
       "retry": "Réessayer",
       "none": "Qloo n'a rien trouvé de nouveau en hausse pour l'instant. Écrivez votre propre piste plus bas.",
       "tavilyFailed": "La vérification de l'actualité ou des annonces a échoué pour certaines suggestions ; cette partie est inconnue.",
       "brandHint": "Facultatif : une marque garde ces suggestions dans votre style.",
-      "brandHintLink": "Ajouter une marque"
+      "brandHintLink": "Ajouter une marque",
+      "steps": {
+        "qloo": "Qloo cherche ce qui monte…",
+        "listings": "Vérification de l'actualité du mois et de la saturation…",
+        "words": "Rédaction des premières suggestions…"
+      },
+      "elapsed": "{seconds, plural, one {# seconde} other {# secondes}}"
     },
     "trends": {
       "title": "Choisir les idées",
