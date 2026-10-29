@@ -26,4 +26,14 @@ Issue #59.
 ## 4. Vulnerabilities
 
 - [x] 4.1 Override `ip-address` to `^10.7.4`
-- [ ] 4.2 `deepmerge` 4.3.1 (low, no patched version) stays until upstream releases one
+- [x] 4.2 `deepmerge` 4.3.1 (GHSA-gcqx-w48m-w2h4, no patched version): pnpm patch, ignored in `osv-scanner.toml` until upstream releases a fix
+- [x] 4.3 `@hono/node-server` 2.x for `@hono/node-ws` (GHSA-rmxm-3fg6-px4f), a pnpm override
+- [x] 4.4 OSV-Scanner scans every lockfile in full on pull requests too; `osv / osv-scan` required on main
+- [x] 4.5 Promo codes drawn with `crypto.randomInt` (CodeQL `js/biased-cryptographic-random`)
+
+## 5. OpenSSF Scorecard
+
+Issue #114.
+
+- [x] 5.1 Dockerfile base images pinned by digest; corepack and varlock from `npm ci` lockfiles in `docker/`; Dependabot covers both
+- [x] 5.2 Main ruleset: one approval, stale reviews dismissed, admin bypass on pull requests only

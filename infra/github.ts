@@ -13,6 +13,8 @@ import type * as pulumi from "@pulumi/pulumi";
 // GitHub Actions' app id: a required check must come from Actions, not from
 // any app that reports a status of the same name.
 const GITHUB_ACTIONS_APP_ID = 15_368;
+// The built-in `admin` repository role, as a ruleset bypass actor.
+const REPOSITORY_ADMIN_ROLE_ID = 5;
 
 type Variables = Record<string, pulumi.Input<string>>;
 
@@ -114,10 +116,21 @@ export const githubRepository = ({
   );
 
   // The default branch: no deletion, no force-push, and every change through
-  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL and
-  // the dependency review (.github/workflows). No required approval: the
-  // maintainer merges their own pull requests.
+  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,
+  // the dependency review and the full OSV scan (.github/workflows), with one
+  // approval that a new push dismisses. The maintainer works alone and can't
+  // approve their own pull requests, so repository admins may bypass the
+  // rules, but only when merging a pull request: a direct push is still
+  // refused. (OpenSSF Scorecard's Branch-Protection gives no credit past
+  // force-push and deletion without a required approval.)
   new github.RepositoryRuleset("main", {
+    bypassActors: [
+      {
+        actorId: REPOSITORY_ADMIN_ROLE_ID,
+        actorType: "RepositoryRole",
+        bypassMode: "pull_request",
+      },
+    ],
     conditions: {
       refName: { excludes: [], includes: ["~DEFAULT_BRANCH"] },
     },
@@ -128,19 +141,24 @@ export const githubRepository = ({
       deletion: true,
       nonFastForward: true,
       pullRequest: {
-        dismissStaleReviewsOnPush: false,
+        dismissStaleReviewsOnPush: true,
         requireCodeOwnerReview: false,
         requireLastPushApproval: false,
-        requiredApprovingReviewCount: 0,
+        requiredApprovingReviewCount: 1,
         requiredReviewThreadResolution: false,
       },
       requiredStatusChecks: {
-        requiredChecks: ["verify", "infra", "codeql", "dependency-review"].map(
-          (context) => ({
-            context,
-            integrationId: GITHUB_ACTIONS_APP_ID,
-          })
-        ),
+        requiredChecks: [
+          "verify",
+          "infra",
+          "codeql",
+          "dependency-review",
+          // A reusable workflow's check is `<calling job> / <its job>`.
+          "osv / osv-scan",
+        ].map((context) => ({
+          context,
+          integrationId: GITHUB_ACTIONS_APP_ID,
+        })),
         strictRequiredStatusChecksPolicy: false,
       },
     },

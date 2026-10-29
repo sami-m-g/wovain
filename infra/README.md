@@ -16,7 +16,7 @@ The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 
 ## GitHub
 
-`github.ts` manages the repository (adopted, protected and retained), Dependabot alerts and security updates, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request (no approval required) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml` and `dependency-review` from `supply-chain.yml` passed. It also owns a `release` ruleset for `release/transcend`, every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads:
+`github.ts` manages the repository (adopted, protected and retained), Dependabot alerts and security updates, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request with one approval (dismissed by a new push) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml`, `dependency-review` from `supply-chain.yml` and `osv / osv-scan` from `osv.yml` passed. Repository admins may bypass it when merging a pull request (the maintainer can't approve their own), never with a direct push. It also owns a `release` ruleset for `release/transcend`, every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads:
 
 | Environment | Deployment branches | Approval | Google trusts in it |
 | --- | --- | --- | --- |
