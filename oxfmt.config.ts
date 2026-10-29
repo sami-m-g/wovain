@@ -5,5 +5,10 @@ import { vendorPatterns } from "./.config/vendor.ts";
 
 export default defineConfig({
   ...ultracite,
-  ignorePatterns: [...(ultracite.ignorePatterns ?? []), ...vendorPatterns],
+  ignorePatterns: [
+    ...(ultracite.ignorePatterns ?? []),
+    ...vendorPatterns,
+    // Written by release-please and git-cliff.
+    "CHANGELOG.md",
+  ],
 });
