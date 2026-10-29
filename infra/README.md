@@ -63,7 +63,7 @@ Set it up once, as a project owner, after `bootstrap/` is applied (it creates th
 pnpm run infra:install
 # The stack, with its own secrets key (the secretsprovider in Pulumi.github.yaml).
 pulumi stack init github --cwd infra/github --secrets-provider gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/github-stack-secrets
-pulumi config set --secret --cwd infra/github --stack github github:token   # paste the token at the prompt
+pulumi config set --secret --cwd infra/github --stack github github:token <token>
 # Adopt what exists: the repository, and the GitLab mirror's ruleset and deploy key, which the first up deletes.
 pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
   github:index/repository:Repository wovain wovain
