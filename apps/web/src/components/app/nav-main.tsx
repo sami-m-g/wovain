@@ -22,7 +22,6 @@ export interface NavItem {
     | "drops"
     | "insights"
     | "products"
-    | "runs"
     | "autopilot"
     | "connections"
     | "billing";

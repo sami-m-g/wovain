@@ -180,6 +180,7 @@ const DropFlow = ({
         onNext={actions.handleDesignPicked}
         onToggle={actions.handleToggleIdea}
         picked={drop.picked}
+        runId={run?.id}
       />
     ),
     products: (

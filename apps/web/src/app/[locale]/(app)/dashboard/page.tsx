@@ -92,7 +92,7 @@ const DashboardPage = async ({
             </h2>
             <Link
               className="text-accent-text text-sm font-medium hover:underline"
-              href="/dashboard/runs"
+              href="/dashboard/drops"
             >
               {t("allRuns")}
             </Link>

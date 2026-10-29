@@ -16,7 +16,7 @@
     "signUpDescription": "Crea una cuenta de wovain y lanza tu primer drop print-on-demand.",
     "dashboardTitle": "Resumen",
     "newDropTitle": "Nuevo drop",
-    "runsTitle": "Ejecuciones",
+    "runsTitle": "Drops",
     "connectionsTitle": "Conexiones",
     "settingsTitle": "Ajustes de la cuenta",
     "notFoundTitle": "Página no encontrada",
@@ -248,7 +248,7 @@
       "title": "Privacidad",
       "intro": "Guardamos lo mínimo posible y nunca vendemos datos.",
       "collectTitle": "Qué recopilamos",
-      "collectBody": "Tu nombre, tu correo y el hash de tu contraseña para tu cuenta; los briefs que escribes; y las ejecuciones, diseños y productos que wovain crea para ti.",
+      "collectBody": "Tu nombre, tu correo y el hash de tu contraseña para tu cuenta; los briefs que escribes; y los drops, diseños y productos que wovain crea para ti.",
       "analyticsTitle": "Analítica",
       "analyticsBody": "Usamos PostHog, alojado en EE. UU., para entender cómo se descubre y usa wovain: las páginas que visitas, los clics, la velocidad de las páginas, el idioma del sitio y tu país. El país se deduce de tu dirección IP, que no se guarda, y la página comprueba si la controla un navegador automatizado, para no contar los bots como visitantes. Hasta que aceptes, funciona sin cookies ni almacenamiento en el navegador, así que no puede reconocerte entre visitas ni grabar sesiones. Si aceptas, o donde la ley no exige preguntar primero, guarda un identificador en tu navegador y graba las sesiones, sin lo que escribes ni los datos de tu cuenta. Puedes cambiar tu elección cuando quieras con Configuración de cookies al pie de la página, y la señal Global Privacy Control de tu navegador cuenta como un no. Cuando inicias sesión, estos eventos se vinculan al identificador de tu cuenta, nunca a tu correo.",
       "connectionsTitle": "Servicios conectados",
@@ -258,7 +258,7 @@
       "voiceTitle": "Comandos de voz",
       "voiceBody": "Cuando mantienes pulsado el botón del micrófono, fal convierte tu grabación en texto y Nebius lee el texto para que wovain entienda lo que pediste. wovain no guarda ni la grabación ni el texto. fal y Nebius los tratan según sus propias condiciones. La analítica solo registra qué tipo de comando fue, nunca lo que dijiste.",
       "deleteTitle": "Eliminar tus datos",
-      "deleteBody": "Escribe a {privacyEmail} desde la dirección de tu cuenta y eliminaremos tu cuenta, tus ejecuciones y tus conexiones en un plazo de 30 días."
+      "deleteBody": "Escribe a {privacyEmail} desde la dirección de tu cuenta y eliminaremos tu cuenta, tus drops y tus conexiones en un plazo de 30 días."
     },
     "terms": {
       "title": "Términos",
@@ -314,7 +314,6 @@
     "nav": {
       "overview": "Resumen",
       "newDrop": "Nuevo drop",
-      "runs": "Ejecuciones",
       "connections": "Conexiones",
       "insights": "Estadísticas",
       "billing": "Facturación",
@@ -334,7 +333,7 @@
     "products": "Productos",
     "ads": "Anuncios",
     "campaign": "Campaña",
-    "stripLabel": "Progreso: {stage}",
+    "stripLabel": "Progreso del drop: {stage}",
     "done": "hecho",
     "current": "actual",
     "pending": "sin empezar"
@@ -349,8 +348,8 @@
     "greeting": "Hola, {name}",
     "lead": "Tus drops y tus conexiones, de un vistazo.",
     "newDrop": "Nuevo drop",
-    "recentRuns": "Ejecuciones recientes",
-    "allRuns": "Todas las ejecuciones",
+    "recentRuns": "Drops recientes",
+    "allRuns": "Todos los drops",
     "connections": "Conexiones",
     "manage": "Gestionar",
     "setupTitle": "Termina la configuración",
@@ -392,8 +391,8 @@
     }
   },
   "Runs": {
-    "title": "Ejecuciones",
-    "lead": "Todos los drops que wovain ha lanzado por ti, del más reciente al más antiguo.",
+    "title": "Drops",
+    "lead": "Todos los drops que wovain ha hecho por ti, del más reciente al más antiguo.",
     "empty": "Tu primer drop aparecerá aquí, con todos los pasos que dio.",
     "emptyCta": "Lanzar un drop",
     "mode": "Modo",
@@ -401,7 +400,7 @@
     "manual": "Contigo",
     "autopilot": "Piloto automático",
     "stoppedAt": "Detenida en el paso {stage}.",
-    "emptyTitle": "Aún no hay ejecuciones",
+    "emptyTitle": "Aún no hay drops",
     "brief": "Brief",
     "status": "Estado",
     "progress": "Progreso",
@@ -581,7 +580,7 @@
       "variants": "Variantes de anuncio",
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
-      "history": "Ver todas las ejecuciones",
+      "history": "Ver todos los drops",
       "media": {
         "start": "Iniciar anuncios",
         "pause": "Pausar anuncios",
@@ -611,7 +610,7 @@
       "reconnectTitle": "Vuelve a conectar {service} para terminar este drop",
       "reconnectBody": "El drop se pausó en el paso {stage} porque la sesión de {service} caducó. Vuelve a conectarlo e inténtalo de nuevo con un clic.",
       "connectedTitle": "{service} está conectado",
-      "connectedBody": "Vuelve a intentar el drop: wovain empieza una nueva ejecución con el mismo brief.",
+      "connectedBody": "Vuelve a intentar el drop: wovain lo empieza de nuevo con el mismo brief.",
       "noIdeas": "La investigación no encontró ideas para este brief. Prueba a redactarlo de otra forma.",
       "rejected": "Al piloto automático no le gustó el diseño. Inténtalo de nuevo para obtener uno nuevo.",
       "other": "Algo salió mal por nuestra parte. No se gastó nada en este paso. Inténtalo de nuevo.",
@@ -746,7 +745,7 @@
     "back": "Volver a iniciar sesión"
   },
   "Run": {
-    "loading": "Abriendo la ejecución…"
+    "loading": "Abriendo el drop…"
   },
   "Seo": {
     "home": "Inicio",
@@ -762,7 +761,7 @@
     "connection": "Quién la conecta",
     "setup": "Configuración",
     "docs": "Leer la documentación",
-    "steps": "Qué hace en una ejecución",
+    "steps": "Qué hace en un drop",
     "data": "Qué se comparte",
     "faq": "Preguntas",
     "relatedUseCases": "Casos de uso",
@@ -843,7 +842,7 @@
     },
     "learned": {
       "title": "Lo que aprendimos",
-      "lead": "Qué se vendió, qué no, y cómo wovain ordena ahora las ideas para tu marca. Tus próximas búsquedas lo usan.",
+      "lead": "Qué se vendió, qué no, y cómo wovain ordena ahora las ideas para tu marca. Tus próximos drops lo usan.",
       "refresh": "Revisar resultados",
       "refreshing": "Revisando…",
       "updated": "Actualizado {date}",
@@ -900,7 +899,7 @@
         "job": "Modera lo que publicas"
       }
     },
-    "runTitle": "Traza del run",
+    "runTitle": "Traza del drop",
     "runLead": "{calls, plural, one {# paso} other {# pasos}} para «{seed}», en orden.",
     "step": "Paso",
     "job": "Tarea",
@@ -923,7 +922,7 @@
       "grounding_guard": "Control de cifras y afirmaciones",
       "research_themes": "Temas de investigación"
     },
-    "emptyTitle": "Aún no hay runs trazados",
+    "emptyTitle": "Aún no hay drops trazados",
     "empty": "Empieza un drop. Cada paso de IA aparece aquí con su modelo."
   },
   "Billing": {
@@ -1402,7 +1401,7 @@
     },
     "levelHints": {
       "suggest": "El piloto sugiere drops. Tú empiezas cada uno.",
-      "draft": "El piloto empieza la ejecución y espera a que elijas ideas.",
+      "draft": "El piloto empieza el drop y espera a que elijas ideas.",
       "publish_ads_paused": "El piloto hace el drop y lo publica. Los anuncios siguen en pausa hasta que los actives."
     },
     "paused": "Pausaste el agente. Las sugerencias te esperan.",
@@ -1413,7 +1412,7 @@
     "empty": "Cada 6 horas el piloto compara Qloo y las noticias de la semana con tu marca. Las coincidencias aparecen aquí con sus fuentes.",
     "accept": "Empezar el drop",
     "dismiss": "Descartar",
-    "openRun": "Abrir la ejecución",
+    "openRun": "Abrir el drop",
     "evidence": "Fuentes",
     "log": "Qué pasó",
     "triggers": {
@@ -1430,7 +1429,7 @@
       "pending": "Te espera",
       "approved": "Aprobada",
       "executing": "Empezando",
-      "done": "Ejecución iniciada",
+      "done": "Drop iniciado",
       "failed": "No empezó",
       "rejected": "Rechazada",
       "denied": "Denegada",
@@ -1446,14 +1445,14 @@
       "tavilyFailed": "Falló la búsqueda de noticias sobre “{query}”.",
       "match": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias de esta semana.} other {# búsquedas encontraron noticias de esta semana.}}",
       "suggest": "Sugerí un drop sobre {subject}.",
-      "policyAllow": "Tu nivel de autonomía deja que el piloto empiece esta ejecución.",
+      "policyAllow": "Tu nivel de autonomía deja que el piloto empiece este drop.",
       "policyWait": "Tu nivel de autonomía pide preguntarte primero.",
-      "policyDeny": "La política denegó esta ejecución.",
+      "policyDeny": "La política denegó este drop.",
       "notEntitled": "El piloto no está en tu plan, así que esto te espera.",
       "creditCap": "Los créditos del piloto de hoy se acabaron ({used, number} de {cap, number}), así que esto te espera.",
-      "runIdeas": "Empezó la ejecución. Espera a que elijas ideas.",
-      "runAutopilot": "Empezó la ejecución en piloto automático. Elige, aprueba y publica; los anuncios siguen en pausa.",
-      "runFailed": "La ejecución no empezó: {error}",
+      "runIdeas": "Empezó el drop. Espera a que elijas ideas.",
+      "runAutopilot": "Empezó el drop en piloto automático. Elige, aprueba y publica; los anuncios siguen en pausa.",
+      "runFailed": "El drop no empezó: {error}",
       "other": "{step}"
     },
     "scans": "Búsquedas sin nada nuevo",
@@ -1590,18 +1589,8 @@
     }
   },
   "Drops": {
-    "title": "Drops",
     "intro": "Un drop son de 4 a 6 productos con una misma paleta y una misma marca. Las etiquetas de gusto de Qloo eligen el estilo y los productos. Cada producto tiene sus propias ubicaciones, mockups y precio.",
-    "planTitle": "Planifica un drop",
-    "planIntro": "Elige una idea de una ejecución. wovain elige los productos, dibuja el arte de cada ubicación y pone precio a cada producto según lo que Fourthwall cobra por fabricarlo.",
-    "noIdeas": "Primero inicia una ejecución. Sus ideas aparecen aquí.",
-    "ideaLabel": "Idea",
-    "ideaPlaceholder": "Elige una idea",
-    "plan": "Planificar drop",
-    "planning": "Planificando…",
-    "emptyTitle": "Aún no hay drops",
-    "emptyBody": "Planifica uno a partir de una idea.",
-    "listLabel": "Tus drops",
+    "plan": "Convertir en cápsula",
     "building": "Dibujando y colocando el arte. Los productos aparecen aquí cuando están listos.",
     "reviewPass": "La revisión visual pasó: ubicaciones, jerarquía y un estilo común.",
     "publish": "Publicar drop",
@@ -1647,6 +1636,8 @@
       "pattern": "Estampado completo",
       "embroidery": "Bordado",
       "label": "Etiqueta"
-    }
+    },
+    "capsuleTitle": "Conviértelo en una cápsula",
+    "capsulePick": "Primero elige una idea arriba."
   }
 }

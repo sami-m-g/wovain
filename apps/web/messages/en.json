@@ -16,7 +16,7 @@
     "signUpDescription": "Create a wovain account and launch your first print-on-demand drop.",
     "dashboardTitle": "Overview",
     "newDropTitle": "New drop",
-    "runsTitle": "Runs",
+    "runsTitle": "Drops",
     "connectionsTitle": "Connections",
     "settingsTitle": "Account settings",
     "notFoundTitle": "Page not found",
@@ -248,7 +248,7 @@
       "title": "Privacy",
       "intro": "We keep as little as we can, and we never sell data.",
       "collectTitle": "What we collect",
-      "collectBody": "Your name, email and password hash for your account; the briefs you write; and the runs, designs and products wovain makes for you.",
+      "collectBody": "Your name, email and password hash for your account; the briefs you write; and the drops, designs and products wovain makes for you.",
       "analyticsTitle": "Analytics",
       "analyticsBody": "We use PostHog, hosted in the US, to learn how people find and use wovain: the pages you visit, what you click, page speed, the site's language and your country. Your country comes from your IP address, which isn't kept, and the page checks whether an automated browser is driving it, so bots aren't counted as visitors. Until you accept, it runs without cookies or browser storage, so it can't recognize you across visits or record replays. If you accept, or where the law doesn't require asking first, it stores an ID in your browser and records session replays, with everything you type and your account details hidden. You can change your choice at any time with Cookie settings at the bottom of the page, and a Global Privacy Control signal from your browser counts as a no. Once you sign in, these events are tied to your account's id, never your email.",
       "connectionsTitle": "Connected services",
@@ -258,7 +258,7 @@
       "voiceTitle": "Voice commands",
       "voiceBody": "When you hold the microphone button, fal turns your recording into text, and Nebius reads the text so wovain can work out what you asked. wovain doesn't store the recording or the text. fal and Nebius handle them under their own terms. Analytics only records which kind of command it was, never what you said.",
       "deleteTitle": "Deleting your data",
-      "deleteBody": "Email {privacyEmail} from your account's address and we delete your account, runs and stored connections within 30 days."
+      "deleteBody": "Email {privacyEmail} from your account's address and we delete your account, drops and stored connections within 30 days."
     },
     "terms": {
       "title": "Terms",
@@ -314,7 +314,6 @@
     "nav": {
       "overview": "Overview",
       "newDrop": "New drop",
-      "runs": "Runs",
       "connections": "Connections",
       "insights": "Insights",
       "billing": "Billing",
@@ -334,7 +333,7 @@
     "products": "Products",
     "ads": "Ads",
     "campaign": "Campaign",
-    "stripLabel": "Run progress: {stage}",
+    "stripLabel": "Drop progress: {stage}",
     "done": "done",
     "current": "current",
     "pending": "not started"
@@ -349,8 +348,8 @@
     "greeting": "Hi {name}",
     "lead": "Your drops and connections, at a glance.",
     "newDrop": "New drop",
-    "recentRuns": "Recent runs",
-    "allRuns": "All runs",
+    "recentRuns": "Recent drops",
+    "allRuns": "All drops",
     "connections": "Connections",
     "manage": "Manage",
     "setupTitle": "Finish setting up",
@@ -392,8 +391,8 @@
     }
   },
   "Runs": {
-    "title": "Runs",
-    "lead": "Every drop wovain has run for you, newest first.",
+    "title": "Drops",
+    "lead": "Every drop wovain has made for you, newest first.",
     "empty": "Your first drop will show up here, with every step it went through.",
     "emptyCta": "Start a drop",
     "mode": "Mode",
@@ -401,7 +400,7 @@
     "manual": "With you",
     "autopilot": "Autopilot",
     "stoppedAt": "Stopped during {stage}.",
-    "emptyTitle": "No runs yet",
+    "emptyTitle": "No drops yet",
     "brief": "Brief",
     "status": "Status",
     "progress": "Progress",
@@ -581,7 +580,7 @@
       "variants": "Ad variants",
       "open": "Open in Ads Manager",
       "another": "Start another drop",
-      "history": "See all runs",
+      "history": "See all drops",
       "media": {
         "start": "Start ads",
         "pause": "Pause ads",
@@ -611,7 +610,7 @@
       "reconnectTitle": "Reconnect {service} to finish this drop",
       "reconnectBody": "The drop paused during {stage} because {service}'s sign-in expired. Reconnect it, then try again in one click.",
       "connectedTitle": "{service} is connected",
-      "connectedBody": "Try the drop again: wovain starts a fresh run from the same brief.",
+      "connectedBody": "Try the drop again: wovain starts it fresh from the same brief.",
       "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
       "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
       "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
@@ -746,7 +745,7 @@
     "back": "Back to sign in"
   },
   "Run": {
-    "loading": "Opening the run…"
+    "loading": "Opening the drop…"
   },
   "Seo": {
     "home": "Home",
@@ -762,7 +761,7 @@
     "connection": "Who connects it",
     "setup": "Setup",
     "docs": "Read the docs",
-    "steps": "What it does in a run",
+    "steps": "What it does in a drop",
     "data": "What's shared",
     "faq": "Questions",
     "relatedUseCases": "Use cases",
@@ -843,7 +842,7 @@
     },
     "learned": {
       "title": "What we learned",
-      "lead": "What sold, what didn't, and how wovain now ranks ideas for your brand. Your next research runs use this.",
+      "lead": "What sold, what didn't, and how wovain now ranks ideas for your brand. Your next drops use this.",
       "refresh": "Check results now",
       "refreshing": "Checking…",
       "updated": "Updated {date}",
@@ -900,7 +899,7 @@
         "job": "Moderates what you publish"
       }
     },
-    "runTitle": "Run trace",
+    "runTitle": "Drop trace",
     "runLead": "{calls, plural, one {# step} other {# steps}} for “{seed}”, in order.",
     "step": "Step",
     "job": "Job",
@@ -923,7 +922,7 @@
       "grounding_guard": "Numbers and claims check",
       "research_themes": "Research themes"
     },
-    "emptyTitle": "No traced runs yet",
+    "emptyTitle": "No traced drops yet",
     "empty": "Start a drop. Each AI step it takes shows up here with its model."
   },
   "Billing": {
@@ -1402,7 +1401,7 @@
     },
     "levelHints": {
       "suggest": "Autopilot suggests drops. You start each one.",
-      "draft": "Autopilot starts the run, then waits for you to pick ideas.",
+      "draft": "Autopilot starts the drop, then waits for you to pick ideas.",
       "publish_ads_paused": "Autopilot runs the drop and publishes it. Ads stay paused until you turn them on."
     },
     "paused": "You paused the agent. Suggestions wait for you.",
@@ -1413,7 +1412,7 @@
     "empty": "Every 6 hours autopilot checks Qloo and this week's news against your brand. Matches show up here with their sources.",
     "accept": "Start the drop",
     "dismiss": "Dismiss",
-    "openRun": "Open the run",
+    "openRun": "Open the drop",
     "evidence": "Sources",
     "log": "What happened",
     "triggers": {
@@ -1430,7 +1429,7 @@
       "pending": "Waiting for you",
       "approved": "Approved",
       "executing": "Starting",
-      "done": "Run started",
+      "done": "Drop started",
       "failed": "Didn't start",
       "rejected": "Rejected",
       "denied": "Refused",
@@ -1446,14 +1445,14 @@
       "tavilyFailed": "The news search for “{query}” failed.",
       "match": "{count, plural, =0 {No search found this week's news.} one {# search found this week's news.} other {# searches found this week's news.}}",
       "suggest": "Suggested a drop on {subject}.",
-      "policyAllow": "Your autonomy level lets autopilot start this run.",
+      "policyAllow": "Your autonomy level lets autopilot start this drop.",
       "policyWait": "Your autonomy level says to ask you first.",
-      "policyDeny": "The policy refused this run.",
+      "policyDeny": "The policy refused this drop.",
       "notEntitled": "Autopilot isn't on your plan, so this waits for you.",
       "creditCap": "Today's autopilot credits are used up ({used, number} of {cap, number}), so this waits for you.",
-      "runIdeas": "Started the run. It waits for you to pick ideas.",
-      "runAutopilot": "Started the run on autopilot. It picks, approves and publishes; ads stay paused.",
-      "runFailed": "The run didn't start: {error}",
+      "runIdeas": "Started the drop. It waits for you to pick ideas.",
+      "runAutopilot": "Started the drop on autopilot. It picks, approves and publishes; ads stay paused.",
+      "runFailed": "The drop didn't start: {error}",
       "other": "{step}"
     },
     "scans": "Scans with nothing new",
@@ -1590,18 +1589,8 @@
     }
   },
   "Drops": {
-    "title": "Drops",
     "intro": "A drop is 4 to 6 products that share one palette and one mark. Qloo's taste tags pick the style and the product mix. Each product gets its own placements, mockups and price.",
-    "planTitle": "Plan a drop",
-    "planIntro": "Pick an idea from a run. wovain chooses the products, draws the art for each placement and prices every product from what Fourthwall charges to make it.",
-    "noIdeas": "Start a run first. Its ideas show up here.",
-    "ideaLabel": "Idea",
-    "ideaPlaceholder": "Choose an idea",
-    "plan": "Plan drop",
-    "planning": "Planning…",
-    "emptyTitle": "No drops yet",
-    "emptyBody": "Plan one from an idea above.",
-    "listLabel": "Your drops",
+    "plan": "Make it a capsule",
     "building": "Drawing and placing the art. Products appear here as they're ready.",
     "reviewPass": "The vision check passed: placements, hierarchy and a shared look.",
     "publish": "Publish drop",
@@ -1647,6 +1636,8 @@
       "pattern": "All-over pattern",
       "embroidery": "Embroidery",
       "label": "Label"
-    }
+    },
+    "capsuleTitle": "Make it a capsule",
+    "capsulePick": "Pick an idea above first."
   }
 }

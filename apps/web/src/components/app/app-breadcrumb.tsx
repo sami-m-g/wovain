@@ -18,22 +18,34 @@ const SECTIONS = {
   "/dashboard/autopilot": "autopilot",
   "/dashboard/billing": "billing",
   "/dashboard/connections": "connections",
+  "/dashboard/drops": "drops",
   "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
   "/dashboard/onboarding": "onboarding",
   "/dashboard/products": "products",
-  "/dashboard/runs": "runs",
 } as const;
 
-const isSection = (path: string): path is keyof typeof SECTIONS =>
-  path in SECTIONS;
+type Section = keyof typeof SECTIONS;
 
-/** Overview › the current section, in the top bar. */
+// A section shown under another one: a new drop is one of the drops.
+const PARENTS: Partial<Record<Section, Section>> = {
+  "/dashboard/new": "/dashboard/drops",
+};
+
+const isSection = (path: string): path is Section => path in SECTIONS;
+
+/** Overview › the parent section, if any › the current section. */
 export const AppBreadcrumb = () => {
   const t = useTranslations("Shell.nav");
   const pathname = usePathname();
+  const parent = isSection(pathname) ? PARENTS[pathname] : undefined;
   const crumbs = isSection(pathname)
-    ? [{ href: pathname, label: t(SECTIONS[pathname]) }]
+    ? [
+        ...(parent === undefined
+          ? []
+          : [{ current: false, href: parent, label: t(SECTIONS[parent]) }]),
+        { current: true, href: pathname, label: t(SECTIONS[pathname]) },
+      ]
     : [];
 
   return (
@@ -52,8 +64,14 @@ export const AppBreadcrumb = () => {
         {crumbs.map((crumb) => (
           <Fragment key={crumb.href}>
             <BreadcrumbSeparator className="max-md:hidden rtl:rotate-180" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+            <BreadcrumbItem className={cn(!crumb.current && "max-md:hidden")}>
+              {crumb.current ? (
+                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink render={<Link href={crumb.href} />}>
+                  {crumb.label}
+                </BreadcrumbLink>
+              )}
             </BreadcrumbItem>
           </Fragment>
         ))}
