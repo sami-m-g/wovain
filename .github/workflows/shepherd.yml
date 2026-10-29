@@ -76,6 +76,7 @@ jobs:
             main | release/* | dependabot/* | release-please--*) skip "#$PR's branch $ref is not the shepherd's." ;;
           esac
           jq -e '.labels | map(.name) | index("needs-human")' <<<"$pr" > /dev/null && skip "#$PR waits for a person."
+          jq -e '.labels | map(.name) | index("autofix")' <<<"$pr" > /dev/null && skip "#$PR is Auto-fix's."
 
           marker='<!-- shepherd:attempt'
           mine='select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- shepherd:attempt")))'

@@ -7,7 +7,8 @@
 # - comments `@coderabbitai review` once on one whose head commit has had no
 #   CodeRabbit review for 15 minutes, unless CodeRabbit's newest comment is
 #   its rate-limit notice (AGENTS.md, "CodeRabbit review loop").
-# Skips drafts, forks, Dependabot, release-please, and `needs-human`.
+# Skips drafts, forks, Dependabot, release-please, `needs-human` and
+# `autofix` (Claude's cloud Auto-fix watches those).
 name: shepherd-scan
 
 on:
@@ -41,7 +42,7 @@ jobs:
           jq -c '.[]
             | select(.isDraft | not) | select(.isCrossRepository | not)
             | select(.headRefName | test("^(dependabot/|release-please--)") | not)
-            | select(.labels | map(.name) | index("needs-human") | not)' <<<"$prs" |
+            | select(.labels | map(.name) | (index("needs-human") or index("autofix")) | not)' <<<"$prs" |
           while read -r pr; do
             n=$(jq -r .number <<<"$pr")
             if [ "$(jq -r .mergeable <<<"$pr")" = CONFLICTING ]; then
