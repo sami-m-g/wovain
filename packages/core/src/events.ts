@@ -26,7 +26,8 @@ export const EVENTS = {
   dropBuildRequested: "wovain/drop.build.requested",
   // Run the feedback loop for one merchant (the daily fan-out).
   feedbackLearn: "wovain/feedback.learn",
-  // Send one notification to the merchant's devices (push, then email).
+  // Send one alert to the merchant on the channels they picked for its type
+  // (email, push, Telegram; openspec alerts).
   notify: "wovain/notify",
   // Re-score the merchant's ads and propose reallocations.
   optimizerTick: "wovain/optimizer.tick",
@@ -49,6 +50,8 @@ export const TRIGGER_KINDS = [
 ] as const;
 export type TriggerKind = (typeof TRIGGER_KINDS)[number];
 
+// What a notification is about; @wovain/core/alerts maps each kind to the
+// alert type whose channels the merchant picks.
 export const NOTIFY_KINDS = [
   "approval",
   "run_done",
@@ -56,6 +59,13 @@ export const NOTIFY_KINDS = [
   "suggestion",
   "order",
   "anomaly",
+  // wovain paused an ad or a campaign, or stopped every campaign.
+  "rule_action",
+  // A rule asks to raise a budget.
+  "scale_request",
+  "first_sale",
+  // A background job failed after its retries.
+  "failure",
 ] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 
@@ -96,9 +106,16 @@ export const eventSchemas = {
       .default([]),
     approvalId: z.string().optional(),
     body: z.string(),
+    // One alert per merchant and key, on each channel, however often the
+    // event is sent (a retry, two producers of one approval). The event's
+    // own id when absent.
+    dedupeKey: z.string().optional(),
     kind: z.enum(NOTIFY_KINDS),
     runId: z.string().optional(),
     title: z.string(),
+    // The page the alert opens, as a path on the site (e.g.
+    // "/dashboard/autopilot").
+    url: z.string().startsWith("/").optional(),
     userId: z.string(),
   }),
   [EVENTS.dropBuildRequested]: z.object({
@@ -130,5 +147,6 @@ export type EventData<N extends EventName> = z.input<(typeof eventSchemas)[N]>;
 
 // Any of the events above, as Inngest's `send` takes it.
 export type WovainEvent = {
-  [N in EventName]: { name: N; data: EventData<N> };
+  // `id`: Inngest drops a second event with the same id within 24 hours.
+  [N in EventName]: { name: N; data: EventData<N>; id?: string };
 }[EventName];

@@ -17,6 +17,7 @@
     "@formatjs/intl-localematcher": "catalog:",
     "@react-email/components": "catalog:",
     "@react-email/render": "catalog:",
+    "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
     "evlog": "catalog:",
     "negotiator": "catalog:",

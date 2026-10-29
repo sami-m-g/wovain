@@ -1,4 +1,5 @@
 import { resolveAccount } from "@wovain/core/ads";
+import { EVENTS } from "@wovain/core/events";
 import {
   metaPageReady,
   metaPaymentReady,
@@ -30,11 +31,7 @@ export const detectMilestones = async (actor: Actor, reading: Reading) => {
     name: MilestoneName,
     done: boolean,
     properties?: Record<string, unknown>
-  ) => {
-    if (done) {
-      await reachMilestone(actor, name, properties);
-    }
-  };
+  ) => done && (await reachMilestone(actor, name, properties));
   const campaigns = reading.ads.status === "ok" ? reading.ads.campaigns : [];
   await reached(
     "campaign_started",
@@ -51,10 +48,27 @@ export const detectMilestones = async (actor: Actor, reading: Reading) => {
     return;
   }
   const { orders, profit, revenue } = reading.shop.totals;
-  await reached("first_sale", orders > 0, {
+  const firstSale = await reached("first_sale", orders > 0, {
     order_value: revenue,
     profit,
   });
+  if (firstSale) {
+    // The milestone is recorded once, so this alert goes once (openspec
+    // alerts).
+    await actor.events?.send({
+      data: {
+        actions: [],
+        body: "Your shop has its first order. Insights has the numbers.",
+        dedupeKey: "first_sale",
+        kind: "first_sale",
+        title: "Your first sale",
+        url: "/dashboard/insights",
+        userId: actor.userId,
+      },
+      id: `notify:first_sale:${actor.userId}`,
+      name: EVENTS.notify,
+    });
+  }
   const spend = reading.ads.status === "ok" ? reading.ads.totals.spend : 0;
   await reached("first_profitable_product", profit - spend > 0, {
     ad_spend: spend,

@@ -35,6 +35,8 @@
     "@wovain/widgets": "workspace:*",
     "drizzle-orm": "catalog:",
     "evlog": "catalog:",
+    "expo-server-sdk": "catalog:",
+    "grammy": "catalog:",
     "inngest": "catalog:",
     "p-retry": "catalog:",
     "zod": "catalog:"

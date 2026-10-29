@@ -8,6 +8,9 @@ import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
 import { defineError } from "evlog";
 
+import type { PushTransport } from "./push";
+import type { TelegramBot } from "./telegram";
+
 // The seller funnel's server-side steps, as PostHog event names: sign_up
 // comes from Better Auth when it creates a user (packages/auth), the rest from
 // procedures. The browser adds landing_cta_clicked (apps/web).
@@ -101,7 +104,19 @@ export interface EventSender {
 
 // Who a flow step runs for, and with what. `runs` is absent inside a run's
 // own steps, which never start or resume runs.
+// Where alerts go besides email (./alerts, openspec alerts): the Expo Push
+// Service, and wovain's Telegram bot when the environment has one.
+export interface AlertTransports {
+  push: PushTransport;
+  // The site's address: alert links, and the bot's webhook
+  // (<siteUrl>/api/telegram).
+  siteUrl: string;
+  telegram?: TelegramBot | undefined;
+}
+
 export interface Actor {
+  // Absent in tests and in jobs that send no alerts.
+  alerts?: AlertTransports | undefined;
   analytics?: Analytics | undefined;
   billing: Billing;
   core: Core;
