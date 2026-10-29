@@ -9,6 +9,8 @@ import type {
   DirectionRequest,
 } from "./drop-directions";
 import type { Ask, Nemotron } from "./nemotron";
+import { fitOutcomeModel } from "./outcomes";
+import type { DesignOutcome } from "./outcomes";
 import type { InsightsQuery, QlooInsight } from "./qloo";
 import { DecisionTrace } from "./trace";
 
@@ -467,4 +469,62 @@ it("with the evidence gate, withdraws a direction whose title stays the raw tag"
   );
   expect(result.directions).toStrictEqual([]);
   expect(events.some((event) => event.kind === "withdrawn")).toBe(true);
+});
+
+// A merchant's record for one theme: `wins` designs that sold, `losses`
+// that didn't.
+const DAY_MS = 86_400_000;
+const designsFor = (theme: string, wins: number, losses: number) =>
+  Array.from({ length: wins + losses }, (_, index): DesignOutcome => {
+    const won = index < wins;
+    return {
+      addToCarts: 0,
+      clicks: 0,
+      dropId: `${theme}_${index}`,
+      impressions: 0,
+      launchedAt: new Date(Date.now() - 10 * DAY_MS),
+      productId: `${theme}_${index}`,
+      profitPerSaleCents: 1000,
+      purchases: 0,
+      qlooTags: [theme],
+      revenueCents: 0,
+      salesCovered: true,
+      spendCents: won ? 0 : 500,
+      theme,
+      units: won ? 3 : 0,
+    };
+  });
+
+it("with a strong track record, the rank follows it and says why", async () => {
+  const plain = await suggestDirections(gatedDeps(), request());
+  const themes = themesOf(plain);
+  expect(themes.length).toBeGreaterThan(1);
+  const first = themes[0] ?? "";
+  const last = themes.at(-1) ?? "";
+  const record = fitOutcomeModel([
+    ...designsFor(last, 12, 0),
+    ...designsFor(first, 0, 12),
+  ]);
+  const result = await suggestDirections(
+    gatedDeps({ outcomes: record }),
+    request()
+  );
+  expect(themesOf(result)[0]).toBe(last);
+  const [top] = result.directions;
+  expect(top?.outcome).toMatchObject({ direction: "up", kind: "theme" });
+  expect(top?.card?.outcome).toStrictEqual(top?.outcome);
+  expect(top?.spot?.score).toBeLessThan(top?.score ?? 0);
+});
+
+it("with no track record, the rank is unchanged", async () => {
+  const plain = await suggestDirections(gatedDeps(), request());
+  const empty = await suggestDirections(
+    gatedDeps({ outcomes: fitOutcomeModel([]) }),
+    request()
+  );
+  expect(themesOf(empty)).toStrictEqual(themesOf(plain));
+  expect(empty.directions.map((one) => one.score)).toStrictEqual(
+    plain.directions.map((one) => one.score)
+  );
+  expect(empty.directions.every((one) => one.outcome === undefined)).toBe(true);
 });

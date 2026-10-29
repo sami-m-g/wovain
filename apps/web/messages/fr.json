@@ -176,7 +176,7 @@
       },
       {
         "question": "Qu'est-ce qui empêche mes publicités de perdre de l'argent ?",
-        "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant. Il vous prévient à chaque fois par e-mail, sur votre téléphone ou sur Telegram."
+        "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant. Il vous prévient à chaque fois par e-mail, sur votre téléphone ou sur Telegram. Si wovain est indisponible, Meta met les publicités en pause lui-même : wovain copie ces règles dans votre compte publicitaire sous forme de règles automatisées Meta."
       },
       {
         "question": "Lesquels de mes designs dois-je promouvoir ?",

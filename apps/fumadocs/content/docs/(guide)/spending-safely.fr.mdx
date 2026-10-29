@@ -44,3 +44,13 @@ wovain demande à augmenter le budget d'une campagne seulement quand tout ceci e
 - elle rapporte au moins 1,3 fois ce qu'il lui faut pour être rentable.
 
 Une augmentation est de 20 % au plus, une fois toutes les 48 heures, et jamais au-dessus de votre plafond quotidien. Elle attend votre accord.
+
+## Si wovain est indisponible
+
+wovain copie aussi ces règles dans votre compte publicitaire sous forme de **Règles automatisées** Meta, pour que Meta mette les dépenses en pause de lui-même si wovain ne le peut pas. Vous les trouverez dans le Gestionnaire de publicités, sous **Règles automatisées**, nommées `wovain backstop`. Elles sont un peu plus souples que les règles de wovain, pour que wovain agisse en premier :
+
+- une publicité se met en pause à 1,2 fois les limites sans vente ci-dessus ;
+- une campagne se met en pause quand ses propres dépenses dépassent votre plafond quotidien ou mensuel ;
+- une campagne sans vente se met en pause quand ses dépenses dépassent votre limite de perte.
+
+wovain les met à jour quand vous changez un plafond ou votre limite de perte, et les supprime quand une campagne se termine. Vos propres règles ne sont jamais modifiées.

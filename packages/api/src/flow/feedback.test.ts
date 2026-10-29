@@ -335,8 +335,9 @@ describe("feedback loop on Postgres", () => {
     expect(memory).toContain("Moth tees: no sales");
 
     const feedback = await researchFeedbackOf(ctx.actor);
-    // Only the weights: Qloo alone names the themes.
-    expect(feedback).toEqual({ weights: record.weights });
+    // The weights and the track record: Qloo alone names the themes.
+    expect(feedback).toMatchObject({ weights: record.weights });
+    expect(feedback?.outcomes?.designs).toBeGreaterThan(0);
 
     // The same data again is the same version.
     const again = await learnFromResults(ctx.actor, NOW);

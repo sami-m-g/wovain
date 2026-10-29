@@ -707,6 +707,44 @@
         "release"
       ]
     },
+    "meta-backstop-rules": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The kill and stop rules mirrored into Meta's Automated Rules, so spend stops even when wovain is down (openspec meta-backstop) (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
     "meta-pixel-automation": {
       "active": true,
       "groups": [

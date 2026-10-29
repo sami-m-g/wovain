@@ -20,6 +20,8 @@ import { writeIdeaWords } from "./idea-words";
 import type { IdeaWordsResult } from "./idea-words";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
+import { outcomeScore } from "./outcomes";
+import type { OutcomeModel, OutcomeWhy } from "./outcomes";
 import type { InsightsQuery, Qloo, QlooInsight } from "./qloo";
 import { judgeIdea } from "./sweet-spot";
 import type { DropReason, SweetSpot, SweetSpotInput } from "./sweet-spot";
@@ -92,6 +94,9 @@ export interface DirectionDeps {
   // Progress as it happens, so the page can show each card the moment it
   // is ready instead of waiting for all of them.
   onEvent?: ((event: DirectionEvent) => void) | undefined;
+  // feedback-loop on: the merchant's track record, whose multiplier scales
+  // each direction's rank (./outcomes).
+  outcomes?: OutcomeModel | undefined;
   qloo: Pick<Qloo, "insights" | "tagsFor">;
   tavily: Pick<TavilyWeb, "search">;
   trace?: DecisionTrace | undefined;
@@ -135,6 +140,8 @@ export interface DropDirection {
   brief: string;
   // The one idea contract (./idea-card), the same for every pipeline.
   card?: IdeaCard | undefined;
+  // Why the merchant's record favours or warns against it (feedback-loop).
+  outcome?: OutcomeWhy | undefined;
   // The honest rank's numbers, when the evidence gate ranked it.
   spot?: SweetSpot | undefined;
   // Who wears it: "for night owls who read in cafés".
@@ -453,6 +460,7 @@ When a brand is given, keep its voice limits. Write in the given language. The i
 interface Draft {
   evidence: DirectionEvidence;
   key: string;
+  outcome?: OutcomeWhy | undefined;
   score: number;
   theme: string;
 }
@@ -609,6 +617,16 @@ export const sweetInputOf = (evidence: DirectionEvidence): SweetSpotInput => ({
   qlooAffinity: evidence.rising.length === 0 ? 0 : evidence.qlooAffinity,
 });
 
+// The merchant's record scales a direction's rank (1 with none): their own
+// angles for this theme, its Qloo tag being the theme.
+const outcomeOf = (deps: DirectionDeps, theme: string) => {
+  const { multiplier, why } = outcomeScore(
+    { qlooTags: [theme], theme },
+    deps.outcomes
+  );
+  return { multiplier, outcome: why };
+};
+
 // A direction as the one idea card (./idea-card).
 export const directionCardOf = (
   draft: Draft & { spot?: SweetSpot | undefined },
@@ -637,6 +655,7 @@ export const directionCardOf = (
           }),
     make: makeOf(words),
     origin: "directions",
+    outcome: draft.outcome,
     spot: draft.spot,
     why:
       evidence.qlooAffinity > 0 && evidence.rising.length > 0
@@ -819,9 +838,11 @@ export const suggestDirections = async (
           return [];
         }
         announceWords();
+        const { multiplier, outcome } = outcomeOf(deps, candidate.name);
         const named = await namedDirection(deps, {
           ...draft,
-          score: verdict.spot.score,
+          outcome,
+          score: verdict.spot.score * multiplier,
           spot: verdict.spot,
         });
         if (named === undefined) {
@@ -839,7 +860,7 @@ export const suggestDirections = async (
       if (!demand.proven) {
         return [];
       }
-      const draft = draftOf(
+      const unweighed = draftOf(
         candidate,
         index,
         demand,
@@ -847,6 +868,12 @@ export const suggestDirections = async (
         saturation,
         adLibrary
       );
+      const { multiplier, outcome } = outcomeOf(deps, candidate.name);
+      const draft = {
+        ...unweighed,
+        outcome,
+        score: unweighed.score * multiplier,
+      };
       announceWords();
       // The card shows at once with its facts; its words replace them.
       deps.onEvent?.({
