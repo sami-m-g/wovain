@@ -22,12 +22,22 @@ Both lockfiles (`pnpm-lock.yaml` and `infra/pnpm-lock.yaml`) SHALL be scanned wi
 
 ### Requirement: Dependency licenses are permissive
 
-Dependencies SHALL be under MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Unlicense, CC0-1.0, BlueOak-1.0.0 or Python-2.0, or MPL-2.0 (reported as a warning). `pnpm run licenses:check` SHALL fail on any other license unless `scripts/check-licenses.ts` lists the package as an exception with a reason.
+Dependencies in both lockfiles SHALL be under MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Unlicense, CC0-1.0, BlueOak-1.0.0, Python-2.0 or MPL-2.0. The `licenses` job (OSV-Scanner) SHALL fail on any other license, or on an unknown one, unless `osv-scanner.toml` overrides or ignores it with a reason.
 
 #### Scenario: Copyleft dependency
 
 - **WHEN** a dependency is under a license outside the allowlist and has no exception
-- **THEN** `licenses:check` and the dependency review fail
+- **THEN** the `licenses` job and the dependency review fail
+
+#### Scenario: Dependency without a license
+
+- **WHEN** a dependency's license is unknown and `osv-scanner.toml` has no override for it
+- **THEN** the `licenses` job fails
+
+#### Scenario: MPL-2.0 dependency added
+
+- **WHEN** a pull request adds a dependency under MPL-2.0
+- **THEN** dependency review reports it as a warning and does not fail
 
 ### Requirement: Releases carry an SBOM
 
