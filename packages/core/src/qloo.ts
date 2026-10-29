@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
+import { keywordsOf } from "./themes";
 
 // Qloo's Taste API on the hackathon server. Qloo ships no client SDK, so this
 // is plain fetch with the X-Api-Key header. Only the seed and Qloo IDs go to
@@ -590,11 +591,10 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
   // The seed's entities: the best matches across its search terms, at most
   // SEED_TAKE. When Qloo rejects every term the request itself is wrong, so
   // the step fails with Qloo's answer.
-  const seedEntities = async (
-    seed: string,
+  const termsEntities = async (
+    terms: string[],
     log?: Logger
   ): Promise<SearchEntity[]> => {
-    const terms = searchTermsOf(seed);
     if (terms.length === 0) {
       return [];
     }
@@ -616,6 +616,25 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
         return fresh;
       })
       .slice(0, SEED_TAKE);
+  };
+
+  // A brief that describes rather than names ("Retro 70s graphic tees for
+  // coffee lovers", or a direction's own title) matches nothing as a whole:
+  // its subject words are searched next, so it still finds an audience.
+  const seedEntities = async (
+    seed: string,
+    log?: Logger
+  ): Promise<SearchEntity[]> => {
+    const terms = searchTermsOf(seed);
+    const named = await termsEntities(terms, log);
+    if (named.length > 0) {
+      return named;
+    }
+    const tried = new Set(terms.map((term) => term.toLowerCase()));
+    return await termsEntities(
+      keywordsOf(seed).filter((word) => !tried.has(word)),
+      log
+    );
   };
 
   // The seed's entities and the tags their fans share; with crossDomain,

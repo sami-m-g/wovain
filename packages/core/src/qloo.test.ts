@@ -393,6 +393,42 @@ it("skips a search term Qloo answers 400 to and keeps the others", async () => {
   expect(set).toHaveBeenCalledWith({ qloo: { rejectedTerms: 3, terms: 4 } });
 });
 
+// QA 2026-10-29, run 8d7f7057: "Qloo found no audience for this brief".
+it("searches a descriptive brief's subject words when it names nothing", async () => {
+  const fetchMock = vi.fn(async (url: URL) => {
+    if (url.pathname === "/search") {
+      return await Promise.resolve(
+        Response.json({
+          results:
+            url.searchParams.get("query") === "coffee"
+              ? [{ entity_id: "E-COFFEE", name: "Blue Bottle Coffee" }]
+              : [],
+        })
+      );
+    }
+    return await Promise.resolve(Response.json({ results: { tags: [] } }));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  const taste = await createQloo({
+    apiKey: "k",
+    baseURL: "https://qloo.example",
+  }).tasteOf("Retro 70s graphic tees for coffee lovers");
+
+  expect(taste.names).toEqual(["Blue Bottle Coffee"]);
+  const queries = fetchMock.mock.calls
+    .map(([url]) => url)
+    .filter((url) => url.pathname === "/search")
+    .map((url) => url.searchParams.get("query"));
+  expect(queries).toEqual([
+    "Retro 70s graphic tees for coffee lovers",
+    "retro",
+    "70s",
+    "graphic",
+    "coffee",
+  ]);
+});
+
 it("fails the taste when Qloo rejects every term", async () => {
   vi.stubGlobal(
     "fetch",
