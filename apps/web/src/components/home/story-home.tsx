@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { buttonVariants } from "@wovain/ui/components/button";
 import { Card } from "@wovain/ui/components/card";
@@ -13,6 +14,8 @@ import { Skeleton } from "@wovain/ui/components/skeleton";
 import { cn } from "@wovain/ui/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import { posthog } from "posthog-js";
+import { useEffect } from "react";
 
 import { DropDirections } from "@/components/app/drop-directions";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
@@ -23,6 +26,17 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { Insights, Run } from "@/lib/flow-client";
 import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
+
+// A failure before a procedure ran is only seen here, so it goes to PostHog
+// Error Tracking; a procedure that threw is already tracked on the server.
+const ReportedProblem = ({ error }: { error: unknown }) => {
+  useEffect(() => {
+    if (!(error instanceof ORPCError)) {
+      posthog.captureException(error, { feature: "story-home" });
+    }
+  }, [error]);
+  return <FlowProblemNotice problem={describeProblem(error)} />;
+};
 
 /** The anchor of "What sells now" on the Home. */
 export const SELLS_NOW_ID = "what-sells-now";
@@ -51,10 +65,10 @@ export const NextAction = () => {
     return <Skeleton className="h-28 w-full rounded-xl" />;
   }
   if (runs.error) {
-    return <FlowProblemNotice problem={describeProblem(runs.error)} />;
+    return <ReportedProblem error={runs.error} />;
   }
   if (problem !== undefined) {
-    return <FlowProblemNotice problem={describeProblem(problem)} />;
+    return <ReportedProblem error={problem} />;
   }
   // Without the onboarding steps (their flag off), what sells now leads.
   if (ready === undefined) {
@@ -145,11 +159,13 @@ export const HomeResults = () => {
     return <Skeleton className="h-40 w-full rounded-xl" />;
   }
   if (error) {
-    return <FlowProblemNotice problem={describeProblem(error)} />;
+    return <ReportedProblem error={error} />;
   }
   const totals: ShopTotals | undefined =
     data.shop.status === "ok" ? data.shop.totals : undefined;
   const sold = (totals?.orders ?? 0) > 0;
+  // Only a shop that answered with zero orders is a first sale to come.
+  const firstSaleToCome = data.shop.status === "ok" && !sold;
   return (
     <section aria-label={t("title")} className="flex flex-col gap-3">
       <KpiFrame
@@ -164,14 +180,14 @@ export const HomeResults = () => {
         source={t("source")}
         title={t("title")}
       >
-        {sold ? null : (
+        {firstSaleToCome ? (
           <Empty className="border-input border border-dashed py-8">
             <EmptyHeader>
               <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
               <EmptyDescription>{t("empty")}</EmptyDescription>
             </EmptyHeader>
           </Empty>
-        )}
+        ) : null}
       </KpiFrame>
       <Link
         className="text-accent-text w-fit text-sm font-medium hover:underline"
