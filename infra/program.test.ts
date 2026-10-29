@@ -94,6 +94,8 @@ test("the program registers every resource once, without throwing", async () => 
     "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::infrastructure-main",
     "github:index/issueLabel:IssueLabel::dependencies",
+    // CodeRabbit, whose approval the main ruleset requires, reaches it.
+    "github:index/appInstallationRepository:AppInstallationRepository::coderabbit",
     "github:index/actionsVariable:ActionsVariable::GCP_WORKLOAD_IDENTITY_PROVIDER",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::production-GCP_DEPLOY_SERVICE_ACCOUNT",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::dev-GCP_DEPLOY_SERVICE_ACCOUNT",

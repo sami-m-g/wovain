@@ -67,9 +67,14 @@ interface RepositoryArgs {
   // GitGuardian's incidents:write token (.github/workflows/gitguardian-ignore.yml),
   // from the `gitguardian-api-key` stack secret. Left out, no secret is declared.
   gitguardianApiKey?: pulumi.Input<string> | undefined;
+  // The CodeRabbit GitHub App's installation on sami-m-g
+  // (github.com/settings/installations/<id>), from the
+  // `coderabbitInstallationId` config. Left out, the repository isn't added.
+  coderabbitInstallationId?: string | undefined;
 }
 
 export const githubRepository = ({
+  coderabbitInstallationId,
   environments,
   gitguardianApiKey,
   releaseBranch,
@@ -81,7 +86,10 @@ export const githubRepository = ({
   const repository = new github.Repository(
     "wovain",
     {
-      allowAutoMerge: false,
+      // `gh pr merge --squash --auto`: a pull request merges itself once the
+      // main ruleset below is met (CodeRabbit's approval and green checks),
+      // and its branch is deleted.
+      allowAutoMerge: true,
       deleteBranchOnMerge: true,
       description:
         "wovain: an MCP server for print-on-demand sellers (product idea → Fourthwall product → Meta Advantage+ campaign).",
@@ -112,6 +120,16 @@ export const githubRepository = ({
     { enabled: true, repository: repository.name },
     { dependsOn: [repository] }
   );
+
+  // CodeRabbit reviews this repository only. GitHub has no API to install an
+  // app (the consent click, infra/README.md); once installed with "Only
+  // select repositories", the repositories it reaches are managed here.
+  if (coderabbitInstallationId !== undefined) {
+    new github.AppInstallationRepository("coderabbit", {
+      installationId: coderabbitInstallationId,
+      repository: repository.name,
+    });
+  }
 
   // The default branch: no deletion, no force-push, and every change through
   // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,

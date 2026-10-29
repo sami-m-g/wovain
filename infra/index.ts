@@ -625,6 +625,7 @@ export const sqlConnectionName = sql.connectionName;
 // Federation and reads DATABASE_URL from Secret Manager. The repository's
 // variables are shared; each environment's say where it deploys, as whom.
 githubRepository({
+  coderabbitInstallationId: config.get("coderabbitInstallationId"),
   environments: {
     // No workflow deploys dev yet; a dispatch from main in `dev` would.
     dev: {

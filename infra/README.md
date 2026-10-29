@@ -37,7 +37,13 @@ The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as
 
 The repository's variables are `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_PROJECT_ID`, `GCP_REGION` and `DOCS_SITE_URL`. Each deploy environment has `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_IMAGE_REPOSITORY`, `GCP_SQL_INSTANCE`, `DATABASE_URL_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`, `SITE_URL` and `WEB_SERVICE`, and `Production` also has `DOCS_SERVICE`. See "Releases" below.
 
-The provider authenticates with the `github:token` stack secret. A fine-grained token for sami-m-g/wovain needs read and write on Administration, Environments, Variables and Dependabot alerts (`pulumi config set --secret github:token <token> --cwd infra --stack prod`).
+The provider authenticates with the `github:token` stack secret. A fine-grained token for sami-m-g/wovain needs read and write on Administration, Environments, Variables, Dependabot alerts and GitHub App installation repository access (`pulumi config set --secret github:token <token> --cwd infra --stack prod`).
+
+### CodeRabbit and auto-merge
+
+CodeRabbit's approval is the one review the `main` ruleset requires (`.coderabbit.yaml`), and the repository allows auto-merge: a pull request opened with `gh pr merge --squash --auto` merges once CodeRabbit approves and `verify`, `infra`, `codeql`, `dependency-review` and `osv / osv-scan` pass. Each of those runs on every pull request; `preview` is path-filtered and not required.
+
+Installing the CodeRabbit GitHub App is the one manual step: GitHub has no API to install an app, since the owner must consent to its permissions. Install it from github.com/apps/coderabbitai with "Only select repositories" (an installation on all repositories can't have its repositories managed). Its installation id is in the URL of github.com/settings/installations, Configure; set it with `pulumi config set --cwd infra --stack prod coderabbitInstallationId <id>`. `github.ts` then adds sami-m-g/wovain to that installation (`AppInstallationRepository`), which needs the token's GitHub App installation repository access permission.
 
 Google trusts GitHub Actions through the `github` workload identity pool (`bootstrap/index.ts`). Its provider accepts only tokens from sami-m-g/wovain (by name, repository id and owner id) on `refs/heads/main`, or on `refs/heads/release/transcend` in the `Production` environment. `gitlab-deploy` trusts only jobs in the `Production` environment, `wovain-deploy-next` only jobs in `next`, `wovain-deploy-dev` only jobs in `dev`, and `gitlab-infra` only jobs in `infrastructure`. The two accounts keep their old ids: renaming would replace protected accounts.
 
