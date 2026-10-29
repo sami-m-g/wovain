@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { FourthwallSignup } from "@/components/app/fourthwall-signup";
 import { ProviderLogo } from "@/components/app/provider-logo";
 import type { Provider } from "@/lib/flow-client";
 import { connectUrl } from "@/lib/flow-client";
@@ -97,6 +98,9 @@ export const ConnectState = ({
           {action}
         </a>
         {children}
+        {provider === "fourthwall" && !reconnect ? (
+          <FourthwallSignup className="w-full" surface="connect_state" />
+        ) : null}
       </EmptyContent>
     </Empty>
   );

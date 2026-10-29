@@ -6,7 +6,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@wovain/ui/components/alert";
-import { Button } from "@wovain/ui/components/button";
+import { Button, buttonVariants } from "@wovain/ui/components/button";
 import {
   Empty,
   EmptyContent,
@@ -192,9 +192,6 @@ export const RunFailedState = ({
 }) => {
   const t = useTranslations("Wizard.failed");
   const stages = useTranslations("Stages");
-  if (failure.reason === "qloo_no_match") {
-    return <QlooNoMatchState onRestart={actions.onRestart} />;
-  }
   const missing = failure.reason === "not_connected" ? failure : undefined;
   // fal while wovain draws the art: nothing for the merchant to connect.
   const connectable = useConnectable(missing?.service ?? "fourthwall");
@@ -208,6 +205,11 @@ export const RunFailedState = ({
         stage={stage}
       />
     );
+  }
+
+  const { onRestart } = actions;
+  if (failure.reason === "qloo_no_match") {
+    return <QlooNoMatchState onRestart={onRestart} />;
   }
 
   const reason = failure.reason === "not_connected" ? "other" : failure.reason;

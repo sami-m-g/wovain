@@ -15,3 +15,9 @@ When a screen or step can't load or finish because the merchant hasn't connected
 
 - **WHEN** a run failed because Fourthwall isn't connected
 - **THEN** the run view offers "Connect Fourthwall", returns to the same run after connecting and then offers "Try again" in one click
+
+#### Scenario: Merchant with no Fourthwall shop
+
+- **WHEN** a Fourthwall connect prompt shows (onboarding, a connect state or the Connections page)
+- **THEN** it keeps "Connect Fourthwall" as the primary button and adds one line, "No Fourthwall shop yet?", with a secondary link "Create a free Fourthwall shop" to Fourthwall's sign-up in a new tab (`rel="noopener noreferrer"`) and the hint "Then come back and connect it."
+- **AND** clicking the link captures `fourthwall_signup_clicked` with the surface (`onboarding`, `connect_state` or `connections`)

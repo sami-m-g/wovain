@@ -13,6 +13,21 @@ import messages from "../messages/en.json";
 // The page the run failed on: connecting comes back to it.
 const HERE = "/en/dashboard/new?run=r1&step=products";
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/dashboard/new",
   useSearchParams: () => new URLSearchParams("run=r1&step=products"),
@@ -110,6 +125,24 @@ describe("RunFailedState", () => {
     expect(html).toContain("Write a new brief");
     expect(html).toContain('data-slot="empty"');
     expect(html).not.toContain('role="alert"');
+    expect(html).toContain("No Fourthwall shop yet?");
+    expect(html).toContain('href="https://fourthwall.com/get-started"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain("Then come back and connect it.");
+  });
+
+  it("offers no Fourthwall sign-up for another provider", () => {
+    const html = render(
+      <RunFailedState
+        failure={{ reason: "not_connected", service: "meta" }}
+        onRestart={noop}
+        onRetry={noop}
+        retrying={false}
+        stage="campaign"
+      />
+    );
+    expect(html).not.toContain("fourthwall.com");
   });
 
   it("offers Reconnect when the sign-in expired", () => {

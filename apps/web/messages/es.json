@@ -438,7 +438,12 @@
         "unlocks": "wovain dibuja tus diseños con tu cuenta de fal, a tu cargo."
       }
     },
-    "comingSoon": "Próximamente"
+    "comingSoon": "Próximamente",
+    "signup": {
+      "prompt": "¿Aún no tienes una tienda de Fourthwall?",
+      "link": "Crea una tienda gratis en Fourthwall",
+      "hint": "Luego vuelve y conéctala."
+    }
   },
   "Wizard": {
     "title": "Nuevo drop",

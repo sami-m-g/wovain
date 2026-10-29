@@ -438,7 +438,12 @@
         "unlocks": "wovain draws your designs on your fal account, billed to you."
       }
     },
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "signup": {
+      "prompt": "No Fourthwall shop yet?",
+      "link": "Create a free Fourthwall shop",
+      "hint": "Then come back and connect it."
+    }
   },
   "Wizard": {
     "title": "New drop",
