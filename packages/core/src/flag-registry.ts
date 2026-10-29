@@ -140,16 +140,6 @@ export const FLAGS = {
     },
     type: "permission",
   },
-  "billing-polar": {
-    description:
-      "Polar billing paths from MR !116: credits, the billing page and webhooks",
-    expires: "2026-12-15",
-    guarded: true,
-    initiallyActive: true,
-    owner: { gitlab: OWNER, team: "billing" },
-    rollout: internalOnly,
-    type: "release",
-  },
   "brand-discovery": workstream(
     "growth",
     "Guided brand discovery in onboarding: Qloo-found starter brands (Suggest for me, a short questionnaire), the buyers panel and per-field suggestions"
@@ -157,6 +147,10 @@ export const FLAGS = {
   "design-drops": workstream(
     "design",
     "Drops: a capsule of products sharing a palette, mark and style family"
+  ),
+  "drop-directions": workstream(
+    "growth",
+    "What to sell now in the new-drop step: 3 to 5 one-click directions from Qloo (across audiences, or within the brand), Tavily momentum and saturation"
   ),
   "drop-style": workstream(
     "design",

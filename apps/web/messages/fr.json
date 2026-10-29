@@ -36,7 +36,7 @@
     "billingTitle": "Facturation",
     "onboardingTitle": "Configuration",
     "autopilotTitle": "Pilote automatique",
-    "productsTitle": "Produits",
+    "storeTitle": "Boutique",
     "dropsTitle": "Drops"
   },
   "Common": {
@@ -320,7 +320,7 @@
       "billing": "Facturation",
       "onboarding": "Configuration",
       "autopilot": "Pilote automatique",
-      "products": "Produits",
+      "store": "Boutique",
       "drops": "Drops"
     },
     "docs": "Docs",
@@ -466,6 +466,34 @@
       "error": "Écrivez au moins quelques mots (10 caractères ou plus).",
       "submit": "Rechercher des tendances",
       "submitAutopilot": "Lancer en pilote automatique"
+    },
+    "directions": {
+      "title": "Quoi vendre maintenant",
+      "lead": "Ce qui monte en ce moment sur Qloo, avec l'actualité du mois et la saturation des annonces, le meilleur pari d'abord. Choisissez-en une pour commencer, ou écrivez la vôtre plus bas.",
+      "titleBrand": "Quoi vendre maintenant, dans votre marque",
+      "leadBrand": "Ce qui monte en ce moment chez les acheteurs de votre marque sur Qloo, avec l'actualité du mois et la saturation des annonces, le meilleur pari d'abord. Choisissez-en une pour commencer, ou écrivez la vôtre plus bas.",
+      "ignoreBrand": "Ignorer ma marque cette fois",
+      "others": "En voir d'autres",
+      "use": "Lancer ce drop",
+      "whyFallback": "{count, plural, =0 {En hausse chez ces acheteurs sur Qloo.} one {En hausse chez ces acheteurs sur Qloo ; # article ce mois-ci.} other {En hausse chez ces acheteurs sur Qloo ; # articles ce mois-ci.}}",
+      "for": "Pour {audience}",
+      "rising": "En hausse avec : {names}",
+      "news": "{count, plural, =0 {aucun article ce mois-ci} one {# article ce mois-ci} other {# articles ce mois-ci}}",
+      "newsUnknown": "actualité non vérifiée",
+      "listings": {
+        "low": "{count, plural, =0 {aucune annonce similaire} one {# annonce similaire} other {# annonces similaires}}",
+        "medium": "{count, plural, one {# annonce similaire} other {# annonces similaires}}",
+        "high": "saturé : {count, plural, one {# annonce similaire} other {# annonces similaires}}"
+      },
+      "listingsUnknown": "annonces non vérifiées",
+      "sources": "Actualité pour {title}",
+      "loading": "Recherche de quoi vendre maintenant…",
+      "failed": "Nous n'avons pas pu joindre nos données de goûts : pas encore de suggestions.",
+      "retry": "Réessayer",
+      "none": "Qloo n'a rien trouvé de nouveau en hausse pour l'instant. Écrivez votre propre piste plus bas.",
+      "tavilyFailed": "La vérification de l'actualité ou des annonces a échoué pour certaines suggestions ; cette partie est inconnue.",
+      "brandHint": "Facultatif : une marque garde ces suggestions dans votre style.",
+      "brandHintLink": "Ajouter une marque"
     },
     "trends": {
       "title": "Choisir les idées",
@@ -955,7 +983,10 @@
       "packTitle": "Besoin de quelques crédits de plus ?",
       "comingSoon": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent chaque mois.",
       "comingSoonRenews": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent le {date}.",
-      "redeemSuccess": "Code utilisé. Vos crédits arrivent dans quelques secondes et n'expirent jamais."
+      "redeemSuccess": "Code utilisé. Vos crédits arrivent dans quelques secondes et n'expirent jamais.",
+      "setupRetrying": "Vos crédits n'ont pas encore pu être configurés. Nouvelle tentative en cours ; la page se met à jour seule.",
+      "setupLinked": "La facturation de cet e-mail est liée à un autre compte wovain. Contactez le support pour la déplacer.",
+      "setupUnverified": "Vérifiez votre e-mail pour configurer vos crédits. Ouvrez le lien que nous vous avons envoyé."
     },
     "paywall": {
       "creditsTitle": "Plus assez de crédits pour cette étape",
@@ -990,6 +1021,8 @@
         "alreadyRedeemed": "Vous avez déjà utilisé ce code.",
         "notFree": "Seuls les codes de crédits gratuits fonctionnent pour l'instant. Les formules payantes arrivent bientôt.",
         "tooMany": "Trop d'essais. Patientez quelques minutes, puis réessayez.",
+        "emailLinked": "La facturation de cet e-mail est liée à un autre compte wovain. Contactez le support.",
+        "emailNotVerified": "Vérifiez d'abord votre e-mail, puis utilisez le code.",
         "error": "Le code n'a pas pu être validé. Réessayez dans un instant."
       }
     }
@@ -1075,7 +1108,7 @@
       "later": "Passer pour l'instant"
     },
     "brand": {
-      "title": "Votre marque",
+      "title": "Votre marque (facultatif)",
       "lead": "Vous ne savez pas encore quoi vendre ? wovain peut vous proposer des marques de départ à partir de ce que les gens aiment en ce moment, ou vous poser quelques questions. Vous pourrez tout modifier ensuite.",
       "start": {
         "label": "Comment voulez-vous commencer ?",
@@ -1296,7 +1329,7 @@
         "second": "Comme des Garçons",
         "third": "Studio Ghibli"
       },
-      "skip": "Passer",
+      "skip": "Passer, aidez-moi juste à vendre",
       "save": "Enregistrer et continuer",
       "saving": "Enregistrement…",
       "saveFailed": "L'enregistrement n'a pas fonctionné : {message}",
@@ -1451,10 +1484,59 @@
     "rejectAction": "Refuser « {action} »"
   },
   "Store": {
-    "title": "Produits",
-    "lead": "Publiez, mettez en pause et retirez des produits, planifiez des codes de lancement et gérez les commandes. Chaque changement passe par vos validations.",
+    "title": "Boutique",
+    "lead": "Votre boutique Fourthwall au même endroit. Chaque changement passe d'abord par vos validations.",
     "queued": "Envoyé dans vos validations.",
     "approved": "Validé. wovain s'en occupe.",
+    "openAdmin": "Ouvrir dans Fourthwall",
+    "newTab": "(s'ouvre dans un nouvel onglet)",
+    "tabs": {
+      "products": "Produits",
+      "orders": "Commandes",
+      "promotions": "Promotions",
+      "approvals": "Validations",
+      "waiting": "en attente de vous"
+    },
+    "summary": {
+      "label": "Résumé de la boutique",
+      "yourShop": "Votre boutique",
+      "site": {
+        "LIVE": "En ligne",
+        "COMING_SOON": "Bientôt disponible",
+        "PASSWORD_PROTECTED": "Protégée par mot de passe",
+        "INACTIVE": "Inactive",
+        "unknown": "Statut inconnu"
+      },
+      "ready": "Prête à vendre",
+      "passing": "({done, number} vérifications sur {total, number} réussies)",
+      "allChecks": "Toutes les vérifications",
+      "fixIt": "Corriger dans Fourthwall",
+      "reconnect": "Reconnecter Fourthwall",
+      "goLive": "Mettre en ligne",
+      "goLiveTitle": "Mettre {name} en ligne ?",
+      "goLiveTitleFallback": "Mettre votre boutique en ligne ?",
+      "goLiveBody": "Les acheteurs peuvent visiter votre boutique et commander chaque produit en ligne. Vous pouvez revenir à « bientôt disponible » dans Fourthwall.",
+      "goingLive": "Votre boutique passe en ligne.",
+      "back": "Pas maintenant",
+      "sales": "Ventes",
+      "orders": "Commandes",
+      "last28": "28 derniers jours, selon Fourthwall",
+      "waiting": "En attente de vous",
+      "review": "Voir",
+      "nothingWaiting": "Rien à valider",
+      "payouts": "Versements",
+      "payout": {
+        "ACTIVE": "Configurés",
+        "IN_PROGRESS": "À terminer",
+        "INACTIVE": "Non configurés",
+        "unknown": "Inconnu"
+      },
+      "payoutFix": "Terminer dans Fourthwall"
+    },
+    "confirm": {
+      "costTitle": "Ce que cela vous coûte, selon Fourthwall",
+      "later": "Décider plus tard"
+    },
     "readiness": {
       "title": "Boutique prête",
       "connectTitle": "Connectez Fourthwall pour voir votre boutique ici",
@@ -1485,9 +1567,9 @@
       }
     },
     "queue": {
-      "title": "Validations de la boutique",
-      "lead": "Ce que wovain veut faire dans votre boutique. Les remboursements et annulations vous attendent toujours.",
-      "empty": "Rien en attente.",
+      "title": "Validations",
+      "lead": "Les changements de la boutique qui vous attendent, puis ce qui a déjà été fait. Remboursements, annulations et cartes cadeaux vous attendent toujours.",
+      "empty": "Rien ne vous attend.",
       "approve": "Valider",
       "reject": "Refuser",
       "status": {
@@ -1500,40 +1582,50 @@
         "done": "Terminé",
         "failed": "Échec",
         "reverted": "Annulé"
-      }
-    },
-    "drops": {
-      "title": "Drops",
-      "empty": "Pas encore de drop. Une exécution en crée un quand vous validez ses designs.",
-      "products": "{count, plural, one {# produit} other {# produits}}",
-      "publish": "Publier le drop",
-      "code": "Code de lancement",
-      "percentage": "% de remise",
-      "maxUses": "Utilisations max.",
-      "startsAt": "Début",
-      "endsAt": "Fin",
-      "planPromotion": "Planifier le code"
-    },
-    "dropStatus": {
-      "draft": "Brouillon",
-      "in_review": "En revue",
-      "live": "En ligne",
-      "paused": "En pause",
-      "retired": "Retiré"
+      },
+      "history": "{count, plural, one {# action précédente} other {# actions précédentes}}"
     },
     "products": {
       "title": "Produits",
-      "lead": "Les grandes tailles coûtent plus cher à fabriquer : elles ont un supplément sur le prix.",
-      "empty": "Pas encore de produit.",
+      "lead": "Prix, marge et unités vendues de tout ce que wovain a créé. Les grandes tailles ont un supplément en plus du prix.",
+      "allInFourthwall": "Tous les produits dans Fourthwall",
+      "filterLabel": "Afficher les produits",
+      "filter": {
+        "all": "Tous",
+        "live": "En ligne",
+        "drafts": "Brouillons",
+        "paused": "Masqués",
+        "retired": "Retirés"
+      },
+      "search": "Rechercher des produits",
+      "column": {
+        "product": "Produit",
+        "status": "Statut",
+        "price": "Prix",
+        "margin": "Marge",
+        "sold": "Vendus"
+      },
+      "selectAll": "Tout sélectionner",
+      "select": "Sélectionner {title}",
+      "selected": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
+      "bulkLabel": "Actions groupées",
+      "clear": "Désélectionner",
+      "actions": "Actions pour {title}",
+      "fromDrop": "Issu de {name}",
+      "soldShort": "{count, number} vendus",
+      "salesSource": "Marge et unités vendues : 28 derniers jours, d'après le rapport des meilleures ventes de Fourthwall.",
+      "empty": "Pas encore de produits.",
+      "emptyBody": "Les produits apparaissent ici quand vous validez des visuels dans un drop.",
+      "emptyAction": "Lancer un drop",
+      "emptyFiltered": "Rien ne correspond à ce filtre.",
       "mockupAlt": "Maquette de {title}",
       "view": "Voir dans la boutique",
-      "price": "Prix (USD)",
+      "editInFourthwall": "Modifier dans Fourthwall",
       "reprice": "Changer le prix",
       "sample": "Commander un échantillon",
-      "sampleLead": "Choisissez une variante. Vous payez au prix coûtant sur Fourthwall :",
       "move": {
         "publish": "Publier",
-        "unpublish": "Dépublier",
+        "unpublish": "Masquer",
         "retire": "Retirer"
       }
     },
@@ -1544,16 +1636,146 @@
       "paused": "En pause",
       "retired": "Retiré"
     },
+    "impact": {
+      "publish": {
+        "title": "Publier {count, plural, one {# produit} other {# produits}} ?",
+        "body": "Les acheteurs {count, plural, one {le} other {les}} voient et peuvent {count, plural, one {le} other {les}} commander dès que votre boutique est prête. Vous pouvez {count, plural, one {le} other {les}} masquer à tout moment."
+      },
+      "unpublish": {
+        "title": "Masquer {count, plural, one {# produit} other {# produits}} ?",
+        "body": "Les acheteurs ne {count, plural, one {le} other {les}} voient plus et ne peuvent plus {count, plural, one {le} other {les}} commander jusqu'à la prochaine publication. Les commandes passées ne changent pas."
+      },
+      "retire": {
+        "title": "Retirer {count, plural, one {# produit} other {# produits}} ?",
+        "body": "{count, plural, one {Il est archivé} other {Ils sont archivés}} sur Fourthwall pour de bon. Un produit retiré ne peut plus être publié."
+      },
+      "skipped": "{count, plural, one {# produit sélectionné est} other {# produits sélectionnés sont}} déjà dans cet état et {count, plural, one {reste} other {restent}} tel quel.",
+      "logged": "Chaque changement est consigné dans vos validations.",
+      "back": "Annuler",
+      "sent": "C'est fait. wovain s'en occupe.",
+      "queuedCount": "{count, plural, one {# changement attend} other {# changements attendent}} dans vos validations."
+    },
+    "reprice": {
+      "title": "Changer le prix de {title}",
+      "note": "Le nouveau prix s'applique à toutes les tailles ; les grandes gardent leur supplément.",
+      "price": "Nouveau prix (USD)",
+      "now": "Actuel",
+      "after": "Après",
+      "same": "Identique.",
+      "up": "Les acheteurs paient {amount} de plus par pièce dès son application.",
+      "down": "Les acheteurs paient {amount} de moins par pièce. wovain refuse un prix qui vend à perte.",
+      "back": "Annuler",
+      "confirm": "Changer le prix"
+    },
+    "sample": {
+      "title": "Commander un échantillon de {title}",
+      "body": "Choisissez une variante. Vous payez au prix coûtant sur le paiement Fourthwall, dans un nouvel onglet.",
+      "none": "Aucune variante trouvée."
+    },
+    "preview": {
+      "open": "Aperçu de la boutique",
+      "title": "{name}, vu par les acheteurs",
+      "titleFallback": "Votre boutique, vue par les acheteurs",
+      "lead": "Vos produits tels qu'ils apparaissent dans la boutique.",
+      "comingSoon": "Votre boutique est en « bientôt disponible » : les acheteurs voient la page d'attente de Fourthwall. Voici ce qu'ils verront une fois en ligne.",
+      "password": "Votre boutique est protégée par mot de passe : seuls les acheteurs qui l'ont la voient.",
+      "includeDrafts": "Inclure les brouillons",
+      "notLive": "Hors ligne",
+      "gridLabel": "Aperçu de la boutique",
+      "empty": "Aucun produit en ligne. Publiez-en un pour le voir ici.",
+      "note": "Les boutiques Fourthwall ne peuvent pas s'afficher dans wovain : cet aperçu utilise les rendus de vos produits.",
+      "openStore": "Ouvrir la boutique",
+      "openPlaceholder": "Voir la page d'attente",
+      "editDesign": "Modifier le design dans Fourthwall",
+      "newTab": "(s'ouvre dans un nouvel onglet)",
+      "mockupAlt": "{title} dans la boutique"
+    },
     "orders": {
       "title": "Commandes",
-      "lead": "Les dernières commandes Fourthwall. Les données client restent dans Fourthwall.",
-      "empty": "Pas encore de commande.",
+      "lead": "Les dernières commandes de Fourthwall. Les données clients restent dans Fourthwall.",
+      "inFourthwall": "Commandes dans Fourthwall",
+      "empty": "Pas encore de commandes.",
       "refund": "Rembourser",
       "cancel": "Annuler la commande",
-      "reason": "Motif",
-      "previewRefund": "Voir le coût du remboursement",
-      "previewCancel": "Voir le coût de l'annulation",
-      "back": "Retour"
+      "reason": "Motif (l'acheteur peut le voir)",
+      "previewRefund": "Voir ce que cela coûte",
+      "previewCancel": "Voir ce que cela coûte",
+      "previewing": "Fourthwall répond…",
+      "back": "Retour",
+      "refundTitle": "Rembourser la commande {id}",
+      "cancelTitle": "Annuler la commande {id}",
+      "refundBody": "Les {amount} restants reviennent à l'acheteur. Fourthwall montre ce que cela vous coûte avant tout mouvement.",
+      "cancelBody": "Toute la commande est annulée et remboursée, si la production n'a pas commencé. Fourthwall montre d'abord ce que cela vous coûte.",
+      "confirmRefund": "Confirmer le remboursement",
+      "confirmCancel": "Confirmer l'annulation",
+      "pages": "Pages de commandes",
+      "newer": "Plus récentes",
+      "older": "Plus anciennes",
+      "status": {
+        "OPEN": "Ouverte",
+        "CONFIRMED": "Confirmée",
+        "PARTIALLY_IN_PRODUCTION": "En production",
+        "IN_PRODUCTION": "En production",
+        "PARTIALLY_SHIPPED": "En expédition",
+        "SHIPPED": "Expédiée",
+        "PARTIALLY_DELIVERED": "En livraison",
+        "DELIVERED": "Livrée",
+        "COMPLETED": "Terminée",
+        "ABANDONED": "Abandonnée",
+        "CANCELLED": "Annulée",
+        "FAILED": "Échec"
+      }
+    },
+    "promotions": {
+      "title": "Promotions",
+      "lead": "Codes promo et cartes cadeaux de votre boutique.",
+      "inFourthwall": "Promotions dans Fourthwall",
+      "codesTitle": "Codes promo",
+      "codesLead": "wovain active un code à son début et le désactive à sa fin.",
+      "codesEmpty": "Pas encore de codes promo.",
+      "newCode": "Nouveau code",
+      "codeLead": "Choisissez les produits, la remise et la période. Le code est créé désactivé et s'active à son début.",
+      "code": "Code",
+      "codeHint": "3 à 24 lettres ou chiffres",
+      "percentage": "% de remise",
+      "maxUses": "Utilisations max.",
+      "startsAt": "Début",
+      "endsAt": "Fin",
+      "products": "{count, plural, =0 {Produits} one {Produits (# choisi)} other {Produits (# choisis)}}",
+      "noProducts": "Pas encore de produits.",
+      "lossNote": "wovain refuse une remise qui ferait vendre à perte l'un des produits choisis.",
+      "plan": "Planifier le code",
+      "back": "Annuler",
+      "end": "Arrêter",
+      "off": "{percent, number} % de remise",
+      "uses": "{count, plural, one {# utilisation} other {# utilisations}}",
+      "status": {
+        "LIVE": "Actif",
+        "ENDED": "Terminé",
+        "ARCHIVED": "Archivé",
+        "ALL_USED": "Épuisé"
+      },
+      "giftTitle": "Cartes cadeaux",
+      "giftLead": "Du crédit boutique pour des collaborations, des concours ou un geste commercial. Une carte cadeau, c'est de l'argent : chaque lot attend votre confirmation.",
+      "giftEmpty": "Pas encore de cartes cadeaux.",
+      "issue": "Émettre des cartes cadeaux",
+      "amount": "Valeur par carte (USD)",
+      "count": "Combien",
+      "expires": "Expire (facultatif)",
+      "giftTotal": "Jusqu'à {total} de crédit au total.",
+      "review": "Vérifier",
+      "confirmIssue": "Émettre les cartes",
+      "group": "Lot",
+      "balance": "Reste {remaining} sur {initial}",
+      "expiresOn": "Expire le {date}",
+      "giftStatus": {
+        "UNUSED": "Inutilisée",
+        "PARTIALLY_USED": "Entamée",
+        "FULLY_USED": "Utilisée",
+        "EXPIRED": "Expirée",
+        "DEACTIVATED": "Désactivée",
+        "ARCHIVED": "Archivée"
+      }
     }
   },
   "Drops": {

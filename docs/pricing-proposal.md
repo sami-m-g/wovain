@@ -119,7 +119,7 @@ Sources: [1] [Printify help: Premium plan, February 2026](https://help.printify.
 ## Environments
 
 - **next** (`infra/next/Pulumi.next.yaml`) carries these numbers.
-- **production** (`infra/Pulumi.prod.yaml`) is frozen until 2026-11-16 and keeps the old ones (Free 15, research 3, design 2, pack $10, no daily caps). Change it after 11-16, together with the `onboarding-wizard` rollout, because these credit costs assume the art runs on wovain's fal.
+- **production** (`infra/Pulumi.prod.yaml`) is frozen until 2026-11-16 and keeps the old ones (Free 25, research 3, design 2, pack $10, no daily caps). Change it after 11-16, together with the `onboarding-wizard` rollout, because these credit costs assume the art runs on wovain's fal.
 - `PRICING_RULES` (the price floor for the merchant's own products) is not about wovain's plans and doesn't change.
 
 ## Before production

@@ -8,7 +8,7 @@ State lives in `gs://wovain-pulumi-state`; stack secrets are encrypted with the 
 
 1. **Pull request.** CI's `infra` job type-checks and runs both programs against mocks with no credentials (`*.test.ts`). This catches missing config, code that throws, duplicate URNs and dynamic providers that don't serialize.
 2. **Preview** locally with real credentials before merging: `pnpm run infra:preview` (with the policy pack, on a copy of the state). Review the plan; `node infra/policy/guard.ts < preview.json` fails on a delete or replace of a stateful resource.
-3. **Apply**: `.github/workflows/infra.yml` runs `pulumi up` of `prod` on every push to main that touches infra, in the `infrastructure` environment, as `gitlab-infra`, after the same preview and guard. Then it runs `pnpm polar:seed` (`packages/billing/src/seed.ts`), which keeps Polar's catalog, promo codes and webhook endpoint as code. On a pull request, the same workflow previews both stacks read-only as `infra-preview` (`bootstrap/preview.ts`, a pool of its own that trusts only this repository's `pull_request` events) and writes the plan to the job summary. `pnpm run infra:up` does the same from a laptop.
+3. **Apply**: on every push to main that touches infra, `.github/workflows/infra.yml` runs `pulumi up` of `next` only, as `infra-next` ("Applied by CI on every push to main", below). It runs `pulumi up` of `prod` only when started by hand while production is frozen, in the `infrastructure` environment, as `gitlab-infra`, after the same preview and guard. Then it runs `pnpm polar:seed` (`packages/billing/src/seed.ts`), which keeps Polar's catalog, promo codes and webhook endpoint as code. On a pull request, the same workflow previews both stacks read-only as `infra-preview` (`bootstrap/preview.ts`, a pool of its own that trusts only this repository's `pull_request` events) and writes the plan to the job summary. `pnpm run infra:up` does the same from a laptop.
 
 The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 
@@ -143,6 +143,26 @@ pnpm run infra:bootstrap:up
 pnpm run infra:next:preview        # creates only
 pnpm run infra:next:up
 ```
+
+### Applied by CI on every push to main
+
+`.github/workflows/infra.yml` previews `next` on every pull request, as before. Every push to main that touches infra then runs the `up-next` job, which applies `next` and only `next`. Production's `up` stays manual and gated. The job runs `scripts/pulumi.ts up infra/next` (the same preview, guard and policy pack) in the `next-infrastructure` GitHub environment, as `infra-next` (`bootstrap/next.ts`). The job's first run creates that environment, and its `up` adopts it with a main-only branch policy (`next/index.ts`).
+
+`infra-next` can change next.wovain.com and nothing of production's. Google trusts it only from `next-infrastructure` through the `github` pool, which accepts only main. Its project roles are limited by conditions to next's resource names, and it can grant only the three project roles next's own accounts hold. It administers only next's two accounts, and it reads and writes only next's objects in the state bucket. next's stack secrets use their own key, `next-stack-secrets`, which `infra-next` can use and production's stacks don't. `infra-preview` can only decrypt with it. What it still shares with production: the `wovain-com` DNS zone, and Search Console. `infra-next` isn't a verified owner of wovain.com, so a change that replaces next's domain mapping fails in CI and is applied from a laptop instead (`pnpm run infra:next:up`).
+
+One time, by a project owner, before the change that adds `up-next` merges: create the identity and the key, then move next's secrets onto the key and commit the stack file.
+
+```sh
+pnpm run infra:install
+pnpm run infra:bootstrap:up
+pulumi stack change-secrets-provider --cwd infra/next --stack next \
+  "gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/next-stack-secrets"
+git add infra/next/Pulumi.next.yaml && git commit -m "chore(infra): next's stack secrets on their own key"
+```
+
+### Feature flags on next
+
+next's PostHog project (`project-next`) has no feature flags, and next has no `posthog-secret-key`. So the app evaluates every flag from the typed registry (`packages/core/src/flags.ts`, `rollout.next` in `packages/core/src/flag-registry.ts`), and a flag such as `tavily-competition` reaches next with the deploy that ships the registry change. PostHog's flags (`posthog/program.ts`) are in production's project and the `prod` stack only, so they wait for production's gated `up`. To toggle next's flags in PostHog without a deploy, next would declare the registry's flags in its own project, with `rollout.next`, plus a `posthog-secret-key` secret (`feature_flag:read`) for that project. That stays inside the next stack, so `up-next` applies it.
 
 ### Values only a provider's console hands out (one time, per environment)
 

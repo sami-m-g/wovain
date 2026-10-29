@@ -21,8 +21,8 @@ const SECTIONS = {
   "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
   "/dashboard/onboarding": "onboarding",
-  "/dashboard/products": "products",
   "/dashboard/runs": "runs",
+  "/dashboard/store": "store",
 } as const;
 
 const isSection = (path: string): path is keyof typeof SECTIONS =>
