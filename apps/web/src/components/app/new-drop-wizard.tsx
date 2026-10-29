@@ -23,6 +23,7 @@ import {
   MAX_BRIEF,
   ProductsStep,
 } from "@/components/app/wizard-steps";
+import { DropStory } from "@/components/drops/drop-story";
 import type { Stage } from "@/components/product/run-tape";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import { describeRunFailure } from "@/lib/flow-client";
@@ -118,9 +119,11 @@ const RunStatePanel = ({
 const DropFlow = ({
   runId,
   initialBrief,
+  story,
 }: {
   runId?: string | undefined;
   initialBrief: string;
+  story: boolean;
 }) => {
   const t = useTranslations("Wizard");
   const drop = useDropFlow(runId, initialBrief);
@@ -196,24 +199,8 @@ const DropFlow = ({
     ),
   };
 
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
-            {t("title")}
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
-        </div>
-        <AutopilotToggle
-          checked={drop.autopilot}
-          disabled={step !== "brief" || Boolean(drop.working)}
-          onCheckedChange={drop.handleAutopilot}
-        />
-      </div>
-
-      <StepNav stage={drop.step.stage} step={step} />
-
+  const notices = (
+    <>
       <output aria-live="polite" className="sr-only">
         {busyLabel}
       </output>
@@ -233,6 +220,43 @@ const DropFlow = ({
           problem={drop.problem}
         />
       ) : null}
+    </>
+  );
+  const active = drop.loading ? (
+    <PanelSkeleton />
+  ) : (
+    <RunStatePanel drop={drop} step={step}>
+      {panels[step]}
+    </RunStatePanel>
+  );
+
+  // story-ui: a drop with a run is one page, read top to bottom.
+  if (story && runId !== undefined) {
+    return <DropStory active={active} drop={drop} notices={notices} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+            {t("title")}
+          </h1>
+          <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
+        </div>
+        {/* Autopilot stays out of the story-ui drop (openspec story-ui). */}
+        {story ? null : (
+          <AutopilotToggle
+            checked={drop.autopilot}
+            disabled={step !== "brief" || Boolean(drop.working)}
+            onCheckedChange={drop.handleAutopilot}
+          />
+        )}
+      </div>
+
+      <StepNav stage={drop.step.stage} step={step} />
+
+      {notices}
 
       {/* Each step settles into place as it replaces the last (preventing a
           jarring change); MotionConfig keeps only the fade for reduced motion. */}
@@ -243,13 +267,7 @@ const DropFlow = ({
         initial={{ opacity: 0, transform: "translateY(8px)" }}
         key={drop.loading ? "loading" : step}
       >
-        {drop.loading ? (
-          <PanelSkeleton />
-        ) : (
-          <RunStatePanel drop={drop} step={step}>
-            {panels[step]}
-          </RunStatePanel>
-        )}
+        {active}
       </motion.section>
     </div>
   );
@@ -260,11 +278,24 @@ const DropFlow = ({
  * "Start another drop" begins from a clean slate without resetting state by
  * hand.
  */
-export const NewDropWizard = () => {
+export const NewDropWizard = ({
+  runId: pageRunId,
+  story = false,
+}: {
+  // The drop page passes its run; /dashboard/new reads ?run.
+  runId?: string | undefined;
+  // The story-ui flag: a drop with a run reads as one page.
+  story?: boolean;
+}) => {
   const searchParams = useSearchParams();
-  const runId = searchParams.get("run") ?? undefined;
+  const runId = pageRunId ?? searchParams.get("run") ?? undefined;
   const initialBrief = (searchParams.get("brief") ?? "").slice(0, MAX_BRIEF);
   return (
-    <DropFlow initialBrief={initialBrief} key={runId ?? "new"} runId={runId} />
+    <DropFlow
+      initialBrief={initialBrief}
+      key={runId ?? "new"}
+      runId={runId}
+      story={story}
+    />
   );
 };

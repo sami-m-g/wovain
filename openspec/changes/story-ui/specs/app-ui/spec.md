@@ -63,3 +63,37 @@ The merchant UI SHALL not show the With and Without Qloo comparison. Autopilot's
 
 - **WHEN** a merchant uses next.wovain.com
 - **THEN** there is no autopilot rail item, no header mic, no Scan now button and no With and Without Qloo panel
+
+### Requirement: One page per drop
+
+While `story-ui` is on, each drop SHALL have its own page at `/dashboard/drops/<id>`. The page SHALL read top to bottom in this order: why it sells, who buys and where, ideas, designs, product, campaign and results. A link to `/dashboard/new?run=<id>` SHALL redirect to the drop page. The autopilot switch SHALL not show on the drop.
+
+#### Scenario: Old link
+
+- **WHEN** a merchant opens a run email link to `/dashboard/new?run=<id>`
+- **THEN** they land on `/dashboard/drops/<id>`
+
+### Requirement: Drop sections say where they stand
+
+Each working section of the drop page SHALL show one of these states: done, needs you, working, stopped or not started. The step that needs the merchant SHALL open inside its own section. A done section SHALL offer to reopen it.
+
+#### Scenario: Ideas wait for the merchant
+
+- **WHEN** a drop's ideas are ready and none is picked
+- **THEN** the Ideas section says "Needs you" and holds the idea picker, and the later sections say "Not started"
+
+### Requirement: Decided by Qloo
+
+A "Decided by Qloo" mark SHALL sit beside each decision Qloo makes, and nowhere else. On the drop page, these are why the idea sells, who buys it and the campaign's targeting. Opening the mark SHALL show the decision in a sentence, then its evidence. A missing value SHALL say "Not available" with the reason, and SHALL not disappear.
+
+#### Scenario: Evidence per decision
+
+- **WHEN** the merchant opens the marks on a drop page
+- **THEN** why it sells shows the taste affinity, this week's news, similar listings and the number of sources
+- **AND** who buys shows the audiences, places and brands
+- **AND** the targeting shows the Qloo audiences, the Meta interests and the ages
+
+#### Scenario: Affinity missing
+
+- **WHEN** Qloo returned no affinity for the lead idea
+- **THEN** the mark's evidence says the affinity is not available and why

@@ -40,6 +40,8 @@ const STORY_PARENTS: Partial<Record<Section, Section>> = {
   "/dashboard/connections": "/dashboard/settings",
 };
 
+const DROP_PAGE = /^\/dashboard\/drops\/[\w-]+$/u;
+
 const isSection = (path: string): path is Section => path in SECTIONS;
 
 /**
@@ -52,7 +54,7 @@ export const AppBreadcrumb = ({ story = false }: { story?: boolean }) => {
   const root = story ? t("home") : t("overview");
   const parents = story ? STORY_PARENTS : PARENTS;
   const parent = isSection(pathname) ? parents[pathname] : undefined;
-  const crumbs = isSection(pathname)
+  const sectionCrumbs = isSection(pathname)
     ? [
         ...(parent === undefined
           ? []
@@ -60,6 +62,13 @@ export const AppBreadcrumb = ({ story = false }: { story?: boolean }) => {
         { current: true, href: pathname, label: t(SECTIONS[pathname]) },
       ]
     : [];
+  // One drop's page: Drops › Drop.
+  const crumbs = DROP_PAGE.test(pathname)
+    ? [
+        { current: false, href: "/dashboard/drops", label: t("drops") },
+        { current: true, href: pathname, label: t("drop") },
+      ]
+    : sectionCrumbs;
 
   return (
     <Breadcrumb>
