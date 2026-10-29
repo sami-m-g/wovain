@@ -36,7 +36,8 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   merchant: _merchant,
   page,
 }) => {
-  test.slow();
+  // Real research and art take minutes on next; the mocks take seconds.
+  test.setTimeout(isSmoke ? 360_000 : 90_000);
   await page.goto("/dashboard/new");
   await page
     .getByRole("textbox", { name: "What should this drop be about?" })
