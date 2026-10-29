@@ -1,15 +1,15 @@
 import { writeFile } from "node:fs/promises";
 
+import { armMetrics, meanMetrics, themeOverlap } from "@wovain/core/ablation";
+import type { ArmMetrics } from "@wovain/core/ablation";
+import { createQloo } from "@wovain/core/qloo";
+import type { Taste } from "@wovain/core/qloo";
+import { qlooThemes } from "@wovain/core/themes";
+import type { Theme } from "@wovain/core/themes";
 import { describe, expect, it, vi } from "vitest";
 
-import { armMetrics, meanMetrics, themeOverlap } from "../ablation";
-import type { ArmMetrics } from "../ablation";
-import { createAgentKit } from "../agents";
-import { createNemotron } from "../nemotron";
-import { createQloo } from "../qloo";
-import type { Taste } from "../qloo";
-import { qlooThemes } from "../themes";
-import type { Theme } from "../themes";
+import { createNemotron } from "../agents/ask";
+import { createAgentKit } from "../agents/kit";
 import { llmOnlyThemes } from "./llm-themes";
 
 // The with-Qloo vs LLM-only ablation (openspec qloo-taste-core). The same

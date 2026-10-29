@@ -38,7 +38,7 @@ Implemented in `packages/core/src/qloo.ts` (`createQloo`):
 - **Failure.** A failed Qloo call fails the research step with `QLOO_FAILED`. The step retries, then the run fails and is logged at error level to PostHog. wovain never falls back to ideas without Qloo.
 - **Kill switch.** `trends-qloo` is an ops kill switch only. When it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503).
 
-The comparison with an LLM-only run is an offline eval only: `packages/core/src/evals/qloo-ablation.eval.ts`, with its eval-only LLM arm in `packages/core/src/evals/llm-themes.ts`. Run it with `pnpm --filter @wovain/core run evals`.
+The comparison with an LLM-only run is an offline eval only: `packages/mastra/src/mastra/evals/qloo-ablation.eval.ts`, with its eval-only LLM arm in `packages/mastra/src/mastra/evals/llm-themes.ts`. Run it with `pnpm --filter @wovain/mastra run evals`.
 
 ## Configuration
 

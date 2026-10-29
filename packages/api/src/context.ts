@@ -1,8 +1,8 @@
 import type { Session } from "@wovain/auth";
 import type { Billing } from "@wovain/billing/service";
-import type { Core } from "@wovain/core/core";
 import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
+import type { Core } from "@wovain/mastra/services";
 import type { EvlogOrpcContext } from "evlog/orpc";
 
 import type {

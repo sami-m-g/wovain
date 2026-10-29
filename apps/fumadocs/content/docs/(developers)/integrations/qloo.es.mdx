@@ -38,7 +38,7 @@ Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 - **Fallo.** Una llamada a Qloo que falla hace fallar el paso de investigación con `QLOO_FAILED`. El paso se reintenta; después, la ejecución falla y se registra a nivel de error en PostHog. wovain nunca recurre a ideas sin Qloo.
 - **Interruptor de emergencia.** `trends-qloo` es solo un interruptor de operaciones. Si está apagado, `runs.start` e `ideas.research` se niegan con `QLOO_OFF` (503).
 
-La comparación con una ejecución solo con LLM es solo una evaluación offline: `packages/core/src/evals/qloo-ablation.eval.ts`, con su rama LLM solo para la evaluación en `packages/core/src/evals/llm-themes.ts`. Se ejecuta con `pnpm --filter @wovain/core run evals`.
+La comparación con una ejecución solo con LLM es solo una evaluación offline: `packages/mastra/src/mastra/evals/qloo-ablation.eval.ts`, con su rama LLM solo para la evaluación en `packages/mastra/src/mastra/evals/llm-themes.ts`. Se ejecuta con `pnpm --filter @wovain/mastra run evals`.
 
 ## Configuración
 

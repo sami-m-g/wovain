@@ -32,6 +32,7 @@
     "@wovain/core": "workspace:*",
     "@wovain/db": "workspace:*",
     "@wovain/email": "workspace:*",
+    "@wovain/mastra": "workspace:*",
     "@wovain/widgets": "workspace:*",
     "drizzle-orm": "catalog:",
     "evlog": "catalog:",

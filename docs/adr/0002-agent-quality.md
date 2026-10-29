@@ -6,11 +6,11 @@
 
 ## Decision
 
-Every model call runs as a named Mastra agent, registered on the app's one Mastra instance (`packages/api/src/workflows/engine.ts`) with Postgres storage in the `mastra` schema. The agents are `design_brief`, `design_judge`, `ad_copy`, `autopilot_pick_idea`, `autopilot_review_design` and `research_themes` (splits a brief into research themes when Qloo names too few), defined in `packages/core/src/agents.ts` on Nemotron through the AI SDK's openai-compatible provider.
+Every model call runs as a named Mastra agent, registered on the app's one Mastra instance (`packages/api/src/workflows/engine.ts`) with Postgres storage in the `mastra` schema. The agents are `design_brief`, `design_judge`, `ad_copy`, `autopilot_pick_idea`, `autopilot_review_design` and `research_themes` (splits a brief into research themes when Qloo names too few), defined in `packages/mastra/src/mastra/agents/kit.ts` on Nemotron through the AI SDK's openai-compatible provider.
 
 ### Scorers on every agent and step
 
-- **Built-in Mastra scorers** (`packages/core/src/scorers.ts`):
+- **Built-in Mastra scorers** (`packages/mastra/src/mastra/scorers/agents.ts`):
   - answer relevancy, prompt alignment, toxicity, bias and completeness, where they fit;
   - faithfulness and hallucination on the brief writer, which works from the research in its prompt.
   - Lower is better for toxicity, bias and hallucination.
@@ -23,7 +23,7 @@ Every model call runs as a named Mastra agent, registered on the app's one Mastr
   - price floor;
   - ad copy lengths.
 - **Live sampling:** the agent scorers sample `SCORER_SAMPLE_RATE` of live calls (default 0.1). Mastra saves each score in `mastra.mastra_scorers`. The `scoresToPostHog` exporter (`packages/api/src/workflows/observability.ts`) sends each one to PostHog as `agent_score`, with `run_id`, `scorer`, `score`, `target` and `reason`.
-- **Offline evals:** `pnpm --filter @wovain/core run evals` runs every judge on the dev and test splits of the versioned labeled set (`packages/core/src/evals/judges.v1.json`). It writes TPR and TNR to `report.v1.json`, and fails when a judge drops more than 0.05 below its entry in `baseline.v1.json`. CI runs it as `evals:judges` when a prompt, a judge, a scorer or the model changes.
+- **Offline evals:** `pnpm --filter @wovain/mastra run evals` runs every judge on the dev and test splits of the versioned labeled set (`packages/core/src/evals/judges.v1.json`). It writes TPR and TNR to `report.v1.json`, and fails when a judge drops more than 0.05 below its entry in `baseline.v1.json`. CI runs it as `evals:judges` when a prompt, a judge, a scorer or the model changes.
 
 ### Calibration status (validate-evaluator)
 
@@ -41,7 +41,7 @@ Every model call runs as a named Mastra agent, registered on the app's one Mastr
 
 ### Memory
 
-- Mastra memory on the same Postgres store (`packages/core/src/taste.ts`).
+- Mastra memory on the same Postgres store (`packages/mastra/src/mastra/memory/taste.ts`).
 - The brief writer and the ad copywriter keep each run as a thread.
 - They share one resource-scoped working memory per merchant, with brand and taste: voice, palette, niches, approved and rejected designs with reasons.
 - wovain writes the working memory from the merchant's own decisions in `decideDesign` (`agentManaged: false`). The agents read it but never edit it, so structured output stays tool-free.
