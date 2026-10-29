@@ -1,4 +1,5 @@
 import { INSIGHT_RANGES } from "@wovain/core/insights";
+import { listingSchema } from "@wovain/core/listing";
 import {
   GIFT_CARD_MAX_COUNT,
   GIFT_CARD_MAX_USD,
@@ -9,7 +10,9 @@ import {
 import { CONFIRMABLE_STEPS } from "@wovain/core/store-setup";
 import { z } from "zod";
 
+import { listingDraft } from "../flow/listing";
 import { metaSetup } from "../flow/meta-setup";
+import { productCosts } from "../flow/price-check";
 import {
   listDrops,
   listStoreOrders,
@@ -23,6 +26,7 @@ import {
   requestCancel,
   requestDropPublish,
   requestLaunchPromotion,
+  requestListingEdit,
   requestProductMove,
   requestRefund,
   requestReprice,
@@ -92,9 +96,21 @@ export const storeRouter = {
         async (context, input) => await requestSetupConfirm(context, input.step)
       )
     ),
+  // A product page rewrite: drafted for the preview (nothing is written),
+  // then applied through the queue once the merchant approves it.
+  draftListing: protectedProcedure
+    .input(z.object({ productId: id }))
+    .handler(
+      guarded(
+        async (context, input) => await listingDraft(context, input.productId)
+      )
+    ),
   drops: protectedProcedure.handler(
     guarded(async (context) => await listDrops(context))
   ),
+  editListing: protectedProcedure
+    .input(z.object({ listing: listingSchema, productId: id }))
+    .handler(guarded(requestListingEdit)),
   endPromotion: protectedProcedure
     .input(z.object({ code: z.string().min(1).max(64), promotionId: id }))
     .handler(guarded(requestPromotionEnd)),
@@ -151,6 +167,14 @@ export const storeRouter = {
       })
     )
     .handler(guarded(requestShopPromotion)),
+  // Fourthwall's cost per size and the pricing rules, for the price check.
+  priceCheck: protectedProcedure
+    .input(z.object({ productId: id }))
+    .handler(
+      guarded(
+        async (context, input) => await productCosts(context, input.productId)
+      )
+    ),
   products: protectedProcedure.handler(
     guarded(async (context) => await storeProducts(context))
   ),

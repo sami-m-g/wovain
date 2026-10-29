@@ -9,6 +9,7 @@ import { useState } from "react";
 
 import { CampaignRules } from "@/components/app/campaign-rules";
 import { ConnectState } from "@/components/app/connect-state";
+import { DesignResults } from "@/components/app/design-results";
 import type { Campaign } from "@/lib/flow-client";
 import { missingConnection } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
@@ -173,6 +174,7 @@ export const CampaignControls = ({ campaign }: { campaign: Campaign }) => {
         </Alert>
       )}
       <CampaignRules campaignId={campaign.id} />
+      <DesignResults campaignId={campaign.id} />
       {notice === null ? null : (
         <output className="text-muted-foreground text-sm">{notice}</output>
       )}

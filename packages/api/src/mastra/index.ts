@@ -32,7 +32,7 @@ const env = z
     GUARDRAIL_MODERATION_THRESHOLD: z.coerce.number().min(0).max(1),
     GUARDRAIL_PII_THRESHOLD: z.coerce.number().min(0).max(1),
     INNGEST_APP_ID: z.string().min(1).default(DEFAULT_INNGEST_APP_ID),
-    META_GRAPH_URL: z.url().default("https://graph.facebook.com/v24.0"),
+    META_GRAPH_URL: z.url().default("https://graph.facebook.com/v26.0"),
     META_MCP_SCOPE: z.string().min(1),
     META_MCP_URL: z.url(),
     NEBIUS_API_KEY: z.string().optional(),

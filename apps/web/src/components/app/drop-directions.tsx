@@ -6,11 +6,12 @@ import { Button } from "@wovain/ui/components/button";
 import { Label } from "@wovain/ui/components/label";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Switch } from "@wovain/ui/components/switch";
-import { ArrowRight, RefreshCw, Shuffle } from "lucide-react";
+import { ArrowRight, RefreshCw, Shuffle, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 
 import { Citations } from "@/components/app/citations";
+import { WhoBuysPanel } from "@/components/app/who-buys";
 import { Link } from "@/i18n/navigation";
 import { orpc } from "@/utils/orpc";
 
@@ -107,8 +108,20 @@ const StepLine = ({ seconds, step }: { seconds: number; step?: Step }) => {
 /** What backs a direction, in one line: who, what is rising, news, crowding. */
 const EvidenceLine = ({ evidence }: { evidence: Direction["evidence"] }) => {
   const t = useTranslations("Wizard.directions");
-  const { audience, momentum, rising, saturation } = evidence;
+  const { audience, demand, momentum, rising, saturation } = evidence;
   const parts = [
+    demand?.ads === undefined || demand.ads.validated === 0
+      ? undefined
+      : t("proof.ads", {
+          count: demand.ads.validated,
+          days: demand.ads.evergreen > 0 ? "30" : "14",
+        }),
+    demand?.market === undefined || demand.market.bestsellers === 0
+      ? undefined
+      : t("proof.bestsellers", { count: demand.market.bestsellers }),
+    demand?.market === undefined || demand.market.reviews === 0
+      ? undefined
+      : t("proof.reviews", { count: demand.market.reviews }),
     audience === undefined ? undefined : t("for", { audience }),
     rising.length === 0
       ? undefined
@@ -121,6 +134,51 @@ const EvidenceLine = ({ evidence }: { evidence: Direction["evidence"] }) => {
       : t(`listings.${saturation.level}`, { count: saturation.count }),
   ].filter((part): part is string => part !== undefined);
   return <p className="text-muted-foreground text-xs">{parts.join(" · ")}</p>;
+};
+
+/** The ads and listings that prove a direction sells, linked. */
+const ProofLinks = ({ direction }: { direction: Direction }) => {
+  const t = useTranslations("Wizard.directions");
+  const { demand } = direction.evidence;
+  const links = [
+    ...(demand?.ads?.samples ?? []).map((sample) => ({
+      title: sample.page,
+      url: sample.url,
+    })),
+    ...(demand?.market?.listings ?? []),
+  ];
+  return links.length === 0 ? null : (
+    <Citations
+      citations={links}
+      label={t("proofSources", { title: direction.title })}
+      max={4}
+    />
+  );
+};
+
+/** "Who buys this", read from Qloo when the merchant opens it. */
+const BuyersToggle = ({ entities }: { entities: string[] }) => {
+  const t = useTranslations("Wizard.directions");
+  const [open, setOpen] = useState(false);
+  if (entities.length === 0) {
+    return null;
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        aria-expanded={open}
+        className="self-start"
+        onClick={() => setOpen((previous) => !previous)}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <Users aria-hidden="true" data-icon="inline-start" />
+        {open ? t("hideBuyers") : t("showBuyers")}
+      </Button>
+      {open ? <WhoBuysPanel entities={entities} /> : null}
+    </div>
+  );
 };
 
 /** One suggested direction: the title starts the drop, the evidence cites. */
@@ -147,6 +205,13 @@ const DirectionRow = ({
       >
         <span className="flex flex-col gap-1">
           <span className="font-medium">{direction.title}</span>
+          {direction.buyer === undefined ? null : (
+            <span className="text-sm">
+              {direction.occasion === undefined
+                ? direction.buyer
+                : `${direction.buyer} · ${direction.occasion}`}
+            </span>
+          )}
           <span className="text-muted-foreground text-sm" id={`${id}-why`}>
             {direction.whyNow === ""
               ? t("whyFallback", { count: momentum?.hits ?? 0 })
@@ -162,6 +227,7 @@ const DirectionRow = ({
         </span>
       </button>
       <EvidenceLine evidence={direction.evidence} />
+      <ProofLinks direction={direction} />
       {momentum === undefined ? null : (
         <Citations
           citations={momentum.sources}
@@ -169,6 +235,7 @@ const DirectionRow = ({
           max={3}
         />
       )}
+      <BuyersToggle entities={direction.evidence.rising.map((one) => one.id)} />
     </li>
   );
 };

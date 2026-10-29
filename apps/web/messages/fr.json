@@ -16,7 +16,7 @@
     "signUpDescription": "Créez un compte wovain et lancez votre premier drop print-on-demand.",
     "dashboardTitle": "Vue d'ensemble",
     "newDropTitle": "Nouveau drop",
-    "runsTitle": "Exécutions",
+    "runsTitle": "Drops",
     "connectionsTitle": "Connexions",
     "settingsTitle": "Paramètres du compte",
     "notFoundTitle": "Page introuvable",
@@ -105,10 +105,10 @@
   },
   "Home": {
     "heroTitle": "Une phrase. Un drop entier.",
-    "heroLead": "Décrivez la capsule. wovain dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
+    "heroLead": "Pas encore d'idée ? wovain montre ce qui se vend maintenant, preuves à l'appui : des boutiques qui en font la pub depuis des semaines et des best-sellers sur les marketplaces. Choisissez-en une ou décrivez la vôtre. wovain dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
     "briefLabel": "Sur quoi porte votre prochain drop ?",
     "briefPlaceholder": "Dessins botaniques au trait, délavés, pour une capsule de printemps",
-    "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui.",
+    "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui. Ou partez de ce qui se vend maintenant.",
     "briefSubmit": "Lancer un drop",
     "tag": {
       "title": "T-shirt épais",
@@ -149,8 +149,12 @@
         "answer": "Une boutique Fourthwall pour les produits, un compte fal pour les visuels et un compte publicitaire Meta pour la campagne. Vous connectez chacun avec sa propre connexion après avoir créé votre compte."
       },
       {
+        "question": "Ma boutique sera-t-elle prête à vendre ?",
+        "answer": "Oui. La Boutique liste ce qu'il faut à votre boutique Fourthwall avant sa première commande (versements, livraison, mise en ligne, pixel Meta), fait ce qu'elle peut pour vous, renvoie vers le reste et coche chaque étape d'elle-même. Elle réécrit aussi chaque page produit comme le ferait un rédacteur e-commerce, et rien ne change avant votre accord."
+      },
+      {
         "question": "Comment les prix sont-ils fixés ?",
-        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Vous pouvez modifier chaque prix ensuite dans Fourthwall."
+        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Quand vous changez un prix, wovain affiche votre profit pour chaque taille face au coût réel de Fourthwall et refuse un prix qui perd de l'argent."
       },
       {
         "question": "Combien ça coûte ?",
@@ -171,6 +175,10 @@
       {
         "question": "Qu'est-ce qui empêche mes publicités de perdre de l'argent ?",
         "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant."
+      },
+      {
+        "question": "Lesquels de mes designs dois-je promouvoir ?",
+        "answer": "Tous, au début. wovain teste jusqu'à cinq designs dans une seule campagne, donne à chacun une part équitable du budget, met en pause ceux qui perdent de l'argent et vous montre le gagnant, pour que le budget suive le design qui vend."
       }
     ],
     "heroCta": "Lancer un drop",
@@ -288,7 +296,7 @@
       "title": "Confidentialité",
       "intro": "Nous conservons le moins de données possible et ne les vendons jamais.",
       "collectTitle": "Ce que nous collectons",
-      "collectBody": "Votre nom, votre e-mail et l'empreinte de votre mot de passe pour votre compte ; les briefs que vous écrivez ; et les exécutions, visuels et produits que wovain crée pour vous.",
+      "collectBody": "Votre nom, votre e-mail et l'empreinte de votre mot de passe pour votre compte ; les briefs que vous écrivez ; et les drops, visuels et produits que wovain crée pour vous.",
       "analyticsTitle": "Mesure d'audience",
       "analyticsBody": "Nous utilisons PostHog, hébergé aux États-Unis, pour comprendre comment on découvre et utilise wovain : les pages visitées, les clics, la vitesse des pages, la langue du site et votre pays. Le pays est déduit de votre adresse IP, qui n'est pas conservée, et la page vérifie si un navigateur automatisé la pilote, pour ne pas compter les robots comme des visiteurs. Tant que vous n'avez pas accepté, il fonctionne sans cookies ni stockage dans le navigateur : il ne peut ni vous reconnaître d'une visite à l'autre, ni enregistrer de sessions. Si vous acceptez, ou là où la loi n'impose pas de demander d'abord, il enregistre un identifiant dans votre navigateur et des enregistrements de session, sans ce que vous saisissez ni les informations de votre compte. Vous pouvez changer d'avis à tout moment avec Paramètres des cookies en bas de page, et le signal Global Privacy Control de votre navigateur vaut refus. Une fois connecté, ces événements sont liés à l'identifiant de votre compte, jamais à votre e-mail.",
       "connectionsTitle": "Services connectés",
@@ -298,7 +306,7 @@
       "voiceTitle": "Commandes vocales",
       "voiceBody": "Quand vous maintenez le bouton du micro, fal transforme votre enregistrement en texte, puis Nebius lit le texte pour que wovain comprenne votre demande. wovain ne garde ni l’enregistrement ni le texte. fal et Nebius les traitent selon leurs propres conditions. Les statistiques n’enregistrent que le type de commande, jamais ce que vous avez dit.",
       "deleteTitle": "Supprimer vos données",
-      "deleteBody": "Écrivez à {privacyEmail} depuis l'adresse de votre compte : nous supprimons votre compte, vos exécutions et vos connexions sous 30 jours."
+      "deleteBody": "Écrivez à {privacyEmail} depuis l'adresse de votre compte : nous supprimons votre compte, vos drops et vos connexions sous 30 jours."
     },
     "terms": {
       "title": "Conditions",
@@ -354,7 +362,6 @@
     "nav": {
       "overview": "Vue d'ensemble",
       "newDrop": "Nouveau drop",
-      "runs": "Exécutions",
       "connections": "Connexions",
       "insights": "Statistiques",
       "billing": "Facturation",
@@ -374,7 +381,7 @@
     "products": "Produits",
     "ads": "Pubs",
     "campaign": "Campagne",
-    "stripLabel": "Progression : {stage}",
+    "stripLabel": "Progression du drop : {stage}",
     "done": "terminé",
     "current": "en cours",
     "pending": "pas commencé"
@@ -389,8 +396,8 @@
     "greeting": "Bonjour {name}",
     "lead": "Vos drops et vos connexions, en un coup d'œil.",
     "newDrop": "Nouveau drop",
-    "recentRuns": "Exécutions récentes",
-    "allRuns": "Toutes les exécutions",
+    "recentRuns": "Drops récents",
+    "allRuns": "Tous les drops",
     "connections": "Connexions",
     "manage": "Gérer",
     "setupTitle": "Terminer la configuration",
@@ -432,8 +439,8 @@
     }
   },
   "Runs": {
-    "title": "Exécutions",
-    "lead": "Tous les drops que wovain a lancés pour vous, du plus récent au plus ancien.",
+    "title": "Drops",
+    "lead": "Tous les drops que wovain a faits pour vous, du plus récent au plus ancien.",
     "empty": "Votre premier drop apparaîtra ici, avec toutes les étapes franchies.",
     "emptyCta": "Lancer un drop",
     "mode": "Mode",
@@ -441,7 +448,7 @@
     "manual": "Avec vous",
     "autopilot": "Pilote automatique",
     "stoppedAt": "Arrêtée à l'étape {stage}.",
-    "emptyTitle": "Aucune exécution pour l'instant",
+    "emptyTitle": "Aucun drop pour l'instant",
     "brief": "Brief",
     "status": "Statut",
     "progress": "Avancement",
@@ -538,7 +545,15 @@
         "listings": "Vérification de l'actualité du mois et de la saturation…",
         "words": "Rédaction des premières suggestions…"
       },
-      "elapsed": "{seconds, plural, one {# seconde} other {# secondes}}"
+      "elapsed": "{seconds, plural, one {# seconde} other {# secondes}}",
+      "proof": {
+        "ads": "{count, plural, one {# boutique} other {# boutiques}} en font la pub depuis {days}+ jours",
+        "bestsellers": "{count, plural, one {un best-seller} other {# best-sellers}} sur les marketplaces",
+        "reviews": "{count, plural, one {# avis} other {# avis}} sur des annonces similaires"
+      },
+      "showBuyers": "Qui achète ça",
+      "hideBuyers": "Masquer qui achète ça",
+      "proofSources": "Preuves pour {title}"
     },
     "trends": {
       "title": "Choisir les idées",
@@ -626,7 +641,7 @@
       "variants": "Variantes publicitaires",
       "open": "Ouvrir le Gestionnaire de publicités",
       "another": "Lancer un autre drop",
-      "history": "Voir toutes les exécutions",
+      "history": "Voir tous les drops",
       "media": {
         "start": "Lancer les publicités",
         "pause": "Mettre en pause",
@@ -665,6 +680,20 @@
           "limitLabel": "Limite de perte (USD)",
           "save": "Enregistrer",
           "saveFailed": "La limite n'a pas été enregistrée : {reason}"
+        },
+        "designs": {
+          "title": "Chaque design du test",
+          "design": "Design",
+          "numbered": "Design {number, number}",
+          "spend": "Dépense",
+          "ctr": "CTR",
+          "addToCarts": "Ajouts au panier",
+          "purchases": "Ventes",
+          "profit": "Bénéfice",
+          "status": "Statut",
+          "testing": "En test",
+          "paused": "En pause",
+          "winner": "Gagnant"
         }
       }
     },
@@ -675,7 +704,7 @@
       "reconnectTitle": "Reconnectez {service} pour terminer ce drop",
       "reconnectBody": "Le drop s'est mis en pause à l'étape {stage} car la session {service} a expiré. Reconnectez-le, puis réessayez en un clic.",
       "connectedTitle": "{service} est connecté",
-      "connectedBody": "Relancez le drop : wovain repart du même brief avec une nouvelle exécution.",
+      "connectedBody": "Relancez le drop : wovain repart du même brief.",
       "noIdeas": "La recherche n'a trouvé aucune idée pour ce brief. Essayez de le reformuler.",
       "rejected": "Le pilote automatique n'a pas aimé le design. Réessayez pour en obtenir un nouveau.",
       "other": "Un problème est survenu de notre côté. Rien n'a été dépensé pour cette étape. Réessayez.",
@@ -824,7 +853,7 @@
     "back": "Retour à la connexion"
   },
   "Run": {
-    "loading": "Ouverture de l'exécution…"
+    "loading": "Ouverture du drop…"
   },
   "Seo": {
     "home": "Accueil",
@@ -840,7 +869,7 @@
     "connection": "Qui le connecte",
     "setup": "Mise en place",
     "docs": "Lire la documentation",
-    "steps": "Son rôle dans une exécution",
+    "steps": "Son rôle dans un drop",
     "data": "Ce qui est partagé",
     "faq": "Questions",
     "relatedUseCases": "Cas d'usage",
@@ -932,7 +961,7 @@
     },
     "learned": {
       "title": "Ce que nous avons appris",
-      "lead": "Ce qui s'est vendu, ce qui ne s'est pas vendu, et comment wovain classe désormais les idées pour votre marque. Vos prochaines recherches s'en servent.",
+      "lead": "Ce qui s'est vendu, ce qui ne s'est pas vendu, et comment wovain classe désormais les idées pour votre marque. Vos prochains drops s'en servent.",
       "refresh": "Vérifier les résultats",
       "refreshing": "Vérification…",
       "updated": "Mis à jour le {date}",
@@ -989,7 +1018,7 @@
         "job": "Modère ce que vous publiez"
       }
     },
-    "runTitle": "Trace du run",
+    "runTitle": "Trace du drop",
     "runLead": "{calls, plural, one {# étape} other {# étapes}} pour « {seed} », dans l'ordre.",
     "step": "Étape",
     "job": "Tâche",
@@ -1012,7 +1041,7 @@
       "grounding_guard": "Contrôle des chiffres et affirmations",
       "research_themes": "Thèmes de recherche"
     },
-    "emptyTitle": "Aucun run tracé pour l'instant",
+    "emptyTitle": "Aucun drop tracé pour l'instant",
     "empty": "Lancez un drop. Chaque étape d'IA apparaît ici avec son modèle."
   },
   "Billing": {
@@ -1462,7 +1491,7 @@
     },
     "levelHints": {
       "suggest": "Le pilote suggère des drops. Vous lancez chacun.",
-      "draft": "Le pilote lance l'exécution, puis attend que vous choisissiez les idées.",
+      "draft": "Le pilote lance le drop, puis attend que vous choisissiez les idées.",
       "publish_ads_paused": "Le pilote fait le drop et le publie. Les publicités restent en pause jusqu'à ce que vous les activiez."
     },
     "paused": "Vous avez mis l'agent en pause. Les suggestions vous attendent.",
@@ -1473,7 +1502,7 @@
     "empty": "Toutes les 6 heures, le pilote compare Qloo et l'actualité de la semaine à votre marque. Les correspondances arrivent ici avec leurs sources.",
     "accept": "Lancer le drop",
     "dismiss": "Ignorer",
-    "openRun": "Ouvrir l'exécution",
+    "openRun": "Ouvrir le drop",
     "evidence": "Sources",
     "log": "Ce qui s'est passé",
     "triggers": {
@@ -1490,7 +1519,7 @@
       "pending": "Vous attend",
       "approved": "Approuvée",
       "executing": "Démarrage",
-      "done": "Exécution lancée",
+      "done": "Drop lancé",
       "failed": "N'a pas démarré",
       "rejected": "Refusée",
       "denied": "Bloquée",
@@ -1506,14 +1535,14 @@
       "tavilyFailed": "La recherche d'actualité sur « {query} » a échoué.",
       "match": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité cette semaine.} other {# recherches ont trouvé de l'actualité cette semaine.}}",
       "suggest": "Suggéré un drop sur {subject}.",
-      "policyAllow": "Votre niveau d'autonomie permet au pilote de lancer cette exécution.",
+      "policyAllow": "Votre niveau d'autonomie permet au pilote de lancer ce drop.",
       "policyWait": "Votre niveau d'autonomie demande de vous consulter d'abord.",
-      "policyDeny": "La politique a bloqué cette exécution.",
+      "policyDeny": "La politique a bloqué ce drop.",
       "notEntitled": "Le pilote n'est pas dans votre offre : ceci vous attend.",
       "creditCap": "Les crédits du pilote du jour sont épuisés ({used, number} sur {cap, number}) : ceci vous attend.",
-      "runIdeas": "Exécution lancée. Elle attend que vous choisissiez les idées.",
-      "runAutopilot": "Exécution lancée en pilote automatique. Il choisit, approuve et publie ; les publicités restent en pause.",
-      "runFailed": "L'exécution n'a pas démarré : {error}",
+      "runIdeas": "Drop lancé. Il attend que vous choisissiez les idées.",
+      "runAutopilot": "Drop lancé en pilote automatique. Il choisit, approuve et publie ; les publicités restent en pause.",
+      "runFailed": "Le drop n'a pas démarré : {error}",
       "other": "{step}"
     },
     "scans": "Analyses sans nouveauté",
@@ -1686,6 +1715,7 @@
       "mockupAlt": "Maquette de {title}",
       "view": "Voir dans la boutique",
       "editInFourthwall": "Modifier dans Fourthwall",
+      "rewrite": "Réécrire la page produit",
       "reprice": "Changer le prix",
       "sample": "Commander un échantillon",
       "move": {
@@ -1720,6 +1750,26 @@
       "sent": "C'est fait. wovain s'en occupe.",
       "queuedCount": "{count, plural, one {# changement attend} other {# changements attendent}} dans vos validations."
     },
+    "listing": {
+      "title": "Une page produit qui vend : {title}",
+      "note": "wovain a réécrit le titre et la description comme le ferait un rédacteur e-commerce. Comparez-les tels que les voit un acheteur. Rien ne change dans votre boutique avant votre accord.",
+      "writing": "Rédaction de la nouvelle page…",
+      "before": "Aujourd'hui",
+      "after": "Avec wovain",
+      "noDescription": "Pas encore de description.",
+      "mockupAlt": "Maquette de {title}",
+      "issues": "À vérifier à l'œil : {list}.",
+      "issue": {
+        "title_length": "le titre dépasse 60 caractères, les moteurs de recherche le coupent",
+        "title_shouting": "le titre est presque tout en majuscules",
+        "ai_tell": "une tournure sonne comme écrite par une machine",
+        "exclamation": "il contient un point d'exclamation"
+      },
+      "practice": "Le mot-clé principal en premier, un titre qui tient dans un résultat de recherche, un bénéfice par ligne, aucune affirmation que votre boutique ne peut pas prouver et le délai d'expédition donné par Fourthwall.",
+      "back": "Annuler",
+      "again": "En écrire une autre",
+      "confirm": "Utiliser cette page"
+    },
     "reprice": {
       "title": "Changer le prix de {title}",
       "note": "Le nouveau prix s'applique à toutes les tailles ; les grandes gardent leur supplément.",
@@ -1731,6 +1781,25 @@
       "down": "Les acheteurs paient {amount} de moins par pièce. wovain refuse un prix qui vend à perte.",
       "back": "Annuler",
       "confirm": "Changer le prix"
+    },
+    "priceCheck": {
+      "label": "Vérification du prix",
+      "verdict": {
+        "loss": "Perte : une taille {size} perd {profit} par vente. wovain n'enverra pas ce prix.",
+        "below_floor": "Sous le seuil de wovain : une taille {size} laisse {profit} par vente.",
+        "thin": "Rentable, mais sous les {margin} de marge que gardent les boutiques pour payer leurs publicités. Une taille {size} laisse {profit}.",
+        "healthy": "Sain : au moins {margin} de marge pour chaque taille. Une taille {size} laisse {profit}."
+      },
+      "size": "Taille",
+      "cost": "Coût",
+      "price": "Prix",
+      "profit": "Profit",
+      "margin": "Marge",
+      "useFloor": "Utiliser {price} (seuil de wovain)",
+      "useBenchmark": "Utiliser {price} ({margin} de marge)",
+      "source": "Coût : ce que Fourthwall facture pour fabriquer chaque taille. Profit : après frais de carte, taxes et réserve pour remboursements.",
+      "noCost": "Fourthwall n'a pas donné de coût pour ce produit, le prix ne peut donc pas être vérifié.",
+      "unavailable": "La vérification du prix n'est pas disponible : {reason}"
     },
     "sample": {
       "title": "Commander un échantillon de {title}",
@@ -1999,18 +2068,8 @@
     }
   },
   "Drops": {
-    "title": "Drops",
     "intro": "Un drop, c'est 4 à 6 produits qui partagent une palette et une marque. Les tags de goût de Qloo choisissent le style et les produits. Chaque produit a ses emplacements, ses maquettes et son prix.",
-    "planTitle": "Préparer un drop",
-    "planIntro": "Choisissez une idée d'une exécution. wovain choisit les produits, dessine l'art de chaque emplacement et fixe le prix de chaque produit selon ce que Fourthwall facture pour le fabriquer.",
-    "noIdeas": "Lancez d'abord une exécution. Ses idées apparaissent ici.",
-    "ideaLabel": "Idée",
-    "ideaPlaceholder": "Choisissez une idée",
-    "plan": "Préparer le drop",
-    "planning": "Préparation…",
-    "emptyTitle": "Aucun drop pour l'instant",
-    "emptyBody": "Préparez-en un à partir d'une idée.",
-    "listLabel": "Vos drops",
+    "plan": "En faire une capsule",
     "building": "Dessin et placement de l'art. Les produits apparaissent ici dès qu'ils sont prêts.",
     "reviewPass": "La vérification visuelle est passée : emplacements, hiérarchie et un style commun.",
     "publish": "Publier le drop",
@@ -2056,7 +2115,9 @@
       "pattern": "Motif intégral",
       "embroidery": "Broderie",
       "label": "Étiquette"
-    }
+    },
+    "capsuleTitle": "En faire une capsule",
+    "capsulePick": "Choisissez d'abord une idée ci-dessus."
   },
   "WithoutQloo": {
     "title": "Sans Qloo",

@@ -44,6 +44,7 @@ import Image from "next/image";
 import { useId } from "react";
 
 import { CampaignControls } from "@/components/app/campaign-controls";
+import { CapsulePanel } from "@/components/app/capsule";
 import { Citations } from "@/components/app/citations";
 import {
   CampaignCompetition,
@@ -260,9 +261,12 @@ export const IdeasStep = ({
   busyLabel,
   onToggle,
   onNext,
+  runId,
 }: {
   ideas: Idea[];
   picked: string[];
+  // The drop's run, for the capsule step.
+  runId?: string | undefined;
   designedIdeaIds: string[];
   busyLabel?: string | undefined;
   onToggle: (id: string, checked: boolean) => void;
@@ -378,6 +382,7 @@ export const IdeasStep = ({
           })}
         </ul>
       </FieldSet>
+      <CapsulePanel ideaId={picked[0]} runId={runId} />
       {/* What the same step makes of a brief without Qloo (the committed ablation). */}
       <WithoutQlooPanel />
       <StepActions busyLabel={busyLabel}>
@@ -815,7 +820,7 @@ export const DoneStep = ({
         </Button>
         <Link
           className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-4")}
-          href="/dashboard/runs"
+          href="/dashboard/drops"
         >
           {t("history")}
         </Link>

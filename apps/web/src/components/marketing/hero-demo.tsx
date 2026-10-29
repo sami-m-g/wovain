@@ -8,7 +8,7 @@ import { cn } from "@wovain/ui/lib/utils";
 import {
   Check,
   ChevronRight,
-  History,
+  Layers,
   ChartLine,
   LayoutGrid,
   PanelLeft,
@@ -124,7 +124,7 @@ const TITLE_OF = {
 const NAV = [
   { icon: LayoutGrid, key: "overview" },
   { icon: Plus, key: "newDrop" },
-  { icon: History, key: "runs" },
+  { icon: Layers, key: "drops" },
   { icon: PlugZap, key: "connections" },
   { icon: ChartLine, key: "insights" },
 ] as const;

@@ -171,6 +171,34 @@ The Store SHALL preview the shop as buyers see it, from the products' Fourthwall
 - **WHEN** the designer opens the preview while the shop is coming soon
 - **THEN** it says buyers see Fourthwall's placeholder page and shows the products as they will appear once live
 
+### Requirement: Price check
+
+Changing a product's price SHALL show, for each size, Fourthwall's cost to make it, the price, the profit after fees and the gross margin, with a verdict (loss, below wovain's floor, under the 60% DTC margin, or healthy) and one-click floor and 60% prices. The server SHALL refuse a price that loses money in any size.
+
+#### Scenario: A size sells at a loss
+
+- **WHEN** the designer asks for a price below what Fourthwall charges to make the 2XL
+- **THEN** the dialog shows the loss on the 2XL, and the request is refused with the lowest price that works
+
+#### Scenario: Thin margin
+
+- **WHEN** the price clears wovain's floor but leaves under 60% gross margin in some size
+- **THEN** the dialog says so and offers the price that reaches 60%
+
+### Requirement: Product pages that sell
+
+The Store SHALL offer to rewrite a product's page: a title of at most 60 characters with the main keyword first, a hook and three or four benefit lines, using only facts the product already holds, shown next to the current page as a buyer sees it. Approving SHALL queue a `store.listing.edit` action that writes the page to Fourthwall; its undo SHALL write the old page back.
+
+#### Scenario: Rewrite approved
+
+- **WHEN** the designer opens Rewrite product page and chooses Use this page
+- **THEN** Fourthwall's product gets the new name and description, and the Store lists the product under its new title
+
+#### Scenario: A rule still broken
+
+- **WHEN** the rewritten title is still over 60 characters after one retry
+- **THEN** the dialog says search results cut it, and the designer decides
+
 ### Requirement: Store setup checklist
 
 The Store page SHALL show a setup checklist for the connected shop: shop connected as owner or manager, payouts, shop live, shipping and the Meta pixel on the shop (required), plus custom domain and policies (optional). Each open step SHALL be done by wovain through the approval queue or offer a one-click deep link into Fourthwall. While a required step is open, the page SHALL poll so a step finished in Fourthwall ticks off without a reload.

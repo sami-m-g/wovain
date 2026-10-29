@@ -73,7 +73,7 @@ const environment = appEnvironment({
       googleClientId: config.get("googleClientId"),
       name: NAME,
       posthogToken: posthog.apiToken,
-      shared: sharedSettings(config),
+      shared: sharedSettings(config, "v26.0"),
     }),
     ...settingEnvs(settings),
     // next shares production's Polar sandbox organization, so its catalog

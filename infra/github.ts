@@ -70,6 +70,10 @@ interface SettingsArgs {
   // GitGuardian's incidents:write token (.github/workflows/gitguardian-ignore.yml),
   // from the `gitguardian-api-key` stack secret. Left out, no secret is declared.
   gitguardianApiKey?: pulumi.Input<string> | undefined;
+  // The token release-please opens its pull request and tags with, from the
+  // `release-please-token` stack secret (.github/workflows/release.yml). Left
+  // out, no secret is declared and release-please uses the default token.
+  releasePleaseToken?: pulumi.Input<string> | undefined;
 }
 
 interface EnvironmentArgs {
@@ -88,6 +92,7 @@ interface EnvironmentArgs {
 // Dependabot label and the repository secret: the `github` stack's.
 export const repositorySettings = ({
   gitguardianApiKey,
+  releasePleaseToken,
   releaseBranch,
 }: SettingsArgs) => {
   // Adopted with `pulumi import` (infra/README.md), never deleted: protected
@@ -227,6 +232,15 @@ export const repositorySettings = ({
       plaintextValue: gitguardianApiKey,
       repository: repository.name,
       secretName: "GITGUARDIAN_API_KEY",
+    });
+  }
+  // A pull request or tag made with the default token starts no workflow, so
+  // the release pull request would never get its `verify` check.
+  if (releasePleaseToken !== undefined) {
+    new github.ActionsSecret("RELEASE_PLEASE_TOKEN", {
+      plaintextValue: releasePleaseToken,
+      repository: repository.name,
+      secretName: "RELEASE_PLEASE_TOKEN",
     });
   }
   return repository;

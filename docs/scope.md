@@ -69,6 +69,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | Store management | Readiness check, drops with a collection, publish, pause and retire, launch codes on a schedule, orders with refunds and cancels (always approved, with Fourthwall's cost preview), samples, per-size prices; every write through the approval queue | In review, behind a flag (dev and next) |
 | Ads | Up to three ad variants per product and a paused Meta campaign | Live |
 | Media buying | Start and pause a campaign from wovain through an approval, within spend caps; sales objective on the pixel, UTM links, status read back from Meta | In progress (dev and next) |
+| What to sell now | The new-drop step opens with 3 to 5 directions proven to sell (shops advertising them 14+ and 30+ days in the Meta Ad Library, marketplace bestsellers and reviews), ranked by that proof x Qloo audience fit x low saturation, each with who buys it and where; a brand is optional | Dev and next (`drop-directions`, `who-buys`) |
 | Autopilot | End-to-end run where Nemotron decides and code gates; scheduled Qloo and Tavily triggers that suggest drops and act within the autonomy level | Run mode internal-only in production; triggers in dev and next only (`autopilot-triggers` flag) |
 | Accounts | Better Auth with Google and email; Better Auth UI screens and account settings | Google live; UI in review |
 | Connectors | Merchant's own Fourthwall and Meta (OAuth); merchant's own fal key | Fourthwall and Meta live; fal in progress |
@@ -77,7 +78,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | Quality | Mastra scorers on every agent and step, calibrated LLM judges, guardrails | Planned with the Mastra migration |
 | Analytics | PostHog; North Star "activated merchants per week" | Dashboards built; some events planned |
 | Voice | Hold-to-talk commands: NVIDIA Nemotron ASR on fal, a Nemotron agent picks the action, the merchant confirms once. wovain keeps no audio. Web first; mobile follows the app (#88) | In review, dev and next only |
-| Drops | Capsules of 4 to 6 products chosen from Qloo tags: back print, chest mark, sleeve text, embroidery and label, each drawn by the model that suits it, checked in code and priced from Fourthwall's cost | In review, behind `design-drops` (dev and next) |
+| Drops | One word for one thing: a drop is one pass through the flow (brief to paused campaign), listed on the Drops page. "Make it a capsule" is a step of the drop after the idea is picked: 4 to 6 products chosen from Qloo tags (back print, chest mark, sleeve text, embroidery and label), each drawn by the model that suits it, checked in code and priced from Fourthwall's cost. "Run" stays an internal word | Capsule step in review, behind `design-drops` (dev and next) |
 
 ## Later
 

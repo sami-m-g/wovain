@@ -1,9 +1,15 @@
+import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
 import { z } from "zod";
 
 import { audienceErrors } from "../flow/audiences";
-import { createProductCampaign, listCampaigns } from "../flow/campaigns";
+import {
+  createDropCampaign,
+  createProductCampaign,
+  listCampaigns,
+} from "../flow/campaigns";
 import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
 import { connectionErrors } from "../flow/connections";
+import { campaignDesignResults } from "../flow/design-results";
 import {
   decideDesign,
   generateDesign,
@@ -23,7 +29,7 @@ import {
 import { approveIdeas, getRun, listRuns, startRun } from "../flow/runs";
 import { proposeProductPublish, storeManagementOn } from "../flow/store";
 import { transitionErrors } from "../flow/transitions";
-import { ideaWhoBuys } from "../flow/who-buys";
+import { directionWhoBuys, ideaWhoBuys } from "../flow/who-buys";
 import { funnelProcedure, protectedProcedure } from "../index";
 
 // The seller flow, one procedure per step: research → design → approve →
@@ -230,9 +236,35 @@ export const campaignsRouter = {
     .handler(
       async ({ context, input }) => await createProductCampaign(context, input)
     ),
+  // A test campaign, design by design: results and each design's rule
+  // status (testing, paused and why, or the winner).
+  designs: protectedProcedure
+    .input(z.object({ campaignId: id }))
+    .handler(
+      async ({ context, input }) =>
+        await campaignDesignResults(context, input.campaignId)
+    ),
   list: protectedProcedure.handler(
     async ({ context }) => await listCampaigns(context)
   ),
+  // A drop's launch: its live designs as one small test campaign (one
+  // design is a plain campaign).
+  test: funnelProcedure("campaign_created")
+    .errors(audienceErrors)
+    .input(
+      z.object({
+        adAccountId: z.string().regex(/^\d+$/u).optional(),
+        countries: countries.default(["US"]),
+        dailyBudget: dailyBudget.default(15),
+        pageId: z.string().regex(/^\d+$/u).optional(),
+        pixelId: z.string().regex(/^\d+$/u).optional(),
+        productIds: z.array(id).min(1).max(MAX_TEST_DESIGNS),
+        requestId: requestId.optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) => await createDropCampaign(context, input)
+    ),
 };
 
 export const runsRouter = {
@@ -281,4 +313,18 @@ export const runsRouter = {
   warmDirections: protectedProcedure.handler(
     async ({ context }) => await warmDirections(context)
   ),
+  // Who buys a suggested direction and where (who-buys), from the Qloo
+  // entities rising for it.
+  whoBuys: protectedProcedure
+    .errors(researchErrors)
+    .input(
+      z.object({
+        entities: z.array(id).min(1).max(5),
+        location: z.string().trim().min(2).max(80).optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await directionWhoBuys(context, input.entities, input.location)
+    ),
 };

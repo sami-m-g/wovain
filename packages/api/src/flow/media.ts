@@ -67,7 +67,7 @@ const campaignNotFound = (id: string) =>
     why: "This merchant has no campaign with that ID.",
   });
 
-const campaignOf = async ({ db, userId }: Actor, id: string) => {
+export const campaignOf = async ({ db, userId }: Actor, id: string) => {
   const [row] = await db
     .select()
     .from(campaign)
@@ -84,6 +84,12 @@ export const stagedOf = (row: CampaignRow): StagedCampaign => ({
   adSetId: row.adSetId,
   campaignId: row.metaCampaignId,
   creativeIds: row.creativeIds,
+  designs: row.designs?.map((design) => ({
+    adIds: design.adIds,
+    adSetId: design.adSetId,
+    creativeIds: design.creativeIds,
+    key: design.productId,
+  })),
   pageId: row.pageId,
 });
 
