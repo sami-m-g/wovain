@@ -64,8 +64,8 @@ export const billingCatalogSchema = z.strictObject({
   creditCost: z.strictObject({
     // Autopilot's pick and review, or the ad copy: one Nemotron call.
     assist: credits,
-    // One design: Nemotron's brief and judgment (the art runs on the
-    // merchant's fal account).
+    // One design: Nemotron's brief and judgment, and the art on wovain's fal
+    // key while onboarding-wizard is on (the merchant's fal otherwise).
     design: credits,
     // A run's trend research: Qloo once and Tavily for each theme.
     research: credits,

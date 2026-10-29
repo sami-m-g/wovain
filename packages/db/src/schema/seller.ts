@@ -1,6 +1,7 @@
 import type { AdCopy } from "@wovain/core/ads";
 import type { Competition } from "@wovain/core/competition";
 import type { DesignBrief, Judgment } from "@wovain/core/design";
+import type { DirectionsAnswer } from "@wovain/core/drop-directions";
 import type { DropStyle } from "@wovain/core/drop-style";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
@@ -262,5 +263,23 @@ export const milestone = pgTable(
   },
   (table) => [
     uniqueIndex("milestone_user_name_idx").on(table.userId, table.name),
+  ]
+);
+
+// The new-drop step's suggestions (drop-directions), kept per merchant and
+// per request (brand or open, round, the brand's state) so the step opens
+// at once; refreshed in the background when stale.
+export const directionCache = pgTable(
+  "direction_cache",
+  {
+    createdAt: createdAt(),
+    id: id(),
+    key: text("key").notNull(),
+    payload: jsonb("payload").$type<DirectionsAnswer>().notNull(),
+    updatedAt: updatedAt(),
+    userId: owner(),
+  },
+  (table) => [
+    uniqueIndex("direction_cache_user_key_idx").on(table.userId, table.key),
   ]
 );

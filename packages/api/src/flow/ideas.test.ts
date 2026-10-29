@@ -21,16 +21,14 @@ const actorWith = (on: Partial<Record<FlagName, boolean>>) => {
 };
 
 describe("researchSourcesFor", () => {
-  it("adds the taste map and Tavily evidence when their flags are on", async () => {
+  it("adds Tavily evidence when its flag is on", async () => {
     const { actor } = actorWith({
-      "qloo-taste-map": true,
       "tavily-evidence": true,
       "trends-tavily": true,
     });
 
     expect(await researchSourcesFor(actor)).toEqual({
       evidence: true,
-      tasteMap: true,
       tavily: true,
     });
   });
@@ -40,7 +38,6 @@ describe("researchSourcesFor", () => {
 
     expect(await researchSourcesFor(actor)).toEqual({
       evidence: false,
-      tasteMap: false,
       tavily: true,
     });
   });
@@ -50,7 +47,7 @@ describe("researchSourcesFor", () => {
 
     await researchSourcesFor(actor);
 
-    expect(isOn).toHaveBeenCalledTimes(3);
+    expect(isOn).toHaveBeenCalledTimes(2);
     for (const [, context] of isOn.mock.calls) {
       expect(context).toEqual({ plan: "studio", userId: "u1" });
     }

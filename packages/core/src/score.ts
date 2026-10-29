@@ -3,8 +3,10 @@
 // ad results, around these defaults. Code ranks ideas; no model does.
 
 export interface IdeaSignals {
-  // Qloo affinity of the theme with the seed's fans (0..1).
-  affinity?: number | undefined;
+  // Qloo affinity of the theme with the seed's fans (0..1). Required: an
+  // idea without Qloo backing is never suggested (./trends), so demand is
+  // never a neutral guess.
+  affinity: number;
   // 0 when the theme names a brand, artist or title Qloo matched.
   ipSafety: number;
   // Competitor prices against wovain's price floor (0..1).
@@ -78,7 +80,7 @@ export const ipSafetyOf = (theme: string, names: string[]) => {
 
 // Each term of the score, 0 to 1, before its weight.
 export const scoreFeatures = (signals: IdeaSignals): ScoreWeights => ({
-  demand: unit(signals.affinity ?? NEUTRAL),
+  demand: unit(signals.affinity),
   ipSafety: unit(signals.ipSafety),
   margin: unit(signals.margin),
   momentum: unit(signals.newsHits / 5),

@@ -10,7 +10,7 @@ Un producto de impresión bajo demanda, en el sitio web y en ChatGPT, que lleva 
 Fuente: `scope.md > What "Working" Looks Like`.
 
 1. El diseñador inicia sesión en [https://wovain.com](https://wovain.com) con Google o correo (o añade la app de wovain en ChatGPT e inicia sesión allí).
-2. Conecta su propia tienda de Fourthwall y su cuenta publicitaria de Meta y, cuando esté disponible, su propia clave de fal. Las cuentas gratuitas empiezan con 15 créditos al mes (propuesta).
+2. Conecta su propia tienda de Fourthwall y su cuenta publicitaria de Meta y, cuando esté disponible, su propia clave de fal. Las cuentas gratuitas empiezan con 40 créditos al mes, unos dos drops (propuesta).
 3. Describe una colección. wovain pide a Qloo las entidades y los temas de gusto de la dirección, luego a Tavily las noticias del último mes y los anuncios de marketplaces dentro de esos temas, y guarda ideas clasificadas con evidencia.
 4. Elige las ideas que le gustan y pulsa Ver diseños: wovain dibuja un diseño para cada idea elegida y para ninguna otra (no se dibuja nada antes de ese clic). Para cada una, Nemotron escribe un brief de diseño y una ficha, fal dibuja arte transparente para imprimir y el precio sale del coste base de la prenda lisa.
 5. Nemotron evalúa el diseño y los scorers lo puntúan. El código comprueba por sí mismo el tamaño de impresión; un veredicto `revise` enumera las correcciones.
@@ -65,7 +65,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 - Como diseñador, quiero ideas con evidencia para confiar en lo que diseño.
   - [x] Cada idea muestra sus señales de Qloo y Tavily, sus enlaces de origen y los datos de su puntuación.
   - [x] Los nombres que Qloo asoció a la dirección nunca se imprimen en un diseño.
-  - [x] «Why this idea» muestra el mapa de gustos de Qloo: las entidades encontradas, la etiqueta del tema y las afinidades transversales con la parte de cada entidad (flag `qloo-taste-map`, solo en next).
+  - [x] «Why this idea» muestra el mapa de gustos de Qloo: las entidades encontradas, la etiqueta del tema y las afinidades transversales con la parte de cada entidad.
   - [x] Cada idea es una etiqueta de gusto de Qloo. Si Qloo no reconoce el brief, la ejecución se detiene y pide al diseñador que nombre un grupo, una película, una marca o un lugar, con ejemplos. La comparación con una ejecución solo con LLM es una evaluación offline, no una opción de la ejecución.
   - [x] Si falta una clave de Qloo, Tavily o Nebius, solo falla ese paso, con un error que nombra la variable.
 
@@ -107,8 +107,8 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 ### Facturación y créditos
 
 - Como diseñador, quiero una pequeña asignación gratuita y un precio claro para probar una colección real antes de pagar.
-  - [ ] Polar es el comerciante registrado. Planes propuestos: Free 15 créditos al mes, Studio 29 $ por 300, Label 79 $ por 1.000 (se acumulan), y un paquete de 100 créditos por 10 $.
-  - [ ] Los créditos se reservan antes de un paso de pago y se devuelven si falla; investigación 3, diseño 2, asistencia 1 (propuesta).
+  - [ ] Polar es el comerciante registrado. Planes propuestos: Free 40 créditos al mes, Studio 29 $ por 300, Label 79 $ por 1.000 (se acumulan), y un paquete de 100 créditos por 15 $. Un drop cuesta unos 18 créditos.
+  - [ ] Los créditos se reservan antes de un paso de pago y se devuelven si falla; investigación 5, diseño 4, asistencia 1 (propuesta).
   - [ ] El autopilot solo está en los planes de pago en producción (propuesta); en dev y next está en todos los planes, Free incluido.
 
 ### Analítica

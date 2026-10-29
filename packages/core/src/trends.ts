@@ -105,7 +105,8 @@ export interface TrendIdea {
   score: number;
   signals: IdeaSignals;
   sources: Source[];
-  // Why this idea: what Qloo's taste graph said (the qloo-taste-map flag).
+  // Why this idea: what Qloo's taste graph said. Research sets it on every
+  // idea; ideas saved before the taste map was always on may have none.
   taste?: TasteMap | undefined;
   theme: string;
 }
@@ -130,12 +131,11 @@ export interface TrendResearch {
 
 // What a run's research adds to Qloo's themes: flags evaluated by the caller
 // for the merchant (packages/api/src/flow/ideas.ts). Qloo itself is not
-// optional: with trends-qloo off the caller refuses the research. tasteMap
+// optional: with trends-qloo off the caller refuses the research. Every run
 // asks Qloo for cross-domain affinities and saves the taste map on each idea.
 export interface TrendSources {
   // tavily-evidence: competitor prices read off the listings by Extract.
   evidence?: boolean | undefined;
-  tasteMap?: boolean | undefined;
   tavily: boolean;
 }
 
@@ -384,13 +384,18 @@ const ideaOf = (
   prices?: PriceEvidence,
   weights?: ScoreWeights
 ): Omit<TrendIdea, "rank"> | undefined => {
+  // No Qloo affinity, no idea: demand is never a neutral guess.
+  const { affinity } = theme;
+  if (affinity === undefined || affinity <= 0) {
+    return undefined;
+  }
   const sources = news.results.length > 0 ? news.results : market.results;
   if (sources.length === 0) {
     return undefined;
   }
   const medianPrice = prices?.median ?? median(snippetPrices(market.results));
   const signals: IdeaSignals = {
-    affinity: theme.affinity,
+    affinity,
     ipSafety: ipSafetyOf(theme.name, avoidNames),
     margin: marginOf(medianPrice, priceFor(pricingRules().defaultBaseCost)),
     marketHits: market.results.length,
@@ -437,10 +442,7 @@ export const createTrends = (
     }
     // Qloo names the themes. A failed call throws (QLOO_FAILED): the step
     // fails and the run logs it at error level. Nothing stands in for Qloo.
-    const taste =
-      sources.tasteMap === true
-        ? await qloo.tasteOf(seed, log, { crossDomain: true })
-        : await qloo.tasteOf(seed, log);
+    const taste = await qloo.tasteOf(seed, log, { crossDomain: true });
     const themes = qlooThemes(seed, taste.themes);
     if (themes.length === 0) {
       log?.set({ trends: { qloo: "no_match" } });
@@ -485,12 +487,9 @@ export const createTrends = (
                 prices[index],
                 feedback.weights
               );
-        if (idea === undefined) {
-          return [];
-        }
-        return sources.tasteMap === true
-          ? [{ ...idea, taste: tasteMapOf(theme, taste) }]
-          : [idea];
+        return idea === undefined
+          ? []
+          : [{ ...idea, taste: tasteMapOf(theme, taste) }];
       })
       .toSorted((a, b) => b.score - a.score)
       .map((idea, index) => ({ ...idea, rank: index + 1 }));

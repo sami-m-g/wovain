@@ -166,6 +166,10 @@
       {
         "question": "Qui voit mes publicités ?",
         "answer": "Les personnes qui aiment ce que votre marque aime. Qloo choisit ce public à partir des marques de votre profil, et chaque publicité est écrite pour lui. Si wovain ne trouve pas ce public, il ne crée aucune publicité et vous dit quoi ajouter."
+      },
+      {
+        "question": "Qu'est-ce qui empêche mes publicités de perdre de l'argent ?",
+        "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant."
       }
     ],
     "heroCta": "Lancer un drop",
@@ -491,13 +495,18 @@
       },
       "listingsUnknown": "annonces non vérifiées",
       "sources": "Actualité pour {title}",
-      "loading": "Recherche de quoi vendre maintenant…",
       "failed": "Nous n'avons pas pu joindre nos données de goûts : pas encore de suggestions.",
       "retry": "Réessayer",
       "none": "Qloo n'a rien trouvé de nouveau en hausse pour l'instant. Écrivez votre propre piste plus bas.",
       "tavilyFailed": "La vérification de l'actualité ou des annonces a échoué pour certaines suggestions ; cette partie est inconnue.",
       "brandHint": "Facultatif : une marque garde ces suggestions dans votre style.",
-      "brandHintLink": "Ajouter une marque"
+      "brandHintLink": "Ajouter une marque",
+      "steps": {
+        "qloo": "Qloo cherche ce qui monte…",
+        "listings": "Vérification de l'actualité du mois et de la saturation…",
+        "words": "Rédaction des premières suggestions…"
+      },
+      "elapsed": "{seconds, plural, one {# seconde} other {# secondes}}"
     },
     "trends": {
       "title": "Choisir les idées",
@@ -1101,7 +1110,7 @@
     "faq": {
       "credit": {
         "question": "Qu'est-ce qu'un crédit ?",
-        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 3, un design 2, et un texte de pub ou un appel de l'autopilote 1, et chaque drop dessine trois designs : un drop validé étape par étape coûte donc environ 10 crédits. Si une étape échoue, ses crédits vous sont rendus."
+        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 5, un design 4, et un texte de pub ou un appel de l'autopilote 1, et chaque drop dessine trois designs : un drop validé étape par étape coûte donc environ 18 crédits. Si une étape échoue, ses crédits vous sont rendus."
       },
       "yours": {
         "question": "Que dois-je payer en dehors de wovain ?",
@@ -1907,6 +1916,70 @@
         "check": "Fourthwall ajoute des politiques par défaut. Relisez-les pour qu'elles correspondent à votre façon de vendre.",
         "action": "Relire les politiques"
       }
+    },
+    "metaSetup": {
+      "title": "Préparez votre compte Meta pour les publicités",
+      "titleReady": "Votre compte Meta est prêt pour les publicités",
+      "progressLabel": "Progression de la configuration Meta",
+      "progress": "{done, number} sur {total, number} terminés",
+      "optional": "Facultatif",
+      "connect": "Connecter Meta",
+      "reconnect": "Reconnecter Meta",
+      "disconnect": "Déconnecter Meta",
+      "disconnected": "Meta est déconnecté",
+      "notConnected": "Connectez votre compte Meta, et wovain vérifie ce qu'il manque encore pour que vos publicités puissent être diffusées.",
+      "expired": "La connexion à Meta a expiré. Reconnectez Meta pour voir où en est votre compte.",
+      "state": {
+        "done": "terminé",
+        "todo": "à faire",
+        "waiting": "en attente",
+        "check": "à vérifier vous-même"
+      },
+      "ad_account": {
+        "label": "Compte publicitaire",
+        "action": "Ouvrir les comptes publicitaires",
+        "altAction": "Ouvrir les comptes publicitaires",
+        "done": "Votre compte publicitaire est ouvert à wovain.",
+        "todo": "Il vous faut un compte publicitaire. Ouvrez la page des comptes publicitaires de Meta, choisissez Ajouter, puis Créer un compte publicitaire. Revenez ici : cette carte se coche toute seule.",
+        "waiting": "Meta a restreint ce compte publicitaire. Ouvrez Qualité du compte pour voir pourquoi et ce que Meta demande.",
+        "check": "Vérifiez votre compte publicitaire dans Meta."
+      },
+      "payment": {
+        "label": "Moyen de paiement",
+        "action": "Ajouter un moyen de paiement",
+        "altAction": "Ajouter un moyen de paiement",
+        "done": "Votre compte publicitaire a un moyen de paiement. Meta y facture vos dépenses publicitaires.",
+        "todo": "Meta facture les dépenses publicitaires sur une carte ou un compte PayPal de votre compte publicitaire. Ouvrez les paramètres de paiement de Meta, choisissez Ajouter un moyen de paiement et enregistrez-le. Revenez ici : cette carte se coche toute seule.",
+        "waiting": "Meta examine ce compte publicitaire, les paiements attendent donc. Ouvrez Qualité du compte pour voir ce dont Meta a besoin.",
+        "check": "Vérifiez le moyen de paiement dans Meta."
+      },
+      "page": {
+        "label": "Page Facebook",
+        "action": "Ajouter votre Page",
+        "altAction": "Créer une Page",
+        "done": "Vos publicités sont diffusées au nom de votre Page Facebook.",
+        "todo": "Les publicités sont diffusées au nom d'une Page Facebook. Si vous en avez une, ouvrez Pages dans les paramètres de l'entreprise de Meta, choisissez Ajouter et sélectionnez-la. Sinon, créez-en une d'abord (un nom et une photo suffisent). Revenez ici : cette carte se coche toute seule.",
+        "waiting": "Configurez d'abord votre compte publicitaire.",
+        "check": "Vérifiez votre Page dans Meta."
+      },
+      "instagram": {
+        "label": "Compte Instagram",
+        "action": "Ajouter Instagram",
+        "altAction": "Ajouter Instagram",
+        "done": "Vos publicités peuvent aussi être diffusées au nom de votre compte Instagram.",
+        "todo": "Facultatif : associez votre compte Instagram pour que vos publicités affichent aussi votre nom sur Instagram. Ouvrez Comptes Instagram dans les paramètres de l'entreprise de Meta et choisissez Ajouter.",
+        "waiting": "Configurez d'abord votre compte publicitaire.",
+        "check": "Facultatif : Meta n'a pas indiqué si un compte Instagram est associé. Vous pouvez le vérifier dans les paramètres de l'entreprise de Meta."
+      },
+      "safety_rules": {
+        "label": "Règles de sécurité",
+        "action": "Reconnecter Meta",
+        "altAction": "Reconnecter Meta",
+        "done": "Prêt. wovain peut créer les règles qui mettent vos publicités en pause, même quand wovain est hors ligne.",
+        "todo": "Reconnectez Meta et acceptez tout ce que Meta demande, pour que wovain puisse créer les règles qui mettent vos publicités en pause. Tant que Meta examine l'app de wovain, cela ne fonctionne que pour les comptes que Meta autorise à la tester.",
+        "waiting": "Disponible une fois votre compte publicitaire configuré.",
+        "check": "Reconnectez Meta pour vérifier les règles de sécurité."
+      }
     }
   },
   "Drops": {
@@ -1968,5 +2041,22 @@
       "embroidery": "Broderie",
       "label": "Étiquette"
     }
+  },
+  "WithoutQloo": {
+    "title": "Sans Qloo",
+    "lead": "La même étape d'idées sur {seeds, number} graines avec Nemotron seul ({model}), d'après la comparaison du {date}.",
+    "tableCaption": "Sur quoi reposent les idées, avec et sans Qloo",
+    "metric": "Par idée",
+    "withQloo": "Avec Qloo",
+    "withoutQloo": "Sans Qloo",
+    "metrics": {
+      "grounded": "Thèmes fondés sur une étiquette Qloo",
+      "explained": "Thèmes que Qloo explique (quels fans, pourquoi)",
+      "crossDomains": "Domaines de goût (marques, films, TV)",
+      "cues": "Indices de style tirés de ces goûts"
+    },
+    "seedsSummary": "Les {seeds, number} graines, côte à côte",
+    "noMatch": "aucun goût trouvé",
+    "note": "Sans Qloo, Nemotron écrit des thèmes plausibles à partir des seuls mots : rien ne les relie à qui achète ni pourquoi."
   }
 }

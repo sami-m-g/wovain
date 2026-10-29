@@ -22,6 +22,7 @@ export type FunnelEvent =
   | "design_approved"
   | "first_drop_started"
   | "fourthwall_shop_ready"
+  | "meta_graph_ready"
   | "meta_page_ready"
   | "meta_payment_ready"
   | "payouts_ready"
