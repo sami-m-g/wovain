@@ -2210,8 +2210,7 @@
     },
     "sell": {
       "title": "Que allez-vous vendre ?",
-      "lead": "Choisissez une piste et wovain écrit le brief. Chacune explique pourquoi elle monte en ce moment.",
-      "picked": "Votre brief : {brief}",
+      "lead": "Choisissez une piste ou écrivez votre propre brief. Chaque piste explique pourquoi elle monte en ce moment.",
       "brand": "Ajouter votre marque (facultatif) : les pistes s'y adaptent",
       "next": "Suivant : la boutique"
     },
@@ -2228,6 +2227,7 @@
     "design": {
       "title": "Approuver un design",
       "lead": "wovain étudie « {brief} », retient les meilleures idées et dessine leurs designs.",
+      "noBrief": "Choisissez d'abord quoi vendre : wovain l'étudie et dessine ses designs.",
       "start": "Trouver des idées et dessiner",
       "working": "wovain étudie et dessine. Ouvrez votre drop pour choisir les idées et approuver les designs ; cette étape se coche à votre retour.",
       "ready": "Votre drop vous attend. Approuvez un design, puis revenez ici.",
@@ -2236,6 +2236,7 @@
     "ads": {
       "title": "Lancer les publicités",
       "lead": "Vos produits sont prêts. Relisez la publicité et son budget quotidien dans votre drop, puis lancez-la.",
+      "needsDesign": "Validez d'abord un design. Votre publicité en est tirée.",
       "open": "Relire et lancer les publicités"
     },
     "finished": {

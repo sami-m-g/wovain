@@ -2210,8 +2210,7 @@
     },
     "sell": {
       "title": "What will you sell?",
-      "lead": "Pick a direction and wovain writes the brief. Each one comes with why it's rising now.",
-      "picked": "Your brief: {brief}",
+      "lead": "Pick a direction or write your own brief. Each direction comes with why it's rising now.",
       "brand": "Add your brand (optional): directions then fit it",
       "next": "Next: your store"
     },
@@ -2228,6 +2227,7 @@
     "design": {
       "title": "Approve a design",
       "lead": "wovain researches “{brief}”, picks the strongest ideas and draws designs for them.",
+      "noBrief": "Pick what to sell first: wovain researches it and draws designs for it.",
       "start": "Find ideas and draw designs",
       "working": "wovain is researching and drawing. Open your drop to pick ideas and approve designs; this step ticks off when you come back.",
       "ready": "Your drop is waiting for you. Approve a design, then come back here.",
@@ -2236,6 +2236,7 @@
     "ads": {
       "title": "Launch your ads",
       "lead": "Your products are ready. Review the ad and its daily budget in your drop, then start it.",
+      "needsDesign": "Approve a design first. Your ad is made from it.",
       "open": "Review and launch ads"
     },
     "finished": {
