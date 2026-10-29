@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@wovain/ui/components/button";
 import { Progress } from "@wovain/ui/components/progress";
 import { Skeleton } from "@wovain/ui/components/skeleton";
@@ -103,11 +103,69 @@ const PayoutsAction = () => {
   );
 };
 
+/**
+ * Pixel automation (openspec pixel-automation): wovain finds or creates the
+ * Meta dataset, shares it with the ad account and sends a test event. The
+ * paste into Fourthwall stays the merchant's.
+ */
+const SetupPixel = ({ again }: { again: boolean }) => {
+  const t = useTranslations("Store.setup.pixel");
+  const queryClient = useQueryClient();
+  const setup = useMutation(
+    orpc.store.setupPixel.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: orpc.store.setup.key(),
+        });
+      },
+    })
+  );
+  const { data } = setup;
+  return (
+    <div className="flex flex-col gap-1.5 text-sm">
+      <div>
+        <Button
+          disabled={setup.isPending}
+          onClick={() => {
+            setup.mutate({});
+          }}
+          size="sm"
+          variant={again ? "outline" : "default"}
+        >
+          {again ? t("sendTest") : t("setUp")}
+        </Button>
+      </div>
+      {setup.isError ? (
+        <p className="text-destructive" role="alert">
+          {t("setUpFailed")}
+        </p>
+      ) : null}
+      {data === undefined ? null : (
+        <output className="text-muted-foreground">
+          {data.created ? t("created") : t("found")}{" "}
+          {data.testEvent === null
+            ? t("noTest")
+            : t(data.testEvent.received > 0 ? "testReceived" : "testMissed", {
+                code: data.testEvent.code,
+              })}
+        </output>
+      )}
+    </div>
+  );
+};
+
 /** The pixel's extra: Meta's Conversions API, which Fourthwall also runs. */
-const PixelSteps = ({ datasetId }: { datasetId: string }) => {
+const PixelSteps = ({
+  automation,
+  datasetId,
+}: {
+  automation: boolean;
+  datasetId: string;
+}) => {
   const t = useTranslations("Store.setup.pixel");
   return (
     <div className="text-muted-foreground flex flex-col gap-1.5 text-sm">
+      {automation ? <SetupPixel again /> : null}
       <p className="flex flex-wrap items-center gap-2">
         {t("paste")} <CopyId value={datasetId} />
       </p>
@@ -230,7 +288,12 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
 const StepDetail = ({ setup, step }: { setup: Setup; step: Step }) => {
   const t = useTranslations("Store.setup");
   if (step.id === "pixel" && setup.pixel !== null && step.state !== "done") {
-    return <PixelSteps datasetId={setup.pixel.datasetId} />;
+    return (
+      <PixelSteps
+        automation={setup.pixelAutomation}
+        datasetId={setup.pixel.datasetId}
+      />
+    );
   }
   if (
     step.id === "payouts" &&
@@ -244,7 +307,14 @@ const StepDetail = ({ setup, step }: { setup: Setup; step: Step }) => {
     );
   }
   if (step.id === "pixel" && setup.metaConnected && setup.pixel === null) {
-    return (
+    return setup.pixelAutomation ? (
+      <div className="flex flex-col gap-2">
+        <p className="text-muted-foreground text-sm">
+          {t("pixel.automationLead")}
+        </p>
+        <SetupPixel again={false} />
+      </div>
+    ) : (
       <p className="text-muted-foreground text-sm">{t("pixel.noDataset")}</p>
     );
   }

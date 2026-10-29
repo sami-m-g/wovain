@@ -1981,7 +1981,16 @@
         "step2": "En Píxeles de seguimiento, pégalo en el campo Facebook Pixel y guarda.",
         "step3": "Abre tu tienda una vez. Este paso se marca cuando Meta ve la visita, lo que puede tardar unos minutos.",
         "capi": "Para contar las ventas que ocultan los bloqueadores de anuncios, conecta también la API de conversiones de Meta en Fourthwall. Pide el mismo ID de píxel y un token de acceso del Administrador de eventos de Meta.",
-        "capiAction": "Abrir Meta Conversions"
+        "capiAction": "Abrir Meta Conversions",
+        "automationLead": "wovain puede crear tu píxel de Meta (conjunto de datos) y conectarlo a tu cuenta publicitaria. Después pegas su ID en Fourthwall.",
+        "setUp": "Configurar mi píxel",
+        "sendTest": "Enviar un evento de prueba",
+        "setUpFailed": "Meta no dejó a wovain configurar el píxel. Vuelve a conectar Meta en la configuración de Meta e inténtalo de nuevo.",
+        "created": "wovain creó tu píxel y lo conectó a tu cuenta publicitaria.",
+        "found": "wovain encontró tu píxel en tu cuenta publicitaria.",
+        "testReceived": "Meta recibió un evento de prueba. Míralo en el Administrador de eventos > Eventos de prueba con el código {code}.",
+        "testMissed": "Meta no confirmó el evento de prueba (código {code}). Inténtalo en un minuto.",
+        "noTest": "Publica tu tienda para enviar un evento de prueba."
       },
       "domain": {
         "label": "Dominio propio",

@@ -1981,7 +1981,16 @@
         "step2": "In Tracking pixels, paste it into the Facebook Pixel field and save.",
         "step3": "Open your storefront once. This step ticks off when Meta sees the visit, which can take a few minutes.",
         "capi": "To count the sales ad blockers hide, also connect Meta's Conversions API in Fourthwall. It asks for the same pixel ID and an access token from Meta Events Manager.",
-        "capiAction": "Open Meta Conversions"
+        "capiAction": "Open Meta Conversions",
+        "automationLead": "wovain can create your Meta pixel (dataset) and connect it to your ad account. Then you paste its ID into Fourthwall.",
+        "setUp": "Set up my pixel",
+        "sendTest": "Send a test event",
+        "setUpFailed": "Meta didn't let wovain set up the pixel. Reconnect Meta in Meta setup, then try again.",
+        "created": "wovain created your pixel and connected it to your ad account.",
+        "found": "wovain found your pixel on your ad account.",
+        "testReceived": "Meta received a test event. See it in Events Manager > Test events with code {code}.",
+        "testMissed": "Meta didn't confirm the test event (code {code}). Try again in a minute.",
+        "noTest": "Publish your shop to send a test event."
       },
       "domain": {
         "label": "Custom domain",
