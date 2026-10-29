@@ -28,6 +28,32 @@ const permissionsSchema = z.object({
     .default([]),
 });
 
+export interface Dataset {
+  id: string;
+  // ISO time Meta last received an event, or null if never.
+  lastFiredAt: string | null;
+  name: string | null;
+}
+
+const datasetsSchema = z.object({
+  data: z
+    .array(
+      z.object({
+        id: z.string(),
+        last_fired_time: z.string().optional(),
+        name: z.string().optional(),
+      })
+    )
+    .default([]),
+});
+const businessSchema = z.object({
+  business: z.object({ id: z.string() }).optional(),
+});
+const idSchema = z.object({ id: z.string() });
+const eventsSchema = z.object({ events_received: z.number() });
+
+const MS_PER_SECOND = 1000;
+
 const graphErrorSchema = z.object({
   error: z.object({ code: z.number().optional(), message: z.string() }),
 });
@@ -77,16 +103,18 @@ export const createMetaGraph = ({
   fetch: fetchFn = fetch,
   graphUrl,
 }: MetaGraphConfig) => {
-  const get = async (
+  const request = async (
     log: Logger | undefined,
     operation: string,
     token: string,
-    path: string
+    path: string,
+    form?: URLSearchParams
   ): Promise<unknown> =>
     await external(log, { operation, provider: "meta" }, async () => {
       const response = await fetchFn(`${graphUrl}${path}`, {
         headers: { authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(TIMEOUT_MS),
+        ...(form === undefined ? {} : { body: form, method: "POST" }),
       });
       const body: unknown = await response.json();
       if (response.ok) {
@@ -99,6 +127,19 @@ export const createMetaGraph = ({
         : `Graph answered ${response.status}`;
       throw new GraphRefusedError(`Graph ${path}: ${message}`, code);
     });
+  const get = async (
+    log: Logger | undefined,
+    operation: string,
+    token: string,
+    path: string
+  ) => await request(log, operation, token, path);
+  const post = async (
+    log: Logger | undefined,
+    operation: string,
+    token: string,
+    path: string,
+    body: Record<string, string>
+  ) => await request(log, operation, token, path, new URLSearchParams(body));
 
   // Which permissions the merchant granted, and whether the account's
   // automated rules can be read with them.
@@ -145,7 +186,142 @@ export const createMetaGraph = ({
     return { granted, state: "ready" };
   };
 
-  return { readiness };
+  // The datasets (pixels) the ad account can use, with when each last
+  // received an event.
+  const datasets = async (
+    token: string,
+    adAccountId: string,
+    log?: Logger
+  ): Promise<Dataset[]> => {
+    const { data } = datasetsSchema.parse(
+      await get(
+        log,
+        "graph.adspixels",
+        token,
+        `/act_${adAccountId}/adspixels?fields=id,name,last_fired_time&limit=50`
+      )
+    );
+    return data.map((row) => ({
+      id: row.id,
+      lastFiredAt: row.last_fired_time ?? null,
+      name: row.name ?? null,
+    }));
+  };
+
+  // The business that owns the ad account, if any (a personal ad account
+  // has none).
+  const businessOf = async (
+    token: string,
+    adAccountId: string,
+    log?: Logger
+  ): Promise<string | undefined> =>
+    businessSchema.parse(
+      await get(
+        log,
+        "graph.ad_account_business",
+        token,
+        `/act_${adAccountId}?fields=business`
+      )
+    ).business?.id;
+
+  /**
+   * Creates a dataset named `name`: under the ad account's business, then
+   * shared with the ad account (the business owns both, so
+   * shared_accounts works), or on the ad account itself when no business
+   * owns it.
+   * https://developers.facebook.com/docs/marketing-api/reference/business/adspixels/
+   * https://developers.facebook.com/docs/marketing-api/reference/ad-account/adspixels/
+   * https://developers.facebook.com/docs/marketing-api/reference/ads-pixel/shared_accounts/
+   */
+  const createDataset = async (
+    token: string,
+    adAccountId: string,
+    name: string,
+    log?: Logger
+  ): Promise<{ businessId: string | undefined; id: string }> => {
+    const businessId = await businessOf(token, adAccountId, log);
+    if (businessId === undefined) {
+      const { id } = idSchema.parse(
+        await post(
+          log,
+          "graph.create_dataset",
+          token,
+          `/act_${adAccountId}/adspixels`,
+          { name }
+        )
+      );
+      return { businessId, id };
+    }
+    // A dataset made by an earlier set-up whose share failed is the
+    // business's but not yet the ad account's: reuse it rather than make a
+    // second one, and stop when the name isn't unique.
+    const { data: owned } = datasetsSchema.parse(
+      await get(
+        log,
+        "graph.business_adspixels",
+        token,
+        `/${businessId}/adspixels?fields=id,name&limit=200`
+      )
+    );
+    const named = owned.filter((each) => each.name === name);
+    if (named.length > 1) {
+      throw new GraphRefusedError(
+        `The business has ${named.length} datasets named "${name}"; keep one in Events Manager`,
+        undefined
+      );
+    }
+    const id =
+      named[0]?.id ??
+      idSchema.parse(
+        await post(
+          log,
+          "graph.create_dataset",
+          token,
+          `/${businessId}/adspixels`,
+          { name }
+        )
+      ).id;
+    await post(log, "graph.share_dataset", token, `/${id}/shared_accounts`, {
+      account_id: adAccountId,
+      business: businessId,
+    });
+    return { businessId, id };
+  };
+
+  /**
+   * Sends one PageView to the dataset as a Conversions API test event: it
+   * shows in Events Manager > Test events under `testEventCode`, and Meta
+   * neither counts it nor uses it for ads.
+   * https://developers.facebook.com/docs/marketing-api/conversions-api/using-the-api#testEvents
+   */
+  const sendTestEvent = async (
+    token: string,
+    datasetId: string,
+    {
+      now = new Date(),
+      sourceUrl,
+      testEventCode,
+    }: { now?: Date; sourceUrl: string; testEventCode: string },
+    log?: Logger
+  ): Promise<number> => {
+    const reply = eventsSchema.parse(
+      await post(log, "graph.test_event", token, `/${datasetId}/events`, {
+        data: JSON.stringify([
+          {
+            action_source: "website",
+            event_name: "PageView",
+            event_source_url: sourceUrl,
+            event_time: Math.floor(now.getTime() / MS_PER_SECOND),
+            user_data: { client_user_agent: "wovain pixel setup" },
+          },
+        ]),
+        test_event_code: testEventCode,
+      })
+    );
+    return reply.events_received;
+  };
+
+  return { createDataset, datasets, readiness, sendTestEvent };
 };
 
 export type MetaGraph = ReturnType<typeof createMetaGraph>;

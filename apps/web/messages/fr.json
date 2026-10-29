@@ -2005,7 +2005,16 @@
         "step2": "Dans Pixels de suivi, collez-le dans le champ Facebook Pixel et enregistrez.",
         "step3": "Ouvrez votre boutique une fois. L'étape se coche quand Meta voit la visite, ce qui peut prendre quelques minutes.",
         "capi": "Pour compter les ventes que masquent les bloqueurs de publicité, connectez aussi l'API Conversions de Meta dans Fourthwall. Elle demande le même ID de pixel et un jeton d'accès du Gestionnaire d'événements de Meta.",
-        "capiAction": "Ouvrir Meta Conversions"
+        "capiAction": "Ouvrir Meta Conversions",
+        "automationLead": "wovain peut créer votre pixel Meta (jeu de données) et le relier à votre compte publicitaire. Vous collez ensuite son ID dans Fourthwall.",
+        "setUp": "Configurer mon pixel",
+        "sendTest": "Envoyer un événement test",
+        "setUpFailed": "Meta n'a pas laissé wovain configurer le pixel. Reconnectez Meta dans la configuration Meta, puis réessayez.",
+        "created": "wovain a créé votre pixel et l’a relié à votre compte publicitaire.",
+        "found": "wovain a trouvé votre pixel sur votre compte publicitaire.",
+        "testReceived": "Meta a reçu un événement test. Retrouvez-le dans le Gestionnaire d'événements > Tester les événements avec le code {code}.",
+        "testMissed": "Meta n'a pas confirmé l'événement test (code {code}). Réessayez dans une minute.",
+        "noTest": "Publiez votre boutique pour envoyer un événement test."
       },
       "domain": {
         "label": "Domaine personnalisé",
