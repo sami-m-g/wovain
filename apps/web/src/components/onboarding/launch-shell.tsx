@@ -1,0 +1,513 @@
+"use client";
+
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button, buttonVariants } from "@wovain/ui/components/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@wovain/ui/components/empty";
+import { Skeleton } from "@wovain/ui/components/skeleton";
+import { cn } from "@wovain/ui/lib/utils";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+
+import { ConnectionHealth } from "@/components/app/connection-health";
+import { DropDirections } from "@/components/app/drop-directions";
+import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { FourthwallSignup } from "@/components/app/fourthwall-signup";
+import { AutonomyStep } from "@/components/app/onboarding-autonomy";
+import { BrandStep } from "@/components/app/onboarding-brand";
+import {
+  NextButton,
+  StepActions,
+  StepHeader,
+} from "@/components/app/wizard-parts";
+import { LaunchChecklist } from "@/components/shadcn-studio/blocks/onboarding-feed-01/onboarding-feed-01";
+import { StoreSetup } from "@/components/store/store-setup";
+import { Link, useRouter } from "@/i18n/navigation";
+import type { OnboardingReady, RunDetail } from "@/lib/flow-client";
+import { describeProblem } from "@/lib/flow-client";
+import { orpc } from "@/utils/orpc";
+
+import type { LaunchProgress, OpenStep } from "./launch-steps";
+import {
+  currentStep,
+  launchedAt,
+  launchProgress,
+  OPEN_STEPS,
+} from "./launch-steps";
+import { LaunchTimer } from "./launch-timer";
+import { useSpotlight } from "./use-spotlight";
+
+// Polled while the run works, so a card ticks off when the merchant returns.
+const RUN_POLL_MS = 3000;
+const RUN_ID = /^[\w-]{1,64}$/u;
+
+interface LaunchUrl {
+  brief?: string | undefined;
+  run?: string | undefined;
+  step?: OpenStep | undefined;
+}
+
+const queryOf = ({ brief, run, step }: LaunchUrl) => {
+  const params = new URLSearchParams();
+  if (step) {
+    params.set("step", step);
+  }
+  if (brief) {
+    params.set("brief", brief);
+  }
+  if (run) {
+    params.set("run", run);
+  }
+  const search = params.toString();
+  return search === "" ? "" : `?${search}`;
+};
+
+// The flow lives in the URL, so a provider's consent page and the drop flow
+// come back to the same step.
+const useLaunchUrl = () => {
+  const params = useSearchParams();
+  const step = OPEN_STEPS.find((each) => each === params.get("step"));
+  const run = params.get("run") ?? undefined;
+  const url: LaunchUrl = {
+    brief: params.get("brief") ?? undefined,
+    run: run !== undefined && RUN_ID.test(run) ? run : undefined,
+    step,
+  };
+  const push = (next: LaunchUrl) => {
+    window.history.pushState(null, "", queryOf({ ...url, ...next }));
+  };
+  return { push, url };
+};
+
+const SellStep = ({
+  brief,
+  brand,
+  onBrief,
+  onNext,
+}: {
+  brand: OnboardingReady["brand"];
+  brief: string | undefined;
+  onBrief: (brief: string) => void;
+  onNext: () => void;
+}) => {
+  const t = useTranslations("Launch.sell");
+  // The brand is optional: with one, the directions fit it.
+  const [brandOpen, setBrandOpen] = useState(false);
+  const closeBrand = () => setBrandOpen(false);
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader lead={t("lead")} title={t("title")} />
+      <div data-tour="sell">
+        <DropDirections disabled={false} onUse={onBrief} />
+      </div>
+      {brief ? (
+        <output className="bg-muted rounded-md p-3 text-sm">
+          {t("picked", { brief })}
+        </output>
+      ) : null}
+      <details
+        className="rounded-md border p-4"
+        onToggle={(event) => setBrandOpen(event.currentTarget.open)}
+        open={brandOpen}
+      >
+        <summary className="cursor-pointer text-sm font-medium">
+          {t("brand")}
+        </summary>
+        {brandOpen ? (
+          <div className="mt-4">
+            <BrandStep brand={brand} onBack={closeBrand} onDone={closeBrand} />
+          </div>
+        ) : null}
+      </details>
+      <StepActions>
+        <NextButton disabled={!brief} onClick={onNext}>
+          {t("next")}
+        </NextButton>
+      </StepActions>
+    </div>
+  );
+};
+
+const StoreStep = ({
+  connections,
+  onNext,
+  returnQuery,
+}: {
+  connections: OnboardingReady["connections"];
+  onNext: () => void;
+  returnQuery: string;
+}) => {
+  const t = useTranslations("Launch.store");
+  const fourthwall = connections.filter(
+    (each) => each.provider === "fourthwall"
+  );
+  const connected = fourthwall.every((each) => each.state === "connected");
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader lead={t("lead")} title={t("title")} />
+      <div data-tour="store">
+        <ConnectionHealth
+          connections={fourthwall}
+          returnPath="/dashboard/onboarding"
+          returnQuery={returnQuery}
+        />
+      </div>
+      {connected ? (
+        <StoreSetup />
+      ) : (
+        <FourthwallSignup className="text-left" surface="onboarding" />
+      )}
+      <StepActions>
+        <NextButton onClick={onNext}>{t("next")}</NextButton>
+      </StepActions>
+    </div>
+  );
+};
+
+const MetaStep = ({
+  status,
+  onBack,
+  onNext,
+  returnQuery,
+}: {
+  onBack: () => void;
+  onNext: () => void;
+  returnQuery: string;
+  status: OnboardingReady;
+}) => {
+  const t = useTranslations("Launch.meta");
+  const meta = status.connections.filter((each) => each.provider === "meta");
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader lead={t("lead")} title={t("title")} />
+      <div data-tour="meta">
+        <ConnectionHealth
+          connections={meta}
+          returnPath="/dashboard/onboarding"
+          returnQuery={returnQuery}
+        />
+      </div>
+      {status.autonomy === null ? (
+        <StepActions>
+          <NextButton onClick={onNext}>{t("next")}</NextButton>
+        </StepActions>
+      ) : (
+        <AutonomyStep
+          autonomy={status.autonomy}
+          onBack={onBack}
+          onDone={onNext}
+        />
+      )}
+    </div>
+  );
+};
+
+const DropFlowCard = ({
+  action,
+  lead,
+  run,
+  title,
+}: {
+  action: string;
+  lead: string;
+  run: string;
+  title: string;
+}) => (
+  <div className="flex flex-col gap-6">
+    <StepHeader lead={lead} title={title} />
+    <Link
+      className={cn(buttonVariants(), "h-10 self-start sm:h-9")}
+      data-tour="drop-flow"
+      href={{ pathname: "/dashboard/new", query: { run } }}
+    >
+      {action}
+    </Link>
+  </div>
+);
+
+const DesignStep = ({
+  brief,
+  onRun,
+  run,
+}: {
+  brief: string | undefined;
+  onRun: (id: string) => void;
+  run: RunDetail | undefined;
+}) => {
+  const t = useTranslations("Launch.design");
+  const start = useMutation(orpc.runs.start.mutationOptions());
+  if (run !== undefined) {
+    return (
+      <DropFlowCard
+        action={t("open")}
+        lead={run.status === "running" ? t("working") : t("ready")}
+        run={run.id}
+        title={t("title")}
+      />
+    );
+  }
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader lead={t("lead", { brief: brief ?? "" })} title={t("title")} />
+      {start.error ? (
+        <FlowProblemNotice problem={describeProblem(start.error)} />
+      ) : null}
+      <Button
+        className="self-start"
+        data-tour="design-start"
+        disabled={!brief || start.isPending}
+        onClick={() => {
+          if (brief) {
+            start.mutate(
+              { seed: brief },
+              { onSuccess: (created) => onRun(created.id) }
+            );
+          }
+        }}
+      >
+        {t("start")}
+      </Button>
+    </div>
+  );
+};
+
+const FinishedStep = ({ run }: { run: string | undefined }) => {
+  const t = useTranslations("Launch.finished");
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader lead={t("lead")} title={t("title")} />
+      {run ? (
+        <Link
+          className={cn(buttonVariants(), "h-10 self-start sm:h-9")}
+          data-tour="campaign"
+          href={{ pathname: "/dashboard/campaign", query: { run } }}
+        >
+          {t("open")}
+        </Link>
+      ) : null}
+    </div>
+  );
+};
+
+const SPOT_SELECTORS: Record<OpenStep, string> = {
+  ads: "[data-tour='drop-flow']",
+  design: "[data-tour='design-start'], [data-tour='drop-flow']",
+  meta: "[data-tour='meta']",
+  sell: "[data-tour='sell']",
+  store: "[data-tour='store']",
+};
+
+const useLaunchData = (
+  runId: string | undefined,
+  brief: string | undefined
+) => {
+  const status = useQuery(orpc.onboarding.status.queryOptions());
+  const ready = status.data?.enabled === true ? status.data : undefined;
+  const fourthwallConnected =
+    ready?.connections.some(
+      (each) => each.provider === "fourthwall" && each.state === "connected"
+    ) ?? false;
+  const store = useQuery({
+    ...orpc.store.setup.queryOptions(),
+    enabled: fourthwallConnected,
+    retry: false,
+  });
+  const run = useQuery({
+    ...orpc.runs.get.queryOptions({ input: { id: runId ?? "" } }),
+    enabled: runId !== undefined,
+    refetchInterval: (query) =>
+      (query.state.data?.campaigns.length ?? 0) > 0 ? false : RUN_POLL_MS,
+  });
+  // Store setup answers 404 while its flag is off: connecting is enough then.
+  const storeReady =
+    store.isError ||
+    (store.data?.steps
+      .filter((step) => step.required)
+      .every((step) => step.state === "done") ??
+      false);
+  const facts = {
+    brief: brief ?? run.data?.seed,
+    fourthwallConnected,
+    guardrailsSet: ready
+      ? ready.autonomy === null || ready.steps.autonomy
+      : false,
+    metaConnected:
+      ready?.connections.some(
+        (each) => each.provider === "meta" && each.state === "connected"
+      ) ?? false,
+    run: run.data,
+    storeReady,
+  };
+  return { facts, ready, run: run.data, status };
+};
+
+const StepPanel = ({
+  active,
+  data,
+  onBrief,
+  onOpen,
+  onRun,
+  returnQuery,
+  url,
+}: {
+  active: OpenStep | undefined;
+  data: ReturnType<typeof useLaunchData>;
+  onBrief: (brief: string) => void;
+  onOpen: (step: OpenStep) => void;
+  onRun: (id: string) => void;
+  returnQuery: string;
+  url: LaunchUrl;
+}) => {
+  const t = useTranslations("Launch");
+  const { facts, ready, run } = data;
+  if (ready === undefined) {
+    return null;
+  }
+  switch (active) {
+    case "sell": {
+      return (
+        <SellStep
+          brand={ready.brand}
+          brief={facts.brief}
+          onBrief={onBrief}
+          onNext={() => onOpen("store")}
+        />
+      );
+    }
+    case "store": {
+      return (
+        <StoreStep
+          connections={ready.connections}
+          onNext={() => onOpen("meta")}
+          returnQuery={returnQuery}
+        />
+      );
+    }
+    case "meta": {
+      return (
+        <MetaStep
+          onBack={() => onOpen("store")}
+          onNext={() => onOpen("design")}
+          returnQuery={returnQuery}
+          status={ready}
+        />
+      );
+    }
+    case "design": {
+      return <DesignStep brief={facts.brief} onRun={onRun} run={run} />;
+    }
+    case "ads": {
+      return run ? (
+        <DropFlowCard
+          action={t("ads.open")}
+          lead={t("ads.lead")}
+          run={run.id}
+          title={t("ads.title")}
+        />
+      ) : (
+        <DesignStep brief={facts.brief} onRun={onRun} run={run} />
+      );
+    }
+    default: {
+      return <FinishedStep run={url.run} />;
+    }
+  }
+};
+
+/**
+ * The one guided flow from sign-in to a running campaign, against a
+ * 10-minute timer: what to sell, store setup, Meta and guardrails, design
+ * approval, ads, then "Here's your campaign". Steps done elsewhere (a
+ * provider's consent page, the drop flow) tick off by polling when the
+ * merchant comes back. Every step can be skipped.
+ */
+export const LaunchShell = ({ startedAt }: { startedAt: string }) => {
+  const t = useTranslations("Launch");
+  const router = useRouter();
+  const { push, url } = useLaunchUrl();
+  const data = useLaunchData(url.run, url.brief);
+  const finish = useMutation(orpc.onboarding.finish.mutationOptions());
+  const progress: LaunchProgress = launchProgress(data.facts);
+  const next = currentStep(progress);
+  const active = url.step ?? next;
+  const returnQuery = queryOf({ ...url, step: active });
+
+  useSpotlight(active, {
+    close: t("spotlight.close"),
+    description: active ? t(`spotlight.${active}`) : "",
+    selector: active ? SPOT_SELECTORS[active] : "",
+    title: active ? t(`steps.${active}.title`) : "",
+  });
+
+  if (data.status.isPending) {
+    return <Skeleton className="h-96 w-full rounded-xl" />;
+  }
+  if (data.status.error) {
+    return <FlowProblemNotice problem={describeProblem(data.status.error)} />;
+  }
+  if (data.ready === undefined) {
+    return (
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>{t("off.title")}</EmptyTitle>
+          <EmptyDescription>{t("off.body")}</EmptyDescription>
+        </EmptyHeader>
+        <Link
+          className={buttonVariants({ variant: "outline" })}
+          href="/dashboard"
+        >
+          {t("off.back")}
+        </Link>
+      </Empty>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+            {t("title")}
+          </h1>
+          <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
+        </div>
+        <LaunchTimer startedAt={startedAt} stoppedAt={launchedAt(data.facts)} />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <LaunchChecklist
+            active={active}
+            onOpen={(step) => push({ step })}
+            progress={progress}
+          />
+          <Button
+            className="mt-3 w-full"
+            disabled={finish.isPending}
+            onClick={() =>
+              finish.mutate({}, { onSuccess: () => router.push("/dashboard") })
+            }
+            variant="ghost"
+          >
+            {t("skip")}
+          </Button>
+        </aside>
+        <section aria-labelledby="wizard-step-title">
+          <StepPanel
+            active={active}
+            data={data}
+            onBrief={(brief) => push({ brief })}
+            onOpen={(step) => push({ step })}
+            onRun={(run) => push({ run, step: "design" })}
+            returnQuery={returnQuery}
+            url={url}
+          />
+        </section>
+      </div>
+    </div>
+  );
+};

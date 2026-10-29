@@ -48,6 +48,7 @@
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "date-fns": "catalog:",
+    "driver.js": "catalog:",
     "evlog": "catalog:",
     "geoip-country": "^5.0.202610240156",
     "lucide-react": "catalog:",

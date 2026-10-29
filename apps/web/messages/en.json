@@ -37,7 +37,8 @@
     "onboardingTitle": "Get set up",
     "autopilotTitle": "Autopilot",
     "storeTitle": "Store",
-    "dropsTitle": "Drops"
+    "dropsTitle": "Drops",
+    "campaignTitle": "Your campaign"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -1122,13 +1123,6 @@
     }
   },
   "Onboarding": {
-    "title": "Set up wovain",
-    "progress": "Step {step, number} of {total, number}",
-    "off": {
-      "title": "Setup isn't on for your account yet",
-      "body": "You can still connect your accounts from Connections and start a drop.",
-      "back": "Back to overview"
-    },
     "health": {
       "state": {
         "connected": "Connected",
@@ -1141,15 +1135,6 @@
         "art": "Draws your designs on your fal account."
       },
       "optional": "You can add it later."
-    },
-    "connect": {
-      "title": "Connect your shop and your ads",
-      "lead": "wovain works inside your own accounts. Each takes one click, and you can disconnect at any time.",
-      "leadWovainDraws": "wovain works inside your own accounts. Each takes one click. wovain draws your designs from your credits.",
-      "ready": "You can start a drop now.",
-      "notReady": "Connect Fourthwall before your first drop.",
-      "next": "Next",
-      "later": "Skip for now"
     },
     "brand": {
       "title": "Your brand (optional)",
@@ -1418,18 +1403,6 @@
       "save": "Save and continue",
       "saving": "Saving…",
       "saveFailed": "Saving didn't work: {message}"
-    },
-    "done": {
-      "title": "You're set up",
-      "lead": "Come back to this page any time to change your brand or your limits.",
-      "items": {
-        "connect": "Fourthwall and Meta connected",
-        "brand": "Brand references saved",
-        "autonomy": "Autonomy and spend limits set"
-      },
-      "doneLabel": "(done)",
-      "openLabel": "(not yet)",
-      "startDrop": "Start a drop"
     }
   },
   "Autopilot": {
@@ -1963,6 +1936,128 @@
       "pattern": "All-over pattern",
       "embroidery": "Embroidery",
       "label": "Label"
+    }
+  },
+  "Launch": {
+    "title": "Your first campaign in 10 minutes",
+    "lead": "Six steps from sign-in to ads running for your first drop. Do them in order, or skip any and come back.",
+    "skip": "Skip setup for now",
+    "timer": {
+      "elapsed": "Time since you signed up:",
+      "target": "of {minutes, number} min",
+      "onTime": "Live in under 10 minutes",
+      "live": "Campaign live"
+    },
+    "checklist": {
+      "title": "Setup",
+      "progress": "{done, number} of {total, number} done",
+      "done": "(done)",
+      "open": "(not yet)",
+      "go": "Do this now"
+    },
+    "steps": {
+      "signin": {
+        "title": "Sign in",
+        "summary": "You're in."
+      },
+      "sell": {
+        "title": "Pick what to sell",
+        "summary": "Choose one of this week's directions: what's rising with an audience and how crowded it is."
+      },
+      "store": {
+        "title": "Set up your store",
+        "summary": "Connect Fourthwall and finish the steps that let your shop take orders."
+      },
+      "meta": {
+        "title": "Connect Meta and set limits",
+        "summary": "Connect your ad account, then choose how much wovain may spend a day and a month."
+      },
+      "design": {
+        "title": "Approve a design",
+        "summary": "wovain researches your direction and draws designs. Approve the ones you'd sell."
+      },
+      "ads": {
+        "title": "Launch your ads",
+        "summary": "Review the ad and its daily budget, then start it."
+      }
+    },
+    "spotlight": {
+      "close": "Got it",
+      "sell": "Pick a direction to start. You can change it later.",
+      "store": "Connect your Fourthwall shop here. You come back to this step when you're done.",
+      "meta": "Connect Meta here. Your ads never spend more than the limits you set below.",
+      "design": "Start here. When your designs are ready, approve them and come back.",
+      "ads": "Open your drop to review the ad and start it."
+    },
+    "sell": {
+      "title": "What will you sell?",
+      "lead": "Pick a direction and wovain writes the brief. Each one comes with why it's rising now.",
+      "picked": "Your brief: {brief}",
+      "brand": "Add your brand (optional): directions then fit it",
+      "next": "Next: your store"
+    },
+    "store": {
+      "title": "Set up your store",
+      "lead": "Your products sell on your own Fourthwall shop. Each card opens the right page and ticks off when you come back.",
+      "next": "Next: Meta"
+    },
+    "meta": {
+      "title": "Connect Meta and set your limits",
+      "lead": "Ads run in your own Meta account. Nothing spends without your approval, and never beyond your limits.",
+      "next": "Next: your designs"
+    },
+    "design": {
+      "title": "Approve a design",
+      "lead": "wovain researches “{brief}”, picks the strongest ideas and draws designs for them.",
+      "start": "Find ideas and draw designs",
+      "working": "wovain is researching and drawing. Open your drop to pick ideas and approve designs; this step ticks off when you come back.",
+      "ready": "Your drop is waiting for you. Approve a design, then come back here.",
+      "open": "Open my drop"
+    },
+    "ads": {
+      "title": "Launch your ads",
+      "lead": "Your products are ready. Review the ad and its daily budget in your drop, then start it.",
+      "open": "Review and launch ads"
+    },
+    "finished": {
+      "title": "Your campaign is live",
+      "lead": "Products, store, ads, spend and results are all on one page.",
+      "open": "See my campaign"
+    },
+    "off": {
+      "title": "Setup isn't on for your account yet",
+      "body": "You can still connect your accounts from Connections and start a drop.",
+      "back": "Back to overview"
+    },
+    "campaign": {
+      "title": "Here's your campaign",
+      "lead": "Everything your drop “{brief}” made, in one place.",
+      "store": "Open my store",
+      "spend": {
+        "title": "Spend and limits",
+        "source": "Your limits apply to every campaign",
+        "daily": "Daily ad budget",
+        "dailyCap": "Daily limit",
+        "monthlyCap": "Monthly limit"
+      },
+      "products": {
+        "title": "Products",
+        "none": "No products yet. Approve a design in your drop to make them.",
+        "mockupAlt": "Product mockup",
+        "view": "View in store",
+        "status": {
+          "hidden": "Draft",
+          "in_review": "Waiting for approval",
+          "public": "For sale",
+          "paused": "Paused",
+          "retired": "Retired"
+        }
+      },
+      "ads": {
+        "title": "Ads",
+        "none": "No ad yet for this drop.",
+        "create": "Create the ad"
+      }
     }
   }
 }

@@ -37,7 +37,8 @@
     "onboardingTitle": "Configuration",
     "autopilotTitle": "Pilote automatique",
     "storeTitle": "Boutique",
-    "dropsTitle": "Drops"
+    "dropsTitle": "Drops",
+    "campaignTitle": "Votre campagne"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -1122,13 +1123,6 @@
     }
   },
   "Onboarding": {
-    "title": "Configurer wovain",
-    "progress": "Étape {step, number} sur {total, number}",
-    "off": {
-      "title": "La configuration n'est pas encore active sur votre compte",
-      "body": "Vous pouvez connecter vos comptes depuis Connexions et lancer un drop.",
-      "back": "Retour à l'aperçu"
-    },
     "health": {
       "state": {
         "connected": "Connecté",
@@ -1141,15 +1135,6 @@
         "art": "Dessine vos designs sur votre compte fal."
       },
       "optional": "Vous pourrez l'ajouter plus tard."
-    },
-    "connect": {
-      "title": "Connectez votre boutique et vos publicités",
-      "lead": "wovain travaille dans vos propres comptes. Un clic pour chacun, et vous pouvez les déconnecter à tout moment.",
-      "leadWovainDraws": "wovain travaille dans vos propres comptes. Un clic pour chacun. wovain dessine vos designs avec vos crédits.",
-      "ready": "Vous pouvez lancer un drop.",
-      "notReady": "Connectez Fourthwall avant votre premier drop.",
-      "next": "Suivant",
-      "later": "Passer pour l'instant"
     },
     "brand": {
       "title": "Votre marque (facultatif)",
@@ -1418,18 +1403,6 @@
       "save": "Enregistrer et continuer",
       "saving": "Enregistrement…",
       "saveFailed": "L'enregistrement a échoué : {message}"
-    },
-    "done": {
-      "title": "C'est prêt",
-      "lead": "Revenez sur cette page quand vous voulez pour changer votre marque ou vos plafonds.",
-      "items": {
-        "connect": "Fourthwall et Meta connectés",
-        "brand": "Références de marque enregistrées",
-        "autonomy": "Autonomie et plafonds définis"
-      },
-      "doneLabel": "(fait)",
-      "openLabel": "(à faire)",
-      "startDrop": "Lancer un drop"
     }
   },
   "Autopilot": {
@@ -1963,6 +1936,128 @@
       "pattern": "Motif intégral",
       "embroidery": "Broderie",
       "label": "Étiquette"
+    }
+  },
+  "Launch": {
+    "title": "Votre première campagne en 10 minutes",
+    "lead": "Six étapes, de la connexion aux publicités de votre premier drop. Suivez-les dans l'ordre, ou passez-en une et revenez-y plus tard.",
+    "skip": "Passer la configuration pour l'instant",
+    "timer": {
+      "elapsed": "Temps depuis votre inscription :",
+      "target": "sur {minutes, number} min",
+      "onTime": "En ligne en moins de 10 minutes",
+      "live": "Campagne en ligne"
+    },
+    "checklist": {
+      "title": "Configuration",
+      "progress": "{done, number} sur {total, number} terminées",
+      "done": "(terminé)",
+      "open": "(pas encore)",
+      "go": "Le faire maintenant"
+    },
+    "steps": {
+      "signin": {
+        "title": "Se connecter",
+        "summary": "C'est fait."
+      },
+      "sell": {
+        "title": "Choisir quoi vendre",
+        "summary": "Choisissez une des pistes de la semaine : ce qui monte auprès d'un public, et la concurrence en face."
+      },
+      "store": {
+        "title": "Préparer la boutique",
+        "summary": "Connectez Fourthwall et terminez les étapes qui permettent à votre boutique de prendre des commandes."
+      },
+      "meta": {
+        "title": "Connecter Meta et fixer des limites",
+        "summary": "Connectez votre compte publicitaire, puis choisissez combien wovain peut dépenser par jour et par mois."
+      },
+      "design": {
+        "title": "Approuver un design",
+        "summary": "wovain étudie votre piste et dessine des designs. Approuvez ceux que vous vendriez."
+      },
+      "ads": {
+        "title": "Lancer les publicités",
+        "summary": "Relisez la publicité et son budget quotidien, puis lancez-la."
+      }
+    },
+    "spotlight": {
+      "close": "Compris",
+      "sell": "Choisissez une piste pour commencer. Vous pourrez la changer ensuite.",
+      "store": "Connectez votre boutique Fourthwall ici. Vous revenez à cette étape une fois terminé.",
+      "meta": "Connectez Meta ici. Vos publicités ne dépassent jamais les limites que vous fixez plus bas.",
+      "design": "Commencez ici. Quand vos designs sont prêts, approuvez-les et revenez.",
+      "ads": "Ouvrez votre drop pour relire la publicité et la lancer."
+    },
+    "sell": {
+      "title": "Que allez-vous vendre ?",
+      "lead": "Choisissez une piste et wovain écrit le brief. Chacune explique pourquoi elle monte en ce moment.",
+      "picked": "Votre brief : {brief}",
+      "brand": "Ajouter votre marque (facultatif) : les pistes s'y adaptent",
+      "next": "Suivant : la boutique"
+    },
+    "store": {
+      "title": "Préparer la boutique",
+      "lead": "Vos produits se vendent sur votre propre boutique Fourthwall. Chaque carte ouvre la bonne page et se coche à votre retour.",
+      "next": "Suivant : Meta"
+    },
+    "meta": {
+      "title": "Connecter Meta et fixer vos limites",
+      "lead": "Les publicités tournent sur votre propre compte Meta. Rien n'est dépensé sans votre accord, ni au-delà de vos limites.",
+      "next": "Suivant : vos designs"
+    },
+    "design": {
+      "title": "Approuver un design",
+      "lead": "wovain étudie « {brief} », retient les meilleures idées et dessine leurs designs.",
+      "start": "Trouver des idées et dessiner",
+      "working": "wovain étudie et dessine. Ouvrez votre drop pour choisir les idées et approuver les designs ; cette étape se coche à votre retour.",
+      "ready": "Votre drop vous attend. Approuvez un design, puis revenez ici.",
+      "open": "Ouvrir mon drop"
+    },
+    "ads": {
+      "title": "Lancer les publicités",
+      "lead": "Vos produits sont prêts. Relisez la publicité et son budget quotidien dans votre drop, puis lancez-la.",
+      "open": "Relire et lancer les publicités"
+    },
+    "finished": {
+      "title": "Votre campagne est en ligne",
+      "lead": "Produits, boutique, publicités, dépenses et résultats sont réunis sur une seule page.",
+      "open": "Voir ma campagne"
+    },
+    "off": {
+      "title": "La configuration n'est pas encore active pour votre compte",
+      "body": "Vous pouvez quand même connecter vos comptes depuis Connexions et lancer un drop.",
+      "back": "Retour à l'aperçu"
+    },
+    "campaign": {
+      "title": "Voici votre campagne",
+      "lead": "Tout ce que votre drop « {brief} » a produit, au même endroit.",
+      "store": "Ouvrir ma boutique",
+      "spend": {
+        "title": "Dépenses et limites",
+        "source": "Vos limites s'appliquent à toutes les campagnes",
+        "daily": "Budget publicitaire quotidien",
+        "dailyCap": "Limite quotidienne",
+        "monthlyCap": "Limite mensuelle"
+      },
+      "products": {
+        "title": "Produits",
+        "none": "Pas encore de produits. Approuvez un design dans votre drop pour les créer.",
+        "mockupAlt": "Maquette du produit",
+        "view": "Voir dans la boutique",
+        "status": {
+          "hidden": "Brouillon",
+          "in_review": "En attente d'approbation",
+          "public": "En vente",
+          "paused": "En pause",
+          "retired": "Retiré"
+        }
+      },
+      "ads": {
+        "title": "Publicités",
+        "none": "Pas encore de publicité pour ce drop.",
+        "create": "Créer la publicité"
+      }
     }
   }
 }

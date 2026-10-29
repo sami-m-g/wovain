@@ -37,7 +37,8 @@
     "onboardingTitle": "Configuración",
     "autopilotTitle": "Piloto automático",
     "storeTitle": "Tienda",
-    "dropsTitle": "Drops"
+    "dropsTitle": "Drops",
+    "campaignTitle": "Tu campaña"
   },
   "Common": {
     "skipToContent": "Saltar al contenido",
@@ -1122,13 +1123,6 @@
     }
   },
   "Onboarding": {
-    "title": "Configura wovain",
-    "progress": "Paso {step, number} de {total, number}",
-    "off": {
-      "title": "La configuración aún no está activa en tu cuenta",
-      "body": "Puedes conectar tus cuentas desde Conexiones y empezar un drop.",
-      "back": "Volver al resumen"
-    },
     "health": {
       "state": {
         "connected": "Conectado",
@@ -1141,15 +1135,6 @@
         "art": "Dibuja tus diseños en tu cuenta de fal."
       },
       "optional": "Puedes añadirla más tarde."
-    },
-    "connect": {
-      "title": "Conecta tu tienda y tus anuncios",
-      "lead": "wovain trabaja dentro de tus propias cuentas. Cada una es un clic y puedes desconectarla cuando quieras.",
-      "leadWovainDraws": "wovain trabaja dentro de tus propias cuentas. Cada una es un clic. wovain dibuja tus diseños con tus créditos.",
-      "ready": "Ya puedes empezar un drop.",
-      "notReady": "Conecta Fourthwall antes de tu primer drop.",
-      "next": "Siguiente",
-      "later": "Omitir por ahora"
     },
     "brand": {
       "title": "Tu marca (opcional)",
@@ -1418,18 +1403,6 @@
       "save": "Guardar y seguir",
       "saving": "Guardando…",
       "saveFailed": "No se pudo guardar: {message}"
-    },
-    "done": {
-      "title": "Todo listo",
-      "lead": "Vuelve a esta página cuando quieras para cambiar tu marca o tus límites.",
-      "items": {
-        "connect": "Fourthwall y Meta conectados",
-        "brand": "Referencias de marca guardadas",
-        "autonomy": "Autonomía y límites de gasto fijados"
-      },
-      "doneLabel": "(hecho)",
-      "openLabel": "(pendiente)",
-      "startDrop": "Empezar un drop"
     }
   },
   "Autopilot": {
@@ -1963,6 +1936,128 @@
       "pattern": "Estampado completo",
       "embroidery": "Bordado",
       "label": "Etiqueta"
+    }
+  },
+  "Launch": {
+    "title": "Tu primera campaña en 10 minutos",
+    "lead": "Seis pasos desde el inicio de sesión hasta los anuncios de tu primer drop. Hazlos en orden, o salta alguno y vuelve después.",
+    "skip": "Saltar la configuración por ahora",
+    "timer": {
+      "elapsed": "Tiempo desde que te registraste:",
+      "target": "de {minutes, number} min",
+      "onTime": "En marcha en menos de 10 minutos",
+      "live": "Campaña activa"
+    },
+    "checklist": {
+      "title": "Configuración",
+      "progress": "{done, number} de {total, number} hechos",
+      "done": "(hecho)",
+      "open": "(pendiente)",
+      "go": "Hacerlo ahora"
+    },
+    "steps": {
+      "signin": {
+        "title": "Iniciar sesión",
+        "summary": "Ya estás dentro."
+      },
+      "sell": {
+        "title": "Elegir qué vender",
+        "summary": "Elige una de las direcciones de esta semana: lo que crece con un público y cuánta competencia hay."
+      },
+      "store": {
+        "title": "Preparar la tienda",
+        "summary": "Conecta Fourthwall y termina los pasos que permiten a tu tienda recibir pedidos."
+      },
+      "meta": {
+        "title": "Conectar Meta y fijar límites",
+        "summary": "Conecta tu cuenta publicitaria y elige cuánto puede gastar wovain al día y al mes."
+      },
+      "design": {
+        "title": "Aprobar un diseño",
+        "summary": "wovain investiga tu dirección y dibuja diseños. Aprueba los que venderías."
+      },
+      "ads": {
+        "title": "Lanzar los anuncios",
+        "summary": "Revisa el anuncio y su presupuesto diario, y lánzalo."
+      }
+    },
+    "spotlight": {
+      "close": "Entendido",
+      "sell": "Elige una dirección para empezar. Puedes cambiarla después.",
+      "store": "Conecta tu tienda Fourthwall aquí. Vuelves a este paso cuando termines.",
+      "meta": "Conecta Meta aquí. Tus anuncios nunca superan los límites que fijes abajo.",
+      "design": "Empieza aquí. Cuando tus diseños estén listos, apruébalos y vuelve.",
+      "ads": "Abre tu drop para revisar el anuncio y lanzarlo."
+    },
+    "sell": {
+      "title": "¿Qué vas a vender?",
+      "lead": "Elige una dirección y wovain escribe el brief. Cada una explica por qué crece ahora.",
+      "picked": "Tu brief: {brief}",
+      "brand": "Añadir tu marca (opcional): las direcciones se adaptan a ella",
+      "next": "Siguiente: tu tienda"
+    },
+    "store": {
+      "title": "Preparar la tienda",
+      "lead": "Tus productos se venden en tu propia tienda Fourthwall. Cada tarjeta abre la página adecuada y se marca cuando vuelves.",
+      "next": "Siguiente: Meta"
+    },
+    "meta": {
+      "title": "Conectar Meta y fijar tus límites",
+      "lead": "Los anuncios funcionan en tu propia cuenta de Meta. Nada se gasta sin tu aprobación ni por encima de tus límites.",
+      "next": "Siguiente: tus diseños"
+    },
+    "design": {
+      "title": "Aprobar un diseño",
+      "lead": "wovain investiga «{brief}», elige las mejores ideas y dibuja sus diseños.",
+      "start": "Buscar ideas y dibujar",
+      "working": "wovain está investigando y dibujando. Abre tu drop para elegir ideas y aprobar diseños; este paso se marca cuando vuelvas.",
+      "ready": "Tu drop te espera. Aprueba un diseño y vuelve aquí.",
+      "open": "Abrir mi drop"
+    },
+    "ads": {
+      "title": "Lanzar los anuncios",
+      "lead": "Tus productos están listos. Revisa el anuncio y su presupuesto diario en tu drop, y lánzalo.",
+      "open": "Revisar y lanzar anuncios"
+    },
+    "finished": {
+      "title": "Tu campaña está activa",
+      "lead": "Productos, tienda, anuncios, gasto y resultados en una sola página.",
+      "open": "Ver mi campaña"
+    },
+    "off": {
+      "title": "La configuración aún no está activa en tu cuenta",
+      "body": "Igualmente puedes conectar tus cuentas desde Conexiones y empezar un drop.",
+      "back": "Volver al resumen"
+    },
+    "campaign": {
+      "title": "Aquí está tu campaña",
+      "lead": "Todo lo que hizo tu drop «{brief}», en un solo lugar.",
+      "store": "Abrir mi tienda",
+      "spend": {
+        "title": "Gasto y límites",
+        "source": "Tus límites se aplican a todas las campañas",
+        "daily": "Presupuesto diario de anuncios",
+        "dailyCap": "Límite diario",
+        "monthlyCap": "Límite mensual"
+      },
+      "products": {
+        "title": "Productos",
+        "none": "Aún no hay productos. Aprueba un diseño en tu drop para crearlos.",
+        "mockupAlt": "Maqueta del producto",
+        "view": "Ver en la tienda",
+        "status": {
+          "hidden": "Borrador",
+          "in_review": "Esperando aprobación",
+          "public": "En venta",
+          "paused": "En pausa",
+          "retired": "Retirado"
+        }
+      },
+      "ads": {
+        "title": "Anuncios",
+        "none": "Aún no hay anuncio para este drop.",
+        "create": "Crear el anuncio"
+      }
     }
   }
 }

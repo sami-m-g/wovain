@@ -132,7 +132,11 @@ const useProductColumns = () => {
   );
 };
 
-const JourneySection = ({ journey }: { journey: Insights["journey"] }) => {
+export const JourneySection = ({
+  journey,
+}: {
+  journey: Insights["journey"];
+}) => {
   const t = useTranslations("Insights.journey");
   const minutes = (value: number | undefined) =>
     unknown(value, (n) => t("minutes", { value: Math.round(n) }));
