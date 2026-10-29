@@ -11,6 +11,7 @@ import {
   setAutonomy,
   spendToDate,
 } from "../flow/approvals";
+import { requestBackstopSync } from "../flow/backstop";
 import { protectedProcedure } from "../index";
 
 // The merchant's side of the approval queue and their autonomy settings
@@ -109,6 +110,9 @@ export const autonomyRouter = {
     )
     .handler(async ({ context, input }) => {
       await requireAutonomyApprovals(context);
-      return await setAutonomy(context, input);
+      const settings = await setAutonomy(context, input);
+      // Meta's mirror of the caps follows (openspec meta-backstop).
+      await requestBackstopSync(context);
+      return settings;
     }),
 };

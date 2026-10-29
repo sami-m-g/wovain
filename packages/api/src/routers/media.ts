@@ -12,6 +12,7 @@ import {
   setLossLimit,
 } from "../flow/ad-rules";
 import { autonomyOf } from "../flow/approvals";
+import { requestBackstopSync } from "../flow/backstop";
 import { flagContextOf } from "../flow/flags";
 import {
   isMediaBuyingLive,
@@ -114,10 +115,12 @@ export const mediaCampaignsRouter = {
         lossLimitCents: z.number().int().min(0).max(MAX_LOSS_LIMIT_CENTS),
       })
     )
-    .handler(
-      async ({ context, input }) =>
-        await setLossLimit(context, input.lossLimitCents)
-    ),
+    .handler(async ({ context, input }) => {
+      const settings = await setLossLimit(context, input.lossLimitCents);
+      // Meta's mirror of the loss limit follows (openspec meta-backstop).
+      await requestBackstopSync(context);
+      return settings;
+    }),
   sync: protectedProcedure
     .input(z.object({ campaignId: id }))
     .handler(
