@@ -107,6 +107,15 @@ The suggestions SHALL be kept per merchant and request and served at once. A kep
 - **WHEN** nothing is kept for the request
 - **THEN** the step shows card-shaped placeholders, the step under way and the seconds so far, and each card appears as soon as it is ready
 
+### Requirement: Only whole answers kept
+
+An answer with no suggestion, or one whose news or listings read failed, SHALL never be kept. One already kept SHALL be read as missing.
+
+#### Scenario: Empty answer
+
+- **WHEN** a search finds no suggestion
+- **THEN** the answer is not kept, and the next visit searches again
+
 ### Requirement: The brief stays usable
 
 The merchant SHALL be able to type and submit their own brief while the suggestions load.

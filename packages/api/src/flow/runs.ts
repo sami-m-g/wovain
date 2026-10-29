@@ -566,6 +566,17 @@ const logRunFailure = (
     },
     userId: actor.userId,
   });
+  // A run that runs inside the request that started it (the legacy engine)
+  // also marks that request's wide event, so the failure shows on the
+  // request in Cloud Logging and PostHog, not only as a separate event.
+  actor.log?.set({
+    runFailure: { error_type: errorType, id: runId, reason, step },
+  });
+  if (level === "error") {
+    actor.log?.error?.(
+      new Error(`Run failed during ${step ?? "start"}: ${reason}`)
+    );
+  }
 };
 
 // The run's last word. A run still active ends here once (a retried finish

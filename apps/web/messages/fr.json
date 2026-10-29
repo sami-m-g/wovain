@@ -2297,6 +2297,7 @@
     "dropped": {
       "no_qloo_evidence": "Aucune preuve Qloo",
       "no_demand_proof": "Aucune preuve que ça se vend",
+      "demand_unknown": "Demande inconnue",
       "no_competition_read": "La concurrence n'a pas pu être lue",
       "saturated": "Trop encombré : trop d'annonces ou d'annonceurs similaires",
       "no_title": "Aucun titre étayé par les preuves"
@@ -2307,7 +2308,15 @@
       "crowded": "Encombré"
     },
     "sameBuyers": "Les mêmes acheteurs que votre brief",
-    "droppedCount": "{count, plural, one {# idée écartée} other {# idées écartées}} faute de preuves"
+    "droppedCount": "{count, plural, one {# idée écartée} other {# idées écartées}} faute de preuves",
+    "caution": {
+      "demand_unknown": "Non confirmé : la vérification de la demande n'a pas pu se faire, on ne sait pas si cela se vend.",
+      "no_demand_proof": "Non confirmé : aucun best-seller, avis ou publicité de longue durée trouvé pour l'instant.",
+      "no_competition_read": "Non confirmé : la vérification des annonces n'a pas pu se faire, la concurrence est inconnue.",
+      "saturated": "Saturé : beaucoup d'annonces ou d'annonceurs similaires le vendent déjà."
+    },
+    "unconfirmed": "Aucun de ces thèmes n'a encore prouvé sa demande : chacun indique ce qui manque. Choisissez-en un à tester, ou écrivez le vôtre.",
+    "noneChecked": "Nous n'avons pas pu confirmer la demande pour ces thèmes. Voici ce que nous avons vérifié :"
   },
   "Alerts": {
     "title": "Alertes",
