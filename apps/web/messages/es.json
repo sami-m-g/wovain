@@ -1425,8 +1425,7 @@
     "title": "Piloto automático",
     "lead": "Lo que wovain vio para tu marca, lo que hizo y por qué.",
     "scanNow": "Buscar ahora",
-    "scanRequested": "Búsqueda pedida. Las nuevas sugerencias aparecen aquí en un par de minutos. Puedes buscar una vez cada 6 horas.",
-    "scanFailed": "La búsqueda no empezó. Inténtalo de nuevo en un momento.",
+    "scanFailed": "El análisis no empezó.",
     "actionFailed": "No funcionó: {message}",
     "levels": {
       "suggest": "Solo sugerir",
@@ -1490,7 +1489,12 @@
       "other": "{step}"
     },
     "scans": "Búsquedas sin nada nuevo",
-    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}"
+    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}",
+    "scanning": "Analizando…",
+    "scanProgress": "Analizando, empezó hace {seconds, number} s",
+    "scanSlow": "Sigue analizando en segundo plano. Los resultados aparecerán aquí al terminar.",
+    "scanDone": "{count, plural, =0 {Análisis terminado. Nada nuevo esta vez.} one {Análisis terminado: # sugerencia nueva.} other {Análisis terminado: # sugerencias nuevas.}}",
+    "scanThrottled": "Analizaste {last}. El próximo análisis puede hacerse a partir de las {next}."
   },
   "Voice": {
     "hold": "Mantén pulsado para hablar",

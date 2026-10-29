@@ -1425,8 +1425,7 @@
     "title": "Pilote automatique",
     "lead": "Ce que wovain a repéré pour votre marque, ce qu'il a fait et pourquoi.",
     "scanNow": "Analyser maintenant",
-    "scanRequested": "Analyse demandée. Les nouvelles suggestions arrivent ici d'ici une ou deux minutes. Vous pouvez analyser une fois toutes les 6 heures.",
-    "scanFailed": "L'analyse n'a pas démarré. Réessayez dans un instant.",
+    "scanFailed": "L'analyse n'a pas démarré.",
     "actionFailed": "Ça n'a pas marché : {message}",
     "levels": {
       "suggest": "Suggérer seulement",
@@ -1490,7 +1489,12 @@
       "other": "{step}"
     },
     "scans": "Analyses sans nouveauté",
-    "scanNothing": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité, déjà suggérée cette semaine.} other {# recherches ont trouvé de l'actualité, déjà suggérée cette semaine.}}"
+    "scanNothing": "{count, plural, =0 {Aucune recherche n'a trouvé d'actualité cette semaine.} one {# recherche a trouvé de l'actualité, déjà suggérée cette semaine.} other {# recherches ont trouvé de l'actualité, déjà suggérée cette semaine.}}",
+    "scanning": "Analyse…",
+    "scanProgress": "Analyse en cours, lancée il y a {seconds, number} s",
+    "scanSlow": "L'analyse continue en arrière-plan. Les résultats s'afficheront ici une fois terminée.",
+    "scanDone": "{count, plural, =0 {Analyse terminée. Rien de nouveau cette fois.} one {Analyse terminée : # nouvelle suggestion.} other {Analyse terminée : # nouvelles suggestions.}}",
+    "scanThrottled": "Vous avez lancé une analyse {last}. La prochaine peut partir à partir de {next}."
   },
   "Voice": {
     "hold": "Maintenez pour parler",
