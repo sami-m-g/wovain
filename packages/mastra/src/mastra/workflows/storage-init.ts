@@ -1,4 +1,4 @@
-import { initMastraSchema } from "./storage";
+import { initMastraSchema } from "@wovain/mastra/workflows/storage";
 
 // `pnpm --filter @wovain/mastra storage:init`: Mastra's schema on DATABASE_URL,
 // run by the migrate jobs after Drizzle's migrations (the deploy pipeline)
