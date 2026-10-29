@@ -1,4 +1,5 @@
-# OSV-Scanner configuration: the license exceptions for the `licenses` CI job
+# OSV-Scanner configuration: the vulnerabilities fixed outside a release, and
+# the license exceptions for the `licenses` CI job
 # (.github/workflows/supply-chain.yml). The job scans pnpm-lock.yaml and
 # infra/pnpm-lock.yaml against the allowlist given on its command line; each
 # entry here is a package whose license is outside that allowlist (or that
@@ -7,6 +8,13 @@
 # `license.override` replaces a missing or wrong license with the one the
 # package really has; `license.ignore` accepts a license that is outside the
 # allowlist. Neither turns off vulnerability scanning for the package.
+
+# Vulnerabilities fixed in this repository, with no fixed release to move to.
+# OpenSSF Scorecard reads this file too.
+
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+reason = "deepmerge 4.3.1 (latest; no fixed release) is patched by patches/deepmerge@4.3.1.patch (pnpm patchedDependencies): merged keys are written as own properties, so a __proto__ key cannot replace the prototype. Remove with the patch once deepmerge ships a fix."
 
 # Manifests without a license field: the license from the package's repository.
 

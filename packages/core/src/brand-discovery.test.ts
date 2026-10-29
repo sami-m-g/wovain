@@ -4,11 +4,16 @@ import type { z } from "zod";
 import {
   buyersOf,
   discoverBrands,
+  palettesFromWords,
   pickReferences,
   seedsOf,
 } from "./brand-discovery";
 import type { DiscoveryDeps, DiscoveryRequest } from "./brand-discovery";
-import { knownGarments } from "./garment-colors";
+import {
+  contrastRatio,
+  knownGarments,
+  MIN_INK_CONTRAST,
+} from "./garment-colors";
 import type { Ask, Nemotron } from "./nemotron";
 import type { InsightsQuery, QlooInsight } from "./qloo";
 import { DecisionTrace } from "./trace";
@@ -329,4 +334,50 @@ it("reads who buys from Qloo's demographics", () => {
     gender: "female",
     nextAge: "30_to_34",
   });
+});
+
+it("re-suggests colours from plain words, held to the blank", async () => {
+  const asked: string[] = [];
+  const ask: Nemotron = async <T extends z.ZodType>({
+    prompt,
+    schema,
+  }: Ask<T>) => {
+    asked.push(prompt);
+    return await Promise.resolve(
+      schema.parse({
+        palettes: [
+          // Pale butter on Ivory fails and is darkened; Navy isn't offered.
+          {
+            garments: ["Ivory", "Navy"],
+            inks: ["#F3E3A1", "#7A2E1F"],
+            label: "warmer cream",
+          },
+          {
+            garments: ["Pepper"],
+            inks: ["#F2ECDD", "#E8A33D"],
+            label: "rust on charcoal",
+          },
+        ],
+      })
+    );
+  };
+  const { palettes } = await palettesFromWords(depsWith({ ask }), {
+    current: ["#3B2A20", "#A3AE91"],
+    words: "warmer",
+  });
+  expect(JSON.parse(asked[0] ?? "{}")).toMatchObject({ words: "warmer" });
+  expect(palettes.map((one) => one.label)).toStrictEqual([
+    "warmer cream",
+    "rust on charcoal",
+  ]);
+  for (const palette of palettes) {
+    for (const garment of palette.garments) {
+      expect(garment.name).not.toBe("Navy");
+      for (const ink of palette.inks) {
+        expect(contrastRatio(ink, garment.hex)).toBeGreaterThanOrEqual(
+          MIN_INK_CONTRAST
+        );
+      }
+    }
+  }
 });

@@ -9,7 +9,6 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@wovain/ui/components/empty";
 import { Skeleton } from "@wovain/ui/components/skeleton";
@@ -20,21 +19,21 @@ import {
 import { cn } from "@wovain/ui/lib/utils";
 import { CircleAlert, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
+import { ConnectState } from "@/components/app/connect-state";
 import type { DataColumn } from "@/components/app/data-table";
 import { DataTable } from "@/components/app/data-table";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
-import { ProviderLogo } from "@/components/app/provider-logo";
 import { ShuttleLoader } from "@/components/brand/shuttle-mark";
 import { KpiFrame } from "@/components/insights/kpi-cards";
 import { SalesChart } from "@/components/insights/sales-chart";
 import { WhatWeLearned } from "@/components/insights/what-we-learned";
-import { getPathname, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import type { InsightRange, Insights } from "@/lib/flow-client";
-import { connectUrl, describeProblem } from "@/lib/flow-client";
+import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 const RANGES = ["7d", "28d", "90d"] as const satisfies readonly InsightRange[];
@@ -78,43 +77,6 @@ const useFigures = () => {
 const right = {
   cellClassName: "text-end figures",
   headerClassName: "text-end",
-};
-
-/** A source that isn't connected: what it would show, and the way to connect. */
-const ConnectEmpty = ({
-  provider,
-  title,
-  body,
-  action,
-}: {
-  provider: "fourthwall" | "meta";
-  title: string;
-  body: string;
-  action: string;
-}) => {
-  const locale = useLocale();
-  return (
-    <Empty className="border-input bg-card border border-dashed">
-      <EmptyHeader>
-        <EmptyMedia>
-          <ProviderLogo service={provider} />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{body}</EmptyDescription>
-      </EmptyHeader>
-      <EmptyContent>
-        <a
-          className={cn(buttonVariants({ variant: "outline" }), "h-9 px-4")}
-          href={connectUrl(
-            provider,
-            getPathname({ href: "/dashboard/insights", locale })
-          )}
-        >
-          {action}
-        </a>
-      </EmptyContent>
-    </Empty>
-  );
 };
 
 const QuietEmpty = ({ title, body }: { title: string; body: string }) => (
@@ -178,8 +140,7 @@ const ShopSection = ({ shop }: { shop: Insights["shop"] }) => {
   if (shop.status === "not_connected") {
     return (
       <section aria-label={t("title")}>
-        <ConnectEmpty
-          action={t("connect")}
+        <ConnectState
           body={t("notConnected")}
           provider="fourthwall"
           title={t("notConnectedTitle")}
@@ -275,8 +236,7 @@ const AdsSection = ({ ads }: { ads: Insights["ads"] }) => {
   if (ads.status === "not_connected") {
     return (
       <section aria-label={t("title")}>
-        <ConnectEmpty
-          action={t("connect")}
+        <ConnectState
           body={t("notConnected")}
           provider="meta"
           title={t("notConnectedTitle")}

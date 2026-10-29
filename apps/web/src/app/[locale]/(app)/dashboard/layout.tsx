@@ -59,7 +59,10 @@ const DashboardLayout = async ({
         {/* Session replays mask the merchant's text here (ph-mask): shop
             names, briefs, emails. Inputs are masked everywhere. */}
         <SidebarInset className="ph-mask outline-none" id="main" tabIndex={-1}>
-          <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-8">
+          <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-8">
+            {/* Above the page: the content below is its own stacking context
+                (isolate), so nothing in it, a focused card's z-index included,
+                can paint over the bar. */}
             <SidebarTrigger
               aria-label={shell("toggleSidebar")}
               className="-ms-1.5"
@@ -93,7 +96,7 @@ const DashboardLayout = async ({
             </div>
           </header>
           <AppMotion>
-            <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 lg:py-10">
+            <div className="isolate mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 lg:py-10">
               <Suspense>
                 <AuthSession>{children}</AuthSession>
               </Suspense>

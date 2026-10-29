@@ -1,7 +1,9 @@
 # Known vulnerabilities in the lockfiles (OSV database), with Google's
-# reusable workflows. They need the permissions below on the calling job.
-# A pull request scans only what it changes; main and the schedule scan
-# everything.
+# reusable workflow. It needs the permissions below on the calling job.
+# Every event scans the lockfiles in full, so a pull request fails on any
+# known vulnerability, not only on one it adds; its check, `osv / osv-scan`,
+# is required on main (infra/github.ts). Vulnerabilities fixed in the
+# repository are the [[IgnoredVulns]] in osv-scanner.toml.
 name: osv
 
 on:
@@ -16,22 +18,8 @@ permissions:
   contents: read
 
 jobs:
-  osv-pr:
-    name: osv (pull request)
-    if: ${{ github.event_name == 'pull_request' }}
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
-    with:
-      scan-args: |-
-        --lockfile=pnpm-lock.yaml
-        --lockfile=infra/pnpm-lock.yaml
-
-  osv-scheduled:
-    name: osv (scheduled)
-    if: ${{ github.event_name != 'pull_request' }}
+  osv:
+    name: osv
     permissions:
       actions: read
       contents: read
@@ -39,5 +27,8 @@ jobs:
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
     with:
       scan-args: |-
+        --config=osv-scanner.toml
         --lockfile=pnpm-lock.yaml
         --lockfile=infra/pnpm-lock.yaml
+        --lockfile=docker/corepack/package-lock.json
+        --lockfile=docker/varlock/package-lock.json

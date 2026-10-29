@@ -17,6 +17,7 @@ The repository is public and ships a product that holds merchants' provider toke
 - `.gitguardian.yaml` and a `ggshield` job; the `GITGUARDIAN_API_KEY` Actions secret is declared in `infra/github.ts` from a stack secret.
 - The main ruleset requires `codeql` and `dependency-review` besides `verify` and `infra` (code only: applied after the production freeze, 2026-11-16).
 - `ip-address` is overridden to `^10.7.4` (the high advisory GHSA-mwp4-54f8-5fhr and five more).
+- OpenSSF Scorecard follow-up (https://github.com/sami-m-g/wovain/issues/114): Dockerfile images pinned by digest and npm installs through `npm ci` lockfiles (`docker/`), `@hono/node-server` overridden to 2.x, `deepmerge` patched (no fixed release), OSV-Scanner on full lockfiles for pull requests (`osv / osv-scan` required), and the main ruleset requiring one approval, from CodeRabbit (`.coderabbit.yaml`), with no bypass.
 
 ## Capabilities
 

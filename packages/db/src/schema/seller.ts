@@ -1,6 +1,7 @@
 import type { AdCopy } from "@wovain/core/ads";
 import type { Competition } from "@wovain/core/competition";
 import type { DesignBrief, Judgment } from "@wovain/core/design";
+import type { DropStyle } from "@wovain/core/drop-style";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
 import {
@@ -115,6 +116,9 @@ export const idea = pgTable(
     runId: text("run_id").references(() => run.id, { onDelete: "set null" }),
     score: real("score").notNull(),
     seed: text("seed").notNull(),
+    // The drop's own tone and palette (drop-style), from its Qloo audience
+    // and the brand's defaults; the merchant's pick once they choose.
+    style: jsonb("style").$type<DropStyle>(),
     theme: text("theme").notNull(),
     userId: owner(),
   },

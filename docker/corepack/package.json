@@ -1,0 +1,8 @@
+{
+  "name": "@wovain/docker-corepack",
+  "private": true,
+  "description": "corepack for the Docker base stage, installed with npm ci from the lockfile",
+  "dependencies": {
+    "corepack": "0.36.0"
+  }
+}
