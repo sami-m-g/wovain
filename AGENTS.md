@@ -40,6 +40,7 @@
   - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
 - Every error must reach PostHog Error Tracking, the one place errors are watched: log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
+- Minimal code, frameworks first, no lost functionality: before writing logic, use what Mastra (workflows, steps, tools, agents, processors, scorers, memory, tracing, `MCPServer`/`MCPClient`), Inngest, Better Auth, oRPC or another maintained library already provides. Write code only for what none of them cover. Every PR body names the library or framework it used, and gives a reason for any hand-written logic it adds
 - Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
 
 ## Specs and changes (OpenSpec)
