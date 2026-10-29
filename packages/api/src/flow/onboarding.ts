@@ -97,18 +97,20 @@ export const onboardingStatus = async (actor: Actor) => {
     return { enabled: false as const };
   }
   const wovainDraws = await platformFal(actor);
-  const [connections, [brand], [autonomyRow], autonomyOn] = await Promise.all([
-    connectionHealth(actor, wovainDraws),
-    actor.db
-      .select()
-      .from(brandProfile)
-      .where(eq(brandProfile.userId, actor.userId)),
-    actor.db
-      .select({ id: autonomySetting.id })
-      .from(autonomySetting)
-      .where(eq(autonomySetting.userId, actor.userId)),
-    actor.core.flags.isOn("autonomy-approvals", flagContextOf(actor)),
-  ]);
+  const [connections, [brand], [autonomyRow], autonomyOn, discovery] =
+    await Promise.all([
+      connectionHealth(actor, wovainDraws),
+      actor.db
+        .select()
+        .from(brandProfile)
+        .where(eq(brandProfile.userId, actor.userId)),
+      actor.db
+        .select({ id: autonomySetting.id })
+        .from(autonomySetting)
+        .where(eq(autonomySetting.userId, actor.userId)),
+      actor.core.flags.isOn("autonomy-approvals", flagContextOf(actor)),
+      actor.core.flags.isOn("brand-discovery", flagContextOf(actor)),
+    ]);
   const ready = (provider: ProviderId) =>
     connections.find((each) => each.provider === provider)?.state ===
     "connected";
@@ -129,6 +131,8 @@ export const onboardingStatus = async (actor: Actor) => {
       (each) => !each.required || each.state === "connected"
     ),
     connections,
+    // Guided brand discovery (the brand-discovery flag).
+    discovery,
     enabled: true as const,
     // The merchant reached the wizard's last step.
     finished: (brand?.onboardedAt ?? null) !== null,

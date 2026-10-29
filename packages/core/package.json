@@ -22,6 +22,8 @@
     "@posthog/ai": "catalog:",
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
+    "p-limit": "catalog:",
+    "p-retry": "catalog:",
     "posthog-node": "catalog:",
     "sharp": "catalog:",
     "zod": "catalog:"

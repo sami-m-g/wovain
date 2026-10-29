@@ -48,6 +48,7 @@ export const AGENT_IDS = [
   "ads_optimizer_review",
   "voice_intent",
   "competition_summary",
+  "brand_discovery",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
@@ -62,6 +63,9 @@ export const AGENT_ROLES = {
   ads_optimizer_review: "reasoning",
   autopilot_pick_idea: "reasoning",
   autopilot_review_design: "reasoning",
+  // Names and words the starter brands Qloo found in onboarding (name,
+  // niche, voice lines, palettes, products): it writes, code ranks.
+  brand_discovery: "default",
   // Reads web results for a brand reference and names Qloo-searchable
   // proxies: research, on the default model.
   brand_proxies: "default",

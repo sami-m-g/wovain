@@ -1,3 +1,5 @@
+import pLimit from "p-limit";
+import pRetry, { AbortError } from "p-retry";
 import { z } from "zod";
 
 import { external, notConfigured } from "./log";
@@ -19,6 +21,11 @@ export interface QlooConfig {
 }
 
 const TIMEOUT_MS = 15_000;
+const QLOO_CONCURRENCY = 4;
+const RETRIES = 2;
+const RETRY_MS = 500;
+const TOO_MANY = 429;
+const SERVER_ERROR = 500;
 
 // Entities a merchant's seed can name that fans have tastes about. Without
 // the filter, a word like "hiking" matches restaurants and trails (places),
@@ -122,6 +129,7 @@ const entitiesSchema = z.object({
         z.object({
           entity_id: z.string().max(128),
           name: z.string().max(300),
+          popularity: z.number().nullish(),
           properties: z.record(z.string(), z.unknown()).nullish(),
           query: z
             .object({
@@ -228,6 +236,29 @@ export interface Taste {
   themes: QlooTheme[];
 }
 
+// One insights query (docs.qloo.com/reference/insights-api-deep-dive):
+// entities of one type that the given signals' fans like. The hackathon
+// server answers 400 to demographics alone, so a query carries entities or
+// audiences too.
+export interface InsightsQuery {
+  // Qloo age buckets, e.g. "25_to_29".
+  age?: string | undefined;
+  audiences?: readonly string[] | undefined;
+  entities?: readonly string[] | undefined;
+  gender?: "female" | "male" | undefined;
+  take: number;
+  // How much what is rising now counts (Qloo's bias.trends).
+  trends?: "high" | "low" | "medium" | "off" | undefined;
+  type: AffinityType | "artist";
+}
+
+// An entity an insights query found, with Qloo's affinity to the signals
+// and its popularity percentile, each 0 to 1.
+export interface QlooInsight extends QlooEntity {
+  affinity: number;
+  popularity: number;
+}
+
 export interface TasteOptions {
   // Also ask which brands, films and shows the seed's fans like, with
   // explainability and a trend bias (the qloo-taste-map flag).
@@ -321,6 +352,11 @@ const themesFrom = (tags: z.output<typeof tagsSchema>): QlooTheme[] => {
 };
 
 export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
+  // At most QLOO_CONCURRENCY requests in flight per client: the hackathon
+  // server answers 429 to a burst (brand discovery's twelve insights calls
+  // did, tried live on 2026-10-29). A 429 or 5xx is retried with backoff;
+  // any other failure is final.
+  const limit = pLimit(QLOO_CONCURRENCY);
   const get = async <T extends z.ZodType>(
     path: string,
     query: Record<string, string>,
@@ -329,19 +365,32 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     if (apiKey === undefined) {
       throw notConfigured.qloo();
     }
-    const response = await fetch(
-      // Qloo's configured base URL; path is one of this file's literals and
-      // query is encoded, so no input picks the host.
-      // nosemgrep
-      new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
-      {
-        headers: { Accept: "application/json", "X-Api-Key": apiKey },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      }
+    const response = await limit(
+      async () =>
+        await pRetry(
+          async () => {
+            const reply = await fetch(
+              // Qloo's configured base URL; path is one of this file's
+              // literals and query is encoded, so no input picks the host.
+              // nosemgrep
+              new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
+              {
+                headers: { Accept: "application/json", "X-Api-Key": apiKey },
+                signal: AbortSignal.timeout(TIMEOUT_MS),
+              }
+            );
+            const error = new Error(`Qloo ${path} answered ${reply.status}`);
+            if (reply.status === TOO_MANY || reply.status >= SERVER_ERROR) {
+              throw error;
+            }
+            if (!reply.ok) {
+              throw new AbortError(error);
+            }
+            return reply;
+          },
+          { minTimeout: RETRY_MS, retries: RETRIES }
+        )
     );
-    if (!response.ok) {
-      throw new Error(`Qloo ${path} answered ${response.status}`);
-    }
     return schema.parse(await response.json());
   };
 
@@ -552,7 +601,85 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       }));
     });
 
-  return { audienceAffinity, demographicsOf, search, searchEntities, tasteOf };
+  // Entities of one type the query's signals like, highest affinity first.
+  const insights = async (
+    {
+      age,
+      audiences = [],
+      entities = [],
+      gender,
+      take,
+      trends,
+      type,
+    }: InsightsQuery,
+    log?: Logger
+  ): Promise<QlooInsight[]> =>
+    await external(
+      log,
+      { operation: `insights.${type}`, provider: "qloo" },
+      async () => {
+        const { results } = await get(
+          "/v2/insights",
+          {
+            "filter.type": `urn:entity:${type}`,
+            take: String(take),
+            ...(entities.length > 0 && {
+              "signal.interests.entities": entities.join(","),
+            }),
+            ...(audiences.length > 0 && {
+              "signal.demographics.audiences": audiences.join(","),
+            }),
+            ...(age !== undefined && { "signal.demographics.age": age }),
+            ...(gender !== undefined && {
+              "signal.demographics.gender": gender,
+            }),
+            ...(trends !== undefined && { "bias.trends": trends }),
+          },
+          entitiesSchema
+        );
+        return results.entities.map((entity) => ({
+          affinity: entity.query?.affinity ?? 0,
+          id: entity.entity_id,
+          name: entity.name.trim(),
+          popularity: entity.popularity ?? 0,
+          type,
+        }));
+      }
+    );
+
+  // The genre tags the given entities' fans share, highest affinity first.
+  const tagsFor = async (
+    entityIds: readonly string[],
+    log?: Logger,
+    take = 8
+  ): Promise<QlooTheme[]> =>
+    await external(log, { operation: "tags", provider: "qloo" }, async () => {
+      if (entityIds.length === 0) {
+        return [];
+      }
+      return themesFrom(
+        await get(
+          "/v2/insights",
+          {
+            "filter.tag.types": THEME_TAG_TYPES,
+            "filter.type": "urn:tag",
+            "signal.interests.entities": entityIds.join(","),
+            take: String(take),
+          },
+          tagsSchema
+        )
+      );
+    });
+
+  return {
+    audienceAffinity,
+    demographicsOf,
+    insights,
+    search,
+    searchEntities,
+    tagsFor,
+    tasteOf,
+  };
 };
 
 export type Qloo = ReturnType<typeof createQloo>;

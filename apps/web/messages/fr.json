@@ -1056,40 +1056,237 @@
     },
     "brand": {
       "title": "Votre marque",
-      "lead": "Citez les artistes, films et marques proches de votre travail. wovain cherche chacun sur Qloo, et vos recherches et publicités partent de ce goût.",
-      "referencesLegend": "Références de goût",
-      "referencesHelp": "Entre 3 et 5 : un musicien, un réalisateur, une marque que vous admirez.",
-      "referenceLabel": "Référence {number, number}",
+      "lead": "Vous ne savez pas encore quoi vendre ? wovain peut vous proposer des marques de départ à partir de ce que les gens aiment en ce moment, ou vous poser quelques questions. Vous pourrez tout modifier ensuite.",
+      "start": {
+        "label": "Comment voulez-vous commencer ?",
+        "auto": {
+          "title": "Proposez-moi",
+          "body": "Des marques de départ sur ce qui monte et reste ouvert."
+        },
+        "questions": {
+          "title": "Posez-moi quelques questions",
+          "body": "Cinq questions rapides sur vous et vos acheteurs."
+        },
+        "manual": {
+          "title": "Je connais déjà ma marque",
+          "body": "Remplissez votre marque vous-même."
+        }
+      },
+      "discover": {
+        "working": "Lecture de ce que les gens aiment et de ce qui se vend déjà…",
+        "failed": "Nous n'avons pas pu joindre nos données de goûts, donc pas encore de suggestions.",
+        "retry": "Réessayer",
+        "empty": "Nous avons trouvé trop peu pour proposer une marque à partir de cela. Essayez les questions ou d'autres réponses.",
+        "more": "Montrez-m'en d'autres",
+        "use": "Utiliser celle-ci",
+        "using": "Utilisée",
+        "applied": "Rempli à partir de {name}. Modifiez ce que vous voulez ci-dessous.",
+        "buyers": "Qui achète",
+        "taste": "Leurs goûts",
+        "products": "Commencez par",
+        "why": "Pourquoi ça pourrait se vendre",
+        "evidence": "Preuves",
+        "match": "Affinité {value, number, percent}",
+        "news": "{count, plural, =0 {Aucune actualité récente} one {# article récent} other {# articles récents}}",
+        "competition": {
+          "low": "Peu de boutiques le vendent",
+          "medium": "Quelques boutiques le vendent",
+          "high": "Saturé : beaucoup de boutiques le vendent",
+          "unknown": "Concurrence non vérifiée"
+        },
+        "listings": "{count, plural, one {# annonce similaire} other {# annonces similaires}} sur {sampled, number} résultats",
+        "blankAssumed": "Couleurs présentées sur un t-shirt classique. Connectez Fourthwall pour les vérifier sur votre vrai support.",
+        "blankOn": "Couleurs vérifiées sur le {name}",
+        "credit": "Données de goûts par Qloo",
+        "partial": "Certaines vérifications de tendances n'ont pas abouti, donc quelques cartes montrent moins de preuves."
+      },
+      "ages": {
+        "24_and_younger": "moins de 25 ans",
+        "25_to_29": "25 à 29 ans",
+        "30_to_34": "30 à 34 ans",
+        "35_to_44": "35 à 44 ans",
+        "45_to_54": "45 à 54 ans",
+        "55_and_older": "55 ans et plus"
+      },
+      "gender": {
+        "female": "surtout des femmes",
+        "male": "surtout des hommes",
+        "mixed": "femmes et hommes"
+      },
+      "kinds": {
+        "t-shirt": "T-shirt",
+        "hoodie": "Sweat à capuche",
+        "crewneck": "Sweat-shirt",
+        "tote bag": "Tote bag",
+        "mug": "Mug",
+        "sticker": "Sticker",
+        "poster": "Affiche",
+        "cap": "Casquette"
+      },
+      "audiences": {
+        "street_fashion": "Mode urbaine",
+        "high_fashion": "Haute couture",
+        "sneakerheads": "Sneakers",
+        "vintage_apparel": "Vêtements vintage",
+        "discount_shoppers": "Chasseurs de bonnes affaires",
+        "jewellery": "Bijoux",
+        "health_and_beauty": "Santé et beauté",
+        "photography": "Photographie",
+        "video_gamer": "Jeux vidéo",
+        "musician": "Faire de la musique",
+        "dance": "Danse",
+        "running": "Course à pied",
+        "hiking": "Randonnée",
+        "outdoors": "Plein air",
+        "travel": "Voyage",
+        "yoga": "Yoga",
+        "basketball": "Basket",
+        "soccer": "Football",
+        "adrenaline_rushers": "Amateurs de sensations fortes",
+        "arts_culture": "Art et culture",
+        "music_festivals": "Festivals de musique",
+        "cinephile": "Cinéphiles",
+        "avid_reader": "Livres",
+        "coffee": "Café",
+        "foodie": "Gastronomie",
+        "art_collectibles": "Collection d'art",
+        "advertising_design": "Design et publicité"
+      },
+      "questions": {
+        "progress": "Question {current, number} sur {total, number}",
+        "next": "Suivant",
+        "back": "Retour",
+        "finish": "Voir mes marques de départ",
+        "optional": "Facultatif",
+        "needOne": "Choisissez au moins un centre d'intérêt ou une chose que vous aimez.",
+        "feeling": {
+          "title": "Que doit ressentir la personne qui le porte ?",
+          "options": {
+            "cosy": "Cocooning",
+            "proud": "Fier",
+            "funny": "Drôle",
+            "rebellious": "Rebelle",
+            "calm": "Serein",
+            "dreamy": "Rêveur"
+          }
+        },
+        "loves": {
+          "title": "Qu'est-ce que vous et vos acheteurs aimez ?",
+          "help": "Artistes, films, séries ou marques. Jusqu'à 5.",
+          "label": "Cherchez quelque chose que vous aimez",
+          "placeholder": "Commencez à taper, par ex. Studio Ghibli",
+          "searching": "Recherche…",
+          "none": "Rien trouvé sous ce nom. Essayez-en un autre.",
+          "remove": "Retirer {name}",
+          "picked": "Choisis"
+        },
+        "who": {
+          "title": "Pour qui est-ce ?",
+          "age": "Leur âge",
+          "gender": "Surtout",
+          "anyone": "Tout le monde",
+          "women": "Des femmes",
+          "men": "Des hommes",
+          "interests": "Ce qui les passionne (jusqu'à 3)"
+        },
+        "goal": {
+          "title": "Quel est votre objectif ?",
+          "options": {
+            "side_income": "Un revenu d'appoint",
+            "build_brand": "Construire une marque",
+            "test_fast": "Tester des idées vite",
+            "existing_audience": "Vendre à ceux qui me suivent déjà"
+          }
+        },
+        "involvement": {
+          "title": "À quel point voulez-vous être impliqué ?",
+          "options": {
+            "hands_off": "Laisser wovain gérer",
+            "some": "Valider les grandes décisions",
+            "hands_on": "Suivre chaque design"
+          }
+        }
+      },
+      "fields": {
+        "info": "À propos de {field}",
+        "suggestions": "Suggestions",
+        "suggestRest": "Proposer le reste à partir de mes références",
+        "suggesting": "Suggestions en cours…",
+        "niche": {
+          "label": "Niche",
+          "help": "Le groupe de personnes pour qui vous créez, en quelques mots.",
+          "tip": "Par exemple : les amoureux des plantes cottagecore, ou la nostalgie des animés des années 90.",
+          "placeholder": "amoureux des plantes cottagecore"
+        },
+        "references": {
+          "label": "Références de goût",
+          "help": "3 à 5 artistes, films, séries ou marques que vos acheteurs adorent.",
+          "tip": "Par exemple : Studio Ghibli, Phoebe Bridgers, Patagonia. wovain n'imprime jamais ces noms ; il s'en sert pour comprendre le goût de vos acheteurs.",
+          "item": "Référence {number, number}",
+          "add": "En ajouter une",
+          "checking": "Vérification…",
+          "placed": "C'est noté",
+          "proxy": "C'est noté, via des noms proches",
+          "notFound": "Nous n'avons pas pu situer celle-ci. Essayez un artiste, un film ou une marque plus précis.",
+          "failed": "Nous n'avons pas pu vérifier celle-ci pour l'instant. Elle reste dans votre liste."
+        },
+        "voice": {
+          "label": "Votre ton",
+          "help": "La façon dont vos fiches et vos pubs parlent d'habitude. Facultatif : chaque drop l'adapte.",
+          "tip": "Par exemple : pince-sans-rire, chaleureux et doux, ou franc et percutant. Choisissez la phrase qui vous ressemble ; chaque drop ajuste le ton à son public.",
+          "custom": "L'écrire avec vos mots",
+          "customLabel": "Votre ton habituel, et ce que wovain ne doit jamais dire",
+          "customPlaceholder": "chaleureux et un peu espiègle, jamais vulgaire"
+        },
+        "palette": {
+          "label": "Vos couleurs",
+          "help": "Les couleurs du vêtement et les 2 à 5 couleurs du motif qui font qu'un drop ressemble à une seule marque. Facultatif : chaque drop les adapte.",
+          "tip": "Par exemple : un motif rouille et crème sur un t-shirt sauge. wovain vérifie que chaque couleur du motif ressort sur le vêtement.",
+          "none": "Pas encore de couleurs. Choisissez un ensemble ou passez : chaque drop propose les siennes.",
+          "on": "sur {garments}",
+          "adjusted": "Ajusté pour ressortir sur le vêtement",
+          "advanced": "Avancé : saisir des codes couleur",
+          "hexLabel": "Couleurs du motif en hexadécimal",
+          "hexHelp": "Jusqu'à {max, number}, séparées par des virgules, comme #1A1A1A.",
+          "hexInvalid": "{color} n'est pas un code couleur comme #1A1A1A.",
+          "clear": "Effacer les couleurs"
+        }
+      },
+      "buyersPanel": {
+        "title": "Vos acheteurs",
+        "who": "Qui ils sont",
+        "whoMeaning": "Créez et écrivez d'abord pour eux.",
+        "love": "Ce qu'ils aiment aussi",
+        "loveMeaning": "Empruntez l'ambiance de ces références pour vos motifs, jamais leurs noms.",
+        "themes": "Thèmes à essayer",
+        "themesMeaning": "Chacun pourrait devenir un drop.",
+        "loading": "Lecture des goûts de vos acheteurs…",
+        "failed": "Nous n'avons pas pu lire vos acheteurs pour l'instant.",
+        "retry": "Réessayer",
+        "empty": "Ajoutez des références ci-dessus pour voir qui achète.",
+        "unknownAge": "des personnes de tous âges"
+      },
       "placeholder": {
         "first": "Wes Anderson",
         "second": "Comme des Garçons",
         "third": "Studio Ghibli"
       },
-      "addReference": "En ajouter une",
-      "resolve": "Chercher sur Qloo",
-      "resolving": "Recherche…",
-      "resolveFailed": "La recherche n'a pas abouti : {message}",
-      "status": {
-        "direct": "Trouvée sur Qloo",
-        "proxy": "Trouvée par des noms liés",
-        "unresolved": "Introuvable"
-      },
-      "entities": "Correspondances Qloo",
-      "notFound": "Qloo ne la connaît pas, et la recherche web n'a rien donné que Qloo connaisse. Elle reste dans vos références.",
-      "failed": "La recherche a échoué pour celle-ci. Réessayez dans une minute.",
-      "readFrom": "Noms liés tirés de",
-      "voiceLabel": "Ton",
-      "voicePlaceholder": "sec, en minuscules, sans emoji",
-      "paletteLabel": "Palette",
-      "paletteHelp": "Jusqu'à {max, number} couleurs hex, séparées par des virgules.",
-      "paletteInvalid": "{color} n'est pas une couleur hex comme #1A1A1A.",
-      "nichesLabel": "Niches",
-      "nichesPlaceholder": "y2k racing, cottagecore",
       "skip": "Passer",
       "save": "Enregistrer et continuer",
       "saving": "Enregistrement…",
-      "saveFailed": "L'enregistrement a échoué : {message}",
-      "notRemembered": "Votre marque est enregistrée. wovain n'a pas pu l'ajouter à sa mémoire cette fois ; enregistrez-la de nouveau plus tard."
+      "saveFailed": "L'enregistrement n'a pas fonctionné : {message}",
+      "notRemembered": "Votre marque est enregistrée. wovain n'a pas pu l'ajouter à sa mémoire cette fois, alors enregistrez-la de nouveau plus tard.",
+      "needReferences": "Ajoutez au moins 3 références de goût pour enregistrer.",
+      "entityTypes": {
+        "artist": "artiste",
+        "book": "livre",
+        "brand": "marque",
+        "movie": "film",
+        "person": "personne",
+        "podcast": "podcast",
+        "tv_show": "série",
+        "videogame": "jeu vidéo"
+      }
     },
     "autonomy": {
       "title": "Ce que wovain fait seul",

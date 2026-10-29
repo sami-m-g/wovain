@@ -383,6 +383,30 @@ const summarize = async (
   return kept;
 };
 
+export interface Saturation {
+  count: number;
+  level: SaturationLevel;
+  listings: Citation[];
+  sampled: number;
+}
+
+// Only the first step of a competition read: how many near-identical
+// listings the marketplaces show for the theme. Fast enough for onboarding's
+// brand discovery; a failure throws for the caller to log.
+export const readSaturation = async (
+  client: Pick<TavilyWeb, "search">,
+  theme: string,
+  log?: Logger
+): Promise<Saturation> => {
+  const { listings, sampled } = await searchListings(client, theme, log);
+  return {
+    count: listings.length,
+    level: saturationOf(listings.length),
+    listings: citationsOf(listings).slice(0, SAMPLE_MAX),
+    sampled,
+  };
+};
+
 // Reads one theme's competition. A failed search marks it unknown; a
 // failed extract, price read or summary leaves that part out and says so.
 // Every failure is logged at error level; none throws.
