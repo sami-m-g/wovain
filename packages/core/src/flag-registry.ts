@@ -248,6 +248,10 @@ export const FLAGS = {
     "mobile",
     "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
   ),
+  "who-buys": workstream(
+    "growth",
+    "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like"
+  ),
 } as const satisfies Record<string, FlagDefinition>;
 
 export type FlagName = keyof typeof FLAGS;
