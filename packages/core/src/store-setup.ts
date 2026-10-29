@@ -134,7 +134,15 @@ export interface SetupStep {
   how: SetupHow;
   // Blocks selling while not done.
   required: boolean;
+  // Done on the merchant's word, where no API can tell (payouts Fourthwall
+  // support set up by hand through PayPal or bill.com).
+  confirmedByMerchant?: boolean;
 }
+
+// The steps a merchant can mark done themselves: payouts set up by
+// Fourthwall support, which the dashboard (and get-payout-info) can't see.
+export const CONFIRMABLE_STEPS = ["payouts"] as const;
+export type ConfirmableStep = (typeof CONFIRMABLE_STEPS)[number];
 
 const STORE_ROLES = new Set(["OWNER", "MANAGER"]);
 
@@ -149,13 +157,33 @@ export interface SetupInput {
   // Undefined when Meta isn't connected or has no single pixel.
   pixel: PixelFacts | undefined;
   metaConnected: boolean;
+  // Steps the merchant marked done (CONFIRMABLE_STEPS).
+  confirmed?: readonly ConfirmableStep[] | undefined;
 }
+
+// Payouts: ACTIVE from get-payout-info is done. Stripe onboarding started
+// but unfinished (IN_PROGRESS) is still the merchant's to finish. Payouts
+// set up by support (PayPal, bill.com) never show as ACTIVE, so the
+// merchant's word marks them done.
+const payoutsStep = (
+  status: string | undefined,
+  confirmed: boolean
+): Pick<SetupStep, "confirmedByMerchant" | "how" | "state"> => {
+  if (status === "ACTIVE") {
+    return { how: "none", state: "done" };
+  }
+  if (confirmed) {
+    return { confirmedByMerchant: true, how: "none", state: "done" };
+  }
+  return { how: "link", state: "todo" };
+};
 
 export const evaluateSetup = ({
   shop,
   domain,
   pixel,
   metaConnected,
+  confirmed = [],
 }: SetupInput): SetupStep[] => {
   const manager = shop.roles.some((role) => STORE_ROLES.has(role));
   const held = shop.verificationRestrictions.length > 0;
@@ -195,10 +223,9 @@ export const evaluateSetup = ({
       state: manager ? "done" : "todo",
     },
     {
-      how: shop.payoutStatus === "ACTIVE" ? "none" : "link",
+      ...payoutsStep(shop.payoutStatus, confirmed.includes("payouts")),
       id: "payouts",
       required: true,
-      state: shop.payoutStatus === "ACTIVE" ? "done" : "todo",
     },
     {
       how: live ? "none" : "do_it",

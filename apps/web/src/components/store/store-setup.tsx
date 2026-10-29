@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@wovain/ui/components/button";
 import { Progress } from "@wovain/ui/components/progress";
 import { Skeleton } from "@wovain/ui/components/skeleton";
@@ -11,7 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useHere } from "@/components/app/connect-state";
-import { AdminLink } from "@/components/store/store-shared";
+import { AdminLink, useRequest } from "@/components/store/store-shared";
 import { GoLive } from "@/components/store/store-summary";
 import { Link } from "@/i18n/navigation";
 import type {
@@ -75,6 +75,81 @@ const CopyId = ({ value }: { value: string }) => {
   );
 };
 
+/**
+ * Payouts: the exact Fourthwall page, and "Mark done" for payouts that
+ * Fourthwall support set up by hand (PayPal, bill.com), which no API sees.
+ */
+const PayoutsAction = () => {
+  const t = useTranslations("Store.setup.payouts");
+  const request = useRequest();
+  const confirm = useMutation(
+    orpc.store.confirmSetupStep.mutationOptions(request)
+  );
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <AdminLink page="billing" variant="outline">
+        {t("action")}
+      </AdminLink>
+      <Button
+        className="h-auto px-0 text-xs"
+        disabled={confirm.isPending}
+        onClick={() => confirm.mutate({ step: "payouts" })}
+        type="button"
+        variant="link"
+      >
+        {t("markDone")}
+      </Button>
+    </div>
+  );
+};
+
+/** The pixel's extra: Meta's Conversions API, which Fourthwall also runs. */
+const PixelSteps = ({ datasetId }: { datasetId: string }) => {
+  const t = useTranslations("Store.setup.pixel");
+  return (
+    <div className="text-muted-foreground flex flex-col gap-1.5 text-sm">
+      <p className="flex flex-wrap items-center gap-2">
+        {t("paste")} <CopyId value={datasetId} />
+      </p>
+      <ol className="list-decimal ps-5">
+        <li>{t("step1")}</li>
+        <li>{t("step2")}</li>
+        <li>{t("step3")}</li>
+      </ol>
+      <p>
+        {t("capi")}{" "}
+        <AdminLink page="metaCapi" variant="link">
+          {t("capiAction")}
+        </AdminLink>
+      </p>
+    </div>
+  );
+};
+
+const PayoutSteps = ({
+  status,
+  confirmed,
+}: {
+  status: string | null;
+  confirmed: boolean;
+}) => {
+  const t = useTranslations("Store.setup.payouts");
+  if (confirmed) {
+    return <p className="text-muted-foreground text-sm">{t("confirmed")}</p>;
+  }
+  return (
+    <div className="text-muted-foreground flex flex-col gap-1.5 text-sm">
+      <p>{status === "IN_PROGRESS" ? t("inProgress") : t("todo")}</p>
+      <ol className="list-decimal ps-5">
+        <li>{t("step1")}</li>
+        <li>{t("step2")}</li>
+        <li>{t("step3")}</li>
+      </ol>
+      <p>{t("noStripe")}</p>
+    </div>
+  );
+};
+
 /** What the merchant does for one step: an action here or a deep link. */
 const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
   const t = useTranslations("Store.setup");
@@ -123,7 +198,7 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
       }
       return (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <AdminLink page="settings" variant="outline">
+          <AdminLink page="trackingPixels" variant="outline">
             {t("pixel.action")}
           </AdminLink>
           {setup.shop.baseUrl ? (
@@ -139,6 +214,9 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
         </div>
       );
     }
+    case "payouts": {
+      return <PayoutsAction />;
+    }
     default: {
       return (
         <AdminLink page="settings" variant="outline">
@@ -152,10 +230,17 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
 const StepDetail = ({ setup, step }: { setup: Setup; step: Step }) => {
   const t = useTranslations("Store.setup");
   if (step.id === "pixel" && setup.pixel !== null && step.state !== "done") {
+    return <PixelSteps datasetId={setup.pixel.datasetId} />;
+  }
+  if (
+    step.id === "payouts" &&
+    (step.state !== "done" || step.confirmedByMerchant)
+  ) {
     return (
-      <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
-        {t("pixel.paste")} <CopyId value={setup.pixel.datasetId} />
-      </p>
+      <PayoutSteps
+        confirmed={step.confirmedByMerchant === true}
+        status={setup.shop.payoutStatus}
+      />
     );
   }
   if (step.id === "pixel" && setup.metaConnected && setup.pixel === null) {
