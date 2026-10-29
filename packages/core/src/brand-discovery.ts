@@ -5,6 +5,14 @@ import { z } from "zod";
 
 import { readSaturation } from "./competition";
 import type { Saturation, SaturationLevel } from "./competition";
+import {
+  AGE_BANDS,
+  FEELINGS,
+  GOALS,
+  INVOLVEMENT,
+  PRODUCT_KINDS,
+} from "./discovery-options";
+import type { AgeBand, Feeling, Goal, Involvement } from "./discovery-options";
 import { citationsOf } from "./evidence";
 import type { Citation, TavilyWeb } from "./evidence";
 import { fitPalette } from "./garment-colors";
@@ -28,49 +36,14 @@ import type { DecisionTrace, TraceSource } from "./trace";
 // real colours. Without Qloo there are no suggestions: a Qloo failure
 // throws, it never falls back to cards made without it.
 
-export const FEELINGS = [
-  "cosy",
-  "proud",
-  "funny",
-  "rebellious",
-  "calm",
-  "dreamy",
-] as const;
-export type Feeling = (typeof FEELINGS)[number];
-
-export const GOALS = [
-  "side_income",
-  "build_brand",
-  "test_fast",
-  "existing_audience",
-] as const;
-export type Goal = (typeof GOALS)[number];
-
-export const INVOLVEMENT = ["hands_off", "some", "hands_on"] as const;
-export type Involvement = (typeof INVOLVEMENT)[number];
-
-// Qloo's age buckets, youngest first.
-export const AGE_BANDS = [
-  "24_and_younger",
-  "25_to_29",
-  "30_to_34",
-  "35_to_44",
-  "45_to_54",
-  "55_and_older",
-] as const;
-export type AgeBand = (typeof AGE_BANDS)[number];
-
-// What a starter brand can print on: Fourthwall blank kinds.
-export const PRODUCT_KINDS = [
-  "t-shirt",
-  "hoodie",
-  "crewneck",
-  "tote bag",
-  "mug",
-  "sticker",
-  "poster",
-  "cap",
-] as const;
+export {
+  AGE_BANDS,
+  FEELINGS,
+  GOALS,
+  INVOLVEMENT,
+  PRODUCT_KINDS,
+} from "./discovery-options";
+export type { AgeBand, Feeling, Goal, Involvement } from "./discovery-options";
 
 const QLOO_ID = /^[\w-]{1,128}$/u;
 

@@ -29,6 +29,11 @@ export type OnboardingReady = Extract<OnboardingStatus, { enabled: true }>;
 export type ProviderHealth = OnboardingReady["connections"][number];
 export type ResolvedReference =
   Outputs["onboarding"]["resolveReferences"][number];
+export type Discovery = Outputs["onboarding"]["discover"];
+export type StarterCard = Discovery["cards"][number];
+export type CardPalette = StarterCard["palettes"][number];
+export type BuyersPanel = NonNullable<Outputs["onboarding"]["buyers"]>;
+export type TasteMatch = Outputs["onboarding"]["searchTaste"][number];
 export type Learned = Outputs["feedback"]["learned"];
 export type VoiceCommand = Outputs["voice"]["command"];
 export type StoreProduct = Outputs["store"]["products"][number];

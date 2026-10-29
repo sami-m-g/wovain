@@ -1056,40 +1056,227 @@
     },
     "brand": {
       "title": "Tu marca",
-      "lead": "Nombra los artistas, películas y marcas cercanos a tu trabajo. wovain busca cada uno en Qloo, y tu investigación y tus anuncios parten de ese gusto.",
-      "referencesLegend": "Referencias de gusto",
-      "referencesHelp": "Entre 3 y 5: un músico, un director, una marca que admiras.",
-      "referenceLabel": "Referencia {number, number}",
+      "lead": "¿Aún no sabes qué vender? wovain puede sugerirte marcas para empezar a partir de lo que gusta ahora mismo, o hacerte unas preguntas. Después puedes cambiarlo todo.",
+      "start": {
+        "label": "¿Cómo quieres empezar?",
+        "auto": {
+          "title": "Sugiéreme",
+          "body": "Marcas para empezar con lo que crece y aún tiene hueco."
+        },
+        "questions": {
+          "title": "Hazme unas preguntas",
+          "body": "Cinco preguntas rápidas sobre ti y tus compradores."
+        },
+        "manual": {
+          "title": "Ya sé cuál es mi marca",
+          "body": "Rellena tu marca tú mismo."
+        }
+      },
+      "discover": {
+        "working": "Leyendo lo que gusta y lo que ya se vende…",
+        "failed": "No pudimos acceder a nuestros datos de gustos, así que aún no hay sugerencias.",
+        "retry": "Reintentar",
+        "empty": "Encontramos muy poco para sugerir una marca con esto. Prueba las preguntas u otras respuestas.",
+        "more": "Muéstrame otras",
+        "use": "Usar esta",
+        "using": "En uso",
+        "applied": "Rellenado con {name}. Cambia lo que quieras abajo.",
+        "buyers": "Quién compra",
+        "taste": "Sus gustos",
+        "products": "Empieza con",
+        "why": "Por qué podría venderse",
+        "evidence": "Pruebas",
+        "match": "Afinidad {value, number, percent}",
+        "news": "{count, plural, =0 {Sin noticias recientes} one {# noticia reciente} other {# noticias recientes}}",
+        "competition": {
+          "low": "Pocas tiendas lo venden",
+          "medium": "Algunas tiendas lo venden",
+          "high": "Saturado: muchas tiendas lo venden",
+          "unknown": "Competencia sin comprobar"
+        },
+        "listings": "{count, number} anuncios parecidos en {sampled, number} resultados",
+        "blankAssumed": "Colores sobre una camiseta clásica. Conecta Fourthwall para comprobarlos en tu prenda real.",
+        "blankOn": "Colores comprobados en {name}",
+        "credit": "Datos de gustos de Qloo",
+        "partial": "Algunas comprobaciones de tendencias no terminaron, así que algunas tarjetas muestran menos pruebas."
+      },
+      "ages": {
+        "24_and_younger": "menos de 25",
+        "25_to_29": "de 25 a 29",
+        "30_to_34": "de 30 a 34",
+        "35_to_44": "de 35 a 44",
+        "45_to_54": "de 45 a 54",
+        "55_and_older": "55 o más"
+      },
+      "gender": {
+        "female": "sobre todo mujeres",
+        "male": "sobre todo hombres",
+        "mixed": "mujeres y hombres"
+      },
+      "kinds": {
+        "t-shirt": "Camiseta",
+        "hoodie": "Sudadera con capucha",
+        "crewneck": "Sudadera",
+        "tote bag": "Bolsa tote",
+        "mug": "Taza",
+        "sticker": "Pegatina",
+        "poster": "Póster",
+        "cap": "Gorra"
+      },
+      "audiences": {
+        "street_fashion": "Moda urbana",
+        "high_fashion": "Alta costura",
+        "sneakerheads": "Zapatillas",
+        "vintage_apparel": "Ropa vintage",
+        "discount_shoppers": "Cazadores de ofertas",
+        "jewellery": "Joyería",
+        "health_and_beauty": "Salud y belleza",
+        "photography": "Fotografía",
+        "video_gamer": "Videojuegos",
+        "musician": "Hacer música",
+        "dance": "Baile",
+        "running": "Correr",
+        "hiking": "Senderismo",
+        "outdoors": "Aire libre",
+        "travel": "Viajes",
+        "yoga": "Yoga",
+        "basketball": "Baloncesto",
+        "soccer": "Fútbol",
+        "adrenaline_rushers": "Amantes de la adrenalina",
+        "arts_culture": "Arte y cultura",
+        "music_festivals": "Festivales de música",
+        "cinephile": "Cinéfilos",
+        "avid_reader": "Libros",
+        "coffee": "Café",
+        "foodie": "Gastronomía",
+        "art_collectibles": "Coleccionismo de arte",
+        "advertising_design": "Diseño y publicidad"
+      },
+      "questions": {
+        "progress": "Pregunta {current, number} de {total, number}",
+        "next": "Siguiente",
+        "back": "Atrás",
+        "finish": "Ver mis marcas para empezar",
+        "optional": "Opcional",
+        "needOne": "Elige al menos algo que les guste o algo que te encante.",
+        "feeling": {
+          "title": "¿Cómo debería sentirse alguien al llevarlo?",
+          "options": {
+            "cosy": "A gusto",
+            "proud": "Orgulloso",
+            "funny": "Divertido",
+            "rebellious": "Rebelde",
+            "calm": "Tranquilo",
+            "dreamy": "Soñador"
+          }
+        },
+        "loves": {
+          "title": "¿Qué os encanta a ti y a tus compradores?",
+          "help": "Artistas, películas, series o marcas. Hasta 5.",
+          "label": "Busca algo que te encante",
+          "placeholder": "Empieza a escribir, p. ej. Studio Ghibli",
+          "searching": "Buscando…",
+          "none": "No encontramos nada con ese nombre. Prueba con otro.",
+          "remove": "Quitar {name}",
+          "picked": "Elegidos"
+        },
+        "who": {
+          "title": "¿Para quién es?",
+          "age": "Su edad",
+          "gender": "Sobre todo",
+          "anyone": "Cualquiera",
+          "women": "Mujeres",
+          "men": "Hombres",
+          "interests": "Lo que les gusta (hasta 3)"
+        },
+        "goal": {
+          "title": "¿Cuál es tu objetivo?",
+          "options": {
+            "side_income": "Ingresos extra",
+            "build_brand": "Crear una marca",
+            "test_fast": "Probar ideas rápido",
+            "existing_audience": "Vender a quien ya me sigue"
+          }
+        },
+        "involvement": {
+          "title": "¿Cuánto quieres implicarte?",
+          "options": {
+            "hands_off": "Que wovain se encargue",
+            "some": "Aprobar lo importante",
+            "hands_on": "Participar en cada diseño"
+          }
+        }
+      },
+      "fields": {
+        "info": "Sobre {field}",
+        "suggestions": "Sugerencias",
+        "suggestRest": "Sugerir el resto a partir de mis referencias",
+        "suggesting": "Sugiriendo…",
+        "niche": {
+          "label": "Nicho",
+          "help": "El grupo de personas para el que creas, en pocas palabras.",
+          "tip": "Por ejemplo: amantes de las plantas cottagecore, o nostalgia del anime de los 90.",
+          "placeholder": "amantes de las plantas cottagecore"
+        },
+        "references": {
+          "label": "Referencias de gusto",
+          "help": "De 3 a 5 artistas, películas, series o marcas que encantan a tus compradores.",
+          "tip": "Por ejemplo: Studio Ghibli, Phoebe Bridgers, Patagonia. wovain nunca imprime estos nombres; los usa para entender el gusto de tus compradores.",
+          "item": "Referencia {number, number}",
+          "add": "Añadir otra",
+          "checking": "Comprobando…",
+          "placed": "Entendido",
+          "proxy": "Entendido, a través de nombres relacionados",
+          "notFound": "No logramos ubicar esta. Prueba con un artista, película o marca más concretos.",
+          "failed": "No pudimos comprobar esta ahora. Sigue en tu lista."
+        },
+        "voice": {
+          "label": "Cómo suenas",
+          "help": "Cómo hablan normalmente tus fichas y anuncios. Opcional: cada lanzamiento lo adapta.",
+          "tip": "Por ejemplo: seco e ingenioso, cálido y acogedor, o atrevido y llamativo. Elige la frase que suene a ti; cada lanzamiento ajusta el tono a su público.",
+          "custom": "Escríbelo con tus palabras",
+          "customLabel": "Tu tono habitual, y lo que wovain nunca debe decir",
+          "customPlaceholder": "cálido y algo pícaro, nunca grosero"
+        },
+        "palette": {
+          "label": "Tus colores",
+          "help": "Los colores de la prenda y los 2 a 5 colores del diseño que hacen que un lanzamiento parezca una sola marca. Opcional: cada lanzamiento los adapta.",
+          "tip": "Por ejemplo: diseño en óxido y crema sobre una camiseta salvia. wovain comprueba que cada color del diseño destaque sobre la prenda.",
+          "none": "Aún no hay colores. Elige un conjunto u omítelo: cada lanzamiento sugiere los suyos.",
+          "on": "sobre {garments}",
+          "adjusted": "Ajustado para destacar sobre la prenda",
+          "advanced": "Avanzado: introducir códigos de color",
+          "hexLabel": "Colores del diseño en hexadecimal",
+          "hexHelp": "Hasta {max, number}, separados por comas, como #1A1A1A.",
+          "hexInvalid": "{color} no es un código de color como #1A1A1A.",
+          "clear": "Quitar colores"
+        }
+      },
+      "buyersPanel": {
+        "title": "Tus compradores",
+        "who": "Quiénes son",
+        "whoMeaning": "Diseña y escribe para {who}.",
+        "love": "Qué más les encanta",
+        "loveMeaning": "Toma el ambiente de estos para tu diseño, nunca sus nombres.",
+        "themes": "Temas para probar",
+        "themesMeaning": "Cada uno podría ser un lanzamiento.",
+        "loading": "Leyendo los gustos de tus compradores…",
+        "failed": "No pudimos leer a tus compradores ahora.",
+        "retry": "Reintentar",
+        "empty": "Añade referencias arriba para ver quién compra.",
+        "unknownAge": "personas de todas las edades"
+      },
       "placeholder": {
         "first": "Wes Anderson",
         "second": "Comme des Garçons",
         "third": "Studio Ghibli"
       },
-      "addReference": "Añadir otra",
-      "resolve": "Buscar en Qloo",
-      "resolving": "Buscando…",
-      "resolveFailed": "La búsqueda no terminó: {message}",
-      "status": {
-        "direct": "Encontrada en Qloo",
-        "proxy": "Encontrada por nombres relacionados",
-        "unresolved": "No encontrada"
-      },
-      "entities": "Coincidencias en Qloo",
-      "notFound": "Qloo no la conoce y la búsqueda web no dio nada que Qloo conozca. Se queda en tus referencias.",
-      "failed": "La búsqueda falló para esta. Inténtalo de nuevo en un minuto.",
-      "readFrom": "Nombres relacionados de",
-      "voiceLabel": "Tono",
-      "voicePlaceholder": "seco, en minúsculas, sin emojis",
-      "paletteLabel": "Paleta",
-      "paletteHelp": "Hasta {max, number} colores hex, separados por comas.",
-      "paletteInvalid": "{color} no es un color hex como #1A1A1A.",
-      "nichesLabel": "Nichos",
-      "nichesPlaceholder": "y2k racing, cottagecore",
       "skip": "Omitir",
-      "save": "Guardar y seguir",
+      "save": "Guardar y continuar",
       "saving": "Guardando…",
       "saveFailed": "No se pudo guardar: {message}",
-      "notRemembered": "Tu marca está guardada. wovain no pudo añadirla a su memoria esta vez; vuelve a guardarla más tarde."
+      "notRemembered": "Tu marca está guardada. wovain no pudo añadirla a su memoria esta vez, así que vuelve a guardarla más tarde.",
+      "needReferences": "Añade al menos 3 referencias de gusto para guardar."
     },
     "autonomy": {
       "title": "Cuánto hace wovain por su cuenta",
