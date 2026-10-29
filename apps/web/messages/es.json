@@ -162,6 +162,14 @@
       {
         "question": "¿De quién son los diseños?",
         "answer": "Tus briefs y los diseños que apruebas son tuyos. wovain revisa los bocetos en busca de nombres y marcas, pero tú sigues siendo responsable de lo que publicas."
+      },
+      {
+        "question": "¿Quién ve mis anuncios?",
+        "answer": "Personas que aman lo mismo que tu marca. Qloo elige esa audiencia a partir de las marcas de tu perfil, y cada anuncio se escribe para ella. Si wovain no encuentra esa audiencia, no crea anuncios y te dice qué añadir."
+      },
+      {
+        "question": "¿Qué evita que mis anuncios pierdan dinero?",
+        "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador."
       }
     ],
     "heroCta": "Empezar un drop",
@@ -1110,7 +1118,7 @@
     "faq": {
       "credit": {
         "question": "¿Qué es un crédito?",
-        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 3, un diseño 2, y un texto de anuncio o una llamada del piloto automático 1, y cada drop dibuja tres diseños, así que un drop que apruebas paso a paso cuesta unos 10 créditos. Si un paso falla, sus créditos vuelven."
+        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 5, un diseño 4, y un texto de anuncio o una llamada del piloto automático 1, y cada drop dibuja tres diseños, así que un drop que apruebas paso a paso cuesta unos 18 créditos. Si un paso falla, sus créditos vuelven."
       },
       "yours": {
         "question": "¿Qué pago fuera de wovain?",
@@ -1916,6 +1924,70 @@
         "check": "Fourthwall añade políticas por defecto. Revísalas para que reflejen cómo vendes.",
         "action": "Revisar políticas"
       }
+    },
+    "metaSetup": {
+      "title": "Prepara tu cuenta de Meta para los anuncios",
+      "titleReady": "Tu cuenta de Meta está lista para los anuncios",
+      "progressLabel": "Progreso de la configuración de Meta",
+      "progress": "{done, number} de {total, number} hechos",
+      "optional": "Opcional",
+      "connect": "Conectar Meta",
+      "reconnect": "Volver a conectar Meta",
+      "disconnect": "Desconectar Meta",
+      "disconnected": "Meta está desconectado",
+      "notConnected": "Conecta tu cuenta de Meta y wovain revisa lo que aún falta para que tus anuncios puedan publicarse.",
+      "expired": "El inicio de sesión de Meta caducó. Vuelve a conectar Meta para ver cómo está tu cuenta.",
+      "state": {
+        "done": "hecho",
+        "todo": "pendiente",
+        "waiting": "en espera",
+        "check": "revísalo tú"
+      },
+      "ad_account": {
+        "label": "Cuenta publicitaria",
+        "action": "Abrir cuentas publicitarias",
+        "altAction": "Abrir cuentas publicitarias",
+        "done": "Tu cuenta publicitaria está abierta a wovain.",
+        "todo": "Necesitas una cuenta publicitaria. Abre la página de cuentas publicitarias de Meta, elige Añadir y luego Crear una cuenta publicitaria nueva. Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Meta ha restringido esta cuenta publicitaria. Abre Calidad de la cuenta para ver por qué y qué pide Meta.",
+        "check": "Revisa tu cuenta publicitaria en Meta."
+      },
+      "payment": {
+        "label": "Método de pago",
+        "action": "Añadir un método de pago",
+        "altAction": "Añadir un método de pago",
+        "done": "Tu cuenta publicitaria tiene un método de pago. Meta le cobra el gasto en anuncios.",
+        "todo": "Meta cobra el gasto en anuncios a una tarjeta o a PayPal en tu cuenta publicitaria. Abre la configuración de pagos de Meta, elige Añadir método de pago y guárdalo. Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Meta está revisando esta cuenta publicitaria, así que los pagos esperan. Abre Calidad de la cuenta para ver qué necesita Meta.",
+        "check": "Revisa el método de pago en Meta."
+      },
+      "page": {
+        "label": "Página de Facebook",
+        "action": "Añadir tu página",
+        "altAction": "Crear una página",
+        "done": "Tus anuncios se publican con tu página de Facebook.",
+        "todo": "Los anuncios se publican con una página de Facebook. Si tienes una, abre Páginas en la configuración del negocio de Meta, elige Añadir y selecciónala. Si no, crea una primero (basta con un nombre y una foto). Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Configura primero tu cuenta publicitaria.",
+        "check": "Revisa tu página en Meta."
+      },
+      "instagram": {
+        "label": "Cuenta de Instagram",
+        "action": "Añadir Instagram",
+        "altAction": "Añadir Instagram",
+        "done": "Tus anuncios también pueden publicarse con tu cuenta de Instagram.",
+        "todo": "Opcional: vincula tu cuenta de Instagram para que tus anuncios muestren tu nombre también en Instagram. Abre Cuentas de Instagram en la configuración del negocio de Meta y elige Añadir.",
+        "waiting": "Configura primero tu cuenta publicitaria.",
+        "check": "Opcional: Meta no indicó si hay una cuenta de Instagram vinculada. Puedes revisarlo en la configuración del negocio de Meta."
+      },
+      "safety_rules": {
+        "label": "Reglas de seguridad",
+        "action": "Volver a conectar Meta",
+        "altAction": "Volver a conectar Meta",
+        "done": "Listo. wovain puede crear las reglas que pausan tus anuncios, incluso cuando wovain no está en línea.",
+        "todo": "Vuelve a conectar Meta y acepta todo lo que pide, para que wovain pueda crear las reglas que pausan tus anuncios. Mientras Meta revisa la app de wovain, esto solo funciona para las cuentas que Meta deja probarla.",
+        "waiting": "Disponible cuando tu cuenta publicitaria esté configurada.",
+        "check": "Vuelve a conectar Meta para revisar las reglas de seguridad."
+      }
     }
   },
   "Drops": {
@@ -1977,5 +2049,22 @@
       "embroidery": "Bordado",
       "label": "Etiqueta"
     }
+  },
+  "WithoutQloo": {
+    "title": "Sin Qloo",
+    "lead": "El mismo paso de ideas con {seeds, number} semillas solo con Nemotron ({model}), de la comparación del {date}.",
+    "tableCaption": "En qué se apoyan las ideas, con Qloo y sin Qloo",
+    "metric": "Por idea",
+    "withQloo": "Con Qloo",
+    "withoutQloo": "Sin Qloo",
+    "metrics": {
+      "grounded": "Temas basados en una etiqueta de Qloo",
+      "explained": "Temas que Qloo explica (qué fans, por qué)",
+      "crossDomains": "Dominios de gusto (marcas, películas, TV)",
+      "cues": "Pistas de estilo de esos gustos"
+    },
+    "seedsSummary": "Las {seeds, number} semillas, lado a lado",
+    "noMatch": "sin gusto encontrado",
+    "note": "Sin Qloo, Nemotron escribe temas verosímiles solo a partir de las palabras: nada los une a quién compra ni por qué."
   }
 }

@@ -17,7 +17,7 @@ import type { Actor } from "./actor";
 import { notReady } from "./actor";
 import { withAgentTrace } from "./agent-trace";
 import { audienceFor as brandAudienceFor } from "./audience";
-import { audienceFor, qlooAudiencesOn } from "./audiences";
+import { audienceFor, requireQlooAudience } from "./audiences";
 import { isCompetitionOn } from "./competition";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
@@ -126,20 +126,21 @@ export const createProductCampaign = async (
   const source = await getDesign(actor, live.designId);
   const { runId } = source;
   // Qloo's audience as the ad set's targeting and the copy's persona, kept
-  // with the key so a retry stages the same ad set (./audiences).
-  const audience = (await qlooAudiencesOn(actor))
-    ? await once(actor, {
-        key: `${key}:audience`,
-        operation: "audience",
-        perform: async () =>
-          await audienceFor(actor, {
-            countries: input.countries,
-            runId: runId ?? undefined,
-          }),
-        provider: "meta",
-        runId,
-      })
-    : undefined;
+  // with the key so a retry stages the same ad set (./audiences). Without
+  // one nothing is staged: QLOO_AUDIENCE_MISSING, and the retry asks again.
+  const audience = await once(actor, {
+    key: `${key}:audience`,
+    operation: "audience",
+    perform: async () =>
+      requireQlooAudience(
+        await audienceFor(actor, {
+          countries: input.countries,
+          runId: runId ?? undefined,
+        })
+      ),
+    provider: "meta",
+    runId,
+  });
   // tavily-competition: the competitor angles the copy counter-positions.
   const competing = await isCompetitionOn(actor);
   const sourceIdea = competing
@@ -171,7 +172,7 @@ export const createProductCampaign = async (
                   title: source.brief.title,
                 },
                 actor.log,
-                audience?.persona,
+                audience.persona,
                 competition,
                 style
               )
@@ -218,8 +219,8 @@ export const createProductCampaign = async (
       pageId: input.pageId,
       // Short and stable: it ends every object's name on Meta.
       tag: `w-${live.id.slice(0, 8)}`,
-      // qloo-audiences: Qloo's ages, gender and interests as suggestions.
-      targeting: audience?.targeting,
+      // Qloo's ages, gender and interests as suggestions.
+      targeting: audience.targeting,
     };
     if (targeting === undefined) {
       return {
