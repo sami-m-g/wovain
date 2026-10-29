@@ -107,8 +107,9 @@ export type DiscoveryRequest =
 export interface DiscoveryDeps {
   ask: Nemotron;
   // The blank the palettes are held to: its real colours, or a stated
-  // assumption when the merchant's Fourthwall shop can't be read yet.
-  blank: { assumed: boolean; colors: GarmentColor[]; name: string };
+  // assumption when the merchant's Fourthwall shop can't be read yet. A
+  // promise, so reading the catalog overlaps the Qloo calls.
+  blank: Blank | Promise<Blank>;
   locale: string;
   log?: Logger | undefined;
   qloo: Pick<Qloo, "demographicsOf" | "insights" | "tagsFor">;
@@ -116,6 +117,13 @@ export interface DiscoveryDeps {
   salt: string;
   tavily: Pick<TavilyWeb, "search">;
   trace?: DecisionTrace | undefined;
+}
+
+export interface Blank {
+  // True when the colours are a stand-in: no Fourthwall catalog was read.
+  assumed: boolean;
+  colors: GarmentColor[];
+  name: string;
 }
 
 export interface CardReference {
@@ -169,7 +177,7 @@ export interface StarterCard {
 }
 
 export interface Discovery {
-  blank: DiscoveryDeps["blank"];
+  blank: Blank;
   cards: StarterCard[];
   // How many of the Qloo inputs failed (each logged at error level).
   qlooFailed: number;
@@ -512,6 +520,7 @@ const asReference = (one: QlooInsight): CardReference => ({
 // and a palette no earlier card uses.
 const finish = (
   deps: DiscoveryDeps,
+  blank: Blank,
   drafts: readonly Draft[],
   words: z.output<typeof wordsSchema>
 ): StarterCard[] => {
@@ -530,7 +539,7 @@ const finish = (
     }
     niches.add(nameKey(niche));
     const fitted = written.palettes.flatMap((proposal) => {
-      const fit = fitPalette(proposal, deps.blank.colors);
+      const fit = fitPalette(proposal, blank.colors);
       if (fit === undefined) {
         return [];
       }
@@ -554,7 +563,7 @@ const finish = (
     palettes.add(first.inks.join(","));
     deps.trace?.add({
       agent: "brand_discovery",
-      inputSummary: `${written.palettes.length} palette(s) proposed on ${deps.blank.name}`,
+      inputSummary: `${written.palettes.length} palette(s) proposed on ${blank.name}`,
       output: {
         adjusted: fitted.flatMap((one) => one.adjusted),
         kept: fresh.length,
@@ -748,8 +757,9 @@ export const discoverBrands = async (
     ],
     step: "rank",
   });
+  const blank = await deps.blank;
   if (ranked.length === 0) {
-    return { blank: deps.blank, cards: [], qlooFailed, tavilyFailed };
+    return { blank, cards: [], qlooFailed, tavilyFailed };
   }
   const words = await deps.ask({
     log: deps.log,
@@ -765,7 +775,7 @@ export const discoverBrands = async (
         themes: draft.themes,
       })),
       feeling: extra.feeling,
-      garments: deps.blank.colors.map((color) => color.name),
+      garments: blank.colors.map((color) => color.name),
       goal: extra.goal,
       involvement: extra.involvement,
       language: deps.locale,
@@ -776,8 +786,8 @@ export const discoverBrands = async (
     temperature: 0.7,
   });
   return {
-    blank: deps.blank,
-    cards: finish(deps, ranked, words),
+    blank,
+    cards: finish(deps, blank, ranked, words),
     qlooFailed,
     tavilyFailed,
   };
