@@ -25,6 +25,7 @@ const scan = (patch: Partial<ScanNow>): ScanNow => ({
   found: 0,
   handleStart: () => {},
   pending: false,
+  pollMs: false,
   running: false,
   scan: { kind: "idle" },
   slow: false,
