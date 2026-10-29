@@ -86,6 +86,9 @@ export const ACTIONS = {
   "store.report.read": spec("store", "R0"),
   // The designer pays for a sample on Fourthwall's checkout.
   "store.sample.checkout": spec("store", "R4"),
+  // The merchant marks a setup step done that no API can see (payouts set
+  // up by Fourthwall support). Nothing is written to the shop.
+  "store.setup.confirm": spec("store", "R1"),
   "store.site.set_status": spec("store", "R3"),
 } as const satisfies Record<string, ActionSpec>;
 

@@ -1804,10 +1804,17 @@
       "payouts": {
         "label": "Versements configurés",
         "done": "Les ventes arrivent sur votre compte bancaire.",
-        "todo": "Terminez votre compte de versement dans Fourthwall pour recevoir vos ventes. L'étape se coche ici une fois faite.",
+        "todo": "Fourthwall vous verse vos ventes via Stripe. La configuration prend environ 5 minutes, et seul le propriétaire de la boutique peut la faire.",
         "waiting": "Fourthwall finalise votre compte de versement.",
         "check": "Vérifiez votre compte de versement.",
-        "action": "Configurer les versements"
+        "action": "Ouvrir Facturation et versements",
+        "inProgress": "Stripe a encore besoin de quelques informations avant de pouvoir vous payer.",
+        "step1": "Ouvrez Facturation et versements dans Fourthwall.",
+        "step2": "Sous Comment vous êtes payé, choisissez Configurer vos versements.",
+        "step3": "Donnez à Stripe votre pièce d'identité et vos coordonnées bancaires, puis revenez ici. L'étape se coche d'elle-même.",
+        "noStripe": "Stripe n'est pas disponible dans votre pays ? Fourthwall paie alors par PayPal ou bill.com : une fois votre solde à 25 $, écrivez à support@fourthwall.com avec l'adresse de votre boutique. Une fois la configuration faite, marquez cette étape comme faite.",
+        "markDone": "Le support Fourthwall a configuré mes versements",
+        "confirmed": "Vous avez indiqué que le support Fourthwall a configuré vos versements (PayPal ou bill.com)."
       },
       "site_live": {
         "label": "Boutique en ligne",
@@ -1831,11 +1838,16 @@
         "todo": "Ajoutez votre pixel Meta dans les réglages Fourthwall, puis ouvrez votre boutique une fois pour envoyer une visite test. L'étape se coche quand Meta la voit.",
         "waiting": "Connectez d'abord Meta : wovain y trouve votre pixel.",
         "check": "Vérifiez votre pixel.",
-        "action": "Ajouter le pixel dans Fourthwall",
+        "action": "Ouvrir Pixels de suivi",
         "test": "Ouvrir votre boutique (visite test)",
         "paste": "ID du pixel à coller :",
         "noDataset": "Meta est connecté, mais wovain n'a pas trouvé un seul pixel sur votre compte publicitaire. Créez-en ou choisissez-en un dans la configuration Meta.",
-        "connectMeta": "Connecter Meta"
+        "connectMeta": "Connecter Meta",
+        "step1": "Copiez l'ID du pixel.",
+        "step2": "Dans Pixels de suivi, collez-le dans le champ Facebook Pixel et enregistrez.",
+        "step3": "Ouvrez votre boutique une fois. L'étape se coche quand Meta voit la visite, ce qui peut prendre quelques minutes.",
+        "capi": "Pour compter les ventes que masquent les bloqueurs de publicité, connectez aussi l'API Conversions de Meta dans Fourthwall. Elle demande le même ID de pixel et un jeton d'accès du Gestionnaire d'événements de Meta.",
+        "capiAction": "Ouvrir Meta Conversions"
       },
       "domain": {
         "label": "Domaine personnalisé",

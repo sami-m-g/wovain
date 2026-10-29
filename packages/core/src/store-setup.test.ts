@@ -44,6 +44,27 @@ describe("evaluateSetup", () => {
     expect(stateOf(steps, "domain")?.state).toBe("check");
   });
 
+  it("takes the merchant's word for payouts support set up by hand", () => {
+    const inactive = { ...READY, payoutStatus: "INACTIVE" };
+    const base = {
+      domain: undefined,
+      metaConnected: false,
+      pixel: undefined,
+      shop: inactive,
+    };
+    expect(stateOf(evaluateSetup(base), "payouts")).toMatchObject({
+      how: "link",
+      state: "todo",
+    });
+    expect(
+      stateOf(evaluateSetup({ ...base, confirmed: ["payouts"] }), "payouts")
+    ).toMatchObject({ confirmedByMerchant: true, how: "none", state: "done" });
+    // Stripe's own ACTIVE never needs the merchant's word.
+    expect(
+      stateOf(evaluateSetup({ ...base, shop: READY }), "payouts")
+    ).not.toHaveProperty("confirmedByMerchant");
+  });
+
   it("offers going live, links payouts and shipping, and waits on Meta", () => {
     const steps = evaluateSetup({
       domain: undefined,
