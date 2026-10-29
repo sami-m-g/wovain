@@ -626,6 +626,33 @@
       "trademarkBlocked": "coincide con una marca registrada. Cambia el texto antes de vender.",
       "trademarkCaution": "ya se vende en marketplaces.",
       "trademarkUnchecked": "no se pudo revisar. Búscalo tú antes de vender."
+    },
+    "competition": {
+      "title": "Competencia",
+      "adsTitle": "Competencia a la que responden estos anuncios",
+      "unknown": "Competencia desconocida",
+      "unknownHint": "La búsqueda en marketplaces falló, así que no se sabe cuán saturado está este tema. {reason}",
+      "again": "Comprobar de nuevo",
+      "level": {
+        "low": "Saturación baja",
+        "medium": "Saturación media",
+        "high": "Saturado"
+      },
+      "count": "{count, plural, one {# anuncio casi idéntico} other {# anuncios casi idénticos}} en {sampled, number} resultados de marketplaces.",
+      "listings": "Anuncios casi idénticos",
+      "saturatedTitle": "Tema saturado",
+      "saturated": "Ya se venden demasiadas camisetas casi idénticas. El piloto automático omite este tema.",
+      "price": "Se venden por unos {price}.",
+      "kind": {
+        "hook": "Sus ganchos",
+        "claim": "Sus afirmaciones",
+        "title": "Sus títulos",
+        "style": "Estilos a evitar",
+        "price": "Sus precios",
+        "complaint": "De qué se quejan los compradores"
+      },
+      "gaps": "Lo que le gusta a tu público y ellos no cubren",
+      "partial": "Parte de la lectura falló ({steps}); se muestra el resto."
     }
   },
   "NotFound": {

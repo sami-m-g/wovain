@@ -1,0 +1,49 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "16afcc04-b0ce-4fcc-9b47-f9f64cebebff",
+  "prevIds": [
+    "e775b7b9-ff24-4012-ae62-66efdd0871c1",
+    "ed9d24f4-cf19-4f03-951c-d340a93f9665",
+    "90fc070f-9e9d-4dcb-85f1-7568d3b89573"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "idea",
+        "competition"
+      ],
+      "writes": [
+        "s|col|public.idea.competition",
+        "n|col|public.idea.competition",
+        "e|col|public.idea.competition"
+      ],
+      "reads": [
+        "n|tbl|public.idea",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "idea",
+        "name": "competition",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

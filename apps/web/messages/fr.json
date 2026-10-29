@@ -626,6 +626,33 @@
       "trademarkBlocked": "correspond à une marque déposée. Changez le texte avant de vendre.",
       "trademarkCaution": "se vend déjà sur les marketplaces.",
       "trademarkUnchecked": "n'a pas pu être vérifié. Cherchez-le vous-même avant de vendre."
+    },
+    "competition": {
+      "title": "Concurrence",
+      "adsTitle": "La concurrence à laquelle ces annonces répondent",
+      "unknown": "Concurrence inconnue",
+      "unknownHint": "La recherche sur les marketplaces a échoué : on ne sait pas à quel point ce thème est saturé. {reason}",
+      "again": "Vérifier à nouveau",
+      "level": {
+        "low": "Saturation faible",
+        "medium": "Saturation moyenne",
+        "high": "Saturé"
+      },
+      "count": "{count, plural, one {# annonce quasi identique} other {# annonces quasi identiques}} sur {sampled, number} résultats de marketplaces.",
+      "listings": "Annonces quasi identiques",
+      "saturatedTitle": "Thème saturé",
+      "saturated": "Trop de t-shirts quasi identiques se vendent déjà. Le pilote automatique ignore ce thème.",
+      "price": "Ils se vendent environ {price}.",
+      "kind": {
+        "hook": "Leurs accroches",
+        "claim": "Leurs affirmations",
+        "title": "Leurs titres",
+        "style": "Styles à éviter",
+        "price": "Leurs prix",
+        "complaint": "Ce que les acheteurs reprochent"
+      },
+      "gaps": "Ce que votre public aime et qu'ils ne couvrent pas",
+      "partial": "Une partie de la lecture a échoué ({steps}) ; le reste est affiché."
     }
   },
   "NotFound": {

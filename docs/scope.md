@@ -62,6 +62,7 @@ The builder wants wovain to be a real product that independent designers pay for
 | --- | --- | --- |
 | Surfaces | Next.js 16 website and ChatGPT app (MCP server with widgets) in one app on Cloud Run | Live |
 | Research | Qloo taste graph and Tavily web search | Live |
+| Competition | Per-theme saturation, how competitors sell and the audience's gaps (Tavily, Nemotron), fed to the brief, the ad writer and autopilot | In review, behind a flag (dev and next) |
 | Design | Brief, transparent print art (fal), pricing from the blank's base cost | Live |
 | Judging | Nemotron on Nebius Token Factory, code-checked print size | Live |
 | Publishing | Hidden Fourthwall products, published by a separate step | Live |

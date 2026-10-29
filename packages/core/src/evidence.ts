@@ -28,23 +28,23 @@ const TITLE_MAX = 300;
 const TEXT_MAX = 1200;
 const LIST_MAX = 6;
 
-const clip = (value: string, max: number) =>
+export const clip = (value: string, max: number) =>
   value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 
-const isWebUrl = (value: string) =>
+export const isWebUrl = (value: string) =>
   URL.canParse(value) && /^https?:$/u.test(new URL(value).protocol);
 
-const hostOf = (url: string) =>
+export const hostOf = (url: string) =>
   new URL(url).hostname.replace(/^www\./u, "").toLowerCase();
 
-const onDomain = (url: string, domains: readonly string[]) => {
+export const onDomain = (url: string, domains: readonly string[]) => {
   const host = hostOf(url);
   return domains.some(
     (domain) => host === domain || host.endsWith(`.${domain}`)
   );
 };
 
-const keyOf = (value: string) =>
+export const keyOf = (value: string) =>
   value
     .toLowerCase()
     .replaceAll(/[^\p{L}\p{N}]+/gu, " ")
@@ -53,7 +53,7 @@ const keyOf = (value: string) =>
 const asError = (error: unknown) =>
   error instanceof Error ? error : new Error(String(error));
 
-const citationsOf = (
+export const citationsOf = (
   items: { title?: string | null | undefined; url: string }[]
 ) => {
   const seen = new Set<string>();

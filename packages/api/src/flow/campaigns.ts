@@ -6,6 +6,7 @@ import {
   writeAdCopy,
 } from "@wovain/core/ads";
 import type { AdCopy, WriteOnce } from "@wovain/core/ads";
+import { adCompetition } from "@wovain/core/competition";
 import { findSalesPixel, verifyStagedPaused } from "@wovain/core/media-buying";
 import { externalWrite } from "@wovain/db/schema/durable";
 import { campaign } from "@wovain/db/schema/seller";
@@ -17,8 +18,10 @@ import { notReady } from "./actor";
 import { withAgentTrace } from "./agent-trace";
 import { audienceFor as brandAudienceFor } from "./audience";
 import { audienceFor, qlooAudiencesOn } from "./audiences";
+import { isCompetitionOn } from "./competition";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
+import { getIdea } from "./ideas";
 import { isMediaBuyingLive } from "./media";
 import { once } from "./once";
 import { getProduct } from "./products";
@@ -136,6 +139,12 @@ export const createProductCampaign = async (
         runId,
       })
     : undefined;
+  // tavily-competition: the competitor angles the copy counter-positions.
+  const competing = await isCompetitionOn(actor);
+  const sourceIdea = competing
+    ? await getIdea(actor, source.ideaId)
+    : undefined;
+  const competition = adCompetition(sourceIdea?.competition);
   // The copy is kept with the key too: a retry stages the same ads.
   const copy = await once(actor, {
     key: `${key}:copy`,
@@ -158,7 +167,8 @@ export const createProductCampaign = async (
                   title: source.brief.title,
                 },
                 actor.log,
-                audience?.persona
+                audience?.persona,
+                competition
               )
           )
       ),

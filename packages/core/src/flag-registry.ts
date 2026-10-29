@@ -210,6 +210,10 @@ export const FLAGS = {
     "store",
     "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"
   ),
+  "tavily-competition": workstream(
+    "growth",
+    "Tavily competitive landscape per Qloo theme: saturation, how competitors sell and the audience's gaps, fed to the brief, the ad writer and autopilot"
+  ),
   "tavily-evidence": workstream(
     "growth",
     "Tavily evidence with citations: per-search failures logged, competitor prices, research dossiers and the trademark check"

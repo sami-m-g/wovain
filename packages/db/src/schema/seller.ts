@@ -1,4 +1,5 @@
 import type { AdCopy } from "@wovain/core/ads";
+import type { Competition } from "@wovain/core/competition";
 import type { DesignBrief, Judgment } from "@wovain/core/design";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
@@ -107,6 +108,9 @@ export const idea = pgTable(
   {
     // Names Qloo matched for the seed: never printed.
     avoidNames: jsonb("avoid_names").$type<string[]>().notNull(),
+    // The theme's competitive landscape (tavily-competition), once read;
+    // status "unknown" when the read failed.
+    competition: jsonb("competition").$type<Competition>(),
     createdAt: createdAt(),
     id: id(),
     rank: integer("rank").notNull(),
