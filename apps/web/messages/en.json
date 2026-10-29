@@ -633,6 +633,20 @@
           "limitLabel": "Loss limit (USD)",
           "save": "Save",
           "saveFailed": "The limit wasn't saved: {reason}"
+        },
+        "designs": {
+          "title": "Each design in the test",
+          "design": "Design",
+          "numbered": "Design {number, number}",
+          "spend": "Spend",
+          "ctr": "CTR",
+          "addToCarts": "Add-to-carts",
+          "purchases": "Sales",
+          "profit": "Profit",
+          "status": "Status",
+          "testing": "Testing",
+          "paused": "Paused",
+          "winner": "Winner"
         }
       }
     },

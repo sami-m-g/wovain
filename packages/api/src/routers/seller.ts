@@ -9,6 +9,7 @@ import {
 } from "../flow/campaigns";
 import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
 import { connectionErrors } from "../flow/connections";
+import { campaignDesignResults } from "../flow/design-results";
 import {
   decideDesign,
   generateDesign,
@@ -234,6 +235,14 @@ export const campaignsRouter = {
     )
     .handler(
       async ({ context, input }) => await createProductCampaign(context, input)
+    ),
+  // A test campaign, design by design: results and each design's rule
+  // status (testing, paused and why, or the winner).
+  designs: protectedProcedure
+    .input(z.object({ campaignId: id }))
+    .handler(
+      async ({ context, input }) =>
+        await campaignDesignResults(context, input.campaignId)
     ),
   list: protectedProcedure.handler(
     async ({ context }) => await listCampaigns(context)

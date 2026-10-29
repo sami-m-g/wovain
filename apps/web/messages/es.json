@@ -633,6 +633,20 @@
           "limitLabel": "Límite de pérdida (USD)",
           "save": "Guardar",
           "saveFailed": "El límite no se guardó: {reason}"
+        },
+        "designs": {
+          "title": "Cada diseño de la prueba",
+          "design": "Diseño",
+          "numbered": "Diseño {number, number}",
+          "spend": "Gasto",
+          "ctr": "CTR",
+          "addToCarts": "Añadidos al carrito",
+          "purchases": "Ventas",
+          "profit": "Beneficio",
+          "status": "Estado",
+          "testing": "En prueba",
+          "paused": "En pausa",
+          "winner": "Ganador"
         }
       }
     },

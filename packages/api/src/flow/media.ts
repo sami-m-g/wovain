@@ -67,7 +67,7 @@ const campaignNotFound = (id: string) =>
     why: "This merchant has no campaign with that ID.",
   });
 
-const campaignOf = async ({ db, userId }: Actor, id: string) => {
+export const campaignOf = async ({ db, userId }: Actor, id: string) => {
   const [row] = await db
     .select()
     .from(campaign)
