@@ -28,6 +28,8 @@ export interface ShopFacts {
   // INACTIVE, IN_PROGRESS or ACTIVE.
   payoutStatus: string | undefined;
   baseUrl: string | undefined;
+  // The shop's name, as buyers see it.
+  name: string | undefined;
 }
 
 export const READINESS_CHECKS = [
@@ -82,6 +84,7 @@ export const evaluateReadiness = (facts: ShopFacts): Readiness => {
 
 const shopSchema = z.object({
   baseUrl: z.string().optional(),
+  name: z.string().optional(),
   status: z.string(),
   verificationRestrictions: z.array(z.string()).default([]),
 });
@@ -112,6 +115,7 @@ export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
     baseUrl: site?.baseUrl,
     enabledShippingProfiles:
       ship?.shippingProfiles.filter((profile) => profile.enabled).length ?? 0,
+    name: site?.name,
     payoutStatus: pay?.status,
     roles: roles?.groups ?? [],
     shippingEnabled: ship?.enabled ?? false,
@@ -716,3 +720,167 @@ export const shopBaseUrl = async (call: ToolCall) =>
     await call("ecommerce_get-current-shop", {}),
     "shop"
   ).baseUrl;
+
+// ---------------------------------------------------------------------------
+// Site status: taking a coming-soon shop live (R3, the merchant confirms)
+
+// Called only by the executor of an approved store.site.set_status.
+export const setSiteLive = async (call: ToolCall) => {
+  const reply = await call("ecommerce_update-shop-site-status", {
+    status: "LIVE",
+  });
+  throwBulkErrors(reply);
+  return findOne(z.object({ status: z.string() }), reply, "shop").status;
+};
+
+// ---------------------------------------------------------------------------
+// Promotions and gift cards, as the Store page lists them
+
+// Fourthwall pages promotions and gift cards 10 at a time at most.
+export const LIST_PAGE_SIZE = 10;
+
+const PROMOTION_STATUSES = ["LIVE", "ENDED", "ARCHIVED", "ALL_USED"] as const;
+
+const promotionRowSchema = z.object({
+  code: z.string().min(1).optional(),
+  codes: z
+    .array(z.union([z.string(), z.object({ code: z.string() })]))
+    .optional(),
+  discount: z.object({ percentage: money.optional() }).partial().optional(),
+  id: z.string().min(1),
+  percentage: money.optional(),
+  status: z.enum(PROMOTION_STATUSES),
+  type: z.string().optional(),
+  usageCount: money.optional(),
+});
+
+export interface PromotionSummary {
+  id: string;
+  code: string;
+  status: (typeof PROMOTION_STATUSES)[number];
+  // Whole percent off, when the code is a percentage.
+  percentage: number | null;
+  uses: number | null;
+}
+
+const firstCode = (row: z.infer<typeof promotionRowSchema>) => {
+  if (row.code !== undefined) {
+    return row.code;
+  }
+  const [first] = row.codes ?? [];
+  return typeof first === "object" ? first.code : first;
+};
+
+// The shop's discount codes, newest first. Membership promotions are left
+// out: wovain doesn't run memberships.
+export const listPromotions = async (
+  call: ToolCall,
+  { page }: { page: number }
+): Promise<PromotionSummary[]> => {
+  const reply = await call("ecommerce_get-promotions", {
+    page,
+    size: LIST_PAGE_SIZE,
+  });
+  const seen = new Set<string>();
+  return findAll(promotionRowSchema, reply).flatMap((row) => {
+    const code = firstCode(row);
+    if (
+      code === undefined ||
+      seen.has(row.id) ||
+      row.type?.startsWith("MEMBERSHIPS") === true
+    ) {
+      return [];
+    }
+    seen.add(row.id);
+    return [
+      {
+        code,
+        id: row.id,
+        percentage: row.percentage ?? row.discount?.percentage ?? null,
+        status: row.status,
+        uses: row.usageCount ?? null,
+      },
+    ];
+  });
+};
+
+const GIFT_CARD_STATUSES = [
+  "UNUSED",
+  "PARTIALLY_USED",
+  "FULLY_USED",
+  "EXPIRED",
+  "DEACTIVATED",
+  "ARCHIVED",
+] as const;
+
+const giftCardRowSchema = z.object({
+  balance: z
+    .object({ initial: money.optional(), remaining: money.optional() })
+    .partial()
+    .optional(),
+  code: z.string().min(1).optional(),
+  expiresAt: z.string().nullish(),
+  id: z.string().min(1),
+  status: z.enum(GIFT_CARD_STATUSES),
+});
+
+export interface GiftCardSummary {
+  id: string;
+  code: string | null;
+  status: (typeof GIFT_CARD_STATUSES)[number];
+  // Cents, in USD (gift cards are priced in the shop's USD).
+  initialCents: number | null;
+  remainingCents: number | null;
+  expiresAt: string | null;
+}
+
+export const listGiftCards = async (
+  call: ToolCall,
+  { page }: { page: number }
+): Promise<GiftCardSummary[]> => {
+  const reply = await call("ecommerce_get-gift-cards", {
+    page,
+    size: LIST_PAGE_SIZE,
+  });
+  const seen = new Set<string>();
+  return findAll(giftCardRowSchema, reply).flatMap((row) => {
+    if (seen.has(row.id)) {
+      return [];
+    }
+    seen.add(row.id);
+    return [
+      {
+        code: row.code ?? null,
+        expiresAt: row.expiresAt ?? null,
+        id: row.id,
+        initialCents: toCents(row.balance?.initial),
+        remainingCents: toCents(row.balance?.remaining),
+        status: row.status,
+      },
+    ];
+  });
+};
+
+// Fourthwall's bounds: $1 to $2,000 a card, 1 to 50 cards at a time.
+export const GIFT_CARD_MAX_USD = 2000;
+export const GIFT_CARD_MAX_COUNT = 50;
+
+// IRREVERSIBLE (store credit is money). Called only by the executor of an
+// approved store.gift_card.create, never retried.
+export const createGiftCards = async (
+  call: ToolCall,
+  {
+    amountUsd,
+    count,
+    expiresAt,
+  }: { amountUsd: number; count: number; expiresAt?: string | undefined }
+) => {
+  throwBulkErrors(
+    await call("ecommerce_create-gift-cards", {
+      amount: amountUsd,
+      numberOfCards: count,
+      ...(expiresAt === undefined ? {} : { expiresAt }),
+    })
+  );
+  return { count };
+};

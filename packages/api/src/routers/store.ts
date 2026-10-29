@@ -1,4 +1,7 @@
+import { INSIGHT_RANGES } from "@wovain/core/insights";
 import {
+  GIFT_CARD_MAX_COUNT,
+  GIFT_CARD_MAX_USD,
   ORDER_CURRENCIES,
   PROMO_CODE,
   MAX_PROMO_USES,
@@ -8,6 +11,13 @@ import { z } from "zod";
 import {
   listDrops,
   listStoreOrders,
+  requestGiftCards,
+  requestPromotionEnd,
+  requestShopPromotion,
+  requestSiteLive,
+  storeGiftCards,
+  storePromotions,
+  storeSales,
   productVariants,
   requestCancel,
   requestDropPublish,
@@ -35,6 +45,16 @@ const price = z.number().min(1).max(1000);
 const MAX_PERCENT = 90;
 const MAX_ORDER_PAGE = 100;
 const MAX_REFUND_CENTS = 1_000_000;
+const MAX_LIST_PAGE = 100;
+const MAX_PICKED = 100;
+const page = z.number().int().min(0).max(MAX_LIST_PAGE).default(0);
+const promotion = {
+  code: z.string().trim().toUpperCase().regex(PROMO_CODE),
+  endsAt: z.coerce.date(),
+  maxUses: z.number().int().min(1).max(MAX_PROMO_USES).optional(),
+  percentage: z.number().int().min(1).max(MAX_PERCENT),
+  startsAt: z.coerce.date(),
+};
 
 const guarded =
   <I, O>(
@@ -63,17 +83,30 @@ export const storeRouter = {
   drops: protectedProcedure.handler(
     guarded(async (context) => await listDrops(context))
   ),
-  launchPromotion: protectedProcedure
+  endPromotion: protectedProcedure
+    .input(z.object({ code: z.string().min(1).max(64), promotionId: id }))
+    .handler(guarded(requestPromotionEnd)),
+  giftCards: protectedProcedure
+    .input(z.object({ page }))
+    .handler(
+      guarded(
+        async (context, input) => await storeGiftCards(context, input.page)
+      )
+    ),
+  goLive: protectedProcedure.handler(
+    guarded(async (context) => await requestSiteLive(context))
+  ),
+  issueGiftCards: protectedProcedure
     .input(
       z.object({
-        code: z.string().trim().toUpperCase().regex(PROMO_CODE),
-        dropId: id,
-        endsAt: z.coerce.date(),
-        maxUses: z.number().int().min(1).max(MAX_PROMO_USES).optional(),
-        percentage: z.number().int().min(1).max(MAX_PERCENT),
-        startsAt: z.coerce.date(),
+        amountUsd: z.number().min(1).max(GIFT_CARD_MAX_USD),
+        count: z.number().int().min(1).max(GIFT_CARD_MAX_COUNT),
+        expiresAt: z.coerce.date().optional(),
       })
     )
+    .handler(guarded(requestGiftCards)),
+  launchPromotion: protectedProcedure
+    .input(z.object({ ...promotion, dropId: id }))
     .handler(guarded(requestLaunchPromotion)),
   moveProduct: protectedProcedure
     .input(
@@ -96,9 +129,24 @@ export const storeRouter = {
       })
     )
     .handler(guarded(listStoreOrders)),
+  planPromotion: protectedProcedure
+    .input(
+      z.object({
+        ...promotion,
+        productIds: z.array(id).min(1).max(MAX_PICKED),
+      })
+    )
+    .handler(guarded(requestShopPromotion)),
   products: protectedProcedure.handler(
     guarded(async (context) => await storeProducts(context))
   ),
+  promotions: protectedProcedure
+    .input(z.object({ page }))
+    .handler(
+      guarded(
+        async (context, input) => await storePromotions(context, input.page)
+      )
+    ),
   publishDrop: protectedProcedure
     .input(z.object({ dropId: id }))
     .handler(
@@ -128,6 +176,11 @@ export const storeRouter = {
         async (context, input) =>
           await requestReprice(context, input.productId, input.price)
       )
+    ),
+  sales: protectedProcedure
+    .input(z.object({ range: z.enum(INSIGHT_RANGES).default("28d") }))
+    .handler(
+      guarded(async (context, input) => await storeSales(context, input.range))
     ),
   sample: protectedProcedure
     .input(z.object({ productId: id, variantId: id }))
