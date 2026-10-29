@@ -65,8 +65,11 @@ export const SOCIAL_DOMAINS = [
   "x.com",
 ];
 
-// Separators page titles put between a name and the site's boilerplate.
-const TITLE_BREAKS = new Set(["|", "→", "»", "•", "·", "–", "—", "-"]);
+// Separators page titles put between a name and the site's boilerplate:
+// marks that break a title wherever they stand ("Tee|Etsy"), and dashes
+// that break it only between spaces ("Spider-Man" is one name).
+const TITLE_MARKS = ["|", "→", "»", "•", "·"];
+const TITLE_DASHES = new Set(["–", "—", "-"]);
 // Calls to action web titles end with.
 const CALLS_TO_ACTION = [
   "buy now",
@@ -78,27 +81,49 @@ const CALLS_TO_ACTION = [
   "shop now",
   "shop the look",
 ];
+// Punctuation a link may stand in: "(https://…)".
+const LINK_WRAP = /^[([{<"'“]+|[)\]}>"'”.,;:!?]+$/gu;
 
-const isLinkWord = (word: string) =>
-  word.startsWith("www.") || /^https?:/iu.test(word);
+const isLinkWord = (word: string) => {
+  const bare = word.replaceAll(LINK_WRAP, "").toLowerCase();
+  return (
+    bare.startsWith("www.") ||
+    bare.startsWith("http:") ||
+    bare.startsWith("https:")
+  );
+};
+
+// The title before its first separator mark.
+const firstPart = (title: string) => {
+  let text = title;
+  for (const mark of TITLE_MARKS) {
+    text = text.split(mark)[0] ?? text;
+  }
+  return text;
+};
 
 // A source's title as the merchant reads it: its first part, without links
-// or a call to action; the page's host when nothing is left.
+// or a trailing call to action; the page's host when nothing is left.
 export const sourceTitle = (title: string | null | undefined, url: string) => {
   const words: string[] = [];
-  for (const word of (title ?? "").split(/\s+/u)) {
-    if (TITLE_BREAKS.has(word) && words.length > 0) {
+  for (const word of firstPart(title ?? "").split(/\s+/u)) {
+    if (TITLE_DASHES.has(word) && words.length > 0) {
       break;
     }
-    if (word !== "" && !isLinkWord(word) && !TITLE_BREAKS.has(word)) {
+    if (word !== "" && !isLinkWord(word) && !TITLE_DASHES.has(word)) {
       words.push(word);
     }
   }
   let text = words.join(" ");
-  for (const call of CALLS_TO_ACTION) {
-    const at = text.toLowerCase().indexOf(call);
-    if (at !== -1) {
-      text = text.slice(0, at).trim();
+  let trimmed = true;
+  while (trimmed) {
+    const lower = text.toLowerCase();
+    const call = CALLS_TO_ACTION.find(
+      (one) => lower === one || lower.endsWith(` ${one}`)
+    );
+    trimmed = call !== undefined;
+    if (call !== undefined) {
+      text = text.slice(0, text.length - call.length).trim();
     }
   }
   return clip(text === "" ? hostOf(url) : text, TITLE_MAX);

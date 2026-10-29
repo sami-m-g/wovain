@@ -297,6 +297,19 @@ it("shows a source's title without links, calls to action or boilerplate", () =>
   expect(sourceTitle("Gothic fern tee | Etsy", "https://etsy.com/l/1")).toBe(
     "Gothic fern tee"
   );
+  expect(sourceTitle("Gothic fern tee|Etsy", "https://etsy.com/l/1")).toBe(
+    "Gothic fern tee"
+  );
+  expect(
+    sourceTitle("Gothic tee (https://shop.example/item)", "https://a.example")
+  ).toBe("Gothic tee");
+  // A headline that only starts with a call to action keeps it.
+  expect(
+    sourceTitle(
+      "Buy Now, Pay Later: What Shoppers Need to Know",
+      "https://news.example/bnpl"
+    )
+  ).toBe("Buy Now, Pay Later: What Shoppers Need to Know");
   expect(
     sourceTitle("https://www.example.com/x", "https://example.com/x")
   ).toBe("example.com");
