@@ -140,6 +140,7 @@ const DropFlow = ({
         onBudget={drop.handleBudget}
         onChange={drop.handleBrief}
         onSubmit={actions.handleSubmitBrief}
+        onUseDirection={actions.handleUseDirection}
       />
     ),
     campaign: (
@@ -179,6 +180,7 @@ const DropFlow = ({
         onNext={actions.handleDesignPicked}
         onToggle={actions.handleToggleIdea}
         picked={drop.picked}
+        runId={run?.id}
       />
     ),
     products: (

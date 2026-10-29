@@ -1,0 +1,108 @@
+# One-off: GitHub Releases for the history before release-please. The tags
+# v0.1.0 to v0.28.0 exist from the GitLab era; v0.29.0 to v0.31.0 are the
+# milestones below. Each release gets notes from its conventional commits
+# (git-cliff, .config/cliff.toml), then is signed by sign-release.yml.
+#
+# It runs by itself once: the push that merges .github/backfill-releases.pending
+# into main starts it. Delete that file in a later pull request; the deletion
+# runs it again and changes nothing, because a release that exists with its
+# signature is left alone. It can also be run by hand from main
+# (workflow_dispatch, dry_run on by default).
+#
+# After v0.31.0, release-please (release.yml) takes over from
+# last-release-sha in release-please-config.json.
+name: backfill-releases
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/backfill-releases.pending"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List the releases it would make, and make none
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  releases:
+    name: releases
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    outputs:
+      tags: ${{ steps.make.outputs.tags }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      # Milestones without a tag yet: the tag, then the commit it goes on.
+      #   v0.29.0  Basics hackathon submission (2026-10-26)
+      #   v0.30.0  Transcend hackathon submission (2026-10-27)
+      #   v0.31.0  Development moves to GitHub (2026-10-27)
+      MILESTONES: |
+        v0.29.0 d29e7decf26431b99e187ed86b5136739ce5dc2d
+        v0.30.0 9ccc2287a8ecaf35a95de27d2bc2bcadb6e1bfa7
+        v0.31.0 42a1716efbde1b533986c0dad2563cef54cfe788
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - id: make
+        shell: bash
+        run: |
+          declare -A sha_of
+          while read -r tag; do
+            sha_of[$tag]=$(git rev-list -n 1 "refs/tags/$tag")
+          done < <(git tag --list 'v[0-9]*.[0-9]*.[0-9]*')
+          while read -r tag sha; do
+            [ -n "$tag" ] && sha_of[$tag]=$sha
+          done <<< "$MILESTONES"
+
+          mapfile -t ordered < <(printf '%s\n' "${!sha_of[@]}" | sort -V)
+          root=$(git rev-list --max-parents=0 HEAD | tail -n 1)
+          previous=$root
+          for tag in "${ordered[@]}"; do
+            sha=${sha_of[$tag]}
+            echo "$tag $sha (notes from $previous)"
+            if [ "$DRY_RUN" != "true" ] && ! gh release view "$tag" > /dev/null 2>&1; then
+              pnpm exec git-cliff --config .config/cliff.toml --skip-tags submission \
+                --tag "$tag" --strip all --output "$RUNNER_TEMP/notes.md" -- "$previous..$sha"
+              gh release create "$tag" --target "$sha" --title "$tag" \
+                --notes-file "$RUNNER_TEMP/notes.md" --latest=false
+            fi
+            previous=$sha
+          done
+          # Only the releases that are not signed yet.
+          todo=()
+          for tag in "${ordered[@]}"; do
+            if [ "$DRY_RUN" = "true" ] || ! gh release view "$tag" --json assets --jq '.assets[].name' | grep -q '\.sigstore\.json$'; then
+              todo+=("$tag")
+            fi
+          done
+          json=$(printf '%s\n' "${todo[@]}" | jq -R . | jq -sc 'map(select(. != ""))')
+          echo "tags=$json" >> "$GITHUB_OUTPUT"
+
+  sign:
+    name: sign ${{ matrix.tag }}
+    needs: releases
+    if: ${{ !inputs.dry_run && needs.releases.outputs.tags != '[]' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        tag: ${{ fromJSON(needs.releases.outputs.tags) }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/sign-release.yml
+    with:
+      tag: ${{ matrix.tag }}

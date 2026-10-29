@@ -14,9 +14,11 @@ import { notFound } from "./actor";
 import { withAgentTrace } from "./agent-trace";
 import { isCompetitionOn } from "./competition";
 import { requireFal, withArtistCall } from "./connections";
+import { writerStyleFor } from "./drop-style";
 import { flagContextOf } from "./flags";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
+import { reachMilestone } from "./milestones";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
 import { charge } from "./spend";
@@ -90,6 +92,9 @@ export const generateDesign = async (
     flagContextOf(actor)
   );
   const competing = await isCompetitionOn(actor);
+  // drop-style: the drop's tone and palette, with the brand voice as
+  // guardrails; none when the flag is off or the suggestion failed.
+  const style = await writerStyleFor(actor, ideaId);
   // One drawing: a brief, fal's art and the judge's look at both. Each paid
   // call is keyed, so a retried step reuses it; `previous` makes it the
   // redraw of a design the judge sent back.
@@ -109,6 +114,7 @@ export const generateDesign = async (
               : undefined,
             idea: source.research,
             previous,
+            style,
           },
           actor.log
         ),
@@ -448,6 +454,9 @@ export const decideDesign = async (
   decision: Decision
 ) => {
   const { replay, row: decided } = await commitDecision(actor, id, decision);
+  if (decision.approve && !replay) {
+    await reachMilestone(actor, "design_approved", { by: decision.by });
+  }
   // A replayed decision taught the agents the first time.
   if (decision.by === "merchant" && !replay) {
     await learnTaste(actor, decided, decision.approve);

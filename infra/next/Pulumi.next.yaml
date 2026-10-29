@@ -63,37 +63,39 @@ config:
       4XL: 6
       5XL: 8
   wovain-next:billingCatalog:
+    # Sized so a credit costs wovain about $0.025 (docs/pricing-proposal.md):
+    # a design draws on wovain's fal while onboarding-wizard is on.
     creditCost:
       assist: 1
       design: 4
-      research: 3
+      research: 5
     designsPerRun: 3
     creditPack:
       credits: 100
       name: Credit pack
-      priceCents: 1000
+      priceCents: 1500
     plans:
       free:
         # Autopilot on Free in dev and next (openspec autopilot-triggers).
         autopilot: true
-        autopilotDailyCredits: 15
-        monthlyCredits: 25
+        autopilotDailyCredits: 25
+        monthlyCredits: 40
         name: Free
         priceCents: 0
         rank: 0
         rollover: false
       label:
         autopilot: true
-        autopilotDailyCredits: 100
-        monthlyCredits: 800
+        autopilotDailyCredits: 150
+        monthlyCredits: 1000
         name: Label
         priceCents: 7900
         rank: 2
         rollover: true
       studio:
         autopilot: true
-        autopilotDailyCredits: 30
-        monthlyCredits: 250
+        autopilotDailyCredits: 50
+        monthlyCredits: 300
         name: Studio
         priceCents: 2900
         rank: 1
@@ -109,7 +111,7 @@ config:
         name: Judges 2026
       # The shared judges' demo login (openspec judges-demo-account): only
       # that account can redeem it, so its code is worthless to anyone else.
-      # 300 credits are about 17 full drops at 17 credits each.
+      # 300 credits are about 16 manual drops at 18 credits each.
       - audience: "The judges' shared demo account on next.wovain.com: the code is shared only in Devpost's private testing instructions."
         credits: 300
         emails:
@@ -132,32 +134,32 @@ config:
       windowSeconds: 600
     runsPerMerchant: 2
   wovain-next:resendAdminKey:
-    secure: v1:eeLzvm96z2no3YkZ:ahof9d8TCAM5bfaWkYDuCslP2qQoktrxzLOAaU19/YcYMdULjMri2rmAkgoPsVltFyh2KA==
+    secure: v1:h2EegYC7qEeuHMJU:hGmoAOjC2L+nk/4uhQrkIulVN8H387oVjwwnTcZf1+6Pb0OC58gyOJU3osgTuOhk+Pe6qg==
   github:token:
-    secure: v1:M1rdtZUvR8tOml9T:mWBKQ+/0BtYXTTCCQVBx5sHwg5oMl265myEukDeOdpy8+xLv5beLPj+Zx7yPzAimxbtwzlCn71xQ0ALF0ptHj5ubmPfKwJzab2aBOyFuQzJ4D3vSnD+M97q9sw0GLHAfM+YhCfvfv7j9jXul1w==
+    secure: v1:VvMNV/emBKnd2zmc:qvc9uzojOESNVebefMu+/PFSNxcB98u4veAB9QKRgKfS/jSjBJVjS/zpQpoEvXQ55iy3g0L7WJ3erq9SsDZNqQ1G5Z4KslJacdhY4jBSP6MlufjEWckCgrLCVBIM5p36r1XkB86eGEGnRGRFOQ==
   posthog:apiKey:
-    secure: v1:k4UTkir3RQ9iw0Zr:kCiVPEMImHiQjyBYm+8/Kf0zuSVnJ/ajfeojlscAz/SvaEhcyxj27Sj54EfOc/HBIWL+AGEEOhgS8dsjoi6b1+qiPWE=
+    secure: v1:48Jg1ccFprleHrjH:jmVvY18m69eIUB/lnZeTB1d6El8AX5jyD3SGIkuDoeznbGWB6519AOyAGQX7obZ/UxgL1kUmGBJHZauIQNBYWnSvPKc=
   wovain-next:nebius-api-key:
-    secure: v1:bH7RTmULY9psQ4e9:Vc8Ir/foU9VzQLwD93sn6EisSDQ/O/605yYYg23hx9Nkpl7MesxYdAUmqSwUz2+W65mgDEeFPtz1FALL4mEBPVhnmW3H64xmFf/nL3lqN3q50vDkzFKG54T6s57TttrDF2rV6xEY69tiq7iejFRGge2v+pgP72b38tSCdJdsQHbyQaZ4CFSF7gDxCaJ1U3BC1HwRVCitG1HIXxHPcPwD7QK+YMRhPw/bsNyffVDJuMX8Qvn2d2/Pd5uVmj/OySpgCI89j3OkIa8513PwxS+6iyxRmrATn95Mi5dut7uVAQhZvHr1+9r5dRJENuomCfmhiS65LTCm5fG0ym4=
+    secure: v1:orC/YiH3rlJfBQAQ:+S6Gb3u4eke5xj5R8+T82m63TSIhN24kQWb1Vi9OJaRvm7WMSFzCzwEBT9WoRdnHiCFE551I8FpRlmitK8H+hHEzb3WM1e7M8ViJTWlmuaOlnOq6uFPb9+xFa/Ai5fxIb8QwGPwxxEl4tWp3t+1mqzq05qmkiue4k7LrSBHvMkTihiaAiOCVQmHoyDU3lNhPUmeD1JLP+X221JdD2EvpgMdkd3tFQWHUcR5f4oXAy4NnlXyyTN4xQdIWmQ313lQx1P6R5hcIxPstD2aqXT1tnHazY45rr+q6c9b900Zwa/5SakYfxACD6mPFtQXhC8+MeSRS7WBh17vkgNc=
   wovain-next:fal-key:
-    secure: v1:3qWEGxYaEGu/V1f2:P13DXzYBAsGm74Jjok3FLf3jUfV1iDyua4fbSh/PgJSjdPyUGRIs+bKkCX+Rh7AUmQJfl1ra34mi7OCzx9N93GX46x0uBIBseX1+a6XdjvahNVtf/GBZLg==
+    secure: v1:wXLWYhTyG0p34WTE:0S4PFVFP8GWMJqOrqESW70L1nBuEBLTZFOhv+T37l+yVFlYDv0tTXt9AnKKfKbIP2CAfpk4ZA5kULQcWm2C2B/nyYUNqR0/3CkdikCemZGZhm/F0RT/gSA==
   wovain-next:tavily-api-key:
-    secure: v1:JlHmRUp5nnKYEdBC:IMPCfHmNtY69TxNh41n9fSHN/QKLF39QGKlJcQhZpxOz66/SCZ8DByjanzsuCijd7ESzM4vPJiP5
+    secure: v1:wY7MV/B/U1ExP9kG:jBO8spJyIB2tbl+UHxDahoKQdbbZAc0j/w7yMMWDLgO0Fsr7PO73CqKPwRUNIxWxalOlce/3fADz
   wovain-next:inngest-event-key:
-    secure: v1:R/eZvgbaAb99klVI:+6E/RcREINkovXHE2oQ6lXk/3xu7qV9Uy1FwU/eKi3AIu8Ic0S/IZZ0+o0loWmNHzmZ5e7DtZj4p+qYOypu5C1YeGzz/k0ley0Js9DyDPVDz5bviONxoYjO80HLodBA4jDvcuNLm
+    secure: v1:Xn7HJex2Yw/Pru9w:TwkTGcNDo70NBM9r9u4enX+yvIb+eUUegrPKeH688Eu3pQww3/HiqYQcK0BEKGIgUdqfIct0eYueVxZVahBduh157Nin8Lb79NOLp1NI/DJzkAo0RzlgpmLjdHK/vjHFLN+Yd5hE
   wovain-next:inngest-signing-key:
-    secure: v1:fkVDMZ7WC9Q1AM7V:5+wIelYvPnW5wOnRM9O6gc8xz9Iv8edeqeGua3okdUREctiM9Ik3PMQlNzAwK9aCLUe6Quo8Wr6zcVLH6EcHkNBuXvgfRW4jQG3XV7fh0P+quLoHMo7bBDJaw6Y0
+    secure: v1:AoF25Y3qBeO25+ZV:eeTkXZO/vFrBsRZWKXr2tmwpdVpmpCo3O9DJOdfdVZUBzbU9pkZ7wUo/O2GBGB6hzlC1e+rWu3QCd50W5+NELfXXt7mwZNsvAaWHfnFO6Yt3SqQjguM65L23SDQb
   wovain-next:qloo-api-key:
-    secure: v1:yDGsDzE6Rd9pmbNM:iqR0AaQjGO6EzQnqWRY/8eW93aKQiFo3MAFuzEehsGGGxHzz3UrtDA1X9Qt+9rYD0two2c4AbNL8zamdbw==
+    secure: v1:N4kWhEDoOHkfDl2S:xb+W3ktwmaKB3IWO6wFBgr/CLe9vz60mIrPak8uCoa6SlcXUSJmRUVwOCromqx4DrX1nxsJdarmpbYXdDQ==
   wovain-next:meta-app-id:
-    secure: v1:/HiE9PWSBntrBndO:XnpXrjh0ZRBt9UpxFz38e4SNqf73iO2Pn80qhpr8Wg==
+    secure: v1:FmlIzscyppvzC7wt:5YcEXYf9oydgXeBGR76hV8ob1mNbWFaFnk9cpqz/xA==
   wovain-next:meta-app-secret:
-    secure: v1:7nyeRkBgIWFoeAbQ:6PQCNdRIofxhiVyZReFwm6tUWevDVSC8hrA0wrmCEc+x2+qZWbXqV5fpDPtiEBAY
+    secure: v1:lV2+YbU9PRO/Woof:nL3nT9aHG51D7/qm6PQvlWjFAvSBEGboEr9nm47/dGPJnbJlYFix0yQu5mqSR+WM
   wovain-next:google-client-secret:
-    secure: v1:TvOS3BBiq+efx/Zp:fGjc/ir431tm0PZk3GthUaaZrbqsnW/BKcRxDjsBRkf+GikdUQNXGJGCxz7DSywIsEbh
+    secure: v1:sAVBpqswSd3Q4Alp:lNW9Mk5oVVqb41V7TBqqkuOxh49hBgVo8zuJYplMiM995/i+Uc6a9L4k3evkcjPQEznV
   wovain-next:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
   wovain-next:polar-access-token:
-    secure: v1:YhuZSVgou55EGC1C:+15urloUPssNpCvIPxVHN66eEUGmXVFavuM2Yr69LWc55RgDP3D3mQpzWn+NISn3qSY5gjHdtO1mupJAVAPcsp2XkAt3
+    secure: v1:jkaUqkKZ14OsXV78:HVdQwG14WkWi417JO+CO+E3lt3AlQSYgTGF1awaW0f/P/qrog7i+gtAQXF1X0WC72RXEwoAKMb4vxmy7YO10qZzvfHHI
   wovain-next:polarEnvironment: sandbox
-secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
-encryptedkey: CiQAr5FKtTJYD7hIO8Y9PlLFQLiZQEO3hZPd1sPgYdfWsO9bZ38SSQDNTiaDXHGtxz0oHJGmgDvoIcNvBJwZkwoAO0CtPWHzXGt+zsZU9gJXdhJP/QwdHl58V24OZc5ZxLHhZw5+igC+hzvIQQyz3uA=
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/next-stack-secrets
+encryptedkey: CiQAh4aI6yDak5l2QZdPDZitzfXVpMdaSqxyew/aSSpg5D3iOcsSSQBWC+SVoviiXmtQZQHMGjMPEeYWy2Upve/8MUOYrG/Pyx5Zu9ok4sBPSrLuCaG9TxbqLaUz9l4edBnTV/psw8A0PDUS7BC6gb0=

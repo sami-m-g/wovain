@@ -15,7 +15,6 @@ import {
   Bot,
   ChartLine,
   CreditCard,
-  History,
   Layers,
   LayoutGrid,
   PlugZap,
@@ -37,16 +36,16 @@ const NAV: readonly NavItem[] = [
   { href: "/dashboard", icon: LayoutGrid, key: "overview" },
   { href: "/dashboard/new", icon: Plus, key: "newDrop" },
   { href: "/dashboard/insights", icon: ChartLine, key: "insights" },
-  { href: "/dashboard/runs", icon: History, key: "runs" },
+  { href: "/dashboard/drops", icon: Layers, key: "drops" },
   { href: "/dashboard/connections", icon: PlugZap, key: "connections" },
   { href: "/dashboard/billing", icon: CreditCard, key: "billing" },
 ];
 
 // Store management, while its flag is on (openspec store-management).
-const PRODUCTS: NavItem = {
-  href: "/dashboard/products",
+const STORE: NavItem = {
+  href: "/dashboard/store",
   icon: Store,
-  key: "products",
+  key: "store",
 };
 
 // Shown only while the autopilot-triggers flag is on for the merchant.
@@ -54,13 +53,6 @@ const AUTOPILOT: NavItem = {
   href: "/dashboard/autopilot",
   icon: Bot,
   key: "autopilot",
-};
-
-// Drops (design-drops), shown only while the flag is on for the merchant.
-const DROPS: NavItem = {
-  href: "/dashboard/drops",
-  icon: Layers,
-  key: "drops",
 };
 
 const MARK_SIZE = 20;
@@ -72,25 +64,20 @@ const MARK_SIZE = 20;
  */
 export const AppSidebar = ({
   docsUrl,
-  drops = false,
-  products = false,
+  store = false,
 }: {
   docsUrl: string;
-  drops?: boolean;
-  products?: boolean;
+  store?: boolean;
 }) => {
   const common = useTranslations("Common");
   const autopilot = useQuery(orpc.autopilot.status.queryOptions());
-  // Drops after New drop, Products after Insights, Autopilot after Runs.
-  const withDrops = drops ? NAV.toSpliced(2, 0, DROPS) : NAV;
-  const insightsIndex = withDrops.findIndex((item) => item.key === "insights");
-  const base = products
-    ? withDrops.toSpliced(insightsIndex + 1, 0, PRODUCTS)
-    : withDrops;
-  const runsIndex = base.findIndex((item) => item.key === "runs");
+  // Store after Insights, Autopilot after Drops.
+  const insightsIndex = NAV.findIndex((item) => item.key === "insights");
+  const base = store ? NAV.toSpliced(insightsIndex + 1, 0, STORE) : NAV;
+  const dropsIndex = base.findIndex((item) => item.key === "drops");
   const items =
     autopilot.data?.enabled === true
-      ? base.toSpliced(runsIndex + 1, 0, AUTOPILOT)
+      ? base.toSpliced(dropsIndex + 1, 0, AUTOPILOT)
       : base;
   return (
     <Sidebar collapsible="icon">

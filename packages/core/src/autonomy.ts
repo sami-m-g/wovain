@@ -86,6 +86,9 @@ export const ACTIONS = {
   "store.report.read": spec("store", "R0"),
   // The designer pays for a sample on Fourthwall's checkout.
   "store.sample.checkout": spec("store", "R4"),
+  // The merchant marks a setup step done that no API can see (payouts set
+  // up by Fourthwall support). Nothing is written to the shop.
+  "store.setup.confirm": spec("store", "R1"),
   "store.site.set_status": spec("store", "R3"),
 } as const satisfies Record<string, ActionSpec>;
 
@@ -119,6 +122,10 @@ export interface PolicyAction {
   // US cents of new ad spend the action may commit: a campaign's daily
   // budget when it activates, or the increase when a budget is raised.
   spendCents?: number | undefined;
+  // A profit rule's stop (./ad-rules.ts): a pause that only lowers spend.
+  // It runs at once at every level, since waiting for the merchant is what
+  // loses the money.
+  protective?: boolean | undefined;
 }
 
 // Ad spend already committed, in US cents: today's, and the month's to
@@ -143,7 +150,8 @@ export type PolicyReason =
   | "always_approve"
   | "over_daily_cap"
   | "over_monthly_cap"
-  | "unknown_action";
+  | "unknown_action"
+  | "protective_stop";
 
 export interface PolicyDecision {
   verdict: PolicyVerdict;
@@ -175,6 +183,9 @@ export const canAutoExecute = (
   const { risk, spends } = ACTIONS[action.type];
   if (risk === "R0") {
     return { reason: "read_only", verdict: "allow" };
+  }
+  if (action.protective === true && !spends && rank(risk) <= rank("R1")) {
+    return { reason: "protective_stop", verdict: "allow" };
   }
   if (spends) {
     const spend = Math.max(0, action.spendCents ?? 0);

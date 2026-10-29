@@ -8,7 +8,7 @@ State lives in `gs://wovain-pulumi-state`; stack secrets are encrypted with the 
 
 1. **Pull request.** CI's `infra` job type-checks and runs both programs against mocks with no credentials (`*.test.ts`). This catches missing config, code that throws, duplicate URNs and dynamic providers that don't serialize.
 2. **Preview** locally with real credentials before merging: `pnpm run infra:preview` (with the policy pack, on a copy of the state). Review the plan; `node infra/policy/guard.ts < preview.json` fails on a delete or replace of a stateful resource.
-3. **Apply**: `.github/workflows/infra.yml` runs `pulumi up` of `prod` on every push to main that touches infra, in the `infrastructure` environment, as `gitlab-infra`, after the same preview and guard. Then it runs `pnpm polar:seed` (`packages/billing/src/seed.ts`), which keeps Polar's catalog, promo codes and webhook endpoint as code. On a pull request, the same workflow previews both stacks read-only as `infra-preview` (`bootstrap/preview.ts`, a pool of its own that trusts only this repository's `pull_request` events) and writes the plan to the job summary. `pnpm run infra:up` does the same from a laptop.
+3. **Apply**: on every push to main that touches infra, `.github/workflows/infra.yml` runs `pulumi up` of `next` only, as `infra-next` ("Applied by CI on every push to main", below). It runs `pulumi up` of `prod` only when started by hand while production is frozen, in the `infrastructure` environment, as `gitlab-infra`, after the same preview and guard. Then it runs `pnpm polar:seed` (`packages/billing/src/seed.ts`), which keeps Polar's catalog, promo codes and webhook endpoint as code. On a pull request, the same workflow previews both stacks read-only as `infra-preview` (`bootstrap/preview.ts`, a pool of its own that trusts only this repository's `pull_request` events) and writes the plan to the job summary. `pnpm run infra:up` does the same from a laptop.
 
 The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 
@@ -16,7 +16,7 @@ The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 
 ## GitHub
 
-`github.ts` manages the repository (adopted, protected and retained), Dependabot alerts and security updates, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request with one approval (dismissed by a new push) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml`, `dependency-review` from `supply-chain.yml` and `osv / osv-scan` from `osv.yml` passed. The approval comes from CodeRabbit (`.coderabbit.yaml`), since the maintainer can't approve their own pull requests; no one may bypass the ruleset. The CodeRabbit GitHub App must be installed on the repository before the ruleset is applied, or no pull request can merge. It also owns a `release` ruleset for `release/transcend`, every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads:
+`github.ts` declares the repository in two stacks. The `github` stack (`github/`, below) owns the repository itself (adopted, protected and retained), its merge settings (auto-merge on, branch deleted on merge), Dependabot alerts and security updates, the `dependencies` label, the `GITGUARDIAN_API_KEY` secret, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request with one approval (dismissed by a new push) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml`, `dependency-review` from `supply-chain.yml` and `osv / osv-scan` from `osv.yml` passed. The approval comes from CodeRabbit (`.coderabbit.yaml`), since the maintainer can't approve their own pull requests; no one may bypass the ruleset. The CodeRabbit GitHub App must be installed on the repository before the ruleset is applied, or no pull request can merge. It also owns a `release` ruleset for `release/transcend`. Production's stack owns every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads, since they name its Google resources:
 
 | Environment | Deployment branches | Approval | Google trusts in it |
 | --- | --- | --- | --- |
@@ -33,11 +33,51 @@ The GitGuardian GitHub App scans every push and pull request for secrets (the `G
 
 False positives (a placeholder CI key, a test fixture) are ignored with `.github/workflows/gitguardian-ignore.yml`: run it on main with the incident id, a reason and a justification, and the run is the audit record. Never ignore a real secret: revoke it, then resolve the incident. `.gitguardian.yaml` holds the ignored paths for ggshield run locally (`ggshield secret scan`).
 
-The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as a stack secret and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set). Create a service account token in the GitGuardian dashboard (API, Service accounts) with only the `incidents:write` scope, then `pulumi config set --secret --cwd infra --stack prod gitguardian-api-key <token>`. Don't set it by hand in the repository's settings. Like the new required checks above, the secret lives in the `prod` stack: it reaches the repository with the first `up` after the production freeze ends (about 2026-11-16); until then, ignore an incident in the dashboard.
+The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as a stack secret of the `github` stack and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set). Create a service account token in the GitGuardian dashboard (API, Service accounts) with only the `incidents:write` scope, then run `pulumi config set --secret --cwd infra/github --stack github gitguardian-api-key`, which prompts for the token so it never lands in your shell history. Don't set it by hand in the repository's settings.
+
+The `RELEASE_PLEASE_TOKEN` secret (`.github/workflows/release.yml`) is declared the same way, from the `release-please-token` stack secret, and only when it is set. The stack's own token cannot be reused: it has no Contents or Pull requests permission. Make a second fine-grained token (`wovain-release-please`, only `sami-m-g/wovain`, Contents read and write, Pull requests read and write, Metadata read) and run `pulumi config set --secret --cwd infra/github --stack github release-please-token`. Until it is set, release-please runs on the default token and its pull request starts no checks.
 
 The repository's variables are `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_PROJECT_ID`, `GCP_REGION` and `DOCS_SITE_URL`. Each deploy environment has `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_IMAGE_REPOSITORY`, `GCP_SQL_INSTANCE`, `DATABASE_URL_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`, `SITE_URL` and `WEB_SERVICE`, and `Production` also has `DOCS_SERVICE`. See "Releases" below.
 
-The provider authenticates with the `github:token` stack secret. A fine-grained token for sami-m-g/wovain needs read and write on Administration, Environments, Variables and Dependabot alerts (`pulumi config set --secret github:token <token> --cwd infra --stack prod`).
+Production's provider authenticates with its `github:token` stack secret: a fine-grained token for sami-m-g/wovain with read and write on Administration, Environments and Variables (run `pulumi config set --secret --cwd infra --stack prod github:token`, which prompts for the token).
+
+### CodeRabbit and auto-merge
+
+CodeRabbit's approval is the one review the `main` ruleset requires (`.coderabbit.yaml`), and the repository allows auto-merge: a pull request opened with `gh pr merge --squash --auto` merges once CodeRabbit approves and `verify`, `infra`, `codeql`, `dependency-review` and `osv / osv-scan` pass. Each of those runs on every pull request; `preview` is path-filtered and not required.
+
+Installing the CodeRabbit GitHub App is the one manual step, and its repository access stays outside Pulumi. GitHub has no API to install an app, since the owner must consent to its permissions. The provider's `AppInstallationRepository` reads an installation's repositories with `GET /user/installations/{id}/repositories`, which GitHub doesn't offer to fine-grained tokens (it isn't in "Endpoints available for fine-grained personal access tokens"; with the token it answers 403), so managing it would take a classic token with `repo` on every repository. Install it from github.com/apps/coderabbitai with "Only select repositories", and select sami-m-g/wovain only.
+
+### The github stack (`github/`)
+
+`github/` is its own project, `wovain-github`, with one stack, `github`, so a change to how pull requests merge never waits on production's frozen stack. Its only credential is its own `github:token` secret, encrypted with its own key (`github-stack-secrets`). CI previews it on pull requests and applies it on every push to main as `infra-github`, which Google trusts only from jobs in the `github-infrastructure` environment and which has no Google role except that stack's state and key (`bootstrap/github.ts`).
+
+Production's stack held the repository, the GitLab mirror's disabled ruleset (`main is mirrored from GitLab`) and its write deploy key (`gitlab-ci-mirror`). They are `moved` in `policy/retired.ts`: `scripts/pulumi.ts` removes them from production's state with `pulumi state delete`, which calls nothing on GitHub, so production's `up` can't delete them. The github stack adopts them with `pulumi import`. It doesn't declare the mirror's ruleset or deploy key, so its first `up` deletes those two from GitHub.
+
+Its token is a fine-grained personal access token (github.com/settings/personal-access-tokens/new):
+
+- Name `wovain-pulumi-github`, resource owner `sami-m-g`, expiration 90 days.
+- Repository access: only select repositories, `sami-m-g/wovain`.
+- Repository permissions: Administration read and write (the repository's settings, rulesets, environments, Dependabot alerts and security fixes, deploy keys), Secrets read and write (`GITGUARDIAN_API_KEY`), Issues read and write (the `dependencies` label), and Metadata read (always on). Nothing else, and no account permissions.
+
+Set it up once, as a project owner, after `bootstrap/` is applied (it creates the key and `infra-github`):
+
+```sh
+pnpm run infra:install
+# The stack, with its own secrets key (the secretsprovider in Pulumi.github.yaml).
+pulumi stack init github --cwd infra/github --secrets-provider gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/github-stack-secrets
+pulumi config set --secret --cwd infra/github --stack github github:token
+# Adopt what exists: the repository, and the GitLab mirror's ruleset and deploy key, which the first up deletes.
+pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
+  github:index/repository:Repository wovain wovain
+pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
+  github:index/repositoryRuleset:RepositoryRuleset main-from-gitlab wovain:25829056
+pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
+  github:index/repositoryDeployKey:RepositoryDeployKey gitlab-ci-mirror wovain:167630121
+node infra/scripts/pulumi.ts preview infra/github
+node infra/scripts/pulumi.ts up infra/github
+```
+
+Commit `infra/github/Pulumi.github.yaml` (now with its encrypted key and token) in a pull request; from then on CI previews and applies the stack. The repository is imported unprotected only so the import matches; the program protects and retains it, and the first `up` writes both flags.
 
 Google trusts GitHub Actions through the `github` workload identity pool (`bootstrap/index.ts`). Its provider accepts only tokens from sami-m-g/wovain (by name, repository id and owner id) on `refs/heads/main`, or on `refs/heads/release/transcend` in the `Production` environment. `gitlab-deploy` trusts only jobs in the `Production` environment, `wovain-deploy-next` only jobs in `next`, `wovain-deploy-dev` only jobs in `dev`, and `gitlab-infra` only jobs in `infrastructure`. The two accounts keep their old ids: renaming would replace protected accounts.
 
@@ -129,9 +169,9 @@ It holds no credential of production's. Its provider credentials are its own sta
 | `posthog:apiKey` | a personal API key in the PostHog organization, with `project:write` (organization scope) | Creating next's project is an organization action, so this key is organization-level; it is next's own key, revocable without touching production's. |
 
 ```sh
-pulumi config set --secret --cwd infra/next --stack next resendAdminKey <key>
-pulumi config set --secret --cwd infra/next --stack next github:token <token>
-pulumi config set --secret --cwd infra/next --stack next posthog:apiKey <key>
+pulumi config set --secret --cwd infra/next --stack next resendAdminKey
+pulumi config set --secret --cwd infra/next --stack next github:token
+pulumi config set --secret --cwd infra/next --stack next posthog:apiKey
 ```
 
 A preview of a stack not yet in the state starts from an empty one, and `up` creates it (`scripts/pulumi.ts`):
@@ -144,9 +184,29 @@ pnpm run infra:next:preview        # creates only
 pnpm run infra:next:up
 ```
 
+### Applied by CI on every push to main
+
+`.github/workflows/infra.yml` previews `next` on every pull request, as before. Every push to main that touches infra then runs the `up-next` job, which applies `next` and only `next`. Production's `up` stays manual and gated. The job runs `scripts/pulumi.ts up infra/next` (the same preview, guard and policy pack) in the `next-infrastructure` GitHub environment, as `infra-next` (`bootstrap/next.ts`). The job's first run creates that environment, and its `up` adopts it with a main-only branch policy (`next/index.ts`).
+
+`infra-next` can change next.wovain.com and nothing of production's. Google trusts it only from `next-infrastructure` through the `github` pool, which accepts only main. Its project roles are limited by conditions to next's resource names, and it can grant only the three project roles next's own accounts hold. It administers only next's two accounts, and it reads and writes only next's objects in the state bucket. next's stack secrets use their own key, `next-stack-secrets`, which `infra-next` can use and production's stacks don't. `infra-preview` can only decrypt with it. What it still shares with production: the `wovain-com` DNS zone, and Search Console. `infra-next` isn't a verified owner of wovain.com, so a change that replaces next's domain mapping fails in CI and is applied from a laptop instead (`pnpm run infra:next:up`).
+
+One time, by a project owner, before the change that adds `up-next` merges: create the identity and the key, then move next's secrets onto the key and commit the stack file.
+
+```sh
+pnpm run infra:install
+pnpm run infra:bootstrap:up
+pulumi stack change-secrets-provider --cwd infra/next --stack next \
+  "gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/next-stack-secrets"
+git add infra/next/Pulumi.next.yaml && git commit -m "chore(infra): next's stack secrets on their own key"
+```
+
+### Feature flags on next
+
+next's PostHog project (`project-next`) has no feature flags, and next has no `posthog-secret-key`. So the app evaluates every flag from the typed registry (`packages/core/src/flags.ts`, `rollout.next` in `packages/core/src/flag-registry.ts`), and a flag such as `tavily-competition` reaches next with the deploy that ships the registry change. PostHog's flags (`posthog/program.ts`) are in production's project and the `prod` stack only, so they wait for production's gated `up`. To toggle next's flags in PostHog without a deploy, next would declare the registry's flags in its own project, with `rollout.next`, plus a `posthog-secret-key` secret (`feature_flag:read`) for that project. That stays inside the next stack, so `up-next` applies it.
+
 ### Values only a provider's console hands out (one time, per environment)
 
-Pulumi creates every `<id>-<name>` secret, empty until it has a value; an empty one is not mounted, since Cloud Run won't start a revision on a secret with no version. These values have no API or IaC provider to create them, so you paste each once as a stack secret: dev's as `pulumi config set --secret --cwd infra --stack prod <id>-dev <value>`, next's without the suffix in its own stack, `pulumi config set --secret --cwd infra/next --stack next <id> <value>` (the Secret Manager id is still `<id>-next`):
+Pulumi creates every `<id>-<name>` secret, empty until it has a value; an empty one is not mounted, since Cloud Run won't start a revision on a secret with no version. These values have no API or IaC provider to create them, so you set each once as a stack secret. Pulumi prompts for the value, so it stays out of your shell history: dev's as `pulumi config set --secret --cwd infra --stack prod <id>-dev` (the prompt is for the value), next's without the suffix in its own stack, `pulumi config set --secret --cwd infra/next --stack next <id>` (the Secret Manager id is still `<id>-next`):
 
 | Stack secret | From | Why it can't be created in code |
 | --- | --- | --- |
@@ -197,10 +257,10 @@ Stack config:
 
 - `posthog:apiKey` (secret): a personal API key with write access to the project's insights, dashboards, alerts, surveys, feature flags and settings.
 - `posthog:projectId`: `687269`.
-- `wovain:posthogInternalUserIds` (optional): the team's Better Auth user ids, which every `internal` and `percent` rollout includes, e.g. `pulumi config set --path 'wovain:posthogInternalUserIds[0]' <user id>`.
+- `wovain:posthogInternalUserIds` (optional): the team's Better Auth user ids, which every `internal` and `percent` rollout includes, e.g. `pulumi config set --path 'wovain:posthogInternalUserIds[0]'`, which prompts for the user id.
 - `wovain:posthogAlertSubscribers` (optional): the PostHog user ids that get KPI alert emails; the founder by default.
 
-The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (`pulumi config set --secret posthog-secret-key <key>`).
+The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (run `pulumi config set --secret --cwd infra posthog-secret-key`, which prompts for the key).
 
 ### Adopting what exists (one time)
 

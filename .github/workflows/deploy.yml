@@ -28,6 +28,10 @@ on:
       - "docs/**"
       - "founder/**"
       - "openspec/**"
+      # A release pull request only moves the version.
+      - ".release-please-manifest.json"
+      - "version.txt"
+      - ".github/backfill-releases.pending"
 
 permissions:
   contents: read
@@ -100,7 +104,8 @@ jobs:
             printf '%s\n' "$WEB_BUILD_ENV"
           } > "$RUNNER_TEMP/web_env"
           echo "SITE_URL=$DOCS_SITE_URL" > "$RUNNER_TEMP/docs_env"
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - id: web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/web/Dockerfile
@@ -115,10 +120,18 @@ jobs:
           # of the image versions the cleanup policy keeps. The GitHub Actions
           # cache it replaces never hit (no step was CACHED) and took about
           # 150 s per run to export.
+          # mode=min caches the final image's layers only (the runner stage:
+          # fonts, varlock). mode=max also exported the builder stage's
+          # node_modules, source and .next layers: 33-94 s per run, for an
+          # install layer that took as long to pull on a hit (about 40 s) as
+          # to install on a miss (25-38 s), and source and build layers that
+          # change on every commit. A failed cache export never fails the
+          # deploy (ignore-error).
           cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache
-          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
       # Only production has a docs service (DOCS_SERVICE).
-      - if: vars.DOCS_SERVICE != ''
+      - id: docs
+        if: vars.DOCS_SERVICE != ''
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -129,7 +142,23 @@ jobs:
           secret-files: docs_env=${{ runner.temp }}/docs_env
           tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/docs:${{ github.sha }}
           cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache
-          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
+      # Keyless cosign signature (this job's OIDC identity, recorded in the
+      # Sigstore log) on each image by digest, stored next to the image in
+      # the registry. Verify with `cosign verify <image>@<digest>
+      # --certificate-identity-regexp ... --certificate-oidc-issuer
+      # https://token.actions.githubusercontent.com`.
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Sign the images
+        env:
+          IMAGE_REPOSITORY: ${{ vars.GCP_IMAGE_REPOSITORY }}
+          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+          DOCS_DIGEST: ${{ steps.docs.outputs.digest }}
+        run: |
+          cosign sign --yes "$IMAGE_REPOSITORY/web@$WEB_DIGEST"
+          if [ -n "$DOCS_DIGEST" ]; then
+            cosign sign --yes "$IMAGE_REPOSITORY/docs@$DOCS_DIGEST"
+          fi
 
       # packages/db's Drizzle migrations, then Mastra's storage schema, on the
       # target's own database (DATABASE_URL_SECRET). The Cloud SQL Auth Proxy
@@ -156,12 +185,15 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
+          # Which environment's credit settlements apply to this database.
+          SETTLEMENT_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'next' || 'production' }}
         run: |
           DATABASE_URL=$(gcloud secrets versions access latest --secret "$DATABASE_URL_SECRET" --project "$GCP_PROJECT_ID")
           echo "::add-mask::$DATABASE_URL"
           export DATABASE_URL
           pnpm --filter @wovain/db exec drizzle-kit migrate
           pnpm --filter @wovain/api run storage:init
+          pnpm --filter @wovain/api run billing:settle
 
       # A new revision of each service, with all traffic; Pulumi owns every
       # other setting of the services (infra/index.ts, infra/dev.ts).

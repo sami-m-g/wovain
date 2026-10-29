@@ -270,7 +270,12 @@ export const entitlement = async (
 // skipped.
 export const merchantOf = async (db: Database, userId: string) => {
   const [row] = await db
-    .select({ email: user.email, id: user.id, name: user.name })
+    .select({
+      email: user.email,
+      emailVerified: user.emailVerified,
+      id: user.id,
+      name: user.name,
+    })
     .from(user)
     .where(eq(user.id, userId));
   return row;

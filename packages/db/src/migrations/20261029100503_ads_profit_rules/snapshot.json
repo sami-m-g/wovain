@@ -1,0 +1,81 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "67869df9-ca18-4fa4-b58e-4bcf7d86c791",
+  "prevIds": [
+    "96f194e1-fd8b-46b2-b7b8-3ab4ecad0a43"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "autonomy_setting",
+        "ad_rules"
+      ],
+      "writes": [
+        "s|col|public.autonomy_setting.ad_rules",
+        "n|col|public.autonomy_setting.ad_rules",
+        "e|col|public.autonomy_setting.ad_rules"
+      ],
+      "reads": [
+        "n|tbl|public.autonomy_setting",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "autonomy_setting",
+        "loss_limit_cents"
+      ],
+      "writes": [
+        "s|col|public.autonomy_setting.loss_limit_cents",
+        "n|col|public.autonomy_setting.loss_limit_cents",
+        "e|col|public.autonomy_setting.loss_limit_cents"
+      ],
+      "reads": [
+        "n|tbl|public.autonomy_setting",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "autonomy_setting",
+        "name": "ad_rules",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'{}'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "autonomy_setting",
+        "name": "loss_limit_cents",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "5000",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

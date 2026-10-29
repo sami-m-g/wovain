@@ -45,13 +45,14 @@ export const billingStatus = async (actor: Actor) => {
   // No plan mirrored yet: put them on Free, whose webhooks bring the plan
   // and the free credits; until then the merchant sees Free with what they
   // have.
-  await startFreePlan(actor);
+  const freePlan = await startFreePlan(actor);
   const current = await entitlement(actor.db, actor.userId);
   const { subscription } = current;
   return {
     autopilot: await autopilotEntitled(actor),
     credits: await creditBalance(actor.db, actor.userId),
     enabled: polar !== undefined,
+    freePlan,
     paidPlans: await actor.billing.paidPlans(),
     plan: current.plan,
     subscription:

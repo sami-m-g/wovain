@@ -10,7 +10,7 @@ A print-on-demand product, on the website and in ChatGPT, that takes an independ
 Source: `scope.md > What "Working" Looks Like`.
 
 1. The designer signs in at [https://wovain.com](https://wovain.com) with Google or email (or adds the wovain app in ChatGPT and signs in there).
-2. They connect their own Fourthwall shop and Meta ad account, and, once shipped, their own fal key. Free accounts start with 15 credits a month (proposal).
+2. They connect their own Fourthwall shop and Meta ad account, and, once shipped, their own fal key. Free accounts start with 40 credits a month, about two drops (proposal).
 3. They describe a drop. wovain asks Qloo for the direction's entities and taste themes, then Tavily for the past month's news and marketplace listings inside those themes, and saves ranked ideas with evidence.
 4. They pick the ideas they like and click See designs: wovain draws a design for each picked idea and for no other (nothing is drawn before that click). For each, Nemotron writes a design brief and listing, fal draws transparent print art, and the price comes from the blank's base cost.
 5. Nemotron judges the design and scorers grade it. Code checks the print size itself; a `revise` verdict lists the fixes.
@@ -34,7 +34,7 @@ Direction -> Ideas (Qloo + Tavily) -> Design: brief, art, price
 | Landing | What wovain does for independent labels, guides, use cases, integrations | Live; product rewrite in review |
 | Sign in and sign up | Google and email through Better Auth; password reset | Live; Better Auth UI screens in review |
 | Account settings | Profile, sessions, linked accounts | In review |
-| Dashboard | Setup checklist, new-drop wizard, runs, designs, products, campaigns | Live; app UI pass in progress |
+| Dashboard | Setup checklist, new-drop wizard (with the capsule step), the Drops page (every drop; the old Runs address redirects), designs, products, campaigns | Live; app UI pass in progress |
 | Connections | Connect Fourthwall and Meta (OAuth); fal API key | Fourthwall and Meta live; fal in progress |
 | Pricing and billing | Plans, credit balance, upgrade screens, Polar checkout and portal | In review |
 | ChatGPT | The same steps as MCP tools at `https://mcp.wovain.com/api/mcp`, with widgets for trends, designs, products and campaigns | Live |
@@ -65,7 +65,7 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 - As a designer, I want ideas that come with evidence so that I trust what I design.
   - [x] Each idea shows its Qloo and Tavily signals, its source links and its score inputs.
   - [x] Names Qloo matched for the direction are never printed on a design.
-  - [x] "Why this idea" shows Qloo's taste map: the matched entities, the theme's tag and the cross-domain affinities with each entity's share (flag `qloo-taste-map`, next only).
+  - [x] "Why this idea" shows Qloo's taste map: the matched entities, the theme's tag and the cross-domain affinities with each entity's share.
   - [x] Every idea is a Qloo taste tag. When Qloo can't place the brief, the run stops and asks the designer to name a band, film, brand or place, with examples. The comparison with an LLM-only run is an offline eval, not a run option.
   - [x] A missing Qloo, Tavily or Nebius key fails only that step, with an error naming the variable.
 
@@ -107,8 +107,8 @@ Editorial and restrained, on the designer's side, honest about money (`scope.md 
 ### Billing and credits
 
 - As a designer, I want a small free allowance and a clear price so that I can try a real drop before paying.
-  - [ ] Polar is the merchant of record. Proposed plans: Free 15 credits a month, Studio $29 for 300, Label $79 for 1,000 (rolls over), and a 100-credit pack for $10.
-  - [ ] Credits are reserved before a paid step and returned if it fails; research 3, design 2, assist 1 (proposal).
+  - [ ] Polar is the merchant of record. Proposed plans (docs/pricing-proposal.md): Free 40 credits a month, Studio $29 for 300, Label $79 for 1,000 (rolls over), and a 100-credit pack for $15. A drop is about 18 credits.
+  - [ ] Credits are reserved before a paid step and returned if it fails; research 5, design 4, assist 1 (proposal).
   - [ ] Autopilot is on paid plans only in production (proposal); in dev and next it is on for every plan, Free included.
 
 ### Analytics

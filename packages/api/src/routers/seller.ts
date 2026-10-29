@@ -1,14 +1,23 @@
+import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
 import { z } from "zod";
 
-import { createProductCampaign, listCampaigns } from "../flow/campaigns";
+import { audienceErrors } from "../flow/audiences";
+import {
+  createDropCampaign,
+  createProductCampaign,
+  listCampaigns,
+} from "../flow/campaigns";
 import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
 import { connectionErrors } from "../flow/connections";
+import { campaignDesignResults } from "../flow/design-results";
 import {
   decideDesign,
   generateDesign,
   getDesign,
   listDesigns,
 } from "../flow/designs";
+import { streamDirections, warmDirections } from "../flow/drop-directions";
+import { ideaStyle, pickStyle } from "../flow/drop-style";
 import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
 import { listIdeas, researchErrors, researchIdeas } from "../flow/ideas";
 import {
@@ -20,6 +29,7 @@ import {
 import { approveIdeas, getRun, listRuns, startRun } from "../flow/runs";
 import { proposeProductPublish, storeManagementOn } from "../flow/store";
 import { transitionErrors } from "../flow/transitions";
+import { directionWhoBuys, ideaWhoBuys } from "../flow/who-buys";
 import { funnelProcedure, protectedProcedure } from "../index";
 
 // The seller flow, one procedure per step: research → design → approve →
@@ -67,6 +77,21 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) => await listIdeas(context, input.runId)
     ),
+  // The drop's tone and colours (drop-style): suggested once, then the
+  // merchant's pick.
+  pickStyle: protectedProcedure
+    .input(
+      z.object({
+        ideaId: id,
+        palette: z.number().int().min(0).max(3).optional(),
+        tone: z.number().int().min(0).max(2).optional(),
+        toneLine: z.string().trim().min(1).max(140).optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await pickStyle(context, input.ideaId, input)
+    ),
   // QLOO_OFF while the kill switch is off; QLOO_NO_MATCH when Qloo knows
   // nothing in the seed.
   research: protectedProcedure
@@ -80,6 +105,25 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) =>
         await startIdeaDossier(context, input.ideaId)
+    ),
+  style: protectedProcedure
+    .input(z.object({ ideaId: id }))
+    .handler(
+      async ({ context, input }) => await ideaStyle(context, input.ideaId)
+    ),
+  // Who buys this and where (who-buys), from Qloo alone; QLOO_OFF while the
+  // kill switch is off.
+  whoBuys: protectedProcedure
+    .errors(researchErrors)
+    .input(
+      z.object({
+        ideaId: id,
+        location: z.string().trim().min(2).max(80).optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await ideaWhoBuys(context, input.ideaId, input.location)
     ),
 };
 
@@ -177,6 +221,7 @@ export const campaignsRouter = {
         await campaignCompetition(context, input.campaignId)
     ),
   create: funnelProcedure("campaign_created")
+    .errors(audienceErrors)
     .input(
       z.object({
         adAccountId: z.string().regex(/^\d+$/u).optional(),
@@ -191,9 +236,35 @@ export const campaignsRouter = {
     .handler(
       async ({ context, input }) => await createProductCampaign(context, input)
     ),
+  // A test campaign, design by design: results and each design's rule
+  // status (testing, paused and why, or the winner).
+  designs: protectedProcedure
+    .input(z.object({ campaignId: id }))
+    .handler(
+      async ({ context, input }) =>
+        await campaignDesignResults(context, input.campaignId)
+    ),
   list: protectedProcedure.handler(
     async ({ context }) => await listCampaigns(context)
   ),
+  // A drop's launch: its live designs as one small test campaign (one
+  // design is a plain campaign).
+  test: funnelProcedure("campaign_created")
+    .errors(audienceErrors)
+    .input(
+      z.object({
+        adAccountId: z.string().regex(/^\d+$/u).optional(),
+        countries: countries.default(["US"]),
+        dailyBudget: dailyBudget.default(15),
+        pageId: z.string().regex(/^\d+$/u).optional(),
+        pixelId: z.string().regex(/^\d+$/u).optional(),
+        productIds: z.array(id).min(1).max(MAX_TEST_DESIGNS),
+        requestId: requestId.optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) => await createDropCampaign(context, input)
+    ),
 };
 
 export const runsRouter = {
@@ -206,6 +277,18 @@ export const runsRouter = {
       await approveIdeas(context, input.id, input.ideaIds);
       return await getRun(context, input.id);
     }),
+  // What to sell next (drop-directions): from Qloo trends, within the
+  // saved brand unless ignored; never made without Qloo.
+  directions: protectedProcedure
+    .errors(researchErrors)
+    .input(
+      z.object({
+        ignoreBrand: z.boolean().default(false),
+        round: z.number().int().min(0).max(1000).default(0),
+      })
+    )
+    // Streams: what was kept at once, or each card as it is written.
+    .handler(({ context, input }) => streamDirections(context, input)),
   get: protectedProcedure
     .input(byId)
     .handler(async ({ context, input }) => await getRun(context, input.id)),
@@ -225,4 +308,23 @@ export const runsRouter = {
       })
     )
     .handler(async ({ context, input }) => await startRun(context, input)),
+  // Opening the app finds the suggestions in the background when the kept
+  // ones are missing or stale.
+  warmDirections: protectedProcedure.handler(
+    async ({ context }) => await warmDirections(context)
+  ),
+  // Who buys a suggested direction and where (who-buys), from the Qloo
+  // entities rising for it.
+  whoBuys: protectedProcedure
+    .errors(researchErrors)
+    .input(
+      z.object({
+        entities: z.array(id).min(1).max(5),
+        location: z.string().trim().min(2).max(80).optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await directionWhoBuys(context, input.entities, input.location)
+    ),
 };

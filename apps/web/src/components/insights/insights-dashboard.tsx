@@ -132,6 +132,43 @@ const useProductColumns = () => {
   );
 };
 
+export const JourneySection = ({
+  journey,
+}: {
+  journey: Insights["journey"];
+}) => {
+  const t = useTranslations("Insights.journey");
+  const minutes = (value: number | undefined) =>
+    unknown(value, (n) => t("minutes", { value: Math.round(n) }));
+  return (
+    <KpiFrame
+      kpis={[
+        {
+          hint: t("liveCampaignHint", {
+            target: journey.targets.timeToLiveCampaign,
+          }),
+          label: t("liveCampaign"),
+          value: minutes(journey.timeToLiveCampaignMinutes),
+        },
+        {
+          hint: t("metaReviewHint"),
+          label: t("metaReview"),
+          value: minutes(journey.metaReviewMinutes),
+        },
+        {
+          hint: t("firstProfitHint", {
+            target: journey.targets.timeToFirstProfit,
+          }),
+          label: t("firstProfit"),
+          value: minutes(journey.timeToFirstProfitMinutes),
+        },
+      ]}
+      source={t("source")}
+      title={t("title")}
+    />
+  );
+};
+
 const ShopSection = ({ shop }: { shop: Insights["shop"] }) => {
   const t = useTranslations("Insights.shop");
   const figures = useFigures();
@@ -462,6 +499,7 @@ export const InsightsDashboard = ({
           className="flex flex-col gap-8"
           initial={false}
         >
+          <JourneySection journey={data.journey} />
           <ShopSection shop={data.shop} />
           <AdsSection ads={data.ads} />
           <DropsSection drops={data.drops} scoring={data.scoring} />

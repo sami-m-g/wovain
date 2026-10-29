@@ -94,7 +94,7 @@ const needsReconnect = async (
 export const withProvider = async <T>(
   actor: Actor,
   provider: ProviderId,
-  work: (call: ToolCall) => Promise<T>
+  work: (call: ToolCall, accessToken: () => Promise<string>) => Promise<T>
 ) => {
   if (await needsReconnect(actor, provider)) {
     throw reconnectNeeded(provider);

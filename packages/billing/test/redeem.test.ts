@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { billingCatalog } from "../src/catalog";
+import { CustomerConflictError } from "../src/customer";
 import { applyGrant } from "../src/mirror";
 import { promoTag } from "../src/promos";
 import type { Promo } from "../src/promos";
@@ -101,7 +102,11 @@ const checkout = (paymentRequired = false) =>
 
 const gateway = (
   found?: PromoDiscount,
-  options: { confirmFails?: boolean; paymentRequired?: boolean } = {}
+  options: {
+    confirmFails?: boolean;
+    customerFails?: Error;
+    paymentRequired?: boolean;
+  } = {}
 ) => ({
   confirmFree: vi.fn(() =>
     options.confirmFails === true
@@ -110,6 +115,11 @@ const gateway = (
   ),
   createCheckout: vi.fn(() =>
     Promise.resolve(checkout(options.paymentRequired))
+  ),
+  ensureCustomer: vi.fn(() =>
+    options.customerFails === undefined
+      ? Promise.resolve()
+      : Promise.reject(options.customerFails)
   ),
   findDiscount: vi.fn(() => Promise.resolve(found)),
 });
@@ -144,6 +154,7 @@ it("confirms a free code in place, with the merchant on the checkout", async () 
   );
   expect(polar.confirmFree).toHaveBeenCalledWith(expect.anything(), {
     email: "merchant@example.com",
+    emailVerified: true,
     id: userId,
     name: "merchant",
   });
@@ -285,4 +296,30 @@ it("counts a parallel burst one by one, before calling Polar", async () => {
     results.filter((result) => result.status === "rate_limited")
   ).toHaveLength(burst - REDEEM_LIMIT.attempts);
   expect(polar.findDiscount).toHaveBeenCalledTimes(REDEEM_LIMIT.attempts);
+});
+
+it("opens no checkout when the email's customer belongs to another account", async () => {
+  const polar = gateway(discountFor(JUDGES), {
+    customerFails: new CustomerConflictError("linked_to_other_account", userId),
+  });
+  expect(await redeem(polar)).toEqual({
+    reason: "linked_to_other_account",
+    status: "blocked",
+  });
+  expect(polar.createCheckout).not.toHaveBeenCalled();
+});
+
+it("settles the customer before the checkout opens", async () => {
+  const polar = gateway(discountFor(JUDGES));
+  await redeem(polar);
+  expect(polar.ensureCustomer).toHaveBeenCalledWith(
+    expect.objectContaining({ id: userId })
+  );
+});
+
+it("lets an unexpected Polar failure through", async () => {
+  const polar = gateway(discountFor(JUDGES), {
+    customerFails: new Error("Polar is down"),
+  });
+  await expect(redeem(polar)).rejects.toThrow("Polar is down");
 });

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { OnboardingWizard } from "@/components/app/onboarding-wizard";
+import { LaunchShell } from "@/components/onboarding/launch-shell";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
@@ -22,13 +22,14 @@ const OnboardingPage = async ({
   params,
 }: PageProps<"/[locale]/dashboard/onboarding">) => {
   const locale = await enterLocale(params);
-  await requireSession(locale, "/dashboard/onboarding");
+  const session = await requireSession(locale, "/dashboard/onboarding");
 
-  // The wizard reads ?step itself, so it moves between steps without a
-  // server round trip, and a provider's consent page comes back to it.
+  // The flow reads ?step, ?brief and ?run itself, so it moves between steps
+  // without a server round trip, and a provider's consent page or the drop
+  // flow comes back to it. The timer counts from sign-up.
   return (
     <Suspense>
-      <OnboardingWizard />
+      <LaunchShell startedAt={new Date(session.user.createdAt).toISOString()} />
     </Suspense>
   );
 };

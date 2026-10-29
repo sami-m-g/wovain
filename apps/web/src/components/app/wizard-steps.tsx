@@ -44,14 +44,19 @@ import Image from "next/image";
 import { useId } from "react";
 
 import { CampaignControls } from "@/components/app/campaign-controls";
+import { CapsulePanel } from "@/components/app/capsule";
 import { Citations } from "@/components/app/citations";
 import {
   CampaignCompetition,
   IdeaCompetition,
 } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
+import { DropDirections } from "@/components/app/drop-directions";
+import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
+import { WhoBuysPanel } from "@/components/app/who-buys";
+import { WithoutQlooPanel } from "@/components/app/without-qloo";
 import {
   NextButton,
   StepActions,
@@ -129,6 +134,7 @@ export const BriefStep = ({
   onChange,
   onBudget,
   onSubmit,
+  onUseDirection,
 }: {
   brief: string;
   error?: string | undefined;
@@ -139,6 +145,7 @@ export const BriefStep = ({
   onChange: (value: string) => void;
   onBudget: (value: string) => void;
   onSubmit: () => void;
+  onUseDirection: (brief: string) => void;
 }) => {
   const t = useTranslations("Wizard.brief");
   const format = useFormatter();
@@ -153,6 +160,7 @@ export const BriefStep = ({
       }}
     >
       <StepHeader focusOnMount={false} title={t("title")} />
+      <DropDirections disabled={Boolean(busyLabel)} onUse={onUseDirection} />
       <Field data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor={id}>{t("label")}</FieldLabel>
         <InputGroup>
@@ -253,9 +261,12 @@ export const IdeasStep = ({
   busyLabel,
   onToggle,
   onNext,
+  runId,
 }: {
   ideas: Idea[];
   picked: string[];
+  // The drop's run, for the capsule step.
+  runId?: string | undefined;
   designedIdeaIds: string[];
   busyLabel?: string | undefined;
   onToggle: (id: string, checked: boolean) => void;
@@ -356,17 +367,24 @@ export const IdeasStep = ({
                 {research.taste ? (
                   <TasteMapPanel taste={research.taste} />
                 ) : null}
+                <WhoBuysPanel ideaId={idea.id} />
                 <IdeaEvidence research={research} />
                 <IdeaCompetition
                   competition={idea.competition}
                   ideaId={idea.id}
                 />
+                {checked && !designed ? (
+                  <DropStylePanel ideaId={idea.id} />
+                ) : null}
                 <IdeaDossier ideaId={idea.id} />
               </li>
             );
           })}
         </ul>
       </FieldSet>
+      <CapsulePanel ideaId={picked[0]} runId={runId} />
+      {/* What the same step makes of a brief without Qloo (the committed ablation). */}
+      <WithoutQlooPanel />
       <StepActions busyLabel={busyLabel}>
         <NextButton disabled={Boolean(busyLabel)} onClick={onNext}>
           {t("submit")}
@@ -802,7 +820,7 @@ export const DoneStep = ({
         </Button>
         <Link
           className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-4")}
-          href="/dashboard/runs"
+          href="/dashboard/drops"
         >
           {t("history")}
         </Link>

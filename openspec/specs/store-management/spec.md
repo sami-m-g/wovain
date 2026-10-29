@@ -42,7 +42,7 @@ Only a lost race for the executor's lock SHALL be skipped without an error; any 
 #### Scenario: Flag off
 
 - **WHEN** the `store-management` flag is off
-- **THEN** the store procedures answer not found and the products page is not shown
+- **THEN** the store procedures answer not found and the Store page is not shown
 
 ### Requirement: Store readiness
 
@@ -120,3 +120,127 @@ When the pricing rules give size surcharges, a product's larger sizes SHALL cost
 
 - **WHEN** the rules add $2 to 2XL and a $30 tee is priced
 - **THEN** its 2XL variants cost $32 and its other sizes $30
+
+### Requirement: Store page
+
+The website SHALL give the designer one Store page at `/dashboard/store`, named Store in the rail, the breadcrumb and the title; `/dashboard/products` SHALL redirect there. A summary strip (site status, readiness as one line with its fix, 28-day sales and orders, waiting actions, payouts) SHALL sit over four tabs: Products, Orders, Promotions and Approvals. Drops SHALL NOT be listed on it. Without Fourthwall, the page SHALL show only the connect state.
+
+#### Scenario: Coming-soon shop
+
+- **WHEN** the designer opens the Store while their shop is coming soon
+- **THEN** the summary names the failing check on one line and offers Go live
+
+#### Scenario: Old link
+
+- **WHEN** someone opens `/dashboard/products`
+- **THEN** they land on `/dashboard/store`
+
+### Requirement: Impact before every store write
+
+Every write the Store page asks for SHALL show its impact before it is sent (what buyers will see, the old and new price, the products a bulk action touches, Fourthwall's cost preview for a refund or cancel, the credit a batch of gift cards creates), and SHALL go through the approval queue. Bulk actions SHALL queue one action per product.
+
+#### Scenario: Bulk hide
+
+- **WHEN** the designer selects three live products and hides them
+- **THEN** a dialog lists the three products and what hiding does, and confirming queues three unpublish actions
+
+### Requirement: Gift cards and shop-wide codes
+
+The designer SHALL be able to issue gift cards, as an R4 action that waits for their confirm with the total store credit on the card, and to plan a discount code for products they pick, scheduled and refused at a loss like a drop's launch code. A live code SHALL be endable from the Store.
+
+#### Scenario: Gift cards confirmed
+
+- **WHEN** the designer asks for four $25 gift cards and confirms
+- **THEN** Fourthwall creates four cards and the approval records the action as done
+
+### Requirement: Going live
+
+Taking a coming-soon shop live SHALL be an R3 `store.site.set_status` action, sent only after the designer confirms its impact.
+
+#### Scenario: Go live
+
+- **WHEN** the designer confirms Go live
+- **THEN** the shop's site status is set to live on Fourthwall
+
+### Requirement: Store preview and Fourthwall links
+
+The Store SHALL preview the shop as buyers see it, from the products' Fourthwall renders, with drafts on request, and SHALL link to the storefront and to Fourthwall's site editor. Wherever wovain doesn't cover something (all products, orders, promotions, settings, payouts), the Store SHALL link into the Fourthwall admin in a new tab.
+
+#### Scenario: Preview a coming-soon shop
+
+- **WHEN** the designer opens the preview while the shop is coming soon
+- **THEN** it says buyers see Fourthwall's placeholder page and shows the products as they will appear once live
+
+### Requirement: Price check
+
+Changing a product's price SHALL show, for each size, Fourthwall's cost to make it, the price, the profit after fees and the gross margin, with a verdict (loss, below wovain's floor, under the 60% DTC margin, or healthy) and one-click floor and 60% prices. The server SHALL refuse a price that loses money in any size.
+
+#### Scenario: A size sells at a loss
+
+- **WHEN** the designer asks for a price below what Fourthwall charges to make the 2XL
+- **THEN** the dialog shows the loss on the 2XL, and the request is refused with the lowest price that works
+
+#### Scenario: Thin margin
+
+- **WHEN** the price clears wovain's floor but leaves under 60% gross margin in some size
+- **THEN** the dialog says so and offers the price that reaches 60%
+
+### Requirement: Product pages that sell
+
+The Store SHALL offer to rewrite a product's page: a title of at most 60 characters with the main keyword first, a hook and three or four benefit lines, using only facts the product already holds, shown next to the current page as a buyer sees it. Approving SHALL queue a `store.listing.edit` action that writes the page to Fourthwall; its undo SHALL write the old page back.
+
+#### Scenario: Rewrite approved
+
+- **WHEN** the designer opens Rewrite product page and chooses Use this page
+- **THEN** Fourthwall's product gets the new name and description, and the Store lists the product under its new title
+
+#### Scenario: A rule still broken
+
+- **WHEN** the rewritten title is still over 60 characters after one retry
+- **THEN** the dialog says search results cut it, and the designer decides
+
+### Requirement: Store setup checklist
+
+The Store page SHALL show a setup checklist for the connected shop: shop connected as owner or manager, payouts, shop live, shipping and the Meta pixel on the shop (required), plus custom domain and policies (optional). Each open step SHALL be done by wovain through the approval queue or offer a one-click deep link into Fourthwall. While a required step is open, the page SHALL poll so a step finished in Fourthwall ticks off without a reload.
+
+#### Scenario: Payouts finished in Fourthwall
+
+- **WHEN** the designer follows the payouts link and finishes payouts in Fourthwall
+- **THEN** the payouts step ticks off on the Store page within seconds, without a reload
+
+#### Scenario: Go live for me
+
+- **WHEN** the designer asks wovain to take a coming-soon shop live and confirms
+- **THEN** a `store.site.set_status` action is queued and recorded in the decision trace
+
+### Requirement: Pixel on the shop
+
+The pixel step SHALL show the pixel wovain found on the designer's Meta ad account, to paste in Fourthwall, and SHALL be done when Meta reports events from one of the shop's hosts in the last 7 days. Without a Meta connection, the step SHALL wait on Meta and link to connect it.
+
+#### Scenario: Test visit
+
+- **WHEN** the designer pastes the pixel ID in Fourthwall and opens their storefront
+- **THEN** the pixel step ticks off once Meta reports the visit from the shop's host
+
+### Requirement: Setup reads fail soft
+
+A part of the checklist that can't be read SHALL be logged at error level and shown as not known, and SHALL NOT fail the rest of the checklist.
+
+#### Scenario: Meta answers an error
+
+- **WHEN** Meta's dataset stats fail
+- **THEN** the error reaches Error Tracking and the other steps still show
+
+### Requirement: Guided pixel and payouts steps
+
+The pixel and payouts steps SHALL give plain steps and open the exact Fourthwall page (Tracking pixels; Billing and payouts). The pixel step SHALL show the pixel ID with a copy button. When payouts can't be read as active, the designer SHALL be able to mark them set up by Fourthwall support, as a `store.setup.confirm` action, and the step SHALL then show as done on their word.
+
+#### Scenario: Payouts set up by support
+
+- **WHEN** Fourthwall reports payouts as inactive and the designer chooses Fourthwall support set up my payouts
+- **THEN** the payouts step shows as done and says it was marked by the designer
+
+#### Scenario: Pixel steps
+
+- **WHEN** the pixel isn't firing on the shop yet
+- **THEN** the step shows the pixel ID to copy, the steps, and a link to Fourthwall's Tracking pixels page

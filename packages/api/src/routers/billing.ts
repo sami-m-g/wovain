@@ -10,6 +10,15 @@ import { protectedProcedure } from "../index";
 // Why a promo code was refused, as typed oRPC errors: the Billing page
 // reads `code` and words it in the merchant's language.
 const redeemErrors = {
+  BILLING_EMAIL_LINKED: {
+    message:
+      "This email's billing is linked to another wovain account. Contact support.",
+    status: 409,
+  },
+  BILLING_EMAIL_NOT_VERIFIED: {
+    message: "Verify your email first, then redeem the code.",
+    status: 403,
+  },
   PROMO_ALREADY_REDEEMED: {
     message: "You've already redeemed this code",
     status: 409,
@@ -62,6 +71,11 @@ export const billingRouter = {
               retryAfterSeconds: billingCatalog().redeemLimit.windowSeconds,
             },
           });
+        }
+        case "blocked": {
+          throw result.reason === "email_not_verified"
+            ? errors.BILLING_EMAIL_NOT_VERIFIED()
+            : errors.BILLING_EMAIL_LINKED();
         }
         case "refused": {
           const refusal = {

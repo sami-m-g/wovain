@@ -73,7 +73,7 @@ const environment = appEnvironment({
       googleClientId: config.get("googleClientId"),
       name: NAME,
       posthogToken: posthog.apiToken,
-      shared: sharedSettings(config),
+      shared: sharedSettings(config, "v26.0"),
     }),
     ...settingEnvs(settings),
     // next shares production's Polar sandbox organization, so its catalog
@@ -111,6 +111,12 @@ mappedHost({
 // shared variables are the `wovain` stack's too, but it is not applied while
 // production is frozen, so next also sets them on its own environment (an
 // environment variable wins over a repository one, with the same value).
+// Where CI applies this stack on every push to main (.github/workflows/
+// infra.yml, `up-next`): Google trusts infra-next only from jobs in it
+// (infra/bootstrap/next.ts). The job's first run creates it on GitHub, with
+// no branch policy, and its `up` adopts it with this one.
+mainOnlyEnvironment("next-infrastructure", "wovain");
+
 environmentVariables(NAME, mainOnlyEnvironment(NAME, "wovain"), {
   DATABASE_URL_SECRET: environment.databaseUrl.secretId,
   DOCS_SITE_URL: `https://docs.${APEX}`,

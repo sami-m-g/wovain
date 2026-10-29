@@ -9,7 +9,12 @@ import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
-import { approval, auditEvent, drop } from "@wovain/db/schema/autonomy";
+import {
+  approval,
+  auditEvent,
+  decisionTrace,
+  drop,
+} from "@wovain/db/schema/autonomy";
 import { design, idea, product, run } from "@wovain/db/schema/seller";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
@@ -18,18 +23,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { productsRouter } from "../routers/seller";
 import type { Actor } from "./actor";
-import { setAutonomy } from "./approvals";
+import {
+  approvalsFor,
+  autonomyOf,
+  setAutonomy,
+  spendToDate,
+} from "./approvals";
 import {
   executeStoreApproval,
   proposeStoreAction,
   requestCancel,
   requestDropPublish,
   requestLaunchPromotion,
+  requestListingEdit,
   requestProductMove,
+  requestGiftCards,
+  requestPromotionEnd,
   requestRefund,
+  requestReprice,
+  requestShopPromotion,
+  requestSetupConfirm,
+  requestSiteLive,
   sampleLink,
   stageRunDrop,
 } from "./store";
+import { doSetupStep, storeSetup } from "./store-setup";
 
 // Lets a test make taking the executor's lock fail.
 const lockFault = vi.hoisted(() => ({ error: undefined as unknown }));
@@ -639,5 +657,229 @@ describe("samples", () => {
       risk: "R4",
       status: "done",
     });
+  });
+});
+
+// The merchant confirms an R3 or R4 action on its approval card.
+const confirm = async (actor: Actor, approvalId: string) => {
+  const [settings, spent] = await Promise.all([
+    autonomyOf(actor),
+    spendToDate(actor),
+  ]);
+  return await approvalsFor(actor).decide(
+    { approvalId, approve: true, decidedBy: USER_ID, userId: USER_ID },
+    settings,
+    spent
+  );
+};
+
+describe("the Store page's requests", () => {
+  it("issues gift cards only after the merchant confirms the credit", async () => {
+    const ctx = await setup({
+      ...LIVE_SHOP,
+      "ecommerce_create-gift-cards": { groupId: "gcg_1" },
+    });
+    const queued = await requestGiftCards(ctx.actor, {
+      amountUsd: 25,
+      count: 4,
+    });
+    expect(queued).toMatchObject({ risk: "R4", status: "pending" });
+    expect(queued.costPreview?.label).toContain("$100.00 of store credit");
+    expect(ctx.shop.count("ecommerce_create-gift-cards")).toBe(0);
+
+    await confirm(ctx.actor, queued.id);
+    expect(await executeStoreApproval(ctx.actor, queued.id)).toEqual({
+      done: queued.id,
+    });
+    expect(
+      ctx.shop.calls.find(
+        (entry) => entry.tool === "ecommerce_create-gift-cards"
+      )?.args
+    ).toEqual({ amount: 25, numberOfCards: 4 });
+  });
+
+  it("refuses a price that loses money in a size, against Fourthwall's cost", async () => {
+    const ctx = await setup({
+      "ecommerce_get-customization-pricing": {
+        sizes: [
+          { cost: 13, size: "M" },
+          { cost: 19, size: "2XL" },
+        ],
+      },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    await expect(requestReprice(ctx.actor, productId, 15)).rejects.toThrow(
+      "sells at a loss"
+    );
+    const queued = await requestReprice(ctx.actor, productId, 40);
+    expect(queued.status).toBe("approved");
+  });
+
+  it("rewrites a product page in the merchant's name, with the old page as the undo", async () => {
+    const ctx = await setup({
+      "ecommerce_get-offers-by-ids": {
+        offers: [
+          {
+            description: "<p>Old</p>",
+            id: "off_1",
+            name: "Dune Tee",
+            shipmentStartDate: "Ships in 5-10 business days",
+          },
+        ],
+      },
+      "ecommerce_update-offer": { id: "off_1" },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    const queued = await requestListingEdit(ctx.actor, {
+      listing: {
+        benefits: ["Desert light", "A gift for hikers", "Soft dusk colours"],
+        hook: "For anyone who hikes at golden hour.",
+        title: "Desert Dusk Hiking Tee",
+      },
+      productId,
+    });
+    expect(queued).toMatchObject({ risk: "R1", status: "approved" });
+    expect(queued.inverse).toEqual({
+      description: "<p>Old</p>",
+      name: "Dune Tee",
+      productId,
+      type: "store.listing.edit",
+    });
+    await executeStoreApproval(ctx.actor, queued.id);
+    const written = ctx.shop.calls.find(
+      (entry) => entry.tool === "ecommerce_update-offer"
+    )?.args;
+    expect(written).toMatchObject({
+      name: "Desert Dusk Hiking Tee",
+      offerId: "off_1",
+    });
+    expect(written?.description).toContain("<li>A gift for hikers</li>");
+    expect(written?.description).toContain("Ships in 5-10 business days.");
+    const [row] = await ctx.db.select().from(design);
+    expect(row?.brief.title).toBe("Desert Dusk Hiking Tee");
+  });
+
+  it("takes a coming-soon shop live after the merchant confirms", async () => {
+    const ctx = await setup({
+      "ecommerce_update-shop-site-status": { status: "LIVE" },
+    });
+    const queued = await requestSiteLive(ctx.actor);
+    expect(queued).toMatchObject({ risk: "R3", status: "pending" });
+    await confirm(ctx.actor, queued.id);
+    await executeStoreApproval(ctx.actor, queued.id);
+    expect(
+      ctx.shop.calls.find(
+        (entry) => entry.tool === "ecommerce_update-shop-site-status"
+      )?.args
+    ).toEqual({ status: "LIVE" });
+  });
+
+  it("plans a discount code for picked products, switched off until its start", async () => {
+    const ctx = await setup({
+      ...SHOP_WRITES,
+      "ecommerce_create-shop-promotion": { id: "prm_9" },
+      "ecommerce_deactivate-promotion": { ok: true },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    const plan = {
+      code: "SPRING15",
+      endsAt: new Date("2026-11-08T00:00:00Z"),
+      percentage: 15,
+      productIds: [productId],
+      startsAt: new Date("2026-11-06T00:00:00Z"),
+    };
+    await expect(
+      requestShopPromotion(ctx.actor, { ...plan, percentage: 90 })
+    ).rejects.toThrow("sell at a loss");
+
+    const queued = await requestShopPromotion(ctx.actor, plan);
+    expect(queued.status).toBe("approved");
+    expect(await executeStoreApproval(ctx.actor, queued.id)).toEqual({
+      done: queued.id,
+    });
+    expect(
+      ctx.shop.calls.find(
+        (entry) => entry.tool === "ecommerce_create-shop-promotion"
+      )?.args
+    ).toMatchObject({
+      code: "SPRING15",
+      percentage: 15,
+      productIds: ["off_1"],
+    });
+    const activation = await ctx.db
+      .select()
+      .from(approval)
+      .where(eq(approval.actionType, "store.promotion.activate"));
+    expect(activation).toHaveLength(1);
+  });
+
+  it("ends a live code in the merchant's name", async () => {
+    const ctx = await setup({ "ecommerce_deactivate-promotion": { ok: true } });
+    const queued = await requestPromotionEnd(ctx.actor, {
+      code: "SPRING15",
+      promotionId: "prm_9",
+    });
+    expect(queued).toMatchObject({ decidedBy: USER_ID, status: "approved" });
+    await executeStoreApproval(ctx.actor, queued.id);
+    expect(ctx.shop.count("ecommerce_deactivate-promotion")).toBe(1);
+  });
+});
+
+describe("store setup", () => {
+  it("lists the tech steps, with the pixel waiting on Meta", async () => {
+    const ctx = await setup({
+      ...LIVE_SHOP,
+      "ecommerce_get-dns-entries": null,
+    });
+    const found = await storeSetup(ctx.actor);
+    expect(found.metaConnected).toBe(false);
+    expect(
+      Object.fromEntries(found.steps.map((step) => [step.id, step.state]))
+    ).toEqual({
+      connect: "done",
+      domain: "check",
+      payouts: "done",
+      pixel: "waiting",
+      policies: "check",
+      shipping: "done",
+      site_live: "done",
+    });
+  });
+
+  it("ticks payouts off on the merchant's word when support set them up", async () => {
+    const ctx = await setup({
+      ...LIVE_SHOP,
+      "ecommerce_get-dns-entries": null,
+      "ecommerce_get-payout-info": { status: "INACTIVE" },
+    });
+    const before = await storeSetup(ctx.actor);
+    expect(before.steps.find((step) => step.id === "payouts")).toMatchObject({
+      how: "link",
+      state: "todo",
+    });
+    expect(before.shop.payoutStatus).toBe("INACTIVE");
+    const queued = await requestSetupConfirm(ctx.actor, "payouts");
+    expect(queued).toMatchObject({ risk: "R1", status: "approved" });
+    await executeStoreApproval(ctx.actor, queued.id);
+    const after = await storeSetup(ctx.actor);
+    expect(after.steps.find((step) => step.id === "payouts")).toMatchObject({
+      confirmedByMerchant: true,
+      state: "done",
+    });
+  });
+
+  it("queues going live and records it in the decision trace", async () => {
+    const ctx = await setup({});
+    const queued = await doSetupStep(ctx.actor, "site_live");
+    expect(queued).toMatchObject({
+      actionType: "store.site.set_status",
+      status: "pending",
+    });
+    const [traced] = await ctx.db
+      .select()
+      .from(decisionTrace)
+      .where(eq(decisionTrace.agent, "store_setup"));
+    expect(traced).toMatchObject({ ok: true, step: "site_live" });
+    expect(traced?.output).toMatchObject({ approvalId: queued.id });
   });
 });

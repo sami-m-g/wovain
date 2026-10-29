@@ -36,3 +36,12 @@ export const releaseDeleted = (checkpoint: Checkpoint) => {
   }
   return released;
 };
+
+// RETIRED's "moved" resources still in this state, dependents first (the
+// state lists a resource after what it depends on), so each
+// `pulumi state delete` finds nothing left that depends on it.
+export const movedOut = (checkpoint: Checkpoint) =>
+  (checkpoint.deployment.resources ?? [])
+    .filter(({ urn }) => RETIRED[retiredKey(urn)] === "moved")
+    .map(({ urn }) => urn)
+    .toReversed();

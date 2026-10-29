@@ -272,6 +272,9 @@ catalogs:
     date-fns:
       specifier: ^4.4.0
       version: 4.4.0
+    driver.js:
+      specifier: ^1.10.2
+      version: 1.10.2
     drizzle-kit:
       specifier: 1.0.0-rc.5
       version: 1.0.0-rc.5
@@ -287,6 +290,9 @@ catalogs:
     fast-check:
       specifier: ^4.10.2
       version: 4.10.2
+    git-cliff:
+      specifier: ^2.14.2
+      version: 2.14.2
     inngest:
       specifier: ^4.26.0
       version: 4.26.0
@@ -399,6 +405,9 @@ importers:
       '@wovain/config':
         specifier: workspace:*
         version: link:packages/config
+      git-cliff:
+        specifier: 'catalog:'
+        version: 2.14.2
       knip:
         specifier: ^6.43.0
         version: 6.43.0
@@ -643,6 +652,9 @@ importers:
       date-fns:
         specifier: 'catalog:'
         version: 4.4.0
+      driver.js:
+        specifier: 'catalog:'
+        version: 1.10.2
       evlog:
         specifier: 'catalog:'
         version: 2.33.1(@orpc/server@1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0))(ai@7.0.152(zod@4.6.7))(express@5.3.0)(hono@4.13.13)(next@16.4.3(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -810,6 +822,9 @@ importers:
       sharp:
         specifier: 'catalog:'
         version: 0.35.5(@types/node@26.6.5)
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
@@ -6640,6 +6655,9 @@ packages:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
+  driver.js@1.10.2:
+    resolution: {integrity: sha512-L/EMTriJPAmg+5kIFmrjzt3TI+1NblhHOV/UZkfpgU/uxhSflGheynMBxk5oImDSy6seAEkIl6MzNOc0zdoKtg==}
+
   drizzle-kit@1.0.0-rc.4:
     resolution: {integrity: sha512-KZCpjRyu+oYHLj/UJogfFlOkWhHVkaEI2EOT1U3NDVXUzLoTyPjqwFxwOrlQxsY6jzRyxcz4EacqboGfhEeYrA==}
     hasBin: true
@@ -7564,6 +7582,41 @@ packages:
 
   get-tsconfig@4.14.3:
     resolution: {integrity: sha512-++QEw4DIY7WGoukz+/+A/8dGYPT9l9yIadnmSgZ8Rjr3YVSVDipQSO9CdnJo9ePqFqUUqh+wk9uIaoiAwsiPkA==}
+
+  git-cliff-darwin-arm64@2.14.2:
+    resolution: {integrity: sha512-Ylk39hv5flEUrXeoGvH6M3WjHBNERFH7a9DVEcGU2a8Q7a7fPtVasNk1fMuJ7CVbZCRIzUNyQV0ejRpxBdFnag==}
+    cpu: [arm64]
+    os: [darwin]
+
+  git-cliff-darwin-x64@2.14.2:
+    resolution: {integrity: sha512-3FZNm0BGCIim/3G6uHSWAakrCaGmC47lcI+Cob9CZPMBYHKrenYk0i6B8MlObSXr2Lr7Ve1BpGbd/foQg4NOiA==}
+    cpu: [x64]
+    os: [darwin]
+
+  git-cliff-linux-arm64@2.14.2:
+    resolution: {integrity: sha512-3oMDpoyfsy2angD9ulcCBtyWCkzZqN3spmmtb0jic8OKAu1p+CALS8oep7J8AdgkDojuLo6bdHiSZIM9PeTxmQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  git-cliff-linux-x64@2.14.2:
+    resolution: {integrity: sha512-4EaBYwBiCupECZ2rzC6CelNSGYvkvtJeja4wXLDGtfKnRhCN/WNoqbM+hvrtm32uf5qovfoNoDA906F8itw+oQ==}
+    cpu: [x64]
+    os: [linux]
+
+  git-cliff-windows-arm64@2.14.2:
+    resolution: {integrity: sha512-0oc0xD/6A+BvInz8imBJulXVOlR9M0nL+d3ibL0lwJvxUVTMQzvoCnsn9OxpsdzXrEisnTvaf+GExoKVJkUcDw==}
+    cpu: [arm64]
+    os: [win32]
+
+  git-cliff-windows-x64@2.14.2:
+    resolution: {integrity: sha512-RFmCMiwGMU8O+rF//wxT7L10ssoDtzI+QFxlbjpA8E1BAEafkmLTQkKalT88ipEweD46P+Sfc20v8RXuE7V/UA==}
+    cpu: [x64]
+    os: [win32]
+
+  git-cliff@2.14.2:
+    resolution: {integrity: sha512-hlXIq4k2Tdj9C59WsD7FsLE0xRGFDozTUuoeqg9toMyVohaVxXiSiLnhM/IQyCmhOh5M4zuNckr2o8qMeuffbg==}
+    engines: {node: ^18.19 || >=20.6}
+    hasBin: true
 
   github-slugger@2.0.0:
     resolution: {integrity: sha512-IaOQ9puYtjrkq7Y0Ygl9KDZnrf/aiUJYUpVf89y8kyaxbRG7Y1SrX/jaumrv81vc61+kiMempujsM3Yw7w5qcw==}
@@ -15406,6 +15459,8 @@ snapshots:
 
   dotenv@17.4.2: {}
 
+  driver.js@1.10.2: {}
+
   drizzle-kit@1.0.0-rc.4:
     dependencies:
       '@drizzle-team/brocli': 0.12.1
@@ -16100,6 +16155,35 @@ snapshots:
   get-tsconfig@4.14.3:
     dependencies:
       resolve-pkg-maps: 1.0.0
+
+  git-cliff-darwin-arm64@2.14.2:
+    optional: true
+
+  git-cliff-darwin-x64@2.14.2:
+    optional: true
+
+  git-cliff-linux-arm64@2.14.2:
+    optional: true
+
+  git-cliff-linux-x64@2.14.2:
+    optional: true
+
+  git-cliff-windows-arm64@2.14.2:
+    optional: true
+
+  git-cliff-windows-x64@2.14.2:
+    optional: true
+
+  git-cliff@2.14.2:
+    dependencies:
+      execa: 9.6.1
+    optionalDependencies:
+      git-cliff-darwin-arm64: 2.14.2
+      git-cliff-darwin-x64: 2.14.2
+      git-cliff-linux-arm64: 2.14.2
+      git-cliff-linux-x64: 2.14.2
+      git-cliff-windows-arm64: 2.14.2
+      git-cliff-windows-x64: 2.14.2
 
   github-slugger@2.0.0: {}
 

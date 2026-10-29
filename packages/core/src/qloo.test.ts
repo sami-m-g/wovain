@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { createQloo } from "./qloo";
+import { createQloo, searchTermsOf } from "./qloo";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -345,4 +345,114 @@ it("searches every reference type and keeps each entity's Qloo type", async () =
   const [url] = fetchMock.mock.calls[0] as unknown as [URL];
   expect(url.searchParams.get("types")).toContain("urn:entity:movie");
   expect(url.searchParams.get("take")).toBe("1");
+});
+
+// A merchant's brief, as typed on the new-drop page: a sentence, not a name.
+const BRIEF =
+  "Streetwear for Cairo night runners: bold, minimal & neon. Think 90s rave posters!";
+
+it("searches Qloo for short names from a brief, not the sentence", () => {
+  expect(searchTermsOf(BRIEF)).toEqual([
+    "Streetwear for Cairo night runners",
+    "bold",
+    "minimal",
+    "neon",
+  ]);
+  expect(searchTermsOf("Studio Ghibli")).toEqual(["Studio Ghibli"]);
+  expect(searchTermsOf("  ¡¿ … !!  ")).toEqual([]);
+  for (const term of searchTermsOf(`${"word ".repeat(40)}, x`)) {
+    expect(term.length).toBeLessThanOrEqual(60);
+  }
+});
+
+it("skips a search term Qloo answers 400 to and keeps the others", async () => {
+  const fetchMock = vi.fn(async (url: URL) => {
+    if (url.pathname === "/search") {
+      return await Promise.resolve(
+        url.searchParams.get("query") === "neon"
+          ? Response.json({ results: [{ entity_id: "E1", name: "Neon" }] })
+          : new Response('{"error":"bad query"}', { status: 400 })
+      );
+    }
+    return await Promise.resolve(Response.json({ results: { tags: [] } }));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const set = vi.fn();
+
+  const taste = await createQloo({
+    apiKey: "k",
+    baseURL: "https://qloo.example",
+  }).tasteOf(BRIEF, { set });
+
+  expect(taste.names).toEqual(["Neon"]);
+  const queries = fetchMock.mock.calls
+    .map(([url]) => url)
+    .filter((url) => url.pathname === "/search")
+    .map((url) => url.searchParams.get("query"));
+  expect(queries).not.toContain(BRIEF);
+  expect(set).toHaveBeenCalledWith({ qloo: { rejectedTerms: 3, terms: 4 } });
+});
+
+it("fails the taste when Qloo rejects every term", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () => await Promise.resolve(new Response("bad", { status: 400 }))
+    )
+  );
+
+  await expect(
+    createQloo({ apiKey: "k", baseURL: "https://qloo.example" }).tasteOf(BRIEF)
+  ).rejects.toThrow("Qloo /search answered 400");
+});
+
+it("fails the taste when Qloo refuses the key, even on one term", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: URL) =>
+      url.searchParams.get("query") === "neon"
+        ? await Promise.resolve(new Response("no", { status: 401 }))
+        : await Promise.resolve(new Response("bad", { status: 400 }))
+    )
+  );
+
+  await expect(
+    createQloo({ apiKey: "k", baseURL: "https://qloo.example" }).tasteOf(BRIEF)
+  ).rejects.toThrow("Qloo /search answered 401");
+});
+
+it("makes no Qloo call for a seed with no words", async () => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  const taste = await createQloo({
+    apiKey: "k",
+    baseURL: "https://qloo.example",
+  }).tasteOf("?!");
+
+  expect(taste).toEqual({ names: [], themes: [] });
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("reuses an answer for the same request and forgets a failed one", async () => {
+  let calls = 0;
+  const fetchMock = vi.fn(async () => {
+    calls += 1;
+    return await Promise.resolve(
+      calls === 1
+        ? new Response("bad request", { status: 400 })
+        : Response.json({
+            results: {
+              tags: [{ id: "urn:tag:genre:media:goth", name: "Goth" }],
+            },
+          })
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "key", baseURL: "https://qloo.test" });
+  await expect(qloo.tagsFor(["E1"])).rejects.toThrow("answered 400");
+  const first = await qloo.tagsFor(["E1"]);
+  const again = await qloo.tagsFor(["E1"]);
+  expect(again).toStrictEqual(first);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
 });

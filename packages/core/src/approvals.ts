@@ -191,6 +191,8 @@ export interface EnqueueInput {
   inverse?: Record<string, unknown> | undefined;
   // New ad spend, US cents, checked against the caps (./autonomy.ts).
   spendCents?: number | undefined;
+  // A profit rule's pause, allowed at every level (./autonomy.ts).
+  protective?: boolean | undefined;
   idempotencyKey?: string | undefined;
   runId?: string | undefined;
   dropId?: string | undefined;
@@ -308,7 +310,11 @@ export const createApprovals = ({
   ) => {
     const { domain, risk } = ACTIONS[input.type];
     const decision = canAutoExecute(
-      { spendCents: input.spendCents, type: input.type },
+      {
+        protective: input.protective,
+        spendCents: input.spendCents,
+        type: input.type,
+      },
       settings,
       spent
     );

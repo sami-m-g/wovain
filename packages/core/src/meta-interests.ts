@@ -17,7 +17,7 @@ import type { Logger } from "./log";
 export interface MetaInterestsConfig {
   appId: string | undefined;
   appSecret: string | undefined;
-  // The Graph API base with its version, e.g. https://graph.facebook.com/v24.0
+  // The Graph API base with its version, e.g. https://graph.facebook.com/v26.0
   graphUrl: string;
 }
 

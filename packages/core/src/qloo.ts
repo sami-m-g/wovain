@@ -21,6 +21,11 @@ export interface QlooConfig {
 }
 
 const TIMEOUT_MS = 15_000;
+// How long a Qloo answer is reused, and how many are kept per client.
+const ANSWER_TTL_MS = 30 * 60_000;
+const ANSWERS_KEPT = 500;
+// Ranked localities (placesOf) are slow on the hackathon server.
+const PLACES_TIMEOUT_MS = 60_000;
 const QLOO_CONCURRENCY = 4;
 const RETRIES = 2;
 const RETRY_MS = 500;
@@ -66,6 +71,50 @@ const TREND_BIAS = "low";
 // not the plot.
 const CUE_TAG = /^urn:tag:(?:style|subgenre|theme|genre):/u;
 
+// A Qloo reply that wasn't ok, with its status, so a rejected query (400)
+// reads apart from Qloo being down or refusing the key.
+export class QlooHttpError extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`Qloo ${path} answered ${status}`);
+    this.name = "QlooHttpError";
+    this.status = status;
+  }
+}
+
+const BAD_REQUEST = 400;
+const SEED_TAKE = 3;
+const MAX_TERMS = 4;
+const TERM_MAX = 60;
+// Clause breaks in a brief: each clause is a candidate entity name.
+const CLAUSE_BREAK = /[\n\r\t,;:.!?|/&+()[\]{}"“”«»<>]+|\s[-–—]\s/u;
+// Anything but letters, marks, numbers, spaces, apostrophes and hyphens.
+const NOT_NAME = /[^\p{L}\p{M}\p{N}\s'’-]+/gu;
+const SPACES = /\s+/gu;
+const HAS_WORD = /[\p{L}\p{N}]/u;
+
+const termOf = (text: string): string =>
+  text.replaceAll(NOT_NAME, " ").replaceAll(SPACES, " ").trim();
+
+// Qloo's /search matches a short entity name ("Studio Ghibli"), not a brief:
+// a long or punctuated query answers 400. The terms are the whole seed when
+// it is short, then its clauses, cleaned of punctuation, each at most
+// TERM_MAX characters, at most MAX_TERMS, without repeats.
+export const searchTermsOf = (seed: string): string[] => {
+  const seen = new Set<string>();
+  return [seed, ...seed.split(CLAUSE_BREAK)]
+    .map(termOf)
+    .filter((term) => {
+      const key = term.toLowerCase();
+      const fresh =
+        HAS_WORD.test(term) && term.length <= TERM_MAX && !seen.has(key);
+      seen.add(key);
+      return fresh;
+    })
+    .slice(0, MAX_TERMS);
+};
+
 const searchSchema = z.object({
   results: z.array(
     z.object({
@@ -75,6 +124,7 @@ const searchSchema = z.object({
     })
   ),
 });
+type SearchEntity = z.output<typeof searchSchema>["results"][number];
 
 const affinityMap = z.record(z.string().max(40), z.number()).default({});
 
@@ -149,6 +199,24 @@ const entitiesSchema = z.object({
             })
             .optional(),
           tags: z.array(z.unknown()).optional(),
+        })
+      )
+      .default([]),
+  }),
+});
+
+// A ranked insights answer for audiences, places (localities) or brands;
+// other fields (a locality's properties) are not read.
+const rankedSchema = z.object({
+  results: z.object({
+    entities: z
+      .array(
+        z.object({
+          disambiguation: z.string().max(300).nullish(),
+          entity_id: z.string().max(128),
+          name: z.string().max(300),
+          popularity: z.number().nullish(),
+          query: z.object({ affinity: z.number().optional() }).optional(),
         })
       )
       .default([]),
@@ -240,6 +308,24 @@ export interface Taste {
 // entities of one type that the given signals' fans like. The hackathon
 // server answers 400 to demographics alone, so a query carries entities or
 // audiences too.
+// What "who buys" is asked about: Qloo entity IDs and Qloo tag IDs.
+export interface WhoSignals {
+  entities?: readonly string[] | undefined;
+  tags?: readonly string[] | undefined;
+}
+
+// A Qloo audience, place (locality) or brand ranked for the
+// signals; `where` is Qloo's disambiguation ("Salem, Essex County,
+// Massachusetts, United States of America"; "Tattoos (Hobbies And
+// Interests)").
+export interface QlooRanked {
+  affinity: number;
+  id: string;
+  name: string;
+  popularity?: number | undefined;
+  where?: string | undefined;
+}
+
 export interface InsightsQuery {
   // Qloo age buckets, e.g. "25_to_29".
   age?: string | undefined;
@@ -261,7 +347,7 @@ export interface QlooInsight extends QlooEntity {
 
 export interface TasteOptions {
   // Also ask which brands, films and shows the seed's fans like, with
-  // explainability and a trend bias (the qloo-taste-map flag).
+  // explainability and a trend bias, in every run.
   crossDomain?: boolean | undefined;
 }
 
@@ -351,20 +437,42 @@ const themesFrom = (tags: z.output<typeof tagsSchema>): QlooTheme[] => {
     });
 };
 
+// The signal parameters of a "who buys" query.
+const signalParams = ({ entities = [], tags = [] }: WhoSignals) => ({
+  ...(entities.length > 0 && {
+    "signal.interests.entities": entities.join(","),
+  }),
+  ...(tags.length > 0 && { "signal.interests.tags": tags.join(",") }),
+});
+
 export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
   // At most QLOO_CONCURRENCY requests in flight per client: the hackathon
   // server answers 429 to a burst (brand discovery's twelve insights calls
   // did, tried live on 2026-10-29). A 429 or 5xx is retried with backoff;
   // any other failure is final.
   const limit = pLimit(QLOO_CONCURRENCY);
-  const get = async <T extends z.ZodType>(
+  // Qloo's answers, kept a while per URL: the same request (a brand's
+  // references, an audience) is asked again within minutes by the new-drop
+  // suggestions, discovery and the taste map. A request in flight is
+  // shared; a failed one is forgotten.
+  const answers = new Map<string, { at: number; body: Promise<unknown> }>();
+  const remember = (key: string, body: Promise<unknown>) => {
+    answers.delete(key);
+    answers.set(key, { at: Date.now(), body });
+    for (const oldest of answers.keys()) {
+      if (answers.size <= ANSWERS_KEPT) {
+        break;
+      }
+      answers.delete(oldest);
+    }
+  };
+
+  const fetchJson = async (
     path: string,
     query: Record<string, string>,
-    schema: T
-  ): Promise<z.output<T>> => {
-    if (apiKey === undefined) {
-      throw notConfigured.qloo();
-    }
+    key: string,
+    timeoutMs: number
+  ): Promise<unknown> => {
     const response = await limit(
       async () =>
         await pRetry(
@@ -375,11 +483,11 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
               // nosemgrep
               new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
               {
-                headers: { Accept: "application/json", "X-Api-Key": apiKey },
-                signal: AbortSignal.timeout(TIMEOUT_MS),
+                headers: { Accept: "application/json", "X-Api-Key": key },
+                signal: AbortSignal.timeout(timeoutMs),
               }
             );
-            const error = new Error(`Qloo ${path} answered ${reply.status}`);
+            const error = new QlooHttpError(path, reply.status);
             if (reply.status === TOO_MANY || reply.status >= SERVER_ERROR) {
               throw error;
             }
@@ -391,7 +499,31 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
           { minTimeout: RETRY_MS, retries: RETRIES }
         )
     );
-    return schema.parse(await response.json());
+    return await response.json();
+  };
+
+  const get = async <T extends z.ZodType>(
+    path: string,
+    query: Record<string, string>,
+    schema: T,
+    timeoutMs = TIMEOUT_MS
+  ): Promise<z.output<T>> => {
+    if (apiKey === undefined) {
+      throw notConfigured.qloo();
+    }
+    const url = `${path}?${new URLSearchParams(query)}`;
+    const cached = answers.get(url);
+    if (cached !== undefined && Date.now() - cached.at < ANSWER_TTL_MS) {
+      return schema.parse(await cached.body);
+    }
+    const body = fetchJson(path, query, apiKey, timeoutMs);
+    remember(url, body);
+    try {
+      return schema.parse(await body);
+    } catch (error) {
+      answers.delete(url);
+      throw error;
+    }
   };
 
   // One domain's affinities. Best effort: a failure is logged at error level,
@@ -434,6 +566,58 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     }
   };
 
+  // One search term's entities. Qloo answers 400 to a term it can't parse:
+  // that term has no match and the others still count. Any other failure
+  // (auth, 429, 5xx) is final.
+  const termEntities = async (
+    term: string
+  ): Promise<{ entities: SearchEntity[]; rejected?: QlooHttpError }> => {
+    try {
+      const { results } = await get(
+        "/search",
+        { query: term, take: String(SEED_TAKE), types: SEED_TYPES },
+        searchSchema
+      );
+      return { entities: results };
+    } catch (error) {
+      if (error instanceof QlooHttpError && error.status === BAD_REQUEST) {
+        return { entities: [], rejected: error };
+      }
+      throw error;
+    }
+  };
+
+  // The seed's entities: the best matches across its search terms, at most
+  // SEED_TAKE. When Qloo rejects every term the request itself is wrong, so
+  // the step fails with Qloo's answer.
+  const seedEntities = async (
+    seed: string,
+    log?: Logger
+  ): Promise<SearchEntity[]> => {
+    const terms = searchTermsOf(seed);
+    if (terms.length === 0) {
+      return [];
+    }
+    const found = await Promise.all(terms.map(termEntities));
+    const rejected = found.flatMap(({ rejected: error }) =>
+      error === undefined ? [] : [error]
+    );
+    log?.set({ qloo: { rejectedTerms: rejected.length, terms: terms.length } });
+    const [firstRejected] = rejected;
+    if (firstRejected !== undefined && rejected.length === terms.length) {
+      throw firstRejected;
+    }
+    const seen = new Set<string>();
+    return found
+      .flatMap(({ entities }) => entities)
+      .filter(({ entity_id: id }) => {
+        const fresh = !seen.has(id);
+        seen.add(id);
+        return fresh;
+      })
+      .slice(0, SEED_TAKE);
+  };
+
   // The seed's entities and the tags their fans share; with crossDomain,
   // also what they like in other domains, and why.
   const tasteOf = async (
@@ -442,11 +626,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     { crossDomain = false }: TasteOptions = {}
   ): Promise<Taste> =>
     await external(log, { operation: "taste", provider: "qloo" }, async () => {
-      const { results: entities } = await get(
-        "/search",
-        { query: seed, take: "3", types: SEED_TYPES },
-        searchSchema
-      );
+      const entities = await seedEntities(seed, log);
       if (entities.length === 0) {
         return crossDomain
           ? {
@@ -671,10 +851,90 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       );
     });
 
+  const ranked = async (
+    operation: string,
+    query: Record<string, string>,
+    log?: Logger,
+    timeoutMs = TIMEOUT_MS
+  ): Promise<QlooRanked[]> =>
+    await external(log, { operation, provider: "qloo" }, async () => {
+      const { results } = await get(
+        "/v2/insights",
+        query,
+        rankedSchema,
+        timeoutMs
+      );
+      return results.entities.map((entity) => ({
+        affinity: entity.query?.affinity ?? 0,
+        id: entity.entity_id,
+        name: entity.name.trim(),
+        ...(entity.popularity !== null &&
+          entity.popularity !== undefined && {
+            popularity: entity.popularity,
+          }),
+        ...(entity.disambiguation !== null &&
+          entity.disambiguation !== undefined && {
+            where: entity.disambiguation.trim(),
+          }),
+      }));
+    });
+
+  // The Qloo audiences (urn:audience) whose members like the signals most.
+  const audiencesOf = async (signals: WhoSignals, log?: Logger, take = 5) =>
+    await ranked(
+      "who.audiences",
+      {
+        "filter.type": "urn:audience",
+        take: String(take),
+        ...signalParams(signals),
+      },
+      log
+    );
+
+  // Where the signals' fans are: the localities (cities, counties) Qloo
+  // ranks for them within a location ("United States"). Not the heatmap
+  // (filter.type=urn:heatmap): it ignores `take` and sent 200 MB of
+  // boundary polygons for the United States, tried live on 2026-10-29.
+  // Ranked localities take about 25 s on the hackathon server, so this
+  // call waits longer than the others.
+  const placesOf = async (
+    signals: WhoSignals,
+    location: string,
+    log?: Logger,
+    take = 5
+  ) =>
+    await ranked(
+      "who.places",
+      {
+        "filter.location.query": location,
+        "filter.type": "urn:entity:locality",
+        take: String(take),
+        ...signalParams(signals),
+      },
+      log,
+      PLACES_TIMEOUT_MS
+    );
+
+  // The fashion brands the signals' fans like: who they already buy from.
+  const fashionBrandsOf = async (signals: WhoSignals, log?: Logger, take = 3) =>
+    await ranked(
+      "who.brands",
+      {
+        "filter.tags": "urn:tag:genre:brand:fashion",
+        "filter.type": "urn:entity:brand",
+        take: String(take),
+        ...signalParams(signals),
+      },
+      log
+    );
+
   return {
     audienceAffinity,
+    audiencesOf,
     demographicsOf,
+    fashionBrandsOf,
     insights,
+    placesOf,
     search,
     searchEntities,
     tagsFor,

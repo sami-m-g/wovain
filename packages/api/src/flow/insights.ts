@@ -17,6 +17,9 @@ import { z } from "zod";
 import type { Actor } from "./actor";
 import { adScoreKey } from "./campaigns";
 import { listConnections, withProvider } from "./connections";
+import { detectMilestones, detectSetup } from "./detect";
+import { getJourney, journeyOf, TARGETS } from "./milestones";
+import type { MilestoneName } from "./milestones";
 
 // The merchant's KPI dashboard: shop sales from Fourthwall's reports, ad
 // metrics from Meta's insights and quality scores, joined to wovain's own
@@ -44,15 +47,31 @@ export const storedAdScores: QualityScorer = {
       return new Map<string, number>();
     }
     const staged = await db
-      .select({ id: campaign.id, key: campaign.idempotencyKey })
+      .select({
+        designs: campaign.designs,
+        id: campaign.id,
+        key: campaign.idempotencyKey,
+      })
       .from(campaign)
       .where(
         and(eq(campaign.userId, userId), inArray(campaign.id, campaignIds))
       );
+    // A test campaign scores each design's copy (./campaigns
+    // createDropCampaign); its score is their mean.
     const byKey = new Map(
-      staged.flatMap((row) =>
-        row.key === null ? [] : [[adScoreKey(row.key), row.id] as const]
-      )
+      staged.flatMap((row) => {
+        const { key } = row;
+        if (key === null) {
+          return [];
+        }
+        if (row.designs === null || row.designs.length === 0) {
+          return [[adScoreKey(key), row.id] as const];
+        }
+        return row.designs.map(
+          (design) =>
+            [adScoreKey(`${key}:${design.productId}`), row.id] as const
+        );
+      })
     );
     if (byKey.size === 0) {
       return new Map<string, number>();
@@ -67,14 +86,24 @@ export const storedAdScores: QualityScorer = {
           inArray(externalWrite.key, [...byKey.keys()])
         )
       );
+    const scores = new Map<string, number[]>();
+    for (const row of scored) {
+      const id = byKey.get(row.key);
+      const parsed = adScoreSchema.safeParse(row.result);
+      if (id !== undefined && parsed.success) {
+        scores.set(id, [...(scores.get(id) ?? []), parsed.data.score]);
+      }
+    }
     return new Map(
-      scored.flatMap((row) => {
-        const id = byKey.get(row.key);
-        const parsed = adScoreSchema.safeParse(row.result);
-        return id === undefined || !parsed.success
-          ? []
-          : [[id, parsed.data.score] as const];
-      })
+      [...scores].map(
+        ([id, each]) =>
+          [
+            id,
+            Math.round(
+              each.reduce((sum, score) => sum + score, 0) / each.length
+            ),
+          ] as const
+      )
     );
   },
 };
@@ -219,6 +248,23 @@ const dropRow = (
   };
 };
 
+// The north star steps these numbers show. A failure is logged at error level
+// (so it reaches PostHog) and never takes the page down.
+const recordMilestones = async (
+  actor: Actor,
+  reading: Parameters<typeof detectMilestones>[1]
+) => {
+  try {
+    await detectMilestones(actor, reading);
+    await detectSetup(actor);
+  } catch (error) {
+    actor.log?.error?.(
+      error instanceof Error ? error : new Error(String(error)),
+      { milestones: "detect" }
+    );
+  }
+};
+
 export const getInsights = async (
   actor: Actor,
   range: InsightRange,
@@ -263,9 +309,17 @@ export const getInsights = async (
     ads.status === "ok" ? ads.campaigns.map((item) => [item.id, item]) : []
   );
 
+  await recordMilestones(actor, { ads, shop });
+  const journey = await getJourney(actor);
+
   return {
     ads,
     drops: drops.map((drop) => dropRow(drop, sales, metrics, adScores)),
+    journey: {
+      ...journeyOf(journey),
+      reached: Object.keys(journey) as MilestoneName[],
+      targets: TARGETS,
+    },
     range: { ...rangeDates(range), key: range },
     scoring: { ads: adScores.size > 0 ? "ready" : "pending" } as const,
     shop: shop as Section<ShopInsights>,

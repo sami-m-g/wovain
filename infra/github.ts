@@ -5,8 +5,15 @@
 // accounts in the Actions variables below: production from the `Production`
 // environment on the release branch, after approval; next.wovain.com from the
 // `next` environment on main (docs/adr/0004-release-branch.md); dev.wovain.com
-// from `dev`, and infra from `infrastructure`, both on main only. The provider
-// authenticates with the `github:token` stack secret and `github:owner`.
+// from `dev`, and infra from `infrastructure`, both on main only.
+//
+// Two stacks declare it. The repository itself (its settings, rulesets,
+// label and repository secret) is the `github` stack's (infra/github,
+// repositorySettings below), applied on every push to main with only a
+// GitHub token. The deploy environments and the Actions variables, which
+// name production's Google resources, stay in production's stack
+// (deployEnvironments below). Each provider authenticates with its stack's
+// `github:token` secret and `github:owner`.
 import * as github from "@pulumi/github";
 import type * as pulumi from "@pulumi/pulumi";
 
@@ -54,7 +61,22 @@ export const environmentVariables = (
   }
 };
 
-interface RepositoryArgs {
+// The repository both stacks address by name.
+export const REPOSITORY = "wovain";
+
+interface SettingsArgs {
+  // The branch production deploys from, e.g. `release/transcend`.
+  releaseBranch: string;
+  // GitGuardian's incidents:write token (.github/workflows/gitguardian-ignore.yml),
+  // from the `gitguardian-api-key` stack secret. Left out, no secret is declared.
+  gitguardianApiKey?: pulumi.Input<string> | undefined;
+  // The token release-please opens its pull request and tags with, from the
+  // `release-please-token` stack secret (.github/workflows/release.yml). Left
+  // out, no secret is declared and release-please uses the default token.
+  releasePleaseToken?: pulumi.Input<string> | undefined;
+}
+
+interface EnvironmentArgs {
   // Shared by every workflow and environment.
   variables: Variables;
   // Each deploy environment's own: where it deploys, and as whom.
@@ -64,40 +86,43 @@ interface RepositoryArgs {
   releaseBranch: string;
   // GitHub user ids who may approve a production deploy.
   releaseReviewerIds: number[];
-  // GitGuardian's incidents:write token (.github/workflows/gitguardian-ignore.yml),
-  // from the `gitguardian-api-key` stack secret. Left out, no secret is declared.
-  gitguardianApiKey?: pulumi.Input<string> | undefined;
 }
 
-export const githubRepository = ({
-  environments,
+// The repository, its default branch's and release branch's rulesets, the
+// Dependabot label and the repository secret: the `github` stack's.
+export const repositorySettings = ({
   gitguardianApiKey,
+  releasePleaseToken,
   releaseBranch,
-  releaseReviewerIds,
-  variables,
-}: RepositoryArgs) => {
-  // Adopted, never deleted: protected and retained, so removing it from the
-  // program or `pulumi up` can't remove the repository.
+}: SettingsArgs) => {
+  // Adopted with `pulumi import` (infra/README.md), never deleted: protected
+  // and retained, so removing it from the program or `pulumi up` can't
+  // remove the repository.
   const repository = new github.Repository(
     "wovain",
     {
-      allowAutoMerge: false,
+      // `gh pr merge --squash --auto`: a pull request merges itself once the
+      // main ruleset below is met (CodeRabbit's approval and green checks),
+      // and its branch is deleted.
+      allowAutoMerge: true,
       deleteBranchOnMerge: true,
+      // What GitHub shows today (set for the hackathon judges, who use
+      // next.wovain.com); the first `up` keeps it rather than reverting it.
       description:
-        "wovain: an MCP server for print-on-demand sellers (product idea → Fourthwall product → Meta Advantage+ campaign).",
+        "Qloo-powered agentic print-on-demand: Qloo's taste graph picks who a drop is for and what they love; Nemotron on Nebius designs and judges; Tavily checks the evidence; you approve Fourthwall products and a paused Meta campaign.",
       hasIssues: true,
       hasProjects: false,
       hasWiki: false,
-      homepageUrl: "https://wovain.com",
-      name: "wovain",
+      homepageUrl: "https://next.wovain.com",
+      name: REPOSITORY,
       topics: [
+        "devpost",
         "fal-ai",
+        "firebase",
         "fourthwall",
-        "google-cloud",
         "mcp",
         "mcp-apps",
         "meta-ads",
-        "nextjs",
         "print-on-demand",
         "typescript",
       ],
@@ -105,13 +130,18 @@ export const githubRepository = ({
       // Dependabot alerts; security updates below need them on.
       vulnerabilityAlerts: true,
     },
-    { import: "wovain", protect: true, retainOnDelete: true }
+    { protect: true, retainOnDelete: true }
   );
   new github.RepositoryDependabotSecurityUpdates(
     "wovain",
     { enabled: true, repository: repository.name },
     { dependsOn: [repository] }
   );
+
+  // CodeRabbit reviews this repository through its GitHub App, installed by
+  // hand with "Only select repositories" (infra/README.md): GitHub has no API
+  // to install an app, and a fine-grained token can't read an
+  // installation's repositories, so its access isn't declared here.
 
   // The default branch: no deletion, no force-push, and every change through
   // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,
@@ -186,40 +216,6 @@ export const githubRepository = ({
     target: "branch",
   });
 
-  // Google trusts the production deploy account only from jobs in this
-  // environment (infra/index.ts), and the environment only deploys the
-  // release branch, after a reviewer approves the run. It already exists, as
-  // `Production` (Vercel's integration made it), and GitHub matches
-  // environment names without case, so it keeps that spelling: the name is
-  // what reaches Google in the OIDC token's `environment` claim. Retained:
-  // deleting it would delete Vercel's deployment history too.
-  const production = new github.RepositoryEnvironment(
-    "production",
-    {
-      deploymentBranchPolicy: {
-        customBranchPolicies: true,
-        protectedBranches: false,
-      },
-      environment: "Production",
-      // The owner approves their own deploys: one reviewer is the gate, not
-      // a second person.
-      preventSelfReview: false,
-      repository: repository.name,
-      reviewers: [{ users: releaseReviewerIds }],
-    },
-    { retainOnDelete: true }
-  );
-  new github.RepositoryEnvironmentDeploymentPolicy("production-release", {
-    branchPattern: releaseBranch,
-    environment: production.environment,
-    repository: repository.name,
-  });
-
-  // Environments that only main may use, with no approval: dev.wovain.com,
-  // and `infrastructure`, the one Google trusts as the infrastructure
-  // account (infra/bootstrap), for when a workflow runs `pulumi up`.
-  const dev = mainOnlyEnvironment("dev", repository.name);
-  mainOnlyEnvironment("infrastructure", repository.name);
   // The label .github/dependabot.yml puts on every update pull request;
   // Dependabot doesn't create it, and a missing label is an error there.
   new github.IssueLabel("dependencies", {
@@ -238,11 +234,64 @@ export const githubRepository = ({
       secretName: "GITGUARDIAN_API_KEY",
     });
   }
+  // A pull request or tag made with the default token starts no workflow, so
+  // the release pull request would never get its `verify` check.
+  if (releasePleaseToken !== undefined) {
+    new github.ActionsSecret("RELEASE_PLEASE_TOKEN", {
+      plaintextValue: releasePleaseToken,
+      repository: repository.name,
+      secretName: "RELEASE_PLEASE_TOKEN",
+    });
+  }
+  return repository;
+};
 
+// The deploy environments and Actions variables: production's stack's,
+// since they name its Google resources.
+export const deployEnvironments = ({
+  environments,
+  releaseBranch,
+  releaseReviewerIds,
+  variables,
+}: EnvironmentArgs) => {
+  // Google trusts the production deploy account only from jobs in this
+  // environment (infra/index.ts), and the environment only deploys the
+  // release branch, after a reviewer approves the run. It already exists, as
+  // `Production` (Vercel's integration made it), and GitHub matches
+  // environment names without case, so it keeps that spelling: the name is
+  // what reaches Google in the OIDC token's `environment` claim. Retained:
+  // deleting it would delete Vercel's deployment history too.
+  const production = new github.RepositoryEnvironment(
+    "production",
+    {
+      deploymentBranchPolicy: {
+        customBranchPolicies: true,
+        protectedBranches: false,
+      },
+      environment: "Production",
+      // The owner approves their own deploys: one reviewer is the gate, not
+      // a second person.
+      preventSelfReview: false,
+      repository: REPOSITORY,
+      reviewers: [{ users: releaseReviewerIds }],
+    },
+    { retainOnDelete: true }
+  );
+  new github.RepositoryEnvironmentDeploymentPolicy("production-release", {
+    branchPattern: releaseBranch,
+    environment: production.environment,
+    repository: REPOSITORY,
+  });
+
+  // Environments that only main may use, with no approval: dev.wovain.com,
+  // and `infrastructure`, the one Google trusts as the infrastructure
+  // account (infra/bootstrap), for when a workflow runs `pulumi up`.
+  const dev = mainOnlyEnvironment("dev", REPOSITORY);
+  mainOnlyEnvironment("infrastructure", REPOSITORY);
   // What the workflows read as `vars.<NAME>`; none is a secret.
   for (const [variableName, value] of Object.entries(variables)) {
     new github.ActionsVariable(variableName, {
-      repository: repository.name,
+      repository: REPOSITORY,
       value,
       variableName,
     });

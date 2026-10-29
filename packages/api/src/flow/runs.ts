@@ -1,4 +1,5 @@
 import { billingCatalog } from "@wovain/billing/catalog";
+import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
 import { pickIdea } from "@wovain/core/autopilot";
 import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
@@ -9,12 +10,13 @@ import { log } from "evlog";
 
 import type { Actor, RunInput } from "./actor";
 import { notFound } from "./actor";
-import { compensateRun, createProductCampaign } from "./campaigns";
+import { compensateRun, createDropCampaign } from "./campaigns";
 import { readRunCompetition, skipSaturated } from "./competition";
 import { requireFal } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { assertQlooOn, getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
+import { reachMilestone } from "./milestones";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
 import { stageRunDrop, storeManagementOn } from "./store";
@@ -379,15 +381,22 @@ export const campaignStep = async (
         isNotNull(product.productUrl)
       )
     );
+  // A drop launches as a small test: its live designs share one campaign,
+  // up to MAX_TEST_DESIGNS each (./campaigns createDropCampaign).
+  const ids = live.map((row) => row.id);
+  const groups: string[] = [];
+  for (let start = 0; start < ids.length; start += MAX_TEST_DESIGNS) {
+    groups.push(ids.slice(start, start + MAX_TEST_DESIGNS).join(","));
+  }
   const staged = await eachSettled(
     runId,
     "campaign",
-    live.map((row) => row.id),
-    async (productId) =>
-      await createProductCampaign(actor, {
+    groups,
+    async (group) =>
+      await createDropCampaign(actor, {
         countries: input.countries,
         dailyBudget: input.dailyBudget,
-        productId,
+        productIds: group.split(","),
       })
   );
   return {
@@ -642,6 +651,9 @@ export const startRun = async (actor: Actor, input: RunInput) => {
     throw new Error("The run wasn't saved");
   }
   actor.log?.set({ run: { autopilot: input.autopilot, id: created.id } });
+  await reachMilestone(actor, "first_drop_started", {
+    autopilot: input.autopilot,
+  });
   try {
     await actor.runs.start({ input, runId: created.id, userId: actor.userId });
   } catch (error) {

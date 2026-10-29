@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { ConnectionsSummary } from "@/components/app/connections-panel";
+import { WarmDirections } from "@/components/app/drop-directions";
 import { RecentRuns } from "@/components/app/runs-list";
 import { SetupChecklist } from "@/components/app/setup-checklist";
 import { enterLocale, requireLocale } from "@/i18n/locale";
@@ -64,6 +65,8 @@ const DashboardPage = async ({
 
   return (
     <div className="flex flex-col gap-10">
+      {/* Finds the new-drop suggestions in the background. */}
+      <WarmDirections />
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
@@ -92,7 +95,7 @@ const DashboardPage = async ({
             </h2>
             <Link
               className="text-accent-text text-sm font-medium hover:underline"
-              href="/dashboard/runs"
+              href="/dashboard/drops"
             >
               {t("allRuns")}
             </Link>

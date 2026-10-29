@@ -17,6 +17,15 @@ import type { FlowProblem, RunDetail } from "@/lib/flow-client";
 import { describeProblem } from "@/lib/flow-client";
 import { client, orpc } from "@/utils/orpc";
 
+// The server's cap on designs per test campaign (MAX_TEST_DESIGNS in
+// @wovain/core/ads, which imports node:crypto, so it stays off the browser).
+const MAX_TEST_DESIGNS = 5;
+
+const chunks = <T>(items: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, index * size + size)
+  );
+
 /**
  * The drop flow's steps. Stepperize owns which step is current; the step is
  * mirrored in the URL (?run=…&step=…) so a refresh, a run email link or the
@@ -210,12 +219,14 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
       dailyBudget: number;
       productIds: string[];
     }) =>
+      // A drop launches as a small test: up to MAX_TEST_DESIGNS designs
+      // share one campaign.
       Promise.all(
-        productIds.map((productId) =>
-          client.campaigns.create({ dailyBudget, productId })
+        chunks(productIds, MAX_TEST_DESIGNS).map((group) =>
+          client.campaigns.test({ dailyBudget, productIds: group })
         )
       ),
-    mutationKey: orpc.campaigns.create.mutationKey(),
+    mutationKey: orpc.campaigns.test.mutationKey(),
     onSettled: refreshList,
   });
   const all = [
@@ -511,6 +522,15 @@ export const useDropFlow = (
       setPicked((previous) =>
         checked ? [...previous, id] : previous.filter((item) => item !== id)
       ),
+    /** A suggested direction: one click starts the drop from its brief. */
+    handleUseDirection: (direction: string) => {
+      setBrief(direction);
+      if (autopilot && budgetInvalid) {
+        return;
+      }
+      setBriefError(undefined);
+      startRun({ autopilot, seed: direction });
+    },
   };
 
   const working = calls.working ?? runWork(run);

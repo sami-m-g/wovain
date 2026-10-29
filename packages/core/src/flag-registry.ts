@@ -93,6 +93,10 @@ export const FLAGS = {
     "media",
     "Thompson-sampling optimizer over ads: reallocation proposals inside the spend caps"
   ),
+  "ads-profit-rules": workstream(
+    "media",
+    "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",
@@ -140,16 +144,6 @@ export const FLAGS = {
     },
     type: "permission",
   },
-  "billing-polar": {
-    description:
-      "Polar billing paths from MR !116: credits, the billing page and webhooks",
-    expires: "2026-12-15",
-    guarded: true,
-    initiallyActive: true,
-    owner: { gitlab: OWNER, team: "billing" },
-    rollout: internalOnly,
-    type: "release",
-  },
   "brand-discovery": workstream(
     "growth",
     "Guided brand discovery in onboarding: Qloo-found starter brands (Suggest for me, a short questionnaire), the buyers panel and per-field suggestions"
@@ -157,6 +151,14 @@ export const FLAGS = {
   "design-drops": workstream(
     "design",
     "Drops: a capsule of products sharing a palette, mark and style family"
+  ),
+  "drop-directions": workstream(
+    "growth",
+    "What to sell now in the new-drop step: 3 to 5 one-click directions from Qloo (across audiences, or within the brand), Tavily momentum and saturation"
+  ),
+  "drop-style": workstream(
+    "design",
+    "Each drop's own tone and palette, suggested from its Qloo audience and the brand defaults, used by the brief and ad writers"
   ),
   "fal-oauth": {
     description:
@@ -202,14 +204,6 @@ export const FLAGS = {
     "growth",
     "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
   ),
-  "qloo-audiences": workstream(
-    "growth",
-    "Qloo audience demographics drive Meta targeting and the ad persona"
-  ),
-  "qloo-taste-map": workstream(
-    "growth",
-    "The Qloo taste map: the entities, tags and cross-domain links behind each idea"
-  ),
   "store-management": workstream(
     "store",
     "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"
@@ -253,6 +247,10 @@ export const FLAGS = {
   "voice-input": workstream(
     "mobile",
     "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
+  ),
+  "who-buys": workstream(
+    "growth",
+    "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like"
   ),
 } as const satisfies Record<string, FlagDefinition>;
 

@@ -17,6 +17,8 @@ Fourthwall est votre boutique. Il imprime chaque commande, l'expédie et gère l
 
 wovain lit le catalogue des blanks et leurs coûts de base, crée des produits à partir des designs que vous validez, et les publie quand vous le dites. Les nouveaux produits démarrent **masqués** : rien n'apparaît dans votre boutique tant que vous ne le publiez pas.
 
+Une fois la boutique connectée, **Boutique** liste ce qu'il lui manque pour vendre et coche chaque étape quand vous la terminez. Voir [Votre boutique](/fr/docs/store).
+
 ## fal
 
 fal dessine les graphismes de chaque idée, en résolution d'impression, sur votre compte fal.
@@ -33,7 +35,27 @@ Meta est l'endroit où vos publicités diffusent. wovain a besoin d'un compte pu
 1. Dans **Connexions**, choisissez **Connecter Meta**.
 2. Connectez-vous avec Facebook et autorisez l'accès au compte publicitaire et à la Page que vous voulez utiliser.
 
+Ouvrez ensuite **Boutique**. Sous **Préparez votre compte Meta pour les publicités**, wovain vérifie votre compte et affiche une carte pour chaque étape restante : un compte publicitaire, un moyen de paiement, une Page Facebook, un compte Instagram (facultatif) et les règles de sécurité. Chaque carte explique quoi faire et ouvre l'écran Meta exact dans un nouvel onglet. Revenez sur wovain une fois terminé : la carte se coche toute seule.
+
+Si la carte des règles de sécurité vous le demande, choisissez **Reconnecter Meta** et acceptez tout ce que Meta demande. Vous pouvez aussi reconnecter ou déconnecter Meta depuis **Connexions** à tout moment.
+
 wovain écrit plusieurs publicités pour chaque produit et construit une campagne avec elles. Chaque campagne est créée **en pause**, avec le budget quotidien que vous fixez (de 1 $ à 500 $). Les dépenses ne commencent que lorsque vous l'activez dans le Gestionnaire de publicités Meta.
+
+## Votre pixel Meta sur la boutique
+
+Pour que vos publicités apprennent de vos acheteurs, votre boutique a besoin de votre pixel Meta. Fourthwall ne permet pas à une autre app de le configurer, donc wovain vous donne l'ID du pixel avec un bouton de copie et ouvre la bonne page Fourthwall :
+
+1. Copiez l'ID du pixel depuis **Boutique**.
+2. Dans **Pixels de suivi** de Fourthwall, collez-le dans le champ **Facebook Pixel** et enregistrez.
+3. Ouvrez votre boutique une fois. L'étape se coche quand Meta voit la visite.
+
+Pour les ventes que masquent les bloqueurs de publicité, connectez aussi l'API Conversions de Meta dans l'app **Meta Conversions** de Fourthwall. Elle demande le même ID de pixel et un jeton d'accès du Gestionnaire d'événements de Meta.
+
+## Être payé
+
+Fourthwall vous verse vos ventes via Stripe. Seul le propriétaire de la boutique peut le configurer : dans **Facturation et versements** de Fourthwall, choisissez **Configurer vos versements** et donnez à Stripe votre pièce d'identité et vos coordonnées bancaires. La Boutique coche l'étape une fois Stripe prêt.
+
+Là où Stripe n'est pas disponible, Fourthwall paie par PayPal ou bill.com. Une fois votre solde à 25 $, écrivez à support@fourthwall.com avec l'adresse de votre boutique. Le support le configure à la main, donc Fourthwall ne peut pas le signaler : une fois fait, choisissez **Le support Fourthwall a configuré mes versements** dans la Boutique.
 
 ## Déconnexion
 

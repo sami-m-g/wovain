@@ -1,18 +1,24 @@
 import { ApprovalError, POLICY_DECIDER } from "@wovain/core/approvals";
 import type { Approval, EnqueueInput } from "@wovain/core/approvals";
 import type { ActionType } from "@wovain/core/autonomy";
+import { rangeDates, shopInsights } from "@wovain/core/insights";
+import type { InsightRange } from "@wovain/core/insights";
+import type { Listing } from "@wovain/core/listing";
 import { discountKeepsProfit, sizePrices } from "@wovain/core/pricing";
 import {
   activatePromotion,
   cancelOrder,
   canMove,
   createCollection,
+  createGiftCards,
   createInactivePromotion,
   endFreshPromotion,
   evaluateReadiness,
   findPromotionByCode,
   hideCollection,
+  listGiftCards,
   listOrders,
+  listPromotions,
   MAX_PROMO_USES,
   nextStatus,
   offerVariants,
@@ -24,6 +30,7 @@ import {
   refundOrder,
   sampleCheckout,
   setOfferVisibility,
+  setSiteLive,
   setSizePrices,
   shopBaseUrl,
   deactivatePromotion,
@@ -33,6 +40,7 @@ import type {
   OrderCurrency,
   ProductStatus,
 } from "@wovain/core/store";
+import type { ConfirmableStep } from "@wovain/core/store-setup";
 import { drop, dropItem } from "@wovain/db/schema/autonomy";
 import { design, product, run } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
@@ -48,7 +56,9 @@ import {
 } from "./approvals";
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
+import { applyListing, listingEdit } from "./listing";
 import { once } from "./once";
+import { checkNewPrice } from "./price-check";
 import { getProduct, publishDesignProduct } from "./products";
 
 // Store management on Fourthwall (openspec store-management), behind the
@@ -82,13 +92,44 @@ const storeError = (message: string, why: string, fix: string) =>
 // ---------------------------------------------------------------------------
 // Readiness
 
-export const storeReadiness = async (actor: Actor) =>
-  evaluateReadiness(
-    await withProvider(
-      actor,
-      "fourthwall",
-      async (call) => await readShopFacts(call)
-    )
+// The readiness checks, with the shop as the Store page's summary shows it.
+export const storeReadiness = async (actor: Actor) => {
+  const facts = await withProvider(
+    actor,
+    "fourthwall",
+    async (call) => await readShopFacts(call)
+  );
+  return {
+    ...evaluateReadiness(facts),
+    shop: {
+      baseUrl: facts.baseUrl ?? null,
+      name: facts.name ?? null,
+      payoutStatus: facts.payoutStatus ?? null,
+      siteStatus: facts.siteStatus ?? null,
+    },
+  };
+};
+
+// Sales, orders and per-product units from Fourthwall's reports.
+export const storeSales = async (actor: Actor, range: InsightRange) =>
+  await withProvider(
+    actor,
+    "fourthwall",
+    async (call) => await shopInsights(call, rangeDates(range))
+  );
+
+export const storePromotions = async (actor: Actor, page: number) =>
+  await withProvider(
+    actor,
+    "fourthwall",
+    async (call) => await listPromotions(call, { page })
+  );
+
+export const storeGiftCards = async (actor: Actor, page: number) =>
+  await withProvider(
+    actor,
+    "fourthwall",
+    async (call) => await listGiftCards(call, { page })
   );
 
 // Publishing waits until the shop can take orders.
@@ -101,7 +142,7 @@ const assertReady = async (actor: Actor) => {
     throw storeError(
       "Your shop isn't ready to sell yet",
       `Readiness checks failing: ${failing.join(", ")}`,
-      "Open Products in wovain and fix the checks it lists, then approve again."
+      "Open the Store in wovain and fix the checks it lists, then approve again."
     );
   }
 };
@@ -317,22 +358,26 @@ export const listDrops = async (actor: Actor) => {
   }));
 };
 
-// The products page: each product with its design's title and its drop.
+// The Store page: each product with its design's title and the drop (and
+// run) it came from.
 export const storeProducts = async (actor: Actor) => {
   const rows = await actor.db
     .select({
       brief: design.brief,
       dropId: dropItem.dropId,
+      dropName: drop.name,
       id: product.id,
       mockups: product.mockups,
       offerId: product.offerId,
       price: product.price,
       productUrl: product.productUrl,
+      runId: design.runId,
       status: product.status,
     })
     .from(product)
     .innerJoin(design, eq(design.id, product.designId))
     .leftJoin(dropItem, eq(dropItem.productId, product.id))
+    .leftJoin(drop, eq(drop.id, dropItem.dropId))
     .where(eq(product.userId, actor.userId))
     .orderBy(desc(product.createdAt));
   return rows.map(({ brief, ...row }) => ({ ...row, title: brief.title }));
@@ -401,7 +446,7 @@ export const requestProductMove = async (
     throw storeError(
       `A ${row.status} product can't be moved that way`,
       `The move ${move} doesn't start from ${row.status}.`,
-      "Refresh the products page and pick an action it offers."
+      "Refresh the Store page and pick an action it offers."
     );
   }
   const designRow = await actor.db.query.design.findFirst({
@@ -495,6 +540,16 @@ export const requestReprice = async (
   price: number
 ) => {
   const row = await getProduct(actor, productId);
+  // A price that loses money on some size is refused, against Fourthwall's
+  // real cost per size.
+  const check = await checkNewPrice(actor, productId, price);
+  if (check?.verdict === "loss") {
+    throw storeError(
+      `At $${price.toFixed(2)}, a ${check.worst.size} sells at a loss`,
+      `Fourthwall charges $${check.worst.cost.toFixed(2)} to make it, which leaves $${check.worst.profit.toFixed(2)} after fees.`,
+      `Price it at $${check.floorPrice} or more.`
+    );
+  }
   return await merchantAction(actor, {
     costPreview: {
       amountCents: Math.round(price * CENTS),
@@ -506,6 +561,22 @@ export const requestReprice = async (
     proposedBy: "merchant",
     title: `Reprice to $${price.toFixed(2)}`,
     type: "store.product.reprice",
+  });
+};
+
+// The merchant approves wovain's rewrite of a product page (R1): it is
+// applied at once in their name, and the page it replaces is the undo.
+export const requestListingEdit = async (
+  actor: Actor,
+  { listing, productId }: { listing: Listing; productId: string }
+) => {
+  const { next, previous } = await listingEdit(actor, productId, listing);
+  return await merchantAction(actor, {
+    inverse: { ...previous, type: "store.listing.edit" },
+    payload: { ...next },
+    proposedBy: "merchant",
+    title: `Rewrite the product page as "${next.name}"`,
+    type: "store.listing.edit",
   });
 };
 
@@ -566,6 +637,144 @@ export const requestLaunchPromotion = async (
     type: "store.promotion.create",
   });
 };
+
+const productsByIds = async (actor: Actor, ids: string[]) =>
+  ids.length === 0
+    ? []
+    : await actor.db
+        .select()
+        .from(product)
+        .where(and(eq(product.userId, actor.userId), inArray(product.id, ids)));
+
+export interface ShopPromotionInput {
+  productIds: string[];
+  code: string;
+  percentage: number;
+  maxUses?: number | undefined;
+  startsAt: Date;
+  endsAt: Date;
+}
+
+// Plans a discount code for products the merchant picked on the Store
+// page, scheduled like a drop's launch code. Refused when the discount
+// would make a sale of any of them lose money.
+export const requestShopPromotion = async (
+  actor: Actor,
+  input: ShopPromotionInput
+) => {
+  const picked = await productsByIds(actor, input.productIds);
+  const products = picked.filter((row) => row.status !== "retired");
+  if (products.length === 0) {
+    throw storeError(
+      "Pick at least one product",
+      "A discount code applies to the products it lists.",
+      "Choose the products the code is for."
+    );
+  }
+  const losing = products.filter(
+    (row) => !discountKeepsProfit(row.price, input.percentage)
+  );
+  if (losing.length > 0) {
+    throw storeError(
+      `${input.percentage}% off would sell at a loss`,
+      `${losing.length} of the products would lose money at that discount.`,
+      "Pick a smaller discount."
+    );
+  }
+  if (input.endsAt <= input.startsAt) {
+    throw storeError(
+      "The promotion ends before it starts",
+      "endsAt must be after startsAt.",
+      "Pick an end after the start."
+    );
+  }
+  return await merchantAction(actor, {
+    idempotencyKey: `store.promotion.create:shop:${input.code}`,
+    payload: {
+      code: input.code,
+      endsAt: input.endsAt.toISOString(),
+      maxUses: input.maxUses ?? null,
+      percentage: input.percentage,
+      productIds: products.map((row) => row.id),
+      startsAt: input.startsAt.toISOString(),
+    },
+    proposedBy: "merchant",
+    title: `Discount code ${input.code}: ${input.percentage}% off ${products.length} product${products.length === 1 ? "" : "s"}`,
+    type: "store.promotion.create",
+  });
+};
+
+// Ends a live discount code now (its own approval, decided in the
+// merchant's name: it is their request).
+export const requestPromotionEnd = async (
+  actor: Actor,
+  { code, promotionId }: { code: string; promotionId: string }
+) =>
+  await merchantAction(actor, {
+    idempotencyKey: `store.promotion.deactivate:${promotionId}`,
+    inverse: { promotionId, type: "store.promotion.activate" },
+    payload: { promotionId },
+    proposedBy: "merchant",
+    title: `End the code ${code}`,
+    type: "store.promotion.deactivate",
+  });
+
+const usd = (dollars: number) => `$${dollars.toFixed(2)}`;
+
+// Gift cards are store credit (R4): the request waits for the merchant's
+// confirm on its approval card, with the credit it creates.
+export const requestGiftCards = async (
+  actor: Actor,
+  {
+    amountUsd,
+    count,
+    expiresAt,
+  }: { amountUsd: number; count: number; expiresAt?: Date | undefined }
+) => {
+  const totalCents = Math.round(amountUsd * CENTS) * count;
+  return await merchantAction(actor, {
+    costPreview: {
+      amountCents: totalCents,
+      currency: "USD",
+      label: `${count} gift card${count === 1 ? "" : "s"} of ${usd(amountUsd)}: up to ${usd(totalCents / CENTS)} of store credit${expiresAt === undefined ? ", no expiry" : `, until ${expiresAt.toISOString().slice(0, 10)}`}`,
+    },
+    payload: {
+      amountUsd,
+      count,
+      expiresAt: expiresAt?.toISOString() ?? null,
+    },
+    proposedBy: "merchant",
+    title: `Issue ${count} gift card${count === 1 ? "" : "s"} of ${usd(amountUsd)}`,
+    type: "store.gift_card.create",
+  });
+};
+
+// Takes a coming-soon shop live (R3): buyers see the storefront once the
+// merchant confirms it on the approval card.
+export const requestSiteLive = async (actor: Actor) =>
+  await merchantAction(actor, {
+    idempotencyKey: `store.site.set_status:LIVE:${new Date().toISOString().slice(0, 10)}`,
+    payload: { status: "LIVE" },
+    proposedBy: "merchant",
+    reason: "Asked for on the Store page.",
+    title: "Take your shop live",
+    type: "store.site.set_status",
+  });
+
+// The merchant marks payouts set up by Fourthwall support (PayPal or
+// bill.com), which get-payout-info can't see. R1, decided in their name.
+export const requestSetupConfirm = async (
+  actor: Actor,
+  step: ConfirmableStep
+) =>
+  await merchantAction(actor, {
+    idempotencyKey: `store.setup.confirm:${step}`,
+    payload: { step },
+    proposedBy: "merchant",
+    reason: "Marked done on the Store page: set up by Fourthwall support.",
+    title: "Payouts set up by Fourthwall support",
+    type: "store.setup.confirm",
+  });
 
 export const listStoreOrders = async (
   actor: Actor,
@@ -893,8 +1102,22 @@ const unpublishDrop = async (actor: Actor, dropId: string) => {
 
 const createPromotion = async (actor: Actor, approval: Approval) => {
   const { payload } = approval;
-  const dropId = text(payload, "dropId");
-  const products = await dropProducts(actor, dropId);
+  // A drop's launch code, or a code for products picked on the Store page.
+  const dropId =
+    typeof payload.dropId === "string" && payload.dropId !== ""
+      ? payload.dropId
+      : undefined;
+  const picked = Array.isArray(payload.productIds)
+    ? payload.productIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const products =
+    dropId === undefined
+      ? await productsByIds(actor, picked)
+      : await dropProducts(actor, dropId);
+  if (products.length === 0) {
+    throw new Error("The promotion's payload names no products");
+  }
+  const scope = dropId === undefined ? "shop" : `drop:${dropId}`;
   const { maxUses } = payload;
   const code = text(payload, "code");
   const promotionId = await withProvider(
@@ -905,7 +1128,7 @@ const createPromotion = async (actor: Actor, approval: Approval) => {
         // Keyed by the drop and the code, not the approval: a merchant's
         // retry is a new approval, and must repair the code an earlier
         // attempt made instead of creating it again.
-        key: `drop:${dropId}:promotion:${code}`,
+        key: `${scope}:promotion:${code}`,
         operation: "create_promotion",
         perform: async () =>
           await createInactivePromotion(call, {
@@ -1009,6 +1232,15 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
         );
       return { price, sizes: bySize };
     }
+    case "store.listing.edit": {
+      const { description } = payload;
+      return await applyListing(actor, {
+        // An undo may write back an empty description.
+        description: typeof description === "string" ? description : "",
+        name: text(payload, "name"),
+        productId: text(payload, "productId"),
+      });
+    }
     case "store.promotion.create": {
       return await createPromotion(actor, approval);
     }
@@ -1033,6 +1265,31 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
             reason: text(payload, "reason"),
           })
       );
+    }
+    case "store.gift_card.create": {
+      const { expiresAt } = payload;
+      return await withProvider(
+        actor,
+        "fourthwall",
+        async (call) =>
+          await createGiftCards(call, {
+            amountUsd: num(payload, "amountUsd"),
+            count: num(payload, "count"),
+            expiresAt: typeof expiresAt === "string" ? expiresAt : undefined,
+          })
+      );
+    }
+    case "store.setup.confirm": {
+      // The merchant's word is the record; the Store setup reads it back.
+      return { step: text(payload, "step") };
+    }
+    case "store.site.set_status": {
+      const status = await withProvider(
+        actor,
+        "fourthwall",
+        async (call) => await setSiteLive(call)
+      );
+      return { status };
     }
     case "store.order.cancel": {
       return await withProvider(

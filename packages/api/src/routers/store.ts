@@ -1,25 +1,42 @@
+import { INSIGHT_RANGES } from "@wovain/core/insights";
+import { listingSchema } from "@wovain/core/listing";
 import {
+  GIFT_CARD_MAX_COUNT,
+  GIFT_CARD_MAX_USD,
   ORDER_CURRENCIES,
   PROMO_CODE,
   MAX_PROMO_USES,
 } from "@wovain/core/store";
+import { CONFIRMABLE_STEPS } from "@wovain/core/store-setup";
 import { z } from "zod";
 
+import { listingDraft } from "../flow/listing";
+import { metaSetup } from "../flow/meta-setup";
+import { productCosts } from "../flow/price-check";
 import {
   listDrops,
   listStoreOrders,
+  requestGiftCards,
+  requestPromotionEnd,
+  requestShopPromotion,
+  storeGiftCards,
+  storePromotions,
+  storeSales,
   productVariants,
   requestCancel,
   requestDropPublish,
   requestLaunchPromotion,
+  requestListingEdit,
   requestProductMove,
   requestRefund,
   requestReprice,
+  requestSetupConfirm,
   requireStoreManagement,
   sampleLink,
   storeProducts,
   storeReadiness,
 } from "../flow/store";
+import { doSetupStep, storeSetup } from "../flow/store-setup";
 import { protectedProcedure } from "../index";
 
 // Running the store (openspec store-management), behind the
@@ -35,6 +52,16 @@ const price = z.number().min(1).max(1000);
 const MAX_PERCENT = 90;
 const MAX_ORDER_PAGE = 100;
 const MAX_REFUND_CENTS = 1_000_000;
+const MAX_LIST_PAGE = 100;
+const MAX_PICKED = 100;
+const page = z.number().int().min(0).max(MAX_LIST_PAGE).default(0);
+const promotion = {
+  code: z.string().trim().toUpperCase().regex(PROMO_CODE),
+  endsAt: z.coerce.date(),
+  maxUses: z.number().int().min(1).max(MAX_PROMO_USES).optional(),
+  percentage: z.number().int().min(1).max(MAX_PERCENT),
+  startsAt: z.coerce.date(),
+};
 
 const guarded =
   <I, O>(
@@ -60,21 +87,57 @@ export const storeRouter = {
       z.object({ friendlyId: z.string().min(1).max(32), orderId: id, reason })
     )
     .handler(guarded(requestCancel)),
+  // Marks a setup step done that no API can see (payouts set up by
+  // Fourthwall support).
+  confirmSetupStep: protectedProcedure
+    .input(z.object({ step: z.enum(CONFIRMABLE_STEPS) }))
+    .handler(
+      guarded(
+        async (context, input) => await requestSetupConfirm(context, input.step)
+      )
+    ),
+  // A product page rewrite: drafted for the preview (nothing is written),
+  // then applied through the queue once the merchant approves it.
+  draftListing: protectedProcedure
+    .input(z.object({ productId: id }))
+    .handler(
+      guarded(
+        async (context, input) => await listingDraft(context, input.productId)
+      )
+    ),
   drops: protectedProcedure.handler(
     guarded(async (context) => await listDrops(context))
   ),
-  launchPromotion: protectedProcedure
+  editListing: protectedProcedure
+    .input(z.object({ listing: listingSchema, productId: id }))
+    .handler(guarded(requestListingEdit)),
+  endPromotion: protectedProcedure
+    .input(z.object({ code: z.string().min(1).max(64), promotionId: id }))
+    .handler(guarded(requestPromotionEnd)),
+  giftCards: protectedProcedure
+    .input(z.object({ page }))
+    .handler(
+      guarded(
+        async (context, input) => await storeGiftCards(context, input.page)
+      )
+    ),
+  issueGiftCards: protectedProcedure
     .input(
       z.object({
-        code: z.string().trim().toUpperCase().regex(PROMO_CODE),
-        dropId: id,
-        endsAt: z.coerce.date(),
-        maxUses: z.number().int().min(1).max(MAX_PROMO_USES).optional(),
-        percentage: z.number().int().min(1).max(MAX_PERCENT),
-        startsAt: z.coerce.date(),
+        amountUsd: z.number().min(1).max(GIFT_CARD_MAX_USD),
+        count: z.number().int().min(1).max(GIFT_CARD_MAX_COUNT),
+        expiresAt: z.coerce.date().optional(),
       })
     )
+    .handler(guarded(requestGiftCards)),
+  launchPromotion: protectedProcedure
+    .input(z.object({ ...promotion, dropId: id }))
     .handler(guarded(requestLaunchPromotion)),
+  // Meta setup: the cards that take the Meta account to ad-ready, polled
+  // by the same page.
+  metaSetup: protectedProcedure.handler(
+    async ({ context }) => await metaSetup(context)
+  ),
   moveProduct: protectedProcedure
     .input(
       z.object({
@@ -96,9 +159,32 @@ export const storeRouter = {
       })
     )
     .handler(guarded(listStoreOrders)),
+  planPromotion: protectedProcedure
+    .input(
+      z.object({
+        ...promotion,
+        productIds: z.array(id).min(1).max(MAX_PICKED),
+      })
+    )
+    .handler(guarded(requestShopPromotion)),
+  // Fourthwall's cost per size and the pricing rules, for the price check.
+  priceCheck: protectedProcedure
+    .input(z.object({ productId: id }))
+    .handler(
+      guarded(
+        async (context, input) => await productCosts(context, input.productId)
+      )
+    ),
   products: protectedProcedure.handler(
     guarded(async (context) => await storeProducts(context))
   ),
+  promotions: protectedProcedure
+    .input(z.object({ page }))
+    .handler(
+      guarded(
+        async (context, input) => await storePromotions(context, input.page)
+      )
+    ),
   publishDrop: protectedProcedure
     .input(z.object({ dropId: id }))
     .handler(
@@ -129,9 +215,24 @@ export const storeRouter = {
           await requestReprice(context, input.productId, input.price)
       )
     ),
+  sales: protectedProcedure
+    .input(z.object({ range: z.enum(INSIGHT_RANGES).default("28d") }))
+    .handler(
+      guarded(async (context, input) => await storeSales(context, input.range))
+    ),
   sample: protectedProcedure
     .input(z.object({ productId: id, variantId: id }))
     .handler(guarded(sampleLink)),
+  // Store setup: the tech checklist, polled by the page, and the steps
+  // wovain does for the merchant.
+  setup: protectedProcedure.handler(
+    guarded(async (context) => await storeSetup(context))
+  ),
+  setupStep: protectedProcedure
+    .input(z.object({ step: z.enum(["site_live"]) }))
+    .handler(
+      guarded(async (context, input) => await doSetupStep(context, input.step))
+    ),
   variants: protectedProcedure
     .input(z.object({ productId: id }))
     .handler(
