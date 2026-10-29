@@ -166,6 +166,10 @@
       {
         "question": "¿Quién ve mis anuncios?",
         "answer": "Personas que aman lo mismo que tu marca. Qloo elige esa audiencia a partir de las marcas de tu perfil, y cada anuncio se escribe para ella. Si wovain no encuentra esa audiencia, no crea anuncios y te dice qué añadir."
+      },
+      {
+        "question": "¿Qué evita que mis anuncios pierdan dinero?",
+        "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador."
       }
     ],
     "heroCta": "Empezar un drop",
