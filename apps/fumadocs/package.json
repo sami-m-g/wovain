@@ -9,7 +9,7 @@
     "check-types": "next typegen && tsc -b tsconfig.vendor.json && tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^2.0.87",
+    "@ai-sdk/openai-compatible": "^3.0.75",
     "@ai-sdk/react": "^4.0.0",
     "@base-ui/react": "catalog:",
     "@fuma-translate/react": "^1.0.2",
