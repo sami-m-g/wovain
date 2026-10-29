@@ -242,6 +242,13 @@ npx inngest-cli@latest dev -u http://localhost:3001/api/inngest   # second termi
 
 Tests and checks: `pnpm run test`, `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate`.
 
+Local hooks stay light. Pre-commit formats and lints the staged files with Ultracite, commit-msg runs commitlint, and pre-push type-checks only the affected packages (`turbo run check-types --affected`). The heavy suites run in CI and on demand:
+
+- `pnpm test`: unit and integration tests.
+- `pnpm test:e2e`: end-to-end tests (the script lands with the E2E suite).
+- `pnpm storybook`: Storybook (the script lands with the Storybook setup).
+- `pnpm run knip`: unused code, CI only.
+
 ## Architecture
 
 | Path | Role |
