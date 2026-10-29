@@ -130,6 +130,34 @@ kpis:
       query: >-
         SELECT if(count() < 5, 1, countIf(person_id IN (SELECT person_id FROM events WHERE event = 'run_started' AND properties.environment = 'production' AND timestamp > now() - INTERVAL 14 DAY)) / count()) AS value FROM (SELECT person_id FROM events WHERE event = 'sign_up' AND properties.environment = 'production' AND timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY GROUP BY person_id)
 
+  # The founder's north star: a first live campaign within 10 minutes of
+  # sign-up, and a first profit within 60 minutes of the campaign delivering.
+  # Medians over merchants who reached the step in the window; 0 (on target)
+  # while nobody has. Events: apps/api flow/milestones.ts.
+  - id: time-to-live-campaign
+    name: Median minutes from sign-up to a live campaign
+    why: The first half of the north star; everything before the campaign (shop, payouts, Meta payment, Page, pixel, drop, ads) counts.
+    unit: minutes
+    direction: down
+    target: 10
+    weight: 5
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(count() = 0, 0, quantile(0.5)(toFloat(properties.seconds_since_signup)) / 60) AS value FROM events WHERE event = 'campaign_started' AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY
+
+  - id: time-to-first-profit
+    name: Median minutes from first impression to first profit
+    why: The second half of the north star; measured from the campaign delivering (Meta's review wait excluded), profit after ad spend above zero.
+    unit: minutes
+    direction: down
+    target: 60
+    weight: 5
+    source:
+      kind: posthog
+      query: >-
+        SELECT if(count() = 0, 0, quantile(0.5)(minutes)) AS value FROM (SELECT dateDiff('minute', minIf(timestamp, event = 'campaign_delivering'), minIf(timestamp, event = 'first_profitable_product')) AS minutes FROM events WHERE event IN ('campaign_delivering', 'first_profitable_product') AND properties.environment = 'production' AND timestamp > now() - INTERVAL {windowDays} DAY GROUP BY person_id HAVING countIf(event = 'campaign_delivering') > 0 AND countIf(event = 'first_profitable_product') > 0)
+
   - id: run-success-rate
     name: Runs that succeed (last 24 hours)
     why: A failed run is a merchant who got nothing; run_completed over run_completed plus run_failed, guarded at fewer than 10 runs.

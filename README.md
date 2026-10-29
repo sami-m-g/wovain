@@ -73,7 +73,7 @@ Details: [Nebius and Nemotron](apps/fumadocs/content/docs/%28developers%29/integ
 
 ## Qloo-powered
 
-Qloo's taste graph decides what a drop is about and who its ads reach. Every idea is a Qloo taste tag, so without Qloo there are no ideas: no Qloo, no run. On next.wovain.com every run calls Qloo, whatever the plan. The `trends-qloo` flag is only an ops kill switch: when it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503), and no run starts. The cross-domain taste map and the "Why this idea" panel are in every run. Qloo-driven Meta targeting is behind `qloo-audiences`, on in development and next and off in production.
+Qloo's taste graph decides what a drop is about and who its ads reach. Every idea is a Qloo taste tag, so without Qloo there are no ideas: no Qloo, no run. On next.wovain.com every run calls Qloo, whatever the plan. The `trends-qloo` flag is only an ops kill switch: when it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503), and no run starts. The cross-domain taste map and the "Why this idea" panel are in every run. Every Meta campaign targets Qloo's audience for the brand: when Qloo finds none, or a targeting step fails, `campaigns.create` refuses with `QLOO_AUDIENCE_MISSING` and stages nothing.
 
 ### Endpoints
 

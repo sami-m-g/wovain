@@ -32,6 +32,7 @@ import type { ToolCall } from "./upstream";
 const READY: ShopFacts = {
   baseUrl: "https://shop.example",
   enabledShippingProfiles: 1,
+  hosts: ["shop.example"],
   name: "Atelier",
   payoutStatus: "ACTIVE",
   roles: ["OWNER"],

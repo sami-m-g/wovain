@@ -745,44 +745,6 @@
         "release"
       ]
     },
-    "qloo-audiences": {
-      "active": true,
-      "groups": [
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "development"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        }
-      ],
-      "name": "Qloo audience demographics drive Meta targeting and the ad persona (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
-      "tags": [
-        "registry",
-        "release"
-      ]
-    },
     "store-management": {
       "active": true,
       "groups": [

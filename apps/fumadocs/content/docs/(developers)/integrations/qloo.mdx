@@ -30,7 +30,7 @@ Implemented in `packages/core/src/qloo.ts` (`createQloo`):
 - **Scoring.** The tag's affinity is the demand term, 30% of the idea's score (`packages/core/src/score.ts`). A tag with no affinity is never searched or suggested; no neutral value stands in for it. The feedback loop re-weights the score terms from sales. It doesn't choose the themes.
 - **IP safety.** The names Qloo matched for the seed (brands, artists, titles) are saved on the idea as names never to print.
 - **Design.** The style and mood tags of the cross-domain affinities go into the design brief as cues, never their names (`packages/core/src/design.ts`). The Qloo tags of a run's ideas pick a drop's style family (`packages/api/src/flow/drops.ts`).
-- **Ads.** Qloo's ages, gender and audiences set the Meta ad set and the ad writer's persona (`packages/core/src/targeting.ts`, behind `qloo-audiences`).
+- **Ads.** Qloo's ages, gender and audiences set the Meta ad set and the ad writer's persona (`packages/core/src/targeting.ts`). Without a Qloo audience no campaign is staged (`QLOO_AUDIENCE_MISSING`).
 
 ## When Qloo can't help
 

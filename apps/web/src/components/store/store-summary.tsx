@@ -56,16 +56,16 @@ const known = <T extends Record<string, Tone>>(
   value !== null && Object.hasOwn(tones, value) ? value : "unknown";
 
 /** Takes a coming-soon shop live: the impact, then one confirm (R3). */
-const GoLive = ({ name }: { name: string | null }) => {
+export const GoLive = ({ name }: { name: string | null }) => {
   const t = useTranslations("Store.summary");
   const refresh = useRefresh();
   const [open, setOpen] = useState(false);
-  const request = useMutation(orpc.store.goLive.mutationOptions());
+  const request = useMutation(orpc.store.setupStep.mutationOptions());
   const decide = useMutation(orpc.approvals.decide.mutationOptions());
   const busy = request.isPending || decide.isPending;
   const confirm = async () => {
     try {
-      const approval = await request.mutateAsync({});
+      const approval = await request.mutateAsync({ step: "site_live" });
       // This dialog, with its impact, is the explicit confirm R3 needs.
       if (approval.status === "pending") {
         await decide.mutateAsync({ approvalId: approval.id, approve: true });

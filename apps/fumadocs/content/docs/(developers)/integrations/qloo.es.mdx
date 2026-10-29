@@ -30,7 +30,7 @@ Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 - **Puntuación.** La afinidad de la etiqueta es el término de demanda, el 30 % de la puntuación de la idea (`packages/core/src/score.ts`). Una etiqueta sin afinidad nunca se busca ni se sugiere; ningún valor neutro la sustituye. El bucle de feedback reajusta los términos de la puntuación según las ventas. No elige los temas.
 - **Seguridad de propiedad intelectual.** Los nombres que Qloo asocia a la semilla (marcas, artistas, títulos) se guardan en la idea como nombres que nunca se deben imprimir.
 - **Diseño.** Las etiquetas de estilo y ambiente de las afinidades transversales entran en el brief de diseño como pistas, nunca sus nombres (`packages/core/src/design.ts`). Las etiquetas de Qloo de las ideas de una ejecución eligen la familia de estilo de un drop (`packages/api/src/flow/drops.ts`).
-- **Anuncios.** Las edades, el género y las audiencias de Qloo configuran el conjunto de anuncios de Meta y la persona del redactor de anuncios (`packages/core/src/targeting.ts`, detrás de `qloo-audiences`).
+- **Anuncios.** Las edades, el género y las audiencias de Qloo configuran el conjunto de anuncios de Meta y la persona del redactor de anuncios (`packages/core/src/targeting.ts`). Sin una audiencia de Qloo no se crea ninguna campaña (`QLOO_AUDIENCE_MISSING`).
 
 ## Cuando Qloo no puede ayudar
 

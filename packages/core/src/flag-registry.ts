@@ -204,10 +204,6 @@ export const FLAGS = {
     "growth",
     "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
   ),
-  "qloo-audiences": workstream(
-    "growth",
-    "Qloo audience demographics drive Meta targeting and the ad persona"
-  ),
   "store-management": workstream(
     "store",
     "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"

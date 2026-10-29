@@ -37,6 +37,9 @@ export type Learned = Outputs["feedback"]["learned"];
 export type VoiceCommand = Outputs["voice"]["command"];
 export type StoreProduct = Outputs["store"]["products"][number];
 export type StoreReadiness = Outputs["store"]["readiness"];
+export type StoreSetup = Outputs["store"]["setup"];
+/** One step of Store setup, with its status: for the onboarding checklist. */
+export type StoreSetupStep = StoreSetup["steps"][number];
 export type StoreOrder = Outputs["store"]["orders"][number];
 export type StoreApproval = Outputs["approvals"]["list"][number];
 
@@ -108,6 +111,11 @@ const refusal = (
       return { kind: "plan", message: error.message, ...text(data.fix) };
     }
     case "EMAIL_NOT_VERIFIED": {
+      return { kind: "limit", message: error.message, ...text(data.fix) };
+    }
+    // No Qloo audience, no campaign: the fix says whether to retry or to add
+    // a brand Qloo knows; the campaign button stays the retry.
+    case "QLOO_AUDIENCE_MISSING": {
       return { kind: "limit", message: error.message, ...text(data.fix) };
     }
     default: {
