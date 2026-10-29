@@ -12,68 +12,113 @@ concurrency:
 permissions:
   contents: read
 
+# The checks run as parallel jobs; `verify`, the required check
+# (infra/github.ts), passes only when every one of them passed. Each job
+# sets up through .github/actions/setup and keeps its own Turborepo cache,
+# saved only from main.
 jobs:
-  verify:
-    name: verify
+  # Format and lint, the types, unused code and the OpenSpec specs. knip
+  # runs after check-types, which builds the outputs it resolves imports
+  # against (packages/widgets/dist).
+  lint:
+    name: lint
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Reads the pnpm version from the packageManager field in package.json.
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      # Varlock validates env when Next loads its config (typegen and build).
-      # Throwaway values are generated per run; real ones exist only at runtime.
-      # The per-environment settings (apps/web/.env.schema) get CI's own
-      # values, and the catalog and pricing rules the tests' fixtures.
-      - name: Generate placeholder env
-        run: |
-          fixture() {
-            node --input-type=module -e "const m = await import('$1'); console.log(JSON.stringify(m['$2']))"
-          }
-          {
-            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
-            echo "BETTER_AUTH_URL=http://localhost:3001"
-            echo "DATABASE_URL=postgresql://ci:$(openssl rand -hex 16)@localhost:5432/ci"
-            echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
-            echo "BILLING_CATALOG=$(fixture ./packages/billing/src/catalog-fixture.ts TEST_CATALOG)"
-            echo "DOCS_URL=http://localhost:4000"
-            echo "EMAIL_FROM=wovain <ci@example.com>"
-            echo "FAL_ART_MODELS=$(fixture ./packages/core/src/config-fixture.ts TEST_ART_MODELS)"
-            echo "FAL_MCP_URL=https://fal.example.com/mcp"
-            echo "FOURTHWALL_DEFAULT_PRODUCT_ID=pro_ci"
-            echo "FOURTHWALL_MCP_URL=https://fourthwall.example.com/mcp"
-            echo "GUARDRAIL_INJECTION_THRESHOLD=0.8"
-            echo "GUARDRAIL_MODERATION_THRESHOLD=0.7"
-            echo "GUARDRAIL_PII_THRESHOLD=0.7"
-            echo "MCP_URL=http://localhost:3001/api/mcp"
-            echo "MCP_WIDGET_RESOURCE_DOMAINS=https://media.example.com"
-            echo "META_MCP_SCOPE=ads_read"
-            echo "META_MCP_URL=https://meta.example.com/mcp"
-            echo "PRIVACY_EMAIL=privacy@example.com"
-            echo "NEMOTRON_INPUT_PRICE=0.3"
-            echo "NEMOTRON_OUTPUT_PRICE=0.9"
-            echo "PRICING_RULES=$(fixture ./packages/core/src/config-fixture.ts TEST_PRICING_RULES)"
-            echo "SUPPORT_EMAIL=support@example.com"
-          } >> "$GITHUB_ENV"
-      # postinstall runs the Varlock codegen (env:generate).
-      - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .turbo
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
+          turbo-cache: lint
       - run: pnpm run check
       - run: pnpm run check-types
       - run: pnpm run knip
       - run: pnpm run spec:validate
-      - run: pnpm run test
+      - if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-lint-${{ github.sha }}
+
+  # Every package's tests. packages/api's flow tests (PGlite, every
+  # migration per test) take three minutes on one runner, so they run in
+  # three shards beside the other packages' tests. The shard is passed to
+  # vitest through turbo, so it is part of the task's hash and each shard
+  # caches on its own.
+  test:
+    name: test (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: packages
+            args: --filter=!@wovain/api
+          - name: api 1/3
+            args: --filter=@wovain/api -- --shard=1/3
+          - name: api 2/3
+            args: --filter=@wovain/api -- --shard=2/3
+          - name: api 3/3
+            args: --filter=@wovain/api -- --shard=3/3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache: test-${{ strategy.job-index }}
+      - name: Test
+        env:
+          TURBO_ARGS: ${{ matrix.args }}
+        # TURBO_ARGS is split into words on purpose: a filter, then vitest's.
+        run: |
+          # shellcheck disable=SC2086
+          pnpm exec turbo run test $TURBO_ARGS
+      - if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-test-${{ strategy.job-index }}-${{ github.sha }}
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache: build
       - run: pnpm run build
+      - if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-build-${{ github.sha }}
+
+  # The required check: green only when every check above passed.
+  verify:
+    name: verify
+    if: always()
+    needs: [lint, test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every check passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "lint, test, build: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "::error::A CI job did not pass ($result)"
+              exit 1
+            fi
+          done
 
   # infra/ is its own pnpm project outside the root workspace. `pulumi install`
   # installs it and generates the gitignored infra/sdks; the checks then run
