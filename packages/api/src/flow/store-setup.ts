@@ -1,0 +1,144 @@
+import { adAccountFor } from "@wovain/core/ads";
+import { findSalesPixel } from "@wovain/core/media-buying";
+import { readShopFacts } from "@wovain/core/store";
+import {
+  evaluateSetup,
+  pixelOnShop,
+  readDomain,
+} from "@wovain/core/store-setup";
+import type { DomainFacts, PixelFacts } from "@wovain/core/store-setup";
+import { DecisionTrace } from "@wovain/core/trace";
+import { log } from "evlog";
+
+import type { Actor } from "./actor";
+import { traceSinkFor } from "./approvals";
+import { listConnections, withProvider } from "./connections";
+import { requestSiteLive } from "./store";
+
+// Store setup (openspec store-management): the tech checklist that takes
+// the connected Fourthwall shop to sell-ready. Reads are polled by the page
+// so a step the merchant finishes in Fourthwall ticks off by itself; the
+// steps wovain can do go through the approval queue, and each is recorded
+// in the decision trace (agent store_setup).
+
+const AGENT = "store_setup";
+
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+// A part of the checklist that couldn't be read: logged at error level,
+// and the step shows as unknown instead of failing the whole checklist.
+const optional = async <T>(
+  actor: Actor,
+  part: string,
+  read: () => Promise<T>
+): Promise<T | undefined> => {
+  try {
+    return await read();
+  } catch (error) {
+    log.error({
+      error: {
+        message: `Store setup couldn't read ${part}: ${messageOf(error)}`,
+        name: "StoreSetupReadFailed",
+      },
+      storeSetup: { part },
+      userId: actor.userId,
+    });
+    return undefined;
+  }
+};
+
+const readPixel = async (
+  actor: Actor,
+  hosts: string[]
+): Promise<PixelFacts | undefined> =>
+  await withProvider(actor, "meta", async (call) => {
+    const adAccountId = await adAccountFor(call, "store-setup");
+    const datasetId = await findSalesPixel(call, adAccountId);
+    if (datasetId === undefined) {
+      return;
+    }
+    return await pixelOnShop(call, { datasetId, hosts });
+  });
+
+export const storeSetup = async (actor: Actor) => {
+  const connections = await listConnections(actor);
+  const metaConnected = connections.some(
+    (each) => each.provider === "meta" && !each.needsReconnect
+  );
+  const { domain, shop } = await withProvider(
+    actor,
+    "fourthwall",
+    async (call) => {
+      const [facts, dns] = await Promise.all([
+        readShopFacts(call),
+        optional<DomainFacts>(
+          actor,
+          "the custom domain",
+          async () => await readDomain(call)
+        ),
+      ]);
+      return { domain: dns, shop: facts };
+    }
+  );
+  const pixel = metaConnected
+    ? await optional(
+        actor,
+        "the Meta pixel",
+        async () => await readPixel(actor, shop.hosts)
+      )
+    : undefined;
+  const steps = evaluateSetup({ domain, metaConnected, pixel, shop });
+  return {
+    domain: domain ?? null,
+    metaConnected,
+    pixel: pixel ?? null,
+    shop: {
+      baseUrl: shop.baseUrl ?? null,
+      hosts: shop.hosts,
+      name: shop.name ?? null,
+      siteStatus: shop.siteStatus ?? null,
+    },
+    steps,
+  };
+};
+
+// "Do it for me": the steps wovain performs, each through the approval
+// queue and recorded in the decision trace. Only taking the shop live can
+// be done through Fourthwall's MCP today; the rest are deep links.
+export const doSetupStep = async (actor: Actor, step: "site_live") => {
+  const trace = new DecisionTrace(
+    { userId: actor.userId },
+    traceSinkFor(actor)
+  );
+  try {
+    const approval = await requestSiteLive(actor);
+    trace.add({
+      agent: AGENT,
+      inputSummary: "The merchant asked wovain to take the shop live.",
+      output: { approvalId: approval.id, status: approval.status },
+      sources: [{ provider: "fourthwall", title: "update-shop-site-status" }],
+      step,
+    });
+    return approval;
+  } catch (error) {
+    trace.add({
+      agent: AGENT,
+      inputSummary: "The merchant asked wovain to take the shop live.",
+      ok: false,
+      output: { error: messageOf(error) },
+      step,
+    });
+    throw error;
+  } finally {
+    await trace.flush().catch((error: unknown) => {
+      log.error({
+        error: {
+          message: `Store setup trace not saved: ${messageOf(error)}`,
+          name: "DecisionTraceNotSaved",
+        },
+        userId: actor.userId,
+      });
+    });
+  }
+};

@@ -1748,6 +1748,85 @@
         "DEACTIVATED": "Désactivée",
         "ARCHIVED": "Archivée"
       }
+    },
+    "setup": {
+      "title": "Préparez votre boutique à vendre",
+      "titleReady": "Votre boutique est prête à vendre",
+      "show": "Voir les étapes",
+      "hide": "Masquer les étapes",
+      "progress": "{done, number} sur {total, number} faites",
+      "progressLabel": "Avancement de la configuration",
+      "optional": "Facultatif",
+      "copy": "Copier {value}",
+      "copied": "Copié.",
+      "state": {
+        "done": "(fait)",
+        "todo": "(à faire)",
+        "waiting": "(en attente)",
+        "check": "(à vérifier)"
+      },
+      "connect": {
+        "label": "Boutique connectée",
+        "done": "Connectée en tant que propriétaire ou gérant de la boutique.",
+        "todo": "wovain a besoin d'un propriétaire ou d'un gérant pour gérer la boutique.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Vérifiez votre rôle dans Fourthwall.",
+        "action": "Reconnecter Fourthwall"
+      },
+      "payouts": {
+        "label": "Versements configurés",
+        "done": "Les ventes arrivent sur votre compte bancaire.",
+        "todo": "Terminez votre compte de versement dans Fourthwall pour recevoir vos ventes. L'étape se coche ici une fois faite.",
+        "waiting": "Fourthwall finalise votre compte de versement.",
+        "check": "Vérifiez votre compte de versement.",
+        "action": "Configurer les versements"
+      },
+      "site_live": {
+        "label": "Boutique en ligne",
+        "done": "Les acheteurs peuvent la visiter et commander.",
+        "todo": "Votre boutique est en « bientôt disponible ». wovain peut la mettre en ligne dès que vous confirmez.",
+        "waiting": "Fourthwall examine votre boutique. Seul le support Fourthwall peut terminer cette étape.",
+        "check": "Vérifiez le statut de votre boutique.",
+        "support": "Contacter le support Fourthwall"
+      },
+      "shipping": {
+        "label": "Livraison activée",
+        "done": "Les acheteurs peuvent payer avec livraison.",
+        "todo": "Activez la livraison et ajoutez un profil de livraison dans Fourthwall. L'étape se coche ici une fois faite.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Vérifiez votre livraison.",
+        "action": "Configurer la livraison"
+      },
+      "pixel": {
+        "label": "Pixel Meta sur votre boutique",
+        "done": "Votre pixel Meta voit les visites et les ventes de votre boutique.",
+        "todo": "Ajoutez votre pixel Meta dans les réglages Fourthwall, puis ouvrez votre boutique une fois pour envoyer une visite test. L'étape se coche quand Meta la voit.",
+        "waiting": "Connectez d'abord Meta : wovain y trouve votre pixel.",
+        "check": "Vérifiez votre pixel.",
+        "action": "Ajouter le pixel dans Fourthwall",
+        "test": "Ouvrir votre boutique (visite test)",
+        "paste": "ID du pixel à coller :",
+        "noDataset": "Meta est connecté, mais wovain n'a pas trouvé un seul pixel sur votre compte publicitaire. Créez-en ou choisissez-en un dans la configuration Meta.",
+        "connectMeta": "Connecter Meta"
+      },
+      "domain": {
+        "label": "Domaine personnalisé",
+        "done": "Votre domaine est connecté.",
+        "todo": "Fourthwall vérifie encore les enregistrements DNS de votre domaine.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Votre boutique vend sur son adresse Fourthwall. Un domaine personnalisé est facultatif.",
+        "action": "Réglages du domaine",
+        "connected": "{domain} est connecté.",
+        "pending": "{domain} : {count, plural, one {# enregistrement DNS non vérifié} other {# enregistrements DNS non vérifiés}}."
+      },
+      "policies": {
+        "label": "Politiques de retour, de livraison et de confidentialité",
+        "done": "Les politiques sont en place.",
+        "todo": "Ajoutez vos politiques dans Fourthwall.",
+        "waiting": "En attente de Fourthwall.",
+        "check": "Fourthwall ajoute des politiques par défaut. Relisez-les pour qu'elles correspondent à votre façon de vendre.",
+        "action": "Relire les politiques"
+      }
     }
   },
   "Drops": {
