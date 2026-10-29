@@ -183,7 +183,10 @@ const polarPlugin = (
                   {
                     analytics,
                     db: database,
-                    log: { set: (fields) => log.info(fields) },
+                    log: {
+                      error: (fields) => log.error(fields),
+                      set: (fields) => log.info(fields),
+                    },
                     polar,
                   },
                   payload

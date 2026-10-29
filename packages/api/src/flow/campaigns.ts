@@ -21,6 +21,7 @@ import { audienceFor, qlooAudiencesOn } from "./audiences";
 import { isCompetitionOn } from "./competition";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
+import { writerStyleFor } from "./drop-style";
 import { getIdea } from "./ideas";
 import { isMediaBuyingLive } from "./media";
 import { once } from "./once";
@@ -145,6 +146,9 @@ export const createProductCampaign = async (
     ? await getIdea(actor, source.ideaId)
     : undefined;
   const competition = adCompetition(sourceIdea?.competition);
+  // drop-style: the copy is written in the drop's tone, inside the brand
+  // voice's guardrails.
+  const style = await writerStyleFor(actor, source.ideaId);
   // The copy is kept with the key too: a retry stages the same ads.
   const copy = await once(actor, {
     key: `${key}:copy`,
@@ -168,7 +172,8 @@ export const createProductCampaign = async (
                 },
                 actor.log,
                 audience?.persona,
-                competition
+                competition,
+                style
               )
           )
       ),

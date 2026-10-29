@@ -1,0 +1,151 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit reviews every pull request into main, and its approval is the
+# one the main ruleset requires (infra/github.ts): it requests changes on
+# blocking findings and approves once they are resolved. Linting, SAST,
+# secret and dependency scanning run in CI (.github/workflows), so its own
+# tools are off and only the LLM review runs, beside CI.
+# Reference: https://docs.coderabbit.ai/reference/configuration
+language: en-US
+reviews:
+  profile: chill
+  # Request changes on blocking findings; approve when they are resolved.
+  # (`request_changes_workflow` is the deprecated alias of `enabled`.)
+  auto_approvals:
+    enabled: true
+    # No `@coderabbitai approve` from a pull request's own author: the
+    # approval must come from the review.
+    allow_author_approval: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: [main]
+  # A short walkthrough comment only, nothing written into the description.
+  high_level_summary: false
+  high_level_summary_in_walkthrough: true
+  poem: false
+  sequence_diagrams: false
+  in_progress_fortune: false
+  estimate_code_review_effort: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  review_status: false
+  review_info: false
+  review_details: false
+  pre_merge_checks:
+    # commitlint checks titles; the code has no docstring convention.
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+  path_filters:
+    # Lockfiles and the patches pnpm applies.
+    - "!**/pnpm-lock.yaml"
+    - "!docker/*/package-lock.json"
+    - "!patches/**"
+    # Generated: drizzle-kit migrations, Better Auth's schema, Varlock's env
+    # modules, the judge eval report.
+    - "!packages/db/src/migrations/**"
+    - "!packages/db/src/schema/auth.ts"
+    - "!**/src/env.ts"
+    - "!packages/core/src/evals/report.v1.json"
+    # Vendored, updated only with their CLIs (AGENTS.md, "Rules").
+    - "!packages/ui/src/components/**"
+    - "!packages/ui/src/hooks/**"
+    - "!packages/ui/src/lib/**"
+    - "!apps/fumadocs/src/components/ai/**"
+    - "!apps/fumadocs/src/components/codeblock.tsx"
+    - "!apps/fumadocs/src/components/tabs/**"
+    - "!apps/fumadocs/src/components/ui/**"
+    - "!apps/fumadocs/src/lib/cn.ts"
+    - "!apps/fumadocs/src/lib/merge-refs.ts"
+    - "!apps/web/src/components/auth/**"
+    - "!apps/web/src/lib/auth/**"
+    - "!.agents/skills/**"
+    - "!.claude/skills/openspec-*/**"
+    - "!.claude/commands/opsx/**"
+  path_instructions:
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        Repository rules (AGENTS.md):
+        - Every error must reach PostHog Error Tracking: log it at error level through evlog, or throw it from an oRPC procedure or a route. Flag a swallowed error (an empty catch, or a catch that only returns a fallback), an error logged as a plain string, console.error, or an error sent anywhere else.
+        - Environment values come from `ENV` in the app's generated `src/env.ts` (Varlock, from `.env.schema`), never from `process.env` read directly in app code.
+        - Feature flags: a flag lives in `packages/core/src/flag-registry.ts` with an owner, an expiry and a per-environment rollout, and is read with `core.flags.isOn("<name>", ...)` (`isFlagOn` in apps/web) with a literal, typed name, never a built string. The safe state is off: code must behave as off when the flag provider can't be reached. Flag an expired or fully rolled-out flag that is still read.
+        - Generated and vendored files are changed only with their CLIs: shadcn (`packages/ui/src/{components,hooks,lib}`), Fumadocs, the Better Auth UI registry (`apps/web/src/{components,lib}/auth`), `pnpm run auth:generate` (`packages/db/src/schema/auth.ts`), `pnpm run db:generate` (`packages/db/src/migrations`). Flag hand edits to them.
+    - path: "**/package.json"
+      instructions: |
+        A dependency version shared by more than one workspace package belongs in the pnpm catalog (`pnpm-workspace.yaml`) and is referenced as `catalog:`. Flag a hard-coded version of a catalog dependency. `docker/*/package.json` are npm projects outside the workspace and pin exact versions on purpose.
+    - path: "pnpm-workspace.yaml"
+      instructions: |
+        Every `overrides` and `patchedDependencies` entry needs a comment saying why it exists and when to remove it.
+  tools:
+    # CI runs Oxlint and Oxfmt (Ultracite), CodeQL and Semgrep, OSV-Scanner,
+    # dependency review and ggshield; these would only repeat them.
+    ast-grep:
+      enabled: false
+    actionlint:
+      enabled: false
+    biome:
+      enabled: false
+    checkmake:
+      enabled: false
+    checkov:
+      enabled: false
+    dotenvLint:
+      enabled: false
+    eslint:
+      enabled: false
+    github-checks:
+      enabled: false
+    gitleaks:
+      enabled: false
+    hadolint:
+      enabled: false
+    htmlhint:
+      enabled: false
+    languagetool:
+      enabled: false
+    markdownlint:
+      enabled: false
+    oasdiff:
+      enabled: false
+    opengrep:
+      enabled: false
+    osvScanner:
+      enabled: false
+    oxc:
+      enabled: false
+    presidio:
+      enabled: false
+    prismaLint:
+      enabled: false
+    reactDoctor:
+      enabled: false
+    semgrep:
+      enabled: false
+    shellcheck:
+      enabled: false
+    skillspector:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    squawk:
+      enabled: false
+    stylelint:
+      enabled: false
+    trivy:
+      enabled: false
+    trufflehog:
+      enabled: false
+    vale:
+      enabled: false
+    yamllint:
+      enabled: false
+    zizmor:
+      enabled: false
+chat:
+  art: false

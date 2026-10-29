@@ -10,6 +10,7 @@ import {
   listDesigns,
 } from "../flow/designs";
 import { dropDirections } from "../flow/drop-directions";
+import { ideaStyle, pickStyle } from "../flow/drop-style";
 import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
 import { listIdeas, researchErrors, researchIdeas } from "../flow/ideas";
 import {
@@ -68,6 +69,21 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) => await listIdeas(context, input.runId)
     ),
+  // The drop's tone and colours (drop-style): suggested once, then the
+  // merchant's pick.
+  pickStyle: protectedProcedure
+    .input(
+      z.object({
+        ideaId: id,
+        palette: z.number().int().min(0).max(3).optional(),
+        tone: z.number().int().min(0).max(2).optional(),
+        toneLine: z.string().trim().min(1).max(140).optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await pickStyle(context, input.ideaId, input)
+    ),
   // QLOO_OFF while the kill switch is off; QLOO_NO_MATCH when Qloo knows
   // nothing in the seed.
   research: protectedProcedure
@@ -81,6 +97,11 @@ export const ideasRouter = {
     .handler(
       async ({ context, input }) =>
         await startIdeaDossier(context, input.ideaId)
+    ),
+  style: protectedProcedure
+    .input(z.object({ ideaId: id }))
+    .handler(
+      async ({ context, input }) => await ideaStyle(context, input.ideaId)
     ),
 };
 

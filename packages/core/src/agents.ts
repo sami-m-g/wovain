@@ -50,6 +50,7 @@ export const AGENT_IDS = [
   "competition_summary",
   "brand_discovery",
   "drop_directions",
+  "drop_style",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
@@ -79,6 +80,8 @@ export const AGENT_ROLES = {
   // Names the drop directions Qloo found rising for the brand (title, brief,
   // why now): it writes, code ranks.
   drop_directions: "default",
+  // Suggests one drop's tones and palettes from its Qloo audience.
+  drop_style: "default",
   research_themes: "default",
   // Maps a spoken command, in any of the app's languages, to one action.
   voice_intent: "default",

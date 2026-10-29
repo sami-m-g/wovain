@@ -413,6 +413,7 @@
     "connected": "Connecté",
     "disconnected": "Non connecté",
     "expired": "Session expirée",
+    "expiredBody": "La session {name} a expiré. Reconnectez-le et wovain reprend là où il s'était arrêté.",
     "connect": "Connecter {name}",
     "reconnect": "Reconnecter {name}",
     "disconnect": "Déconnecter {name}",
@@ -423,18 +424,26 @@
     "providers": {
       "fourthwall": {
         "name": "Fourthwall",
-        "body": "Votre boutique, les supports du catalogue et les prix. Nécessaire pour publier des produits."
+        "body": "Votre boutique, les supports du catalogue et les prix. Nécessaire pour publier des produits.",
+        "unlocks": "wovain publie vos designs comme produits dans votre boutique, à un prix qui préserve votre marge."
       },
       "meta": {
         "name": "Meta",
-        "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne."
+        "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne.",
+        "unlocks": "wovain crée une campagne en pause pour chaque drop : rien n'est dépensé avant que vous la lanciez."
       },
       "fal": {
         "name": "fal",
-        "body": "Votre compte fal dessine les visuels, à vos frais. Nécessaire pour créer les designs."
+        "body": "Votre compte fal dessine les visuels, à vos frais. Nécessaire pour créer les designs.",
+        "unlocks": "wovain dessine vos designs avec votre compte fal, à vos frais."
       }
     },
-    "comingSoon": "Bientôt disponible"
+    "comingSoon": "Bientôt disponible",
+    "signup": {
+      "prompt": "Pas encore de boutique Fourthwall ?",
+      "link": "Créez une boutique Fourthwall gratuite",
+      "hint": "Revenez ensuite pour la connecter."
+    }
   },
   "Wizard": {
     "title": "Nouveau drop",
@@ -447,9 +456,6 @@
     "back": "Retour",
     "problem": {
       "notConfigured": "Cette étape n'est pas disponible pour le moment. Réessayez dans un instant.",
-      "notConnected": "Connectez {service} pour terminer cette étape.",
-      "reconnect": "La session {service} a expiré. Reconnectez-le pour terminer cette étape.",
-      "connectLink": "Aller aux connexions",
       "other": "Un problème est survenu : {message}"
     },
     "brief": {
@@ -600,14 +606,16 @@
     },
     "failed": {
       "title": "Le drop s'est arrêté à l'étape {stage}",
-      "notConnected": "{service} n'est pas connecté : wovain n'a pas pu terminer cette étape. Connectez-le, puis réessayez.",
-      "reconnect": "La session {service} a expiré et n'a pas pu être renouvelée : wovain n'a pas pu terminer cette étape. Reconnectez-le, puis réessayez.",
+      "connectTitle": "Connectez {service} pour terminer ce drop",
+      "connectBody": "Le drop s'est mis en pause à l'étape {stage} car {service} n'est pas encore connecté. Connectez-le, puis réessayez en un clic.",
+      "reconnectTitle": "Reconnectez {service} pour terminer ce drop",
+      "reconnectBody": "Le drop s'est mis en pause à l'étape {stage} car la session {service} a expiré. Reconnectez-le, puis réessayez en un clic.",
+      "connectedTitle": "{service} est connecté",
+      "connectedBody": "Relancez le drop : wovain repart du même brief avec une nouvelle exécution.",
       "noIdeas": "La recherche n'a trouvé aucune idée pour ce brief. Essayez de le reformuler.",
       "rejected": "Le pilote automatique n'a pas aimé le design. Réessayez pour en obtenir un nouveau.",
       "other": "Un problème est survenu de notre côté. Rien n'a été dépensé pour cette étape. Réessayez.",
       "details": "Détails : {message}",
-      "connect": "Connecter {service}",
-      "reconnectAction": "Reconnecter {service}",
       "retry": "Réessayer",
       "retrying": "Relance en cours…",
       "another": "Écrire un nouveau brief"
@@ -682,6 +690,20 @@
       },
       "gaps": "Ce que votre public aime et qu'ils ne couvrent pas",
       "partial": "Une partie de la lecture a échoué ({steps}) ; le reste est affiché."
+    },
+    "style": {
+      "title": "Ton et couleurs de ce drop",
+      "tone": "Ton",
+      "toneTip": "La façon dont la fiche et les pubs de ce drop parlent, par ex. pince-sans-rire, ou chaleureux et doux. Il part de la voix de votre marque et s'adapte à ses acheteurs ; les limites de votre marque restent.",
+      "colours": "Couleurs",
+      "coloursTip": "Les couleurs du vêtement et du motif pour ce drop, par ex. un motif rouille et crème sur un t-shirt sauge. Chaque couleur du motif est vérifiée pour ressortir sur le vêtement.",
+      "noColours": "Aucun ensemble de couleurs ne convient à ce support. Le design choisit les siennes.",
+      "checkedOn": "Vérifié sur le {blank}",
+      "guardrails": "La voix de votre marque s'applique toujours : {voice}",
+      "loading": "Suggestion d'un ton et de couleurs selon les acheteurs de ce drop…",
+      "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
+      "retry": "Réessayer",
+      "info": "À propos de {field}"
     }
   },
   "NotFound": {
@@ -782,7 +804,6 @@
       "margin": "Marge",
       "notConnectedTitle": "Connectez Fourthwall pour voir les ventes",
       "notConnected": "wovain lit les rapports de votre boutique pour afficher le chiffre d'affaires et le bénéfice par drop.",
-      "connect": "Connecter Fourthwall",
       "unavailable": "Les rapports Fourthwall n'ont pas chargé : {message}",
       "emptyTitle": "Pas encore de ventes",
       "empty": "Publiez un produit et partagez-le ; la première commande apparaîtra ici."
@@ -799,7 +820,6 @@
       "results": "Résultats",
       "notConnectedTitle": "Connectez Meta pour voir les résultats",
       "notConnected": "wovain lit les statistiques des campagnes qu'il a créées pour vous.",
-      "connect": "Connecter Meta",
       "unavailable": "Les statistiques Meta n'ont pas chargé : {message}",
       "emptyTitle": "Pas encore de résultats",
       "empty": "Les campagnes sont créées en pause : les résultats arrivent dès que vous en activez une dans le Gestionnaire de publicités."
@@ -963,7 +983,10 @@
       "packTitle": "Besoin de quelques crédits de plus ?",
       "comingSoon": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent chaque mois.",
       "comingSoonRenews": "Les formules payantes et les packs de crédits arrivent bientôt. Vos crédits Free se renouvellent le {date}.",
-      "redeemSuccess": "Code utilisé. Vos crédits arrivent dans quelques secondes et n'expirent jamais."
+      "redeemSuccess": "Code utilisé. Vos crédits arrivent dans quelques secondes et n'expirent jamais.",
+      "setupRetrying": "Vos crédits n'ont pas encore pu être configurés. Nouvelle tentative en cours ; la page se met à jour seule.",
+      "setupLinked": "La facturation de cet e-mail est liée à un autre compte wovain. Contactez le support pour la déplacer.",
+      "setupUnverified": "Vérifiez votre e-mail pour configurer vos crédits. Ouvrez le lien que nous vous avons envoyé."
     },
     "paywall": {
       "creditsTitle": "Plus assez de crédits pour cette étape",
@@ -998,6 +1021,8 @@
         "alreadyRedeemed": "Vous avez déjà utilisé ce code.",
         "notFree": "Seuls les codes de crédits gratuits fonctionnent pour l'instant. Les formules payantes arrivent bientôt.",
         "tooMany": "Trop d'essais. Patientez quelques minutes, puis réessayez.",
+        "emailLinked": "La facturation de cet e-mail est liée à un autre compte wovain. Contactez le support.",
+        "emailNotVerified": "Vérifiez d'abord votre e-mail, puis utilisez le code.",
         "error": "Le code n'a pas pu être validé. Réessayez dans un instant."
       }
     }
@@ -1269,15 +1294,20 @@
         "palette": {
           "label": "Vos couleurs",
           "help": "Les couleurs du vêtement et les 2 à 5 couleurs du motif qui font qu'un drop ressemble à une seule marque. Facultatif : chaque drop les adapte.",
-          "tip": "Par exemple : un motif rouille et crème sur un t-shirt sauge. wovain vérifie que chaque couleur du motif ressort sur le vêtement.",
-          "none": "Pas encore de couleurs. Choisissez un ensemble ou passez : chaque drop propose les siennes.",
+          "tip": "Choisissez un ensemble, ou décrivez ce que vous voulez en mots simples : plus chaud, plus audacieux, ou rouille et crème. wovain vérifie que chaque couleur du motif ressort sur le vêtement.",
+          "none": "Pas encore de couleurs. Choisissez un ensemble, décrivez-les en quelques mots, ou passez : chaque drop propose les siennes.",
           "on": "sur {garments}",
           "adjusted": "Ajusté pour ressortir sur le vêtement",
           "advanced": "Avancé : saisir des codes couleur",
           "hexLabel": "Couleurs du motif en hexadécimal",
           "hexHelp": "Jusqu'à {max, number}, séparées par des virgules, comme #1A1A1A.",
           "hexInvalid": "{color} n'est pas un code couleur comme #1A1A1A.",
-          "clear": "Effacer les couleurs"
+          "clear": "Effacer les couleurs",
+          "wordsLabel": "Décrivez vos couleurs",
+          "wordsPlaceholder": "plus chaud, plus audacieux, ou rouille et crème",
+          "wordsSubmit": "Proposer des couleurs",
+          "wordsBusy": "Recherche de couleurs…",
+          "wordsNone": "Aucun ensemble pour ces mots ne ressort sur le vêtement. Essayez d'autres mots."
         }
       },
       "buyersPanel": {
@@ -1460,6 +1490,8 @@
     "approved": "Validé. wovain s'en occupe.",
     "readiness": {
       "title": "Boutique prête",
+      "connectTitle": "Connectez Fourthwall pour voir votre boutique ici",
+      "connectBody": "wovain vérifie que votre boutique peut prendre des commandes, puis affiche vos drops, produits et commandes.",
       "ready": "Votre boutique peut recevoir des commandes.",
       "notReady": "Corrigez ces points avant toute publication.",
       "passed": "(fait)",

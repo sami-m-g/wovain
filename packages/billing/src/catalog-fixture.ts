@@ -13,7 +13,7 @@ export const TEST_CATALOG = {
     free: {
       autopilot: false,
       autopilotDailyCredits: 15,
-      monthlyCredits: 15,
+      monthlyCredits: 25,
       name: "Free",
       priceCents: 0,
       rank: 0,

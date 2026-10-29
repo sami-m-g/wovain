@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { buyersPanel, discoverBrands } from "@wovain/core/brand-discovery";
+import {
+  buyersPanel,
+  discoverBrands,
+  palettesFromWords,
+} from "@wovain/core/brand-discovery";
 import type {
   Blank,
   DiscoveryAnswers,
@@ -62,7 +66,7 @@ const discoveriesExhausted = () =>
     why: `Each merchant asks for at most ${DISCOVERIES_PER_HOUR} sets of suggestions an hour.`,
   });
 
-const discoveriesUsed = async (actor: Actor) => {
+const discoveriesUsed = async (actor: Actor, step = "discovery.start") => {
   const [used] = await actor.db
     .select({ runs: count() })
     .from(decisionTrace)
@@ -70,7 +74,7 @@ const discoveriesUsed = async (actor: Actor) => {
       and(
         eq(decisionTrace.userId, actor.userId),
         eq(decisionTrace.agent, "brand_discovery"),
-        eq(decisionTrace.step, "discovery.start"),
+        eq(decisionTrace.step, step),
         gt(decisionTrace.at, new Date(Date.now() - 60 * MINUTE_MS))
       )
     );
@@ -128,6 +132,11 @@ const readBlank = async (actor: Actor): Promise<Blank> => {
 
 const withTimeout = async <T>(work: Promise<T>, fallback: T, ms: number) =>
   await Promise.race([work, delay(ms, fallback)]);
+
+// The tee a drop is drawn on and its colours, within BLANK_TIMEOUT_MS, else
+// the stated stand-in (./drop-style uses it too).
+export const draftBlank = async (actor: Actor) =>
+  await withTimeout(readBlank(actor), ASSUMED, BLANK_TIMEOUT_MS);
 
 export const localeOf = async (actor: Actor) => {
   const [row] = await actor.db
@@ -217,7 +226,7 @@ export const discover = async (actor: Actor, input: DiscoverInput) => {
       await discoverBrands(
         {
           ask: actor.core.nemotron,
-          blank: withTimeout(readBlank(actor), ASSUMED, BLANK_TIMEOUT_MS),
+          blank: draftBlank(actor),
           locale,
           log: actor.log,
           qloo: actor.core.qloo,
@@ -264,4 +273,45 @@ export const searchTaste = async (actor: Actor, query: string) => {
     name: entity.name,
     type: entity.type,
   }));
+};
+
+const COLOUR_WORDS_PER_HOUR = 30;
+
+// Colour sets from the merchant's own words ("warmer", "rust and cream"),
+// held to the blank's colours like every suggestion.
+export const recolour = async (
+  actor: Actor,
+  input: {
+    current?: string[] | undefined;
+    niche?: string | undefined;
+    words: string;
+  }
+) => {
+  await requireDiscovery(actor);
+  if (
+    (await discoveriesUsed(actor, "palette.words")) >= COLOUR_WORDS_PER_HOUR
+  ) {
+    throw createError({
+      code: "DISCOVERY_LIMIT",
+      fix: "Wait an hour, or pick one of the colour sets you have.",
+      message: "You've asked for a lot of colours this hour",
+      status: 429,
+      why: `Each merchant asks for at most ${COLOUR_WORDS_PER_HOUR} colour suggestions an hour.`,
+    });
+  }
+  const locale = await localeOf(actor);
+  return await traced(
+    actor,
+    async (trace) =>
+      await palettesFromWords(
+        {
+          ask: actor.core.nemotron,
+          blank: withTimeout(readBlank(actor), ASSUMED, BLANK_TIMEOUT_MS),
+          locale,
+          log: actor.log,
+          trace,
+        },
+        input
+      )
+  );
 };

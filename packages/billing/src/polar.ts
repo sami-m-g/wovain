@@ -1,16 +1,15 @@
-import { createPolarCore, errors } from "@polar-sh/sdk/2026-10";
+import { createPolarCore } from "@polar-sh/sdk/2026-10";
 import type { Environment, PolarCore } from "@polar-sh/sdk/2026-10";
 import { createCheckouts } from "@polar-sh/sdk/2026-10/services/checkouts";
 import { createCustomerSessions } from "@polar-sh/sdk/2026-10/services/customer_sessions";
-import {
-  createCustomers,
-  getExternalCustomers,
-  getStateExternalCustomers,
-} from "@polar-sh/sdk/2026-10/services/customers";
+import { getStateExternalCustomers } from "@polar-sh/sdk/2026-10/services/customers";
 import { ingestEvents } from "@polar-sh/sdk/2026-10/services/events";
 import { iterListProducts } from "@polar-sh/sdk/2026-10/services/products";
 import { createSubscriptions } from "@polar-sh/sdk/2026-10/services/subscriptions";
+import type { Database } from "@wovain/db";
 
+import { ensureCustomer, polarCustomerGateway } from "./customer";
+import type { CustomerMerchant } from "./customer";
 import { CREDIT_METER, POLAR_METADATA_KEY } from "./plans";
 import type { CreditStep, Offer, PlanCode } from "./plans";
 
@@ -105,22 +104,15 @@ export const portalUrl = async (
 // subscription (new, or a paid plan just ended) is put on Free, whose
 // benefit grants the monthly free credits. Users from before billing get
 // their customer here too; new sign-ups get it from the Better Auth plugin.
+// A customer that exists under a stale link is settled by ensureCustomer,
+// which throws CustomerConflictError when the email belongs to a live
+// account.
 export const ensureFreePlan = async (
   polar: PolarCore,
-  merchant: { email: string; id: string; name: string }
+  db: Database,
+  merchant: CustomerMerchant
 ) => {
-  try {
-    await getExternalCustomers(polar)(merchant.id);
-  } catch (error) {
-    if (!(error instanceof errors.ResourceNotFound)) {
-      throw error;
-    }
-    await createCustomers(polar)({
-      email: merchant.email,
-      external_id: merchant.id,
-      name: merchant.name,
-    });
-  }
+  await ensureCustomer(db, polarCustomerGateway(polar), merchant);
   const state = await getStateExternalCustomers(polar)(merchant.id);
   if (state.active_subscriptions.length > 0) {
     return false;

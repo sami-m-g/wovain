@@ -17,7 +17,7 @@
 // Node runs this file directly, so it imports only the SDKs, zod (through
 // catalog.ts), plans.ts and promos.ts.
 
-import { randomBytes } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
@@ -359,15 +359,16 @@ const sinkFor = (secretId: string, fallbackPath: string): SecretSink => {
 };
 
 // Codes customers type: 16 characters from an alphabet without look-alikes
-// (no 0/O, 1/I), 80 random bits, so a code can't be guessed. 256 is a
-// multiple of the alphabet's 32 letters, so every letter is equally likely.
+// (no 0/O, 1/I), 80 random bits, so a code can't be guessed. randomInt
+// draws each letter uniformly (it rejects out-of-range values, no modulo bias).
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 16;
 
 const randomCode = () =>
-  [...randomBytes(CODE_LENGTH)]
-    .map((byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length])
-    .join("");
+  Array.from(
+    { length: CODE_LENGTH },
+    () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]
+  ).join("");
 
 // A code chosen for a promo (CI variable POLAR_PROMO_CODE_<ID>), if any.
 const chosenCode = (promo: Promo) => {

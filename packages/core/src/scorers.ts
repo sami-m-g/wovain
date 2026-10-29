@@ -79,6 +79,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   design_judge: [],
   design_vision: [],
   drop_directions: [],
+  drop_style: [],
   research_themes: [],
   // The merchant's own words: never judged, so never sent to scorers.
   voice_intent: [],
@@ -113,6 +114,7 @@ const BUILT_INS: Record<AgentId, string[]> = {
   design_vision: [],
   // Writes titles and "why now" lines from the Qloo and news facts given.
   drop_directions: ["answer_relevancy", "prompt_alignment", "toxicity"],
+  drop_style: ["answer_relevancy", "prompt_alignment"],
   research_themes: ["answer_relevancy", "prompt_alignment"],
   voice_intent: [],
 };

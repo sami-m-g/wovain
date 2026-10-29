@@ -12,8 +12,11 @@
 #   the Polar catalog seed (packages/billing/src/seed.ts), which is
 #   production's Polar organization, so it is skipped while
 #   `wovain:freezeProduction` is on.
-# next.wovain.com's stack (infra/next) is previewed here and applied from a
-#   laptop (`pnpm run infra:next:up`, infra/README.md).
+# Push to main: `pulumi up` of next.wovain.com's stack (infra/next) only, in
+#   the `next-infrastructure` environment, as infra-next, which Google trusts
+#   only from that environment on main and which can change only next's
+#   resources (infra/bootstrap/next.ts). Production keeps its manual, gated
+#   `up` below.
 #
 # The bootstrap stack is CI's own identity, so CI only previews it; a project
 # owner applies it (`pnpm run infra:bootstrap:up`).
@@ -45,6 +48,7 @@ env:
   PREVIEW_SERVICE_ACCOUNT: infra-preview@wovain.iam.gserviceaccount.com
   INFRA_WORKLOAD_IDENTITY_PROVIDER: projects/422330561934/locations/global/workloadIdentityPools/github/providers/github
   INFRA_SERVICE_ACCOUNT: gitlab-infra@wovain.iam.gserviceaccount.com
+  NEXT_INFRA_SERVICE_ACCOUNT: infra-next@wovain.iam.gserviceaccount.com
   # Polar's webhook endpoint on production (packages/auth).
   POLAR_WEBHOOK_URL: https://wovain.com/api/auth/polar/webhooks
 
@@ -79,21 +83,65 @@ jobs:
           workload_identity_provider: ${{ env.PREVIEW_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.PREVIEW_SERVICE_ACCOUNT }}
       - run: pnpm run infra:install
+      # A failed preview still writes its JSON: scripts/pulumi.ts puts its
+      # errors in the log and the guard puts them in the job summary. Every
+      # stack is previewed, even after an earlier one fails.
       - name: Preview bootstrap
         run: |
-          node infra/scripts/pulumi.ts preview infra/bootstrap -- --json > "$RUNNER_TEMP/bootstrap.json"
+          status=0
+          node infra/scripts/pulumi.ts preview infra/bootstrap -- --json > "$RUNNER_TEMP/bootstrap.json" || status=$?
           echo "### bootstrap" >> "$GITHUB_STEP_SUMMARY"
-          node infra/policy/guard.ts < "$RUNNER_TEMP/bootstrap.json" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/bootstrap.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
       - name: Preview prod
+        if: ${{ !cancelled() }}
         run: |
-          node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json"
+          status=0
+          node infra/scripts/pulumi.ts preview infra -- --json > "$RUNNER_TEMP/prod.json" || status=$?
           echo "### prod" >> "$GITHUB_STEP_SUMMARY"
-          node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/prod.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
       - name: Preview next
+        if: ${{ !cancelled() }}
         run: |
-          node infra/scripts/pulumi.ts preview infra/next -- --json > "$RUNNER_TEMP/next.json"
+          status=0
+          node infra/scripts/pulumi.ts preview infra/next -- --json > "$RUNNER_TEMP/next.json" || status=$?
           echo "### next" >> "$GITHUB_STEP_SUMMARY"
-          node infra/policy/guard.ts < "$RUNNER_TEMP/next.json" >> "$GITHUB_STEP_SUMMARY"
+          node infra/policy/guard.ts < "$RUNNER_TEMP/next.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
+
+  up-next:
+    # Every push to main (and a manual run on main) applies next only. The
+    # same guard as production's runs first (scripts/pulumi.ts).
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: next-infrastructure
+    permissions:
+      contents: read
+      id-token: write
+    # One apply at a time; a newer one waits instead of cancelling an apply.
+    concurrency:
+      group: infra-up-next
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: pulumi/setup-pulumi@b374ceb6168550de27c6eba92e01c1a774040e11 # v2.0.0
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.NEXT_INFRA_SERVICE_ACCOUNT }}
+      - run: pnpm run infra:install
+      - name: Apply next
+        run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview
 
   up:
     # Manual only while production is frozen (until the Transcend winners,

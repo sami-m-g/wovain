@@ -1,0 +1,90 @@
+# Ignores one GitGuardian secret incident that is not a real secret, for
+# example a placeholder CI key in a commit that was squashed away. The
+# GitGuardian GitHub App (`GitGuardian Security Checks`) is the repository's
+# secret scan; its incidents live in the GitGuardian dashboard.
+#
+# Run it from the Actions tab on main with the incident id (the number in
+# the dashboard URL), a reason GitGuardian accepts and a justification. The
+# run is the audit record: who ignored which incident, when, and why. A
+# leaked real secret is never ignored: revoke it and resolve the incident.
+#
+# Needs the GITGUARDIAN_API_KEY Actions secret, a GitGuardian service
+# account token with the `incidents:write` scope, which infra/github.ts
+# declares from the `gitguardian-api-key` stack secret (infra/README.md,
+# "GitGuardian").
+name: gitguardian-ignore
+
+on:
+  workflow_dispatch:
+    inputs:
+      incident_id:
+        description: GitGuardian secret incident id (digits only)
+        required: true
+        type: string
+      reason:
+        description: Why it is not a real leaked secret
+        required: true
+        type: choice
+        options:
+          - test_credential
+          - false_positive
+          - invalid
+          - low_risk
+      justification:
+        description: What the match is and why it is safe (kept in the run summary)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitguardian-ignore-${{ inputs.incident_id }}
+  cancel-in-progress: false
+
+jobs:
+  ignore:
+    # Only from main, so a branch can't change what the token does.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ignore the incident
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+          INCIDENT_ID: ${{ inputs.incident_id }}
+          REASON: ${{ inputs.reason }}
+          JUSTIFICATION: ${{ inputs.justification }}
+        run: |
+          if [[ ! "$INCIDENT_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::incident_id must be digits only, got '$INCIDENT_ID'"
+            exit 1
+          fi
+          if [[ "${#JUSTIFICATION}" -lt 20 ]]; then
+            echo "::error::Give a justification of at least 20 characters: what the match is and why it is safe."
+            exit 1
+          fi
+          if [[ -z "$GITGUARDIAN_API_KEY" ]]; then
+            echo "::error::The GITGUARDIAN_API_KEY Actions secret is not set (infra/README.md, \"GitGuardian\")."
+            exit 1
+          fi
+          body=$(jq -n --arg reason "$REASON" '{ignore_reason: $reason}')
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/response.json" --write-out '%{http_code}' \
+            --request POST "https://api.gitguardian.com/v1/incidents/secrets/${INCIDENT_ID}/ignore" \
+            --header "Authorization: Token ${GITGUARDIAN_API_KEY}" \
+            --header "Content-Type: application/json" \
+            --data "$body")
+          if [[ "$status" != 2* ]]; then
+            echo "::error::GitGuardian answered HTTP $status: $(cat "$RUNNER_TEMP/response.json")"
+            exit 1
+          fi
+          {
+            echo "### GitGuardian incident ${INCIDENT_ID} ignored"
+            echo ""
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| By | ${GITHUB_ACTOR} |"
+            echo "| Reason | ${REASON} |"
+            echo "| Justification | ${JUSTIFICATION//|/\\|} |"
+            echo "| Status | $(jq -r '.status // "unknown"' "$RUNNER_TEMP/response.json") |"
+          } >> "$GITHUB_STEP_SUMMARY"

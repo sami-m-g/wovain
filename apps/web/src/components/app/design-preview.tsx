@@ -8,7 +8,11 @@ import {
 import { cn } from "@wovain/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import type { ReactNode } from "react";
 import { useState } from "react";
+
+import { useHere } from "@/components/app/connect-state";
+import { connectUrl } from "@/lib/flow-client";
 
 const FRAME_SIZE = 640;
 const SIZES = "(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw";
@@ -92,14 +96,22 @@ export const DesignPreview = ({
   const [view, setView] = useState<View>("shirt");
   const [mockup] = mockupStatus === "ready" ? mockups : [];
   const onShirt = view === "shirt" && mockup !== undefined;
-  const notice =
-    view === "shirt" && mockup === undefined
-      ? t(
-          mockupStatus === "not_connected"
-            ? "mockupNotConnected"
-            : "mockupUnavailable"
-        )
-      : null;
+  const here = useHere();
+  let notice: ReactNode = null;
+  if (view === "shirt" && mockup === undefined) {
+    // Not connected: the line itself is the way to connect, and back here.
+    notice =
+      mockupStatus === "not_connected" ? (
+        <a
+          className="text-accent-text font-medium underline underline-offset-4"
+          href={connectUrl("fourthwall", here)}
+        >
+          {t("mockupNotConnected")}
+        </a>
+      ) : (
+        t("mockupUnavailable")
+      );
+  }
   const src = onShirt ? mockup : artworkUrl;
   return (
     <div className="bg-muted flex flex-col gap-3 p-4">

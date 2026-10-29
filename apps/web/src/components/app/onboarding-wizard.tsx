@@ -18,6 +18,7 @@ import { useCallback, useEffect } from "react";
 
 import { ConnectionHealth } from "@/components/app/connection-health";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { FourthwallSignup } from "@/components/app/fourthwall-signup";
 import { AutonomyStep } from "@/components/app/onboarding-autonomy";
 import { BrandStep } from "@/components/app/onboarding-brand";
 import {
@@ -61,6 +62,11 @@ const ConnectStep = ({
         returnPath="/dashboard/onboarding"
         returnQuery="?step=connect"
       />
+      {status.connections.some(
+        (each) => each.provider === "fourthwall" && each.state === "missing"
+      ) ? (
+        <FourthwallSignup className="text-left" surface="onboarding" />
+      ) : null}
       <output className="text-muted-foreground block text-sm">
         {status.canStartDrop ? t("ready") : t("notReady")}
       </output>

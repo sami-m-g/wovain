@@ -413,6 +413,7 @@
     "connected": "Connected",
     "disconnected": "Not connected",
     "expired": "Sign-in expired",
+    "expiredBody": "{name}'s sign-in expired. Reconnect it and wovain picks up where it left off.",
     "connect": "Connect {name}",
     "reconnect": "Reconnect {name}",
     "disconnect": "Disconnect {name}",
@@ -423,18 +424,26 @@
     "providers": {
       "fourthwall": {
         "name": "Fourthwall",
-        "body": "Your shop, catalog blanks and prices. Needed to publish products."
+        "body": "Your shop, catalog blanks and prices. Needed to publish products.",
+        "unlocks": "wovain publishes your designs as products in your shop, priced to clear your profit."
       },
       "meta": {
         "name": "Meta",
-        "body": "Your ad account, Page and pixel. Needed to build the campaign."
+        "body": "Your ad account, Page and pixel. Needed to build the campaign.",
+        "unlocks": "wovain builds a paused campaign for each drop, so nothing spends until you start it."
       },
       "fal": {
         "name": "fal",
-        "body": "Your fal account draws the artwork, billed to you. Needed to make designs."
+        "body": "Your fal account draws the artwork, billed to you. Needed to make designs.",
+        "unlocks": "wovain draws your designs on your fal account, billed to you."
       }
     },
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "signup": {
+      "prompt": "No Fourthwall shop yet?",
+      "link": "Create a free Fourthwall shop",
+      "hint": "Then come back and connect it."
+    }
   },
   "Wizard": {
     "title": "New drop",
@@ -447,9 +456,6 @@
     "back": "Back",
     "problem": {
       "notConfigured": "This step isn't available right now. Try again in a little while.",
-      "notConnected": "Connect {service} to finish this step.",
-      "reconnect": "{service}'s sign-in expired. Reconnect it to finish this step.",
-      "connectLink": "Go to Connections",
       "other": "Something went wrong: {message}"
     },
     "brief": {
@@ -600,14 +606,16 @@
     },
     "failed": {
       "title": "The drop stopped during {stage}",
-      "notConnected": "{service} isn't connected, so wovain couldn't finish this step. Connect it, then try again.",
-      "reconnect": "{service}'s sign-in expired and couldn't be renewed, so wovain couldn't finish this step. Reconnect it, then try again.",
+      "connectTitle": "Connect {service} to finish this drop",
+      "connectBody": "The drop paused during {stage} because {service} isn't connected yet. Connect it, then try again in one click.",
+      "reconnectTitle": "Reconnect {service} to finish this drop",
+      "reconnectBody": "The drop paused during {stage} because {service}'s sign-in expired. Reconnect it, then try again in one click.",
+      "connectedTitle": "{service} is connected",
+      "connectedBody": "Try the drop again: wovain starts a fresh run from the same brief.",
       "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
       "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
       "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
       "details": "Details: {message}",
-      "connect": "Connect {service}",
-      "reconnectAction": "Reconnect {service}",
       "retry": "Try again",
       "retrying": "Starting again…",
       "another": "Write a new brief"
@@ -682,6 +690,20 @@
       },
       "gaps": "What your audience likes that they miss",
       "partial": "Some of the read failed ({steps}); the rest is shown."
+    },
+    "style": {
+      "title": "This drop's tone and colours",
+      "tone": "Tone",
+      "toneTip": "How this drop's listing and ads talk, e.g. dry and witty, or warm and cosy. It starts from your brand voice and adapts to this drop's buyers; your brand's limits still apply.",
+      "colours": "Colours",
+      "coloursTip": "The shirt colours and the art colours for this drop, e.g. rust and cream art on a sage tee. Every art colour is checked to stand out on the shirt.",
+      "noColours": "No colour set fits this blank. The design picks its own.",
+      "checkedOn": "Checked on the {blank}",
+      "guardrails": "Your brand voice still applies: {voice}",
+      "loading": "Suggesting a tone and colours from this drop's buyers…",
+      "failed": "We couldn't suggest a tone and colours just now.",
+      "retry": "Try again",
+      "info": "About {field}"
     }
   },
   "NotFound": {
@@ -782,7 +804,6 @@
       "margin": "Margin",
       "notConnectedTitle": "Connect Fourthwall to see sales",
       "notConnected": "wovain reads your shop's reports to show revenue and profit per drop.",
-      "connect": "Connect Fourthwall",
       "unavailable": "Fourthwall's reports didn't load: {message}",
       "emptyTitle": "No sales yet",
       "empty": "Publish a product and share it; the first order shows up here."
@@ -799,7 +820,6 @@
       "results": "Results",
       "notConnectedTitle": "Connect Meta to see ad results",
       "notConnected": "wovain reads the insights for the campaigns it built for you.",
-      "connect": "Connect Meta",
       "unavailable": "Meta's insights didn't load: {message}",
       "emptyTitle": "No campaign results yet",
       "empty": "Campaigns are created paused, so results start once you turn one on in Ads Manager."
@@ -963,7 +983,10 @@
       "packTitle": "Need a few more credits?",
       "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
       "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}.",
-      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire."
+      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire.",
+      "setupRetrying": "Your credits couldn't be set up yet. We're retrying; this page updates on its own.",
+      "setupLinked": "This email's billing is linked to another wovain account. Contact support to move it.",
+      "setupUnverified": "Verify your email to set up your credits. Open the link we emailed you."
     },
     "paywall": {
       "creditsTitle": "You're out of credits for this step",
@@ -998,6 +1021,8 @@
         "alreadyRedeemed": "You've already redeemed this code.",
         "notFree": "Only codes for free credits work for now. Paid plans are coming soon.",
         "tooMany": "Too many tries. Wait a few minutes, then try again.",
+        "emailLinked": "This email's billing is linked to another wovain account. Contact support.",
+        "emailNotVerified": "Verify your email first, then redeem the code.",
         "error": "The code didn't go through. Try again in a moment."
       }
     }
@@ -1269,15 +1294,20 @@
         "palette": {
           "label": "Your colours",
           "help": "The shirt colours and the 2 to 5 art colours that make a drop look like one brand. Optional: each drop adapts them.",
-          "tip": "For example: rust and cream art on a sage tee. wovain checks every art colour stands out on the shirt colours.",
-          "none": "No colours yet. Pick a set, or skip: each drop suggests its own.",
+          "tip": "Pick a set, or describe what you want in plain words: warmer, bolder, or rust and cream. wovain checks every art colour stands out on the shirt colours.",
+          "none": "No colours yet. Pick a set, describe them in a few words, or skip: each drop suggests its own.",
           "on": "on {garments}",
           "adjusted": "Adjusted to stand out on the shirt",
           "advanced": "Advanced: enter colour codes",
           "hexLabel": "Art colours as hex codes",
           "hexHelp": "Up to {max, number}, separated by commas, like #1A1A1A.",
           "hexInvalid": "{color} isn't a colour code like #1A1A1A.",
-          "clear": "Clear colours"
+          "clear": "Clear colours",
+          "wordsLabel": "Describe your colours",
+          "wordsPlaceholder": "warmer, bolder, or rust and cream",
+          "wordsSubmit": "Suggest colours",
+          "wordsBusy": "Finding colours…",
+          "wordsNone": "No colour set for those words stands out on the shirt. Try other words."
         }
       },
       "buyersPanel": {
@@ -1460,6 +1490,8 @@
     "approved": "Approved. wovain is on it.",
     "readiness": {
       "title": "Shop readiness",
+      "connectTitle": "Connect Fourthwall to open your shop here",
+      "connectBody": "wovain checks your shop can take orders, then lists your drops, products and orders.",
       "ready": "Your shop can take orders.",
       "notReady": "Fix these before anything goes public.",
       "passed": "(done)",

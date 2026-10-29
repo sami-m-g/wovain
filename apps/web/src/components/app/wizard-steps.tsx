@@ -51,6 +51,7 @@ import {
 } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
 import { DropDirections } from "@/components/app/drop-directions";
+import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
 import {
@@ -365,6 +366,9 @@ export const IdeasStep = ({
                   competition={idea.competition}
                   ideaId={idea.id}
                 />
+                {checked && !designed ? (
+                  <DropStylePanel ideaId={idea.id} />
+                ) : null}
                 <IdeaDossier ideaId={idea.id} />
               </li>
             );

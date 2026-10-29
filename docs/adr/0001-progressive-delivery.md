@@ -53,7 +53,6 @@ Constraints:
 | `app-ui-v2` | release | design | internal | all | 2026-12-31 |
 | `autopilot` | release | runs | internal | all | 2026-12-31 |
 | `billing-paid-plans` | permission | billing | off (Status off) | off | 2027-01-31 |
-| `billing-polar` | release | billing | internal | all | 2026-12-15 |
 | `fal-oauth` | release | connectors | internal | all | 2026-12-31 |
 | `fault-injection-checkout` | ops | platform | off | all (Status off) | 2027-03-31 |
 | `mastra-runs` | release | runs | internal + 10% of users | all | 2026-12-31 |
