@@ -565,6 +565,10 @@ const gated = <T extends Omit<TrendIdea, "rank">>(
         theme: item.theme,
       })),
       kept: kept.length,
+      keptThemes: kept.map(({ caution, item }) => ({
+        caution,
+        theme: item.theme,
+      })),
       unconfirmed: kept.some((one) => one.caution !== undefined),
     },
   });

@@ -180,6 +180,8 @@ export interface Directions {
   scope: DirectionScope;
   // Tavily failed for at least one direction: momentum or saturation unknown.
   tavilyFailed: boolean;
+  // The connected Ad Library read failed for at least one direction.
+  adLibraryFailed?: boolean | undefined;
 }
 
 // What the new-drop step gets and what is kept for it: the directions and
@@ -563,6 +565,16 @@ const checksOf = async (deps: DirectionDeps, theme: string, query: string) => {
 
 type Checks = Awaited<ReturnType<typeof checksOf>>;
 
+// Which reads failed: Tavily's (news, listings, marketplaces), or the Ad
+// Library when it is connected.
+const failedReads = (deps: DirectionDeps, checks: Checks) => ({
+  adLibrary: deps.adLibrary !== undefined && checks.ads === undefined,
+  tavily:
+    checks.momentum === undefined ||
+    checks.saturation === undefined ||
+    checks.market === undefined,
+});
+
 // A proven theme's card before its words.
 // The candidate's audience cues that no listing read for it carries.
 export const gapsAmong = (
@@ -769,28 +781,46 @@ const cautiousDirections = async (
     weight: number;
   }[]
 ): Promise<DropDirection[]> => {
-  const best = cautious
-    .toSorted((first, second) => second.weight - first.weight)
-    .slice(0, MAX_DIRECTIONS);
-  if (best.length > 0) {
+  // Validate in weight order, a batch at a time, until enough pass: the
+  // top few failing their words must not hide a lower one that passes.
+  // The merchant's record scales the weight before any is dropped.
+  const ranked = cautious
+    .map((one) => {
+      const { multiplier, outcome } = outcomeOf(deps, one.draft.theme);
+      return { ...one, outcome, score: one.weight * multiplier };
+    })
+    .toSorted((first, second) => second.score - first.score);
+  if (ranked.length > 0) {
     deps.onEvent?.({ kind: "step", step: "words" });
   }
-  const named = await Promise.all(
-    best.map(async ({ caution, draft, spot, weight }) => {
-      const { multiplier, outcome } = outcomeOf(deps, draft.theme);
-      // A theme whose words fail keeps its gate reason in the trace.
-      return await namedDirection(deps, {
-        ...draft,
-        caution,
-        outcome,
-        score: weight * multiplier,
-        spot,
-      });
-    })
-  );
+  const named: DropDirection[] = [];
+  for (
+    let start = 0;
+    start < ranked.length && named.length < MAX_DIRECTIONS;
+    start += MAX_DIRECTIONS
+  ) {
+    // One batch at a time: later drafts are only worded when needed.
+    // oxlint-disable-next-line no-await-in-loop
+    const batch = await Promise.all(
+      ranked.slice(start, start + MAX_DIRECTIONS).map(
+        async ({ caution, draft, outcome, score, spot }) =>
+          // A theme whose words fail keeps its gate reason in the trace.
+          await namedDirection(deps, {
+            ...draft,
+            caution,
+            outcome,
+            score,
+            spot,
+          })
+      )
+    );
+    named.push(
+      ...batch.filter((one): one is DropDirection => one !== undefined)
+    );
+  }
   return named
-    .filter((one): one is DropDirection => one !== undefined)
-    .toSorted((first, second) => second.score - first.score);
+    .toSorted((first, second) => second.score - first.score)
+    .slice(0, MAX_DIRECTIONS);
 };
 
 // Up to MAX_DIRECTIONS directions for the next drop, best first: within the
@@ -831,6 +861,11 @@ export const suggestDirections = async (
     step: "directions.qloo",
   });
   let tavilyFailed = false;
+  let adLibraryFailed = false;
+  const noteFailures = (failed: ReturnType<typeof failedReads>) => {
+    tavilyFailed ||= failed.tavily;
+    adLibraryFailed ||= failed.adLibrary;
+  };
   const niche = brand?.niches[0] ?? "";
   if (candidates.length > 0) {
     deps.onEvent?.({ kind: "step", step: "listings" });
@@ -887,13 +922,7 @@ export const suggestDirections = async (
         candidate.name,
         query
       );
-      if (
-        momentum === undefined ||
-        saturation === undefined ||
-        market === undefined
-      ) {
-        tavilyFailed = true;
-      }
+      noteFailures(failedReads(deps, { ads, market, momentum, saturation }));
       const demand = demandOf(ads, market);
       proofs.push({ demand, theme: candidate.name });
       const adLibrary =
@@ -1034,6 +1063,7 @@ export const suggestDirections = async (
     step: "directions.rank",
   });
   return {
+    adLibraryFailed,
     checked:
       deps.gate === true
         ? gateDrops.map(({ reason, theme }) => ({ reason, theme }))

@@ -163,8 +163,11 @@ export const cacheKeyOf = (
 // reads failed, would be served for a week as if nothing sold. A row like
 // that, kept before this rule, is read as missing and searched again.
 export const keepable = (
-  answer: Pick<Directions, "directions" | "tavilyFailed">
-) => answer.directions.length > 0 && !answer.tavilyFailed;
+  answer: Pick<Directions, "adLibraryFailed" | "directions" | "tavilyFailed">
+) =>
+  answer.directions.length > 0 &&
+  !answer.tavilyFailed &&
+  answer.adLibraryFailed !== true;
 
 const readCache = async (actor: Actor, key: string) => {
   const [row] = await actor.db

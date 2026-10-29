@@ -41,5 +41,12 @@ it("never keeps an empty answer or one whose reads failed", () => {
   const direction = { theme: "Gothic romance" } as never;
   expect(keepable({ directions: [], tavilyFailed: false })).toBe(false);
   expect(keepable({ directions: [direction], tavilyFailed: true })).toBe(false);
+  expect(
+    keepable({
+      adLibraryFailed: true,
+      directions: [direction],
+      tavilyFailed: false,
+    })
+  ).toBe(false);
   expect(keepable({ directions: [direction], tavilyFailed: false })).toBe(true);
 });
