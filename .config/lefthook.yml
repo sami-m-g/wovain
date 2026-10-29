@@ -40,4 +40,10 @@ commit-msg:
 pre-push:
   jobs:
     - name: check-types
-      run: pnpm exec turbo run check-types --affected
+      # A fresh worktree has no env file: Varlock gets CI's placeholders.
+      run: |
+        if [ -f apps/web/.env ] || [ -f apps/web/.env.local ]; then
+          pnpm exec turbo run check-types --affected
+        else
+          .config/placeholder-env.sh pnpm exec turbo run check-types --affected
+        fi
