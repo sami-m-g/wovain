@@ -246,7 +246,10 @@ export const appEnvironment = (args: EnvironmentArgs) => {
       ...[...mounted].map(([id, secret]) => secretEnv(id, secret.secretId)),
     ],
     location: region,
-    maxInstances: 1,
+    // One instance answered 429 ("no available instance") to page loads
+    // while a deploy or a scale event replaced it (QA 2026-10-29): a second
+    // one serves in the meantime, as production's does.
+    maxInstances: 2,
     // The same app as production's, with Mastra's agents in-process.
     memory: "1Gi",
     name: `wovain-web-${name}`,

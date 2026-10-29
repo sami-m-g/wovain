@@ -41,11 +41,13 @@ pulumi.runtime.setAllConfig(
 );
 
 const registered: string[] = [];
+const inputsOf = new Map<string, Record<string, unknown>>();
 await pulumi.runtime.setMocks(
   {
     call: ({ inputs }) => ({ ...inputs, number: "123456789" }),
     newResource: ({ inputs, name, type }) => {
       registered.push(`${type}::${name}`);
+      inputsOf.set(name, inputs);
       return { id: `${name}-id`, state: { token: "token", ...inputs } };
     },
   },
@@ -83,4 +85,12 @@ test("the next program declares only next.wovain.com's own resources", async () 
   // Every name is next's, so nothing here can be production's or dev's.
   expect(registered.filter((r) => !r.includes("next"))).toEqual([]);
   expect(registered.filter((r, i) => registered.indexOf(r) !== i)).toEqual([]);
+});
+
+// QA 2026-10-29: with one instance, Cloud Run answered page loads 429 ("no
+// available instance") while a deploy replaced it.
+test("next's web service can scale past one instance", () => {
+  expect(inputsOf.get("web-next")).toMatchObject({
+    template: { scaling: { maxInstanceCount: 2 } },
+  });
 });
