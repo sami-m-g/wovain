@@ -210,7 +210,7 @@ const idField = (key: string) =>
 const idOf = (reply: unknown, key: string) =>
   String(findOne(idField(key), reply, key)[key]);
 
-const resolveAccount = async (call: ToolCall, given?: string) => {
+export const resolveAccount = async (call: ToolCall, given?: string) => {
   if (given !== undefined) {
     return given;
   }

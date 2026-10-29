@@ -37,6 +37,9 @@ export type Learned = Outputs["feedback"]["learned"];
 export type VoiceCommand = Outputs["voice"]["command"];
 export type StoreProduct = Outputs["store"]["products"][number];
 export type StoreReadiness = Outputs["store"]["readiness"];
+export type StoreSetup = Outputs["store"]["setup"];
+/** One step of Store setup, with its status: for the onboarding checklist. */
+export type StoreSetupStep = StoreSetup["steps"][number];
 export type StoreOrder = Outputs["store"]["orders"][number];
 export type StoreApproval = Outputs["approvals"]["list"][number];
 

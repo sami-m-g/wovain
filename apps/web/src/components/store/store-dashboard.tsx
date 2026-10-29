@@ -24,10 +24,22 @@ import { StoreOrders } from "@/components/store/store-orders";
 import { StorePreview } from "@/components/store/store-preview";
 import { StoreProducts } from "@/components/store/store-products";
 import { StorePromotions } from "@/components/store/store-promotions";
+import { StoreSetup } from "@/components/store/store-setup";
 import { AdminLink } from "@/components/store/store-shared";
 import { StoreSummary } from "@/components/store/store-summary";
 import { missingConnection } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
+
+const CONNECT_POLL_MS = 5000;
+
+const untilShopConnected = (current: {
+  state: { data?: { needsReconnect: boolean; provider: string }[] };
+}) =>
+  current.state.data?.some(
+    (each) => each.provider === "fourthwall" && !each.needsReconnect
+  ) === true
+    ? false
+    : CONNECT_POLL_MS;
 
 const TABS = ["products", "orders", "promotions", "approvals"] as const;
 type Tab = (typeof TABS)[number];
@@ -74,6 +86,25 @@ const Header = ({ actions }: { actions?: ReactNode }) => {
   );
 };
 
+/** No shop to run yet: the Fourthwall connect state, with its sign-up link. */
+const ShopConnect = ({ reconnect }: { reconnect: boolean }) => {
+  const t = useTranslations("Store");
+  return (
+    <div className="flex flex-col gap-8">
+      <Header />
+      <section aria-labelledby="store-connect">
+        <ConnectState
+          body={t("readiness.connectBody")}
+          headingId="store-connect"
+          provider="fourthwall"
+          reconnect={reconnect}
+          title={reconnect ? undefined : t("readiness.connectTitle")}
+        />
+      </section>
+    </div>
+  );
+};
+
 /**
  * The Store: one summary strip over four tabs (products, orders,
  * promotions, approvals). Simple by default, power one click away; every
@@ -82,7 +113,12 @@ const Header = ({ actions }: { actions?: ReactNode }) => {
 export const StoreDashboard = () => {
   const t = useTranslations("Store");
   const [tab, setTab] = useTab();
-  const connections = useQuery(orpc.connections.list.queryOptions());
+  // Polled while there is no connected shop: a merchant who just created
+  // their Fourthwall shop and connected it in another tab moves on here.
+  const connections = useQuery({
+    ...orpc.connections.list.queryOptions(),
+    refetchInterval: untilShopConnected,
+  });
   const fourthwall = connections.data?.find(
     (each) => each.provider === "fourthwall"
   );
@@ -100,24 +136,9 @@ export const StoreDashboard = () => {
   // state, never an error.
   if (shopless || missing !== undefined) {
     return (
-      <div className="flex flex-col gap-8">
-        <Header />
-        <section aria-labelledby="store-connect">
-          <ConnectState
-            body={t("readiness.connectBody")}
-            headingId="store-connect"
-            provider="fourthwall"
-            reconnect={
-              missing?.reconnect ?? fourthwall?.needsReconnect === true
-            }
-            title={
-              (missing?.reconnect ?? fourthwall?.needsReconnect === true)
-                ? undefined
-                : t("readiness.connectTitle")
-            }
-          />
-        </section>
-      </div>
+      <ShopConnect
+        reconnect={missing?.reconnect ?? fourthwall?.needsReconnect === true}
+      />
     );
   }
 
@@ -143,6 +164,7 @@ export const StoreDashboard = () => {
           <AlertDescription>{readiness.error.message}</AlertDescription>
         </Alert>
       ) : null}
+      {readiness.data ? <StoreSetup /> : null}
       {readiness.data ? (
         <StoreSummary
           onApprovals={() => setTab("approvals")}

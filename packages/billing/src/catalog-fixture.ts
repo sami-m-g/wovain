@@ -3,17 +3,17 @@ import type { z } from "zod";
 import type { billingCatalogSchema } from "./catalog.ts";
 
 // The catalog the tests run with (vitest.config.ts sets BILLING_CATALOG to
-// it): production's values when it was written, so the tests read like the
-// product. Deployed environments get theirs from Pulumi config.
+// it): the proposed launch values (docs/pricing-proposal.md), so the tests
+// read like the product. Deployed environments get theirs from Pulumi config.
 export const TEST_CATALOG = {
-  creditCost: { assist: 1, design: 2, research: 3 },
-  creditPack: { credits: 100, name: "Credit pack", priceCents: 1000 },
+  creditCost: { assist: 1, design: 4, research: 5 },
+  creditPack: { credits: 100, name: "Credit pack", priceCents: 1500 },
   designsPerRun: 3,
   plans: {
     free: {
       autopilot: false,
-      autopilotDailyCredits: 15,
-      monthlyCredits: 25,
+      autopilotDailyCredits: 25,
+      monthlyCredits: 40,
       name: "Free",
       priceCents: 0,
       rank: 0,
@@ -21,7 +21,7 @@ export const TEST_CATALOG = {
     },
     label: {
       autopilot: true,
-      autopilotDailyCredits: 100,
+      autopilotDailyCredits: 150,
       monthlyCredits: 1000,
       name: "Label",
       priceCents: 7900,
@@ -30,7 +30,7 @@ export const TEST_CATALOG = {
     },
     studio: {
       autopilot: true,
-      autopilotDailyCredits: 30,
+      autopilotDailyCredits: 50,
       monthlyCredits: 300,
       name: "Studio",
       priceCents: 2900,

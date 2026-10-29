@@ -15,6 +15,7 @@ import { requireFal } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { assertQlooOn, getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
+import { reachMilestone } from "./milestones";
 import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
 import { stageRunDrop, storeManagementOn } from "./store";
@@ -642,6 +643,9 @@ export const startRun = async (actor: Actor, input: RunInput) => {
     throw new Error("The run wasn't saved");
   }
   actor.log?.set({ run: { autopilot: input.autopilot, id: created.id } });
+  await reachMilestone(actor, "first_drop_started", {
+    autopilot: input.autopilot,
+  });
   try {
     await actor.runs.start({ input, runId: created.id, userId: actor.userId });
   } catch (error) {

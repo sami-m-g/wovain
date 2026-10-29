@@ -5,11 +5,16 @@ import { createCustomerSessions } from "@polar-sh/sdk/2026-10/services/customer_
 import { getStateExternalCustomers } from "@polar-sh/sdk/2026-10/services/customers";
 import { ingestEvents } from "@polar-sh/sdk/2026-10/services/events";
 import { iterListProducts } from "@polar-sh/sdk/2026-10/services/products";
-import { createSubscriptions } from "@polar-sh/sdk/2026-10/services/subscriptions";
+import {
+  createSubscriptions,
+  revokeSubscriptions,
+} from "@polar-sh/sdk/2026-10/services/subscriptions";
 import type { Database } from "@wovain/db";
+import { sql } from "drizzle-orm";
+import { log } from "evlog";
 
 import { ensureCustomer, polarCustomerGateway } from "./customer";
-import type { CustomerMerchant } from "./customer";
+import type { CustomerGateway, CustomerMerchant } from "./customer";
 import { CREDIT_METER, POLAR_METADATA_KEY } from "./plans";
 import type { CreditStep, Offer, PlanCode } from "./plans";
 
@@ -100,6 +105,40 @@ export const portalUrl = async (
   return session.customer_portal_url;
 };
 
+// The Polar calls ensureFreePlan makes on a merchant's subscriptions, so
+// tests can stand in for Polar.
+export interface FreePlanGateway {
+  // Active subscriptions of the merchant's customer, oldest first.
+  activeSubscriptions: (
+    merchantId: string
+  ) => Promise<{ id: string; productId: string }[]>;
+  create: (merchantId: string, productId: string) => Promise<void>;
+  freeProductId: () => Promise<string>;
+  revoke: (subscriptionId: string) => Promise<void>;
+}
+
+export const polarFreePlanGateway = (polar: PolarCore): FreePlanGateway => ({
+  activeSubscriptions: async (merchantId) => {
+    const state = await getStateExternalCustomers(polar)(merchantId);
+    return state.active_subscriptions
+      .toSorted((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+      .map((subscription) => ({
+        id: subscription.id,
+        productId: subscription.product_id,
+      }));
+  },
+  create: async (merchantId, product) => {
+    await createSubscriptions(polar)({
+      external_customer_id: merchantId,
+      product_id: product,
+    });
+  },
+  freeProductId: async () => await productId(polar, "free"),
+  revoke: async (subscriptionId) => {
+    await revokeSubscriptions(polar)(subscriptionId);
+  },
+});
+
 // Makes sure a merchant is a Polar customer on some plan: one with no
 // subscription (new, or a paid plan just ended) is put on Free, whose
 // benefit grants the monthly free credits. Users from before billing get
@@ -107,21 +146,55 @@ export const portalUrl = async (
 // A customer that exists under a stale link is settled by ensureCustomer,
 // which throws CustomerConflictError when the email belongs to a live
 // account.
+//
+// The sign-up webhook and the Billing page's poll both land here at once, and
+// Polar lets a customer hold two Free subscriptions (each grants the monthly
+// credits). So the check and the create run under a per-merchant database
+// lock, shared by every server instance, and a second Free subscription that
+// got through anyway is revoked (its grant's revoke webhook takes its credits
+// back) and reported to error tracking.
 export const ensureFreePlan = async (
   polar: PolarCore,
   db: Database,
-  merchant: CustomerMerchant
+  merchant: CustomerMerchant,
+  gateways: {
+    customer?: CustomerGateway;
+    freePlan?: FreePlanGateway;
+  } = {}
 ) => {
-  await ensureCustomer(db, polarCustomerGateway(polar), merchant);
-  const state = await getStateExternalCustomers(polar)(merchant.id);
-  if (state.active_subscriptions.length > 0) {
+  await ensureCustomer(
+    db,
+    gateways.customer ?? polarCustomerGateway(polar),
+    merchant
+  );
+  const plans = gateways.freePlan ?? polarFreePlanGateway(polar);
+  return await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`free-plan:${merchant.id}`}))`
+    );
+    const active = await plans.activeSubscriptions(merchant.id);
+    if (active.length === 0) {
+      await plans.create(merchant.id, await plans.freeProductId());
+      return true;
+    }
+    const free = await plans.freeProductId();
+    const [, ...extras] = active.filter(
+      (subscription) => subscription.productId === free
+    );
+    for (const extra of extras) {
+      // oxlint-disable-next-line no-await-in-loop
+      await plans.revoke(extra.id);
+      log.error({
+        billing: { subscriptionId: extra.id, userId: merchant.id },
+        error: {
+          code: "POLAR_DUPLICATE_FREE_SUBSCRIPTION",
+          message: "A second Free subscription was revoked",
+          name: "PolarDuplicateFreeSubscription",
+        },
+      });
+    }
     return false;
-  }
-  await createSubscriptions(polar)({
-    external_customer_id: merchant.id,
-    product_id: await productId(polar, "free"),
   });
-  return true;
 };
 
 // Reports a settled step to Polar's credits meter, so the customer portal

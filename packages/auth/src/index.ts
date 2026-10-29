@@ -69,8 +69,9 @@ const localeOf = (user: object, request?: Request) =>
 export interface AuthAnalytics {
   capture: (event: {
     distinctId: string;
-    event: BillingEvent | "sign_up";
+    event: BillingEvent | "sign_up" | "signed_up";
     properties?: Record<string, unknown>;
+    timestamp?: Date;
   }) => Promise<void>;
   identify?: BillingAnalytics["identify"];
 }
@@ -291,6 +292,17 @@ export const createAuth = (
               distinctId: user.id,
               event: "sign_up",
               properties: method === undefined ? {} : { method },
+            });
+            // The north star's clock starts here; user.createdAt is the
+            // time the Insights page times the journey from.
+            await analytics?.capture({
+              distinctId: user.id,
+              event: "signed_up",
+              properties: {
+                ...(method === undefined ? {} : { method }),
+                reached_at: user.createdAt.toISOString(),
+              },
+              timestamp: user.createdAt,
             });
           },
           before: (user, context) =>
