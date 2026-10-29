@@ -187,7 +187,9 @@ export const FLAGS = {
     owner: { gitlab: OWNER, team: "runs" },
     rollout: {
       development: { kind: "all" },
-      next: { kind: "percent", percent: 10 },
+      // Every run on next takes the Mastra workflow, so it is proven there
+      // before the legacy engine is deleted; production stays frozen.
+      next: { kind: "all" },
       production: { kind: "percent", percent: 10 },
     },
     type: "release",

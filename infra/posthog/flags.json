@@ -583,20 +583,6 @@
           "rollout_percentage": 10
         },
         {
-          "internal": true,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
           "internal": false,
           "properties": [
             {
@@ -608,7 +594,7 @@
               ]
             }
           ],
-          "rollout_percentage": 10
+          "rollout_percentage": 100
         },
         {
           "internal": false,
