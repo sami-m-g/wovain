@@ -17,6 +17,7 @@ export const MILESTONES = [
   "meta_payment_ready",
   "meta_page_ready",
   "pixel_ready",
+  "meta_graph_ready",
   "first_drop_started",
   "design_approved",
   "products_published",

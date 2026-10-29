@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
 import { createAutopilotFunctions } from "./autopilot";
+import { createDirectionFunctions } from "./directions";
 import { createDropFunctions } from "./drops";
 import { createFeedbackFunctions } from "./feedback";
 import { createMediaFunctions } from "./media";
@@ -184,6 +185,7 @@ export const createRunEngine = ({
       ...createOptimizerFunctions(inngest, { ...services, events }),
       ...createStoreFunctions(inngest, services),
       ...createDropFunctions(inngest, services),
+      ...createDirectionFunctions(inngest, services),
     ],
     inngest,
     mastra,

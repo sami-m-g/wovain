@@ -166,6 +166,10 @@
       {
         "question": "¿Quién ve mis anuncios?",
         "answer": "Personas que aman lo mismo que tu marca. Qloo elige esa audiencia a partir de las marcas de tu perfil, y cada anuncio se escribe para ella. Si wovain no encuentra esa audiencia, no crea anuncios y te dice qué añadir."
+      },
+      {
+        "question": "¿Qué evita que mis anuncios pierdan dinero?",
+        "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador."
       }
     ],
     "heroCta": "Empezar un drop",
@@ -491,13 +495,18 @@
       },
       "listingsUnknown": "anuncios sin revisar",
       "sources": "Noticias de {title}",
-      "loading": "Buscando qué vender ahora…",
       "failed": "No pudimos acceder a nuestros datos de gustos, así que aún no hay sugerencias.",
       "retry": "Reintentar",
       "none": "Qloo no encontró nada nuevo en alza ahora. Escribe tu propia dirección abajo.",
       "tavilyFailed": "La revisión de noticias o anuncios falló en algunas sugerencias; esa parte es desconocida.",
       "brandHint": "Opcional: una marca mantiene estas sugerencias dentro de tu estilo.",
-      "brandHintLink": "Añadir una marca"
+      "brandHintLink": "Añadir una marca",
+      "steps": {
+        "qloo": "Preguntando a Qloo qué está subiendo…",
+        "listings": "Revisando las noticias del mes y lo saturado que está…",
+        "words": "Escribiendo las primeras sugerencias…"
+      },
+      "elapsed": "{seconds, plural, one {# segundo} other {# segundos}}"
     },
     "trends": {
       "title": "Elige las ideas",
@@ -1856,10 +1865,17 @@
       "payouts": {
         "label": "Pagos configurados",
         "done": "Las ventas llegan a tu cuenta bancaria.",
-        "todo": "Termina tu cuenta de pagos en Fourthwall para recibir las ventas. Se marcará aquí cuando esté hecho.",
+        "todo": "Fourthwall te paga las ventas a través de Stripe. Configurarlo lleva unos 5 minutos y solo puede hacerlo el propietario de la tienda.",
         "waiting": "Fourthwall está terminando tu cuenta de pagos.",
         "check": "Revisa tu cuenta de pagos.",
-        "action": "Configurar pagos"
+        "action": "Abrir Facturación y pagos",
+        "inProgress": "Stripe aún necesita algunos datos antes de poder pagarte.",
+        "step1": "Abre Facturación y pagos en Fourthwall.",
+        "step2": "En Cómo cobras, elige Configurar tus pagos.",
+        "step3": "Da a Stripe tu identificación y tus datos bancarios, y vuelve aquí. Este paso se marca solo.",
+        "noStripe": "¿Stripe no está disponible en tu país? Fourthwall paga por PayPal o bill.com: cuando tu saldo llegue a 25 $, escribe a support@fourthwall.com con la dirección de tu tienda. Cuando lo hayan configurado, marca este paso como hecho.",
+        "markDone": "El soporte de Fourthwall configuró mis pagos",
+        "confirmed": "Marcaste los pagos como configurados por el soporte de Fourthwall (PayPal o bill.com)."
       },
       "site_live": {
         "label": "Tienda publicada",
@@ -1883,11 +1899,16 @@
         "todo": "Añade tu píxel de Meta en los ajustes de Fourthwall y abre tu tienda una vez para enviar una visita de prueba. Se marcará cuando Meta la vea.",
         "waiting": "Conecta Meta primero: wovain encuentra tu píxel allí.",
         "check": "Revisa tu píxel.",
-        "action": "Añadir el píxel en Fourthwall",
+        "action": "Abrir Píxeles de seguimiento",
         "test": "Abrir tu tienda (visita de prueba)",
         "paste": "ID del píxel para pegar:",
         "noDataset": "Meta está conectado, pero wovain no encontró un único píxel en tu cuenta publicitaria. Crea o elige uno en la configuración de Meta.",
-        "connectMeta": "Conectar Meta"
+        "connectMeta": "Conectar Meta",
+        "step1": "Copia el ID del píxel.",
+        "step2": "En Píxeles de seguimiento, pégalo en el campo Facebook Pixel y guarda.",
+        "step3": "Abre tu tienda una vez. Este paso se marca cuando Meta ve la visita, lo que puede tardar unos minutos.",
+        "capi": "Para contar las ventas que ocultan los bloqueadores de anuncios, conecta también la API de conversiones de Meta en Fourthwall. Pide el mismo ID de píxel y un token de acceso del Administrador de eventos de Meta.",
+        "capiAction": "Abrir Meta Conversions"
       },
       "domain": {
         "label": "Dominio propio",
@@ -1906,6 +1927,70 @@
         "waiting": "Esperando a Fourthwall.",
         "check": "Fourthwall añade políticas por defecto. Revísalas para que reflejen cómo vendes.",
         "action": "Revisar políticas"
+      }
+    },
+    "metaSetup": {
+      "title": "Prepara tu cuenta de Meta para los anuncios",
+      "titleReady": "Tu cuenta de Meta está lista para los anuncios",
+      "progressLabel": "Progreso de la configuración de Meta",
+      "progress": "{done, number} de {total, number} hechos",
+      "optional": "Opcional",
+      "connect": "Conectar Meta",
+      "reconnect": "Volver a conectar Meta",
+      "disconnect": "Desconectar Meta",
+      "disconnected": "Meta está desconectado",
+      "notConnected": "Conecta tu cuenta de Meta y wovain revisa lo que aún falta para que tus anuncios puedan publicarse.",
+      "expired": "El inicio de sesión de Meta caducó. Vuelve a conectar Meta para ver cómo está tu cuenta.",
+      "state": {
+        "done": "hecho",
+        "todo": "pendiente",
+        "waiting": "en espera",
+        "check": "revísalo tú"
+      },
+      "ad_account": {
+        "label": "Cuenta publicitaria",
+        "action": "Abrir cuentas publicitarias",
+        "altAction": "Abrir cuentas publicitarias",
+        "done": "Tu cuenta publicitaria está abierta a wovain.",
+        "todo": "Necesitas una cuenta publicitaria. Abre la página de cuentas publicitarias de Meta, elige Añadir y luego Crear una cuenta publicitaria nueva. Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Meta ha restringido esta cuenta publicitaria. Abre Calidad de la cuenta para ver por qué y qué pide Meta.",
+        "check": "Revisa tu cuenta publicitaria en Meta."
+      },
+      "payment": {
+        "label": "Método de pago",
+        "action": "Añadir un método de pago",
+        "altAction": "Añadir un método de pago",
+        "done": "Tu cuenta publicitaria tiene un método de pago. Meta le cobra el gasto en anuncios.",
+        "todo": "Meta cobra el gasto en anuncios a una tarjeta o a PayPal en tu cuenta publicitaria. Abre la configuración de pagos de Meta, elige Añadir método de pago y guárdalo. Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Meta está revisando esta cuenta publicitaria, así que los pagos esperan. Abre Calidad de la cuenta para ver qué necesita Meta.",
+        "check": "Revisa el método de pago en Meta."
+      },
+      "page": {
+        "label": "Página de Facebook",
+        "action": "Añadir tu página",
+        "altAction": "Crear una página",
+        "done": "Tus anuncios se publican con tu página de Facebook.",
+        "todo": "Los anuncios se publican con una página de Facebook. Si tienes una, abre Páginas en la configuración del negocio de Meta, elige Añadir y selecciónala. Si no, crea una primero (basta con un nombre y una foto). Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Configura primero tu cuenta publicitaria.",
+        "check": "Revisa tu página en Meta."
+      },
+      "instagram": {
+        "label": "Cuenta de Instagram",
+        "action": "Añadir Instagram",
+        "altAction": "Añadir Instagram",
+        "done": "Tus anuncios también pueden publicarse con tu cuenta de Instagram.",
+        "todo": "Opcional: vincula tu cuenta de Instagram para que tus anuncios muestren tu nombre también en Instagram. Abre Cuentas de Instagram en la configuración del negocio de Meta y elige Añadir.",
+        "waiting": "Configura primero tu cuenta publicitaria.",
+        "check": "Opcional: Meta no indicó si hay una cuenta de Instagram vinculada. Puedes revisarlo en la configuración del negocio de Meta."
+      },
+      "safety_rules": {
+        "label": "Reglas de seguridad",
+        "action": "Volver a conectar Meta",
+        "altAction": "Volver a conectar Meta",
+        "done": "Listo. wovain puede crear las reglas que pausan tus anuncios, incluso cuando wovain no está en línea.",
+        "todo": "Vuelve a conectar Meta y acepta todo lo que pide, para que wovain pueda crear las reglas que pausan tus anuncios. Mientras Meta revisa la app de wovain, esto solo funciona para las cuentas que Meta deja probarla.",
+        "waiting": "Disponible cuando tu cuenta publicitaria esté configurada.",
+        "check": "Vuelve a conectar Meta para revisar las reglas de seguridad."
       }
     }
   },

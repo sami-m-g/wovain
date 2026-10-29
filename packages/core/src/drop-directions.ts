@@ -69,10 +69,22 @@ export interface DirectionDeps {
   ask: Nemotron;
   locale: string;
   log?: Logger | undefined;
+  // Progress as it happens, so the page can show each card the moment it
+  // is ready instead of waiting for all of them.
+  onEvent?: ((event: DirectionEvent) => void) | undefined;
   qloo: Pick<Qloo, "insights" | "tagsFor">;
   tavily: Pick<TavilyWeb, "search">;
   trace?: DecisionTrace | undefined;
 }
+
+// What the page is told while directions are being found: the step under
+// way (Qloo, then the news and listings checks, then the words), and each
+// direction as soon as it is written.
+export type DirectionStep = "listings" | "qloo" | "words";
+
+export type DirectionEvent =
+  | { kind: "step"; step: DirectionStep }
+  | { direction: DropDirection; kind: "direction" };
 
 export interface DirectionEvidence {
   // The Qloo audience the direction grew from (open mode).
@@ -106,6 +118,12 @@ export interface Directions {
   scope: DirectionScope;
   // Tavily failed for at least one direction: momentum or saturation unknown.
   tavilyFailed: boolean;
+}
+
+// What the new-drop step gets and what is kept for it: the directions and
+// whether the merchant has a brand (for "Ignore my brand this time").
+export interface DirectionsAnswer extends Directions {
+  hasBrand: boolean;
 }
 
 const failure = (step: string, error: unknown) => {
@@ -352,6 +370,20 @@ interface Draft {
   theme: string;
 }
 
+// Words built from a draft's facts alone: shown while Nemotron writes, and
+// kept when it fails. The page writes "why now" from the counts.
+const plainWords = (draft: Draft, brand: DirectionBrand | undefined) => {
+  const buyers = draft.evidence.audience ?? brand?.niches[0];
+  return {
+    brief: (buyers === undefined
+      ? draft.theme
+      : `${draft.theme} for ${buyers}`
+    ).slice(0, BRIEF_MAX),
+    title: draft.theme,
+    whyNow: "",
+  };
+};
+
 // The words for each draft; a draft whose words are missing gets plain ones
 // built from its facts, so a Nemotron failure never hides Qloo's answer.
 const wordsFor = async (
@@ -359,17 +391,7 @@ const wordsFor = async (
   brand: DirectionBrand | undefined,
   drafts: readonly Draft[]
 ) => {
-  const plain = (draft: Draft) => {
-    const buyers = draft.evidence.audience ?? brand?.niches[0];
-    return {
-      brief: (buyers === undefined
-        ? draft.theme
-        : `${draft.theme} for ${buyers}`
-      ).slice(0, BRIEF_MAX),
-      title: draft.theme,
-      whyNow: "",
-    };
-  };
+  const plain = (draft: Draft) => plainWords(draft, brand);
   try {
     const reply = await deps.ask({
       log: deps.log,
@@ -411,6 +433,7 @@ export const suggestDirections = async (
   const brand =
     given !== undefined && given.entities.length > 0 ? given : undefined;
   const scope: DirectionScope = brand === undefined ? "open" : "brand";
+  deps.onEvent?.({ kind: "step", step: "qloo" });
   const candidates =
     brand === undefined
       ? await openCandidates(deps, round, salt)
@@ -439,8 +462,14 @@ export const suggestDirections = async (
   });
   let tavilyFailed = false;
   const niche = brand?.niches[0] ?? "";
-  const drafts = await Promise.all(
-    candidates.map(async (candidate, index): Promise<Draft> => {
+  if (candidates.length > 0) {
+    deps.onEvent?.({ kind: "step", step: "listings" });
+  }
+  let writing = false;
+  // Each candidate goes through its own checks and words in parallel, and
+  // is announced as soon as it is written.
+  const written = await Promise.all(
+    candidates.map(async (candidate, index): Promise<DropDirection> => {
       const query =
         niche === "" ? candidate.name : `${candidate.name} ${niche}`;
       const [momentum, saturation] = await Promise.all([
@@ -452,7 +481,7 @@ export const suggestDirections = async (
       }
       const carriers = candidate.carriers.slice(0, EVIDENCE_REFS);
       const qlooAffinity = mean(carriers.map((one) => one.affinity));
-      return {
+      const draft: Draft = {
         evidence: {
           audience: candidate.audience,
           momentum:
@@ -473,9 +502,29 @@ export const suggestDirections = async (
         score: scoreOf(qlooAffinity, momentum, saturation),
         theme: candidate.name,
       };
+      if (!writing) {
+        writing = true;
+        deps.onEvent?.({ kind: "step", step: "words" });
+      }
+      // The card shows at once with its facts; its words replace them.
+      deps.onEvent?.({
+        direction: { ...draft, ...plainWords(draft, brand) },
+        kind: "direction",
+      });
+      const [words] = await wordsFor(deps, brand, [draft]);
+      const direction: DropDirection = {
+        ...draft,
+        brief: words?.brief ?? draft.theme,
+        title: words?.title ?? draft.theme,
+        whyNow: words?.whyNow ?? "",
+      };
+      deps.onEvent?.({ direction, kind: "direction" });
+      return direction;
     })
   );
-  const ranked = drafts.toSorted((first, second) => second.score - first.score);
+  const ranked = written.toSorted(
+    (first, second) => second.score - first.score
+  );
   deps.trace?.add({
     agent: "drop_directions",
     inputSummary: `${ranked.length} direction(s)`,
@@ -493,21 +542,5 @@ export const suggestDirections = async (
     ],
     step: "directions.rank",
   });
-  if (ranked.length === 0) {
-    return { directions: [], scope, tavilyFailed };
-  }
-  const words = await wordsFor(deps, brand, ranked);
-  return {
-    directions: ranked.map((draft, index) => {
-      const written = words[index];
-      return {
-        ...draft,
-        brief: written?.brief ?? draft.theme,
-        title: written?.title ?? draft.theme,
-        whyNow: written?.whyNow ?? "",
-      };
-    }),
-    scope,
-    tavilyFailed,
-  };
+  return { directions: ranked, scope, tavilyFailed };
 };

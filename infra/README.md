@@ -33,11 +33,11 @@ The GitGuardian GitHub App scans every push and pull request for secrets (the `G
 
 False positives (a placeholder CI key, a test fixture) are ignored with `.github/workflows/gitguardian-ignore.yml`: run it on main with the incident id, a reason and a justification, and the run is the audit record. Never ignore a real secret: revoke it, then resolve the incident. `.gitguardian.yaml` holds the ignored paths for ggshield run locally (`ggshield secret scan`).
 
-The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as a stack secret of the `github` stack and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set). Create a service account token in the GitGuardian dashboard (API, Service accounts) with only the `incidents:write` scope, then `pulumi config set --secret --cwd infra/github --stack github gitguardian-api-key <token>`. Don't set it by hand in the repository's settings.
+The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as a stack secret of the `github` stack and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set). Create a service account token in the GitGuardian dashboard (API, Service accounts) with only the `incidents:write` scope, then run `pulumi config set --secret --cwd infra/github --stack github gitguardian-api-key`, which prompts for the token so it never lands in your shell history. Don't set it by hand in the repository's settings.
 
 The repository's variables are `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_PROJECT_ID`, `GCP_REGION` and `DOCS_SITE_URL`. Each deploy environment has `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_IMAGE_REPOSITORY`, `GCP_SQL_INSTANCE`, `DATABASE_URL_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`, `SITE_URL` and `WEB_SERVICE`, and `Production` also has `DOCS_SERVICE`. See "Releases" below.
 
-Production's provider authenticates with its `github:token` stack secret: a fine-grained token for sami-m-g/wovain with read and write on Administration, Environments and Variables (`pulumi config set --secret github:token <token> --cwd infra --stack prod`).
+Production's provider authenticates with its `github:token` stack secret: a fine-grained token for sami-m-g/wovain with read and write on Administration, Environments and Variables (run `pulumi config set --secret --cwd infra --stack prod github:token`, which prompts for the token).
 
 ### CodeRabbit and auto-merge
 
@@ -63,7 +63,7 @@ Set it up once, as a project owner, after `bootstrap/` is applied (it creates th
 pnpm run infra:install
 # The stack, with its own secrets key (the secretsprovider in Pulumi.github.yaml).
 pulumi stack init github --cwd infra/github --secrets-provider gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/github-stack-secrets
-pulumi config set --secret --cwd infra/github --stack github github:token <token>
+pulumi config set --secret --cwd infra/github --stack github github:token
 # Adopt what exists: the repository, and the GitLab mirror's ruleset and deploy key, which the first up deletes.
 pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
   github:index/repository:Repository wovain wovain
@@ -167,9 +167,9 @@ It holds no credential of production's. Its provider credentials are its own sta
 | `posthog:apiKey` | a personal API key in the PostHog organization, with `project:write` (organization scope) | Creating next's project is an organization action, so this key is organization-level; it is next's own key, revocable without touching production's. |
 
 ```sh
-pulumi config set --secret --cwd infra/next --stack next resendAdminKey <key>
-pulumi config set --secret --cwd infra/next --stack next github:token <token>
-pulumi config set --secret --cwd infra/next --stack next posthog:apiKey <key>
+pulumi config set --secret --cwd infra/next --stack next resendAdminKey
+pulumi config set --secret --cwd infra/next --stack next github:token
+pulumi config set --secret --cwd infra/next --stack next posthog:apiKey
 ```
 
 A preview of a stack not yet in the state starts from an empty one, and `up` creates it (`scripts/pulumi.ts`):
@@ -204,7 +204,7 @@ next's PostHog project (`project-next`) has no feature flags, and next has no `p
 
 ### Values only a provider's console hands out (one time, per environment)
 
-Pulumi creates every `<id>-<name>` secret, empty until it has a value; an empty one is not mounted, since Cloud Run won't start a revision on a secret with no version. These values have no API or IaC provider to create them, so you paste each once as a stack secret: dev's as `pulumi config set --secret --cwd infra --stack prod <id>-dev <value>`, next's without the suffix in its own stack, `pulumi config set --secret --cwd infra/next --stack next <id> <value>` (the Secret Manager id is still `<id>-next`):
+Pulumi creates every `<id>-<name>` secret, empty until it has a value; an empty one is not mounted, since Cloud Run won't start a revision on a secret with no version. These values have no API or IaC provider to create them, so you set each once as a stack secret. Pulumi prompts for the value, so it stays out of your shell history: dev's as `pulumi config set --secret --cwd infra --stack prod <id>-dev` (the prompt is for the value), next's without the suffix in its own stack, `pulumi config set --secret --cwd infra/next --stack next <id>` (the Secret Manager id is still `<id>-next`):
 
 | Stack secret | From | Why it can't be created in code |
 | --- | --- | --- |
@@ -255,10 +255,10 @@ Stack config:
 
 - `posthog:apiKey` (secret): a personal API key with write access to the project's insights, dashboards, alerts, surveys, feature flags and settings.
 - `posthog:projectId`: `687269`.
-- `wovain:posthogInternalUserIds` (optional): the team's Better Auth user ids, which every `internal` and `percent` rollout includes, e.g. `pulumi config set --path 'wovain:posthogInternalUserIds[0]' <user id>`.
+- `wovain:posthogInternalUserIds` (optional): the team's Better Auth user ids, which every `internal` and `percent` rollout includes, e.g. `pulumi config set --path 'wovain:posthogInternalUserIds[0]'`, which prompts for the user id.
 - `wovain:posthogAlertSubscribers` (optional): the PostHog user ids that get KPI alert emails; the founder by default.
 
-The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (`pulumi config set --secret posthog-secret-key <key>`).
+The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (run `pulumi config set --secret --cwd infra posthog-secret-key`, which prompts for the key).
 
 ### Adopting what exists (one time)
 
