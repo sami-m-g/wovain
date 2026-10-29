@@ -68,6 +68,50 @@ const TREND_BIAS = "low";
 // not the plot.
 const CUE_TAG = /^urn:tag:(?:style|subgenre|theme|genre):/u;
 
+// A Qloo reply that wasn't ok, with its status, so a rejected query (400)
+// reads apart from Qloo being down or refusing the key.
+export class QlooHttpError extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`Qloo ${path} answered ${status}`);
+    this.name = "QlooHttpError";
+    this.status = status;
+  }
+}
+
+const BAD_REQUEST = 400;
+const SEED_TAKE = 3;
+const MAX_TERMS = 4;
+const TERM_MAX = 60;
+// Clause breaks in a brief: each clause is a candidate entity name.
+const CLAUSE_BREAK = /[\n\r\t,;:.!?|/&+()[\]{}"“”«»<>]+|\s[-–—]\s/u;
+// Anything but letters, marks, numbers, spaces, apostrophes and hyphens.
+const NOT_NAME = /[^\p{L}\p{M}\p{N}\s'’-]+/gu;
+const SPACES = /\s+/gu;
+const HAS_WORD = /[\p{L}\p{N}]/u;
+
+const termOf = (text: string): string =>
+  text.replaceAll(NOT_NAME, " ").replaceAll(SPACES, " ").trim();
+
+// Qloo's /search matches a short entity name ("Studio Ghibli"), not a brief:
+// a long or punctuated query answers 400. The terms are the whole seed when
+// it is short, then its clauses, cleaned of punctuation, each at most
+// TERM_MAX characters, at most MAX_TERMS, without repeats.
+export const searchTermsOf = (seed: string): string[] => {
+  const seen = new Set<string>();
+  return [seed, ...seed.split(CLAUSE_BREAK)]
+    .map(termOf)
+    .filter((term) => {
+      const key = term.toLowerCase();
+      const fresh =
+        HAS_WORD.test(term) && term.length <= TERM_MAX && !seen.has(key);
+      seen.add(key);
+      return fresh;
+    })
+    .slice(0, MAX_TERMS);
+};
+
 const searchSchema = z.object({
   results: z.array(
     z.object({
@@ -77,6 +121,7 @@ const searchSchema = z.object({
     })
   ),
 });
+type SearchEntity = z.output<typeof searchSchema>["results"][number];
 
 const affinityMap = z.record(z.string().max(40), z.number()).default({});
 
@@ -426,7 +471,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
                 signal: AbortSignal.timeout(timeoutMs),
               }
             );
-            const error = new Error(`Qloo ${path} answered ${reply.status}`);
+            const error = new QlooHttpError(path, reply.status);
             if (reply.status === TOO_MANY || reply.status >= SERVER_ERROR) {
               throw error;
             }
@@ -481,6 +526,58 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     }
   };
 
+  // One search term's entities. Qloo answers 400 to a term it can't parse:
+  // that term has no match and the others still count. Any other failure
+  // (auth, 429, 5xx) is final.
+  const termEntities = async (
+    term: string
+  ): Promise<{ entities: SearchEntity[]; rejected?: QlooHttpError }> => {
+    try {
+      const { results } = await get(
+        "/search",
+        { query: term, take: String(SEED_TAKE), types: SEED_TYPES },
+        searchSchema
+      );
+      return { entities: results };
+    } catch (error) {
+      if (error instanceof QlooHttpError && error.status === BAD_REQUEST) {
+        return { entities: [], rejected: error };
+      }
+      throw error;
+    }
+  };
+
+  // The seed's entities: the best matches across its search terms, at most
+  // SEED_TAKE. When Qloo rejects every term the request itself is wrong, so
+  // the step fails with Qloo's answer.
+  const seedEntities = async (
+    seed: string,
+    log?: Logger
+  ): Promise<SearchEntity[]> => {
+    const terms = searchTermsOf(seed);
+    if (terms.length === 0) {
+      return [];
+    }
+    const found = await Promise.all(terms.map(termEntities));
+    const rejected = found.flatMap(({ rejected: error }) =>
+      error === undefined ? [] : [error]
+    );
+    log?.set({ qloo: { rejectedTerms: rejected.length, terms: terms.length } });
+    const [firstRejected] = rejected;
+    if (firstRejected !== undefined && rejected.length === terms.length) {
+      throw firstRejected;
+    }
+    const seen = new Set<string>();
+    return found
+      .flatMap(({ entities }) => entities)
+      .filter(({ entity_id: id }) => {
+        const fresh = !seen.has(id);
+        seen.add(id);
+        return fresh;
+      })
+      .slice(0, SEED_TAKE);
+  };
+
   // The seed's entities and the tags their fans share; with crossDomain,
   // also what they like in other domains, and why.
   const tasteOf = async (
@@ -489,11 +586,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     { crossDomain = false }: TasteOptions = {}
   ): Promise<Taste> =>
     await external(log, { operation: "taste", provider: "qloo" }, async () => {
-      const { results: entities } = await get(
-        "/search",
-        { query: seed, take: "3", types: SEED_TYPES },
-        searchSchema
-      );
+      const entities = await seedEntities(seed, log);
       if (entities.length === 0) {
         return crossDomain
           ? {
