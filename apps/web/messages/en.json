@@ -166,6 +166,10 @@
       {
         "question": "Who sees my ads?",
         "answer": "People who love what your label loves. Qloo picks that audience from the brands in your profile, and every ad is written for them. If wovain can't find that audience, it makes no ads and tells you what to add."
+      },
+      {
+        "question": "What stops my ads from losing money?",
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
       }
     ],
     "heroCta": "Start a drop",
@@ -490,13 +494,18 @@
       },
       "listingsUnknown": "listings not checked",
       "sources": "News for {title}",
-      "loading": "Finding what to sell now…",
       "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
       "retry": "Try again",
       "none": "Qloo found nothing new rising right now. Write your own direction below.",
       "tavilyFailed": "The news or listings check failed for some suggestions; that part is unknown.",
       "brandHint": "Optional: a brand keeps these suggestions within your style.",
-      "brandHintLink": "Add a brand"
+      "brandHintLink": "Add a brand",
+      "steps": {
+        "qloo": "Asking Qloo what's rising…",
+        "listings": "Checking this month's news and how crowded it is…",
+        "words": "Writing the first suggestions…"
+      },
+      "elapsed": "{seconds, plural, one {# second} other {# seconds}}"
     },
     "trends": {
       "title": "Pick the ideas",
@@ -1100,7 +1109,7 @@
     "faq": {
       "credit": {
         "question": "What is a credit?",
-        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 10 credits. If a step fails, its credits come back."
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 5, a design takes 4, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 18 credits. If a step fails, its credits come back."
       },
       "yours": {
         "question": "What do I pay outside wovain?",
@@ -1906,6 +1915,70 @@
         "check": "Fourthwall adds default policies. Review them so they match how you sell.",
         "action": "Review policies"
       }
+    },
+    "metaSetup": {
+      "title": "Get your Meta account ready for ads",
+      "titleReady": "Your Meta account is ready for ads",
+      "progressLabel": "Meta setup progress",
+      "progress": "{done, number} of {total, number} done",
+      "optional": "Optional",
+      "connect": "Connect Meta",
+      "reconnect": "Reconnect Meta",
+      "disconnect": "Disconnect Meta",
+      "disconnected": "Meta is disconnected",
+      "notConnected": "Connect your Meta account, and wovain checks what it still needs before your ads can run.",
+      "expired": "Meta's sign-in expired. Reconnect Meta to see where your account stands.",
+      "state": {
+        "done": "done",
+        "todo": "to do",
+        "waiting": "waiting",
+        "check": "check it yourself"
+      },
+      "ad_account": {
+        "label": "Ad account",
+        "action": "Open ad accounts",
+        "altAction": "Open ad accounts",
+        "done": "Your ad account is open to wovain.",
+        "todo": "You need an ad account. Open Meta's ad accounts page, choose Add, then Create a new ad account. Come back here: this card ticks off by itself.",
+        "waiting": "Meta has restricted this ad account. Open Account quality to see why and what Meta asks for.",
+        "check": "Check your ad account in Meta."
+      },
+      "payment": {
+        "label": "Payment method",
+        "action": "Add a payment method",
+        "altAction": "Add a payment method",
+        "done": "Your ad account has a payment method. Meta bills your ad spend to it.",
+        "todo": "Meta charges ad spend to a card or PayPal on your ad account. Open Meta's payment settings, choose Add payment method and save it. Come back here: this card ticks off by itself.",
+        "waiting": "Meta is reviewing this ad account, so payments wait. Open Account quality to see what Meta needs.",
+        "check": "Check the payment method in Meta."
+      },
+      "page": {
+        "label": "Facebook Page",
+        "action": "Add your Page",
+        "altAction": "Create a Page",
+        "done": "Your ads run under your Facebook Page.",
+        "todo": "Ads run under a Facebook Page. If you have one, open Pages in Meta's business settings, choose Add and pick it. If not, create one first (a name and a photo are enough). Come back here: this card ticks off by itself.",
+        "waiting": "Set up your ad account first.",
+        "check": "Check your Page in Meta."
+      },
+      "instagram": {
+        "label": "Instagram account",
+        "action": "Add Instagram",
+        "altAction": "Add Instagram",
+        "done": "Your ads can also run under your Instagram account.",
+        "todo": "Optional: link your Instagram account so your ads show your name on Instagram too. Open Instagram accounts in Meta's business settings and choose Add.",
+        "waiting": "Set up your ad account first.",
+        "check": "Optional: Meta didn't say whether an Instagram account is linked. You can check in Meta's business settings."
+      },
+      "safety_rules": {
+        "label": "Safety rules",
+        "action": "Reconnect Meta",
+        "altAction": "Reconnect Meta",
+        "done": "Ready. wovain can set up the rules that pause your ads, even when wovain is offline.",
+        "todo": "Reconnect Meta and allow everything Meta asks for, so wovain can set up the rules that pause your ads. While Meta reviews wovain's app, this works only for accounts Meta lets test it.",
+        "waiting": "Available once your ad account is set up.",
+        "check": "Reconnect Meta to check the safety rules."
+      }
     }
   },
   "Drops": {
@@ -1959,5 +2032,22 @@
     },
     "capsuleTitle": "Make it a capsule",
     "capsulePick": "Pick an idea above first."
+  },
+  "WithoutQloo": {
+    "title": "Without Qloo",
+    "lead": "The same idea step on {seeds, number} seeds with Nemotron alone ({model}), from the comparison run on {date}.",
+    "tableCaption": "What ideas stand on, with Qloo and without",
+    "metric": "Per idea",
+    "withQloo": "With Qloo",
+    "withoutQloo": "Without Qloo",
+    "metrics": {
+      "grounded": "Themes grounded in a Qloo tag",
+      "explained": "Themes Qloo explains (which fans, why)",
+      "crossDomains": "Taste domains (brands, films, TV)",
+      "cues": "Style cues from those tastes"
+    },
+    "seedsSummary": "The {seeds, number} seeds, side by side",
+    "noMatch": "no taste found",
+    "note": "Without Qloo, Nemotron writes plausible themes from the words alone: nothing ties them to who buys or why."
   }
 }

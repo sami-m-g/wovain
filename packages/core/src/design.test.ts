@@ -46,6 +46,7 @@ const idea = (theme: string, score: number): TrendIdea => ({
   references: [],
   score,
   signals: {
+    affinity: 0.6,
     ipSafety: 1,
     margin: 0.5,
     marketHits: 2,

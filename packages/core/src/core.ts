@@ -8,6 +8,7 @@ import type { ResearchModel } from "./evidence";
 import { createArtist, createFalJobs, falKeyCall } from "./fal";
 import { createFlags } from "./flags";
 import type { FlagsConfig } from "./flags";
+import { createMetaGraph } from "./meta-graph";
 import { createMetaInterests } from "./meta-interests";
 import { createModelRouter } from "./model-router";
 import type { ModelRouterConfig } from "./model-router";
@@ -136,6 +137,8 @@ export const createCore = (
     // PostHog feature flags (./flags.ts), typed by ./flag-registry.ts.
     flags: createFlags(env),
     memory,
+    // The Graph API with the merchant's own Meta grant (./meta-graph).
+    metaGraph: createMetaGraph({ graphUrl: env.META_GRAPH_URL }),
     // Meta's interest search, with wovain's app token (./meta-interests).
     metaInterests: createMetaInterests({
       appId: env.META_APP_ID,
