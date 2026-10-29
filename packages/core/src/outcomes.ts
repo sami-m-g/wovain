@@ -5,7 +5,7 @@ import betaCdf from "@stdlib/stats-base-dists-beta-cdf";
 // profit (sales times the profit per sale, less its ad spend), and each of
 // its angles (theme, Qloo tags and entities, audience, palette, price band,
 // blank) learns from the trials it was part of. Pure functions;
-// packages/api/src/flow/outcomes.ts records the rows and feeds them here.
+// packages/mastra/src/mastra/flow/outcomes.ts records the rows and feeds them here.
 //
 // The method is Beta-Binomial with an empirical-Bayes prior:
 // - Each angle's win rate has a Beta(κm, κ(1 − m)) prior, where m is the

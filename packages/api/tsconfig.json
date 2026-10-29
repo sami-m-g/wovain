@@ -2,11 +2,26 @@
   "extends": "@wovain/config/tsconfig.lib.json",
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../db" },
-    { "path": "../auth" },
-    { "path": "../billing" },
-    { "path": "../core" },
-    { "path": "../email" },
-    { "path": "../widgets" }
+    {
+      "path": "../db"
+    },
+    {
+      "path": "../auth"
+    },
+    {
+      "path": "../billing"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../email"
+    },
+    {
+      "path": "../widgets"
+    },
+    {
+      "path": "../mastra"
+    }
   ]
 }

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { compose, pickLocale } from "./emails";
 import { createMailer } from "./mailer";
+import { verifyUnsubscribeToken } from "./unsubscribe";
 
 const send = vi.fn();
 vi.mock("resend", () => ({
@@ -46,6 +47,25 @@ describe("emails", () => {
     expect(text).toContain('"pickleball"');
     expect(text).toContain(`${site}/r`);
   });
+
+  it("heads an alert by its type, in the merchant's language", async () => {
+    const alert = compose(
+      {
+        alert: "scale_request",
+        body: "3 sales at 2x ROAS.",
+        kind: "alert",
+        title: "A product is selling: raise its budget?",
+        url: `${site}/dashboard/autopilot`,
+      },
+      "fr"
+    );
+    expect(alert.subject).toBe(
+      "Un produit se vend: A product is selling: raise its budget?"
+    );
+    const text = await render(alert.element, { plainText: true });
+    expect(text).toContain("raise its budget? 3 sales at 2x ROAS.");
+    expect(text).toContain("Paramètres > Alertes");
+  });
 });
 
 describe("createMailer", () => {
@@ -54,6 +74,7 @@ describe("createMailer", () => {
     const mail = createMailer({
       apiKey: undefined,
       from: "wovain <support@wovain.com>",
+      replyTo: "support@wovain.com",
       siteUrl: site,
     });
 
@@ -78,6 +99,7 @@ describe("createMailer", () => {
     const mail = createMailer({
       apiKey: "re_test",
       from: "wovain <support@wovain.com>",
+      replyTo: "support@wovain.com",
       siteUrl: site,
     });
 
@@ -104,6 +126,50 @@ describe("createMailer", () => {
     expect(info).toHaveBeenCalledWith({ email: { id: "e1", kind: "run" } });
   });
 
+  it("marks run updates for one-click unsubscribe, not verification", async () => {
+    vi.spyOn(log, "info").mockImplementation(() => {});
+    send.mockResolvedValue({ data: { id: "e1" }, error: null });
+    const mail = createMailer({
+      apiKey: "re_test",
+      from: "wovain <support@wovain.com>",
+      replyTo: "support@wovain.com",
+      siteUrl: site,
+      unsubscribeSecret: "s3cret",
+    });
+
+    await mail({
+      message: { kind: "run", seed: "a", status: "failed", url: "/d" },
+      to: "m@example.com",
+    });
+    await mail({
+      message: { kind: "verify", url: `${site}/v` },
+      to: "m@example.com",
+    });
+
+    const [runSent, verifySent] = send.mock.calls.map(([sent]) => sent);
+    expect(runSent.replyTo).toBe("support@wovain.com");
+    expect(runSent.headers["List-Unsubscribe-Post"]).toBe(
+      "List-Unsubscribe=One-Click"
+    );
+    const header: string = runSent.headers["List-Unsubscribe"];
+    expect(header).toContain("<mailto:support@wovain.com?subject=unsubscribe>");
+    const link = /<(?<url>https:[^>]+)>/u.exec(header)?.groups?.["url"] ?? "";
+    expect(runSent.html).toContain("Unsubscribe from run updates");
+    expect(
+      verifyUnsubscribeToken(
+        "s3cret",
+        new URL(link).searchParams.get("token") ?? ""
+      )
+    ).toBe("m@example.com");
+    expect(verifySent.headers).toBeUndefined();
+    expect(verifySent.html).not.toContain("Unsubscribe");
+  });
+
+  it("rejects a forged unsubscribe token", () => {
+    expect(verifyUnsubscribeToken("s3cret", "bUBleC5jb20.bad")).toBeUndefined();
+    expect(verifyUnsubscribeToken("s3cret", "nope")).toBeUndefined();
+  });
+
   it("fails with a structured error when Resend refuses", async () => {
     send.mockResolvedValue({
       data: null,
@@ -112,6 +178,7 @@ describe("createMailer", () => {
     const mail = createMailer({
       apiKey: "re_test",
       from: "x <x@wovain.com>",
+      replyTo: "support@wovain.com",
       siteUrl: site,
     });
 

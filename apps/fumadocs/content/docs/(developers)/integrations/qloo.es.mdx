@@ -29,7 +29,7 @@ Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 - **Pruebas.** Tavily busca las noticias del último mes y los marketplaces solo dentro de los temas de Qloo (`packages/core/src/trends.ts`). Tavily nunca nombra un tema.
 - **Puntuación.** La afinidad de la etiqueta es el término de demanda, el 30 % de la puntuación de la idea (`packages/core/src/score.ts`). Una etiqueta sin afinidad nunca se busca ni se sugiere; ningún valor neutro la sustituye. El bucle de feedback reajusta los términos de la puntuación según las ventas. No elige los temas.
 - **Seguridad de propiedad intelectual.** Los nombres que Qloo asocia a la semilla (marcas, artistas, títulos) se guardan en la idea como nombres que nunca se deben imprimir.
-- **Diseño.** Las etiquetas de estilo y ambiente de las afinidades transversales entran en el brief de diseño como pistas, nunca sus nombres (`packages/core/src/design.ts`). Las etiquetas de Qloo de las ideas de una ejecución eligen la familia de estilo de un drop (`packages/api/src/flow/drops.ts`).
+- **Diseño.** Las etiquetas de estilo y ambiente de las afinidades transversales entran en el brief de diseño como pistas, nunca sus nombres (`packages/core/src/design.ts`). Las etiquetas de Qloo de las ideas de una ejecución eligen la familia de estilo de un drop (`packages/mastra/src/mastra/flow/drops.ts`).
 - **Anuncios.** Las edades, el género y las audiencias de Qloo configuran el conjunto de anuncios de Meta y la persona del redactor de anuncios (`packages/core/src/targeting.ts`). Sin una audiencia de Qloo no se crea ninguna campaña (`QLOO_AUDIENCE_MISSING`).
 
 ## Cuando Qloo no puede ayudar
@@ -38,7 +38,7 @@ Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 - **Fallo.** Una llamada a Qloo que falla hace fallar el paso de investigación con `QLOO_FAILED`. El paso se reintenta; después, la ejecución falla y se registra a nivel de error en PostHog. wovain nunca recurre a ideas sin Qloo.
 - **Interruptor de emergencia.** `trends-qloo` es solo un interruptor de operaciones. Si está apagado, `runs.start` e `ideas.research` se niegan con `QLOO_OFF` (503).
 
-La comparación con una ejecución solo con LLM es solo una evaluación offline: `packages/core/src/evals/qloo-ablation.eval.ts`, con su rama LLM solo para la evaluación en `packages/core/src/evals/llm-themes.ts`. Se ejecuta con `pnpm --filter @wovain/core run evals`.
+La comparación con una ejecución solo con LLM es solo una evaluación offline: `packages/mastra/src/mastra/evals/qloo-ablation.eval.ts`, con su rama LLM solo para la evaluación en `packages/mastra/src/mastra/evals/llm-themes.ts`. Se ejecuta con `pnpm --filter @wovain/mastra run evals`.
 
 ## Configuración
 

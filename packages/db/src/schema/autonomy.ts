@@ -1,3 +1,4 @@
+import type { AlertChannel, AlertSettings } from "@wovain/core/alerts";
 import type {
   ApprovalProposer,
   ApprovalStatus,
@@ -147,6 +148,9 @@ export const autonomySetting = pgTable("autonomy_setting", {
     .$type<Record<string, number>>()
     .default({})
     .notNull(),
+  // The merchant's alert channels per type and quiet hours
+  // (@wovain/core/alerts AlertSettings); null means the defaults.
+  alerts: jsonb("alerts").$type<AlertSettings>(),
   createdAt: createdAt(),
   dailySpendCapCents: integer("daily_spend_cap_cents").default(0).notNull(),
   id: id(),
@@ -378,6 +382,54 @@ export const device = pgTable(
     userId: owner(),
   },
   (table) => [index("device_user_idx").on(table.userId)]
+);
+
+// The merchant's Telegram chat with wovain's bot (openspec alerts). Settings
+// writes a one-time link token (its SHA-256, never the token) for the deep
+// link t.me/<bot>?start=<token>; the bot's webhook finds it on /start and
+// saves the chat.
+export const telegramChat = pgTable("telegram_chat", {
+  // Telegram's chat id, once the merchant pressed Start.
+  chatId: text("chat_id"),
+  createdAt: createdAt(),
+  id: id(),
+  linkExpiresAt: timestamp("link_expires_at"),
+  linkTokenHash: text("link_token_hash").unique(),
+  linkedAt: timestamp("linked_at"),
+  updatedAt: updatedAt(),
+  userId: owner().unique(),
+  // The merchant's @username, shown in Settings.
+  username: text("username"),
+});
+
+// One alert on one channel (openspec alerts): written once it was sent, so
+// a retried or repeated event never sends it twice, and kept when it was
+// skipped or failed for good.
+export const alertDelivery = pgTable(
+  "alert_delivery",
+  {
+    channel: text("channel").$type<AlertChannel>().notNull(),
+    createdAt: createdAt(),
+    error: text("error"),
+    id: id(),
+    // The notify event's dedupeKey, or its id.
+    key: text("key").notNull(),
+    kind: text("kind").notNull(),
+    // sending: claimed before the provider call, so a retry after a send
+    // whose write failed never sends again.
+    status: text("status", {
+      enum: ["sending", "sent", "skipped", "failed"],
+    }).notNull(),
+    updatedAt: updatedAt(),
+    userId: owner(),
+  },
+  (table) => [
+    uniqueIndex("alert_delivery_key_idx").on(
+      table.userId,
+      table.key,
+      table.channel
+    ),
+  ]
 );
 
 // The ads optimizer's state per ad: a Beta(alpha, beta) posterior over its

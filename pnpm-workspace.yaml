@@ -110,7 +110,19 @@ catalog:
   "@opentelemetry/instrumentation-undici": 0.34.0
   "@ai-sdk/openai-compatible": ^2.0.87
   inngest: ^4.26.0
+  expo-server-sdk: ^8.0.0
+  grammy: ^1.46.0
   "@electric-sql/pglite": ^0.5.11
+  storybook: ^10.6.5
+  "@storybook/react": ^10.6.5
+  "@storybook/nextjs-vite": ^10.6.5
+  "@storybook/addon-a11y": ^10.6.5
+  "@storybook/addon-vitest": ^10.6.5
+  "@vitest/browser-playwright": ^5.0.5
+  playwright: ^1.64.1
+  vite: ^8.3.5
+  msw: ^3.0.3
+  msw-storybook-addon: ^3.0.3
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2
 patchedDependencies:

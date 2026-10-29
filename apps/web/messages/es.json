@@ -40,6 +40,7 @@
     "dropsTitle": "Drops",
     "campaignTitle": "Tu campaña",
     "settingsHubTitle": "Ajustes",
+    "alertsTitle": "Alertas",
     "dropTitle": "Drop"
   },
   "Common": {
@@ -67,7 +68,8 @@
       "fr": "Français",
       "es": "Español"
     },
-    "noData": "Aún no hay nada."
+    "noData": "Aún no hay nada.",
+    "alertSettings": "Alertas"
   },
   "Header": {
     "product": "Cómo funciona",
@@ -176,7 +178,7 @@
       },
       {
         "question": "¿Qué evita que mis anuncios pierdan dinero?",
-        "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador."
+        "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador. Te avisa cada vez por correo, en tu teléfono o en Telegram. Si wovain no está disponible, Meta pausa los anuncios por su cuenta: wovain copia estas reglas en tu cuenta publicitaria como reglas automatizadas de Meta."
       },
       {
         "question": "¿Qué diseños debo anunciar?",
@@ -373,9 +375,9 @@
       "drops": "Drops",
       "home": "Inicio",
       "settings": "Ajustes",
-      "drop": "Drop",
       "account": "Cuenta",
-      "security": "Seguridad"
+      "security": "Seguridad",
+      "drop": "Drop"
     },
     "docs": "Docs",
     "docsLabel": "Docs (se abre en una pestaña nueva)",
@@ -1586,28 +1588,16 @@
     "scanThrottled": "Analizaste {last}. El próximo análisis puede hacerse a partir de las {next}."
   },
   "Voice": {
-    "hold": "Mantén pulsado para hablar",
-    "listening": "Escuchando… suelta para enviar",
-    "thinking": "Entendiendo lo que dijiste…",
     "disclosureTitle": "Antes de hablar con wovain",
-    "disclosure": "wovain no guarda tu grabación. fal la convierte en texto y Nebius lee el texto para entender lo que pediste. No pasa nada hasta que confirmes.",
     "disclosureOk": "Entendido",
     "noMic": "wovain no puede usar tu micrófono. Permítelo en los ajustes del sitio de tu navegador y vuelve a intentarlo.",
     "recordFailed": "wovain no pudo grabar en este navegador. Vuelve a intentarlo o usa otro navegador.",
-    "confirmTitle": "¿Es correcto?",
-    "notUnderstood": "wovain no lo entendió",
     "notHeard": "wovain no te oyó bien. Mantén pulsado el botón y vuelve a intentarlo.",
-    "canDo": "Puedes empezar un drop, o aprobar o rechazar ideas, diseños y acciones en cola.",
-    "heard": "Dijiste: «{transcript}»",
-    "confirm": "Confirmar",
-    "done": "Hecho.",
-    "startDrop": "Empezar un drop nuevo: {brief}",
-    "approveIdeas": "Aprobar {count, plural, one {esta idea} other {estas # ideas}} y dibujar diseños: {ideas}",
-    "approveDesign": "Aprobar el diseño «{design}»",
-    "rejectDesign": "Rechazar el diseño «{design}»",
-    "rejectDesignWhy": "Rechazar el diseño «{design}» porque {reason}",
-    "approveAction": "Aprobar «{action}»",
-    "rejectAction": "Rechazar «{action}»"
+    "dictate": "Dictar: {field}",
+    "dictateHint": "Mantén pulsado para hablar y suelta para añadir las palabras",
+    "listeningField": "Escuchando. Suelta para añadir las palabras al campo.",
+    "transcribing": "Convirtiendo tu grabación en texto.",
+    "disclosureDictation": "wovain no guarda tu grabación. fal la convierte en texto y las palabras aparecen en el campo para que las edites. No se envía ni se ejecuta nada hasta que lo confirmes."
   },
   "Store": {
     "title": "Tienda",
@@ -2013,7 +2003,16 @@
         "step2": "En Píxeles de seguimiento, pégalo en el campo Facebook Pixel y guarda.",
         "step3": "Abre tu tienda una vez. Este paso se marca cuando Meta ve la visita, lo que puede tardar unos minutos.",
         "capi": "Para contar las ventas que ocultan los bloqueadores de anuncios, conecta también la API de conversiones de Meta en Fourthwall. Pide el mismo ID de píxel y un token de acceso del Administrador de eventos de Meta.",
-        "capiAction": "Abrir Meta Conversions"
+        "capiAction": "Abrir Meta Conversions",
+        "automationLead": "wovain puede crear tu píxel de Meta (conjunto de datos) y conectarlo a tu cuenta publicitaria. Después pegas su ID en Fourthwall.",
+        "setUp": "Configurar mi píxel",
+        "sendTest": "Enviar un evento de prueba",
+        "setUpFailed": "Meta no dejó a wovain configurar el píxel. Vuelve a conectar Meta en la configuración de Meta e inténtalo de nuevo.",
+        "created": "wovain creó tu píxel y lo conectó a tu cuenta publicitaria.",
+        "found": "wovain encontró tu píxel en tu cuenta publicitaria.",
+        "testReceived": "Meta recibió un evento de prueba. Míralo en el Administrador de eventos > Eventos de prueba con el código {code}.",
+        "testMissed": "Meta no confirmó el evento de prueba (código {code}). Inténtalo en un minuto.",
+        "noTest": "Publica tu tienda para enviar un evento de prueba."
       },
       "domain": {
         "label": "Dominio propio",
@@ -2204,8 +2203,7 @@
     },
     "sell": {
       "title": "¿Qué vas a vender?",
-      "lead": "Elige una dirección y wovain escribe el brief. Cada una explica por qué crece ahora.",
-      "picked": "Tu brief: {brief}",
+      "lead": "Elige una dirección o escribe tu propio brief. Cada dirección explica por qué crece ahora.",
       "brand": "Añadir tu marca (opcional): las direcciones se adaptan a ella",
       "next": "Siguiente: tu tienda"
     },
@@ -2222,6 +2220,7 @@
     "design": {
       "title": "Aprobar un diseño",
       "lead": "wovain investiga «{brief}», elige las mejores ideas y dibuja sus diseños.",
+      "noBrief": "Primero elige qué vender: wovain lo investiga y dibuja sus diseños.",
       "start": "Buscar ideas y dibujar",
       "working": "wovain está investigando y dibujando. Abre tu drop para elegir ideas y aprobar diseños; este paso se marca cuando vuelvas.",
       "ready": "Tu drop te espera. Aprueba un diseño y vuelve aquí.",
@@ -2230,6 +2229,7 @@
     "ads": {
       "title": "Lanzar los anuncios",
       "lead": "Tus productos están listos. Revisa el anuncio y su presupuesto diario en tu drop, y lánzalo.",
+      "needsDesign": "Primero aprueba un diseño. Tu anuncio se hace a partir de él.",
       "open": "Revisar y lanzar anuncios"
     },
     "finished": {
@@ -2346,6 +2346,108 @@
     "account": {
       "title": "Cuenta y seguridad",
       "body": "Tu nombre, correo, contraseña y sesiones."
+    }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "Qué hacer",
+      "why": "Por qué se vende",
+      "audience": "Quién compra y dónde",
+      "competition": "Competencia"
+    },
+    "unavailable": {
+      "not_read": "Aún no se ha leído.",
+      "read_failed": "La lectura falló. Vuelve a investigar.",
+      "not_connected": "Conecta Meta para leer los anuncios que las tiendas mantienen activos.",
+      "none_found": "No se encontró nada para esta idea.",
+      "ungrounded": "Sin título: el texto afirmaba algo que la evidencia no muestra.",
+      "raw_tag": "Sin título: solo volvió la etiqueta de gusto original."
+    },
+    "dropped": {
+      "no_qloo_evidence": "Sin evidencia de Qloo",
+      "no_demand_proof": "Sin prueba de que se venda",
+      "demand_unknown": "Demanda desconocida",
+      "no_competition_read": "No se pudo leer la competencia",
+      "saturated": "Demasiado saturado: demasiados anuncios o productos similares",
+      "no_title": "Sin un título respaldado por la evidencia"
+    },
+    "level": {
+      "open": "Abierto",
+      "sweet-spot": "Punto óptimo",
+      "crowded": "Saturado"
+    },
+    "sameBuyers": "Los mismos compradores que tu brief",
+    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil",
+    "caution": {
+      "demand_unknown": "Sin confirmar: no se pudo revisar la demanda, así que no se sabe si se vende.",
+      "no_demand_proof": "Sin confirmar: aún no hay superventas, reseñas ni anuncios de larga duración.",
+      "no_competition_read": "Sin confirmar: no se pudo revisar los anuncios, así que la competencia es desconocida.",
+      "saturated": "Saturado: muchos anuncios o anunciantes similares ya lo venden."
+    },
+    "unconfirmed": "Ninguno de estos temas ha probado demanda aún, así que cada uno dice qué falta. Elige uno para probar, o escribe el tuyo.",
+    "noneChecked": "No pudimos confirmar la demanda de estos temas. Esto es lo que revisamos:"
+  },
+  "Alerts": {
+    "title": "Alertas",
+    "lead": "wovain te avisa cuando pausa un anuncio, detiene tus campañas, pide subir un presupuesto, necesita tu aprobación, logra tu primera venta o algo falla. Elige adónde va cada alerta.",
+    "loading": "Cargando tus alertas…",
+    "off": "Las alertas aún no están disponibles en tu cuenta.",
+    "channelsTitle": "Adónde pueden ir las alertas",
+    "gridTitle": "Qué alertas van adónde",
+    "gridCaption": "Cada tipo de alerta y los canales a los que va",
+    "typeColumn": "Alerta",
+    "toggle": "Enviar alertas de {type} por {channel}",
+    "save": "Guardar",
+    "saved": "Guardado.",
+    "saveFailed": "No pudimos guardar tus alertas. Inténtalo de nuevo.",
+    "channels": {
+      "email": "Correo",
+      "push": "Teléfono",
+      "telegram": "Telegram",
+      "emailNone": "Tu cuenta no tiene correo.",
+      "pushNone": "Aún no hay teléfono. Inicia sesión en la app de wovain y permite las notificaciones.",
+      "pushDevices": "{count, plural, one {# teléfono} other {# teléfonos}}",
+      "telegramUnavailable": "no está configurado en este sitio.",
+      "telegramConnect": "Conectar Telegram",
+      "telegramCheck": "Ya pulsé Iniciar",
+      "telegramConnected": "Conectado.",
+      "telegramConnectedAs": "Conectado como @{username}.",
+      "telegramDisconnect": "Desconectar",
+      "telegramFailed": "Telegram no respondió. Inténtalo en un minuto."
+    },
+    "quiet": {
+      "title": "Horas de silencio",
+      "lead": "En las horas de silencio, las alertas al teléfono y a Telegram esperan hasta el final. El correo sale enseguida.",
+      "on": "Retener las alertas al teléfono y a Telegram de noche",
+      "start": "Desde",
+      "end": "Hasta",
+      "timeZone": "En tu zona horaria, {timeZone}."
+    },
+    "types": {
+      "rule_action": {
+        "label": "Anuncios pausados o detenidos",
+        "hint": "Una regla pausó un anuncio o una campaña, o detuvo todas las campañas en un límite."
+      },
+      "scale_request": {
+        "label": "Solicitudes de más presupuesto",
+        "hint": "Un producto se vende y una regla pide subir su presupuesto."
+      },
+      "approval": {
+        "label": "Aprobaciones pendientes",
+        "hint": "Otra acción espera tu sí o tu no."
+      },
+      "first_sale": {
+        "label": "Primera venta",
+        "hint": "Tu tienda logra su primera venta."
+      },
+      "failure": {
+        "label": "Fallos",
+        "hint": "Un trabajo falló tras varios intentos."
+      },
+      "updates": {
+        "label": "Sugerencias y ejecuciones terminadas",
+        "hint": "Ideas nuevas del piloto automático y ejecuciones que terminan."
+      }
     }
   },
   "Qloo": {

@@ -21,10 +21,10 @@ PRD ref: `prd.md > The Core Journey`.
 
 1. The designer signs in → Better Auth (`/api/auth`, Google or email) creates a session in PostgreSQL. ChatGPT instead signs in through Better Auth's OAuth server and calls `POST /api/mcp` with an access token.
 2. They connect providers → `/api/connections/[provider]/start` and `callback` run the provider's OAuth; `packages/core/src/sealing.ts` seals the tokens into `connection`.
-3. They describe a drop → the page or the MCP tool `research_trends` calls `ideas.research` → `researchIdeas` (`packages/api/src/flow/ideas.ts`) uses Qloo and Tavily from `packages/core` → ranked ideas are saved. Paid steps are metered (`flow/spend.ts`).
+3. They describe a drop → the page or the MCP tool `research_trends` calls `ideas.research` → `researchIdeas` (`packages/mastra/src/mastra/flow/ideas.ts`) uses Qloo and Tavily from `packages/core` → ranked ideas are saved. Paid steps are metered (`flow/spend.ts`).
 4. The run waits at its ideas gate with nothing drawn; See designs → `runs.approveIdeas` (`approveIdeas`) resumes it, and it draws a design for each approved idea only → `generateDesign` → Nemotron brief (`draftBrief`), fal art (`createArtist`), price (`priceFor`), Nemotron judge (`judgeDesign`) → the design is saved as `pending_approval`.
 5. They approve → `designs.approve` (`decideDesign`). Target: the Mastra run workflow is suspended here and `resume()` continues it.
-6. `products.create` (`createDesignProduct`) calls Fourthwall through the sealed connection; `products.publish` makes it public. With `store-management` on, `products.publish` queues `store.product.publish` instead (decided in the merchant's name from the website, left to the autonomy policy through MCP) and returns the product with its approval; a run leaves its products hidden as a drop in review and queues `store.drop.publish`; the `store.*` procedures (`packages/api/src/routers/store.ts`) queue store actions, and an Inngest executor (`packages/api/src/workflows/store.ts`) performs each approved one once.
+6. `products.create` (`createDesignProduct`) calls Fourthwall through the sealed connection; `products.publish` makes it public. With `store-management` on, `products.publish` queues `store.product.publish` instead (decided in the merchant's name from the website, left to the autonomy policy through MCP) and returns the product with its approval; a run leaves its products hidden as a drop in review and queues `store.drop.publish`; the `store.*` procedures (`packages/api/src/routers/store.ts`) queue store actions, and an Inngest executor (`packages/mastra/src/mastra/workflows/store.ts`) performs each approved one once.
 7. `campaigns.create` (`createProductCampaign`) → Nemotron ad copy (`writeAdCopy`) → `stagePausedCampaign` creates the campaign, ad set and ads paused on Meta.
 8. `runs.start` (`startRun`) chains these steps; with `autopilot: true` Nemotron picks the lead idea (`pickIdea`) and reviews each design (`reviewDesign`). Target: `runs.start` creates the run, starts the Mastra workflow and returns at once; clients poll `runs.get`.
 
@@ -62,7 +62,7 @@ docker compose up -d
 pnpm run dev
 ```
 
-Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT`. Never commit real values.
+Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `EMAIL_REPLY_TO`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT`. Never commit real values.
 
 Submission needs a short demo video and the public repository: [https://github.com/sami-m-g/wovain](https://github.com/sami-m-g/wovain) (MIT). Video URL: to be added after upload.
 

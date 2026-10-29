@@ -8,11 +8,10 @@ import {
   MAX_PROMO_USES,
 } from "@wovain/core/store";
 import { CONFIRMABLE_STEPS } from "@wovain/core/store-setup";
-import { z } from "zod";
-
-import { listingDraft } from "../flow/listing";
-import { metaSetup } from "../flow/meta-setup";
-import { productCosts } from "../flow/price-check";
+import { listingDraft } from "@wovain/mastra/flow/listing";
+import { metaSetup } from "@wovain/mastra/flow/meta-setup";
+import { setupPixel } from "@wovain/mastra/flow/pixel-setup";
+import { productCosts } from "@wovain/mastra/flow/price-check";
 import {
   listDrops,
   listStoreOrders,
@@ -35,8 +34,10 @@ import {
   sampleLink,
   storeProducts,
   storeReadiness,
-} from "../flow/store";
-import { doSetupStep, storeSetup } from "../flow/store-setup";
+} from "@wovain/mastra/flow/store";
+import { doSetupStep, storeSetup } from "@wovain/mastra/flow/store-setup";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 // Running the store (openspec store-management), behind the
@@ -227,6 +228,11 @@ export const storeRouter = {
   // wovain does for the merchant.
   setup: protectedProcedure.handler(
     guarded(async (context) => await storeSetup(context))
+  ),
+  // Finds or creates the Meta dataset, shares it with the ad account and
+  // sends a test event (openspec pixel-automation).
+  setupPixel: protectedProcedure.handler(
+    guarded(async (context) => await setupPixel(context))
   ),
   setupStep: protectedProcedure
     .input(z.object({ step: z.enum(["site_live"]) }))

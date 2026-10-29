@@ -1,6 +1,6 @@
+import { audienceFor } from "@wovain/mastra/flow/audiences";
 import { z } from "zod";
 
-import { audienceFor } from "../flow/audiences";
 import { protectedProcedure } from "../index";
 import { fields } from "./seller";
 

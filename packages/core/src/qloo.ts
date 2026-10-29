@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
+import { keywordsOf } from "./themes";
 
 // Qloo's Taste API on the hackathon server. Qloo ships no client SDK, so this
 // is plain fetch with the X-Api-Key header. Only the seed and Qloo IDs go to
@@ -113,6 +114,23 @@ export const searchTermsOf = (seed: string): string[] => {
       return fresh;
     })
     .slice(0, MAX_TERMS);
+};
+
+// The first SEED_TAKE items, each term's best first (one from every term
+// before a second from any), without repeats.
+const firstOf = <T>(lists: T[][], key: (item: T) => string): T[] => {
+  const seen = new Set<string>();
+  const longest = Math.max(0, ...lists.map((list) => list.length));
+  return Array.from({ length: longest }, (_, rank) =>
+    lists.flatMap((list) => list.slice(rank, rank + 1))
+  )
+    .flat()
+    .filter((item) => {
+      const fresh = !seen.has(key(item));
+      seen.add(key(item));
+      return fresh;
+    })
+    .slice(0, SEED_TAKE);
 };
 
 const searchSchema = z.object({
@@ -349,6 +367,9 @@ export interface TasteOptions {
   // Also ask which brands, films and shows the seed's fans like, with
   // explainability and a trend bias, in every run.
   crossDomain?: boolean | undefined;
+  // The terms to search Qloo for, entities and tags; the brief's own
+  // clauses when not given.
+  terms?: readonly string[] | undefined;
 }
 
 const typeOf = (urn: string | undefined) => urn?.split(":").at(-1) ?? "";
@@ -587,47 +608,112 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     }
   };
 
-  // The seed's entities: the best matches across its search terms, at most
-  // SEED_TAKE. When Qloo rejects every term the request itself is wrong, so
-  // the step fails with Qloo's answer.
-  const seedEntities = async (
-    seed: string,
-    log?: Logger
-  ): Promise<SearchEntity[]> => {
-    const terms = searchTermsOf(seed);
-    if (terms.length === 0) {
-      return [];
+  // One term's taste tags: a concept like "dark academia" or "gothic" is a
+  // Qloo tag, not an entity /search finds. A 400 is no match.
+  const termTags = async (term: string): Promise<string[]> => {
+    try {
+      const { results } = await get(
+        "/v2/tags",
+        {
+          "filter.query": term,
+          "filter.tag.types": THEME_TAG_TYPES,
+          take: String(SEED_TAKE),
+        },
+        tagsSchema
+      );
+      return results.tags.flatMap((tag) => {
+        const id = tag.id ?? tag.tag_id ?? "";
+        return QLOO_TAG.test(id) ? [id] : [];
+      });
+    } catch (error) {
+      if (error instanceof QlooHttpError && error.status === BAD_REQUEST) {
+        return [];
+      }
+      throw error;
     }
-    const found = await Promise.all(terms.map(termEntities));
+  };
+
+  // The terms' entities and tags, at most SEED_TAKE of each. When Qloo
+  // rejects every term's entity search the request itself is wrong, so the
+  // step fails with Qloo's answer.
+  const termsMatches = async (
+    terms: readonly string[],
+    log?: Logger
+  ): Promise<{ entities: SearchEntity[]; tags: string[] }> => {
+    if (terms.length === 0) {
+      return { entities: [], tags: [] };
+    }
+    const found = await Promise.all(
+      terms.map(async (term) => {
+        const [named, tags] = await Promise.all([
+          termEntities(term),
+          termTags(term),
+        ]);
+        return { ...named, tags };
+      })
+    );
     const rejected = found.flatMap(({ rejected: error }) =>
       error === undefined ? [] : [error]
     );
     log?.set({ qloo: { rejectedTerms: rejected.length, terms: terms.length } });
     const [firstRejected] = rejected;
-    if (firstRejected !== undefined && rejected.length === terms.length) {
+    if (
+      firstRejected !== undefined &&
+      rejected.length === terms.length &&
+      found.every(({ tags }) => tags.length === 0)
+    ) {
       throw firstRejected;
     }
-    const seen = new Set<string>();
-    return found
-      .flatMap(({ entities }) => entities)
-      .filter(({ entity_id: id }) => {
-        const fresh = !seen.has(id);
-        seen.add(id);
-        return fresh;
-      })
-      .slice(0, SEED_TAKE);
+    return {
+      entities: firstOf(
+        found.map(({ entities }) => entities),
+        ({ entity_id: id }) => id
+      ),
+      tags: firstOf(
+        found.map(({ tags }) => tags),
+        (id) => id
+      ),
+    };
   };
 
-  // The seed's entities and the tags their fans share; with crossDomain,
-  // also what they like in other domains, and why.
+  // The seed matches when any term names an entity or a tag. A brief that
+  // describes rather than names ("Retro 70s graphic tees for coffee lovers",
+  // or a direction's own title) may match nothing as a whole: its subject
+  // words are searched next, so it still finds an audience.
+  const seedMatches = async (
+    seed: string,
+    log?: Logger,
+    given?: readonly string[]
+  ) => {
+    const terms = given ?? searchTermsOf(seed);
+    const tried = new Set(terms.map((term) => term.toLowerCase()));
+    const keywords = keywordsOf(seed).filter((word) => !tried.has(word));
+    try {
+      const matched = await termsMatches(terms, log);
+      if (matched.entities.length > 0 || matched.tags.length > 0) {
+        return matched;
+      }
+    } catch (error) {
+      // Qloo rejected every term: its subject words may still pass.
+      const rejected =
+        error instanceof QlooHttpError && error.status === BAD_REQUEST;
+      if (!rejected || keywords.length === 0) {
+        throw error;
+      }
+    }
+    return await termsMatches(keywords, log);
+  };
+
+  // The seed's entities and tags, and the tags their fans share; with
+  // crossDomain, also what the entities' fans like in other domains, and why.
   const tasteOf = async (
     seed: string,
     log?: Logger,
-    { crossDomain = false }: TasteOptions = {}
+    { crossDomain = false, terms }: TasteOptions = {}
   ): Promise<Taste> =>
     await external(log, { operation: "taste", provider: "qloo" }, async () => {
-      const entities = await seedEntities(seed, log);
-      if (entities.length === 0) {
+      const { entities, tags: seedTags } = await seedMatches(seed, log, terms);
+      if (entities.length === 0 && seedTags.length === 0) {
         return crossDomain
           ? {
               affinities: [],
@@ -649,13 +735,18 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
           {
             "filter.tag.types": THEME_TAG_TYPES,
             "filter.type": "urn:tag",
-            "signal.interests.entities": seeds.map(({ id }) => id).join(","),
+            ...(seeds.length > 0 && {
+              "signal.interests.entities": seeds.map(({ id }) => id).join(","),
+            }),
+            ...(seedTags.length > 0 && {
+              "signal.interests.tags": seedTags.join(","),
+            }),
             take: "10",
             ...(crossDomain && { "bias.trends": TREND_BIAS }),
           },
           tagsSchema
         ),
-        ...(crossDomain
+        ...(crossDomain && seeds.length > 0
           ? AFFINITY_TYPES.map(
               async (type) => await affinitiesIn(type, seeds, log)
             )

@@ -23,13 +23,13 @@ const SECTIONS: readonly {
     | "/dashboard/connections"
     | "/dashboard/billing"
     | "/dashboard/settings/account"
-    | { pathname: "/dashboard/onboarding"; query: { step: "brand" } };
+    | { pathname: "/dashboard/onboarding"; query: { step: "sell" } };
   icon: LucideIcon;
   key: "connections" | "brand" | "billing" | "account";
 }[] = [
   { href: "/dashboard/connections", icon: PlugZap, key: "connections" },
   {
-    href: { pathname: "/dashboard/onboarding", query: { step: "brand" } },
+    href: { pathname: "/dashboard/onboarding", query: { step: "sell" } },
     icon: Palette,
     key: "brand",
   },

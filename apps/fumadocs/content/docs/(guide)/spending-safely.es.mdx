@@ -33,7 +33,7 @@ wovain pausa todas las campañas cuando:
 - el gasto en anuncios de este mes llega a tu límite mensual;
 - tu gasto en anuncios, menos el beneficio de las ventas que trajo, llega a tu **límite de pérdidas**. Es de 50 $ salvo que lo cambies.
 
-Fija tu límite de pérdidas en cualquier tarjeta de campaña y elige **Guardar**. Las pausas son inmediatas, en cualquier nivel de piloto automático, porque esperar es lo que cuesta dinero. Recibes una notificación cada vez.
+Fija tu límite de pérdidas en cualquier tarjeta de campaña y elige **Guardar**. Las pausas son inmediatas, en cualquier nivel de piloto automático, porque esperar es lo que cuesta dinero. Recibes una alerta cada vez, por correo, en tu teléfono o en Telegram ([Alertas](/es/docs/alerts)).
 
 ## Cuándo escala wovain un ganador
 
@@ -44,3 +44,13 @@ wovain pide subir el presupuesto de una campaña solo cuando se cumple todo esto
 - gana al menos 1,3 veces lo que necesita para cubrir costes.
 
 Una subida es del 20 % como máximo, una vez cada 48 horas, y nunca por encima de tu límite diario. Espera tu aprobación.
+
+## Si wovain no está disponible
+
+wovain también copia estas reglas en tu cuenta publicitaria como **Reglas automatizadas** de Meta, para que Meta pause el gasto por su cuenta si wovain no puede. Las encontrarás en el Administrador de anuncios, en **Reglas automatizadas**, con el nombre `wovain backstop`. Son algo más holgadas que las reglas de wovain, para que wovain actúe primero:
+
+- un anuncio se pausa al llegar a 1,2 veces los límites sin venta de arriba;
+- una campaña se pausa cuando su propio gasto supera tu límite diario o mensual;
+- una campaña sin ventas se pausa cuando su gasto supera tu límite de pérdidas.
+
+wovain las actualiza cuando cambias un límite o tu límite de pérdidas, y las elimina cuando una campaña termina. Tus propias reglas no se tocan.

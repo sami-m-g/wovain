@@ -1,7 +1,10 @@
 import type { TavilySearchOptions, TavilySearchResponse } from "@tavily/core";
 import { describe, expect, it, vi } from "vitest";
 
+import { fitOutcomeModel } from "./outcomes";
+import type { DesignOutcome } from "./outcomes";
 import type { Qloo } from "./qloo";
+import { fakeNemotron } from "./test-doubles";
 import { RUN_THEMES } from "./themes";
 import { createTrends, MAX_NEWS_AGE_DAYS, rankSources } from "./trends";
 import type { TavilyTrends } from "./trends";
@@ -94,6 +97,8 @@ const qlooBlank = qlooWith(
 );
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
+const DARK_BRIEF =
+  "Gothic botanical tees for plant lovers who like dark academia";
 
 // What Qloo answers for Studio Ghibli: three taste tags.
 const GHIBLI_TASTE = {
@@ -416,6 +421,25 @@ describe("createTrends", () => {
     expect(tasteOf).not.toHaveBeenCalled();
     expect(research.ideas).toEqual([]);
   });
+
+  // Next, run 8c279e18: "Qloo found no audience for this brief".
+  it("searches Qloo for the phrases Nemotron copies from the brief, never one it made up", async () => {
+    const { client } = fakeTavily();
+    const tasteOf = vi.fn<Qloo["tasteOf"]>(
+      async () => await Promise.resolve(GHIBLI_TASTE)
+    );
+    const { ask } = fakeNemotron({
+      terms: ["Gothic botanical", "dark academia", "Studio Ghibli"],
+    });
+
+    await createTrends(client, qlooWith(tasteOf), ask).research(DARK_BRIEF);
+
+    expect(tasteOf).toHaveBeenCalledWith(DARK_BRIEF, undefined, {
+      crossDomain: true,
+      // The brief itself is too long a term for Qloo's /search.
+      terms: ["Gothic botanical", "dark academia"],
+    });
+  });
 });
 describe("rankSources", () => {
   const news = { maxAgeDays: MAX_NEWS_AGE_DAYS, minScore: 0.4 };
@@ -484,5 +508,189 @@ describe("rankSources", () => {
       "https://www.b.example/story/?utm=x",
       "https://c.example/other",
     ]);
+  });
+});
+
+// Marketplace proof for "anime" only; "cozy" is crowded with
+// near-identical listings; "pastel" has neither.
+const gatedTavily = () => {
+  const { client } = fakeTavily();
+  const search = vi.fn(async (query: string, options?: TavilySearchOptions) => {
+    const quoted = /^"(?<theme>[^"]+)" (?<kind>shirt|t-shirt)$/u.exec(query);
+    const theme = quoted?.groups?.["theme"] ?? "";
+    if (quoted?.groups?.["kind"] === "shirt") {
+      return await Promise.resolve(
+        reply(
+          query,
+          theme === "anime"
+            ? [
+                hit(
+                  "https://www.etsy.com/listing/9",
+                  `${theme} shirt`,
+                  "Bestseller. 1,240 reviews"
+                ),
+              ]
+            : []
+        )
+      );
+    }
+    if (quoted?.groups?.["kind"] === "t-shirt") {
+      return await Promise.resolve(
+        reply(
+          query,
+          theme.startsWith("cozy")
+            ? Array.from({ length: 10 }, (_, index) =>
+                hit(
+                  `https://www.etsy.com/listing/c${index}`,
+                  `${theme} t-shirt ${index}`,
+                  `${theme} t-shirt`,
+                  { score: 0.9 }
+                )
+              )
+            : []
+        )
+      );
+    }
+    return await client.search(query, options);
+  });
+  return { ...client, search } satisfies TavilyTrends;
+};
+
+describe("createTrends with the evidence gate", () => {
+  it("shows only proven, unsaturated ideas, ranked by the lower bound", async () => {
+    const trends = createTrends(gatedTavily(), qlooGhibli);
+    const research = await trends.research("ghibli", undefined, {
+      evidenceGate: true,
+      tavily: true,
+    });
+    expect(research.ideas.map((idea) => idea.theme)).toStrictEqual(["anime"]);
+    const [top] = research.ideas;
+    expect(top?.rank).toBe(1);
+    expect(top?.proof).toMatchObject({
+      market: { bestsellers: 1, reviews: 1240 },
+      proven: true,
+      supply: { count: 0 },
+    });
+    expect(top?.score).toBe(top?.spot?.score);
+  });
+
+  // The founder's typed brief on next (2026-10-29): Qloo names the themes and
+  // the marketplaces list them, but no listing shows a Bestseller badge or
+  // reviews. The gate dropped every theme, research came back empty and the
+  // run failed at Trends with "Research found no ideas for this seed".
+  it("never fails a typed brief because no theme proved demand", async () => {
+    const trends = createTrends(fakeTavily().client, qlooGhibli);
+    const research = await trends.research(BRIEF, undefined, {
+      evidenceGate: true,
+      tavily: true,
+    });
+    expect(research.ideas.map((idea) => idea.theme)).toStrictEqual([
+      "anime",
+      "cozy",
+      "pastel",
+    ]);
+    expect(research.ideas.map((idea) => idea.caution)).toStrictEqual([
+      "no_demand_proof",
+      "no_demand_proof",
+      "no_demand_proof",
+    ]);
+    expect(research.ideas.map((idea) => idea.rank)).toStrictEqual([1, 2, 3]);
+  });
+
+  it("calls a failed marketplace read unknown, not unproven", async () => {
+    const { client } = fakeTavily();
+    const search = vi.fn(
+      async (query: string, options?: TavilySearchOptions) => {
+        if (options?.includeDomains !== undefined && query.endsWith(" shirt")) {
+          throw new Error("Tavily answered 432");
+        }
+        return await client.search(query, options);
+      }
+    );
+    const trends = createTrends({ ...client, search }, qlooGhibli);
+    const research = await trends.research(BRIEF, undefined, {
+      evidenceGate: true,
+      tavily: true,
+    });
+    expect(research.ideas.length).toBeGreaterThan(0);
+    expect(
+      research.ideas.every((idea) => idea.caution === "demand_unknown")
+    ).toBe(true);
+  });
+
+  it("leaves the old ranking alone with the gate off", async () => {
+    const trends = createTrends(gatedTavily(), qlooGhibli);
+    const research = await trends.research("ghibli");
+    expect(research.ideas).toHaveLength(3);
+    expect(research.ideas[0]?.proof).toBeUndefined();
+  });
+});
+
+// A merchant's record for one theme: `wins` designs that sold, `losses`
+// that didn't.
+const designsFor = (theme: string, wins: number, losses: number) =>
+  Array.from({ length: wins + losses }, (_, index): DesignOutcome => {
+    const won = index < wins;
+    return {
+      addToCarts: 0,
+      clicks: 0,
+      dropId: `${theme}_${index}`,
+      impressions: 0,
+      launchedAt: new Date(Date.now() - 10 * DAY_MS),
+      productId: `${theme}_${index}`,
+      profitPerSaleCents: 1000,
+      purchases: 0,
+      qlooTags: [theme],
+      revenueCents: 0,
+      salesCovered: true,
+      spendCents: won ? 0 : 500,
+      theme,
+      units: won ? 3 : 0,
+    };
+  });
+
+describe("createTrends with the merchant's track record", () => {
+  it("reorders the ideas by a strong record and says why", async () => {
+    const trends = createTrends(fakeTavily().client, qlooGhibli);
+    const plain = await trends.research("ghibli");
+    const themes = plain.ideas.map((idea) => idea.theme);
+    const first = themes[0] ?? "";
+    const last = themes.at(-1) ?? "";
+    const research = await trends.research("ghibli", undefined, undefined, {
+      outcomes: fitOutcomeModel([
+        ...designsFor(last, 12, 0),
+        ...designsFor(first, 0, 12),
+      ]),
+    });
+    expect(research.ideas[0]?.theme).toBe(last);
+    expect(research.ideas.map((idea) => idea.rank)).toStrictEqual([1, 2, 3]);
+    expect(research.ideas[0]?.outcome).toMatchObject({ direction: "up" });
+  });
+
+  it("scales the gated score and keeps the sweet spot as read", async () => {
+    const trends = createTrends(gatedTavily(), qlooGhibli);
+    const research = await trends.research(
+      "ghibli",
+      undefined,
+      { evidenceGate: true, tavily: true },
+      { outcomes: fitOutcomeModel(designsFor("anime", 12, 0)) }
+    );
+    const [top] = research.ideas;
+    expect(top?.score).toBeGreaterThan(top?.spot?.score ?? 0);
+  });
+
+  it("leaves the ranking unchanged with no data", async () => {
+    const trends = createTrends(fakeTavily().client, qlooGhibli);
+    const plain = await trends.research("ghibli");
+    const empty = await trends.research("ghibli", undefined, undefined, {
+      outcomes: fitOutcomeModel([]),
+    });
+    expect(empty.ideas.map((idea) => idea.theme)).toStrictEqual(
+      plain.ideas.map((idea) => idea.theme)
+    );
+    expect(empty.ideas.map((idea) => idea.score)).toStrictEqual(
+      plain.ideas.map((idea) => idea.score)
+    );
+    expect(empty.ideas.every((idea) => idea.outcome === undefined)).toBe(true);
   });
 });

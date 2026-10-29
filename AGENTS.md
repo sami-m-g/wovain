@@ -4,7 +4,9 @@
 
 - `apps/web`: Next.js 16 app (App Router, oRPC, Better Auth, evlog)
 - `apps/fumadocs`: Fumadocs documentation site with Nebius (Nemotron) AI chat
-- `packages/api`: oRPC routers and procedures
+- `packages/api`: routing only: oRPC routers, the MCP server and the handlers `apps/web` mounts
+- `packages/mastra`: all orchestration (`@wovain/mastra`, Mastra's `src/mastra/` layout): agents, scorers, memory, evals, the workflows on Inngest, the seller flow (`flow/*`, being reshaped into Mastra steps and tools) and the composition root (`services.ts`)
+- `packages/core`: domain logic and provider clients
 - `packages/auth`: Better Auth configuration
 - `packages/db`: Drizzle schema, relations and client (PostgreSQL)
 - `packages/ui`: shared shadcn/ui components (Base UI, Tailwind CSS 4)
@@ -16,17 +18,17 @@
 - TypeScript 6 for tooling (`typescript` alias of `@typescript/typescript6`), TypeScript 7 for `tsc`
 - Varlock for environment: each app owns `.env.schema`; import `ENV` from the generated `src/env.ts`
 - Ultracite (Oxlint + Oxfmt) for lint and format; knip for unused code
-- Mastra for agents, workflows, scorers, memory and tracing: agents, scorers and judges in `packages/core/src/{agents,scorers,judges,step-scorers,taste}.ts`; the run workflow on Inngest in `packages/api/src/workflows` (docs/adr/0001, 0002)
+- Mastra for agents, workflows, scorers, memory and tracing: everything in `packages/mastra/src/mastra/{agents,scorers,memory,evals,workflows,flow}` (`@wovain/mastra`); core keeps the agent registry (`agents.ts`), the model-call port (`nemotron.ts`) and the judge specs (`judges.ts`); the run workflow on Inngest in `packages/mastra/src/mastra/workflows` (docs/adr/0001, 0002)
 
 ## Mastra Studio (local)
 
-- `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/api studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
-  - The entry `packages/api/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
+- `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/mastra studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
+  - The entry `packages/mastra/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
   - Required: `NEMOTRON_MODEL`, `NEMOTRON_VISION_MODEL`, `NEMOTRON_MODEL_{FAST,DEFAULT,REASONING,VISION,SAFETY}`, `FAL_IMAGE_MODEL`, `TAVILY_RESEARCH_MODEL` and `VOICE_STT_{MODEL,FALLBACK_MODEL}` (as in `apps/web/.env.schema`), `DATABASE_URL` (`postgresql://postgres:password@localhost:5432/wovain` with the Docker database) and `TOKEN_ENCRYPTION_KEY`.
   - Also the per-environment settings in `apps/web/.env.schema` (`BILLING_CATALOG`, `PRICING_RULES`, the MCP URLs, `EMAIL_FROM` and the rest), set in `apps/web/.env.local`.
   - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.
 - Running the workflow needs the Inngest Dev Server: `INNGEST_DEV=1` and `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`, with `pnpm dev:web` running.
-- Judge evals: `pnpm --filter @wovain/core run evals` (needs `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) writes `packages/core/src/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
+- Judge evals: `pnpm --filter @wovain/mastra run evals` (needs `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) writes `packages/mastra/src/mastra/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
 
 ## Rules
 
@@ -40,7 +42,9 @@
   - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
 - Every error must reach PostHog Error Tracking, the one place errors are watched: log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
-- Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
+- Minimal code, frameworks first, no lost functionality: before writing logic, use what Mastra (workflows, steps, tools, agents, processors, scorers, memory, tracing, `MCPServer`/`MCPClient`), Inngest, Better Auth, oRPC or another maintained library already provides. Write code only for what none of them cover. Every PR body names the library or framework it used, and gives a reason for any hand-written logic it adds
+- Layers (`turbo boundaries`, tags in each package's `turbo.json`, rules in the root `turbo.json`): `core` (domain, provider clients) ← `db`, `billing`, `email`, `auth` (data) ← `mastra` (orchestration) ← `api` (routing) ← `web`; `ui` ← `widgets` (MCP Apps, used by `api`). A package imports only the layers below it, transitively
+- Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip`, `pnpm run boundaries` and `pnpm run spec:validate` before committing
 
 ## Specs and changes (OpenSpec)
 
@@ -54,6 +58,15 @@
 
 - Code, issues and pull requests live on GitHub (`sami-m-g/wovain`). CI is GitHub Actions.
 - Work on a branch and open a pull request against `main`. The PR says `Closes #<issue>`.
+
+## CodeRabbit review loop
+
+- CodeRabbit's approval is required. Its limit is the cost: PR reviews are rate limited per developer per hour (OSS plan: 1-10 by star count; [rate limits](https://docs.coderabbit.ai/management/plans#rate-limits)), and every agent shares one developer. Each review, including each incremental review of a push, uses one; a comment "Your next included review will be available in N minutes" means the limit was hit. A blocked push costs none.
+- Keep a PR under about 400 changed lines. Review time grows with the diff, and a small PR leaves fewer comments to fix.
+- Fix all comments in one commit and push once. Do not push a commit per comment: each push is a review.
+- Resolve each thread you fixed (reply "Fixed in <sha>" and resolve), then comment `@coderabbitai review` once on the new head. CodeRabbit approves once its threads are resolved and the head is reviewed.
+- No review on the head commit after 10 minutes: comment `@coderabbitai full review`. After 10 more, read the PR for a rate-limit comment and wait the time it states. Do not re-ping inside the wait.
+- A stale CHANGES_REQUESTED stays until CodeRabbit reviews again: its comments are fixed and resolved, so the next review on the head approves.
 
 ## Tooling (project scope)
 

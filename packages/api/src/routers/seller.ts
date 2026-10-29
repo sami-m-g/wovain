@@ -1,35 +1,56 @@
 import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
-import { z } from "zod";
-
-import { audienceErrors } from "../flow/audiences";
+import { audienceErrors } from "@wovain/mastra/flow/audiences";
 import {
   createDropCampaign,
   createProductCampaign,
   listCampaigns,
-} from "../flow/campaigns";
-import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
-import { connectionErrors } from "../flow/connections";
-import { campaignDesignResults } from "../flow/design-results";
+} from "@wovain/mastra/flow/campaigns";
+import {
+  campaignCompetition,
+  readIdeaCompetition,
+} from "@wovain/mastra/flow/competition";
+import { connectionErrors } from "@wovain/mastra/flow/connections";
+import { campaignDesignResults } from "@wovain/mastra/flow/design-results";
 import {
   decideDesign,
   generateDesign,
   getDesign,
   listDesigns,
-} from "../flow/designs";
-import { streamDirections, warmDirections } from "../flow/drop-directions";
-import { ideaStyle, pickStyle } from "../flow/drop-style";
-import { readIdeaDossier, startIdeaDossier } from "../flow/evidence";
-import { listIdeas, researchErrors, researchIdeas } from "../flow/ideas";
+} from "@wovain/mastra/flow/designs";
+import {
+  streamDirections,
+  warmDirections,
+} from "@wovain/mastra/flow/drop-directions";
+import { ideaStyle, pickStyle } from "@wovain/mastra/flow/drop-style";
+import {
+  readIdeaDossier,
+  startIdeaDossier,
+} from "@wovain/mastra/flow/evidence";
+import {
+  listIdeas,
+  researchErrors,
+  researchIdeas,
+} from "@wovain/mastra/flow/ideas";
 import {
   browseCatalog,
   createDesignProduct,
   listProducts,
   publishDesignProduct,
-} from "../flow/products";
-import { approveIdeas, getRun, listRuns, startRun } from "../flow/runs";
-import { proposeProductPublish, storeManagementOn } from "../flow/store";
-import { transitionErrors } from "../flow/transitions";
-import { directionWhoBuys, ideaWhoBuys } from "../flow/who-buys";
+} from "@wovain/mastra/flow/products";
+import {
+  approveIdeas,
+  getRun,
+  listRuns,
+  startRun,
+} from "@wovain/mastra/flow/runs";
+import {
+  proposeProductPublish,
+  storeManagementOn,
+} from "@wovain/mastra/flow/store";
+import { transitionErrors } from "@wovain/mastra/flow/transitions";
+import { directionWhoBuys, ideaWhoBuys } from "@wovain/mastra/flow/who-buys";
+import { z } from "zod";
+
 import { funnelProcedure, protectedProcedure } from "../index";
 
 // The seller flow, one procedure per step: research → design → approve →

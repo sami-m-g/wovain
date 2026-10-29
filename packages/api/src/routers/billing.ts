@@ -1,10 +1,14 @@
 import { billingCatalog } from "@wovain/billing/catalog";
 import { OFFERS } from "@wovain/billing/plans";
 import { REDEEM_SURFACES } from "@wovain/billing/redeem";
+import {
+  billingStatus,
+  openPortal,
+  startCheckout,
+} from "@wovain/mastra/flow/billing";
+import { redeemCode } from "@wovain/mastra/flow/promo";
 import { z } from "zod";
 
-import { billingStatus, openPortal, startCheckout } from "../flow/billing";
-import { redeemCode } from "../flow/promo";
 import { protectedProcedure } from "../index";
 
 // Why a promo code was refused, as typed oRPC errors: the Billing page

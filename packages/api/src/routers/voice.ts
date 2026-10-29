@@ -1,15 +1,16 @@
 import { call } from "@orpc/server";
 import { MAX_AUDIO_BASE64, VOICE_SCREENS } from "@wovain/core/voice";
 import type { VoiceProposal } from "@wovain/core/voice";
-import { z } from "zod";
-
-import type { Context } from "../context";
 import {
   confirmVoiceProposal,
+  dictateClip,
   proposeVoiceCommand,
   requireVoice,
   voiceEnabled,
-} from "../flow/voice";
+} from "@wovain/mastra/flow/voice";
+import { z } from "zod";
+
+import type { Context } from "../context";
 import { protectedProcedure } from "../index";
 import { approvalsRouter } from "./approvals";
 import { designsRouter, runsRouter } from "./seller";
@@ -77,6 +78,11 @@ const execute = async (
   }
 };
 
+const clipInput = z.object({
+  audio: z.string().min(1).max(MAX_AUDIO_BASE64),
+  mimeType: z.string().min(1).max(100),
+});
+
 export const voiceRouter = {
   command: protectedProcedure
     .input(
@@ -104,6 +110,11 @@ export const voiceRouter = {
       });
       return { kind: proposal.kind, ...done };
     }),
+  // Dictation into a text field (openspec voice-dictation): a clip becomes
+  // text for the merchant to edit. Changes nothing and runs nothing.
+  dictate: protectedProcedure
+    .input(clipInput)
+    .handler(async ({ context, input }) => await dictateClip(context, input)),
   // Whether this merchant has voice: the clients show the mic only then.
   status: protectedProcedure.handler(async ({ context }) => ({
     enabled: await voiceEnabled(context),

@@ -40,6 +40,7 @@
     "dropsTitle": "Drops",
     "campaignTitle": "Your campaign",
     "settingsHubTitle": "Settings",
+    "alertsTitle": "Alerts",
     "dropTitle": "Drop"
   },
   "Common": {
@@ -67,7 +68,8 @@
       "fr": "Français",
       "es": "Español"
     },
-    "noData": "Nothing here yet."
+    "noData": "Nothing here yet.",
+    "alertSettings": "Alerts"
   },
   "Header": {
     "product": "How it works",
@@ -176,7 +178,7 @@
       },
       {
         "question": "What stops my ads from losing money?",
-        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner. You get an alert each time, by email, on your phone or on Telegram. If wovain is down, Meta pauses the ads itself: wovain copies these rules into your ad account as Meta automated rules."
       },
       {
         "question": "Which of my designs should I advertise?",
@@ -373,9 +375,9 @@
       "drops": "Drops",
       "home": "Home",
       "settings": "Settings",
-      "drop": "Drop",
       "account": "Account",
-      "security": "Security"
+      "security": "Security",
+      "drop": "Drop"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -1586,28 +1588,16 @@
     "scanThrottled": "You scanned {last}. The next scan can run from {next}."
   },
   "Voice": {
-    "hold": "Hold to talk",
-    "listening": "Listening… release to send",
-    "thinking": "Working out what you said…",
     "disclosureTitle": "Before you talk to wovain",
-    "disclosure": "wovain doesn't store your recording. fal turns it into text, and Nebius reads the text to work out what you asked. Nothing happens until you confirm.",
     "disclosureOk": "Got it",
     "noMic": "wovain can't use your microphone. Allow it in your browser's site settings, then try again.",
     "recordFailed": "wovain couldn't record in this browser. Try again, or use another browser.",
-    "confirmTitle": "Is this right?",
-    "notUnderstood": "wovain didn't get that",
     "notHeard": "wovain didn't catch that. Hold the button and try again.",
-    "canDo": "You can start a drop, or approve or reject ideas, designs and queued actions.",
-    "heard": "You said: “{transcript}”",
-    "confirm": "Confirm",
-    "done": "Done.",
-    "startDrop": "Start a new drop: {brief}",
-    "approveIdeas": "Approve {count, plural, one {this idea} other {these # ideas}} and draw designs: {ideas}",
-    "approveDesign": "Approve the design “{design}”",
-    "rejectDesign": "Reject the design “{design}”",
-    "rejectDesignWhy": "Reject the design “{design}” because {reason}",
-    "approveAction": "Approve “{action}”",
-    "rejectAction": "Reject “{action}”"
+    "dictate": "Dictate: {field}",
+    "dictateHint": "Hold to talk, release to add the words",
+    "listeningField": "Listening. Release to add the words to the field.",
+    "transcribing": "Turning your recording into text.",
+    "disclosureDictation": "wovain doesn't store your recording. fal turns it into text, and the words appear in the field for you to edit. Nothing is sent or run until you submit."
   },
   "Store": {
     "title": "Store",
@@ -2013,7 +2003,16 @@
         "step2": "In Tracking pixels, paste it into the Facebook Pixel field and save.",
         "step3": "Open your storefront once. This step ticks off when Meta sees the visit, which can take a few minutes.",
         "capi": "To count the sales ad blockers hide, also connect Meta's Conversions API in Fourthwall. It asks for the same pixel ID and an access token from Meta Events Manager.",
-        "capiAction": "Open Meta Conversions"
+        "capiAction": "Open Meta Conversions",
+        "automationLead": "wovain can create your Meta pixel (dataset) and connect it to your ad account. Then you paste its ID into Fourthwall.",
+        "setUp": "Set up my pixel",
+        "sendTest": "Send a test event",
+        "setUpFailed": "Meta didn't let wovain set up the pixel. Reconnect Meta in Meta setup, then try again.",
+        "created": "wovain created your pixel and connected it to your ad account.",
+        "found": "wovain found your pixel on your ad account.",
+        "testReceived": "Meta received a test event. See it in Events Manager > Test events with code {code}.",
+        "testMissed": "Meta didn't confirm the test event (code {code}). Try again in a minute.",
+        "noTest": "Publish your shop to send a test event."
       },
       "domain": {
         "label": "Custom domain",
@@ -2204,8 +2203,7 @@
     },
     "sell": {
       "title": "What will you sell?",
-      "lead": "Pick a direction and wovain writes the brief. Each one comes with why it's rising now.",
-      "picked": "Your brief: {brief}",
+      "lead": "Pick a direction or write your own brief. Each direction comes with why it's rising now.",
       "brand": "Add your brand (optional): directions then fit it",
       "next": "Next: your store"
     },
@@ -2222,6 +2220,7 @@
     "design": {
       "title": "Approve a design",
       "lead": "wovain researches “{brief}”, picks the strongest ideas and draws designs for them.",
+      "noBrief": "Pick what to sell first: wovain researches it and draws designs for it.",
       "start": "Find ideas and draw designs",
       "working": "wovain is researching and drawing. Open your drop to pick ideas and approve designs; this step ticks off when you come back.",
       "ready": "Your drop is waiting for you. Approve a design, then come back here.",
@@ -2230,6 +2229,7 @@
     "ads": {
       "title": "Launch your ads",
       "lead": "Your products are ready. Review the ad and its daily budget in your drop, then start it.",
+      "needsDesign": "Approve a design first. Your ad is made from it.",
       "open": "Review and launch ads"
     },
     "finished": {
@@ -2346,6 +2346,108 @@
     "account": {
       "title": "Account and security",
       "body": "Your name, email, password and sessions."
+    }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "What to make",
+      "why": "Why it sells",
+      "audience": "Who buys and where",
+      "competition": "Competition"
+    },
+    "unavailable": {
+      "not_read": "Not read yet.",
+      "read_failed": "The read failed. Try Research again.",
+      "not_connected": "Connect Meta to read the ads shops keep running.",
+      "none_found": "Nothing found for this idea.",
+      "ungrounded": "No title: the words stated something the evidence doesn't show.",
+      "raw_tag": "No title: only the raw taste tag came back."
+    },
+    "dropped": {
+      "no_qloo_evidence": "No Qloo evidence",
+      "no_demand_proof": "No proof that it sells",
+      "demand_unknown": "Demand unknown",
+      "no_competition_read": "The competition couldn't be read",
+      "saturated": "Too crowded: too many similar listings or advertisers",
+      "no_title": "No title backed by the evidence"
+    },
+    "level": {
+      "open": "Open",
+      "sweet-spot": "Sweet spot",
+      "crowded": "Crowded"
+    },
+    "sameBuyers": "Same buyers as your brief",
+    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence",
+    "caution": {
+      "demand_unknown": "Unconfirmed: the demand check couldn't run, so whether it sells is unknown.",
+      "no_demand_proof": "Unconfirmed: no bestseller, reviews or long-running ads found for it yet.",
+      "no_competition_read": "Unconfirmed: the listings check couldn't run, so the competition is unknown.",
+      "saturated": "Crowded: many similar listings or advertisers already sell it."
+    },
+    "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
+    "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:"
+  },
+  "Alerts": {
+    "title": "Alerts",
+    "lead": "wovain tells you when it pauses an ad, stops your campaigns, asks to raise a budget, needs your approval, makes your first sale or fails at something. Choose where each alert goes.",
+    "loading": "Loading your alerts…",
+    "off": "Alerts aren't available on your account yet.",
+    "channelsTitle": "Where alerts can go",
+    "gridTitle": "Which alerts go where",
+    "gridCaption": "Each alert type and the channels it goes to",
+    "typeColumn": "Alert",
+    "toggle": "Send {type} alerts by {channel}",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Couldn't save your alerts. Try again.",
+    "channels": {
+      "email": "Email",
+      "push": "Phone",
+      "telegram": "Telegram",
+      "emailNone": "No email address on your account.",
+      "pushNone": "No phone yet. Sign in to the wovain app and allow notifications.",
+      "pushDevices": "{count, plural, one {# phone} other {# phones}}",
+      "telegramUnavailable": "isn't set up on this site.",
+      "telegramConnect": "Connect Telegram",
+      "telegramCheck": "I've pressed Start",
+      "telegramConnected": "Connected.",
+      "telegramConnectedAs": "Connected as @{username}.",
+      "telegramDisconnect": "Disconnect",
+      "telegramFailed": "Telegram didn't answer. Try again in a minute."
+    },
+    "quiet": {
+      "title": "Quiet hours",
+      "lead": "During quiet hours, phone and Telegram alerts wait until the end. Email still goes at once.",
+      "on": "Hold phone and Telegram alerts at night",
+      "start": "From",
+      "end": "Until",
+      "timeZone": "In your time zone, {timeZone}."
+    },
+    "types": {
+      "rule_action": {
+        "label": "Ads paused or stopped",
+        "hint": "A rule paused an ad or a campaign, or stopped every campaign at a cap."
+      },
+      "scale_request": {
+        "label": "Budget raise requests",
+        "hint": "A product sells and a rule asks to raise its budget."
+      },
+      "approval": {
+        "label": "Approvals waiting",
+        "hint": "Another action waits for your yes or no."
+      },
+      "first_sale": {
+        "label": "First sale",
+        "hint": "Your shop makes its first sale."
+      },
+      "failure": {
+        "label": "Failures",
+        "hint": "A job failed after several tries."
+      },
+      "updates": {
+        "label": "Suggestions and finished runs",
+        "hint": "New ideas from autopilot, and runs that finish."
+      }
     }
   },
   "Qloo": {

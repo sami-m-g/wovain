@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 import {
   acceptSuggestion,
   autopilotLog,
@@ -7,7 +5,9 @@ import {
   dismissSuggestion,
   requestScan,
   requireAutopilotTriggers,
-} from "../flow/autopilot";
+} from "@wovain/mastra/flow/autopilot";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 import { asOrpc } from "./approvals";
 

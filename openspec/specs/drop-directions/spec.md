@@ -52,6 +52,15 @@ The system SHALL rank directions in code by Qloo affinity x momentum (Tavily new
 - **WHEN** one direction's theme has many near-identical listings and another's has none
 - **THEN** the crowded one ranks lower and says how many similar listings there are
 
+### Requirement: Evidence gate behind the flag
+
+While the `idea-evidence-gate` flag is on, directions SHALL pass the evidence gate and rank by the sweet spot's lower bound (capability `idea-evidence`), by demand against supply, and each SHALL carry the one idea card. A direction whose words fail the evidence check twice SHALL be withdrawn.
+
+#### Scenario: Crowded theme behind the gate
+
+- **WHEN** the `idea-evidence-gate` flag is on and a theme has 8 or more near-identical listings of 20
+- **THEN** it is not suggested, and the decision trace records it as `saturated`
+
 ### Requirement: One-click cards with evidence
 
 Each direction SHALL be a card with a title, a "why now" line, the audience (when it grew from one), the rising Qloo entities, the news count with links, and the similar-listings count. Clicking it SHALL start the drop with its brief.
@@ -97,6 +106,15 @@ The suggestions SHALL be kept per merchant and request and served at once. A kep
 
 - **WHEN** nothing is kept for the request
 - **THEN** the step shows card-shaped placeholders, the step under way and the seconds so far, and each card appears as soon as it is ready
+
+### Requirement: Only whole answers kept
+
+An answer with no suggestion, or one whose news or listings read failed, SHALL never be kept. One already kept SHALL be read as missing.
+
+#### Scenario: Empty answer
+
+- **WHEN** a search finds no suggestion
+- **THEN** the answer is not kept, and the next visit searches again
 
 ### Requirement: The brief stays usable
 

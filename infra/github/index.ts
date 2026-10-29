@@ -24,6 +24,7 @@ import {
 const config = new pulumi.Config();
 
 repositorySettings({
+  claudeCodeOauthToken: config.getSecret("claude-code-oauth-token"),
   gitguardianApiKey: config.getSecret("gitguardian-api-key"),
   releaseBranch: config.require("releaseBranch"),
   releasePleaseToken: config.getSecret("release-please-token"),

@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
@@ -19,6 +20,10 @@ const pollWhileActive = (
     run.status === "awaiting_approval";
   return active && (run?.campaigns.length ?? 0) === 0 ? RUN_POLL_MS : false;
 };
+
+/** A setup route answers 404 while its flag is off: not a failure. */
+const flagOff = (error: unknown) =>
+  error instanceof ORPCError && error.status === 404;
 
 /** Meta is connected and its required setup cards are done. */
 const metaSetupDone = (
@@ -67,7 +72,7 @@ export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
   const storeSteps = store.data?.steps.filter((step) => step.required) ?? [];
   // Store setup answers 404 while its flag is off: connecting is enough then.
   const storeReady =
-    store.isError ||
+    flagOff(store.error) ||
     (store.data !== undefined &&
       storeSteps.every((step) => step.state === "done"));
   const metaLinked =
@@ -75,7 +80,7 @@ export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
       (each) => each.provider === "meta" && each.state === "connected"
     ) ?? false;
   // Without the Meta setup check (flag off), a connected Meta is enough.
-  const metaReady = meta.isError ? metaLinked : metaSetupDone(meta.data);
+  const metaReady = flagOff(meta.error) ? metaLinked : metaSetupDone(meta.data);
   const facts: LaunchFacts = {
     brief: brief ?? run.data?.seed,
     fourthwallConnected,
@@ -90,8 +95,13 @@ export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
   // Fourthwall) is not loading, so it doesn't hold this back.
   const settled =
     !status.isPending && !run.isLoading && !store.isLoading && !meta.isLoading;
+  // A real failure (not a flag off) is shown, never read as "done".
+  const problem = [status.error, run.error, store.error, meta.error].find(
+    (error) => error !== null && error !== undefined && !flagOff(error)
+  );
   return {
     facts,
+    problem,
     ready,
     run: run.data,
     settled,

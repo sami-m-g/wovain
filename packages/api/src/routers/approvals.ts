@@ -2,15 +2,16 @@ import { ORPCError } from "@orpc/server";
 import { APPROVAL_STATUSES, ApprovalError } from "@wovain/core/approvals";
 import type { ApprovalErrorCode } from "@wovain/core/approvals";
 import { ACTION_DOMAINS, AUTONOMY_LEVELS } from "@wovain/core/autonomy";
-import { z } from "zod";
-
 import {
   approvalsFor,
   autonomyOf,
   requireAutonomyApprovals,
   setAutonomy,
   spendToDate,
-} from "../flow/approvals";
+} from "@wovain/mastra/flow/approvals";
+import { requestBackstopSync } from "@wovain/mastra/flow/backstop";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 // The merchant's side of the approval queue and their autonomy settings
@@ -109,6 +110,9 @@ export const autonomyRouter = {
     )
     .handler(async ({ context, input }) => {
       await requireAutonomyApprovals(context);
-      return await setAutonomy(context, input);
+      const settings = await setAutonomy(context, input);
+      // Meta's mirror of the caps follows (openspec meta-backstop).
+      await requestBackstopSync(context);
+      return settings;
     }),
 };

@@ -8,11 +8,13 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@wovain/ui/components/empty";
+import { Field, FieldLabel } from "@wovain/ui/components/field";
 import { Skeleton } from "@wovain/ui/components/skeleton";
+import { Textarea } from "@wovain/ui/components/textarea";
 import { cn } from "@wovain/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { ConnectionHealth } from "@/components/app/connection-health";
 import { DropDirections } from "@/components/app/drop-directions";
@@ -25,6 +27,7 @@ import {
   StepActions,
   StepHeader,
 } from "@/components/app/wizard-parts";
+import { MAX_BRIEF } from "@/components/app/wizard-steps";
 import { LaunchChecklist } from "@/components/shadcn-studio/blocks/onboarding-feed-01/onboarding-feed-01";
 import { MetaSetup } from "@/components/store/meta-setup";
 import { StoreSetup } from "@/components/store/store-setup";
@@ -75,7 +78,7 @@ const useLaunchUrl = () => {
   const step = OPEN_STEPS.find((each) => each === params.get("step"));
   const run = params.get("run") ?? undefined;
   const url: LaunchUrl = {
-    brief: params.get("brief") ?? undefined,
+    brief: params.get("brief")?.trim() || undefined,
     run: run !== undefined && RUN_ID.test(run) ? run : undefined,
     step,
   };
@@ -85,18 +88,20 @@ const useLaunchUrl = () => {
   return { push, url };
 };
 
-const SellStep = ({
+// A direction fills the brief; with none (or Qloo off), the merchant writes it.
+export const SellStep = ({
   brief,
   brand,
-  onBrief,
   onNext,
 }: {
   brand: OnboardingReady["brand"];
   brief: string | undefined;
-  onBrief: (brief: string) => void;
-  onNext: () => void;
+  onNext: (brief: string) => void;
 }) => {
   const t = useTranslations("Launch.sell");
+  const tBrief = useTranslations("Wizard.brief");
+  const id = useId();
+  const [draft, setDraft] = useState(brief ?? "");
   // The brand is optional: with one, the directions fit it.
   const [brandOpen, setBrandOpen] = useState(false);
   const closeBrand = () => setBrandOpen(false);
@@ -104,13 +109,19 @@ const SellStep = ({
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
       <div data-tour="sell">
-        <DropDirections disabled={false} onUse={onBrief} />
+        <DropDirections disabled={false} onUse={setDraft} />
       </div>
-      {brief ? (
-        <output className="bg-muted rounded-md p-3 text-sm">
-          {t("picked", { brief })}
-        </output>
-      ) : null}
+      <Field>
+        <FieldLabel htmlFor={id}>{tBrief("label")}</FieldLabel>
+        <Textarea
+          className="min-h-20 text-base md:text-sm"
+          id={id}
+          maxLength={MAX_BRIEF}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={tBrief("placeholder")}
+          value={draft}
+        />
+      </Field>
       <details
         className="rounded-md border p-4"
         onToggle={(event) => setBrandOpen(event.currentTarget.open)}
@@ -126,7 +137,10 @@ const SellStep = ({
         ) : null}
       </details>
       <StepActions>
-        <NextButton disabled={!brief} onClick={onNext}>
+        <NextButton
+          disabled={draft.trim() === ""}
+          onClick={() => onNext(draft.trim())}
+        >
           {t("next")}
         </NextButton>
       </StepActions>
@@ -226,7 +240,7 @@ const DropFlowCard = ({
   </div>
 );
 
-const DesignStep = ({
+export const DesignStep = ({
   brief,
   onRun,
   run,
@@ -249,7 +263,10 @@ const DesignStep = ({
   }
   return (
     <div className="flex flex-col gap-6">
-      <StepHeader lead={t("lead", { brief: brief ?? "" })} title={t("title")} />
+      <StepHeader
+        lead={brief ? t("lead", { brief }) : t("noBrief")}
+        title={t("title")}
+      />
       {start.error ? (
         <FlowProblemNotice problem={describeProblem(start.error)} />
       ) : null}
@@ -326,8 +343,8 @@ const StepPanel = ({
         <SellStep
           brand={ready.brand}
           brief={facts.brief}
-          onBrief={onBrief}
-          onNext={() => onOpen("store")}
+          key={facts.brief}
+          onNext={onBrief}
         />
       );
     }
@@ -361,7 +378,14 @@ const StepPanel = ({
           title={t("ads.title")}
         />
       ) : (
-        <DesignStep brief={facts.brief} onRun={onRun} run={run} />
+        <div className="flex flex-col gap-6" data-tour="drop-flow">
+          <StepHeader lead={t("ads.needsDesign")} title={t("ads.title")} />
+          <StepActions>
+            <NextButton onClick={() => onOpen("design")}>
+              {t("steps.design.title")}
+            </NextButton>
+          </StepActions>
+        </div>
       );
     }
     default: {
@@ -452,7 +476,7 @@ export const LaunchShell = ({ startedAt }: { startedAt: string }) => {
           <StepPanel
             active={active}
             data={data}
-            onBrief={(brief) => push({ brief })}
+            onBrief={(brief) => push({ brief, step: "store" })}
             onOpen={(step) => push({ step })}
             onRun={(run) => push({ run, step: "design" })}
             returnQuery={returnQuery}

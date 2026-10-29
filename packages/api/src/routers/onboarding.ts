@@ -1,19 +1,22 @@
 import { answersSchema } from "@wovain/core/brand-discovery";
-import { MAX_REFERENCES, MIN_REFERENCES } from "@wovain/core/brand-identity";
-import { z } from "zod";
-
 import {
   buyers,
   discover,
   recolour,
   searchTaste,
-} from "../flow/brand-discovery";
+} from "@wovain/mastra/flow/brand-discovery";
 import {
   finishOnboarding,
   onboardingStatus,
   resolveBrandReferences,
   saveBrand,
-} from "../flow/onboarding";
+} from "@wovain/mastra/flow/onboarding";
+import {
+  MAX_REFERENCES,
+  MIN_REFERENCES,
+} from "@wovain/mastra/memory/brand-identity";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 // The first-run wizard (openspec onboarding-wizard). `status` answers
