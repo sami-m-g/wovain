@@ -794,12 +794,12 @@
       "title": "Your first drop",
       "source": "Time from sign-up to a live campaign, then to a first profit",
       "liveCampaign": "Time to live campaign",
-      "liveCampaignHint": "Sign-up to campaign live. Target {target} min",
+      "liveCampaignHint": "Sign-up to campaign live. Target {target, number} min",
       "metaReview": "Meta review wait",
       "metaReviewHint": "Campaign live to first impression. Meta's time, not yours",
       "firstProfit": "Time to first profit",
-      "firstProfitHint": "First impression to profit after ad spend. Target {target} min",
-      "minutes": "{value} min"
+      "firstProfitHint": "First impression to profit after ad spend. Target {target, number} min",
+      "minutes": "{value, number} min"
     },
     "shop": {
       "title": "Shop",
