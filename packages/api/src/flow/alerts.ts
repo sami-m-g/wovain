@@ -389,10 +389,11 @@ export const deliverAlert = async (
   if (claimed.length === 0) {
     return { status: "duplicate" };
   }
-  // The merchant may have turned the channel off while quiet hours held it.
-  const settings = await alertSettingsFor(actor);
   let outcome: { reason?: string; status: "sent" | "skipped" };
+  // Every failure after the claim releases it, a settings read included.
   try {
+    // The merchant may have turned the channel off while quiet hours held it.
+    const settings = await alertSettingsFor(actor);
     outcome = settings.channels[alertTypeOf(notification.kind)].includes(
       channel
     )

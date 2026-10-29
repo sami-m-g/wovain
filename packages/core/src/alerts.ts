@@ -190,7 +190,10 @@ export const quietUntil = (
   // A clock change in between moves the wall-clock end by its offset.
   const shift =
     offsetMinutes(now, quiet.timeZone) - offsetMinutes(naive, quiet.timeZone);
-  return new Date(naive.getTime() + shift * MS_PER_MINUTE);
+  const shifted = new Date(naive.getTime() + shift * MS_PER_MINUTE);
+  // An end inside a spring-forward gap doesn't exist: the end is then the
+  // first minute after the gap, never a time already past.
+  return shifted.getTime() > now.getTime() ? shifted : naive;
 };
 
 export interface ChannelPlan {
