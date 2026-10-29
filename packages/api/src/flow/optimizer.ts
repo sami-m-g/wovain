@@ -1,3 +1,5 @@
+import { decideCampaign } from "@wovain/core/ad-rules";
+import type { AdRuleSettings, UnitEconomics } from "@wovain/core/ad-rules";
 import type { Approval } from "@wovain/core/approvals";
 import type { ActionType } from "@wovain/core/autonomy";
 import {
@@ -7,6 +9,7 @@ import {
   reviewProposal,
 } from "@wovain/core/optimizer";
 import type { Assessment, Proposal, Rng } from "@wovain/core/optimizer";
+import type { MetaCampaignRead } from "@wovain/core/optimizer-meta";
 import {
   pauseAd,
   readCampaign,
@@ -24,6 +27,15 @@ import { log as evlog } from "evlog";
 import { z } from "zod";
 
 import type { Actor } from "./actor";
+import {
+  adResultsOf,
+  adRulesOf,
+  applyCampaignRules,
+  applyStop,
+  economicsOf,
+  isAdRulesOn,
+} from "./ad-rules";
+import type { RuleOutcome } from "./ad-rules";
 import {
   approvalsFor,
   autonomyOf,
@@ -70,7 +82,8 @@ export type CampaignOutcome =
       outcome: "enqueued";
       status: Approval["status"];
     }
-  | { campaignId: string; outcome: "failed"; error: string };
+  | { campaignId: string; outcome: "failed"; error: string }
+  | RuleOutcome;
 
 const metaOf =
   (actor: Actor, deps: OptimizerDeps) =>
@@ -86,17 +99,30 @@ const messageOf = (error: unknown) =>
 
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
-const params = z.object({ lastEditAt: z.string().optional() }).loose();
+const params = z
+  .object({
+    lastEditAt: z.string().optional(),
+    lastScaleAt: z.string().optional(),
+  })
+  .loose();
 
-// wovain's last significant edit of the campaign's ad set.
-const lastEditOf = (rows: (typeof adOptimizerState.$inferSelect)[]) => {
+// The latest of one saved timestamp across the campaign's ads.
+const latestOf = (
+  rows: (typeof adOptimizerState.$inferSelect)[],
+  key: "lastEditAt" | "lastScaleAt"
+) => {
   const edits = rows.flatMap((row) => {
     const parsed = params.safeParse(row.params);
-    const at = parsed.success ? parsed.data.lastEditAt : undefined;
+    const at = parsed.success ? parsed.data[key] : undefined;
     return at === undefined ? [] : [new Date(at).getTime()];
   });
   return edits.length === 0 ? undefined : new Date(Math.max(...edits));
 };
+
+// wovain's last significant edit of the campaign's ad set. A profit-rule
+// raise of at most 20% is not one: it is kept apart as lastScaleAt.
+const lastEditOf = (rows: (typeof adOptimizerState.$inferSelect)[]) =>
+  latestOf(rows, "lastEditAt");
 
 const stateRows = async ({ db, userId }: Actor, campaignId: string) =>
   await db
@@ -236,6 +262,72 @@ const enqueueInput = (
   };
 };
 
+interface RulesContext {
+  economics: Map<string, UnitEconomics>;
+  reads: Map<string, { read: MetaCampaignRead; row: CampaignRow }>;
+  settings: AdRuleSettings;
+}
+
+// The profit rules for one campaign (./ad-rules): kills run before the
+// bandit, and only a profit-rule raise may raise the budget.
+const runCampaignRules = async (
+  actor: Actor,
+  trace: DecisionTrace,
+  input: {
+    assessment: Assessment;
+    dailyBudgetCents: number;
+    dailySpendCapCents: number;
+    now: Date;
+    otherBudgetsCents: number;
+    read: MetaCampaignRead;
+    row: CampaignRow;
+    rules: RulesContext;
+    settings: Awaited<ReturnType<typeof autonomyOf>>;
+    spent: Awaited<ReturnType<typeof spendToDate>>;
+    stateRows: (typeof adOptimizerState.$inferSelect)[];
+  }
+) => {
+  const { now, read, row, rules } = input;
+  const economics = rules.economics.get(row.productId) ?? {
+    priceCents: 0,
+    profitCents: 0,
+  };
+  const decision = decideCampaign(
+    {
+      ads: adResultsOf(read.ads),
+      campaignId: row.id,
+      dailyBudgetCents: input.dailyBudgetCents,
+      economics,
+      lastScaleAt: latestOf(input.stateRows, "lastScaleAt"),
+      learning: input.assessment.learning.learning,
+      live: read.live,
+    },
+    rules.settings,
+    {
+      now,
+      roomCents:
+        input.dailySpendCapCents -
+        input.otherBudgetsCents -
+        input.dailyBudgetCents,
+    }
+  );
+  trace.add({
+    agent: "ad_rules",
+    inputSummary: `price ${economics.priceCents}c, profit per sale ${economics.profitCents}c`,
+    output: { decision, settings: rules.settings },
+    sources: [{ provider: "rule", title: "Profit rules: kill and scale" }],
+    step: "rules",
+  });
+  return await applyCampaignRules(actor, trace, {
+    decision,
+    hasOutstanding: async () =>
+      (await outstandingApproval(actor, row.id, now)) !== undefined,
+    now,
+    queue: { autonomy: input.settings, spent: input.spent },
+    row,
+  });
+};
+
 const optimizeCampaign = async (
   actor: Actor,
   call: ToolCall,
@@ -244,6 +336,7 @@ const optimizeCampaign = async (
     budgets: Map<string, number>;
     deps: OptimizerDeps;
     now: Date;
+    rules?: RulesContext | undefined;
   }
 ): Promise<CampaignOutcome> => {
   const { now } = context;
@@ -256,6 +349,7 @@ const optimizeCampaign = async (
     { id: row.metaCampaignId, provider: "meta" as const, title: "campaign" },
   ];
   try {
+    const cached = context.rules?.reads.get(row.id)?.read;
     const read = await trace.call(
       {
         agent: AGENT,
@@ -263,12 +357,13 @@ const optimizeCampaign = async (
         step: "meta.read",
       },
       async () =>
-        await readCampaign(call, {
+        cached ??
+        (await readCampaign(call, {
           adAccountId: row.adAccountId,
           adIds: row.adIds,
           adSetId: row.adSetId,
           metaCampaignId: row.metaCampaignId,
-        }),
+        })),
       (result) => ({ output: result, sources })
     );
     const dailyBudgetCents = read.dailyBudgetCents ?? row.dailyBudgetCents;
@@ -316,7 +411,46 @@ const optimizeCampaign = async (
       sources: [{ provider: "rule", title: "Thompson sampling and guards" }],
       step: "assess",
     });
-    const { proposal } = assessment;
+    if (context.rules !== undefined) {
+      const ruled = await runCampaignRules(actor, trace, {
+        assessment,
+        dailyBudgetCents,
+        dailySpendCapCents: settings.dailySpendCapCents,
+        now,
+        otherBudgetsCents,
+        read,
+        row,
+        rules: context.rules,
+        settings,
+        spent,
+        stateRows: rows,
+      });
+      if (ruled !== undefined) {
+        return ruled;
+      }
+    }
+    const proposal =
+      context.rules !== undefined &&
+      assessment.proposal?.type === "media.budget.change" &&
+      assessment.proposal.toCents > assessment.proposal.fromCents
+        ? undefined
+        : assessment.proposal;
+    if (proposal === undefined && assessment.proposal !== undefined) {
+      trace.add({
+        agent: AGENT,
+        inputSummary: "a raise on clicks alone",
+        output: { dropped: assessment.proposal, hold: "raise_needs_sales" },
+        sources: [
+          { provider: "rule", title: "Profit rules: raises need sales" },
+        ],
+        step: "guard",
+      });
+      return {
+        campaignId: row.id,
+        hold: "raise_needs_sales",
+        outcome: "held",
+      };
+    }
     if (proposal === undefined) {
       return {
         campaignId: row.id,
@@ -381,6 +515,65 @@ const optimizeCampaign = async (
   }
 };
 
+// The merchant's stops (./ad-rules applyStop), from a fresh read of every
+// campaign: the reads are kept for the per-campaign rules. A campaign that
+// can't be read is logged at error level and left out of the sums.
+const protect = async (
+  actor: Actor,
+  call: ToolCall,
+  rows: CampaignRow[],
+  now: Date
+): Promise<
+  | { stopped: true; outcomes: CampaignOutcome[] }
+  | { stopped: false; rules: RulesContext }
+> => {
+  const trace = new DecisionTrace(
+    { userId: actor.userId },
+    traceSinkFor(actor),
+    () => new Date()
+  );
+  try {
+    const reads: RulesContext["reads"] = new Map();
+    for (const row of rows) {
+      try {
+        // oxlint-disable-next-line no-await-in-loop
+        const read = await readCampaign(call, {
+          adAccountId: row.adAccountId,
+          adIds: row.adIds,
+          adSetId: row.adSetId,
+          metaCampaignId: row.metaCampaignId,
+        });
+        reads.set(row.id, { read, row });
+      } catch (error) {
+        evlog.error({
+          campaignId: row.id,
+          error: "AD_RULES_READ_FAILED",
+          reason: messageOf(error),
+          userId: actor.userId,
+        });
+      }
+    }
+    const [settings, economics, autonomy, spent] = await Promise.all([
+      adRulesOf(actor),
+      economicsOf(actor, [...new Set(rows.map((row) => row.productId))]),
+      autonomyOf(actor),
+      spendToDate(actor, now),
+    ]);
+    const { outcomes, stop } = await applyStop(actor, trace, {
+      economics,
+      now,
+      queue: { autonomy, spent },
+      reads,
+      settings,
+    });
+    return stop === undefined
+      ? { rules: { economics, reads, settings }, stopped: false }
+      : { outcomes, stopped: true };
+  } finally {
+    await trace.flush();
+  }
+};
+
 // Reviews the merchant's campaigns (or one); nothing with the flag off.
 export const optimizeMerchant = async (
   actor: Actor,
@@ -405,11 +598,20 @@ export const optimizeMerchant = async (
   // daily cap holds across all of them.
   const budgets = new Map(rows.map((row) => [row.id, row.dailyBudgetCents]));
   const now = nowOf(deps);
+  const rulesOn = await isAdRulesOn(actor);
   return await metaOf(
     actor,
     deps
   )(async (call) => {
     const outcomes: CampaignOutcome[] = [];
+    let rules: RulesContext | undefined;
+    if (rulesOn) {
+      const stopped = await protect(actor, call, rows, now);
+      if (stopped.stopped) {
+        return stopped.outcomes;
+      }
+      ({ rules } = stopped);
+    }
     for (const row of wanted) {
       try {
         // One campaign at a time: each reads the budgets before it.
@@ -418,6 +620,7 @@ export const optimizeMerchant = async (
           budgets,
           deps,
           now,
+          rules,
         });
         outcomes.push(outcome);
       } catch (error) {
@@ -454,6 +657,15 @@ const budgetPayload = z.object({
 });
 const campaignPayload = z.object({ campaignId: z.string() }).loose();
 
+const ruleOf = (approval: Approval) => {
+  const { rule } = approval.payload;
+  return typeof rule === "string" ? rule : undefined;
+};
+const isKill = (approval: Approval) => {
+  const rule = ruleOf(approval);
+  return rule !== undefined && rule !== "scale";
+};
+
 const isOptimizerAction = (type: string) =>
   (OPTIMIZER_ACTIONS as readonly string[]).includes(type);
 
@@ -463,15 +675,16 @@ const markEdited = async (
   actor: Actor,
   campaignId: string,
   at: Date,
-  pausedAdId?: string
+  { pausedAdId, scaled = false }: { pausedAdId?: string; scaled?: boolean }
 ) => {
   const rows = await stateRows(actor, campaignId);
+  const key = scaled ? "lastScaleAt" : "lastEditAt";
   for (const row of rows) {
     // oxlint-disable-next-line no-await-in-loop
     await actor.db
       .update(adOptimizerState)
       .set({
-        params: { ...row.params, lastEditAt: at.toISOString() },
+        params: { ...row.params, [key]: at.toISOString() },
         ...(row.metaAdId === pausedAdId && { status: "paused" as const }),
       })
       .where(eq(adOptimizerState.id, row.id));
@@ -513,6 +726,14 @@ const staleReasons = async (
     }),
     stateRows(actor, row.id),
   ]);
+  if (approval.actionType === "media.ad.pause" && isKill(approval)) {
+    // A profit-rule kill stands whatever the learning phase or delivery
+    // share: it only needs the ad still running.
+    const { adId } = pausePayload.parse(approval.payload);
+    return read.ads.some((ad) => ad.adId === adId && ad.active)
+      ? []
+      : [`ad ${adId} is no longer running`];
+  }
   const why = learningReasons(
     {
       lastEditAt: lastEditOf(rows),
@@ -561,6 +782,7 @@ const perform = async (
   campaignId: string;
   dailyBudgetCents?: number;
   pausedAdId?: string;
+  scaled?: boolean;
 }> => {
   if (approval.actionType === "media.ad.pause") {
     const payload = pausePayload.parse(approval.payload);
@@ -576,6 +798,7 @@ const perform = async (
   return {
     campaignId: payload.campaignId,
     dailyBudgetCents: payload.toCents,
+    ...(ruleOf(approval) === "scale" && { scaled: true }),
   };
 };
 
@@ -589,6 +812,7 @@ export type OptimizerWrite =
       dailyBudgetCents?: number;
       kind: "written";
       pausedAdId?: string;
+      scaled?: boolean;
     };
 
 // Checks an approved optimizer action again and performs it on Meta.
@@ -704,12 +928,10 @@ export const finishOptimizerApproval = async (
   write: Extract<OptimizerWrite, { kind: "written" }>
 ) => {
   try {
-    await markEdited(
-      actor,
-      write.campaignId,
-      new Date(write.at),
-      write.pausedAdId
-    );
+    await markEdited(actor, write.campaignId, new Date(write.at), {
+      ...(write.pausedAdId !== undefined && { pausedAdId: write.pausedAdId }),
+      ...(write.scaled === true && { scaled: true }),
+    });
     if (write.dailyBudgetCents !== undefined) {
       await saveBudget(actor, write.campaignId, write.dailyBudgetCents);
     }

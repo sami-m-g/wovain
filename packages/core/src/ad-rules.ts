@@ -83,8 +83,12 @@ export const adRuleOverridesSchema = z
 export type AdRuleOverrides = z.infer<typeof adRuleOverridesSchema>;
 
 export const adRuleSettingsOf = (overrides: unknown): AdRuleSettings => {
+  // An invalid override set falls back to the defaults as a whole.
   const parsed = adRuleOverridesSchema.safeParse(overrides ?? {});
-  return { ...AD_RULE_DEFAULTS, ...(parsed.success ? parsed.data : {}) };
+  const set = Object.entries(parsed.success ? parsed.data : {}).filter(
+    (entry): entry is [string, number] => entry[1] !== undefined
+  );
+  return { ...AD_RULE_DEFAULTS, ...Object.fromEntries(set) };
 };
 
 // What one sale of the campaign's product is worth to the merchant.

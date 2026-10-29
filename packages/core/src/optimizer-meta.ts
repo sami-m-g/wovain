@@ -162,11 +162,10 @@ export const readCampaign = async (
       return {
         active: ad !== undefined && statusOf(ad) === ACTIVE,
         adId,
-        addToCarts:
-          amountOf(ad?.omni_add_to_cart ?? ad?.adds_to_cart) ?? 0,
-        purchases: amountOf(ad?.omni_purchase ?? ad?.purchases) ?? 0,
+        addToCarts: amountOf(ad?.omni_add_to_cart ?? ad?.adds_to_cart) ?? 0,
         clicks: amountOf(ad?.clicks) ?? 0,
         impressions: amountOf(ad?.impressions) ?? 0,
+        purchases: amountOf(ad?.omni_purchase ?? ad?.purchases) ?? 0,
         spendCents: Math.round(
           // Ad-level spend is the insights field `spend`; `amount_spent` is
           // the account field, kept in case the MCP maps it.

@@ -573,6 +573,25 @@
           "with_issues": "À vérifier dans Meta",
           "archived": "Archivée",
           "unknown": "Statut inconnu"
+        },
+        "rules": {
+          "title": "Comment wovain protège votre budget publicitaire",
+          "pauseIf": "wovain met une annonce en pause de lui-même si elle :",
+          "noSale": "dépense {spend} (la marge d'une vente) sans vente ni ajout au panier",
+          "cartNoSale": "dépense {spend} avec des ajouts au panier mais sans vente",
+          "lowCtr": "obtient moins de {ctr} % de clics après {impressions} vues",
+          "highCpc": "coûte plus de {cpc} par clic après {clicks} clics",
+          "noProfit": "Une vente de ce produit ne laisse aucune marge : wovain met donc ses annonces en pause.",
+          "stopIf": "wovain met toutes les campagnes en pause si :",
+          "dailyCap": "les dépenses du jour atteignent votre plafond quotidien de {cap}",
+          "monthlyCap": "les dépenses du mois atteignent votre plafond mensuel de {cap}",
+          "lossLimit": "les dépenses publicitaires moins la marge des ventes atteignent {limit}",
+          "scaleIf": "wovain propose d'augmenter le budget si :",
+          "scale": "Meta a fini son apprentissage, la campagne compte au moins {purchases} ventes et rapporte au moins {roas} par 1 $ de publicité. La hausse est de {step} % au plus, une fois toutes les {hours} heures, dans votre plafond quotidien.",
+          "how": "wovain vérifie toutes les 30 minutes. Les pauses sont immédiates et vous recevez une notification. Une hausse attend votre accord.",
+          "limitLabel": "Limite de perte (USD)",
+          "save": "Enregistrer",
+          "saveFailed": "La limite n'a pas été enregistrée : {reason}"
         }
       }
     },

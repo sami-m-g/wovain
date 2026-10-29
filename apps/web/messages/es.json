@@ -573,6 +573,25 @@
           "with_issues": "Revisar en Meta",
           "archived": "Archivada",
           "unknown": "Estado desconocido"
+        },
+        "rules": {
+          "title": "Cómo protege wovain tu dinero en anuncios",
+          "pauseIf": "wovain pausa un anuncio por su cuenta si:",
+          "noSale": "gasta {spend} (la ganancia de una venta) sin ventas ni añadidos al carrito",
+          "cartNoSale": "gasta {spend} con añadidos al carrito pero sin ventas",
+          "lowCtr": "recibe menos del {ctr} % de clics tras {impressions} vistas",
+          "highCpc": "cuesta más de {cpc} por clic tras {clicks} clics",
+          "noProfit": "Una venta de este producto no deja ganancia, así que wovain pausa sus anuncios.",
+          "stopIf": "wovain pausa todas las campañas si:",
+          "dailyCap": "el gasto de hoy llega a tu límite diario de {cap}",
+          "monthlyCap": "el gasto del mes llega a tu límite mensual de {cap}",
+          "lossLimit": "el gasto en anuncios menos la ganancia de sus ventas llega a {limit}",
+          "scaleIf": "wovain pide subir el presupuesto si:",
+          "scale": "Meta terminó de aprender, la campaña tiene al menos {purchases} ventas y genera al menos {roas} por cada 1 $ en anuncios. La subida es del {step} % como máximo, una vez cada {hours} horas, dentro de tu límite diario.",
+          "how": "wovain revisa cada 30 minutos. Las pausas son inmediatas y recibes una notificación. Una subida espera tu aprobación.",
+          "limitLabel": "Límite de pérdida (USD)",
+          "save": "Guardar",
+          "saveFailed": "El límite no se guardó: {reason}"
         }
       }
     },
