@@ -244,6 +244,23 @@ describe("outcomes per design on Postgres", () => {
     expect(first?.profitPerSaleCents).toBeGreaterThan(0);
   });
 
+  it("updates multi-word columns when a design is refreshed with new sales", async () => {
+    await ctx.db
+      .insert(performanceSnapshot)
+      .values([sale(products[0] ?? "", "2026-10-15", 2)]);
+    await refreshOutcomes(ctx.actor, { now: NOW });
+    await ctx.db
+      .insert(performanceSnapshot)
+      .values([sale(products[0] ?? "", "2026-10-16", 1)]);
+    await refreshOutcomes(ctx.actor, { now: NOW });
+
+    const rows = await ctx.db.select().from(designOutcome);
+    expect(rows.find((row) => row.productId === products[0])).toMatchObject({
+      revenueCents: 9000,
+      units: 3,
+    });
+  });
+
   it("records Meta's numbers per design from the tick and keeps them on the daily refresh", async () => {
     const [row] = await ctx.db
       .insert(campaign)

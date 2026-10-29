@@ -273,12 +273,24 @@ export const createDropCampaign = async (
   }
   const dailyBudgetCents = Math.round(input.dailyBudget * 100);
   // feedback-loop: designs whose angles sold before get more of the floor.
-  const shares = single
-    ? undefined
-    : await testFloorSharesOf(
-        actor,
-        designs.map((design) => design.productId)
-      );
+  // Kept with the key so a retry stages every ad set with the same shares,
+  // even when the learned model has moved since.
+  const floor = single
+    ? null
+    : await once(actor, {
+        key: `${key}:floor`,
+        operation: "floor",
+        perform: async () => {
+          const found = await testFloorSharesOf(
+            actor,
+            designs.map((design) => design.productId)
+          );
+          return found === undefined ? null : Object.fromEntries(found);
+        },
+        provider: "meta",
+        runId,
+      });
+  const shares = floor === null ? undefined : new Map(Object.entries(floor));
   const metaOnce: WriteOnce = async (name, perform, recover) =>
     await once(actor, {
       key: `${key}:meta:${name}`,

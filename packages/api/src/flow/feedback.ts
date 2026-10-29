@@ -257,11 +257,11 @@ export const adRows = (
 const UPSERTED = [
   "clicks",
   "impressions",
-  "product_id",
+  "productId",
   "purchases",
   "raw",
-  "revenue_cents",
-  "spend_cents",
+  "revenueCents",
+  "spendCents",
   "units",
 ] as const;
 
@@ -276,7 +276,10 @@ const saveRows = async (actor: Pick<Actor, "db">, rows: Snapshot[]) => {
     .onConflictDoUpdate({
       set: {
         ...Object.fromEntries(
-          UPSERTED.map((column) => [column, sql.raw(`excluded.${column}`)])
+          UPSERTED.map((key) => [
+            key,
+            sql.raw(`excluded."${performanceSnapshot[key].name}"`),
+          ])
         ),
         updatedAt: new Date(),
       },

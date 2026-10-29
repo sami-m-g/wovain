@@ -215,25 +215,25 @@ const salesOf = async (actor: Pick<Actor, "db" | "userId">) => {
 };
 
 const UPDATED = [
-  "add_to_carts",
+  "addToCarts",
   "audience",
   "blank",
   "clicks",
-  "design_id",
-  "drop_id",
-  "idea_id",
+  "designId",
+  "dropId",
+  "ideaId",
   "impressions",
-  "launched_at",
-  "meta_read_at",
+  "launchedAt",
+  "metaReadAt",
   "palette",
-  "price_cents",
-  "profit_per_sale_cents",
+  "priceCents",
+  "profitPerSaleCents",
   "purchases",
-  "qloo_entities",
-  "qloo_tags",
-  "revenue_cents",
-  "sales_covered",
-  "spend_cents",
+  "qlooEntities",
+  "qlooTags",
+  "revenueCents",
+  "salesCovered",
+  "spendCents",
   "theme",
   "units",
 ] as const;
@@ -317,7 +317,10 @@ export const refreshOutcomes = async (
     .onConflictDoUpdate({
       set: {
         ...Object.fromEntries(
-          UPDATED.map((column) => [column, sql.raw(`excluded.${column}`)])
+          UPDATED.map((key) => [
+            key,
+            sql.raw(`excluded."${designOutcome[key].name}"`),
+          ])
         ),
         updatedAt: now,
       },
@@ -357,6 +360,29 @@ export const metaTotalsOf = (
   return totals;
 };
 
+// A design in a campaign that wasn't read this tick keeps its last saved
+// totals: a partial sum would overwrite the lifetime numbers.
+const completeTotalsOf = async (
+  actor: Actor,
+  reads: ReadonlyMap<string, { read: MetaCampaignRead; row: CampaignRow }>
+) => {
+  const totals = metaTotalsOf(reads);
+  const rows = await actor.db
+    .select()
+    .from(campaign)
+    .where(eq(campaign.userId, actor.userId));
+  for (const row of rows) {
+    if (reads.has(row.id)) {
+      continue;
+    }
+    totals.delete(row.productId);
+    for (const entry of row.designs ?? []) {
+      totals.delete(entry.productId);
+    }
+  }
+  return totals;
+};
+
 /**
  * The optimizer tick's part: Meta's lifetime numbers per design, recorded
  * while the feedback-loop flag is on. A failure is logged at error level and
@@ -371,7 +397,10 @@ export const recordAdOutcomes = async (
     return;
   }
   try {
-    await refreshOutcomes(actor, { meta: metaTotalsOf(reads), now });
+    await refreshOutcomes(actor, {
+      meta: await completeTotalsOf(actor, reads),
+      now,
+    });
   } catch (error) {
     logOutcomeFailure("OUTCOMES_META_FAILED", error, actor.userId);
   }
@@ -417,7 +446,7 @@ const readAllCampaigns = async (actor: Actor) => {
 export const refreshAllOutcomes = async (actor: Actor, now = new Date()) => {
   let meta = new Map<string, MetaTotals>();
   try {
-    meta = metaTotalsOf(await readAllCampaigns(actor));
+    meta = await completeTotalsOf(actor, await readAllCampaigns(actor));
   } catch (error) {
     logOutcomeFailure("OUTCOMES_META_FAILED", error, actor.userId);
   }
@@ -529,10 +558,10 @@ export const testFloorSharesOf = async (
   actor: Actor,
   productIds: string[]
 ): Promise<Map<string, number> | undefined> => {
-  if (productIds.length < 2 || !(await outcomesOn(actor))) {
-    return undefined;
-  }
   try {
+    if (productIds.length < 2 || !(await outcomesOn(actor))) {
+      return undefined;
+    }
     const [model, designs] = await Promise.all([
       outcomeModelFor(actor),
       attributesOf(actor, productIds),
