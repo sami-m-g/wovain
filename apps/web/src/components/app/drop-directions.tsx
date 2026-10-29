@@ -40,6 +40,9 @@ const progressOf = (chunks: readonly DirectionsChunk[]) => {
       ({ answer } = chunk);
     } else if (chunk.kind === "step") {
       ({ step } = chunk);
+    } else if (chunk.kind === "withdrawn") {
+      // Its words failed the evidence check: not shown after all.
+      cards.delete(chunk.key);
     } else {
       cards.set(chunk.direction.key, chunk.direction);
     }

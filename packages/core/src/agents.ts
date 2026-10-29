@@ -51,6 +51,7 @@ export const AGENT_IDS = [
   "brand_discovery",
   "drop_directions",
   "drop_style",
+  "idea_words",
   "product_listing",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
@@ -83,6 +84,9 @@ export const AGENT_ROLES = {
   drop_directions: "default",
   // Suggests one drop's tones and palettes from its Qloo audience.
   drop_style: "default",
+  // Names each idea past the evidence gate (title and concept) from its
+  // evidence only; code checks every number and claim (./idea-words).
+  idea_words: "default",
   // Rewrites a product page (name and description) for the Store.
   product_listing: "default",
   research_themes: "default",

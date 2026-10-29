@@ -179,3 +179,34 @@ it("ranks a city with many fans above a village where a few love it", () => {
   ]);
   expect(places.map((one) => one.name)).toStrictEqual(["City", "Village"]);
 });
+
+it("reads a tag-only idea's buyers from its tag, its age from the brief, and says so", async () => {
+  const qloo = qlooFake();
+  const result = await whoBuys(
+    depsWith({ qloo }),
+    { tags: ["urn:tag:genre:garden"] },
+    DEFAULT_LOCATION,
+    { demographics: ["Q-brief"], scope: "idea" }
+  );
+  expect(qloo.demographicsOf).toHaveBeenCalledWith(["Q-brief"], undefined);
+  expect(qloo.placesOf.mock.calls[0]?.[0]).toStrictEqual({
+    tags: ["urn:tag:genre:garden"],
+  });
+  expect(result).toMatchObject({ buyersScope: "brief", scope: "idea" });
+  expect(result.buyers.age).toBe("25_to_29");
+});
+
+it("leaves out audiences about money, jobs or politics whatever their family", () => {
+  const audiences = targetable([
+    {
+      affinity: 0.9,
+      id: "a",
+      name: "Angel Start Up Investing",
+      where: "Angel Start Up Investing (Lifestyle)",
+    },
+    { affinity: 0.8, id: "b", name: "Sales Professional" },
+    { affinity: 0.7, id: "c", name: "Political Junkie" },
+    { affinity: 0.6, id: "d", name: "K-Drama Fans" },
+  ]);
+  expect(audiences.map((one) => one.name)).toStrictEqual(["K-Drama Fans"]);
+});

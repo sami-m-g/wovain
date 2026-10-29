@@ -174,6 +174,10 @@ export const FLAGS = {
     "growth",
     "Performance snapshots feed scores, taste and the next suggestions"
   ),
+  "idea-evidence-gate": workstream(
+    "growth",
+    "Ideas shown only with Qloo evidence, proof of demand and a competition read; sweet-spot demand / supply ranked by a Wilson lower bound; one idea card contract; titles checked against the evidence (openspec idea-evidence)"
+  ),
   "mastra-runs": {
     description:
       "New runs go through the Mastra workflow; the legacy run steps are the fallback",

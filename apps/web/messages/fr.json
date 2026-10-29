@@ -2279,5 +2279,35 @@
         "create": "Créer la publicité"
       }
     }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "Quoi créer",
+      "why": "Pourquoi ça se vend",
+      "audience": "Qui achète et où",
+      "competition": "Concurrence"
+    },
+    "unavailable": {
+      "not_read": "Pas encore lu.",
+      "read_failed": "La lecture a échoué. Relancez la recherche.",
+      "not_connected": "Connectez Meta pour lire les publicités que les boutiques maintiennent.",
+      "none_found": "Rien trouvé pour cette idée.",
+      "ungrounded": "Pas de titre : le texte affirmait ce que les preuves ne montrent pas.",
+      "raw_tag": "Pas de titre : seule l'étiquette de goût brute est revenue."
+    },
+    "dropped": {
+      "no_qloo_evidence": "Aucune preuve Qloo",
+      "no_demand_proof": "Aucune preuve que ça se vend",
+      "no_competition_read": "La concurrence n'a pas pu être lue",
+      "saturated": "Trop encombré : trop d'annonces ou d'annonceurs similaires",
+      "no_title": "Aucun titre étayé par les preuves"
+    },
+    "level": {
+      "open": "Ouvert",
+      "sweet-spot": "Juste milieu",
+      "crowded": "Encombré"
+    },
+    "sameBuyers": "Les mêmes acheteurs que votre brief",
+    "droppedCount": "{count, plural, one {# idée écartée} other {# idées écartées}} faute de preuves"
   }
 }
