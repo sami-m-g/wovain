@@ -70,6 +70,11 @@ test("the bootstrap program registers CI's identities", async () => {
       "gcp:serviceaccount/iAMMember:IAMMember::infra-next-from-github",
       "gcp:kms/cryptoKey:CryptoKey::next-stack-secrets",
       "gcp:kms/cryptoKeyIAMMember:CryptoKeyIAMMember::infra-preview-next-stack-secrets",
+      // The github stack's `pulumi up` from CI (github.ts).
+      "gcp:serviceaccount/account:Account::infra-github",
+      "gcp:serviceaccount/iAMMember:IAMMember::infra-github-from-github",
+      "gcp:kms/cryptoKey:CryptoKey::github-stack-secrets",
+      "gcp:kms/cryptoKeyIAMMember:CryptoKeyIAMMember::infra-preview-github-stack-secrets",
     ])
   );
 });
@@ -111,4 +116,25 @@ test("infra-next reads and writes only next's state, its locks included", () => 
   }
   // Nothing of production's or bootstrap's.
   expect(expression).not.toMatch(/\/wovain\/|wovain-bootstrap/u);
+});
+
+test("infra-github has no Google role but its stack's state and key", () => {
+  expect(
+    projectRoles.filter(({ name }) => name.startsWith("infra-github"))
+  ).toEqual([]);
+  const expression = bucketConditions.get("infra-github-state") ?? "";
+  const objects = "projects/_/buckets/wovain-pulumi-state/objects/.pulumi";
+  for (const prefix of [
+    "stacks/wovain-github/",
+    "locks/organization/wovain-github/",
+    "history/wovain-github/",
+    "backups/wovain-github/",
+  ]) {
+    expect(expression).toContain(`startsWith("${objects}/${prefix}")`);
+  }
+  expect(expression).not.toMatch(/\/wovain\/|wovain-bootstrap|wovain-next/u);
+  // Trusted only from its own GitHub environment.
+  expect(
+    workloadUsers.filter((member) => member.endsWith("/github-infrastructure"))
+  ).toHaveLength(1);
 });

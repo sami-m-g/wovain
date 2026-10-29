@@ -40,6 +40,7 @@ import { getInsights, storedAdScores } from "./insights";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
 import { createDesignProduct } from "./products";
+import { QLOO_BRAND, qlooAudienceCore } from "./qloo-audience-fixture";
 import {
   approvedDesigns,
   approveIdeas,
@@ -95,6 +96,10 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
     id: USER_ID,
     name: "Merchant",
   });
+  // A brand Qloo knows: no campaign stages without its audience.
+  await db
+    .insert(brandProfile)
+    .values({ qlooEntities: [QLOO_BRAND], userId: USER_ID });
   // Enough credits for every paid step the tests run.
   await applyGrant(db as unknown as Database, {
     grantId: "grant_plan",
@@ -117,6 +122,7 @@ const setup = async (providers: Partial<Record<ProviderId, ToolCall>>) => {
       isOn: async (name: string) => await Promise.resolve(flagsOn.has(name)),
     },
     nemotron: ask,
+    ...qlooAudienceCore,
     upstream: {
       session: async (
         provider: ProviderId,
@@ -732,15 +738,70 @@ describe("createProductCampaign", () => {
     expect(await ctx.db.select().from(campaign)).toHaveLength(1);
   });
 
-  it("targets the ad set with Qloo's audience and saves the trace when qloo-audiences is on", async () => {
+  it("stages nothing without a Qloo audience, and a retry asks Qloo again", async () => {
+    const ads = meta({ loseAdSetAnswer: false });
+    const ctx = await setup({ meta: ads.call });
+    const { designId } = await seedRun(ctx.db, "running");
+    const productId = await publishedProduct(ctx.db, designId);
+    const input = { countries: ["US"], dailyBudget: 15, productId };
+    let qlooUp = false;
+    ctx.actor.core = {
+      ...ctx.actor.core,
+      qloo: {
+        ...qlooAudienceCore.qloo,
+        audienceAffinity: async (audienceId: string) => {
+          if (!qlooUp) {
+            throw new Error("Qloo answered 503");
+          }
+          return await qlooAudienceCore.qloo.audienceAffinity(audienceId);
+        },
+      },
+    } as unknown as Core;
+
+    await expect(createProductCampaign(ctx.actor, input)).rejects.toMatchObject(
+      {
+        code: "QLOO_AUDIENCE_MISSING",
+        data: { reason: "failed" },
+      }
+    );
+    expect(ads.calls).toHaveLength(0);
+    expect(await ctx.db.select().from(campaign)).toHaveLength(0);
+
+    qlooUp = true;
+    const staged = await createProductCampaign(ctx.actor, input);
+    const adSet = ads.calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(String(adSet?.args["ad_set_name"])).toContain("qloo");
+    expect(staged.adSetId).toBeTruthy();
+  });
+
+  it("refuses a brand Qloo has no audience for with the fix", async () => {
+    const ads = meta({ loseAdSetAnswer: false });
+    const ctx = await setup({ meta: ads.call });
+    await ctx.db
+      .update(brandProfile)
+      .set({ qlooEntities: [] })
+      .where(eq(brandProfile.userId, USER_ID));
+    const { designId } = await seedRun(ctx.db, "running");
+    const productId = await publishedProduct(ctx.db, designId);
+
+    await expect(
+      createProductCampaign(ctx.actor, {
+        countries: ["US"],
+        dailyBudget: 15,
+        productId,
+      })
+    ).rejects.toMatchObject({
+      code: "QLOO_AUDIENCE_MISSING",
+      data: { fix: expect.stringContaining("brand"), reason: "no_audience" },
+    });
+    expect(ads.calls).toHaveLength(0);
+  });
+
+  it("targets the ad set with Qloo's audience and saves the trace", async () => {
     const ads = meta({ loseAdSetAnswer: false });
     const ctx = await setup({ meta: ads.call });
     const { designId, runId } = await seedRun(ctx.db, "running");
     const productId = await publishedProduct(ctx.db, designId);
-    await ctx.db.insert(brandProfile).values({
-      qlooEntities: [{ id: "B1", name: "Supreme", type: "urn:entity:brand" }],
-      userId: USER_ID,
-    });
     const search = vi.fn(
       async (query: string) =>
         await Promise.resolve(
@@ -751,10 +812,6 @@ describe("createProductCampaign", () => {
     );
     ctx.actor.core = {
       ...ctx.actor.core,
-      flags: {
-        isOn: async (name: string) =>
-          await Promise.resolve(name === "qloo-audiences"),
-      },
       metaInterests: { search },
       qloo: {
         audienceAffinity: async (audienceId: string) =>

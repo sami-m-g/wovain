@@ -9,7 +9,12 @@ import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
-import { approval, auditEvent, drop } from "@wovain/db/schema/autonomy";
+import {
+  approval,
+  auditEvent,
+  decisionTrace,
+  drop,
+} from "@wovain/db/schema/autonomy";
 import { design, idea, product, run } from "@wovain/db/schema/seller";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
@@ -40,6 +45,7 @@ import {
   sampleLink,
   stageRunDrop,
 } from "./store";
+import { doSetupStep, storeSetup } from "./store-setup";
 
 // Lets a test make taking the executor's lock fail.
 const lockFault = vi.hoisted(() => ({ error: undefined as unknown }));
@@ -797,5 +803,42 @@ describe("the Store page's requests", () => {
     expect(queued).toMatchObject({ decidedBy: USER_ID, status: "approved" });
     await executeStoreApproval(ctx.actor, queued.id);
     expect(ctx.shop.count("ecommerce_deactivate-promotion")).toBe(1);
+  });
+});
+
+describe("store setup", () => {
+  it("lists the tech steps, with the pixel waiting on Meta", async () => {
+    const ctx = await setup({
+      ...LIVE_SHOP,
+      "ecommerce_get-dns-entries": null,
+    });
+    const found = await storeSetup(ctx.actor);
+    expect(found.metaConnected).toBe(false);
+    expect(
+      Object.fromEntries(found.steps.map((step) => [step.id, step.state]))
+    ).toEqual({
+      connect: "done",
+      domain: "check",
+      payouts: "done",
+      pixel: "waiting",
+      policies: "check",
+      shipping: "done",
+      site_live: "done",
+    });
+  });
+
+  it("queues going live and records it in the decision trace", async () => {
+    const ctx = await setup({});
+    const queued = await doSetupStep(ctx.actor, "site_live");
+    expect(queued).toMatchObject({
+      actionType: "store.site.set_status",
+      status: "pending",
+    });
+    const [traced] = await ctx.db
+      .select()
+      .from(decisionTrace)
+      .where(eq(decisionTrace.agent, "store_setup"));
+    expect(traced).toMatchObject({ ok: true, step: "site_live" });
+    expect(traced?.output).toMatchObject({ approvalId: queued.id });
   });
 });

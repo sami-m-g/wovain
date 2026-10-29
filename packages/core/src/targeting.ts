@@ -22,8 +22,9 @@ import type { DecisionTrace, TraceSource } from "./trace";
 // Countries stay the hard control. Ages, genders and interests go to Meta as
 // Advantage+ audience suggestions, the setting Meta's Ads MCP keeps on: Meta
 // may reach past them when that converts better. Every match is kept as
-// evidence, and a step that fails is logged at error level and left out, so
-// the ad set falls back to what is known and never to a guess.
+// evidence. A step that fails is logged at error level and marked failed in
+// the evidence; a targeting with a failed step or no Qloo audience is never
+// staged (qlooAudienceGap): no Qloo audience, no campaign.
 
 export interface QlooEntityInput {
   id: string;
@@ -113,6 +114,26 @@ export interface AudienceTargeting {
   sources: TraceSource[];
   targeting: MetaTargeting;
 }
+
+// Why a targeting can't be staged. Every idea is a Qloo tag, so every ad
+// reaches Qloo's audience for it: a failed step (retry it) or no Qloo
+// audience kept (the brand needs a reference Qloo knows) refuses the
+// campaign, never a countries-only ad set.
+export type QlooAudienceGap =
+  | { reason: "failed"; steps: string[] }
+  | { reason: "no_audience" };
+
+export const qlooAudienceGap = (
+  evidence: Pick<TargetingEvidence, "audiences" | "failed">
+): QlooAudienceGap | undefined => {
+  if (evidence.failed.length > 0) {
+    return { reason: "failed", steps: [...evidence.failed] };
+  }
+  if (evidence.audiences.length === 0) {
+    return { reason: "no_audience" };
+  }
+  return undefined;
+};
 
 // Qloo's age buckets in Meta's years; Meta's ages stop at 65.
 export const QLOO_AGE_BUCKETS = [
@@ -323,7 +344,7 @@ const asError = (error: unknown) =>
   error instanceof Error ? error : new Error(String(error));
 
 // A step's failure goes to the error sink (PostHog Error Tracking); the
-// targeting carries on without that step.
+// other steps still run, so the evidence shows everything that failed.
 export const reportFailure = (
   log: Logger | undefined,
   step: string,

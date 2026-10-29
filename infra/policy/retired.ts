@@ -16,10 +16,14 @@
 //     `up` deletes it. If no `up` wrote the release's flags first, the
 //     state still protects or retains it; scripts/pulumi.ts then clears
 //     both flags in the state (scripts/state.ts, releaseDeleted).
+//   - "moved": another stack owns it now. scripts/pulumi.ts runs
+//     `pulumi state delete` on it (scripts/state.ts, movedOut): the state
+//     forgets it and nothing is called, so this stack's `up` can't delete
+//     what the other stack adopted with `pulumi import`.
 //
 // Keys are `<project>::<type>::<name>`, a URN without its stack.
 
-export type Release = "code" | "deleted" | "unprotect";
+export type Release = "code" | "deleted" | "moved" | "unprotect";
 
 // GitLab's pools, providers and accounts and the GitHub mirror's deploy key
 // pair are released by unprotecting them. The App Hosting backend (with its
@@ -27,6 +31,10 @@ export type Release = "code" | "deleted" | "unprotect";
 // secrets only its build read (WorkOS, GitLab's OTLP settings, the docs
 // chat's OpenRouter key) and Firebase's Admin SDK account are released in
 // code (legacy.ts), then deleted.
+//
+// The repository, and the GitLab mirror's ruleset and deploy key, moved to
+// the `github` stack (infra/github), which adopts them with `pulumi import`
+// and deletes the mirror's two leftovers itself.
 export const RETIRED: Record<string, Release> = {
   "wovain-bootstrap::gcp:iam/workloadIdentityPool:WorkloadIdentityPool::gitlab":
     "unprotect",
@@ -54,5 +62,10 @@ export const RETIRED: Record<string, Release> = {
   "wovain::gcp:serviceaccount/account:Account::firebase-adminsdk": "deleted",
   "wovain::gcp:serviceaccount/account:Account::gitlab-ops": "unprotect",
   "wovain::gcp:storage/bucket:Bucket::apphosting-sources": "deleted",
+  "wovain::github:index/repository:Repository::wovain": "moved",
+  "wovain::github:index/repositoryDeployKey:RepositoryDeployKey::gitlab-ci-mirror":
+    "moved",
+  "wovain::github:index/repositoryRuleset:RepositoryRuleset::main-from-gitlab":
+    "moved",
   "wovain::tls:index/privateKey:PrivateKey::github-mirror": "unprotect",
 };

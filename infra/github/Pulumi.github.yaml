@@ -1,0 +1,5 @@
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/github-stack-secrets
+config:
+  github:owner: sami-m-g
+  # The branch production deploys from (docs/adr/0004-release-branch.md).
+  wovain-github:releaseBranch: release/transcend

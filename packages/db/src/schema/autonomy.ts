@@ -141,10 +141,19 @@ export const tasteReference = pgTable(
 // How far wovain acts alone (@wovain/core/autonomy), one row per merchant.
 // No row means DEFAULT_AUTONOMY.
 export const autonomySetting = pgTable("autonomy_setting", {
+  // The merchant's overrides of the ads profit rules' thresholds
+  // (@wovain/core/ad-rules AdRuleOverrides); empty means the defaults.
+  adRules: jsonb("ad_rules")
+    .$type<Record<string, number>>()
+    .default({})
+    .notNull(),
   createdAt: createdAt(),
   dailySpendCapCents: integer("daily_spend_cap_cents").default(0).notNull(),
   id: id(),
   level: text("level").$type<AutonomyLevel>().default("suggest").notNull(),
+  // Stop every campaign once ad spend minus the profit of its sales reaches
+  // this (@wovain/core/ad-rules). $50 until the merchant sets it.
+  lossLimitCents: integer("loss_limit_cents").default(5000).notNull(),
   monthlySpendCapCents: integer("monthly_spend_cap_cents").default(0).notNull(),
   // The merchant's "pause the agent" switch.
   paused: boolean("paused").default(false).notNull(),

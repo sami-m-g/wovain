@@ -93,6 +93,10 @@ export const FLAGS = {
     "media",
     "Thompson-sampling optimizer over ads: reallocation proposals inside the spend caps"
   ),
+  "ads-profit-rules": workstream(
+    "media",
+    "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",
@@ -200,10 +204,6 @@ export const FLAGS = {
     "growth",
     "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
   ),
-  "qloo-audiences": workstream(
-    "growth",
-    "Qloo audience demographics drive Meta targeting and the ad persona"
-  ),
   "qloo-taste-map": workstream(
     "growth",
     "The Qloo taste map: the entities, tags and cross-domain links behind each idea"
@@ -251,6 +251,10 @@ export const FLAGS = {
   "voice-input": workstream(
     "mobile",
     "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
+  ),
+  "who-buys": workstream(
+    "growth",
+    "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like"
   ),
 } as const satisfies Record<string, FlagDefinition>;
 

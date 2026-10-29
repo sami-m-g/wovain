@@ -11,13 +11,13 @@
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/ai-seo/SKILL.md",
-      "computedHash": "d17bcf49642639b1978e59aee3f13a1a5c80198a56c3c33cb7aee34df7b79359"
+      "computedHash": "ee3528ba51a4d773ec9554f7a5cf2cdca69d96fa8bbd0a44aa5abe64966fce77"
     },
     "analytics": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/analytics/SKILL.md",
-      "computedHash": "9550ba9a282c2ea1eef4eb16bab3a05450cfba83c1a2cc909e8a7f8146cb76d5"
+      "computedHash": "5ffac703d3668127f5aa01dc65f34a0dd8b6b1080d40931414bbdd896278eebb"
     },
     "analyze-logs": {
       "source": "evlog.dev",
@@ -42,7 +42,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/api-and-interface-design/SKILL.md",
-      "computedHash": "8bdbf1fca81bef9258d7e0d9726f933f25677ec8537792e084a3fb7c54acf2ba"
+      "computedHash": "0d823e9ff32f529f21492a3fd7635fc75b43ff1eb1788d4be0974bfa42e22ae3"
     },
     "better-auth-best-practices": {
       "source": "better-auth/skills",
@@ -73,13 +73,13 @@
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/copy-editing/SKILL.md",
-      "computedHash": "92731d3f0fd28f0e432c1031230e6553a2267f517a3e4cd9a44f37ff82ebba04"
+      "computedHash": "2c98bcf29c1adeac0dc5772a53a97d3b4c0320fd03accfb03a204c84d9a2799b"
     },
     "copywriting": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/copywriting/SKILL.md",
-      "computedHash": "b62e532dd34dc666288b241ea05e4e1f36f011d4f65d5d3129e85603064ac1c4"
+      "computedHash": "fa83931a47fad42131875374585cab98c9fcf2c3299543bb5bae8828cf06ea08"
     },
     "cro": {
       "source": "coreyhaines31/marketingskills",
@@ -91,7 +91,25 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/documentation-and-adrs/SKILL.md",
-      "computedHash": "f1bd038e74194364c1dcdb3dd0a72194ffd3ca9d3a103c125ca1a62e801a0cc4"
+      "computedHash": "85db994c5d2853bbd9ebdb8542e43d92b7229918a0c70126f0e94280ea1ceeec"
+    },
+    "dropshipping-product-research": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "dropshipping-product-research/SKILL.md",
+      "computedHash": "fde51ae45e278322116dfeba26296913268e8e90d88b3b9a7281ab7e329b0f75"
+    },
+    "ecommerce-checkout-optimization": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "ecommerce-checkout-optimization/SKILL.md",
+      "computedHash": "2489c741edfead05a4a2fadb4bde1b476c4ec7891f9154a6f7b9b9859576cb99"
+    },
+    "ecommerce-landing-page": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "ecommerce-landing-page/SKILL.md",
+      "computedHash": "3647e4875d6375c2f62f39c8392dbe52c63fb791312f25c3bb5ada10d4171a49"
     },
     "email-and-password-best-practices": {
       "source": "better-auth/skills",
@@ -104,6 +122,12 @@
       "sourceType": "github",
       "skillPath": "skills/error-analysis/SKILL.md",
       "computedHash": "64840896ab089c9315fc69764e5ebba7d4c3468dabf69b04423c19e8d9c23c87"
+    },
+    "etsy-print-on-demand": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "etsy-print-on-demand/SKILL.md",
+      "computedHash": "8468395b9d5c6d72d330a50fbbbdce8d9b463d65311850c80022e601fe98c50f"
     },
     "eval-audit": {
       "source": "hamelsmu/evals-skills",
@@ -140,6 +164,12 @@
       "sourceType": "github",
       "skillPath": "skills/investor-outreach/SKILL.md",
       "computedHash": "7a4e527a37fcdcdb808e8469ad6b1e53154fc7f62e3c1d2ea84607f857652d9c"
+    },
+    "market-gap-analysis": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "market-gap-analysis/SKILL.md",
+      "computedHash": "ad8acd95934c47515dc449dca5415c6132f44683418f6cd8c21e5747065e5a32"
     },
     "mastra": {
       "source": "mastra-ai/skills",
@@ -236,6 +266,13 @@
       "sourceType": "github",
       "skillPath": "skills/product-marketing/SKILL.md",
       "computedHash": "d051a45340cc15c633c008e5e8896dce61f5746830104f2624e7d20fdf5beb48"
+    },
+    "profit-margin-calculator-shopify": {
+      "source": "nexscope-ai/eCommerce-Skills",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "profit-margin-calculator/profit-margin-calculator-shopify/SKILL.md",
+      "computedHash": "f8512a70575302326824cb6a8f8c99fd7279c89578bf255601de03aec3146c29"
     },
     "provider-upgrade": {
       "source": "pulumi/agent-skills",

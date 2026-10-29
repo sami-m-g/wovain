@@ -45,18 +45,18 @@ Interest IDs SHALL come only from Meta's targeting search. An interest SHALL be 
 
 ### Requirement: Failed steps are visible and left out
 
-A step that fails (Qloo demographics, Qloo audiences or Meta interests) SHALL be logged at error level, marked failed in the decision trace and in the evidence, and left out of the targeting. The targeting SHALL never contain a guessed value.
+A step that fails (Qloo demographics, Qloo audiences or Meta interests) SHALL be logged at error level and marked failed in the decision trace and in the evidence. The targeting SHALL never contain a guessed value, and a targeting with a failed step or no Qloo audience SHALL NOT be staged (`qlooAudienceGap`).
 
 #### Scenario: Meta search fails
 
 - **WHEN** Meta's interest search answers an error
-- **THEN** the ad set keeps Qloo's ages and gender, has no interests, and the failure reaches error tracking
+- **THEN** the evidence lists `meta.interests` as failed, the failure reaches error tracking, and no campaign is staged with that targeting
 
-### Requirement: Targeting preview
+### Requirement: Targeting preview for every merchant
 
-`targeting.preview({ countries })` SHALL return the Meta targeting, the persona and the evidence for the signed-in merchant's brand, behind the `qloo-audiences` flag, and SHALL save its steps as a decision trace.
+`targeting.preview({ countries })` SHALL return the Meta targeting, the persona and the evidence for the signed-in merchant's brand, with no flag, and SHALL save its steps as a decision trace.
 
-#### Scenario: Flag off
+#### Scenario: Preview
 
-- **WHEN** the `qloo-audiences` flag is off for the merchant
-- **THEN** the preview answers 404
+- **WHEN** a signed-in merchant asks for a preview for the US
+- **THEN** the answer carries the targeting, the persona and the evidence, and the steps are saved as a decision trace

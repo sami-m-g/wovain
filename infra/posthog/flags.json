@@ -38,6 +38,44 @@
         "release"
       ]
     },
+    "ads-profit-rules": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
     "app-ui-v2": {
       "active": true,
       "groups": [
@@ -707,44 +745,6 @@
         "release"
       ]
     },
-    "qloo-audiences": {
-      "active": true,
-      "groups": [
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "development"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        }
-      ],
-      "name": "Qloo audience demographics drive Meta targeting and the ad persona (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
-      "tags": [
-        "registry",
-        "release"
-      ]
-    },
     "qloo-taste-map": {
       "active": true,
       "groups": [
@@ -1034,6 +1034,44 @@
         }
       ],
       "name": "Hold-to-talk: speech to text, then a typed action proposal in the approval queue (owner: mobile, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "who-buys": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
       "tags": [
         "registry",
         "release"

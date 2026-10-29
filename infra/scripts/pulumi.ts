@@ -4,9 +4,10 @@
 //   node infra/scripts/pulumi.ts preview infra [-- pulumi args]
 //   node infra/scripts/pulumi.ts up infra/bootstrap [-- pulumi args, e.g. --yes]
 //   node infra/scripts/pulumi.ts up infra/next
+//   node infra/scripts/pulumi.ts up infra/github
 //
 // Each directory holds one stack, the one `Pulumi.<stack>.yaml` names: `prod`
-// in infra/ and infra/bootstrap, `next` in infra/next. A stack that isn't in
+// in infra/ and infra/bootstrap, `next` in infra/next, `github` in infra/github. A stack that isn't in
 // the state yet previews from an empty state, and `up` creates it with the
 // stack file's secrets provider.
 //
@@ -14,7 +15,8 @@
 //    resources from the state, since GitLab is archived and Pulumi must
 //    never call it, unprotect what policy/retired.ts retires that way, and
 //    release the retired "deleted" resources the state still protects
-//    (scripts/state.ts, releaseDeleted). Each step checks the state first,
+//    (scripts/state.ts, releaseDeleted), and forget what moved to another
+//    stack (movedOut). Each step checks the state first,
 //    so running it again does nothing.
 // 2. The policy pack, always.
 //
@@ -36,7 +38,7 @@ import path from "node:path";
 import { parse } from "yaml";
 
 import { RETIRED } from "../policy/retired.ts";
-import { releaseDeleted } from "./state.ts";
+import { movedOut, releaseDeleted } from "./state.ts";
 import type { Checkpoint } from "./state.ts";
 
 const repo = path.resolve(import.meta.dirname, "../..");
@@ -125,6 +127,12 @@ const migrateState = (env: NodeJS.ProcessEnv) => {
       process.stderr.write(`state: unprotect ${urn}\n`);
       change(["state", "unprotect", urn, "--stack", STACK, "--yes"], env);
     }
+  }
+  // What another stack owns now leaves this state only: --force lets it
+  // drop a protected resource, and nothing is called.
+  for (const urn of movedOut(exportState(env))) {
+    process.stderr.write(`state: forget ${urn}, moved to another stack\n`);
+    change(["state", "delete", urn, "--stack", STACK, "--yes", "--force"], env);
   }
   // `pulumi state unprotect` can't clear retainOnDelete, so the release
   // edits an export of the state and imports it back.

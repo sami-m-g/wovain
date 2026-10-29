@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { audienceErrors } from "../flow/audiences";
 import { createProductCampaign, listCampaigns } from "../flow/campaigns";
 import { campaignCompetition, readIdeaCompetition } from "../flow/competition";
 import { connectionErrors } from "../flow/connections";
@@ -22,6 +23,7 @@ import {
 import { approveIdeas, getRun, listRuns, startRun } from "../flow/runs";
 import { proposeProductPublish, storeManagementOn } from "../flow/store";
 import { transitionErrors } from "../flow/transitions";
+import { ideaWhoBuys } from "../flow/who-buys";
 import { funnelProcedure, protectedProcedure } from "../index";
 
 // The seller flow, one procedure per step: research → design → approve →
@@ -102,6 +104,20 @@ export const ideasRouter = {
     .input(z.object({ ideaId: id }))
     .handler(
       async ({ context, input }) => await ideaStyle(context, input.ideaId)
+    ),
+  // Who buys this and where (who-buys), from Qloo alone; QLOO_OFF while the
+  // kill switch is off.
+  whoBuys: protectedProcedure
+    .errors(researchErrors)
+    .input(
+      z.object({
+        ideaId: id,
+        location: z.string().trim().min(2).max(80).optional(),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await ideaWhoBuys(context, input.ideaId, input.location)
     ),
 };
 
@@ -199,6 +215,7 @@ export const campaignsRouter = {
         await campaignCompetition(context, input.campaignId)
     ),
   create: funnelProcedure("campaign_created")
+    .errors(audienceErrors)
     .input(
       z.object({
         adAccountId: z.string().regex(/^\d+$/u).optional(),
