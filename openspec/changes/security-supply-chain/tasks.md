@@ -7,7 +7,7 @@ Issue #59.
 - [x] 1.1 CodeQL and Semgrep workflow with SARIF upload
 - [x] 1.2 OSV-Scanner reusable workflows for pull requests and a daily schedule
 - [x] 1.3 Dependency review with `fail-on-severity: high` and a license allowlist
-- [x] 1.4 `licenses:check` script with exceptions, run in CI
+- [x] 1.4 License scan of both lockfiles in CI (OSV-Scanner), exceptions in `osv-scanner.toml`
 - [x] 1.5 SBOM on releases
 - [x] 1.6 OpenSSF Scorecard workflow and README badge
 - [x] 1.7 `SECURITY.md`

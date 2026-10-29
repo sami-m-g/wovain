@@ -1,6 +1,7 @@
 # Dependency and license checks. dependency-review judges what a pull request
-# adds (vulnerabilities, licenses); licenses is the whole tree
-# (scripts/check-licenses.ts); ggshield scans the commits for secrets.
+# adds (vulnerabilities, licenses); licenses is the whole tree of both
+# lockfiles (OSV-Scanner, exceptions in osv-scanner.toml); ggshield scans the
+# commits for secrets.
 name: supply-chain
 
 on:
@@ -30,7 +31,8 @@ jobs:
           persist-credentials: false
       # Blocks a pull request that adds a high or critical vulnerability, or a
       # license outside the allowlist (OSI-permissive, MIT-compatible).
-      # allow-dependencies-licenses are scripts/check-licenses.ts's exceptions:
+      # allow-dependencies-licenses are the osv-scanner.toml exceptions that this
+      # review has needed so far:
       # packages whose manifest has no license, and data or binaries under
       # other terms.
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
@@ -57,15 +59,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      # Every package in both lockfiles against the allowlist, with license
+      # data from deps.dev; exceptions are in osv-scanner.toml. Vulnerability
+      # matching is off here: the osv workflow and dependency-review own it.
+      # MPL-2.0 is allowed; the license summary in the log counts it, and the
+      # second dependency-review pass warns when a pull request adds one.
+      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      # The check reads the lockfile and the store; the postinstall's env
-      # codegen is not needed.
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm run licenses:check
+          scan-args: |-
+            --config=osv-scanner.toml
+            --lockfile=pnpm-lock.yaml
+            --lockfile=infra/pnpm-lock.yaml
+            --x-disable-plugins=vulnmatch/osvdev
+            --licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,0BSD,Unlicense,CC0-1.0,BlueOak-1.0.0,Python-2.0,MPL-2.0
 
   # The GitGuardian GitHub App can be uninstalled once this runs. Needs the
   # GITGUARDIAN_API_KEY Actions secret (infra/README.md, "GitGuardian").
