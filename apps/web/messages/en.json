@@ -2210,8 +2210,7 @@
     },
     "sell": {
       "title": "What will you sell?",
-      "lead": "Pick a direction and wovain writes the brief. Each one comes with why it's rising now.",
-      "picked": "Your brief: {brief}",
+      "lead": "Pick a direction or write your own brief. Each direction comes with why it's rising now.",
       "brand": "Add your brand (optional): directions then fit it",
       "next": "Next: your store"
     },
@@ -2228,6 +2227,7 @@
     "design": {
       "title": "Approve a design",
       "lead": "wovain researches “{brief}”, picks the strongest ideas and draws designs for them.",
+      "noBrief": "Pick what to sell first: wovain researches it and draws designs for it.",
       "start": "Find ideas and draw designs",
       "working": "wovain is researching and drawing. Open your drop to pick ideas and approve designs; this step ticks off when you come back.",
       "ready": "Your drop is waiting for you. Approve a design, then come back here.",
@@ -2236,6 +2236,7 @@
     "ads": {
       "title": "Launch your ads",
       "lead": "Your products are ready. Review the ad and its daily budget in your drop, then start it.",
+      "needsDesign": "Approve a design first. Your ad is made from it.",
       "open": "Review and launch ads"
     },
     "finished": {
@@ -2297,6 +2298,7 @@
     "dropped": {
       "no_qloo_evidence": "No Qloo evidence",
       "no_demand_proof": "No proof that it sells",
+      "demand_unknown": "Demand unknown",
       "no_competition_read": "The competition couldn't be read",
       "saturated": "Too crowded: too many similar listings or advertisers",
       "no_title": "No title backed by the evidence"
@@ -2307,7 +2309,15 @@
       "crowded": "Crowded"
     },
     "sameBuyers": "Same buyers as your brief",
-    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence"
+    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence",
+    "caution": {
+      "demand_unknown": "Unconfirmed: the demand check couldn't run, so whether it sells is unknown.",
+      "no_demand_proof": "Unconfirmed: no bestseller, reviews or long-running ads found for it yet.",
+      "no_competition_read": "Unconfirmed: the listings check couldn't run, so the competition is unknown.",
+      "saturated": "Crowded: many similar listings or advertisers already sell it."
+    },
+    "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
+    "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:"
   },
   "Alerts": {
     "title": "Alerts",

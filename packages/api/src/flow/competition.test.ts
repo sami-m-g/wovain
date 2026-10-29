@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
-import type { Core } from "@wovain/core/core";
 import { fakeAgents } from "@wovain/core/test-doubles";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { Database } from "@wovain/db";
@@ -9,6 +8,7 @@ import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { decisionTrace } from "@wovain/db/schema/autonomy";
 import { idea } from "@wovain/db/schema/seller";
+import type { Core } from "@wovain/mastra/services";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { describe, expect, it, vi } from "vitest";

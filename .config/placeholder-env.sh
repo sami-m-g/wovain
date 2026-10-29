@@ -20,7 +20,7 @@ fixture() {
 # without a key-shaped literal in the repository. Anyone can recompute them:
 # they protect nothing and are used only in CI.
 placeholder() {
-  printf 'wovain-ci-placeholder-%s' "$1" | shasum -a 256 | cut -c1-64
+  node -e 'process.stdout.write(require("node:crypto").createHash("sha256").update(`wovain-ci-placeholder-${process.argv[1]}`).digest("hex"))' "$1"
 }
 
 emit() {

@@ -36,8 +36,8 @@ import {
   scoreIdea,
 } from "./score";
 import type { IdeaSignals, ScoreWeights } from "./score";
-import { provenDemand, rankIdeas } from "./sweet-spot";
-import type { SweetSpot } from "./sweet-spot";
+import { cautionScore, provenDemand, rankIdeas } from "./sweet-spot";
+import type { Caution, SweetSpot } from "./sweet-spot";
 import { qlooThemes } from "./themes";
 import type { Theme } from "./themes";
 
@@ -117,6 +117,9 @@ export interface TrendProof {
 export interface TrendIdea {
   // Tavily's one-paragraph answer to "why now".
   answer?: string | undefined;
+  // Shown although it didn't pass the evidence gate, because none did: why
+  // it didn't (idea-evidence-gate on). The card says so.
+  caution?: Caution | undefined;
   // This week's headline that makes the theme timely.
   moment?: string | undefined;
   // Tavily Research's dossier on the theme, when the merchant asked.
@@ -530,7 +533,8 @@ const proofOf = async (
 // recorded in the decision trace with the reason, never shown.
 const gated = <T extends Omit<TrendIdea, "rank">>(
   ideas: T[],
-  multiplierOf: (idea: T) => number
+  multiplierOf: (idea: T) => number,
+  log?: Logger
 ) => {
   const judged = rankIdeas(ideas, (idea) => ({
     gaps: idea.proof?.gaps.length ?? 0,
@@ -540,12 +544,34 @@ const gated = <T extends Omit<TrendIdea, "rank">>(
   }));
   const { dropped } = judged;
   // The merchant's record scales the sweet-spot score; the spot stays as read.
+  // An idea shown with a caution (nothing passed the gate) ranks on its Qloo
+  // fit, scaled down by its caution.
   const kept = judged.kept
     .map((one) => ({
       ...one,
-      weighed: one.spot.score * multiplierOf(one.item),
+      weighed:
+        (one.caution === undefined
+          ? one.spot.score
+          : cautionScore(one.caution, one.item.signals.affinity ?? 0)) *
+        multiplierOf(one.item),
     }))
     .toSorted((first, second) => second.weighed - first.weighed);
+  // On the request's wide event too: an empty or cautious result shows in
+  // the logs with each theme's reason.
+  log?.set({
+    trendsGate: {
+      dropped: dropped.map(({ item, reason }) => ({
+        reason,
+        theme: item.theme,
+      })),
+      kept: kept.length,
+      keptThemes: kept.map(({ caution, item }) => ({
+        caution,
+        theme: item.theme,
+      })),
+      unconfirmed: kept.some((one) => one.caution !== undefined),
+    },
+  });
   currentDecisions()?.add({
     agent: "trends",
     inputSummary: `${ideas.length} idea(s) through the evidence gate`,
@@ -555,7 +581,11 @@ const gated = <T extends Omit<TrendIdea, "rank">>(
         spot,
         theme: item.theme,
       })),
-      kept: kept.map(({ item, spot }) => ({ spot, theme: item.theme })),
+      kept: kept.map(({ caution, item, spot }) => ({
+        caution,
+        spot,
+        theme: item.theme,
+      })),
     },
     sources: [
       {
@@ -566,8 +596,9 @@ const gated = <T extends Omit<TrendIdea, "rank">>(
     ],
     step: "ideas.gate",
   });
-  return kept.map(({ item, spot, weighed }, index) => ({
+  return kept.map(({ caution, item, spot, weighed }, index) => ({
     ...item,
+    ...(caution !== undefined && { caution }),
     rank: index + 1,
     score: weighed,
     spot,
@@ -671,7 +702,7 @@ export const createTrends = (
     }
     return {
       avoidNames: avoidNames.slice(0, 3),
-      ideas: gated(ideas, (idea) => outcomeOf(idea.theme).multiplier),
+      ideas: gated(ideas, (idea) => outcomeOf(idea.theme).multiplier, log),
     };
   },
 });

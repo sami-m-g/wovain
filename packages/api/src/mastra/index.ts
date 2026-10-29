@@ -1,9 +1,9 @@
 import { createBilling } from "@wovain/billing/service";
-import { createCore } from "@wovain/core/core";
 import { RESEARCH_MODELS } from "@wovain/core/evidence";
-import { createMerchantMemory } from "@wovain/core/taste";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
+import { createMerchantMemory } from "@wovain/mastra/memory/taste";
+import { createCore } from "@wovain/mastra/services";
 import { Inngest } from "inngest";
 import { z } from "zod";
 
