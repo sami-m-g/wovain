@@ -2,6 +2,8 @@ import { emailOptOut } from "@wovain/db/schema/seller";
 import { pickLocale } from "@wovain/email/emails";
 import type { Locale } from "@wovain/email/locales";
 import { verifyUnsubscribeToken } from "@wovain/email/unsubscribe";
+import type { ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { ENV } from "@/env.server";
 import { withEvlog } from "@/lib/evlog";
@@ -43,25 +45,39 @@ const TEXT: Record<Locale, Text> = {
   },
 };
 
-const escapeHtml = (value: string) =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-
-const page = (request: Request, body: (text: Text) => string, status = 200) => {
+const page = (
+  request: Request,
+  body: (text: Text) => ReactNode,
+  status = 200
+) => {
   const locale = pickLocale(request.headers.get("accept-language"));
-  return new Response(
-    `<!doctype html><html lang="${locale}"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="robots" content="noindex"><title>wovain</title><body style="font-family:sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem">${body(TEXT[locale])}</body></html>`,
-    {
-      headers: {
-        "Cache-Control": "private, no-store",
-        "Content-Type": "text/html; charset=utf-8",
-      },
-      status,
-    }
+  const html = renderToStaticMarkup(
+    <html lang={locale}>
+      <head>
+        <meta charSet="utf-8" />
+        <meta content="width=device-width" name="viewport" />
+        <meta content="noindex" name="robots" />
+        <title>wovain</title>
+      </head>
+      <body
+        style={{
+          fontFamily: "sans-serif",
+          margin: "4rem auto",
+          maxWidth: "32rem",
+          padding: "0 1rem",
+        }}
+      >
+        {body(TEXT[locale])}
+      </body>
+    </html>
   );
+  return new Response(`<!doctype html>${html}`, {
+    headers: {
+      "Cache-Control": "private, no-store",
+      "Content-Type": "text/html; charset=utf-8",
+    },
+    status,
+  });
 };
 
 const addressOf = (request: Request) => {
@@ -73,23 +89,26 @@ const addressOf = (request: Request) => {
 
 const handleGet = (request: Request) => {
   if (addressOf(request) === undefined) {
-    return page(request, (text) => `<p>${text.invalid}</p>`, BAD_REQUEST);
+    return page(request, (text) => <p>{text.invalid}</p>, BAD_REQUEST);
   }
-  const action = escapeHtml(new URL(request.url).search);
-  return page(
-    request,
-    (text) =>
-      `<p>${text.prompt}</p><form method="post" action="/api/unsubscribe${action}"><button type="submit">${text.button}</button></form>`
-  );
+  const { search } = new URL(request.url);
+  return page(request, (text) => (
+    <>
+      <p>{text.prompt}</p>
+      <form action={`/api/unsubscribe${search}`} method="post">
+        <button type="submit">{text.button}</button>
+      </form>
+    </>
+  ));
 };
 
 const handlePost = async (request: Request) => {
   const email = addressOf(request);
   if (email === undefined) {
-    return page(request, (text) => `<p>${text.invalid}</p>`, BAD_REQUEST);
+    return page(request, (text) => <p>{text.invalid}</p>, BAD_REQUEST);
   }
   await db.insert(emailOptOut).values({ email }).onConflictDoNothing();
-  return page(request, (text) => `<p>${text.done}</p>`);
+  return page(request, (text) => <p>{text.done}</p>);
 };
 
 export const GET = withEvlog(handleGet);
