@@ -175,8 +175,20 @@ const cases: [string, AnyProcedure, unknown, unknown, unknown][] = [
     "autopilot.status",
     appRouter.autopilot.status,
     undefined,
-    { ok: expect.any(Object) },
-    { ok: expect.any(Object) },
+    {
+      ok: {
+        autonomy: expect.any(Object),
+        credits: {
+          cap: expect.anything(),
+          estimate: expect.any(Number),
+          usedToday: expect.any(Number),
+        },
+        enabled: true,
+        entitled: expect.anything(),
+        hasBrand: false,
+      },
+    },
+    { ok: { enabled: false } },
   ],
 ];
 
