@@ -338,8 +338,11 @@ const QuietScans = ({ scans }: { scans: TraceStep[] }) => {
   );
 };
 
-/** The narrated decision log: suggestions, their evidence and what autopilot did. */
-export const AutopilotLog = () => {
+/**
+ * The narrated decision log: suggestions, their evidence and what autopilot
+ * did. `scanNow` is the scan-now flag: the on-demand scan button.
+ */
+export const AutopilotLog = ({ scanNow }: { scanNow: boolean }) => {
   const t = useTranslations("Autopilot");
   const status = useQuery(orpc.autopilot.status.queryOptions());
   const enabled = status.data?.enabled === true;
@@ -372,9 +375,9 @@ export const AutopilotLog = () => {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <Settings status={status.data} />
-        <ScanButton scan={scan} />
+        {scanNow ? <ScanButton scan={scan} /> : null}
       </div>
-      <ScanStatus scan={scan} />
+      {scanNow ? <ScanStatus scan={scan} /> : null}
       {suggestions.length === 0 ? (
         <Empty className="border-border border border-dashed">
           <EmptyHeader>

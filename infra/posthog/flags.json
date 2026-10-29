@@ -229,20 +229,6 @@
               "operator": "exact",
               "type": "person",
               "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
                 "development"
               ]
             }
@@ -745,6 +731,30 @@
         "release"
       ]
     },
+    "scan-now": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Autopilot's Scan now button: an on-demand scan (owner: runs, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
     "store-management": {
       "active": true,
       "groups": [
@@ -778,6 +788,44 @@
         }
       ],
       "name": "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue (owner: store, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "story-ui": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "One story in the merchant UI (openspec story-ui): a 4-item rail (Home, Drops, Store, Settings) and a Home with the next action, what sells now, drops in progress and results (owner: design, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
       "tags": [
         "registry",
         "release"
@@ -966,20 +1014,6 @@
     "voice-input": {
       "active": true,
       "groups": [
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
         {
           "internal": false,
           "properties": [

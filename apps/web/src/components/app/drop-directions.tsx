@@ -269,6 +269,7 @@ const IgnoreBrandSwitch = ({
 
 /** The cards so far, the loading state, or the failure. */
 const DirectionsBody = ({
+  briefBelow,
   cards,
   disabled,
   error,
@@ -290,6 +291,7 @@ const DirectionsBody = ({
   seconds: number;
   step: Step | undefined;
   tavilyFailed: boolean;
+  briefBelow: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
   if (error !== undefined) {
@@ -319,7 +321,9 @@ const DirectionsBody = ({
     <>
       {loading ? <StepLine seconds={seconds} step={step} /> : null}
       {!loading && cards.length === 0 ? (
-        <p className="text-muted-foreground text-sm">{t("none")}</p>
+        <p className="text-muted-foreground text-sm">
+          {briefBelow ? t("none") : t("noneHome")}
+        </p>
       ) : null}
       {cards.length > 0 || waiting.length > 0 ? (
         <ul aria-busy={loading} className="flex flex-col gap-2">
@@ -351,11 +355,24 @@ const DirectionsBody = ({
  * starts the drop; the free-text brief stays below. Never shown without
  * Qloo: a Qloo failure offers a retry.
  */
+// The lead under the title: within the brand or not, with a brief field
+// below (the new-drop step) or not (the Home).
+const LEADS = {
+  all: { below: "lead", home: "leadHome" },
+  brand: { below: "leadBrand", home: "leadBrandHome" },
+} as const;
+
 export const DropDirections = ({
+  briefBelow = true,
   disabled,
+  heading: Heading = "h3",
   onUse,
 }: {
+  // A free-text brief follows (the new-drop step); the Home has none.
+  briefBelow?: boolean;
   disabled: boolean;
+  // h2 where it heads a page section (the story Home), else h3.
+  heading?: "h2" | "h3";
   onUse: (brief: string) => void;
 }) => {
   const t = useTranslations("Wizard.directions");
@@ -384,11 +401,18 @@ export const DropDirections = ({
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h3 className="text-sm font-semibold" id={headingId}>
+          <Heading
+            className={
+              Heading === "h2"
+                ? "font-display text-lg font-semibold tracking-[-0.015em]"
+                : "text-sm font-semibold"
+            }
+            id={headingId}
+          >
             {within ? t("titleBrand") : t("title")}
-          </h3>
+          </Heading>
           <p className="text-muted-foreground max-w-[65ch] text-sm">
-            {within ? t("leadBrand") : t("lead")}
+            {t(LEADS[within ? "brand" : "all"][briefBelow ? "below" : "home"])}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -426,6 +450,7 @@ export const DropDirections = ({
         seconds={seconds}
         step={step}
         tavilyFailed={data?.tavilyFailed === true}
+        briefBelow={briefBelow}
       />
       {data !== undefined && !data.hasBrand ? (
         <p className="text-muted-foreground text-xs">

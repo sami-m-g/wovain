@@ -17,6 +17,8 @@ export interface NavItem {
   href: "/dashboard" | `/dashboard/${string}`;
   icon: LucideIcon;
   key:
+    | "home"
+    | "settings"
     | "overview"
     | "newDrop"
     | "drops"
@@ -25,6 +27,8 @@ export interface NavItem {
     | "autopilot"
     | "connections"
     | "billing";
+  /** Other pages that belong to this item: the rail marks it on them too. */
+  also?: readonly string[];
 }
 
 /** Is `href` the page, or the section the page belongs to? */
@@ -32,6 +36,9 @@ const isActiveHref = (pathname: string, href: string) =>
   href === "/dashboard"
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`);
+
+const isActive = (pathname: string, { also = [], href }: NavItem) =>
+  [href, ...also].some((each) => isActiveHref(pathname, each));
 
 /** The rail's page links (sidebar-07's NavMain, flattened: no sub-menus). */
 export const NavMain = ({ items }: { items: readonly NavItem[] }) => {
@@ -43,8 +50,9 @@ export const NavMain = ({ items }: { items: readonly NavItem[] }) => {
     <SidebarGroup>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map(({ href, icon: Icon, key }) => {
-            const active = isActiveHref(pathname, href);
+          {items.map((item) => {
+            const { href, icon: Icon, key } = item;
+            const active = isActive(pathname, item);
             return (
               <SidebarMenuItem key={href}>
                 <SidebarMenuButton

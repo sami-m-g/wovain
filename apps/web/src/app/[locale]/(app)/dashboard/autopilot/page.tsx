@@ -5,6 +5,7 @@ import { AutopilotLog } from "@/components/app/autopilot-log";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
+import { core } from "@/services";
 
 export const generateMetadata = async ({
   params,
@@ -24,8 +25,11 @@ const AutopilotPage = async ({
   params,
 }: PageProps<"/[locale]/dashboard/autopilot">) => {
   const locale = await enterLocale(params);
-  await requireSession(locale, "/dashboard/autopilot");
+  const session = await requireSession(locale, "/dashboard/autopilot");
   const t = await getTranslations("Autopilot");
+  const scanNow = await core.flags.isOn("scan-now", {
+    userId: session.user.id,
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -35,7 +39,7 @@ const AutopilotPage = async ({
         </h1>
         <p className="text-muted-foreground mt-2">{t("lead")}</p>
       </div>
-      <AutopilotLog />
+      <AutopilotLog scanNow={scanNow} />
     </div>
   );
 };

@@ -77,6 +77,14 @@ const devAndNext = {
 
 // The flags of the workstreams that build on foundation-autonomy-approvals,
 // declared together so their pull requests don't conflict on this file.
+// Kept in the code and on in development only: hidden on next and in
+// production while story-ui tells one story (openspec story-ui).
+const devOnly = {
+  development: { kind: "all" },
+  next: { kind: "off" },
+  production: { kind: "off" },
+} as const satisfies Record<FlagEnvironment, Rollout>;
+
 const workstream = (team: string, description: string) =>
   ({
     description,
@@ -126,10 +134,14 @@ export const FLAGS = {
     rollout: { ...devAndNext, production: { kind: "internal" } },
     type: "release",
   },
-  "autopilot-triggers": workstream(
-    "runs",
-    "Autopilot fires on trend and Qloo triggers and files suggestions"
-  ),
+  // The page, the rail item and the scheduled scans.
+  "autopilot-triggers": {
+    ...workstream(
+      "runs",
+      "Autopilot fires on trend and Qloo triggers and files suggestions"
+    ),
+    rollout: devOnly,
+  },
   "billing-paid-plans": {
     description:
       "Paid plans: checkout, plan changes and credit pack purchases (MR !116). Off at launch: only Free is sold",
@@ -204,9 +216,18 @@ export const FLAGS = {
     "growth",
     "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
   ),
+  // Autopilot's "Scan now" button, apart from the page it sits on.
+  "scan-now": {
+    ...workstream("runs", "Autopilot's Scan now button: an on-demand scan"),
+    rollout: devOnly,
+  },
   "store-management": workstream(
     "store",
     "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"
+  ),
+  "story-ui": workstream(
+    "design",
+    "One story in the merchant UI (openspec story-ui): a 4-item rail (Home, Drops, Store, Settings) and a Home with the next action, what sells now, drops in progress and results"
   ),
   "tavily-competition": workstream(
     "growth",
@@ -244,10 +265,14 @@ export const FLAGS = {
     },
     type: "kill-switch",
   },
-  "voice-input": workstream(
-    "mobile",
-    "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
-  ),
+  // The header's hold-to-talk mic.
+  "voice-input": {
+    ...workstream(
+      "mobile",
+      "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
+    ),
+    rollout: devOnly,
+  },
   "who-buys": workstream(
     "growth",
     "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like"

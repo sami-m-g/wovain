@@ -8,10 +8,12 @@ import { ConnectionsSummary } from "@/components/app/connections-panel";
 import { WarmDirections } from "@/components/app/drop-directions";
 import { RecentRuns } from "@/components/app/runs-list";
 import { SetupChecklist } from "@/components/app/setup-checklist";
+import { StoryHome } from "@/components/home/story-home-page";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link, redirect } from "@/i18n/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
+import { core } from "@/services";
 import { client } from "@/utils/orpc";
 
 export const generateMetadata = async ({
@@ -56,6 +58,11 @@ const DashboardPage = async ({
     });
   }
   const session = await requireSession(locale, "/dashboard");
+  // The story-ui Home: the next action, what sells now, drops in progress
+  // and results. The onboarding steps are reached from the next action.
+  if (await core.flags.isOn("story-ui", { userId: session.user.id })) {
+    return <StoryHome name={session.user.name} />;
+  }
   // With the onboarding-wizard flag on, a merchant starts in the wizard (after
   // sign-up and sign-in both land here) until they reach its last step.
   if (await onboardingOpen()) {

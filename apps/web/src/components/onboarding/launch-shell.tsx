@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import {
   Empty,
@@ -41,10 +41,10 @@ import {
   OPEN_STEPS,
 } from "./launch-steps";
 import { LaunchTimer } from "./launch-timer";
+import type { LaunchData } from "./use-launch-facts";
+import { useLaunchFacts } from "./use-launch-facts";
 import { useSpotlight } from "./use-spotlight";
 
-// Polled while the run works, so a card ticks off when the merchant returns.
-const RUN_POLL_MS = 3000;
 const RUN_ID = /^[\w-]{1,64}$/u;
 
 interface LaunchUrl {
@@ -298,64 +298,6 @@ const SPOT_SELECTORS: Record<OpenStep, string> = {
   store: "[data-tour='store']",
 };
 
-const useLaunchData = (
-  runId: string | undefined,
-  brief: string | undefined
-) => {
-  const status = useQuery(orpc.onboarding.status.queryOptions());
-  const ready = status.data?.enabled === true ? status.data : undefined;
-  const fourthwallConnected =
-    ready?.connections.some(
-      (each) => each.provider === "fourthwall" && each.state === "connected"
-    ) ?? false;
-  const store = useQuery({
-    ...orpc.store.setup.queryOptions(),
-    enabled: fourthwallConnected,
-    retry: false,
-  });
-  const run = useQuery({
-    ...orpc.runs.get.queryOptions({ input: { id: runId ?? "" } }),
-    enabled: runId !== undefined,
-    refetchInterval: (query) =>
-      (query.state.data?.campaigns.length ?? 0) > 0 ? false : RUN_POLL_MS,
-  });
-  // The same query <MetaSetup /> polls, so the step ticks off with its cards.
-  const meta = useQuery({
-    ...orpc.store.metaSetup.queryOptions(),
-    retry: false,
-  });
-  // Store setup answers 404 while its flag is off: connecting is enough then.
-  const storeReady =
-    store.isError ||
-    (store.data?.steps
-      .filter((step) => step.required)
-      .every((step) => step.state === "done") ??
-      false);
-  const metaLinked =
-    ready?.connections.some(
-      (each) => each.provider === "meta" && each.state === "connected"
-    ) ?? false;
-  // Without the Meta setup check (flag off), a connected Meta is enough.
-  const metaReady = meta.isError
-    ? metaLinked
-    : meta.data !== undefined &&
-      meta.data.connected &&
-      meta.data.steps
-        .filter((step) => step.required)
-        .every((step) => step.state === "done");
-  const facts = {
-    brief: brief ?? run.data?.seed,
-    fourthwallConnected,
-    guardrailsSet: ready
-      ? ready.autonomy === null || ready.steps.autonomy
-      : false,
-    metaConnected: metaReady,
-    run: run.data,
-    storeReady,
-  };
-  return { facts, ready, run: run.data, status };
-};
-
 const StepPanel = ({
   active,
   data,
@@ -366,7 +308,7 @@ const StepPanel = ({
   url,
 }: {
   active: OpenStep | undefined;
-  data: ReturnType<typeof useLaunchData>;
+  data: LaunchData;
   onBrief: (brief: string) => void;
   onOpen: (step: OpenStep) => void;
   onRun: (id: string) => void;
@@ -439,7 +381,7 @@ export const LaunchShell = ({ startedAt }: { startedAt: string }) => {
   const t = useTranslations("Launch");
   const router = useRouter();
   const { push, url } = useLaunchUrl();
-  const data = useLaunchData(url.run, url.brief);
+  const data = useLaunchFacts(url.run, url.brief);
   const finish = useMutation(orpc.onboarding.finish.mutationOptions());
   const progress: LaunchProgress = launchProgress(data.facts);
   const next = currentStep(progress);
