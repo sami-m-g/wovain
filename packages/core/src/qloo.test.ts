@@ -346,3 +346,26 @@ it("searches every reference type and keeps each entity's Qloo type", async () =
   expect(url.searchParams.get("types")).toContain("urn:entity:movie");
   expect(url.searchParams.get("take")).toBe("1");
 });
+
+it("reuses an answer for the same request and forgets a failed one", async () => {
+  let calls = 0;
+  const fetchMock = vi.fn(async () => {
+    calls += 1;
+    return await Promise.resolve(
+      calls === 1
+        ? new Response("bad request", { status: 400 })
+        : Response.json({
+            results: {
+              tags: [{ id: "urn:tag:genre:media:goth", name: "Goth" }],
+            },
+          })
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "key", baseURL: "https://qloo.test" });
+  await expect(qloo.tagsFor(["E1"])).rejects.toThrow("answered 400");
+  const first = await qloo.tagsFor(["E1"]);
+  const again = await qloo.tagsFor(["E1"]);
+  expect(again).toStrictEqual(first);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
