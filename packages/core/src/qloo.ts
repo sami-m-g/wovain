@@ -302,7 +302,7 @@ export interface QlooInsight extends QlooEntity {
 
 export interface TasteOptions {
   // Also ask which brands, films and shows the seed's fans like, with
-  // explainability and a trend bias (the qloo-taste-map flag).
+  // explainability and a trend bias, in every run.
   crossDomain?: boolean | undefined;
 }
 

@@ -107,7 +107,8 @@ export const distinctThemes = (seed: string, themes: Theme[]): Theme[] => {
 };
 
 // Qloo's tags as themes, highest affinity first: Tavily searches each one
-// alongside the brief's subject. Empty when Qloo named no usable tag.
+// alongside the brief's subject. A tag with no Qloo affinity is no theme.
+// Empty when Qloo named no usable tag.
 export const qlooThemes = (
   seed: string,
   qloo: { affinity: number; id: string; name: string }[]
@@ -115,9 +116,11 @@ export const qlooThemes = (
   const subject = keywordsOf(seed).join(" ");
   return distinctThemes(
     seed,
-    qloo.map((theme) => ({
-      ...theme,
-      query: clip(`${theme.name} ${subject}`, QUERY_MAX),
-    }))
+    qloo
+      .filter(({ affinity }) => affinity > 0)
+      .map((theme) => ({
+        ...theme,
+        query: clip(`${theme.name} ${subject}`, QUERY_MAX),
+      }))
   ).slice(0, RUN_THEMES);
 };
