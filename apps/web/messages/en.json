@@ -39,6 +39,7 @@
     "storeTitle": "Store",
     "dropsTitle": "Drops",
     "campaignTitle": "Your campaign",
+    "settingsHubTitle": "Settings",
     "alertsTitle": "Alerts"
   },
   "Common": {
@@ -107,7 +108,7 @@
   },
   "Home": {
     "heroTitle": "One sentence. A whole drop.",
-    "heroLead": "No idea yet? wovain shows what sells now, with proof: shops advertising it for weeks and marketplace bestsellers. Pick one or describe your own. wovain drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
+    "heroLead": "Qloo tells you what will sell and who buys it, with proof: shops advertising it for weeks and marketplace bestsellers. wovain turns that into your product and a campaign: it drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
     "briefLabel": "What is your next drop about?",
     "briefPlaceholder": "Washed botanical line drawings for a spring capsule",
     "briefHint": "A sentence is enough: the mood, a reference, who it's for. Or start from what sells now.",
@@ -267,7 +268,7 @@
       "steps": {
         "sell": {
           "title": "Pick what to sell",
-          "body": "Choose one of this week's directions: what's rising with an audience, and how crowded it is."
+          "body": "Choose one of this week's directions from Qloo: what's rising, who buys it and how crowded it is."
         },
         "store": {
           "title": "Set up your store",
@@ -370,7 +371,11 @@
       "onboarding": "Get set up",
       "autopilot": "Autopilot",
       "store": "Store",
-      "drops": "Drops"
+      "drops": "Drops",
+      "home": "Home",
+      "settings": "Settings",
+      "account": "Account",
+      "security": "Security"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -555,7 +560,10 @@
       },
       "showBuyers": "Who buys this",
       "hideBuyers": "Hide who buys this",
-      "proofSources": "Proof for {title}"
+      "proofSources": "Proof for {title}",
+      "leadHome": "Rising now on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start a drop.",
+      "leadBrandHome": "Rising now with your brand's buyers on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start a drop.",
+      "noneHome": "Qloo found nothing new rising right now. Start a drop with your own brief."
     },
     "trends": {
       "title": "Pick the ideas",
@@ -2140,23 +2148,6 @@
     "capsuleTitle": "Make it a capsule",
     "capsulePick": "Pick an idea above first."
   },
-  "WithoutQloo": {
-    "title": "Without Qloo",
-    "lead": "The same idea step on {seeds, number} seeds with Nemotron alone ({model}), from the comparison run on {date}.",
-    "tableCaption": "What ideas stand on, with Qloo and without",
-    "metric": "Per idea",
-    "withQloo": "With Qloo",
-    "withoutQloo": "Without Qloo",
-    "metrics": {
-      "grounded": "Themes grounded in a Qloo tag",
-      "explained": "Themes Qloo explains (which fans, why)",
-      "crossDomains": "Taste domains (brands, films, TV)",
-      "cues": "Style cues from those tastes"
-    },
-    "seedsSummary": "The {seeds, number} seeds, side by side",
-    "noMatch": "no taste found",
-    "note": "Without Qloo, Nemotron writes plausible themes from the words alone: nothing ties them to who buys or why."
-  },
   "Launch": {
     "title": "Your first campaign in 10 minutes",
     "lead": "Six steps from sign-in to ads running for your first drop. Do them in order, or skip any and come back.",
@@ -2278,6 +2269,81 @@
         "none": "No ad yet for this drop.",
         "create": "Create the ad"
       }
+    }
+  },
+  "StoryHome": {
+    "greeting": "Hi {name}",
+    "lead": "What sells now, from Qloo, and the drops wovain is making from it.",
+    "start": "Start a drop",
+    "next": {
+      "eyebrow": "Next step",
+      "sell": {
+        "title": "Pick what to sell",
+        "body": "Start from one of Qloo's directions below, or write your own brief.",
+        "action": "See what sells now"
+      },
+      "store": {
+        "title": "Get your shop ready to sell",
+        "body": "Connect Fourthwall so wovain can price and publish your products.",
+        "progress": "{done, number} of {total, number} store steps done. Fourthwall needs them before your first sale.",
+        "action": "Open Store"
+      },
+      "meta": {
+        "title": "Connect Meta and set your limits",
+        "body": "wovain builds your campaign paused, inside the spend limits you set.",
+        "action": "Set up Meta"
+      },
+      "design": {
+        "title": "Approve a design",
+        "body": "Your drop “{brief}” is waiting for you.",
+        "action": "Open the drop"
+      },
+      "ads": {
+        "title": "Launch your ads",
+        "body": "Your drop “{brief}” has a design. Its paused campaign is one step away.",
+        "action": "Open the drop"
+      },
+      "done": {
+        "title": "Your campaign is built",
+        "body": "Start your next drop from what sells now.",
+        "action": "See what sells now"
+      }
+    },
+    "progress": {
+      "title": "Drops in progress",
+      "all": "All drops",
+      "empty": "No drop in progress.",
+      "emptyLink": "Start one from what sells now."
+    },
+    "results": {
+      "title": "Results, last 28 days",
+      "source": "Fourthwall reports",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "orders": "Orders",
+      "emptyTitle": "Your first sale shows here",
+      "empty": "Revenue, profit and orders appear once a product from a drop sells.",
+      "all": "All results"
+    }
+  },
+  "SettingsHub": {
+    "title": "Settings",
+    "lead": "The accounts wovain acts through, your brand, billing and your account.",
+    "connections": {
+      "title": "Connections",
+      "body": "Fourthwall and Meta: your shop, your ad account, Page and pixel."
+    },
+    "brand": {
+      "title": "Brand (optional)",
+      "body": "Taste references that steer what wovain suggests. You can sell without one."
+    },
+    "billing": {
+      "title": "Billing",
+      "body": "Your plan, your credits and what each step costs."
+    },
+    "account": {
+      "title": "Account and security",
+      "body": "Your name, email, password and sessions."
     }
   },
   "IdeaCard": {

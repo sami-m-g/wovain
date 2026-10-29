@@ -57,7 +57,6 @@ import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
 import { WhoBuysPanel } from "@/components/app/who-buys";
-import { WithoutQlooPanel } from "@/components/app/without-qloo";
 import {
   NextButton,
   StepActions,
@@ -400,8 +399,6 @@ export const IdeasStep = ({
         </ul>
       </FieldSet>
       <CapsulePanel ideaId={picked[0]} runId={runId} />
-      {/* What the same step makes of a brief without Qloo (the committed ablation). */}
-      <WithoutQlooPanel />
       <StepActions busyLabel={busyLabel}>
         <NextButton disabled={Boolean(busyLabel)} onClick={onNext}>
           {t("submit")}

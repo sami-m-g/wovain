@@ -22,6 +22,9 @@ const SECTIONS = {
   "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
   "/dashboard/onboarding": "onboarding",
+  "/dashboard/settings": "settings",
+  "/dashboard/settings/account": "account",
+  "/dashboard/settings/security": "security",
   "/dashboard/store": "store",
 } as const;
 
@@ -32,13 +35,28 @@ const PARENTS: Partial<Record<Section, Section>> = {
   "/dashboard/new": "/dashboard/drops",
 };
 
+// In the story rail, connections, billing and the account are parts of
+// Settings.
+const STORY_PARENTS: Partial<Record<Section, Section>> = {
+  ...PARENTS,
+  "/dashboard/billing": "/dashboard/settings",
+  "/dashboard/connections": "/dashboard/settings",
+  "/dashboard/settings/account": "/dashboard/settings",
+  "/dashboard/settings/security": "/dashboard/settings",
+};
+
 const isSection = (path: string): path is Section => path in SECTIONS;
 
-/** Overview › the parent section, if any › the current section. */
-export const AppBreadcrumb = () => {
+/**
+ * Overview (Home in the story rail) › the parent section, if any › the
+ * current section. `story` is the story-ui flag.
+ */
+export const AppBreadcrumb = ({ story = false }: { story?: boolean }) => {
   const t = useTranslations("Shell.nav");
   const pathname = usePathname();
-  const parent = isSection(pathname) ? PARENTS[pathname] : undefined;
+  const root = story ? t("home") : t("overview");
+  const parents = story ? STORY_PARENTS : PARENTS;
+  const parent = isSection(pathname) ? parents[pathname] : undefined;
   const crumbs = isSection(pathname)
     ? [
         ...(parent === undefined
@@ -54,10 +72,10 @@ export const AppBreadcrumb = () => {
         {/* Phones show only the current page; the rail sheet has the rest. */}
         <BreadcrumbItem className={cn(crumbs.length > 0 && "max-md:hidden")}>
           {crumbs.length === 0 ? (
-            <BreadcrumbPage>{t("overview")}</BreadcrumbPage>
+            <BreadcrumbPage>{root}</BreadcrumbPage>
           ) : (
             <BreadcrumbLink render={<Link href="/dashboard" />}>
-              {t("overview")}
+              {root}
             </BreadcrumbLink>
           )}
         </BreadcrumbItem>

@@ -15,10 +15,12 @@ import {
   Bot,
   ChartLine,
   CreditCard,
+  House,
   Layers,
   LayoutGrid,
   PlugZap,
   Plus,
+  Settings,
   Store,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -39,6 +41,29 @@ const NAV: readonly NavItem[] = [
   { href: "/dashboard/drops", icon: Layers, key: "drops" },
   { href: "/dashboard/connections", icon: PlugZap, key: "connections" },
   { href: "/dashboard/billing", icon: CreditCard, key: "billing" },
+];
+
+// The story-ui rail: four places that tell one story (openspec story-ui).
+// New drop and Insights leave the rail; their pages belong to Drops and Home.
+const STORY_NAV: readonly NavItem[] = [
+  {
+    also: ["/dashboard/insights"],
+    href: "/dashboard",
+    icon: House,
+    key: "home",
+  },
+  {
+    also: ["/dashboard/new", "/dashboard/campaign", "/dashboard/models"],
+    href: "/dashboard/drops",
+    icon: Layers,
+    key: "drops",
+  },
+  {
+    also: ["/dashboard/connections", "/dashboard/billing"],
+    href: "/dashboard/settings",
+    icon: Settings,
+    key: "settings",
+  },
 ];
 
 // Store management, while its flag is on (openspec store-management).
@@ -65,19 +90,27 @@ const MARK_SIZE = 20;
 export const AppSidebar = ({
   docsUrl,
   store = false,
+  story = false,
 }: {
   docsUrl: string;
   store?: boolean;
+  // The story-ui flag: the four-item rail.
+  story?: boolean;
 }) => {
   const common = useTranslations("Common");
   const autopilot = useQuery(orpc.autopilot.status.queryOptions());
-  // Store after Insights, Autopilot after Drops.
-  const insightsIndex = NAV.findIndex((item) => item.key === "insights");
-  const base = store ? NAV.toSpliced(insightsIndex + 1, 0, STORE) : NAV;
-  const dropsIndex = base.findIndex((item) => item.key === "drops");
+  // Store after Insights (after Drops in the story rail), Autopilot after Drops.
+  const nav = story ? STORY_NAV : NAV;
+  const storeAfter = story ? "drops" : "insights";
+  const storeIndex = nav.findIndex((item) => item.key === storeAfter);
+  const base = store ? nav.toSpliced(storeIndex + 1, 0, STORE) : nav;
+  // The story rail keeps its four places together: Autopilot comes last.
+  const autopilotAfter = story
+    ? base.length - 1
+    : base.findIndex((item) => item.key === "drops");
   const items =
     autopilot.data?.enabled === true
-      ? base.toSpliced(dropsIndex + 1, 0, AUTOPILOT)
+      ? base.toSpliced(autopilotAfter + 1, 0, AUTOPILOT)
       : base;
   return (
     <Sidebar collapsible="icon">

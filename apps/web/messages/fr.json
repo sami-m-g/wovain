@@ -39,6 +39,7 @@
     "storeTitle": "Boutique",
     "dropsTitle": "Drops",
     "campaignTitle": "Votre campagne",
+    "settingsHubTitle": "Paramètres",
     "alertsTitle": "Alertes"
   },
   "Common": {
@@ -107,7 +108,7 @@
   },
   "Home": {
     "heroTitle": "Une phrase. Un drop entier.",
-    "heroLead": "Pas encore d'idée ? wovain montre ce qui se vend maintenant, preuves à l'appui : des boutiques qui en font la pub depuis des semaines et des best-sellers sur les marketplaces. Choisissez-en une ou décrivez la vôtre. wovain dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
+    "heroLead": "Qloo vous dit ce qui va se vendre et qui l'achète, preuves à l'appui : des boutiques qui en font la pub depuis des semaines et des best-sellers sur les marketplaces. wovain en fait votre produit et une campagne : il dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
     "briefLabel": "Sur quoi porte votre prochain drop ?",
     "briefPlaceholder": "Dessins botaniques au trait, délavés, pour une capsule de printemps",
     "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui. Ou partez de ce qui se vend maintenant.",
@@ -267,7 +268,7 @@
       "steps": {
         "sell": {
           "title": "Choisir quoi vendre",
-          "body": "Choisissez une des pistes de la semaine : ce qui monte auprès d'un public, et la concurrence en face."
+          "body": "Choisissez une des pistes Qloo de la semaine : ce qui monte, qui l'achète, et la concurrence en face."
         },
         "store": {
           "title": "Préparer la boutique",
@@ -370,7 +371,11 @@
       "onboarding": "Configuration",
       "autopilot": "Pilote automatique",
       "store": "Boutique",
-      "drops": "Drops"
+      "drops": "Drops",
+      "home": "Accueil",
+      "settings": "Paramètres",
+      "account": "Compte",
+      "security": "Sécurité"
     },
     "docs": "Docs",
     "docsLabel": "Docs (s'ouvre dans un nouvel onglet)",
@@ -555,7 +560,10 @@
       },
       "showBuyers": "Qui achète ça",
       "hideBuyers": "Masquer qui achète ça",
-      "proofSources": "Preuves pour {title}"
+      "proofSources": "Preuves pour {title}",
+      "leadHome": "Ce qui monte en ce moment sur Qloo, avec l'actualité du mois et la saturation des annonces, le meilleur pari d'abord. Choisissez-en une pour lancer un drop.",
+      "leadBrandHome": "Ce qui monte en ce moment chez les acheteurs de votre marque sur Qloo, avec l'actualité du mois et la saturation des annonces, le meilleur pari d'abord. Choisissez-en une pour lancer un drop.",
+      "noneHome": "Qloo n'a rien trouvé de nouveau en hausse pour l'instant. Lancez un drop avec votre propre brief."
     },
     "trends": {
       "title": "Choisir les idées",
@@ -2140,23 +2148,6 @@
     "capsuleTitle": "En faire une capsule",
     "capsulePick": "Choisissez d'abord une idée ci-dessus."
   },
-  "WithoutQloo": {
-    "title": "Sans Qloo",
-    "lead": "La même étape d'idées sur {seeds, number} graines avec Nemotron seul ({model}), d'après la comparaison du {date}.",
-    "tableCaption": "Sur quoi reposent les idées, avec et sans Qloo",
-    "metric": "Par idée",
-    "withQloo": "Avec Qloo",
-    "withoutQloo": "Sans Qloo",
-    "metrics": {
-      "grounded": "Thèmes fondés sur une étiquette Qloo",
-      "explained": "Thèmes que Qloo explique (quels fans, pourquoi)",
-      "crossDomains": "Domaines de goût (marques, films, TV)",
-      "cues": "Indices de style tirés de ces goûts"
-    },
-    "seedsSummary": "Les {seeds, number} graines, côte à côte",
-    "noMatch": "aucun goût trouvé",
-    "note": "Sans Qloo, Nemotron écrit des thèmes plausibles à partir des seuls mots : rien ne les relie à qui achète ni pourquoi."
-  },
   "Launch": {
     "title": "Votre première campagne en 10 minutes",
     "lead": "Six étapes, de la connexion aux publicités de votre premier drop. Suivez-les dans l'ordre, ou passez-en une et revenez-y plus tard.",
@@ -2278,6 +2269,81 @@
         "none": "Pas encore de publicité pour ce drop.",
         "create": "Créer la publicité"
       }
+    }
+  },
+  "StoryHome": {
+    "greeting": "Bonjour {name}",
+    "lead": "Ce qui se vend en ce moment, d'après Qloo, et les drops que wovain en tire.",
+    "start": "Lancer un drop",
+    "next": {
+      "eyebrow": "Étape suivante",
+      "sell": {
+        "title": "Choisissez quoi vendre",
+        "body": "Partez d'une des directions de Qloo ci-dessous, ou écrivez votre propre brief.",
+        "action": "Voir ce qui se vend"
+      },
+      "store": {
+        "title": "Préparez votre boutique à vendre",
+        "body": "Connectez Fourthwall pour que wovain fixe le prix de vos produits et les publie.",
+        "progress": "{done, number} étapes boutique sur {total, number} faites. Fourthwall en a besoin avant votre première vente.",
+        "action": "Ouvrir la boutique"
+      },
+      "meta": {
+        "title": "Connectez Meta et fixez vos limites",
+        "body": "wovain crée votre campagne en pause, dans les limites de dépense que vous fixez.",
+        "action": "Configurer Meta"
+      },
+      "design": {
+        "title": "Approuvez un visuel",
+        "body": "Votre drop « {brief} » vous attend.",
+        "action": "Ouvrir le drop"
+      },
+      "ads": {
+        "title": "Lancez vos publicités",
+        "body": "Votre drop « {brief} » a son visuel. Sa campagne en pause est à une étape.",
+        "action": "Ouvrir le drop"
+      },
+      "done": {
+        "title": "Votre campagne est prête",
+        "body": "Lancez votre prochain drop à partir de ce qui se vend.",
+        "action": "Voir ce qui se vend"
+      }
+    },
+    "progress": {
+      "title": "Drops en cours",
+      "all": "Tous les drops",
+      "empty": "Aucun drop en cours.",
+      "emptyLink": "Lancez-en un à partir de ce qui se vend."
+    },
+    "results": {
+      "title": "Résultats, 28 derniers jours",
+      "source": "Rapports Fourthwall",
+      "revenue": "Chiffre d'affaires",
+      "profit": "Bénéfice",
+      "orders": "Commandes",
+      "emptyTitle": "Votre première vente s'affichera ici",
+      "empty": "Le chiffre d'affaires, le bénéfice et les commandes apparaissent dès qu'un produit d'un drop se vend.",
+      "all": "Tous les résultats"
+    }
+  },
+  "SettingsHub": {
+    "title": "Paramètres",
+    "lead": "Les comptes par lesquels wovain agit, votre marque, la facturation et votre compte.",
+    "connections": {
+      "title": "Connexions",
+      "body": "Fourthwall et Meta : votre boutique, votre compte publicitaire, votre Page et votre pixel."
+    },
+    "brand": {
+      "title": "Marque (facultatif)",
+      "body": "Des références de goût qui orientent ce que wovain propose. Vous pouvez vendre sans."
+    },
+    "billing": {
+      "title": "Facturation",
+      "body": "Votre offre, vos crédits et le coût de chaque étape."
+    },
+    "account": {
+      "title": "Compte et sécurité",
+      "body": "Votre nom, votre e-mail, votre mot de passe et vos sessions."
     }
   },
   "IdeaCard": {

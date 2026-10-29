@@ -41,17 +41,21 @@ const DashboardLayout = async ({
   const jar = await cookies();
   const sidebarOpen = jar.get(SIDEBAR_COOKIE)?.value !== "false";
   // The Store page shows in the rail only while store-management is on
-  // for the merchant.
+  // for the merchant; story-ui swaps in the four-item rail.
   const session = await auth.api.getSession({ headers: await headers() });
-  const store =
-    session?.user === undefined
-      ? false
-      : await core.flags.isOn("store-management", { userId: session.user.id });
+  const userId = session?.user.id;
+  const [store, story] =
+    userId === undefined
+      ? [false, false]
+      : await Promise.all([
+          core.flags.isOn("store-management", { userId }),
+          core.flags.isOn("story-ui", { userId }),
+        ]);
 
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarOpen} style={RAIL_WIDTH}>
-        <AppSidebar docsUrl={ENV.DOCS_URL} store={store} />
+        <AppSidebar docsUrl={ENV.DOCS_URL} store={store} story={story} />
         {/* Session replays mask the merchant's text here (ph-mask): shop
             names, briefs, emails. Inputs are masked everywhere. */}
         <SidebarInset className="ph-mask outline-none" id="main" tabIndex={-1}>
@@ -81,7 +85,7 @@ const DashboardLayout = async ({
                 width={MARK_SIZE}
               />
             </Link>
-            <AppBreadcrumb />
+            <AppBreadcrumb story={story} />
             <div className="ms-auto flex items-center gap-2">
               <LocaleSwitcher />
               <ModeToggle />
