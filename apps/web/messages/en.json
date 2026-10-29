@@ -104,10 +104,10 @@
   },
   "Home": {
     "heroTitle": "One sentence. A whole drop.",
-    "heroLead": "Describe the capsule. wovain drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
+    "heroLead": "No idea yet? wovain shows what sells now, with proof: shops advertising it for weeks and marketplace bestsellers. Pick one or describe your own. wovain drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
     "briefLabel": "What is your next drop about?",
     "briefPlaceholder": "Washed botanical line drawings for a spring capsule",
-    "briefHint": "A sentence is enough: the mood, a reference, who it's for.",
+    "briefHint": "A sentence is enough: the mood, a reference, who it's for. Or start from what sells now.",
     "briefSubmit": "Start a drop",
     "tag": {
       "title": "Heavyweight tee",
@@ -503,7 +503,10 @@
         "ads": "{count, plural, one {# shop} other {# shops}} advertising it for {days}+ days",
         "bestsellers": "{count, plural, one {a bestseller} other {# bestsellers}} on the marketplaces",
         "reviews": "{count, plural, one {# review} other {# reviews}} on similar listings"
-      }
+      },
+      "showBuyers": "Who buys this",
+      "hideBuyers": "Hide who buys this",
+      "proofSources": "Proof for {title}"
     },
     "trends": {
       "title": "Pick the ideas",

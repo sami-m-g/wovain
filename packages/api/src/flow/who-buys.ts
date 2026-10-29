@@ -95,3 +95,30 @@ export const ideaWhoBuys = async (
     await flush(actor, trace);
   }
 };
+
+// Who buys a suggested direction (drop-directions) and where: read from
+// the Qloo entities rising for it. Not kept: Qloo's own answers are reused
+// for 30 minutes, and the suggestion itself is kept.
+export const directionWhoBuys = async (
+  actor: Actor,
+  entities: readonly string[],
+  location: string = DEFAULT_LOCATION
+): Promise<WhoBuys> => {
+  if (!(await whoBuysOn(actor))) {
+    throw whoBuysOff();
+  }
+  await assertQlooOn(actor);
+  const trace = new DecisionTrace(
+    { userId: actor.userId },
+    traceSinkFor(actor)
+  );
+  try {
+    return await whoBuys(
+      { log: actor.log, qloo: actor.core.qloo, trace },
+      { entities: entities.slice(0, MAX_ENTITIES) },
+      location
+    );
+  } finally {
+    await flush(actor, trace);
+  }
+};

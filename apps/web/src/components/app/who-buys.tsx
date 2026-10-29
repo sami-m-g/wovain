@@ -92,16 +92,26 @@ const Places = ({ places }: { places: WhoBuys["places"] }) => {
  * they are, and the fashion brands they already wear (data for targeting,
  * never put on a design).
  */
-export const WhoBuysPanel = ({ ideaId }: { ideaId: string }) => {
+export const WhoBuysPanel = (
+  props: { entities: string[]; ideaId?: never } | { ideaId: string }
+) => {
   const t = useTranslations("Wizard.whoBuys");
   const headingId = useId();
-  const query = useQuery(
-    orpc.ideas.whoBuys.queryOptions({
-      input: { ideaId },
-      retry: false,
-      staleTime: Number.POSITIVE_INFINITY,
-    })
-  );
+  const byIdea = orpc.ideas.whoBuys.queryOptions({
+    enabled: props.ideaId !== undefined,
+    input: { ideaId: props.ideaId ?? "" },
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const byDirection = orpc.runs.whoBuys.queryOptions({
+    enabled: "entities" in props,
+    input: { entities: "entities" in props ? props.entities : [] },
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const ideaQuery = useQuery(byIdea);
+  const directionQuery = useQuery(byDirection);
+  const query = props.ideaId === undefined ? directionQuery : ideaQuery;
   // The who-buys flag is off: nothing to show.
   if (query.isError && statusOf(query.error) === NOT_FOUND) {
     return null;

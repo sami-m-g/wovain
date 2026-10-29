@@ -33,6 +33,31 @@ const DEMAND_SCALE = 4;
 
 const APPAREL =
   /\b(?:(?:t-?)?shirts?|tees?|hoodies?|sweat(?:shirt)?s?|apparel|merch|clothing|crewnecks?|tanks?)\b/iu;
+// Shop and print-on-demand words in an ad or a shop's name.
+const SHOP_TERMS =
+  /\b(?:shop|store|boutique|outfitters?|threads|wear|tees?|merch|print(?:ed)?|graphic|designs?|collection|drop|order now|shop now|free shipping|\d+% off|sale)\b/iu;
+// Where print-on-demand and small apparel shops land their ads.
+const SHOP_DOMAINS = [
+  "etsy.com",
+  "amazon.com",
+  "redbubble.com",
+  "teepublic.com",
+  "spreadshirt.com",
+  "printful.com",
+  "printify.com",
+  "fourthwall.com",
+  "myshopify.com",
+  "bonfire.com",
+  "teespring.com",
+  "spring.com",
+  "threadless.com",
+  "zazzle.com",
+  "society6.com",
+] as const;
+// What ads for the same words sell instead of a shirt: books and stories,
+// cars, classes, apps, games and money.
+const NOISE =
+  /\b(?:novels?|books?|e-?books?|audiobooks?|chapters?|read (?:now|more|free)|episodes?|stories|cars?|trucks?|vehicles?|dealers?(?:hip)?|academy|lessons?|courses?|classes|tutoring|apps?|download|install|play now|games?|casino|bets?|loans?|insurance|mortgage|real estate|tickets?)\b/iu;
 const BESTSELLER = /\bbest\s?-?seller\b/iu;
 const REVIEWS = /(?<count>\d{1,3}(?:,\d{3})+|\d+)\s*(?:reviews|ratings)/giu;
 const TOKEN = /[\p{L}\p{N}]{3,}/gu;
@@ -91,7 +116,12 @@ const parsed = (value: unknown): unknown => {
   return value;
 };
 
+const strings = z.array(z.string().max(2000)).nullish();
+
 const adSchema = z.object({
+  ad_creative_bodies: strings,
+  ad_creative_link_captions: strings,
+  ad_creative_link_descriptions: strings,
   ad_creative_link_title: z.string().max(500).nullish(),
   ad_delivery_start_time: z.union([z.number(), z.string()]).nullish(),
   ad_snapshot_url: z.string().url().nullish(),
@@ -133,6 +163,39 @@ const startOf = (value: number | string | null | undefined) => {
   return Number.isNaN(date) ? undefined : date;
 };
 
+type Ad = z.output<typeof adSchema>;
+
+const onShopDomain = (captions: readonly string[]) =>
+  captions.some((caption) => {
+    const host = caption.toLowerCase().trim();
+    return SHOP_DOMAINS.some(
+      (domain) => host === domain || host.endsWith(`.${domain}`)
+    );
+  });
+
+// Whether an ad sells apparel about the theme: it names the theme, it
+// shows a product (an apparel word in what it says, or a shop name and a
+// shop-like landing), and it isn't a book, car, class, app or game ad.
+export const sellsApparel = (ad: Ad, theme: ReadonlySet<string>) => {
+  const says = [
+    ad.ad_creative_link_title ?? "",
+    ...(ad.ad_creative_bodies ?? []),
+    ...(ad.ad_creative_link_descriptions ?? []),
+  ].join(" ");
+  const page = ad.page_name ?? "";
+  if (!about(`${says} ${page}`, theme)) {
+    return false;
+  }
+  const product = APPAREL.test(says) || APPAREL.test(page);
+  const shop =
+    onShopDomain(ad.ad_creative_link_captions ?? []) &&
+    (SHOP_TERMS.test(says) || SHOP_TERMS.test(page));
+  if (!product && !shop) {
+    return false;
+  }
+  return !NOISE.test(says) || APPAREL.test(says);
+};
+
 // Apparel ads about the theme running now in the country, by shop.
 export const adDemandOf = async (
   call: ToolCall,
@@ -149,9 +212,8 @@ export const adDemandOf = async (
   const words = tokensOf(theme);
   const byShop = new Map<string, { days: number; page: string; url: string }>();
   for (const ad of adsOf(reply)) {
-    const text = `${ad.ad_creative_link_title ?? ""} ${ad.page_name ?? ""}`;
     const started = startOf(ad.ad_delivery_start_time);
-    if (!APPAREL.test(text) || !about(text, words) || started === undefined) {
+    if (!sellsApparel(ad, words) || started === undefined) {
       continue;
     }
     const days = Math.max(0, Math.floor((now - started) / DAY_MS));

@@ -1,6 +1,12 @@
 import { expect, it, vi } from "vitest";
 
-import { adDemandOf, demandOf, marketDemandOf, PROVEN_REVIEWS } from "./demand";
+import {
+  adDemandOf,
+  demandOf,
+  marketDemandOf,
+  PROVEN_REVIEWS,
+  sellsApparel,
+} from "./demand";
 import type { TavilyWeb } from "./evidence";
 
 const DAY_S = 24 * 60 * 60;
@@ -134,4 +140,74 @@ const adsWith = (evergreen: number, validated: number) => ({
 it("weighs evergreen ads above new ones", () => {
   const ads = adsWith;
   expect(demandOf(ads(3, 3)).score).toBeGreaterThan(demandOf(ads(0, 3)).score);
+});
+
+// What "gothic t-shirt" really returned from the Ad Library on 2026-10-29,
+// plus the noise the filters must keep out.
+const gothicNoise = [
+  {
+    ad_creative_link_title: "📖✨ It's amazing! Click to read now! 👉💖",
+    page_name: "Wonderful novel story",
+  },
+  {
+    ad_creative_link_title: "book.runswiftapp.com",
+    page_name: "Operation Baseball & Softball Academy",
+  },
+  { ad_creative_link_title: "Car T-Shirt Sale!", page_name: "Car Threads" },
+  {
+    ad_creative_link_title: "Black Friday On The Pocket Tee",
+    page_name: "LIOR",
+  },
+  {
+    ad_creative_bodies: ["A gothic romance novel you can't put down"],
+    ad_creative_link_title: "Read the gothic saga free",
+    page_name: "Gothic Reads",
+  },
+  {
+    ad_creative_bodies: ["Gothic cathedral tour, tickets on sale"],
+    ad_creative_link_title: "Book your gothic tour",
+    page_name: "City Tours",
+  },
+];
+
+const gothicShops = [
+  {
+    ad_creative_link_title: "Gothic moth tee, 20% off this week",
+    page_name: "Night Moth Studio",
+  },
+  {
+    ad_creative_bodies: ["New gothic drop: printed to order, free shipping"],
+    ad_creative_link_captions: ["nightmoth.myshopify.com"],
+    ad_creative_link_title: "The Gothic Collection",
+    page_name: "Night Moth",
+  },
+];
+
+it("keeps out books, academies, cars and tours from a gothic t-shirt search", async () => {
+  const ads = [...gothicNoise, ...gothicShops].map((ad, index) => ({
+    ...ad,
+    ad_delivery_start_time: ago(20),
+    ad_snapshot_url: `https://www.facebook.com/ads/library/?id=${index}`,
+    page_id: index,
+  }));
+  const call = vi.fn(
+    async () =>
+      await Promise.resolve({
+        results: JSON.stringify({ ads, estimated_total_count: ads.length }),
+      })
+  );
+  const demand = await adDemandOf(call, "gothic", { now: NOW_MS });
+  expect(demand.advertisers).toBe(2);
+  expect(demand.samples.map((one) => one.page).toSorted()).toStrictEqual([
+    "Night Moth",
+    "Night Moth Studio",
+  ]);
+});
+
+it.each(gothicNoise)("is not an apparel ad: $page_name", (ad) => {
+  expect(sellsApparel({ ...ad, page_id: 1 }, new Set(["gothic"]))).toBe(false);
+});
+
+it.each(gothicShops)("is an apparel ad: $page_name", (ad) => {
+  expect(sellsApparel({ ...ad, page_id: 1 }, new Set(["gothic"]))).toBe(true);
 });
