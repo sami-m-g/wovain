@@ -208,10 +208,6 @@ export const FLAGS = {
     "growth",
     "Qloo audience demographics drive Meta targeting and the ad persona"
   ),
-  "qloo-taste-map": workstream(
-    "growth",
-    "The Qloo taste map: the entities, tags and cross-domain links behind each idea"
-  ),
   "store-management": workstream(
     "store",
     "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"

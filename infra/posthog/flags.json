@@ -783,44 +783,6 @@
         "release"
       ]
     },
-    "qloo-taste-map": {
-      "active": true,
-      "groups": [
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "next"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        },
-        {
-          "internal": false,
-          "properties": [
-            {
-              "key": "environment",
-              "operator": "exact",
-              "type": "person",
-              "value": [
-                "development"
-              ]
-            }
-          ],
-          "rollout_percentage": 100
-        }
-      ],
-      "name": "The Qloo taste map: the entities, tags and cross-domain links behind each idea (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
-      "tags": [
-        "registry",
-        "release"
-      ]
-    },
     "store-management": {
       "active": true,
       "groups": [

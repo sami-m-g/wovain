@@ -34,6 +34,7 @@ const research: TrendIdea = {
   references: [],
   score: 0.7,
   signals: {
+    affinity: 0.6,
     ipSafety: 1,
     margin: 0.5,
     marketHits: 3,

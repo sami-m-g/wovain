@@ -18,7 +18,7 @@ Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 
 1. **Search** (`/search`, `tasteOf`) convierte el brief en hasta 3 entidades semilla.
 2. **Insights de etiquetas** (`/v2/insights`, `filter.type=urn:tag`) devuelven las etiquetas de gusto que comparten los fans de la semilla. Son los temas de los diseños.
-3. **Insights transversales** (`/v2/insights` para marcas, películas y series, con `feature.explainability`) devuelven lo que también gusta a los fans de la semilla, con la parte de cada entidad semilla. Detrás del flag `qloo-taste-map`.
+3. **Insights transversales** (`/v2/insights` para marcas, películas y series, con `feature.explainability`) devuelven lo que también gusta a los fans de la semilla, con la parte de cada entidad semilla. En cada ejecución.
 4. **Demografía** (`demographicsOf`, `urn:demographics`) y **audiencias** (`audienceAffinity`) puntúan a quién le gustan las entidades de Qloo de la marca.
 5. **Search** (`search`, `searchEntities`) resuelve las referencias de gusto que el diseñador nombra en el onboarding de la marca.
 6. **Marcas en alza** (`/v2/insights` con `bias.trends=high`) alimentan el análisis del autopilot (`packages/core/src/autopilot-signals.ts`).
@@ -27,7 +27,7 @@ Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 
 - **Ideas.** Cada idea es una de las etiquetas de Qloo, hasta 3 por ejecución (`qlooThemes` en `packages/core/src/themes.ts`). El nombre de la etiqueta es el título de la idea. Menos de 3 etiquetas significa menos ideas, nunca ideas inventadas.
 - **Pruebas.** Tavily busca las noticias del último mes y los marketplaces solo dentro de los temas de Qloo (`packages/core/src/trends.ts`). Tavily nunca nombra un tema.
-- **Puntuación.** La afinidad de la etiqueta es el término de demanda, el 30 % de la puntuación de la idea (`packages/core/src/score.ts`). El bucle de feedback reajusta los términos de la puntuación según las ventas. No elige los temas.
+- **Puntuación.** La afinidad de la etiqueta es el término de demanda, el 30 % de la puntuación de la idea (`packages/core/src/score.ts`). Una etiqueta sin afinidad nunca se busca ni se sugiere; ningún valor neutro la sustituye. El bucle de feedback reajusta los términos de la puntuación según las ventas. No elige los temas.
 - **Seguridad de propiedad intelectual.** Los nombres que Qloo asocia a la semilla (marcas, artistas, títulos) se guardan en la idea como nombres que nunca se deben imprimir.
 - **Diseño.** Las etiquetas de estilo y ambiente de las afinidades transversales entran en el brief de diseño como pistas, nunca sus nombres (`packages/core/src/design.ts`). Las etiquetas de Qloo de las ideas de una ejecución eligen la familia de estilo de un drop (`packages/api/src/flow/drops.ts`).
 - **Anuncios.** Las edades, el género y las audiencias de Qloo configuran el conjunto de anuncios de Meta y la persona del redactor de anuncios (`packages/core/src/targeting.ts`, detrás de `qloo-audiences`).

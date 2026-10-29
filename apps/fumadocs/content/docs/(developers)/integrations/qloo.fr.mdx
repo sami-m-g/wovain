@@ -18,7 +18,7 @@ Implémenté dans `packages/core/src/qloo.ts` (`createQloo`) :
 
 1. **Search** (`/search`, `tasteOf`) résout le brief en 3 entités graines au plus.
 2. **Insights de tags** (`/v2/insights`, `filter.type=urn:tag`) renvoient les tags de goût que partagent les fans de la graine. Ce sont les thèmes des designs.
-3. **Insights transversaux** (`/v2/insights` pour les marques, les films et les séries, avec `feature.explainability`) renvoient ce que les fans de la graine aiment aussi, avec la part de chaque entité graine. Derrière le flag `qloo-taste-map`.
+3. **Insights transversaux** (`/v2/insights` pour les marques, les films et les séries, avec `feature.explainability`) renvoient ce que les fans de la graine aiment aussi, avec la part de chaque entité graine. Dans chaque run.
 4. **Démographie** (`demographicsOf`, `urn:demographics`) et **audiences** (`audienceAffinity`) mesurent qui aime les entités Qloo de la marque.
 5. **Search** (`search`, `searchEntities`) résout les références de goût que le créateur nomme à l'onboarding de la marque.
 6. **Marques en hausse** (`/v2/insights` avec `bias.trends=high`) alimentent l'analyse de l'autopilot (`packages/core/src/autopilot-signals.ts`).
@@ -27,7 +27,7 @@ Implémenté dans `packages/core/src/qloo.ts` (`createQloo`) :
 
 - **Idées.** Chaque idée est un des tags de Qloo, 3 au plus par exécution (`qlooThemes` dans `packages/core/src/themes.ts`). Le nom du tag est le titre de l'idée. Moins de 3 tags donne moins d'idées, jamais des idées inventées.
 - **Preuves.** Tavily ne cherche l'actualité du dernier mois et les places de marché que dans les thèmes de Qloo (`packages/core/src/trends.ts`). Tavily ne nomme jamais un thème.
-- **Scoring.** L'affinité du tag est le terme de demande, 30 % du score de l'idée (`packages/core/src/score.ts`). La boucle de retour repondère les termes du score selon les ventes. Elle ne choisit pas les thèmes.
+- **Scoring.** L'affinité du tag est le terme de demande, 30 % du score de l'idée (`packages/core/src/score.ts`). Un tag sans affinité n'est jamais recherché ni suggéré ; aucune valeur neutre ne le remplace. La boucle de retour repondère les termes du score selon les ventes. Elle ne choisit pas les thèmes.
 - **Sécurité de propriété intellectuelle.** Les noms que Qloo associe à la graine (marques, artistes, titres) sont enregistrés sur l'idée comme noms à ne jamais imprimer.
 - **Design.** Les tags de style et d'ambiance des affinités transversales entrent dans le brief de design comme indices, jamais leurs noms (`packages/core/src/design.ts`). Les tags Qloo des idées d'une exécution choisissent la famille de style d'un drop (`packages/api/src/flow/drops.ts`).
 - **Publicités.** Les âges, le genre et les audiences de Qloo règlent l'ensemble de publicités Meta et le persona du rédacteur publicitaire (`packages/core/src/targeting.ts`, derrière `qloo-audiences`).
