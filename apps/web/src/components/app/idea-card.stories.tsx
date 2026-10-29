@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { unavailable } from "@wovain/core/idea-card";
 import { expect, fn, userEvent } from "storybook/test";
 
 import { IdeasStep } from "@/components/app/wizard-steps";
@@ -6,6 +7,13 @@ import type { Idea } from "@/lib/flow-client";
 
 const idea: Idea = {
   avoidNames: [],
+  card: {
+    audience: unavailable("not_read"),
+    competition: unavailable("not_read"),
+    make: unavailable("not_read"),
+    origin: "trends",
+    why: unavailable("not_read"),
+  },
   competition: null,
   createdAt: new Date("2026-10-20T09:30:00Z"),
   id: "idea_1",
