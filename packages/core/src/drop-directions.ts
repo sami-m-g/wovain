@@ -818,9 +818,12 @@ const cautiousDirections = async (
       ...batch.filter((one): one is DropDirection => one !== undefined)
     );
   }
-  return named
-    .toSorted((first, second) => second.score - first.score)
-    .slice(0, MAX_DIRECTIONS);
+  const sorted = named.toSorted((first, second) => second.score - first.score);
+  // A card already announced but cut by the limit leaves the list too.
+  for (const cut of sorted.slice(MAX_DIRECTIONS)) {
+    deps.onEvent?.({ key: cut.key, kind: "withdrawn" });
+  }
+  return sorted.slice(0, MAX_DIRECTIONS);
 };
 
 // Up to MAX_DIRECTIONS directions for the next drop, best first: within the
