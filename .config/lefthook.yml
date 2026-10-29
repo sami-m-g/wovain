@@ -36,7 +36,8 @@ commit-msg:
     - name: commitlint
       run: pnpm exec commitlint --config .config/commitlint.config.ts --edit {1}
 
+# Keep hooks light: heavy suites (tests, E2E, Storybook, knip) run in CI or on demand.
 pre-push:
   jobs:
-    - name: knip
-      run: pnpm run knip
+    - name: check-types
+      run: pnpm exec turbo run check-types --affected
