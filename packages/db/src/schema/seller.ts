@@ -238,3 +238,18 @@ export const campaign = pgTable(
   },
   (table) => [index("campaign_user_idx").on(table.userId)]
 );
+
+// The merchant's first time at each north star step (packages/api
+// flow/milestones): one row per merchant and step, so a step is reported to
+// PostHog once and the Insights page can time the journey.
+export const milestone = pgTable(
+  "milestone",
+  {
+    at: timestamp("at").defaultNow().notNull(),
+    name: text("name").notNull(),
+    userId: owner(),
+  },
+  (table) => [
+    uniqueIndex("milestone_user_name_idx").on(table.userId, table.name),
+  ]
+);

@@ -15,11 +15,24 @@ import { defineError } from "evlog";
 export type FunnelEvent =
   | BillingEvent
   | "campaign_created"
+  | "campaign_delivering"
+  | "campaign_started"
+  | "connection_completed"
   | "connect_provider"
   | "design_approved"
+  | "first_drop_started"
+  | "fourthwall_shop_ready"
+  | "meta_page_ready"
+  | "meta_payment_ready"
+  | "payouts_ready"
+  | "pixel_ready"
+  | "first_profitable_product"
+  | "first_sale"
   | "product_published"
+  | "products_published"
   | "run_started"
-  | "sign_up";
+  | "sign_up"
+  | "signed_up";
 
 // What runs report as they go (./metrics): the agent's quality and speed.
 export type RunEvent =
@@ -40,6 +53,8 @@ export interface Analytics {
     distinctId: string;
     event: FunnelEvent | RunEvent | VoiceEvent;
     properties?: Record<string, unknown>;
+    // When it happened, if not now.
+    timestamp?: Date;
   }) => Promise<void>;
   // Sets person properties (`$set`), such as the merchant's plan.
   identify?:

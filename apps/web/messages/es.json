@@ -822,6 +822,17 @@
       "28d": "28 días",
       "90d": "90 días"
     },
+    "journey": {
+      "title": "Tu primer drop",
+      "source": "Tiempo desde el registro hasta una campaña activa y un primer beneficio",
+      "liveCampaign": "Tiempo hasta la campaña activa",
+      "liveCampaignHint": "Del registro a la campaña activa. Objetivo {target, number} min",
+      "metaReview": "Espera de revisión de Meta",
+      "metaReviewHint": "De campaña activa a la primera impresión. Tiempo de Meta, no tuyo",
+      "firstProfit": "Tiempo hasta el primer beneficio",
+      "firstProfitHint": "De la primera impresión al beneficio tras el gasto en anuncios. Objetivo {target, number} min",
+      "minutes": "{value, number} min"
+    },
     "updating": "Actualizando…",
     "shop": {
       "title": "Tienda",
