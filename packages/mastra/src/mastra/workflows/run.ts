@@ -171,13 +171,23 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   // evidence, checked by the grounding guard with one retry, recorded in
   // the decision trace. The ideas show only once named, never as a raw tag.
   const name = createStep({
-    execute: async ({ inputData }) => {
-      await body(
+    execute: async ({ bail, inputData }) => {
+      const named = await body(
         "name",
         async (actor, from) =>
           await nameIdeas(actor, from.ideaIds ?? [], from.runId)
       )(inputData);
-      return inputData;
+      // Only named ideas go on, in research's order (autopilot's pick first).
+      const kept = new Set(named.map((row) => row.id));
+      const ideaIds = (inputData.ideaIds ?? []).filter((id) => kept.has(id));
+      if (ideaIds.length === 0) {
+        await finishRun(actorFor(inputData.userId), inputData.runId, {
+          error: "No idea got a title its evidence supports.",
+          status: "failed",
+        });
+        return bail(inputData);
+      }
+      return { ...inputData, ideaIds };
     },
     id: "name",
     inputSchema: carry,
