@@ -36,4 +36,5 @@ Issue #59.
 Issue #114.
 
 - [x] 5.1 Dockerfile base images pinned by digest; corepack and varlock from `npm ci` lockfiles in `docker/`; Dependabot covers both
-- [x] 5.2 Main ruleset: one approval, stale reviews dismissed, admin bypass on pull requests only
+- [x] 5.2 Main ruleset: one approval (CodeRabbit, `.coderabbit.yaml`), stale reviews dismissed, no bypass
+- [ ] 5.3 Install the CodeRabbit GitHub App, then apply the ruleset

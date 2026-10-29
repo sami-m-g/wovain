@@ -41,12 +41,17 @@ Every external image in a Dockerfile SHALL be pinned by digest, every GitHub Act
 
 ### Requirement: The default branch is protected
 
-The main ruleset SHALL block deletion and force-push, SHALL require a pull request with one approval that a new push dismisses, and SHALL require the `verify`, `infra`, `codeql`, `dependency-review` and `osv / osv-scan` checks. Repository admins MAY bypass it only when merging a pull request.
+The main ruleset SHALL block deletion and force-push, SHALL require a pull request with one approval that a new push dismisses, and SHALL require the `verify`, `infra`, `codeql`, `dependency-review` and `osv / osv-scan` checks. The approval SHALL come from CodeRabbit, which requests changes on blocking findings and approves once they are resolved, and no one MAY bypass the ruleset.
 
 #### Scenario: Direct push to main
 
 - **WHEN** anyone, an admin included, pushes a commit directly to main
 - **THEN** GitHub refuses the push
+
+#### Scenario: Unresolved review finding
+
+- **WHEN** CodeRabbit has requested changes on a pull request and they are not resolved
+- **THEN** the pull request cannot merge, whoever opened it
 
 ### Requirement: Dependency licenses are permissive
 

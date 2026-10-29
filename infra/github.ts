@@ -13,8 +13,6 @@ import type * as pulumi from "@pulumi/pulumi";
 // GitHub Actions' app id: a required check must come from Actions, not from
 // any app that reports a status of the same name.
 const GITHUB_ACTIONS_APP_ID = 15_368;
-// The built-in `admin` repository role, as a ruleset bypass actor.
-const REPOSITORY_ADMIN_ROLE_ID = 5;
 
 type Variables = Record<string, pulumi.Input<string>>;
 
@@ -118,19 +116,12 @@ export const githubRepository = ({
   // The default branch: no deletion, no force-push, and every change through
   // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,
   // the dependency review and the full OSV scan (.github/workflows), with one
-  // approval that a new push dismisses. The maintainer works alone and can't
-  // approve their own pull requests, so repository admins may bypass the
-  // rules, but only when merging a pull request: a direct push is still
-  // refused. (OpenSSF Scorecard's Branch-Protection gives no credit past
-  // force-push and deletion without a required approval.)
+  // approval that a new push dismisses. The maintainer works alone, so the
+  // approval comes from CodeRabbit (.coderabbit.yaml: it requests changes on
+  // blocking findings and approves once they are resolved). No one may
+  // bypass the rules. CodeRabbit is not a required check: its review runs
+  // beside CI, and its approval is what counts.
   new github.RepositoryRuleset("main", {
-    bypassActors: [
-      {
-        actorId: REPOSITORY_ADMIN_ROLE_ID,
-        actorType: "RepositoryRole",
-        bypassMode: "pull_request",
-      },
-    ],
     conditions: {
       refName: { excludes: [], includes: ["~DEFAULT_BRANCH"] },
     },
