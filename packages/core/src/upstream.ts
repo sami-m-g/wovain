@@ -386,7 +386,9 @@ export const createUpstream = (config: UpstreamConfig) => {
     provider: ProviderId,
     grant: GrantStore,
     log: Logger | undefined,
-    work: (call: ToolCall) => Promise<T>
+    // `accessToken` reads the grant's current access token, for the
+    // provider's own API beside its MCP server (Meta's Graph API).
+    work: (call: ToolCall, accessToken: () => Promise<string>) => Promise<T>
   ): Promise<T> => {
     const held = await grant.load();
     if (held === undefined) {
@@ -467,7 +469,14 @@ export const createUpstream = (config: UpstreamConfig) => {
         { operation: "connect", provider },
         async () => await client.connect(transport).catch(unlessRefused)
       );
-      return await work(call);
+      const accessToken = async () => {
+        const latest = await grant.load();
+        if (latest === undefined) {
+          throw await refused();
+        }
+        return latest.access_token;
+      };
+      return await work(call, accessToken);
     } finally {
       await client.close();
     }
