@@ -30,6 +30,7 @@ import {
   requestCancel,
   requestDropPublish,
   requestLaunchPromotion,
+  requestListingEdit,
   requestProductMove,
   requestGiftCards,
   requestPromotionEnd,
@@ -687,6 +688,50 @@ describe("the Store page's requests", () => {
         (entry) => entry.tool === "ecommerce_create-gift-cards"
       )?.args
     ).toEqual({ amount: 25, numberOfCards: 4 });
+  });
+
+  it("rewrites a product page in the merchant's name, with the old page as the undo", async () => {
+    const ctx = await setup({
+      "ecommerce_get-offers-by-ids": {
+        offers: [
+          {
+            description: "<p>Old</p>",
+            id: "off_1",
+            name: "Dune Tee",
+            shipmentStartDate: "Ships in 5-10 business days",
+          },
+        ],
+      },
+      "ecommerce_update-offer": { id: "off_1" },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    const queued = await requestListingEdit(ctx.actor, {
+      listing: {
+        benefits: ["Desert light", "A gift for hikers", "Soft dusk colours"],
+        hook: "For anyone who hikes at golden hour.",
+        title: "Desert Dusk Hiking Tee",
+      },
+      productId,
+    });
+    expect(queued).toMatchObject({ risk: "R1", status: "approved" });
+    expect(queued.inverse).toEqual({
+      description: "<p>Old</p>",
+      name: "Dune Tee",
+      productId,
+      type: "store.listing.edit",
+    });
+    await executeStoreApproval(ctx.actor, queued.id);
+    const written = ctx.shop.calls.find(
+      (entry) => entry.tool === "ecommerce_update-offer"
+    )?.args;
+    expect(written).toMatchObject({
+      name: "Desert Dusk Hiking Tee",
+      offerId: "off_1",
+    });
+    expect(written?.description).toContain("<li>A gift for hikers</li>");
+    expect(written?.description).toContain("Ships in 5-10 business days.");
+    const [row] = await ctx.db.select().from(design);
+    expect(row?.brief.title).toBe("Desert Dusk Hiking Tee");
   });
 
   it("takes a coming-soon shop live after the merchant confirms", async () => {

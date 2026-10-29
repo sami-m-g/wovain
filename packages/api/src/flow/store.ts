@@ -3,6 +3,7 @@ import type { Approval, EnqueueInput } from "@wovain/core/approvals";
 import type { ActionType } from "@wovain/core/autonomy";
 import { rangeDates, shopInsights } from "@wovain/core/insights";
 import type { InsightRange } from "@wovain/core/insights";
+import type { Listing } from "@wovain/core/listing";
 import { discountKeepsProfit, sizePrices } from "@wovain/core/pricing";
 import {
   activatePromotion,
@@ -54,6 +55,7 @@ import {
 } from "./approvals";
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
+import { applyListing, listingEdit } from "./listing";
 import { once } from "./once";
 import { getProduct, publishDesignProduct } from "./products";
 
@@ -547,6 +549,22 @@ export const requestReprice = async (
     proposedBy: "merchant",
     title: `Reprice to $${price.toFixed(2)}`,
     type: "store.product.reprice",
+  });
+};
+
+// The merchant approves wovain's rewrite of a product page (R1): it is
+// applied at once in their name, and the page it replaces is the undo.
+export const requestListingEdit = async (
+  actor: Actor,
+  { listing, productId }: { listing: Listing; productId: string }
+) => {
+  const { next, previous } = await listingEdit(actor, productId, listing);
+  return await merchantAction(actor, {
+    inverse: { ...previous, type: "store.listing.edit" },
+    payload: { ...next },
+    proposedBy: "merchant",
+    title: `Rewrite the product page as "${next.name}"`,
+    type: "store.listing.edit",
   });
 };
 
@@ -1186,6 +1204,15 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
           and(eq(product.id, productId), eq(product.userId, actor.userId))
         );
       return { price, sizes: bySize };
+    }
+    case "store.listing.edit": {
+      const { description } = payload;
+      return await applyListing(actor, {
+        // An undo may write back an empty description.
+        description: typeof description === "string" ? description : "",
+        name: text(payload, "name"),
+        productId: text(payload, "productId"),
+      });
     }
     case "store.promotion.create": {
       return await createPromotion(actor, approval);

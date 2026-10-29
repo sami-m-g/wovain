@@ -1,4 +1,5 @@
 import { INSIGHT_RANGES } from "@wovain/core/insights";
+import { listingSchema } from "@wovain/core/listing";
 import {
   GIFT_CARD_MAX_COUNT,
   GIFT_CARD_MAX_USD,
@@ -8,6 +9,7 @@ import {
 } from "@wovain/core/store";
 import { z } from "zod";
 
+import { listingDraft } from "../flow/listing";
 import {
   listDrops,
   listStoreOrders,
@@ -22,6 +24,7 @@ import {
   requestCancel,
   requestDropPublish,
   requestLaunchPromotion,
+  requestListingEdit,
   requestProductMove,
   requestRefund,
   requestReprice,
@@ -80,9 +83,21 @@ export const storeRouter = {
       z.object({ friendlyId: z.string().min(1).max(32), orderId: id, reason })
     )
     .handler(guarded(requestCancel)),
+  // A product page rewrite: drafted for the preview (nothing is written),
+  // then applied through the queue once the merchant approves it.
+  draftListing: protectedProcedure
+    .input(z.object({ productId: id }))
+    .handler(
+      guarded(
+        async (context, input) => await listingDraft(context, input.productId)
+      )
+    ),
   drops: protectedProcedure.handler(
     guarded(async (context) => await listDrops(context))
   ),
+  editListing: protectedProcedure
+    .input(z.object({ listing: listingSchema, productId: id }))
+    .handler(guarded(requestListingEdit)),
   endPromotion: protectedProcedure
     .input(z.object({ code: z.string().min(1).max(64), promotionId: id }))
     .handler(guarded(requestPromotionEnd)),

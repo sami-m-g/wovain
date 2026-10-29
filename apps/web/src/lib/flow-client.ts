@@ -36,6 +36,7 @@ export type TasteMatch = Outputs["onboarding"]["searchTaste"][number];
 export type Learned = Outputs["feedback"]["learned"];
 export type VoiceCommand = Outputs["voice"]["command"];
 export type StoreProduct = Outputs["store"]["products"][number];
+export type StoreListingDraft = Outputs["store"]["draftListing"];
 export type StoreReadiness = Outputs["store"]["readiness"];
 export type StoreOrder = Outputs["store"]["orders"][number];
 export type StoreApproval = Outputs["approvals"]["list"][number];

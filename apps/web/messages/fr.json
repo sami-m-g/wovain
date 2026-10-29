@@ -148,6 +148,10 @@
         "answer": "Une boutique Fourthwall pour les produits, un compte fal pour les visuels et un compte publicitaire Meta pour la campagne. Vous connectez chacun avec sa propre connexion après avoir créé votre compte."
       },
       {
+        "question": "Ma boutique sera-t-elle prête à vendre ?",
+        "answer": "Oui. La Boutique liste ce qu'il faut à votre boutique Fourthwall avant sa première commande (versements, livraison, mise en ligne, pixel Meta), fait ce qu'elle peut pour vous, renvoie vers le reste et coche chaque étape d'elle-même. Elle réécrit aussi chaque page produit comme le ferait un rédacteur e-commerce, et rien ne change avant votre accord."
+      },
+      {
         "question": "Comment les prix sont-ils fixés ?",
         "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Vous pouvez modifier chaque prix ensuite dans Fourthwall."
       },
@@ -1621,6 +1625,7 @@
       "mockupAlt": "Maquette de {title}",
       "view": "Voir dans la boutique",
       "editInFourthwall": "Modifier dans Fourthwall",
+      "rewrite": "Réécrire la page produit",
       "reprice": "Changer le prix",
       "sample": "Commander un échantillon",
       "move": {
@@ -1654,6 +1659,26 @@
       "back": "Annuler",
       "sent": "C'est fait. wovain s'en occupe.",
       "queuedCount": "{count, plural, one {# changement attend} other {# changements attendent}} dans vos validations."
+    },
+    "listing": {
+      "title": "Une page produit qui vend : {title}",
+      "note": "wovain a réécrit le titre et la description comme le ferait un rédacteur e-commerce. Comparez-les tels que les voit un acheteur. Rien ne change dans votre boutique avant votre accord.",
+      "writing": "Rédaction de la nouvelle page…",
+      "before": "Aujourd'hui",
+      "after": "Avec wovain",
+      "noDescription": "Pas encore de description.",
+      "mockupAlt": "Maquette de {title}",
+      "issues": "À vérifier à l'œil : {list}.",
+      "issue": {
+        "title_length": "le titre dépasse 60 caractères, les moteurs de recherche le coupent",
+        "title_shouting": "le titre est presque tout en majuscules",
+        "ai_tell": "une tournure sonne comme écrite par une machine",
+        "exclamation": "il contient un point d'exclamation"
+      },
+      "practice": "Le mot-clé principal en premier, un titre qui tient dans un résultat de recherche, un bénéfice par ligne, aucune affirmation que votre boutique ne peut pas prouver et le délai d'expédition donné par Fourthwall.",
+      "back": "Annuler",
+      "again": "En écrire une autre",
+      "confirm": "Utiliser cette page"
     },
     "reprice": {
       "title": "Changer le prix de {title}",
