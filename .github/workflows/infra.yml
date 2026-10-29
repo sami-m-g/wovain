@@ -17,6 +17,12 @@
 #   only from that environment on main and which can change only next's
 #   resources (infra/bootstrap/next.ts). Production keeps its manual, gated
 #   `up` below.
+# Push to main: `pulumi up` of the GitHub repository's stack (infra/github)
+#   too, in the `github-infrastructure` environment, as infra-github, which
+#   Google trusts only from that environment on main and which can only
+#   decrypt that stack's GitHub token and write its state
+#   (infra/bootstrap/github.ts). Both github jobs skip until the owner has
+#   created the stack and its token (infra/README.md, "The github stack").
 #
 # The bootstrap stack is CI's own identity, so CI only previews it; a project
 # owner applies it (`pnpm run infra:bootstrap:up`).
@@ -49,6 +55,7 @@ env:
   INFRA_WORKLOAD_IDENTITY_PROVIDER: projects/422330561934/locations/global/workloadIdentityPools/github/providers/github
   INFRA_SERVICE_ACCOUNT: gitlab-infra@wovain.iam.gserviceaccount.com
   NEXT_INFRA_SERVICE_ACCOUNT: infra-next@wovain.iam.gserviceaccount.com
+  GITHUB_INFRA_SERVICE_ACCOUNT: infra-github@wovain.iam.gserviceaccount.com
   # Polar's webhook endpoint on production (packages/auth).
   POLAR_WEBHOOK_URL: https://wovain.com/api/auth/polar/webhooks
 
@@ -109,6 +116,18 @@ jobs:
           echo "### next" >> "$GITHUB_STEP_SUMMARY"
           node infra/policy/guard.ts < "$RUNNER_TEMP/next.json" >> "$GITHUB_STEP_SUMMARY" || status=1
           exit "$status"
+      - name: Preview github
+        if: ${{ !cancelled() }}
+        run: |
+          echo "### github" >> "$GITHUB_STEP_SUMMARY"
+          if ! grep -q '^  github:token:' infra/github/Pulumi.github.yaml; then
+            echo "Skipped: the github stack has no token yet (infra/README.md)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          status=0
+          node infra/scripts/pulumi.ts preview infra/github -- --json > "$RUNNER_TEMP/github.json" || status=$?
+          node infra/policy/guard.ts < "$RUNNER_TEMP/github.json" >> "$GITHUB_STEP_SUMMARY" || status=1
+          exit "$status"
 
   up-next:
     # Every push to main (and a manual run on main) applies next only. The
@@ -142,6 +161,53 @@ jobs:
       - run: pnpm run infra:install
       - name: Apply next
         run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview
+
+  up-github:
+    # Every push to main (and a manual run on main) applies the repository's
+    # settings and rulesets, after the same guard (scripts/pulumi.ts).
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: github-infrastructure
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: infra-up-github
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: ready
+        name: Check the stack has its token
+        run: |
+          if grep -q '^  github:token:' infra/github/Pulumi.github.yaml; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipped: the github stack has no token yet (infra/README.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.ready.outputs.ready == 'true'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - if: steps.ready.outputs.ready == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - if: steps.ready.outputs.ready == 'true'
+        uses: pulumi/setup-pulumi@b374ceb6168550de27c6eba92e01c1a774040e11 # v2.0.0
+      - if: steps.ready.outputs.ready == 'true'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GITHUB_INFRA_SERVICE_ACCOUNT }}
+      - if: steps.ready.outputs.ready == 'true'
+        run: pnpm run infra:install
+      - if: steps.ready.outputs.ready == 'true'
+        name: Apply github
+        run: node infra/scripts/pulumi.ts up infra/github -- --yes --skip-preview
 
   up:
     # Manual only while production is frozen (until the Transcend winners,
