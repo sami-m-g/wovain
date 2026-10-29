@@ -40,6 +40,7 @@ import type {
   OrderCurrency,
   ProductStatus,
 } from "@wovain/core/store";
+import type { ConfirmableStep } from "@wovain/core/store-setup";
 import { drop, dropItem } from "@wovain/db/schema/autonomy";
 import { design, product, run } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
@@ -749,6 +750,21 @@ export const requestSiteLive = async (actor: Actor) =>
     type: "store.site.set_status",
   });
 
+// The merchant marks payouts set up by Fourthwall support (PayPal or
+// bill.com), which get-payout-info can't see. R1, decided in their name.
+export const requestSetupConfirm = async (
+  actor: Actor,
+  step: ConfirmableStep
+) =>
+  await merchantAction(actor, {
+    idempotencyKey: `store.setup.confirm:${step}`,
+    payload: { step },
+    proposedBy: "merchant",
+    reason: "Marked done on the Store page: set up by Fourthwall support.",
+    title: "Payouts set up by Fourthwall support",
+    type: "store.setup.confirm",
+  });
+
 export const listStoreOrders = async (
   actor: Actor,
   { dropId, page }: { dropId?: string | undefined; page: number }
@@ -1251,6 +1267,10 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
             expiresAt: typeof expiresAt === "string" ? expiresAt : undefined,
           })
       );
+    }
+    case "store.setup.confirm": {
+      // The merchant's word is the record; the Store setup reads it back.
+      return { step: text(payload, "step") };
     }
     case "store.site.set_status": {
       const status = await withProvider(

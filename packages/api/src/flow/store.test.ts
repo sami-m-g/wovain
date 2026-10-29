@@ -41,6 +41,7 @@ import {
   requestPromotionEnd,
   requestRefund,
   requestShopPromotion,
+  requestSetupConfirm,
   requestSiteLive,
   sampleLink,
   stageRunDrop,
@@ -824,6 +825,28 @@ describe("store setup", () => {
       policies: "check",
       shipping: "done",
       site_live: "done",
+    });
+  });
+
+  it("ticks payouts off on the merchant's word when support set them up", async () => {
+    const ctx = await setup({
+      ...LIVE_SHOP,
+      "ecommerce_get-dns-entries": null,
+      "ecommerce_get-payout-info": { status: "INACTIVE" },
+    });
+    const before = await storeSetup(ctx.actor);
+    expect(before.steps.find((step) => step.id === "payouts")).toMatchObject({
+      how: "link",
+      state: "todo",
+    });
+    expect(before.shop.payoutStatus).toBe("INACTIVE");
+    const queued = await requestSetupConfirm(ctx.actor, "payouts");
+    expect(queued).toMatchObject({ risk: "R1", status: "approved" });
+    await executeStoreApproval(ctx.actor, queued.id);
+    const after = await storeSetup(ctx.actor);
+    expect(after.steps.find((step) => step.id === "payouts")).toMatchObject({
+      confirmedByMerchant: true,
+      state: "done",
     });
   });
 

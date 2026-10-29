@@ -142,6 +142,7 @@ const SETUP: Setup = {
     baseUrl: "https://atelier.fourthwall.com",
     hosts: ["atelier.fourthwall.com"],
     name: "Atelier",
+    payoutStatus: "INACTIVE",
     siteStatus: "COMING_SOON",
   },
   steps: [
@@ -163,8 +164,36 @@ describe("StoreSetup", () => {
     expect(html).toContain("Get your shop ready to sell");
     expect(html).toContain("2 of 5 done");
     expect(html).toContain("Go live");
-    expect(html).toContain("Set up payouts");
+    expect(html).toContain("Open Billing and payouts");
+    expect(html).toContain("redirectPath=%2Fsettings%2Fbilling%2F");
+    expect(html).toContain("Fourthwall support set up my payouts");
     expect(html).toContain("939178269202011");
+    expect(html).toContain(
+      "redirectPath=%2Fanalytics%2Foverview%2Ftracking-pixels"
+    );
+    expect(html).toContain("Open Meta Conversions");
     expect(html).toContain("Open your storefront (test visit)");
+  });
+
+  it("shows payouts the merchant marked done", () => {
+    const html = render(<StoreSetup />, (client) => {
+      client.setQueryData(orpc.store.setup.queryKey(), {
+        ...SETUP,
+        steps: SETUP.steps.map((step) =>
+          step.id === "payouts"
+            ? {
+                ...step,
+                confirmedByMerchant: true,
+                how: "none" as const,
+                state: "done" as const,
+              }
+            : step
+        ),
+      });
+    });
+    expect(html).toContain(
+      "You marked payouts as set up by Fourthwall support"
+    );
+    expect(html).not.toContain("Fourthwall support set up my payouts");
   });
 });
