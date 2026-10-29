@@ -74,6 +74,10 @@ interface SettingsArgs {
   // `release-please-token` stack secret (.github/workflows/release.yml). Left
   // out, no secret is declared and release-please uses the default token.
   releasePleaseToken?: pulumi.Input<string> | undefined;
+  // The founder's Claude subscription token (`claude setup-token`) that
+  // .github/workflows/claude-review.yml signs in with, from the
+  // `claude-code-oauth-token` stack secret. Left out, no secret is declared.
+  claudeCodeOauthToken?: pulumi.Input<string> | undefined;
 }
 
 interface EnvironmentArgs {
@@ -91,6 +95,7 @@ interface EnvironmentArgs {
 // The repository, its default branch's and release branch's rulesets, the
 // Dependabot label and the repository secret: the `github` stack's.
 export const repositorySettings = ({
+  claudeCodeOauthToken,
   gitguardianApiKey,
   releasePleaseToken,
   releaseBranch,
@@ -148,7 +153,8 @@ export const repositorySettings = ({
   // the dependency review and the full OSV scan (.github/workflows), with one
   // approval that a new push dismisses. The maintainer works alone, so the
   // approval comes from CodeRabbit (.coderabbit.yaml: it requests changes on
-  // blocking findings and approves once they are resolved). No one may
+  // blocking findings and approves once they are resolved) or from Claude
+  // (.github/workflows/claude-review.yml), whichever answers first. No one may
   // bypass the rules. CodeRabbit is not a required check: its review runs
   // beside CI, and its approval is what counts.
   new github.RepositoryRuleset("main", {
@@ -184,6 +190,16 @@ export const repositorySettings = ({
       },
     },
     target: "branch",
+  });
+
+  // Claude's review (.github/workflows/claude-review.yml) is the job token's
+  // approval, github-actions[bot], which counts toward the ruleset's one
+  // approval only while Actions may approve pull requests. Workflows still
+  // get a read-only token by default; each job asks for what it needs.
+  new github.WorkflowRepositoryPermissions("wovain", {
+    canApprovePullRequestReviews: true,
+    defaultWorkflowPermissions: "read",
+    repository: repository.name,
   });
 
   // The release branch production deploys from (docs/adr/0004-release-branch.md):
@@ -241,6 +257,13 @@ export const repositorySettings = ({
       plaintextValue: releasePleaseToken,
       repository: repository.name,
       secretName: "RELEASE_PLEASE_TOKEN",
+    });
+  }
+  if (claudeCodeOauthToken !== undefined) {
+    new github.ActionsSecret("CLAUDE_CODE_OAUTH_TOKEN", {
+      plaintextValue: claudeCodeOauthToken,
+      repository: repository.name,
+      secretName: "CLAUDE_CODE_OAUTH_TOKEN",
     });
   }
   return repository;

@@ -1,13 +1,13 @@
 import type { Memory } from "@mastra/memory";
+import type { Logger } from "@wovain/core/log";
+import type { Nemotron } from "@wovain/core/nemotron";
+import type { QlooEntity } from "@wovain/core/qloo";
+import type { TraceSource } from "@wovain/core/trace";
+import type { TavilySearch } from "@wovain/core/trends";
 import { log as evlog } from "evlog";
 import { z } from "zod";
 
-import type { Logger } from "./log";
-import type { Nemotron } from "./nemotron";
-import type { QlooEntity } from "./qloo";
 import { TASTE_TEMPLATE, tasteThread } from "./taste";
-import type { TraceSource } from "./trace";
-import type { TavilySearch } from "./trends";
 
 // A designer's brand identity from the taste references they name (3 to 5
 // artists, films, brands). Each reference resolves to Qloo entities: first

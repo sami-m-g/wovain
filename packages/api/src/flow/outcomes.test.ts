@@ -2,7 +2,6 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { adRuleSettingsOf } from "@wovain/core/ad-rules";
-import type { Core } from "@wovain/core/core";
 import type { MetaCampaignRead } from "@wovain/core/optimizer-meta";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
@@ -14,6 +13,7 @@ import {
   performanceSnapshot,
 } from "@wovain/db/schema/autonomy";
 import { campaign, design, idea, product, run } from "@wovain/db/schema/seller";
+import type { Core } from "@wovain/mastra/services";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";

@@ -1,10 +1,11 @@
-import type { ArmMetrics } from "./ablation";
+import type { ArmMetrics } from "@wovain/core/ablation";
+
 // The committed with-Qloo vs LLM-only ablation (evals/qloo-ablation.eval.ts,
-// `pnpm --filter @wovain/core evals`), as the ideas step shows it beside the
+// `pnpm --filter @wovain/mastra evals`), as the ideas step shows it beside the
 // real ideas: what the theme step stands on with Qloo's taste graph, and
 // what Nemotron alone makes of the same seeds. A new run of the eval
 // rewrites the JSON; this reads whatever is committed.
-import report from "./evals/qloo-ablation.report.v1.json" with { type: "json" };
+import report from "./qloo-ablation.report.v1.json" with { type: "json" };
 
 export interface AblationSeed {
   seed: string;

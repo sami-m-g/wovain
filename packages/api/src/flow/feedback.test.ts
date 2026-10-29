@@ -2,9 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { InMemoryStore } from "@mastra/core/storage";
-import type { Core } from "@wovain/core/core";
 import { SCORE_WEIGHTS } from "@wovain/core/score";
-import { createMerchantMemory } from "@wovain/core/taste";
 import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
@@ -18,6 +16,8 @@ import {
   product,
   run,
 } from "@wovain/db/schema/seller";
+import { createMerchantMemory } from "@wovain/mastra/memory/taste";
+import type { Core } from "@wovain/mastra/services";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";

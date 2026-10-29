@@ -5,18 +5,18 @@ import {
   createAgentTestRun,
   createTestMessage,
 } from "@mastra/evals/scorers/utils";
+import { agreement, splitOf, trusted } from "@wovain/core/calibration";
+import type { Agreement, Verdict } from "@wovain/core/calibration";
+import { JUDGE_IDS, LABELED } from "@wovain/core/judges";
+import type { JudgeId, LabeledCase } from "@wovain/core/judges";
 import { describe, expect, it } from "vitest";
 
-import { agreement, splitOf, trusted } from "../calibration";
-import type { Agreement, Verdict } from "../calibration";
-import { JUDGE_IDS, LABELED } from "../judges";
-import type { JudgeId, LabeledCase } from "../judges";
-import { judgeScorer } from "../scorers";
+import { judgeScorer } from "../scorers/agents";
 import baseline from "./baseline.v1.json" with { type: "json" };
 
 // Offline evals of wovain's judges on the versioned labeled set
 // (judges.v1.json), run in CI when a prompt, a judge or the model changes
-// (`pnpm --filter @wovain/core evals`). For each judge it measures TPR and
+// (`pnpm --filter @wovain/mastra evals`). For each judge it measures TPR and
 // TNR against the labels on the dev and test splits, writes the report, and
 // fails when a judge drops below its recorded baseline (baseline.v1.json) by
 // more than the tolerance. Without NEBIUS_API_KEY the suite is skipped; with

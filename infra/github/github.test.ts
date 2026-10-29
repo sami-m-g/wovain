@@ -13,6 +13,7 @@ pulumi.runtime.setAllConfig(
   {
     ...config,
     "github:token": "placeholder",
+    "wovain-github:claude-code-oauth-token": "placeholder",
     "wovain-github:gitguardian-api-key": "placeholder",
     "wovain-github:release-please-token": "placeholder",
   },
@@ -20,6 +21,7 @@ pulumi.runtime.setAllConfig(
     "github:token",
     "wovain-github:gitguardian-api-key",
     "wovain-github:release-please-token",
+    "wovain-github:claude-code-oauth-token",
   ]
 );
 
@@ -54,6 +56,8 @@ test("the github program declares the repository's own resources only", async ()
       "github:index/issueLabel:IssueLabel::dependencies",
       "github:index/actionsSecret:ActionsSecret::GITGUARDIAN_API_KEY",
       "github:index/actionsSecret:ActionsSecret::RELEASE_PLEASE_TOKEN",
+      "github:index/actionsSecret:ActionsSecret::CLAUDE_CODE_OAUTH_TOKEN",
+      "github:index/workflowRepositoryPermissions:WorkflowRepositoryPermissions::wovain",
       "github:index/repositoryEnvironment:RepositoryEnvironment::github-infrastructure",
       "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::github-infrastructure-main",
     ].toSorted()

@@ -5,6 +5,8 @@
 - `apps/web`: Next.js 16 app (App Router, oRPC, Better Auth, evlog)
 - `apps/fumadocs`: Fumadocs documentation site with Nebius (Nemotron) AI chat
 - `packages/api`: oRPC routers and procedures
+- `packages/mastra`: Mastra agents, scorers, memory, evals and the composition root (`@wovain/mastra`, Mastra's `src/mastra/` layout); the workflows and `flow/*` move here next (#227)
+- `packages/core`: domain logic and provider clients
 - `packages/auth`: Better Auth configuration
 - `packages/db`: Drizzle schema, relations and client (PostgreSQL)
 - `packages/ui`: shared shadcn/ui components (Base UI, Tailwind CSS 4)
@@ -16,7 +18,7 @@
 - TypeScript 6 for tooling (`typescript` alias of `@typescript/typescript6`), TypeScript 7 for `tsc`
 - Varlock for environment: each app owns `.env.schema`; import `ENV` from the generated `src/env.ts`
 - Ultracite (Oxlint + Oxfmt) for lint and format; knip for unused code
-- Mastra for agents, workflows, scorers, memory and tracing: agents, scorers and judges in `packages/core/src/{agents,scorers,judges,step-scorers,taste}.ts`; the run workflow on Inngest in `packages/api/src/workflows` (docs/adr/0001, 0002)
+- Mastra for agents, workflows, scorers, memory and tracing: the agents, scorers, memory, evals and composition root (`createCore`) in `packages/mastra/src/mastra/{agents,scorers,memory,evals,services}` (`@wovain/mastra`); core keeps the agent registry (`agents.ts`), the model-call port (`nemotron.ts`), the judge specs (`judges.ts`) and the step scorers until they move; the run workflow on Inngest in `packages/api/src/workflows` (docs/adr/0001, 0002)
 
 ## Mastra Studio (local)
 
@@ -26,7 +28,7 @@
   - Also the per-environment settings in `apps/web/.env.schema` (`BILLING_CATALOG`, `PRICING_RULES`, the MCP URLs, `EMAIL_FROM` and the rest), set in `apps/web/.env.local`.
   - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.
 - Running the workflow needs the Inngest Dev Server: `INNGEST_DEV=1` and `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`, with `pnpm dev:web` running.
-- Judge evals: `pnpm --filter @wovain/core run evals` (needs `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) writes `packages/core/src/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
+- Judge evals: `pnpm --filter @wovain/mastra run evals` (needs `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) writes `packages/mastra/src/mastra/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
 
 ## Rules
 
@@ -41,7 +43,7 @@
 - Every error must reach PostHog Error Tracking, the one place errors are watched: log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
 - Minimal code, frameworks first, no lost functionality: before writing logic, use what Mastra (workflows, steps, tools, agents, processors, scorers, memory, tracing, `MCPServer`/`MCPClient`), Inngest, Better Auth, oRPC or another maintained library already provides. Write code only for what none of them cover. Every PR body names the library or framework it used, and gives a reason for any hand-written logic it adds
-- Layers (`turbo boundaries`, tags in each package's `turbo.json`, rules in the root `turbo.json`): `core` (domain, provider clients) ← `db`, `billing`, `email`, `auth` (data) ← `api` (routing) ← `web`; `ui` ← `widgets` (MCP Apps, used by `api`). A package imports only the layers below it, transitively
+- Layers (`turbo boundaries`, tags in each package's `turbo.json`, rules in the root `turbo.json`): `core` (domain, provider clients) ← `db`, `billing`, `email`, `auth` (data) ← `mastra` (orchestration) ← `api` (routing) ← `web`; `ui` ← `widgets` (MCP Apps, used by `api`). A package imports only the layers below it, transitively
 - Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip`, `pnpm run boundaries` and `pnpm run spec:validate` before committing
 
 ## Specs and changes (OpenSpec)

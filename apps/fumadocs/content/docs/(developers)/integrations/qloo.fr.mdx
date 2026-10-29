@@ -38,7 +38,7 @@ Implémenté dans `packages/core/src/qloo.ts` (`createQloo`) :
 - **Échec.** Un appel Qloo qui échoue fait échouer l'étape de recherche avec `QLOO_FAILED`. L'étape est relancée, puis l'exécution échoue et est journalisée au niveau erreur dans PostHog. wovain ne se rabat jamais sur des idées sans Qloo.
 - **Coupe-circuit.** `trends-qloo` n'est qu'un coupe-circuit d'exploitation. Quand il est coupé, `runs.start` et `ideas.research` refusent avec `QLOO_OFF` (503).
 
-La comparaison avec une exécution uniquement LLM n'est qu'une évaluation hors ligne : `packages/core/src/evals/qloo-ablation.eval.ts`, avec sa branche LLM réservée à l'évaluation dans `packages/core/src/evals/llm-themes.ts`. Elle se lance avec `pnpm --filter @wovain/core run evals`.
+La comparaison avec une exécution uniquement LLM n'est qu'une évaluation hors ligne : `packages/mastra/src/mastra/evals/qloo-ablation.eval.ts`, avec sa branche LLM réservée à l'évaluation dans `packages/mastra/src/mastra/evals/llm-themes.ts`. Elle se lance avec `pnpm --filter @wovain/mastra run evals`.
 
 ## Configuration
 

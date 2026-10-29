@@ -5,8 +5,8 @@ import { briefCompetition } from "@wovain/core/competition";
 import { draftBrief, judgeDesign, redrawCanFix } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
 import { checkTrademarks } from "@wovain/core/evidence";
-import { recordTaste } from "@wovain/core/taste";
 import { design, run } from "@wovain/db/schema/seller";
+import { recordTaste } from "@wovain/mastra/memory/taste";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import type { Actor, RunDecision } from "./actor";

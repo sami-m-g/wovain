@@ -417,7 +417,7 @@ const BrandHint = () => {
       {t("brandHint")}{" "}
       <Link
         className="text-accent-text font-medium underline underline-offset-2"
-        href="/dashboard/onboarding?step=brand"
+        href="/dashboard/onboarding?step=sell"
       >
         {t("brandHintLink")}
       </Link>
