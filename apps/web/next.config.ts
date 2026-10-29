@@ -34,6 +34,8 @@ const MOVED_PAGES = [
   ["/use-cases/band-merch", "/use-cases"],
   ["/guides/price-print-on-demand-merch", "/guides/price-print-on-demand"],
   ["/guides/launch-a-merch-drop", "/guides/launch-a-capsule-drop"],
+  // Products became the Store (store manager).
+  ["/dashboard/products", "/dashboard/store"],
 ] as const;
 
 const nextConfig: NextConfig = {

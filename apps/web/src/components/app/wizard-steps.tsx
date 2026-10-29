@@ -50,6 +50,7 @@ import {
   IdeaCompetition,
 } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
+import { DropDirections } from "@/components/app/drop-directions";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
@@ -130,6 +131,7 @@ export const BriefStep = ({
   onChange,
   onBudget,
   onSubmit,
+  onUseDirection,
 }: {
   brief: string;
   error?: string | undefined;
@@ -140,6 +142,7 @@ export const BriefStep = ({
   onChange: (value: string) => void;
   onBudget: (value: string) => void;
   onSubmit: () => void;
+  onUseDirection: (brief: string) => void;
 }) => {
   const t = useTranslations("Wizard.brief");
   const format = useFormatter();
@@ -154,6 +157,7 @@ export const BriefStep = ({
       }}
     >
       <StepHeader focusOnMount={false} title={t("title")} />
+      <DropDirections disabled={Boolean(busyLabel)} onUse={onUseDirection} />
       <Field data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor={id}>{t("label")}</FieldLabel>
         <InputGroup>

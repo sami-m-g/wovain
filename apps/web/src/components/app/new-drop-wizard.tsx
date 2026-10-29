@@ -140,6 +140,7 @@ const DropFlow = ({
         onBudget={drop.handleBudget}
         onChange={drop.handleBrief}
         onSubmit={actions.handleSubmitBrief}
+        onUseDirection={actions.handleUseDirection}
       />
     ),
     campaign: (

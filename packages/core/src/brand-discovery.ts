@@ -393,7 +393,10 @@ export const buyersOf = (
 };
 
 // Recent news about the theme: how many relevant stories in the past month.
-const momentumOf = async (deps: DiscoveryDeps, theme: string) => {
+export const momentumOf = async (
+  deps: Pick<DiscoveryDeps, "tavily">,
+  theme: string
+) => {
   const reply = await deps.tavily.search(`${theme} fashion trend`, {
     maxResults: 10,
     searchDepth: "basic",

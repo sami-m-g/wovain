@@ -36,7 +36,7 @@
     "billingTitle": "Billing",
     "onboardingTitle": "Get set up",
     "autopilotTitle": "Autopilot",
-    "productsTitle": "Products",
+    "storeTitle": "Store",
     "dropsTitle": "Drops"
   },
   "Common": {
@@ -320,7 +320,7 @@
       "billing": "Billing",
       "onboarding": "Get set up",
       "autopilot": "Autopilot",
-      "products": "Products",
+      "store": "Store",
       "drops": "Drops"
     },
     "docs": "Docs",
@@ -466,6 +466,34 @@
       "error": "Write at least a few words (10 characters or more).",
       "submit": "Research trends",
       "submitAutopilot": "Run on autopilot"
+    },
+    "directions": {
+      "title": "What to sell now",
+      "lead": "Rising now on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start, or write your own below.",
+      "titleBrand": "What to sell now, within your brand",
+      "leadBrand": "Rising now with your brand's buyers on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start, or write your own below.",
+      "ignoreBrand": "Ignore my brand this time",
+      "others": "Show me others",
+      "use": "Start this drop",
+      "whyFallback": "{count, plural, =0 {Rising with these buyers on Qloo.} one {Rising with these buyers on Qloo; # news story this month.} other {Rising with these buyers on Qloo; # news stories this month.}}",
+      "for": "For {audience}",
+      "rising": "Rising with: {names}",
+      "news": "{count, plural, =0 {no news this month} one {# news story this month} other {# news stories this month}}",
+      "newsUnknown": "news not checked",
+      "listings": {
+        "low": "{count, plural, =0 {no similar listings} one {# similar listing} other {# similar listings}}",
+        "medium": "{count, plural, one {# similar listing} other {# similar listings}}",
+        "high": "crowded: {count, plural, one {# similar listing} other {# similar listings}}"
+      },
+      "listingsUnknown": "listings not checked",
+      "sources": "News for {title}",
+      "loading": "Finding what to sell now…",
+      "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
+      "retry": "Try again",
+      "none": "Qloo found nothing new rising right now. Write your own direction below.",
+      "tavilyFailed": "The news or listings check failed for some suggestions; that part is unknown.",
+      "brandHint": "Optional: a brand keeps these suggestions within your style.",
+      "brandHintLink": "Add a brand"
     },
     "trends": {
       "title": "Pick the ideas",
@@ -1080,7 +1108,7 @@
       "later": "Skip for now"
     },
     "brand": {
-      "title": "Your brand",
+      "title": "Your brand (optional)",
       "lead": "Not sure what to sell yet? wovain can suggest starter brands from what people love right now, or ask you a few questions. You can change everything afterwards.",
       "start": {
         "label": "How do you want to start?",
@@ -1301,7 +1329,7 @@
         "second": "Comme des Garçons",
         "third": "Studio Ghibli"
       },
-      "skip": "Skip",
+      "skip": "Skip, just help me sell",
       "save": "Save and continue",
       "saving": "Saving…",
       "saveFailed": "Saving didn't work: {message}",
@@ -1460,10 +1488,59 @@
     "rejectAction": "Reject “{action}”"
   },
   "Store": {
-    "title": "Products",
-    "lead": "Publish, pause and retire products, plan launch codes and handle orders. Every change goes through your approvals.",
+    "title": "Store",
+    "lead": "Your Fourthwall shop in one place. Every change waits in your approvals first.",
     "queued": "Sent to your approvals.",
     "approved": "Approved. wovain is on it.",
+    "openAdmin": "Open in Fourthwall",
+    "newTab": "(opens in a new tab)",
+    "tabs": {
+      "products": "Products",
+      "orders": "Orders",
+      "promotions": "Promotions",
+      "approvals": "Approvals",
+      "waiting": "waiting for you"
+    },
+    "summary": {
+      "label": "Shop summary",
+      "yourShop": "Your shop",
+      "site": {
+        "LIVE": "Live",
+        "COMING_SOON": "Coming soon",
+        "PASSWORD_PROTECTED": "Password protected",
+        "INACTIVE": "Inactive",
+        "unknown": "Status unknown"
+      },
+      "ready": "Ready to sell",
+      "passing": "({done, number} of {total, number} checks pass)",
+      "allChecks": "All readiness checks",
+      "fixIt": "Fix in Fourthwall",
+      "reconnect": "Reconnect Fourthwall",
+      "goLive": "Go live",
+      "goLiveTitle": "Take {name} live?",
+      "goLiveTitleFallback": "Take your shop live?",
+      "goLiveBody": "Buyers can visit your storefront and order every live product. You can set it back to coming soon in Fourthwall.",
+      "goingLive": "Your shop is going live.",
+      "back": "Not now",
+      "sales": "Sales",
+      "orders": "Orders",
+      "last28": "Last 28 days, from Fourthwall",
+      "waiting": "Waiting for you",
+      "review": "Review",
+      "nothingWaiting": "Nothing to approve",
+      "payouts": "Payouts",
+      "payout": {
+        "ACTIVE": "Set up",
+        "IN_PROGRESS": "Finishing",
+        "INACTIVE": "Not set up",
+        "unknown": "Unknown"
+      },
+      "payoutFix": "Finish in Fourthwall"
+    },
+    "confirm": {
+      "costTitle": "What it costs you, from Fourthwall",
+      "later": "Decide later"
+    },
     "readiness": {
       "title": "Shop readiness",
       "connectTitle": "Connect Fourthwall to open your shop here",
@@ -1494,9 +1571,9 @@
       }
     },
     "queue": {
-      "title": "Store approvals",
-      "lead": "What wovain wants to do in your shop. Refunds and cancels always wait for you.",
-      "empty": "Nothing waiting.",
+      "title": "Approvals",
+      "lead": "Store changes waiting for you, then what already ran. Refunds, cancels and gift cards always wait for you.",
+      "empty": "Nothing waiting for you.",
       "approve": "Approve",
       "reject": "Reject",
       "status": {
@@ -1509,40 +1586,50 @@
         "done": "Done",
         "failed": "Failed",
         "reverted": "Undone"
-      }
-    },
-    "drops": {
-      "title": "Drops",
-      "empty": "No drops yet. A run makes one when you approve its designs.",
-      "products": "{count, plural, one {# product} other {# products}}",
-      "publish": "Publish drop",
-      "code": "Launch code",
-      "percentage": "% off",
-      "maxUses": "Max uses",
-      "startsAt": "Starts",
-      "endsAt": "Ends",
-      "planPromotion": "Plan launch code"
-    },
-    "dropStatus": {
-      "draft": "Draft",
-      "in_review": "In review",
-      "live": "Live",
-      "paused": "Paused",
-      "retired": "Retired"
+      },
+      "history": "{count, plural, one {# earlier action} other {# earlier actions}}"
     },
     "products": {
       "title": "Products",
-      "lead": "Larger sizes cost more to make, so they carry a surcharge on top of the price.",
+      "lead": "Price, margin and units sold for everything wovain made. Larger sizes carry a surcharge on top of the price.",
+      "allInFourthwall": "All products in Fourthwall",
+      "filterLabel": "Show products",
+      "filter": {
+        "all": "All",
+        "live": "Live",
+        "drafts": "Drafts",
+        "paused": "Hidden",
+        "retired": "Retired"
+      },
+      "search": "Search products",
+      "column": {
+        "product": "Product",
+        "status": "Status",
+        "price": "Price",
+        "margin": "Margin",
+        "sold": "Sold"
+      },
+      "selectAll": "Select all shown",
+      "select": "Select {title}",
+      "selected": "{count, plural, one {# selected} other {# selected}}",
+      "bulkLabel": "Bulk actions",
+      "clear": "Clear",
+      "actions": "Actions for {title}",
+      "fromDrop": "From {name}",
+      "soldShort": "{count, number} sold",
+      "salesSource": "Margin and units sold: last 28 days, from Fourthwall's top-products report.",
       "empty": "No products yet.",
+      "emptyBody": "Products appear here once you approve designs in a drop.",
+      "emptyAction": "Start a drop",
+      "emptyFiltered": "Nothing matches this filter.",
       "mockupAlt": "{title} mockup",
       "view": "View in shop",
-      "price": "Price (USD)",
-      "reprice": "Reprice",
+      "editInFourthwall": "Edit in Fourthwall",
+      "reprice": "Change price",
       "sample": "Order a sample",
-      "sampleLead": "Pick a variant. You pay at cost on Fourthwall:",
       "move": {
         "publish": "Publish",
-        "unpublish": "Unpublish",
+        "unpublish": "Hide",
         "retire": "Retire"
       }
     },
@@ -1553,16 +1640,146 @@
       "paused": "Paused",
       "retired": "Retired"
     },
+    "impact": {
+      "publish": {
+        "title": "Publish {count, plural, one {# product} other {# products}}?",
+        "body": "Buyers can see and order {count, plural, one {it} other {them}} once your shop is ready. You can hide {count, plural, one {it} other {them}} again at any time."
+      },
+      "unpublish": {
+        "title": "Hide {count, plural, one {# product} other {# products}}?",
+        "body": "Buyers can't see or order {count, plural, one {it} other {them}} until you publish again. Orders already placed aren't affected."
+      },
+      "retire": {
+        "title": "Retire {count, plural, one {# product} other {# products}}?",
+        "body": "{count, plural, one {It is} other {They are}} archived on Fourthwall for good. A retired product can't be published again."
+      },
+      "skipped": "{count, plural, one {# selected product is} other {# selected products are}} already in that state and left alone.",
+      "logged": "Each change is recorded in your approvals.",
+      "back": "Cancel",
+      "sent": "Done. wovain is on it.",
+      "queuedCount": "{count, plural, one {# change waits} other {# changes wait}} in your approvals."
+    },
+    "reprice": {
+      "title": "Change the price of {title}",
+      "note": "The new price applies to every size; larger sizes keep their surcharge on top.",
+      "price": "New price (USD)",
+      "now": "Now",
+      "after": "After",
+      "same": "Same as now.",
+      "up": "Buyers pay {amount} more per piece once it's applied.",
+      "down": "Buyers pay {amount} less per piece. wovain refuses a price that sells at a loss.",
+      "back": "Cancel",
+      "confirm": "Change price"
+    },
+    "sample": {
+      "title": "Order a sample of {title}",
+      "body": "Pick a variant. You pay at cost on Fourthwall's checkout, in a new tab.",
+      "none": "No variants found."
+    },
+    "preview": {
+      "open": "Preview store",
+      "title": "{name}, as buyers see it",
+      "titleFallback": "Your shop, as buyers see it",
+      "lead": "Your products as they show on the storefront.",
+      "comingSoon": "Your shop is coming soon: buyers see Fourthwall's placeholder page. This is what they'll see once it's live.",
+      "password": "Your shop is password protected: only buyers with the password see this.",
+      "includeDrafts": "Include drafts",
+      "notLive": "Not live",
+      "gridLabel": "Storefront preview",
+      "empty": "No live products yet. Publish one to see it here.",
+      "note": "Fourthwall storefronts can't be shown inside wovain, so this preview uses your product renders.",
+      "openStore": "Open storefront",
+      "openPlaceholder": "See the placeholder page",
+      "editDesign": "Edit design in Fourthwall",
+      "newTab": "(opens in a new tab)",
+      "mockupAlt": "{title} on the storefront"
+    },
     "orders": {
       "title": "Orders",
       "lead": "The latest orders from Fourthwall. Customer details stay in Fourthwall.",
+      "inFourthwall": "Orders in Fourthwall",
       "empty": "No orders yet.",
       "refund": "Refund",
       "cancel": "Cancel order",
-      "reason": "Reason",
-      "previewRefund": "See refund cost",
-      "previewCancel": "See cancel cost",
-      "back": "Back"
+      "reason": "Reason (the buyer may see it)",
+      "previewRefund": "See what it costs",
+      "previewCancel": "See what it costs",
+      "previewing": "Asking Fourthwall…",
+      "back": "Back",
+      "refundTitle": "Refund order {id}",
+      "cancelTitle": "Cancel order {id}",
+      "refundBody": "The remaining {amount} goes back to the buyer. Fourthwall shows what it costs you before anything moves.",
+      "cancelBody": "The whole order is cancelled and refunded, if production hasn't started. Fourthwall shows what it costs you first.",
+      "confirmRefund": "Confirm refund",
+      "confirmCancel": "Confirm cancel",
+      "pages": "Order pages",
+      "newer": "Newer",
+      "older": "Older",
+      "status": {
+        "OPEN": "Open",
+        "CONFIRMED": "Confirmed",
+        "PARTIALLY_IN_PRODUCTION": "In production",
+        "IN_PRODUCTION": "In production",
+        "PARTIALLY_SHIPPED": "Shipping",
+        "SHIPPED": "Shipped",
+        "PARTIALLY_DELIVERED": "Delivering",
+        "DELIVERED": "Delivered",
+        "COMPLETED": "Completed",
+        "ABANDONED": "Abandoned",
+        "CANCELLED": "Cancelled",
+        "FAILED": "Failed"
+      }
+    },
+    "promotions": {
+      "title": "Promotions",
+      "lead": "Discount codes and gift cards for your shop.",
+      "inFourthwall": "Promotions in Fourthwall",
+      "codesTitle": "Discount codes",
+      "codesLead": "wovain switches a code on at its start and off at its end.",
+      "codesEmpty": "No discount codes yet.",
+      "newCode": "New code",
+      "codeLead": "Pick the products, the discount and when it runs. The code is created switched off and goes live at its start.",
+      "code": "Code",
+      "codeHint": "3 to 24 letters or numbers",
+      "percentage": "% off",
+      "maxUses": "Max uses",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "products": "{count, plural, =0 {Products} one {Products (# picked)} other {Products (# picked)}}",
+      "noProducts": "No products yet.",
+      "lossNote": "wovain refuses a discount that would sell any picked product at a loss.",
+      "plan": "Plan code",
+      "back": "Cancel",
+      "end": "End now",
+      "off": "{percent, number}% off",
+      "uses": "{count, plural, one {# use} other {# uses}}",
+      "status": {
+        "LIVE": "Live",
+        "ENDED": "Ended",
+        "ARCHIVED": "Archived",
+        "ALL_USED": "All used"
+      },
+      "giftTitle": "Gift cards",
+      "giftLead": "Store credit for collaborators, giveaways or a make-good. Gift cards are money, so each batch waits for your confirm.",
+      "giftEmpty": "No gift cards yet.",
+      "issue": "Issue gift cards",
+      "amount": "Value per card (USD)",
+      "count": "How many",
+      "expires": "Expires (optional)",
+      "giftTotal": "Up to {total} of store credit in total.",
+      "review": "Review",
+      "confirmIssue": "Issue gift cards",
+      "group": "Batch",
+      "balance": "{remaining} of {initial} left",
+      "expiresOn": "Expires {date}",
+      "giftStatus": {
+        "UNUSED": "Unused",
+        "PARTIALLY_USED": "Partly used",
+        "FULLY_USED": "Used",
+        "EXPIRED": "Expired",
+        "DEACTIVATED": "Deactivated",
+        "ARCHIVED": "Archived"
+      }
     }
   },
   "Drops": {
