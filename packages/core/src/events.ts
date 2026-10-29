@@ -18,6 +18,9 @@ export const EVENTS = {
   // Scan one brand for autopilot triggers (Qloo, Tavily): the cron fans
   // out one per brand, and "Scan now" sends one.
   autopilotScan: "wovain/autopilot.scan",
+  // Find the merchant's new-drop suggestions again and keep them
+  // (drop-directions): sent when the kept ones are stale or missing.
+  directionsRefresh: "wovain/directions.refresh",
   // Draw, place, preview and price every product of a planned drop
   // (design-drops).
   dropBuildRequested: "wovain/drop.build.requested",
@@ -59,6 +62,11 @@ export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 const actionType = z.enum(ACTION_TYPES as [string, ...string[]]);
 
 export const eventSchemas = {
+  [EVENTS.directionsRefresh]: z.object({
+    ignoreBrand: z.boolean(),
+    round: z.number().int().min(0),
+    userId: z.string(),
+  }),
   [EVENTS.approvalDecided]: z.object({
     actionType,
     approvalId: z.string(),

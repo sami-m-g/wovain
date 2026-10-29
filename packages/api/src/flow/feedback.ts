@@ -469,8 +469,10 @@ export const snapshotPerformance = async (
   return result;
 };
 
+// Only Qloo-backed ideas teach the weights: an older idea saved without
+// Qloo's affinity is left out of the fit.
 const signalsSchema = z.looseObject({
-  affinity: z.number().optional(),
+  affinity: z.number(),
   ipSafety: z.number(),
   margin: z.number(),
   marketHits: z.number(),

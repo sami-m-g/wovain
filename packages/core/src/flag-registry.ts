@@ -204,10 +204,6 @@ export const FLAGS = {
     "growth",
     "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
   ),
-  "qloo-taste-map": workstream(
-    "growth",
-    "The Qloo taste map: the entities, tags and cross-domain links behind each idea"
-  ),
   "store-management": workstream(
     "store",
     "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"

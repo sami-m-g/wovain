@@ -8,6 +8,7 @@ import {
 } from "@wovain/core/store";
 import { z } from "zod";
 
+import { metaSetup } from "../flow/meta-setup";
 import { productCosts } from "../flow/price-check";
 import {
   listDrops,
@@ -106,6 +107,11 @@ export const storeRouter = {
   launchPromotion: protectedProcedure
     .input(z.object({ ...promotion, dropId: id }))
     .handler(guarded(requestLaunchPromotion)),
+  // Meta setup: the cards that take the Meta account to ad-ready, polled
+  // by the same page.
+  metaSetup: protectedProcedure.handler(
+    async ({ context }) => await metaSetup(context)
+  ),
   moveProduct: protectedProcedure
     .input(
       z.object({
