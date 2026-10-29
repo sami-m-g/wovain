@@ -24,8 +24,17 @@ interface Preview {
   changeSummary?: Record<string, number>;
 }
 
+// Empty when the preview failed before Pulumi wrote its JSON: the reason is
+// in the log (scripts/pulumi.ts writes it to stderr).
+const input = readFileSync(0, "utf-8");
+if (input.trim() === "") {
+  process.stdout.write(
+    "## Infrastructure preview\n\nThe preview didn't run; see the job log.\n"
+  );
+  process.exit(1);
+}
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Pulumi's preview JSON
-const preview = JSON.parse(readFileSync(0, "utf-8")) as Preview;
+const preview = JSON.parse(input) as Preview;
 const changes = (preview.steps ?? []).filter((step) => step.op !== "same");
 // project::type::name, without the stack.
 const key = (urn: string) => urn.split("::").slice(1).join("::");
@@ -55,8 +64,14 @@ const productionFrozen =
 const frozen = productionFrozen
   ? changes.filter(({ urn }) => FROZEN.has(key(urn)))
   : [];
+// Node's warnings on the program's stderr, not errors.
+const NODE_NOISE = /ExperimentalWarning|--trace-warnings|^\s*$/u;
+// The engine's errors, and the program's stderr (`info#err`), where a
+// program that throws reports why.
 const errors = (preview.diagnostics ?? []).filter(
-  (d) => d.severity === "error"
+  (d) =>
+    d.severity === "error" ||
+    (d.severity === "info#err" && !NODE_NOISE.test(d.message))
 );
 // type::name, without the stack and project.
 const name = (urn: string) => urn.split("::").slice(2).join("::");

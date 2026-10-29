@@ -13,7 +13,9 @@
 //     writes those flags to the state; the
 //     pull request that then deletes the declaration deletes the resource.
 //   - "deleted": a "code" resource whose declaration is gone, so the next
-//     `up` deletes it.
+//     `up` deletes it. If no `up` wrote the release's flags first, the
+//     state still protects or retains it; scripts/pulumi.ts then clears
+//     both flags in the state (scripts/state.ts, releaseDeleted).
 //
 // Keys are `<project>::<type>::<name>`, a URN without its stack.
 
@@ -46,6 +48,8 @@ export const RETIRED: Record<string, Release> = {
   "wovain::gcp:secretmanager/secret:Secret::otel-exporter-otlp-headers":
     "deleted",
   "wovain::gcp:secretmanager/secret:Secret::workos-api-key": "deleted",
+  "wovain::gcp:secretmanager/secretVersion:SecretVersion::workos-api-key":
+    "deleted",
   "wovain::gcp:serviceaccount/account:Account::app-hosting": "deleted",
   "wovain::gcp:serviceaccount/account:Account::firebase-adminsdk": "deleted",
   "wovain::gcp:serviceaccount/account:Account::gitlab-ops": "unprotect",
