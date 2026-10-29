@@ -61,6 +61,9 @@ jobs:
       pr: ${{ steps.gate.outputs.pr }}
       head: ${{ steps.gate.outputs.head }}
       run: ${{ steps.gate.outputs.run }}
+      # Read here, before any pull-request code runs: the fix job's setup
+      # runs the pull request's files, which could rewrite its env.
+      mode: ${{ steps.gate.outputs.mode }}
     steps:
       - id: gate
         env:
@@ -107,7 +110,7 @@ jobs:
           gh pr edit "$PR" --add-label shepherd
           gh pr comment "$PR" --body "$marker sha=$head event=$GITHUB_EVENT_NAME -->
           The shepherd is on it ($(( $(jq length <<<"$attempts") + 1 ))/$MAX_PER_PR): $GITHUB_SERVER_URL/$REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          { echo "pr=$PR"; echo "head=$ref"; echo "run=true"; } >> "$GITHUB_OUTPUT"
+          { echo "pr=$PR"; echo "head=$ref"; echo "mode=$SHEPHERD_MODE"; echo "run=true"; } >> "$GITHUB_OUTPUT"
 
   fix:
     needs: gate
@@ -141,7 +144,7 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ needs.gate.outputs.pr }}
             BRANCH: ${{ needs.gate.outputs.head }}
-            MODE: ${{ env.SHEPHERD_MODE }}
+            MODE: ${{ needs.gate.outputs.mode }}
 
             You are the PR shepherd. Get this pull request green and approved with
             the smallest change. Read AGENTS.md first: its rules apply.
@@ -167,4 +170,4 @@ jobs:
                `@coderabbitai review`.
             Never merge, approve, dismiss a review, force-push or touch another branch.
           claude_args: >-
-            --model sonnet --max-turns 40 --disallowedTools "WebFetch,WebSearch" --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(git status),Bash(git diff:*),Bash(git log:*)${{ env.SHEPHERD_MODE == 'live' && format(',Edit,Write,Bash(pnpm run check),Bash(pnpm run check-types),Bash(pnpm run knip),Bash(pnpm exec turbo run test:*),Bash(pnpm exec ultracite fix:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:{0})', needs.gate.outputs.head) || '' }}"
+            --model sonnet --max-turns 40 --disallowedTools "WebFetch,WebSearch" --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(git status),Bash(git diff:*),Bash(git log:*)${{ needs.gate.outputs.mode == 'live' && format(',Edit,Write,Bash(pnpm run check),Bash(pnpm run check-types),Bash(pnpm run knip),Bash(pnpm exec turbo run test:*),Bash(pnpm exec ultracite fix:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:{0})', needs.gate.outputs.head) || '' }}"
