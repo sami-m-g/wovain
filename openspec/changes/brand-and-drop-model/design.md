@@ -4,17 +4,17 @@
 
 Current code:
 
-- `brand_profile` (`packages/db/src/schema/autonomy.ts`) is one row per merchant (`userId` is unique). It holds `displayName`, `niches`, `tasteReferences`, `qlooEntities`, `demographics`, a free-text `voice` and up to 6 `palette` colours. There is no logo, no guardrail list, no palette lock, no preferred blanks and no price floor.
+- `brand_profile` (`packages/db/src/schema/autonomy.ts`) is one row per merchant (`userId` is unique). It holds `displayName`, `niches`, `tasteReferences`, `qlooEntities`, `demographics`, a free-text `voice` and up to 6 `palette` colours. It has no preferred blanks and no price floor or margin.
 - `packages/core/src/brand-identity.ts` resolves taste references to Qloo entities (direct, or through cultural proxies) and writes the Voice, Palette and Niches lines into the taste memory the writers read.
 - `packages/core/src/brand-discovery.ts` (#113) builds starter brands from Qloo audiences and holds palettes to the blank's real colours (3:1 ink contrast).
 - #122 (`drop-style` flag, open) suggests 3 tones and up to 3 palettes per idea from the brand defaults and the idea's Qloo cues, saves the pick on the new `idea.style` jsonb column and passes the brand voice to the brief and ad writers as guardrails.
-- `drop` holds `name`, `palette`, `qlooTags`, `styleFamily`, `brief` and `status`; `drop_item` holds `priceCents` per product. A drop has no link to a brand, no Experimental tag and no audience slice.
+- Ideas start from a seed the merchant types (`ideas.research`): Qloo names the themes and Tavily adds the evidence (`packages/core/src/trends.ts`). `planDrop` (`packages/api/src/flow/drops.ts`) turns an idea into a 4 to 6 product capsule.
+- `drop` holds `name`, `palette`, `qlooTags`, `styleFamily`, `brief` and `status`; `drop_item` holds `priceCents` per product. A drop has no audience, voice, blanks or price fields of its own.
 - Prices come from `packages/core/src/pricing.ts`: a cost-plus floor from the `PRICING_RULES` environment variable, the same for every merchant.
-- `packages/core/src/autonomy.ts` (#60) has the levels `suggest` (R0 alone), `draft` (up to R1) and `publish_ads_paused` (up to R2), the closed action catalog and the policy. `approvals.ts` is the one queue, with an audit log, an `inverse` for undo and a `reverted` status. The `autopilot` flag lets autopilot make the calls a merchant would otherwise approve.
 
-## What real brands and print-on-demand sellers do
+## Background: what real brands and print-on-demand sellers do
 
-The user asked whether a drop may target an audience outside the brand's core audience, and how real brands handle it. Findings:
+Research done for this change (#133). The simpler model below was chosen for now; experimental drops, an audience-overlap rule, a new-brand prompt, anchor colours with a palette lock and brand updates learned from sales may come later, and these findings are kept for that.
 
 1. **Drops and collabs widen reach, but the brand stays one identity.** Supreme releases small groups of products from the season's collection every week, and its collaborations are credited with widening its audience ([Wikipedia: Supreme](<https://en.wikipedia.org/wiki/Supreme_(brand)>)). Kith built its reach through collabs with Adidas, Nike, Timberland and others, and the press asks whether that many collabs dilute its aura ([FashionNetwork](https://hu.fashionnetwork.com/news/Could-Kith-wrestle-the-premium-streetwear-crown-from-Supreme-,898612.html)). In both cases the collab partner brings its own audience, and the drop stays under the parent's name.
 2. **A durable new audience becomes a named sub-line, not a drop.** Kith opened Kith Women with a 60-piece collection and its own store ([Snobette](https://snobette.com/2015/12/kith-adds-a-womens-line-and-retail-space/)), then Kith Kids ([Complex](https://www.complex.com/style/a/erica-euse/kith-launches-kids)). Off-White's diffusion line "For All" was made so that "a new customer" could see themselves in the label ([Buro 24/7](https://buro247.me/?p=12035)). Buyers judge a diffusion line by design integrity, its own product brief and its own price structure ([Business of Fashion](https://www.businessoffashion.com/articles/news-analysis/diffusion-lines-still-make-sense/)).
@@ -29,69 +29,37 @@ The line between a new drop and a new brand: a drop changes the execution (tone,
 
 **Goals**
 
-- One model for what a Brand owns and what a Drop may override.
-- A rule, with evidence, for drops whose audience is outside the brand's.
-- Brand updates learned from sales that follow the existing autonomy levels.
-- The gaps between the current code and the model, as tasks.
+- The brand as the set of defaults a drop needs, and nothing more.
+- Two ways a drop starts: manual or suggested by wovain.
+- Every drop field starts from the brand default and can be overridden per drop.
+- The gaps between the current code and this model, as tasks.
 
 **Non-Goals**
 
 - App code, schema, migrations or UI in this change.
-- A/B tests of the logo or the name: the research says to keep core identity out of A/B tests.
-- Automatic creation of a new brand: wovain only proposes it.
+- Experimental drops, collabs, an audience-overlap rule, a new-brand prompt, anchor colours or a palette lock, and learning brand updates from sales (may come later; see Background).
+- More than one brand per merchant.
 
 ## Decisions
 
-### D1. The Brand owns the lasting identity
+### D1. The brand is the defaults a drop needs
 
-A Brand has: name and logo; niche and core Qloo audience (the Qloo entities and tags from the taste references, plus demographics); long-term taste references; voice as a personality plus a list of hard guardrails; a default palette with 1 or 2 anchor colours and an optional lock ("Always use my brand colours"); preferred blanks; a price floor and margin. A merchant may own more than one Brand, each with its own Fourthwall collections and Insights. Today's `brand_profile` becomes the merchant's first Brand.
+The brand holds: niche and audience (Qloo entities, tags and demographics), taste references, voice, palette, preferred blanks, and a price floor and margin. Nothing more. Today's `brand_profile` row is the brand; it gains preferred blanks and the price floor and margin.
 
-### D2. A Drop inherits everything and overrides four things only
+### D2. A drop starts manual or suggested
 
-| Field | Drop may override? | Limit |
-| --- | --- | --- |
-| Tone | Yes | Never breaks a guardrail |
-| Palette | Yes | Keeps at least one anchor colour; free when Experimental; none when the lock is on and the drop is regular |
-| Audience slice | Yes | Overlaps the core audience, unless the audience rule (D4) allows otherwise |
-| Products | Yes | 4 to 6 products, each priced at or above the price floor |
-| Name, logo, guardrails, price floor, margin | Never |  |
-| Taste references, preferred blanks | No (read-only defaults) | A drop may add Qloo cues to its audience slice |
+- **Manual.** The merchant gives the direction (today's seed, in their own words). Qloo and Tavily research it as they do now.
+- **Suggested.** wovain proposes the direction from the brand (its niche, audience and references as Qloo signals) plus current trends from Qloo and Tavily. The merchant picks one or asks again.
 
-#122's per-idea tone and palette become the drop's overrides. `drop-style` already treats the brand voice as guardrails and holds palettes to the blank; this model adds the anchor colour, the lock and the price floor.
+Either way the drop then follows today's flow: idea, `planDrop`, capsule, approval, publish.
 
-### D3. Experimental drops
+### D3. Every field starts from the brand and can be overridden per drop
 
-The merchant turns on "Try something new" for a drop. An Experimental drop may leave the brand palette (anchor colours not required, lock ignored only because the merchant asked for it on this drop) and may use the outside-audience rule (D4). It still keeps the guardrails, the name and the price floor. The drop is tagged `experimental`, and Insights reports it beside the brand's regular drops. Autopilot never starts an Experimental drop when the palette lock is on.
+When a drop is created, it copies the brand's niche and audience, references, voice, palette, preferred blanks, and price floor and margin. The merchant can change any of them on that drop; the brand stays unchanged. A drop's price floor can never go under the global cost-plus floor from `PRICING_RULES`, which protects the merchant from selling at a loss. #122's per-idea tone and palette become the drop's voice and palette overrides, suggested from the brand defaults and the idea's Qloo cues.
 
-### D4. Audience outside the brand: Experimental or collab only, with a new-brand prompt
-
-**Rule.** wovain measures how much a drop's audience slice overlaps the brand's core Qloo audience (shared Qloo tags and entities, weighted by affinity, 0 to 1).
-
-- At or above the overlap threshold: any drop may target it.
-- Below the threshold: only an Experimental drop or a collab drop may target it. Before saving, the merchant sees "This audience is far from your brand's buyers" with two choices: start a new brand for it, or run it as an experiment under this brand.
-- A regular drop (not Experimental, not a collab) below the threshold is refused with that message.
-- When 2 or more Experimental drops for the same outside audience outsell the brand's regular drops, wovain proposes a new brand for that audience (D5). It never moves the core audience toward it on its own.
-
-**Why.** Real brands reach new audiences with drops and collabs (Supreme, Kith; finding 1), and the partner's audience is the bridge in a collab. When the new audience lasts, they make a named sub-line with its own brief and prices (Kith Women, Kith Kids, Off-White For All; finding 2). Extensions that don't fit the parent's beliefs dilute it (finding 3). POD guidance is to pilot a new niche inside the current shop first and open a separate shop only for an audience that doesn't overlap (finding 4). So: a far audience may be tested, labelled as a test, and graduates to its own brand when the sales say so.
-
-The threshold starts at 0.3 and is configuration, set per environment like the other model settings.
-
-### D5. Learning follows the autonomy levels
-
-- **Evidence.** wovain compares each drop with the brand's regular drops on revenue per drop, sell-through and ad CTR from Insights. A brand update is proposed only from at least 2 drops and 30 orders (configuration) and never more than once a month per field. A guidelines review is also offered once a year, as the research suggests (finding 6).
-- **What may change.** Default palette (not the anchor colours unless the merchant agrees), default tone, taste references, preferred blanks and the core audience's slices. A brand update never changes the guardrails, the name, the logo or the price floor: those change only when the merchant edits them.
-- **Action.** A new catalog action `brand.profile.update`, risk R2: reversible, and it changes what customers see in later drops. Its payload holds the new values and its `inverse` the old ones.
-- **Levels.** Under `suggest` and `draft` the policy answers `needs_approval`: the update waits in the approval queue with its evidence (for example "your experimental palette outsold the brand palette by 38% over 3 drops, 41 orders"). Under `publish_ads_paused` with the `autopilot` flag on (the user's "autopilot"), the policy allows it: wovain applies it, records it in the decision trace and offers undo, which reverts it with the `inverse` and sets the approval to `reverted`. Under `publish_ads_paused` without the `autopilot` flag, the update still waits for approval. While the agent is paused, it always waits.
-- **New brand.** A new-brand proposal (D4) is a suggestion, never an action wovain runs on its own.
+Rationale: findings 4 and 5 support one brand whose drops are collections in one shop; per-drop overrides cover a drop's own tone, colours or audience slice without a new brand.
 
 ## Risks / Trade-offs
 
-- Overlap from Qloo tags is an estimate. Mitigation: the threshold is configuration, and the merchant can always run the drop as an experiment.
-- Small shops have few orders; evidence thresholds may rarely trigger. Mitigation: the yearly review still offers a refresh, and the thresholds are configuration.
-- More than one brand per merchant touches every table keyed by `userId`. Mitigation: a nullable `brandId` first, filled with the first brand, then required.
-- Some sources are vendor blogs or fashion press, not studies. The academic fit result (Aaker and Keller) carries the audience rule; the rest supports it.
-
-## Open Questions
-
-- Does a collab need its own type (a partner brand and its Qloo entity), or is it an Experimental drop with a partner field?
-- Should a new brand get its own Fourthwall shop or a set of collections in the same shop? Fourthwall has one shop per account today.
+- A drop can override the audience far from the brand's buyers with no warning. Accepted for now; finding 3 says fit matters, so an overlap check is the first candidate to add later.
+- Copying the defaults onto each drop means a later brand edit does not change drops already made. Intended: a published drop keeps what it was made with.
