@@ -44,9 +44,10 @@ export const NextAction = () => {
   // The drop in progress, else the latest one.
   const run =
     runs.data?.find((each) => OPEN.has(each.status)) ?? runs.data?.[0];
-  const { facts, ready, status, store } = useLaunchFacts(run?.id);
+  const { facts, ready, settled, store } = useLaunchFacts(run?.id);
 
-  if (status.isPending || runs.isPending) {
+  // Wait for every fact, so the card never shows an earlier step first.
+  if (runs.isPending || !settled) {
     return <Skeleton className="h-28 w-full rounded-xl" />;
   }
   if (runs.error) {

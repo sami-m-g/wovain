@@ -371,7 +371,9 @@
       "store": "Tienda",
       "drops": "Drops",
       "home": "Inicio",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "account": "Cuenta",
+      "security": "Seguridad"
     },
     "docs": "Docs",
     "docsLabel": "Docs (se abre en una pestaña nueva)",
