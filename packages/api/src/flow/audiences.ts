@@ -1,4 +1,9 @@
-import { buildAudienceTargeting, reportFailure } from "@wovain/core/targeting";
+import { ORPCError } from "@orpc/server";
+import {
+  buildAudienceTargeting,
+  qlooAudienceGap,
+  reportFailure,
+} from "@wovain/core/targeting";
 import type {
   AudienceTargeting,
   QlooEntityInput,
@@ -6,33 +11,56 @@ import type {
 import { DecisionTrace } from "@wovain/core/trace";
 import { brandProfile } from "@wovain/db/schema/autonomy";
 import { eq } from "drizzle-orm";
-import { createError } from "evlog";
+import { z } from "zod";
 
 import type { Actor } from "./actor";
 import { traceSinkFor } from "./approvals";
-import { flagContextOf } from "./flags";
 
 // Qloo's audience for the merchant's brand as Meta targeting
-// (@wovain/core/targeting), behind the qloo-audiences flag. Media buying
-// calls `audienceFor` before it stages an ad set; the copy writer gets its
-// persona. The steps and every Qloo and Meta match are saved as a decision
-// trace.
+// (@wovain/core/targeting). Every campaign calls `audienceFor` before it
+// stages an ad set; the copy writer gets its persona. The steps and every
+// Qloo and Meta match are saved as a decision trace. No Qloo audience, no
+// campaign (`requireQlooAudience`).
 
 const BRAND_TYPE = "urn:entity:brand";
 const MAX_REFERENCES = 5;
+// One status for both reasons, so the declared error keeps its type; the
+// data's reason and fix tell a retry from a brand fix.
+const UNPROCESSABLE = 422;
 
-export const qlooAudiencesOn = async (actor: Actor) =>
-  await actor.core.flags.isOn("qloo-audiences", flagContextOf(actor));
+const NO_AUDIENCE_FIX =
+  "Add a brand you love to your brand profile (one Qloo knows, like Supreme or Patagonia), then make the ads again.";
+const FAILED_FIX = "Make the ads again in a minute.";
 
-export const requireQlooAudiences = async (actor: Actor) => {
-  if (!(await qlooAudiencesOn(actor))) {
-    throw createError({
-      fix: "Turn on the qloo-audiences flag for this environment.",
-      message: "Qloo audience targeting isn't available yet",
-      status: 404,
-      why: "The qloo-audiences flag is off.",
-    });
+// Procedures declare these (`.errors(audienceErrors)`), so the drop flow
+// reads `error.code` and shows the fix with a retry.
+export const audienceErrors = {
+  QLOO_AUDIENCE_MISSING: {
+    data: z.object({
+      fix: z.string(),
+      reason: z.enum(["failed", "no_audience"]),
+    }),
+    message: "No ads were made: wovain found no Qloo audience for your brand",
+    status: UNPROCESSABLE,
+  },
+} as const;
+
+// Throws QLOO_AUDIENCE_MISSING unless the targeting carries a Qloo audience
+// and every step behind it worked. Thrown inside a keyed write (./once), so
+// nothing is saved and a retry asks Qloo again.
+export const requireQlooAudience = (targeting: AudienceTargeting) => {
+  const gap = qlooAudienceGap(targeting.evidence);
+  if (gap === undefined) {
+    return targeting;
   }
+  const failed = gap.reason === "failed";
+  throw new ORPCError("QLOO_AUDIENCE_MISSING", {
+    data: { fix: failed ? FAILED_FIX : NO_AUDIENCE_FIX, reason: gap.reason },
+    message: failed
+      ? `No ads were made: wovain couldn't reach Qloo's audience for your brand (${gap.steps.join(", ")} failed)`
+      : audienceErrors.QLOO_AUDIENCE_MISSING.message,
+    status: UNPROCESSABLE,
+  });
 };
 
 // The brand's Qloo entities: the wizard's, plus Qloo brands for its taste

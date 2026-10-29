@@ -216,6 +216,7 @@ describe("Meta", () => {
       linkUrl: "https://shop.example.com/products/reading-cat",
       name: "wovain · Reading Cat",
       tag: "w-test",
+      targeting: { geo_locations: { countries: ["US"] } },
     });
 
     expect(staged).toEqual({

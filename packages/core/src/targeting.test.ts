@@ -9,6 +9,7 @@ import {
   leanOf,
   metaTargetingOf,
   pickAudiences,
+  qlooAudienceGap,
 } from "./targeting";
 import type { TargetingDeps } from "./targeting";
 import { DecisionTrace } from "./trace";
@@ -320,7 +321,7 @@ it("lets the merchant's own ages and gender win over Qloo's", async () => {
   expect(deps.qloo.demographicsOf).not.toHaveBeenCalled();
 });
 
-it("logs a failed step at error level and targets with what is known", async () => {
+it("logs a failed step at error level and refuses the targeting", async () => {
   const { deps, error } = fakeDeps({
     interests: {
       search: vi.fn(
@@ -337,6 +338,11 @@ it("logs a failed step at error level and targets with what is known", async () 
   expect(result.targeting.flexible_spec).toBeUndefined();
   expect(result.targeting.age_min).toBe(25);
   expect(result.evidence.failed).toEqual(["meta.interests"]);
+  // No countries-only fallback: the campaign is refused until a retry works.
+  expect(qlooAudienceGap(result.evidence)).toEqual({
+    reason: "failed",
+    steps: ["meta.interests"],
+  });
   expect(error).toHaveBeenCalledWith(expect.any(Error), {
     targeting: { step: "meta.interests" },
   });
@@ -345,7 +351,7 @@ it("logs a failed step at error level and targets with what is known", async () 
   ).toBe(false);
 });
 
-it("targets countries only when the brand has no Qloo entities", async () => {
+it("finds no Qloo audience when the brand has no Qloo entities", async () => {
   const { deps } = fakeDeps();
   const result = await buildAudienceTargeting(deps, {
     countries: ["CA"],
@@ -353,6 +359,7 @@ it("targets countries only when the brand has no Qloo entities", async () => {
   });
   expect(result.targeting).toEqual({ geo_locations: { countries: ["CA"] } });
   expect(deps.interests.search).not.toHaveBeenCalled();
+  expect(qlooAudienceGap(result.evidence)).toEqual({ reason: "no_audience" });
 });
 
 it("leaves out audiences Qloo has no score for", async () => {
@@ -373,4 +380,5 @@ it("leaves out audiences Qloo has no score for", async () => {
   // Every scored audience sits at the same baseline: none stands out.
   expect(result.evidence.audiences).toEqual([]);
   expect(result.evidence.failed).toEqual([]);
+  expect(qlooAudienceGap(result.evidence)).toEqual({ reason: "no_audience" });
 });

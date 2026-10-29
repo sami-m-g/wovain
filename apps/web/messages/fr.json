@@ -162,6 +162,10 @@
       {
         "question": "À qui appartiennent les visuels ?",
         "answer": "Vos briefs et les visuels que vous validez vous appartiennent. wovain vérifie les noms et les marques dans les esquisses, mais vous restez responsable de ce que vous publiez."
+      },
+      {
+        "question": "Qui voit mes publicités ?",
+        "answer": "Les personnes qui aiment ce que votre marque aime. Qloo choisit ce public à partir des marques de votre profil, et chaque publicité est écrite pour lui. Si wovain ne trouve pas ce public, il ne crée aucune publicité et vous dit quoi ajouter."
       }
     ],
     "heroCta": "Lancer un drop",
