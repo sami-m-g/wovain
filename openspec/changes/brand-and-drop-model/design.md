@@ -14,7 +14,7 @@ Current code:
 
 ## Background: what real brands and print-on-demand sellers do
 
-Research done for this change (#133). The simpler model below was chosen for now; experimental drops, an audience-overlap rule, a new-brand prompt, anchor colours with a palette lock and brand updates learned from sales may come later, and these findings are kept for that.
+Research done for this change (#133). The simpler model below ("Just sell" by default, an optional brand) was chosen for now; experimental drops, an audience-overlap rule, a new-brand prompt, anchor colours with a palette lock and brand updates learned from sales may come later, and these findings are kept for that.
 
 1. **Drops and collabs widen reach, but the brand stays one identity.** Supreme releases small groups of products from the season's collection every week, and its collaborations are credited with widening its audience ([Wikipedia: Supreme](<https://en.wikipedia.org/wiki/Supreme_(brand)>)). Kith built its reach through collabs with Adidas, Nike, Timberland and others, and the press asks whether that many collabs dilute its aura ([FashionNetwork](https://hu.fashionnetwork.com/news/Could-Kith-wrestle-the-premium-streetwear-crown-from-Supreme-,898612.html)). In both cases the collab partner brings its own audience, and the drop stays under the parent's name.
 2. **A durable new audience becomes a named sub-line, not a drop.** Kith opened Kith Women with a 60-piece collection and its own store ([Snobette](https://snobette.com/2015/12/kith-adds-a-womens-line-and-retail-space/)), then Kith Kids ([Complex](https://www.complex.com/style/a/erica-euse/kith-launches-kids)). Off-White's diffusion line "For All" was made so that "a new customer" could see themselves in the label ([Buro 24/7](https://buro247.me/?p=12035)). Buyers judge a diffusion line by design integrity, its own product brief and its own price structure ([Business of Fashion](https://www.businessoffashion.com/articles/news-analysis/diffusion-lines-still-make-sense/)).
@@ -29,9 +29,10 @@ The line between a new drop and a new brand: a drop changes the execution (tone,
 
 **Goals**
 
-- The brand as the set of defaults a drop needs, and nothing more.
-- Two ways a drop starts: manual or suggested by wovain.
-- Every drop field starts from the brand default and can be overridden per drop.
+- "Just sell" as the default: no brand needed, wovain suggests what will sell now.
+- An optional brand that keeps suggestions within it and gives each drop its defaults.
+- Two ways a drop starts: suggested (the default) or manual.
+- Nothing requires a brand.
 - The gaps between the current code and this model, as tasks.
 
 **Non-Goals**
@@ -39,27 +40,33 @@ The line between a new drop and a new brand: a drop changes the execution (tone,
 - App code, schema, migrations or UI in this change.
 - Experimental drops, collabs, an audience-overlap rule, a new-brand prompt, anchor colours or a palette lock, and learning brand updates from sales (may come later; see Background).
 - More than one brand per merchant.
+- A brand price floor: prices stay the global cost-plus floor from `PRICING_RULES`.
 
 ## Decisions
 
-### D1. The brand is the defaults a drop needs
+### D1. "Just sell" is the default
 
-The brand holds: niche and audience (Qloo entities, tags and demographics), taste references, voice, palette, preferred blanks, and a price floor and margin. Nothing more. Today's `brand_profile` row is the brand; it gains preferred blanks and the price floor and margin.
+The user's goal is to make money, simply. A merchant without a brand gets drops suggested from what will sell now: Qloo trends, Tavily evidence and the competition read, in any niche, possibly a different one every drop. Suggestions are ranked for expected sales (Qloo affinity, Tavily momentum, low saturation), the factors brand discovery already ranks by. Nothing in onboarding, drops, autopilot or ads may require a brand.
 
-### D2. A drop starts manual or suggested
+### D2. The brand is optional
 
-- **Manual.** The merchant gives the direction (today's seed, in their own words). Qloo and Tavily research it as they do now.
-- **Suggested.** wovain proposes the direction from the brand (its niche, audience and references as Qloo signals) plus current trends from Qloo and Tavily. The merchant picks one or asks again.
+A merchant who wants a concrete brand rather than just selling sets one: niche, audience (Qloo entities, tags and demographics), references, voice, palette and preferred blanks. With a brand set, suggestions stay within its niche and audience, and each drop's fields start from the brand's values. Today's `brand_profile` row is the brand; it gains preferred blanks.
+
+### D3. A drop is suggested or manual
+
+- **Suggested (default).** wovain proposes directions: from trends alone without a brand, or from trends within the brand when one is set. The merchant picks one or asks again.
+- **Manual.** The merchant gives the direction in their own words (today's seed). Qloo and Tavily research it as they do now.
 
 Either way the drop then follows today's flow: idea, `planDrop`, capsule, approval, publish.
 
-### D3. Every field starts from the brand and can be overridden per drop
+### D4. Any field can be overridden per drop
 
-When a drop is created, it copies the brand's niche and audience, references, voice, palette, preferred blanks, and price floor and margin. The merchant can change any of them on that drop; the brand stays unchanged. A drop's price floor can never go under the global cost-plus floor from `PRICING_RULES`, which protects the merchant from selling at a loss. #122's per-idea tone and palette become the drop's voice and palette overrides, suggested from the brand defaults and the idea's Qloo cues.
+The merchant can change any drop field (niche, audience, references, voice, palette, blanks) on that drop only; the brand stays unchanged. Without a brand, wovain fills the fields from the suggestion itself (#122's per-idea tone and palette from the idea's Qloo cues). With a brand, #122 starts from the brand defaults as it does now.
 
-Rationale: findings 4 and 5 support one brand whose drops are collections in one shop; per-drop overrides cover a drop's own tone, colours or audience slice without a new brand.
+Rationale: print-on-demand sellers test niches and keep one shop with collections (findings 4 and 5); a concrete brand is a choice the merchant makes when they want buyers who come back (finding 2).
 
 ## Risks / Trade-offs
 
-- A drop can override the audience far from the brand's buyers with no warning. Accepted for now; finding 3 says fit matters, so an overlap check is the first candidate to add later.
+- "Just sell" drops in unrelated niches can make a shop look incoherent, which finding 4 says costs trust. Accepted for now: the merchant chose sales over identity, and each drop is its own Fourthwall collection.
+- A drop can override the audience far from the brand's buyers with no warning. Finding 3 says fit matters, so an overlap check is a candidate to add later.
 - Copying the defaults onto each drop means a later brand edit does not change drops already made. Intended: a published drop keeps what it was made with.
