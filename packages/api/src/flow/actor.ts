@@ -44,7 +44,10 @@ export type RunEvent =
   | "run_failed";
 
 // Voice commands (./voice): the intent kind and the outcome, never the words.
-export type VoiceEvent = "voice_command_confirmed" | "voice_command_proposed";
+export type VoiceEvent =
+  | "voice_command_confirmed"
+  | "voice_command_proposed"
+  | "voice_dictated";
 
 export interface Analytics {
   // Resolves once PostHog has the event, and never rejects: a caller awaits

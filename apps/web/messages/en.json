@@ -1554,28 +1554,16 @@
     "scanThrottled": "You scanned {last}. The next scan can run from {next}."
   },
   "Voice": {
-    "hold": "Hold to talk",
-    "listening": "Listening… release to send",
-    "thinking": "Working out what you said…",
     "disclosureTitle": "Before you talk to wovain",
-    "disclosure": "wovain doesn't store your recording. fal turns it into text, and Nebius reads the text to work out what you asked. Nothing happens until you confirm.",
     "disclosureOk": "Got it",
     "noMic": "wovain can't use your microphone. Allow it in your browser's site settings, then try again.",
     "recordFailed": "wovain couldn't record in this browser. Try again, or use another browser.",
-    "confirmTitle": "Is this right?",
-    "notUnderstood": "wovain didn't get that",
     "notHeard": "wovain didn't catch that. Hold the button and try again.",
-    "canDo": "You can start a drop, or approve or reject ideas, designs and queued actions.",
-    "heard": "You said: “{transcript}”",
-    "confirm": "Confirm",
-    "done": "Done.",
-    "startDrop": "Start a new drop: {brief}",
-    "approveIdeas": "Approve {count, plural, one {this idea} other {these # ideas}} and draw designs: {ideas}",
-    "approveDesign": "Approve the design “{design}”",
-    "rejectDesign": "Reject the design “{design}”",
-    "rejectDesignWhy": "Reject the design “{design}” because {reason}",
-    "approveAction": "Approve “{action}”",
-    "rejectAction": "Reject “{action}”"
+    "dictate": "Dictate: {field}",
+    "dictateHint": "Hold to talk, release to add the words",
+    "listeningField": "Listening. Release to add the words to the field.",
+    "transcribing": "Turning your recording into text.",
+    "disclosureDictation": "wovain doesn't store your recording. fal turns it into text, and the words appear in the field for you to edit. Nothing is sent or run until you submit."
   },
   "Store": {
     "title": "Store",

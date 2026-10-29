@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { createSealer } from "@wovain/core/sealing";
-import { openProposal } from "@wovain/core/voice";
+import { openProposal, VOICE_RATE_LIMIT } from "@wovain/core/voice";
 import type { Transcript, VoiceReply } from "@wovain/core/voice";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
@@ -18,6 +18,7 @@ import type { Actor } from "./actor";
 import {
   claimVoiceCommand,
   confirmVoiceProposal,
+  dictateClip,
   openVoiceProposal,
   proposeVoiceCommand,
 } from "./voice";
@@ -214,6 +215,40 @@ describe("proposeVoiceCommand", () => {
     await expect(
       proposeVoiceCommand(actor, { ...clip, screen: "home" })
     ).rejects.toThrow(/aren't available/u);
+  });
+});
+
+describe("dictateClip", () => {
+  it("returns the words only, with no intent parsing and no words in analytics", async () => {
+    const { actor, captured, prompts } = actorWith({
+      heard: { fallback: false, model: "asr", text: "a retro surf tee" },
+    });
+    expect(await dictateClip(actor, clip)).toEqual({
+      text: "a retro surf tee",
+    });
+    expect(prompts).toHaveLength(0);
+    expect(captured).toEqual([
+      {
+        distinctId: USER_ID,
+        event: "voice_dictated",
+        properties: { fallback: false, model: "asr" },
+      },
+    ]);
+  });
+
+  it("is off without the voice-input flag and shares the rate limit", async () => {
+    await expect(
+      dictateClip(actorWith({ flags: {} }).actor, clip)
+    ).rejects.toThrow(/aren't available/u);
+    const { actor } = actorWith();
+    await Promise.all(
+      Array.from({ length: VOICE_RATE_LIMIT.perMinute }, () =>
+        dictateClip(actor, clip)
+      )
+    );
+    await expect(dictateClip(actor, clip)).rejects.toMatchObject({
+      code: "VOICE_RATE_LIMITED",
+    });
   });
 });
 
