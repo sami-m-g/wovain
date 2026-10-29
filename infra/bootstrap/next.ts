@@ -24,6 +24,8 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { stackAccess } from "./stack-access.ts";
+
 const ENVIRONMENT = "next-infrastructure";
 const NAME = "next";
 const kept = { protect: true };
@@ -95,61 +97,16 @@ export const nextInfrastructure = (args: NextArgs) => {
     serviceAccountId: account.name,
   });
 
-  // next's own stack secrets key: `pulumi stack change-secrets-provider`
-  // moves the next stack onto it (infra/README.md).
-  const stackSecrets = new gcp.kms.CryptoKey(
-    "next-stack-secrets",
-    {
-      destroyScheduledDuration: "2592000s",
-      keyRing: args.keyRing,
-      name: "next-stack-secrets",
-      purpose: "ENCRYPT_DECRYPT",
-      versionTemplate: {
-        algorithm: "GOOGLE_SYMMETRIC_ENCRYPTION",
-        protectionLevel: "SOFTWARE",
-      },
-    },
-    kept
-  );
-  new gcp.kms.CryptoKeyIAMMember("infra-next-stack-secrets", {
-    cryptoKeyId: stackSecrets.id,
-    member: account.member,
-    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-  });
-
-  // The state bucket: it lists every object's name, and reads and writes
-  // only next's stack, its locks, history and backups.
-  new gcp.storage.BucketIAMMember("infra-next-state-list", {
-    bucket: args.stateBucket,
-    member: account.member,
-    role: "roles/storage.legacyBucketReader",
-  });
-  // Pulumi's object layout: .pulumi/<kind>/<project>/<stack>..., except
-  // locks, which sit under the stack's fully qualified name:
-  // .pulumi/locks/organization/<project>/<stack>/<lock>.json.
-  const objects = `projects/_/buckets/${args.stateBucket}/objects/.pulumi`;
-  new gcp.storage.BucketIAMMember("infra-next-state", {
-    bucket: args.stateBucket,
-    condition: {
-      expression: ["stacks", "locks/organization", "history", "backups"]
-        .map(
-          (kind) =>
-            `resource.name.startsWith("${objects}/${kind}/wovain-${NAME}/")`
-        )
-        .join(" || "),
-      title: "next's state",
-    },
-    member: account.member,
-    role: "roles/storage.objectAdmin",
-  });
-  new gcp.storage.BucketIAMMember("infra-next-state-meta", {
-    bucket: args.stateBucket,
-    condition: {
-      expression: `resource.name == "${objects}/meta.yaml"`,
-      title: "the backend's metadata",
-    },
-    member: account.member,
-    role: "roles/storage.objectViewer",
+  // next's own stack secrets key (`pulumi stack change-secrets-provider`
+  // moved the next stack onto it, infra/README.md) and next's objects in the
+  // state bucket.
+  const stackSecrets = stackAccess({
+    account,
+    keyName: `${NAME}-stack-secrets`,
+    keyRing: args.keyRing,
+    prefix: "infra-next",
+    project: `wovain-${NAME}`,
+    stateBucket: args.stateBucket,
   });
 
   // Reading the project (getProject) and billing API calls to it

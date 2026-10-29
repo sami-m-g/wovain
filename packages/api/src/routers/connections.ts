@@ -7,6 +7,7 @@ import {
   listConnections,
   startConnection,
 } from "../flow/connections";
+import { reachMilestone } from "../flow/milestones";
 import { protectedProcedure } from "../index";
 
 const provider = z.enum(providerIds);
@@ -36,6 +37,9 @@ export const connectionsRouter = {
           distinctId: context.userId,
           event: "connect_provider",
           properties: { provider: input.provider },
+        });
+        await reachMilestone(context, "connection_completed", {
+          provider: input.provider,
         });
       }
       return result;
