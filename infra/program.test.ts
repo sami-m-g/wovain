@@ -80,22 +80,18 @@ test("the program registers every resource once, without throwing", async () => 
   expect(registered).toContain(
     "gcp:dns/recordSet:RecordSet::rsend-wovain-com-cname"
   );
-  // GitHub is the primary repository: its main and release rulesets, the
-  // Production, dev and infrastructure environments and the Actions
-  // variables deploy.yml reads (docs/adr/0004-release-branch.md). next's
-  // environment is its own stack's (next/next.test.ts).
+  // GitHub is the primary repository: production declares its Production,
+  // dev and infrastructure environments and the Actions variables deploy.yml
+  // reads (docs/adr/0004-release-branch.md). next's environment is its own
+  // stack's (next/next.test.ts); the repository, its rulesets, label and
+  // secret are the github stack's (github/github.test.ts).
   for (const urn of [
-    "github:index/repositoryRuleset:RepositoryRuleset::main",
-    "github:index/repositoryRuleset:RepositoryRuleset::release",
     "github:index/repositoryEnvironment:RepositoryEnvironment::production",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::production-release",
     "github:index/repositoryEnvironment:RepositoryEnvironment::dev",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::dev-main",
     "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::infrastructure-main",
-    "github:index/issueLabel:IssueLabel::dependencies",
-    // CodeRabbit, whose approval the main ruleset requires, reaches it.
-    "github:index/appInstallationRepository:AppInstallationRepository::coderabbit",
     "github:index/actionsVariable:ActionsVariable::GCP_WORKLOAD_IDENTITY_PROVIDER",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::production-GCP_DEPLOY_SERVICE_ACCOUNT",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::dev-GCP_DEPLOY_SERVICE_ACCOUNT",
@@ -139,6 +135,14 @@ test("the program registers every resource once, without throwing", async () => 
   expect(
     registered.filter(
       (r) => r.startsWith("gitlab:") || r.startsWith("graphql:")
+    )
+  ).toEqual([]);
+  // The repository's own resources aren't production's to change.
+  expect(
+    registered.filter((r) =>
+      /^github:index\/(?:repository|repositoryRuleset|issueLabel|actionsSecret|repositoryDependabotSecurityUpdates|appInstallationRepository):/u.test(
+        r
+      )
     )
   ).toEqual([]);
   // Two resources with one type and name are one URN, which the engine refuses.
@@ -227,4 +231,36 @@ test("the state migration releases retired resources no `up` released", async ()
   }
   // A second run finds nothing left to release.
   expect(releaseDeleted(checkpoint)).toEqual([]);
+});
+
+const urn = (key: string) => `urn:pulumi:prod::wovain::${key}`;
+
+test("the state migration forgets what moved to the github stack", async () => {
+  const { movedOut } = await import("./scripts/state.ts");
+  // Production's GitHub resources on 2026-10-29, in state order: the
+  // repository before the two that depend on it.
+  const repository = urn("github:index/repository:Repository::wovain");
+  const deployKey = urn(
+    "github:index/repositoryDeployKey:RepositoryDeployKey::gitlab-ci-mirror"
+  );
+  const ruleset = urn(
+    "github:index/repositoryRuleset:RepositoryRuleset::main-from-gitlab"
+  );
+  const kept = urn("gcp:sql/databaseInstance:DatabaseInstance::db");
+  const checkpoint = {
+    deployment: {
+      resources: [
+        resource(kept, false),
+        resource(repository, true),
+        resource(deployKey, false),
+        resource(ruleset, false),
+      ],
+    },
+  };
+  // Dependents first, so each `pulumi state delete` succeeds; the rest stays.
+  expect(movedOut(checkpoint)).toEqual([ruleset, deployKey, repository]);
+  // Once forgotten, a second run finds nothing.
+  expect(
+    movedOut({ deployment: { resources: [resource(kept, false)] } })
+  ).toEqual([]);
 });

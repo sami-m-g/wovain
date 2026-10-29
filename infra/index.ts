@@ -6,7 +6,7 @@ import { appEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
 import { previewEnvironment } from "./github-preview.ts";
-import { githubRepository } from "./github.ts";
+import { deployEnvironments } from "./github.ts";
 import { retainLegacy } from "./legacy.ts";
 import { polarPromoSecrets } from "./polar.ts";
 import { configurePostHog, environmentProject } from "./posthog/program.ts";
@@ -624,8 +624,9 @@ export const sqlConnectionName = sql.connectionName;
 // a secret: deploy.yml gets Google credentials through Workload Identity
 // Federation and reads DATABASE_URL from Secret Manager. The repository's
 // variables are shared; each environment's say where it deploys, as whom.
-githubRepository({
-  coderabbitInstallationId: config.get("coderabbitInstallationId"),
+// The repository's own settings, rulesets and secret are the `github`
+// stack's (infra/github).
+deployEnvironments({
   environments: {
     // No workflow deploys dev yet; a dispatch from main in `dev` would.
     dev: {
@@ -652,7 +653,6 @@ githubRepository({
         : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
     },
   },
-  gitguardianApiKey: config.getSecret("gitguardian-api-key"),
   releaseBranch: config.get("releaseBranch") ?? "release/transcend",
   // Who approves a production deploy (GitHub user ids): the owner by default.
   releaseReviewerIds: config.getObject<number[]>("releaseReviewerIds") ?? [

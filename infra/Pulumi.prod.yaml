@@ -264,6 +264,5 @@ config:
     secure: v1:ra3iNA/gphxekhdp:wVHpw3DvAwknNmbzTcM2XaT6ButyXISpOlnrMB6oEA==
   wovain:meta-app-secret:
     secure: v1:gQjl0tDIuR+9zO6J:X84+fxZpY3rHpgDqHlHfiz4PLWc2iSY25tp7nBev3Y2I4hmvMlgJ3kicP7FILTi6
-  wovain:coderabbitInstallationId: "176495068"
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/stack-secrets
 encryptedkey: CiQAr5FKtQs+MB1/BJb3BdDnNZDBDfS0WB/jInCJ+QSgOSNzOd4SSQDNTiaDNttyCQ+Tio5ntobIU9QyXhaL312jfVTpYj3UGhNEmpLCLjjk3mpPPQkSiXXGRCoAcAFmb13EREAGsAEoLjdpSPqcqdM=
