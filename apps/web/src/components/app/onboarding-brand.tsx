@@ -37,7 +37,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { FormEvent, ReactNode } from "react";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { Answers } from "@/components/app/brand-discovery";
@@ -52,6 +52,8 @@ import {
   StepActions,
   StepHeader,
 } from "@/components/app/wizard-parts";
+import { freshDraft, switchDraft } from "@/lib/brand-drafts";
+import type { BrandDraft, BrandPath, Drafts } from "@/lib/brand-drafts";
 import type {
   CardPalette,
   OnboardingReady,
@@ -63,6 +65,7 @@ import { client, orpc } from "@/utils/orpc";
 const MIN_REFERENCES = 3;
 const MAX_REFERENCES = 5;
 const MAX_PALETTE = 6;
+const MIN_WORDS = 2;
 const HEX = /^#[\da-f]{6}$/iu;
 const LIST_SPLIT = /\s*,\s*/u;
 const PLACEHOLDERS = ["first", "second", "third"] as const;
@@ -470,19 +473,51 @@ const VoiceField = ({
 /** Pick a colour set shown on the shirt colours; hex entry sits behind Advanced. */
 const PaletteField = ({
   hex,
+  niche,
+  onOptions,
   options,
   palette,
   setHex,
   setPalette,
+  words: wordsOn,
 }: {
   hex: string;
+  niche: string;
+  onOptions: (next: CardPalette[]) => void;
   options: readonly CardPalette[];
   palette: CardPalette | undefined;
   setHex: (next: string) => void;
   setPalette: (next: CardPalette | undefined) => void;
+  // Colour words need the brand-discovery flag.
+  words: boolean;
 }) => {
   const t = useTranslations("Onboarding.brand.fields.palette");
   const id = useId();
+  const [words, setWords] = useState("");
+  const recolour = useMutation(
+    orpc.onboarding.recolour.mutationOptions({
+      onError: (error) => toast.error(error.message),
+      onSuccess: ({ palettes }) => {
+        if (palettes.length === 0) {
+          toast.message(t("wordsNone"));
+          return;
+        }
+        onOptions(palettes);
+        setPalette(palettes[0]);
+      },
+    })
+  );
+  const askWords = () => {
+    const text = words.trim();
+    if (text.length < MIN_WORDS || recolour.isPending) {
+      return;
+    }
+    recolour.mutate({
+      current: palette?.inks ?? listOf(hex).filter((color) => HEX.test(color)),
+      niche: niche.trim() === "" ? undefined : niche.trim().slice(0, 60),
+      words: text,
+    });
+  };
   const colors = listOf(hex);
   const badColor = colors.find((color) => !HEX.test(color));
   const invalid = badColor === undefined ? undefined : true;
@@ -526,6 +561,42 @@ const PaletteField = ({
       ) : null}
       {palette === undefined && colors.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("none")}</p>
+      ) : null}
+      {wordsOn ? (
+        <Field>
+          <FieldLabel htmlFor={`${id}-words`}>{t("wordsLabel")}</FieldLabel>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              className="h-10"
+              id={`${id}-words`}
+              maxLength={80}
+              onChange={(event) => setWords(event.target.value)}
+              onKeyDown={(event) => {
+                // Enter asks for colours instead of saving the brand.
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  askWords();
+                }
+              }}
+              placeholder={t("wordsPlaceholder")}
+              value={words}
+            />
+            <Button
+              className="h-10 shrink-0"
+              disabled={words.trim().length < MIN_WORDS || recolour.isPending}
+              onClick={askWords}
+              type="button"
+              variant="outline"
+            >
+              {recolour.isPending ? (
+                <Spinner aria-hidden="true" data-icon="inline-start" />
+              ) : (
+                <Sparkles aria-hidden="true" data-icon="inline-start" />
+              )}
+              {recolour.isPending ? t("wordsBusy") : t("wordsSubmit")}
+            </Button>
+          </div>
+        </Field>
       ) : null}
       {palette === undefined ? null : (
         <Button
@@ -680,16 +751,15 @@ const useReferenceChecks = () => {
 /** The chooser, the questionnaire and the starter cards. */
 const DiscoverySection = ({
   chosen,
-  initial,
-  onManual,
+  onStart,
   onUse,
+  start,
 }: {
   chosen: string | undefined;
-  initial: Start | undefined;
-  onManual: () => void;
+  onStart: (next: Start) => void;
   onUse: (card: StarterCard) => void;
+  start: Start | undefined;
 }) => {
-  const [start, setStart] = useState<Start | undefined>(initial);
   const [round, setRound] = useState(0);
   const [answers, setAnswers] = useState<Answers>(EMPTY_ANSWERS);
   const discover = useMutation(orpc.onboarding.discover.mutationOptions());
@@ -704,13 +774,11 @@ const DiscoverySection = ({
     <div className="flex flex-col gap-4">
       <StartChooser
         onChange={(next) => {
-          setStart(next);
+          // Each path keeps its own fields (useBrandForm).
+          onStart(next);
           discover.reset();
           if (next === "auto") {
             runAuto(round);
-          }
-          if (next === "manual") {
-            onManual();
           }
         }}
         value={start}
@@ -836,10 +904,13 @@ const BrandFields = ({
       />
       <PaletteField
         hex={hex}
-        options={chosen?.palettes ?? []}
+        niche={niche}
+        onOptions={(colourOptions) => form.update({ colourOptions })}
+        options={form.colourOptions ?? chosen?.palettes ?? []}
         palette={palette}
         setHex={setHex}
         setPalette={setPalette}
+        words={discoveryOn}
       />
       {discoveryOn ? (
         <p className="text-muted-foreground text-xs">{t("discover.credit")}</p>
@@ -848,26 +919,60 @@ const BrandFields = ({
   );
 };
 
-/** The brand's fields, starting from what was saved. */
-const useBrandForm = (brand: OnboardingReady["brand"]) => {
-  const [references, setReferences] = useState(() =>
-    startingReferences(brand?.tasteReferences ?? [])
+type Draft = BrandDraft<StarterCard, CardPalette> & {
+  // Colour sets suggested from the merchant's own words.
+  colourOptions?: CardPalette[] | undefined;
+};
+
+const savedDraft = (brand: OnboardingReady["brand"]): Draft => ({
+  hex: (brand?.palette ?? []).join(", "),
+  niche: (brand?.niches ?? []).join(", "),
+  references: startingReferences(brand?.tasteReferences ?? []),
+  voice: brand?.voice ?? "",
+});
+
+const BLANK_DRAFT: Draft = {
+  hex: "",
+  niche: "",
+  references: startingReferences([]),
+  voice: "",
+};
+
+/**
+ * The brand's fields, one draft per way in: switching between Suggest for
+ * me, the questionnaire and "I already know my brand" keeps each path's own
+ * values and never mixes them (./brand-drafts).
+ */
+const useBrandForm = (brand: OnboardingReady["brand"], hasBrand: boolean) => {
+  const saved = useMemo(() => savedDraft(brand), [brand]);
+  const [draft, setDraft] = useState<Draft>(saved);
+  const [drafts, setDrafts] = useState<Drafts<Draft>>({});
+  const [path, setPath] = useState<BrandPath | undefined>(
+    hasBrand ? "manual" : undefined
   );
-  const [niche, setNiche] = useState((brand?.niches ?? []).join(", "));
-  const [voice, setVoice] = useState(brand?.voice ?? "");
-  const [palette, setPalette] = useState<CardPalette | undefined>();
-  const [hex, setHex] = useState((brand?.palette ?? []).join(", "));
+  const update = (patch: Partial<Draft>) =>
+    setDraft((current) => ({ ...current, ...patch }));
+  const switchTo = (next: BrandPath) => {
+    if (next === path) {
+      return;
+    }
+    const switched = switchDraft(drafts, path, next, draft, (one) =>
+      freshDraft(one, saved, BLANK_DRAFT)
+    );
+    setDrafts(switched.drafts);
+    setDraft(switched.current);
+    setPath(next);
+  };
   return {
-    hex,
-    niche,
-    palette,
-    references,
-    setHex,
-    setNiche,
-    setPalette,
-    setReferences,
-    setVoice,
-    voice,
+    ...draft,
+    path,
+    setHex: (hex: string) => update({ hex }),
+    setNiche: (niche: string) => update({ niche }),
+    setPalette: (palette: CardPalette | undefined) => update({ palette }),
+    setReferences: (references: string[]) => update({ references }),
+    setVoice: (voice: string) => update({ voice }),
+    switchTo,
+    update,
   };
 };
 
@@ -891,9 +996,8 @@ export const BrandStep = ({
   const status = useQuery(orpc.onboarding.status.queryOptions());
   const discoveryOn = status.data?.enabled === true && status.data.discovery;
   const hasBrand = (brand?.tasteReferences.length ?? 0) > 0;
-  const [chosen, setChosen] = useState<StarterCard | undefined>();
-  const [manual, setManual] = useState(hasBrand);
-  const form = useBrandForm(brand);
+  const form = useBrandForm(brand, hasBrand);
+  const chosen = form.card;
   const refs = useReferenceChecks();
 
   const suggestRest = useMutation(
@@ -905,20 +1009,23 @@ export const BrandStep = ({
           toast.message(t("discover.empty"));
           return;
         }
-        setChosen(card);
+        form.update({ card });
       },
     })
   );
 
   const use = (card: StarterCard) => {
-    setChosen(card);
-    form.setNiche(card.niche);
     const names = card.references.map((reference) => reference.name);
-    form.setReferences(startingReferences(names));
     refs.markPlaced(names);
-    form.setVoice(card.voiceLines[0] ?? "");
-    form.setPalette(card.palettes[0]);
-    form.setHex("");
+    form.update({
+      card,
+      colourOptions: undefined,
+      hex: "",
+      niche: card.niche,
+      palette: card.palettes[0],
+      references: startingReferences(names),
+      voice: card.voiceLines[0] ?? "",
+    });
     toast.success(t("discover.applied", { name: card.name }));
   };
 
@@ -964,7 +1071,8 @@ export const BrandStep = ({
     });
   };
 
-  const showForm = !discoveryOn || manual || chosen !== undefined;
+  const showForm =
+    !discoveryOn || form.path === "manual" || chosen !== undefined;
 
   return (
     <TooltipProvider>
@@ -973,9 +1081,9 @@ export const BrandStep = ({
         {discoveryOn ? (
           <DiscoverySection
             chosen={chosen?.key}
-            initial={hasBrand ? "manual" : undefined}
-            onManual={() => setManual(true)}
+            onStart={(next) => form.switchTo(next)}
             onUse={use}
+            start={form.path}
           />
         ) : null}
         {showForm ? (

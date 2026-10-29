@@ -1241,15 +1241,20 @@
         "palette": {
           "label": "Tus colores",
           "help": "Los colores de la prenda y los 2 a 5 colores del diseño que hacen que un lanzamiento parezca una sola marca. Opcional: cada lanzamiento los adapta.",
-          "tip": "Por ejemplo: diseño en óxido y crema sobre una camiseta salvia. wovain comprueba que cada color del diseño destaque sobre la prenda.",
-          "none": "Aún no hay colores. Elige un conjunto u omítelo: cada lanzamiento sugiere los suyos.",
+          "tip": "Elige un conjunto o describe lo que quieres con palabras sencillas: más cálido, más atrevido, u óxido y crema. wovain comprueba que cada color del diseño destaque sobre la prenda.",
+          "none": "Aún no hay colores. Elige un conjunto, descríbelos en pocas palabras u omítelo: cada lanzamiento sugiere los suyos.",
           "on": "sobre {garments}",
           "adjusted": "Ajustado para destacar sobre la prenda",
           "advanced": "Avanzado: introducir códigos de color",
           "hexLabel": "Colores del diseño en hexadecimal",
           "hexHelp": "Hasta {max, number}, separados por comas, como #1A1A1A.",
           "hexInvalid": "{color} no es un código de color como #1A1A1A.",
-          "clear": "Quitar colores"
+          "clear": "Quitar colores",
+          "wordsLabel": "Describe tus colores",
+          "wordsPlaceholder": "más cálido, más atrevido, u óxido y crema",
+          "wordsSubmit": "Sugerir colores",
+          "wordsBusy": "Buscando colores…",
+          "wordsNone": "Ningún conjunto para esas palabras destaca sobre la prenda. Prueba con otras."
         }
       },
       "buyersPanel": {

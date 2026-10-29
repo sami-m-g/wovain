@@ -2,7 +2,12 @@ import { answersSchema } from "@wovain/core/brand-discovery";
 import { MAX_REFERENCES, MIN_REFERENCES } from "@wovain/core/brand-identity";
 import { z } from "zod";
 
-import { buyers, discover, searchTaste } from "../flow/brand-discovery";
+import {
+  buyers,
+  discover,
+  recolour,
+  searchTaste,
+} from "../flow/brand-discovery";
 import {
   finishOnboarding,
   onboardingStatus,
@@ -53,6 +58,16 @@ export const onboardingRouter = {
   finish: protectedProcedure.handler(
     async ({ context }) => await finishOnboarding(context)
   ),
+  // Colour sets from plain words ("warmer", "rust and cream").
+  recolour: protectedProcedure
+    .input(
+      z.object({
+        current: z.array(z.string().regex(HEX)).max(MAX_PALETTE).optional(),
+        niche: z.string().trim().max(60).optional(),
+        words: z.string().trim().min(2).max(80),
+      })
+    )
+    .handler(async ({ context, input }) => await recolour(context, input)),
   resolveReferences: protectedProcedure
     .input(
       z.object({
