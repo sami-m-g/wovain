@@ -13,6 +13,7 @@ import type {
   DropDirection,
 } from "@wovain/core/drop-directions";
 import { EVENTS } from "@wovain/core/events";
+import type { OutcomeModel } from "@wovain/core/outcomes";
 import type { ToolCall } from "@wovain/core/upstream";
 import { brandProfile, decisionTrace } from "@wovain/db/schema/autonomy";
 import { directionCache } from "@wovain/db/schema/seller";
@@ -24,6 +25,7 @@ import { localeOf, traced } from "./brand-discovery";
 import { listConnections, withProvider } from "./connections";
 import { flagContextOf } from "./flags";
 import { assertQlooOn } from "./ideas";
+import { outcomeModelFor, outcomesOn } from "./outcomes";
 
 // What to sell next, in the new-drop step (openspec drop-directions),
 // behind the drop-directions flag: 3 to 5 directions from Qloo trends with
@@ -132,7 +134,9 @@ export const cacheKeyOf = (
   brand: SavedBrand | undefined,
   locale: string,
   // Answers made through the evidence gate are kept apart.
-  gated = false
+  gated = false,
+  // The track record that ranked it: a changed record is a new key.
+  record?: OutcomeModel
 ) => {
   const scoped = brand !== undefined && !input.ignoreBrand;
   const state = scoped
@@ -149,7 +153,10 @@ export const cacheKeyOf = (
         .slice(0, 16)
     : "none";
   const base = `${scoped ? "brand" : "open"}:${input.round}:${locale}:${state}`;
-  return gated ? `${base}:gated` : base;
+  const ranked = gated ? `${base}:gated` : base;
+  return record === undefined || record.designs === 0
+    ? ranked
+    : `${ranked}:record-${record.designs}-${record.wins}-${record.angles.length}`;
 };
 
 const readCache = async (actor: Actor, key: string) => {
@@ -203,6 +210,10 @@ const metaReady = async (actor: Actor) => {
   return rows.some((row) => row.provider === "meta" && !row.needsReconnect);
 };
 
+// The merchant's track record, when feedback-loop is on.
+const trackRecordOf = async (actor: Actor) =>
+  (await outcomesOn(actor)) ? await outcomeModelFor(actor) : undefined;
+
 // Finds the directions now, reports progress, keeps the answer. With Meta
 // connected, the Ad Library adds its proof through the merchant's Meta
 // session; a session that can't open is logged and the marketplaces alone
@@ -212,11 +223,13 @@ const search = async (
   input: DirectionsInput,
   onEvent?: (event: DirectionEvent) => void
 ): Promise<DirectionsAnswer> => {
-  const [brand, locale, meta, gate] = await Promise.all([
+  const [brand, locale, meta, gate, outcomes] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
     metaReady(actor),
     gateOn(actor),
+    // feedback-loop on: the merchant's track record scales each rank.
+    trackRecordOf(actor),
   ]);
   const scoped = brand !== undefined && !input.ignoreBrand;
   const run = async (adLibrary?: (theme: string) => Promise<AdDemand>) =>
@@ -231,6 +244,7 @@ const search = async (
             locale,
             log: actor.log,
             onEvent,
+            outcomes,
             qloo: actor.core.qloo,
             tavily: actor.core.tavily,
             trace,
@@ -279,7 +293,11 @@ const search = async (
     directions = await run();
   }
   const answer = { ...directions, hasBrand: brand !== undefined };
-  await writeCache(actor, cacheKeyOf(input, brand, locale, gate), answer);
+  await writeCache(
+    actor,
+    cacheKeyOf(input, brand, locale, gate, outcomes),
+    answer
+  );
   return answer;
 };
 
@@ -314,12 +332,16 @@ export const streamDirections = async function* streamDirections(
     throw directionsOff();
   }
   await assertQlooOn(actor);
-  const [brand, locale, gate] = await Promise.all([
+  const [brand, locale, gate, record] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
     gateOn(actor),
+    trackRecordOf(actor),
   ]);
-  const kept = await readCache(actor, cacheKeyOf(input, brand, locale, gate));
+  const kept = await readCache(
+    actor,
+    cacheKeyOf(input, brand, locale, gate, record)
+  );
   const age =
     kept === undefined
       ? Number.POSITIVE_INFINITY
@@ -370,12 +392,16 @@ export const warmDirections = async (actor: Actor) => {
     return { queued: false };
   }
   const input = { ignoreBrand: false, round: 0 };
-  const [brand, locale, gate] = await Promise.all([
+  const [brand, locale, gate, record] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
     gateOn(actor),
+    trackRecordOf(actor),
   ]);
-  const kept = await readCache(actor, cacheKeyOf(input, brand, locale, gate));
+  const kept = await readCache(
+    actor,
+    cacheKeyOf(input, brand, locale, gate, record)
+  );
   if (kept !== undefined && Date.now() - kept.at.getTime() < FRESH_MS) {
     return { queued: false };
   }

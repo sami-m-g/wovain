@@ -2,6 +2,7 @@ import type { Competition } from "./competition";
 import type { AdDemand, MarketDemand } from "./demand";
 import type { Citation } from "./evidence";
 import type { IdeaWordsResult } from "./idea-words";
+import type { OutcomeWhy } from "./outcomes";
 import { SATURATED_LISTINGS } from "./sweet-spot";
 import type { SweetSpot } from "./sweet-spot";
 import type { TrendIdea } from "./trends";
@@ -127,6 +128,9 @@ export interface IdeaCard {
   make: Field<IdeaMake>;
   // The pipeline that found it.
   origin: "directions" | "trends";
+  // Why the merchant's own record favours or warns against it (feedback-loop
+  // on, and a confident angle shared). Absent with no track record.
+  outcome?: OutcomeWhy | undefined;
   // Its place in the honest rank, when the evidence gate ranked it.
   spot?: SweetSpot | undefined;
   why: Field<IdeaWhy>;
@@ -328,6 +332,7 @@ export const trendCardOf = (
   competition: trendCompetition(research, reads.competition),
   make: makeOf(research.words),
   origin: "trends",
+  outcome: research.outcome,
   spot: research.spot,
   why: trendWhy(research),
 });
