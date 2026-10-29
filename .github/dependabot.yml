@@ -1,9 +1,13 @@
 version: 2
 
 updates:
-  # Root pnpm workspace, including the catalog in pnpm-workspace.yaml.
+  # Root pnpm workspace, including the catalog in pnpm-workspace.yaml, and the
+  # npm lockfiles the Dockerfiles install corepack and varlock from.
   - package-ecosystem: npm
-    directory: /
+    directories:
+      - /
+      - /docker/corepack
+      - /docker/varlock
     schedule:
       interval: weekly
       day: monday
@@ -22,10 +26,14 @@ updates:
         patterns: [drizzle-orm, drizzle-kit]
       playwright:
         patterns: [playwright, "@playwright/*"]
+      # The catalog and docker/varlock move together, in one pull request.
+      varlock:
+        group-by: dependency-name
+        patterns: [varlock]
       minor-and-patch:
         update-types: [minor, patch]
         exclude-patterns:
-          [drizzle-orm, drizzle-kit, playwright, "@playwright/*"]
+          [drizzle-orm, drizzle-kit, playwright, "@playwright/*", varlock]
     ignore:
       # High-churn SDK whose new APIs are unused; bump it by hand.
       - dependency-name: openai

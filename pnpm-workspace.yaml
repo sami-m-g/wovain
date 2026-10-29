@@ -14,6 +14,11 @@ overrides:
   # geoip-country pins ip-address 6.x (GHSA-mwp4-54f8-5fhr, high, and others);
   # it does not import it at runtime. Remove once geoip-country moves to 10.x.
   ip-address: ^10.7.4
+  # @hono/node-ws (via mastra's deployer) peers on @hono/node-server 1.x, and
+  # every 1.x from 1.19.10 has GHSA-rmxm-3fg6-px4f (no 1.x fix). node-ws does not
+  # import node-server at runtime, and the deployer itself is on 2.x.
+  # Remove once @hono/node-ws accepts 2.x.
+  "@hono/node-ws>@hono/node-server": ^2.1.3
 catalog:
   zod: ^4.6.7
   sharp: ^0.35.5
@@ -105,3 +110,8 @@ catalog:
   "@electric-sql/pglite": ^0.5.11
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2
+patchedDependencies:
+  # GHSA-gcqx-w48m-w2h4 has no fixed release; the patch writes merged keys as
+  # own properties so a "__proto__" key cannot replace the prototype.
+  # Remove once deepmerge ships a fix.
+  deepmerge@4.3.1: patches/deepmerge@4.3.1.patch

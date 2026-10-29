@@ -114,9 +114,13 @@ export const githubRepository = ({
   );
 
   // The default branch: no deletion, no force-push, and every change through
-  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL and
-  // the dependency review (.github/workflows). No required approval: the
-  // maintainer merges their own pull requests.
+  // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,
+  // the dependency review and the full OSV scan (.github/workflows), with one
+  // approval that a new push dismisses. The maintainer works alone, so the
+  // approval comes from CodeRabbit (.coderabbit.yaml: it requests changes on
+  // blocking findings and approves once they are resolved). No one may
+  // bypass the rules. CodeRabbit is not a required check: its review runs
+  // beside CI, and its approval is what counts.
   new github.RepositoryRuleset("main", {
     conditions: {
       refName: { excludes: [], includes: ["~DEFAULT_BRANCH"] },
@@ -128,19 +132,24 @@ export const githubRepository = ({
       deletion: true,
       nonFastForward: true,
       pullRequest: {
-        dismissStaleReviewsOnPush: false,
+        dismissStaleReviewsOnPush: true,
         requireCodeOwnerReview: false,
         requireLastPushApproval: false,
-        requiredApprovingReviewCount: 0,
+        requiredApprovingReviewCount: 1,
         requiredReviewThreadResolution: false,
       },
       requiredStatusChecks: {
-        requiredChecks: ["verify", "infra", "codeql", "dependency-review"].map(
-          (context) => ({
-            context,
-            integrationId: GITHUB_ACTIONS_APP_ID,
-          })
-        ),
+        requiredChecks: [
+          "verify",
+          "infra",
+          "codeql",
+          "dependency-review",
+          // A reusable workflow's check is `<calling job> / <its job>`.
+          "osv / osv-scan",
+        ].map((context) => ({
+          context,
+          integrationId: GITHUB_ACTIONS_APP_ID,
+        })),
         strictRequiredStatusChecksPolicy: false,
       },
     },
