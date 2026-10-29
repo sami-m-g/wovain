@@ -495,13 +495,18 @@
       },
       "listingsUnknown": "anuncios sin revisar",
       "sources": "Noticias de {title}",
-      "loading": "Buscando qué vender ahora…",
       "failed": "No pudimos acceder a nuestros datos de gustos, así que aún no hay sugerencias.",
       "retry": "Reintentar",
       "none": "Qloo no encontró nada nuevo en alza ahora. Escribe tu propia dirección abajo.",
       "tavilyFailed": "La revisión de noticias o anuncios falló en algunas sugerencias; esa parte es desconocida.",
       "brandHint": "Opcional: una marca mantiene estas sugerencias dentro de tu estilo.",
-      "brandHintLink": "Añadir una marca"
+      "brandHintLink": "Añadir una marca",
+      "steps": {
+        "qloo": "Preguntando a Qloo qué está subiendo…",
+        "listings": "Revisando las noticias del mes y lo saturado que está…",
+        "words": "Escribiendo las primeras sugerencias…"
+      },
+      "elapsed": "{seconds, plural, one {# segundo} other {# segundos}}"
     },
     "trends": {
       "title": "Elige las ideas",

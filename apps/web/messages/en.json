@@ -495,13 +495,18 @@
       },
       "listingsUnknown": "listings not checked",
       "sources": "News for {title}",
-      "loading": "Finding what to sell now…",
       "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
       "retry": "Try again",
       "none": "Qloo found nothing new rising right now. Write your own direction below.",
       "tavilyFailed": "The news or listings check failed for some suggestions; that part is unknown.",
       "brandHint": "Optional: a brand keeps these suggestions within your style.",
-      "brandHintLink": "Add a brand"
+      "brandHintLink": "Add a brand",
+      "steps": {
+        "qloo": "Asking Qloo what's rising…",
+        "listings": "Checking this month's news and how crowded it is…",
+        "words": "Writing the first suggestions…"
+      },
+      "elapsed": "{seconds, plural, one {# second} other {# seconds}}"
     },
     "trends": {
       "title": "Pick the ideas",
