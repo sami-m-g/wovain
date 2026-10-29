@@ -104,24 +104,22 @@ const tavilyFake = () =>
     }),
   }) as unknown as DirectionDeps["tavily"];
 
-// Words that follow the facts given, as the real writer is told to.
-const writeWords: Nemotron = async <T extends z.ZodType>({
+// The idea_words agent: a readable title from the tag, no number.
+const nameIdeas: Nemotron = async <T extends z.ZodType>({
   prompt,
   schema,
 }: Ask<T>) => {
-  const { directions } = JSON.parse(prompt) as {
-    directions: { key: string; rising: string[]; theme: string }[];
+  const { evidence } = JSON.parse(prompt) as {
+    evidence: { qloo: { tag: string } };
   };
   return await Promise.resolve(
     schema.parse({
-      directions: directions.map((one) => ({
-        brief: `A drop about ${one.theme} for these buyers`,
-        buyer: `for fans of ${one.theme}`,
-        key: one.key,
-        occasion: "identity tee",
-        title: one.theme.slice(0, 60),
-        whyNow: `Rising with fans of ${one.rising[0] ?? "these shows"}.`,
-      })),
+      buyer: "for fans of the night",
+      concept: `A line-art crest about ${evidence.qloo.tag} on a soft tee.`,
+      occasion: "identity tee",
+      style: "line art",
+      title: `Line-art crest of ${evidence.qloo.tag}`.slice(0, 60),
+      whyNow: "Shoppers already buy it on the marketplaces.",
     })
   );
 };
@@ -130,7 +128,7 @@ const failingWords: Nemotron = async () =>
   await Promise.reject(new Error("Nemotron timed out"));
 
 const depsWith = (overrides: Partial<DirectionDeps> = {}): DirectionDeps => ({
-  ask: writeWords,
+  ask: nameIdeas,
   locale: "en",
   qloo: qlooFake(),
   tavily: tavilyFake(),
@@ -261,7 +259,7 @@ it.each([
     const prompts: string[] = [];
     const ask: Nemotron = async (args) => {
       prompts.push(args.prompt);
-      return await writeWords(args);
+      return await nameIdeas(args);
     };
     const tavily = tavilyFake();
     await expect(
@@ -275,25 +273,26 @@ it.each([
   }
 );
 
-it("keeps Qloo's directions when the words fail", async () => {
+it("never shows a direction with its raw tag when the words fail", async () => {
+  const events: DirectionEvent[] = [];
   const result = await suggestDirections(
-    depsWith({ ask: failingWords }),
+    depsWith({ ask: failingWords, onEvent: (event) => events.push(event) }),
     request()
   );
-  expect(result.directions.length).toBeGreaterThan(0);
-  for (const direction of result.directions) {
-    expect(direction.title).toBe(direction.theme);
-    expect(direction.brief).toContain(direction.theme);
-  }
+  expect(result.directions).toStrictEqual([]);
+  expect(events.some((event) => event.kind === "direction")).toBe(false);
 });
 
 it("records the directions in the decision trace", async () => {
   const trace = new DecisionTrace({ userId: "user-1" });
   await suggestDirections(depsWith({ trace }), request());
-  expect(trace.entries.map((entry) => entry.step)).toStrictEqual([
+  const steps = trace.entries.map((entry) => entry.step);
+  expect(steps.filter((step) => step.startsWith("directions."))).toStrictEqual([
     "directions.qloo",
     "directions.rank",
   ]);
+  // Every direction shown was named by the idea_words agent.
+  expect(steps).toContain("ideas.words");
 });
 
 it("announces each step and each direction as soon as it is written", async () => {
@@ -309,10 +308,8 @@ it("announces each step and each direction as soon as it is written", async () =
   const streamed = events.flatMap((event) =>
     event.kind === "direction" ? [event.direction.key] : []
   );
-  // Each card is sent twice: with its facts, then with its words.
-  for (const key of new Set(streamed)) {
-    expect(streamed.filter((one) => one === key)).toHaveLength(2);
-  }
+  // Each card is sent once, named: never with its raw tag first.
+  expect(new Set(streamed).size).toBe(streamed.length);
   for (const direction of result.directions) {
     expect(streamed).toContain(direction.key);
   }
@@ -363,26 +360,6 @@ it("writes each proven theme as a concept: design, buyer and occasion", async ()
     expect(direction.evidence.demand?.proven).toBe(true);
   }
 });
-
-// The idea_words agent: a readable title from the tag, no number.
-const nameIdeas: Nemotron = async <T extends z.ZodType>({
-  prompt,
-  schema,
-}: Ask<T>) => {
-  const { evidence } = JSON.parse(prompt) as {
-    evidence: { qloo: { tag: string } };
-  };
-  return await Promise.resolve(
-    schema.parse({
-      buyer: "for fans of the night",
-      concept: `A line-art crest about ${evidence.qloo.tag} on a soft tee.`,
-      occasion: "identity tee",
-      style: "line art",
-      title: `Line-art crest of ${evidence.qloo.tag}`.slice(0, 60),
-      whyNow: "Shoppers already buy it on the marketplaces.",
-    })
-  );
-};
 
 const gatedDeps = (overrides: Partial<DirectionDeps> = {}) =>
   depsWith({ ask: nameIdeas, gate: true, ...overrides });
@@ -475,7 +452,7 @@ const rawTitles: Nemotron = async <T extends z.ZodType>(asked: Ask<T>) => {
   );
 };
 
-it("with the evidence gate, withdraws a direction whose title stays the raw tag", async () => {
+it("with the evidence gate, never shows a direction whose title stays the raw tag", async () => {
   const events: DirectionEvent[] = [];
   const result = await suggestDirections(
     gatedDeps({
@@ -487,7 +464,7 @@ it("with the evidence gate, withdraws a direction whose title stays the raw tag"
     request()
   );
   expect(result.directions).toStrictEqual([]);
-  expect(events.some((event) => event.kind === "withdrawn")).toBe(true);
+  expect(events.some((event) => event.kind === "direction")).toBe(false);
 });
 
 // A merchant's record for one theme: `wins` designs that sold, `losses`

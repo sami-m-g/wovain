@@ -16,6 +16,16 @@ export type Connection = Outputs["connections"]["list"][number];
 export type Run = Outputs["runs"]["list"][number];
 export type RunDetail = Outputs["runs"]["get"];
 export type Idea = RunDetail["ideas"][number];
+
+/**
+ * An idea's checked title and concept (the run's naming step), or undefined
+ * while it is being named or when its words failed: such an idea is not
+ * shown, so no card reads as a raw Qloo tag.
+ */
+export const namedWords = (idea: Idea) => {
+  const { words } = idea.research;
+  return words?.status === "ok" ? words : undefined;
+};
 export type IdeaDossierRecord = NonNullable<Outputs["ideas"]["dossier"]>;
 export type Design = Outputs["designs"]["get"];
 export type Product = Outputs["products"]["create"];

@@ -24,6 +24,7 @@ import {
 import { RunTape, stageOf } from "@/components/product/run-tape";
 import { Link } from "@/i18n/navigation";
 import type { RunDetail } from "@/lib/flow-client";
+import { namedWords } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 type Drop = ReturnType<typeof useDropFlow>;
@@ -113,6 +114,7 @@ const WhySection = ({ lead }: { lead: Idea | undefined }) => {
     );
   }
   const { research } = lead;
+  const words = namedWords(lead);
   const { affinity } = research.signals;
   const evidence: QlooEvidence[] = [
     {
@@ -138,10 +140,12 @@ const WhySection = ({ lead }: { lead: Idea | undefined }) => {
       title={t("title")}
     >
       <div className="flex flex-col gap-2">
-        <h3 className="text-base font-semibold">{lead.theme}</h3>
-        {research.moment || research.answer ? (
+        {words ? (
+          <h3 className="text-base font-semibold">{words.title}</h3>
+        ) : null}
+        {words ? (
           <p className="max-w-[70ch] text-sm">
-            {research.moment || research.answer}
+            {words.concept} {words.whyNow}
           </p>
         ) : (
           <NotAvailable reason={t("noMoment")} />

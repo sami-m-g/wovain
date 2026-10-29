@@ -115,7 +115,11 @@ describe("seller-run steps", () => {
   it("name names the ideas and passes them through", async () => {
     const carry = { ...from, ideaIds: ["i1", "i2"] };
     expect(await execute("name", carry)).toEqual(carry);
-    expect(nameIdeas).toHaveBeenCalledWith(expect.anything(), ["i1", "i2"]);
+    expect(nameIdeas).toHaveBeenCalledWith(
+      expect.anything(),
+      ["i1", "i2"],
+      "run_1"
+    );
   });
 
   it.each([

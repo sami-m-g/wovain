@@ -4,7 +4,7 @@ import { trendEvidenceOf, writeIdeaWords } from "@wovain/core/idea-words";
 import { QLOO_NO_MATCH_MESSAGE } from "@wovain/core/log";
 import { currentDecisions } from "@wovain/core/nemotron";
 import type { TrendSources } from "@wovain/core/trends";
-import { idea } from "@wovain/db/schema/seller";
+import { idea, run } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { EvlogError } from "evlog";
 
@@ -149,17 +149,25 @@ export const listIdeas = async ({ db, userId }: Actor, runId?: string) => {
   }));
 };
 
-// The run's naming step (idea-evidence-gate): a readable title and concept
-// for each idea past the gate, written from its evidence and checked by
-// the grounding guard (@wovain/core/idea-words). Ideas already named keep
-// their words; words that fail twice are kept as unavailable, with the
-// reason, so the card never shows the raw tag.
-export const nameIdeas = async (actor: Actor, ideaIds: readonly string[]) => {
-  if (
-    ideaIds.length === 0 ||
-    !(await actor.core.flags.isOn("idea-evidence-gate", flagContextOf(actor)))
-  ) {
-    return;
+// The run's naming step: a readable title and concept for every idea, as
+// for every direction (@wovain/core/drop-directions), written from its
+// evidence and checked by the grounding guard (@wovain/core/idea-words).
+// Ideas already named keep their words; words that fail twice are kept as
+// unavailable, with the reason, and the idea is not shown: no card shows
+// the raw tag. The run says it is naming meanwhile (step "name").
+export const nameIdeas = async (
+  actor: Actor,
+  ideaIds: readonly string[],
+  runId?: string
+) => {
+  if (ideaIds.length === 0) {
+    return [];
+  }
+  if (runId !== undefined) {
+    await actor.db
+      .update(run)
+      .set({ step: "name" })
+      .where(and(eq(run.id, runId), eq(run.userId, actor.userId)));
   }
   const [rows, locale] = await Promise.all([
     actor.db
@@ -170,25 +178,32 @@ export const nameIdeas = async (actor: Actor, ideaIds: readonly string[]) => {
       ),
     localeOf(actor),
   ]);
-  await Promise.all(
-    rows
-      .filter((row) => row.research.words === undefined)
-      .map(async (row) => {
-        const words = await writeIdeaWords(
-          {
-            ask: actor.core.nemotron,
-            locale,
-            log: actor.log,
-            trace: currentDecisions(),
-          },
-          trendEvidenceOf(row.research)
-        );
-        await actor.db
-          .update(idea)
-          .set({ research: { ...row.research, words } })
-          .where(and(eq(idea.id, row.id), eq(idea.userId, actor.userId)));
-      })
+  const named = await Promise.all(
+    rows.map(async (row) => {
+      if (row.research.words !== undefined) {
+        return row;
+      }
+      const words = await writeIdeaWords(
+        {
+          ask: actor.core.nemotron,
+          locale,
+          log: actor.log,
+          trace: currentDecisions(),
+        },
+        trendEvidenceOf(row.research)
+      );
+      const research = { ...row.research, words };
+      await actor.db
+        .update(idea)
+        .set({ research })
+        .where(and(eq(idea.id, row.id), eq(idea.userId, actor.userId)));
+      return { ...row, research };
+    })
   );
+  // The ideas to show: named, best first.
+  return named
+    .filter((row) => row.research.words?.status === "ok")
+    .toSorted((first, second) => first.rank - second.rank);
 };
 
 export const getIdea = async ({ db, userId }: Actor, id: string) => {

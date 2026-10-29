@@ -1,5 +1,6 @@
 import { init } from "@mastra/inngest";
 import { billingCatalog } from "@wovain/billing/catalog";
+import { currentDecisions } from "@wovain/core/nemotron";
 import { NonRetriableError } from "inngest";
 import type { Inngest } from "inngest";
 import { z } from "zod";
@@ -115,16 +116,30 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   const { createStep, createWorkflow } = init(inngest);
   const actorFor = (userId: string): Actor => ({ ...services, userId });
 
-  // Runs a step's body for the run's merchant, inside the run's LLM trace.
+  // Runs a step's body for the run's merchant, inside the run's LLM trace,
+  // and records how long it took in the decision trace (run.<step>).
   const body =
-    <T>(work: (actor: Actor, from: Carry) => Promise<T>) =>
+    <T>(step: string, work: (actor: Actor, from: Carry) => Promise<T>) =>
     async (from: Carry) => {
       try {
         const actor = actorFor(from.userId);
         return await withAgentTrace(
           actor,
           { runId: from.runId, traceId: from.runId },
-          async () => await work(actor, from)
+          async () => {
+            const decisions = currentDecisions();
+            return decisions === undefined
+              ? await work(actor, from)
+              : await decisions.call(
+                  {
+                    agent: "run",
+                    inputSummary: `${step} step`,
+                    step: `run.${step}`,
+                  },
+                  async () => await work(actor, from),
+                  () => ({ output: { step } })
+                );
+          }
         );
       } catch (error) {
         throw permanentOrRetried(error);
@@ -134,6 +149,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   const research = createStep({
     execute: async ({ bail, inputData }) => {
       const found = await body(
+        "research",
         async (actor, from) => await researchStep(actor, from.runId, from.input)
       )(inputData);
       if (found.ideaIds.length === 0) {
@@ -151,14 +167,15 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     retries: RETRIES,
   });
 
-  // Names each idea past the evidence gate (idea-evidence-gate): a
-  // readable title and concept from its evidence, checked by the grounding
-  // guard with one retry, recorded in the decision trace. Nothing to do
-  // with the flag off.
+  // Names every idea research found: a readable title and concept from its
+  // evidence, checked by the grounding guard with one retry, recorded in
+  // the decision trace. The ideas show only once named, never as a raw tag.
   const name = createStep({
     execute: async ({ inputData }) => {
       await body(
-        async (actor, from) => await nameIdeas(actor, from.ideaIds ?? [])
+        "name",
+        async (actor, from) =>
+          await nameIdeas(actor, from.ideaIds ?? [], from.runId)
       )(inputData);
       return inputData;
     },
@@ -194,6 +211,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   const design = createStep({
     execute: async ({ inputData }) => {
       const drafted = await body(
+        "design",
         async (actor, from) =>
           await designStep(actor, from.runId, from.ideaIds ?? [])
       )(inputData);
@@ -220,6 +238,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
       const { runId } = inputData;
       if (inputData.input.autopilot) {
         const decided = await body(
+          "autopilot",
           async (as, from) =>
             await autopilotStep(as, from.runId, from.designIds ?? [])
         )(inputData);
@@ -254,6 +273,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   const product = createStep({
     execute: async ({ inputData }) => {
       const made = await body(
+        "product",
         async (actor, from) =>
           await productStep(actor, from.runId, from.designIds ?? [], {
             autopilot: from.input.autopilot,
@@ -270,7 +290,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
 
   const campaign = createStep({
     execute: async ({ inputData }) => {
-      const staged = await body(async (actor, from) => {
+      const staged = await body("campaign", async (actor, from) => {
         const made = await campaignStep(actor, from.runId, {
           input: from.input,
           productIds: from.productIds ?? [],

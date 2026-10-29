@@ -26,7 +26,7 @@ import {
 import { DropStory } from "@/components/drops/drop-story";
 import type { Stage } from "@/components/product/run-tape";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
-import { describeRunFailure } from "@/lib/flow-client";
+import { describeRunFailure, namedWords } from "@/lib/flow-client";
 
 const StepNav = ({ step, stage }: { step: Step; stage: Stage }) => {
   const t = useTranslations("Wizard");
@@ -102,7 +102,7 @@ const RunStatePanel = ({
       />
     );
   }
-  if (step !== "ideas" || !run || run.ideas.length > 0) {
+  if (step !== "ideas" || !run || run.ideas.some(namedWords)) {
     return children;
   }
   return run.status === "running" ? (
@@ -179,7 +179,7 @@ const DropFlow = ({
       <IdeasStep
         busyLabel={busyLabel}
         designedIdeaIds={designs.map((item) => item.ideaId)}
-        ideas={run?.ideas ?? []}
+        ideas={(run?.ideas ?? []).filter(namedWords)}
         onNext={actions.handleDesignPicked}
         onToggle={actions.handleToggleIdea}
         picked={drop.picked}
