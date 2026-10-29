@@ -35,7 +35,7 @@ A merchant pays for finished drops: researched ideas, approved designs, a paused
 
 ### What a drop costs wovain (recomputed 2026-10-29)
 
-Since #76, a design draws its art on **wovain's own fal key** while the `onboarding-wizard` flag is on (dev and next today; `platformFal` in `packages/api/src/flow/connections.ts`). Merchants need no fal connection there, so the art is wovain's cost, and the largest one.
+Since #76, a design draws its art on **wovain's own fal key** while the `onboarding-wizard` flag is on (dev and next today; `platformFal` in `packages/mastra/src/mastra/flow/connections.ts`). Merchants need no fal connection there, so the art is wovain's cost, and the largest one.
 
 | Step | What wovain pays for | Cost |
 | --- | --- | --- |
@@ -43,7 +43,7 @@ Since #76, a design draws its art on **wovain's own fal key** while the `onboard
 | Design | GPT Image 2.5 (`openai/gpt-image-2.5/flare/text-to-image`) at 2880 × 2880, quality high: about $0.10 on fal (the same pixel count as fal's 3840 × 2160 row, $0.10008). Nemotron's brief and judgment. | about **$0.11** |
 | Assist (autopilot pick or review, ad copy) | One Nemotron call. | about **$0.005** |
 
-A manual drop (research, three designs, ad copy) costs about **$0.45**. An autopilot drop (plus its pick and three reviews) costs about **$0.47**. A redraw after the judge says "revise" is not charged again (`packages/api/src/flow/designs.ts`), so a heavy user whose designs are redrawn half the time costs about **$0.62** a drop.
+A manual drop (research, three designs, ad copy) costs about **$0.45**. An autopilot drop (plus its pick and three reviews) costs about **$0.47**. A redraw after the judge says "revise" is not charged again (`packages/mastra/src/mastra/flow/designs.ts`), so a heavy user whose designs are redrawn half the time costs about **$0.62** a drop.
 
 The old credit costs (research 3, design 2, assist 1, so 10 credits a drop) were set when the art ran on the merchant's fal. With the art on wovain, a credit cost about $0.047, not $0.02. Studio used in full kept only about 49% gross margin, and Label 39%.
 
@@ -108,7 +108,7 @@ Sources: [1] [Printify help: Premium plan, February 2026](https://help.printify.
 
 | Cost | Who pays | Notes |
 | --- | --- | --- |
-| **fal** (artwork) | **wovain**, paid for with design credits, while `onboarding-wizard` is on (dev and next) | Otherwise the merchant's own fal connection (production today). Capsule drops (`packages/api/src/flow/drops.ts`) still draw on the merchant's fal while they charge design credits. Decide whether they move to wovain's key too. |
+| **fal** (artwork) | **wovain**, paid for with design credits, while `onboarding-wizard` is on (dev and next) | Otherwise the merchant's own fal connection (production today). Capsule drops (`packages/mastra/src/mastra/flow/drops.ts`) still draw on the merchant's fal while they charge design credits. Decide whether they move to wovain's key too. |
 | **Meta** ads spend | Merchant, on their own ad account | Campaigns are created paused. |
 | **Fourthwall** blanks and fees | Merchant, on their own shop | Fourthwall takes its base cost from each sale. |
 | **Nebius / Nemotron** (brief, judge, autopilot, copy) | wovain, paid for with credits | It is cheap, and asking merchants for a key would add onboarding friction. |

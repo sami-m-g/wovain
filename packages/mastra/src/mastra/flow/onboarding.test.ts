@@ -25,7 +25,7 @@ import {
 // migrations): connection health, the brand profile and the fal switch.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const KNOWN = new Set(["Wes Anderson", "Studio Ghibli", "Kenzo", "Prada"]);

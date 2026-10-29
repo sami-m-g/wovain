@@ -23,13 +23,13 @@ import {
   product,
   run,
 } from "@wovain/db/schema/seller";
-import type { Core } from "@wovain/mastra/services";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { createError, log } from "evlog";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Core } from "../services";
 import { createLegacyRunEngine, createRunRouter } from "../workflows/rollout";
 import { isPermanent } from "../workflows/run";
 import type { Actor, RunEngine } from "./actor";
@@ -61,7 +61,7 @@ import { transitionErrors } from "./transitions";
 // crash cases replay a step the way Inngest does after an invocation dies.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const MERCHANT = "merchant@example.com";

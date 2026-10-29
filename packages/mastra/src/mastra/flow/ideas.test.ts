@@ -1,8 +1,8 @@
 import type { FlagName } from "@wovain/core/flag-registry";
 import type { FlagContext } from "@wovain/core/flags";
-import type { Core } from "@wovain/mastra/services";
 import { describe, expect, it, vi } from "vitest";
 
+import type { Core } from "../services";
 import type { Actor } from "./actor";
 import { assertQlooOn, researchSourcesFor } from "./ideas";
 

@@ -1,7 +1,6 @@
 import { billingCatalog } from "@wovain/billing/catalog";
 import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
 import { pickIdea } from "@wovain/core/autopilot";
-import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
 import {
   design,
@@ -14,6 +13,7 @@ import type { RunStatus } from "@wovain/db/schema/seller";
 import { and, asc, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { log } from "evlog";
 
+import type { DesignFacts } from "../scorers/steps";
 import type { Actor, RunInput } from "./actor";
 import { notFound } from "./actor";
 import { compensateRun, createDropCampaign } from "./campaigns";
@@ -144,7 +144,7 @@ const drawDesign = async (actor: Actor, runId: string, ideaId: string) => {
   });
   const source = await getIdea(actor, ideaId);
   const { brief } = drafted;
-  // What the step's code scorer checks (@wovain/core/step-scorers).
+  // What the step's code scorer checks (scorers/steps).
   const facts: DesignFacts = {
     artworkWidth: drafted.artworkWidth,
     avoidNames: source.avoidNames,

@@ -1,5 +1,5 @@
-import { linkTelegramChat, TELEGRAM_COPY } from "@wovain/api/flow/alerts";
-import { startTokenOf } from "@wovain/api/flow/telegram";
+import { linkTelegramChat, TELEGRAM_COPY } from "@wovain/mastra/flow/alerts";
+import { startTokenOf } from "@wovain/mastra/flow/telegram";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 

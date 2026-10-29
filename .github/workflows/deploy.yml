@@ -192,7 +192,7 @@ jobs:
           echo "::add-mask::$DATABASE_URL"
           export DATABASE_URL
           pnpm --filter @wovain/db exec drizzle-kit migrate
-          pnpm --filter @wovain/api run storage:init
+          pnpm --filter @wovain/mastra run storage:init
           pnpm --filter @wovain/api run billing:settle
 
       # A new revision of each service, with all traffic; Pulumi owns every

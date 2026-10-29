@@ -1,8 +1,6 @@
 import { randomUUID } from "node:crypto";
 
 import type { StyleFamily } from "@wovain/core/drops";
-import { z } from "zod";
-
 import {
   dropItems,
   dropStateOf,
@@ -13,7 +11,9 @@ import {
   planDrop,
   publishDrop,
   requireDesignDrops,
-} from "../flow/drops";
+} from "@wovain/mastra/flow/drops";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 // Drops (openspec design-drops), behind the design-drops flag: plan a

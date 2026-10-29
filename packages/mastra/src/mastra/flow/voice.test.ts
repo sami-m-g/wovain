@@ -28,7 +28,7 @@ import {
 // them, and analytics never sees the words.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const OTHER_ID = "user_2";

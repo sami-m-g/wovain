@@ -6,7 +6,7 @@
 
 ## Decision
 
-Every model call runs as a named Mastra agent, registered on the app's one Mastra instance (`packages/api/src/workflows/engine.ts`) with Postgres storage in the `mastra` schema. The agents are `design_brief`, `design_judge`, `ad_copy`, `autopilot_pick_idea`, `autopilot_review_design` and `research_themes` (splits a brief into research themes when Qloo names too few), defined in `packages/mastra/src/mastra/agents/kit.ts` on Nemotron through the AI SDK's openai-compatible provider.
+Every model call runs as a named Mastra agent, registered on the app's one Mastra instance (`packages/mastra/src/mastra/workflows/engine.ts`) with Postgres storage in the `mastra` schema. The agents are `design_brief`, `design_judge`, `ad_copy`, `autopilot_pick_idea`, `autopilot_review_design` and `research_themes` (splits a brief into research themes when Qloo names too few), defined in `packages/mastra/src/mastra/agents/kit.ts` on Nemotron through the AI SDK's openai-compatible provider.
 
 ### Scorers on every agent and step
 
@@ -18,11 +18,11 @@ Every model call runs as a named Mastra agent, registered on the app's one Mastr
 - **Custom binary LLM judges** (`packages/core/src/judges.ts`), one failure mode each: design quality, brand fit, trend fit, copyright and trademark risk, ad copy quality, and Meta policy compliance.
   - They follow the write-judge-prompt method: a task, Pass/Fail definitions, few-shot examples only from the train split, and the critique before the verdict, with structured output.
   - Each score is 1 for Pass and 0 for Fail.
-- **Code scorers on the workflow steps** (`packages/core/src/step-scorers.ts`), run on every step:
+- **Code scorers on the workflow steps** (`packages/mastra/src/mastra/scorers/steps.ts`), run on every step:
   - design facts: print size, avoided names, title, description and printed-text lengths;
   - price floor;
   - ad copy lengths.
-- **Live sampling:** the agent scorers sample `SCORER_SAMPLE_RATE` of live calls (default 0.1). Mastra saves each score in `mastra.mastra_scorers`. The `scoresToPostHog` exporter (`packages/api/src/workflows/observability.ts`) sends each one to PostHog as `agent_score`, with `run_id`, `scorer`, `score`, `target` and `reason`.
+- **Live sampling:** the agent scorers sample `SCORER_SAMPLE_RATE` of live calls (default 0.1). Mastra saves each score in `mastra.mastra_scorers`. The `scoresToPostHog` exporter (`packages/mastra/src/mastra/workflows/observability.ts`) sends each one to PostHog as `agent_score`, with `run_id`, `scorer`, `score`, `target` and `reason`.
 - **Offline evals:** `pnpm --filter @wovain/mastra run evals` runs every judge on the dev and test splits of the versioned labeled set (`packages/core/src/evals/judges.v1.json`). It writes TPR and TNR to `report.v1.json`, and fails when a judge drops more than 0.05 below its entry in `baseline.v1.json`. CI runs it as `evals:judges` when a prompt, a judge, a scorer or the model changes.
 
 ### Calibration status (validate-evaluator)

@@ -15,20 +15,13 @@ import {
   drop,
 } from "@wovain/db/schema/autonomy";
 import { design, idea, product, run } from "@wovain/db/schema/seller";
-import type { Core } from "@wovain/mastra/services";
-import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/pglite";
-import { migrate } from "drizzle-orm/pglite/migrator";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import { productsRouter } from "../routers/seller";
-import type { Actor } from "./actor";
+import type { Actor } from "@wovain/mastra/flow/actor";
 import {
   approvalsFor,
   autonomyOf,
   setAutonomy,
   spendToDate,
-} from "./approvals";
+} from "@wovain/mastra/flow/approvals";
 import {
   executeStoreApproval,
   proposeStoreAction,
@@ -46,13 +39,20 @@ import {
   requestSiteLive,
   sampleLink,
   stageRunDrop,
-} from "./store";
-import { doSetupStep, storeSetup } from "./store-setup";
+} from "@wovain/mastra/flow/store";
+import { doSetupStep, storeSetup } from "@wovain/mastra/flow/store-setup";
+import type { Core } from "@wovain/mastra/services";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { productsRouter } from "./seller";
 
 // Lets a test make taking the executor's lock fail.
 const lockFault = vi.hoisted(() => ({ error: undefined as unknown }));
 
-vi.mock(import("./approvals"), async (importOriginal) => {
+vi.mock(import("@wovain/mastra/flow/approvals"), async (importOriginal) => {
   const real = await importOriginal();
   return {
     ...real,

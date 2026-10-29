@@ -13,11 +13,11 @@ import {
   performanceSnapshot,
 } from "@wovain/db/schema/autonomy";
 import { campaign, design, idea, product, run } from "@wovain/db/schema/seller";
-import type { Core } from "@wovain/mastra/services";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { Core } from "../services";
 import type { Actor } from "./actor";
 import {
   globalPriorOf,
@@ -31,7 +31,7 @@ import {
 // Outcomes per design on real Postgres (PGlite, with the app's migrations).
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const NOW = new Date("2026-10-29T12:00:00.000Z");

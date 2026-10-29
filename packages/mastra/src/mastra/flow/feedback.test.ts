@@ -16,14 +16,14 @@ import {
   product,
   run,
 } from "@wovain/db/schema/seller";
-import { createMerchantMemory } from "@wovain/mastra/memory/taste";
-import type { Core } from "@wovain/mastra/services";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { log } from "evlog";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createMerchantMemory } from "../memory/taste";
+import type { Core } from "../services";
 import type { Actor } from "./actor";
 import {
   LEARN_COOLDOWN_MS,
@@ -40,7 +40,7 @@ import {
 // Fourthwall and Meta answer from fakes, one day at a time.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const NOW = new Date("2026-10-28T12:00:00.000Z");

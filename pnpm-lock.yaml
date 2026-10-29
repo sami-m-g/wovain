@@ -806,36 +806,12 @@ importers:
 
   packages/api:
     dependencies:
-      '@google-cloud/opentelemetry-cloud-trace-exporter':
-        specifier: 'catalog:'
-        version: 3.1.0(@opentelemetry/api@1.10.0)(@opentelemetry/resources@2.12.0(@opentelemetry/api@1.10.0))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0))
-      '@mastra/core':
-        specifier: 'catalog:'
-        version: 1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7)
-      '@mastra/inngest':
-        specifier: 'catalog:'
-        version: 1.10.7(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(@typescript/typescript6@6.0.2)(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@8.0.9)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(zod@4.6.7)
-      '@mastra/observability':
-        specifier: 'catalog:'
-        version: 1.21.0(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(zod@4.6.7)
-      '@mastra/otel-exporter':
-        specifier: 'catalog:'
-        version: 1.4.9(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(zod@4.6.7)
-      '@mastra/pg':
-        specifier: 'catalog:'
-        version: 1.32.0(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))
       '@modelcontextprotocol/ext-apps':
         specifier: 'catalog:'
         version: 2.0.3(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/core@2.3.1)(@modelcontextprotocol/server@2.3.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@modelcontextprotocol/server':
         specifier: 'catalog:'
         version: 2.3.1
-      '@opentelemetry/api':
-        specifier: 'catalog:'
-        version: 1.10.0
-      '@opentelemetry/exporter-trace-otlp-http':
-        specifier: 'catalog:'
-        version: 0.221.0(@opentelemetry/api@1.10.0)
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0)
@@ -866,18 +842,6 @@ importers:
       evlog:
         specifier: 'catalog:'
         version: 2.33.1(@orpc/server@1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0))(ai@7.0.152(zod@4.6.7))(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@8.0.9)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
-      expo-server-sdk:
-        specifier: 'catalog:'
-        version: 8.0.0
-      grammy:
-        specifier: 'catalog:'
-        version: 1.46.0
-      inngest:
-        specifier: 'catalog:'
-        version: 4.26.0(@typescript/typescript6@6.0.2)(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@8.0.9)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(zod@4.6.7)
-      p-retry:
-        specifier: 'catalog:'
-        version: 8.0.1
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -897,12 +861,6 @@ importers:
       '@wovain/config':
         specifier: workspace:*
         version: link:../config
-      mastra:
-        specifier: 'catalog:'
-        version: 1.35.0(@hono/node-server@2.1.5(hono@4.13.13))(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(@opentelemetry/api@1.10.0)(zod@4.6.7)
-      sharp:
-        specifier: 'catalog:'
-        version: 0.35.5(@types/node@26.6.5)
       tsx:
         specifier: 'catalog:'
         version: 4.23.15
@@ -1024,9 +982,6 @@ importers:
       '@fal-ai/client':
         specifier: 'catalog:'
         version: 1.10.1
-      '@mastra/core':
-        specifier: 'catalog:'
-        version: 1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7)
       '@modelcontextprotocol/client':
         specifier: 'catalog:'
         version: 2.3.1
@@ -1168,24 +1123,72 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: 'catalog:'
         version: 2.0.87(zod@4.6.7)
+      '@google-cloud/opentelemetry-cloud-trace-exporter':
+        specifier: 'catalog:'
+        version: 3.1.0(@opentelemetry/api@1.10.0)(@opentelemetry/resources@2.12.0(@opentelemetry/api@1.10.0))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0))
       '@mastra/core':
         specifier: 'catalog:'
         version: 1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7)
       '@mastra/evals':
         specifier: 'catalog:'
         version: 1.10.8(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(vitest@5.0.5)
+      '@mastra/inngest':
+        specifier: 'catalog:'
+        version: 1.10.7(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(@typescript/typescript6@6.0.2)(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@8.0.9)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(zod@4.6.7)
       '@mastra/memory':
         specifier: 'catalog:'
         version: 1.39.0(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))
+      '@mastra/observability':
+        specifier: 'catalog:'
+        version: 1.21.0(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(zod@4.6.7)
+      '@mastra/otel-exporter':
+        specifier: 'catalog:'
+        version: 1.4.9(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(zod@4.6.7)
+      '@mastra/pg':
+        specifier: 'catalog:'
+        version: 1.32.0(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.10.0
+      '@opentelemetry/exporter-trace-otlp-http':
+        specifier: 'catalog:'
+        version: 0.221.0(@opentelemetry/api@1.10.0)
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0)
       '@posthog/ai':
         specifier: 'catalog:'
-        version: 8.16.3(@ai-sdk/provider@4.0.33)(@opentelemetry/api@1.10.0)(@opentelemetry/exporter-trace-otlp-http@0.300.0(@opentelemetry/api@1.10.0))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0))(posthog-node@5.57.2(@opentelemetry/api@1.10.0))
+        version: 8.16.3(@ai-sdk/provider@4.0.33)(@opentelemetry/api@1.10.0)(@opentelemetry/exporter-trace-otlp-http@0.221.0(@opentelemetry/api@1.10.0))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0))(posthog-node@5.57.2(@opentelemetry/api@1.10.0))
+      '@wovain/billing':
+        specifier: workspace:*
+        version: link:../billing
       '@wovain/core':
         specifier: workspace:*
         version: link:../core
+      '@wovain/db':
+        specifier: workspace:*
+        version: link:../db
+      '@wovain/email':
+        specifier: workspace:*
+        version: link:../email
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.5(@electric-sql/pglite@0.5.11)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(pg@8.23.1)(zod@4.6.7)
       evlog:
         specifier: 'catalog:'
         version: 2.33.1(@orpc/server@1.16.1(@opentelemetry/api@1.10.0)(ws@8.22.0))(ai@7.0.152(zod@4.6.7))(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@8.0.9)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      expo-server-sdk:
+        specifier: 'catalog:'
+        version: 8.0.0
+      grammy:
+        specifier: 'catalog:'
+        version: 1.46.0
+      inngest:
+        specifier: 'catalog:'
+        version: 4.26.0(@typescript/typescript6@6.0.2)(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@8.0.9)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(zod@4.6.7)
+      p-retry:
+        specifier: 'catalog:'
+        version: 8.0.1
       posthog-node:
         specifier: 'catalog:'
         version: 5.57.2(@opentelemetry/api@1.10.0)
@@ -1193,6 +1196,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@electric-sql/pglite':
+        specifier: 'catalog:'
+        version: 0.5.11
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1202,6 +1208,12 @@ importers:
       '@wovain/config':
         specifier: workspace:*
         version: link:../config
+      mastra:
+        specifier: 'catalog:'
+        version: 1.35.0(@hono/node-server@2.1.5(hono@4.13.13))(@mastra/core@1.79.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(@opentelemetry/api@1.10.0)(ai@7.0.152(zod@4.6.7))(express@5.3.0)(zod-to-json-schema@3.25.2(zod@4.6.7))(zod@4.6.7))(@opentelemetry/api@1.10.0)(zod@4.6.7)
+      sharp:
+        specifier: 'catalog:'
+        version: 0.35.5(@types/node@26.6.5)
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
@@ -15797,6 +15809,18 @@ snapshots:
 
   '@polka/url@1.0.0-next.29': {}
 
+  '@posthog/ai@8.16.3(@ai-sdk/provider@4.0.33)(@opentelemetry/api@1.10.0)(@opentelemetry/exporter-trace-otlp-http@0.221.0(@opentelemetry/api@1.10.0))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0))(posthog-node@5.57.2(@opentelemetry/api@1.10.0))':
+    dependencies:
+      '@posthog/core': 1.60.1
+      posthog-node: 5.57.2(@opentelemetry/api@1.10.0)
+      uuid: 11.1.1
+      zod: 4.6.7
+    optionalDependencies:
+      '@ai-sdk/provider': 4.0.33
+      '@opentelemetry/api': 1.10.0
+      '@opentelemetry/exporter-trace-otlp-http': 0.221.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/sdk-trace-base': 2.12.0(@opentelemetry/api@1.10.0)
+
   '@posthog/ai@8.16.3(@ai-sdk/provider@4.0.33)(@opentelemetry/api@1.10.0)(@opentelemetry/exporter-trace-otlp-http@0.300.0(@opentelemetry/api@1.10.0))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0))(posthog-node@5.57.2(@opentelemetry/api@1.10.0))':
     dependencies:
       '@posthog/core': 1.60.1
@@ -20022,7 +20046,7 @@ snapshots:
 
   gcp-metadata@8.1.2:
     dependencies:
-      gaxios: 7.1.3
+      gaxios: 7.3.1
       google-logging-utils: 1.1.3
       json-bigint: 1.0.0
     transitivePeerDependencies:

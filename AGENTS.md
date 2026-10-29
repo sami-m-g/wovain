@@ -4,8 +4,8 @@
 
 - `apps/web`: Next.js 16 app (App Router, oRPC, Better Auth, evlog)
 - `apps/fumadocs`: Fumadocs documentation site with Nebius (Nemotron) AI chat
-- `packages/api`: oRPC routers and procedures
-- `packages/mastra`: Mastra agents, scorers, memory, evals and the composition root (`@wovain/mastra`, Mastra's `src/mastra/` layout); the workflows and `flow/*` move here next (#227)
+- `packages/api`: routing only: oRPC routers, the MCP server and the handlers `apps/web` mounts
+- `packages/mastra`: all orchestration (`@wovain/mastra`, Mastra's `src/mastra/` layout): agents, scorers, memory, evals, the workflows on Inngest, the seller flow (`flow/*`, being reshaped into Mastra steps and tools) and the composition root (`services.ts`)
 - `packages/core`: domain logic and provider clients
 - `packages/auth`: Better Auth configuration
 - `packages/db`: Drizzle schema, relations and client (PostgreSQL)
@@ -18,12 +18,12 @@
 - TypeScript 6 for tooling (`typescript` alias of `@typescript/typescript6`), TypeScript 7 for `tsc`
 - Varlock for environment: each app owns `.env.schema`; import `ENV` from the generated `src/env.ts`
 - Ultracite (Oxlint + Oxfmt) for lint and format; knip for unused code
-- Mastra for agents, workflows, scorers, memory and tracing: the agents, scorers, memory, evals and composition root (`createCore`) in `packages/mastra/src/mastra/{agents,scorers,memory,evals,services}` (`@wovain/mastra`); core keeps the agent registry (`agents.ts`), the model-call port (`nemotron.ts`), the judge specs (`judges.ts`) and the step scorers until they move; the run workflow on Inngest in `packages/api/src/workflows` (docs/adr/0001, 0002)
+- Mastra for agents, workflows, scorers, memory and tracing: everything in `packages/mastra/src/mastra/{agents,scorers,memory,evals,workflows,flow}` (`@wovain/mastra`); core keeps the agent registry (`agents.ts`), the model-call port (`nemotron.ts`) and the judge specs (`judges.ts`); the run workflow on Inngest in `packages/mastra/src/mastra/workflows` (docs/adr/0001, 0002)
 
 ## Mastra Studio (local)
 
-- `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/api studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
-  - The entry `packages/api/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
+- `pnpm run db:start` for Postgres, then `pnpm --filter @wovain/mastra studio`, which runs `mastra dev --dir src/mastra` and serves Studio on http://localhost:4111.
+  - The entry `packages/mastra/src/mastra/index.ts` builds the same agents, scorers, memory, workflow and storage as the app, from the environment.
   - Required: `NEMOTRON_MODEL`, `NEMOTRON_VISION_MODEL`, `NEMOTRON_MODEL_{FAST,DEFAULT,REASONING,VISION,SAFETY}`, `FAL_IMAGE_MODEL`, `TAVILY_RESEARCH_MODEL` and `VOICE_STT_{MODEL,FALLBACK_MODEL}` (as in `apps/web/.env.schema`), `DATABASE_URL` (`postgresql://postgres:password@localhost:5432/wovain` with the Docker database) and `TOKEN_ENCRYPTION_KEY`.
   - Also the per-environment settings in `apps/web/.env.schema` (`BILLING_CATALOG`, `PRICING_RULES`, the MCP URLs, `EMAIL_FROM` and the rest), set in `apps/web/.env.local`.
   - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.

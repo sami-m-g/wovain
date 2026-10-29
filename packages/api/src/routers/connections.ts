@@ -1,13 +1,13 @@
 import { providerIds } from "@wovain/core/upstream";
-import { z } from "zod";
-
 import {
   completeConnection,
   disconnect,
   listConnections,
   startConnection,
-} from "../flow/connections";
-import { reachMilestone } from "../flow/milestones";
+} from "@wovain/mastra/flow/connections";
+import { reachMilestone } from "@wovain/mastra/flow/milestones";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 const provider = z.enum(providerIds);
