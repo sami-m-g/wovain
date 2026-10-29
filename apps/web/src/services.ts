@@ -1,3 +1,5 @@
+import { expoTransport } from "@wovain/api/flow/push";
+import { telegramBot } from "@wovain/api/flow/telegram";
 import { createRunEngine } from "@wovain/api/workflows/engine";
 import { createMastraStorage } from "@wovain/api/workflows/storage";
 import { createAuth } from "@wovain/auth";
@@ -16,6 +18,17 @@ export const mailer = createMailer({
   from: ENV.EMAIL_FROM,
   siteUrl: ENV.BETTER_AUTH_URL,
 });
+
+// Where alerts go besides email (openspec alerts): Expo push, and this
+// environment's Telegram bot when it has one (TELEGRAM_BOT_TOKEN).
+export const alerts = {
+  push: expoTransport(ENV.EXPO_ACCESS_TOKEN),
+  siteUrl: ENV.BETTER_AUTH_URL,
+  telegram:
+    ENV.TELEGRAM_BOT_TOKEN === undefined || ENV.TELEGRAM_BOT_TOKEN === ""
+      ? undefined
+      : telegramBot(ENV.TELEGRAM_BOT_TOKEN),
+};
 
 // Mastra's store (snapshots, memory, scores, traces) on the same database,
 // in its own schema; the merchants' brand and taste memory lives there.
@@ -39,6 +52,6 @@ export const {
   mastraFor: (userId) => core.flags.isOn("mastra-runs", { userId }),
   // The OTLP backend gets them too when it's configured (src/lib/otel.ts).
   otlpEndpoint: process.env["OTEL_EXPORTER_OTLP_ENDPOINT"],
-  services: { analytics, billing, core, db, mailer },
+  services: { alerts, analytics, billing, core, db, mailer },
   storage,
 });

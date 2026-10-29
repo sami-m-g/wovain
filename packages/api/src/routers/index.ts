@@ -1,6 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 
 import { publicProcedure } from "../index";
+import { alertsRouter, devicesRouter } from "./alerts";
 import { approvalsRouter, autonomyRouter } from "./approvals";
 import { targetingRouter } from "./audiences";
 import { autopilotRouter } from "./autopilot";
@@ -23,6 +24,7 @@ import { storeRouter } from "./store";
 import { voiceRouter } from "./voice";
 
 export const appRouter = {
+  alerts: alertsRouter,
   approvals: approvalsRouter,
   autonomy: autonomyRouter,
   autopilot: autopilotRouter,
@@ -30,6 +32,7 @@ export const appRouter = {
   campaigns: { ...campaignsRouter, ...mediaCampaignsRouter },
   connections: connectionsRouter,
   designs: designsRouter,
+  devices: devicesRouter,
   drops: dropsRouter,
   feedback: feedbackRouter,
   healthCheck: publicProcedure.handler(() => "OK"),

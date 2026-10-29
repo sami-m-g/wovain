@@ -46,6 +46,25 @@ describe("emails", () => {
     expect(text).toContain('"pickleball"');
     expect(text).toContain(`${site}/r`);
   });
+
+  it("heads an alert by its type, in the merchant's language", async () => {
+    const alert = compose(
+      {
+        alert: "scale_request",
+        body: "3 sales at 2x ROAS.",
+        kind: "alert",
+        title: "A product is selling: raise its budget?",
+        url: `${site}/dashboard/autopilot`,
+      },
+      "fr"
+    );
+    expect(alert.subject).toBe(
+      "Un produit se vend: A product is selling: raise its budget?"
+    );
+    const text = await render(alert.element, { plainText: true });
+    expect(text).toContain("raise its budget? 3 sales at 2x ROAS.");
+    expect(text).toContain("Paramètres > Alertes");
+  });
 });
 
 describe("createMailer", () => {

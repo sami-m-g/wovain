@@ -38,7 +38,8 @@
     "autopilotTitle": "Pilote automatique",
     "storeTitle": "Boutique",
     "dropsTitle": "Drops",
-    "campaignTitle": "Votre campagne"
+    "campaignTitle": "Votre campagne",
+    "alertsTitle": "Alertes"
   },
   "Common": {
     "skipToContent": "Aller au contenu",
@@ -65,7 +66,8 @@
       "fr": "Français",
       "es": "Español"
     },
-    "noData": "Rien pour l'instant."
+    "noData": "Rien pour l'instant.",
+    "alertSettings": "Alertes"
   },
   "Header": {
     "product": "Fonctionnement",
@@ -174,7 +176,7 @@
       },
       {
         "question": "Qu'est-ce qui empêche mes publicités de perdre de l'argent ?",
-        "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant."
+        "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant. Il vous prévient à chaque fois par e-mail, sur votre téléphone ou sur Telegram."
       },
       {
         "question": "Lesquels de mes designs dois-je promouvoir ?",
@@ -2255,6 +2257,69 @@
         "title": "Publicités",
         "none": "Pas encore de publicité pour ce drop.",
         "create": "Créer la publicité"
+      }
+    }
+  },
+  "Alerts": {
+    "title": "Alertes",
+    "lead": "wovain vous prévient quand il met une publicité en pause, arrête vos campagnes, demande à augmenter un budget, attend votre validation, réalise votre première vente ou rencontre un échec. Choisissez où va chaque alerte.",
+    "loading": "Chargement de vos alertes…",
+    "off": "Les alertes ne sont pas encore disponibles sur votre compte.",
+    "channelsTitle": "Où les alertes peuvent aller",
+    "gridTitle": "Quelles alertes vont où",
+    "gridCaption": "Chaque type d'alerte et ses canaux",
+    "typeColumn": "Alerte",
+    "toggle": "Envoyer les alertes {type} par {channel}",
+    "save": "Enregistrer",
+    "saved": "Enregistré.",
+    "saveFailed": "Impossible d'enregistrer vos alertes. Réessayez.",
+    "channels": {
+      "email": "E-mail",
+      "push": "Téléphone",
+      "telegram": "Telegram",
+      "emailNone": "Votre compte n'a pas d'adresse e-mail.",
+      "pushNone": "Aucun téléphone pour l'instant. Connectez-vous à l'app wovain et autorisez les notifications.",
+      "pushDevices": "{count, plural, one {# téléphone} other {# téléphones}}",
+      "telegramUnavailable": "n'est pas configuré sur ce site.",
+      "telegramConnect": "Connecter Telegram",
+      "telegramCheck": "J'ai appuyé sur Démarrer",
+      "telegramConnected": "Connecté.",
+      "telegramConnectedAs": "Connecté en tant que @{username}.",
+      "telegramDisconnect": "Déconnecter",
+      "telegramFailed": "Telegram n'a pas répondu. Réessayez dans une minute."
+    },
+    "quiet": {
+      "title": "Heures de silence",
+      "lead": "Pendant les heures de silence, les alertes sur téléphone et Telegram attendent la fin. L'e-mail part tout de suite.",
+      "on": "Retenir les alertes téléphone et Telegram la nuit",
+      "start": "De",
+      "end": "Jusqu'à",
+      "timeZone": "Dans votre fuseau horaire, {timeZone}."
+    },
+    "types": {
+      "rule_action": {
+        "label": "Publicités en pause ou arrêtées",
+        "hint": "Une règle a mis en pause une publicité ou une campagne, ou arrêté toutes les campagnes à un plafond."
+      },
+      "scale_request": {
+        "label": "Demandes de hausse de budget",
+        "hint": "Un produit se vend et une règle demande à augmenter son budget."
+      },
+      "approval": {
+        "label": "Validations en attente",
+        "hint": "Une autre action attend votre oui ou votre non."
+      },
+      "first_sale": {
+        "label": "Première vente",
+        "hint": "Votre boutique réalise sa première vente."
+      },
+      "failure": {
+        "label": "Échecs",
+        "hint": "Une tâche a échoué après plusieurs essais."
+      },
+      "updates": {
+        "label": "Suggestions et exécutions terminées",
+        "hint": "Nouvelles idées du pilote automatique et exécutions terminées."
       }
     }
   }

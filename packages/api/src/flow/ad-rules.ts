@@ -146,15 +146,24 @@ const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-// Tells the merchant what a rule did, or asks them. A failed send is
-// logged at error level; the action itself stands.
+// Tells the merchant what a rule did, or asks them (openspec alerts). One
+// alert per approval, whoever sends it: alerts-approval-requested uses the
+// same key. A failed send is logged at error level; the action itself
+// stands.
 const notify = async (
   actor: Actor,
   data: { approvalId: string; body: string; kind: NotifyKind; title: string }
 ) => {
   try {
     await actor.events?.send({
-      data: { ...data, actions: [], userId: actor.userId },
+      data: {
+        ...data,
+        actions: [],
+        dedupeKey: `approval:${data.approvalId}`,
+        url: "/dashboard/autopilot",
+        userId: actor.userId,
+      },
+      id: `notify:approval:${data.approvalId}`,
       name: EVENTS.notify,
     });
   } catch (error) {
@@ -269,7 +278,7 @@ export const applyStop = async (
       queue,
       {
         body: `wovain paused campaign ${row.metaCampaignId}. ${stop.text}`,
-        kind: "anomaly",
+        kind: "rule_action",
         title: "Ads paused to protect your money",
       }
     );
@@ -369,7 +378,7 @@ export const applyCampaignRules = async (
       queue,
       {
         body: `wovain paused campaign ${row.metaCampaignId}. ${reason}`,
-        kind: "anomaly",
+        kind: "rule_action",
         title: "Campaign paused: it isn't selling",
       }
     );
@@ -391,7 +400,7 @@ export const applyCampaignRules = async (
         queue,
         {
           body: `wovain paused ad ${kill.adId}. ${kill.reason}`,
-          kind: "anomaly",
+          kind: "rule_action",
           title: "Ad paused: it isn't selling",
         }
       );
@@ -415,7 +424,7 @@ export const applyCampaignRules = async (
       queue,
       {
         body: `${decision.reason} Approve to raise the daily budget to $${(decision.toCents / CENTS).toFixed(2)}.`,
-        kind: "approval",
+        kind: "scale_request",
         title: "A product is selling: raise its budget?",
       }
     );
