@@ -29,6 +29,7 @@ import { writerStyleFor } from "./drop-style";
 import { getIdea } from "./ideas";
 import { isMediaBuyingLive } from "./media";
 import { once } from "./once";
+import { testFloorSharesOf } from "./outcomes";
 import { getProduct } from "./products";
 import { charge } from "./spend";
 
@@ -271,6 +272,13 @@ export const createDropCampaign = async (
     throw new Error("A campaign needs a design");
   }
   const dailyBudgetCents = Math.round(input.dailyBudget * 100);
+  // feedback-loop: designs whose angles sold before get more of the floor.
+  const shares = single
+    ? undefined
+    : await testFloorSharesOf(
+        actor,
+        designs.map((design) => design.productId)
+      );
   const metaOnce: WriteOnce = async (name, perform, recover) =>
     await once(actor, {
       key: `${key}:meta:${name}`,
@@ -303,6 +311,7 @@ export const createDropCampaign = async (
         ? undefined
         : designs.map((design, index) => ({
             copy: design.copy,
+            floorShare: shares?.get(design.productId),
             imageUrl: design.imageUrl,
             key: design.productId,
             label: `d${index + 1}`,

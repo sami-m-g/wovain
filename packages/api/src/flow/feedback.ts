@@ -13,6 +13,7 @@ import type {
 } from "@wovain/core/feedback";
 import { campaignInsights, shopInsights } from "@wovain/core/insights";
 import type { CampaignInsight, ProductSales } from "@wovain/core/insights";
+import { angleWhys } from "@wovain/core/outcomes";
 import { SCORE_TERMS, SCORE_WEIGHTS } from "@wovain/core/score";
 import type { IdeaSignals, ScoreWeights } from "@wovain/core/score";
 import { recordLearnings } from "@wovain/core/taste";
@@ -29,6 +30,7 @@ import type { Actor } from "./actor";
 import { traceSinkFor } from "./approvals";
 import { listConnections, withProvider } from "./connections";
 import { flagContextOf } from "./flags";
+import { outcomeModelFor, refreshAllOutcomes } from "./outcomes";
 
 // The feedback loop (openspec feedback-loop): daily performance snapshots
 // of what wovain made (Fourthwall sales per product and drop, Meta results
@@ -721,6 +723,13 @@ const lockFits = async (store: Store) => {
  */
 export const learnFromResults = async (actor: Actor, now = new Date()) => {
   const snapshot = await snapshotPerformance(actor, now);
+  // Outcomes per design: the angles against Meta's and Fourthwall's
+  // numbers. A failure is logged; the fit still runs.
+  try {
+    await refreshAllOutcomes(actor, now);
+  } catch (error) {
+    logFailure("FEEDBACK_OUTCOMES_FAILED", error, { user_id: actor.userId });
+  }
   const { fit, record } = await actor.db.transaction(async (tx) => {
     const store: Store = { db: tx, userId: actor.userId };
     await lockFits(store);
@@ -783,17 +792,29 @@ export const researchFeedbackOf = async (
   return fit === undefined ? undefined : { weights: fit.record.weights };
 };
 
-/** "What we learned": the newest fit against the defaults. */
+/**
+ * "What we learned": the newest fit against the defaults, and the angles
+ * the merchant's own designs proved or disproved (outcomes per design).
+ */
 export const whatWeLearned = async (actor: Actor) => {
-  const fit = await latestFit(actor);
+  const [fit, model] = await Promise.all([
+    latestFit(actor),
+    outcomeModelFor(actor),
+  ]);
   const record = fit?.record;
   return {
+    angles: angleWhys(model),
     defaults: SCORE_WEIGHTS as ScoreWeights,
     fittedAt: fit?.at,
     learned: record?.learned ?? { sold: [], unsold: [] },
     minLiveDays: MIN_LIVE_DAYS,
     minSamples: MIN_SAMPLES,
     samples: record?.samples ?? 0,
+    trackRecord: {
+      baseRate: model.baseRate,
+      designs: model.designs,
+      wins: model.wins,
+    },
     version: record?.version ?? 0,
     weights: record?.weights ?? (SCORE_WEIGHTS as ScoreWeights),
   };
