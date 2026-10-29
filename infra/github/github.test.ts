@@ -56,6 +56,7 @@ test("the github program declares the repository's own resources only", async ()
       "github:index/issueLabel:IssueLabel::dependencies",
       "github:index/issueLabel:IssueLabel::needs-human",
       "github:index/issueLabel:IssueLabel::shepherd",
+      "github:index/issueLabel:IssueLabel::autofix",
       "github:index/issueLabel:IssueLabel::claude",
       "github:index/actionsVariable:ActionsVariable::SHEPHERD_MODE",
       "github:index/actionsVariable:ActionsVariable::SHEPHERD_MAX_PER_PR",
