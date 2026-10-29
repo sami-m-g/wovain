@@ -491,6 +491,32 @@ it("matches a brief whose terms are Qloo tags, not entities", async () => {
   expect(insights?.searchParams.has("signal.interests.entities")).toBe(false);
 });
 
+it("keeps a tag match when Qloo rejects every entity search", async () => {
+  const GOTHIC = "urn:tag:genre:media:gothic";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: URL) => {
+      if (url.pathname === "/search") {
+        return await Promise.resolve(new Response("bad", { status: 400 }));
+      }
+      return await Promise.resolve(
+        Response.json({
+          results: {
+            tags: [{ id: GOTHIC, name: "Gothic", query: { affinity: 0.7 } }],
+          },
+        })
+      );
+    })
+  );
+
+  const taste = await createQloo({
+    apiKey: "k",
+    baseURL: "https://qloo.example",
+  }).tasteOf("gothic");
+
+  expect(taste.themes.map(({ id }) => id)).toEqual([GOTHIC]);
+});
+
 it("fails the taste when Qloo rejects every term", async () => {
   vi.stubGlobal(
     "fetch",

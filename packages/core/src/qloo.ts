@@ -657,7 +657,11 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     );
     log?.set({ qloo: { rejectedTerms: rejected.length, terms: terms.length } });
     const [firstRejected] = rejected;
-    if (firstRejected !== undefined && rejected.length === terms.length) {
+    if (
+      firstRejected !== undefined &&
+      rejected.length === terms.length &&
+      found.every(({ tags }) => tags.length === 0)
+    ) {
       throw firstRejected;
     }
     return {
