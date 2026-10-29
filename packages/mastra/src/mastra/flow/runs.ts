@@ -1,6 +1,7 @@
 import { billingCatalog } from "@wovain/billing/catalog";
 import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
 import { pickIdea } from "@wovain/core/autopilot";
+import { trendCardOf } from "@wovain/core/idea-card";
 import { user } from "@wovain/db/schema/auth";
 import {
   design,
@@ -635,8 +636,16 @@ export const getRun = async (actor: Actor, id: string) => {
   if (found === undefined) {
     throw notFound.run({ id });
   }
-  // Flattened: each step's rows in a list of their own.
-  const { designs: drafted, ...rest } = found;
+  // Flattened: each step's rows in a list of their own. Each idea carries
+  // the one idea card (@wovain/core/idea-card), as ideas.list does.
+  const { designs: drafted, ideas: researched, ...rest } = found;
+  const ideas = researched.map((row) => ({
+    ...row,
+    card: trendCardOf(row.research, {
+      competition: row.competition,
+      whoBuys: row.whoBuys,
+    }),
+  }));
   const designs = [];
   const products = [];
   const campaigns = [];
@@ -647,7 +656,7 @@ export const getRun = async (actor: Actor, id: string) => {
       campaigns.push(...staged);
     }
   }
-  return { ...rest, campaigns, designs, products };
+  return { ...rest, campaigns, designs, ideas, products };
 };
 
 // A long-running operation: saves the run, queues it and returns it at once

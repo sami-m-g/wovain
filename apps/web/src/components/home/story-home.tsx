@@ -125,6 +125,7 @@ export const HomeDirections = () => {
         briefBelow={false}
         disabled={false}
         heading="h2"
+        story
         onUse={(brief) => {
           router.push({ pathname: "/dashboard/new", query: { brief } });
         }}

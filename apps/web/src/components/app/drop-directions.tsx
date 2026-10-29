@@ -13,6 +13,7 @@ import { useEffect, useId, useState } from "react";
 
 import { Citations } from "@/components/app/citations";
 import { WhoBuysPanel } from "@/components/app/who-buys";
+import { IdeaCardView } from "@/components/ideas/idea-card-view";
 import { OutcomeWhy } from "@/components/insights/outcome-why";
 import { Link } from "@/i18n/navigation";
 import { orpc } from "@/utils/orpc";
@@ -212,15 +213,35 @@ const DirectionRow = ({
   direction,
   disabled,
   onUse,
+  story,
 }: {
   direction: Direction;
   disabled: boolean;
   onUse: (brief: string) => void;
+  story: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
   const tCard = useTranslations("IdeaCard");
   const id = useId();
   const { momentum } = direction.evidence;
+  // story-ui: the one fixed idea card, with the same start button.
+  if (story && direction.card !== undefined) {
+    return (
+      <li className="border-border bg-card flex flex-col rounded-xl border p-4">
+        <IdeaCardView card={direction.card}>
+          <Button
+            className="h-9 w-fit px-4"
+            disabled={disabled}
+            onClick={() => onUse(direction.brief)}
+            type="button"
+          >
+            {t("use")}
+            <ArrowRight aria-hidden="true" data-icon="inline-end" />
+          </Button>
+        </IdeaCardView>
+      </li>
+    );
+  }
   return (
     <li className="border-border bg-card has-[button:hover]:border-foreground/40 flex flex-col gap-2 rounded-xl border p-4 transition-colors">
       <button
@@ -305,6 +326,7 @@ const IgnoreBrandSwitch = ({
 /** The cards so far, the loading state, or the failure. */
 const DirectionsBody = ({
   briefBelow,
+  story,
   cards,
   disabled,
   error,
@@ -333,6 +355,7 @@ const DirectionsBody = ({
   step: Step | undefined;
   tavilyFailed: boolean;
   briefBelow: boolean;
+  story: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
   const tCard = useTranslations("IdeaCard");
@@ -380,6 +403,7 @@ const DirectionsBody = ({
               disabled={disabled}
               key={direction.key}
               onUse={onUse}
+              story={story}
             />
           ))}
           {waiting.map((key) => (
@@ -475,6 +499,12 @@ const DirectionsActions = ({
  * starts the drop; the free-text brief stays below. Never shown without
  * Qloo: a Qloo failure offers a retry.
  */
+// An h2 heads a page section (the Home); an h3 sits inside a step.
+const HEADING_CLASS = {
+  h2: "font-display text-lg font-semibold tracking-[-0.015em]",
+  h3: "text-sm font-semibold",
+} as const;
+
 // The lead under the title: within the brand or not, with a brief field
 // below (the new-drop step) or not (the Home).
 const LEADS = {
@@ -487,7 +517,10 @@ export const DropDirections = ({
   disabled,
   heading: Heading = "h3",
   onUse,
+  story = false,
 }: {
+  // The story-ui flag: each suggestion as the one fixed idea card.
+  story?: boolean;
   // A free-text brief follows (the new-drop step); the Home has none.
   briefBelow?: boolean;
   disabled: boolean;
@@ -521,14 +554,7 @@ export const DropDirections = ({
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <Heading
-            className={
-              Heading === "h2"
-                ? "font-display text-lg font-semibold tracking-[-0.015em]"
-                : "text-sm font-semibold"
-            }
-            id={headingId}
-          >
+          <Heading className={HEADING_CLASS[Heading]} id={headingId}>
             {within ? t("titleBrand") : t("title")}
           </Heading>
           <p className="text-muted-foreground max-w-[65ch] text-sm">
@@ -545,6 +571,7 @@ export const DropDirections = ({
         />
       </div>
       <DirectionsBody
+        story={story}
         cards={cards}
         disabled={disabled}
         error={directions.isError ? directions.error : undefined}

@@ -62,6 +62,7 @@ import {
   StepActions,
   StepHeader,
 } from "@/components/app/wizard-parts";
+import { IdeaCardView } from "@/components/ideas/idea-card-view";
 import { Link } from "@/i18n/navigation";
 import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
 
@@ -135,6 +136,7 @@ export const BriefStep = ({
   onBudget,
   onSubmit,
   onUseDirection,
+  story = false,
 }: {
   brief: string;
   error?: string | undefined;
@@ -146,6 +148,8 @@ export const BriefStep = ({
   onBudget: (value: string) => void;
   onSubmit: () => void;
   onUseDirection: (brief: string) => void;
+  // The story-ui flag: suggestions as the one fixed idea card.
+  story?: boolean;
 }) => {
   const t = useTranslations("Wizard.brief");
   const format = useFormatter();
@@ -160,7 +164,11 @@ export const BriefStep = ({
       }}
     >
       <StepHeader focusOnMount={false} title={t("title")} />
-      <DropDirections disabled={Boolean(busyLabel)} onUse={onUseDirection} />
+      <DropDirections
+        disabled={Boolean(busyLabel)}
+        onUse={onUseDirection}
+        story={story}
+      />
       <Field data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor={id}>{t("label")}</FieldLabel>
         <InputGroup>
@@ -268,9 +276,12 @@ export const IdeasStep = ({
   onToggle,
   onNext,
   runId,
+  story = false,
 }: {
   ideas: Idea[];
   picked: string[];
+  // The story-ui flag: every idea as the one fixed idea card.
+  story?: boolean;
   // The drop's run, for the capsule step.
   runId?: string | undefined;
   designedIdeaIds: string[];
@@ -302,6 +313,44 @@ export const IdeasStep = ({
             const checked = designed || picked.includes(idea.id);
             const checkboxId = `${id}-${idea.id}`;
             const { research } = idea;
+            if (story) {
+              return (
+                <li
+                  className="border-border bg-card has-data-checked:border-primary/60 flex flex-col rounded-xl border p-4"
+                  key={idea.id}
+                >
+                  <IdeaCardView
+                    card={idea.card}
+                    readAudience={<WhoBuysPanel ideaId={idea.id} />}
+                    lead={
+                      <Checkbox
+                        aria-label={t("pickIdea", {
+                          title:
+                            idea.card.make.status === "ok"
+                              ? idea.card.make.value.title
+                              : idea.theme,
+                        })}
+                        checked={checked}
+                        className="mt-0.5"
+                        disabled={designed}
+                        id={checkboxId}
+                        onCheckedChange={(next) => onToggle(idea.id, next)}
+                      />
+                    }
+                  >
+                    {designed ? (
+                      <Badge className="w-fit" variant="secondary">
+                        {t("hasDesign")}
+                      </Badge>
+                    ) : null}
+                    {checked && !designed ? (
+                      <DropStylePanel ideaId={idea.id} />
+                    ) : null}
+                    <IdeaDossier ideaId={idea.id} />
+                  </IdeaCardView>
+                </li>
+              );
+            }
             return (
               <li className="flex flex-col gap-2" key={idea.id}>
                 {/* shadcn's choice card: the whole card is the label. */}
