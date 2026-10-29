@@ -84,6 +84,12 @@ export const stagedOf = (row: CampaignRow): StagedCampaign => ({
   adSetId: row.adSetId,
   campaignId: row.metaCampaignId,
   creativeIds: row.creativeIds,
+  designs: row.designs?.map((design) => ({
+    adIds: design.adIds,
+    adSetId: design.adSetId,
+    creativeIds: design.creativeIds,
+    key: design.productId,
+  })),
   pageId: row.pageId,
 });
 

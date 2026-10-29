@@ -1,0 +1,49 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "090c2850-0665-4cd8-bfe6-a33053168977",
+  "prevIds": [
+    "0c214bdb-455f-4bdc-9502-fade49080387",
+    "a5deeaa2-69cb-4548-a8a3-a9f98b1354ea",
+    "67869df9-ca18-4fa4-b58e-4bcf7d86c791"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "campaign",
+        "designs"
+      ],
+      "writes": [
+        "s|col|public.campaign.designs",
+        "n|col|public.campaign.designs",
+        "e|col|public.campaign.designs"
+      ],
+      "reads": [
+        "n|tbl|public.campaign",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "campaign",
+        "name": "designs",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { conversationId } from "./ads";
+import { adSetIdsOf, conversationId } from "./ads";
 import type { StagedCampaign } from "./ads";
 import { findAll } from "./upstream";
 import type { ToolCall } from "./upstream";
@@ -141,7 +141,7 @@ export const verifyStagedPaused = async (
   const inDraft = await draftIds(ask, staged);
   const levels = [
     ["campaign", [staged.campaignId]],
-    ["adset", [staged.adSetId]],
+    ["adset", adSetIdsOf(staged)],
     ["ad", staged.adIds],
   ] as const;
   const live = levels.map(
@@ -191,7 +191,7 @@ export const activateCampaign = async (
   }
   const order = [
     ["campaign", staged.campaignId],
-    ["ad_set", staged.adSetId],
+    ...adSetIdsOf(staged).map((id) => ["ad_set", id] as const),
     ...staged.adIds.map((id) => ["ad", id] as const),
   ] as const;
   for (const [type, id] of order) {
