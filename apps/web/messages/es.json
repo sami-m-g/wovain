@@ -1911,6 +1911,70 @@
         "check": "Fourthwall añade políticas por defecto. Revísalas para que reflejen cómo vendes.",
         "action": "Revisar políticas"
       }
+    },
+    "metaSetup": {
+      "title": "Prepara tu cuenta de Meta para los anuncios",
+      "titleReady": "Tu cuenta de Meta está lista para los anuncios",
+      "progressLabel": "Progreso de la configuración de Meta",
+      "progress": "{done, number} de {total, number} hechos",
+      "optional": "Opcional",
+      "connect": "Conectar Meta",
+      "reconnect": "Volver a conectar Meta",
+      "disconnect": "Desconectar Meta",
+      "disconnected": "Meta está desconectado",
+      "notConnected": "Conecta tu cuenta de Meta y wovain revisa lo que aún falta para que tus anuncios puedan publicarse.",
+      "expired": "El inicio de sesión de Meta caducó. Vuelve a conectar Meta para ver cómo está tu cuenta.",
+      "state": {
+        "done": "hecho",
+        "todo": "pendiente",
+        "waiting": "en espera",
+        "check": "revísalo tú"
+      },
+      "ad_account": {
+        "label": "Cuenta publicitaria",
+        "action": "Abrir cuentas publicitarias",
+        "altAction": "Abrir cuentas publicitarias",
+        "done": "Tu cuenta publicitaria está abierta a wovain.",
+        "todo": "Necesitas una cuenta publicitaria. Abre la página de cuentas publicitarias de Meta, elige Añadir y luego Crear una cuenta publicitaria nueva. Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Meta ha restringido esta cuenta publicitaria. Abre Calidad de la cuenta para ver por qué y qué pide Meta.",
+        "check": "Revisa tu cuenta publicitaria en Meta."
+      },
+      "payment": {
+        "label": "Método de pago",
+        "action": "Añadir un método de pago",
+        "altAction": "Añadir un método de pago",
+        "done": "Tu cuenta publicitaria tiene un método de pago. Meta le cobra el gasto en anuncios.",
+        "todo": "Meta cobra el gasto en anuncios a una tarjeta o a PayPal en tu cuenta publicitaria. Abre la configuración de pagos de Meta, elige Añadir método de pago y guárdalo. Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Meta está revisando esta cuenta publicitaria, así que los pagos esperan. Abre Calidad de la cuenta para ver qué necesita Meta.",
+        "check": "Revisa el método de pago en Meta."
+      },
+      "page": {
+        "label": "Página de Facebook",
+        "action": "Añadir tu página",
+        "altAction": "Crear una página",
+        "done": "Tus anuncios se publican con tu página de Facebook.",
+        "todo": "Los anuncios se publican con una página de Facebook. Si tienes una, abre Páginas en la configuración del negocio de Meta, elige Añadir y selecciónala. Si no, crea una primero (basta con un nombre y una foto). Vuelve aquí: esta tarjeta se marca sola.",
+        "waiting": "Configura primero tu cuenta publicitaria.",
+        "check": "Revisa tu página en Meta."
+      },
+      "instagram": {
+        "label": "Cuenta de Instagram",
+        "action": "Añadir Instagram",
+        "altAction": "Añadir Instagram",
+        "done": "Tus anuncios también pueden publicarse con tu cuenta de Instagram.",
+        "todo": "Opcional: vincula tu cuenta de Instagram para que tus anuncios muestren tu nombre también en Instagram. Abre Cuentas de Instagram en la configuración del negocio de Meta y elige Añadir.",
+        "waiting": "Configura primero tu cuenta publicitaria.",
+        "check": "Opcional: Meta no indicó si hay una cuenta de Instagram vinculada. Puedes revisarlo en la configuración del negocio de Meta."
+      },
+      "safety_rules": {
+        "label": "Reglas de seguridad",
+        "action": "Volver a conectar Meta",
+        "altAction": "Volver a conectar Meta",
+        "done": "Listo. wovain puede crear las reglas que pausan tus anuncios, incluso cuando wovain no está en línea.",
+        "todo": "Vuelve a conectar Meta y acepta todo lo que pide, para que wovain pueda crear las reglas que pausan tus anuncios. Mientras Meta revisa la app de wovain, esto solo funciona para las cuentas que Meta deja probarla.",
+        "waiting": "Disponible cuando tu cuenta publicitaria esté configurada.",
+        "check": "Vuelve a conectar Meta para revisar las reglas de seguridad."
+      }
     }
   },
   "Drops": {
