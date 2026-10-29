@@ -111,6 +111,12 @@
       "skillPath": "skills/eval-audit/SKILL.md",
       "computedHash": "996ef52f90673647106ac795600c6d32f82ac0e1a51564b3ea47d130c0145a45"
     },
+    "founder-board": {
+      "source": "Jakeschincariol/founder-skill",
+      "sourceType": "github",
+      "skillPath": "skills/founder-board/SKILL.md",
+      "computedHash": "6895508a35b7b28f5e032e24e991995f6364310a57fabb75008b7d0c066c6d9d"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
@@ -182,6 +188,12 @@
       "sourceType": "github",
       "skillPath": "skills/observability-and-instrumentation/SKILL.md",
       "computedHash": "e5eba32f952a29d20c0383728a9505d0ca2a90f1d8d075603e53804b441b2dd2"
+    },
+    "office-hours": {
+      "source": "garrytan/gstack",
+      "sourceType": "github",
+      "skillPath": "office-hours/SKILL.md",
+      "computedHash": "df86c1586175d68d2da19e8755ed57011dd6fcc49de7395ef258ace06ca8eccf"
     },
     "onboarding": {
       "source": "coreyhaines31/marketingskills",
@@ -453,6 +465,12 @@
       "sourceType": "github",
       "skillPath": "skills/validate-evaluator/SKILL.md",
       "computedHash": "8e6639863c2ce7d9ce98975889e30ad472fe3767e38037ef3c5384ecb50c002b"
+    },
+    "validate-idea": {
+      "source": "emotixco/claude-skills-founder",
+      "sourceType": "github",
+      "skillPath": "skills/validate-idea/SKILL.md",
+      "computedHash": "213c54e8007f7f03d4c0a63ddafeadd9347a3359188cddec13d42f02eb5920db"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

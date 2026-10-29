@@ -60,7 +60,7 @@
 - Declared in `.mcp.json`, `.claude/settings.json` and `skills-lock.json`; never install at user or global scope.
 - MCP: `qloo-docs` (docs), `qloo` (harness, reads `QLOO_API_KEY`), `tavily` (OAuth, or `TAVILY_API_KEY` for the CLI skills), `inngest-dev` (Dev Server on 127.0.0.1:8288), `pulumi` (OAuth).
 - Plugins: `superpowers`, `inngest`, `playwright`.
-- Skills: `tavily-*`, `remotion-*`, `pulumi-*`, `investor-materials`, `investor-outreach`.
+- Skills: `tavily-*`, `remotion-*`, `pulumi-*`, `investor-materials`, `investor-outreach`, `founder-board`, `office-hours` (gstack, single skill; its `~/.claude/skills/gstack` helpers are not installed), `validate-idea`. Founder skills write to `founder/` (git-ignored).
 
 ## Feature flags
 

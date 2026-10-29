@@ -58,3 +58,9 @@ temp
 junit.xml
 packages/core/src/evals/report.v1.json
 .mastra
+
+# Founder skill output (founder-board, validate-idea)
+founder/
+
+# gstack office-hours scratch files
+.gstack/
