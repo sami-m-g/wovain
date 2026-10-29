@@ -23,17 +23,19 @@ permissions: {}
 
 jobs:
   claude:
-    # Only the owner starts it: no bot, and no outsider's comment or issue
-    # starts a run (the action would reject them, but as a failed run). An
-    # issue counts only when the owner wrote it: the action reads the whole
-    # issue, and `include_comments_by_actor` filters comments only.
+    # Only the owner starts it, on an issue or pull request that the owner
+    # or Claude wrote: the action reads the whole title and body, and
+    # `include_comments_by_actor` filters comments only. No bot and no
+    # outsider starts a run. An Agent task with `@claude` in it starts one
+    # run, from its label, not two.
     if: >-
       github.actor == github.repository_owner && (
-        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-        (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
-          (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude') || github.event.label.name == 'claude')))
+        (github.event_name == 'issue_comment' && contains(fromJSON('["sami-m-g","claude[bot]"]'), github.event.issue.user.login) && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(fromJSON('["sami-m-g","claude[bot]"]'), github.event.pull_request.user.login) && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(fromJSON('["sami-m-g","claude[bot]"]'), github.event.pull_request.user.login) && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner && (
+          (github.event.action == 'opened' && !contains(github.event.issue.labels.*.name, 'claude') && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
+          github.event.label.name == 'claude')))
     # One run per issue or pull request at a time.
     concurrency:
       group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
