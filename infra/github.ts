@@ -241,6 +241,41 @@ export const repositorySettings = ({
     repository: repository.name,
   });
 
+  // The PR shepherd's labels (.github/workflows/shepherd*.yml): `needs-human`
+  // when it stops, `shepherd` on a pull request it worked on, `autofix` on
+  // one that Claude's cloud Auto-fix watches instead (the shepherd leaves it
+  // alone, so the two never push to one pull request), and `claude`, which
+  // hands an issue or pull request to Claude.
+  for (const [name, color, description] of [
+    ["needs-human", "d93f0b", "The shepherd stopped: a person decides"],
+    ["shepherd", "5319e7", "The shepherd worked on this pull request"],
+    ["autofix", "0e8a16", "Claude's cloud Auto-fix watches this pull request"],
+    ["claude", "d4a373", "Hand this to Claude"],
+  ] as const) {
+    new github.IssueLabel(name, {
+      color,
+      description,
+      name,
+      repository: repository.name,
+    });
+  }
+
+  // The shepherd's limits on the founder's Claude subscription: attempts per
+  // pull request (at most one per head commit) and Claude runs per day across
+  // the repository. `shadow` comments the planned fix and pushes nothing;
+  // `live` pushes.
+  for (const [name, value] of [
+    ["SHEPHERD_MODE", "shadow"],
+    ["SHEPHERD_MAX_PER_PR", "5"],
+    ["SHEPHERD_MAX_PER_DAY", "30"],
+  ] as const) {
+    new github.ActionsVariable(name, {
+      repository: repository.name,
+      value,
+      variableName: name,
+    });
+  }
+
   // The one repository secret: GitGuardian's token. It is a stack secret, so
   // Pulumi keeps it encrypted in state; only gitguardian-ignore reads it.
   if (gitguardianApiKey !== undefined) {
