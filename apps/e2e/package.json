@@ -1,0 +1,31 @@
+{
+  "name": "@wovain/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "seed:smoke": "tsx src/seed-smoke.ts",
+    "test:e2e": "playwright test --project=pr",
+    "test:smoke": "playwright test --project=smoke"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
+    "@playwright/test": "catalog:",
+    "@wovain/auth": "workspace:*",
+    "@wovain/db": "workspace:*",
+    "better-auth": "catalog:",
+    "evlog": "catalog:",
+    "msw": "catalog:",
+    "posthog-node": "catalog:",
+    "sharp": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
