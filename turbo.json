@@ -14,6 +14,13 @@
       "dependsOn": ["transit"],
       "outputs": ["junit.xml"]
     },
+    "build-storybook": {
+      "dependsOn": ["transit"],
+      "outputs": ["storybook-static/**"]
+    },
+    "test-storybook": {
+      "dependsOn": ["transit"]
+    },
     "transit": {
       "dependsOn": ["^transit"]
     },

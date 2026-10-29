@@ -67,3 +67,7 @@ founder/
 
 # Playwright MCP screenshots and console logs
 .playwright-mcp/
+
+# Storybook
+storybook-static
+*storybook.log
