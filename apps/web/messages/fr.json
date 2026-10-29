@@ -989,6 +989,28 @@
         "openness": "Place sur le marché",
         "margin": "Marge",
         "ipSafety": "Sans noms de marques"
+      },
+      "anglesTitle": "Ce qui se vend pour vous",
+      "anglesLead": "{wins, number} de vos {designs, number} designs ont dégagé un bénéfice après la publicité. Un angle apparaît ici quand les preuves sont solides : une seule vente le fait peu bouger.",
+      "anglesNone": "Aucun angle ne se détache encore. Chaque design en vente depuis 3 jours ou plus compte.",
+      "why": {
+        "up": "Pourquoi : {count, plural, one {votre dernier drop {value}} other {vos # derniers drops {value}}} ({kind}) {count, plural, one {a rapporté} other {ont rapporté}} {money}.",
+        "down": "Attention : {count, plural, one {votre dernier drop {value}} other {vos # derniers drops {value}}} ({kind}) {count, plural, one {a perdu} other {ont perdu}} {money}.",
+        "kinds": {
+          "theme": "thème",
+          "tag": "tag Qloo",
+          "entity": "entité Qloo",
+          "audience": "audience",
+          "palette": "palette",
+          "price": "prix",
+          "blank": "article de base"
+        },
+        "bands": {
+          "under-25": "moins de 25 $",
+          "25-35": "de 25 $ à 35 $",
+          "35-50": "de 35 $ à 50 $",
+          "50-up": "50 $ et plus"
+        }
       }
     }
   },
@@ -2266,5 +2288,35 @@
         "create": "Créer la publicité"
       }
     }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "Quoi créer",
+      "why": "Pourquoi ça se vend",
+      "audience": "Qui achète et où",
+      "competition": "Concurrence"
+    },
+    "unavailable": {
+      "not_read": "Pas encore lu.",
+      "read_failed": "La lecture a échoué. Relancez la recherche.",
+      "not_connected": "Connectez Meta pour lire les publicités que les boutiques maintiennent.",
+      "none_found": "Rien trouvé pour cette idée.",
+      "ungrounded": "Pas de titre : le texte affirmait ce que les preuves ne montrent pas.",
+      "raw_tag": "Pas de titre : seule l'étiquette de goût brute est revenue."
+    },
+    "dropped": {
+      "no_qloo_evidence": "Aucune preuve Qloo",
+      "no_demand_proof": "Aucune preuve que ça se vend",
+      "no_competition_read": "La concurrence n'a pas pu être lue",
+      "saturated": "Trop encombré : trop d'annonces ou d'annonceurs similaires",
+      "no_title": "Aucun titre étayé par les preuves"
+    },
+    "level": {
+      "open": "Ouvert",
+      "sweet-spot": "Juste milieu",
+      "crowded": "Encombré"
+    },
+    "sameBuyers": "Les mêmes acheteurs que votre brief",
+    "droppedCount": "{count, plural, one {# idée écartée} other {# idées écartées}} faute de preuves"
   }
 }

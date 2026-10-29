@@ -486,3 +486,74 @@ describe("rankSources", () => {
     ]);
   });
 });
+
+// Marketplace proof for "anime" only; "cozy" is crowded with
+// near-identical listings; "pastel" has neither.
+const gatedTavily = () => {
+  const { client } = fakeTavily();
+  const search = vi.fn(async (query: string, options?: TavilySearchOptions) => {
+    const quoted = /^"(?<theme>[^"]+)" (?<kind>shirt|t-shirt)$/u.exec(query);
+    const theme = quoted?.groups?.["theme"] ?? "";
+    if (quoted?.groups?.["kind"] === "shirt") {
+      return await Promise.resolve(
+        reply(
+          query,
+          theme === "anime"
+            ? [
+                hit(
+                  "https://www.etsy.com/listing/9",
+                  `${theme} shirt`,
+                  "Bestseller. 1,240 reviews"
+                ),
+              ]
+            : []
+        )
+      );
+    }
+    if (quoted?.groups?.["kind"] === "t-shirt") {
+      return await Promise.resolve(
+        reply(
+          query,
+          theme.startsWith("cozy")
+            ? Array.from({ length: 10 }, (_, index) =>
+                hit(
+                  `https://www.etsy.com/listing/c${index}`,
+                  `${theme} t-shirt ${index}`,
+                  `${theme} t-shirt`,
+                  { score: 0.9 }
+                )
+              )
+            : []
+        )
+      );
+    }
+    return await client.search(query, options);
+  });
+  return { ...client, search } satisfies TavilyTrends;
+};
+
+describe("createTrends with the evidence gate", () => {
+  it("shows only proven, unsaturated ideas, ranked by the lower bound", async () => {
+    const trends = createTrends(gatedTavily(), qlooGhibli);
+    const research = await trends.research("ghibli", undefined, {
+      evidenceGate: true,
+      tavily: true,
+    });
+    expect(research.ideas.map((idea) => idea.theme)).toStrictEqual(["anime"]);
+    const [top] = research.ideas;
+    expect(top?.rank).toBe(1);
+    expect(top?.proof).toMatchObject({
+      market: { bestsellers: 1, reviews: 1240 },
+      proven: true,
+      supply: { count: 0 },
+    });
+    expect(top?.score).toBe(top?.spot?.score);
+  });
+
+  it("leaves the old ranking alone with the gate off", async () => {
+    const trends = createTrends(gatedTavily(), qlooGhibli);
+    const research = await trends.research("ghibli");
+    expect(research.ideas).toHaveLength(3);
+    expect(research.ideas[0]?.proof).toBeUndefined();
+  });
+});

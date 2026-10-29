@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import type { Actor } from "../flow/actor";
 import { withAgentTrace } from "../flow/agent-trace";
+import { nameIdeas } from "../flow/ideas";
 import {
   approvedDesigns,
   autopilotRejection,
@@ -146,6 +147,23 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     },
     id: "research",
     inputSchema: trigger,
+    outputSchema: carry,
+    retries: RETRIES,
+  });
+
+  // Names each idea past the evidence gate (idea-evidence-gate): a
+  // readable title and concept from its evidence, checked by the grounding
+  // guard with one retry, recorded in the decision trace. Nothing to do
+  // with the flag off.
+  const name = createStep({
+    execute: async ({ inputData }) => {
+      await body(
+        async (actor, from) => await nameIdeas(actor, from.ideaIds ?? [])
+      )(inputData);
+      return inputData;
+    },
+    id: "name",
+    inputSchema: carry,
     outputSchema: carry,
     retries: RETRIES,
   });
@@ -295,6 +313,7 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
     })
       /* oxlint-disable promise/prefer-await-to-then -- Mastra's step builder, not a promise */
       .then(research)
+      .then(name)
       .then(ideas)
       .then(design)
       .then(approval)

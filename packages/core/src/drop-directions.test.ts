@@ -361,3 +361,110 @@ it("writes each proven theme as a concept: design, buyer and occasion", async ()
     expect(direction.evidence.demand?.proven).toBe(true);
   }
 });
+
+// The idea_words agent: a readable title from the tag, no number.
+const nameIdeas: Nemotron = async <T extends z.ZodType>({
+  prompt,
+  schema,
+}: Ask<T>) => {
+  const { evidence } = JSON.parse(prompt) as {
+    evidence: { qloo: { tag: string } };
+  };
+  return await Promise.resolve(
+    schema.parse({
+      buyer: "for fans of the night",
+      concept: `A line-art crest about ${evidence.qloo.tag} on a soft tee.`,
+      occasion: "identity tee",
+      style: "line art",
+      title: `Line-art crest of ${evidence.qloo.tag}`.slice(0, 60),
+      whyNow: "Shoppers already buy it on the marketplaces.",
+    })
+  );
+};
+
+const gatedDeps = (overrides: Partial<DirectionDeps> = {}) =>
+  depsWith({ ask: nameIdeas, gate: true, ...overrides });
+
+it("with the evidence gate, drops a saturated theme and records why", async () => {
+  const trace = new DecisionTrace({ userId: "u1" });
+  const result = await suggestDirections(
+    gatedDeps({ trace }),
+    request(brandFor("crowded", "Gothic"))
+  );
+  expect(themesOf(result)).not.toContain("crowded wave");
+  const rank = trace.entries.find((entry) => entry.step === "directions.rank");
+  expect(rank?.output).toMatchObject({
+    gate: expect.arrayContaining([
+      expect.objectContaining({ reason: "saturated", theme: "crowded wave" }),
+    ]),
+  });
+});
+
+it("with the evidence gate, drops a theme without proof of demand", async () => {
+  const trace = new DecisionTrace({ userId: "u1" });
+  const result = await suggestDirections(
+    gatedDeps({ trace }),
+    request(brandFor("unsold", "Cottagecore"))
+  );
+  expect(result.directions).toStrictEqual([]);
+  expect(result.dropped).toBeGreaterThan(0);
+  const rank = trace.entries.find((entry) => entry.step === "directions.rank");
+  expect(rank?.output).toMatchObject({
+    gate: expect.arrayContaining([
+      expect.objectContaining({ reason: "no_demand_proof" }),
+    ]),
+  });
+});
+
+it("with the evidence gate, every direction carries the same card, best first", async () => {
+  const result = await suggestDirections(gatedDeps(), request());
+  expect(result.directions.length).toBeGreaterThan(0);
+  const scores = result.directions.map((one) => one.score);
+  expect(scores).toStrictEqual(scores.toSorted((a, b) => b - a));
+  for (const direction of result.directions) {
+    expect(direction.spot?.score).toBe(direction.score);
+    expect(direction.title).not.toBe(direction.theme);
+    expect(direction.card).toMatchObject({
+      audience: { reason: "not_read", status: "unavailable" },
+      competition: { status: "ok", value: { level: "open", listings: 0 } },
+      make: { status: "ok", value: { products: ["t-shirt"] } },
+      origin: "directions",
+      why: {
+        status: "ok",
+        value: {
+          demand: {
+            status: "ok",
+            value: { ads: { reason: "not_connected" }, proven: true },
+          },
+          qlooTag: { name: direction.theme },
+        },
+      },
+    });
+  }
+});
+
+// A writer whose titles stay the raw tag.
+const rawTitles: Nemotron = async <T extends z.ZodType>(asked: Ask<T>) => {
+  const { evidence } = JSON.parse(asked.prompt) as {
+    evidence: { qloo: { tag: string } };
+  };
+  const named = (await nameIdeas(asked)) as object;
+  return await Promise.resolve(
+    asked.schema.parse({ ...named, title: evidence.qloo.tag })
+  );
+};
+
+it("with the evidence gate, withdraws a direction whose title stays the raw tag", async () => {
+  const events: DirectionEvent[] = [];
+  const result = await suggestDirections(
+    gatedDeps({
+      ask: rawTitles,
+      onEvent: (event) => {
+        events.push(event);
+      },
+    }),
+    request()
+  );
+  expect(result.directions).toStrictEqual([]);
+  expect(events.some((event) => event.kind === "withdrawn")).toBe(true);
+});

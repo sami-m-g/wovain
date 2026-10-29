@@ -989,6 +989,28 @@
         "openness": "Espacio en el mercado",
         "margin": "Margen",
         "ipSafety": "Sin nombres de marcas"
+      },
+      "anglesTitle": "Lo que te vende",
+      "anglesLead": "{wins, number} de tus {designs, number} diseños dieron ganancia después de los anuncios. Un ángulo aparece aquí cuando la evidencia es sólida, así que una sola venta lo mueve poco.",
+      "anglesNone": "Todavía no destaca ningún ángulo. Cada diseño que lleva 3 días o más a la venta suma.",
+      "why": {
+        "up": "Por qué esto: {count, plural, one {tu último drop de {value}} other {tus últimos # drops de {value}}} ({kind}) {count, plural, one {ganó} other {ganaron}} {money}.",
+        "down": "Ojo: {count, plural, one {tu último drop de {value}} other {tus últimos # drops de {value}}} ({kind}) {count, plural, one {perdió} other {perdieron}} {money}.",
+        "kinds": {
+          "theme": "tema",
+          "tag": "etiqueta de Qloo",
+          "entity": "entidad de Qloo",
+          "audience": "audiencia",
+          "palette": "paleta",
+          "price": "precio",
+          "blank": "prenda base"
+        },
+        "bands": {
+          "under-25": "menos de 25 $",
+          "25-35": "de 25 $ a 35 $",
+          "35-50": "de 35 $ a 50 $",
+          "50-up": "50 $ o más"
+        }
       }
     }
   },
@@ -2266,5 +2288,35 @@
         "create": "Crear el anuncio"
       }
     }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "Qué hacer",
+      "why": "Por qué se vende",
+      "audience": "Quién compra y dónde",
+      "competition": "Competencia"
+    },
+    "unavailable": {
+      "not_read": "Aún no se ha leído.",
+      "read_failed": "La lectura falló. Vuelve a investigar.",
+      "not_connected": "Conecta Meta para leer los anuncios que las tiendas mantienen activos.",
+      "none_found": "No se encontró nada para esta idea.",
+      "ungrounded": "Sin título: el texto afirmaba algo que la evidencia no muestra.",
+      "raw_tag": "Sin título: solo volvió la etiqueta de gusto original."
+    },
+    "dropped": {
+      "no_qloo_evidence": "Sin evidencia de Qloo",
+      "no_demand_proof": "Sin prueba de que se venda",
+      "no_competition_read": "No se pudo leer la competencia",
+      "saturated": "Demasiado saturado: demasiados anuncios o productos similares",
+      "no_title": "Sin un título respaldado por la evidencia"
+    },
+    "level": {
+      "open": "Abierto",
+      "sweet-spot": "Punto óptimo",
+      "crowded": "Saturado"
+    },
+    "sameBuyers": "Los mismos compradores que tu brief",
+    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil"
   }
 }

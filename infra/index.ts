@@ -10,7 +10,7 @@ import { deployEnvironments } from "./github.ts";
 import { retainLegacy } from "./legacy.ts";
 import { polarPromoSecrets } from "./polar.ts";
 import { configurePostHog, environmentProject } from "./posthog/program.ts";
-import { ResendDomain, ResendVerification } from "./resend.ts";
+import { ResendDomain, ResendTracking, ResendVerification } from "./resend.ts";
 import {
   cloudRunService,
   postgresInstance,
@@ -533,6 +533,22 @@ if (resendDomain !== undefined && resendApiKey !== undefined) {
     { apiKey: resendApiKey, domainId: resendDomain.id },
     { dependsOn: site.resendRecordSets }
   );
+}
+
+// Opt-in per stack: `resendTracking: off` turns Resend's open and click
+// tracking off for the domain (resend.ts). Unset, the domain keeps Resend's
+// default; Pulumi.prod.yaml leaves it unset until prod's mail is changed.
+if (
+  resendDomain !== undefined &&
+  resendApiKey !== undefined &&
+  config.get("resendTracking") === "off"
+) {
+  new ResendTracking("resend", {
+    apiKey: resendApiKey,
+    clickTracking: false,
+    domainId: resendDomain.id,
+    openTracking: false,
+  });
 }
 
 new gcp.kms.CryptoKeyIAMMember("runner-connections", {

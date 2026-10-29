@@ -25,6 +25,11 @@ import { z } from "zod";
 //   https://www.attnagency.com/blog/scale-facebook-ads-maintain-cpa).
 // - Scale only at ROAS of at least 1.3x break-even with 3 or more purchases,
 //   so one lucky sale never raises a budget.
+// - The real cost per sale (feedback-loop, ./outcomes realCostPerSaleOf):
+//   once the merchant's ads have made 10 purchases, the target CPA is the
+//   lower of the profit per sale and what a sale really costs them, so an
+//   ad far behind their usual cost is cut sooner. It never rises above the
+//   profit per sale.
 // Every threshold is a named setting a merchant can override.
 
 export const AD_RULE_DEFAULTS = {
@@ -47,6 +52,9 @@ export const AD_RULE_DEFAULTS = {
   maxCpcCents: 150,
   // The click-through-rate floor.
   minCtr: 0.008,
+  // Purchases across the merchant's ads before the target CPA reads their
+  // real cost per sale.
+  realCpaMinPurchases: 10,
   // Hours between two raises of one campaign.
   scaleEveryHours: 48,
   // A raise needs at least this many purchases.
@@ -71,6 +79,7 @@ export const adRuleOverridesSchema = z
     lossLimitCents: z.number().int().min(0).max(10_000_000),
     maxCpcCents: z.number().int().min(1).max(10_000),
     minCtr: z.number().min(0).max(0.2),
+    realCpaMinPurchases: z.number().int().min(1).max(10_000),
     scaleEveryHours: z
       .number()
       .min(24)
@@ -96,11 +105,17 @@ export interface UnitEconomics {
   priceCents: number;
   // Profit per sale after the blank, fees and the refund reserve.
   profitCents: number;
+  // What a sale really costs the merchant in ads, once they have enough
+  // purchases (feedback-loop); the profit per sale is the target before.
+  realCostPerSaleCents?: number | undefined;
 }
 
 export interface Targets {
-  // The most a purchase may cost without losing money: the profit per sale.
+  // The most a purchase may cost: the profit per sale, or the real cost per
+  // sale when it is lower.
   targetCpaCents: number;
+  // The target is the merchant's real cost per sale.
+  real: boolean;
   // Revenue per dollar of spend at which a sale just pays for its ads.
   breakEvenRoas: number;
   // The ROAS a raise needs.
@@ -115,10 +130,17 @@ export const targetsOf = (
     return undefined;
   }
   const breakEvenRoas = economics.priceCents / economics.profitCents;
+  const real =
+    economics.realCostPerSaleCents !== undefined &&
+    economics.realCostPerSaleCents > 0 &&
+    economics.realCostPerSaleCents < economics.profitCents;
   return {
     breakEvenRoas,
+    real,
     scaleRoas: breakEvenRoas * settings.scaleRoasMultiple,
-    targetCpaCents: economics.profitCents,
+    targetCpaCents: real
+      ? (economics.realCostPerSaleCents ?? economics.profitCents)
+      : economics.profitCents,
   };
 };
 
@@ -147,6 +169,9 @@ export interface Kill {
 }
 
 const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+// What the target is, in a kill's reason.
+const targetName = (targets: Targets) =>
+  targets.real ? "real cost per sale" : "profit per sale";
 const pct = (share: number) => `${(share * 100).toFixed(2)}%`;
 
 // The first kill rule an ad breaks, if any.
@@ -166,7 +191,7 @@ export const killOf = (
           spendCents: ad.spendCents,
           targetCpaCents: cpa,
         },
-        reason: `Spent ${dollars(ad.spendCents)} with no sale and no add-to-cart; the limit is ${dollars(limit)} (${settings.killNoSaleCpaMultiple}x the ${dollars(cpa)} profit per sale).`,
+        reason: `Spent ${dollars(ad.spendCents)} with no sale and no add-to-cart; the limit is ${dollars(limit)} (${settings.killNoSaleCpaMultiple}x the ${dollars(cpa)} ${targetName(targets)}).`,
         rule: "no_sale_spend",
       };
     }
@@ -182,7 +207,7 @@ export const killOf = (
           spendCents: ad.spendCents,
           targetCpaCents: cpa,
         },
-        reason: `Spent ${dollars(ad.spendCents)} with ${ad.addToCarts} add-to-carts but no sale; the limit is ${dollars(limit)} (${settings.killCartNoSaleCpaMultiple}x the ${dollars(cpa)} profit per sale).`,
+        reason: `Spent ${dollars(ad.spendCents)} with ${ad.addToCarts} add-to-carts but no sale; the limit is ${dollars(limit)} (${settings.killCartNoSaleCpaMultiple}x the ${dollars(cpa)} ${targetName(targets)}).`,
         rule: "cart_no_sale_spend",
       };
     }

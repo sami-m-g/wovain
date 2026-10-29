@@ -245,19 +245,51 @@ export const createMetaGraph = ({
     log?: Logger
   ): Promise<{ businessId: string | undefined; id: string }> => {
     const businessId = await businessOf(token, adAccountId, log);
-    const path =
-      businessId === undefined
-        ? `/act_${adAccountId}/adspixels`
-        : `/${businessId}/adspixels`;
-    const { id } = idSchema.parse(
-      await post(log, "graph.create_dataset", token, path, { name })
-    );
-    if (businessId !== undefined) {
-      await post(log, "graph.share_dataset", token, `/${id}/shared_accounts`, {
-        account_id: adAccountId,
-        business: businessId,
-      });
+    if (businessId === undefined) {
+      const { id } = idSchema.parse(
+        await post(
+          log,
+          "graph.create_dataset",
+          token,
+          `/act_${adAccountId}/adspixels`,
+          { name }
+        )
+      );
+      return { businessId, id };
     }
+    // A dataset made by an earlier set-up whose share failed is the
+    // business's but not yet the ad account's: reuse it rather than make a
+    // second one, and stop when the name isn't unique.
+    const { data: owned } = datasetsSchema.parse(
+      await get(
+        log,
+        "graph.business_adspixels",
+        token,
+        `/${businessId}/adspixels?fields=id,name&limit=200`
+      )
+    );
+    const named = owned.filter((each) => each.name === name);
+    if (named.length > 1) {
+      throw new GraphRefusedError(
+        `The business has ${named.length} datasets named "${name}"; keep one in Events Manager`,
+        undefined
+      );
+    }
+    const id =
+      named[0]?.id ??
+      idSchema.parse(
+        await post(
+          log,
+          "graph.create_dataset",
+          token,
+          `/${businessId}/adspixels`,
+          { name }
+        )
+      ).id;
+    await post(log, "graph.share_dataset", token, `/${id}/shared_accounts`, {
+      account_id: adAccountId,
+      business: businessId,
+    });
     return { businessId, id };
   };
 
