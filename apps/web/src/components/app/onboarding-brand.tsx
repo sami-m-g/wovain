@@ -47,6 +47,7 @@ import {
   StarterCards,
   useBuyersLine,
 } from "@/components/app/brand-discovery";
+import { DictationMic } from "@/components/app/dictation-mic";
 import {
   NextButton,
   StepActions,
@@ -456,14 +457,22 @@ const VoiceField = ({
           <FieldLabel className="sr-only" htmlFor={`${id}-custom`}>
             {t("customLabel")}
           </FieldLabel>
-          <Input
-            className="h-10"
-            id={`${id}-custom`}
-            maxLength={200}
-            onChange={(event) => setVoice(event.target.value)}
-            placeholder={t("customPlaceholder")}
-            value={custom ? voice : ""}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              className="h-10"
+              id={`${id}-custom`}
+              maxLength={200}
+              onChange={(event) => setVoice(event.target.value)}
+              placeholder={t("customPlaceholder")}
+              value={custom ? voice : ""}
+            />
+            <DictationMic
+              field={`${id}-custom`}
+              label={t("customLabel")}
+              maxLength={200}
+              onText={setVoice}
+            />
+          </div>
         </Field>
       </details>
     </FieldSet>
@@ -864,15 +873,23 @@ const BrandFields = ({
     <div className="flex flex-col gap-6">
       <Field>
         <FieldHeading field="niche" htmlFor={`${id}-niche`} id={`${id}-n`} />
-        <Input
-          aria-describedby={`${id}-n-help`}
-          className="h-10"
-          id={`${id}-niche`}
-          maxLength={60}
-          onChange={(event) => setNiche(event.target.value)}
-          placeholder={t("fields.niche.placeholder")}
-          value={niche}
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            aria-describedby={`${id}-n-help`}
+            className="h-10"
+            id={`${id}-niche`}
+            maxLength={60}
+            onChange={(event) => setNiche(event.target.value)}
+            placeholder={t("fields.niche.placeholder")}
+            value={niche}
+          />
+          <DictationMic
+            field={`${id}-niche`}
+            label={t("fields.niche.label")}
+            maxLength={60}
+            onText={setNiche}
+          />
+        </div>
         <SuggestionChips
           label={t("fields.niche.label")}
           onPick={setNiche}

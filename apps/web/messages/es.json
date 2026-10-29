@@ -1578,28 +1578,16 @@
     "scanThrottled": "Analizaste {last}. El próximo análisis puede hacerse a partir de las {next}."
   },
   "Voice": {
-    "hold": "Mantén pulsado para hablar",
-    "listening": "Escuchando… suelta para enviar",
-    "thinking": "Entendiendo lo que dijiste…",
     "disclosureTitle": "Antes de hablar con wovain",
-    "disclosure": "wovain no guarda tu grabación. fal la convierte en texto y Nebius lee el texto para entender lo que pediste. No pasa nada hasta que confirmes.",
     "disclosureOk": "Entendido",
     "noMic": "wovain no puede usar tu micrófono. Permítelo en los ajustes del sitio de tu navegador y vuelve a intentarlo.",
     "recordFailed": "wovain no pudo grabar en este navegador. Vuelve a intentarlo o usa otro navegador.",
-    "confirmTitle": "¿Es correcto?",
-    "notUnderstood": "wovain no lo entendió",
     "notHeard": "wovain no te oyó bien. Mantén pulsado el botón y vuelve a intentarlo.",
-    "canDo": "Puedes empezar un drop, o aprobar o rechazar ideas, diseños y acciones en cola.",
-    "heard": "Dijiste: «{transcript}»",
-    "confirm": "Confirmar",
-    "done": "Hecho.",
-    "startDrop": "Empezar un drop nuevo: {brief}",
-    "approveIdeas": "Aprobar {count, plural, one {esta idea} other {estas # ideas}} y dibujar diseños: {ideas}",
-    "approveDesign": "Aprobar el diseño «{design}»",
-    "rejectDesign": "Rechazar el diseño «{design}»",
-    "rejectDesignWhy": "Rechazar el diseño «{design}» porque {reason}",
-    "approveAction": "Aprobar «{action}»",
-    "rejectAction": "Rechazar «{action}»"
+    "dictate": "Dictar: {field}",
+    "dictateHint": "Mantén pulsado para hablar y suelta para añadir las palabras",
+    "listeningField": "Escuchando. Suelta para añadir las palabras al campo.",
+    "transcribing": "Convirtiendo tu grabación en texto.",
+    "disclosureDictation": "wovain no guarda tu grabación. fal la convierte en texto y las palabras aparecen en el campo para que las edites. No se envía ni se ejecuta nada hasta que lo confirmes."
   },
   "Store": {
     "title": "Tienda",
@@ -2222,8 +2210,7 @@
     },
     "sell": {
       "title": "¿Qué vas a vender?",
-      "lead": "Elige una dirección y wovain escribe el brief. Cada una explica por qué crece ahora.",
-      "picked": "Tu brief: {brief}",
+      "lead": "Elige una dirección o escribe tu propio brief. Cada dirección explica por qué crece ahora.",
       "brand": "Añadir tu marca (opcional): las direcciones se adaptan a ella",
       "next": "Siguiente: tu tienda"
     },
@@ -2240,6 +2227,7 @@
     "design": {
       "title": "Aprobar un diseño",
       "lead": "wovain investiga «{brief}», elige las mejores ideas y dibuja sus diseños.",
+      "noBrief": "Primero elige qué vender: wovain lo investiga y dibuja sus diseños.",
       "start": "Buscar ideas y dibujar",
       "working": "wovain está investigando y dibujando. Abre tu drop para elegir ideas y aprobar diseños; este paso se marca cuando vuelvas.",
       "ready": "Tu drop te espera. Aprueba un diseño y vuelve aquí.",
@@ -2248,6 +2236,7 @@
     "ads": {
       "title": "Lanzar los anuncios",
       "lead": "Tus productos están listos. Revisa el anuncio y su presupuesto diario en tu drop, y lánzalo.",
+      "needsDesign": "Primero aprueba un diseño. Tu anuncio se hace a partir de él.",
       "open": "Revisar y lanzar anuncios"
     },
     "finished": {
@@ -2309,6 +2298,7 @@
     "dropped": {
       "no_qloo_evidence": "Sin evidencia de Qloo",
       "no_demand_proof": "Sin prueba de que se venda",
+      "demand_unknown": "Demanda desconocida",
       "no_competition_read": "No se pudo leer la competencia",
       "saturated": "Demasiado saturado: demasiados anuncios o productos similares",
       "no_title": "Sin un título respaldado por la evidencia"
@@ -2319,7 +2309,15 @@
       "crowded": "Saturado"
     },
     "sameBuyers": "Los mismos compradores que tu brief",
-    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil"
+    "droppedCount": "{count, plural, one {# idea descartada} other {# ideas descartadas}} por evidencia débil",
+    "caution": {
+      "demand_unknown": "Sin confirmar: no se pudo revisar la demanda, así que no se sabe si se vende.",
+      "no_demand_proof": "Sin confirmar: aún no hay superventas, reseñas ni anuncios de larga duración.",
+      "no_competition_read": "Sin confirmar: no se pudo revisar los anuncios, así que la competencia es desconocida.",
+      "saturated": "Saturado: muchos anuncios o anunciantes similares ya lo venden."
+    },
+    "unconfirmed": "Ninguno de estos temas ha probado demanda aún, así que cada uno dice qué falta. Elige uno para probar, o escribe el tuyo.",
+    "noneChecked": "No pudimos confirmar la demanda de estos temas. Esto es lo que revisamos:"
   },
   "Alerts": {
     "title": "Alertas",

@@ -402,20 +402,39 @@ it("with the evidence gate, drops a saturated theme and records why", async () =
   });
 });
 
-it("with the evidence gate, drops a theme without proof of demand", async () => {
+// The founder's "What to sell now" on next (2026-10-29): no theme proved
+// demand, the gate dropped them all and the step said Qloo found nothing.
+it("with the evidence gate and no theme proven, shows Qloo's themes with their caution", async () => {
   const trace = new DecisionTrace({ userId: "u1" });
   const result = await suggestDirections(
     gatedDeps({ trace }),
     request(brandFor("unsold", "Cottagecore"))
   );
-  expect(result.directions).toStrictEqual([]);
-  expect(result.dropped).toBeGreaterThan(0);
+  expect(result.directions.length).toBeGreaterThan(0);
+  expect(result.unconfirmed).toBe(true);
+  expect(
+    result.directions.every((one) => one.caution === "no_demand_proof")
+  ).toBe(true);
+  expect(result.checked).toStrictEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ reason: "no_demand_proof" }),
+    ])
+  );
   const rank = trace.entries.find((entry) => entry.step === "directions.rank");
   expect(rank?.output).toMatchObject({
     gate: expect.arrayContaining([
       expect.objectContaining({ reason: "no_demand_proof" }),
     ]),
+    unconfirmed: true,
   });
+});
+
+it("with the evidence gate, a proven theme hides the unproven ones", async () => {
+  const result = await suggestDirections(gatedDeps(), request());
+  expect(result.unconfirmed).toBeUndefined();
+  expect(result.directions.every((one) => one.caution === undefined)).toBe(
+    true
+  );
 });
 
 it("with the evidence gate, every direction carries the same card, best first", async () => {

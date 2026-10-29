@@ -68,11 +68,18 @@ export const assertAutopilot = async (actor: Actor) => {
   }
 };
 
-// Runs a paid step on the merchant's credits.
+// Runs a paid step on the merchant's credits. A step whose result gave the
+// merchant nothing (`refundIf`) is given back like a failed one.
 export const charge = async <T>(
   actor: Actor,
   step: CreditStep,
-  { runId }: { runId?: string | null | undefined },
+  {
+    refundIf,
+    runId,
+  }: {
+    refundIf?: (result: T) => boolean;
+    runId?: string | null | undefined;
+  },
   work: () => Promise<T>
 ): Promise<T> => {
   const merchant = await merchantOf(actor);
@@ -96,6 +103,11 @@ export const charge = async <T>(
   } catch (error) {
     await releaseCredits(actor.db, held.id);
     throw error;
+  }
+  if (refundIf?.(result) === true) {
+    await releaseCredits(actor.db, held.id);
+    actor.log?.set({ credits: { refunded: step } });
+    return result;
   }
   const settled = await settleCredits(actor.db, held.id);
   actor.log?.set({ credits: { left: held.available, spent: step } });

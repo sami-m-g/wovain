@@ -56,6 +56,8 @@ const failed = (functionId: string) => ({
   run_id: "run_1",
 });
 
+const allowAll = async () => await Promise.resolve(true);
+
 const setup = async () => {
   const client = new PGlite();
   const db = drizzle({ client, relations });
@@ -119,10 +121,12 @@ const setup = async () => {
 const linkTelegram = async (ctx: Awaited<ReturnType<typeof setup>>) => {
   const { url } = await connectTelegram(ctx.actor);
   const token = new URL(url).searchParams.get("start") ?? "";
-  return await linkTelegramChat(ctx.db as unknown as Database, token, {
-    id: "777",
-    username: "merchant",
-  });
+  return await linkTelegramChat(
+    ctx.db as unknown as Database,
+    token,
+    { id: "777", username: "merchant" },
+    allowAll
+  );
 };
 
 describe("alerts on Postgres", () => {
@@ -154,10 +158,17 @@ describe("alerts on Postgres", () => {
 
     const db = ctx.db as unknown as Database;
     expect(
-      await linkTelegramChat(db, token, { id: "777", username: "merchant" })
+      await linkTelegramChat(
+        db,
+        token,
+        { id: "777", username: "merchant" },
+        allowAll
+      )
     ).toEqual({ locale: "fr", userId: USER_ID });
     // The token is spent.
-    expect(await linkTelegramChat(db, token, { id: "888" })).toBeUndefined();
+    expect(
+      await linkTelegramChat(db, token, { id: "888" }, allowAll)
+    ).toBeUndefined();
     const channels = await alertChannelsFor(ctx.actor);
     expect(channels.telegram).toEqual({
       available: true,
@@ -241,8 +252,22 @@ describe("alerts on Postgres", () => {
     await expect(
       deliverAlert(ctx.actor, { channel: "push", key: "k3", notification })
     ).rejects.toThrow("Expo refused");
-    // Nothing recorded, so the retry sends it.
-    expect(await ctx.db.select().from(alertDelivery)).toHaveLength(2);
+    // Recorded as failed, so the retry claims it and sends it.
+    const rows = await ctx.db.select().from(alertDelivery);
+    expect(rows.map((row) => row.status).toSorted()).toEqual([
+      "failed",
+      "skipped",
+      "skipped",
+    ]);
+    ctx.push.tickets = (messages) =>
+      messages.map(() => ({ id: "t2", status: "ok" }));
+    expect(
+      await deliverAlert(ctx.actor, {
+        channel: "push",
+        key: "k3",
+        notification,
+      })
+    ).toEqual({ status: "sent" });
   });
 
   it("skips a channel the merchant turned off after the alert was planned", async () => {
@@ -259,6 +284,41 @@ describe("alerts on Postgres", () => {
       })
     ).toEqual({ reason: "turned off", status: "skipped" });
     expect(ctx.mails).toEqual([]);
+  });
+
+  it("never calls a provider twice for a delivery already claimed", async () => {
+    // An earlier try sent the email, then failed to write that it did.
+    await ctx.db.insert(alertDelivery).values({
+      channel: "email",
+      key: "k6",
+      kind: "rule_action",
+      status: "sending",
+      userId: USER_ID,
+    });
+    expect(
+      await deliverAlert(ctx.actor, {
+        channel: "email",
+        key: "k6",
+        notification,
+      })
+    ).toEqual({ status: "duplicate" });
+    expect(ctx.mails).toEqual([]);
+  });
+
+  it("links Telegram only for a merchant with alerts on", async () => {
+    const { url } = await connectTelegram(ctx.actor);
+    const token = new URL(url).searchParams.get("start") ?? "";
+    const db = ctx.db as unknown as Database;
+    expect(
+      await linkTelegramChat(
+        db,
+        token,
+        { id: "777" },
+        async () => await Promise.resolve(false)
+      )
+    ).toBeUndefined();
+    const [chat] = await ctx.db.select().from(telegramChat);
+    expect(chat?.chatId).toBeNull();
   });
 
   it("unlinks a chat that blocked the bot", async () => {

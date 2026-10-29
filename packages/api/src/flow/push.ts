@@ -134,7 +134,10 @@ export const pushMessagesFor = (
         approvalId: notification.approvalId,
         kind: notification.kind,
         runId: notification.runId,
+        // The app's screen (an Expo Router path), and the alert's own page
+        // on the site for links that open the web.
         url: SCREEN[notification.kind],
+        webUrl: notification.url,
       },
       sound: "default",
       title: notification.title,

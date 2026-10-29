@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { useLogger as getRequestLogger, withEvlog } from "@/lib/evlog";
-import { alerts, db } from "@/services";
+import { alerts, core, db } from "@/services";
 
 // wovain's Telegram bot webhook (openspec alerts). Telegram posts each
 // message here with the secret token setWebhook gave it
@@ -57,10 +57,12 @@ const handleUpdate = async (request: NextRequest) => {
     linked =
       token === undefined
         ? undefined
-        : await linkTelegramChat(db, token, {
-            id: chatId,
-            username: message.from?.username,
-          });
+        : await linkTelegramChat(
+            db,
+            token,
+            { id: chatId, username: message.from?.username },
+            async (userId) => await core.flags.isOn("alerts", { userId })
+          );
   } catch (error) {
     getRequestLogger().error(
       error instanceof Error ? error : new Error(String(error))

@@ -7,7 +7,7 @@
 # Pull requests and tags made with the default token do not start other
 # workflows, so the release pull request's required checks (`verify`) never
 # run. Set the RELEASE_PLEASE_TOKEN Actions secret (a fine-grained token with
-# contents and pull requests write) and they do; without it the workflow still
+# contents, pull requests and workflows write) and they do; without it the workflow still
 # runs on the default token.
 name: release
 

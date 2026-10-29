@@ -195,7 +195,7 @@ describe("createFlags", () => {
     });
   });
 
-  it("follows production's registry answers on next", async () => {
+  it("answers only flags rolled out to everyone on next", async () => {
     const flags = createFlags({
       ...configured,
       APP_ENV: "next",
@@ -203,7 +203,8 @@ describe("createFlags", () => {
       POSTHOG_SECRET_KEY: undefined,
     });
 
-    expect(await flags.isOn("mastra-runs")).toBe(false);
+    expect(await flags.isOn("mastra-runs")).toBe(true);
+    expect(await flags.isOn("app-ui-v2")).toBe(false);
   });
 
   it("snapshots every registered flag", async () => {

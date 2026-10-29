@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
