@@ -1,6 +1,7 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ORPCError } from "@orpc/client";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@wovain/ui/components/button";
 import {
   Dialog,
@@ -13,21 +14,20 @@ import {
 import { Spinner } from "@wovain/ui/components/spinner";
 import { Mic } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
 import { posthog } from "posthog-js";
 import { useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { toast } from "sonner";
 
-import { usePathname, useRouter } from "@/i18n/navigation";
-import type { VoiceCommand } from "@/lib/flow-client";
+import { insertAtCursor } from "@/lib/dictation";
 import { orpc } from "@/utils/orpc";
 
 /**
- * Hold to talk (openspec voice-commands): hold the mic, say a command,
- * release, check what wovain understood, confirm. The clip goes to wovain's
- * server and nowhere else from here; nothing runs before Confirm. Shown only
- * while the voice-input flag is on for this merchant.
+ * Dictation (openspec voice-dictation): hold the mic beside a text field, say
+ * the words, release. The transcript is inserted at the cursor and the
+ * merchant edits it before they submit. No intent parsing, nothing runs. The
+ * clip goes to wovain's server (fal turns it into text) and nowhere else.
+ * Shown only while the voice-input flag is on for this merchant.
  */
 
 // Matches the server's cap (packages/core/src/voice.ts MAX_CLIP_SECONDS).
@@ -47,7 +47,6 @@ const RECORDING_TYPES = [
 ];
 // Set once the merchant has read what voice sends where.
 const DISCLOSED_KEY = "wovain.voice.disclosed";
-const NEW_DROP_PATH = "/dashboard/new";
 
 const recordingType = () =>
   RECORDING_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
@@ -61,112 +60,87 @@ const toBase64 = async (blob: Blob) => {
   return btoa(binary);
 };
 
-// The screen the merchant is on, which decides what "this one" can mean.
-const useScreen = () => {
-  const pathname = usePathname();
-  const runId = useSearchParams().get("run") ?? undefined;
-  if (pathname === NEW_DROP_PATH && runId !== undefined) {
-    return { runId, screen: "run" as const };
-  }
-  return {
-    screen:
-      pathname === NEW_DROP_PATH ? ("new_drop" as const) : ("home" as const),
-  };
+type Field = HTMLInputElement | HTMLTextAreaElement;
+
+const fieldOf = (id: string): Field | undefined => {
+  const element = document.querySelector(`#${id}`);
+  return element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement
+    ? element
+    : undefined;
 };
 
-const ProposalText = ({ command }: { command: VoiceCommand }) => {
-  const t = useTranslations("Voice");
-  const { proposal } = command;
-  switch (proposal.kind) {
-    case "start_drop": {
-      return t("startDrop", { brief: proposal.brief });
-    }
-    case "approve_ideas": {
-      return t("approveIdeas", {
-        count: proposal.ideaIds.length,
-        ideas: proposal.labels.join(", "),
-      });
-    }
-    case "approve_design": {
-      return t("approveDesign", { design: proposal.label });
-    }
-    case "reject_design": {
-      return proposal.reason === undefined
-        ? t("rejectDesign", { design: proposal.label })
-        : t("rejectDesignWhy", {
-            design: proposal.label,
-            reason: proposal.reason,
-          });
-    }
-    case "decide_approval": {
-      return proposal.approve
-        ? t("approveAction", { action: proposal.label })
-        : t("rejectAction", { action: proposal.label });
-    }
-    default: {
-      return proposal.code === "not_heard" ? t("notHeard") : t("canDo");
-    }
-  }
-};
-
-// What wovain heard, and the model's own reply when it found nothing to do
-// (an optional extra under the translated message).
-const Heard = ({ command }: { command: VoiceCommand }) => {
-  const t = useTranslations("Voice");
-  const { proposal, transcript } = command;
-  const reply =
-    proposal.kind === "none" && proposal.reason !== undefined
-      ? proposal.reason
-      : undefined;
-  return (
-    <>
-      {reply === undefined ? null : <p className="text-sm">{reply}</p>}
-      {transcript === "" ? null : (
-        <p className="text-muted-foreground text-sm">
-          {t("heard", { transcript })}
-        </p>
-      )}
-    </>
-  );
-};
-
-export const VoiceButton = () => {
+export const DictationMic = ({
+  field,
+  label,
+  maxLength,
+  onText,
+}: {
+  /** The id of the input or textarea the words go into. */
+  field: string;
+  /** The field's name, for the button's label ("Dictate: Brief"). */
+  label: string;
+  maxLength?: number;
+  /** Receives the field's whole new value, to set in its state. */
+  onText: (value: string) => void;
+}) => {
   const t = useTranslations("Voice");
   const status = useQuery(orpc.voice.status.queryOptions());
-  const context = useScreen();
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const [recording, setRecording] = useState(false);
   const [disclosing, setDisclosing] = useState(false);
-  const [command, setCommand] = useState<VoiceCommand | undefined>();
   const recorder = useRef<MediaRecorder | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // True from press to release, so a release during the microphone prompt
   // still stops the recording.
   const held = useRef(false);
+  // The cursor when the merchant pressed, before focus moved to the button.
+  // and the field's text then, to tell whether it was edited since.
+  const cursor = useRef({ end: 0, start: 0, value: "" });
 
-  const propose = useMutation({
+  const insert = (text: string) => {
+    const target = fieldOf(field);
+    if (target === undefined) {
+      return;
+    }
+    // Edited while the clip was transcribing: the saved selection points
+    // into old text, so go in at the caret now and keep the edit.
+    const edited = target.value !== cursor.current.value;
+    const inserted = insertAtCursor({
+      end: edited
+        ? (target.selectionEnd ?? target.value.length)
+        : cursor.current.end,
+      maxLength,
+      start: edited
+        ? (target.selectionStart ?? target.value.length)
+        : cursor.current.start,
+      text,
+      value: target.value,
+    });
+    onText(inserted.value);
+    // After React has put the new value in, so the caret lands after the words.
+    requestAnimationFrame(() => {
+      target.focus();
+      target.setSelectionRange(inserted.caret, inserted.caret);
+    });
+  };
+
+  const dictate = useMutation({
     mutationFn: async ({ clip, mimeType }: { clip: Blob; mimeType: string }) =>
-      await orpc.voice.command.call({
-        audio: await toBase64(clip),
-        mimeType,
-        ...context,
-      }),
-    onError: (error) => toast.error(error.message),
-    onSuccess: setCommand,
-  });
-
-  const confirm = useMutation({
-    mutationFn: async (token: string) =>
-      await orpc.voice.confirm.call({ token }),
-    onError: (error) => toast.error(error.message),
-    onSuccess: async (done) => {
-      setCommand(undefined);
-      toast.success(t("done"));
-      await queryClient.invalidateQueries();
-      if (done.runId !== null) {
-        router.push({ pathname: NEW_DROP_PATH, query: { run: done.runId } });
+      await orpc.voice.dictate.call({ audio: await toBase64(clip), mimeType }),
+    onError: (error) => {
+      // A procedure that throws is already tracked on the server; a failure
+      // before the request (the clip, the network) is only seen here.
+      if (!(error instanceof ORPCError)) {
+        posthog.captureException(error, { feature: "voice-input" });
       }
+      toast.error(error.message);
+    },
+    onSuccess: ({ text }) => {
+      if (text.trim() === "") {
+        toast.error(t("notHeard"));
+        return;
+      }
+      insert(text);
     },
   });
 
@@ -201,7 +175,7 @@ export const VoiceButton = () => {
       setRecording(false);
       const clip = new Blob(chunks, { type: media.mimeType });
       if (clip.size > 0) {
-        propose.mutate({ clip, mimeType: media.mimeType });
+        dictate.mutate({ clip, mimeType: media.mimeType });
       }
     });
     recorder.current = media;
@@ -233,11 +207,17 @@ export const VoiceButton = () => {
   }
 
   const start = () => {
+    const target = fieldOf(field);
+    cursor.current = {
+      end: target?.selectionEnd ?? target?.value.length ?? 0,
+      start: target?.selectionStart ?? target?.value.length ?? 0,
+      value: target?.value ?? "",
+    };
     if (localStorage.getItem(DISCLOSED_KEY) === null) {
       setDisclosing(true);
       return;
     }
-    if (recording || propose.isPending) {
+    if (recording || dictate.isPending) {
       return;
     }
     held.current = true;
@@ -257,30 +237,34 @@ export const VoiceButton = () => {
     }
   };
 
-  let label = t("hold");
+  let state = "";
   if (recording) {
-    label = t("listening");
-  } else if (propose.isPending) {
-    label = t("thinking");
+    state = t("listeningField");
+  } else if (dictate.isPending) {
+    state = t("transcribing");
   }
-  const busy = recording || propose.isPending;
 
   return (
     <>
       <Button
-        aria-label={label}
+        aria-label={t("dictate", { field: label })}
         aria-pressed={recording}
-        disabled={propose.isPending || confirm.isPending}
+        disabled={dictate.isPending}
         onKeyDown={onKeyDown}
         onPointerCancel={stop}
-        onPointerDown={start}
+        onPointerDown={(event) => {
+          // Keeps the field's focus and selection while the mic is held.
+          event.preventDefault();
+          start();
+        }}
         onPointerLeave={stop}
         onPointerUp={stop}
-        size="icon"
-        title={label}
+        size="icon-sm"
+        title={t("dictateHint")}
+        type="button"
         variant={recording ? "default" : "ghost"}
       >
-        {propose.isPending ? (
+        {dictate.isPending ? (
           <Spinner />
         ) : (
           <Mic
@@ -289,15 +273,15 @@ export const VoiceButton = () => {
           />
         )}
       </Button>
-      <span aria-live="polite" className="sr-only">
-        {busy ? label : ""}
-      </span>
+      <output aria-live="polite" className="sr-only">
+        {state}
+      </output>
 
       <Dialog onOpenChange={setDisclosing} open={disclosing}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("disclosureTitle")}</DialogTitle>
-            <DialogDescription>{t("disclosure")}</DialogDescription>
+            <DialogDescription>{t("disclosureDictation")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -308,42 +292,6 @@ export const VoiceButton = () => {
             >
               {t("disclosureOk")}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        onOpenChange={(open) => {
-          if (!open) {
-            setCommand(undefined);
-          }
-        }}
-        open={command !== undefined}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {command?.token === undefined
-                ? t("notUnderstood")
-                : t("confirmTitle")}
-            </DialogTitle>
-            <DialogDescription>
-              {command === undefined ? null : (
-                <ProposalText command={command} />
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {command === undefined ? null : <Heard command={command} />}
-          <DialogFooter showCloseButton>
-            {command?.token === undefined ? null : (
-              <Button
-                disabled={confirm.isPending}
-                onClick={() => confirm.mutate(command.token ?? "")}
-              >
-                {confirm.isPending ? <Spinner /> : null}
-                {t("confirm")}
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

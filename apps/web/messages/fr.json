@@ -1586,28 +1586,16 @@
     "scanThrottled": "Vous avez lancé une analyse {last}. La prochaine peut partir à partir de {next}."
   },
   "Voice": {
-    "hold": "Maintenez pour parler",
-    "listening": "À l'écoute… relâchez pour envoyer",
-    "thinking": "wovain comprend ce que vous avez dit…",
     "disclosureTitle": "Avant de parler à wovain",
-    "disclosure": "wovain ne garde pas votre enregistrement. fal le transforme en texte, puis Nebius lit le texte pour comprendre votre demande. Rien ne se passe avant votre confirmation.",
     "disclosureOk": "Compris",
     "noMic": "wovain ne peut pas utiliser votre micro. Autorisez-le dans les réglages du site de votre navigateur, puis réessayez.",
     "recordFailed": "wovain n'a pas pu enregistrer dans ce navigateur. Réessayez, ou utilisez un autre navigateur.",
-    "confirmTitle": "C'est bien ça ?",
-    "notUnderstood": "wovain n'a pas compris",
     "notHeard": "wovain n'a pas bien entendu. Maintenez le bouton et réessayez.",
-    "canDo": "Vous pouvez lancer un drop, ou approuver ou refuser des idées, des designs et des actions en attente.",
-    "heard": "Vous avez dit : « {transcript} »",
-    "confirm": "Confirmer",
-    "done": "C'est fait.",
-    "startDrop": "Lancer un nouveau drop : {brief}",
-    "approveIdeas": "Approuver {count, plural, one {cette idée} other {ces # idées}} et dessiner les designs : {ideas}",
-    "approveDesign": "Approuver le design « {design} »",
-    "rejectDesign": "Refuser le design « {design} »",
-    "rejectDesignWhy": "Refuser le design « {design} » parce que {reason}",
-    "approveAction": "Approuver « {action} »",
-    "rejectAction": "Refuser « {action} »"
+    "dictate": "Dicter : {field}",
+    "dictateHint": "Maintenez pour parler, relâchez pour ajouter les mots",
+    "listeningField": "Écoute en cours. Relâchez pour ajouter les mots au champ.",
+    "transcribing": "Transformation de votre enregistrement en texte.",
+    "disclosureDictation": "wovain ne conserve pas votre enregistrement. fal le transforme en texte et les mots apparaissent dans le champ pour que vous les modifiiez. Rien n'est envoyé ni exécuté avant que vous validiez."
   },
   "Store": {
     "title": "Boutique",
@@ -2213,8 +2201,7 @@
     },
     "sell": {
       "title": "Que allez-vous vendre ?",
-      "lead": "Choisissez une piste et wovain écrit le brief. Chacune explique pourquoi elle monte en ce moment.",
-      "picked": "Votre brief : {brief}",
+      "lead": "Choisissez une piste ou écrivez votre propre brief. Chaque piste explique pourquoi elle monte en ce moment.",
       "brand": "Ajouter votre marque (facultatif) : les pistes s'y adaptent",
       "next": "Suivant : la boutique"
     },
@@ -2231,6 +2218,7 @@
     "design": {
       "title": "Approuver un design",
       "lead": "wovain étudie « {brief} », retient les meilleures idées et dessine leurs designs.",
+      "noBrief": "Choisissez d'abord quoi vendre : wovain l'étudie et dessine ses designs.",
       "start": "Trouver des idées et dessiner",
       "working": "wovain étudie et dessine. Ouvrez votre drop pour choisir les idées et approuver les designs ; cette étape se coche à votre retour.",
       "ready": "Votre drop vous attend. Approuvez un design, puis revenez ici.",
@@ -2239,6 +2227,7 @@
     "ads": {
       "title": "Lancer les publicités",
       "lead": "Vos produits sont prêts. Relisez la publicité et son budget quotidien dans votre drop, puis lancez-la.",
+      "needsDesign": "Validez d'abord un design. Votre publicité en est tirée.",
       "open": "Relire et lancer les publicités"
     },
     "finished": {
@@ -2375,6 +2364,7 @@
     "dropped": {
       "no_qloo_evidence": "Aucune preuve Qloo",
       "no_demand_proof": "Aucune preuve que ça se vend",
+      "demand_unknown": "Demande inconnue",
       "no_competition_read": "La concurrence n'a pas pu être lue",
       "saturated": "Trop encombré : trop d'annonces ou d'annonceurs similaires",
       "no_title": "Aucun titre étayé par les preuves"
@@ -2385,7 +2375,15 @@
       "crowded": "Encombré"
     },
     "sameBuyers": "Les mêmes acheteurs que votre brief",
-    "droppedCount": "{count, plural, one {# idée écartée} other {# idées écartées}} faute de preuves"
+    "droppedCount": "{count, plural, one {# idée écartée} other {# idées écartées}} faute de preuves",
+    "caution": {
+      "demand_unknown": "Non confirmé : la vérification de la demande n'a pas pu se faire, on ne sait pas si cela se vend.",
+      "no_demand_proof": "Non confirmé : aucun best-seller, avis ou publicité de longue durée trouvé pour l'instant.",
+      "no_competition_read": "Non confirmé : la vérification des annonces n'a pas pu se faire, la concurrence est inconnue.",
+      "saturated": "Saturé : beaucoup d'annonces ou d'annonceurs similaires le vendent déjà."
+    },
+    "unconfirmed": "Aucun de ces thèmes n'a encore prouvé sa demande : chacun indique ce qui manque. Choisissez-en un à tester, ou écrivez le vôtre.",
+    "noneChecked": "Nous n'avons pas pu confirmer la demande pour ces thèmes. Voici ce que nous avons vérifié :"
   },
   "Alerts": {
     "title": "Alertes",

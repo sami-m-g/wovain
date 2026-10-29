@@ -34,6 +34,7 @@ jobs:
       - run: pnpm run check
       - run: pnpm run check-types
       - run: pnpm run knip
+      - run: pnpm run boundaries
       - run: pnpm run spec:validate
       - if: github.event_name == 'push'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -99,6 +100,35 @@ jobs:
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-build-${{ github.sha }}
+
+  # Storybook (apps/web/.storybook): the static build, uploaded for review,
+  # and every story as a component test in Chromium (play functions and the
+  # a11y checks). Not part of `verify` nor a required check until it has
+  # proved stable.
+  storybook:
+    name: storybook
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache: storybook
+      - run: pnpm run build-storybook
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: storybook
+          path: apps/web/storybook-static
+          retention-days: 7
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm run test-storybook
+      - if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-storybook-${{ github.sha }}
 
   # The required check: green only when every check above passed.
   verify:

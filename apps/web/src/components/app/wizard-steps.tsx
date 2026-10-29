@@ -51,6 +51,7 @@ import {
   IdeaCompetition,
 } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
+import { DictationMic } from "@/components/app/dictation-mic";
 import { DropDirections } from "@/components/app/drop-directions";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
@@ -174,7 +175,13 @@ export const BriefStep = ({
             required
             value={brief}
           />
-          <InputGroupAddon align="block-end" className="justify-end">
+          <InputGroupAddon align="block-end" className="justify-between">
+            <DictationMic
+              field={id}
+              label={t("label")}
+              maxLength={MAX_BRIEF}
+              onText={onChange}
+            />
             <InputGroupText aria-hidden="true" className="figures text-xs">
               {format.number(brief.length)}/{format.number(MAX_BRIEF)}
             </InputGroupText>
@@ -272,6 +279,7 @@ export const IdeasStep = ({
   onNext: () => void;
 }) => {
   const t = useTranslations("Wizard.trends");
+  const tCard = useTranslations("IdeaCard");
   const format = useFormatter();
   const id = useId();
   const decimal = (value: number) =>
@@ -282,6 +290,10 @@ export const IdeasStep = ({
   return (
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
+      {ideas.length > 0 &&
+      ideas.every((idea) => idea.research.caution !== undefined) ? (
+        <p className="text-muted-foreground text-sm">{tCard("unconfirmed")}</p>
+      ) : null}
       <FieldSet>
         <FieldLegend className="sr-only">{t("title")}</FieldLegend>
         <ul className="grid gap-3 md:grid-cols-2">
@@ -311,6 +323,11 @@ export const IdeasStep = ({
                       <span className="text-muted-foreground figures text-xs font-medium">
                         {t("score", { score: decimal(idea.score) })}
                       </span>
+                      {research.caution === undefined ? null : (
+                        <span className="text-muted-foreground text-xs">
+                          {tCard(`caution.${research.caution}`)}
+                        </span>
+                      )}
                       {research.moment || research.answer ? (
                         <FieldDescription className="text-foreground line-clamp-4">
                           {research.moment ?? research.answer}
@@ -511,9 +528,17 @@ const DesignCard = ({
           <TrademarkEvidence trademark={judgment.trademark} />
           {design.status === "pending_approval" ? (
             <Field>
-              <FieldLabel className="text-xs" htmlFor={reasonId}>
-                {t("reasonLabel")}
-              </FieldLabel>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel className="text-xs" htmlFor={reasonId}>
+                  {t("reasonLabel")}
+                </FieldLabel>
+                <DictationMic
+                  field={reasonId}
+                  label={t("reasonLabel")}
+                  maxLength={500}
+                  onText={onReason}
+                />
+              </div>
               <Textarea
                 className="min-h-14 text-sm"
                 id={reasonId}

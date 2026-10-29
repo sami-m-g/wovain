@@ -5,6 +5,12 @@
 # blocking findings and approves once they are resolved. Linting, SAST,
 # secret and dependency scanning run in CI (.github/workflows), so its own
 # tools are off and only the LLM review runs, beside CI.
+#
+# Latency is a rate limit, not queueing: reviews are limited per developer per
+# hour (OSS plan: 1-10 by star count; docs.coderabbit.ai/management/plans),
+# and every push to a reviewed pull request uses one. This file already
+# keeps each review cheap (chill profile, no summaries, no tools, filtered
+# paths); the lever left is fewer pushes (AGENTS.md, "CodeRabbit review loop").
 # Reference: https://docs.coderabbit.ai/reference/configuration
 language: en-US
 reviews:
@@ -110,6 +116,7 @@ reviews:
         - Every error must reach PostHog Error Tracking: log it at error level through evlog, or throw it from an oRPC procedure or a route. Flag a swallowed error (an empty catch, or a catch that only returns a fallback), an error logged as a plain string, console.error, or an error sent anywhere else.
         - Environment values come from `ENV` in the app's generated `src/env.ts` (Varlock, from `.env.schema`), never from `process.env` read directly in app code.
         - Feature flags: a flag lives in `packages/core/src/flag-registry.ts` with an owner, an expiry and a per-environment rollout, and is read with `core.flags.isOn("<name>", ...)` (`isFlagOn` in apps/web) with a literal, typed name, never a built string. The safe state is off: code must behave as off when the flag provider can't be reached. Flag an expired or fully rolled-out flag that is still read.
+        - Frameworks first, minimal code: flag hand-written logic that Mastra or a maintained dependency already covers, and name the replacement. Examples: a hand-written retry loop or re-ask of a model (Mastra step `retries`, Inngest retries, a processor's `abort(reason, { retry: true })`); a validation or guard around a model call (a Mastra input or output processor); orchestration of several steps, fan-out, schedules or waits in plain functions or raw `inngest.createFunction` (a Mastra workflow with steps, `cron`, `.sleepUntil`, `.parallel`); a direct model call outside a Mastra agent; an eval or score computed by hand (`createScorer`, `runEvals`); spans or traces built by hand (Mastra observability and its exporters); MCP servers or clients built on the raw SDK (`MCPServer`, `MCPClient` from `@mastra/mcp`). Also flag a pull request whose description does not name the library or framework used, or does not give a reason for hand-written logic it adds. Don't ask to remove behaviour: a replacement must keep every case the code handles.
         - Generated and vendored files are changed only with their CLIs: shadcn (`packages/ui/src/{components,hooks,lib}`), Fumadocs, the Better Auth UI registry (`apps/web/src/{components,lib}/auth`), `pnpm run auth:generate` (`packages/db/src/schema/auth.ts`), `pnpm run db:generate` (`packages/db/src/migrations`). Flag hand edits to them.
     - path: "**/package.json"
       instructions: |

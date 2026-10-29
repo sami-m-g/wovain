@@ -2,6 +2,10 @@
 
 <!-- What changes, and why. Link the issue: Closes #123 -->
 
+## Libraries and frameworks
+
+<!-- Which library or framework does the work (Mastra, Inngest, Better Auth, oRPC, …), and why any hand-written logic is needed. -->
+
 ## How to check
 
 <!-- Steps or commands a reviewer can run. -->

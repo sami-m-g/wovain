@@ -40,7 +40,9 @@
   - `.{agents,claude}/skills/openspec-*`, `.claude/commands/opsx`: `pnpm exec openspec update`
 - Every error must reach PostHog Error Tracking, the one place errors are watched: log it at error level through evlog or throw it from a procedure or route. Never swallow an error, log it as a plain string, or send it anywhere else on your own
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
-- Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip` and `pnpm run spec:validate` before committing
+- Minimal code, frameworks first, no lost functionality: before writing logic, use what Mastra (workflows, steps, tools, agents, processors, scorers, memory, tracing, `MCPServer`/`MCPClient`), Inngest, Better Auth, oRPC or another maintained library already provides. Write code only for what none of them cover. Every PR body names the library or framework it used, and gives a reason for any hand-written logic it adds
+- Layers (`turbo boundaries`, tags in each package's `turbo.json`, rules in the root `turbo.json`): `core` (domain, provider clients) ← `db`, `billing`, `email`, `auth` (data) ← `api` (routing) ← `web`; `ui` ← `widgets` (MCP Apps, used by `api`). A package imports only the layers below it, transitively
+- Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip`, `pnpm run boundaries` and `pnpm run spec:validate` before committing
 
 ## Specs and changes (OpenSpec)
 
@@ -54,6 +56,15 @@
 
 - Code, issues and pull requests live on GitHub (`sami-m-g/wovain`). CI is GitHub Actions.
 - Work on a branch and open a pull request against `main`. The PR says `Closes #<issue>`.
+
+## CodeRabbit review loop
+
+- CodeRabbit's approval is required. Its limit is the cost: PR reviews are rate limited per developer per hour (OSS plan: 1-10 by star count; [rate limits](https://docs.coderabbit.ai/management/plans#rate-limits)), and every agent shares one developer. Each review, including each incremental review of a push, uses one; a comment "Your next included review will be available in N minutes" means the limit was hit. A blocked push costs none.
+- Keep a PR under about 400 changed lines. Review time grows with the diff, and a small PR leaves fewer comments to fix.
+- Fix all comments in one commit and push once. Do not push a commit per comment: each push is a review.
+- Resolve each thread you fixed (reply "Fixed in <sha>" and resolve), then comment `@coderabbitai review` once on the new head. CodeRabbit approves once its threads are resolved and the head is reviewed.
+- No review on the head commit after 10 minutes: comment `@coderabbitai full review`. After 10 more, read the PR for a rate-limit comment and wait the time it states. Do not re-ping inside the wait.
+- A stale CHANGES_REQUESTED stays until CodeRabbit reviews again: its comments are fixed and resolved, so the next review on the head approves.
 
 ## Tooling (project scope)
 

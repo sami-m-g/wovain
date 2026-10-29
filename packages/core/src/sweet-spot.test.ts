@@ -45,6 +45,29 @@ it("bounds the share from below, tighter with more evidence", () => {
   expect(wilsonLower(10, 10)).toBeLessThan(1);
 });
 
+it("calls demand unknown when no demand read came back", () => {
+  const verdict = judgeIdea(idea({ market: undefined }));
+  expect(verdict).toMatchObject({ kept: false, reason: "demand_unknown" });
+});
+
+it("shows Qloo-backed ideas with their caution when none passes, never empty", () => {
+  const { dropped, kept } = rankIdeas(
+    [
+      idea({ market: market(0), qlooAffinity: 0.4 }),
+      idea({ listings: SATURATED_LISTINGS + 4 }),
+      idea({ market: undefined, qlooAffinity: 0.3 }),
+      idea({ qlooAffinity: 0 }),
+    ],
+    (one) => one
+  );
+  expect(kept.map((one) => one.caution)).toStrictEqual([
+    "demand_unknown",
+    "no_demand_proof",
+    "saturated",
+  ]);
+  expect(dropped.map((one) => one.reason)).toStrictEqual(["no_qloo_evidence"]);
+});
+
 it("drops an idea with no proof of demand", () => {
   const verdict = judgeIdea(idea({ market: market(0, 10) }));
   expect(verdict).toMatchObject({ kept: false, reason: "no_demand_proof" });

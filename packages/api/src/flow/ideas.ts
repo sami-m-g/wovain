@@ -99,7 +99,8 @@ export const researchIdeas = async (
   const { avoidNames, ideas } = await charge(
     actor,
     "research",
-    { runId },
+    // Research that found no ideas gave the merchant nothing (#232).
+    { refundIf: (found) => found.ideas.length === 0, runId },
     async () =>
       await actor.core.trends.research(seed, actor.log, sources, feedback)
   ).catch((error: unknown) => {

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { DirectionsChunk } from "@wovain/api/flow/drop-directions";
+import type { DropReason } from "@wovain/core/sweet-spot";
 import { Button } from "@wovain/ui/components/button";
 import { Label } from "@wovain/ui/components/label";
 import { Skeleton } from "@wovain/ui/components/skeleton";
@@ -186,6 +187,27 @@ const BuyersToggle = ({ entities }: { entities: string[] }) => {
 };
 
 /** One suggested direction: the title starts the drop, the evidence cites. */
+// No theme to show: what the evidence gate checked, and why each fell short.
+const CheckedList = ({
+  checked,
+}: {
+  checked: readonly { reason: DropReason; theme: string }[];
+}) => {
+  const t = useTranslations("IdeaCard");
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-muted-foreground text-sm">{t("noneChecked")}</p>
+      <ul className="text-muted-foreground list-disc ps-5 text-sm">
+        {checked.map((one) => (
+          <li key={`${one.theme}:${one.reason}`}>
+            {one.theme}: {t(`dropped.${one.reason}`)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 const DirectionRow = ({
   direction,
   disabled,
@@ -196,6 +218,7 @@ const DirectionRow = ({
   onUse: (brief: string) => void;
 }) => {
   const t = useTranslations("Wizard.directions");
+  const tCard = useTranslations("IdeaCard");
   const id = useId();
   const { momentum } = direction.evidence;
   return (
@@ -230,6 +253,11 @@ const DirectionRow = ({
           />
         </span>
       </button>
+      {direction.caution === undefined ? null : (
+        <p className="text-muted-foreground text-xs">
+          {tCard(`caution.${direction.caution}`)}
+        </p>
+      )}
       {direction.outcome === undefined ? null : (
         <OutcomeWhy why={direction.outcome} />
       )}
@@ -287,7 +315,13 @@ const DirectionsBody = ({
   seconds,
   step,
   tavilyFailed,
+  checked,
+  unconfirmed,
 }: {
+  // What the evidence gate checked, theme by theme, and why each fell short.
+  checked: readonly { reason: DropReason; theme: string }[];
+  // No theme passed the gate: the cards carry their caution.
+  unconfirmed: boolean;
   cards: readonly Direction[];
   disabled: boolean;
   error: Error | undefined;
@@ -301,6 +335,7 @@ const DirectionsBody = ({
   briefBelow: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
+  const tCard = useTranslations("IdeaCard");
   if (error !== undefined) {
     return (
       <div
@@ -324,13 +359,18 @@ const DirectionsBody = ({
     );
   }
   const waiting = loading ? SKELETON_ROWS.slice(cards.length) : [];
+  const empty = !loading && cards.length === 0;
   return (
     <>
       {loading ? <StepLine seconds={seconds} step={step} /> : null}
-      {!loading && cards.length === 0 ? (
+      {empty && checked.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           {briefBelow ? t("none") : t("noneHome")}
         </p>
+      ) : null}
+      {empty && checked.length > 0 ? <CheckedList checked={checked} /> : null}
+      {!loading && unconfirmed && cards.length > 0 ? (
+        <p className="text-muted-foreground text-sm">{tCard("unconfirmed")}</p>
       ) : null}
       {cards.length > 0 || waiting.length > 0 ? (
         <ul aria-busy={loading} className="flex flex-col gap-2">
@@ -351,6 +391,79 @@ const DirectionsBody = ({
         <p className="text-muted-foreground text-xs">{t("tavilyFailed")}</p>
       ) : null}
     </>
+  );
+};
+
+// What the answer says about itself, once it has arrived.
+const answerFlags = (
+  data:
+    | {
+        checked?: readonly { reason: DropReason; theme: string }[] | undefined;
+        tavilyFailed?: boolean | undefined;
+        unconfirmed?: boolean | undefined;
+      }
+    | undefined
+) => ({
+  checked: data?.checked ?? [],
+  tavilyFailed: data?.tavilyFailed === true,
+  unconfirmed: data?.unconfirmed === true,
+});
+
+// Points a merchant without a brand to where it is made.
+const BrandHint = () => {
+  const t = useTranslations("Wizard.directions");
+  return (
+    <p className="text-muted-foreground text-xs">
+      {t("brandHint")}{" "}
+      <Link
+        className="text-accent-text font-medium underline underline-offset-2"
+        href="/dashboard/onboarding?step=brand"
+      >
+        {t("brandHintLink")}
+      </Link>
+    </p>
+  );
+};
+
+// The switches beside the title: ignore the brand, show others.
+const DirectionsActions = ({
+  hasBrand,
+  ignoreBrand,
+  loading,
+  onIgnoreBrand,
+  onOthers,
+  showOthers,
+}: {
+  hasBrand: boolean;
+  ignoreBrand: boolean;
+  loading: boolean;
+  onIgnoreBrand: (value: boolean) => void;
+  onOthers: () => void;
+  showOthers: boolean;
+}) => {
+  const t = useTranslations("Wizard.directions");
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {hasBrand ? (
+        <IgnoreBrandSwitch
+          checked={ignoreBrand}
+          disabled={loading}
+          onChange={onIgnoreBrand}
+        />
+      ) : null}
+      {showOthers ? (
+        <Button
+          disabled={loading}
+          onClick={onOthers}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <Shuffle aria-hidden="true" data-icon="inline-start" />
+          {t("others")}
+        </Button>
+      ) : null}
+    </div>
   );
 };
 
@@ -422,27 +535,14 @@ export const DropDirections = ({
             {t(LEADS[within ? "brand" : "all"][briefBelow ? "below" : "home"])}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {data?.hasBrand ? (
-            <IgnoreBrandSwitch
-              checked={ignoreBrand}
-              disabled={loading}
-              onChange={setIgnoreBrand}
-            />
-          ) : null}
-          {data !== undefined && !within ? (
-            <Button
-              disabled={loading}
-              onClick={() => setRound((previous) => previous + 1)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Shuffle aria-hidden="true" data-icon="inline-start" />
-              {t("others")}
-            </Button>
-          ) : null}
-        </div>
+        <DirectionsActions
+          hasBrand={data?.hasBrand === true}
+          ignoreBrand={ignoreBrand}
+          loading={loading}
+          onIgnoreBrand={setIgnoreBrand}
+          onOthers={() => setRound((previous) => previous + 1)}
+          showOthers={data !== undefined && !within}
+        />
       </div>
       <DirectionsBody
         cards={cards}
@@ -456,20 +556,10 @@ export const DropDirections = ({
         retrying={directions.isFetching}
         seconds={seconds}
         step={step}
-        tavilyFailed={data?.tavilyFailed === true}
         briefBelow={briefBelow}
+        {...answerFlags(data)}
       />
-      {data !== undefined && !data.hasBrand ? (
-        <p className="text-muted-foreground text-xs">
-          {t("brandHint")}{" "}
-          <Link
-            className="text-accent-text font-medium underline underline-offset-2"
-            href="/dashboard/onboarding?step=brand"
-          >
-            {t("brandHintLink")}
-          </Link>
-        </p>
-      ) : null}
+      {data !== undefined && !data.hasBrand ? <BrandHint /> : null}
     </section>
   );
 };

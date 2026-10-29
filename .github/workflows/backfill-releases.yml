@@ -37,7 +37,10 @@ jobs:
     outputs:
       tags: ${{ steps.make.outputs.tags }}
     env:
-      GH_TOKEN: ${{ github.token }}
+      # Not github.token: it cannot create a release on a commit that adds
+      # workflow files (v0.6.0 is the first), so this needs a token with the
+      # workflow scope, set by the infra/github stack.
+      GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
       GH_REPO: ${{ github.repository }}
       DRY_RUN: ${{ inputs.dry_run }}
       # Milestones without a tag yet: the tag, then the commit it goes on.
@@ -55,6 +58,13 @@ jobs:
           fetch-tags: true
           persist-credentials: false
       - uses: ./.github/actions/setup
+      - name: Require the release token
+        shell: bash
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::RELEASE_PLEASE_TOKEN is not set; set release-please-token in the infra/github stack"
+            exit 1
+          fi
       - id: make
         shell: bash
         run: |
