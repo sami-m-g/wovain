@@ -413,6 +413,7 @@
     "connected": "Connected",
     "disconnected": "Not connected",
     "expired": "Sign-in expired",
+    "expiredBody": "{name}'s sign-in expired. Reconnect it and wovain picks up where it left off.",
     "connect": "Connect {name}",
     "reconnect": "Reconnect {name}",
     "disconnect": "Disconnect {name}",
@@ -423,15 +424,18 @@
     "providers": {
       "fourthwall": {
         "name": "Fourthwall",
-        "body": "Your shop, catalog blanks and prices. Needed to publish products."
+        "body": "Your shop, catalog blanks and prices. Needed to publish products.",
+        "unlocks": "wovain publishes your designs as products in your shop, priced to clear your profit."
       },
       "meta": {
         "name": "Meta",
-        "body": "Your ad account, Page and pixel. Needed to build the campaign."
+        "body": "Your ad account, Page and pixel. Needed to build the campaign.",
+        "unlocks": "wovain builds a paused campaign for each drop, so nothing spends until you start it."
       },
       "fal": {
         "name": "fal",
-        "body": "Your fal account draws the artwork, billed to you. Needed to make designs."
+        "body": "Your fal account draws the artwork, billed to you. Needed to make designs.",
+        "unlocks": "wovain draws your designs on your fal account, billed to you."
       }
     },
     "comingSoon": "Coming soon"
@@ -447,9 +451,6 @@
     "back": "Back",
     "problem": {
       "notConfigured": "This step isn't available right now. Try again in a little while.",
-      "notConnected": "Connect {service} to finish this step.",
-      "reconnect": "{service}'s sign-in expired. Reconnect it to finish this step.",
-      "connectLink": "Go to Connections",
       "other": "Something went wrong: {message}"
     },
     "brief": {
@@ -572,14 +573,16 @@
     },
     "failed": {
       "title": "The drop stopped during {stage}",
-      "notConnected": "{service} isn't connected, so wovain couldn't finish this step. Connect it, then try again.",
-      "reconnect": "{service}'s sign-in expired and couldn't be renewed, so wovain couldn't finish this step. Reconnect it, then try again.",
+      "connectTitle": "Connect {service} to finish this drop",
+      "connectBody": "The drop paused during {stage} because {service} isn't connected yet. Connect it, then try again in one click.",
+      "reconnectTitle": "Reconnect {service} to finish this drop",
+      "reconnectBody": "The drop paused during {stage} because {service}'s sign-in expired. Reconnect it, then try again in one click.",
+      "connectedTitle": "{service} is connected",
+      "connectedBody": "Try the drop again: wovain starts a fresh run from the same brief.",
       "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
       "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
       "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
       "details": "Details: {message}",
-      "connect": "Connect {service}",
-      "reconnectAction": "Reconnect {service}",
       "retry": "Try again",
       "retrying": "Starting again…",
       "another": "Write a new brief"
@@ -754,7 +757,6 @@
       "margin": "Margin",
       "notConnectedTitle": "Connect Fourthwall to see sales",
       "notConnected": "wovain reads your shop's reports to show revenue and profit per drop.",
-      "connect": "Connect Fourthwall",
       "unavailable": "Fourthwall's reports didn't load: {message}",
       "emptyTitle": "No sales yet",
       "empty": "Publish a product and share it; the first order shows up here."
@@ -771,7 +773,6 @@
       "results": "Results",
       "notConnectedTitle": "Connect Meta to see ad results",
       "notConnected": "wovain reads the insights for the campaigns it built for you.",
-      "connect": "Connect Meta",
       "unavailable": "Meta's insights didn't load: {message}",
       "emptyTitle": "No campaign results yet",
       "empty": "Campaigns are created paused, so results start once you turn one on in Ads Manager."
@@ -1432,6 +1433,8 @@
     "approved": "Approved. wovain is on it.",
     "readiness": {
       "title": "Shop readiness",
+      "connectTitle": "Connect Fourthwall to open your shop here",
+      "connectBody": "wovain checks your shop can take orders, then lists your drops, products and orders.",
       "ready": "Your shop can take orders.",
       "notReady": "Fix these before anything goes public.",
       "passed": "(done)",

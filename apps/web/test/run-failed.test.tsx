@@ -1,33 +1,37 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { NoIdeasState, RunFailedState } from "@/components/app/run-failed";
-import { describeRunFailure } from "@/lib/flow-client";
+import type { Connection, OnboardingReady } from "@/lib/flow-client";
+import { connectUrl, describeRunFailure } from "@/lib/flow-client";
+import { orpc } from "@/utils/orpc";
 
 import messages from "../messages/en.json";
 
-vi.mock("@/i18n/navigation", () => ({
-  Link: ({
-    children,
-    href,
-    ...props
-  }: {
-    children: React.ReactNode;
-    href: string;
-  }) => (
-    <a href={href} {...props}>
-      {children}
-    </a>
-  ),
+// The page the run failed on: connecting comes back to it.
+const HERE = "/en/dashboard/new?run=r1&step=products";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/en/dashboard/new",
+  useSearchParams: () => new URLSearchParams("run=r1&step=products"),
 }));
 
-const render = (node: React.ReactNode) =>
-  renderToStaticMarkup(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
-      {node}
-    </NextIntlClientProvider>
+const render = (
+  node: React.ReactNode,
+  seed: (client: QueryClient) => void = () => {}
+) => {
+  const client = new QueryClient();
+  seed(client);
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>
+      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        {node}
+      </NextIntlClientProvider>
+    </QueryClientProvider>
   );
+};
 
 const noop = () => {};
 
@@ -90,7 +94,64 @@ describe("describeRunFailure", () => {
 });
 
 describe("RunFailedState", () => {
-  it("names the failed step and offers Connect for a missing connection", () => {
+  it("asks to connect a missing provider, never as an error", () => {
+    const html = render(
+      <RunFailedState
+        failure={{ reason: "not_connected", service: "fourthwall" }}
+        onRestart={noop}
+        onRetry={noop}
+        retrying={false}
+        stage="products"
+      />
+    );
+    expect(html).toContain("Connect Fourthwall to finish this drop");
+    expect(html).toContain("during Products because Fourthwall");
+    expect(html).toContain(`href="${connectUrl("fourthwall", HERE)}"`);
+    expect(html).toContain("Write a new brief");
+    expect(html).toContain('data-slot="empty"');
+    expect(html).not.toContain('role="alert"');
+  });
+
+  it("offers Reconnect when the sign-in expired", () => {
+    const html = render(
+      <RunFailedState
+        failure={{ reason: "not_connected", reconnect: true, service: "meta" }}
+        onRestart={noop}
+        onRetry={noop}
+        retrying={false}
+        stage="campaign"
+      />
+    );
+    expect(html).toContain("Reconnect Meta to finish this drop");
+    expect(html).toContain("Meta&#x27;s sign-in expired");
+    expect(html).toContain(`href="${connectUrl("meta", HERE)}"`);
+  });
+
+  it("offers Try again in one click once the provider is connected", () => {
+    const html = render(
+      <RunFailedState
+        failure={{ reason: "not_connected", service: "fourthwall" }}
+        onRestart={noop}
+        onRetry={noop}
+        retrying={false}
+        stage="products"
+      />,
+      (client) => {
+        client.setQueryData(orpc.connections.list.queryKey(), [
+          {
+            connectedAt: new Date(),
+            needsReconnect: false,
+            provider: "fourthwall",
+          },
+        ] as unknown as Connection[]);
+      }
+    );
+    expect(html).toContain("Fourthwall is connected");
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("/api/connections/");
+  });
+
+  it("never names fal while wovain draws the art", () => {
     const html = render(
       <RunFailedState
         failure={{ reason: "not_connected", service: "fal" }}
@@ -98,28 +159,17 @@ describe("RunFailedState", () => {
         onRetry={noop}
         retrying={false}
         stage="designs"
-      />
+      />,
+      (client) => {
+        client.setQueryData(orpc.onboarding.status.queryKey(), {
+          enabled: true,
+          wovainDraws: true,
+        } as unknown as OnboardingReady);
+      }
     );
     expect(html).toContain("The drop stopped during Designs");
-    expect(html).toContain("fal isn&#x27;t connected");
-    expect(html).toContain("Connect fal");
-    expect(html).toContain('href="/dashboard/connections"');
     expect(html).toContain("Try again");
-  });
-
-  it("offers Reconnect when the sign-in expired", () => {
-    const html = render(
-      <RunFailedState
-        failure={{ reason: "not_connected", reconnect: true, service: "fal" }}
-        onRestart={noop}
-        onRetry={noop}
-        retrying={false}
-        stage="designs"
-      />
-    );
-    expect(html).toContain("fal&#x27;s sign-in expired");
-    expect(html).toContain("Reconnect fal");
-    expect(html).toContain('href="/dashboard/connections"');
+    expect(html).not.toMatch(/\bfal\b/u);
   });
 
   it("explains an unknown failure and offers Try again, without Connect", () => {
