@@ -1813,6 +1813,85 @@
         "DEACTIVATED": "Desactivada",
         "ARCHIVED": "Archivada"
       }
+    },
+    "setup": {
+      "title": "Prepara tu tienda para vender",
+      "titleReady": "Tu tienda está lista para vender",
+      "show": "Ver pasos",
+      "hide": "Ocultar pasos",
+      "progress": "{done, number} de {total, number} hechos",
+      "progressLabel": "Progreso de la configuración",
+      "optional": "Opcional",
+      "copy": "Copiar {value}",
+      "copied": "Copiado.",
+      "state": {
+        "done": "(hecho)",
+        "todo": "(pendiente)",
+        "waiting": "(en espera)",
+        "check": "(por revisar)"
+      },
+      "connect": {
+        "label": "Tienda conectada",
+        "done": "Conectada como propietario o gestor de la tienda.",
+        "todo": "wovain necesita un propietario o gestor para llevar la tienda.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Revisa tu rol en Fourthwall.",
+        "action": "Reconectar Fourthwall"
+      },
+      "payouts": {
+        "label": "Pagos configurados",
+        "done": "Las ventas llegan a tu cuenta bancaria.",
+        "todo": "Termina tu cuenta de pagos en Fourthwall para recibir las ventas. Se marcará aquí cuando esté hecho.",
+        "waiting": "Fourthwall está terminando tu cuenta de pagos.",
+        "check": "Revisa tu cuenta de pagos.",
+        "action": "Configurar pagos"
+      },
+      "site_live": {
+        "label": "Tienda publicada",
+        "done": "Los compradores pueden visitarla y pedir.",
+        "todo": "Tu tienda está en «próximamente». wovain puede publicarla cuando lo confirmes.",
+        "waiting": "Fourthwall está revisando tu tienda. Solo el soporte de Fourthwall puede terminarlo.",
+        "check": "Revisa el estado de tu tienda.",
+        "support": "Contactar con el soporte de Fourthwall"
+      },
+      "shipping": {
+        "label": "Envíos activados",
+        "done": "Los compradores pueden pagar con envío.",
+        "todo": "Activa los envíos y añade un perfil de envío en Fourthwall. Se marcará aquí cuando esté hecho.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Revisa tus envíos.",
+        "action": "Configurar envíos"
+      },
+      "pixel": {
+        "label": "Píxel de Meta en tu tienda",
+        "done": "Tu píxel de Meta ve las visitas y ventas de tu tienda.",
+        "todo": "Añade tu píxel de Meta en los ajustes de Fourthwall y abre tu tienda una vez para enviar una visita de prueba. Se marcará cuando Meta la vea.",
+        "waiting": "Conecta Meta primero: wovain encuentra tu píxel allí.",
+        "check": "Revisa tu píxel.",
+        "action": "Añadir el píxel en Fourthwall",
+        "test": "Abrir tu tienda (visita de prueba)",
+        "paste": "ID del píxel para pegar:",
+        "noDataset": "Meta está conectado, pero wovain no encontró un único píxel en tu cuenta publicitaria. Crea o elige uno en la configuración de Meta.",
+        "connectMeta": "Conectar Meta"
+      },
+      "domain": {
+        "label": "Dominio propio",
+        "done": "Tu dominio está conectado.",
+        "todo": "Fourthwall aún está verificando los registros DNS de tu dominio.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Tu tienda vende en su dirección de Fourthwall. Un dominio propio es opcional.",
+        "action": "Ajustes de dominio",
+        "connected": "{domain} está conectado.",
+        "pending": "{domain}: {count, plural, one {# registro DNS} other {# registros DNS}} sin verificar."
+      },
+      "policies": {
+        "label": "Políticas de devoluciones, envíos y privacidad",
+        "done": "Las políticas están listas.",
+        "todo": "Añade tus políticas en Fourthwall.",
+        "waiting": "Esperando a Fourthwall.",
+        "check": "Fourthwall añade políticas por defecto. Revísalas para que reflejen cómo vendes.",
+        "action": "Revisar políticas"
+      }
     }
   },
   "Drops": {
