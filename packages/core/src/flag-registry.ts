@@ -196,6 +196,10 @@ export const FLAGS = {
     "media",
     "Launch Meta campaigns live after an approval, inside the merchant's spend caps"
   ),
+  "meta-pixel-automation": workstream(
+    "store",
+    "Pixel set-up on the single Meta grant: find or create the dataset, share it with the ad account and send a test event (openspec pixel-automation)"
+  ),
   "mobile-app": workstream(
     "mobile",
     "The Expo app: approval inbox, push notifications and the store pulse"
