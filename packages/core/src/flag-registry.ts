@@ -220,7 +220,7 @@ export const FLAGS = {
   ),
   "trends-qloo": {
     description:
-      "Qloo taste themes in trend research, for every plan (founder decision, 2026-10-28). A kill switch only: off cuts Qloo and research runs on Tavily and the language model",
+      "Qloo taste themes in trend research, for every plan (founder decision, 2026-10-28). An ops kill switch only: off, research and new runs are refused with QLOO_OFF, since every idea is a Qloo tag",
     expires: "2027-06-30",
     guarded: false,
     initiallyActive: true,

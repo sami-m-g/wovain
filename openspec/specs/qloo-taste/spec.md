@@ -8,7 +8,7 @@ How Qloo's taste graph shapes the ideas a run researches, how each idea explains
 
 ### Requirement: Qloo in every run
 
-Research SHALL call Qloo in every run, whatever the merchant's plan, unless the `trends-qloo` kill switch is off or the merchant turned Qloo off for that run while `qloo-taste-map` is on. `trends-qloo` SHALL have no plan limit, and every flag SHALL be evaluated with the merchant's real plan. A Qloo failure SHALL be logged at error level, SHALL NOT fail the run, and SHALL be recorded on each idea of the run.
+Research SHALL call Qloo in every run, whatever the merchant's plan, and a merchant SHALL have no choice to run without it. `trends-qloo` SHALL be an ops kill switch only, with no plan limit: while it is off, `runs.start` (before saving a run) and research SHALL refuse with `QLOO_OFF`. Flags SHALL be evaluated with the merchant's real plan. A failed Qloo call SHALL fail the research step and be logged at error level.
 
 #### Scenario: Paid plan
 
@@ -20,10 +20,15 @@ Research SHALL call Qloo in every run, whatever the merchant's plan, unless the 
 - **WHEN** a merchant on a paid plan starts a run while `qloo-taste-map` is on
 - **THEN** research calls Qloo and the ideas carry Qloo's taste map
 
+#### Scenario: Kill switch off
+
+- **WHEN** a merchant starts a run while `trends-qloo` is off
+- **THEN** `runs.start` answers `QLOO_OFF`, and no run is saved or queued
+
 #### Scenario: Qloo fails
 
 - **WHEN** Qloo answers with an error during research
-- **THEN** the error is logged at error level, research goes on with themes from the brief, and each idea's taste map has status `failed`
+- **THEN** the research step fails, the run fails after its retries, the error is logged at error level, and no idea is saved
 
 ### Requirement: Cross-domain affinities in the brief
 
@@ -34,20 +39,6 @@ Research SHALL ask Qloo, with explainability and a trend bias, which brands, art
 - **WHEN** a brief is drafted for an idea whose taste map has cross-domain affinities
 - **THEN** the brief's input holds their aesthetic cues and no affinity name
 
-### Requirement: Why this idea
-
-Each idea card SHALL show a "Why this idea" panel with the seed entities Qloo matched, the theme's Qloo tag and affinity, and the cross-domain affinities with their contributing entities. When Qloo failed, found no match or was off for the run, the panel SHALL say which, instead of showing a taste map.
-
-#### Scenario: Idea from Qloo
-
-- **WHEN** a designer views an idea whose theme came from a Qloo tag
-- **THEN** the panel shows the tag, its affinity, the seed entities and the cross-domain affinities
-
-#### Scenario: Run without Qloo
-
-- **WHEN** a designer views an idea from a run started with Qloo off
-- **THEN** the panel says the run used LLM-only themes
-
 ### Requirement: Failed affinity domains
 
 When the affinities call for one domain (brands, films or TV) fails, the error SHALL be logged at error level, the other domains SHALL stand, the idea's taste map SHALL record the failed domains, and the "Why this idea" panel SHALL name the domains it couldn't load.
@@ -57,14 +48,41 @@ When the affinities call for one domain (brands, films or TV) fails, the error S
 - **WHEN** Qloo answers the films call with an error and the brand and TV calls succeed
 - **THEN** the error is logged at error level, the idea's taste map lists `movie` as a failed domain with the brand and TV affinities, and the panel says Qloo couldn't load films
 
-### Requirement: With-Qloo and LLM-only comparison
+### Requirement: Qloo match required
 
-A merchant SHALL be able to start a run with Qloo off while `qloo-taste-map` is on. The run SHALL keep that choice, and retrying a failed run SHALL reuse it. An offline eval SHALL research the same seeds with Qloo and without it and SHALL report, for each arm, the share of themes grounded in a Qloo tag, the share of ideas explained by Qloo entities, the number of aesthetic cues, and how far the themes move from the seed's own words.
+Every idea SHALL be a Qloo taste tag for the entities Qloo matched in the brief. When Qloo matches no entity, or no usable tag, research SHALL stop with the typed error `QLOO_NO_MATCH` and the message "Qloo found no audience for this brief; try naming a band, film, brand or place". It SHALL search nothing on Tavily and SHALL give the step's credits back.
 
-#### Scenario: Retry an LLM-only run
+#### Scenario: Brief Qloo can't place
 
-- **WHEN** a merchant retries a failed run that was started with Qloo off
-- **THEN** the new run also runs without Qloo
+- **WHEN** a merchant starts a run with the brief "asdf qwerty" and Qloo matches nothing
+- **THEN** the run fails with `QLOO_NO_MATCH`, no Tavily search runs and no credits are spent
+
+### Requirement: No-match suggestions
+
+A run that failed with `QLOO_NO_MATCH` SHALL show a suggestion panel instead of the generic failure: name a band, film, brand or place, example briefs Qloo knows, and "Write a new brief". It SHALL NOT offer "Try again", because the same brief can't match.
+
+#### Scenario: Example brief
+
+- **WHEN** the merchant picks the example "Studio Ghibli" on the suggestion panel
+- **THEN** a new brief opens with "Studio Ghibli" filled in
+
+### Requirement: Qloo's taste map on each idea
+
+Each idea card SHALL show a "Why this idea" panel with the seed entities Qloo matched, the theme's Qloo tag and affinity, and the cross-domain affinities with their contributing entities. An idea saved before Qloo was required, with no matched entity, SHALL show no panel.
+
+#### Scenario: Idea from Qloo
+
+- **WHEN** a designer views an idea
+- **THEN** the panel shows the theme's Qloo tag, its affinity, the seed entities and the cross-domain affinities
+
+#### Scenario: Idea saved before Qloo was required
+
+- **WHEN** a designer views an older idea whose taste map has no seed entity
+- **THEN** no "Why this idea" panel is shown
+
+### Requirement: Offline Qloo ablation
+
+No product path SHALL run without Qloo. An offline eval SHALL research the same seeds with Qloo's themes and with themes a model splits from the brief alone (an eval-only arm), and SHALL report, for each arm, the share of themes grounded in a Qloo tag, the share of ideas explained by Qloo entities, the number of aesthetic cues, and how far the themes move from the seed's own words.
 
 #### Scenario: Qloo fails during the eval
 

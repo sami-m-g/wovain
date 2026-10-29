@@ -1,13 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import type { Nemotron } from "./nemotron";
 import {
   distinctThemes,
-  fallbackThemes,
   keywordsOf,
   MAX_THEMES,
-  suggestThemes,
-  themesSchema,
+  qlooThemes,
+  RUN_THEMES,
 } from "./themes";
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
@@ -44,60 +42,35 @@ describe("themes", () => {
 
     expect(distinctThemes(BRIEF, many)).toHaveLength(MAX_THEMES);
   });
+});
 
-  it("titles fallback themes by angle and subject, never the brief", () => {
-    const names = fallbackThemes(BRIEF).map(({ name }) => name);
+describe("qlooThemes", () => {
+  it("makes each Qloo tag a theme searched with the brief's subject", () => {
+    const themes = qlooThemes(BRIEF, [
+      { affinity: 0.7, id: "urn:tag:genre:horror", name: "Horror" },
+    ]);
 
-    expect(names).toEqual([
-      "Retro Spooky Halloween Horror Movie",
-      "Minimalist Spooky Halloween Horror Movie",
-      "Funny Spooky Halloween Horror Movie",
+    expect(themes).toEqual([
+      {
+        affinity: 0.7,
+        id: "urn:tag:genre:horror",
+        name: "Horror",
+        query: "Horror spooky halloween horror movie",
+      },
     ]);
   });
 
-  it("accepts long model text instead of failing the run", () => {
-    const long = "word ".repeat(500);
-
-    expect(
-      themesSchema.safeParse({ themes: [{ name: long, query: long }] }).success
-    ).toBe(true);
-  });
-});
-
-describe("suggestThemes with learnings", () => {
-  const reply = { themes: [{ name: "Retro slasher VHS", query: "vhs" }] };
-
-  it("passes what sold and what didn't to the model as data", async () => {
-    const ask = vi.fn().mockResolvedValue(reply);
-    const learned = {
-      sold: ["Retro slasher VHS: 4 sold, $96.00 revenue"],
-      unsold: ["Moth tees: no sales"],
-    };
-
-    await suggestThemes(
-      ask as unknown as Nemotron,
-      BRIEF,
-      [],
-      undefined,
-      learned
-    );
-
-    const [{ prompt, system }] = ask.mock.calls[0] as [
-      { prompt: string; system: string },
-    ];
-    expect(JSON.parse(prompt)).toEqual({ brief: BRIEF, learned, taken: [] });
-    expect(system).toContain("learned");
+  it("makes up nothing when Qloo named no tag", () => {
+    expect(qlooThemes(BRIEF, [])).toEqual([]);
   });
 
-  it("leaves learned out when there is nothing to learn yet", async () => {
-    const ask = vi.fn().mockResolvedValue(reply);
+  it("keeps at most RUN_THEMES of Qloo's tags", () => {
+    const tags = ["anime", "cozy", "pastel", "folk"].map((name) => ({
+      affinity: 0.5,
+      id: `urn:tag:style:${name}`,
+      name,
+    }));
 
-    await suggestThemes(ask as unknown as Nemotron, BRIEF, [], undefined, {
-      sold: [],
-      unsold: [],
-    });
-
-    const [{ prompt }] = ask.mock.calls[0] as [{ prompt: string }];
-    expect(JSON.parse(prompt)).toEqual({ brief: BRIEF, taken: [] });
+    expect(qlooThemes("ghibli", tags)).toHaveLength(RUN_THEMES);
   });
 });

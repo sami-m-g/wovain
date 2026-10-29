@@ -71,20 +71,6 @@ The vision model SHALL check that the drawn art's subject is not a garment, mock
 - **WHEN** the art does not show on a listed garment color
 - **THEN** that color is dropped, and the design is `revise` when no color is left
 
-### Requirement: Distinct research themes
-
-Research SHALL study 3 to 5 distinct themes for a direction: Qloo's themes first, topped up from the direction by a model when Qloo names fewer than 3, and design angles on the direction's subject when no model answers. A theme SHALL never be the direction itself, and reworded duplicates SHALL be dropped. A model's long theme name SHALL be shortened, never fail the run.
-
-#### Scenario: Qloo names no themes
-
-- **WHEN** a designer researches a direction that Qloo does not match, or Qloo is off or fails
-- **THEN** research saves 3 to 5 ideas, each titled with a distinct theme that is not the direction's text
-
-#### Scenario: The model fails
-
-- **WHEN** the theme model is missing or fails
-- **THEN** the run continues with design angles on the direction's subject, and the failure is logged at error level
-
 ### Requirement: Relevant, recent sources
 
 Each theme SHALL be searched with its own query, not the whole direction. Research SHALL keep a news source only when it is a web page that is not an archive or tag page, is at most 31 days old, has a Tavily relevance score of at least 0.4, and shares a word with the theme's query. Sources SHALL be deduped by page and headline and ranked by relevance and freshness.
@@ -209,3 +195,17 @@ With the `design-drops` flag on, a design's placement preview and its product SH
 
 - **WHEN** the brief lists "black" and the blank comes in White, Black and Sand Dune, sizes S to 2XL
 - **THEN** the preview asks Fourthwall for Black in S, M, L and 2XL
+
+### Requirement: Research themes are Qloo tags
+
+Research SHALL study up to 3 distinct themes for a direction, each one a Qloo taste tag for the direction's matched entities, in Qloo's order. Research SHALL NOT make up themes from the direction, by a model or by design angles, and Tavily SHALL NOT name themes: when Qloo names fewer than 3 usable tags, research studies only those. A theme SHALL never be the direction itself, and reworded duplicates SHALL be dropped.
+
+#### Scenario: Qloo names one theme
+
+- **WHEN** Qloo names one usable tag for a direction
+- **THEN** research saves at most one idea, titled with that tag
+
+#### Scenario: Qloo's tag echoes the direction
+
+- **WHEN** Qloo's only tag is the direction's own text
+- **THEN** research stops with `QLOO_NO_MATCH` and searches nothing

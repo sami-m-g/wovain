@@ -7,6 +7,7 @@ import { createBilling } from "@wovain/billing/service";
 import type { Core } from "@wovain/core/core";
 import { createArtist } from "@wovain/core/fal";
 import { fakeAgents, fakeNemotron } from "@wovain/core/test-doubles";
+import { createTrends } from "@wovain/core/trends";
 import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
@@ -34,6 +35,7 @@ import type { Actor, RunEngine } from "./actor";
 import { compensateRun, createProductCampaign } from "./campaigns";
 import { listConnections, requireFal, withProvider } from "./connections";
 import { decideDesign, generateDesign } from "./designs";
+import { researchIdeas } from "./ideas";
 import { getInsights, storedAdScores } from "./insights";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
@@ -1503,33 +1505,84 @@ describe("fal connection", () => {
   });
 });
 
+// A merchant with fal connected and a run engine that only records starts.
+const withFal = async () => {
+  const { actor, db } = await setup({});
+  await db.insert(connection).values({
+    provider: "fal",
+    sealedTokens: "sealed",
+    userId: USER_ID,
+  });
+  const runs = engine();
+  return { actor: { ...actor, runs }, db, runs };
+};
+
 describe("startRun", () => {
-  it("keeps the merchant's with-Qloo or LLM-only choice on the run", async () => {
-    const { actor, db } = await setup({});
-    await db.insert(connection).values({
-      provider: "fal",
-      sealedTokens: "sealed",
-      userId: USER_ID,
-    });
-    const runs = engine();
-    const withRuns = { ...actor, runs };
-    const input = {
-      autopilot: false,
-      countries: ["US"],
-      dailyBudget: 5,
-      seed: "cozy reading",
-    };
+  const input = {
+    autopilot: false,
+    countries: ["US"],
+    dailyBudget: 5,
+    seed: "cozy reading",
+  };
 
-    const llmOnly = await startRun(withRuns, { ...input, qloo: false });
-    const withQloo = await startRun(withRuns, input);
+  it("starts a run while trends-qloo is on", async () => {
+    flagsOn.add("trends-qloo");
+    const { actor, runs } = await withFal();
 
-    expect(llmOnly.qloo).toBe(false);
-    expect(withQloo.qloo).toBe(true);
+    const started = await startRun(actor, input);
+
+    expect(started.status).toBe("running");
     expect(runs.start).toHaveBeenCalledWith(
-      expect.objectContaining({
-        input: expect.objectContaining({ qloo: false }),
-        runId: llmOnly.id,
-      })
+      expect.objectContaining({ input, runId: started.id })
     );
+    flagsOn.clear();
+  });
+
+  it("refuses to start, saving nothing, when the trends-qloo kill switch is off", async () => {
+    const { actor, db, runs } = await withFal();
+
+    await expect(startRun(actor, input)).rejects.toMatchObject({
+      code: "QLOO_OFF",
+      status: 503,
+    });
+    expect(runs.start).not.toHaveBeenCalled();
+    expect(await db.select().from(run)).toEqual([]);
+  });
+
+  it("refuses research too when trends-qloo is off", async () => {
+    const { actor } = await withFal();
+
+    await expect(researchIdeas(actor, "cozy reading")).rejects.toMatchObject({
+      code: "QLOO_OFF",
+    });
+  });
+
+  it("answers QLOO_NO_MATCH, and keeps the credits, when Qloo knows nothing in the seed", async () => {
+    flagsOn.add("trends-qloo");
+    flagsOn.add("trends-tavily");
+    const { actor, db } = await setup({});
+    actor.core = {
+      ...actor.core,
+      trends: createTrends(
+        { extract: vi.fn(), search: vi.fn() },
+        {
+          tasteOf: async () => await Promise.resolve({ names: [], themes: [] }),
+        }
+      ),
+    } as unknown as Core;
+
+    await expect(researchIdeas(actor, "asdf qwerty")).rejects.toMatchObject({
+      code: "QLOO_NO_MATCH",
+      message:
+        "Qloo found no audience for this brief; try naming a band, film, brand or place",
+      status: 422,
+    });
+    expect(
+      await db
+        .select()
+        .from(creditReservation)
+        .where(eq(creditReservation.status, "settled"))
+    ).toEqual([]);
+    flagsOn.clear();
   });
 });

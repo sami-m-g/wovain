@@ -29,7 +29,6 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from "@wovain/ui/components/input-group";
-import { Switch } from "@wovain/ui/components/switch";
 import { Textarea } from "@wovain/ui/components/textarea";
 import { cn } from "@wovain/ui/lib/utils";
 import {
@@ -130,8 +129,6 @@ export const BriefStep = ({
   onChange,
   onBudget,
   onSubmit,
-  qloo,
-  onQloo,
 }: {
   brief: string;
   error?: string | undefined;
@@ -142,14 +139,10 @@ export const BriefStep = ({
   onChange: (value: string) => void;
   onBudget: (value: string) => void;
   onSubmit: () => void;
-  // The with-Qloo or LLM-only switch, shown with onQloo (qloo-taste-map).
-  qloo?: boolean | undefined;
-  onQloo?: ((checked: boolean) => void) | undefined;
 }) => {
   const t = useTranslations("Wizard.brief");
   const format = useFormatter();
   const id = useId();
-  const qlooId = useId();
   return (
     <form
       className="flex flex-col gap-6"
@@ -183,22 +176,6 @@ export const BriefStep = ({
         <FieldDescription id={`${id}-hint`}>{t("hint")}</FieldDescription>
         {error ? <FieldError>{error}</FieldError> : null}
       </Field>
-      {onQloo ? (
-        <Field orientation="horizontal">
-          <Switch
-            aria-describedby={`${qlooId}-hint`}
-            checked={qloo ?? true}
-            id={qlooId}
-            onCheckedChange={onQloo}
-          />
-          <FieldContent>
-            <FieldLabel htmlFor={qlooId}>{t("qloo")}</FieldLabel>
-            <FieldDescription id={`${qlooId}-hint`}>
-              {t("qlooHint")}
-            </FieldDescription>
-          </FieldContent>
-        </Field>
-      ) : null}
       {autopilot ? (
         <BudgetField
           budget={budget}

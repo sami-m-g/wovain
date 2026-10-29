@@ -767,7 +767,10 @@ export const learnFromResults = async (actor: Actor, now = new Date()) => {
   return { record, snapshot };
 };
 
-/** The weights and learnings research uses, when the loop is on. */
+/**
+ * The weights research scores ideas with, when the loop is on. Themes come
+ * from Qloo alone, so what sold before no longer steers them.
+ */
 export const researchFeedbackOf = async (
   actor: Actor
 ): Promise<ResearchFeedback | undefined> => {
@@ -775,12 +778,7 @@ export const researchFeedbackOf = async (
     return undefined;
   }
   const fit = await latestFit(actor);
-  return fit === undefined
-    ? undefined
-    : {
-        learned: learningsOf(fit.record.learned),
-        weights: fit.record.weights,
-      };
+  return fit === undefined ? undefined : { weights: fit.record.weights };
 };
 
 /** "What we learned": the newest fit against the defaults. */

@@ -7,10 +7,8 @@ import type {
 
 import { competitorPrices } from "./evidence";
 import type { Citation, DossierRecord, TavilyWeb } from "./evidence";
-import type { Learnings } from "./feedback";
-import { external, notConfigured } from "./log";
+import { external, notConfigured, qlooNoMatch } from "./log";
 import type { Logger } from "./log";
-import type { Nemotron } from "./nemotron";
 import { priceFor, pricingRules } from "./pricing";
 import type {
   AffinityType,
@@ -29,13 +27,15 @@ import {
   scoreIdea,
 } from "./score";
 import type { IdeaSignals, ScoreWeights } from "./score";
-import { themesFor } from "./themes";
+import { qlooThemes } from "./themes";
 import type { Theme } from "./themes";
 
 // Trend research: Qloo's taste graph names the themes the seed's fans love
-// (topped up from the brief by Nemotron, ./themes), and Tavily (called live
-// on every run) says why each one matters now and how crowded it already is
-// on the marketplaces. Code filters and ranks the sources and scores each
+// (./themes), and Tavily (called live on every run) adds the evidence: why
+// each one matters now and how crowded it already is on the marketplaces.
+// Every idea is a Qloo tag. Tavily never names a theme of its own, and no
+// theme is made up from the brief: when Qloo matches nothing or fails, the
+// research stops with that error. Code filters and ranks the sources and scores each
 // theme; everything Tavily returns is untrusted web text, kept as data only.
 
 const TIMEOUT_S = 20;
@@ -96,7 +96,8 @@ export interface TrendIdea {
   failedSearches?: SearchKind[] | undefined;
   // Competitor prices behind the margin signal (evidence on).
   prices?: PriceEvidence | undefined;
-  // Qloo tag ID, when the theme came from Qloo.
+  // The Qloo tag the theme is. Ideas saved before Qloo was required may
+  // have none.
   qlooTag?: string | undefined;
   rank: number;
   // Mood-board images for the art brief: never to copy.
@@ -109,19 +110,15 @@ export interface TrendIdea {
   theme: string;
 }
 
-// off: the trends-qloo flag said no, or the merchant ran without Qloo.
-export type QlooStatus = "used" | "no_match" | "failed" | "off";
-
 // What Qloo contributed to one idea: the entities it matched for the seed,
-// the theme's Qloo tag when the theme came from Qloo, and what the seed's
-// fans also like in other domains, with each seed entity's share.
+// the theme's Qloo tag, and what the seed's fans also like in other domains,
+// with each seed entity's share.
 export interface TasteMap {
   affinities: QlooAffinity[];
   // Domains Qloo couldn't load affinities from (logged at error level).
   // Ideas saved before this field have none.
   failedDomains?: AffinityType[] | undefined;
   seeds: QlooEntity[];
-  status: QlooStatus;
   tag?: QlooTheme | undefined;
 }
 
@@ -129,52 +126,35 @@ export interface TrendResearch {
   // Names Qloo matched: never put them on a product.
   avoidNames: string[];
   ideas: TrendIdea[];
-  qloo: QlooStatus;
 }
 
-// Which sources a run may use: the trends-qloo and trends-tavily flags,
-// evaluated by the caller for the merchant (packages/api/src/flow/ideas.ts),
-// and the merchant's own choice to run without Qloo. tasteMap asks Qloo for
-// cross-domain affinities and saves the taste map on each idea.
+// What a run's research adds to Qloo's themes: flags evaluated by the caller
+// for the merchant (packages/api/src/flow/ideas.ts). Qloo itself is not
+// optional: with trends-qloo off the caller refuses the research. tasteMap
+// asks Qloo for cross-domain affinities and saves the taste map on each idea.
 export interface TrendSources {
   // tavily-evidence: competitor prices read off the listings by Extract.
   evidence?: boolean | undefined;
-  qloo: boolean;
   tasteMap?: boolean | undefined;
   tavily: boolean;
 }
 
 // What the merchant's past ideas taught (./feedback), when the
-// feedback-loop flag is on: learnings for the themes prompt and the
-// merchant's re-fit score weights.
+// feedback-loop flag is on: the merchant's re-fit score weights.
 export interface ResearchFeedback {
-  learned?: Learnings | undefined;
   weights?: ScoreWeights | undefined;
 }
 
-const ALL_SOURCES: TrendSources = { qloo: true, tavily: true };
-const NO_TASTE: Taste & { failed?: boolean } = { names: [], themes: [] };
+const ALL_SOURCES: TrendSources = { tavily: true };
 
-const tasteMapOf = (
-  theme: Theme,
-  taste: Taste,
-  status: QlooStatus
-): TasteMap => ({
+const tasteMapOf = (theme: Theme, taste: Taste): TasteMap => ({
   affinities: taste.affinities ?? [],
   failedDomains: taste.failedDomains ?? [],
   seeds: taste.seeds ?? [],
-  status,
   ...(theme.id !== undefined && {
     tag: { affinity: theme.affinity ?? 0, id: theme.id, name: theme.name },
   }),
 });
-
-const qlooStatus = (taste: Taste & { failed?: boolean }) => {
-  if (taste.failed === true) {
-    return "failed";
-  }
-  return taste.themes.length > 0 ? "used" : "no_match";
-};
 
 const isWebUrl = (value: string) =>
   URL.canParse(value) && /^https?:$/u.test(new URL(value).protocol);
@@ -443,10 +423,7 @@ const ideaOf = (
 
 export const createTrends = (
   client: TavilyTrends,
-  qloo: Pick<Qloo, "tasteOf">,
-  // Splits a brief into themes when Qloo names too few; without it, design
-  // angles on the brief's subject stand in (./themes).
-  ask?: Nemotron
+  qloo: Pick<Qloo, "tasteOf">
 ) => ({
   research: async (
     seed: string,
@@ -456,34 +433,19 @@ export const createTrends = (
   ): Promise<TrendResearch> => {
     // Tavily is the evidence: without it there is nothing to rank.
     if (!sources.tavily) {
-      return {
-        avoidNames: [],
-        ideas: [],
-        qloo: sources.qloo ? "no_match" : "off",
-      };
+      return { avoidNames: [], ideas: [] };
     }
-    // Qloo sharpens the themes; the brief tops them up to MIN_THEMES.
-    const tasteOf = async () =>
+    // Qloo names the themes. A failed call throws (QLOO_FAILED): the step
+    // fails and the run logs it at error level. Nothing stands in for Qloo.
+    const taste =
       sources.tasteMap === true
         ? await qloo.tasteOf(seed, log, { crossDomain: true })
         : await qloo.tasteOf(seed, log);
-    const taste = sources.qloo
-      ? await tasteOf().catch((error: unknown) => {
-          // Research goes on without Qloo, but the failure still reaches
-          // the error sink (PostHog Error Tracking).
-          log?.error?.(
-            error instanceof Error ? error : new Error(String(error))
-          );
-          return { failed: true, names: [], themes: [] };
-        })
-      : NO_TASTE;
-    const themes = await themesFor(
-      seed,
-      taste.themes,
-      ask,
-      log,
-      feedback.learned
-    );
+    const themes = qlooThemes(seed, taste.themes);
+    if (themes.length === 0) {
+      log?.set({ trends: { qloo: "no_match" } });
+      throw qlooNoMatch();
+    }
     const searched = await Promise.all(
       themes.map(async (theme) => await searchTheme(client, theme, log))
     );
@@ -510,7 +472,6 @@ export const createTrends = (
     const protectedNames = avoidNames.filter(
       (name) => name.toLowerCase() !== seed.toLowerCase()
     );
-    const status = sources.qloo ? qlooStatus(taste) : "off";
     const ideas = themes
       .flatMap((theme, index) => {
         const found = searched[index];
@@ -528,16 +489,12 @@ export const createTrends = (
           return [];
         }
         return sources.tasteMap === true
-          ? [{ ...idea, taste: tasteMapOf(theme, taste, status) }]
+          ? [{ ...idea, taste: tasteMapOf(theme, taste) }]
           : [idea];
       })
       .toSorted((a, b) => b.score - a.score)
       .map((idea, index) => ({ ...idea, rank: index + 1 }));
-    return {
-      avoidNames: avoidNames.slice(0, 3),
-      ideas,
-      qloo: status,
-    };
+    return { avoidNames: avoidNames.slice(0, 3), ideas };
   },
 });
 

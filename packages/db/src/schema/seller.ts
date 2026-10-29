@@ -85,9 +85,6 @@ export const run = pgTable(
       .notNull(),
     error: text("error"),
     id: id(),
-    // false: the merchant ran without Qloo (the LLM-only comparison,
-    // qloo-taste-map), so a retry runs without it too.
-    qloo: boolean("qloo").default(true).notNull(),
     seed: text("seed").notNull(),
     status: text("status", {
       enum: ["running", "awaiting_approval", "completed", "failed"],

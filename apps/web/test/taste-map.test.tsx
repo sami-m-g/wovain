@@ -26,9 +26,17 @@ const USED: NonNullable<Idea["research"]["taste"]> = {
     },
   ],
   seeds: [{ id: "E1", name: "Studio Ghibli", type: "artist" }],
-  status: "used",
   tag: { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
 };
+
+it("shows no panel for an idea with no Qloo entity behind it", () => {
+  // Saved before Qloo was required.
+  const html = render(
+    <TasteMapPanel taste={{ affinities: [], failedDomains: [], seeds: [] }} />
+  );
+
+  expect(html).toBe("");
+});
 
 it("says which Qloo domains failed to load", () => {
   const html = render(

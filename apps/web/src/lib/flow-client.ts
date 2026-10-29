@@ -148,6 +148,9 @@ export type RunFailure =
   // reconnect: the grant expired and couldn't be refreshed.
   | { reason: "not_connected"; service: Provider; reconnect?: boolean }
   | { reason: "no_ideas" }
+  // Qloo matched nothing in the brief (QLOO_NO_MATCH): a new brief that
+  // names something Qloo knows, not a retry, is the fix.
+  | { reason: "qloo_no_match" }
   | { reason: "rejected" }
   | { reason: "other"; message: string };
 
@@ -164,6 +167,7 @@ const reconnectFor = (message: string): Provider | undefined => {
   return PROVIDERS.find((provider) => provider === service);
 };
 const NO_IDEAS = /found no ideas/iu;
+const QLOO_NO_MATCH = /\bqloo_no_match\b|qloo found no audience/iu;
 const AUTOPILOT_REJECTED = /autopilot rejected/iu;
 
 /**
@@ -185,6 +189,9 @@ export const describeRunFailure = (run: {
   const service = (found?.service ?? found?.named)?.toLowerCase();
   if (service === "fal" || service === "fourthwall" || service === "meta") {
     return { reason: "not_connected", service };
+  }
+  if (QLOO_NO_MATCH.test(message)) {
+    return { reason: "qloo_no_match" };
   }
   if (NO_IDEAS.test(message)) {
     return { reason: "no_ideas" };

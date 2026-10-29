@@ -65,6 +65,18 @@ describe("describeRunFailure", () => {
     ).toEqual({ reason: "rejected" });
   });
 
+  it("recognises Qloo matching nothing in the brief", () => {
+    expect(
+      describeRunFailure({
+        error:
+          "Qloo found no audience for this brief; try naming a band, film, brand or place",
+      })
+    ).toEqual({ reason: "qloo_no_match" });
+    expect(describeRunFailure({ error: "QLOO_NO_MATCH" })).toEqual({
+      reason: "qloo_no_match",
+    });
+  });
+
   it("keeps the message of anything else", () => {
     expect(describeRunFailure({ error: "boom" })).toEqual({
       message: "boom",
@@ -125,6 +137,23 @@ describe("RunFailedState", () => {
     expect(html).toContain("upstream 502");
     expect(html).toContain("Try again");
     expect(html).not.toContain("Connect ");
+  });
+
+  it("suggests a brief Qloo knows, not a retry, when Qloo matched nothing", () => {
+    const html = render(
+      <RunFailedState
+        failure={{ reason: "qloo_no_match" }}
+        onRestart={noop}
+        onRetry={noop}
+        retrying={false}
+        stage="trends"
+      />
+    );
+    expect(html).toContain("Qloo found no audience for this brief");
+    expect(html).toContain("band, film, brand or place");
+    expect(html).toContain('href="/dashboard/new?brief=Studio%20Ghibli"');
+    expect(html).toContain("Write a new brief");
+    expect(html).not.toContain("Try again");
   });
 
   it("disables the actions while a new run is starting", () => {

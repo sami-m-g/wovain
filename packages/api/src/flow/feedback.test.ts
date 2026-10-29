@@ -335,14 +335,8 @@ describe("feedback loop on Postgres", () => {
     expect(memory).toContain("Moth tees: no sales");
 
     const feedback = await researchFeedbackOf(ctx.actor);
-    expect(feedback?.weights).toEqual(record.weights);
-    expect(feedback?.learned).toEqual({
-      sold: [
-        "Retro slasher VHS: 57 sold, $1,368.00 revenue, CTR 1.8%",
-        "Cottagecore frogs: 19 sold, $456.00 revenue",
-      ],
-      unsold: ["Moth tees: no sales"],
-    });
+    // Only the weights: Qloo alone names the themes.
+    expect(feedback).toEqual({ weights: record.weights });
 
     // The same data again is the same version.
     const again = await learnFromResults(ctx.actor, NOW);

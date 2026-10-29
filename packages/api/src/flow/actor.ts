@@ -60,9 +60,6 @@ export interface RunInput {
   autopilot: boolean;
   countries: string[];
   dailyBudget: number;
-  // false: research without Qloo, to compare with a Qloo run
-  // (qloo-taste-map). Undefined means with Qloo.
-  qloo?: boolean | undefined;
   seed: string;
 }
 

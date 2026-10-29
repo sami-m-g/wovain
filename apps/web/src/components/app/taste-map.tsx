@@ -13,8 +13,9 @@ const DOMAINS = new Set(["brand", "movie", "tv_show"]);
 /**
  * "Why this idea": what Qloo's taste graph said about it. The seed entities
  * Qloo matched, the theme's Qloo tag, and what the same fans like in other
- * domains, with each seed entity's share (Qloo's explainability). When Qloo
- * failed, matched nothing or was off for the run, it says so instead.
+ * domains, with each seed entity's share (Qloo's explainability). Every idea
+ * is a Qloo tag; an idea saved before Qloo was required, with no entity
+ * behind it, shows no panel.
  */
 export const TasteMapPanel = ({ taste }: { taste: TasteMap }) => {
   const t = useTranslations("Wizard.trends");
@@ -27,24 +28,8 @@ export const TasteMapPanel = ({ taste }: { taste: TasteMap }) => {
   const percent = (value: number) =>
     format.number(value, { maximumFractionDigits: 0, style: "percent" });
 
-  if (taste.status !== "used") {
-    const message = {
-      failed: t("whyFailed"),
-      no_match: t("whyNoMatch"),
-      off: t("whyOff"),
-    }[taste.status];
-    return (
-      <p
-        className="text-muted-foreground flex items-start gap-1.5 px-1 text-xs"
-        role={taste.status === "failed" ? "alert" : undefined}
-      >
-        <CircleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />
-        <span>
-          <span className="text-foreground font-semibold">{t("why")}: </span>
-          {message}
-        </span>
-      </p>
-    );
+  if (taste.seeds.length === 0) {
+    return null;
   }
 
   const seeds = format.list(

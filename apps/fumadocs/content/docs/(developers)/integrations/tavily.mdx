@@ -9,7 +9,7 @@ Tavily is called at **runtime**, on every trend research, not only during develo
 
 `packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) uses Tavily to:
 
-- **Themes.** Each run researches 3 to 5 distinct themes: Qloo's, topped up by the `research_themes` agent (Nemotron) when Qloo names fewer than 3 (`packages/core/src/themes.ts`). A theme is never the brief itself; without a model, design angles on the brief's subject stand in.
+- **Themes.** Tavily never names a theme. Each run researches up to 3 of Qloo's taste tags for the brief (`qlooThemes` in `packages/core/src/themes.ts`). Fewer Qloo tags means fewer ideas. When Qloo matches nothing, the run stops with `QLOO_NO_MATCH`. With `trends-tavily` off, research returns no ideas.
 - **Moment.** For each theme, search the past month's news (`topic: "news"`, `searchDepth: "advanced"`) and return sources. Code drops archive and tag pages, results older than 31 days, results Tavily scores below 0.4 and results that share no word with the theme's query, then dedupes pages and headlines and ranks by relevance and freshness. This is the "why now" shown on an idea.
 - **Saturation.** Search marketplaces (etsy.com, redbubble.com, teepublic.com, fourthwall.com) for matching listings. Few matches score higher.
 

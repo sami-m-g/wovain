@@ -42,7 +42,6 @@ const runInput = z.object({
   autopilot: z.boolean(),
   countries: z.array(z.string()),
   dailyBudget: z.number(),
-  qloo: z.boolean().optional(),
   seed: z.string(),
 });
 

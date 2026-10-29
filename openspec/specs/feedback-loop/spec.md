@@ -40,12 +40,12 @@ Fourthwall rows SHALL hold units and revenue, and drop rows SHALL also hold sell
 
 ### Requirement: Learnings in taste memory and research
 
-The system SHALL turn the outcomes of ideas whose products have been public for at least 3 days into learnings: up to 3 ideas that sold and up to 3 that didn't. A product's outcome SHALL sum its first 28 days for sale. A product that went on sale before the merchant's sales snapshots began SHALL NOT count, because its results are incomplete. The system SHALL write the learnings into the merchant's working memory and pass them to the `research_themes` prompt as data, never as instructions.
+The system SHALL turn the outcomes of ideas whose products have been public for at least 3 days into learnings: up to 3 ideas that sold and up to 3 that didn't. A product's outcome SHALL sum its first 28 days for sale. A product that went on sale before the merchant's sales snapshots began SHALL NOT count, because its results are incomplete. The system SHALL write the learnings into the merchant's working memory, and SHALL NOT pass them to a theme prompt: themes come from Qloo alone.
 
 #### Scenario: A theme sold
 
 - **WHEN** a product of the idea "Retro slasher VHS" sold 4 units
-- **THEN** the next research prompt and the merchant's working memory list it under what sold
+- **THEN** the merchant's working memory lists it under what sold
 
 #### Scenario: A product older than the snapshots
 

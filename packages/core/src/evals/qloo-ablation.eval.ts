@@ -8,13 +8,15 @@ import { createAgentKit } from "../agents";
 import { createNemotron } from "../nemotron";
 import { createQloo } from "../qloo";
 import type { Taste } from "../qloo";
-import { themesFor } from "../themes";
+import { qlooThemes } from "../themes";
 import type { Theme } from "../themes";
+import { llmOnlyThemes } from "./llm-themes";
 
 // The with-Qloo vs LLM-only ablation (openspec qloo-taste-core). The same
 // seeds go through the theme step twice: once with Qloo's taste graph
 // (tags, cross-domain affinities with explainability and a trend bias), and
-// once with Nemotron alone splitting the brief. Tavily is left out, so the
+// once with Nemotron alone splitting the brief (./llm-themes: an eval-only
+// arm, since no product path runs without Qloo). Tavily is left out, so the
 // eval spends no search credits: it compares what the themes and the brief
 // stand on, not the web evidence found for them. It writes
 // qloo-ablation.report.v1.json. Without QLOO_API_KEY and NEBIUS_API_KEY the
@@ -62,9 +64,8 @@ const armOf = (seed: string, themes: Theme[], taste: Taste): Arm => ({
 });
 
 describe.skipIf(!ready)("with Qloo vs LLM-only", () => {
-  // The app's own agents, so the LLM-only arm is exactly the app's
-  // fallback; guardrails and scorers are off to keep the eval to the
-  // theme calls.
+  // The app's own agents; guardrails and scorers are off to keep the eval
+  // to the theme calls.
   const ask = createNemotron(
     createAgentKit({
       apiKey: nebiusKey,
@@ -105,10 +106,8 @@ describe.skipIf(!ready)("with Qloo vs LLM-only", () => {
         `Qloo failed for "${seed}" (${(taste.failedDomains ?? []).join(", ")}): ${errors.map(({ message }) => message).join("; ")}`
       );
     }
-    const [withQloo, llmOnly] = await Promise.all([
-      themesFor(seed, taste.themes, ask),
-      themesFor(seed, [], ask),
-    ]);
+    const withQloo = qlooThemes(seed, taste.themes);
+    const llmOnly = await llmOnlyThemes(ask, seed);
     const qlooArm = armOf(seed, withQloo, taste);
     const llmArm = armOf(seed, llmOnly, NO_TASTE);
     return {

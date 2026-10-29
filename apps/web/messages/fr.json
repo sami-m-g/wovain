@@ -459,9 +459,7 @@
       "placeholder": "Du merch nature et cosy pour ma chaîne sur les plantes",
       "error": "Écrivez au moins quelques mots (10 caractères ou plus).",
       "submit": "Rechercher des tendances",
-      "submitAutopilot": "Lancer en pilote automatique",
-      "qloo": "Utiliser les données de goût Qloo",
-      "qlooHint": "Désactivez-le pour n'utiliser que le modèle de langage et comparer les idées."
+      "submitAutopilot": "Lancer en pilote automatique"
     },
     "trends": {
       "title": "Choisir les idées",
@@ -482,9 +480,6 @@
       "whyAlso": "Ces mêmes fans aiment aussi",
       "whyShare": "{share} via {name}",
       "whyCues": "Indices de style envoyés au brief du visuel",
-      "whyFailed": "Qloo n'a pas répondu pour ce lancement : ces thèmes viennent de votre brief seul.",
-      "whyNoMatch": "Qloo n'a rien reconnu dans votre brief : ces thèmes viennent de votre brief seul.",
-      "whyOff": "Ce lancement s'est passé de Qloo : le modèle de langage a choisi ces thèmes seul.",
       "whyDomainsFailed": "Qloo n'a pas pu charger {domains} qu'aiment ces fans : cette carte ne les montre pas.",
       "domainPlural": {
         "brand": "les marques",
@@ -594,6 +589,12 @@
       "body": "La recherche n'a rien donné pour ce brief. Réessayez, ou reformulez-le.",
       "retry": "Réessayer",
       "another": "Écrire un nouveau brief"
+    },
+    "qlooNoMatch": {
+      "title": "Qloo n'a trouvé aucun public pour ce brief",
+      "body": "Chaque idée vient des données de goûts de Qloo : le brief doit donc citer quelque chose que Qloo connaît. Essayez de nommer un groupe, un film, une marque ou un lieu que vos fans adorent.",
+      "examples": "Commencez par l'un de ceux-ci :",
+      "another": "Écrire un autre brief"
     },
     "working": {
       "research": "Recherche des tendances…",
