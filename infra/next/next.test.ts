@@ -73,6 +73,9 @@ test("the next program declares only next.wovain.com's own resources", async () 
       "pulumi-nodejs:dynamic/resend:ApiKey::resend-next",
       "github:index/repositoryEnvironment:RepositoryEnvironment::next",
       "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::next-main",
+      // Where CI applies this stack (infra/bootstrap/next.ts).
+      "github:index/repositoryEnvironment:RepositoryEnvironment::next-infrastructure",
+      "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::next-infrastructure-main",
       "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::next-GCP_DEPLOY_SERVICE_ACCOUNT",
       "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::next-WEB_BUILD_ENV",
     ])

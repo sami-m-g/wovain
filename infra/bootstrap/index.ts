@@ -6,6 +6,7 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
+import { nextInfrastructure } from "./next.ts";
 import { pullRequestPreviews } from "./preview.ts";
 import { pulumiState } from "./state.ts";
 
@@ -20,9 +21,8 @@ const githubRepository = config.require("githubRepository");
 const githubRepositoryId = config.require("githubRepositoryId");
 const githubOwnerId = config.require("githubOwnerId");
 
-const { billingAccount } = await gcp.organizations.getProject({
-  projectId: project,
-});
+const { billingAccount, number: projectNumber } =
+  await gcp.organizations.getProject({ projectId: project });
 // Deleting or replacing any of these would cut CI off (infra/policy).
 const kept = { protect: true };
 const workloadIdentityUser = "roles/iam.workloadIdentityUser";
@@ -127,3 +127,20 @@ const previews = pullRequestPreviews({
 });
 export const previewServiceAccount = previews.account;
 export const previewWorkloadIdentityProvider = previews.provider;
+
+// `pulumi up` of the next stack on every push to main (next.ts).
+const next = nextInfrastructure({
+  githubPool: pool.name,
+  keyRing: state.stackSecrets.keyRing,
+  project,
+  projectNumber,
+  region,
+  stateBucket: `${project}-pulumi-state`,
+});
+export const nextInfraServiceAccount = next.account;
+// Pull request previews of next decrypt its stack secrets too.
+new gcp.kms.CryptoKeyIAMMember("infra-preview-next-stack-secrets", {
+  cryptoKeyId: next.stackSecrets.id,
+  member: pulumi.interpolate`serviceAccount:${previews.account}`,
+  role: "roles/cloudkms.cryptoKeyDecrypter",
+});
