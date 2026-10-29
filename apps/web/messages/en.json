@@ -174,7 +174,7 @@
       },
       {
         "question": "What stops my ads from losing money?",
-        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner. If wovain is down, Meta pauses the ads itself: wovain copies these rules into your ad account as Meta automated rules."
       },
       {
         "question": "Which of my designs should I advertise?",
@@ -1991,7 +1991,16 @@
         "step2": "In Tracking pixels, paste it into the Facebook Pixel field and save.",
         "step3": "Open your storefront once. This step ticks off when Meta sees the visit, which can take a few minutes.",
         "capi": "To count the sales ad blockers hide, also connect Meta's Conversions API in Fourthwall. It asks for the same pixel ID and an access token from Meta Events Manager.",
-        "capiAction": "Open Meta Conversions"
+        "capiAction": "Open Meta Conversions",
+        "automationLead": "wovain can create your Meta pixel (dataset) and connect it to your ad account. Then you paste its ID into Fourthwall.",
+        "setUp": "Set up my pixel",
+        "sendTest": "Send a test event",
+        "setUpFailed": "Meta didn't let wovain set up the pixel. Reconnect Meta in Meta setup, then try again.",
+        "created": "wovain created your pixel and connected it to your ad account.",
+        "found": "wovain found your pixel on your ad account.",
+        "testReceived": "Meta received a test event. See it in Events Manager > Test events with code {code}.",
+        "testMissed": "Meta didn't confirm the test event (code {code}). Try again in a minute.",
+        "noTest": "Publish your shop to send a test event."
       },
       "domain": {
         "label": "Custom domain",
@@ -2267,5 +2276,35 @@
         "create": "Create the ad"
       }
     }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "What to make",
+      "why": "Why it sells",
+      "audience": "Who buys and where",
+      "competition": "Competition"
+    },
+    "unavailable": {
+      "not_read": "Not read yet.",
+      "read_failed": "The read failed. Try Research again.",
+      "not_connected": "Connect Meta to read the ads shops keep running.",
+      "none_found": "Nothing found for this idea.",
+      "ungrounded": "No title: the words stated something the evidence doesn't show.",
+      "raw_tag": "No title: only the raw taste tag came back."
+    },
+    "dropped": {
+      "no_qloo_evidence": "No Qloo evidence",
+      "no_demand_proof": "No proof that it sells",
+      "no_competition_read": "The competition couldn't be read",
+      "saturated": "Too crowded: too many similar listings or advertisers",
+      "no_title": "No title backed by the evidence"
+    },
+    "level": {
+      "open": "Open",
+      "sweet-spot": "Sweet spot",
+      "crowded": "Crowded"
+    },
+    "sameBuyers": "Same buyers as your brief",
+    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence"
   }
 }

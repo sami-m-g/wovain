@@ -31,9 +31,9 @@ const whoBuysOff = () =>
     why: "The who-buys flag is off.",
   });
 
-// The idea's Qloo signals: the entities its taste map matched and its Qloo
-// tag.
-export const signalsOf = (research: TrendIdea) => {
+// The brief's Qloo entities: the seed's matches, then the strongest
+// cross-domain affinities. Every idea of a run shares them.
+const briefEntitiesOf = (research: TrendIdea) => {
   const { taste } = research;
   const ids = [
     ...(taste?.seeds ?? []).map((one) => one.id),
@@ -41,9 +41,25 @@ export const signalsOf = (research: TrendIdea) => {
       .toSorted((first, second) => second.affinity - first.affinity)
       .map((one) => one.id),
   ];
+  return [...new Set(ids)].slice(0, MAX_ENTITIES);
+};
+
+// The idea's own Qloo signal is its tag: the audiences, places and brands
+// are read from it alone, so each idea gets its own buyers (with the
+// brief's entities mixed in, every idea of a run got the same). The age and
+// gender need entities, so they come from the brief's, and say so. An idea
+// without a tag (saved before Qloo was required) reads the brief's.
+export const signalsOf = (research: TrendIdea) => {
+  const brief = briefEntitiesOf(research);
+  if (research.qlooTag === undefined) {
+    return {
+      options: { scope: "brief" as const },
+      signals: { entities: brief, tags: [] },
+    };
+  }
   return {
-    entities: [...new Set(ids)].slice(0, MAX_ENTITIES),
-    tags: research.qlooTag === undefined ? [] : [research.qlooTag],
+    options: { demographics: brief, scope: "idea" as const },
+    signals: { entities: [], tags: [research.qlooTag] },
   };
 };
 
@@ -72,7 +88,12 @@ export const ideaWhoBuys = async (
     throw whoBuysOff();
   }
   const row = await getIdea(actor, ideaId);
-  if (row.whoBuys !== null && row.whoBuys.location === location) {
+  // Answers kept before scopes were read from the brief: read again.
+  if (
+    row.whoBuys !== null &&
+    row.whoBuys.location === location &&
+    row.whoBuys.scope !== undefined
+  ) {
     return row.whoBuys;
   }
   await assertQlooOn(actor);
@@ -81,10 +102,12 @@ export const ideaWhoBuys = async (
     traceSinkFor(actor)
   );
   try {
+    const { options, signals } = signalsOf(row.research);
     const result = await whoBuys(
       { log: actor.log, qloo: actor.core.qloo, trace },
-      signalsOf(row.research),
-      location
+      signals,
+      location,
+      options
     );
     await actor.db
       .update(idea)
@@ -116,7 +139,8 @@ export const directionWhoBuys = async (
     return await whoBuys(
       { log: actor.log, qloo: actor.core.qloo, trace },
       { entities: entities.slice(0, MAX_ENTITIES) },
-      location
+      location,
+      { scope: "idea" }
     );
   } finally {
     await flush(actor, trace);

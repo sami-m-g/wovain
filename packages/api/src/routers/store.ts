@@ -12,6 +12,7 @@ import { z } from "zod";
 
 import { listingDraft } from "../flow/listing";
 import { metaSetup } from "../flow/meta-setup";
+import { setupPixel } from "../flow/pixel-setup";
 import { productCosts } from "../flow/price-check";
 import {
   listDrops,
@@ -227,6 +228,11 @@ export const storeRouter = {
   // wovain does for the merchant.
   setup: protectedProcedure.handler(
     guarded(async (context) => await storeSetup(context))
+  ),
+  // Finds or creates the Meta dataset, shares it with the ad account and
+  // sends a test event (openspec pixel-automation).
+  setupPixel: protectedProcedure.handler(
+    guarded(async (context) => await setupPixel(context))
   ),
   setupStep: protectedProcedure
     .input(z.object({ step: z.enum(["site_live"]) }))
