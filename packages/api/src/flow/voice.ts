@@ -244,6 +244,29 @@ export const proposeVoiceCommand = async (
   };
 };
 
+// Dictation: a clip becomes text for the merchant to edit in a field. Same
+// flag, rate limit and speech models as a command, but no intent parsing and
+// no action; the text goes back to the merchant only.
+export const dictateClip = async (
+  actor: Actor,
+  input: Clip
+): Promise<{ text: string }> => {
+  await requireVoice(actor);
+  // Counted before the paid call, refused past the limit.
+  await claimVoiceCommand(actor);
+  const heard = await actor.core.transcriber.transcribe(input, actor.log);
+  // The model, never the words.
+  actor.log?.set({
+    voice: { dictation: true, fallback: heard.fallback, model: heard.model },
+  });
+  await actor.analytics?.capture({
+    distinctId: actor.userId,
+    event: "voice_dictated",
+    properties: { fallback: heard.fallback, model: heard.model },
+  });
+  return { text: heard.text };
+};
+
 // The proposal behind a token, for this merchant only, while it's fresh.
 export const openVoiceProposal = (actor: Actor, token: string) => {
   try {

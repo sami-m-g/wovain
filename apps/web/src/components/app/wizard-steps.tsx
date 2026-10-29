@@ -51,6 +51,7 @@ import {
   IdeaCompetition,
 } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
+import { DictationMic } from "@/components/app/dictation-mic";
 import { DropDirections } from "@/components/app/drop-directions";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
@@ -175,7 +176,13 @@ export const BriefStep = ({
             required
             value={brief}
           />
-          <InputGroupAddon align="block-end" className="justify-end">
+          <InputGroupAddon align="block-end" className="justify-between">
+            <DictationMic
+              field={id}
+              label={t("label")}
+              maxLength={MAX_BRIEF}
+              onText={onChange}
+            />
             <InputGroupText aria-hidden="true" className="figures text-xs">
               {format.number(brief.length)}/{format.number(MAX_BRIEF)}
             </InputGroupText>
@@ -514,9 +521,17 @@ const DesignCard = ({
           <TrademarkEvidence trademark={judgment.trademark} />
           {design.status === "pending_approval" ? (
             <Field>
-              <FieldLabel className="text-xs" htmlFor={reasonId}>
-                {t("reasonLabel")}
-              </FieldLabel>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel className="text-xs" htmlFor={reasonId}>
+                  {t("reasonLabel")}
+                </FieldLabel>
+                <DictationMic
+                  field={reasonId}
+                  label={t("reasonLabel")}
+                  maxLength={500}
+                  onText={onReason}
+                />
+              </div>
               <Textarea
                 className="min-h-14 text-sm"
                 id={reasonId}
