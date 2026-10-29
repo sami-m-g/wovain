@@ -162,6 +162,10 @@
       {
         "question": "Who owns the designs?",
         "answer": "You own your briefs and the designs you approve. wovain screens drafts for names and trademarks, but you stay responsible for what you publish."
+      },
+      {
+        "question": "Who sees my ads?",
+        "answer": "People who love what your label loves. Qloo picks that audience from the brands in your profile, and every ad is written for them. If wovain can't find that audience, it makes no ads and tells you what to add."
       }
     ],
     "heroCta": "Start a drop",
