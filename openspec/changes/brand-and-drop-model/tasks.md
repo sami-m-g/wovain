@@ -1,19 +1,19 @@
 # Tasks
 
-Gaps between the current code and the model (#133). Nothing here is built in this change.
+Gaps between the current code and the model (#133). This change builds nothing; items are checked as the code lands elsewhere (drop directions, #140 and #183).
 
 ## 1. Nothing requires a brand
 
-- [ ] 1.1 Make the onboarding brand step skippable ("Just sell"); onboarding finishes without a brand (`onboarding-wizard.tsx`, `flow/onboarding.ts`)
-- [ ] 1.2 Autopilot scans only merchants with a `brand_profile` row (`brandsToScan` in `flow/autopilot.ts`); scan merchants without one too
+- [x] 1.1 Make the onboarding brand step skippable ("Skip, just help me sell"); onboarding finishes without a brand (`onboarding-wizard.tsx`, `flow/onboarding.ts`)
+- [ ] 1.2 Open gap: autopilot scans only merchants with a `brand_profile` row (`brandsToScan` in `flow/autopilot.ts`); scan merchants without one too
 - [ ] 1.3 Ad targeting reads demographics from `brand_profile` (`flow/audience.ts`); use the drop's audience, from its Qloo cues when there is no brand
 - [ ] 1.4 Check every other `brand_profile` read (`flow/drops.ts`, `flow/evidence.ts`, `flow/audiences.ts`, the writers' taste memory) works with no brand
 
 ## 2. Suggested drops (the default)
 
-- [ ] 2.1 Idea research needs a seed the merchant types (`ideas.research`, `trends.ts`). Add a seedless "what sells now" suggestion from Qloo trends, Tavily and the competition read, in any niche, ranked for expected sales
-- [ ] 2.2 With a brand set, seed the same research from the brand's niche, audience and references so suggestions stay within it
-- [ ] 2.3 Make suggested the default in the new-drop flow, with manual (today's seed) as the other choice
+- [x] 2.1 Idea research needed a seed the merchant types (`ideas.research`, `trends.ts`). Add a seedless "what sells now" suggestion from Qloo trends, Tavily and the competition read, in any niche, ranked for expected sales
+- [x] 2.2 With a brand set, seed the same research from the brand's niche, audience and references so suggestions stay within it
+- [x] 2.3 Make suggested the default in the new-drop flow, with manual (today's seed) as the other choice
 
 ## 3. Optional brand and per-drop overrides
 
