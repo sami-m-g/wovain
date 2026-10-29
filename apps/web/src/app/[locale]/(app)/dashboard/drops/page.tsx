@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 
-import { DropsBoard } from "@/components/app/drops-board";
+import { RunsTable } from "@/components/app/runs-list";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
@@ -20,26 +19,28 @@ export const generateMetadata = async ({
   });
 };
 
-// Drops (openspec design-drops), behind the design-drops flag: the page
-// doesn't exist while the flag is off for the merchant.
+// Every drop wovain made for the merchant, newest first. A drop is one run
+// of the flow (brief, ideas, designs, products, campaign); "run" stays an
+// internal word (the run table, the workflow), never shown.
 const DropsPage = async ({
   params,
 }: PageProps<"/[locale]/dashboard/drops">) => {
   const locale = await enterLocale(params);
   const session = await requireSession(locale, "/dashboard/drops");
-  if (!(await core.flags.isOn("design-drops", { userId: session.user.id }))) {
-    notFound();
-  }
-  const t = await getTranslations("Drops");
+  const t = await getTranslations("Runs");
+  const showModels = await core.flags.isOn("model-routing", {
+    userId: session.user.id,
+  });
+
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
+    <div className="flex flex-col gap-8">
+      <div>
         <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
           {t("title")}
         </h1>
-        <p className="text-muted-foreground max-w-2xl text-sm">{t("intro")}</p>
-      </header>
-      <DropsBoard />
+        <p className="text-muted-foreground mt-2">{t("lead")}</p>
+      </div>
+      <RunsTable showModels={showModels} />
     </div>
   );
 };

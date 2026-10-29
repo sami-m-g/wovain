@@ -66,6 +66,8 @@ export const dropsRouter = {
       id: row.id,
       name: row.name,
       palette: row.palette,
+      // The drop's run: the new-drop flow shows its capsule.
+      runId: row.runId,
       status: row.status,
       styleFamily: (row.styleFamily ?? "streetwear") as StyleFamily,
     }));

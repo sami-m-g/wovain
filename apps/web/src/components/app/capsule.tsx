@@ -12,12 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@wovain/ui/components/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@wovain/ui/components/empty";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Check, CircleAlert, Layers } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
@@ -30,13 +24,12 @@ import { orpc } from "@/utils/orpc";
 
 type Outputs = InferRouterOutputs<AppRouter>;
 
-// Drops (openspec design-drops): plan a capsule from an idea, watch each
-// product get its art, placements, mockups and price, and publish the
-// whole capsule through one approval.
+// Capsules (openspec design-drops), a step of the new-drop flow: the picked
+// idea becomes a capsule, each product gets its art, placements, mockups
+// and price, and the whole capsule publishes through one approval.
 
 type DropDetail = Outputs["drops"]["get"];
 type DropItem = DropDetail["items"][number];
-type DropSummary = Outputs["drops"]["list"][number];
 
 // A drop still building is polled until every product settles.
 const POLL_MS = 5000;
@@ -266,125 +259,93 @@ const DropView = ({ dropId }: { dropId: string }) => {
   );
 };
 
-const PlanForm = ({ onPlanned }: { onPlanned: (id: string) => void }) => {
+const NOT_FOUND = 404;
+
+const statusOf = (error: unknown) =>
+  typeof error === "object" && error !== null && "status" in error
+    ? (error as { status?: unknown }).status
+    : undefined;
+
+/**
+ * "Make it a capsule", the step after the idea is picked (design-drops):
+ * the picked idea becomes 4 to 6 products that share one palette and one
+ * mark, built and published as one drop. Once planned, the capsule shows
+ * here with its products and its publish button.
+ */
+export const CapsulePanel = ({
+  ideaId,
+  runId,
+}: {
+  ideaId: string | undefined;
+  runId: string | undefined;
+}) => {
   const t = useTranslations("Drops");
-  const selectId = useId();
-  const ideas = useQuery(orpc.ideas.list.queryOptions({ input: {} }));
-  const [ideaId, setIdeaId] = useState("");
-  const [problem, setProblem] = useState<FlowProblem | undefined>();
+  const headingId = useId();
   const queryClient = useQueryClient();
+  const [problem, setProblem] = useState<FlowProblem | undefined>();
+  const drops = useQuery(orpc.drops.list.queryOptions({ retry: false }));
   const plan = useMutation(
     orpc.drops.plan.mutationOptions({
       onError: (error) => setProblem(describeProblem(error)),
-      onSuccess: async (row) => {
+      onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.drops.key() });
-        onPlanned(row.id);
       },
     })
   );
-  const options = ideas.data ?? [];
+  // The design-drops flag is off: no capsule step.
+  if (
+    runId === undefined ||
+    (drops.isError && statusOf(drops.error) === NOT_FOUND)
+  ) {
+    return null;
+  }
+  const capsule = drops.data?.find((one) => one.runId === runId);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("planTitle")}</CardTitle>
-        <CardDescription>{t("planIntro")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {options.length === 0 && !ideas.isPending ? (
-          <p className="text-muted-foreground text-sm">{t("noIdeas")}</p>
-        ) : (
-          <form
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (ideaId !== "") {
+    <section
+      aria-labelledby={headingId}
+      className="border-border flex flex-col gap-4 rounded-xl border p-4"
+    >
+      <div className="flex flex-col gap-1">
+        <h3
+          className="flex items-center gap-2 text-sm font-semibold"
+          id={headingId}
+        >
+          <Layers aria-hidden="true" className="size-4" />
+          {t("capsuleTitle")}
+        </h3>
+        <p className="text-muted-foreground max-w-[65ch] text-sm">
+          {t("intro")}
+        </p>
+      </div>
+      {capsule === undefined ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            disabled={ideaId === undefined || plan.isPending || drops.isPending}
+            onClick={() => {
+              if (ideaId !== undefined) {
                 plan.mutate({ ideaId });
               }
             }}
+            type="button"
+            variant="outline"
           >
-            <div className="flex min-w-60 flex-1 flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor={selectId}>
-                {t("ideaLabel")}
-              </label>
-              <select
-                className="border-input bg-background h-9 rounded-md border px-2 text-sm"
-                id={selectId}
-                onChange={(event) => setIdeaId(event.target.value)}
-                value={ideaId}
-              >
-                <option value="">{t("ideaPlaceholder")}</option>
-                {options.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.theme}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button disabled={ideaId === "" || plan.isPending} type="submit">
-              {plan.isPending ? t("planning") : t("plan")}
-            </Button>
-          </form>
-        )}
-        {problem === undefined ? null : (
-          <FlowProblemNotice
-            onDismiss={() => setProblem(undefined)}
-            problem={problem}
-          />
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-const DropList = ({
-  drops,
-  onOpen,
-  open,
-}: {
-  drops: readonly DropSummary[];
-  onOpen: (id: string) => void;
-  open: string | undefined;
-}) => {
-  const t = useTranslations("Drops");
-  return (
-    <nav aria-label={t("listLabel")} className="flex flex-wrap gap-2">
-      {drops.map((drop) => (
-        <Button
-          aria-current={drop.id === open ? "true" : undefined}
-          key={drop.id}
-          onClick={() => onOpen(drop.id)}
-          size="sm"
-          variant={drop.id === open ? "default" : "outline"}
-        >
-          <Swatches palette={drop.palette.slice(0, 3)} />
-          {drop.name}
-        </Button>
-      ))}
-    </nav>
-  );
-};
-
-export const DropsBoard = () => {
-  const t = useTranslations("Drops");
-  const drops = useQuery(orpc.drops.list.queryOptions());
-  const [open, setOpen] = useState<string | undefined>();
-  const shown = open ?? drops.data?.[0]?.id;
-  return (
-    <div className="space-y-6">
-      <PlanForm onPlanned={setOpen} />
-      {drops.data !== undefined && drops.data.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <Layers aria-hidden="true" />
-            <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
-            <EmptyDescription>{t("emptyBody")}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : null}
-      {drops.data !== undefined && drops.data.length > 0 ? (
-        <DropList drops={drops.data} onOpen={setOpen} open={shown} />
-      ) : null}
-      {shown === undefined ? null : <DropView dropId={shown} />}
-    </div>
+            {t("plan")}
+          </Button>
+          {ideaId === undefined ? (
+            <span className="text-muted-foreground text-sm">
+              {t("capsulePick")}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <DropView dropId={capsule.id} />
+      )}
+      {problem === undefined ? null : (
+        <FlowProblemNotice
+          onDismiss={() => setProblem(undefined)}
+          problem={problem}
+        />
+      )}
+    </section>
   );
 };
