@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fitOutcomeModel } from "./outcomes";
 import type { DesignOutcome } from "./outcomes";
 import type { Qloo } from "./qloo";
+import { fakeNemotron } from "./test-doubles";
 import { RUN_THEMES } from "./themes";
 import { createTrends, MAX_NEWS_AGE_DAYS, rankSources } from "./trends";
 import type { TavilyTrends } from "./trends";
@@ -96,6 +97,8 @@ const qlooBlank = qlooWith(
 );
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
+const DARK_BRIEF =
+  "Gothic botanical tees for plant lovers who like dark academia";
 
 // What Qloo answers for Studio Ghibli: three taste tags.
 const GHIBLI_TASTE = {
@@ -417,6 +420,25 @@ describe("createTrends", () => {
     expect(search).not.toHaveBeenCalled();
     expect(tasteOf).not.toHaveBeenCalled();
     expect(research.ideas).toEqual([]);
+  });
+
+  // Next, run 8c279e18: "Qloo found no audience for this brief".
+  it("searches Qloo for the phrases Nemotron copies from the brief, never one it made up", async () => {
+    const { client } = fakeTavily();
+    const tasteOf = vi.fn<Qloo["tasteOf"]>(
+      async () => await Promise.resolve(GHIBLI_TASTE)
+    );
+    const { ask } = fakeNemotron({
+      terms: ["Gothic botanical", "dark academia", "Studio Ghibli"],
+    });
+
+    await createTrends(client, qlooWith(tasteOf), ask).research(DARK_BRIEF);
+
+    expect(tasteOf).toHaveBeenCalledWith(DARK_BRIEF, undefined, {
+      crossDomain: true,
+      // The brief itself is too long a term for Qloo's /search.
+      terms: ["Gothic botanical", "dark academia"],
+    });
   });
 });
 describe("rankSources", () => {

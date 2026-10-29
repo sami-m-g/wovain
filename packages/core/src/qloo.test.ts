@@ -6,6 +6,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Answers Qloo's tag search with no tag, and every other call with the
+// next of `replies`, in order.
+const withNoTags =
+  (replies: unknown[]) =>
+  async (url: URL): Promise<Response> =>
+    await Promise.resolve(
+      Response.json(
+        url.pathname === "/v2/tags"
+          ? { results: { tags: [] } }
+          : replies.shift()
+      )
+    );
+
 it("keeps one theme per Qloo tag spelling, highest affinity first", async () => {
   const replies = [
     { results: [{ entity_id: "E1", name: "Studio Ghibli" }] },
@@ -32,9 +45,7 @@ it("keeps one theme per Qloo tag spelling, highest affinity first", async () => 
       },
     },
   ];
-  const fetchMock = vi.fn(
-    async () => await Promise.resolve(Response.json(replies.shift()))
-  );
+  const fetchMock = vi.fn(withNoTags(replies));
   vi.stubGlobal("fetch", fetchMock);
 
   const taste = await createQloo({
@@ -108,9 +119,7 @@ it("asks for entities and theme tags a shirt can use, not places", async () => {
     { results: [{ entity_id: "E1", name: "Hiking Thru" }] },
     { results: { tags: [] } },
   ];
-  const fetchMock = vi.fn(
-    async (_url: URL) => await Promise.resolve(Response.json(replies.shift()))
-  );
+  const fetchMock = vi.fn(withNoTags(replies));
   vi.stubGlobal("fetch", fetchMock);
 
   const taste = await createQloo({
@@ -118,9 +127,9 @@ it("asks for entities and theme tags a shirt can use, not places", async () => {
     baseURL: "https://qloo.example",
   }).tasteOf("hiking");
 
-  const [search, insights] = fetchMock.mock.calls.map(
-    ([url]) => url.searchParams
-  );
+  const [search, insights] = fetchMock.mock.calls
+    .filter(([url]) => url.pathname !== "/v2/tags")
+    .map(([url]) => url.searchParams);
   expect(search?.get("types")).not.toContain("urn:entity:place");
   expect(insights?.get("filter.tag.types")).toContain("urn:tag:genre:media");
   expect(taste.themes).toEqual([]);
@@ -279,7 +288,8 @@ it("makes no cross-domain calls unless asked", async () => {
     baseURL: "https://qloo.example",
   }).tasteOf("ghibli");
 
-  expect(fetchMock).toHaveBeenCalledTimes(2);
+  // The seed's entity search, its tag search, then the tags' insights.
+  expect(fetchMock).toHaveBeenCalledTimes(3);
   expect(taste.affinities).toBeUndefined();
   expect(taste.failedDomains).toBeUndefined();
 });
@@ -427,6 +437,58 @@ it("searches a descriptive brief's subject words when it names nothing", async (
     "graphic",
     "coffee",
   ]);
+});
+
+// Next, run 8c279e18: no entity, but "dark academia" is a Qloo tag.
+it("matches a brief whose terms are Qloo tags, not entities", async () => {
+  const DARK = "urn:tag:keyword:media:dark_academia";
+  const replies: Record<string, (query: string | null) => unknown> = {
+    "/search": () => ({ results: [] }),
+    "/v2/insights": () => ({
+      results: {
+        tags: [
+          {
+            id: "urn:tag:genre:media:gothic",
+            name: "Gothic",
+            query: { affinity: 0.8 },
+          },
+        ],
+      },
+    }),
+    "/v2/tags": (query) => ({
+      results: {
+        tags:
+          query === "dark academia"
+            ? [{ id: DARK, name: "Dark Academia" }]
+            : [],
+      },
+    }),
+  };
+  const fetchMock = vi.fn(
+    async (url: URL) =>
+      await Promise.resolve(
+        Response.json(
+          replies[url.pathname]?.(url.searchParams.get("filter.query"))
+        )
+      )
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  const taste = await createQloo({
+    apiKey: "k",
+    baseURL: "https://qloo.example",
+  }).tasteOf(
+    "Gothic botanical tees for plant lovers who like dark academia",
+    undefined,
+    { terms: ["Gothic botanical", "dark academia"] }
+  );
+
+  expect(taste.themes.map(({ name }) => name)).toEqual(["Gothic"]);
+  const insights = fetchMock.mock.calls
+    .map(([url]) => url)
+    .find((url) => url.pathname === "/v2/insights");
+  expect(insights?.searchParams.get("signal.interests.tags")).toBe(DARK);
+  expect(insights?.searchParams.has("signal.interests.entities")).toBe(false);
 });
 
 it("fails the taste when Qloo rejects every term", async () => {

@@ -45,6 +45,7 @@ export const AGENT_IDS = [
   "autopilot_review_design",
   "brand_proxies",
   "research_themes",
+  "brief_terms",
   "ads_optimizer_review",
   "voice_intent",
   "competition_summary",
@@ -73,6 +74,8 @@ export const AGENT_ROLES = {
   // Reads web results for a brand reference and names Qloo-searchable
   // proxies: research, on the default model.
   brand_proxies: "default",
+  // Copies the phrases Qloo may know out of a brief: extraction, fast.
+  brief_terms: "fast",
   // Reads competitors' listing pages and lists how they sell, each point
   // with its page: research, on the default model.
   competition_summary: "default",
