@@ -116,6 +116,20 @@ describe("automated rules on Graph", () => {
         const url = new URL(String(input));
         const key = `${init?.method ?? "GET"} ${url.pathname.replace("/v26.0", "")}`;
         seen.push({ body: init?.body?.toString() ?? null, key });
+        if (key === "GET /act_222/adrules_library") {
+          // Two pages: the second after the first's cursor.
+          const second = url.searchParams.get("after") === "c1";
+          return await Promise.resolve(
+            Response.json(
+              second
+                ? { data: [{ id: "57", name: "y" }] }
+                : {
+                    data: [{ id: "55", name: "x" }],
+                    paging: { cursors: { after: "c1" }, next: "https://next" },
+                  }
+            )
+          );
+        }
         const answers: Record<string, unknown> = {
           "DELETE /55": { success: true },
           "GET /act_222/adrules_library": { data: [{ id: "55", name: "x" }] },
@@ -127,6 +141,7 @@ describe("automated rules on Graph", () => {
     });
     expect(await graph.rules("token", "222")).toEqual([
       { id: "55", name: "x" },
+      { id: "57", name: "y" },
     ]);
     const [rule] = backstopRulesFor(
       { ...shirt, metaCampaignId: "120" },
@@ -142,10 +157,11 @@ describe("automated rules on Graph", () => {
     await graph.deleteRule("token", "55");
     expect(seen.map((each) => each.key)).toEqual([
       "GET /act_222/adrules_library",
+      "GET /act_222/adrules_library",
       "POST /act_222/adrules_library",
       "DELETE /55",
     ]);
-    const created = new URLSearchParams(seen[1]?.body ?? "");
+    const created = new URLSearchParams(seen[2]?.body ?? "");
     expect(created.get("status")).toBe("ENABLED");
     expect(JSON.parse(created.get("execution_spec") ?? "{}")).toEqual({
       execution_type: "PAUSE",

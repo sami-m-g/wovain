@@ -52,7 +52,17 @@ const businessSchema = z.object({
 const idSchema = z.object({ id: z.string() });
 const rulesSchema = z.object({
   data: z.array(z.object({ id: z.string(), name: z.string() })).default([]),
+  paging: z
+    .object({
+      cursors: z.object({ after: z.string().optional() }).optional(),
+      next: z.string().optional(),
+    })
+    .optional(),
 });
+const RULES_PAGE = 500;
+// 10,000 rules: far past what one ad account holds; beyond it the list
+// can't be trusted, so the sync fails rather than duplicate rules.
+const RULES_MAX_PAGES = 20;
 const eventsSchema = z.object({ events_received: z.number() });
 
 const MS_PER_SECOND = 1000;
@@ -332,15 +342,36 @@ export const createMetaGraph = ({
     token: string,
     adAccountId: string,
     log?: Logger
-  ): Promise<{ id: string; name: string }[]> =>
-    rulesSchema.parse(
-      await get(
-        log,
-        "graph.adrules_library",
-        token,
-        `/act_${adAccountId}/adrules_library?fields=id,name&limit=500`
-      )
-    ).data;
+  ): Promise<{ id: string; name: string }[]> => {
+    const all: { id: string; name: string }[] = [];
+    let after: string | undefined;
+    for (let page = 0; page < RULES_MAX_PAGES; page += 1) {
+      const query = new URLSearchParams({
+        fields: "id,name",
+        limit: String(RULES_PAGE),
+        ...(after === undefined ? {} : { after }),
+      });
+      // Pages follow one another: each needs the cursor before it.
+      const reply = rulesSchema.parse(
+        // oxlint-disable-next-line no-await-in-loop
+        await get(
+          log,
+          "graph.adrules_library",
+          token,
+          `/act_${adAccountId}/adrules_library?${query.toString()}`
+        )
+      );
+      all.push(...reply.data);
+      after = reply.paging?.cursors?.after;
+      if (reply.paging?.next === undefined || after === undefined) {
+        return all;
+      }
+    }
+    throw new GraphRefusedError(
+      `The ad account has more than ${RULES_PAGE * RULES_MAX_PAGES} automated rules; wovain can't list them all`,
+      undefined
+    );
+  };
 
   // Creates an enabled automated rule on the ad account.
   const createRule = async (
