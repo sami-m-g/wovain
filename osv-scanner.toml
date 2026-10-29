@@ -60,6 +60,13 @@ reason = "LGPL-3.0-or-later prebuilt libvips binaries (bundled in the wasm32 and
 
 [[PackageOverrides]]
 ecosystem = "npm"
+name = "@stdlib/math-base-special-(beta|betainc|gamma-delta-ratio|gamma-lanczos-sum|gamma-lanczos-sum-expg-scaled|gammainc|kernel-betainc|powm1)"
+nameIsRegex = true
+license.ignore = true
+reason = "Apache-2.0 AND BSL-1.0: stdlib's ports of Boost.Math routines keep the Boost Software License 1.0 (OSI-approved, permissive, attribution in source only); used by @stdlib/stats-base-dists-beta-cdf for the feedback loop's Beta posteriors"
+
+[[PackageOverrides]]
+ecosystem = "npm"
 name = "caniuse-lite"
 license.ignore = true
 reason = "CC-BY-4.0 browser-support data, used by build tooling and not shipped"
