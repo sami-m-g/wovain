@@ -5,12 +5,7 @@ import { campaign } from "@wovain/db/schema/seller";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import {
-  adRulesOf,
-  economicsOf,
-  isAdRulesOn,
-  setLossLimit,
-} from "../flow/ad-rules";
+import { adRulesOf, isAdRulesOn, setLossLimit } from "../flow/ad-rules";
 import { autonomyOf } from "../flow/approvals";
 import { flagContextOf } from "../flow/flags";
 import {
@@ -19,6 +14,7 @@ import {
   requestCampaignActivation,
   syncCampaignStatus,
 } from "../flow/media";
+import { killEconomicsOf } from "../flow/outcomes";
 import { protectedProcedure } from "../index";
 
 // Live media buying on a staged campaign (openspec change
@@ -94,9 +90,9 @@ export const mediaCampaignsRouter = {
           message: `No campaign ${input.campaignId}`,
         });
       }
-      const [settings, economics, autonomy] = await Promise.all([
-        adRulesOf(context),
-        economicsOf(context, [row.productId]),
+      const settings = await adRulesOf(context);
+      const [economics, autonomy] = await Promise.all([
+        killEconomicsOf(context, [row.productId], settings),
         autonomyOf(context),
       ]);
       const unit = economics.get(row.productId);

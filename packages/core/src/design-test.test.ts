@@ -120,6 +120,23 @@ describe("a multi-design test campaign", () => {
     ]);
   });
 
+  it("gives a design with a winning track record more of the floor", async () => {
+    const { call, calls } = meta();
+    await stagePausedCampaign(call, {
+      ...plan,
+      designs: [
+        { ...design(1), floorShare: 0.5 },
+        { ...design(2), floorShare: 0.25 },
+        { ...design(3), floorShare: 0.25 },
+      ],
+    });
+    const floors = calls
+      .filter((item) => item.tool === "ads_create_ad_set")
+      .map((item) => item.args["daily_min_spend_target"]);
+    // Half of $30 is the floor: $7.50, then $3.75 each.
+    expect(floors).toEqual([750, 375, 375]);
+  });
+
   it("keeps one write key per design object, so a retry makes nothing twice", async () => {
     const { call, calls } = meta();
     const { done, once } = keyedOnce();
