@@ -174,6 +174,10 @@ export const FLAGS = {
     "growth",
     "Performance snapshots feed scores, taste and the next suggestions"
   ),
+  "idea-evidence-gate": workstream(
+    "growth",
+    "Ideas shown only with Qloo evidence, proof of demand and a competition read; sweet-spot demand / supply ranked by a Wilson lower bound; one idea card contract; titles checked against the evidence (openspec idea-evidence)"
+  ),
   "mastra-runs": {
     description:
       "New runs go through the Mastra workflow; the legacy run steps are the fallback",
@@ -191,6 +195,14 @@ export const FLAGS = {
   "media-buying-live": workstream(
     "media",
     "Launch Meta campaigns live after an approval, inside the merchant's spend caps"
+  ),
+  "meta-backstop-rules": workstream(
+    "media",
+    "The kill and stop rules mirrored into Meta's Automated Rules, so spend stops even when wovain is down (openspec meta-backstop)"
+  ),
+  "meta-pixel-automation": workstream(
+    "store",
+    "Pixel set-up on the single Meta grant: find or create the dataset, share it with the ad account and send a test event (openspec pixel-automation)"
   ),
   "mobile-app": workstream(
     "mobile",

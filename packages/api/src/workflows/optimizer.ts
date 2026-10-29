@@ -5,6 +5,7 @@ import { NonRetriableError } from "inngest";
 import type { z } from "zod";
 
 import type { Actor } from "../flow/actor";
+import { syncBackstop } from "../flow/backstop";
 import {
   finishOptimizerApproval,
   OPTIMIZER_ACTIONS,
@@ -78,10 +79,17 @@ export const createOptimizerFunctions = (
         EVENTS.optimizerTick,
         event.data
       );
-      return await step.run(
+      const outcomes = await step.run(
         "optimize",
         async () => await optimizeMerchant(actorFor(userId), { campaignId })
       );
+      // The Meta backstop (openspec meta-backstop) follows wovain's rules
+      // and campaigns; its own step, so a Graph failure retries alone.
+      const backstop = await step.run(
+        "backstop",
+        async () => await syncBackstop(actorFor(userId))
+      );
+      return { backstop, outcomes };
     }
   );
 

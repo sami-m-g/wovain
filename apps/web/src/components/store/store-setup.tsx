@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@wovain/ui/components/button";
 import { Progress } from "@wovain/ui/components/progress";
 import { Skeleton } from "@wovain/ui/components/skeleton";
@@ -99,6 +99,57 @@ const PayoutsAction = () => {
       >
         {t("markDone")}
       </Button>
+    </div>
+  );
+};
+
+/**
+ * Pixel automation (openspec pixel-automation): wovain finds or creates the
+ * Meta dataset, shares it with the ad account and sends a test event. The
+ * paste into Fourthwall stays the merchant's.
+ */
+const SetupPixel = ({ again }: { again: boolean }) => {
+  const t = useTranslations("Store.setup.pixel");
+  const queryClient = useQueryClient();
+  const setup = useMutation(
+    orpc.store.setupPixel.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: orpc.store.setup.key(),
+        });
+      },
+    })
+  );
+  const { data } = setup;
+  return (
+    <div className="flex flex-col gap-1.5 text-sm">
+      <div>
+        <Button
+          disabled={setup.isPending}
+          onClick={() => {
+            setup.mutate({});
+          }}
+          size="sm"
+          variant={again ? "outline" : "default"}
+        >
+          {again ? t("sendTest") : t("setUp")}
+        </Button>
+      </div>
+      {setup.isError ? (
+        <p className="text-destructive" role="alert">
+          {t("setUpFailed")}
+        </p>
+      ) : null}
+      {data === undefined ? null : (
+        <output className="text-muted-foreground">
+          {data.created ? t("created") : t("found")}{" "}
+          {data.testEvent === null
+            ? t("noTest")
+            : t(data.testEvent.received > 0 ? "testReceived" : "testMissed", {
+                code: data.testEvent.code,
+              })}
+        </output>
+      )}
     </div>
   );
 };
@@ -229,6 +280,28 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
 
 const StepDetail = ({ setup, step }: { setup: Setup; step: Step }) => {
   const t = useTranslations("Store.setup");
+  // With pixel automation, one SetupPixel stays mounted while the pixel
+  // goes from none to found, so its result (the test event code) stays.
+  if (
+    step.id === "pixel" &&
+    step.state !== "done" &&
+    setup.metaConnected &&
+    setup.pixelAutomation
+  ) {
+    return (
+      <div className="flex flex-col gap-2">
+        {setup.pixel === null ? (
+          <p className="text-muted-foreground text-sm">
+            {t("pixel.automationLead")}
+          </p>
+        ) : null}
+        <SetupPixel again={setup.pixel !== null} />
+        {setup.pixel === null ? null : (
+          <PixelSteps datasetId={setup.pixel.datasetId} />
+        )}
+      </div>
+    );
+  }
   if (step.id === "pixel" && setup.pixel !== null && step.state !== "done") {
     return <PixelSteps datasetId={setup.pixel.datasetId} />;
   }

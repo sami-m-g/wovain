@@ -1,12 +1,16 @@
 import { ORPCError } from "@orpc/server";
+import { trendCardOf } from "@wovain/core/idea-card";
+import { trendEvidenceOf, writeIdeaWords } from "@wovain/core/idea-words";
 import { QLOO_NO_MATCH_MESSAGE } from "@wovain/core/log";
+import { currentDecisions } from "@wovain/core/nemotron";
 import type { TrendSources } from "@wovain/core/trends";
 import { idea } from "@wovain/db/schema/seller";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { EvlogError } from "evlog";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
+import { localeOf } from "./brand-discovery";
 import { researchFeedbackOf } from "./feedback";
 import { flagContextOf } from "./flags";
 import { charge } from "./spend";
@@ -53,11 +57,12 @@ export const researchSourcesFor = async (
   actor: Actor
 ): Promise<TrendSources> => {
   const context = flagContextOf(actor);
-  const [tavilyOn, evidenceOn] = await Promise.all([
+  const [tavilyOn, evidenceOn, gateOn] = await Promise.all([
     actor.core.flags.isOn("trends-tavily", context),
     actor.core.flags.isOn("tavily-evidence", context),
+    actor.core.flags.isOn("idea-evidence-gate", context),
   ]);
-  return { evidence: evidenceOn, tavily: tavilyOn };
+  return { evidence: evidenceOn, evidenceGate: gateOn, tavily: tavilyOn };
 };
 
 const isNoMatch = (error: unknown) =>
@@ -122,8 +127,10 @@ export const researchIdeas = async (
     .returning();
 };
 
-export const listIdeas = async ({ db, userId }: Actor, runId?: string) =>
-  await db
+// Each idea with the one idea card (@wovain/core/idea-card), built from
+// its research and the reads kept on it.
+export const listIdeas = async ({ db, userId }: Actor, runId?: string) => {
+  const rows = await db
     .select()
     .from(idea)
     .where(
@@ -132,6 +139,56 @@ export const listIdeas = async ({ db, userId }: Actor, runId?: string) =>
         : and(eq(idea.userId, userId), eq(idea.runId, runId))
     )
     .orderBy(desc(idea.createdAt), asc(idea.rank));
+  return rows.map((row) => ({
+    ...row,
+    card: trendCardOf(row.research, {
+      competition: row.competition,
+      whoBuys: row.whoBuys,
+    }),
+  }));
+};
+
+// The run's naming step (idea-evidence-gate): a readable title and concept
+// for each idea past the gate, written from its evidence and checked by
+// the grounding guard (@wovain/core/idea-words). Ideas already named keep
+// their words; words that fail twice are kept as unavailable, with the
+// reason, so the card never shows the raw tag.
+export const nameIdeas = async (actor: Actor, ideaIds: readonly string[]) => {
+  if (
+    ideaIds.length === 0 ||
+    !(await actor.core.flags.isOn("idea-evidence-gate", flagContextOf(actor)))
+  ) {
+    return;
+  }
+  const [rows, locale] = await Promise.all([
+    actor.db
+      .select()
+      .from(idea)
+      .where(
+        and(eq(idea.userId, actor.userId), inArray(idea.id, [...ideaIds]))
+      ),
+    localeOf(actor),
+  ]);
+  await Promise.all(
+    rows
+      .filter((row) => row.research.words === undefined)
+      .map(async (row) => {
+        const words = await writeIdeaWords(
+          {
+            ask: actor.core.nemotron,
+            locale,
+            log: actor.log,
+            trace: currentDecisions(),
+          },
+          trendEvidenceOf(row.research)
+        );
+        await actor.db
+          .update(idea)
+          .set({ research: { ...row.research, words } })
+          .where(and(eq(idea.id, row.id), eq(idea.userId, actor.userId)));
+      })
+  );
+};
 
 export const getIdea = async ({ db, userId }: Actor, id: string) => {
   const row = await db.query.idea.findFirst({ where: { id, userId } });

@@ -791,8 +791,17 @@ export const researchFeedbackOf = async (
   if (!(await feedbackLoopOn(actor))) {
     return undefined;
   }
-  const fit = await latestFit(actor);
-  return fit === undefined ? undefined : { weights: fit.record.weights };
+  const [fit, outcomes] = await Promise.all([
+    latestFit(actor),
+    outcomeModelFor(actor),
+  ]);
+  if (fit === undefined && outcomes.designs === 0) {
+    return undefined;
+  }
+  return {
+    outcomes,
+    ...(fit === undefined ? {} : { weights: fit.record.weights }),
+  };
 };
 
 /**
