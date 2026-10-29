@@ -1,0 +1,67 @@
+# The shepherd's backstop (#248), with no model: every 30 minutes it walks the
+# open pull requests and
+# - dispatches the shepherd (shepherd.yml) for one that has a failed check or
+#   changes requested; the shepherd's gate allows one attempt per head commit,
+#   so a dispatch on a pull request it already tried costs nothing;
+# - labels `needs-human` one that has a merge conflict;
+# - comments `@coderabbitai review` once on one whose head commit has had no
+#   CodeRabbit review for 15 minutes, unless CodeRabbit's newest comment is
+#   its rate-limit notice (AGENTS.md, "CodeRabbit review loop").
+# Skips drafts, forks, Dependabot, release-please, and `needs-human`.
+name: shepherd-scan
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: shepherd-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      issues: write
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          now=$(date -u +%s)
+          prs=$(gh pr list --state open --limit 100 \
+            --json number,isDraft,isCrossRepository,headRefName,headRefOid,mergeable,reviewDecision,statusCheckRollup,labels)
+          jq -c '.[]
+            | select(.isDraft | not) | select(.isCrossRepository | not)
+            | select(.headRefName | test("^(dependabot/|release-please--)") | not)
+            | select(.labels | map(.name) | index("needs-human") | not)' <<<"$prs" |
+          while read -r pr; do
+            n=$(jq -r .number <<<"$pr")
+            if [ "$(jq -r .mergeable <<<"$pr")" = CONFLICTING ]; then
+              gh pr edit "$n" --add-label needs-human
+              gh pr comment "$n" --body "This pull request has a merge conflict. A person or \`@claude\` rebases it."
+              continue
+            fi
+            failed=$(jq '[.statusCheckRollup[] | select(.conclusion == "FAILURE")] | length' <<<"$pr")
+            if [ "$failed" -gt 0 ] || [ "$(jq -r .reviewDecision <<<"$pr")" = CHANGES_REQUESTED ]; then
+              gh workflow run shepherd.yml -f pr="$n"
+              continue
+            fi
+            head=$(jq -r .headRefOid <<<"$pr")
+            detail=$(gh pr view "$n" --json reviews,comments,commits)
+            pushed=$(jq -r '.commits[-1].committedDate' <<<"$detail")
+            reviewed=$(jq --arg h "$head" '[.reviews[] | select(.author.login == "coderabbitai" and .commit.oid == $h)] | length' <<<"$detail")
+            asked=$(jq --arg t "$pushed" '[.comments[] | select(.createdAt > $t and (.body | contains("@coderabbitai")))] | length' <<<"$detail")
+            limited=$(jq -r '[.comments[] | select(.author.login == "coderabbitai")] | last | .body // "" | contains("review will be available in")' <<<"$detail")
+            if [ "$reviewed" -eq 0 ] && [ "$asked" -eq 0 ] && [ "$limited" = false ] &&
+              [ $(( now - $(date -u -d "$pushed" +%s) )) -gt 900 ]; then
+              gh pr comment "$n" --body "@coderabbitai review"
+            fi
+          done
