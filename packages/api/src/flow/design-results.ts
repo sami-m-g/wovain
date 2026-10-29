@@ -5,9 +5,10 @@ import { design, product } from "@wovain/db/schema/seller";
 import { and, eq, inArray } from "drizzle-orm";
 
 import type { Actor } from "./actor";
-import { adResultsOf, adRulesOf, economicsOf } from "./ad-rules";
+import { adResultsOf, adRulesOf } from "./ad-rules";
 import { withProvider } from "./connections";
 import { campaignOf } from "./media";
+import { killEconomicsOf } from "./outcomes";
 
 // A drop's test campaign, design by design (openspec ads-design-test):
 // spend, CTR, add-to-carts, purchases and profit from Meta's lifetime
@@ -31,9 +32,9 @@ export const campaignDesignResults = async (
     },
   ];
   const productIds = designs.map((each) => each.productId);
-  const [economics, settings, products] = await Promise.all([
-    economicsOf(actor, productIds),
-    adRulesOf(actor),
+  const settings = await adRulesOf(actor);
+  const [economics, products] = await Promise.all([
+    killEconomicsOf(actor, productIds, settings),
     actor.db
       .select({
         brief: design.brief,

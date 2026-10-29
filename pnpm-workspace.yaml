@@ -21,6 +21,7 @@ overrides:
   "@hono/node-ws>@hono/node-server": ^2.1.3
 catalog:
   zod: ^4.6.7
+  "@stdlib/stats-base-dists-beta-cdf": ^0.2.3
   sharp: ^0.35.5
   "@base-ui/react": ^1.9.0
   fast-check: ^4.10.2

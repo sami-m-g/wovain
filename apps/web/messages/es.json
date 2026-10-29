@@ -999,6 +999,28 @@
         "openness": "Espacio en el mercado",
         "margin": "Margen",
         "ipSafety": "Sin nombres de marcas"
+      },
+      "anglesTitle": "Lo que te vende",
+      "anglesLead": "{wins, number} de tus {designs, number} diseños dieron ganancia después de los anuncios. Un ángulo aparece aquí cuando la evidencia es sólida, así que una sola venta lo mueve poco.",
+      "anglesNone": "Todavía no destaca ningún ángulo. Cada diseño que lleva 3 días o más a la venta suma.",
+      "why": {
+        "up": "Por qué esto: {count, plural, one {tu último drop de {value}} other {tus últimos # drops de {value}}} ({kind}) {count, plural, one {ganó} other {ganaron}} {money}.",
+        "down": "Ojo: {count, plural, one {tu último drop de {value}} other {tus últimos # drops de {value}}} ({kind}) {count, plural, one {perdió} other {perdieron}} {money}.",
+        "kinds": {
+          "theme": "tema",
+          "tag": "etiqueta de Qloo",
+          "entity": "entidad de Qloo",
+          "audience": "audiencia",
+          "palette": "paleta",
+          "price": "precio",
+          "blank": "prenda base"
+        },
+        "bands": {
+          "under-25": "menos de 25 $",
+          "25-35": "de 25 $ a 35 $",
+          "35-50": "de 35 $ a 50 $",
+          "50-up": "50 $ o más"
+        }
       }
     }
   },
