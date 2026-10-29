@@ -161,10 +161,7 @@ describe("createTrends", () => {
     );
     const trends = createTrends(client, qlooWith(tasteOf));
 
-    const research = await trends.research("ghibli", undefined, {
-      tasteMap: true,
-      tavily: true,
-    });
+    const research = await trends.research("ghibli");
 
     expect(tasteOf).toHaveBeenCalledWith("ghibli", undefined, {
       crossDomain: true,
@@ -179,12 +176,42 @@ describe("createTrends", () => {
     });
   });
 
-  it("leaves the taste map out unless asked", async () => {
-    const { client } = fakeTavily();
+  it("suggests no idea without Qloo affinity", async () => {
+    const { client, search } = fakeTavily();
+    const qloo = qlooWith(
+      async () =>
+        await Promise.resolve({
+          names: ["Studio Ghibli"],
+          themes: [
+            { affinity: 0.9, id: "urn:tag:genre:anime", name: "anime" },
+            { affinity: 0, id: "urn:tag:style:cozy", name: "cozy" },
+          ],
+        })
+    );
 
-    const research = await createTrends(client, qlooGhibli).research("ghibli");
+    const research = await createTrends(client, qloo).research("ghibli");
 
-    expect(research.ideas.every((idea) => idea.taste === undefined)).toBe(true);
+    expect(research.ideas.map((idea) => idea.theme)).toEqual(["anime"]);
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(research.ideas.every((idea) => idea.signals.affinity > 0)).toBe(
+      true
+    );
+  });
+
+  it("stops with QLOO_NO_MATCH when no Qloo tag has affinity", async () => {
+    const { client, search } = fakeTavily();
+    const qloo = qlooWith(
+      async () =>
+        await Promise.resolve({
+          names: [],
+          themes: [{ affinity: 0, id: "urn:tag:style:cozy", name: "cozy" }],
+        })
+    );
+
+    await expect(
+      createTrends(client, qloo).research("ghibli")
+    ).rejects.toMatchObject({ code: "QLOO_NO_MATCH" });
+    expect(search).not.toHaveBeenCalled();
   });
 
   it("stops with QLOO_NO_MATCH, and searches nothing, when Qloo matches nothing", async () => {

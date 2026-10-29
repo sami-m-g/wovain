@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { MAX_DIRECTIONS, suggestDirections } from "./drop-directions";
 import type {
   DirectionBrand,
+  DirectionEvent,
   DirectionDeps,
   DirectionRequest,
 } from "./drop-directions";
@@ -271,4 +272,30 @@ it("records the directions in the decision trace", async () => {
     "directions.qloo",
     "directions.rank",
   ]);
+});
+
+it("announces each step and each direction as soon as it is written", async () => {
+  const events: DirectionEvent[] = [];
+  const result = await suggestDirections(
+    depsWith({ onEvent: (event) => events.push(event) }),
+    request()
+  );
+  const steps = events.flatMap((event) =>
+    event.kind === "step" ? [event.step] : []
+  );
+  expect(steps).toStrictEqual(["qloo", "listings", "words"]);
+  const streamed = events.flatMap((event) =>
+    event.kind === "direction" ? [event.direction.key] : []
+  );
+  // Each card is sent twice: with its facts, then with its words.
+  expect(streamed).toHaveLength(result.directions.length * 2);
+  expect([...new Set(streamed)].toSorted()).toStrictEqual(
+    result.directions.map((one) => one.key).toSorted()
+  );
+  // Words come after the checks: the first card follows the words step.
+  expect(
+    events.findIndex((event) => event.kind === "direction")
+  ).toBeGreaterThan(
+    events.findIndex((event) => event.kind === "step" && event.step === "words")
+  );
 });

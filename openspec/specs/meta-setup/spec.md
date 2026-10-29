@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Take a merchant's Meta account to ready-for-ads from inside wovain: the ad account, payment, Page and safety checks as cards that deep-link into Meta and tick off by polling.
+Guiding a seller's Meta account to ad-ready inside wovain: the ad account, payment method, Page, Instagram and safety rules, read through the Meta Ads MCP and Graph on the single Meta grant, with deep-link cards that tick off by polling.
 
 ## Requirements
 

@@ -167,6 +167,10 @@
       {
         "question": "Who sees my ads?",
         "answer": "People who love what your label loves. Qloo picks that audience from the brands in your profile, and every ad is written for them. If wovain can't find that audience, it makes no ads and tells you what to add."
+      },
+      {
+        "question": "What stops my ads from losing money?",
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner."
       }
     ],
     "heroCta": "Start a drop",
@@ -523,13 +527,18 @@
       },
       "listingsUnknown": "listings not checked",
       "sources": "News for {title}",
-      "loading": "Finding what to sell now…",
       "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
       "retry": "Try again",
       "none": "Qloo found nothing new rising right now. Write your own direction below.",
       "tavilyFailed": "The news or listings check failed for some suggestions; that part is unknown.",
       "brandHint": "Optional: a brand keeps these suggestions within your style.",
-      "brandHintLink": "Add a brand"
+      "brandHintLink": "Add a brand",
+      "steps": {
+        "qloo": "Asking Qloo what's rising…",
+        "listings": "Checking this month's news and how crowded it is…",
+        "words": "Writing the first suggestions…"
+      },
+      "elapsed": "{seconds, plural, one {# second} other {# seconds}}"
     },
     "trends": {
       "title": "Pick the ideas",
@@ -1860,10 +1869,17 @@
       "payouts": {
         "label": "Payouts set up",
         "done": "Sales reach your bank account.",
-        "todo": "Finish your payout account in Fourthwall so sales reach you. This ticks off here once it's done.",
+        "todo": "Fourthwall pays your sales out through Stripe. Setting it up takes about 5 minutes, and only the shop owner can do it.",
         "waiting": "Fourthwall is finishing your payout account.",
         "check": "Check your payout account.",
-        "action": "Set up payouts"
+        "action": "Open Billing and payouts",
+        "inProgress": "Stripe still needs a few details before it can pay you.",
+        "step1": "Open Billing and payouts in Fourthwall.",
+        "step2": "Under How you get paid, choose Set up your payouts.",
+        "step3": "Give Stripe your ID and bank details, then come back here. This step ticks off by itself.",
+        "noStripe": "Stripe isn't available in your country? Fourthwall pays through PayPal or bill.com instead: once your balance reaches $25, email support@fourthwall.com with your shop's address. When they've set it up, mark this step done.",
+        "markDone": "Fourthwall support set up my payouts",
+        "confirmed": "You marked payouts as set up by Fourthwall support (PayPal or bill.com)."
       },
       "site_live": {
         "label": "Shop is live",
@@ -1887,11 +1903,16 @@
         "todo": "Add your Meta pixel in Fourthwall's settings, then open your storefront once to send a test visit. This ticks off when Meta sees it.",
         "waiting": "Connect Meta first: wovain finds your pixel there.",
         "check": "Check your pixel.",
-        "action": "Add the pixel in Fourthwall",
+        "action": "Open Tracking pixels",
         "test": "Open your storefront (test visit)",
         "paste": "Pixel ID to paste:",
         "noDataset": "Meta is connected, but wovain didn't find exactly one pixel on your ad account. Create or pick one in Meta setup.",
-        "connectMeta": "Connect Meta"
+        "connectMeta": "Connect Meta",
+        "step1": "Copy the pixel ID.",
+        "step2": "In Tracking pixels, paste it into the Facebook Pixel field and save.",
+        "step3": "Open your storefront once. This step ticks off when Meta sees the visit, which can take a few minutes.",
+        "capi": "To count the sales ad blockers hide, also connect Meta's Conversions API in Fourthwall. It asks for the same pixel ID and an access token from Meta Events Manager.",
+        "capiAction": "Open Meta Conversions"
       },
       "domain": {
         "label": "Custom domain",

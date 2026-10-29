@@ -6,6 +6,7 @@ import {
   PROMO_CODE,
   MAX_PROMO_USES,
 } from "@wovain/core/store";
+import { CONFIRMABLE_STEPS } from "@wovain/core/store-setup";
 import { z } from "zod";
 
 import { metaSetup } from "../flow/meta-setup";
@@ -25,6 +26,7 @@ import {
   requestProductMove,
   requestRefund,
   requestReprice,
+  requestSetupConfirm,
   requireStoreManagement,
   sampleLink,
   storeProducts,
@@ -81,6 +83,15 @@ export const storeRouter = {
       z.object({ friendlyId: z.string().min(1).max(32), orderId: id, reason })
     )
     .handler(guarded(requestCancel)),
+  // Marks a setup step done that no API can see (payouts set up by
+  // Fourthwall support).
+  confirmSetupStep: protectedProcedure
+    .input(z.object({ step: z.enum(CONFIRMABLE_STEPS) }))
+    .handler(
+      guarded(
+        async (context, input) => await requestSetupConfirm(context, input.step)
+      )
+    ),
   drops: protectedProcedure.handler(
     guarded(async (context) => await listDrops(context))
   ),

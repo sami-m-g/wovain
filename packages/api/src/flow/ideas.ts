@@ -47,18 +47,17 @@ export const assertQlooOn = async (actor: Actor) => {
   }
 };
 
-// What a run's research adds to Qloo's themes. With qloo-taste-map on, it
-// also saves the taste map on each idea.
+// What a run's research adds to Qloo's themes. The taste map is always on:
+// every idea carries what Qloo said about it.
 export const researchSourcesFor = async (
   actor: Actor
 ): Promise<TrendSources> => {
   const context = flagContextOf(actor);
-  const [tasteMap, tavilyOn, evidenceOn] = await Promise.all([
-    actor.core.flags.isOn("qloo-taste-map", context),
+  const [tavilyOn, evidenceOn] = await Promise.all([
     actor.core.flags.isOn("trends-tavily", context),
     actor.core.flags.isOn("tavily-evidence", context),
   ]);
-  return { evidence: evidenceOn, tasteMap, tavily: tavilyOn };
+  return { evidence: evidenceOn, tavily: tavilyOn };
 };
 
 const isNoMatch = (error: unknown) =>
