@@ -141,7 +141,7 @@ const WhySection = ({ lead }: { lead: Idea | undefined }) => {
         <h3 className="text-base font-semibold">{lead.theme}</h3>
         {research.moment || research.answer ? (
           <p className="max-w-[70ch] text-sm">
-            {research.moment ?? research.answer}
+            {research.moment || research.answer}
           </p>
         ) : (
           <NotAvailable reason={t("noMoment")} />
@@ -299,7 +299,12 @@ export const DropStory = ({
   const format = useFormatter();
   const { run } = drop;
   if (run === undefined) {
-    return active;
+    return (
+      <div className="flex flex-col gap-6">
+        {notices}
+        {active}
+      </div>
+    );
   }
   const step = drop.step.id;
   const picked = [

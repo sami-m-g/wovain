@@ -244,14 +244,11 @@ const DropFlow = ({
           </h1>
           <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
         </div>
-        {/* Autopilot stays out of the story-ui drop (openspec story-ui). */}
-        {story ? null : (
-          <AutopilotToggle
-            checked={drop.autopilot}
-            disabled={step !== "brief" || Boolean(drop.working)}
-            onCheckedChange={drop.handleAutopilot}
-          />
-        )}
+        <AutopilotToggle
+          checked={drop.autopilot}
+          disabled={step !== "brief" || Boolean(drop.working)}
+          onCheckedChange={drop.handleAutopilot}
+        />
       </div>
 
       <StepNav stage={drop.step.stage} step={step} />
