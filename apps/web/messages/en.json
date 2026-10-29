@@ -601,6 +601,25 @@
           "with_issues": "Needs attention in Meta",
           "archived": "Archived",
           "unknown": "Status unknown"
+        },
+        "rules": {
+          "title": "How wovain protects your ad money",
+          "pauseIf": "wovain pauses an ad on its own if it:",
+          "noSale": "spends {spend} (one sale's profit) with no sale and no add-to-cart",
+          "cartNoSale": "spends {spend} with add-to-carts but no sale",
+          "lowCtr": "gets under {ctr}% clicks after {impressions} views",
+          "highCpc": "costs more than {cpc} a click after {clicks} clicks",
+          "noProfit": "A sale of this product leaves no profit, so wovain pauses its ads.",
+          "stopIf": "wovain pauses every campaign if:",
+          "dailyCap": "today's ad spend reaches your {cap} daily cap",
+          "monthlyCap": "this month's ad spend reaches your {cap} monthly cap",
+          "lossLimit": "ad spend minus the profit of its sales reaches {limit}",
+          "scaleIf": "wovain asks to raise the budget if:",
+          "scale": "Meta has finished learning, the campaign has at least {purchases} sales, and it earns at least {roas} per $1 of ads. The raise is {step}% at most, once every {hours} hours, inside your daily cap.",
+          "how": "wovain checks every 30 minutes. Pauses happen right away and you get a notification. A raise waits for your approval.",
+          "limitLabel": "Loss limit (USD)",
+          "save": "Save",
+          "saveFailed": "The limit wasn't saved: {reason}"
         }
       }
     },

@@ -26,6 +26,10 @@ export interface MetaCampaignRead {
   live: boolean;
   metaLearning?: MetaLearning | undefined;
   resultsLast7d: number;
+  // The campaign's spend today and this month, in cents (the account's
+  // time zone), for the spend caps (./ad-rules.ts).
+  spendTodayCents: number;
+  spendMonthCents: number;
 }
 
 const CENTS = 100;
@@ -96,7 +100,7 @@ export const readCampaign = async (
   call: ToolCall,
   ref: CampaignRef
 ): Promise<MetaCampaignRead> => {
-  const [campaigns, ads, adSets] = await Promise.all([
+  const [campaigns, ads, adSets, today, month] = await Promise.all([
     lookup(call, ref, {
       date_preset: "maximum",
       fields: ["id", "effective_status", "daily_budget"],
@@ -112,6 +116,8 @@ export const readCampaign = async (
         "clicks",
         "spend",
         "amount_spent",
+        "omni_purchase",
+        "omni_add_to_cart",
       ],
       level: "ad",
       object_ids: ref.adIds,
@@ -122,6 +128,18 @@ export const readCampaign = async (
       level: "adset",
       object_ids: [ref.adSetId],
     }),
+    lookup(call, ref, {
+      date_preset: "today",
+      fields: ["id", "amount_spent"],
+      level: "campaign",
+      object_ids: [ref.metaCampaignId],
+    }),
+    lookup(call, ref, {
+      date_preset: "this_month",
+      fields: ["id", "amount_spent"],
+      level: "campaign",
+      object_ids: [ref.metaCampaignId],
+    }),
   ]);
   const campaign = rowsById(campaigns, [ref.metaCampaignId]).get(
     ref.metaCampaignId
@@ -130,14 +148,24 @@ export const readCampaign = async (
   const adSet = rowsById(adSets, [ref.adSetId]).get(ref.adSetId);
   // Meta's budgets are in the account's minor unit (cents for USD).
   const budget = amountOf(campaign?.daily_budget ?? campaign?.dailyBudget);
+  const spendOf = (reply: unknown) => {
+    const entity = rowsById(reply, [ref.metaCampaignId]).get(
+      ref.metaCampaignId
+    );
+    return Math.round(
+      (amountOf(entity?.amount_spent ?? entity?.spend) ?? 0) * CENTS
+    );
+  };
   return {
     ads: ref.adIds.map((adId) => {
       const ad = adRows.get(adId);
       return {
         active: ad !== undefined && statusOf(ad) === ACTIVE,
         adId,
+        addToCarts: amountOf(ad?.omni_add_to_cart ?? ad?.adds_to_cart) ?? 0,
         clicks: amountOf(ad?.clicks) ?? 0,
         impressions: amountOf(ad?.impressions) ?? 0,
+        purchases: amountOf(ad?.omni_purchase ?? ad?.purchases) ?? 0,
         spendCents: Math.round(
           // Ad-level spend is the insights field `spend`; `amount_spent` is
           // the account field, kept in case the MCP maps it.
@@ -150,6 +178,8 @@ export const readCampaign = async (
     live: campaign !== undefined && statusOf(campaign) === ACTIVE,
     metaLearning: learningOf(adSet),
     resultsLast7d: amountOf(adSet?.results) ?? 0,
+    spendMonthCents: spendOf(month),
+    spendTodayCents: spendOf(today),
   };
 };
 

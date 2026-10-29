@@ -1,7 +1,17 @@
 import { ORPCError } from "@orpc/server";
+import { targetsOf } from "@wovain/core/ad-rules";
 import { ApprovalError } from "@wovain/core/approvals";
+import { campaign } from "@wovain/db/schema/seller";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  adRulesOf,
+  economicsOf,
+  isAdRulesOn,
+  setLossLimit,
+} from "../flow/ad-rules";
+import { autonomyOf } from "../flow/approvals";
 import { flagContextOf } from "../flow/flags";
 import {
   isMediaBuyingLive,
@@ -20,6 +30,8 @@ const id = z.string().min(1).max(64);
 // Makes a request idempotent (AIP-155): the same ID returns the same approval.
 const requestId = z.uuid();
 const byCampaign = z.object({ campaignId: id, requestId });
+// The highest loss limit a merchant may set: $100,000.
+const MAX_LOSS_LIMIT_CENTS = 10_000_000;
 
 // The queue's refusals (a cap breach is DENIED) as oRPC errors.
 const asOrpc = (error: unknown): never => {
@@ -60,6 +72,52 @@ export const mediaCampaignsRouter = {
         return asOrpc(error);
       }
     }),
+  // The profit rules for one campaign, in numbers the card states plainly:
+  // the thresholds, the target CPA and ROAS from its product, and the caps.
+  rules: protectedProcedure
+    .input(z.object({ campaignId: id }))
+    .handler(async ({ context, input }) => {
+      if (!(await isAdRulesOn(context))) {
+        return { on: false as const };
+      }
+      const [row] = await context.db
+        .select({ productId: campaign.productId })
+        .from(campaign)
+        .where(
+          and(
+            eq(campaign.userId, context.userId),
+            eq(campaign.id, input.campaignId)
+          )
+        );
+      if (row === undefined) {
+        throw new ORPCError("NOT_FOUND", {
+          message: `No campaign ${input.campaignId}`,
+        });
+      }
+      const [settings, economics, autonomy] = await Promise.all([
+        adRulesOf(context),
+        economicsOf(context, [row.productId]),
+        autonomyOf(context),
+      ]);
+      const unit = economics.get(row.productId);
+      return {
+        dailySpendCapCents: autonomy.dailySpendCapCents,
+        monthlySpendCapCents: autonomy.monthlySpendCapCents,
+        on: true as const,
+        settings,
+        targets: unit === undefined ? undefined : targetsOf(unit, settings),
+      };
+    }),
+  setLossLimit: protectedProcedure
+    .input(
+      z.object({
+        lossLimitCents: z.number().int().min(0).max(MAX_LOSS_LIMIT_CENTS),
+      })
+    )
+    .handler(
+      async ({ context, input }) =>
+        await setLossLimit(context, input.lossLimitCents)
+    ),
   sync: protectedProcedure
     .input(z.object({ campaignId: id }))
     .handler(
