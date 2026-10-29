@@ -37,7 +37,7 @@ The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as
 
 The repository's variables are `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_PROJECT_ID`, `GCP_REGION` and `DOCS_SITE_URL`. Each deploy environment has `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_IMAGE_REPOSITORY`, `GCP_SQL_INSTANCE`, `DATABASE_URL_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`, `SITE_URL` and `WEB_SERVICE`, and `Production` also has `DOCS_SERVICE`. See "Releases" below.
 
-Production's provider authenticates with its `github:token` stack secret: a fine-grained token for sami-m-g/wovain with read and write on Administration, Environments and Variables (run `pulumi config set --secret github:token --cwd infra --stack prod`, which prompts for the token).
+Production's provider authenticates with its `github:token` stack secret: a fine-grained token for sami-m-g/wovain with read and write on Administration, Environments and Variables (run `pulumi config set --secret --cwd infra --stack prod github:token`, which prompts for the token).
 
 ### CodeRabbit and auto-merge
 
@@ -258,7 +258,7 @@ Stack config:
 - `wovain:posthogInternalUserIds` (optional): the team's Better Auth user ids, which every `internal` and `percent` rollout includes, e.g. `pulumi config set --path 'wovain:posthogInternalUserIds[0]'`, which prompts for the user id.
 - `wovain:posthogAlertSubscribers` (optional): the PostHog user ids that get KPI alert emails; the founder by default.
 
-The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (run `pulumi config set --secret posthog-secret-key`, which prompts for the key).
+The web app evaluates flags with the `posthog-secret-key` secret, mounted as `POSTHOG_SECRET_KEY` once its stack secret is set (run `pulumi config set --secret --cwd infra posthog-secret-key`, which prompts for the key).
 
 ### Adopting what exists (one time)
 
