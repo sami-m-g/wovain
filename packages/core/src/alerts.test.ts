@@ -66,6 +66,14 @@ describe("quiet hours", () => {
     );
   });
 
+  it("ends at the local time across a clock change", () => {
+    // Paris leaves summer time at 03:00 on 2026-10-25: 07:00 is then 06:00Z.
+    const paris = { ...night, timeZone: "Europe/Paris" };
+    expect(
+      quietUntil(new Date("2026-10-24T22:00:00Z"), paris)?.toISOString()
+    ).toBe("2026-10-25T06:00:00.000Z");
+  });
+
   it("is open outside them, or with none set", () => {
     const noon = new Date("2026-10-30T10:00:00Z");
     expect(quietUntil(noon, night)).toBeUndefined();

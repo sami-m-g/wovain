@@ -136,10 +136,30 @@ const localMinute = (now: Date, timeZone: string) => {
   return part("hour") * MINUTES_PER_HOUR + part("minute");
 };
 
+const OFFSET = /GMT(?<sign>[+-])(?<hours>\d{2}):?(?<minutes>\d{2})?/u;
+
+// The time zone's offset from UTC at `at`, in minutes (Cairo in winter: 120).
+const offsetMinutes = (at: Date, timeZone: string) => {
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    timeZoneName: "longOffset",
+  })
+    .formatToParts(at)
+    .find((part) => part.type === "timeZoneName")?.value;
+  const groups = name === undefined ? undefined : OFFSET.exec(name)?.groups;
+  if (groups === undefined) {
+    // "GMT" alone: UTC.
+    return 0;
+  }
+  const total =
+    Number(groups["hours"]) * MINUTES_PER_HOUR + Number(groups["minutes"] ?? 0);
+  return groups["sign"] === "-" ? -total : total;
+};
+
 /**
  * When the quiet hours around `now` end, or undefined outside them (or with
- * none set, or a start equal to the end). A clock change inside the quiet
- * hours moves the end by up to that hour.
+ * none set, or a start equal to the end), in the merchant's time zone,
+ * across a clock change too.
  */
 export const quietUntil = (
   now: Date,
@@ -166,7 +186,11 @@ export const quietUntil = (
     now.getTime() -
     now.getUTCSeconds() * MS_PER_SECOND -
     now.getUTCMilliseconds();
-  return new Date(startOfMinute + wait * MS_PER_MINUTE);
+  const naive = new Date(startOfMinute + wait * MS_PER_MINUTE);
+  // A clock change in between moves the wall-clock end by its offset.
+  const shift =
+    offsetMinutes(now, quiet.timeZone) - offsetMinutes(naive, quiet.timeZone);
+  return new Date(naive.getTime() + shift * MS_PER_MINUTE);
 };
 
 export interface ChannelPlan {

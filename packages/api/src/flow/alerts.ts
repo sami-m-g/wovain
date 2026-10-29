@@ -169,8 +169,23 @@ export const disconnectTelegram = async (
 export const linkTelegramChat = async (
   db: Database,
   token: string,
-  chat: { id: string; username?: string | undefined }
+  chat: { id: string; username?: string | undefined },
+  // Whether the merchant may link (the alerts flag); a merchant who may not
+  // gets the expired answer and nothing is saved.
+  allowed: (userId: string) => Promise<boolean>
 ): Promise<{ locale: Locale; userId: string } | undefined> => {
+  const [pending] = await db
+    .select({ userId: telegramChat.userId })
+    .from(telegramChat)
+    .where(
+      and(
+        eq(telegramChat.linkTokenHash, hashOf(token)),
+        gt(telegramChat.linkExpiresAt, new Date())
+      )
+    );
+  if (pending === undefined || !(await allowed(pending.userId))) {
+    return undefined;
+  }
   const [linked] = await db
     .update(telegramChat)
     .set({
@@ -351,26 +366,49 @@ export const deliverAlert = async (
     notification: Notification;
   }
 ): Promise<{ reason?: string; status: DeliveryStatus }> => {
-  const [done] = await actor.db
-    .select({ status: alertDelivery.status })
-    .from(alertDelivery)
-    .where(
-      and(
-        eq(alertDelivery.userId, actor.userId),
-        eq(alertDelivery.key, key),
-        eq(alertDelivery.channel, channel)
-      )
-    );
-  if (done !== undefined && done.status !== "failed") {
+  // Claim the delivery first: a new row, or one whose last try failed. Any
+  // other row (sending, sent, skipped) means an earlier try got this far, so
+  // the provider is never called twice, even when the write after a send
+  // failed.
+  const claimed = await actor.db
+    .insert(alertDelivery)
+    .values({
+      channel,
+      error: null,
+      key,
+      kind: notification.kind,
+      status: "sending",
+      userId: actor.userId,
+    })
+    .onConflictDoUpdate({
+      set: { error: null, status: "sending" },
+      target: [alertDelivery.userId, alertDelivery.key, alertDelivery.channel],
+      where: eq(alertDelivery.status, "failed"),
+    })
+    .returning({ id: alertDelivery.id });
+  if (claimed.length === 0) {
     return { status: "duplicate" };
   }
   // The merchant may have turned the channel off while quiet hours held it.
   const settings = await alertSettingsFor(actor);
-  const outcome = settings.channels[alertTypeOf(notification.kind)].includes(
-    channel
-  )
-    ? await sendOn(actor, channel, notification)
-    : { reason: "turned off", status: "skipped" as const };
+  let outcome: { reason?: string; status: "sent" | "skipped" };
+  try {
+    outcome = settings.channels[alertTypeOf(notification.kind)].includes(
+      channel
+    )
+      ? await sendOn(actor, channel, notification)
+      : { reason: "turned off", status: "skipped" };
+  } catch (error) {
+    // Released, so the step's retry claims it again.
+    await record(actor, {
+      channel,
+      error: error instanceof Error ? error.message : String(error),
+      key,
+      kind: notification.kind,
+      status: "failed",
+    });
+    throw error;
+  }
   await record(actor, {
     channel,
     error: outcome.reason,
