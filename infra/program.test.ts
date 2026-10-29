@@ -180,3 +180,49 @@ test("retired resources match what the program declares", async () => {
     expect(registered.includes(rest.join("::"))).toBe(release === "code");
   }
 });
+
+// A protected resource in a `pulumi stack export` checkpoint.
+const resource = (urn: string, retainOnDelete: boolean) => ({
+  protect: true,
+  retainOnDelete,
+  type: urn.split("::")[2] ?? "",
+  urn,
+});
+
+test("the state migration releases retired resources no `up` released", async () => {
+  const { releaseDeleted } = await import("./scripts/state.ts");
+  // Production's state on 2026-10-29: #47 released these in code and #48
+  // deleted the declarations, with no `up` in between, so the state still
+  // protects and retains them, and every preview failed on the delete.
+  const stale = [
+    "gcp:firebase/appHostingBackend:AppHostingBackend::app",
+    "gcp:secretmanager/secret:Secret::openrouter-api-key",
+    "gcp:secretmanager/secret:Secret::otel-exporter-otlp-endpoint",
+    "gcp:secretmanager/secret:Secret::otel-exporter-otlp-headers",
+    "gcp:secretmanager/secret:Secret::workos-api-key",
+    "gcp:secretmanager/secretVersion:SecretVersion::workos-api-key",
+    "gcp:serviceaccount/account:Account::app-hosting",
+    "gcp:storage/bucket:Bucket::apphosting-sources",
+  ].map((key) => `urn:pulumi:prod::wovain::${key}`);
+  // Not retired, and retired by `pulumi state unprotect`: left alone.
+  const untouched = [
+    "gcp:sql/databaseInstance:DatabaseInstance::db",
+    "gcp:serviceaccount/account:Account::gitlab-ops",
+  ].map((key) => `urn:pulumi:prod::wovain::${key}`);
+  const checkpoint = {
+    deployment: {
+      resources: [
+        ...stale.map((urn) => resource(urn, true)),
+        ...untouched.map((urn) => resource(urn, false)),
+      ],
+    },
+  };
+  expect(releaseDeleted(checkpoint)).toEqual(stale);
+  for (const { protect, retainOnDelete, urn } of checkpoint.deployment
+    .resources) {
+    expect(protect).toBe(untouched.includes(urn));
+    expect(retainOnDelete).toBe(false);
+  }
+  // A second run finds nothing left to release.
+  expect(releaseDeleted(checkpoint)).toEqual([]);
+});
