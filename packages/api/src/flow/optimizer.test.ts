@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
+import { createApprovals } from "@wovain/core/approvals";
 import type { WovainEvent } from "@wovain/core/events";
 import { seededRng } from "@wovain/core/optimizer";
 import { fakeNemotron } from "@wovain/core/test-doubles";
@@ -18,11 +19,16 @@ import { campaign, design, idea, product } from "@wovain/db/schema/seller";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Actor } from "./actor";
 import { adRulesOf, setLossLimit } from "./ad-rules";
-import { approvalsFor, autonomyOf, setAutonomy } from "./approvals";
+import {
+  approvalsFor,
+  autonomyOf,
+  drizzleApprovalStore,
+  setAutonomy,
+} from "./approvals";
 import {
   executeOptimizerApproval,
   finishOptimizerApproval,
@@ -741,23 +747,19 @@ describe("the ads profit rules", () => {
     });
     expect(queued?.payload).toMatchObject({ fromCents: 1000, toCents: 1200 });
 
-    // The approval expires a day after NOW; decide on the clock the
-    // optimizer ran on, not the real one.
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
-    try {
-      await approvalsFor(ctx.actor).decide(
-        {
-          approvalId: queued?.id ?? "",
-          approve: true,
-          decidedBy: USER_ID,
-          userId: USER_ID,
-        },
-        settings
-      );
-    } finally {
-      vi.useRealTimers();
-    }
+    // Decided at the tick's clock: the raise expires a day after NOW.
+    await createApprovals({
+      now: () => NOW,
+      store: drizzleApprovalStore(ctx.actor.db),
+    }).decide(
+      {
+        approvalId: queued?.id ?? "",
+        approve: true,
+        decidedBy: USER_ID,
+        userId: USER_ID,
+      },
+      settings
+    );
     expect(
       await executeOptimizerApproval(ctx.actor, queued?.id ?? "", deps(meta))
     ).toBe("done");
