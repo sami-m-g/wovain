@@ -153,7 +153,7 @@
       },
       {
         "question": "Comment les prix sont-ils fixés ?",
-        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Vous pouvez modifier chaque prix ensuite dans Fourthwall."
+        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Quand vous changez un prix, wovain affiche votre profit pour chaque taille face au coût réel de Fourthwall et refuse un prix qui perd de l'argent."
       },
       {
         "question": "Combien ça coûte ?",
@@ -1770,6 +1770,25 @@
       "down": "Les acheteurs paient {amount} de moins par pièce. wovain refuse un prix qui vend à perte.",
       "back": "Annuler",
       "confirm": "Changer le prix"
+    },
+    "priceCheck": {
+      "label": "Vérification du prix",
+      "verdict": {
+        "loss": "Perte : une taille {size} perd {profit} par vente. wovain n'enverra pas ce prix.",
+        "below_floor": "Sous le seuil de wovain : une taille {size} laisse {profit} par vente.",
+        "thin": "Rentable, mais sous les {margin} de marge que gardent les boutiques pour payer leurs publicités. Une taille {size} laisse {profit}.",
+        "healthy": "Sain : au moins {margin} de marge pour chaque taille. Une taille {size} laisse {profit}."
+      },
+      "size": "Taille",
+      "cost": "Coût",
+      "price": "Prix",
+      "profit": "Profit",
+      "margin": "Marge",
+      "useFloor": "Utiliser {price} (seuil de wovain)",
+      "useBenchmark": "Utiliser {price} ({margin} de marge)",
+      "source": "Coût : ce que Fourthwall facture pour fabriquer chaque taille. Profit : après frais de carte, taxes et réserve pour remboursements.",
+      "noCost": "Fourthwall n'a pas donné de coût pour ce produit, le prix ne peut donc pas être vérifié.",
+      "unavailable": "La vérification du prix n'est pas disponible : {reason}"
     },
     "sample": {
       "title": "Commander un échantillon de {title}",

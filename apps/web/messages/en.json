@@ -153,7 +153,7 @@
       },
       {
         "question": "How are prices set?",
-        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. You can change any price later in Fourthwall."
+        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. When you change a price, wovain shows your profit in every size against Fourthwall's real cost and refuses one that loses money."
       },
       {
         "question": "What does it cost?",
@@ -1770,6 +1770,25 @@
       "down": "Buyers pay {amount} less per piece. wovain refuses a price that sells at a loss.",
       "back": "Cancel",
       "confirm": "Change price"
+    },
+    "priceCheck": {
+      "label": "Price check",
+      "verdict": {
+        "loss": "Loss: a {size} loses {profit} per sale. wovain won't send this price.",
+        "below_floor": "Below wovain's floor: a {size} leaves {profit} per sale.",
+        "thin": "Profitable, but under the {margin} margin stores keep to pay for ads. A {size} leaves {profit}.",
+        "healthy": "Healthy: at least {margin} margin in every size. A {size} leaves {profit}."
+      },
+      "size": "Size",
+      "cost": "Cost",
+      "price": "Price",
+      "profit": "Profit",
+      "margin": "Margin",
+      "useFloor": "Use {price} (wovain's floor)",
+      "useBenchmark": "Use {price} ({margin} margin)",
+      "source": "Cost: what Fourthwall charges to make each size. Profit: after card fees, tax and a refund reserve.",
+      "noCost": "Fourthwall gave no cost for this product, so the price can't be checked.",
+      "unavailable": "The price check isn't available: {reason}"
     },
     "sample": {
       "title": "Order a sample of {title}",
