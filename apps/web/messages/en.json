@@ -1870,5 +1870,22 @@
       "embroidery": "Embroidery",
       "label": "Label"
     }
+  },
+  "WithoutQloo": {
+    "title": "Without Qloo",
+    "lead": "The same idea step on {seeds} seeds with Nemotron alone ({model}), from the comparison run on {date}.",
+    "tableCaption": "What ideas stand on, with Qloo and without",
+    "metric": "Per idea",
+    "withQloo": "With Qloo",
+    "withoutQloo": "Without Qloo",
+    "metrics": {
+      "grounded": "Themes grounded in a Qloo tag",
+      "explained": "Themes Qloo explains (which fans, why)",
+      "crossDomains": "Taste domains (brands, films, TV)",
+      "cues": "Style cues from those tastes"
+    },
+    "seedsSummary": "The {seeds} seeds, side by side",
+    "noMatch": "no taste found",
+    "note": "Without Qloo, Nemotron writes plausible themes from the words alone: nothing ties them to who buys or why."
   }
 }

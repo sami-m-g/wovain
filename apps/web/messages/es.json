@@ -1870,5 +1870,22 @@
       "embroidery": "Bordado",
       "label": "Etiqueta"
     }
+  },
+  "WithoutQloo": {
+    "title": "Sin Qloo",
+    "lead": "El mismo paso de ideas con {seeds} semillas solo con Nemotron ({model}), de la comparación del {date}.",
+    "tableCaption": "En qué se apoyan las ideas, con Qloo y sin Qloo",
+    "metric": "Por idea",
+    "withQloo": "Con Qloo",
+    "withoutQloo": "Sin Qloo",
+    "metrics": {
+      "grounded": "Temas basados en una etiqueta de Qloo",
+      "explained": "Temas que Qloo explica (qué fans, por qué)",
+      "crossDomains": "Dominios de gusto (marcas, películas, TV)",
+      "cues": "Pistas de estilo de esos gustos"
+    },
+    "seedsSummary": "Las {seeds} semillas, lado a lado",
+    "noMatch": "sin gusto encontrado",
+    "note": "Sin Qloo, Nemotron escribe temas verosímiles solo a partir de las palabras: nada los une a quién compra ni por qué."
   }
 }

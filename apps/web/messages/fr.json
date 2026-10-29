@@ -1870,5 +1870,22 @@
       "embroidery": "Broderie",
       "label": "Étiquette"
     }
+  },
+  "WithoutQloo": {
+    "title": "Sans Qloo",
+    "lead": "La même étape d'idées sur {seeds} graines avec Nemotron seul ({model}), d'après la comparaison du {date}.",
+    "tableCaption": "Sur quoi reposent les idées, avec et sans Qloo",
+    "metric": "Par idée",
+    "withQloo": "Avec Qloo",
+    "withoutQloo": "Sans Qloo",
+    "metrics": {
+      "grounded": "Thèmes fondés sur une étiquette Qloo",
+      "explained": "Thèmes que Qloo explique (quels fans, pourquoi)",
+      "crossDomains": "Domaines de goût (marques, films, TV)",
+      "cues": "Indices de style tirés de ces goûts"
+    },
+    "seedsSummary": "Les {seeds} graines, côte à côte",
+    "noMatch": "aucun goût trouvé",
+    "note": "Sans Qloo, Nemotron écrit des thèmes plausibles à partir des seuls mots : rien ne les relie à qui achète ni pourquoi."
   }
 }

@@ -53,7 +53,11 @@ interface SeedReport {
   llmOnly: Arm;
   overlap: number;
   seed: string;
-  withQloo: Arm & { qloo: "used" | "no_match" };
+  withQloo: Arm & {
+    // Cross-domain calls Qloo refused for this seed.
+    failedDomains: string[];
+    qloo: "used" | "no_match";
+  };
 }
 
 const NO_TASTE: Taste = { names: [], themes: [] };
@@ -87,25 +91,19 @@ describe.skipIf(!ready)("with Qloo vs LLM-only", () => {
     baseURL: process.env["QLOO_API_URL"] ?? "https://hackathon.api.qloo.com",
   });
 
-  // A Qloo failure fails the eval: an ablation with a broken arm says
-  // nothing. A failed brand, film or TV call is caught inside tasteOf, so
-  // the logger collects it and the seed throws.
+  // A failed theme call fails the eval: tasteOf throws, and an ablation with
+  // a broken arm says nothing. A failed brand, film or TV call is caught
+  // inside tasteOf, as in the app, and recorded on the seed: Qloo's search
+  // can return entities its insights refuse as signals ("All of the provided
+  // signal.interests.entities were invalid", the Pickleball video games on
+  // 2026-10-29), which leaves that seed without cross-domain affinities but
+  // with its themes.
   const seedReport = async (seed: string): Promise<SeedReport> => {
-    const errors: Error[] = [];
     const taste = await qloo.tasteOf(
       seed,
-      {
-        error: (error) =>
-          errors.push(error instanceof Error ? error : new Error(error)),
-        set: vi.fn(),
-      },
+      { error: vi.fn(), set: vi.fn() },
       { crossDomain: true }
     );
-    if (errors.length > 0 || (taste.failedDomains ?? []).length > 0) {
-      throw new Error(
-        `Qloo failed for "${seed}" (${(taste.failedDomains ?? []).join(", ")}): ${errors.map(({ message }) => message).join("; ")}`
-      );
-    }
     const withQloo = qlooThemes(seed, taste.themes);
     const llmOnly = await llmOnlyThemes(ask, seed);
     const qlooArm = armOf(seed, withQloo, taste);
@@ -116,6 +114,7 @@ describe.skipIf(!ready)("with Qloo vs LLM-only", () => {
       seed,
       withQloo: {
         ...qlooArm,
+        failedDomains: taste.failedDomains ?? [],
         qloo: taste.themes.length > 0 ? "used" : "no_match",
       },
     };
