@@ -43,7 +43,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], baseURL: smokeUrl },
     },
   ],
-  reporter: isCI ? [["github"], ["html", { open: "never" }]] : "list",
+  reporter: isCI
+    ? [
+        ["github"],
+        ["html", { open: "never" }],
+        // Smoke failures also reach PostHog Error Tracking.
+        ["./src/posthog-reporter.ts"],
+      ]
+    : "list",
   retries: isCI ? 1 : 0,
   testDir: "tests",
   use: { trace: "retain-on-failure" },

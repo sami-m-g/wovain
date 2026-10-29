@@ -20,11 +20,13 @@
 // A preview without one of them fails, naming it.
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
+import * as random from "@pulumi/random";
 
 import { appEnvironment } from "../dev.ts";
 import { mappedHost } from "../domains.ts";
 import { environmentVariables, mainOnlyEnvironment } from "../github.ts";
 import { environmentProject } from "../posthog/program.ts";
+import { secretWithValue } from "../resources.ts";
 import {
   appSettings,
   buildEnv,
@@ -95,6 +97,23 @@ if (deploy === undefined) {
   throw new Error("next needs its deploy account");
 }
 
+// The post-deploy smoke suite's account (apps/e2e/src/seed-smoke.ts): its
+// password, generated here and kept only in Secret Manager. deploy.yml
+// reads it as next's deploy account, seeds the account and signs in with it.
+const smokePassword = secretWithValue(
+  "e2e-smoke-password-next",
+  new random.RandomPassword("e2e-smoke-password-next", {
+    length: 32,
+    special: false,
+  }).result,
+  { protect: true }
+);
+new gcp.secretmanager.SecretIamMember("deploy-next-e2e-smoke-password", {
+  member: deploy.deployer.member,
+  role: "roles/secretmanager.secretAccessor",
+  secretId: smokePassword.secret.id,
+});
+
 mappedHost({
   apex: APEX,
   dependsOn: [],
@@ -120,6 +139,7 @@ mainOnlyEnvironment("next-infrastructure", "wovain");
 environmentVariables(NAME, mainOnlyEnvironment(NAME, "wovain"), {
   DATABASE_URL_SECRET: environment.databaseUrl.secretId,
   DOCS_SITE_URL: `https://docs.${APEX}`,
+  E2E_SMOKE_PASSWORD_SECRET: smokePassword.secret.secretId,
   GCP_DEPLOY_SERVICE_ACCOUNT: deploy.deployer.email,
   GCP_IMAGE_REPOSITORY: deploy.imageRepository,
   GCP_PROJECT_ID: project,
