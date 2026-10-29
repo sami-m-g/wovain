@@ -59,11 +59,34 @@ concurrency:
 permissions: {}
 
 jobs:
-  review:
-    name: claude-review
+  # Until the CLAUDE_CODE_OAUTH_TOKEN secret exists (the infra/github stack's
+  # `claude-code-oauth-token`), the review is skipped, a neutral check,
+  # instead of failing every pull request: without it the action asks for an
+  # API key. A job's `if` can't read secrets, so this job checks it.
+  token:
     # Not a draft; not a fork or Dependabot run, which get no secrets.
     if: >-
       github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set; the Claude review is skipped."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  review:
+    name: claude-review
+    needs: token
+    if: needs.token.outputs.present == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
