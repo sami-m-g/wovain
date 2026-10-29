@@ -104,10 +104,10 @@
   },
   "Home": {
     "heroTitle": "Una frase. Un drop entero.",
-    "heroLead": "Describe la cápsula. wovain dibuja las piezas, las pone a la venta en tu tienda de Fourthwall con un margen que se sostiene y prepara los anuncios de Meta, en pausa.",
+    "heroLead": "¿Aún sin idea? wovain te muestra lo que se vende ahora, con pruebas: tiendas que lo anuncian desde hace semanas y superventas en los marketplaces. Elige una o describe la tuya. wovain dibuja las piezas, las pone a la venta en tu tienda de Fourthwall con un margen que se sostiene y prepara los anuncios de Meta, en pausa.",
     "briefLabel": "¿De qué trata tu próximo drop?",
     "briefPlaceholder": "Dibujos botánicos de línea, deslavados, para una cápsula de primavera",
-    "briefHint": "Basta una frase: el ambiente, una referencia, para quién es.",
+    "briefHint": "Basta una frase: el ambiente, una referencia, para quién es. O empieza por lo que se vende ahora.",
     "briefSubmit": "Empezar un drop",
     "tag": {
       "title": "Camiseta gruesa",
@@ -513,7 +513,15 @@
         "listings": "Revisando las noticias del mes y lo saturado que está…",
         "words": "Escribiendo las primeras sugerencias…"
       },
-      "elapsed": "{seconds, plural, one {# segundo} other {# segundos}}"
+      "elapsed": "{seconds, plural, one {# segundo} other {# segundos}}",
+      "proof": {
+        "ads": "{count, plural, one {# tienda} other {# tiendas}} lo anuncian desde hace {days}+ días",
+        "bestsellers": "{count, plural, one {un superventas} other {# superventas}} en los marketplaces",
+        "reviews": "{count, plural, one {# reseña} other {# reseñas}} en anuncios parecidos"
+      },
+      "showBuyers": "Quién compra esto",
+      "hideBuyers": "Ocultar quién compra esto",
+      "proofSources": "Pruebas de {title}"
     },
     "trends": {
       "title": "Elige las ideas",

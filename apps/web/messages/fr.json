@@ -104,10 +104,10 @@
   },
   "Home": {
     "heroTitle": "Une phrase. Un drop entier.",
-    "heroLead": "Décrivez la capsule. wovain dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
+    "heroLead": "Pas encore d'idée ? wovain montre ce qui se vend maintenant, preuves à l'appui : des boutiques qui en font la pub depuis des semaines et des best-sellers sur les marketplaces. Choisissez-en une ou décrivez la vôtre. wovain dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
     "briefLabel": "Sur quoi porte votre prochain drop ?",
     "briefPlaceholder": "Dessins botaniques au trait, délavés, pour une capsule de printemps",
-    "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui.",
+    "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui. Ou partez de ce qui se vend maintenant.",
     "briefSubmit": "Lancer un drop",
     "tag": {
       "title": "T-shirt épais",
@@ -513,7 +513,15 @@
         "listings": "Vérification de l'actualité du mois et de la saturation…",
         "words": "Rédaction des premières suggestions…"
       },
-      "elapsed": "{seconds, plural, one {# seconde} other {# secondes}}"
+      "elapsed": "{seconds, plural, one {# seconde} other {# secondes}}",
+      "proof": {
+        "ads": "{count, plural, one {# boutique} other {# boutiques}} en font la pub depuis {days}+ jours",
+        "bestsellers": "{count, plural, one {un best-seller} other {# best-sellers}} sur les marketplaces",
+        "reviews": "{count, plural, one {# avis} other {# avis}} sur des annonces similaires"
+      },
+      "showBuyers": "Qui achète ça",
+      "hideBuyers": "Masquer qui achète ça",
+      "proofSources": "Preuves pour {title}"
     },
     "trends": {
       "title": "Choisir les idées",
