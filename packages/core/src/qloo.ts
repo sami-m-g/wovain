@@ -122,6 +122,7 @@ const entitiesSchema = z.object({
         z.object({
           entity_id: z.string().max(128),
           name: z.string().max(300),
+          popularity: z.number().optional(),
           properties: z.record(z.string(), z.unknown()).nullish(),
           query: z
             .object({
@@ -226,6 +227,29 @@ export interface Taste {
   seeds?: QlooEntity[] | undefined;
   // Tags the seed's fans share, highest affinity first.
   themes: QlooTheme[];
+}
+
+// One insights query (docs.qloo.com/reference/insights-api-deep-dive):
+// entities of one type that the given signals' fans like. The hackathon
+// server answers 400 to demographics alone, so a query carries entities or
+// audiences too.
+export interface InsightsQuery {
+  // Qloo age buckets, e.g. "25_to_29".
+  age?: string | undefined;
+  audiences?: readonly string[] | undefined;
+  entities?: readonly string[] | undefined;
+  gender?: "female" | "male" | undefined;
+  take: number;
+  // How much what is rising now counts (Qloo's bias.trends).
+  trends?: "high" | "low" | "medium" | "off" | undefined;
+  type: AffinityType | "artist";
+}
+
+// An entity an insights query found, with Qloo's affinity to the signals
+// and its popularity percentile, each 0 to 1.
+export interface QlooInsight extends QlooEntity {
+  affinity: number;
+  popularity: number;
 }
 
 export interface TasteOptions {
@@ -552,7 +576,85 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       }));
     });
 
-  return { audienceAffinity, demographicsOf, search, searchEntities, tasteOf };
+  // Entities of one type the query's signals like, highest affinity first.
+  const insights = async (
+    {
+      age,
+      audiences = [],
+      entities = [],
+      gender,
+      take,
+      trends,
+      type,
+    }: InsightsQuery,
+    log?: Logger
+  ): Promise<QlooInsight[]> =>
+    await external(
+      log,
+      { operation: `insights.${type}`, provider: "qloo" },
+      async () => {
+        const { results } = await get(
+          "/v2/insights",
+          {
+            "filter.type": `urn:entity:${type}`,
+            take: String(take),
+            ...(entities.length > 0 && {
+              "signal.interests.entities": entities.join(","),
+            }),
+            ...(audiences.length > 0 && {
+              "signal.demographics.audiences": audiences.join(","),
+            }),
+            ...(age !== undefined && { "signal.demographics.age": age }),
+            ...(gender !== undefined && {
+              "signal.demographics.gender": gender,
+            }),
+            ...(trends !== undefined && { "bias.trends": trends }),
+          },
+          entitiesSchema
+        );
+        return results.entities.map((entity) => ({
+          affinity: entity.query?.affinity ?? 0,
+          id: entity.entity_id,
+          name: entity.name.trim(),
+          popularity: entity.popularity ?? 0,
+          type,
+        }));
+      }
+    );
+
+  // The genre tags the given entities' fans share, highest affinity first.
+  const tagsFor = async (
+    entityIds: readonly string[],
+    log?: Logger,
+    take = 8
+  ): Promise<QlooTheme[]> =>
+    await external(log, { operation: "tags", provider: "qloo" }, async () => {
+      if (entityIds.length === 0) {
+        return [];
+      }
+      return themesFrom(
+        await get(
+          "/v2/insights",
+          {
+            "filter.tag.types": THEME_TAG_TYPES,
+            "filter.type": "urn:tag",
+            "signal.interests.entities": entityIds.join(","),
+            take: String(take),
+          },
+          tagsSchema
+        )
+      );
+    });
+
+  return {
+    audienceAffinity,
+    demographicsOf,
+    insights,
+    search,
+    searchEntities,
+    tagsFor,
+    tasteOf,
+  };
 };
 
 export type Qloo = ReturnType<typeof createQloo>;

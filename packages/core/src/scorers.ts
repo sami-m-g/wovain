@@ -72,6 +72,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   ads_optimizer_review: [],
   autopilot_pick_idea: ["trend_fit"],
   autopilot_review_design: [],
+  brand_discovery: [],
   brand_proxies: [],
   competition_summary: [],
   design_brief: ["design_quality", "brand_fit", "trend_fit", "ip_risk"],
@@ -91,6 +92,8 @@ const BUILT_INS: Record<AgentId, string[]> = {
   ads_optimizer_review: ["answer_relevancy"],
   autopilot_pick_idea: ["answer_relevancy", "prompt_alignment"],
   autopilot_review_design: ["answer_relevancy", "prompt_alignment", "bias"],
+  // Writes names and words from the Qloo facts in its prompt.
+  brand_discovery: ["answer_relevancy", "prompt_alignment", "toxicity"],
   // The names it lists must come from the web results in its prompt.
   brand_proxies: ["faithfulness", "hallucination"],
   // Every point it lists must come from the listing pages in its prompt.

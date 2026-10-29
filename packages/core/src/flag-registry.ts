@@ -150,6 +150,10 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
+  "brand-discovery": workstream(
+    "growth",
+    "Guided brand discovery in onboarding: Qloo-found starter brands (Suggest for me, a short questionnaire), the buyers panel and per-field suggestions"
+  ),
   "design-drops": workstream(
     "design",
     "Drops: a capsule of products sharing a palette, mark and style family"
