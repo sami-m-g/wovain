@@ -124,12 +124,14 @@ export const nextInfrastructure = (args: NextArgs) => {
     member: account.member,
     role: "roles/storage.legacyBucketReader",
   });
-  // Pulumi's object layout: .pulumi/<kind>/<project>/<stack>...
+  // Pulumi's object layout: .pulumi/<kind>/<project>/<stack>..., except
+  // locks, which sit under the stack's fully qualified name:
+  // .pulumi/locks/organization/<project>/<stack>/<lock>.json.
   const objects = `projects/_/buckets/${args.stateBucket}/objects/.pulumi`;
   new gcp.storage.BucketIAMMember("infra-next-state", {
     bucket: args.stateBucket,
     condition: {
-      expression: ["stacks", "locks", "history", "backups"]
+      expression: ["stacks", "locks/organization", "history", "backups"]
         .map(
           (kind) =>
             `resource.name.startsWith("${objects}/${kind}/wovain-${NAME}/")`
