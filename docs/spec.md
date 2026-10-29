@@ -63,7 +63,7 @@ docker compose up -d
 pnpm run dev
 ```
 
-Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Never commit real values.
+Keys are declared in `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `EMAIL_REPLY_TO`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; billing adds `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Never commit real values.
 
 Submission needs a short demo video and the public repository: <https://github.com/sami-m-g/wovain> (MIT). Video URL: to be added after upload.
 

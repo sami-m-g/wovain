@@ -10,7 +10,7 @@ import { featureFlags } from "./flags.ts";
 import { githubMirror } from "./github.ts";
 import { ciVariables, environments } from "./gitlab.ts";
 import { retainLegacy } from "./legacy.ts";
-import { ResendDomain, ResendVerification } from "./resend.ts";
+import { ResendDomain, ResendTracking, ResendVerification } from "./resend.ts";
 import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
 
 // wovain's Google Cloud project: Cloud Run serves apps/web at wovain.com and
@@ -522,6 +522,22 @@ if (resendDomain !== undefined && resendApiKey !== undefined) {
     { apiKey: resendApiKey, domainId: resendDomain.id },
     { dependsOn: site.resendRecordSets }
   );
+}
+
+// Opt-in per stack: `resendTracking: off` turns Resend's open and click
+// tracking off for the domain (resend.ts). Unset, the domain keeps Resend's
+// default; Pulumi.prod.yaml leaves it unset until prod's mail is changed.
+if (
+  resendDomain !== undefined &&
+  resendApiKey !== undefined &&
+  config.get("resendTracking") === "off"
+) {
+  new ResendTracking("resend", {
+    apiKey: resendApiKey,
+    clickTracking: false,
+    domainId: resendDomain.id,
+    openTracking: false,
+  });
 }
 
 new gcp.kms.CryptoKeyIAMMember("runner-connections", {

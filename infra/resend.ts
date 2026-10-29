@@ -153,3 +153,73 @@ export class ResendVerification extends pulumi.dynamic.Resource {
     );
   }
 }
+
+interface TrackingInputs {
+  apiKey: string;
+  clickTracking: boolean;
+  domainId: string;
+  openTracking: boolean;
+}
+
+const setTracking = async (inputs: TrackingInputs) => {
+  // A fixed host; the id comes from Pulumi state and is encoded.
+  const url = `https://api.resend.com/domains/${encodeURIComponent(inputs.domainId)}`;
+  // nosemgrep
+  const response = await fetch(url, {
+    body: JSON.stringify({
+      click_tracking: inputs.clickTracking,
+      open_tracking: inputs.openTracking,
+    }),
+    headers: {
+      authorization: `Bearer ${inputs.apiKey}`,
+      "content-type": "application/json",
+    },
+    method: "PATCH",
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Resend refused the tracking settings: ${response.status} ${await response.text()}`
+    );
+  }
+};
+
+// Resend rewrites links (click tracking) and adds a pixel (open tracking)
+// per domain, not per send (resend.com/docs/api-reference/domains/update-
+// domain). Both hurt transactional deliverability: a rewritten link on a
+// tracking host looks like phishing to a spam filter, and a verify or reset
+// link must stay the link wovain wrote. This sets both for the domain.
+const trackingProvider: pulumi.dynamic.ResourceProvider<
+  TrackingInputs,
+  TrackingInputs
+> = {
+  async create(inputs) {
+    await setTracking(inputs);
+    return { id: inputs.domainId, outs: inputs };
+  },
+  async update(_id, _olds, news) {
+    await setTracking(news);
+    return { outs: news };
+  },
+};
+
+export class ResendTracking extends pulumi.dynamic.Resource {
+  constructor(
+    name: string,
+    args: {
+      apiKey: pulumi.Input<string>;
+      clickTracking: pulumi.Input<boolean>;
+      domainId: pulumi.Input<string>;
+      openTracking: pulumi.Input<boolean>;
+    },
+    opts?: pulumi.CustomResourceOptions
+  ) {
+    super(
+      trackingProvider,
+      name,
+      args,
+      { ...opts, additionalSecretOutputs: ["apiKey"] },
+      "resend",
+      "Tracking"
+    );
+  }
+}

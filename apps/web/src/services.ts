@@ -14,7 +14,9 @@ export const db = createDb(ENV);
 export const mailer = createMailer({
   apiKey: ENV.RESEND_API_KEY,
   from: ENV.EMAIL_FROM,
+  replyTo: ENV.EMAIL_REPLY_TO,
   siteUrl: ENV.BETTER_AUTH_URL,
+  unsubscribeSecret: ENV.BETTER_AUTH_SECRET,
 });
 
 // Mastra's store (snapshots, memory, scores, traces) on the same database,

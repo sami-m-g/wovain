@@ -49,6 +49,7 @@ export const mastra = createMastra({
     mailer: createMailer({
       apiKey: undefined,
       from: "wovain <support@wovain.com>",
+      replyTo: "support@wovain.com",
       siteUrl: env.BETTER_AUTH_URL,
     }),
   },

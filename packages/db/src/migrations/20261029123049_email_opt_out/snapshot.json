@@ -1,0 +1,86 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "a40ad783-8afd-4186-8f86-85d57c944b1f",
+  "prevIds": [
+    "fe864c92-1db3-4de7-b6bf-893e5757dbbd"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "email_opt_out"
+      ],
+      "writes": [
+        "s|tbl|public.email_opt_out",
+        "n|tbl|public.email_opt_out",
+        "e|tbl|public.email_opt_out",
+        "n|rel|public.email_opt_out",
+        "n|type|public.email_opt_out",
+        "n|rel|public.email_opt_out_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "email_opt_out",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "email_opt_out",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "email_opt_out",
+        "name": "email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "email_opt_out",
+        "name": "email_opt_out_pkey",
+        "columns": [
+          "email"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

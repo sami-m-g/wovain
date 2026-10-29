@@ -3,7 +3,7 @@ import { pickIdea } from "@wovain/core/autopilot";
 import { NEMOTRON_MODEL } from "@wovain/core/nemotron";
 import type { DesignFacts } from "@wovain/core/step-scorers";
 import { user } from "@wovain/db/schema/auth";
-import { design, run } from "@wovain/db/schema/seller";
+import { design, emailOptOut, run } from "@wovain/db/schema/seller";
 import type { RunStatus } from "@wovain/db/schema/seller";
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import { log } from "evlog";
@@ -291,6 +291,15 @@ export const notifyRun = async (actor: Actor, runId: string) => {
     .innerJoin(user, eq(user.id, run.userId))
     .where(eq(run.id, runId));
   if (row === undefined || row.status === "running") {
+    return;
+  }
+  // An address that unsubscribed gets no run updates (the one-click link in
+  // each of them, apps/web/src/app/api/unsubscribe).
+  const [optedOut] = await actor.db
+    .select({ email: emailOptOut.email })
+    .from(emailOptOut)
+    .where(eq(emailOptOut.email, row.email));
+  if (optedOut !== undefined) {
     return;
   }
   try {
