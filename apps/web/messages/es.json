@@ -467,6 +467,34 @@
       "submit": "Investigar tendencias",
       "submitAutopilot": "Lanzar en piloto automático"
     },
+    "directions": {
+      "title": "Qué vender ahora",
+      "lead": "Lo que sube ahora en Qloo, con las noticias del mes y lo saturados que están los anuncios, la mejor apuesta primero. Elige una para empezar o escribe la tuya abajo.",
+      "titleBrand": "Qué vender ahora, dentro de tu marca",
+      "leadBrand": "Lo que sube ahora entre los compradores de tu marca en Qloo, con las noticias del mes y lo saturados que están los anuncios, la mejor apuesta primero. Elige una para empezar o escribe la tuya abajo.",
+      "ignoreBrand": "Ignorar mi marca esta vez",
+      "others": "Ver otras",
+      "use": "Empezar este drop",
+      "whyFallback": "{count, plural, =0 {Sube entre estos compradores en Qloo.} one {Sube entre estos compradores en Qloo; # noticia este mes.} other {Sube entre estos compradores en Qloo; # noticias este mes.}}",
+      "for": "Para {audience}",
+      "rising": "Sube con: {names}",
+      "news": "{count, plural, =0 {sin noticias este mes} one {# noticia este mes} other {# noticias este mes}}",
+      "newsUnknown": "noticias sin revisar",
+      "listings": {
+        "low": "{count, plural, =0 {sin anuncios parecidos} one {# anuncio parecido} other {# anuncios parecidos}}",
+        "medium": "{count, plural, one {# anuncio parecido} other {# anuncios parecidos}}",
+        "high": "saturado: {count, plural, one {# anuncio parecido} other {# anuncios parecidos}}"
+      },
+      "listingsUnknown": "anuncios sin revisar",
+      "sources": "Noticias de {title}",
+      "loading": "Buscando qué vender ahora…",
+      "failed": "No pudimos acceder a nuestros datos de gustos, así que aún no hay sugerencias.",
+      "retry": "Reintentar",
+      "none": "Qloo no encontró nada nuevo en alza ahora. Escribe tu propia dirección abajo.",
+      "tavilyFailed": "La revisión de noticias o anuncios falló en algunas sugerencias; esa parte es desconocida.",
+      "brandHint": "Opcional: una marca mantiene estas sugerencias dentro de tu estilo.",
+      "brandHintLink": "Añadir una marca"
+    },
     "trends": {
       "title": "Elige las ideas",
       "lead": "Puntuadas según afinidad de gustos, impulso de esta semana y cuántos anuncios compiten. Elige las que venderías: wovain solo dibuja diseños para esas, cuando pulses «Ver diseños».",
@@ -1080,7 +1108,7 @@
       "later": "Omitir por ahora"
     },
     "brand": {
-      "title": "Tu marca",
+      "title": "Tu marca (opcional)",
       "lead": "¿Aún no sabes qué vender? wovain puede sugerirte marcas para empezar a partir de lo que gusta ahora mismo, o hacerte unas preguntas. Después puedes cambiarlo todo.",
       "start": {
         "label": "¿Cómo quieres empezar?",
@@ -1301,7 +1329,7 @@
         "second": "Comme des Garçons",
         "third": "Studio Ghibli"
       },
-      "skip": "Omitir",
+      "skip": "Omitir, solo ayúdame a vender",
       "save": "Guardar y continuar",
       "saving": "Guardando…",
       "saveFailed": "No se pudo guardar: {message}",

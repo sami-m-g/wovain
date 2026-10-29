@@ -467,6 +467,34 @@
       "submit": "Research trends",
       "submitAutopilot": "Run on autopilot"
     },
+    "directions": {
+      "title": "What to sell now",
+      "lead": "Rising now on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start, or write your own below.",
+      "titleBrand": "What to sell now, within your brand",
+      "leadBrand": "Rising now with your brand's buyers on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start, or write your own below.",
+      "ignoreBrand": "Ignore my brand this time",
+      "others": "Show me others",
+      "use": "Start this drop",
+      "whyFallback": "{count, plural, =0 {Rising with these buyers on Qloo.} one {Rising with these buyers on Qloo; # news story this month.} other {Rising with these buyers on Qloo; # news stories this month.}}",
+      "for": "For {audience}",
+      "rising": "Rising with: {names}",
+      "news": "{count, plural, =0 {no news this month} one {# news story this month} other {# news stories this month}}",
+      "newsUnknown": "news not checked",
+      "listings": {
+        "low": "{count, plural, =0 {no similar listings} one {# similar listing} other {# similar listings}}",
+        "medium": "{count, plural, one {# similar listing} other {# similar listings}}",
+        "high": "crowded: {count, plural, one {# similar listing} other {# similar listings}}"
+      },
+      "listingsUnknown": "listings not checked",
+      "sources": "News for {title}",
+      "loading": "Finding what to sell now…",
+      "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
+      "retry": "Try again",
+      "none": "Qloo found nothing new rising right now. Write your own direction below.",
+      "tavilyFailed": "The news or listings check failed for some suggestions; that part is unknown.",
+      "brandHint": "Optional: a brand keeps these suggestions within your style.",
+      "brandHintLink": "Add a brand"
+    },
     "trends": {
       "title": "Pick the ideas",
       "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. Pick the ones you'd sell: wovain draws designs only for those, when you click See designs.",
@@ -1080,7 +1108,7 @@
       "later": "Skip for now"
     },
     "brand": {
-      "title": "Your brand",
+      "title": "Your brand (optional)",
       "lead": "Not sure what to sell yet? wovain can suggest starter brands from what people love right now, or ask you a few questions. You can change everything afterwards.",
       "start": {
         "label": "How do you want to start?",
@@ -1301,7 +1329,7 @@
         "second": "Comme des Garçons",
         "third": "Studio Ghibli"
       },
-      "skip": "Skip",
+      "skip": "Skip, just help me sell",
       "save": "Save and continue",
       "saving": "Saving…",
       "saveFailed": "Saving didn't work: {message}",
