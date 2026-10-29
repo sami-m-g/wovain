@@ -761,6 +761,17 @@
       "28d": "28 jours",
       "90d": "90 jours"
     },
+    "journey": {
+      "title": "Votre premier drop",
+      "source": "Délai de l'inscription à une campagne en ligne, puis à un premier bénéfice",
+      "liveCampaign": "Délai avant la campagne en ligne",
+      "liveCampaignHint": "De l'inscription à la campagne en ligne. Objectif {target} min",
+      "metaReview": "Attente de la revue Meta",
+      "metaReviewHint": "De la campagne en ligne à la première impression. Délai de Meta, pas le vôtre",
+      "firstProfit": "Délai avant le premier bénéfice",
+      "firstProfitHint": "De la première impression au bénéfice après les dépenses publicitaires. Objectif {target} min",
+      "minutes": "{value} min"
+    },
     "updating": "Mise à jour…",
     "shop": {
       "title": "Boutique",

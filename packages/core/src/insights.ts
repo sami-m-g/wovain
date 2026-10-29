@@ -167,11 +167,14 @@ export interface CampaignInsight {
   /** Purchase return on ad spend, when the pixel reports purchases. */
   roas: number | undefined;
   spend: number;
+  /** Meta's status for the campaign (PAUSED, ACTIVE, ...), when reported. */
+  status: string | undefined;
 }
 
 const campaignRow = z.looseObject({
   id: z.union([z.string().min(1), z.number()]),
   name: z.string(),
+  status: z.string().optional(),
 });
 
 const FIELDS = [
@@ -184,6 +187,7 @@ const FIELDS = [
   "results",
   "cost_per_result",
   "purchase_roas",
+  "status",
 ];
 
 /**
@@ -238,6 +242,7 @@ export const campaignInsights = async (
       results,
       roas: column(row, "purchase_roas"),
       spend,
+      status: row.status,
     };
   });
 };

@@ -18,6 +18,7 @@ import { writerStyleFor } from "./drop-style";
 import { flagContextOf } from "./flags";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
+import { reachMilestone } from "./milestones";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
 import { charge } from "./spend";
@@ -453,6 +454,9 @@ export const decideDesign = async (
   decision: Decision
 ) => {
   const { replay, row: decided } = await commitDecision(actor, id, decision);
+  if (decision.approve && !replay) {
+    await reachMilestone(actor, "design_approved", { by: decision.by });
+  }
   // A replayed decision taught the agents the first time.
   if (decision.by === "merchant" && !replay) {
     await learnTaste(actor, decided, decision.approve);
