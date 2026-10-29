@@ -44,7 +44,9 @@ test("Settings in the navigation @smoke", async ({
   page,
 }) => {
   await page.goto("/dashboard/billing");
-  const rail = page.getByRole("link", { exact: true, name: "Settings" });
+  const rail = page
+    .getByRole("link", { exact: true, name: "Settings" })
+    .first();
   const account = page.getByRole("button", { name: /\(Account\)$/u });
   // Wait for the shell, then take whichever entry it has.
   await expect(rail.or(account).first()).toBeVisible();
