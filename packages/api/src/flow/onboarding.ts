@@ -1,19 +1,19 @@
-import {
-  distinctReferences,
-  referenceKey,
-  resolveReferences,
-  writeBrandMemory,
-} from "@wovain/core/brand-identity";
-import type {
-  BrandEntity,
-  ResolvedReference,
-} from "@wovain/core/brand-identity";
 import type { ProviderId } from "@wovain/core/upstream";
 import {
   autonomySetting,
   brandProfile,
   tasteReference,
 } from "@wovain/db/schema/autonomy";
+import {
+  distinctReferences,
+  referenceKey,
+  resolveReferences,
+  writeBrandMemory,
+} from "@wovain/mastra/memory/brand-identity";
+import type {
+  BrandEntity,
+  ResolvedReference,
+} from "@wovain/mastra/memory/brand-identity";
 import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
 import { createError, log as evlog } from "evlog";
 

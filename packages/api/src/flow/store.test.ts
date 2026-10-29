@@ -3,7 +3,6 @@ import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import { call as callProcedure } from "@orpc/server";
 import { ApprovalError } from "@wovain/core/approvals";
-import type { Core } from "@wovain/core/core";
 import type { WovainEvent } from "@wovain/core/events";
 import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
@@ -16,6 +15,7 @@ import {
   drop,
 } from "@wovain/db/schema/autonomy";
 import { design, idea, product, run } from "@wovain/db/schema/seller";
+import type { Core } from "@wovain/mastra/services";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";

@@ -1,7 +1,6 @@
 import type { MastraCompositeStore } from "@mastra/core/storage";
 import { Memory } from "@mastra/memory";
-
-import type { Learnings } from "./feedback";
+import type { Learnings } from "@wovain/core/feedback";
 
 // Each merchant's memory (Mastra memory on wovain's Postgres): the brief
 // writer and the ad copywriter keep a run's messages as its thread, and
