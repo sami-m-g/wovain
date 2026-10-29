@@ -105,6 +105,10 @@ export const FLAGS = {
     "media",
     "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers"
   ),
+  alerts: workstream(
+    "media",
+    "Alerts on email, mobile push and Telegram for rule actions, approvals, a first sale and failures, with per-type channels and quiet hours (openspec alerts)"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",
@@ -186,6 +190,10 @@ export const FLAGS = {
     "growth",
     "Performance snapshots feed scores, taste and the next suggestions"
   ),
+  "idea-evidence-gate": workstream(
+    "growth",
+    "Ideas shown only with Qloo evidence, proof of demand and a competition read; sweet-spot demand / supply ranked by a Wilson lower bound; one idea card contract; titles checked against the evidence (openspec idea-evidence)"
+  ),
   "mastra-runs": {
     description:
       "New runs go through the Mastra workflow; the legacy run steps are the fallback",
@@ -203,6 +211,14 @@ export const FLAGS = {
   "media-buying-live": workstream(
     "media",
     "Launch Meta campaigns live after an approval, inside the merchant's spend caps"
+  ),
+  "meta-backstop-rules": workstream(
+    "media",
+    "The kill and stop rules mirrored into Meta's Automated Rules, so spend stops even when wovain is down (openspec meta-backstop)"
+  ),
+  "meta-pixel-automation": workstream(
+    "store",
+    "Pixel set-up on the single Meta grant: find or create the dataset, share it with the ad account and send a test event (openspec pixel-automation)"
   ),
   "mobile-app": workstream(
     "mobile",

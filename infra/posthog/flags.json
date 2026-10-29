@@ -76,6 +76,44 @@
         "release"
       ]
     },
+    "alerts": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Alerts on email, mobile push and Telegram for rule actions, approvals, a first sale and failures, with per-type channels and quiet hours (openspec alerts) (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
     "app-ui-v2": {
       "active": true,
       "groups": [
@@ -499,6 +537,44 @@
         "release"
       ]
     },
+    "idea-evidence-gate": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Ideas shown only with Qloo evidence, proof of demand and a competition read; sweet-spot demand / supply ranked by a Wilson lower bound; one idea card contract; titles checked against the evidence (openspec idea-evidence) (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
     "mastra-runs": {
       "active": true,
       "groups": [
@@ -612,6 +688,82 @@
         }
       ],
       "name": "Launch Meta campaigns live after an approval, inside the merchant's spend caps (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "meta-backstop-rules": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The kill and stop rules mirrored into Meta's Automated Rules, so spend stops even when wovain is down (openspec meta-backstop) (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "meta-pixel-automation": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Pixel set-up on the single Meta grant: find or create the dataset, share it with the ad account and send a test event (openspec pixel-automation) (owner: store, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
       "tags": [
         "registry",
         "release"

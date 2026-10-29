@@ -19,7 +19,7 @@ import { campaign, design, idea, product } from "@wovain/db/schema/seller";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Actor } from "./actor";
 import { adRulesOf, setLossLimit } from "./ad-rules";
@@ -615,6 +615,10 @@ describe("the ads profit rules", () => {
     ctx = await setup({ rules: true });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   type Outcomes = Exclude<
     Awaited<ReturnType<typeof optimizeMerchant>>,
     "flag_off"
@@ -653,7 +657,7 @@ describe("the ads profit rules", () => {
     });
     expect(queued?.payload).toMatchObject({ adId: "ad2", rule: "low_ctr" });
     const notified = ctx.sent.find((event) => event.name === "wovain/notify");
-    expect(notified?.data).toMatchObject({ kind: "anomaly" });
+    expect(notified?.data).toMatchObject({ kind: "rule_action" });
     // No reviewer for a money rule.
     expect(ctx.reviewer.asked).toEqual([]);
 
@@ -726,6 +730,9 @@ describe("the ads profit rules", () => {
   });
 
   it("asks before raising a proven seller, and a raise doesn't restart learning", async () => {
+    // The approval queue decides on the wall clock: pin it to NOW, or the
+    // raise has expired a day after NOW.
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
     const settings = {
       dailySpendCapCents: 10_000,
       level: "suggest" as const,

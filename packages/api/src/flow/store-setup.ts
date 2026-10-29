@@ -18,6 +18,7 @@ import { log } from "evlog";
 import type { Actor } from "./actor";
 import { approvalsFor, traceSinkFor } from "./approvals";
 import { listConnections, withProvider } from "./connections";
+import { graphDatasetFor, isPixelAutomationOn } from "./pixel-setup";
 import { requestSiteLive } from "./store";
 
 // Store setup (openspec store-management): the tech checklist that takes
@@ -53,13 +54,20 @@ const optional = async <T>(
   }
 };
 
+// With pixel automation on, an account with several datasets uses the one
+// wovain picks (openspec pixel-automation), as set-up did.
 const readPixel = async (
   actor: Actor,
-  hosts: string[]
+  hosts: string[],
+  automation: boolean
 ): Promise<PixelFacts | undefined> =>
-  await withProvider(actor, "meta", async (call) => {
+  await withProvider(actor, "meta", async (call, accessToken) => {
     const adAccountId = await adAccountFor(call, "store-setup");
-    const datasetId = await findSalesPixel(call, adAccountId);
+    const datasetId =
+      (await findSalesPixel(call, adAccountId)) ??
+      (automation
+        ? await graphDatasetFor(actor, await accessToken(), adAccountId)
+        : undefined);
     if (datasetId === undefined) {
       return;
     }
@@ -107,11 +115,12 @@ export const storeSetup = async (actor: Actor) => {
       return { domain: dns, shop: facts };
     }
   );
+  const pixelAutomation = metaConnected && (await isPixelAutomationOn(actor));
   const pixel = metaConnected
     ? await optional(
         actor,
         "the Meta pixel",
-        async () => await readPixel(actor, shop.hosts)
+        async () => await readPixel(actor, shop.hosts, pixelAutomation)
       )
     : undefined;
   const confirmed = await confirmedSteps(actor);
@@ -126,6 +135,8 @@ export const storeSetup = async (actor: Actor) => {
     domain: domain ?? null,
     metaConnected,
     pixel: pixel ?? null,
+    // wovain can find or create the dataset and send a test event.
+    pixelAutomation,
     shop: {
       baseUrl: shop.baseUrl ?? null,
       hosts: shop.hosts,

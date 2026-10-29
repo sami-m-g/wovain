@@ -138,6 +138,7 @@ const SETUP: Setup = {
   domain: null,
   metaConnected: true,
   pixel: { datasetId: "939178269202011", firing: false },
+  pixelAutomation: false,
   shop: {
     baseUrl: "https://atelier.fourthwall.com",
     hosts: ["atelier.fourthwall.com"],
@@ -195,5 +196,25 @@ describe("StoreSetup", () => {
       "You marked payouts as set up by Fourthwall support"
     );
     expect(html).not.toContain("Fourthwall support set up my payouts");
+  });
+
+  it("offers to set up the pixel when Meta has none, and to test it after", () => {
+    const none = render(<StoreSetup />, (client) => {
+      client.setQueryData(orpc.store.setup.queryKey(), {
+        ...SETUP,
+        pixel: null,
+        pixelAutomation: true,
+      });
+    });
+    expect(none).toContain("Set up my pixel");
+    expect(none).not.toContain("didn&#x27;t find exactly one pixel");
+    const found = render(<StoreSetup />, (client) => {
+      client.setQueryData(orpc.store.setup.queryKey(), {
+        ...SETUP,
+        pixelAutomation: true,
+      });
+    });
+    expect(found).toContain("Send a test event");
+    expect(found).toContain("939178269202011");
   });
 });

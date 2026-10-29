@@ -14,8 +14,8 @@ const ideaWith = (research: Partial<TrendIdea>) =>
     ...research,
   }) as TrendIdea;
 
-it("reads the idea's Qloo seeds, its strongest affinities and its tag", () => {
-  const signals = signalsOf(
+it("reads the buyers from the idea's tag, the age from the brief's entities", () => {
+  const { options, signals } = signalsOf(
     ideaWith({
       qlooTag: "urn:tag:genre:media:cottagecore",
       taste: {
@@ -41,14 +41,28 @@ it("reads the idea's Qloo seeds, its strongest affinities and its tag", () => {
       },
     })
   );
-  expect(signals.entities).toStrictEqual(["seed", "strong", "weak"]);
+  expect(signals.entities).toStrictEqual([]);
   expect(signals.tags).toStrictEqual(["urn:tag:genre:media:cottagecore"]);
+  expect(options).toStrictEqual({
+    demographics: ["seed", "strong", "weak"],
+    scope: "idea",
+  });
 });
 
 it("reads only the tag of an idea without a taste map", () => {
   expect(
-    signalsOf(ideaWith({ qlooTag: "urn:tag:genre:media:goth" }))
+    signalsOf(ideaWith({ qlooTag: "urn:tag:genre:media:goth" })).signals
   ).toStrictEqual({ entities: [], tags: ["urn:tag:genre:media:goth"] });
+});
+
+it("reads the brief's entities for an idea without a tag, and says so", () => {
+  const seeds = [{ id: "seed", name: "Seed", type: "movie" }];
+  expect(
+    signalsOf(ideaWith({ taste: { affinities: [], seeds } }))
+  ).toStrictEqual({
+    options: { scope: "brief" },
+    signals: { entities: ["seed"], tags: [] },
+  });
 });
 
 it("caps the entities at five", () => {
@@ -58,6 +72,6 @@ it("caps the entities at five", () => {
     type: "movie",
   }));
   expect(
-    signalsOf(ideaWith({ taste: { affinities: [], seeds } })).entities
+    signalsOf(ideaWith({ taste: { affinities: [], seeds } })).signals.entities
   ).toHaveLength(5);
 });

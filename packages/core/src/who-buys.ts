@@ -44,6 +44,10 @@ export interface WhoBuysAudience {
   name: string;
 }
 
+// Whose buyers these are: the idea's own Qloo signals (its tag, or the
+// entities rising for it), or the brief's, shared by every idea of a run.
+export type WhoBuysScope = "brief" | "idea";
+
 export interface WhoBuys {
   // Qloo's fashion brands the fans like: data for targeting, never for the
   // design.
@@ -55,6 +59,19 @@ export interface WhoBuys {
   // The country the places were looked for in.
   location: string;
   places: WhoBuysPlace[];
+  // Whose signals the audiences, places and brands came from. Answers
+  // kept before scopes have none: they were read from the brief.
+  scope?: WhoBuysScope | undefined;
+  // Whose entities the age and gender came from.
+  buyersScope?: WhoBuysScope | undefined;
+}
+
+export interface WhoBuysOptions {
+  // Entities for the age and gender when the signals have none (a tag-only
+  // idea): the brief's, so the card says they are the brief's.
+  demographics?: readonly string[] | undefined;
+  // Whose signals `signals` are.
+  scope?: WhoBuysScope | undefined;
 }
 
 export interface WhoBuysDeps {
@@ -115,12 +132,19 @@ const SENSITIVE_FAMILIES = new Set([
   "professions",
 ]);
 
+// Audiences whose names say they are about money, jobs or politics, which
+// Qloo files under other families ("Angel Start Up Investing", "Sales
+// Professional", "Political Junkie"): no taste to sell a shirt to.
+const OFF_TOPIC =
+  /\b(?:invest\w*|start[ -]?ups?|politic\w*|professionals?|executives?|entrepreneurs?|finance|financial|real estate)\b/iu;
+
 // The audiences an ad can be aimed at, best first.
 export const targetable = (audiences: readonly QlooRanked[]) =>
   audiences
     .filter(
       (one) =>
-        !SENSITIVE_FAMILIES.has((familyOf(one.where) ?? "").toLowerCase())
+        !SENSITIVE_FAMILIES.has((familyOf(one.where) ?? "").toLowerCase()) &&
+        !OFF_TOPIC.test(one.name)
     )
     .slice(0, TOP_AUDIENCES);
 
@@ -168,12 +192,16 @@ const step = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
 export const whoBuys = async (
   deps: WhoBuysDeps,
   signals: WhoSignals,
-  location: string = DEFAULT_LOCATION
+  location: string = DEFAULT_LOCATION,
+  options: WhoBuysOptions = {}
 ): Promise<WhoBuys> => {
-  const entities = signals.entities ?? [];
-  if (entities.length === 0 && (signals.tags ?? []).length === 0) {
+  const own = signals.entities ?? [];
+  if (own.length === 0 && (signals.tags ?? []).length === 0) {
     throw whoBuysNoSignal();
   }
+  const scope = options.scope ?? "idea";
+  const entities = own.length > 0 ? own : (options.demographics ?? []);
+  const buyersScope: WhoBuysScope = own.length > 0 ? scope : "brief";
   const [demographics, audiences, places, brands] = await Promise.all([
     step("qloo.demographics", async () =>
       entities.length === 0
@@ -208,6 +236,7 @@ export const whoBuys = async (
       name: one.name,
     })),
     buyers: buyersOf(demographics, entities),
+    buyersScope,
     location,
     places: markets(places).map((one) => ({
       affinity: one.affinity,
@@ -216,6 +245,7 @@ export const whoBuys = async (
       name: one.name,
       where: one.where,
     })),
+    scope,
   };
   deps.trace?.add({
     agent: "who_buys",

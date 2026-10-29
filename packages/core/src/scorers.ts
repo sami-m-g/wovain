@@ -80,6 +80,7 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
   design_vision: [],
   drop_directions: [],
   drop_style: [],
+  idea_words: [],
   product_listing: [],
   research_themes: [],
   // The merchant's own words: never judged, so never sent to scorers.
@@ -116,6 +117,8 @@ const BUILT_INS: Record<AgentId, string[]> = {
   // Writes titles and "why now" lines from the Qloo and news facts given.
   drop_directions: ["answer_relevancy", "prompt_alignment", "toxicity"],
   drop_style: ["answer_relevancy", "prompt_alignment"],
+  // Titles and concepts from the evidence given.
+  idea_words: ["answer_relevancy", "prompt_alignment", "toxicity"],
   // Every claim on the page must come from the product facts in its prompt.
   product_listing: [
     "answer_relevancy",
