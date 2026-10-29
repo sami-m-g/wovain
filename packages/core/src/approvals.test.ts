@@ -11,7 +11,7 @@ import type { AutonomySettings } from "./autonomy";
 import type { WovainEvent } from "./events";
 
 // An in-memory ApprovalStore with the same contract as the Drizzle one
-// (packages/api/src/flow/approvals.ts).
+// (packages/mastra/src/mastra/flow/approvals.ts).
 const memoryStore = () => {
   const rows = new Map<string, Approval>();
   const audit: AuditEntry[] = [];

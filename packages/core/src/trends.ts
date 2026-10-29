@@ -173,7 +173,7 @@ export interface TrendResearch {
 }
 
 // What a run's research adds to Qloo's themes: flags evaluated by the caller
-// for the merchant (packages/api/src/flow/ideas.ts). Qloo itself is not
+// for the merchant (packages/mastra/src/mastra/flow/ideas.ts). Qloo itself is not
 // optional: with trends-qloo off the caller refuses the research. Every run
 // asks Qloo for cross-domain affinities and saves the taste map on each idea.
 export interface TrendSources {

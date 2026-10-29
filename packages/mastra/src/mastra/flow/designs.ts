@@ -6,9 +6,9 @@ import { draftBrief, judgeDesign, redrawCanFix } from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
 import { checkTrademarks } from "@wovain/core/evidence";
 import { design, run } from "@wovain/db/schema/seller";
-import { recordTaste } from "@wovain/mastra/memory/taste";
 import { and, count, desc, eq } from "drizzle-orm";
 
+import { recordTaste } from "../memory/taste";
 import type { Actor, RunDecision } from "./actor";
 import { notFound } from "./actor";
 import { withAgentTrace } from "./agent-trace";

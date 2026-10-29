@@ -2,15 +2,14 @@ import { createBilling } from "@wovain/billing/service";
 import { RESEARCH_MODELS } from "@wovain/core/evidence";
 import { createDb } from "@wovain/db";
 import { createMailer } from "@wovain/email/mailer";
-import { createMerchantMemory } from "@wovain/mastra/memory/taste";
-import { createCore } from "@wovain/mastra/services";
 import { Inngest } from "inngest";
 import { z } from "zod";
 
-import { createMastra, DEFAULT_INNGEST_APP_ID } from "../workflows/engine";
-import { createMastraStorage } from "../workflows/storage";
+import { createCore } from "./services";
+import { createMastra, DEFAULT_INNGEST_APP_ID } from "./workflows/engine";
+import { createMastraStorage } from "./workflows/storage";
 
-// Mastra Studio's entry (`pnpm --filter @wovain/api studio`, AGENTS.md): the
+// Mastra Studio's entry (`pnpm --filter @wovain/mastra studio`, AGENTS.md): the
 // same agents, scorers, memory, workflow and storage as the app, built from
 // the environment, for local inspection only. The app builds its instance
 // in apps/web/src/services.ts. Per-environment settings have no defaults
@@ -70,7 +69,7 @@ export const mastra = createMastra({
       BETTER_AUTH_URL: env.BETTER_AUTH_URL,
       POLAR_ENVIRONMENT: "sandbox",
     }),
-    core: createCore(env, { memory: createMerchantMemory(storage) }),
+    core: createCore(env, { storage }),
     db,
     mailer: createMailer({
       apiKey: undefined,

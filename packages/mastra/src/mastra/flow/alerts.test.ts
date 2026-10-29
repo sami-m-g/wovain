@@ -34,7 +34,7 @@ import { startTokenOf } from "./telegram";
 // with fake email, Expo and Telegram.
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const TOKEN = "ExponentPushToken[abc]";

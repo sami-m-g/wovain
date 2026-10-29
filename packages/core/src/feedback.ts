@@ -5,7 +5,7 @@ import type { IdeaSignals, ScoreTerm, ScoreWeights } from "./score";
 // units and revenue, Meta clicks) becomes a reward, the rewards re-fit the
 // merchant's score weights around the defaults, and the ideas that sold
 // and the ones that didn't become learnings for taste memory and research.
-// Pure functions; packages/api/src/flow/feedback.ts feeds them snapshots.
+// Pure functions; packages/mastra/src/mastra/flow/feedback.ts feeds them snapshots.
 
 /** One idea's results, summed over its products and their ads. */
 export interface IdeaOutcome {

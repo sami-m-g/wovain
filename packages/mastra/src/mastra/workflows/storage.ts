@@ -55,7 +55,7 @@ export const checkStorage = async (
     log.error({
       error: "MASTRA_STORAGE_UNAVAILABLE",
       mastra: {
-        fix: "Run the migrate job: it creates the mastra schema (pnpm --filter @wovain/api storage:init).",
+        fix: "Run the migrate job: it creates the mastra schema (pnpm --filter @wovain/mastra storage:init).",
         storageCheck: error instanceof Error ? error.message : String(error),
       },
     });

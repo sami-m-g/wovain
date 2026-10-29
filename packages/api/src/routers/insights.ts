@@ -1,7 +1,7 @@
 import { INSIGHT_RANGES } from "@wovain/core/insights";
+import { getInsights } from "@wovain/mastra/flow/insights";
 import { z } from "zod";
 
-import { getInsights } from "../flow/insights";
 import { protectedProcedure } from "../index";
 
 // The merchant's KPI dashboard: shop, ads and quality per drop.

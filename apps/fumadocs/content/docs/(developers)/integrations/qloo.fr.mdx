@@ -29,7 +29,7 @@ Implémenté dans `packages/core/src/qloo.ts` (`createQloo`) :
 - **Preuves.** Tavily ne cherche l'actualité du dernier mois et les places de marché que dans les thèmes de Qloo (`packages/core/src/trends.ts`). Tavily ne nomme jamais un thème.
 - **Scoring.** L'affinité du tag est le terme de demande, 30 % du score de l'idée (`packages/core/src/score.ts`). Un tag sans affinité n'est jamais recherché ni suggéré ; aucune valeur neutre ne le remplace. La boucle de retour repondère les termes du score selon les ventes. Elle ne choisit pas les thèmes.
 - **Sécurité de propriété intellectuelle.** Les noms que Qloo associe à la graine (marques, artistes, titres) sont enregistrés sur l'idée comme noms à ne jamais imprimer.
-- **Design.** Les tags de style et d'ambiance des affinités transversales entrent dans le brief de design comme indices, jamais leurs noms (`packages/core/src/design.ts`). Les tags Qloo des idées d'une exécution choisissent la famille de style d'un drop (`packages/api/src/flow/drops.ts`).
+- **Design.** Les tags de style et d'ambiance des affinités transversales entrent dans le brief de design comme indices, jamais leurs noms (`packages/core/src/design.ts`). Les tags Qloo des idées d'une exécution choisissent la famille de style d'un drop (`packages/mastra/src/mastra/flow/drops.ts`).
 - **Publicités.** Les âges, le genre et les audiences de Qloo règlent l'ensemble de publicités Meta et le persona du rédacteur publicitaire (`packages/core/src/targeting.ts`). Sans audience Qloo, aucune campagne n'est créée (`QLOO_AUDIENCE_MISSING`).
 
 ## Quand Qloo ne peut pas aider

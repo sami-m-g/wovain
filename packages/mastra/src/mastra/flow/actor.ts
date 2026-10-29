@@ -5,9 +5,9 @@ import type { FlagPlan } from "@wovain/core/flag-registry";
 import type { Logger } from "@wovain/core/log";
 import type { Database } from "@wovain/db";
 import type { Mailer } from "@wovain/email/mailer";
-import type { Core } from "@wovain/mastra/services";
 import { defineError } from "evlog";
 
+import type { Core } from "../services";
 import type { PushTransport } from "./push";
 import type { TelegramBot } from "./telegram";
 

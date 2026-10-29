@@ -1,8 +1,7 @@
 import { createScorer } from "@mastra/core/evals";
+import { REQUIRED_PX } from "@wovain/core/design";
+import { pricingRules, profitPerSale } from "@wovain/core/pricing";
 import { z } from "zod";
-
-import { REQUIRED_PX } from "./design";
-import { pricingRules, profitPerSale } from "./pricing";
 
 // Code scorers on the run workflow's steps: facts code can check without a
 // model. Each step puts what it made in its output's `facts` (one item, or

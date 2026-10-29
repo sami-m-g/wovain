@@ -44,7 +44,7 @@ const { startRun } = vi.hoisted(() => ({ startRun: vi.fn() }));
 vi.mock("./runs", () => ({ startRun }));
 
 const MIGRATIONS = fileURLToPath(
-  new URL("../../../db/src/migrations", import.meta.url)
+  new URL("../../../../db/src/migrations", import.meta.url)
 );
 const USER_ID = "user_1";
 const NOW = new Date("2026-10-28T12:00:00Z");

@@ -1,6 +1,5 @@
 import { init } from "@mastra/inngest";
 import { billingCatalog } from "@wovain/billing/catalog";
-import { stepScorers } from "@wovain/core/step-scorers";
 import { NonRetriableError } from "inngest";
 import type { Inngest } from "inngest";
 import { z } from "zod";
@@ -20,6 +19,7 @@ import {
   productStep,
   researchStep,
 } from "../flow/runs";
+import { stepScorers } from "../scorers/steps";
 
 // The seller run as a Mastra workflow on Inngest (docs/adr/0001). Inngest
 // calls /api/inngest once per step, so no step outlives a Cloud Run request,
@@ -56,7 +56,7 @@ const trigger = z.object({
 const carry = trigger.extend({
   designIds: z.array(z.string()).optional(),
   // What the last step made, one item per design, for its code scorer
-  // (@wovain/core/step-scorers).
+  // (scorers/steps).
   facts: z.array(z.record(z.string(), z.unknown())).optional(),
   ideaIds: z.array(z.string()).optional(),
   productIds: z.array(z.string()).optional(),

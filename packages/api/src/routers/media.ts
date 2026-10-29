@@ -2,20 +2,24 @@ import { ORPCError } from "@orpc/server";
 import { targetsOf } from "@wovain/core/ad-rules";
 import { ApprovalError } from "@wovain/core/approvals";
 import { campaign } from "@wovain/db/schema/seller";
-import { and, eq } from "drizzle-orm";
-import { z } from "zod";
-
-import { adRulesOf, isAdRulesOn, setLossLimit } from "../flow/ad-rules";
-import { autonomyOf } from "../flow/approvals";
-import { requestBackstopSync } from "../flow/backstop";
-import { flagContextOf } from "../flow/flags";
+import {
+  adRulesOf,
+  isAdRulesOn,
+  setLossLimit,
+} from "@wovain/mastra/flow/ad-rules";
+import { autonomyOf } from "@wovain/mastra/flow/approvals";
+import { requestBackstopSync } from "@wovain/mastra/flow/backstop";
+import { flagContextOf } from "@wovain/mastra/flow/flags";
 import {
   isMediaBuyingLive,
   pauseCampaignNow,
   requestCampaignActivation,
   syncCampaignStatus,
-} from "../flow/media";
-import { killEconomicsOf } from "../flow/outcomes";
+} from "@wovain/mastra/flow/media";
+import { killEconomicsOf } from "@wovain/mastra/flow/outcomes";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 // Live media buying on a staged campaign (openspec change

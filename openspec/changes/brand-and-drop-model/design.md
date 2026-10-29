@@ -8,7 +8,7 @@ Current code:
 - `packages/core/src/brand-identity.ts` resolves taste references to Qloo entities (direct, or through cultural proxies) and writes the Voice, Palette and Niches lines into the taste memory the writers read.
 - `packages/core/src/brand-discovery.ts` (#113) builds starter brands from Qloo audiences and holds palettes to the blank's real colours (3:1 ink contrast).
 - #122 (`drop-style` flag, open) suggests 3 tones and up to 3 palettes per idea from the brand defaults and the idea's Qloo cues, saves the pick on the new `idea.style` jsonb column and passes the brand voice to the brief and ad writers as guardrails.
-- Ideas start from a seed the merchant types (`ideas.research`): Qloo names the themes and Tavily adds the evidence (`packages/core/src/trends.ts`). `planDrop` (`packages/api/src/flow/drops.ts`) turns an idea into a 4 to 6 product capsule.
+- Ideas start from a seed the merchant types (`ideas.research`): Qloo names the themes and Tavily adds the evidence (`packages/core/src/trends.ts`). `planDrop` (`packages/mastra/src/mastra/flow/drops.ts`) turns an idea into a 4 to 6 product capsule.
 - `drop` holds `name`, `palette`, `qlooTags`, `styleFamily`, `brief` and `status`; `drop_item` holds `priceCents` per product. A drop has no audience, voice, blanks or price fields of its own.
 - Prices come from `packages/core/src/pricing.ts`: a cost-plus floor from the `PRICING_RULES` environment variable, the same for every merchant.
 

@@ -1,6 +1,4 @@
 import { alertSettingsSchema } from "@wovain/core/alerts";
-import { z } from "zod";
-
 import {
   alertChannelsFor,
   alertSettingsFor,
@@ -9,8 +7,10 @@ import {
   isAlertsOn,
   requireAlerts,
   saveAlertSettings,
-} from "../flow/alerts";
-import { registerDevice, unregisterDevice } from "../flow/push";
+} from "@wovain/mastra/flow/alerts";
+import { registerDevice, unregisterDevice } from "@wovain/mastra/flow/push";
+import { z } from "zod";
+
 import { protectedProcedure } from "../index";
 
 // Settings > Alerts (openspec alerts): which channels each alert type uses,
