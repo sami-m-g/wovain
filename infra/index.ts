@@ -307,6 +307,8 @@ const serviceName = "wovain-web";
 // Settings production and dev share (settings.ts). next.wovain.com is its
 // own stack (next/).
 const sharedEnvs = sharedSettings(config);
+// dev calls Graph v26.0 while production stays on v24.0 until the freeze ends.
+const devSharedEnvs = sharedSettings(config, "v26.0");
 // apps/web's per-environment settings: production's under plain keys, and
 // dev's under `<key>-dev` (`pulumi config set emailFrom-dev ...`), never
 // shared with production's.
@@ -470,7 +472,7 @@ const dev = appEnvironment({
       googleClientId: config.get(devKey("googleClientId")),
       name: "dev",
       posthogToken: devPostHog.apiToken,
-      shared: sharedEnvs,
+      shared: devSharedEnvs,
     }),
     ...settingEnvs(devSettings),
   ],

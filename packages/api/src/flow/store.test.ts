@@ -35,12 +35,14 @@ import {
   requestCancel,
   requestDropPublish,
   requestLaunchPromotion,
+  requestListingEdit,
   requestProductMove,
   requestGiftCards,
   requestPromotionEnd,
   requestRefund,
   requestReprice,
   requestShopPromotion,
+  requestSetupConfirm,
   requestSiteLive,
   sampleLink,
   stageRunDrop,
@@ -713,6 +715,50 @@ describe("the Store page's requests", () => {
     expect(queued.status).toBe("approved");
   });
 
+  it("rewrites a product page in the merchant's name, with the old page as the undo", async () => {
+    const ctx = await setup({
+      "ecommerce_get-offers-by-ids": {
+        offers: [
+          {
+            description: "<p>Old</p>",
+            id: "off_1",
+            name: "Dune Tee",
+            shipmentStartDate: "Ships in 5-10 business days",
+          },
+        ],
+      },
+      "ecommerce_update-offer": { id: "off_1" },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    const queued = await requestListingEdit(ctx.actor, {
+      listing: {
+        benefits: ["Desert light", "A gift for hikers", "Soft dusk colours"],
+        hook: "For anyone who hikes at golden hour.",
+        title: "Desert Dusk Hiking Tee",
+      },
+      productId,
+    });
+    expect(queued).toMatchObject({ risk: "R1", status: "approved" });
+    expect(queued.inverse).toEqual({
+      description: "<p>Old</p>",
+      name: "Dune Tee",
+      productId,
+      type: "store.listing.edit",
+    });
+    await executeStoreApproval(ctx.actor, queued.id);
+    const written = ctx.shop.calls.find(
+      (entry) => entry.tool === "ecommerce_update-offer"
+    )?.args;
+    expect(written).toMatchObject({
+      name: "Desert Dusk Hiking Tee",
+      offerId: "off_1",
+    });
+    expect(written?.description).toContain("<li>A gift for hikers</li>");
+    expect(written?.description).toContain("Ships in 5-10 business days.");
+    const [row] = await ctx.db.select().from(design);
+    expect(row?.brief.title).toBe("Desert Dusk Hiking Tee");
+  });
+
   it("takes a coming-soon shop live after the merchant confirms", async () => {
     const ctx = await setup({
       "ecommerce_update-shop-site-status": { status: "LIVE" },
@@ -797,6 +843,28 @@ describe("store setup", () => {
       policies: "check",
       shipping: "done",
       site_live: "done",
+    });
+  });
+
+  it("ticks payouts off on the merchant's word when support set them up", async () => {
+    const ctx = await setup({
+      ...LIVE_SHOP,
+      "ecommerce_get-dns-entries": null,
+      "ecommerce_get-payout-info": { status: "INACTIVE" },
+    });
+    const before = await storeSetup(ctx.actor);
+    expect(before.steps.find((step) => step.id === "payouts")).toMatchObject({
+      how: "link",
+      state: "todo",
+    });
+    expect(before.shop.payoutStatus).toBe("INACTIVE");
+    const queued = await requestSetupConfirm(ctx.actor, "payouts");
+    expect(queued).toMatchObject({ risk: "R1", status: "approved" });
+    await executeStoreApproval(ctx.actor, queued.id);
+    const after = await storeSetup(ctx.actor);
+    expect(after.steps.find((step) => step.id === "payouts")).toMatchObject({
+      confirmedByMerchant: true,
+      state: "done",
     });
   });
 

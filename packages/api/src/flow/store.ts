@@ -3,6 +3,7 @@ import type { Approval, EnqueueInput } from "@wovain/core/approvals";
 import type { ActionType } from "@wovain/core/autonomy";
 import { rangeDates, shopInsights } from "@wovain/core/insights";
 import type { InsightRange } from "@wovain/core/insights";
+import type { Listing } from "@wovain/core/listing";
 import { discountKeepsProfit, sizePrices } from "@wovain/core/pricing";
 import {
   activatePromotion,
@@ -39,6 +40,7 @@ import type {
   OrderCurrency,
   ProductStatus,
 } from "@wovain/core/store";
+import type { ConfirmableStep } from "@wovain/core/store-setup";
 import { drop, dropItem } from "@wovain/db/schema/autonomy";
 import { design, product, run } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
@@ -54,6 +56,7 @@ import {
 } from "./approvals";
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
+import { applyListing, listingEdit } from "./listing";
 import { once } from "./once";
 import { checkNewPrice } from "./price-check";
 import { getProduct, publishDesignProduct } from "./products";
@@ -561,6 +564,22 @@ export const requestReprice = async (
   });
 };
 
+// The merchant approves wovain's rewrite of a product page (R1): it is
+// applied at once in their name, and the page it replaces is the undo.
+export const requestListingEdit = async (
+  actor: Actor,
+  { listing, productId }: { listing: Listing; productId: string }
+) => {
+  const { next, previous } = await listingEdit(actor, productId, listing);
+  return await merchantAction(actor, {
+    inverse: { ...previous, type: "store.listing.edit" },
+    payload: { ...next },
+    proposedBy: "merchant",
+    title: `Rewrite the product page as "${next.name}"`,
+    type: "store.listing.edit",
+  });
+};
+
 export interface LaunchPromotionInput {
   dropId: string;
   code: string;
@@ -740,6 +759,21 @@ export const requestSiteLive = async (actor: Actor) =>
     reason: "Asked for on the Store page.",
     title: "Take your shop live",
     type: "store.site.set_status",
+  });
+
+// The merchant marks payouts set up by Fourthwall support (PayPal or
+// bill.com), which get-payout-info can't see. R1, decided in their name.
+export const requestSetupConfirm = async (
+  actor: Actor,
+  step: ConfirmableStep
+) =>
+  await merchantAction(actor, {
+    idempotencyKey: `store.setup.confirm:${step}`,
+    payload: { step },
+    proposedBy: "merchant",
+    reason: "Marked done on the Store page: set up by Fourthwall support.",
+    title: "Payouts set up by Fourthwall support",
+    type: "store.setup.confirm",
   });
 
 export const listStoreOrders = async (
@@ -1198,6 +1232,15 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
         );
       return { price, sizes: bySize };
     }
+    case "store.listing.edit": {
+      const { description } = payload;
+      return await applyListing(actor, {
+        // An undo may write back an empty description.
+        description: typeof description === "string" ? description : "",
+        name: text(payload, "name"),
+        productId: text(payload, "productId"),
+      });
+    }
     case "store.promotion.create": {
       return await createPromotion(actor, approval);
     }
@@ -1235,6 +1278,10 @@ const perform = async (actor: Actor, approval: Approval): Promise<unknown> => {
             expiresAt: typeof expiresAt === "string" ? expiresAt : undefined,
           })
       );
+    }
+    case "store.setup.confirm": {
+      // The merchant's word is the record; the Store setup reads it back.
+      return { step: text(payload, "step") };
     }
     case "store.site.set_status": {
       const status = await withProvider(

@@ -17,11 +17,16 @@ export type SettingKey = (base: string) => string;
 // Settings every environment of a stack shares. NEMOTRON_MODEL is the Nebius
 // model the agents call (`pulumi config set nemotronModel <id>`) and
 // FAL_IMAGE_MODEL the fal endpoint that draws (`falImageModel`).
-export const sharedSettings = (config: pulumi.Config) => ({
+// Production still calls Graph v24.0; next and dev pass v26.0.
+export const PRODUCTION_GRAPH_VERSION = "v24.0";
+export const sharedSettings = (
+  config: pulumi.Config,
+  graphVersion: string = PRODUCTION_GRAPH_VERSION
+) => ({
   FAL_IMAGE_MODEL: config.require("falImageModel"),
   // Meta's interest search for Qloo audience targeting
   // (packages/core/src/meta-interests.ts).
-  META_GRAPH_URL: "https://graph.facebook.com/v24.0",
+  META_GRAPH_URL: `https://graph.facebook.com/${graphVersion}`,
   NEBIUS_BASE_URL: "https://api.tokenfactory.nebius.com/v1/",
   NEMOTRON_MODEL: config.require("nemotronModel"),
   NEMOTRON_VISION_MODEL: config.require("nemotronVisionModel"),

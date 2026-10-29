@@ -32,6 +32,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ListingDialog } from "@/components/store/store-listing";
 import { PriceCheck } from "@/components/store/store-price-check";
 import type { Tone } from "@/components/store/store-shared";
 import {
@@ -419,11 +420,13 @@ const RowMenu = ({
   product,
   onMove,
   onReprice,
+  onRewrite,
   onSample,
 }: {
   product: StoreProduct;
   onMove: (move: Move) => void;
   onReprice: () => void;
+  onRewrite: () => void;
   onSample: () => void;
 }) => {
   const t = useTranslations("Store.products");
@@ -454,6 +457,9 @@ const RowMenu = ({
         ))}
         {product.status === "retired" ? null : (
           <>
+            <DropdownMenuItem onClick={onRewrite}>
+              {t("rewrite")}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onReprice}>
               {t("reprice")}
             </DropdownMenuItem>
@@ -485,6 +491,7 @@ const ProductRow = ({
   sold,
   onMove,
   onReprice,
+  onRewrite,
   onSample,
 }: {
   product: StoreProduct;
@@ -493,6 +500,7 @@ const ProductRow = ({
   sold: { margin: number | undefined; unitsSold: number } | undefined;
   onMove: (move: Move) => void;
   onReprice: () => void;
+  onRewrite: () => void;
   onSample: () => void;
 }) => {
   const t = useTranslations("Store.products");
@@ -556,6 +564,7 @@ const ProductRow = ({
       <RowMenu
         onMove={onMove}
         onReprice={onReprice}
+        onRewrite={onRewrite}
         onSample={onSample}
         product={product}
       />
@@ -575,6 +584,7 @@ export const StoreProducts = () => {
   >();
   const [repricing, setRepricing] = useState<StoreProduct | undefined>();
   const [sampling, setSampling] = useState<StoreProduct | undefined>();
+  const [rewriting, setRewriting] = useState<StoreProduct | undefined>();
 
   const all = query.data ?? [];
   const shown = all.filter(
@@ -753,6 +763,7 @@ export const StoreProducts = () => {
                 key={product.id}
                 onMove={(move) => setMoving({ move, products: [product] })}
                 onReprice={() => setRepricing(product)}
+                onRewrite={() => setRewriting(product)}
                 onSample={() => setSampling(product)}
                 onSelect={(on) => toggle(product.id, on)}
                 product={product}
@@ -782,6 +793,10 @@ export const StoreProducts = () => {
         product={repricing}
       />
       <SampleDialog onClose={() => setSampling(undefined)} product={sampling} />
+      <ListingDialog
+        onClose={() => setRewriting(undefined)}
+        product={rewriting}
+      />
     </section>
   );
 };

@@ -148,6 +148,10 @@
         "answer": "Una tienda de Fourthwall para los productos, una cuenta de fal para los gráficos y una cuenta publicitaria de Meta para la campaña. Conectas cada una con su propio inicio de sesión después de crear tu cuenta."
       },
       {
+        "question": "¿Mi tienda estará lista para vender?",
+        "answer": "Sí. La Tienda muestra lo que tu tienda de Fourthwall necesita antes de aceptar un pedido (pagos, envíos, publicarla, el píxel de Meta), hace lo que puede por ti, enlaza el resto y marca cada paso sola. También reescribe cada página de producto como lo haría un redactor de e-commerce, y nada cambia hasta que lo apruebas."
+      },
+      {
         "question": "¿Cómo se fijan los precios?",
         "answer": "Desde el coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, tras comisiones de tarjeta, impuesto sobre ventas y una reserva para reembolsos, redondeado al dólar superior. Cuando cambias un precio, wovain muestra tu beneficio en cada talla frente al coste real de Fourthwall y rechaza uno que pierda dinero."
       },
@@ -1682,6 +1686,7 @@
       "mockupAlt": "Maqueta de {title}",
       "view": "Ver en la tienda",
       "editInFourthwall": "Editar en Fourthwall",
+      "rewrite": "Reescribir la página del producto",
       "reprice": "Cambiar precio",
       "sample": "Pedir una muestra",
       "move": {
@@ -1715,6 +1720,26 @@
       "back": "Cancelar",
       "sent": "Hecho. wovain se encarga.",
       "queuedCount": "{count, plural, one {# cambio espera} other {# cambios esperan}} en tus aprobaciones."
+    },
+    "listing": {
+      "title": "Una página de producto que vende: {title}",
+      "note": "wovain reescribió el título y la descripción como lo haría un redactor de e-commerce. Compáralos tal como los ve un comprador. Nada cambia en tu tienda hasta que lo apruebes.",
+      "writing": "Escribiendo la nueva página…",
+      "before": "Ahora",
+      "after": "Con wovain",
+      "noDescription": "Aún sin descripción.",
+      "mockupAlt": "Maqueta de {title}",
+      "issues": "Revísalo a ojo: {list}.",
+      "issue": {
+        "title_length": "el título pasa de 60 caracteres, así que los buscadores lo cortan",
+        "title_shouting": "el título está casi todo en mayúsculas",
+        "ai_tell": "una frase suena escrita por una máquina",
+        "exclamation": "usa un signo de exclamación"
+      },
+      "practice": "La palabra clave principal primero, un título que cabe en un resultado de búsqueda, un beneficio por línea, ninguna afirmación que tu tienda no pueda respaldar y el plazo de envío que da Fourthwall.",
+      "back": "Cancelar",
+      "again": "Escribir otra",
+      "confirm": "Usar esta página"
     },
     "reprice": {
       "title": "Cambiar el precio de {title}",
@@ -1884,10 +1909,17 @@
       "payouts": {
         "label": "Pagos configurados",
         "done": "Las ventas llegan a tu cuenta bancaria.",
-        "todo": "Termina tu cuenta de pagos en Fourthwall para recibir las ventas. Se marcará aquí cuando esté hecho.",
+        "todo": "Fourthwall te paga las ventas a través de Stripe. Configurarlo lleva unos 5 minutos y solo puede hacerlo el propietario de la tienda.",
         "waiting": "Fourthwall está terminando tu cuenta de pagos.",
         "check": "Revisa tu cuenta de pagos.",
-        "action": "Configurar pagos"
+        "action": "Abrir Facturación y pagos",
+        "inProgress": "Stripe aún necesita algunos datos antes de poder pagarte.",
+        "step1": "Abre Facturación y pagos en Fourthwall.",
+        "step2": "En Cómo cobras, elige Configurar tus pagos.",
+        "step3": "Da a Stripe tu identificación y tus datos bancarios, y vuelve aquí. Este paso se marca solo.",
+        "noStripe": "¿Stripe no está disponible en tu país? Fourthwall paga por PayPal o bill.com: cuando tu saldo llegue a 25 $, escribe a support@fourthwall.com con la dirección de tu tienda. Cuando lo hayan configurado, marca este paso como hecho.",
+        "markDone": "El soporte de Fourthwall configuró mis pagos",
+        "confirmed": "Marcaste los pagos como configurados por el soporte de Fourthwall (PayPal o bill.com)."
       },
       "site_live": {
         "label": "Tienda publicada",
@@ -1911,11 +1943,16 @@
         "todo": "Añade tu píxel de Meta en los ajustes de Fourthwall y abre tu tienda una vez para enviar una visita de prueba. Se marcará cuando Meta la vea.",
         "waiting": "Conecta Meta primero: wovain encuentra tu píxel allí.",
         "check": "Revisa tu píxel.",
-        "action": "Añadir el píxel en Fourthwall",
+        "action": "Abrir Píxeles de seguimiento",
         "test": "Abrir tu tienda (visita de prueba)",
         "paste": "ID del píxel para pegar:",
         "noDataset": "Meta está conectado, pero wovain no encontró un único píxel en tu cuenta publicitaria. Crea o elige uno en la configuración de Meta.",
-        "connectMeta": "Conectar Meta"
+        "connectMeta": "Conectar Meta",
+        "step1": "Copia el ID del píxel.",
+        "step2": "En Píxeles de seguimiento, pégalo en el campo Facebook Pixel y guarda.",
+        "step3": "Abre tu tienda una vez. Este paso se marca cuando Meta ve la visita, lo que puede tardar unos minutos.",
+        "capi": "Para contar las ventas que ocultan los bloqueadores de anuncios, conecta también la API de conversiones de Meta en Fourthwall. Pide el mismo ID de píxel y un token de acceso del Administrador de eventos de Meta.",
+        "capiAction": "Abrir Meta Conversions"
       },
       "domain": {
         "label": "Dominio propio",
