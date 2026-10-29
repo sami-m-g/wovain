@@ -10,7 +10,7 @@ import { alerts, db } from "@/services";
 // message here with the secret token setWebhook gave it
 // (core.telegram.org/bots/api#setwebhook). /start <token> from the
 // Settings deep link links the chat to the merchant; anything else gets the
-// way to connect. Always 200, so Telegram doesn't resend.
+// way to connect. 200 unless linking failed, so Telegram resends only then.
 
 const update = z.object({
   message: z
@@ -40,19 +40,30 @@ const handleUpdate = async (request: NextRequest) => {
   }
   const chatId = String(message.chat.id);
   const token = startTokenOf(message.text);
+  // A failed link answers 500, so Telegram sends the update again and the
+  // token stays usable.
+  let linked: Awaited<ReturnType<typeof linkTelegramChat>>;
   try {
-    const linked =
+    linked =
       token === undefined
         ? undefined
         : await linkTelegramChat(db, token, {
             id: chatId,
             username: message.from?.username,
           });
-    const copy = TELEGRAM_COPY[linked?.locale ?? "en"];
+  } catch (error) {
+    getRequestLogger().error(
+      error instanceof Error ? error : new Error(String(error))
+    );
+    return new Response(null, { status: 500 });
+  }
+  const copy = TELEGRAM_COPY[linked?.locale ?? "en"];
+  try {
     await bot.send(chatId, {
       text: linked === undefined ? copy.expired : copy.connected,
     });
   } catch (error) {
+    // The chat is linked; only the reply failed.
     getRequestLogger().error(
       error instanceof Error ? error : new Error(String(error))
     );
