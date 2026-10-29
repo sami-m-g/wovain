@@ -96,5 +96,64 @@
     "VOICE_STT_MODEL",
     "_VARLOCK_ENV_KEY"
   ],
-  "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"]
+  "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"],
+  "boundaries": {
+    "tags": {
+      "config": {
+        "dependencies": {
+          "allow": []
+        }
+      },
+      "domain": {
+        "dependencies": {
+          "allow": ["config"]
+        }
+      },
+      "data": {
+        "dependencies": {
+          "allow": ["config", "domain", "data"]
+        }
+      },
+      "orchestration": {
+        "dependencies": {
+          "allow": ["config", "domain", "data"]
+        }
+      },
+      "routing": {
+        "dependencies": {
+          "allow": [
+            "config",
+            "domain",
+            "data",
+            "orchestration",
+            "ui",
+            "widgets"
+          ]
+        }
+      },
+      "ui": {
+        "dependencies": {
+          "allow": ["config"]
+        }
+      },
+      "widgets": {
+        "dependencies": {
+          "allow": ["config", "ui"]
+        }
+      },
+      "app": {
+        "dependencies": {
+          "allow": [
+            "config",
+            "domain",
+            "data",
+            "orchestration",
+            "routing",
+            "ui",
+            "widgets"
+          ]
+        }
+      }
+    }
+  }
 }

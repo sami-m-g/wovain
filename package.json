@@ -28,6 +28,7 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "knip": "knip --config .config/knip.json",
+    "boundaries": "turbo boundaries",
     "changelog:history": "git-cliff --config .config/cliff.toml --output CHANGELOG.md",
     "changelog:notes": "git-cliff --config .config/cliff.toml --strip all",
     "infra:install": "pulumi install --cwd infra",

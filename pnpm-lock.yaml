@@ -828,6 +828,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 'catalog:'
         version: 0.5.11
+      '@modelcontextprotocol/client':
+        specifier: 'catalog:'
+        version: 2.3.1
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5

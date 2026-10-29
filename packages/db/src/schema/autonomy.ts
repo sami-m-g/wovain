@@ -415,7 +415,11 @@ export const alertDelivery = pgTable(
     // The notify event's dedupeKey, or its id.
     key: text("key").notNull(),
     kind: text("kind").notNull(),
-    status: text("status", { enum: ["sent", "skipped", "failed"] }).notNull(),
+    // sending: claimed before the provider call, so a retry after a send
+    // whose write failed never sends again.
+    status: text("status", {
+      enum: ["sending", "sent", "skipped", "failed"],
+    }).notNull(),
     updatedAt: updatedAt(),
     userId: owner(),
   },
