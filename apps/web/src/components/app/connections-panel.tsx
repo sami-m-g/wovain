@@ -18,6 +18,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { FourthwallSignup } from "@/components/app/fourthwall-signup";
 import { ProviderLogo } from "@/components/app/provider-logo";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { Connection, Provider } from "@/lib/flow-client";
@@ -189,6 +190,10 @@ export const ConnectionsPanel = () => {
           />
         ))}
       </ul>
+      {providers.includes("fourthwall") &&
+      !data.some((item) => item.provider === "fourthwall") ? (
+        <FourthwallSignup className="mt-4 text-left" surface="connections" />
+      ) : null}
     </div>
   );
 };

@@ -413,6 +413,7 @@
     "connected": "Connecté",
     "disconnected": "Non connecté",
     "expired": "Session expirée",
+    "expiredBody": "La session {name} a expiré. Reconnectez-le et wovain reprend là où il s'était arrêté.",
     "connect": "Connecter {name}",
     "reconnect": "Reconnecter {name}",
     "disconnect": "Déconnecter {name}",
@@ -423,18 +424,26 @@
     "providers": {
       "fourthwall": {
         "name": "Fourthwall",
-        "body": "Votre boutique, les supports du catalogue et les prix. Nécessaire pour publier des produits."
+        "body": "Votre boutique, les supports du catalogue et les prix. Nécessaire pour publier des produits.",
+        "unlocks": "wovain publie vos designs comme produits dans votre boutique, à un prix qui préserve votre marge."
       },
       "meta": {
         "name": "Meta",
-        "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne."
+        "body": "Votre compte publicitaire, votre Page et votre pixel. Nécessaire pour créer la campagne.",
+        "unlocks": "wovain crée une campagne en pause pour chaque drop : rien n'est dépensé avant que vous la lanciez."
       },
       "fal": {
         "name": "fal",
-        "body": "Votre compte fal dessine les visuels, à vos frais. Nécessaire pour créer les designs."
+        "body": "Votre compte fal dessine les visuels, à vos frais. Nécessaire pour créer les designs.",
+        "unlocks": "wovain dessine vos designs avec votre compte fal, à vos frais."
       }
     },
-    "comingSoon": "Bientôt disponible"
+    "comingSoon": "Bientôt disponible",
+    "signup": {
+      "prompt": "Pas encore de boutique Fourthwall ?",
+      "link": "Créez une boutique Fourthwall gratuite",
+      "hint": "Revenez ensuite pour la connecter."
+    }
   },
   "Wizard": {
     "title": "Nouveau drop",
@@ -447,9 +456,6 @@
     "back": "Retour",
     "problem": {
       "notConfigured": "Cette étape n'est pas disponible pour le moment. Réessayez dans un instant.",
-      "notConnected": "Connectez {service} pour terminer cette étape.",
-      "reconnect": "La session {service} a expiré. Reconnectez-le pour terminer cette étape.",
-      "connectLink": "Aller aux connexions",
       "other": "Un problème est survenu : {message}"
     },
     "brief": {
@@ -572,14 +578,16 @@
     },
     "failed": {
       "title": "Le drop s'est arrêté à l'étape {stage}",
-      "notConnected": "{service} n'est pas connecté : wovain n'a pas pu terminer cette étape. Connectez-le, puis réessayez.",
-      "reconnect": "La session {service} a expiré et n'a pas pu être renouvelée : wovain n'a pas pu terminer cette étape. Reconnectez-le, puis réessayez.",
+      "connectTitle": "Connectez {service} pour terminer ce drop",
+      "connectBody": "Le drop s'est mis en pause à l'étape {stage} car {service} n'est pas encore connecté. Connectez-le, puis réessayez en un clic.",
+      "reconnectTitle": "Reconnectez {service} pour terminer ce drop",
+      "reconnectBody": "Le drop s'est mis en pause à l'étape {stage} car la session {service} a expiré. Reconnectez-le, puis réessayez en un clic.",
+      "connectedTitle": "{service} est connecté",
+      "connectedBody": "Relancez le drop : wovain repart du même brief avec une nouvelle exécution.",
       "noIdeas": "La recherche n'a trouvé aucune idée pour ce brief. Essayez de le reformuler.",
       "rejected": "Le pilote automatique n'a pas aimé le design. Réessayez pour en obtenir un nouveau.",
       "other": "Un problème est survenu de notre côté. Rien n'a été dépensé pour cette étape. Réessayez.",
       "details": "Détails : {message}",
-      "connect": "Connecter {service}",
-      "reconnectAction": "Reconnecter {service}",
       "retry": "Réessayer",
       "retrying": "Relance en cours…",
       "another": "Écrire un nouveau brief"
@@ -754,7 +762,6 @@
       "margin": "Marge",
       "notConnectedTitle": "Connectez Fourthwall pour voir les ventes",
       "notConnected": "wovain lit les rapports de votre boutique pour afficher le chiffre d'affaires et le bénéfice par drop.",
-      "connect": "Connecter Fourthwall",
       "unavailable": "Les rapports Fourthwall n'ont pas chargé : {message}",
       "emptyTitle": "Pas encore de ventes",
       "empty": "Publiez un produit et partagez-le ; la première commande apparaîtra ici."
@@ -771,7 +778,6 @@
       "results": "Résultats",
       "notConnectedTitle": "Connectez Meta pour voir les résultats",
       "notConnected": "wovain lit les statistiques des campagnes qu'il a créées pour vous.",
-      "connect": "Connecter Meta",
       "unavailable": "Les statistiques Meta n'ont pas chargé : {message}",
       "emptyTitle": "Pas encore de résultats",
       "empty": "Les campagnes sont créées en pause : les résultats arrivent dès que vous en activez une dans le Gestionnaire de publicités."
@@ -1437,6 +1443,8 @@
     "approved": "Validé. wovain s'en occupe.",
     "readiness": {
       "title": "Boutique prête",
+      "connectTitle": "Connectez Fourthwall pour voir votre boutique ici",
+      "connectBody": "wovain vérifie que votre boutique peut prendre des commandes, puis affiche vos drops, produits et commandes.",
       "ready": "Votre boutique peut recevoir des commandes.",
       "notReady": "Corrigez ces points avant toute publication.",
       "passed": "(fait)",

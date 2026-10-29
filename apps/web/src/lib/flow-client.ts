@@ -147,6 +147,26 @@ export const describeProblem = (error: unknown): FlowProblem => {
   };
 };
 
+/**
+ * The provider an error says isn't connected (or whose sign-in expired), if
+ * that's all it says. Not an error: the screen shows the connect state.
+ */
+export const missingConnection = (
+  error: unknown
+): { provider: Provider; reconnect: boolean } | undefined => {
+  if (error === null || error === undefined) {
+    return undefined;
+  }
+  const problem = describeProblem(error);
+  if (problem.kind !== "not_connected") {
+    return undefined;
+  }
+  const provider = PROVIDERS.find((each) => each === problem.service);
+  return provider === undefined
+    ? undefined
+    : { provider, reconnect: problem.reconnect === true };
+};
+
 /** Why a run stopped, in terms a step can explain without server detail. */
 export type RunFailure =
   // reconnect: the grant expired and couldn't be refreshed.

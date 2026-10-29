@@ -1,10 +1,15 @@
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { DesignPreview } from "@/components/app/design-preview";
 
 import messages from "../messages/en.json";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/en/dashboard/new",
+  useSearchParams: () => new URLSearchParams("run=r1&step=designs"),
+}));
 
 const render = (node: React.ReactNode) =>
   renderToStaticMarkup(
@@ -70,6 +75,9 @@ describe("DesignPreview", () => {
     expect(html).toContain(ART);
     expect(html).toContain(
       "Connect Fourthwall to see this design on the shirt."
+    );
+    expect(html).toContain(
+      "/api/connections/fourthwall/start?returnTo=%2Fen%2Fdashboard%2Fnew%3Frun%3Dr1%26step%3Ddesigns"
     );
   });
 });

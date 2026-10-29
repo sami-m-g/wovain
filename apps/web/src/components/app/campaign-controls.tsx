@@ -7,7 +7,9 @@ import { Button } from "@wovain/ui/components/button";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { ConnectState } from "@/components/app/connect-state";
 import type { Campaign } from "@/lib/flow-client";
+import { missingConnection } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 /**
@@ -99,6 +101,7 @@ export const CampaignControls = ({ campaign }: { campaign: Campaign }) => {
   };
 
   const failure = ask.error ?? decide.error ?? pause.error ?? sync.error;
+  const missing = missingConnection(failure);
 
   return (
     <div className="flex flex-col gap-3">
@@ -171,7 +174,13 @@ export const CampaignControls = ({ campaign }: { campaign: Campaign }) => {
       {notice === null ? null : (
         <output className="text-muted-foreground text-sm">{notice}</output>
       )}
-      {failure === null ? null : (
+      {missing === undefined ? null : (
+        <ConnectState
+          provider={missing.provider}
+          reconnect={missing.reconnect}
+        />
+      )}
+      {failure === null || missing !== undefined ? null : (
         <p className="text-destructive text-sm" role="alert">
           {t("failed", { reason: failure.message })}
         </p>
