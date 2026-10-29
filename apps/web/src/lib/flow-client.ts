@@ -32,7 +32,6 @@ export type ResolvedReference =
 export type Discovery = Outputs["onboarding"]["discover"];
 export type StarterCard = Discovery["cards"][number];
 export type CardPalette = StarterCard["palettes"][number];
-export type BuyersPanel = NonNullable<Outputs["onboarding"]["buyers"]>;
 export type TasteMatch = Outputs["onboarding"]["searchTaste"][number];
 export type Learned = Outputs["feedback"]["learned"];
 export type VoiceCommand = Outputs["voice"]["command"];

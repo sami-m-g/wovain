@@ -52,7 +52,7 @@ import type {
 } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
-export const audienceKey = (id: string) => id.split(":").at(-1) ?? id;
+const audienceKey = (id: string) => id.split(":").at(-1) ?? id;
 
 const FEELING_ICONS: Record<Feeling, LucideIcon> = {
   calm: Leaf,
@@ -264,7 +264,7 @@ const StarterCardItem = ({
 };
 
 /** Three placeholder cards while Qloo, Tavily and the writer work. */
-export const CardSkeletons = () => {
+const CardSkeletons = () => {
   const t = useTranslations("Onboarding.brand.discover");
   return (
     <div aria-live="polite" className="flex flex-col gap-3">
