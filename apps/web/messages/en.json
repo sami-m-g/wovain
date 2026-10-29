@@ -1364,8 +1364,7 @@
     "title": "Autopilot",
     "lead": "What wovain noticed for your brand, what it did, and why.",
     "scanNow": "Scan now",
-    "scanRequested": "Scan requested. New suggestions show up here in a minute or two. You can scan once every 6 hours.",
-    "scanFailed": "The scan didn't start. Try again in a moment.",
+    "scanFailed": "The scan didn't start.",
     "actionFailed": "That didn't work: {message}",
     "levels": {
       "suggest": "Suggest only",
@@ -1429,7 +1428,12 @@
       "other": "{step}"
     },
     "scans": "Scans with nothing new",
-    "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}"
+    "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}",
+    "scanning": "Scanning…",
+    "scanProgress": "Scanning, started {seconds, number} s ago",
+    "scanSlow": "Still scanning in the background. Results show up here when it's done.",
+    "scanDone": "{count, plural, =0 {Scan finished. Nothing new this time.} one {Scan finished: # new suggestion.} other {Scan finished: # new suggestions.}}",
+    "scanThrottled": "You scanned {last}. The next scan can run from {next}."
   },
   "Voice": {
     "hold": "Hold to talk",

@@ -21,17 +21,12 @@ import {
 } from "@wovain/ui/components/empty";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Spinner } from "@wovain/ui/components/spinner";
-import {
-  Bot,
-  CircleAlert,
-  CircleCheck,
-  ExternalLink,
-  Radar,
-} from "lucide-react";
+import { Bot, CircleAlert, CircleCheck, ExternalLink } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { ScanButton, ScanStatus, useScanNow } from "@/components/app/scan-now";
 import { Link } from "@/i18n/navigation";
 import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
@@ -317,30 +312,6 @@ const Settings = ({ status }: { status: Status }) => {
   );
 };
 
-const ScanButton = () => {
-  const t = useTranslations("Autopilot");
-  const scan = useMutation(
-    orpc.autopilot.scan.mutationOptions({
-      onError: () => {
-        toast.error(t("scanFailed"));
-      },
-      onSuccess: () => {
-        toast.success(t("scanRequested"));
-      },
-    })
-  );
-  return (
-    <Button
-      disabled={scan.isPending}
-      onClick={() => scan.mutate({})}
-      variant="outline"
-    >
-      {scan.isPending ? <Spinner /> : <Radar aria-hidden="true" />}
-      {t("scanNow")}
-    </Button>
-  );
-};
-
 const QuietScans = ({ scans }: { scans: TraceStep[] }) => {
   const t = useTranslations("Autopilot");
   const format = useFormatter();
@@ -376,6 +347,8 @@ export const AutopilotLog = () => {
     ...orpc.autopilot.log.queryOptions(),
     enabled,
   });
+  // Polls the same log while a requested scan runs in the background.
+  const scan = useScanNow();
 
   if (status.isPending || (enabled && log.isPending)) {
     return <Skeleton className="h-64 w-full rounded-xl" />;
@@ -399,8 +372,9 @@ export const AutopilotLog = () => {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <Settings status={status.data} />
-        <ScanButton />
+        <ScanButton scan={scan} />
       </div>
+      <ScanStatus scan={scan} />
       {suggestions.length === 0 ? (
         <Empty className="border-border border border-dashed">
           <EmptyHeader>
