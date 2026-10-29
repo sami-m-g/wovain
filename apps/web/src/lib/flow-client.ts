@@ -113,6 +113,11 @@ const refusal = (
     case "EMAIL_NOT_VERIFIED": {
       return { kind: "limit", message: error.message, ...text(data.fix) };
     }
+    // No Qloo audience, no campaign: the fix says whether to retry or to add
+    // a brand Qloo knows; the campaign button stays the retry.
+    case "QLOO_AUDIENCE_MISSING": {
+      return { kind: "limit", message: error.message, ...text(data.fix) };
+    }
     default: {
       return undefined;
     }

@@ -162,6 +162,10 @@
       {
         "question": "¿De quién son los diseños?",
         "answer": "Tus briefs y los diseños que apruebas son tuyos. wovain revisa los bocetos en busca de nombres y marcas, pero tú sigues siendo responsable de lo que publicas."
+      },
+      {
+        "question": "¿Quién ve mis anuncios?",
+        "answer": "Personas que aman lo mismo que tu marca. Qloo elige esa audiencia a partir de las marcas de tu perfil, y cada anuncio se escribe para ella. Si wovain no encuentra esa audiencia, no crea anuncios y te dice qué añadir."
       }
     ],
     "heroCta": "Empezar un drop",
@@ -601,6 +605,25 @@
           "with_issues": "Revisar en Meta",
           "archived": "Archivada",
           "unknown": "Estado desconocido"
+        },
+        "rules": {
+          "title": "Cómo protege wovain tu dinero en anuncios",
+          "pauseIf": "wovain pausa un anuncio por su cuenta si:",
+          "noSale": "gasta {spend} (la ganancia de una venta) sin ventas ni añadidos al carrito",
+          "cartNoSale": "gasta {spend} con añadidos al carrito pero sin ventas",
+          "lowCtr": "recibe menos del {ctr} % de clics tras {impressions} vistas",
+          "highCpc": "cuesta más de {cpc} por clic tras {clicks} clics",
+          "noProfit": "Una venta de este producto no deja ganancia, así que wovain pausa sus anuncios.",
+          "stopIf": "wovain pausa todas las campañas si:",
+          "dailyCap": "el gasto de hoy llega a tu límite diario de {cap}",
+          "monthlyCap": "el gasto del mes llega a tu límite mensual de {cap}",
+          "lossLimit": "el gasto en anuncios menos la ganancia de sus ventas llega a {limit}",
+          "scaleIf": "wovain pide subir el presupuesto si:",
+          "scale": "Meta terminó de aprender, la campaña tiene al menos {purchases} ventas y genera al menos {roas} por cada 1 $ en anuncios. La subida es del {step} % como máximo, una vez cada {hours} horas, dentro de tu límite diario.",
+          "how": "wovain revisa cada 30 minutos. Las pausas son inmediatas y recibes una notificación. Una subida espera tu aprobación.",
+          "limitLabel": "Límite de pérdida (USD)",
+          "save": "Guardar",
+          "saveFailed": "El límite no se guardó: {reason}"
         }
       }
     },
@@ -704,6 +727,20 @@
       "failed": "No pudimos sugerir tono y colores ahora.",
       "retry": "Reintentar",
       "info": "Sobre {field}"
+    },
+    "whoBuys": {
+      "title": "Quién compra esto",
+      "buyers": "Sobre todo {age}, {gender}",
+      "unknownAge": "edad desconocida",
+      "unknownGender": "género desconocido",
+      "audiences": "Les gusta:",
+      "where": "Dónde están tus compradores",
+      "affinity": "Afinidad de Qloo {value}",
+      "brands": "También compran:",
+      "source": "Según los datos de gustos de Qloo. Las marcas sirven solo para segmentar, nunca para el diseño.",
+      "loading": "Preguntando a Qloo quién compra esto…",
+      "failed": "No pudimos acceder a nuestros datos de gustos para saber quién compra esto.",
+      "retry": "Reintentar"
     }
   },
   "NotFound": {
@@ -788,6 +825,17 @@
       "7d": "7 días",
       "28d": "28 días",
       "90d": "90 días"
+    },
+    "journey": {
+      "title": "Tu primer drop",
+      "source": "Tiempo desde el registro hasta una campaña activa y un primer beneficio",
+      "liveCampaign": "Tiempo hasta la campaña activa",
+      "liveCampaignHint": "Del registro a la campaña activa. Objetivo {target, number} min",
+      "metaReview": "Espera de revisión de Meta",
+      "metaReviewHint": "De campaña activa a la primera impresión. Tiempo de Meta, no tuyo",
+      "firstProfit": "Tiempo hasta el primer beneficio",
+      "firstProfitHint": "De la primera impresión al beneficio tras el gasto en anuncios. Objetivo {target, number} min",
+      "minutes": "{value, number} min"
     },
     "updating": "Actualizando…",
     "shop": {
@@ -1053,7 +1101,7 @@
     "faq": {
       "credit": {
         "question": "¿Qué es un crédito?",
-        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 3, un diseño 2, y un texto de anuncio o una llamada del piloto automático 1, y cada drop dibuja tres diseños, así que un drop que apruebas paso a paso cuesta unos 10 créditos. Si un paso falla, sus créditos vuelven."
+        "answer": "Un crédito paga una unidad de trabajo de wovain. La investigación de tendencias cuesta 5, un diseño 4, y un texto de anuncio o una llamada del piloto automático 1, y cada drop dibuja tres diseños, así que un drop que apruebas paso a paso cuesta unos 18 créditos. Si un paso falla, sus créditos vuelven."
       },
       "yours": {
         "question": "¿Qué pago fuera de wovain?",
@@ -1392,8 +1440,7 @@
     "title": "Piloto automático",
     "lead": "Lo que wovain vio para tu marca, lo que hizo y por qué.",
     "scanNow": "Buscar ahora",
-    "scanRequested": "Búsqueda pedida. Las nuevas sugerencias aparecen aquí en un par de minutos. Puedes buscar una vez cada 6 horas.",
-    "scanFailed": "La búsqueda no empezó. Inténtalo de nuevo en un momento.",
+    "scanFailed": "El análisis no empezó.",
     "actionFailed": "No funcionó: {message}",
     "levels": {
       "suggest": "Solo sugerir",
@@ -1457,7 +1504,12 @@
       "other": "{step}"
     },
     "scans": "Búsquedas sin nada nuevo",
-    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}"
+    "scanNothing": "{count, plural, =0 {Ninguna búsqueda encontró noticias de esta semana.} one {# búsqueda encontró noticias, ya sugeridas esta semana.} other {# búsquedas encontraron noticias, ya sugeridas esta semana.}}",
+    "scanning": "Analizando…",
+    "scanProgress": "Analizando, empezó hace {seconds, number} s",
+    "scanSlow": "Sigue analizando en segundo plano. Los resultados aparecerán aquí al terminar.",
+    "scanDone": "{count, plural, =0 {Análisis terminado. Nada nuevo esta vez.} one {Análisis terminado: # sugerencia nueva.} other {Análisis terminado: # sugerencias nuevas.}}",
+    "scanThrottled": "Analizaste {last}. El próximo análisis puede hacerse a partir de las {next}."
   },
   "Voice": {
     "hold": "Mantén pulsado para hablar",
@@ -1928,5 +1980,22 @@
       "embroidery": "Bordado",
       "label": "Etiqueta"
     }
+  },
+  "WithoutQloo": {
+    "title": "Sin Qloo",
+    "lead": "El mismo paso de ideas con {seeds, number} semillas solo con Nemotron ({model}), de la comparación del {date}.",
+    "tableCaption": "En qué se apoyan las ideas, con Qloo y sin Qloo",
+    "metric": "Por idea",
+    "withQloo": "Con Qloo",
+    "withoutQloo": "Sin Qloo",
+    "metrics": {
+      "grounded": "Temas basados en una etiqueta de Qloo",
+      "explained": "Temas que Qloo explica (qué fans, por qué)",
+      "crossDomains": "Dominios de gusto (marcas, películas, TV)",
+      "cues": "Pistas de estilo de esos gustos"
+    },
+    "seedsSummary": "Las {seeds, number} semillas, lado a lado",
+    "noMatch": "sin gusto encontrado",
+    "note": "Sin Qloo, Nemotron escribe temas verosímiles solo a partir de las palabras: nada los une a quién compra ni por qué."
   }
 }

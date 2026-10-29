@@ -16,7 +16,7 @@ The policy pack (`policy/index.ts`) is mandatory in every preview and `up`:
 
 ## GitHub
 
-`github.ts` manages the repository (adopted, protected and retained), Dependabot alerts and security updates, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request with one approval (dismissed by a new push) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml`, `dependency-review` from `supply-chain.yml` and `osv / osv-scan` from `osv.yml` passed. The approval comes from CodeRabbit (`.coderabbit.yaml`), since the maintainer can't approve their own pull requests; no one may bypass the ruleset. The CodeRabbit GitHub App must be installed on the repository before the ruleset is applied, or no pull request can merge. It also owns a `release` ruleset for `release/transcend`, every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads:
+`github.ts` declares the repository in two stacks. The `github` stack (`github/`, below) owns the repository itself (adopted, protected and retained), its merge settings (auto-merge on, branch deleted on merge), Dependabot alerts and security updates, the `dependencies` label, the `GITGUARDIAN_API_KEY` secret, and a ruleset on the default branch: no deletion, no force-push, changes only through a pull request with one approval (dismissed by a new push) whose `verify` and `infra` checks from `.github/workflows/ci.yml`, `codeql` from `codeql.yml`, `dependency-review` from `supply-chain.yml` and `osv / osv-scan` from `osv.yml` passed. The approval comes from CodeRabbit (`.coderabbit.yaml`), since the maintainer can't approve their own pull requests; no one may bypass the ruleset. The CodeRabbit GitHub App must be installed on the repository before the ruleset is applied, or no pull request can merge. It also owns a `release` ruleset for `release/transcend`. Production's stack owns every GitHub environment a workflow or Google's trust uses, and the Actions variables `.github/workflows/deploy.yml` reads, since they name its Google resources:
 
 | Environment | Deployment branches | Approval | Google trusts in it |
 | --- | --- | --- | --- |
@@ -33,11 +33,49 @@ The GitGuardian GitHub App scans every push and pull request for secrets (the `G
 
 False positives (a placeholder CI key, a test fixture) are ignored with `.github/workflows/gitguardian-ignore.yml`: run it on main with the incident id, a reason and a justification, and the run is the audit record. Never ignore a real secret: revoke it, then resolve the incident. `.gitguardian.yaml` holds the ignored paths for ggshield run locally (`ggshield secret scan`).
 
-The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as a stack secret and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set). Create a service account token in the GitGuardian dashboard (API, Service accounts) with only the `incidents:write` scope, then `pulumi config set --secret --cwd infra --stack prod gitguardian-api-key <token>`. Don't set it by hand in the repository's settings. Like the new required checks above, the secret lives in the `prod` stack: it reaches the repository with the first `up` after the production freeze ends (about 2026-11-16); until then, ignore an incident in the dashboard.
+The workflow reads the repository's one secret, `GITGUARDIAN_API_KEY`. Set it as a stack secret of the `github` stack and Pulumi writes it as the Actions secret (`github.ts` declares it only when the stack secret is set). Create a service account token in the GitGuardian dashboard (API, Service accounts) with only the `incidents:write` scope, then `pulumi config set --secret --cwd infra/github --stack github gitguardian-api-key <token>`. Don't set it by hand in the repository's settings.
 
 The repository's variables are `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_PROJECT_ID`, `GCP_REGION` and `DOCS_SITE_URL`. Each deploy environment has `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_IMAGE_REPOSITORY`, `GCP_SQL_INSTANCE`, `DATABASE_URL_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`, `SITE_URL` and `WEB_SERVICE`, and `Production` also has `DOCS_SERVICE`. See "Releases" below.
 
-The provider authenticates with the `github:token` stack secret. A fine-grained token for sami-m-g/wovain needs read and write on Administration, Environments, Variables and Dependabot alerts (`pulumi config set --secret github:token <token> --cwd infra --stack prod`).
+Production's provider authenticates with its `github:token` stack secret: a fine-grained token for sami-m-g/wovain with read and write on Administration, Environments and Variables (`pulumi config set --secret github:token <token> --cwd infra --stack prod`).
+
+### CodeRabbit and auto-merge
+
+CodeRabbit's approval is the one review the `main` ruleset requires (`.coderabbit.yaml`), and the repository allows auto-merge: a pull request opened with `gh pr merge --squash --auto` merges once CodeRabbit approves and `verify`, `infra`, `codeql`, `dependency-review` and `osv / osv-scan` pass. Each of those runs on every pull request; `preview` is path-filtered and not required.
+
+Installing the CodeRabbit GitHub App is the one manual step, and its repository access stays outside Pulumi. GitHub has no API to install an app, since the owner must consent to its permissions. The provider's `AppInstallationRepository` reads an installation's repositories with `GET /user/installations/{id}/repositories`, which GitHub doesn't offer to fine-grained tokens (it isn't in "Endpoints available for fine-grained personal access tokens"; with the token it answers 403), so managing it would take a classic token with `repo` on every repository. Install it from github.com/apps/coderabbitai with "Only select repositories", and select sami-m-g/wovain only.
+
+### The github stack (`github/`)
+
+`github/` is its own project, `wovain-github`, with one stack, `github`, so a change to how pull requests merge never waits on production's frozen stack. Its only credential is its own `github:token` secret, encrypted with its own key (`github-stack-secrets`). CI previews it on pull requests and applies it on every push to main as `infra-github`, which Google trusts only from jobs in the `github-infrastructure` environment and which has no Google role except that stack's state and key (`bootstrap/github.ts`).
+
+Production's stack held the repository, the GitLab mirror's disabled ruleset (`main is mirrored from GitLab`) and its write deploy key (`gitlab-ci-mirror`). They are `moved` in `policy/retired.ts`: `scripts/pulumi.ts` removes them from production's state with `pulumi state delete`, which calls nothing on GitHub, so production's `up` can't delete them. The github stack adopts them with `pulumi import`. It doesn't declare the mirror's ruleset or deploy key, so its first `up` deletes those two from GitHub.
+
+Its token is a fine-grained personal access token (github.com/settings/personal-access-tokens/new):
+
+- Name `wovain-pulumi-github`, resource owner `sami-m-g`, expiration 90 days.
+- Repository access: only select repositories, `sami-m-g/wovain`.
+- Repository permissions: Administration read and write (the repository's settings, rulesets, environments, Dependabot alerts and security fixes, deploy keys), Secrets read and write (`GITGUARDIAN_API_KEY`), Issues read and write (the `dependencies` label), and Metadata read (always on). Nothing else, and no account permissions.
+
+Set it up once, as a project owner, after `bootstrap/` is applied (it creates the key and `infra-github`):
+
+```sh
+pnpm run infra:install
+# The stack, with its own secrets key (the secretsprovider in Pulumi.github.yaml).
+pulumi stack init github --cwd infra/github --secrets-provider gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/github-stack-secrets
+pulumi config set --secret --cwd infra/github --stack github github:token <token>
+# Adopt what exists: the repository, and the GitLab mirror's ruleset and deploy key, which the first up deletes.
+pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
+  github:index/repository:Repository wovain wovain
+pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
+  github:index/repositoryRuleset:RepositoryRuleset main-from-gitlab wovain:25829056
+pulumi import --cwd infra/github --stack github --yes --protect=false --generate-code=false \
+  github:index/repositoryDeployKey:RepositoryDeployKey gitlab-ci-mirror wovain:167630121
+node infra/scripts/pulumi.ts preview infra/github
+node infra/scripts/pulumi.ts up infra/github
+```
+
+Commit `infra/github/Pulumi.github.yaml` (now with its encrypted key and token) in a pull request; from then on CI previews and applies the stack. The repository is imported unprotected only so the import matches; the program protects and retains it, and the first `up` writes both flags.
 
 Google trusts GitHub Actions through the `github` workload identity pool (`bootstrap/index.ts`). Its provider accepts only tokens from sami-m-g/wovain (by name, repository id and owner id) on `refs/heads/main`, or on `refs/heads/release/transcend` in the `Production` environment. `gitlab-deploy` trusts only jobs in the `Production` environment, `wovain-deploy-next` only jobs in `next`, `wovain-deploy-dev` only jobs in `dev`, and `gitlab-infra` only jobs in `infrastructure`. The two accounts keep their old ids: renaming would replace protected accounts.
 

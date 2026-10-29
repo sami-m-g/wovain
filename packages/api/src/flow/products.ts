@@ -18,6 +18,7 @@ import { notFound, notReady } from "./actor";
 import { withProvider } from "./connections";
 import { getDesign } from "./designs";
 import { flagContextOf } from "./flags";
+import { reachMilestone } from "./milestones";
 import { once } from "./once";
 import { previewKey, variantsFor } from "./variants";
 
@@ -186,6 +187,7 @@ export const publishDesignProduct = async (actor: Actor, id: string) => {
     .set({ productUrl, status: "public" })
     .where(and(eq(product.id, id), eq(product.userId, actor.userId)))
     .returning();
+  await reachMilestone(actor, "products_published");
   return row ?? { ...hidden, productUrl, status: "public" as const };
 };
 

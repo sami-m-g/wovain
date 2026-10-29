@@ -17,6 +17,9 @@ import { z } from "zod";
 import type { Actor } from "./actor";
 import { adScoreKey } from "./campaigns";
 import { listConnections, withProvider } from "./connections";
+import { detectMilestones, detectSetup } from "./detect";
+import { getJourney, journeyOf, TARGETS } from "./milestones";
+import type { MilestoneName } from "./milestones";
 
 // The merchant's KPI dashboard: shop sales from Fourthwall's reports, ad
 // metrics from Meta's insights and quality scores, joined to wovain's own
@@ -219,6 +222,23 @@ const dropRow = (
   };
 };
 
+// The north star steps these numbers show. A failure is logged at error level
+// (so it reaches PostHog) and never takes the page down.
+const recordMilestones = async (
+  actor: Actor,
+  reading: Parameters<typeof detectMilestones>[1]
+) => {
+  try {
+    await detectMilestones(actor, reading);
+    await detectSetup(actor);
+  } catch (error) {
+    actor.log?.error?.(
+      error instanceof Error ? error : new Error(String(error)),
+      { milestones: "detect" }
+    );
+  }
+};
+
 export const getInsights = async (
   actor: Actor,
   range: InsightRange,
@@ -263,9 +283,17 @@ export const getInsights = async (
     ads.status === "ok" ? ads.campaigns.map((item) => [item.id, item]) : []
   );
 
+  await recordMilestones(actor, { ads, shop });
+  const journey = await getJourney(actor);
+
   return {
     ads,
     drops: drops.map((drop) => dropRow(drop, sales, metrics, adScores)),
+    journey: {
+      ...journeyOf(journey),
+      reached: Object.keys(journey) as MilestoneName[],
+      targets: TARGETS,
+    },
     range: { ...rangeDates(range), key: range },
     scoring: { ads: adScores.size > 0 ? "ready" : "pending" } as const,
     shop: shop as Section<ShopInsights>,

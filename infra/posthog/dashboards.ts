@@ -13,7 +13,12 @@ const MANAGED =
 
 export const PRODUCTION = "properties.environment = 'production'";
 
-export type DashboardKey = "growth" | "retention" | "agent" | "web";
+export type DashboardKey =
+  | "growth"
+  | "northstar"
+  | "retention"
+  | "agent"
+  | "web";
 
 export const DASHBOARDS: Record<
   DashboardKey,
@@ -27,6 +32,11 @@ export const DASHBOARDS: Record<
   growth: {
     description: `Visit to paid funnel, activation and traffic. North Star: activated merchants per week, those who approve a design (design_approved) within 7 days of sign-up. Funnel steps campaign_activated and subscription_started, and the revenue tiles, wait on events not yet captured. ${MANAGED}`,
     name: "Growth",
+    pinned: true,
+  },
+  northstar: {
+    description: `A first live campaign within 10 minutes of sign-up (signed_up to campaign_started) and a first profit within 60 minutes of the campaign delivering (campaign_delivering to first_profitable_product, profit after ad spend above zero). Meta's review wait (campaign_started to campaign_delivering) is charted apart, so Meta's time and ours are not mixed. Events are recorded once per merchant by packages/api flow/milestones.ts. ${MANAGED}`,
+    name: "North star",
     pinned: true,
   },
   retention: {
@@ -56,6 +66,8 @@ export const KPI_DASHBOARDS: Partial<Record<string, DashboardKey[]>> = {
   "frustrated-clicks": ["web"],
   "llm-cost-per-run": ["agent"],
   "run-success-rate": ["agent"],
+  "time-to-first-profit": ["northstar"],
+  "time-to-live-campaign": ["northstar"],
 };
 
 const prodProperties = [
@@ -197,6 +209,37 @@ export const QUERY_INSIGHTS: Record<string, QueryInsight> = {
         },
       ],
       trendsFilter: { display: "ActionsLineGraph" },
+    },
+  },
+  north_star_funnel: {
+    dashboards: ["northstar"],
+    description:
+      "Sign-up, setup (shop, Meta payment, Page, pixel), first drop, approval, products, live campaign, delivering, first sale, first profit. The step with the biggest fall is where to work. payouts_ready is not charted until Fourthwall exposes payout state.",
+    name: "North star funnel: where merchants drop (30d)",
+    source: {
+      dateRange: last(30),
+      funnelsFilter: {
+        funnelVizType: "steps",
+        funnelWindowInterval: 30,
+        funnelWindowIntervalUnit: "day",
+      },
+      kind: "FunnelsQuery",
+      properties: prodProperties,
+      series: [
+        events("signed_up", "Signed up"),
+        events("connection_completed", "Connection completed"),
+        events("fourthwall_shop_ready", "Shop ready"),
+        events("meta_payment_ready", "Meta payment ready"),
+        events("meta_page_ready", "Meta Page ready"),
+        events("pixel_ready", "Pixel ready"),
+        events("first_drop_started", "First drop started"),
+        events("design_approved", "Design approved"),
+        events("products_published", "Products published"),
+        events("campaign_started", "Campaign started"),
+        events("campaign_delivering", "Campaign delivering"),
+        events("first_sale", "First sale"),
+        events("first_profitable_product", "First profitable product"),
+      ],
     },
   },
   provider_connections: {
@@ -400,6 +443,18 @@ export const SQL_INSIGHTS: Record<string, SqlInsight> = {
     name: "LLM cost per run (weekly, USD)",
     sql: `SELECT toStartOfWeek(timestamp) AS week, sum(toFloat(properties.$ai_total_cost_usd)) / nullIf(uniq(properties.$ai_trace_id), 0) AS cost_per_run FROM events WHERE event = '$ai_generation' AND ${PRODUCTION} AND timestamp > now() - INTERVAL 90 DAY GROUP BY week ORDER BY week`,
   },
+  meta_review_wait: {
+    chart: {
+      xAxis: { column: "week" },
+      yAxis: [{ column: "median_minutes" }],
+    },
+    dashboards: ["northstar"],
+    description:
+      "Median minutes from campaign_started to campaign_delivering: Meta's time, not wovain's.",
+    display: "ActionsLineGraph",
+    name: "Meta review wait (weekly median, minutes)",
+    sql: `SELECT toStartOfWeek(week_start) AS week, quantile(0.5)(minutes) AS median_minutes FROM (SELECT dateDiff('minute', minIf(timestamp, event = 'campaign_started'), minIf(timestamp, event = 'campaign_delivering')) AS minutes, minIf(timestamp, event = 'campaign_delivering') AS week_start FROM events WHERE event IN ('campaign_started', 'campaign_delivering') AND ${PRODUCTION} AND timestamp > now() - INTERVAL 90 DAY GROUP BY person_id HAVING countIf(event = 'campaign_started') > 0 AND countIf(event = 'campaign_delivering') > 0) GROUP BY week ORDER BY week`,
+  },
   run_duration: {
     chart: {
       xAxis: { column: "week" },
@@ -423,6 +478,41 @@ export const SQL_INSIGHTS: Record<string, SqlInsight> = {
     display: "ActionsLineGraph",
     name: "Run success rate (weekly)",
     sql: `SELECT toStartOfWeek(timestamp) AS week, countIf(event = 'run_completed') / nullIf(count(), 0) AS success_rate FROM events WHERE event IN ('run_completed', 'run_failed') AND ${PRODUCTION} AND timestamp > now() - INTERVAL 90 DAY GROUP BY week ORDER BY week`,
+  },
+  setup_step_times: {
+    chart: {},
+    dashboards: ["northstar"],
+    description:
+      "How long each setup and drop step takes after sign-up (median), so the slow one inside the 10-minute budget is visible.",
+    display: "ActionsTable",
+    name: "Minutes from sign-up to each step (median, 30d)",
+    sql: `SELECT event AS step, quantile(0.5)(toFloat(properties.seconds_since_signup)) / 60 AS median_minutes, count() AS merchants FROM events WHERE event IN ('connection_completed', 'fourthwall_shop_ready', 'payouts_ready', 'meta_payment_ready', 'meta_page_ready', 'pixel_ready', 'first_drop_started', 'design_approved', 'products_published', 'campaign_started', 'campaign_delivering', 'first_sale', 'first_profitable_product') AND ${PRODUCTION} AND timestamp > now() - INTERVAL 30 DAY GROUP BY step ORDER BY median_minutes`,
+  },
+  time_to_first_profit: {
+    chart: {
+      goalLines: [{ label: "Target", value: 60 }],
+      xAxis: { column: "week" },
+      yAxis: [{ column: "median_minutes" }],
+    },
+    dashboards: ["northstar"],
+    description:
+      "Median minutes from campaign_delivering to first_profitable_product, profit after Meta spend. Target <= 60.",
+    display: "ActionsLineGraph",
+    name: "Time to first profit (weekly median, minutes)",
+    sql: `SELECT toStartOfWeek(week_start) AS week, quantile(0.5)(minutes) AS median_minutes FROM (SELECT dateDiff('minute', minIf(timestamp, event = 'campaign_delivering'), minIf(timestamp, event = 'first_profitable_product')) AS minutes, minIf(timestamp, event = 'first_profitable_product') AS week_start FROM events WHERE event IN ('campaign_delivering', 'first_profitable_product') AND ${PRODUCTION} AND timestamp > now() - INTERVAL 90 DAY GROUP BY person_id HAVING countIf(event = 'campaign_delivering') > 0 AND countIf(event = 'first_profitable_product') > 0) GROUP BY week ORDER BY week`,
+  },
+  time_to_live_campaign: {
+    chart: {
+      goalLines: [{ label: "Target", value: 10 }],
+      xAxis: { column: "week" },
+      yAxis: [{ column: "median_minutes" }],
+    },
+    dashboards: ["northstar"],
+    description:
+      "Median minutes from signed_up to campaign_started. Target <= 10.",
+    display: "ActionsLineGraph",
+    name: "Time to live campaign (weekly median, minutes)",
+    sql: `SELECT toStartOfWeek(timestamp) AS week, quantile(0.5)(toFloat(properties.seconds_since_signup)) / 60 AS median_minutes FROM events WHERE event = 'campaign_started' AND ${PRODUCTION} AND timestamp > now() - INTERVAL 90 DAY GROUP BY week ORDER BY week`,
   },
   vitals_by_page: {
     dashboards: ["web"],

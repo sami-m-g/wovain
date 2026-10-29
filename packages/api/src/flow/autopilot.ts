@@ -956,15 +956,53 @@ export const dismissSuggestion = async (actor: Actor, id: string) => {
 };
 
 // "Scan now": the same scan the cron fans out, rate-limited per brand.
-export const requestScan = async (actor: Actor) => {
+// A manual scan runs at most once per 6 hours (the autopilot-scan
+// function's rate limit, ../workflows/autopilot); a request inside that
+// window is dropped, so the page is told when the next one can run.
+const MANUAL_SCAN_PERIOD_MS = 6 * 60 * 60 * 1000;
+
+// When the latest scan (of this reason, if given) started: the "scan"
+// step's time in its saved trace. A scan saves its trace when it ends, so
+// a time here means that scan finished.
+const lastScanAt = async (actor: Actor, reason?: ScanReason) => {
+  const [latest] = await actor.db
+    .select({ at: decisionTrace.at })
+    .from(decisionTrace)
+    .where(
+      and(
+        eq(decisionTrace.userId, actor.userId),
+        eq(decisionTrace.agent, AGENT),
+        eq(decisionTrace.step, "scan"),
+        reason === undefined
+          ? undefined
+          : sql`${decisionTrace.output}->>'reason' = ${reason}`
+      )
+    )
+    .orderBy(desc(decisionTrace.at))
+    .limit(1);
+  return latest?.at;
+};
+
+export const requestScan = async (actor: Actor, now = new Date()) => {
   if (actor.events === undefined) {
     throw new Error("No event sender to request the scan");
+  }
+  const last = await lastScanAt(actor, "manual");
+  if (
+    last !== undefined &&
+    now.getTime() - last.getTime() < MANUAL_SCAN_PERIOD_MS
+  ) {
+    return {
+      lastScanAt: last.toISOString(),
+      nextAt: new Date(last.getTime() + MANUAL_SCAN_PERIOD_MS).toISOString(),
+      requested: false,
+    } as const;
   }
   await actor.events.send({
     data: { reason: "manual", userId: actor.userId },
     name: EVENTS.autopilotScan,
   });
-  return { requested: true };
+  return { requested: true, requestedAt: now.toISOString() } as const;
 };
 
 export const autopilotStatus = async (actor: Actor, now = new Date()) => {
@@ -1063,7 +1101,10 @@ export const autopilotLog = async (actor: Actor) => {
       .orderBy(desc(decisionTrace.at))
       .limit(LOG_SCANS),
   ]);
+  // The page polls this after "Scan now": a newer scan means it finished.
+  const latest = await lastScanAt(actor);
   return {
+    lastScanAt: latest?.toISOString() ?? null,
     scans: scans.map(traceView),
     suggestions: suggestions.map((row) => {
       const queued = approvals.find(({ id }) => id === row.approvalId);

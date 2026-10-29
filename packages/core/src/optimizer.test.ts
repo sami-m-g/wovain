@@ -276,7 +276,7 @@ describe("the reasoning review", () => {
 });
 
 describe("reading Meta", () => {
-  it("reads status, budget, ad counts and learning leniently", async () => {
+  it("reads status, budget, ad counts, sales, spend and learning leniently", async () => {
     const replies: Record<string, unknown> = {
       ad: {
         data: [
@@ -285,6 +285,8 @@ describe("reading Meta", () => {
             effective_status: "ACTIVE",
             id: "a1",
             impressions: "1500",
+            omni_add_to_cart: "5",
+            omni_purchase: 2,
             spend: "12.5",
           },
           {
@@ -309,8 +311,15 @@ describe("reading Meta", () => {
         data: [{ daily_budget: "1500", effective_status: "ACTIVE", id: "c1" }],
       },
     };
+    const spend: Record<string, unknown> = {
+      this_month: { data: [{ amount_spent: "42.10", id: "c1" }] },
+      today: { data: [{ amount_spent: "3.5", id: "c1" }] },
+    };
     const read = await readCampaign(
-      async (_tool, args) => await Promise.resolve(replies[String(args.level)]),
+      async (_tool, args) =>
+        await Promise.resolve(
+          spend[String(args.date_preset)] ?? replies[String(args.level)]
+        ),
       {
         adAccountId: "1",
         adIds: ["a1", "2", "a3"],
@@ -323,23 +332,37 @@ describe("reading Meta", () => {
         {
           active: true,
           adId: "a1",
+          addToCarts: 5,
           clicks: 40,
           impressions: 1500,
+          purchases: 2,
           spendCents: 1250,
         },
         {
           active: false,
           adId: "2",
+          addToCarts: 0,
           clicks: 0,
           impressions: 10,
+          purchases: 0,
           spendCents: 40,
         },
-        { active: false, adId: "a3", clicks: 0, impressions: 0, spendCents: 0 },
+        {
+          active: false,
+          adId: "a3",
+          addToCarts: 0,
+          clicks: 0,
+          impressions: 0,
+          purchases: 0,
+          spendCents: 0,
+        },
       ],
       dailyBudgetCents: 1500,
       live: true,
       metaLearning: "success",
       resultsLast7d: 61,
+      spendMonthCents: 4210,
+      spendTodayCents: 350,
     });
   });
 });

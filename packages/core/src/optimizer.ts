@@ -153,6 +153,10 @@ export interface AdStats {
   spendCents: number;
   // Delivering on Meta (effective status ACTIVE).
   active: boolean;
+  // Lifetime purchases and add-to-carts the pixel attributes to the ad
+  // (./ad-rules.ts); 0 when Meta returns none.
+  purchases?: number | undefined;
+  addToCarts?: number | undefined;
 }
 
 export type MetaLearning = "learning" | "learning_limited" | "success";
