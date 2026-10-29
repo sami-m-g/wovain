@@ -639,7 +639,10 @@ const briefTerms = async (
       temperature: 0,
     }));
   } catch (error) {
-    log?.error?.(error instanceof Error ? error : new Error(String(error)));
+    evlog.error({
+      error: error instanceof Error ? error : new Error(String(error)),
+      trends: { briefTerms: "failed" },
+    });
   }
   const brief = seed.toLowerCase();
   const copied = picked
