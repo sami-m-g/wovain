@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@wovain/ui/components/button";
 import {
@@ -93,16 +94,25 @@ export const DictationMic = ({
   // still stops the recording.
   const held = useRef(false);
   // The cursor when the merchant pressed, before focus moved to the button.
-  const cursor = useRef({ end: 0, start: 0 });
+  // and the field's text then, to tell whether it was edited since.
+  const cursor = useRef({ end: 0, start: 0, value: "" });
 
   const insert = (text: string) => {
     const target = fieldOf(field);
     if (target === undefined) {
       return;
     }
+    // Edited while the clip was transcribing: the saved selection points
+    // into old text, so go in at the caret now and keep the edit.
+    const edited = target.value !== cursor.current.value;
     const inserted = insertAtCursor({
-      ...cursor.current,
+      end: edited
+        ? (target.selectionEnd ?? target.value.length)
+        : cursor.current.end,
       maxLength,
+      start: edited
+        ? (target.selectionStart ?? target.value.length)
+        : cursor.current.start,
       text,
       value: target.value,
     });
@@ -117,7 +127,14 @@ export const DictationMic = ({
   const dictate = useMutation({
     mutationFn: async ({ clip, mimeType }: { clip: Blob; mimeType: string }) =>
       await orpc.voice.dictate.call({ audio: await toBase64(clip), mimeType }),
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      // A procedure that throws is already tracked on the server; a failure
+      // before the request (the clip, the network) is only seen here.
+      if (!(error instanceof ORPCError)) {
+        posthog.captureException(error, { feature: "voice-input" });
+      }
+      toast.error(error.message);
+    },
     onSuccess: ({ text }) => {
       if (text.trim() === "") {
         toast.error(t("notHeard"));
@@ -194,6 +211,7 @@ export const DictationMic = ({
     cursor.current = {
       end: target?.selectionEnd ?? target?.value.length ?? 0,
       start: target?.selectionStart ?? target?.value.length ?? 0,
+      value: target?.value ?? "",
     };
     if (localStorage.getItem(DISCLOSED_KEY) === null) {
       setDisclosing(true);
