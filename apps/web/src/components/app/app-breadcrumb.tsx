@@ -22,7 +22,7 @@ const SECTIONS = {
   "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
   "/dashboard/onboarding": "onboarding",
-  "/dashboard/products": "products",
+  "/dashboard/store": "store",
 } as const;
 
 type Section = keyof typeof SECTIONS;

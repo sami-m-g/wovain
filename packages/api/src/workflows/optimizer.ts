@@ -14,14 +14,14 @@ import {
 import type { RunServices } from "./run";
 
 // The ads optimizer on Inngest (openspec ads-optimizer):
-// - every 6 hours, one optimizer.tick per merchant with a campaign;
+// - every 30 minutes, one optimizer.tick per merchant with a campaign;
 // - a tick reviews that merchant's campaigns (one tick per merchant at a
 //   time) and enqueues at most one change per campaign;
 // - an approved optimizer action, by the merchant or by the policy, is
 //   performed on Meta.
 // The ads-optimizer flag is checked per merchant inside the tick.
 
-export const OPTIMIZER_CRON = "0 */6 * * *";
+export const OPTIMIZER_CRON = "*/30 * * * *";
 
 const actionFilter = OPTIMIZER_ACTIONS.map(
   (type) => `event.data.actionType == "${type}"`

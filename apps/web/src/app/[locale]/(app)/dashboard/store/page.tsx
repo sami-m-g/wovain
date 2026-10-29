@@ -9,23 +9,24 @@ import { core } from "@/services";
 
 export const generateMetadata = async ({
   params,
-}: PageProps<"/[locale]/dashboard/products">): Promise<Metadata> => {
+}: PageProps<"/[locale]/dashboard/store">): Promise<Metadata> => {
   const locale = await requireLocale(params);
   return pageMetadata({
     index: false,
     locale,
-    path: "/dashboard/products",
-    titleKey: "productsTitle",
+    path: "/dashboard/store",
+    titleKey: "storeTitle",
   });
 };
 
 // Store management (openspec store-management), behind its flag: the data
-// comes from packages/api (store.*, approvals.*).
-const ProductsPage = async ({
+// comes from packages/api (store.*, approvals.*). /dashboard/products
+// redirects here (next.config.ts).
+const StorePage = async ({
   params,
-}: PageProps<"/[locale]/dashboard/products">) => {
+}: PageProps<"/[locale]/dashboard/store">) => {
   const locale = await enterLocale(params);
-  const session = await requireSession(locale, "/dashboard/products");
+  const session = await requireSession(locale, "/dashboard/store");
   const on = await core.flags.isOn("store-management", {
     userId: session.user.id,
   });
@@ -35,4 +36,4 @@ const ProductsPage = async ({
   return <StoreDashboard />;
 };
 
-export default ProductsPage;
+export default StorePage;

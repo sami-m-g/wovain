@@ -42,10 +42,10 @@ const NAV: readonly NavItem[] = [
 ];
 
 // Store management, while its flag is on (openspec store-management).
-const PRODUCTS: NavItem = {
-  href: "/dashboard/products",
+const STORE: NavItem = {
+  href: "/dashboard/store",
   icon: Store,
-  key: "products",
+  key: "store",
 };
 
 // Shown only while the autopilot-triggers flag is on for the merchant.
@@ -64,16 +64,16 @@ const MARK_SIZE = 20;
  */
 export const AppSidebar = ({
   docsUrl,
-  products = false,
+  store = false,
 }: {
   docsUrl: string;
-  products?: boolean;
+  store?: boolean;
 }) => {
   const common = useTranslations("Common");
   const autopilot = useQuery(orpc.autopilot.status.queryOptions());
-  // Products after Insights, Autopilot after Drops.
+  // Store after Insights, Autopilot after Drops.
   const insightsIndex = NAV.findIndex((item) => item.key === "insights");
-  const base = products ? NAV.toSpliced(insightsIndex + 1, 0, PRODUCTS) : NAV;
+  const base = store ? NAV.toSpliced(insightsIndex + 1, 0, STORE) : NAV;
   const dropsIndex = base.findIndex((item) => item.key === "drops");
   const items =
     autopilot.data?.enabled === true

@@ -21,6 +21,8 @@ export interface QlooConfig {
 }
 
 const TIMEOUT_MS = 15_000;
+// Ranked localities (placesOf) are slow on the hackathon server.
+const PLACES_TIMEOUT_MS = 60_000;
 const QLOO_CONCURRENCY = 4;
 const RETRIES = 2;
 const RETRY_MS = 500;
@@ -155,6 +157,24 @@ const entitiesSchema = z.object({
   }),
 });
 
+// A ranked insights answer for audiences, places (localities) or brands;
+// other fields (a locality's properties) are not read.
+const rankedSchema = z.object({
+  results: z.object({
+    entities: z
+      .array(
+        z.object({
+          disambiguation: z.string().max(300).nullish(),
+          entity_id: z.string().max(128),
+          name: z.string().max(300),
+          popularity: z.number().nullish(),
+          query: z.object({ affinity: z.number().optional() }).optional(),
+        })
+      )
+      .default([]),
+  }),
+});
+
 const QLOO_TAG = /^urn:tag:[\w.:-]+$/u;
 const QLOO_ENTITY = /^urn:entity:[\w.:-]+$/u;
 
@@ -240,6 +260,24 @@ export interface Taste {
 // entities of one type that the given signals' fans like. The hackathon
 // server answers 400 to demographics alone, so a query carries entities or
 // audiences too.
+// What "who buys" is asked about: Qloo entity IDs and Qloo tag IDs.
+export interface WhoSignals {
+  entities?: readonly string[] | undefined;
+  tags?: readonly string[] | undefined;
+}
+
+// A Qloo audience, place (locality) or brand ranked for the
+// signals; `where` is Qloo's disambiguation ("Salem, Essex County,
+// Massachusetts, United States of America"; "Tattoos (Hobbies And
+// Interests)").
+export interface QlooRanked {
+  affinity: number;
+  id: string;
+  name: string;
+  popularity?: number | undefined;
+  where?: string | undefined;
+}
+
 export interface InsightsQuery {
   // Qloo age buckets, e.g. "25_to_29".
   age?: string | undefined;
@@ -351,6 +389,14 @@ const themesFrom = (tags: z.output<typeof tagsSchema>): QlooTheme[] => {
     });
 };
 
+// The signal parameters of a "who buys" query.
+const signalParams = ({ entities = [], tags = [] }: WhoSignals) => ({
+  ...(entities.length > 0 && {
+    "signal.interests.entities": entities.join(","),
+  }),
+  ...(tags.length > 0 && { "signal.interests.tags": tags.join(",") }),
+});
+
 export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
   // At most QLOO_CONCURRENCY requests in flight per client: the hackathon
   // server answers 429 to a burst (brand discovery's twelve insights calls
@@ -360,7 +406,8 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
   const get = async <T extends z.ZodType>(
     path: string,
     query: Record<string, string>,
-    schema: T
+    schema: T,
+    timeoutMs = TIMEOUT_MS
   ): Promise<z.output<T>> => {
     if (apiKey === undefined) {
       throw notConfigured.qloo();
@@ -376,7 +423,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
               new URL(`${path}?${new URLSearchParams(query)}`, baseURL),
               {
                 headers: { Accept: "application/json", "X-Api-Key": apiKey },
-                signal: AbortSignal.timeout(TIMEOUT_MS),
+                signal: AbortSignal.timeout(timeoutMs),
               }
             );
             const error = new Error(`Qloo ${path} answered ${reply.status}`);
@@ -671,10 +718,90 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       );
     });
 
+  const ranked = async (
+    operation: string,
+    query: Record<string, string>,
+    log?: Logger,
+    timeoutMs = TIMEOUT_MS
+  ): Promise<QlooRanked[]> =>
+    await external(log, { operation, provider: "qloo" }, async () => {
+      const { results } = await get(
+        "/v2/insights",
+        query,
+        rankedSchema,
+        timeoutMs
+      );
+      return results.entities.map((entity) => ({
+        affinity: entity.query?.affinity ?? 0,
+        id: entity.entity_id,
+        name: entity.name.trim(),
+        ...(entity.popularity !== null &&
+          entity.popularity !== undefined && {
+            popularity: entity.popularity,
+          }),
+        ...(entity.disambiguation !== null &&
+          entity.disambiguation !== undefined && {
+            where: entity.disambiguation.trim(),
+          }),
+      }));
+    });
+
+  // The Qloo audiences (urn:audience) whose members like the signals most.
+  const audiencesOf = async (signals: WhoSignals, log?: Logger, take = 5) =>
+    await ranked(
+      "who.audiences",
+      {
+        "filter.type": "urn:audience",
+        take: String(take),
+        ...signalParams(signals),
+      },
+      log
+    );
+
+  // Where the signals' fans are: the localities (cities, counties) Qloo
+  // ranks for them within a location ("United States"). Not the heatmap
+  // (filter.type=urn:heatmap): it ignores `take` and sent 200 MB of
+  // boundary polygons for the United States, tried live on 2026-10-29.
+  // Ranked localities take about 25 s on the hackathon server, so this
+  // call waits longer than the others.
+  const placesOf = async (
+    signals: WhoSignals,
+    location: string,
+    log?: Logger,
+    take = 5
+  ) =>
+    await ranked(
+      "who.places",
+      {
+        "filter.location.query": location,
+        "filter.type": "urn:entity:locality",
+        take: String(take),
+        ...signalParams(signals),
+      },
+      log,
+      PLACES_TIMEOUT_MS
+    );
+
+  // The fashion brands the signals' fans like: who they already buy from.
+  const fashionBrandsOf = async (signals: WhoSignals, log?: Logger, take = 3) =>
+    await ranked(
+      "who.brands",
+      {
+        "filter.tags": "urn:tag:genre:brand:fashion",
+        "filter.type": "urn:entity:brand",
+        take: String(take),
+        ...signalParams(signals),
+      },
+      log
+    );
+
   return {
     audienceAffinity,
+    audiencesOf,
     demographicsOf,
+    fashionBrandsOf,
     insights,
+    placesOf,
     search,
     searchEntities,
     tagsFor,

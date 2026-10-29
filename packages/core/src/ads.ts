@@ -159,9 +159,9 @@ export interface CampaignPlan {
   // Stable across retries of one staging: it names every object, so an
   // object whose create got no answer can be found again on Meta.
   tag: string;
-  // Qloo's audience as Meta targeting (./targeting); countries only when
-  // unset. Its countries are the plan's.
-  targeting?: MetaTargeting | undefined;
+  // Qloo's audience as Meta targeting (./targeting). Required: no ad set is
+  // staged without it (qlooAudienceGap). Its countries are the plan's.
+  targeting: MetaTargeting;
 }
 
 export interface StagedCampaign {
@@ -210,7 +210,7 @@ const idField = (key: string) =>
 const idOf = (reply: unknown, key: string) =>
   String(findOne(idField(key), reply, key)[key]);
 
-const resolveAccount = async (call: ToolCall, given?: string) => {
+export const resolveAccount = async (call: ToolCall, given?: string) => {
   if (given !== undefined) {
     return given;
   }
@@ -313,8 +313,8 @@ export const stagePausedCampaign = async (
   );
   // media-buying-live: Advantage+ audience with the brand's ages and
   // genders; otherwise the chosen countries. Qloo's ages, gender and
-  // interests (qloo-audiences) ride on top as suggestions; the countries
-  // stay the hard limit either way.
+  // interests always ride on top as suggestions; the countries stay the
+  // hard limit either way.
   const base =
     plan.media === undefined
       ? { geo_locations: { countries: plan.countries } }
@@ -324,8 +324,7 @@ export const stagePausedCampaign = async (
     ...plan.targeting,
     geo_locations: base.geo_locations,
   };
-  // "broad" keeps the name an earlier staging of the same plan used.
-  const adSetName = named(plan.targeting === undefined ? "broad" : "qloo");
+  const adSetName = named("qloo");
   const adSetId = await once(
     "ad_set",
     async () =>

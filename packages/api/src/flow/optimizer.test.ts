@@ -21,6 +21,7 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Actor } from "./actor";
+import { adRulesOf, setLossLimit } from "./ad-rules";
 import { approvalsFor, autonomyOf, setAutonomy } from "./approvals";
 import {
   executeOptimizerApproval,
@@ -46,14 +47,27 @@ interface MetaAd {
   effective_status: string;
   id: string;
   impressions: number;
+  omni_add_to_cart?: number;
+  omni_purchase?: number;
 }
 
-const fakeMeta = (ads: MetaAd[], campaignStatus = "ACTIVE") => {
+const fakeMeta = (
+  ads: MetaAd[],
+  campaignStatus = "ACTIVE",
+  // The campaign's spend today and this month, in dollars.
+  spend: { month?: string; today?: string } = {}
+) => {
   const writes: { args: Record<string, unknown>; tool: string }[] = [];
   const call: ToolCall = async (tool, args) => {
     if (tool === "ads_update_entity") {
       writes.push({ args, tool });
       return await Promise.resolve({ success: true });
+    }
+    if (args.date_preset === "today" || args.date_preset === "this_month") {
+      const amount = args.date_preset === "today" ? spend.today : spend.month;
+      return await Promise.resolve({
+        data: [{ amount_spent: amount ?? "0", id: "mc1" }],
+      });
     }
     const replies: Record<string, unknown> = {
       ad: { data: ads },
@@ -100,9 +114,11 @@ const WINNER_AND_LOSER: MetaAd[] = [
 const setup = async ({
   flag = true,
   review = { approve: true, reason: "Enough data; clear loser." },
+  rules = false,
 }: {
   flag?: boolean;
   review?: unknown;
+  rules?: boolean;
 } = {}) => {
   const client = new PGlite();
   const db = drizzle({ client, relations });
@@ -169,7 +185,10 @@ const setup = async ({
   const reviewer = fakeNemotron(review);
   const actor = {
     core: {
-      flags: { isOn: async () => await Promise.resolve(flag) },
+      flags: {
+        isOn: async (name: string) =>
+          await Promise.resolve(name === "ads-profit-rules" ? rules : flag),
+      },
       models: { modelFor: () => REASONING_MODEL },
       nemotron: reviewer.ask,
     },
@@ -577,5 +596,165 @@ describe("the ads optimizer flow", () => {
     );
     const [failed] = await ctx.db.select().from(approval);
     expect(failed).toMatchObject({ error: "Meta said no", status: "failed" });
+  });
+});
+
+// The profit rules (openspec ads-profit-rules) on the same fake Meta. The
+// product is $25; with the test pricing rules a sale leaves its profit,
+// the target CPA.
+describe("the ads profit rules", () => {
+  let ctx: Awaited<ReturnType<typeof setup>>;
+
+  beforeEach(async () => {
+    ctx = await setup({ rules: true });
+  });
+
+  type Outcomes = Exclude<
+    Awaited<ReturnType<typeof optimizeMerchant>>,
+    "flag_off"
+  >;
+
+  const sellingAd: MetaAd = {
+    clicks: 60,
+    effective_status: "ACTIVE",
+    id: "ad1",
+    impressions: 2000,
+    omni_purchase: 10,
+    spend: "30",
+  };
+  const deadAd: MetaAd = {
+    clicks: 5,
+    effective_status: "ACTIVE",
+    id: "ad2",
+    impressions: 2000,
+    // Under the target CPA, so only its CTR fails.
+    spend: "5",
+  };
+
+  it("pauses an ad that isn't selling at once, even at level suggest, and tells the merchant", async () => {
+    const meta = fakeMeta([sellingAd, deadAd]);
+    const outcomes = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Outcomes;
+    expect(outcomes).toMatchObject([{ outcome: "rule", rule: "pause_ads" }]);
+    const [queued] = await ctx.db.select().from(approval);
+    expect(queued).toMatchObject({
+      actionType: "media.ad.pause",
+      policyReason: "protective_stop",
+      status: "approved",
+    });
+    expect(queued?.payload).toMatchObject({ adId: "ad2", rule: "low_ctr" });
+    const notified = ctx.sent.find((event) => event.name === "wovain/notify");
+    expect(notified?.data).toMatchObject({ kind: "anomaly" });
+    // No reviewer for a money rule.
+    expect(ctx.reviewer.asked).toEqual([]);
+
+    expect(
+      await executeOptimizerApproval(ctx.actor, queued?.id ?? "", deps(meta))
+    ).toBe("done");
+    expect(meta.writes).toHaveLength(1);
+    expect(meta.writes[0]?.args).toMatchObject({
+      entity_id: "ad2",
+      fields: JSON.stringify({ status: "PAUSED" }),
+    });
+    const steps = await ctx.db.select().from(decisionTrace);
+    expect(steps.find((step) => step.step === "rules")?.output).toMatchObject({
+      decision: {
+        kills: [{ adId: "ad2", rule: "low_ctr" }],
+        kind: "pause_ads",
+      },
+    });
+  });
+
+  it("pauses the campaign when no ad sells", async () => {
+    const meta = fakeMeta(WINNER_AND_LOSER);
+    const outcomes = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Outcomes;
+    expect(outcomes).toMatchObject([
+      { outcome: "rule", rule: "pause_campaign" },
+    ]);
+    const [queued] = await ctx.db.select().from(approval);
+    expect(queued).toMatchObject({
+      actionType: "media.campaign.pause",
+      policyReason: "protective_stop",
+      status: "approved",
+    });
+  });
+
+  it("stops every campaign at the merchant's loss limit", async () => {
+    await setLossLimit(ctx.actor, 500);
+    const saved = await adRulesOf(ctx.actor);
+    expect(saved.lossLimitCents).toBe(500);
+    const meta = fakeMeta([deadAd]);
+    const outcomes = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Outcomes;
+    expect(outcomes).toMatchObject([{ outcome: "rule", rule: "loss_limit" }]);
+    const steps = await ctx.db.select().from(decisionTrace);
+    expect(steps.find((step) => step.step === "stop")?.output).toMatchObject({
+      stop: { numbers: { lossCents: 500, lossLimitCents: 500 } },
+    });
+  });
+
+  it("stops every campaign at the daily cap", async () => {
+    await setAutonomy(ctx.actor, {
+      dailySpendCapCents: 2000,
+      level: "suggest",
+      monthlySpendCapCents: 60_000,
+      paused: false,
+    });
+    const meta = fakeMeta([sellingAd], "ACTIVE", { month: "20", today: "20" });
+    const outcomes = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Outcomes;
+    expect(outcomes).toMatchObject([{ outcome: "rule", rule: "daily_cap" }]);
+  });
+
+  it("asks before raising a proven seller, and a raise doesn't restart learning", async () => {
+    const settings = {
+      dailySpendCapCents: 10_000,
+      level: "suggest" as const,
+      monthlySpendCapCents: 300_000,
+      paused: false,
+    };
+    await setAutonomy(ctx.actor, settings);
+    const meta = fakeMeta([sellingAd]);
+    const outcomes = (await optimizeMerchant(
+      ctx.actor,
+      {},
+      deps(meta)
+    )) as Outcomes;
+    expect(outcomes).toMatchObject([{ outcome: "rule", rule: "scale" }]);
+    const [queued] = await ctx.db.select().from(approval);
+    expect(queued).toMatchObject({
+      actionType: "media.budget.change",
+      status: "pending",
+    });
+    expect(queued?.payload).toMatchObject({ fromCents: 1000, toCents: 1200 });
+
+    await approvalsFor(ctx.actor).decide(
+      {
+        approvalId: queued?.id ?? "",
+        approve: true,
+        decidedBy: USER_ID,
+        userId: USER_ID,
+      },
+      settings
+    );
+    expect(
+      await executeOptimizerApproval(ctx.actor, queued?.id ?? "", deps(meta))
+    ).toBe("done");
+    const [state] = await ctx.db.select().from(adOptimizerState);
+    expect(state?.params).toMatchObject({ lastScaleAt: NOW.toISOString() });
+    expect(state?.params).not.toHaveProperty("lastEditAt");
   });
 });
