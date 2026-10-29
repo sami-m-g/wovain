@@ -44,6 +44,8 @@ export type IdeaWordsResult =
 
 // What the agent may use, and nothing else.
 export interface IdeaEvidence {
+  // The brief's key concepts the idea carries: the design must show them.
+  briefConcepts?: string[] | undefined;
   // Qloo audience cues no listing covers.
   gaps?: string[] | undefined;
   // The buyers, when read.
@@ -56,7 +58,13 @@ export interface IdeaEvidence {
   };
   nearIdenticalListings?: number | undefined;
   newsThisMonth?: number | undefined;
-  qloo: { affinity: number; entities: string[]; tag: string };
+  qloo: {
+    affinity: number;
+    // A Qloo tag of another brief concept the idea pairs with its own.
+    bridge?: string | undefined;
+    entities: string[];
+    tag: string;
+  };
   // The headline that makes it timely, when one.
   why?: string | undefined;
 }
@@ -69,7 +77,7 @@ export interface IdeaWordsDeps {
 }
 
 const SYSTEM = `You name one proven print-on-demand t-shirt idea for a shop owner, from its evidence only. The evidence has a Qloo taste tag (it may read like "+children's" or "Middle Grade"), the Qloo entities its fans like, its proof of demand (bestsellers, reviews, shops advertising for weeks), the near-identical listings, the audience cues no listing covers, and the buyers when known. Answer:
-- title: the design idea, what is printed, in 3 to 7 words a shop owner reads at a glance ("Moth and moon line-art crest"). Never the raw tag, never a name of an artist, show or brand.
+- title: the design idea, what is printed, in 3 to 7 words a shop owner reads at a glance ("Moth and moon line-art crest"). Never the raw tag, never a name of an artist, show or brand. With brief concepts and a bridge tag in the evidence, the design carries them all ("Gothic fern skull botanical plate").
 - concept: one sentence: the design, the buyer and the product.
 - style: the look in a few words ("soft pastel line art").
 - buyer: who wears it, starting "for".
@@ -146,7 +154,9 @@ export const writeIdeaWords = async (
     if (unsupported.length > 0) {
       return { kind: "ungrounded", unsupported, words };
     }
-    return isRawTag(words.title, tag)
+    const { bridge } = evidence.qloo;
+    return isRawTag(words.title, tag) ||
+      (bridge !== undefined && isRawTag(words.title, bridge))
       ? { kind: "raw_tag", words }
       : { kind: "ok", words };
   };
@@ -193,6 +203,7 @@ export const writeIdeaWords = async (
 
 // A trend idea's evidence for its words (./trends TrendIdea).
 export const trendEvidenceOf = (research: TrendIdea): IdeaEvidence => ({
+  briefConcepts: research.concepts?.covered,
   demand: {
     bestsellers: research.proof?.market?.bestsellers,
     reviews: research.proof?.market?.reviews,
@@ -202,6 +213,7 @@ export const trendEvidenceOf = (research: TrendIdea): IdeaEvidence => ({
   newsThisMonth: research.signals.newsHits,
   qloo: {
     affinity: Number(research.signals.affinity.toFixed(2)),
+    bridge: research.bridge?.name,
     entities: (research.taste?.seeds ?? []).map((seed) => seed.name),
     tag: research.theme,
   },
