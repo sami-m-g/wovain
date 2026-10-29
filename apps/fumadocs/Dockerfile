@@ -22,6 +22,11 @@ COPY --from=pruner /app/out/json/ .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
 
 COPY --from=pruner /app/out/full/ .
+# A cached install layer is older than the files copied above (patches/ included), so
+# pnpm's dependency check before exec/run would reinstall and run the root postinstall,
+# which generates env files for apps the prune left out. The install above is already
+# from the frozen lockfile, so skip the check.
+ENV pnpm_config_verify_deps_before_run=false
 RUN pnpm exec varlock codegen --path ./apps/fumadocs/
 
 ENV NODE_ENV=production
