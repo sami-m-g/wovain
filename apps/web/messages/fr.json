@@ -174,6 +174,10 @@
       {
         "question": "Qu'est-ce qui empêche mes publicités de perdre de l'argent ?",
         "answer": "wovain vérifie vos publicités toutes les 30 minutes. Il met en pause une publicité qui dépense le bénéfice d'une vente sans vendre, et arrête toute dépense à votre plafond quotidien, à votre plafond mensuel ou à votre limite de perte (50 $ sauf si vous la modifiez). Il vous demande avant d'augmenter le budget d'un gagnant."
+      },
+      {
+        "question": "Lesquels de mes designs dois-je promouvoir ?",
+        "answer": "Tous, au début. wovain teste jusqu'à cinq designs dans une seule campagne, donne à chacun une part équitable du budget, met en pause ceux qui perdent de l'argent et vous montre le gagnant, pour que le budget suive le design qui vend."
       }
     ],
     "heroCta": "Lancer un drop",
@@ -637,6 +641,20 @@
           "limitLabel": "Limite de perte (USD)",
           "save": "Enregistrer",
           "saveFailed": "La limite n'a pas été enregistrée : {reason}"
+        },
+        "designs": {
+          "title": "Chaque design du test",
+          "design": "Design",
+          "numbered": "Design {number, number}",
+          "spend": "Dépense",
+          "ctr": "CTR",
+          "addToCarts": "Ajouts au panier",
+          "purchases": "Ventes",
+          "profit": "Bénéfice",
+          "status": "Statut",
+          "testing": "En test",
+          "paused": "En pause",
+          "winner": "Gagnant"
         }
       }
     },

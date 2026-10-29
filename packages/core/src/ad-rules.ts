@@ -227,6 +227,9 @@ export interface CampaignResults {
   dailyBudgetCents: number;
   ads: AdResults[];
   economics: UnitEconomics;
+  // A test campaign's ads, each judged on its own design's product; the
+  // campaign's economics otherwise.
+  economicsByAd?: ReadonlyMap<string, UnitEconomics> | undefined;
   // The ad set is learning (./optimizer learningReasons).
   learning: boolean;
   // wovain's last raise of this campaign's budget.
@@ -363,7 +366,10 @@ export const decideCampaign = (
     };
   }
   const kills = active.flatMap((ad) => {
-    const kill = killOf(ad, targets, settings);
+    const own = results.economicsByAd?.get(ad.adId);
+    const adTargets =
+      own === undefined ? targets : (targetsOf(own, settings) ?? targets);
+    const kill = killOf(ad, adTargets, settings);
     return kill === undefined ? [] : [kill];
   });
   if (active.length > 0 && kills.length === active.length) {
@@ -437,4 +443,92 @@ export const stopOf = (
     };
   }
   return undefined;
+};
+
+// ---------------------------------------------------------------------------
+// A test campaign, design by design (openspec ads-design-test)
+
+export interface DesignSlice {
+  // The caller's id for the design (its product).
+  key: string;
+  adIds: readonly string[];
+  economics: UnitEconomics;
+}
+
+export type DesignStatus =
+  // Every design keeps spending until the rules can judge it.
+  | { state: "testing" }
+  // Every ad of the design is off: why, in the rule's words.
+  | { state: "paused"; reason: string }
+  // The most profitable design with a sale.
+  | { state: "winner" };
+
+export interface DesignResult extends CampaignTotals {
+  key: string;
+  // Clicks over impressions, 0 to 1; 0 before any impression.
+  ctr: number;
+  // Purchases times the profit per sale, minus spend.
+  profitCents: number;
+  status: DesignStatus;
+}
+
+const PAUSED_ON_META = "Paused on Meta.";
+
+const statusOfDesign = (
+  ads: readonly AdResults[],
+  slice: DesignSlice,
+  settings: AdRuleSettings
+): DesignStatus => {
+  if (ads.length === 0 || ads.some((ad) => ad.active)) {
+    return { state: "testing" };
+  }
+  const targets = targetsOf(slice.economics, settings);
+  if (targets === undefined) {
+    return {
+      reason: `A sale at ${dollars(slice.economics.priceCents)} leaves no profit.`,
+      state: "paused",
+    };
+  }
+  const reasons = ads.flatMap((ad) => {
+    const kill = killOf(ad, targets, settings);
+    return kill === undefined ? [] : [kill.reason];
+  });
+  return { reason: reasons[0] ?? PAUSED_ON_META, state: "paused" };
+};
+
+// Each design's results and where the rules have it: testing, paused (and
+// why), or the winner the scale rule grows.
+export const designResultsOf = (
+  ads: readonly AdResults[],
+  designs: readonly DesignSlice[],
+  settings: AdRuleSettings
+): DesignResult[] => {
+  const byId = new Map(ads.map((ad) => [ad.adId, ad]));
+  const results = designs.map((slice) => {
+    const own = slice.adIds.flatMap((id) => {
+      const ad = byId.get(id);
+      return ad === undefined ? [] : [ad];
+    });
+    const totals = totalsOf(own, slice.economics);
+    return {
+      ...totals,
+      ctr: totals.impressions === 0 ? 0 : totals.clicks / totals.impressions,
+      key: slice.key,
+      profitCents:
+        totals.purchases * slice.economics.profitCents - totals.spendCents,
+      status: statusOfDesign(own, slice, settings),
+    };
+  });
+  const contenders = results.filter(
+    (result) =>
+      result.purchases > 0 &&
+      result.profitCents > 0 &&
+      result.status.state !== "paused"
+  );
+  const [best] = contenders.toSorted((a, b) => b.profitCents - a.profitCents);
+  return results.map((result) =>
+    best !== undefined && result.key === best.key
+      ? { ...result, status: { state: "winner" as const } }
+      : result
+  );
 };

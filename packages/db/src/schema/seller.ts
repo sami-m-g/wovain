@@ -198,6 +198,14 @@ export const product = pgTable(
   (table) => [index("product_user_idx").on(table.userId)]
 );
 
+export interface CampaignDesign {
+  adIds: string[];
+  adSetId: string;
+  copy: AdCopy;
+  creativeIds: string[];
+  productId: string;
+}
+
 export const campaign = pgTable(
   "campaign",
   {
@@ -208,6 +216,9 @@ export const campaign = pgTable(
     createdAt: createdAt(),
     creativeIds: jsonb("creative_ids").$type<string[]>().notNull(),
     dailyBudgetCents: integer("daily_budget_cents").notNull(),
+    // A drop's multi-design test: each design's product, ad set, ads and
+    // copy. Null on a single-design campaign (productId, adSetId, adIds).
+    designs: jsonb("designs").$type<CampaignDesign[]>(),
     id: id(),
     // The caller's request (or the run step) that made this row: a retry with
     // the same key gets this row back instead of a second one.

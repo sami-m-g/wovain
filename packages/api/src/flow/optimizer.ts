@@ -298,6 +298,15 @@ const runCampaignRules = async (
       campaignId: row.id,
       dailyBudgetCents: input.dailyBudgetCents,
       economics,
+      // A test campaign: each design's ads on its own product's numbers.
+      economicsByAd: new Map(
+        (row.designs ?? []).flatMap((design) => {
+          const own = rules.economics.get(design.productId);
+          return own === undefined
+            ? []
+            : design.adIds.map((adId) => [adId, own] as const);
+        })
+      ),
       lastScaleAt: latestOf(input.stateRows, "lastScaleAt"),
       learning: input.assessment.learning.learning,
       live: read.live,
@@ -555,7 +564,14 @@ const protect = async (
     }
     const [settings, economics, autonomy, spent] = await Promise.all([
       adRulesOf(actor),
-      economicsOf(actor, [...new Set(rows.map((row) => row.productId))]),
+      economicsOf(actor, [
+        ...new Set(
+          rows.flatMap((row) => [
+            row.productId,
+            ...(row.designs ?? []).map((design) => design.productId),
+          ])
+        ),
+      ]),
       autonomyOf(actor),
       spendToDate(actor, now),
     ]);

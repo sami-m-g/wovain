@@ -47,15 +47,31 @@ export const storedAdScores: QualityScorer = {
       return new Map<string, number>();
     }
     const staged = await db
-      .select({ id: campaign.id, key: campaign.idempotencyKey })
+      .select({
+        designs: campaign.designs,
+        id: campaign.id,
+        key: campaign.idempotencyKey,
+      })
       .from(campaign)
       .where(
         and(eq(campaign.userId, userId), inArray(campaign.id, campaignIds))
       );
+    // A test campaign scores each design's copy (./campaigns
+    // createDropCampaign); its score is their mean.
     const byKey = new Map(
-      staged.flatMap((row) =>
-        row.key === null ? [] : [[adScoreKey(row.key), row.id] as const]
-      )
+      staged.flatMap((row) => {
+        const { key } = row;
+        if (key === null) {
+          return [];
+        }
+        if (row.designs === null || row.designs.length === 0) {
+          return [[adScoreKey(key), row.id] as const];
+        }
+        return row.designs.map(
+          (design) =>
+            [adScoreKey(`${key}:${design.productId}`), row.id] as const
+        );
+      })
     );
     if (byKey.size === 0) {
       return new Map<string, number>();
@@ -70,14 +86,24 @@ export const storedAdScores: QualityScorer = {
           inArray(externalWrite.key, [...byKey.keys()])
         )
       );
+    const scores = new Map<string, number[]>();
+    for (const row of scored) {
+      const id = byKey.get(row.key);
+      const parsed = adScoreSchema.safeParse(row.result);
+      if (id !== undefined && parsed.success) {
+        scores.set(id, [...(scores.get(id) ?? []), parsed.data.score]);
+      }
+    }
     return new Map(
-      scored.flatMap((row) => {
-        const id = byKey.get(row.key);
-        const parsed = adScoreSchema.safeParse(row.result);
-        return id === undefined || !parsed.success
-          ? []
-          : [[id, parsed.data.score] as const];
-      })
+      [...scores].map(
+        ([id, each]) =>
+          [
+            id,
+            Math.round(
+              each.reduce((sum, score) => sum + score, 0) / each.length
+            ),
+          ] as const
+      )
     );
   },
 };
