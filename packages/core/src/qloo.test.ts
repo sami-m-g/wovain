@@ -636,3 +636,19 @@ it("still retries a 5xx that follows a run of 429s", async () => {
   await expect(tags).resolves.toHaveLength(1);
   expect(fetchMock).toHaveBeenCalledTimes(4);
 });
+
+it("retries a timed-out call once, not twice", async () => {
+  vi.useFakeTimers();
+  const fetchMock = vi.fn(
+    async () =>
+      await Promise.reject(
+        new DOMException("The operation timed out.", "TimeoutError")
+      )
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "key", baseURL: "https://qloo.test" });
+  const tags = expect(qloo.tagsFor(["E4"])).rejects.toThrow("timed out");
+  await vi.runAllTimersAsync();
+  await tags;
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
