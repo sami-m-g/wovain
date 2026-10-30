@@ -11,7 +11,7 @@ import type { CarouselApi } from "@wovain/ui/components/carousel";
 import { useReducedMotion } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Embla's slide speed (its default), and the fastest it goes: with reduced
 // motion a slide changes at once instead of gliding.
@@ -34,21 +34,37 @@ export const IdeaCarousel = ({
   const format = useFormatter();
   const reduced = useReducedMotion() === true;
   const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
+  // The card on show, by key: streamed cards can reorder under it.
+  const [selected, setSelected] = useState<string>();
+  const shown = useRef<string>(undefined);
+  const keys = items.map((item) => item.key).join("\n");
   useEffect(() => {
     if (api === undefined) {
       return;
     }
-    const select = () => setCurrent(api.selectedScrollSnap());
-    select();
+    const select = () => {
+      shown.current = keys.split("\n")[api.selectedScrollSnap()];
+      setSelected(shown.current);
+    };
     api.on("select", select);
-    api.on("reInit", select);
     return () => {
       api.off("select", select);
-      api.off("reInit", select);
     };
-  }, [api]);
+  }, [api, keys]);
+  // A new or reordered card keeps the one on show where the merchant is.
+  useEffect(() => {
+    if (api === undefined) {
+      return;
+    }
+    api.reInit();
+    const index = keys.split("\n").indexOf(shown.current ?? "");
+    if (index > 0) {
+      api.scrollTo(index, true);
+    }
+  }, [api, keys]);
   const total = items.length;
+  const found = items.findIndex((item) => item.key === selected);
+  const current = Math.max(found, 0);
   return (
     <Carousel
       aria-label={label}
@@ -63,6 +79,8 @@ export const IdeaCarousel = ({
               current: format.number(index + 1),
               total: format.number(total),
             })}
+            // Only the card on show takes focus; the others are off screen.
+            inert={index !== current}
             key={item.key}
           >
             {item.node}
