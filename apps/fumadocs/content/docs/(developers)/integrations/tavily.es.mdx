@@ -9,11 +9,34 @@ Tavily se llama **en tiempo de ejecución**, en cada investigación de tendencia
 
 `packages/core/src/trends.ts` (`createTrends`, `tavilyClient`) usa Tavily para:
 
-- **Temas.** Cada ejecución investiga de 3 a 5 temas distintos: los de Qloo, completados por el agente `research_themes` (Nemotron) cuando Qloo nombra menos de 3 (`packages/core/src/themes.ts`). Un tema nunca es el propio brief; sin modelo, se usan ángulos de diseño sobre el asunto del brief.
+- **Temas.** Tavily nunca nombra un tema. Cada ejecución investiga hasta 3 de las etiquetas de gusto de Qloo para el brief (`qlooThemes` en `packages/core/src/themes.ts`). Menos etiquetas de Qloo significa menos ideas. Si Qloo no encuentra nada, la ejecución se detiene con `QLOO_NO_MATCH`. Con `trends-tavily` apagado, la investigación no devuelve ideas.
 - **Momento.** Para cada tema, buscar las noticias del último mes (`topic: "news"`, `searchDepth: "advanced"`) y devolver fuentes. El código descarta páginas de archivo y de etiquetas, resultados de más de 31 días, resultados con puntuación de Tavily inferior a 0,4 y resultados sin ninguna palabra de la consulta del tema; después elimina páginas y titulares duplicados y ordena por relevancia y actualidad. Es la línea «por qué ahora» que se muestra en una idea.
-- **Saturación.** Buscar en marketplaces (etsy.com, redbubble.com, fourthwall.com) anuncios coincidentes. Pocas coincidencias puntúan más alto.
+- **Saturación.** Buscar en marketplaces (etsy.com, redbubble.com, teepublic.com, fourthwall.com) anuncios coincidentes. Pocas coincidencias puntúan más alto.
 
 El texto de la web no es confiable: las ideas conservan sus enlaces de fuentes y los prompts indican a Nemotron que trate el texto de las ideas solo como datos.
+
+## Capa de evidencia (flag `tavily-evidence`)
+
+`packages/core/src/evidence.ts` hace de Tavily la evidencia detrás de tres decisiones. El flag está activo en development y next, y apagado en producción.
+
+- **Fallos por búsqueda.** Las búsquedas de noticias y de marketplaces de cada tema se resuelven por separado. Una búsqueda fallida se registra con nivel error y la idea se apoya en la otra; la tarjeta dice cuál falló. Solo si fallan todas, el paso de investigación falla (y devuelve sus créditos).
+- **Precios de la competencia.** Tavily Extract lee hasta 5 anuncios de Redbubble, TeePublic y Etsy que encontró la búsqueda de marketplaces y toma el primer precio plausible de cada uno (de 8 a 120 $). Las páginas que Tavily no puede leer (`failed_results`) se cuentan en el evento, y el margen vuelve a los fragmentos de búsqueda. La tarjeta muestra la mediana y los anuncios de donde sale.
+- **Dossier de investigación.** En una tarjeta de idea, "Investigar esta idea" lanza Tavily Research (`model: "mini"`) con un `output_schema` de `why_now`, `saturation`, `price_band`, `risks` y `citations`. El tema y la afinidad de Qloo de la idea y las entidades y la audiencia de Qloo del perfil de marca se adjuntan como `qloo-taste.json`, para que Tavily razone sobre ellos. La app lee el resultado cada pocos segundos y lo guarda en la idea. Un dossier pendiente tras 15 minutos se marca como fallido y se registra.
+- **Control de marcas.** Antes de que el juez decida, cada frase que imprime un diseño se busca como frase exacta (`exact_match`) en uspto.gov, trademarkia.com, trademarks.justia.com y euipo.europa.eu, y en Redbubble, TeePublic, Etsy y Amazon. Una página de registro cuyo título contiene la frase falla la comprobación `trademark`, así que el brief se reescribe una vez con otras palabras. Las coincidencias en marketplaces se muestran como aviso. Una frase que no se pudo comprobar también falla (el control falla cerrado) y el comerciante puede aprobar después de leer las citas. No se buscan palabras sueltas de menos de 5 letras.
+
+Es una búsqueda, no una autorización legal: un resultado limpio significa que Tavily no encontró ningún registro.
+
+## Panorama competitivo (flag `tavily-competition`)
+
+`packages/core/src/competition.ts` lee la competencia de cada tema de Qloo mientras una ejecución investiga, antes de elegir una idea. El flag está activo en development y next, e inactivo en producción.
+
+- **Saturación.** Una búsqueda en Redbubble, TeePublic, Etsy, Amazon, tiendas Shopify, Threadless, Spreadshirt y Teespring (20 resultados) se filtra en código: cuenta como anuncio casi idéntico un resultado con relevancia de al menos 0,5 cuyo título o fragmento lleva todas las palabras del tema. Menos de 4 es baja, de 4 a 7 media, 8 o más alta (saturado). La muestra se cita.
+- **Cómo venden.** Tavily Extract lee los 5 primeros anuncios con una `query` y 3 fragmentos por página; `competitorPrices` lee sus precios. Un resumidor de Nemotron (`competition_summary`, trabajo default del router de modelos) lista títulos, ganchos, afirmaciones, precios, estilos y quejas en reseñas como JSON validado con Zod, cada punto con su página. Un punto que cita una página no leída se descarta.
+- **Huecos.** El código compara las señales de afinidad de Qloo del tema con el texto de los anuncios; las que ningún anuncio menciona son los huecos.
+- **Uso en los agentes.** El brief de diseño recibe los estilos a evitar y los huecos; el redactor de anuncios recibe los ángulos de la competencia con sus páginas y escribe un texto contrapuesto, y la guarda de fundamentación acepta solo hechos de esas líneas. El piloto automático omite un tema saturado y guarda el motivo en la idea.
+- **Fallos.** Una búsqueda fallida marca la idea como "competencia desconocida" y la tarjeta ofrece comprobar de nuevo; si falla la extracción, los precios o el resumen, esa parte falta y se indica. Cada fallo se registra a nivel error y cada paso queda en la traza de decisiones (/dashboard/models).
+
+Tavily no puede leer las páginas de la Biblioteca de anuncios de Meta, así que wovain no las busca ni las extrae.
 
 ## Configuración
 

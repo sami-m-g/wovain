@@ -35,7 +35,9 @@ L'application web a besoin de :
 | `BETTER_AUTH_URL` | URL publique de l'application web |
 | `DATABASE_URL` | Chaîne de connexion PostgreSQL (Cloud SQL en production) |
 
-L'application de documentation a une clé optionnelle, `NEBIUS_API_KEY` (Nemotron sur Nebius Token Factory ; `NEBIUS_MODEL` et `NEBIUS_BASE_URL` ont des valeurs par défaut), pour le chat IA. Sans la clé, le point d'accès du chat répond 503.
+Il lui faut aussi les réglages propres à chaque environnement, qui n'ont pas de valeur par défaut : `MCP_URL`, `DOCS_URL`, `SUPPORT_EMAIL`, `EMAIL_FROM`, les URL MCP des fournisseurs, `BILLING_CATALOG` et `PRICING_RULES` (JSON), les prix de Nemotron et les seuils des garde-fous. `apps/web/.env.schema` décrit chacun ; les valeurs de production sont dans `infra/Pulumi.prod.yaml`, d'où Pulumi les applique par environnement.
+
+L'application de documentation a une clé optionnelle, `NEBIUS_API_KEY` (Nemotron sur Nebius Token Factory ; `DOCS_CHAT_MODEL` et `NEBIUS_BASE_URL` ont des valeurs par défaut), pour le chat IA. Sans la clé, le point d'accès du chat répond 503.
 
 Les clés des fournisseurs (Nebius, Qloo, Tavily, fal) sont décrites sur chaque [page d'intégration](/fr/docs/integrations).
 

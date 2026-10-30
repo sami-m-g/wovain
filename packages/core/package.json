@@ -9,26 +9,29 @@
   "scripts": {
     "build": "tsc -b",
     "check-types": "tsc -b",
-    "test": "vitest run",
-    "evals": "vitest run --config vitest.evals.config.ts"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "catalog:",
-    "@mastra/core": "catalog:",
-    "@mastra/evals": "catalog:",
-    "@mastra/memory": "catalog:",
+    "@fal-ai/client": "catalog:",
     "@modelcontextprotocol/client": "catalog:",
-    "@posthog/ai": "catalog:",
+    "@stdlib/stats-base-dists-beta-cdf": "catalog:",
     "@tavily/core": "catalog:",
+    "@toon-format/toon": "catalog:",
+    "culori": "catalog:",
     "evlog": "catalog:",
+    "lru-cache": "catalog:",
+    "p-limit": "catalog:",
+    "p-retry": "catalog:",
     "posthog-node": "catalog:",
-    "unleash-client": "catalog:",
+    "sharp": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/culori": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",
+    "fast-check": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -41,6 +41,7 @@ beforeEach(async () => {
     {
       BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-32",
       BETTER_AUTH_URL: URL_BASE,
+      MCP_URL: `${URL_BASE}/api/mcp`,
       POLAR_WEBHOOK_SECRET: SECRET,
     },
     db,
@@ -283,7 +284,7 @@ it("records a pack purchase", async () => {
   expect(capture).toHaveBeenCalledWith({
     distinctId: userId,
     event: "credits_purchased",
-    properties: { amount_usd: 10, credits: 100, pack: "pack" },
+    properties: { amount_usd: 15, credits: 100, pack: "pack" },
   });
 });
 
@@ -364,4 +365,19 @@ it("gives a merchant a promo's credits only once, even from two orders", async (
   expect(second.status).toBe(200);
   expect(await creditBalance(db, userId)).toMatchObject({ pack: 300 });
   expect(capture).toHaveBeenCalledOnce();
+});
+
+it("credits a promo that names its accounts to no one else", async () => {
+  const response = await deliver(
+    grantEvent("benefit_grant.created", {
+      code: "promo:judges-account-2026",
+      grantId: "grant_account_promo",
+      order: true,
+      rollover: true,
+      units: 300,
+    })
+  );
+  expect(response.status).toBe(200);
+  expect(await creditBalance(db, userId)).toMatchObject({ available: 0 });
+  expect(capture).not.toHaveBeenCalled();
 });

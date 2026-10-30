@@ -8,7 +8,7 @@ export default defineConfig({
   ignorePatterns: [
     ...(ultracite.ignorePatterns ?? []),
     ...vendorPatterns,
-    // Written back to main by the AI Catalog sync job (.gitlab/ci/duo.yml).
-    ".gitlab/duo/catalog/mapping.json",
+    // Written by release-please and git-cliff.
+    "CHANGELOG.md",
   ],
 });

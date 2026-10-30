@@ -8,12 +8,20 @@ import {
 import { cn } from "@wovain/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
-const FLAT_SIZE = 640;
+import { useHere } from "@/components/app/connect-state";
+import { connectUrl } from "@/lib/flow-client";
+
+const FRAME_SIZE = 640;
 const SIZES = "(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw";
 
 type View = "shirt" | "flat";
+
+const NO_MOCKUPS: string[] = [];
+
+type MockupStatus = "ready" | "failed" | "not_connected" | null;
 
 // The image stays invisible until it has loaded; the skeleton holds the space.
 const useLoaded = () => {
@@ -27,64 +35,99 @@ const useLoaded = () => {
   return { loaded, onLoad: () => setLoaded(true), ref };
 };
 
-// A neutral tee, drawn once, in the page's own colors.
-const Tee = () => (
-  <svg
-    aria-hidden="true"
-    className="text-card absolute inset-0 size-full drop-shadow-sm"
-    fill="currentColor"
-    stroke="var(--border)"
-    strokeLinejoin="round"
-    strokeWidth="1.5"
-    viewBox="0 0 100 100"
-  >
-    <path d="M36 12c3 5 8 8 14 8s11-3 14-8l22 8 9 20-14 6-3-6v46H22V40l-3 6-14-6 9-20 22-8z" />
-  </svg>
-);
+// One image filling the square frame. Keyed by its source, so a new image
+// starts hidden behind the skeleton again.
+const FrameImage = ({
+  alt,
+  dimmed,
+  src,
+}: {
+  alt: string;
+  dimmed: boolean | undefined;
+  src: string;
+}) => {
+  const { loaded, onLoad, ref } = useLoaded();
+  return (
+    <>
+      {loaded ? null : (
+        <Skeleton
+          aria-hidden="true"
+          className="absolute inset-0 size-full rounded-none"
+        />
+      )}
+      <Image
+        alt={alt}
+        className={cn(
+          "absolute inset-0 size-full object-contain transition-opacity duration-300",
+          loaded ? "opacity-100" : "opacity-0",
+          dimmed && "grayscale"
+        )}
+        height={FRAME_SIZE}
+        onLoad={onLoad}
+        ref={ref}
+        sizes={SIZES}
+        src={src}
+        unoptimized
+        width={FRAME_SIZE}
+      />
+    </>
+  );
+};
 
-// The artwork on a neutral tee (Fourthwall renders the real mockup only once
-// the product exists), with the flat artwork as a second view. The frame has
-// a fixed aspect ratio, so nothing moves when the image arrives.
+// "On a shirt" is Fourthwall's own mockup of the art on the blank the product
+// will use; "Flat art" is the artwork alone. Without a mockup (the preview
+// failed, Fourthwall isn't connected, or the design predates previews) the
+// shirt view shows the flat art and says why. The frame has a fixed aspect
+// ratio, so nothing moves when the image arrives.
 export const DesignPreview = ({
   title,
   artworkUrl,
+  mockups = NO_MOCKUPS,
+  mockupStatus = null,
   dimmed,
 }: {
   title: string;
   artworkUrl: string;
+  mockups?: string[] | undefined;
+  mockupStatus?: MockupStatus | undefined;
   dimmed?: boolean;
 }) => {
   const t = useTranslations("Wizard.designs");
   const [view, setView] = useState<View>("shirt");
-  const { loaded, onLoad, ref } = useLoaded();
-  const flat = view === "flat";
+  const [mockup] = mockupStatus === "ready" ? mockups : [];
+  const onShirt = view === "shirt" && mockup !== undefined;
+  const here = useHere();
+  let notice: ReactNode = null;
+  if (view === "shirt" && mockup === undefined) {
+    // Not connected: the line itself is the way to connect, and back here.
+    notice =
+      mockupStatus === "not_connected" ? (
+        <a
+          className="text-accent-text font-medium underline underline-offset-4"
+          href={connectUrl("fourthwall", here)}
+        >
+          {t("mockupNotConnected")}
+        </a>
+      ) : (
+        t("mockupUnavailable")
+      );
+  }
+  const src = onShirt ? mockup : artworkUrl;
   return (
     <div className="bg-muted flex flex-col gap-3 p-4">
       <div className="relative aspect-square w-full overflow-hidden">
-        {loaded ? null : (
-          <Skeleton
-            aria-hidden="true"
-            className="absolute inset-0 size-full rounded-none"
-          />
-        )}
-        {flat ? null : <Tee />}
-        <Image
-          alt={flat ? t("artAlt", { title }) : t("shirtAlt", { title })}
-          className={cn(
-            "absolute object-contain transition-opacity duration-300",
-            flat ? "inset-0 size-full" : "top-[26%] left-[34%] h-[34%] w-[32%]",
-            loaded ? "opacity-100" : "opacity-0",
-            dimmed && "grayscale"
-          )}
-          height={FLAT_SIZE}
-          onLoad={onLoad}
-          ref={ref}
-          sizes={SIZES}
-          src={artworkUrl}
-          unoptimized
-          width={FLAT_SIZE}
+        <FrameImage
+          alt={onShirt ? t("shirtAlt", { title }) : t("artAlt", { title })}
+          dimmed={dimmed}
+          key={src}
+          src={src}
         />
       </div>
+      {notice === null ? null : (
+        <output className="text-muted-foreground text-center text-xs">
+          {notice}
+        </output>
+      )}
       <ToggleGroup
         aria-label={t("viewLabel")}
         className="self-center"

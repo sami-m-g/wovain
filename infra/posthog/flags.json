@@ -1,0 +1,1216 @@
+{
+  "flags": {
+    "ads-optimizer": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Thompson-sampling optimizer over ads: reallocation proposals inside the spend caps (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "ads-profit-rules": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "alerts": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Alerts on email, mobile push and Telegram for rule actions, approvals, a first sale and failures, with per-type channels and quiet hours (openspec alerts) (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "app-ui-v2": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The redesigned app UI (openspec app-ui-pass) (owner: design, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "autonomy-approvals": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The shared approval queue and the merchant's autonomy settings (openspec foundation-autonomy-approvals) (owner: runs, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "autopilot": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Autopilot: idea, product set, ads and a paused campaign without a human step. On for every plan, Free included, in dev and next (foundation-autonomy-approvals) (owner: runs, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "autopilot-triggers": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Autopilot fires on trend and Qloo triggers and files suggestions (owner: runs, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "billing-paid-plans": {
+      "active": false,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [],
+          "rollout_percentage": 0
+        }
+      ],
+      "name": "Paid plans: checkout, plan changes and credit pack purchases (MR !116). Off at launch: only Free is sold (owner: billing, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "permission"
+      ]
+    },
+    "brand-discovery": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Guided brand discovery in onboarding: Qloo-found starter brands (Suggest for me, a short questionnaire), the buyers panel and per-field suggestions (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "design-drops": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Drops: a capsule of products sharing a palette, mark and style family (owner: design, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "drop-directions": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "What to sell now in the new-drop step: 3 to 5 one-click directions from Qloo (across audiences, or within the brand), Tavily momentum and saturation (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "drop-style": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Each drop's own tone and palette, suggested from its Qloo audience and the brand defaults, used by the brief and ad writers (owner: design, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "fal-oauth": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Connect fal with OAuth instead of a pasted key (openspec add-fal-byo-connector) (owner: connectors, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "feedback-loop": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Performance snapshots feed scores, taste and the next suggestions (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "idea-evidence-gate": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Ideas shown only with Qloo evidence, proof of demand and a competition read; sweet-spot demand / supply ranked by a Wilson lower bound; one idea card contract; titles checked against the evidence (openspec idea-evidence) (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "mastra-runs": {
+      "active": true,
+      "groups": [
+        {
+          "internal": true,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 10
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "New runs go through the Mastra workflow; the legacy run steps are the fallback (owner: runs, expires 2026-12-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "media-buying-live": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Launch Meta campaigns live after an approval, inside the merchant's spend caps (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "meta-backstop-rules": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The kill and stop rules mirrored into Meta's Automated Rules, so spend stops even when wovain is down (openspec meta-backstop) (owner: media, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "meta-pixel-automation": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Pixel set-up on the single Meta grant: find or create the dataset, share it with the ad account and send a test event (openspec pixel-automation) (owner: store, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "mobile-app": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The Expo app: approval inbox, push notifications and the store pulse (owner: mobile, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "model-routing": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Route each agent to a Nemotron model by job (NEMOTRON_MODEL_FAST, _DEFAULT, _REASONING, _VISION, _SAFETY) (owner: agents, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "onboarding-wizard": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "scan-now": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Autopilot's Scan now button: an on-demand scan (owner: runs, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "store-management": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue (owner: store, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "story-ui": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "One story in the merchant UI (openspec story-ui): a 4-item rail (Home, Drops, Store, Settings) and a Home with the next action, what sells now, drops in progress and results (owner: design, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "tavily-competition": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Tavily competitive landscape per Qloo theme: saturation, how competitors sell and the audience's gaps, fed to the brief, the ad writer and autopilot (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "tavily-evidence": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Tavily evidence with citations: per-search failures logged, competitor prices, research dossiers and the trademark check (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "trends-qloo": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Qloo taste themes in trend research, for every plan (founder decision, 2026-10-28). An ops kill switch only: off, research and new runs are refused with QLOO_OFF, since every idea is a Qloo tag (owner: growth, expires 2027-06-30). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "kill-switch"
+      ]
+    },
+    "trends-tavily": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "production"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Live Tavily search in trend research (off: research returns no ideas) (owner: growth, expires 2027-06-30). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "kill-switch"
+      ]
+    },
+    "voice-input": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Hold-to-talk: speech to text, then a typed action proposal in the approval queue (owner: mobile, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    },
+    "who-buys": {
+      "active": true,
+      "groups": [
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "next"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        },
+        {
+          "internal": false,
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "exact",
+              "type": "person",
+              "value": [
+                "development"
+              ]
+            }
+          ],
+          "rollout_percentage": 100
+        }
+      ],
+      "name": "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like (owner: growth, expires 2027-01-31). Managed in packages/core/src/flag-registry.ts.",
+      "tags": [
+        "registry",
+        "release"
+      ]
+    }
+  },
+  "internal_user_id": "wovain-internal"
+}

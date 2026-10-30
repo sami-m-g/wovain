@@ -1,5 +1,6 @@
 "use client";
 
+import type { IdeaCard } from "@wovain/core/idea-card";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button } from "@wovain/ui/components/button";
 import { Card } from "@wovain/ui/components/card";
@@ -8,16 +9,14 @@ import { cn } from "@wovain/ui/lib/utils";
 import {
   Check,
   ChevronRight,
-  History,
-  ChartLine,
-  LayoutGrid,
+  House,
+  Layers,
   PanelLeft,
+  Settings,
   Sun,
   MousePointer2,
   Pause,
   Play,
-  PlugZap,
-  Plus,
 } from "lucide-react";
 import {
   animate,
@@ -41,6 +40,7 @@ import {
 
 import { Logo } from "@/components/brand/logo";
 import { ShuttleLoader, ShuttleMark } from "@/components/brand/shuttle-mark";
+import { IdeaCardView } from "@/components/ideas/idea-card-view";
 import {
   AdPreview,
   MOCKUPS,
@@ -50,20 +50,22 @@ import {
 import { HangTag } from "@/components/product/hang-tag";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
 import type { Stage } from "@/components/product/run-tape";
-import { priceBreakdown } from "@/lib/pricing";
+import type { PriceBreakdown } from "@/lib/pricing";
 
 /** The clock the whole sequence runs on, in milliseconds. */
 const TICK = 50;
 const EXPO_OUT = [0.16, 1, 0.3, 1] as const;
-/** A typical tee's base cost (core's DEFAULT_BASE_COST). */
-const EXAMPLE_BASE_COST = 12;
 
 // Beats inside each scene, in milliseconds from the scene's start.
 const TYPE_START = 350;
 const TYPE_PER_CHAR = 26;
 const BRIEF_CURSOR = 3000;
 const BRIEF_CLICK = 3800;
-const IDEA_PICK = 2200;
+const IDEA_PICK = 6200;
+const IDEA_SCROLL_START = 700;
+const IDEA_SCROLL_MS = 5000;
+/** Ideas the evidence gate left out of the example, for the count above the card. */
+const IDEAS_LEFT_OUT = 4;
 const DESIGN_CURSOR = 1500;
 const DESIGN_CLICK = 2400;
 const DESIGN_FOCUS = 3000;
@@ -83,11 +85,11 @@ type Beat =
   | { kind: "scene"; scene: Scene; ms: number }
   | { kind: "work"; work: Work; ms: number };
 
-/** The choreography: one drop, brief to paused campaign, about 22 seconds. */
+/** The choreography: one drop, brief to paused campaign, about 26 seconds. */
 const SEQUENCE: readonly Beat[] = [
   { kind: "scene", ms: 4500, scene: "brief" },
   { kind: "work", ms: 1100, work: "research" },
-  { kind: "scene", ms: 3300, scene: "trends" },
+  { kind: "scene", ms: 7500, scene: "trends" },
   { kind: "work", ms: 1100, work: "designs" },
   { kind: "scene", ms: 4300, scene: "designs" },
   { kind: "work", ms: 1100, work: "products" },
@@ -122,13 +124,11 @@ const TITLE_OF = {
   trends: "trends.title",
 } as const satisfies Record<Stage, string>;
 
-/** The dashboard's own rail, in its order; "newDrop" is where the demo runs. */
+/** The dashboard's own rail, in its order; a new drop is a page of "drops". */
 const NAV = [
-  { icon: LayoutGrid, key: "overview" },
-  { icon: Plus, key: "newDrop" },
-  { icon: History, key: "runs" },
-  { icon: PlugZap, key: "connections" },
-  { icon: ChartLine, key: "insights" },
+  { icon: House, key: "home" },
+  { icon: Layers, key: "drops" },
+  { icon: Settings, key: "settings" },
 ] as const;
 
 const DESIGNS = [
@@ -284,80 +284,119 @@ const BriefScene = ({
 };
 
 interface IdeaCopy {
-  theme: string;
-  moment: string;
+  title: string;
+  concept: string;
+  buyer: string;
+  style: string;
+  tag: string;
+  sentence: string;
+  gender: string;
+  interests: string[];
+  places: string[];
+  gap: string;
+  sources: string[];
 }
 
-/** The example ideas' signals, in the order of the copy's ideas. */
-const IDEA_SIGNALS = [
-  { affinity: 0.82, listings: 38, news: 14, score: 8.4 },
-  { affinity: 0.74, listings: 21, news: 9, score: 7.1 },
-  { affinity: 0.69, listings: 64, news: 11, score: 6.6 },
-] as const;
+const ok = <T,>(value: T) => ({ status: "ok", value }) as const;
 
+/** The example idea, as the app's own idea card reads it. */
+const exampleCard = (copy: IdeaCopy): IdeaCard => ({
+  audience: ok({
+    ages: ["25-34", "35-44"],
+    agesScope: "idea",
+    alsoLikes: [],
+    gender: copy.gender,
+    interests: copy.interests,
+    places: copy.places.map((name) => ({ affinity: 0.8, name })),
+    scope: "idea",
+  }),
+  competition: ok({
+    advertisers: 7,
+    citations: [],
+    gaps: [copy.gap],
+    level: "sweet-spot",
+    listings: 12,
+    medianPrice: 28,
+    sampled: 60,
+  }),
+  make: ok({
+    brief: copy.concept,
+    buyer: copy.buyer,
+    concept: copy.concept,
+    products: ["t-shirt"],
+    style: copy.style,
+    title: copy.title,
+  }),
+  origin: "trends",
+  why: ok({
+    affinity: 0.82,
+    citations: copy.sources.map((title) => ({
+      title,
+      url: "https://example.com/",
+    })),
+    demand: ok({
+      ads: ok({
+        advertisers: 7,
+        evergreen: 2,
+        longestDays: 41,
+        samples: [],
+        validated: 5,
+      }),
+      market: ok({ bestsellers: 6, listings: [], reviews: 312 }),
+      proven: true,
+    }),
+    qloo: { affinity: 0.82, entities: [] },
+    qlooTag: { name: copy.tag },
+    sentence: copy.sentence,
+    trend: { news: 14 },
+  }),
+});
+
+/**
+ * The idea step: the app's one idea card, read top to bottom as it scrolls,
+ * under the count of ideas the evidence gate left out. Then the designer
+ * picks it.
+ */
 const TrendsScene = ({ elapsed }: { elapsed: number }) => {
   const t = useTranslations("Home");
-  const wizard = useTranslations("Wizard.trends");
-  const format = useFormatter();
-  const ideas = (t.raw("demo.ideas") as IdeaCopy[]).map((copy, index) => ({
-    ...copy,
-    ...(IDEA_SIGNALS[index] ?? IDEA_SIGNALS[0]),
-  }));
-  const decimal = (value: number) =>
-    format.number(value, {
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 1,
-    });
+  const card = useTranslations("IdeaCard");
+  const box = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState(0);
+  useLayoutEffect(() => {
+    if (box.current && inner.current) {
+      setOverflow(
+        Math.max(0, inner.current.offsetHeight - box.current.clientHeight)
+      );
+    }
+  }, []);
+  const read = Math.min(
+    1,
+    Math.max(0, (elapsed - IDEA_SCROLL_START) / IDEA_SCROLL_MS)
+  );
+  const picked = elapsed >= IDEA_PICK;
   return (
-    <ul className="grid gap-3 sm:grid-cols-3">
-      {ideas.map((idea, index) => (
-        <motion.li
-          className={cn(index === 2 && "max-sm:hidden")}
-          key={idea.theme}
-          {...enter(index * 0.12)}
+    <motion.div className="flex h-full flex-col gap-2" {...enter()}>
+      <p className="text-muted-foreground text-xs">
+        {card("droppedCount", { count: IDEAS_LEFT_OUT })}
+      </p>
+      <div className="min-h-0 flex-1 overflow-hidden" ref={box}>
+        <div
+          className="transition-transform duration-100 ease-linear"
+          ref={inner}
+          style={{ transform: `translateY(${-overflow * read}px)` }}
         >
-          <Card
-            className={cn(
-              "h-full gap-2.5 p-3.5 transition-shadow",
-              index === 0 && elapsed >= IDEA_PICK && "ring-primary ring-2"
-            )}
-          >
-            <div className="flex items-start gap-2.5">
-              <Checkbox
-                checked={index === 0 && elapsed >= IDEA_PICK}
-                className="mt-0.5"
-                tabIndex={-1}
-              />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <p className="text-sm leading-tight font-semibold">
-                  {idea.theme}
-                </p>
-                <p className="text-muted-foreground figures text-xs font-medium">
-                  {wizard("score", { score: decimal(idea.score) })}
-                </p>
-              </div>
-            </div>
-            <p className="text-xs leading-snug">{idea.moment}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                `${wizard("affinity")} ${decimal(idea.affinity)}`,
-                `${wizard("news")} ${format.number(idea.news)}`,
-                `${wizard("listings")} ${format.number(idea.listings)}`,
-              ].map((chip, chipIndex) => (
-                <motion.span
-                  key={chip}
-                  {...enter(0.35 + index * 0.12 + chipIndex * 0.08)}
-                >
-                  <Badge className="figures font-medium" variant="secondary">
-                    {chip}
-                  </Badge>
-                </motion.span>
-              ))}
-            </div>
+          <Card className={cn("p-4", picked && "ring-primary ring-2")}>
+            <IdeaCardView
+              card={exampleCard(t.raw("demo.idea") as IdeaCopy)}
+              lead={
+                <Checkbox checked={picked} className="mt-0.5" tabIndex={-1} />
+              }
+            />
           </Card>
-        </motion.li>
-      ))}
-    </ul>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -477,14 +516,19 @@ const DesignsScene = ({
   );
 };
 
-const LaunchScene = ({ elapsed }: { elapsed: number }) => {
+const LaunchScene = ({
+  elapsed,
+  tag,
+}: {
+  elapsed: number;
+  tag: PriceBreakdown;
+}) => {
   const t = useTranslations("Home");
   const home = useTranslations("Home");
   const wizard = useTranslations("Wizard");
   const format = useFormatter();
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
-  const tag = priceBreakdown(EXAMPLE_BASE_COST);
   const withTag = elapsed < TAG_OUT;
   const withAd = elapsed >= AD_IN;
   const working = !withTag && !withAd;
@@ -629,10 +673,12 @@ const cursorPhase = (beat: Beat, elapsed: number) => {
 const SceneView = ({
   beat,
   elapsed,
+  tag,
   target,
 }: {
   beat: Beat;
   elapsed: number;
+  tag: PriceBreakdown;
   target: RefObject<HTMLButtonElement | null>;
 }) => {
   if (beat.kind === "work") {
@@ -647,7 +693,7 @@ const SceneView = ({
   if (beat.scene === "designs") {
     return <DesignsScene elapsed={elapsed} target={target} />;
   }
-  return <LaunchScene elapsed={elapsed} />;
+  return <LaunchScene elapsed={elapsed} tag={tag} />;
 };
 
 /** The tape's passage and whether the run is done, at this point of the loop. */
@@ -694,7 +740,17 @@ const useHoverFocus = (ref: RefObject<HTMLElement | null>) => {
  * finished frame, still, to visitors who ask for reduced motion. The picture
  * is hidden from assistive tech; the caption carries the same story in words.
  */
-export const HeroDemo = ({ className }: { className?: string }) => {
+/**
+ * `tag` is a typical tee's price, worked out on the server from the pricing
+ * rules (src/lib/pricing.ts).
+ */
+export const HeroDemo = ({
+  className,
+  tag,
+}: {
+  className?: string;
+  tag: PriceBreakdown;
+}) => {
   const t = useTranslations("Home");
   const wizard = useTranslations("Wizard");
   const shell = useTranslations("Shell.nav");
@@ -753,7 +809,7 @@ export const HeroDemo = ({ className }: { className?: string }) => {
                 <li
                   className={cn(
                     "flex h-9 items-center justify-center gap-2.5 rounded-md lg:justify-start lg:px-2.5",
-                    item === "newDrop"
+                    item === "drops"
                       ? "bg-sidebar-accent font-medium"
                       : "opacity-70"
                   )}
@@ -762,7 +818,7 @@ export const HeroDemo = ({ className }: { className?: string }) => {
                   <Icon
                     className={cn(
                       "size-4 shrink-0",
-                      item === "newDrop" && "text-sidebar-primary"
+                      item === "drops" && "text-sidebar-primary"
                     )}
                   />
                   <span className="hidden truncate lg:inline">
@@ -779,7 +835,7 @@ export const HeroDemo = ({ className }: { className?: string }) => {
               <span className="sm:hidden">
                 <ShuttleMark label={null} size={20} />
               </span>
-              <span className="text-muted-foreground">{shell("newDrop")}</span>
+              <span className="text-muted-foreground">{shell("drops")}</span>
               <ChevronRight className="text-muted-foreground size-3.5 rtl:rotate-180" />
               <span className="truncate font-medium">{stages(tapeStage)}</span>
               <span className="ms-auto flex items-center gap-2">
@@ -813,7 +869,12 @@ export const HeroDemo = ({ className }: { className?: string }) => {
                     initial={{ opacity: 0 }}
                     key={`${clock.index}-${key}`}
                   >
-                    <SceneView beat={beat} elapsed={elapsed} target={target} />
+                    <SceneView
+                      beat={beat}
+                      elapsed={elapsed}
+                      tag={tag}
+                      target={target}
+                    />
                   </motion.div>
                 </AnimatePresence>
               </div>

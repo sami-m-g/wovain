@@ -11,7 +11,18 @@
       "outputs": ["dist/**", ".vendor-types/**"]
     },
     "test": {
+      "dependsOn": ["transit"],
       "outputs": ["junit.xml"]
+    },
+    "build-storybook": {
+      "dependsOn": ["transit"],
+      "outputs": ["storybook-static/**"]
+    },
+    "test-storybook": {
+      "dependsOn": ["transit"]
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
     },
     "dev": {
       "cache": false,
@@ -43,26 +54,113 @@
   "globalEnv": [
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
+    "BILLING_CATALOG",
     "CI",
     "DATABASE_URL",
+    "DOCS_CHAT_MAX_OUTPUT_TOKENS",
+    "DOCS_CHAT_MODEL",
+    "DOCS_CHAT_REASONING_EFFORT",
+    "DOCS_URL",
     "EMAIL_FROM",
+    "FAL_ART_MODELS",
+    "FAL_IMAGE_MODEL",
+    "FAL_KEY",
+    "FAL_MCP_URL",
+    "FOURTHWALL_DEFAULT_PRODUCT_ID",
+    "FOURTHWALL_MCP_URL",
+    "GUARDRAIL_INJECTION_THRESHOLD",
+    "GUARDRAIL_MODERATION_THRESHOLD",
+    "GUARDRAIL_PII_THRESHOLD",
+    "MCP_URL",
+    "MCP_WIDGET_RESOURCE_DOMAINS",
     "META_APP_ID",
     "META_APP_SECRET",
+    "META_GRAPH_URL",
+    "META_MCP_SCOPE",
+    "META_MCP_URL",
     "NEBIUS_API_KEY",
     "NEBIUS_BASE_URL",
-    "NEBIUS_MODEL",
+    "NEMOTRON_INPUT_PRICE",
+    "NEMOTRON_MODEL",
+    "NEMOTRON_OUTPUT_PRICE",
+    "NEMOTRON_VISION_MODEL",
     "NODE_ENV",
     "POLAR_ACCESS_TOKEN",
     "POLAR_ENVIRONMENT",
     "POLAR_WEBHOOK_SECRET",
     "POSTHOG_HOST",
     "POSTHOG_KEY",
+    "PRICING_RULES",
+    "PRIVACY_EMAIL",
     "QLOO_API_KEY",
     "QLOO_API_URL",
     "RESEND_API_KEY",
+    "SUPPORT_EMAIL",
     "TAVILY_API_KEY",
+    "TAVILY_RESEARCH_MODEL",
     "TOKEN_ENCRYPTION_KEY",
+    "VOICE_STT_FALLBACK_MODEL",
+    "VOICE_STT_MODEL",
     "_VARLOCK_ENV_KEY"
   ],
-  "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"]
+  "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"],
+  "boundaries": {
+    "tags": {
+      "config": {
+        "dependencies": {
+          "allow": []
+        }
+      },
+      "domain": {
+        "dependencies": {
+          "allow": ["config"]
+        }
+      },
+      "data": {
+        "dependencies": {
+          "allow": ["config", "domain", "data"]
+        }
+      },
+      "orchestration": {
+        "dependencies": {
+          "allow": ["config", "domain", "data"]
+        }
+      },
+      "routing": {
+        "dependencies": {
+          "allow": [
+            "config",
+            "domain",
+            "data",
+            "orchestration",
+            "ui",
+            "widgets"
+          ]
+        }
+      },
+      "ui": {
+        "dependencies": {
+          "allow": ["config"]
+        }
+      },
+      "widgets": {
+        "dependencies": {
+          "allow": ["config", "ui"]
+        }
+      },
+      "app": {
+        "dependencies": {
+          "allow": [
+            "config",
+            "domain",
+            "data",
+            "orchestration",
+            "routing",
+            "ui",
+            "widgets"
+          ]
+        }
+      }
+    }
+  }
 }

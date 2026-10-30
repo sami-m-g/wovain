@@ -3,7 +3,7 @@ title: Qloo
 description: Qloo's taste graph decides which themes are worth designing.
 ---
 
-Qloo is the first step of the flow, not an add-on. Without it wovain only knows what is in the news; with it, wovain knows **which themes the seed's fans love**.
+Qloo is the first step of the flow, not an add-on. Every idea is a Qloo taste tag: **no Qloo, no run**. Qloo says **which themes the seed's fans love**, and Tavily adds the evidence for each one.
 
 ## Taste times moment
 
@@ -16,14 +16,29 @@ Qloo is the first step of the flow, not an add-on. Without it wovain only knows 
 
 Implemented in `packages/core/src/qloo.ts` (`createQloo`):
 
-1. **Search** (`/search`) resolves the seed into Qloo entities.
-2. **Insights** (`/v2/insights`) return the cross-domain taste tags of those entities. These are the themes for designs.
+1. **Search** (`/search`, `tasteOf`) resolves the brief to up to 3 seed entities.
+2. **Tag insights** (`/v2/insights`, `filter.type=urn:tag`) return the taste tags the seed's fans share. These are the themes for designs.
+3. **Cross-domain insights** (`/v2/insights` for brands, films and TV, with `feature.explainability`) return what the seed's fans also like, with each seed entity's share. In every run.
+4. **Demographics** (`demographicsOf`, `urn:demographics`) and **audiences** (`audienceAffinity`) score who likes the brand's Qloo entities.
+5. **Search** (`search`, `searchEntities`) resolves the taste references a designer names in brand onboarding.
+6. **Rising brands** (`/v2/insights` with `bias.trends=high`) feed autopilot's scan (`packages/core/src/autopilot-signals.ts`).
 
-## How it changes the product
+## What Qloo decides
 
-- **Ideas.** Tavily searches the past week's news and marketplaces only inside Qloo's themes (`packages/core/src/trends.ts`).
-- **Scoring.** Code ranks each idea (`packages/core/src/score.ts`) and saves the inputs behind the score with the idea. Nemotron writes the name and angle.
+- **Ideas.** Each idea is one of Qloo's tags, up to 3 per run (`qlooThemes` in `packages/core/src/themes.ts`). The tag's name is the idea's title. Fewer than 3 tags means fewer ideas, never made-up ones.
+- **Evidence.** Tavily searches the past month's news and marketplaces only inside Qloo's themes (`packages/core/src/trends.ts`). Tavily never names a theme.
+- **Scoring.** The tag's affinity is the demand term, 30% of the idea's score (`packages/core/src/score.ts`). A tag with no affinity is never searched or suggested; no neutral value stands in for it. The feedback loop re-weights the score terms from sales. It doesn't choose the themes.
 - **IP safety.** The names Qloo matched for the seed (brands, artists, titles) are saved on the idea as names never to print.
+- **Design.** The style and mood tags of the cross-domain affinities go into the design brief as cues, never their names (`packages/core/src/design.ts`). The Qloo tags of a run's ideas pick a drop's style family (`packages/mastra/src/mastra/flow/drops.ts`).
+- **Ads.** Qloo's ages, gender and audiences set the Meta ad set and the ad writer's persona (`packages/core/src/targeting.ts`). Without a Qloo audience no campaign is staged (`QLOO_AUDIENCE_MISSING`).
+
+## When Qloo can't help
+
+- **No match.** When Qloo matches nothing in the brief, the run stops with `QLOO_NO_MATCH` (422): "Qloo found no audience for this brief; try naming a band, film, brand or place". The wizard shows suggestions with examples and a **Write a new brief** button.
+- **Failure.** A failed Qloo call fails the research step with `QLOO_FAILED`. The step retries, then the run fails and is logged at error level to PostHog. wovain never falls back to ideas without Qloo.
+- **Kill switch.** `trends-qloo` is an ops kill switch only. When it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503).
+
+The comparison with an LLM-only run is an offline eval only: `packages/mastra/src/mastra/evals/qloo-ablation.eval.ts`, with its eval-only LLM arm in `packages/mastra/src/mastra/evals/llm-themes.ts`. Run it with `pnpm --filter @wovain/mastra run evals`.
 
 ## Configuration
 

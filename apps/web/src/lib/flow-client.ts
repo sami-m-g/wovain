@@ -16,12 +16,45 @@ export type Connection = Outputs["connections"]["list"][number];
 export type Run = Outputs["runs"]["list"][number];
 export type RunDetail = Outputs["runs"]["get"];
 export type Idea = RunDetail["ideas"][number];
+
+/**
+ * An idea's checked title and concept (the run's naming step), or undefined
+ * while it is being named or when its words failed: such an idea is not
+ * shown, so no card reads as a raw Qloo tag.
+ */
+export const namedWords = (idea: Idea) => {
+  const { words } = idea.research;
+  return words?.status === "ok" ? words : undefined;
+};
+export type IdeaDossierRecord = NonNullable<Outputs["ideas"]["dossier"]>;
 export type Design = Outputs["designs"]["get"];
 export type Product = Outputs["products"]["create"];
 export type Campaign = Outputs["campaigns"]["create"];
 export type BillingStatus = Outputs["billing"]["status"];
 export type Insights = Outputs["insights"]["overview"];
 export type InsightRange = Insights["range"]["key"];
+export type ModelTrace = Outputs["models"]["trace"];
+type OnboardingStatus = Outputs["onboarding"]["status"];
+export type OnboardingReady = Extract<OnboardingStatus, { enabled: true }>;
+export type ProviderHealth = OnboardingReady["connections"][number];
+export type ResolvedReference =
+  Outputs["onboarding"]["resolveReferences"][number];
+export type Discovery = Outputs["onboarding"]["discover"];
+export type StarterCard = Discovery["cards"][number];
+export type CardPalette = StarterCard["palettes"][number];
+export type TasteMatch = Outputs["onboarding"]["searchTaste"][number];
+export type Learned = Outputs["feedback"]["learned"];
+export type StoreProduct = Outputs["store"]["products"][number];
+export type StoreListingDraft = Outputs["store"]["draftListing"];
+export type StoreReadiness = Outputs["store"]["readiness"];
+export type StoreSetup = Outputs["store"]["setup"];
+/** One step of Store setup, with its status: for the onboarding checklist. */
+export type StoreSetupStep = StoreSetup["steps"][number];
+export type MetaSetup = Outputs["store"]["metaSetup"];
+/** One Meta setup card, for the onboarding shell to mount. */
+export type MetaSetupStep = MetaSetup["steps"][number];
+export type StoreOrder = Outputs["store"]["orders"][number];
+export type StoreApproval = Outputs["approvals"]["list"][number];
 
 export const PROVIDERS = [
   "fourthwall",
@@ -56,6 +89,8 @@ const VARIABLE = /\b(?<name>[A-Z][A-Z0-9_]{2,})\b/u;
 const SERVICE_CODE =
   /^(?<service>[A-Z]+)_(?<kind>NOT_CONFIGURED|NOT_CONNECTED|RECONNECT_NEEDED)$/u;
 
+const FULL_STOP = /\.$/u;
+
 const text = (value: unknown) =>
   typeof value === "string" ? { fix: value } : {};
 const count = (key: "available" | "needed", value: unknown) =>
@@ -72,8 +107,20 @@ const refusal = (
     available?: unknown;
     fix?: unknown;
     needed?: unknown;
+    why?: unknown;
   };
   switch (String(error.code)) {
+    // A step whose input isn't ready (Fourthwall's catalog had too few
+    // blanks for a capsule): the server words why and what to do.
+    case "PRECONDITION_FAILED": {
+      const why =
+        typeof data.why === "string" ? data.why.replace(FULL_STOP, "") : "";
+      return {
+        kind: "limit",
+        message: why === "" ? error.message : `${error.message}. ${why}`,
+        ...text(data.fix),
+      };
+    }
     case "OUT_OF_CREDITS": {
       return {
         kind: "credits",
@@ -91,6 +138,11 @@ const refusal = (
       return { kind: "plan", message: error.message, ...text(data.fix) };
     }
     case "EMAIL_NOT_VERIFIED": {
+      return { kind: "limit", message: error.message, ...text(data.fix) };
+    }
+    // No Qloo audience, no campaign: the fix says whether to retry or to add
+    // a brand Qloo knows; the campaign button stays the retry.
+    case "QLOO_AUDIENCE_MISSING": {
       return { kind: "limit", message: error.message, ...text(data.fix) };
     }
     default: {
@@ -130,11 +182,34 @@ export const describeProblem = (error: unknown): FlowProblem => {
   };
 };
 
+/**
+ * The provider an error says isn't connected (or whose sign-in expired), if
+ * that's all it says. Not an error: the screen shows the connect state.
+ */
+export const missingConnection = (
+  error: unknown
+): { provider: Provider; reconnect: boolean } | undefined => {
+  if (error === null || error === undefined) {
+    return undefined;
+  }
+  const problem = describeProblem(error);
+  if (problem.kind !== "not_connected") {
+    return undefined;
+  }
+  const provider = PROVIDERS.find((each) => each === problem.service);
+  return provider === undefined
+    ? undefined
+    : { provider, reconnect: problem.reconnect === true };
+};
+
 /** Why a run stopped, in terms a step can explain without server detail. */
 export type RunFailure =
   // reconnect: the grant expired and couldn't be refreshed.
   | { reason: "not_connected"; service: Provider; reconnect?: boolean }
   | { reason: "no_ideas" }
+  // Qloo matched nothing in the brief (QLOO_NO_MATCH): a new brief that
+  // names something Qloo knows, not a retry, is the fix.
+  | { reason: "qloo_no_match" }
   | { reason: "rejected" }
   | { reason: "other"; message: string };
 
@@ -151,6 +226,7 @@ const reconnectFor = (message: string): Provider | undefined => {
   return PROVIDERS.find((provider) => provider === service);
 };
 const NO_IDEAS = /found no ideas/iu;
+const QLOO_NO_MATCH = /\bqloo_no_match\b|qloo found no audience/iu;
 const AUTOPILOT_REJECTED = /autopilot rejected/iu;
 
 /**
@@ -172,6 +248,9 @@ export const describeRunFailure = (run: {
   const service = (found?.service ?? found?.named)?.toLowerCase();
   if (service === "fal" || service === "fourthwall" || service === "meta") {
     return { reason: "not_connected", service };
+  }
+  if (QLOO_NO_MATCH.test(message)) {
+    return { reason: "qloo_no_match" };
   }
   if (NO_IDEAS.test(message)) {
     return { reason: "no_ideas" };

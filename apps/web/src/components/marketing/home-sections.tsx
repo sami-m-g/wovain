@@ -1,4 +1,4 @@
-import { PLANS } from "@wovain/billing/plans";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { BlurFade } from "@wovain/ui/components/blur-fade";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
@@ -22,7 +22,7 @@ import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { priceBreakdown } from "@/lib/pricing";
+import { exampleTee } from "@/lib/pricing";
 
 /** A page on the docs site, in the visitor's language (English has no prefix). */
 const docsHref = async (path: string) => {
@@ -31,8 +31,6 @@ const docsHref = async (path: string) => {
   return new URL(`${prefix}/docs/${path}`, ENV.DOCS_URL).toString();
 };
 
-/** A typical tee's base cost (core's DEFAULT_BASE_COST). */
-const EXAMPLE_BASE_COST = 12;
 const SIZES = ["S", "M", "L", "XL"] as const;
 const PICKED_SIZE = "M";
 const REVEAL_STAGGER = 0.12;
@@ -90,7 +88,7 @@ export const Results = async () => {
   const format = await getFormatter();
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
-  const tag = priceBreakdown(EXAMPLE_BASE_COST);
+  const tag = exampleTee();
   return (
     <section
       aria-labelledby="results-title"
@@ -164,7 +162,7 @@ export const Results = async () => {
             index={2}
             label={t("results.insights")}
           >
-            <ExampleInsights />
+            <ExampleInsights tee={tag} />
           </Result>
         </div>
       </div>
@@ -238,7 +236,9 @@ export const FreeToStart = async () => {
       >
         <SectionHead
           id="free"
-          lead={t("free.body", { credits: PLANS.free.monthlyCredits })}
+          lead={t("free.body", {
+            credits: billingCatalog().plans.free.monthlyCredits,
+          })}
           title={t("free.title")}
         />
         <Link
@@ -269,6 +269,67 @@ export const HomeFaq = async ({ items }: { items: Faq[] }) => {
       more={{ href: await docsHref("faq"), label: t("faqSection.more") }}
       title={t("faqSection.title")}
     />
+  );
+};
+
+const HOW_STEPS = [
+  "sell",
+  "store",
+  "meta",
+  "design",
+  "ads",
+  "campaign",
+] as const;
+
+/** The one guided flow: sign-in to a running campaign in about 10 minutes. */
+export const HowItWorks = async () => {
+  const t = await getTranslations("Home");
+  const guide = await docsHref("getting-started");
+  return (
+    <section
+      aria-labelledby="how-it-works-title"
+      className="scroll-mt-20 py-16 sm:py-20"
+      id="how-it-works"
+    >
+      <div className={cn(container, "flex flex-col gap-10")}>
+        <SectionHead
+          id="how-it-works"
+          lead={t("how.lead")}
+          title={t("how.title")}
+        >
+          <a
+            className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+            href={guide}
+          >
+            {t("how.guide")}
+            <ArrowRight
+              aria-hidden="true"
+              className="size-3.5 rtl:rotate-180"
+            />
+          </a>
+        </SectionHead>
+        <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {HOW_STEPS.map((step, index) => (
+            <li className="flex gap-4" key={step}>
+              <span
+                aria-hidden="true"
+                className="font-display figures bg-muted flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+              >
+                {index + 1}
+              </span>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-display text-base font-semibold">
+                  {t(`how.steps.${step}.title`)}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {t(`how.steps.${step}.body`)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 };
 

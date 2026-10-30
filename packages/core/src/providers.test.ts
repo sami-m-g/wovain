@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { stagePausedCampaign } from "./ads";
-import { createArtist, TEXT_TO_IMAGE } from "./fal";
+import { createArtist } from "./fal";
 import {
   createProduct,
-  DEFAULT_CATALOG_PRODUCT_ID,
   pickBlank,
   publishProduct,
   searchCatalog,
@@ -217,6 +216,7 @@ describe("Meta", () => {
       linkUrl: "https://shop.example.com/products/reading-cat",
       name: "wovain · Reading Cat",
       tag: "w-test",
+      targeting: { geo_locations: { countries: ["US"] } },
     });
 
     expect(staged).toEqual({
@@ -225,6 +225,14 @@ describe("Meta", () => {
       adSetId: "as_1",
       campaignId: "c_1",
       creativeIds: ["cr_1", "cr_1"],
+      designs: [
+        {
+          adIds: ["ad_1", "ad_1"],
+          adSetId: "as_1",
+          creativeIds: ["cr_1", "cr_1"],
+          key: "w-test",
+        },
+      ],
       pageId: "p_1",
     });
     const tools = calls.map((item) => item.tool);
@@ -239,6 +247,52 @@ describe("Meta", () => {
     ).toMatchObject({
       ad_account_id: "222",
       campaign_daily_budget: 1500,
+    });
+    const adSet = calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(JSON.parse(String(adSet?.args["targeting"]))).toEqual({
+      geo_locations: { countries: ["US"] },
+    });
+  });
+
+  it("targets the ad set with Qloo's audience, the plan's countries kept", async () => {
+    const { call, calls } = fakeServer({
+      ads_create_ad: { ad_id: "ad_1" },
+      ads_create_ad_set: { ad_set_id: "as_1" },
+      ads_create_campaign: { campaign_id: "c_1" },
+      ads_create_creative: { creative_id: "cr_1" },
+    });
+
+    await stagePausedCampaign(call, {
+      adAccountId: "222",
+      copy: [{ angle: "humor", headline: "h", message: "m" }],
+      countries: ["US", "CA"],
+      dailyBudgetCents: 1500,
+      imageUrl: "https://cdn.fourthwall.com/mock.png",
+      linkUrl: "https://shop.example.com/products/reading-cat",
+      name: "wovain · Reading Cat",
+      pageId: "p_1",
+      tag: "w-test",
+      targeting: {
+        age_max: 34,
+        age_min: 25,
+        flexible_spec: [
+          { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+        ],
+        genders: [1],
+        geo_locations: { countries: ["GB"] },
+      },
+    });
+
+    const adSet = calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(adSet?.args["ad_set_name"]).toContain("qloo");
+    expect(JSON.parse(String(adSet?.args["targeting"]))).toEqual({
+      age_max: 34,
+      age_min: 25,
+      flexible_spec: [
+        { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+      ],
+      genders: [1],
+      geo_locations: { countries: ["US", "CA"] },
     });
   });
 });
@@ -268,8 +322,11 @@ describe("fal", () => {
       },
       submit_job: { request_id: "req_1" },
     });
-    const artist = createArtist(call, async () => {
-      await Promise.resolve();
+    const artist = createArtist(call, {
+      model: "test/text-to-image",
+      wait: async () => {
+        await Promise.resolve();
+      },
     });
 
     const requestId = await artist.submit(brief);
@@ -282,7 +339,7 @@ describe("fal", () => {
       width: 2880,
     });
     expect(calls.filter((item) => item.tool === "submit_job")).toHaveLength(1);
-    expect(calls[0]?.args).toMatchObject({ endpoint_id: TEXT_TO_IMAGE });
+    expect(calls[0]?.args).toMatchObject({ endpoint_id: "test/text-to-image" });
   });
 });
 
@@ -297,6 +354,7 @@ const sequence = (replies: unknown[]) => {
 };
 
 describe("pickBlank", () => {
+  const DEFAULT_PRODUCT_ID = "pro_default";
   const tee = {
     id: "prd_tee",
     name: "Tee",
@@ -312,22 +370,32 @@ describe("pickBlank", () => {
 
   it("retries an empty reply", async () => {
     const { call, calls } = sequence([empty, { data: [tee] }]);
-    const blank = await pickBlank(call, { retryMs: 0 });
+    const blank = await pickBlank(call, {
+      defaultProductId: DEFAULT_PRODUCT_ID,
+      retryMs: 0,
+    });
     expect(blank.id).toBe("prd_tee");
     expect(calls).toHaveLength(2);
   });
 
   it("falls back to the default blank when the search stays empty", async () => {
     const { call, calls } = sequence([empty, empty, empty, { data: [tee] }]);
-    const blank = await pickBlank(call, { retryMs: 0 });
+    const blank = await pickBlank(call, {
+      defaultProductId: DEFAULT_PRODUCT_ID,
+      retryMs: 0,
+    });
     expect(blank.id).toBe("prd_tee");
-    expect(calls.at(-1)?.productIds).toEqual([DEFAULT_CATALOG_PRODUCT_ID]);
+    expect(calls.at(-1)?.productIds).toEqual([DEFAULT_PRODUCT_ID]);
   });
 
   it("names what Fourthwall answered when nothing can print", async () => {
     const { call } = sequence(["no.", "no.", "no."]);
     await expect(
-      pickBlank(call, { productId: "prd_x", retryMs: 0 })
+      pickBlank(call, {
+        defaultProductId: DEFAULT_PRODUCT_ID,
+        productId: "prd_x",
+        retryMs: 0,
+      })
     ).rejects.toMatchObject({
       code: "FOURTHWALL_NO_BLANK",
       message: "That Fourthwall product can't print this design",

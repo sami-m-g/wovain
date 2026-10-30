@@ -1,0 +1,56 @@
+---
+title: Dépenser en sécurité
+description: Comment wovain met en pause les publicités qui ne vendent pas, arrête la dépense à vos limites et vous demande avant d'augmenter un gagnant.
+icon: ShieldCheck
+---
+
+Chaque campagne démarre **en pause**. Quand vous l'approuvez, wovain vérifie d'abord que les règles ci-dessous sont en place, ici et dans Meta, et refuse de la lancer sinon. Puis il la lance et la surveille pour vous. Sur le site de prévisualisation, il vérifie vos publicités toutes les 30 minutes. Il agit sur les ventes et le bénéfice, pas seulement sur les mentions J'aime ou les clics.
+
+Vous trouverez ces règles sur chaque campagne, sous **Comment wovain protège votre budget publicitaire**.
+
+## Quand wovain met une publicité en pause
+
+Votre seuil de rentabilité vient du bénéfice d'une vente : le prix, moins le vêtement de base, moins les frais. wovain met une publicité en pause de lui-même quand elle :
+
+- dépense le bénéfice d'une vente sans aucune vente ni aucun ajout au panier ;
+- dépense le bénéfice de deux ventes avec des ajouts au panier mais sans vente ;
+- obtient moins de 0,8 % de clics après 1 000 vues ;
+- coûte plus de 1,50 $ par clic après 10 clics.
+
+Quand une vente du produit ne laisse aucun bénéfice, ou que toutes les publicités d'une campagne sont en pause, wovain met toute la campagne en pause.
+
+Dès que vos publicités ont apporté 10 ventes, wovain sait aussi ce qu'une vente vous coûte vraiment. Si c'est moins que le bénéfice d'une vente, il utilise votre coût réel par vente : une publicité qui reste loin derrière vos résultats habituels est mise en pause plus tôt. Il n'attend jamais plus que le bénéfice d'une vente.
+
+## Comment wovain apprend ce qui se vend pour vous
+
+Chaque design publié apprend quelque chose à wovain : son thème, ses tags Qloo, son audience, sa palette, son prix et son article de base, face à ce qu'il a rapporté après la publicité. Une seule vente pèse peu ; un angle compte quand plusieurs designs vont dans le même sens. Quand un drop est lancé en test, les designs dont les angles ont déjà vendu reçoivent une plus grande part du budget minimum, et chaque design garde la sienne. **Insights > Ce que nous avons appris** montre les angles qui se vendent pour vous, par exemple "vos 2 derniers drops cottagecore ont rapporté 84 $".
+
+## Quand wovain arrête toute dépense
+
+wovain met toutes les campagnes en pause quand :
+
+- la dépense publicitaire du jour atteint votre plafond quotidien ;
+- la dépense publicitaire du mois atteint votre plafond mensuel ;
+- votre dépense publicitaire, moins le bénéfice des ventes qu'elle a apportées, atteint votre **limite de perte**. Elle est de 50 $ sauf si vous la modifiez.
+
+Réglez votre limite de perte sur n'importe quelle carte de campagne et choisissez **Enregistrer**. Les pauses sont immédiates, à tous les niveaux de pilote automatique, car attendre coûte de l'argent. Vous recevez une alerte à chaque fois, par e-mail, sur votre téléphone ou sur Telegram ([Alertes](/fr/docs/alerts)).
+
+## Quand wovain augmente un gagnant
+
+wovain demande à augmenter le budget d'une campagne seulement quand tout ceci est vrai :
+
+- Meta a terminé son apprentissage ;
+- la campagne compte au moins 3 ventes ;
+- elle rapporte au moins 1,3 fois ce qu'il lui faut pour être rentable.
+
+Une augmentation est de 20 % au plus, une fois toutes les 48 heures, et jamais au-dessus de votre plafond quotidien. Elle attend votre accord.
+
+## Si wovain est indisponible
+
+wovain copie aussi ces règles dans votre compte publicitaire sous forme de **Règles automatisées** Meta, pour que Meta mette les dépenses en pause de lui-même si wovain ne le peut pas. Vous les trouverez dans le Gestionnaire de publicités, sous **Règles automatisées**, nommées `wovain backstop`. Elles sont un peu plus souples que les règles de wovain, pour que wovain agisse en premier :
+
+- une publicité se met en pause à 1,2 fois les limites sans vente ci-dessus ;
+- une campagne se met en pause quand ses propres dépenses dépassent votre plafond quotidien ou mensuel ;
+- une campagne sans vente se met en pause quand ses dépenses dépassent votre limite de perte.
+
+wovain les met à jour quand vous changez un plafond ou votre limite de perte, et les supprime quand une campagne se termine. Vos propres règles ne sont jamais modifiées.

@@ -1,0 +1,34 @@
+# Known vulnerabilities in the lockfiles (OSV database), with Google's
+# reusable workflow. It needs the permissions below on the calling job.
+# Every event scans the lockfiles in full, so a pull request fails on any
+# known vulnerability, not only on one it adds; its check, `osv / osv-scan`,
+# is required on main (infra/github.ts). Vulnerabilities fixed in the
+# repository are the [[IgnoredVulns]] in osv-scanner.toml.
+name: osv
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Daily, 05:41 UTC.
+    - cron: "41 5 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  osv:
+    name: osv
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    with:
+      scan-args: |-
+        --config=osv-scanner.toml
+        --lockfile=pnpm-lock.yaml
+        --lockfile=infra/pnpm-lock.yaml
+        --lockfile=docker/corepack/package-lock.json
+        --lockfile=docker/varlock/package-lock.json

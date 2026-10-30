@@ -9,20 +9,27 @@ import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AutopilotToggle } from "@/components/app/autopilot-toggle";
+import { CampaignStep, DoneStep } from "@/components/app/campaign-step";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { NoIdeasState, RunFailedState } from "@/components/app/run-failed";
 import type { Step } from "@/components/app/use-drop-flow";
-import { failureOf, flow, useDropFlow } from "@/components/app/use-drop-flow";
+import {
+  atPickGate,
+  failureOf,
+  flow,
+  useDropFlow,
+} from "@/components/app/use-drop-flow";
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
 import {
   BriefStep,
-  CampaignStep,
   DesignsStep,
-  DoneStep,
   IdeasStep,
+  PickReviewStep,
   MAX_BRIEF,
   ProductsStep,
 } from "@/components/app/wizard-steps";
+import { pickedIdeaIdsOf } from "@/components/drops/drop-sections";
+import { DropStory } from "@/components/drops/drop-story";
 import type { Stage } from "@/components/product/run-tape";
 import {
   reachedStage,
@@ -30,17 +37,18 @@ import {
   STAGE_COUNT,
   STAGES,
 } from "@/components/product/run-tape";
-import { describeRunFailure } from "@/lib/flow-client";
+import { describeRunFailure, namedWords } from "@/lib/flow-client";
 
 const StepNav = ({
   step,
   stage,
-  reached,
+  run,
 }: {
   step: Step;
   stage: Stage;
-  reached?: Stage | undefined;
+  run?: Parameters<typeof reachedStage>[0] | undefined;
 }) => {
+  const reached = run ? reachedStage(run) : undefined;
   const t = useTranslations("Wizard");
   const stages = useTranslations("Stages");
   const index = flow.steps.findIndex((item) => item.id === step);
@@ -88,6 +96,22 @@ const PanelSkeleton = () => {
 
 type Drop = ReturnType<typeof useDropFlow>;
 
+// The picked ideas still being drawn while the run works: each shows as a
+// placeholder with its title until its design lands.
+const drawingOf = (run: Drop["run"], approved: readonly string[]) => {
+  if (run?.status !== "running") {
+    return [];
+  }
+  const drawn = new Set(run.designs.map((one) => one.ideaId));
+  const picked = new Set(pickedIdeaIdsOf(run, approved));
+  return run.ideas
+    .filter((idea) => picked.has(idea.id) && !drawn.has(idea.id))
+    .map((idea) => ({
+      id: idea.id,
+      title: namedWords(idea)?.title ?? idea.theme,
+    }));
+};
+
 /**
  * The step's panel, unless the run says otherwise: a failed run, or research
  * that came back empty, never leaves the wizard on an empty step. The
@@ -115,7 +139,7 @@ const RunStatePanel = ({
       />
     );
   }
-  if (step !== "ideas" || !run || run.ideas.length > 0) {
+  if (step !== "ideas" || !run || run.ideas.some(namedWords)) {
     return children;
   }
   return run.status === "running" ? (
@@ -132,15 +156,22 @@ const RunStatePanel = ({
 const DropFlow = ({
   runId,
   initialBrief,
+  story,
 }: {
   runId?: string | undefined;
   initialBrief: string;
+  story: boolean;
 }) => {
   const t = useTranslations("Wizard");
   const drop = useDropFlow(runId, initialBrief);
   const { actions, busyLabel, run } = drop;
   const designs = run?.designs ?? [];
+  const campaigns = run?.campaigns ?? [];
+  const products = run?.products ?? [];
   const step = drop.step.id;
+  const titles = Object.fromEntries(
+    designs.map((item) => [item.id, item.brief.title])
+  );
 
   const panels: Record<Step, ReactNode> = {
     brief: (
@@ -161,15 +192,26 @@ const DropFlow = ({
         budget={drop.budget}
         budgetInvalid={drop.budgetInvalid}
         busyLabel={busyLabel}
+        campaigns={campaigns}
         onBack={() => actions.handleGoTo("products")}
         onBudget={drop.handleBudget}
-        onNext={actions.handleMakeCampaigns}
+        onLaunched={actions.handleLaunched}
+        onStage={actions.handleMakeCampaigns}
+        products={products.filter((item) => item.status === "public")}
+        titles={titles}
       />
     ),
-    designs: (
+    designs: atPickGate(run) ? (
+      <PickReviewStep
+        busyLabel={busyLabel}
+        ideas={run?.ideas ?? []}
+        onMake={actions.handleDesignPicked}
+      />
+    ) : (
       <DesignsStep
         busyLabel={busyLabel}
         designs={designs}
+        drawing={drawingOf(run, drop.picked)}
         onApprove={(design) => actions.handleDecide(design.id, true)}
         onBack={() => actions.handleGoTo("ideas")}
         onNext={actions.handleMakeProducts}
@@ -179,20 +221,17 @@ const DropFlow = ({
         reasons={drop.reasons}
       />
     ),
-    done: (
-      <DoneStep
-        campaigns={run?.campaigns ?? []}
-        onRestart={actions.handleRestart}
-      />
-    ),
+    done: <DoneStep campaigns={campaigns} onRestart={actions.handleRestart} />,
     ideas: (
       <IdeasStep
         busyLabel={busyLabel}
         designedIdeaIds={designs.map((item) => item.ideaId)}
-        ideas={run?.ideas ?? []}
+        ideas={(run?.ideas ?? []).filter(namedWords)}
         onNext={actions.handleDesignPicked}
         onToggle={actions.handleToggleIdea}
         picked={drop.picked}
+        runId={run?.id}
+        story={story}
       />
     ),
     products: (
@@ -200,36 +239,14 @@ const DropFlow = ({
         busyLabel={busyLabel}
         onNext={actions.handleProductsDone}
         onPublish={(product) => actions.handlePublish(product.id)}
-        products={run?.products ?? []}
-        titles={Object.fromEntries(
-          designs.map((item) => [item.id, item.brief.title])
-        )}
+        products={products}
+        titles={titles}
       />
     ),
   };
 
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
-            {t("title")}
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
-        </div>
-        <AutopilotToggle
-          checked={drop.autopilot}
-          disabled={step !== "brief" || Boolean(drop.working)}
-          onCheckedChange={drop.handleAutopilot}
-        />
-      </div>
-
-      <StepNav
-        reached={run ? reachedStage(run) : undefined}
-        stage={drop.step.stage}
-        step={step}
-      />
-
+  const notices = (
+    <>
       <output aria-live="polite" className="sr-only">
         {busyLabel}
       </output>
@@ -249,6 +266,40 @@ const DropFlow = ({
           problem={drop.problem}
         />
       ) : null}
+    </>
+  );
+  const active = drop.loading ? (
+    <PanelSkeleton />
+  ) : (
+    <RunStatePanel drop={drop} step={step}>
+      {panels[step]}
+    </RunStatePanel>
+  );
+
+  // story-ui: a drop with a run is one page, read top to bottom.
+  if (story && runId !== undefined) {
+    return <DropStory active={active} drop={drop} notices={notices} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+            {t("title")}
+          </h1>
+          <p className="text-muted-foreground mt-2 max-w-[60ch]">{t("lead")}</p>
+        </div>
+        <AutopilotToggle
+          checked={drop.autopilot}
+          disabled={step !== "brief" || Boolean(drop.working)}
+          onCheckedChange={drop.handleAutopilot}
+        />
+      </div>
+
+      <StepNav run={run} stage={drop.step.stage} step={step} />
+
+      {notices}
 
       {/* Each step settles into place as it replaces the last (preventing a
           jarring change); MotionConfig keeps only the fade for reduced motion. */}
@@ -259,13 +310,7 @@ const DropFlow = ({
         initial={{ opacity: 0, transform: "translateY(8px)" }}
         key={drop.loading ? "loading" : step}
       >
-        {drop.loading ? (
-          <PanelSkeleton />
-        ) : (
-          <RunStatePanel drop={drop} step={step}>
-            {panels[step]}
-          </RunStatePanel>
-        )}
+        {active}
       </motion.section>
     </div>
   );
@@ -276,11 +321,24 @@ const DropFlow = ({
  * "Start another drop" begins from a clean slate without resetting state by
  * hand.
  */
-export const NewDropWizard = () => {
+export const NewDropWizard = ({
+  runId: pageRunId,
+  story = false,
+}: {
+  // The drop page passes its run; /dashboard/new reads ?run.
+  runId?: string | undefined;
+  // The story-ui flag: a drop with a run reads as one page.
+  story?: boolean;
+}) => {
   const searchParams = useSearchParams();
-  const runId = searchParams.get("run") ?? undefined;
+  const runId = pageRunId ?? searchParams.get("run") ?? undefined;
   const initialBrief = (searchParams.get("brief") ?? "").slice(0, MAX_BRIEF);
   return (
-    <DropFlow initialBrief={initialBrief} key={runId ?? "new"} runId={runId} />
+    <DropFlow
+      initialBrief={initialBrief}
+      key={runId ?? "new"}
+      runId={runId}
+      story={story}
+    />
   );
 };

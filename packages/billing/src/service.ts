@@ -17,7 +17,7 @@ export interface Billing {
   // The site origin, for Polar's success and return URLs.
   appUrl: string;
   // Whether paid plans and credit packs are on sale (`billing-paid-plans`).
-  paidPlans: () => boolean;
+  paidPlans: () => Promise<boolean>;
   polar: PolarCore | undefined;
 }
 
@@ -26,6 +26,6 @@ export const createBilling = (
   isFlagOn: FlagReader = flagsOff
 ): Billing => ({
   appUrl: env.BETTER_AUTH_URL,
-  paidPlans: () => isFlagOn(BILLING_PAID_PLANS),
+  paidPlans: async () => await isFlagOn(BILLING_PAID_PLANS),
   polar: createPolarClient(env),
 });

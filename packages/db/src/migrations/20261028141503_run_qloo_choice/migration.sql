@@ -1,0 +1,1 @@
+ALTER TABLE "run" ADD COLUMN "qloo" boolean DEFAULT true NOT NULL;

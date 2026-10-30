@@ -1,5 +1,7 @@
 # ADR 0001: Progressive delivery with GitLab feature flags, Cloud Run canaries and a Duo release guard
 
+> **Superseded by [ADR 0003](0003-move-to-github.md).** The GitLab feature flags, the Duo release guard, the canary jobs and the GitLab pipeline described below were removed when development moved to GitHub. The typed flag registry in `packages/core/src/flag-registry.ts` stays; its provider is open. Kept as a record.
+
 - Status: accepted (2026-10-26)
 - Owner: @sami-m-g
 - Related: `docs/flows.md` (flow 1, self-healing), MR !116 (`feat/billing-polar`), openspec change `add-progressive-delivery`
@@ -51,11 +53,10 @@ Constraints:
 | `app-ui-v2` | release | design | internal | all | 2026-12-31 |
 | `autopilot` | release | runs | internal | all | 2026-12-31 |
 | `billing-paid-plans` | permission | billing | off (Status off) | off | 2027-01-31 |
-| `billing-polar` | release | billing | internal | all | 2026-12-15 |
 | `fal-oauth` | release | connectors | internal | all | 2026-12-31 |
 | `fault-injection-checkout` | ops | platform | off | all (Status off) | 2027-03-31 |
 | `mastra-runs` | release | runs | internal + 10% of users | all | 2026-12-31 |
-| `trends-qloo` | kill-switch, free and demo plans only | growth | all | all | 2026-11-05 |
+| `trends-qloo` | kill-switch, every plan (no plan limit since 2026-10-28) | growth | all | all | 2027-06-30 |
 | `trends-tavily` | kill-switch | growth | all | all | 2027-06-30 |
 
 ### 2. The official Unleash Node SDK, server-side only
@@ -64,7 +65,7 @@ Constraints:
 
 - Context: `userId` (GitLab's user lists and percentages match it), `plan` as a property, the environment as the app name.
 - **Fail closed**: until the SDK has fetched GitLab's flags, and for any flag GitLab doesn't return, the answer is `false`. Storage is in memory only, so a cold start never serves a stale backup file. Without any GitLab URL (laptops, tests) the registry answers: in development its development rollout, in production only a flag whose production rollout is `all`, so a missing secret never opens an internal or percent rollout.
-- **Plan gating in the app**: GitLab has no constraints, so a flag's `plans` allowlist is checked before GitLab. `trends-qloo` is `["free", "demo"]`: paid plans get Tavily-only trends even if the flag is on, which keeps Qloo out of paid products after paid plans open.
+- **Plan gating in the app**: GitLab has no constraints, so a flag's `plans` allowlist is checked before GitLab. `trends-qloo` was `["free", "demo"]` until 2026-10-28, when the founder decided every plan calls Qloo and the flag is only a kill switch. No flag has an allowlist now. Qloo's hackathon terms still hold because only Free is sold (`billing-paid-plans`); paid plans open only with a commercial Qloo licence.
 - **Exposures to PostHog**: the first answer per user, flag and value is a `$feature_flag_called` event with `$feature_flag`, `$feature_flag_response` and `$feature/<flag>`, so any KPI insight breaks down by flag value.
 - **No browser SDK**: GitLab offers no frontend API, and `@unleash/nextjs` needs one (or an Unleash Edge, which GitLab doesn't support). Client components get values as props from a server component (`core.flags.snapshot`).
 - Flag names are the registry's keys (`FlagName`): a typo fails `tsc`.

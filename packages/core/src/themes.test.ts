@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   distinctThemes,
-  fallbackThemes,
   keywordsOf,
   MAX_THEMES,
-  themesSchema,
+  qlooThemes,
+  RUN_THEMES,
 } from "./themes";
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
@@ -42,22 +42,35 @@ describe("themes", () => {
 
     expect(distinctThemes(BRIEF, many)).toHaveLength(MAX_THEMES);
   });
+});
 
-  it("titles fallback themes by angle and subject, never the brief", () => {
-    const names = fallbackThemes(BRIEF).map(({ name }) => name);
+describe("qlooThemes", () => {
+  it("makes each Qloo tag a theme searched with the brief's subject", () => {
+    const themes = qlooThemes(BRIEF, [
+      { affinity: 0.7, id: "urn:tag:genre:horror", name: "Horror" },
+    ]);
 
-    expect(names).toEqual([
-      "Retro Spooky Halloween Horror Movie",
-      "Minimalist Spooky Halloween Horror Movie",
-      "Funny Spooky Halloween Horror Movie",
+    expect(themes).toEqual([
+      {
+        affinity: 0.7,
+        id: "urn:tag:genre:horror",
+        name: "Horror",
+        query: "Horror spooky halloween horror movie",
+      },
     ]);
   });
 
-  it("accepts long model text instead of failing the run", () => {
-    const long = "word ".repeat(500);
+  it("makes up nothing when Qloo named no tag", () => {
+    expect(qlooThemes(BRIEF, [])).toEqual([]);
+  });
 
-    expect(
-      themesSchema.safeParse({ themes: [{ name: long, query: long }] }).success
-    ).toBe(true);
+  it("keeps at most RUN_THEMES of Qloo's tags", () => {
+    const tags = ["anime", "cozy", "pastel", "folk"].map((name) => ({
+      affinity: 0.5,
+      id: `urn:tag:style:${name}`,
+      name,
+    }));
+
+    expect(qlooThemes("ghibli", tags)).toHaveLength(RUN_THEMES);
   });
 });

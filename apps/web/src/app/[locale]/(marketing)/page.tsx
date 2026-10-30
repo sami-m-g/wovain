@@ -13,16 +13,18 @@ import {
   Connectors,
   FreeToStart,
   HomeFaq,
+  HowItWorks,
   Results,
 } from "@/components/marketing/home-sections";
 import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
+import { exampleTee } from "@/lib/pricing";
 import { localizedUrl, pageMetadata, siteUrl } from "@/lib/seo";
 
 /** The questions the landing answers; the rest live on the docs FAQ. */
-const LANDING_FAQ = new Set([1, 2, 4, 5]);
+const LANDING_FAQ = new Set([1, 2, 4, 5, 8, 9, 10, 12]);
 
 export const generateMetadata = async ({
   params,
@@ -99,17 +101,21 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
               </CtaLink>
               <Link
                 className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
-                href={{ hash: "results", pathname: "/" }}
+                href={{ hash: "how-it-works", pathname: "/" }}
               >
                 {t("heroSecondary")}
                 <ArrowDown aria-hidden="true" className="size-3.5" />
               </Link>
             </div>
           </div>
-          <HeroDemo className="lg:-me-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))]" />
+          <HeroDemo
+            className="lg:-me-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))]"
+            tag={exampleTee()}
+          />
         </div>
       </section>
 
+      <HowItWorks />
       <Results />
       <Connectors />
       <FreeToStart />

@@ -16,7 +16,7 @@
     "signUpDescription": "Create a wovain account and launch your first print-on-demand drop.",
     "dashboardTitle": "Overview",
     "newDropTitle": "New drop",
-    "runsTitle": "Runs",
+    "runsTitle": "Drops",
     "connectionsTitle": "Connections",
     "settingsTitle": "Account settings",
     "notFoundTitle": "Page not found",
@@ -30,9 +30,18 @@
     "guidesTitle": "Guides for print-on-demand labels",
     "guidesDescription": "Practical guides for independent labels on print-on-demand: pricing every piece so each sale clears a profit, and launching a capsule drop from idea to ads.",
     "insightsTitle": "Insights",
+    "modelsTitle": "Models",
     "pricingTitle": "Pricing: plans and credits for merch drops",
     "pricingDescription": "Start free with credits every month. Studio, Label and credit packs are coming soon. Credits pay for research and AI checks; fal, Meta and Fourthwall bill you directly.",
-    "billingTitle": "Billing"
+    "billingTitle": "Billing",
+    "onboardingTitle": "Get set up",
+    "autopilotTitle": "Autopilot",
+    "storeTitle": "Store",
+    "dropsTitle": "Drops",
+    "campaignTitle": "Your campaign",
+    "settingsHubTitle": "Settings",
+    "alertsTitle": "Alerts",
+    "dropTitle": "Drop"
   },
   "Common": {
     "skipToContent": "Skip to content",
@@ -59,7 +68,8 @@
       "fr": "Français",
       "es": "Español"
     },
-    "noData": "Nothing here yet."
+    "noData": "Nothing here yet.",
+    "alertSettings": "Alerts"
   },
   "Header": {
     "product": "How it works",
@@ -99,10 +109,10 @@
   },
   "Home": {
     "heroTitle": "One sentence. A whole drop.",
-    "heroLead": "Describe the capsule. wovain drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
+    "heroLead": "Qloo says who buys and what is rising. wovain keeps only ideas with proof that they sell (shops advertising them for weeks, marketplace bestsellers) and room left to compete, then drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
     "briefLabel": "What is your next drop about?",
     "briefPlaceholder": "Washed botanical line drawings for a spring capsule",
-    "briefHint": "A sentence is enough: the mood, a reference, who it's for.",
+    "briefHint": "A sentence is enough: the mood, a reference, who it's for. Or start from what sells now.",
     "briefSubmit": "Start a drop",
     "tag": {
       "title": "Heavyweight tee",
@@ -113,7 +123,7 @@
       "reserve": "Refund reserve",
       "profit": "Your profit",
       "margin": "Margin over blank",
-      "campaign": "Meta campaign: paused until you turn it on"
+      "campaign": "Meta campaign: paused until you approve it"
     },
     "connection": {
       "yours": "You connect it",
@@ -136,19 +146,23 @@
       },
       {
         "question": "Will wovain spend money on ads by itself?",
-        "answer": "No. Every campaign is created paused, at the daily budget you choose, from $1 to $500. Spend starts only when you turn it on in Meta Ads Manager."
+        "answer": "No. Every campaign is created paused, at the daily budget you choose, from $1 to $500. Spend starts only when you approve the campaign: wovain then starts it on Meta, and only once its spend rules and Meta's automated rules are in place."
       },
       {
         "question": "What do I need to connect?",
         "answer": "A Fourthwall shop for the products, a fal account for the artwork and a Meta ad account for the campaign. You connect each one with its own sign-in after you create your account."
       },
       {
+        "question": "Will my shop be ready to sell?",
+        "answer": "Yes. The Store lists what your Fourthwall shop needs before it can take an order (payouts, shipping, going live, the Meta pixel), does what it can for you and links to the rest, then ticks each step off by itself. It also rewrites each product page the way an e-commerce copywriter would, and nothing changes until you approve it."
+      },
+      {
         "question": "How are prices set?",
-        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. You can change any price later in Fourthwall."
+        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. When you change a price, wovain shows your profit in every size against Fourthwall's real cost and refuses one that loses money."
       },
       {
         "question": "What does it cost?",
-        "answer": "wovain's plans are on the pricing page. Production is paid from each sale through Fourthwall, artwork is billed by fal and ad spend by Meta, each to your own account."
+        "answer": "wovain's plans are on the pricing page. Production is paid from each sale through Fourthwall, artwork is billed by fal and ad spend by Meta, each to your own account. If research finds no ideas, wovain gives the credits back."
       },
       {
         "question": "Can I use it in ChatGPT?",
@@ -157,28 +171,30 @@
       {
         "question": "Who owns the designs?",
         "answer": "You own your briefs and the designs you approve. wovain screens drafts for names and trademarks, but you stay responsible for what you publish."
+      },
+      {
+        "question": "Who sees my ads?",
+        "answer": "People who love what your label loves. Qloo picks that audience from the brands in your profile, and every ad is written for them. If wovain can't find that audience, it makes no ads and tells you what to add."
+      },
+      {
+        "question": "What stops my ads from losing money?",
+        "answer": "wovain checks your ads every 30 minutes. It pauses an ad that spends one sale's profit without a sale, and pauses all spend at your daily cap, your monthly cap or your loss limit ($50 unless you change it). It asks before it raises the budget of a winner. You get an alert each time, by email, on your phone or on Telegram. If wovain is down, Meta pauses the ads itself: wovain copies these rules into your ad account as Meta automated rules."
+      },
+      {
+        "question": "Which of my designs should I advertise?",
+        "answer": "All of them, at first. wovain tests up to five designs in one campaign, gives each a fair share of the budget, pauses the ones that lose money and shows you the winner, so the budget follows the design that sells."
+      },
+      {
+        "question": "How does wovain pick what to sell?",
+        "answer": "It starts from Qloo's taste data for your buyers, then keeps only ideas with proof that they sell: shops advertising them for weeks, marketplace bestsellers and reviews. Crowded themes are dropped, and the rest are ranked by how much demand is left for a new label. Each idea is one card with its sources linked, and wovain counts the ideas it left out."
       }
     ],
     "heroCta": "Start a drop",
     "demo": {
-      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
+      "alt": "An example drop in wovain. A one-line brief is typed. One idea card appears with what to make, why it sells, who buys and where, and the competition, after wovain left out the ideas with weak evidence, and the designer picks it. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
       "pause": "Pause the example",
       "play": "Play the example",
       "brief": "Washed botanical line drawings for a spring capsule, for people who garden on balconies.",
-      "ideas": [
-        {
-          "theme": "Balcony growing",
-          "moment": "Small-space gardening is up for a third week."
-        },
-        {
-          "theme": "Seed swaps",
-          "moment": "Libraries are lending seeds this spring."
-        },
-        {
-          "theme": "Pressed botanicals",
-          "moment": "Popular, and already crowded."
-        }
-      ],
       "designs": [
         "Fern Study No. 3",
         "Garden Hours",
@@ -193,7 +209,23 @@
         "cta": "Shop now"
       },
       "paused": "Campaign: Paused",
-      "initials": "YL"
+      "initials": "YL",
+      "idea": {
+        "title": "Fern line-art tee for balcony gardeners",
+        "concept": "Washed fern line drawings on a heavyweight tee, for people who garden in small spaces.",
+        "buyer": "balcony gardeners who shop small labels",
+        "style": "washed line art",
+        "tag": "Container gardening",
+        "sentence": "Small-space gardening is up for a third week, and shops keep their botanical ads running.",
+        "gender": "mostly women",
+        "interests": ["Houseplants", "Slow living"],
+        "places": ["Portland", "Seattle", "Denver"],
+        "gap": "tees for balcony vegetable growers",
+        "sources": [
+          "Balcony gardens, a growing trend",
+          "Botanical tees: marketplace bestsellers"
+        ]
+      }
     },
     "results": {
       "title": "Listed, advertised, counted",
@@ -203,7 +235,7 @@
       "insights": "Insights",
       "sizes": "Size",
       "addToCart": "Add to cart",
-      "paused": "Paused until you turn it on",
+      "paused": "Paused until you approve it",
       "photoAlt": "A model on a balcony wearing the black Fern Study No. 3 tee",
       "mockupAlt": "The Fern Study No. 3 design on a black heavyweight tee, worn by a model, as Fourthwall renders it"
     },
@@ -223,7 +255,7 @@
     },
     "free": {
       "title": "Free to start",
-      "body": "{credits, number} credits a month, enough to try a full drop. wovain never takes a cut of your sales.",
+      "body": "{credits, number} credits a month, enough to try a full drop. If research finds no ideas, your credits come back. wovain never takes a cut of your sales.",
       "link": "See pricing"
     },
     "faqSection": {
@@ -235,6 +267,37 @@
       "body": "You keep every decision. wovain does the production.",
       "button": "Start a drop",
       "secondary": "See pricing"
+    },
+    "how": {
+      "title": "From sign-up to ads running in about 10 minutes",
+      "lead": "One guided flow, with a timer and a checklist. Steps that happen in Fourthwall or Meta come back and tick off on their own.",
+      "guide": "Read the getting started guide",
+      "steps": {
+        "sell": {
+          "title": "Pick what to sell",
+          "body": "Start from the ideas wovain kept: each card says what to make, why it sells, who buys it and where, and how crowded it is. Ideas with weak evidence are left out and counted. Pick one and the drop opens at its designs, its research done."
+        },
+        "store": {
+          "title": "Set up your store",
+          "body": "Connect your Fourthwall shop and finish payouts, shipping and the rest, one card at a time."
+        },
+        "meta": {
+          "title": "Connect Meta, set limits",
+          "body": "One Meta sign-in covers your ad account, Page and pixel. Set the most wovain may spend a day and a month, and choose how you get alerts: email, phone or Telegram."
+        },
+        "design": {
+          "title": "Approve a design",
+          "body": "wovain researches your direction and draws designs. You approve the ones you'd sell."
+        },
+        "ads": {
+          "title": "Launch your ads",
+          "body": "Review the ad and its daily budget, then start it. Nothing spends past your limits, and Meta's own automated rules stop the ads even if wovain is down."
+        },
+        "campaign": {
+          "title": "See your campaign",
+          "body": "Products, store, ads, spend and live results, all on one page."
+        }
+      }
     }
   },
   "Legal": {
@@ -243,15 +306,17 @@
       "title": "Privacy",
       "intro": "We keep as little as we can, and we never sell data.",
       "collectTitle": "What we collect",
-      "collectBody": "Your name, email and password hash for your account; the briefs you write; and the runs, designs and products wovain makes for you.",
+      "collectBody": "Your name, email and password hash for your account; the briefs you write; and the drops, designs and products wovain makes for you.",
       "analyticsTitle": "Analytics",
       "analyticsBody": "We use PostHog, hosted in the US, to learn how people find and use wovain: the pages you visit, what you click, page speed, the site's language and your country. Your country comes from your IP address, which isn't kept, and the page checks whether an automated browser is driving it, so bots aren't counted as visitors. Until you accept, it runs without cookies or browser storage, so it can't recognize you across visits or record replays. If you accept, or where the law doesn't require asking first, it stores an ID in your browser and records session replays, with everything you type and your account details hidden. You can change your choice at any time with Cookie settings at the bottom of the page, and a Global Privacy Control signal from your browser counts as a no. Once you sign in, these events are tied to your account's id, never your email.",
       "connectionsTitle": "Connected services",
       "connectionsBody": "When you connect Fourthwall, Meta or fal, we store the access they grant so wovain can act for you. You can disconnect any of them at any time from Connections.",
       "processorsTitle": "Who processes it",
       "processorsBody": "Briefs and designs are sent to the services that do the work: Nebius, Qloo, Tavily, fal, Fourthwall and Meta. Each handles data under its own policy.",
+      "voiceTitle": "Voice commands",
+      "voiceBody": "When you hold the microphone button, fal turns your recording into text, and Nebius reads the text so wovain can work out what you asked. wovain doesn't store the recording or the text. fal and Nebius handle them under their own terms. Analytics only records which kind of command it was, never what you said.",
       "deleteTitle": "Deleting your data",
-      "deleteBody": "Email privacy@wovain.com from your account's address and we delete your account, runs and stored connections within 30 days."
+      "deleteBody": "Email {privacyEmail} from your account's address and we delete your account, drops and stored connections within 30 days."
     },
     "terms": {
       "title": "Terms",
@@ -261,9 +326,9 @@
       "contentTitle": "Your content",
       "contentBody": "You own your briefs and the designs you approve. You are responsible for making sure what you publish does not infringe anyone's rights; wovain screens for trademarks but cannot guarantee it.",
       "spendTitle": "Ads and spend",
-      "spendBody": "Campaigns are created paused. Any ad spend starts only when you turn a campaign on in Meta, and it is billed by Meta to your ad account.",
+      "spendBody": "Campaigns are created paused. Any ad spend starts only when you approve a campaign in wovain, or turn it on in Meta yourself, and it is billed by Meta to your ad account.",
       "contactTitle": "Contact",
-      "contactBody": "Questions about these terms go to support@wovain.com."
+      "contactBody": "Questions about these terms go to {supportEmail}."
     }
   },
   "Auth": {
@@ -307,10 +372,18 @@
     "nav": {
       "overview": "Overview",
       "newDrop": "New drop",
-      "runs": "Runs",
       "connections": "Connections",
       "insights": "Insights",
-      "billing": "Billing"
+      "billing": "Billing",
+      "onboarding": "Get set up",
+      "autopilot": "Autopilot",
+      "store": "Store",
+      "drops": "Drops",
+      "home": "Home",
+      "settings": "Settings",
+      "account": "Account",
+      "security": "Security",
+      "drop": "Drop"
     },
     "docs": "Docs",
     "docsLabel": "Docs (opens in a new tab)",
@@ -323,7 +396,7 @@
     "products": "Products",
     "ads": "Ads",
     "campaign": "Campaign",
-    "stripLabel": "Run progress: {stage}",
+    "stripLabel": "Drop progress: {stage}",
     "done": "done",
     "current": "current",
     "pending": "not started"
@@ -338,15 +411,15 @@
     "greeting": "Hi {name}",
     "lead": "Your drops and connections, at a glance.",
     "newDrop": "New drop",
-    "recentRuns": "Recent runs",
-    "allRuns": "All runs",
+    "recentRuns": "Recent drops",
+    "allRuns": "All drops",
     "connections": "Connections",
     "manage": "Manage",
     "setupTitle": "Finish setting up",
     "setupBody": "Connect {count, plural, one {# more service} other {# more services}} to run a full drop.",
     "allConnected": "Everything is connected.",
     "setup": {
-      "title": "Get set up",
+      "title": "Start here",
       "progress": "{done, number} of {total, number} done",
       "done": "done",
       "fourthwall": {
@@ -362,7 +435,8 @@
       "drop": {
         "title": "Start your first drop",
         "body": "One sentence about who it's for. wovain researches trends, then draws designs with your fal account. Fourthwall publishes them and Meta runs the ads.",
-        "action": "Start"
+        "action": "Start",
+        "bodyWovainDraws": "One sentence about who it's for. wovain researches trends and draws the designs, paid from your credits. Fourthwall publishes them and Meta runs the ads."
       },
       "missing": "Still to connect:",
       "needs": {
@@ -371,12 +445,17 @@
         "meta": "Meta, for ads"
       },
       "lead": "Three steps, then wovain can take a brief all the way to a paused campaign.",
-      "next": "Next"
+      "next": "Next",
+      "brand": {
+        "title": "Describe your brand",
+        "body": "Name 3 to 5 artists, films or brands your work sits next to. wovain looks them up on Qloo and designs with that taste.",
+        "action": "Open"
+      }
     }
   },
   "Runs": {
-    "title": "Runs",
-    "lead": "Every drop wovain has run for you, newest first.",
+    "title": "Drops",
+    "lead": "Every drop wovain has made for you, newest first.",
     "empty": "Your first drop will show up here, with every step it went through.",
     "emptyCta": "Start a drop",
     "mode": "Mode",
@@ -384,10 +463,11 @@
     "manual": "With you",
     "autopilot": "Autopilot",
     "stoppedAt": "Stopped during {stage}.",
-    "emptyTitle": "No runs yet",
+    "emptyTitle": "No drops yet",
     "brief": "Brief",
     "status": "Status",
-    "progress": "Progress"
+    "progress": "Progress",
+    "models": "Models"
   },
   "Connections": {
     "title": "Connections",
@@ -395,6 +475,7 @@
     "connected": "Connected",
     "disconnected": "Not connected",
     "expired": "Sign-in expired",
+    "expiredBody": "{name}'s sign-in expired. Reconnect it and wovain picks up where it left off.",
     "connect": "Connect {name}",
     "reconnect": "Reconnect {name}",
     "disconnect": "Disconnect {name}",
@@ -405,18 +486,26 @@
     "providers": {
       "fourthwall": {
         "name": "Fourthwall",
-        "body": "Your shop, catalog blanks and prices. Needed to publish products."
+        "body": "Your shop, catalog blanks and prices. Needed to publish products.",
+        "unlocks": "wovain publishes your designs as products in your shop, priced to clear your profit."
       },
       "meta": {
         "name": "Meta",
-        "body": "Your ad account, Page and pixel. Needed to build the campaign."
+        "body": "Your ad account, Page and pixel. Needed to build the campaign.",
+        "unlocks": "wovain builds a paused campaign for each drop, so nothing spends until you start it."
       },
       "fal": {
         "name": "fal",
-        "body": "Your fal account draws the artwork, billed to you. Needed to make designs."
+        "body": "Your fal account draws the artwork, billed to you. Needed to make designs.",
+        "unlocks": "wovain draws your designs on your fal account, billed to you."
       }
     },
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "signup": {
+      "prompt": "No Fourthwall shop yet?",
+      "link": "Create a free Fourthwall shop",
+      "hint": "Then come back and connect it."
+    }
   },
   "Wizard": {
     "title": "New drop",
@@ -429,9 +518,6 @@
     "back": "Back",
     "problem": {
       "notConfigured": "This step isn't available right now. Try again in a little while.",
-      "notConnected": "Connect {service} to finish this step.",
-      "reconnect": "{service}'s sign-in expired. Reconnect it to finish this step.",
-      "connectLink": "Go to Connections",
       "other": "Something went wrong: {message}"
     },
     "brief": {
@@ -441,11 +527,66 @@
       "placeholder": "Cozy outdoorsy merch for my houseplant channel",
       "error": "Write at least a few words (10 characters or more).",
       "submit": "Research trends",
-      "submitAutopilot": "Run on autopilot"
+      "submitAutopilot": "Run on autopilot",
+      "starters": "Or start from one of these",
+      "starter1": "Line-art tees for balcony gardeners",
+      "starter2": "Retro arcade tees for weekend gamers",
+      "starter3": "Moody poetry tees for night-owl readers",
+      "pickIdea": "Not sure? Pick a researched idea"
+    },
+    "directions": {
+      "title": "What to sell now",
+      "lead": "Rising now on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start, or write your own below.",
+      "titleBrand": "What to sell now, within your brand",
+      "leadBrand": "Rising now with your brand's buyers on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start, or write your own below.",
+      "ignoreBrand": "Ignore my brand this time",
+      "others": "Show me others",
+      "use": "Start this drop",
+      "whyFallback": "{count, plural, =0 {Rising with these buyers on Qloo.} one {Rising with these buyers on Qloo; # news story this month.} other {Rising with these buyers on Qloo; # news stories this month.}}",
+      "for": "For {audience}",
+      "rising": "Rising with: {names}",
+      "news": "{count, plural, =0 {no news this month} one {# news story this month} other {# news stories this month}}",
+      "newsUnknown": "news not checked",
+      "listings": {
+        "low": "{count, plural, =0 {no similar listings} one {# similar listing} other {# similar listings}}",
+        "medium": "{count, plural, one {# similar listing} other {# similar listings}}",
+        "high": "crowded: {count, plural, one {# similar listing} other {# similar listings}}"
+      },
+      "listingsUnknown": "listings not checked",
+      "sources": "News for {title}",
+      "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
+      "retry": "Try again",
+      "none": "Qloo found nothing new rising right now. Write your own direction below.",
+      "tavilyFailed": "The news or listings check failed for some suggestions; that part is unknown.",
+      "brandHint": "Optional: a brand keeps these suggestions within your style.",
+      "brandHintLink": "Add a brand",
+      "steps": {
+        "qloo": "Asking Qloo what's rising…",
+        "listings": "Checking this month's news and how crowded it is…",
+        "words": "Writing the first suggestions…"
+      },
+      "elapsed": "{seconds, plural, one {# second} other {# seconds}}",
+      "proof": {
+        "ads": "{count, plural, one {# shop} other {# shops}} advertising it for {days}+ days",
+        "bestsellers": "{count, plural, one {a bestseller} other {# bestsellers}} on the marketplaces",
+        "reviews": "{count, plural, one {# review} other {# reviews}} on similar listings"
+      },
+      "showBuyers": "Who buys this",
+      "hideBuyers": "Hide who buys this",
+      "proofSources": "Proof for {title}",
+      "leadHome": "Rising now on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start a drop.",
+      "leadBrandHome": "Rising now with your brand's buyers on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start a drop.",
+      "noneHome": "Qloo found nothing new rising right now. Start a drop with your own brief.",
+      "carousel": {
+        "label": "Ideas to sell now, one at a time",
+        "next": "Next idea",
+        "position": "{current} of {total}",
+        "previous": "Previous idea"
+      }
     },
     "trends": {
       "title": "Pick the ideas",
-      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. The top ideas already have designs; pick more to draw them too.",
+      "lead": "Scored by taste affinity, this week's momentum and how crowded the listings are. Pick the ones you'd sell: wovain draws designs only for those, when you click See designs.",
       "score": "Score {score}",
       "affinity": "Taste affinity",
       "affinityUnavailable": "Not available",
@@ -455,7 +596,25 @@
       "sources": "Sources",
       "hasDesign": "Design ready",
       "error": "Pick at least one idea.",
-      "submit": "See designs"
+      "submit": "See designs",
+      "why": "Why this idea",
+      "whyTag": "Fans of {seeds} share the taste “{tag}”.",
+      "whyNoTag": "This theme came from your brief. Qloo's taste map below is for the whole drop.",
+      "whyAlso": "The same fans also like",
+      "whyShare": "{share} from {name}",
+      "whyCues": "Style cues sent to the design brief",
+      "whyDomainsFailed": "Qloo couldn't load the {domains} these fans like, so this map leaves them out.",
+      "domainPlural": {
+        "brand": "brands",
+        "movie": "films",
+        "tv_show": "TV shows"
+      },
+      "domain": {
+        "brand": "Brand",
+        "movie": "Film",
+        "tv_show": "TV"
+      },
+      "pickIdea": "Pick “{title}”"
     },
     "designs": {
       "title": "Approve the designs",
@@ -466,6 +625,8 @@
       "checkScore": "{score, number}/100",
       "printed": "Prints: {text}",
       "approve": "Approve",
+      "approveAnyway": "Approve anyway",
+      "flagged": "The design check flagged this design. Check these before you sell it:",
       "approved": "Approved",
       "reject": "Reject",
       "rejected": "Rejected",
@@ -475,50 +636,144 @@
       "error": "Approve at least one design.",
       "submit": "Make products",
       "artAlt": "Design: {title}",
-      "shirtAlt": "Design on a shirt: {title}",
+      "shirtAlt": "Design on a shirt, as Fourthwall renders it: {title}",
       "viewShirt": "On a shirt",
       "viewFlat": "Flat art",
-      "viewLabel": "Artwork view"
+      "viewLabel": "Artwork view",
+      "mockupUnavailable": "Fourthwall couldn't render this design on the shirt. Showing the flat art.",
+      "mockupNotConnected": "Connect Fourthwall to see this design on the shirt.",
+      "drawing": "Drawing a design for “{title}”. It takes a few minutes.",
+      "make": "Make designs",
+      "reviewTitle": "Set the tone and colours",
+      "reviewLead": "Suggested from the buyers and research above. Change either one, then make the designs."
     },
     "products": {
       "title": "Publish the products",
       "lead": "Real Fourthwall blanks, priced to clear at least $10 profit per sale after fees. They stay hidden until you publish.",
       "price": "Price",
       "hidden": "Hidden",
+      "inReview": "Waiting to publish",
       "public": "Live",
       "view": "View on Fourthwall",
       "error": "Publish at least one product first.",
       "publish": "Publish to Fourthwall",
-      "submit": "Plan the campaign",
-      "mockupAlt": "{title}, product mockup"
+      "submit": "Go to the campaign",
+      "mockupAlt": "{title}, product mockup",
+      "confirm": {
+        "title": "Publish “{title}”?",
+        "body": "It goes live on {shop} at {price}, and customers can buy it right away. You can hide it again from the Store.",
+        "product": "Product",
+        "price": "Price",
+        "shop": "Shop",
+        "yourShop": "your Fourthwall shop",
+        "cancel": "Not yet",
+        "action": "Publish now"
+      }
     },
     "campaign": {
-      "title": "Build the campaign",
-      "lead": "One campaign per product with an ad per copy variant. It's created paused: nothing spends until you turn it on in Meta.",
+      "title": "Launch the campaign",
+      "lead": "The ads for your live products: the creatives, the copy, who sees them and what they may spend. Nothing spends until you launch.",
+      "creatives": "Ad creatives",
+      "creativeAlt": "{title}, ad image",
+      "noCreatives": "Publish a product to see its ad images here.",
+      "copy": "Ad copy",
+      "copyPending": "wovain writes three ad variants per design, in the drop's tone, when you launch. You read them before anything spends.",
+      "audience": "Who sees it",
+      "budget": "Daily budget",
+      "budgetSet": "{budget} a day",
+      "rules": "Spend rules",
+      "rulesPending": "Your daily and monthly caps and wovain's profit rules apply from the first dollar. You see them in full before anything spends.",
+      "connectTitle": "Connect Meta to launch",
+      "connectBody": "Your creatives are ready. Connect your Meta ad account and you come back here to launch.",
+      "storeSetup": "Open Store setup",
+      "submit": "Launch campaign",
+      "confirm": {
+        "title": "Launch the campaign?",
+        "body": "{budget} a day on Meta, billed to your ad account. wovain pauses designs that don't sell and stops at your caps. You can pause it at any time.",
+        "cancel": "Not yet",
+        "action": "Launch now"
+      },
       "budgetLabel": "Daily budget (USD)",
       "budgetHint": "Between $1 and $500 a day. You can change it in Meta.",
       "budgetError": "Enter a daily budget from $1 to $500.",
-      "submit": "Build paused campaign",
       "perDay": "a day"
     },
     "done": {
       "title": "Your campaign is ready, paused",
-      "lead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day. Turn it on in Meta Ads Manager when you're ready to spend.",
+      "lead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day, paused until you approve it.",
       "variants": "Ad variants",
       "open": "Open in Ads Manager",
       "another": "Start another drop",
-      "history": "See all runs"
+      "history": "See all drops",
+      "media": {
+        "start": "Start ads",
+        "pause": "Pause ads",
+        "refresh": "Refresh status",
+        "confirm": "Start this campaign at {budget} a day? wovain first checks that its spend rules and Meta's automated rules are in place, then starts the campaign, its ad sets and ads. Meta bills your ad account directly. You can pause it at any time.",
+        "approve": "Approve and start",
+        "notNow": "Not now",
+        "starting": "Approved. Meta reviews new ads before they run, which can take a few hours.",
+        "overCap": "This would go over your daily or monthly ad spend cap. Raise the cap in your autonomy settings to start it.",
+        "failed": "That didn't work: {reason}",
+        "status": {
+          "draft": "Staged, not running",
+          "paused": "Paused",
+          "publishing": "Publishing",
+          "in_review": "In Meta review",
+          "active": "Running",
+          "with_issues": "Needs attention in Meta",
+          "archived": "Archived",
+          "unknown": "Status unknown"
+        },
+        "rules": {
+          "title": "How wovain protects your ad money",
+          "pauseIf": "wovain pauses an ad on its own if it:",
+          "noSale": "spends {spend} (one sale's profit) with no sale and no add-to-cart",
+          "cartNoSale": "spends {spend} with add-to-carts but no sale",
+          "lowCtr": "gets under {ctr}% clicks after {impressions} views",
+          "highCpc": "costs more than {cpc} a click after {clicks} clicks",
+          "noProfit": "A sale of this product leaves no profit, so wovain pauses its ads.",
+          "stopIf": "wovain pauses every campaign if:",
+          "dailyCap": "today's ad spend reaches your {cap} daily cap",
+          "monthlyCap": "this month's ad spend reaches your {cap} monthly cap",
+          "lossLimit": "ad spend minus the profit of its sales reaches {limit}",
+          "scaleIf": "wovain asks to raise the budget if:",
+          "scale": "Meta has finished learning, the campaign has at least {purchases} sales, and it earns at least {roas} per $1 of ads. The raise is {step}% at most, once every {hours} hours, inside your daily cap.",
+          "how": "wovain checks every 30 minutes. Pauses happen right away and you get a notification. A raise waits for your approval.",
+          "limitLabel": "Loss limit (USD)",
+          "save": "Save",
+          "saveFailed": "The limit wasn't saved: {reason}"
+        },
+        "designs": {
+          "title": "Each design in the test",
+          "design": "Design",
+          "numbered": "Design {number, number}",
+          "spend": "Spend",
+          "ctr": "CTR",
+          "addToCarts": "Add-to-carts",
+          "purchases": "Sales",
+          "profit": "Profit",
+          "status": "Status",
+          "testing": "Testing",
+          "paused": "Paused",
+          "winner": "Winner"
+        }
+      },
+      "launchedTitle": "Your campaign is launching",
+      "launchedLead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day. Meta reviews new ads before they run, which can take a few hours."
     },
     "failed": {
       "title": "The drop stopped during {stage}",
-      "notConnected": "{service} isn't connected, so wovain couldn't finish this step. Connect it, then try again.",
-      "reconnect": "{service}'s sign-in expired and couldn't be renewed, so wovain couldn't finish this step. Reconnect it, then try again.",
+      "connectTitle": "Connect {service} to finish this drop",
+      "connectBody": "The drop paused during {stage} because {service} isn't connected yet. Connect it, then try again in one click.",
+      "reconnectTitle": "Reconnect {service} to finish this drop",
+      "reconnectBody": "The drop paused during {stage} because {service}'s sign-in expired. Reconnect it, then try again in one click.",
+      "connectedTitle": "{service} is connected",
+      "connectedBody": "Try the drop again: wovain starts it fresh from the same brief.",
       "noIdeas": "Research found no ideas for this brief. Try wording it differently.",
       "rejected": "Autopilot didn't like the design it drew. Try again for a fresh one.",
       "other": "Something went wrong on our side. Nothing was spent on this step. Try again.",
       "details": "Details: {message}",
-      "connect": "Connect {service}",
-      "reconnectAction": "Reconnect {service}",
       "retry": "Try again",
       "retrying": "Starting again…",
       "another": "Write a new brief"
@@ -529,18 +784,106 @@
       "retry": "Try again",
       "another": "Write a new brief"
     },
+    "qlooNoMatch": {
+      "title": "Qloo found no audience for this brief",
+      "body": "Every idea comes from Qloo's taste data, so the brief needs something Qloo knows. Try naming a band, film, brand or place your fans love.",
+      "examples": "Start from one of these:",
+      "another": "Write a new brief"
+    },
     "working": {
-      "research": "Researching trends and drafting the first designs…",
+      "research": "Researching trends…",
+      "naming": "Writing each idea's title…",
       "autopilot": "Autopilot is researching, designing, publishing and building the campaign…",
       "designs": "Making designs…",
       "review": "Saving your decision…",
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
-      "campaign": "Building the paused campaign on Meta…"
+      "campaign": "Writing the ads and staging the campaign on Meta…"
     },
     "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
     "autopilotUpgrade": "See plans",
-    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step."
+    "autopilotSoon": "Autopilot is coming soon with paid plans. On Free, you approve each step.",
+    "evidence": {
+      "sources": "Sources",
+      "competitorPrice": "Similar shirts sell for about {price} ({count, plural, one {# listing read} other {# listings read}}).",
+      "newsFailed": "The news search failed, so this idea rests on marketplace listings only.",
+      "marketFailed": "The marketplace search failed, so listings and prices are missing for this idea.",
+      "dossierStart": "Research this idea",
+      "dossierRetry": "Research again",
+      "dossierHint": "Tavily reads the web and your Qloo taste data, then reports why now, how crowded it is, what shirts sell for and the risks. Takes about a minute.",
+      "dossierPending": "Researching. This takes about a minute.",
+      "dossierFailed": "The research didn't finish.",
+      "dossierTitle": "Research report",
+      "whyNow": "Why now",
+      "saturation": "How crowded",
+      "priceBand": "What shirts sell for",
+      "risks": "Risks",
+      "readFull": "Read full report",
+      "level": {
+        "low": "Open",
+        "medium": "Some competition",
+        "high": "Crowded"
+      },
+      "trademarkTitle": "Trademark check",
+      "trademarkBlocked": "matches a trademark record. Change the words before you sell.",
+      "trademarkCaution": "already sells on marketplaces.",
+      "trademarkUnchecked": "couldn't be checked. Search it yourself before you sell."
+    },
+    "competition": {
+      "title": "Competition",
+      "adsTitle": "Competition these ads answer",
+      "unknown": "Competition unknown",
+      "unknownHint": "The marketplace search failed, so how crowded this theme is isn't known. {reason}",
+      "again": "Check again",
+      "level": {
+        "low": "Low saturation",
+        "medium": "Medium saturation",
+        "high": "Saturated"
+      },
+      "count": "{count, plural, one {# near-identical listing} other {# near-identical listings}} in {sampled, number} marketplace results.",
+      "listings": "Near-identical listings",
+      "saturatedTitle": "Saturated theme",
+      "saturated": "Too many near-identical shirts already sell. Autopilot skips this theme.",
+      "price": "They sell for about {price}.",
+      "kind": {
+        "hook": "Their hooks",
+        "claim": "Their claims",
+        "title": "Their titles",
+        "style": "Looks to avoid",
+        "price": "Their prices",
+        "complaint": "What buyers complain about"
+      },
+      "gaps": "What your audience likes that they miss",
+      "partial": "Some of the read failed ({steps}); the rest is shown."
+    },
+    "style": {
+      "title": "This drop's tone and colours",
+      "tone": "Tone",
+      "toneTip": "How this drop's listing and ads talk, e.g. dry and witty, or warm and cosy. It starts from your brand voice and adapts to this drop's buyers; your brand's limits still apply.",
+      "colours": "Colours",
+      "coloursTip": "The shirt colours and the art colours for this drop, e.g. rust and cream art on a sage tee. Every art colour is checked to stand out on the shirt.",
+      "noColours": "No colour set fits this blank. The design picks its own.",
+      "checkedOn": "Checked on the {blank}",
+      "guardrails": "Your brand voice still applies: {voice}",
+      "loading": "Suggesting a tone and colours from this drop's buyers…",
+      "failed": "We couldn't suggest a tone and colours just now.",
+      "retry": "Try again",
+      "info": "About {field}"
+    },
+    "whoBuys": {
+      "title": "Who buys this",
+      "buyers": "Mostly {age}, {gender}",
+      "unknownAge": "age unknown",
+      "unknownGender": "gender lean unknown",
+      "audiences": "Into:",
+      "where": "Where your buyers are",
+      "affinity": "Qloo affinity {value}",
+      "brands": "They also buy:",
+      "source": "From Qloo's taste data. The brands are for targeting only, never for the design.",
+      "loading": "Asking Qloo who buys this. The first look takes about 20 seconds.",
+      "failed": "We couldn't reach our taste data to say who buys this.",
+      "retry": "Try again"
+    }
   },
   "NotFound": {
     "title": "This page isn't here",
@@ -582,7 +925,7 @@
     "back": "Back to sign in"
   },
   "Run": {
-    "loading": "Opening the run…"
+    "loading": "Opening the drop…"
   },
   "Seo": {
     "home": "Home",
@@ -598,7 +941,7 @@
     "connection": "Who connects it",
     "setup": "Setup",
     "docs": "Read the docs",
-    "steps": "What it does in a run",
+    "steps": "What it does in a drop",
     "data": "What's shared",
     "faq": "Questions",
     "relatedUseCases": "Use cases",
@@ -626,6 +969,17 @@
       "90d": "90 days"
     },
     "updating": "Updating…",
+    "journey": {
+      "title": "Your first drop",
+      "source": "Time from sign-up to a live campaign, then to a first profit",
+      "liveCampaign": "Time to live campaign",
+      "liveCampaignHint": "Sign-up to campaign live. Target {target, number} min",
+      "metaReview": "Meta review wait",
+      "metaReviewHint": "Campaign live to first impression. Meta's time, not yours",
+      "firstProfit": "Time to first profit",
+      "firstProfitHint": "First impression to profit after ad spend. Target {target, number} min",
+      "minutes": "{value, number} min"
+    },
     "shop": {
       "title": "Shop",
       "source": "Fourthwall reports, this period",
@@ -640,7 +994,6 @@
       "margin": "Margin",
       "notConnectedTitle": "Connect Fourthwall to see sales",
       "notConnected": "wovain reads your shop's reports to show revenue and profit per drop.",
-      "connect": "Connect Fourthwall",
       "unavailable": "Fourthwall's reports didn't load: {message}",
       "emptyTitle": "No sales yet",
       "empty": "Publish a product and share it; the first order shows up here."
@@ -657,10 +1010,9 @@
       "results": "Results",
       "notConnectedTitle": "Connect Meta to see ad results",
       "notConnected": "wovain reads the insights for the campaigns it built for you.",
-      "connect": "Connect Meta",
       "unavailable": "Meta's insights didn't load: {message}",
       "emptyTitle": "No campaign results yet",
-      "empty": "Campaigns are created paused, so results start once you turn one on in Ads Manager."
+      "empty": "Campaigns are created paused, so results start once you approve one."
     },
     "drops": {
       "title": "Drops",
@@ -673,12 +1025,118 @@
       "profit": "Profit",
       "spend": "Ad spend",
       "units": "Units",
-      "scorePending": "Ad scores appear once wovain's scorers rate your ad copy.",
+      "scorePending": "Ad scores appear for campaigns created after wovain's ad judges went live.",
       "notScored": "Not scored",
       "emptyTitle": "No drops yet",
       "empty": "Start a drop; its sales, spend and scores land here.",
       "emptyCta": "Start a drop"
+    },
+    "learned": {
+      "title": "What we learned",
+      "lead": "What sold, what didn't, and how wovain now ranks ideas for your brand. Your next drops use this.",
+      "refresh": "Check results now",
+      "refreshing": "Checking…",
+      "updated": "Updated {date}",
+      "sold": "Sold",
+      "unsold": "Didn't sell",
+      "noneSold": "Nothing has sold yet.",
+      "noneUnsold": "Every idea we counted has sold at least once.",
+      "result": "{units, plural, one {# sold} other {# sold}}, {revenue}",
+      "resultCtr": "{units, plural, one {# sold} other {# sold}}, {revenue}, {ctr} click-through rate",
+      "noSales": "No sales",
+      "notEnough": "wovain starts adjusting once {minSamples, number} ideas have had a product for sale for {minLiveDays, number} days or more. So far: {samples, number}.",
+      "weightsTitle": "How ideas are scored",
+      "weightsLead": "Version {version, number}, fit on {samples, number} ideas. The defaults are the starting point, and a weight moves at most half its default.",
+      "defaultsLead": "The defaults (version 0). They change once enough ideas have results.",
+      "term": "Signal",
+      "now": "Now",
+      "default": "Default",
+      "up": "Higher than the default",
+      "down": "Lower than the default",
+      "terms": {
+        "demand": "Taste fit (Qloo)",
+        "momentum": "News momentum",
+        "recency": "Fresh news",
+        "relevance": "Search relevance",
+        "openness": "Room in the market",
+        "margin": "Margin",
+        "ipSafety": "Safe from brand names"
+      },
+      "anglesTitle": "What sells for you",
+      "anglesLead": "{wins, number} of your {designs, number} designs made a profit after ads. An angle shows here once the evidence is strong, so one sale moves it only a little.",
+      "anglesNone": "No angle stands out yet. Each design that has been for sale 3 days or more adds to this.",
+      "why": {
+        "up": "Why this: {count, plural, one {your last {value} drop} other {your last # {value} drops}} ({kind}) made {money}.",
+        "down": "Careful: {count, plural, one {your last {value} drop} other {your last # {value} drops}} ({kind}) lost {money}.",
+        "kinds": {
+          "theme": "theme",
+          "tag": "Qloo tag",
+          "entity": "Qloo entity",
+          "audience": "audience",
+          "palette": "palette",
+          "price": "price",
+          "blank": "blank"
+        },
+        "bands": {
+          "under-25": "under $25",
+          "25-35": "$25 to $35",
+          "35-50": "$35 to $50",
+          "50-up": "$50 and up"
+        }
+      }
     }
+  },
+  "Models": {
+    "title": "Which model did what",
+    "lead": "Each AI step in a drop runs on an NVIDIA Nemotron model on Nebius Token Factory, picked for its job. Here is every step, the model it used and how long it took.",
+    "byJob": "Models by job",
+    "roles": {
+      "default": {
+        "name": "Writer",
+        "job": "Design briefs, research themes and ad copy"
+      },
+      "reasoning": {
+        "name": "Reasoner",
+        "job": "The design judge's verdict and autopilot's go or no-go"
+      },
+      "vision": {
+        "name": "Vision",
+        "job": "Looks at the drawn artwork before the judge scores it"
+      },
+      "fast": {
+        "name": "Fast",
+        "job": "Ad judges, scorers and guardrails"
+      },
+      "safety": {
+        "name": "Safety",
+        "job": "Moderates what you publish"
+      }
+    },
+    "runTitle": "Drop trace",
+    "runLead": "{calls, plural, one {# step} other {# steps}} for “{seed}”, in order.",
+    "step": "Step",
+    "job": "Job",
+    "model": "Model",
+    "time": "Time",
+    "result": "Result",
+    "ok": "Done",
+    "failed": "Failed",
+    "rule": "Rule",
+    "noModel": "None (a rule in code)",
+    "seconds": "{seconds} s",
+    "agents": {
+      "ad_copy": "Ad copy",
+      "ad_judge": "Ad judge",
+      "autopilot_pick_idea": "Autopilot picks an idea",
+      "autopilot_review_design": "Autopilot reviews a design",
+      "design_brief": "Design brief",
+      "design_judge": "Design judge",
+      "design_vision": "Design judge looks at the art",
+      "grounding_guard": "Numbers and claims check",
+      "research_themes": "Research themes"
+    },
+    "emptyTitle": "No traced drops yet",
+    "empty": "Start a drop. Each AI step it takes shows up here with its model."
   },
   "Billing": {
     "perMonth": "/ month",
@@ -715,7 +1173,7 @@
     "creditTag": {
       "title": "What a credit buys",
       "subtitle": "Taken when a step runs, given back if it fails",
-      "research": "Trend research",
+      "research": "Trend research, or an idea picked on Home",
       "design": "One design",
       "assist": "Ad copy, or an autopilot call",
       "manualDrop": "A drop you approve",
@@ -737,7 +1195,10 @@
       "packTitle": "Need a few more credits?",
       "comingSoon": "Paid plans and credit packs are coming soon. Your Free credits refresh every month.",
       "comingSoonRenews": "Paid plans and credit packs are coming soon. Your Free credits refresh on {date}.",
-      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire."
+      "redeemSuccess": "Code redeemed. Your credits arrive in a few seconds and never expire.",
+      "setupRetrying": "Your credits couldn't be set up yet. We're retrying; this page updates on its own.",
+      "setupLinked": "This email's billing is linked to another wovain account. Contact support to move it.",
+      "setupUnverified": "Verify your email to set up your credits. Open the link we emailed you."
     },
     "paywall": {
       "creditsTitle": "You're out of credits for this step",
@@ -772,6 +1233,8 @@
         "alreadyRedeemed": "You've already redeemed this code.",
         "notFree": "Only codes for free credits work for now. Paid plans are coming soon.",
         "tooMany": "Too many tries. Wait a few minutes, then try again.",
+        "emailLinked": "This email's billing is linked to another wovain account. Contact support.",
+        "emailNotVerified": "Verify your email first, then redeem the code.",
         "error": "The code didn't go through. Try again in a moment."
       }
     }
@@ -802,7 +1265,7 @@
     "faq": {
       "credit": {
         "question": "What is a credit?",
-        "answer": "A credit pays for one unit of wovain's work. Trend research takes 3, a design takes 2, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 10 credits. If a step fails, its credits come back."
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 5 (so does starting a drop from a researched idea on Home), a design takes 4, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 18 credits. If a step fails, its credits come back."
       },
       "yours": {
         "question": "What do I pay outside wovain?",
@@ -824,6 +1287,1333 @@
         "question": "When can I buy Studio, Label or credits?",
         "answer": "Soon. For now every account is on Free. Press Notify me on the plan you want, so we know which one to open first."
       }
+    }
+  },
+  "Onboarding": {
+    "health": {
+      "state": {
+        "connected": "Connected",
+        "expired": "Sign-in expired",
+        "missing": "Not connected"
+      },
+      "neededFor": {
+        "publish": "Publishes your products to your shop.",
+        "ads": "Builds your ad campaigns, paused until you approve them.",
+        "art": "Draws your designs on your fal account."
+      },
+      "optional": "You can add it later."
+    },
+    "brand": {
+      "title": "Your brand (optional)",
+      "lead": "Not sure what to sell yet? wovain can suggest starter brands from what people love right now, or ask you a few questions. You can change everything afterwards.",
+      "start": {
+        "label": "How do you want to start?",
+        "auto": {
+          "title": "Suggest for me",
+          "body": "Starter brands from what's rising and still open."
+        },
+        "questions": {
+          "title": "Ask me a few questions",
+          "body": "Five quick questions about you and your buyers."
+        },
+        "manual": {
+          "title": "I already know my brand",
+          "body": "Fill in your brand yourself."
+        }
+      },
+      "discover": {
+        "working": "Reading what people love and what's already selling…",
+        "failed": "We couldn't reach our taste data, so there are no suggestions yet.",
+        "retry": "Try again",
+        "empty": "We found too little to suggest a brand from this. Try the questions, or other answers.",
+        "more": "Show me others",
+        "use": "Use this",
+        "using": "In use",
+        "applied": "Filled in from {name}. Change anything below.",
+        "buyers": "Who buys",
+        "taste": "Their taste",
+        "products": "Start with",
+        "why": "Why it could sell",
+        "evidence": "Evidence",
+        "match": "Taste match {value, number, percent}",
+        "news": "{count, plural, =0 {No recent news} one {# recent story} other {# recent stories}}",
+        "competition": {
+          "low": "Few shops sell this",
+          "medium": "Some shops sell this",
+          "high": "Crowded: many shops sell this",
+          "unknown": "Competition not checked"
+        },
+        "listings": "{count, plural, one {# similar listing} other {# similar listings}} in {sampled, number} results",
+        "blankAssumed": "Colours shown on a classic tee. Connect Fourthwall to check them on your real blank.",
+        "blankOn": "Colours checked on the {name}",
+        "credit": "Taste data by Qloo",
+        "partial": "Some trend checks didn't finish, so a few cards show less evidence."
+      },
+      "ages": {
+        "24_and_younger": "under 25",
+        "25_to_29": "25 to 29",
+        "30_to_34": "30 to 34",
+        "35_to_44": "35 to 44",
+        "45_to_54": "45 to 54",
+        "55_and_older": "55 and over"
+      },
+      "gender": {
+        "female": "mostly women",
+        "male": "mostly men",
+        "mixed": "women and men"
+      },
+      "kinds": {
+        "t-shirt": "T-shirt",
+        "hoodie": "Hoodie",
+        "crewneck": "Sweatshirt",
+        "tote bag": "Tote bag",
+        "mug": "Mug",
+        "sticker": "Sticker",
+        "poster": "Poster",
+        "cap": "Cap"
+      },
+      "audiences": {
+        "street_fashion": "Street fashion",
+        "high_fashion": "High fashion",
+        "sneakerheads": "Sneakers",
+        "vintage_apparel": "Vintage clothes",
+        "discount_shoppers": "Bargain hunters",
+        "jewellery": "Jewellery",
+        "health_and_beauty": "Health and beauty",
+        "photography": "Photography",
+        "video_gamer": "Video games",
+        "musician": "Making music",
+        "dance": "Dance",
+        "running": "Running",
+        "hiking": "Hiking",
+        "outdoors": "The outdoors",
+        "travel": "Travel",
+        "yoga": "Yoga",
+        "basketball": "Basketball",
+        "soccer": "Football (soccer)",
+        "adrenaline_rushers": "Thrill seekers",
+        "arts_culture": "Art and culture",
+        "music_festivals": "Music festivals",
+        "cinephile": "Film lovers",
+        "avid_reader": "Books",
+        "coffee": "Coffee",
+        "foodie": "Food",
+        "art_collectibles": "Art collecting",
+        "advertising_design": "Design and advertising"
+      },
+      "questions": {
+        "progress": "Question {current, number} of {total, number}",
+        "next": "Next",
+        "back": "Back",
+        "finish": "Show my starter brands",
+        "optional": "Optional",
+        "needOne": "Pick at least one thing they're into, or one thing you love.",
+        "feeling": {
+          "title": "How should someone feel wearing it?",
+          "options": {
+            "cosy": "Cosy",
+            "proud": "Proud",
+            "funny": "Funny",
+            "rebellious": "Rebellious",
+            "calm": "Calm",
+            "dreamy": "Dreamy"
+          }
+        },
+        "loves": {
+          "title": "What do you and your buyers love?",
+          "help": "Artists, films, shows or brands. Up to 5.",
+          "label": "Search for something you love",
+          "placeholder": "Start typing, e.g. Studio Ghibli",
+          "searching": "Searching…",
+          "none": "Nothing found for that. Try another name.",
+          "remove": "Remove {name}",
+          "picked": "Picked"
+        },
+        "who": {
+          "title": "Who is it for?",
+          "age": "Their age",
+          "gender": "Mostly",
+          "anyone": "Anyone",
+          "women": "Women",
+          "men": "Men",
+          "interests": "What they're into (up to 3)"
+        },
+        "goal": {
+          "title": "What's your goal?",
+          "options": {
+            "side_income": "Side income",
+            "build_brand": "Build a brand",
+            "test_fast": "Test ideas fast",
+            "existing_audience": "Sell to people who already follow me"
+          }
+        },
+        "involvement": {
+          "title": "How involved do you want to be?",
+          "options": {
+            "hands_off": "Let wovain run it",
+            "some": "Approve the big calls",
+            "hands_on": "Hands-on with every design"
+          }
+        }
+      },
+      "fields": {
+        "info": "About {field}",
+        "suggestions": "Suggestions",
+        "suggestRest": "Suggest the rest from my references",
+        "suggesting": "Suggesting…",
+        "niche": {
+          "label": "Niche",
+          "help": "The group of people you make things for, in a few words.",
+          "tip": "For example: cottagecore plant people, or 90s anime nostalgia.",
+          "placeholder": "cottagecore plant people"
+        },
+        "references": {
+          "label": "Taste references",
+          "help": "3 to 5 artists, films, shows or brands your buyers love.",
+          "tip": "For example: Studio Ghibli, Phoebe Bridgers, Patagonia. wovain never prints these names; it uses them to understand your buyers' taste.",
+          "item": "Reference {number, number}",
+          "add": "Add another",
+          "checking": "Checking…",
+          "placed": "Got it",
+          "proxy": "Got it, through related names",
+          "notFound": "We couldn't place this one. Try a more specific artist, film or brand.",
+          "failed": "We couldn't check this one just now. It stays in your list."
+        },
+        "voice": {
+          "label": "How you sound",
+          "help": "How your listings and ads usually talk. Optional: each drop adapts it.",
+          "tip": "For example: dry and witty, warm and cosy, or bold and loud. Pick the line that sounds like you; each drop adjusts the tone to its audience.",
+          "custom": "Write it in your own words",
+          "customLabel": "Your usual tone, and anything wovain should never say",
+          "customPlaceholder": "warm and a bit cheeky, never crude"
+        },
+        "palette": {
+          "label": "Your colours",
+          "help": "The shirt colours and the 2 to 5 art colours that make a drop look like one brand. Optional: each drop adapts them.",
+          "tip": "Pick a set, or describe what you want in plain words: warmer, bolder, or rust and cream. wovain checks every art colour stands out on the shirt colours.",
+          "none": "No colours yet. Pick a set, describe them in a few words, or skip: each drop suggests its own.",
+          "on": "on {garments}",
+          "adjusted": "Adjusted to stand out on the shirt",
+          "advanced": "Advanced: enter colour codes",
+          "hexLabel": "Art colours as hex codes",
+          "hexHelp": "Up to {max, number}, separated by commas, like #1A1A1A.",
+          "hexInvalid": "{color} isn't a colour code like #1A1A1A.",
+          "clear": "Clear colours",
+          "wordsLabel": "Describe your colours",
+          "wordsPlaceholder": "warmer, bolder, or rust and cream",
+          "wordsSubmit": "Suggest colours",
+          "wordsBusy": "Finding colours…",
+          "wordsNone": "No colour set for those words stands out on the shirt. Try other words."
+        }
+      },
+      "buyersPanel": {
+        "title": "Your buyers",
+        "who": "Who they are",
+        "whoMeaning": "Design and write for them first.",
+        "love": "What else they love",
+        "loveMeaning": "Borrow the mood of these in your art, never their names.",
+        "themes": "Themes to try",
+        "themesMeaning": "Each one could be a drop.",
+        "loading": "Reading your buyers' taste…",
+        "failed": "We couldn't read your buyers just now.",
+        "retry": "Try again",
+        "empty": "Add references above to see who buys.",
+        "unknownAge": "people of all ages"
+      },
+      "placeholder": {
+        "first": "Wes Anderson",
+        "second": "Comme des Garçons",
+        "third": "Studio Ghibli"
+      },
+      "skip": "Skip, just help me sell",
+      "save": "Save and continue",
+      "saving": "Saving…",
+      "saveFailed": "Saving didn't work: {message}",
+      "notRemembered": "Your brand is saved. wovain couldn't add it to its memory this time, so save it again later.",
+      "needReferences": "Add at least 3 taste references to save.",
+      "entityTypes": {
+        "artist": "artist",
+        "book": "book",
+        "brand": "brand",
+        "movie": "film",
+        "person": "person",
+        "podcast": "podcast",
+        "tv_show": "TV show",
+        "videogame": "game"
+      }
+    },
+    "autonomy": {
+      "title": "How much wovain does on its own",
+      "lead": "Pick how far wovain goes before it asks you. Anything that spends money waits for your approval.",
+      "levelLegend": "Autonomy",
+      "levels": {
+        "suggest": {
+          "title": "Suggest",
+          "body": "wovain suggests drops and changes. You start everything."
+        },
+        "draft": {
+          "title": "Draft",
+          "body": "wovain drafts designs and hidden products. Nothing goes live until you approve it."
+        },
+        "publish_ads_paused": {
+          "title": "Publish, with ads paused",
+          "body": "wovain publishes products and builds paused campaigns. You approve any spend."
+        }
+      },
+      "capsLegend": "Ad spend limits",
+      "capsHelp": "In US dollars. wovain never spends past them, even with your approval. 0 means no ad spend.",
+      "daily": "Per day",
+      "monthly": "Per month",
+      "capInvalid": "Enter an amount between $0 and $1,000,000.",
+      "monthlyBelowDaily": "The monthly limit can't be lower than the daily one.",
+      "skip": "Skip",
+      "save": "Save and continue",
+      "saving": "Saving…",
+      "saveFailed": "Saving didn't work: {message}"
+    }
+  },
+  "Autopilot": {
+    "title": "Autopilot",
+    "lead": "What wovain noticed for your brand, what it did, and why.",
+    "scanNow": "Scan now",
+    "scanFailed": "The scan didn't start.",
+    "actionFailed": "That didn't work: {message}",
+    "levels": {
+      "suggest": "Suggest only",
+      "draft": "Draft for me",
+      "publish_ads_paused": "Publish, ads paused"
+    },
+    "levelHints": {
+      "suggest": "Autopilot suggests drops. You start each one.",
+      "draft": "Autopilot starts the drop, then waits for you to pick ideas.",
+      "publish_ads_paused": "Autopilot runs the drop and publishes it. Ads stay paused until you turn them on."
+    },
+    "paused": "You paused the agent. Suggestions wait for you.",
+    "credits": "{used, number} of {cap, number} autopilot credits used today. A drop costs about {estimate, number}.",
+    "notEntitled": "Autopilot isn't on your plan yet, so every suggestion waits for you.",
+    "noBrand": "Autopilot needs your brand profile (niches and taste references) to know what to watch.",
+    "emptyTitle": "No suggestions yet",
+    "empty": "Every 6 hours autopilot checks Qloo and this week's news against your brand. Matches show up here with their sources.",
+    "accept": "Start the drop",
+    "dismiss": "Dismiss",
+    "openRun": "Open the drop",
+    "evidence": "Sources",
+    "log": "What happened",
+    "triggers": {
+      "qloo": "Qloo trend",
+      "trend": "In the news"
+    },
+    "statuses": {
+      "new": "New",
+      "accepted": "Started",
+      "dismissed": "Dismissed",
+      "expired": "Expired"
+    },
+    "approvals": {
+      "pending": "Waiting for you",
+      "approved": "Approved",
+      "executing": "Starting",
+      "done": "Drop started",
+      "failed": "Didn't start",
+      "rejected": "Rejected",
+      "denied": "Refused",
+      "expired": "Expired",
+      "reverted": "Undone"
+    },
+    "steps": {
+      "scan": "Scanned your brand: {input}.",
+      "qlooRising": "Asked Qloo what's rising with your audience: {names}.",
+      "qlooNone": "Asked Qloo what's rising with your audience. Nothing came back.",
+      "qlooFailed": "Qloo didn't answer, so this scan used the news only.",
+      "tavily": "Searched this week's news for “{query}”: {count, plural, =0 {nothing recent} one {# story} other {# stories}}.",
+      "tavilyFailed": "The news search for “{query}” failed.",
+      "match": "{count, plural, =0 {No search found this week's news.} one {# search found this week's news.} other {# searches found this week's news.}}",
+      "suggest": "Suggested a drop on {subject}.",
+      "policyAllow": "Your autonomy level lets autopilot start this drop.",
+      "policyWait": "Your autonomy level says to ask you first.",
+      "policyDeny": "The policy refused this drop.",
+      "notEntitled": "Autopilot isn't on your plan, so this waits for you.",
+      "creditCap": "Today's autopilot credits are used up ({used, number} of {cap, number}), so this waits for you.",
+      "runIdeas": "Started the drop. It waits for you to pick ideas.",
+      "runAutopilot": "Started the drop on autopilot. It picks, approves and publishes; ads stay paused.",
+      "runFailed": "The drop didn't start: {error}",
+      "other": "{step}"
+    },
+    "scans": "Scans with nothing new",
+    "scanNothing": "{count, plural, =0 {No search found this week's news.} one {# search found news, already suggested this week.} other {# searches found news, already suggested this week.}}",
+    "scanning": "Scanning…",
+    "scanProgress": "Scanning, started {seconds, number} s ago",
+    "scanSlow": "Still scanning in the background. Results show up here when it's done.",
+    "scanDone": "{count, plural, =0 {Scan finished. Nothing new this time.} one {Scan finished: # new suggestion.} other {Scan finished: # new suggestions.}}",
+    "scanThrottled": "You scanned {last}. The next scan can run from {next}."
+  },
+  "Voice": {
+    "disclosureTitle": "Before you talk to wovain",
+    "disclosureOk": "Got it",
+    "noMic": "wovain can't use your microphone. Allow it in your browser's site settings, then try again.",
+    "recordFailed": "wovain couldn't record in this browser. Try again, or use another browser.",
+    "notHeard": "wovain didn't catch that. Hold the button and try again.",
+    "dictate": "Dictate: {field}",
+    "dictateHint": "Hold to talk, release to add the words",
+    "listeningField": "Listening. Release to add the words to the field.",
+    "transcribing": "Turning your recording into text.",
+    "disclosureDictation": "wovain doesn't store your recording. fal turns it into text, and the words appear in the field for you to edit. Nothing is sent or run until you submit."
+  },
+  "Store": {
+    "title": "Store",
+    "lead": "Your Fourthwall shop in one place. Every change waits in your approvals first.",
+    "queued": "Sent to your approvals.",
+    "approved": "Approved. wovain is on it.",
+    "openAdmin": "Open in Fourthwall",
+    "newTab": "(opens in a new tab)",
+    "tabs": {
+      "products": "Products",
+      "orders": "Orders",
+      "promotions": "Promotions",
+      "approvals": "Approvals",
+      "waiting": "waiting for you"
+    },
+    "summary": {
+      "label": "Shop summary",
+      "yourShop": "Your shop",
+      "site": {
+        "LIVE": "Live",
+        "COMING_SOON": "Coming soon",
+        "PASSWORD_PROTECTED": "Password protected",
+        "INACTIVE": "Inactive",
+        "unknown": "Status unknown"
+      },
+      "ready": "Ready to sell",
+      "passing": "({done, number} of {total, number} checks pass)",
+      "allChecks": "All readiness checks",
+      "fixIt": "Fix in Fourthwall",
+      "goLive": "Go live",
+      "goLiveTitle": "Take {name} live?",
+      "goLiveTitleFallback": "Take your shop live?",
+      "goLiveBody": "Buyers can visit your storefront and order every live product. You can set it back to coming soon in Fourthwall.",
+      "goingLive": "Your shop is going live.",
+      "back": "Not now",
+      "sales": "Sales",
+      "orders": "Orders",
+      "last28": "Last 28 days, from Fourthwall",
+      "waiting": "Waiting for you",
+      "review": "Review",
+      "nothingWaiting": "Nothing to approve",
+      "payouts": "Payouts",
+      "payout": {
+        "ACTIVE": "Set up",
+        "IN_PROGRESS": "Finishing",
+        "INACTIVE": "Not set up",
+        "unknown": "Unknown"
+      },
+      "payoutFix": "Finish in Fourthwall"
+    },
+    "confirm": {
+      "costTitle": "What it costs you, from Fourthwall",
+      "later": "Decide later"
+    },
+    "readiness": {
+      "title": "Shop readiness",
+      "connectTitle": "Connect Fourthwall to open your shop here",
+      "connectBody": "wovain checks your shop can take orders, then lists your drops, products and orders.",
+      "ready": "Your shop can take orders.",
+      "notReady": "Fix these before anything goes public.",
+      "passed": "(done)",
+      "failed": "(to fix)",
+      "site_live": {
+        "label": "Shop is live",
+        "fix": "In Fourthwall, set your site status to Live."
+      },
+      "verified": {
+        "label": "Shop is verified",
+        "fix": "Fourthwall is still reviewing your shop. Contact Fourthwall support to finish it."
+      },
+      "shipping": {
+        "label": "Shipping is on",
+        "fix": "In Fourthwall, turn on shipping and add at least one shipping profile."
+      },
+      "payouts": {
+        "label": "Payouts are set up",
+        "fix": "In Fourthwall, finish your payout account so sales reach you."
+      }
+    },
+    "queue": {
+      "title": "Approvals",
+      "lead": "Store changes waiting for you, then what already ran. Refunds, cancels and gift cards always wait for you.",
+      "empty": "Nothing waiting for you.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "status": {
+        "pending": "Waiting",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "denied": "Refused",
+        "expired": "Expired",
+        "executing": "Running",
+        "done": "Done",
+        "failed": "Failed",
+        "reverted": "Undone"
+      },
+      "history": "{count, plural, one {# earlier action} other {# earlier actions}}"
+    },
+    "products": {
+      "title": "Products",
+      "lead": "Price, margin and units sold for everything wovain made. Larger sizes carry a surcharge on top of the price.",
+      "allInFourthwall": "All products in Fourthwall",
+      "filterLabel": "Show products",
+      "filter": {
+        "all": "All",
+        "live": "Live",
+        "drafts": "Drafts",
+        "paused": "Hidden",
+        "retired": "Retired"
+      },
+      "search": "Search products",
+      "column": {
+        "product": "Product",
+        "status": "Status",
+        "price": "Price",
+        "margin": "Margin",
+        "sold": "Sold"
+      },
+      "selectAll": "Select all shown",
+      "select": "Select {title}",
+      "selected": "{count, plural, one {# selected} other {# selected}}",
+      "bulkLabel": "Bulk actions",
+      "clear": "Clear",
+      "actions": "Actions for {title}",
+      "fromDrop": "From {name}",
+      "soldShort": "{count, number} sold",
+      "salesSource": "Margin and units sold: last 28 days, from Fourthwall's top-products report.",
+      "empty": "No products yet.",
+      "emptyBody": "Products appear here once you approve designs in a drop.",
+      "emptyAction": "Start a drop",
+      "emptyFiltered": "Nothing matches this filter.",
+      "mockupAlt": "{title} mockup",
+      "view": "View in shop",
+      "editInFourthwall": "Edit in Fourthwall",
+      "rewrite": "Rewrite product page",
+      "reprice": "Change price",
+      "sample": "Order a sample",
+      "move": {
+        "publish": "Publish",
+        "unpublish": "Hide",
+        "retire": "Retire"
+      }
+    },
+    "productStatus": {
+      "hidden": "Draft",
+      "in_review": "In review",
+      "public": "Live",
+      "paused": "Paused",
+      "retired": "Retired"
+    },
+    "impact": {
+      "publish": {
+        "title": "Publish {count, plural, one {# product} other {# products}}?",
+        "body": "Buyers can see and order {count, plural, one {it} other {them}} once your shop is ready. You can hide {count, plural, one {it} other {them}} again at any time."
+      },
+      "unpublish": {
+        "title": "Hide {count, plural, one {# product} other {# products}}?",
+        "body": "Buyers can't see or order {count, plural, one {it} other {them}} until you publish again. Orders already placed aren't affected."
+      },
+      "retire": {
+        "title": "Retire {count, plural, one {# product} other {# products}}?",
+        "body": "{count, plural, one {It is} other {They are}} archived on Fourthwall for good. A retired product can't be published again."
+      },
+      "skipped": "{count, plural, one {# selected product is} other {# selected products are}} already in that state and left alone.",
+      "logged": "Each change is recorded in your approvals.",
+      "back": "Cancel",
+      "sent": "Done. wovain is on it.",
+      "queuedCount": "{count, plural, one {# change waits} other {# changes wait}} in your approvals."
+    },
+    "listing": {
+      "title": "A product page that sells: {title}",
+      "note": "wovain rewrote the title and description the way an e-commerce copywriter would. Compare them as a buyer sees them. Nothing changes in your shop until you approve.",
+      "writing": "Writing the new page…",
+      "before": "Now",
+      "after": "With wovain",
+      "noDescription": "No description yet.",
+      "mockupAlt": "{title} mockup",
+      "issues": "Still to check by eye: {list}.",
+      "issue": {
+        "title_length": "the title is over 60 characters, so search results cut it",
+        "title_shouting": "the title is mostly capitals",
+        "ai_tell": "a phrase reads as machine-written",
+        "exclamation": "it uses an exclamation mark"
+      },
+      "practice": "Main keyword first in a title that fits a search result, one benefit per line, no claim your shop can't back, and the shipping time Fourthwall gives.",
+      "back": "Cancel",
+      "again": "Write another",
+      "confirm": "Use this page"
+    },
+    "reprice": {
+      "title": "Change the price of {title}",
+      "note": "The new price applies to every size; larger sizes keep their surcharge on top.",
+      "price": "New price (USD)",
+      "now": "Now",
+      "after": "After",
+      "same": "Same as now.",
+      "up": "Buyers pay {amount} more per piece once it's applied.",
+      "down": "Buyers pay {amount} less per piece. wovain refuses a price that sells at a loss.",
+      "back": "Cancel",
+      "confirm": "Change price"
+    },
+    "priceCheck": {
+      "label": "Price check",
+      "verdict": {
+        "loss": "Loss: a {size} loses {profit} per sale. wovain won't send this price.",
+        "below_floor": "Below wovain's floor: a {size} leaves {profit} per sale.",
+        "thin": "Profitable, but under the {margin} margin stores keep to pay for ads. A {size} leaves {profit}.",
+        "healthy": "Healthy: at least {margin} margin in every size. A {size} leaves {profit}."
+      },
+      "size": "Size",
+      "cost": "Cost",
+      "price": "Price",
+      "profit": "Profit",
+      "margin": "Margin",
+      "useFloor": "Use {price} (wovain's floor)",
+      "useBenchmark": "Use {price} ({margin} margin)",
+      "source": "Cost: what Fourthwall charges to make each size. Profit: after card fees, tax and a refund reserve.",
+      "noCost": "Fourthwall gave no cost for this product, so the price can't be checked.",
+      "unavailable": "The price check isn't available: {reason}"
+    },
+    "sample": {
+      "title": "Order a sample of {title}",
+      "body": "Pick a variant. You pay at cost on Fourthwall's checkout, in a new tab.",
+      "none": "No variants found."
+    },
+    "preview": {
+      "open": "Preview store",
+      "title": "{name}, as buyers see it",
+      "titleFallback": "Your shop, as buyers see it",
+      "lead": "Your products as they show on the storefront.",
+      "comingSoon": "Your shop is coming soon: buyers see Fourthwall's placeholder page. This is what they'll see once it's live.",
+      "password": "Your shop is password protected: only buyers with the password see this.",
+      "includeDrafts": "Include drafts",
+      "notLive": "Not live",
+      "gridLabel": "Storefront preview",
+      "empty": "No live products yet. Publish one to see it here.",
+      "note": "Fourthwall storefronts can't be shown inside wovain, so this preview uses your product renders.",
+      "openStore": "Open storefront",
+      "openPlaceholder": "See the placeholder page",
+      "editDesign": "Edit design in Fourthwall",
+      "newTab": "(opens in a new tab)",
+      "mockupAlt": "{title} on the storefront"
+    },
+    "orders": {
+      "title": "Orders",
+      "lead": "The latest orders from Fourthwall. Customer details stay in Fourthwall.",
+      "inFourthwall": "Orders in Fourthwall",
+      "empty": "No orders yet.",
+      "refund": "Refund",
+      "cancel": "Cancel order",
+      "reason": "Reason (the buyer may see it)",
+      "previewRefund": "See what it costs",
+      "previewCancel": "See what it costs",
+      "previewing": "Asking Fourthwall…",
+      "back": "Back",
+      "refundTitle": "Refund order {id}",
+      "cancelTitle": "Cancel order {id}",
+      "refundBody": "The remaining {amount} goes back to the buyer. Fourthwall shows what it costs you before anything moves.",
+      "cancelBody": "The whole order is cancelled and refunded, if production hasn't started. Fourthwall shows what it costs you first.",
+      "confirmRefund": "Confirm refund",
+      "confirmCancel": "Confirm cancel",
+      "pages": "Order pages",
+      "newer": "Newer",
+      "older": "Older",
+      "status": {
+        "OPEN": "Open",
+        "CONFIRMED": "Confirmed",
+        "PARTIALLY_IN_PRODUCTION": "In production",
+        "IN_PRODUCTION": "In production",
+        "PARTIALLY_SHIPPED": "Shipping",
+        "SHIPPED": "Shipped",
+        "PARTIALLY_DELIVERED": "Delivering",
+        "DELIVERED": "Delivered",
+        "COMPLETED": "Completed",
+        "ABANDONED": "Abandoned",
+        "CANCELLED": "Cancelled",
+        "FAILED": "Failed"
+      }
+    },
+    "promotions": {
+      "title": "Promotions",
+      "lead": "Discount codes and gift cards for your shop.",
+      "inFourthwall": "Promotions in Fourthwall",
+      "codesTitle": "Discount codes",
+      "codesLead": "wovain switches a code on at its start and off at its end.",
+      "codesEmpty": "No discount codes yet.",
+      "newCode": "New code",
+      "codeLead": "Pick the products, the discount and when it runs. The code is created switched off and goes live at its start.",
+      "code": "Code",
+      "codeHint": "3 to 24 letters or numbers",
+      "percentage": "% off",
+      "maxUses": "Max uses",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "products": "{count, plural, =0 {Products} one {Products (# picked)} other {Products (# picked)}}",
+      "noProducts": "No products yet.",
+      "lossNote": "wovain refuses a discount that would sell any picked product at a loss.",
+      "plan": "Plan code",
+      "back": "Cancel",
+      "end": "End now",
+      "off": "{percent, number}% off",
+      "uses": "{count, plural, one {# use} other {# uses}}",
+      "status": {
+        "LIVE": "Live",
+        "ENDED": "Ended",
+        "ARCHIVED": "Archived",
+        "ALL_USED": "All used"
+      },
+      "giftTitle": "Gift cards",
+      "giftLead": "Store credit for collaborators, giveaways or a make-good. Gift cards are money, so each batch waits for your confirm.",
+      "giftEmpty": "No gift cards yet.",
+      "issue": "Issue gift cards",
+      "amount": "Value per card (USD)",
+      "count": "How many",
+      "expires": "Expires (optional)",
+      "giftTotal": "Up to {total} of store credit in total.",
+      "review": "Review",
+      "confirmIssue": "Issue gift cards",
+      "group": "Batch",
+      "balance": "{remaining} of {initial} left",
+      "expiresOn": "Expires {date}",
+      "giftStatus": {
+        "UNUSED": "Unused",
+        "PARTIALLY_USED": "Partly used",
+        "FULLY_USED": "Used",
+        "EXPIRED": "Expired",
+        "DEACTIVATED": "Deactivated",
+        "ARCHIVED": "Archived"
+      }
+    },
+    "setup": {
+      "title": "Get your shop ready to sell",
+      "titleReady": "Your shop is ready to sell",
+      "show": "Show steps",
+      "hide": "Hide steps",
+      "progress": "{done, number} of {total, number} done",
+      "progressLabel": "Setup progress",
+      "optional": "Optional",
+      "copy": "Copy {value}",
+      "copied": "Copied.",
+      "state": {
+        "done": "(done)",
+        "todo": "(to do)",
+        "waiting": "(waiting)",
+        "check": "(to review)"
+      },
+      "connect": {
+        "label": "Shop connected",
+        "done": "Connected as the shop's owner or a manager.",
+        "todo": "wovain needs an owner or manager to run the shop.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Check your Fourthwall role.",
+        "action": "Reconnect Fourthwall"
+      },
+      "payouts": {
+        "label": "Payouts set up",
+        "done": "Sales reach your bank account.",
+        "todo": "Fourthwall pays your sales out through Stripe. Setting it up takes about 5 minutes, and only the shop owner can do it.",
+        "waiting": "Fourthwall is finishing your payout account.",
+        "check": "Check your payout account.",
+        "action": "Open Billing and payouts",
+        "inProgress": "Stripe still needs a few details before it can pay you.",
+        "step1": "Open Billing and payouts in Fourthwall.",
+        "step2": "Under How you get paid, choose Set up your payouts.",
+        "step3": "Give Stripe your ID and bank details, then come back here. This step ticks off by itself.",
+        "noStripe": "Stripe isn't available in your country? Fourthwall pays through PayPal or bill.com instead: once your balance reaches $25, email support@fourthwall.com with your shop's address. When they've set it up, mark this step done.",
+        "markDone": "Fourthwall support set up my payouts",
+        "confirmed": "You marked payouts as set up by Fourthwall support (PayPal or bill.com)."
+      },
+      "site_live": {
+        "label": "Shop is live",
+        "done": "Buyers can visit and order.",
+        "todo": "Your shop is coming soon. wovain can take it live once you confirm.",
+        "waiting": "Fourthwall is reviewing your shop. Only Fourthwall support can finish it.",
+        "check": "Check your site status.",
+        "support": "Contact Fourthwall support"
+      },
+      "shipping": {
+        "label": "Shipping is on",
+        "done": "Buyers can check out with shipping.",
+        "todo": "Turn on shipping and add a shipping profile in Fourthwall. This ticks off here once it's done.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Check your shipping.",
+        "action": "Set up shipping"
+      },
+      "pixel": {
+        "label": "Meta pixel on your shop",
+        "done": "Your Meta pixel sees visits and sales from your shop.",
+        "todo": "Add your Meta pixel in Fourthwall's settings, then open your storefront once to send a test visit. This ticks off when Meta sees it.",
+        "waiting": "Connect Meta first: wovain finds your pixel there.",
+        "check": "Check your pixel.",
+        "action": "Open Tracking pixels",
+        "test": "Open your storefront (test visit)",
+        "paste": "Pixel ID to paste:",
+        "noDataset": "Meta is connected, but wovain didn't find exactly one pixel on your ad account. Create or pick one in Meta setup.",
+        "connectMeta": "Connect Meta",
+        "step1": "Copy the pixel ID.",
+        "step2": "In Tracking pixels, paste it into the Facebook Pixel field and save.",
+        "step3": "Open your storefront once. This step ticks off when Meta sees the visit, which can take a few minutes.",
+        "capi": "To count the sales ad blockers hide, also connect Meta's Conversions API in Fourthwall. It asks for the same pixel ID and an access token from Meta Events Manager.",
+        "capiAction": "Open Meta Conversions",
+        "automationLead": "wovain can create your Meta pixel (dataset) and connect it to your ad account. Then you paste its ID into Fourthwall.",
+        "setUp": "Set up my pixel",
+        "sendTest": "Send a test event",
+        "setUpFailed": "Meta didn't let wovain set up the pixel. Reconnect Meta in Meta setup, then try again.",
+        "created": "wovain created your pixel and connected it to your ad account.",
+        "found": "wovain found your pixel on your ad account.",
+        "testReceived": "Meta received a test event. See it in Events Manager > Test events with code {code}.",
+        "testMissed": "Meta didn't confirm the test event (code {code}). Try again in a minute.",
+        "noTest": "Publish your shop to send a test event."
+      },
+      "domain": {
+        "label": "Custom domain",
+        "done": "Your domain is connected.",
+        "todo": "Fourthwall is still verifying your domain's DNS records.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Your shop sells on its Fourthwall address. A custom domain is optional.",
+        "action": "Domain settings",
+        "connected": "{domain} is connected.",
+        "pending": "{domain}: {count, plural, one {# DNS record} other {# DNS records}} not verified yet."
+      },
+      "policies": {
+        "label": "Returns, shipping and privacy policies",
+        "done": "Policies are in place.",
+        "todo": "Add your policies in Fourthwall.",
+        "waiting": "Waiting for Fourthwall.",
+        "check": "Fourthwall adds default policies. Review them so they match how you sell.",
+        "action": "Review policies"
+      }
+    },
+    "metaSetup": {
+      "title": "Get your Meta account ready for ads",
+      "titleReady": "Your Meta account is ready for ads",
+      "progressLabel": "Meta setup progress",
+      "progress": "{done, number} of {total, number} done",
+      "optional": "Optional",
+      "connect": "Connect Meta",
+      "reconnect": "Reconnect Meta",
+      "disconnect": "Disconnect Meta",
+      "disconnected": "Meta is disconnected",
+      "notConnected": "Connect your Meta account, and wovain checks what it still needs before your ads can run.",
+      "expired": "Meta's sign-in expired. Reconnect Meta to see where your account stands.",
+      "state": {
+        "done": "done",
+        "todo": "to do",
+        "waiting": "waiting",
+        "check": "check it yourself"
+      },
+      "ad_account": {
+        "label": "Ad account",
+        "action": "Open ad accounts",
+        "altAction": "Open ad accounts",
+        "done": "Your ad account is open to wovain.",
+        "todo": "You need an ad account. Open Meta's ad accounts page, choose Add, then Create a new ad account. Come back here: this card ticks off by itself.",
+        "waiting": "Meta has restricted this ad account. Open Account quality to see why and what Meta asks for.",
+        "check": "Check your ad account in Meta."
+      },
+      "payment": {
+        "label": "Payment method",
+        "action": "Add a payment method",
+        "altAction": "Add a payment method",
+        "done": "Your ad account has a payment method. Meta bills your ad spend to it.",
+        "todo": "Meta charges ad spend to a card or PayPal on your ad account. Open Meta's payment settings, choose Add payment method and save it. Come back here: this card ticks off by itself.",
+        "waiting": "Meta is reviewing this ad account, so payments wait. Open Account quality to see what Meta needs.",
+        "check": "Check the payment method in Meta."
+      },
+      "page": {
+        "label": "Facebook Page",
+        "action": "Add your Page",
+        "altAction": "Create a Page",
+        "done": "Your ads run under your Facebook Page.",
+        "todo": "Ads run under a Facebook Page. If you have one, open Pages in Meta's business settings, choose Add and pick it. If not, create one first (a name and a photo are enough). Come back here: this card ticks off by itself.",
+        "waiting": "Set up your ad account first.",
+        "check": "Check your Page in Meta."
+      },
+      "instagram": {
+        "label": "Instagram account",
+        "action": "Add Instagram",
+        "altAction": "Add Instagram",
+        "done": "Your ads can also run under your Instagram account.",
+        "todo": "Optional: link your Instagram account so your ads show your name on Instagram too. Open Instagram accounts in Meta's business settings and choose Add.",
+        "waiting": "Set up your ad account first.",
+        "check": "Optional: Meta didn't say whether an Instagram account is linked. You can check in Meta's business settings."
+      },
+      "safety_rules": {
+        "label": "Safety rules",
+        "action": "Reconnect Meta",
+        "altAction": "Reconnect Meta",
+        "done": "Ready. wovain can set up the rules that pause your ads, even when wovain is offline.",
+        "todo": "Reconnect Meta and allow everything Meta asks for, so wovain can set up the rules that pause your ads. While Meta reviews wovain's app, this works only for accounts Meta lets test it.",
+        "waiting": "Available once your ad account is set up.",
+        "check": "Reconnect Meta to check the safety rules."
+      }
+    }
+  },
+  "Drops": {
+    "intro": "A drop is 4 to 6 products that share one palette and one mark. Qloo's taste tags pick the style and the product mix. Each product gets its own placements, mockups and price.",
+    "plan": "Make it a capsule",
+    "planning": "Planning the capsule on Fourthwall's catalog…",
+    "building": "Drawing and placing the art. Products appear here as they're ready.",
+    "reviewPass": "The vision check passed: placements, hierarchy and a shared look.",
+    "publish": "Publish drop",
+    "live": "Live: {slug}",
+    "chosenBy": "Style chosen from these Qloo tags: {tags}",
+    "chosenByDefault": "No Qloo tag matched a style, so this drop uses streetwear.",
+    "factsPass": "Print checks passed",
+    "placements": "Placements",
+    "placement": "{art} on {region}",
+    "colors": "Colors",
+    "sizes": "Sizes",
+    "price": "Price",
+    "costSource": {
+      "customization": "costs {cost} to make",
+      "catalog": "about {cost} to make (catalog prices)"
+    },
+    "mockupAlt": "Mockup {index} of {title}",
+    "itemStatus": {
+      "draft": "building",
+      "ready": "ready",
+      "published": "published",
+      "failed": "failed"
+    },
+    "status": {
+      "draft": "Building",
+      "in_review": "Ready to review",
+      "live": "Live",
+      "paused": "Paused",
+      "retired": "Retired"
+    },
+    "family": {
+      "skate_punk": "Skate and punk",
+      "indie_folk": "Indie folk",
+      "anime_gaming": "Anime and gaming",
+      "quiet_luxury": "Quiet luxury",
+      "sports_varsity": "Varsity",
+      "streetwear": "Streetwear"
+    },
+    "art": {
+      "graphic": "Back graphic",
+      "mark": "Mark",
+      "typographic": "Type",
+      "pattern": "All-over pattern",
+      "embroidery": "Embroidery",
+      "label": "Label"
+    },
+    "capsuleTitle": "Make it a capsule",
+    "capsulePick": "Pick an idea above first."
+  },
+  "Launch": {
+    "title": "Your first campaign in 10 minutes",
+    "lead": "Six steps from sign-in to ads running for your first drop. Do them in order, or skip any and come back.",
+    "skip": "Skip setup for now",
+    "timer": {
+      "elapsed": "Time since you signed up:",
+      "target": "of {minutes, number} min",
+      "onTime": "Live in under 10 minutes",
+      "live": "Campaign live"
+    },
+    "checklist": {
+      "title": "Setup",
+      "progress": "{done, number} of {total, number} done",
+      "done": "(done)",
+      "open": "(not yet)",
+      "go": "Do this now"
+    },
+    "steps": {
+      "signin": {
+        "title": "Sign in",
+        "summary": "You're in."
+      },
+      "sell": {
+        "title": "Pick what to sell",
+        "summary": "Choose one of this week's directions: what's rising with an audience and how crowded it is."
+      },
+      "store": {
+        "title": "Set up your store",
+        "summary": "Connect Fourthwall and finish the steps that let your shop take orders."
+      },
+      "meta": {
+        "title": "Connect Meta and set limits",
+        "summary": "Connect your ad account, then choose how much wovain may spend a day and a month."
+      },
+      "design": {
+        "title": "Approve a design",
+        "summary": "wovain researches your direction and draws designs. Approve the ones you'd sell."
+      },
+      "ads": {
+        "title": "Launch your ads",
+        "summary": "Review the ad and its daily budget, then start it."
+      }
+    },
+    "spotlight": {
+      "close": "Got it",
+      "sell": "Pick a direction to start. You can change it later.",
+      "store": "Connect your Fourthwall shop here. You come back to this step when you're done.",
+      "meta": "Connect Meta here. Your ads never spend more than the limits you set below.",
+      "design": "Start here. When your designs are ready, approve them and come back.",
+      "ads": "Open your drop to review the ad and start it."
+    },
+    "sell": {
+      "title": "What will you sell?",
+      "lead": "Pick a direction or write your own brief. Each direction comes with why it's rising now.",
+      "brand": "Add your brand (optional): directions then fit it",
+      "next": "Next: your store"
+    },
+    "store": {
+      "title": "Set up your store",
+      "lead": "Your products sell on your own Fourthwall shop. Each card opens the right page and ticks off when you come back.",
+      "next": "Next: Meta"
+    },
+    "meta": {
+      "title": "Connect Meta and set your limits",
+      "lead": "Ads run in your own Meta account. Nothing spends without your approval, and never beyond your limits.",
+      "next": "Next: your designs"
+    },
+    "design": {
+      "title": "Approve a design",
+      "lead": "wovain researches “{brief}”, picks the strongest ideas and draws designs for them.",
+      "noBrief": "Pick what to sell first: wovain researches it and draws designs for it.",
+      "start": "Find ideas and draw designs",
+      "working": "wovain is researching and drawing. Open your drop to pick ideas and approve designs; this step ticks off when you come back.",
+      "ready": "Your drop is waiting for you. Approve a design, then come back here.",
+      "open": "Open my drop"
+    },
+    "ads": {
+      "title": "Launch your ads",
+      "lead": "Your products are ready. Review the ad and its daily budget in your drop, then start it.",
+      "needsDesign": "Approve a design first. Your ad is made from it.",
+      "open": "Review and launch ads"
+    },
+    "finished": {
+      "title": "Your campaign is live",
+      "lead": "Products, store, ads, spend and results are all on one page.",
+      "open": "See my campaign"
+    },
+    "off": {
+      "title": "Setup isn't on for your account yet",
+      "body": "You can still connect your accounts from Connections and start a drop.",
+      "back": "Back to overview"
+    },
+    "campaign": {
+      "title": "Here's your campaign",
+      "lead": "Everything your drop “{brief}” made, in one place.",
+      "store": "Open my store",
+      "spend": {
+        "title": "Spend and limits",
+        "source": "Your limits apply to every campaign",
+        "daily": "Daily ad budget",
+        "dailyCap": "Daily limit",
+        "monthlyCap": "Monthly limit"
+      },
+      "products": {
+        "title": "Products",
+        "none": "No products yet. Approve a design in your drop to make them.",
+        "mockupAlt": "Product mockup",
+        "view": "View in store",
+        "status": {
+          "hidden": "Draft",
+          "in_review": "Waiting for approval",
+          "public": "For sale",
+          "paused": "Paused",
+          "retired": "Retired"
+        }
+      },
+      "ads": {
+        "title": "Ads",
+        "none": "No ad yet for this drop.",
+        "create": "Create the ad"
+      }
+    }
+  },
+  "StoryHome": {
+    "greeting": "Hi {name}",
+    "lead": "What sells now, from Qloo, and the drops wovain is making from it.",
+    "start": "Start a drop",
+    "next": {
+      "eyebrow": "Next step",
+      "sell": {
+        "title": "Pick what to sell",
+        "body": "Start from one of Qloo's directions below, or write your own brief.",
+        "action": "See what sells now"
+      },
+      "store": {
+        "title": "Get your shop ready to sell",
+        "body": "Connect Fourthwall so wovain can price and publish your products.",
+        "progress": "{done, number} of {total, number} store steps done. Fourthwall needs them before your first sale.",
+        "action": "Open Store"
+      },
+      "meta": {
+        "title": "Connect Meta and set your limits",
+        "body": "wovain builds your campaign paused, inside the spend limits you set.",
+        "action": "Set up Meta"
+      },
+      "design": {
+        "title": "Approve a design",
+        "body": "Your drop “{brief}” is waiting for you.",
+        "action": "Open the drop"
+      },
+      "ads": {
+        "title": "Launch your ads",
+        "body": "Your drop “{brief}” has a design. Its paused campaign is one step away.",
+        "action": "Open the drop"
+      },
+      "done": {
+        "title": "Your campaign is built",
+        "body": "Start your next drop from what sells now.",
+        "action": "See what sells now"
+      }
+    },
+    "progress": {
+      "title": "Drops in progress",
+      "all": "All drops",
+      "empty": "No drop in progress.",
+      "emptyLink": "Start one from what sells now."
+    },
+    "results": {
+      "title": "Results, last 28 days",
+      "source": "Fourthwall reports",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "orders": "Orders",
+      "emptyTitle": "Your first sale shows here",
+      "empty": "Revenue, profit and orders appear once a product from a drop sells.",
+      "all": "All results"
+    }
+  },
+  "SettingsHub": {
+    "title": "Settings",
+    "lead": "The accounts wovain acts through, your brand, billing and your account.",
+    "connections": {
+      "title": "Connections",
+      "body": "Fourthwall and Meta: your shop, your ad account, Page and pixel."
+    },
+    "brand": {
+      "title": "Brand (optional)",
+      "body": "Taste references that steer what wovain suggests. You can sell without one."
+    },
+    "billing": {
+      "title": "Billing",
+      "body": "Your plan, your credits and what each step costs."
+    },
+    "account": {
+      "title": "Account and security",
+      "body": "Your name, email, password and sessions."
+    }
+  },
+  "IdeaCard": {
+    "sections": {
+      "make": "What to make",
+      "why": "Why it sells",
+      "audience": "Who buys and where",
+      "competition": "Competition"
+    },
+    "dropped": {
+      "no_qloo_evidence": "No Qloo evidence",
+      "no_demand_proof": "No proof that it sells",
+      "demand_unknown": "Demand unknown",
+      "no_competition_read": "The competition couldn't be read",
+      "saturated": "Too crowded: too many similar listings or advertisers",
+      "no_title": "No title backed by the evidence"
+    },
+    "level": {
+      "open": "Open",
+      "sweet-spot": "Sweet spot",
+      "crowded": "Crowded"
+    },
+    "sameBuyers": "Same buyers as your brief",
+    "droppedCount": "{count, plural, one {# idea left out} other {# ideas left out}} for weak evidence",
+    "caution": {
+      "demand_unknown": "Unconfirmed: the demand check couldn't run, so whether it sells is unknown.",
+      "no_demand_proof": "Unconfirmed: no bestseller, reviews or long-running ads found for it yet.",
+      "no_competition_read": "Unconfirmed: the listings check couldn't run, so the competition is unknown.",
+      "saturated": "Crowded: many similar listings or advertisers already sell it."
+    },
+    "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
+    "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:",
+    "unavailable": "Not available: {reason}",
+    "tagTitle": "Qloo tag “{tag}”",
+    "reasons": {
+      "not_read": "not read yet",
+      "read_failed": "the read failed",
+      "not_connected": "connect Meta to read it",
+      "none_found": "nothing was found",
+      "ungrounded": "the words didn't match the evidence",
+      "raw_tag": "only the raw Qloo tag came back"
+    },
+    "make": {
+      "products": "Proven on: {products}",
+      "style": "Style: {style}"
+    },
+    "why": {
+      "affinity": "Qloo: “{tag}” fits this audience ({affinity})",
+      "news": "{count, plural, =0 {No news this month} one {# news story this month} other {# news stories this month}}",
+      "market": "{bestsellers, plural, =0 {No bestsellers} one {# bestseller} other {# bestsellers}}, {reviews, plural, =0 {no reviews} one {# review} other {# reviews}} on marketplaces",
+      "marketMissing": "Marketplaces: not available, {reason}",
+      "ads": "{advertisers, plural, =0 {No shop advertising it} one {# shop advertising it} other {# shops advertising it}}, {validated, number} for 14 days or more",
+      "adsMissing": "Meta Ad Library: not available, {reason}",
+      "demandMissing": "Proof of demand: not available, {reason}"
+    },
+    "audience": {
+      "sameAsBrief": "Same buyers as your brief.",
+      "fromBrief": "from your brief",
+      "noAges": "Ages not known",
+      "places": "Where: {places}",
+      "interests": "Into: {interests}"
+    },
+    "competition": {
+      "level": {
+        "open": "Open",
+        "sweet-spot": "Sweet spot",
+        "crowded": "Crowded"
+      },
+      "listings": "{count, plural, =0 {No similar listings} one {# similar listing} other {# similar listings}}",
+      "listingsOf": "{count, number} similar of {sampled, number} listings read",
+      "medianPrice": "They sell for about {price}",
+      "noPrice": "Prices not read",
+      "advertisers": "{count, plural, =0 {no advertisers} one {# advertiser} other {# advertisers}}",
+      "gaps": "Nobody covers: {gaps}"
+    },
+    "mark": {
+      "decision": "Qloo picked “{tag}” for these buyers: it is a taste they share.",
+      "tag": "Qloo tag",
+      "affinity": "Taste affinity",
+      "audience": "Qloo audience",
+      "entities": "Rose with",
+      "places": "Top places"
+    }
+  },
+  "Alerts": {
+    "title": "Alerts",
+    "lead": "wovain tells you when it pauses an ad, stops your campaigns, asks to raise a budget, needs your approval, makes your first sale or fails at something. Choose where each alert goes.",
+    "loading": "Loading your alerts…",
+    "off": "Alerts aren't available on your account yet.",
+    "channelsTitle": "Where alerts can go",
+    "gridTitle": "Which alerts go where",
+    "gridCaption": "Each alert type and the channels it goes to",
+    "typeColumn": "Alert",
+    "toggle": "Send {type} alerts by {channel}",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Couldn't save your alerts. Try again.",
+    "channels": {
+      "email": "Email",
+      "push": "Phone",
+      "telegram": "Telegram",
+      "emailNone": "No email address on your account.",
+      "pushNone": "No phone yet. Sign in to the wovain app and allow notifications.",
+      "pushDevices": "{count, plural, one {# phone} other {# phones}}",
+      "telegramUnavailable": "isn't set up on this site.",
+      "telegramConnect": "Connect Telegram",
+      "telegramCheck": "I've pressed Start",
+      "telegramConnected": "Connected.",
+      "telegramConnectedAs": "Connected as @{username}.",
+      "telegramDisconnect": "Disconnect",
+      "telegramFailed": "Telegram didn't answer. Try again in a minute."
+    },
+    "quiet": {
+      "title": "Quiet hours",
+      "lead": "During quiet hours, phone and Telegram alerts wait until the end. Email still goes at once.",
+      "on": "Hold phone and Telegram alerts at night",
+      "start": "From",
+      "end": "Until",
+      "timeZone": "In your time zone, {timeZone}."
+    },
+    "types": {
+      "rule_action": {
+        "label": "Ads paused or stopped",
+        "hint": "A rule paused an ad or a campaign, or stopped every campaign at a cap."
+      },
+      "scale_request": {
+        "label": "Budget raise requests",
+        "hint": "A product sells and a rule asks to raise its budget."
+      },
+      "approval": {
+        "label": "Approvals waiting",
+        "hint": "Another action waits for your yes or no."
+      },
+      "first_sale": {
+        "label": "First sale",
+        "hint": "Your shop makes its first sale."
+      },
+      "failure": {
+        "label": "Failures",
+        "hint": "A job failed after several tries."
+      },
+      "updates": {
+        "label": "Suggestions and finished runs",
+        "hint": "New ideas from autopilot, and runs that finish."
+      }
+    }
+  },
+  "Qloo": {
+    "decided": "Decided by Qloo",
+    "title": "What Qloo decided"
+  },
+  "DropStory": {
+    "eyebrow": "Drop",
+    "started": "Started {date}",
+    "review": "Review",
+    "notAvailable": "Not available: {reason}",
+    "state": {
+      "done": "Done",
+      "waiting": "Needs you",
+      "working": "Working",
+      "stopped": "Stopped",
+      "not_started": "Not started"
+    },
+    "why": {
+      "title": "Why it sells",
+      "decision": "Qloo ranks “{theme}” as the best fit for the people who buy what you described.",
+      "affinity": "Taste affinity (Qloo)",
+      "affinityMissing": "Not available: Qloo returned no affinity for this theme",
+      "news": "News this week",
+      "listings": "Similar listings",
+      "sources": "Sources",
+      "noIdea": "Qloo is still reading this brief.",
+      "noMoment": "no news summary for this theme yet.",
+      "noSources": "no sources were found for this theme."
+    },
+    "who": {
+      "title": "Who buys and where",
+      "decision": "These buyers and places come from Qloo's audience for “{theme}”.",
+      "audiences": "Audiences",
+      "places": "Top places",
+      "brands": "They also like",
+      "noIdea": "Qloo is still reading this brief."
+    },
+    "ideas": {
+      "title": "Ideas",
+      "summary": "{count, plural, one {# idea} other {# ideas}}, {picked, number} picked.",
+      "notStarted": "Ideas appear once Qloo and the news are read."
+    },
+    "designs": {
+      "title": "Designs",
+      "summary": "{approved, number} of {count, number} designs approved.",
+      "notStarted": "Designs are drawn for the ideas you pick."
+    },
+    "products": {
+      "title": "Product",
+      "summary": "{count, plural, one {# product} other {# products}} on Fourthwall.",
+      "notStarted": "Products are listed once you approve a design."
+    },
+    "campaign": {
+      "title": "Campaign",
+      "summary": "{count, plural, =0 {No campaign yet.} one {# campaign, created paused.} other {# campaigns, created paused.}}",
+      "notStarted": "The campaign is built paused once your products are live.",
+      "decision": "Your ads reach Qloo's audience for your brand, matched to Meta interests.",
+      "audiences": "Qloo audiences",
+      "interests": "Meta interests",
+      "agesLabel": "Ages",
+      "ages": "{min, number} to {max, number}"
+    },
+    "results": {
+      "title": "Results",
+      "open": "See your campaign and its results",
+      "notStarted": "Orders, spend and profit show here once the campaign runs."
     }
   }
 }

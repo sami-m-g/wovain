@@ -34,13 +34,9 @@ const MOVED_PAGES = [
   ["/use-cases/band-merch", "/use-cases"],
   ["/guides/price-print-on-demand-merch", "/guides/price-print-on-demand"],
   ["/guides/launch-a-merch-drop", "/guides/launch-a-capsule-drop"],
+  // Products became the Store (store manager).
+  ["/dashboard/products", "/dashboard/store"],
 ] as const;
-
-// The status page is GitLab Pages' unique domain for the project. status.<apex>
-// reaches this app through a Cloud Run domain mapping (infra/index.ts) and is
-// proxied there, so the URL stays put and no Pages domain (a Maintainer
-// setting) is needed. src/proxy.ts lets the host through untouched.
-const statusPages = "https://showcase-10d519.gitlab.io";
 
 const nextConfig: NextConfig = {
   images: {
@@ -77,15 +73,8 @@ const nextConfig: NextConfig = {
       },
       { destination: `${posthogHost}/:path*`, source: "/ingest/:path*" },
     ],
-    beforeFiles: [
-      {
-        destination: `${statusPages}/:path*`,
-        has: [{ type: "host", value: "status.wovain.com" }],
-        source: "/:path*",
-      },
-    ],
   }),
-  // The durable run engine (packages/api/src/workflows) runs as plain
+  // The durable run engine (packages/mastra/src/mastra/workflows) runs as plain
   // Node: Mastra and Inngest load optional workers and native modules a
   // bundle can't resolve.
   serverExternalPackages: [

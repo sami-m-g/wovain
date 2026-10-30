@@ -1,14 +1,28 @@
+import { billingCatalog } from "@wovain/billing/catalog";
 import { OFFERS } from "@wovain/billing/plans";
-import { REDEEM_LIMIT, REDEEM_SURFACES } from "@wovain/billing/redeem";
+import { REDEEM_SURFACES } from "@wovain/billing/redeem";
+import {
+  billingStatus,
+  openPortal,
+  startCheckout,
+} from "@wovain/mastra/flow/billing";
+import { redeemCode } from "@wovain/mastra/flow/promo";
 import { z } from "zod";
 
-import { billingStatus, openPortal, startCheckout } from "../flow/billing";
-import { redeemCode } from "../flow/promo";
 import { protectedProcedure } from "../index";
 
 // Why a promo code was refused, as typed oRPC errors: the Billing page
 // reads `code` and words it in the merchant's language.
 const redeemErrors = {
+  BILLING_EMAIL_LINKED: {
+    message:
+      "This email's billing is linked to another wovain account. Contact support.",
+    status: 409,
+  },
+  BILLING_EMAIL_NOT_VERIFIED: {
+    message: "Verify your email first, then redeem the code.",
+    status: 403,
+  },
   PROMO_ALREADY_REDEEMED: {
     message: "You've already redeemed this code",
     status: 409,
@@ -57,8 +71,15 @@ export const billingRouter = {
       switch (result.status) {
         case "rate_limited": {
           throw errors.TOO_MANY_REQUESTS({
-            data: { retryAfterSeconds: REDEEM_LIMIT.windowMs / 1000 },
+            data: {
+              retryAfterSeconds: billingCatalog().redeemLimit.windowSeconds,
+            },
           });
+        }
+        case "blocked": {
+          throw result.reason === "email_not_verified"
+            ? errors.BILLING_EMAIL_NOT_VERIFIED()
+            : errors.BILLING_EMAIL_LINKED();
         }
         case "refused": {
           const refusal = {

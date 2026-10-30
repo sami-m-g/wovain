@@ -1,11 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { CREDIT_PACK, PLANS } from "@wovain/billing/plans";
 import { Button } from "@wovain/ui/components/button";
 import { Bot, Coins } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { useCatalog } from "@/components/billing/catalog-provider";
 import { CheckoutButton } from "@/components/billing/checkout-button";
 import { NotifyButton } from "@/components/billing/notify-button";
 import { useMoney } from "@/components/billing/plan-cards";
@@ -19,7 +19,10 @@ const Offers = ({ kind }: { kind: Kind }) => {
   const t = useTranslations("Billing.paywall");
   const billing = useTranslations("Billing");
   const money = useMoney();
-  const { studio } = PLANS;
+  const {
+    creditPack,
+    plans: { studio },
+  } = useCatalog();
   return (
     <>
       <p className="figures text-sm">
@@ -35,8 +38,8 @@ const Offers = ({ kind }: { kind: Kind }) => {
         {kind === "credits" ? (
           <CheckoutButton offer="pack">
             {t("pack", {
-              credits: CREDIT_PACK.credits,
-              price: money(CREDIT_PACK.priceCents),
+              credits: creditPack.credits,
+              price: money(creditPack.priceCents),
             })}
           </CheckoutButton>
         ) : null}

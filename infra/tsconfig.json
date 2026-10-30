@@ -8,5 +8,14 @@
     "moduleResolution": "nodenext",
     "types": ["node"]
   },
-  "include": ["*.ts", "bootstrap/*.ts", "policy/*.ts"]
+  "include": [
+    "*.ts",
+    "bootstrap/*.ts",
+    "next/*.ts",
+    "nebius/*.ts",
+    "github/*.ts",
+    "policy/*.ts",
+    "posthog/*.ts",
+    "scripts/*.ts"
+  ]
 }

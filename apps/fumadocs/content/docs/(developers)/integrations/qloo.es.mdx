@@ -3,7 +3,7 @@ title: Qloo
 description: El grafo de gustos de Qloo decide qué temas merece la pena diseñar.
 ---
 
-Qloo es el primer paso del flujo, no un añadido. Sin él, wovain solo conoce lo que sale en las noticias; con él, wovain sabe **qué temas aman los fans de la semilla**.
+Qloo es el primer paso del flujo, no un añadido. Cada idea es una etiqueta de gusto de Qloo: **sin Qloo, no hay ejecución**. Qloo dice **qué temas aman los fans de la semilla**, y Tavily añade las pruebas de cada uno.
 
 ## Gusto por momento
 
@@ -16,14 +16,29 @@ Qloo es el primer paso del flujo, no un añadido. Sin él, wovain solo conoce lo
 
 Implementado en `packages/core/src/qloo.ts` (`createQloo`):
 
-1. **Search** (`/search`) convierte la semilla en entidades de Qloo.
-2. **Insights** (`/v2/insights`) devuelven las etiquetas de gustos transversales de esas entidades. Son los temas de los diseños.
+1. **Search** (`/search`, `tasteOf`) convierte el brief en hasta 3 entidades semilla.
+2. **Insights de etiquetas** (`/v2/insights`, `filter.type=urn:tag`) devuelven las etiquetas de gusto que comparten los fans de la semilla. Son los temas de los diseños.
+3. **Insights transversales** (`/v2/insights` para marcas, películas y series, con `feature.explainability`) devuelven lo que también gusta a los fans de la semilla, con la parte de cada entidad semilla. En cada ejecución.
+4. **Demografía** (`demographicsOf`, `urn:demographics`) y **audiencias** (`audienceAffinity`) puntúan a quién le gustan las entidades de Qloo de la marca.
+5. **Search** (`search`, `searchEntities`) resuelve las referencias de gusto que el diseñador nombra en el onboarding de la marca.
+6. **Marcas en alza** (`/v2/insights` con `bias.trends=high`) alimentan el análisis del autopilot (`packages/core/src/autopilot-signals.ts`).
 
-## Cómo cambia el producto
+## Qué decide Qloo
 
-- **Ideas.** Tavily busca las noticias de la semana y los marketplaces solo dentro de los temas de Qloo (`packages/core/src/trends.ts`).
-- **Puntuación.** El código ordena cada idea (`packages/core/src/score.ts`) y guarda con ella los datos de su puntuación. Nemotron escribe el nombre y el enfoque.
+- **Ideas.** Cada idea es una de las etiquetas de Qloo, hasta 3 por ejecución (`qlooThemes` en `packages/core/src/themes.ts`). El nombre de la etiqueta es el título de la idea. Menos de 3 etiquetas significa menos ideas, nunca ideas inventadas.
+- **Pruebas.** Tavily busca las noticias del último mes y los marketplaces solo dentro de los temas de Qloo (`packages/core/src/trends.ts`). Tavily nunca nombra un tema.
+- **Puntuación.** La afinidad de la etiqueta es el término de demanda, el 30 % de la puntuación de la idea (`packages/core/src/score.ts`). Una etiqueta sin afinidad nunca se busca ni se sugiere; ningún valor neutro la sustituye. El bucle de feedback reajusta los términos de la puntuación según las ventas. No elige los temas.
 - **Seguridad de propiedad intelectual.** Los nombres que Qloo asocia a la semilla (marcas, artistas, títulos) se guardan en la idea como nombres que nunca se deben imprimir.
+- **Diseño.** Las etiquetas de estilo y ambiente de las afinidades transversales entran en el brief de diseño como pistas, nunca sus nombres (`packages/core/src/design.ts`). Las etiquetas de Qloo de las ideas de una ejecución eligen la familia de estilo de un drop (`packages/mastra/src/mastra/flow/drops.ts`).
+- **Anuncios.** Las edades, el género y las audiencias de Qloo configuran el conjunto de anuncios de Meta y la persona del redactor de anuncios (`packages/core/src/targeting.ts`). Sin una audiencia de Qloo no se crea ninguna campaña (`QLOO_AUDIENCE_MISSING`).
+
+## Cuando Qloo no puede ayudar
+
+- **Sin coincidencias.** Si Qloo no encuentra nada en el brief, la ejecución se detiene con `QLOO_NO_MATCH` (422): "Qloo found no audience for this brief; try naming a band, film, brand or place". El asistente muestra sugerencias con ejemplos y un botón **Write a new brief**.
+- **Fallo.** Una llamada a Qloo que falla hace fallar el paso de investigación con `QLOO_FAILED`. El paso se reintenta; después, la ejecución falla y se registra a nivel de error en PostHog. wovain nunca recurre a ideas sin Qloo.
+- **Interruptor de emergencia.** `trends-qloo` es solo un interruptor de operaciones. Si está apagado, `runs.start` e `ideas.research` se niegan con `QLOO_OFF` (503).
+
+La comparación con una ejecución solo con LLM es solo una evaluación offline: `packages/mastra/src/mastra/evals/qloo-ablation.eval.ts`, con su rama LLM solo para la evaluación en `packages/mastra/src/mastra/evals/llm-themes.ts`. Se ejecuta con `pnpm --filter @wovain/mastra run evals`.
 
 ## Configuración
 

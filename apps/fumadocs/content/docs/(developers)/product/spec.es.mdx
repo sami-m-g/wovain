@@ -3,7 +3,7 @@ title: Especificación
 description: Especificación técnica de la pila, los datos, los servicios y los modos de fallo.
 ---
 
-Última actualización: 2026-10-26. «En línea» significa en `main` y desplegado; «en revisión» significa una merge request abierta; «en curso» y «previsto» significan que aún no se ha fusionado. Los requisitos detallados por capacidad están en `openspec/specs/`, y cada cambio abierto en `openspec/changes/`.
+Última actualización: 2026-10-26. «En línea» significa en `main` y desplegado; «en revisión» significa una pull request abierta; «en curso» y «previsto» significan que aún no se ha fusionado. Los requisitos detallados por capacidad están en `openspec/specs/`, y cada cambio abierto en `openspec/changes/`.
 
 ## Cómo funciona, en lenguaje sencillo
 
@@ -21,10 +21,10 @@ Ref. del PRD: `prd.md > The Core Journey`.
 
 1. El diseñador inicia sesión → Better Auth (`/api/auth`, Google o correo) crea una sesión en PostgreSQL. ChatGPT, en cambio, inicia sesión mediante el servidor OAuth de Better Auth y llama a `POST /api/mcp` con un token de acceso.
 2. Conecta proveedores → `/api/connections/[provider]/start` y `callback` ejecutan el OAuth del proveedor; `packages/core/src/sealing.ts` sella los tokens en `connection`.
-3. Describe una colección → la página o la herramienta MCP `research_trends` llama a `ideas.research` → `researchIdeas` (`packages/api/src/flow/ideas.ts`) usa Qloo y Tavily desde `packages/core` → se guardan las ideas clasificadas. Los pasos de pago se miden (`flow/spend.ts`; créditos en la MR !116).
-4. Elige una idea → `designs.generate` (`generateDesign`) → brief de Nemotron (`draftBrief`), arte de fal (`createArtist`), precio (`priceFor`), juez Nemotron (`judgeDesign`) → el diseño se guarda como `pending_approval`.
+3. Describe una colección → la página o la herramienta MCP `research_trends` llama a `ideas.research` → `researchIdeas` (`packages/mastra/src/mastra/flow/ideas.ts`) usa Qloo y Tavily desde `packages/core` → se guardan las ideas clasificadas. Los pasos de pago se miden (`flow/spend.ts`; créditos en la MR !116).
+4. La ejecución espera en su puerta de ideas sin dibujar nada; Ver diseños → `runs.approveIdeas` (`approveIdeas`) la reanuda y dibuja un diseño solo para cada idea aprobada → `generateDesign` → brief de Nemotron (`draftBrief`), arte de fal (`createArtist`), precio (`priceFor`), juez Nemotron (`judgeDesign`) → el diseño se guarda como `pending_approval`.
 5. Aprueba → `designs.approve` (`decideDesign`). Objetivo: el workflow de Mastra de la ejecución se suspende aquí y `resume()` lo continúa.
-6. `products.create` (`createDesignProduct`) llama a Fourthwall mediante la conexión sellada; `products.publish` lo hace público.
+6. `products.create` (`createDesignProduct`) llama a Fourthwall mediante la conexión sellada; `products.publish` lo hace público. Con `store-management` activo, `products.publish` encola `store.product.publish` (decidido en nombre del comerciante desde la web, según la política de autonomía por MCP) y devuelve el producto con su aprobación; una ejecución deja sus productos ocultos como un drop en revisión y encola `store.drop.publish`; los procedimientos `store.*` (`packages/api/src/routers/store.ts`) encolan acciones de tienda y un ejecutor de Inngest (`packages/mastra/src/mastra/workflows/store.ts`) realiza cada una aprobada una sola vez.
 7. `campaigns.create` (`createProductCampaign`) → texto del anuncio de Nemotron (`writeAdCopy`) → `stagePausedCampaign` crea la campaña, el conjunto de anuncios y los anuncios en pausa en Meta.
 8. `runs.start` (`startRun`) encadena estos pasos; con `autopilot: true` Nemotron elige la idea (`pickIdea`) y revisa el diseño (`reviewDesign`). Objetivo: `runs.start` crea la ejecución, inicia el workflow de Mastra y responde al instante; los clientes consultan `runs.get`.
 
@@ -35,23 +35,24 @@ Ref. del PRD: `prd.md > The Core Journey`.
 | App | Next.js 16, App Router, React 19 | En línea | [https://nextjs.org/docs](https://nextjs.org/docs) |
 | API | Procedimientos oRPC en `packages/api`, montados en `/api/rpc` | En línea | [https://orpc.dev](https://orpc.dev) |
 | MCP | `@modelcontextprotocol/server` en `packages/api/src/mcp.ts` en `/api/mcp`; widgets de MCP Apps en `packages/widgets` | En línea | [https://modelcontextprotocol.io](https://modelcontextprotocol.io) |
-| Auth | Better Auth 1.7 con Google, correo y los plugins MCP y JWT en `packages/auth`; Better Auth UI para las pantallas | En línea; UI en revisión (!111) | [https://better-auth.com](https://better-auth.com) |
+| Auth | Better Auth 1.7 con Google, correo y los plugins MCP y JWT en `packages/auth`; Better Auth UI para las pantallas | En línea; UI en revisión | [https://better-auth.com](https://better-auth.com) |
 | Agentes y workflows | Mastra: agentes, workflows con suspensión y reanudación, ejecuciones duraderas, herramientas, memoria y almacenamiento en `@mastra/pg`, scorers, trazas | En curso | [https://mastra.ai/docs](https://mastra.ai/docs) |
 | Lógica de dominio | `packages/core`: proveedores, precios, juez, autopilot, gasto | En línea; pasa a estar detrás de herramientas de Mastra |  |
-| Facturación | Polar (comerciante registrado) mediante el plugin de Polar para Better Auth, `packages/billing` con planes y un libro de créditos | En revisión (!116) | [https://polar.sh/docs](https://polar.sh/docs) |
+| Facturación | Polar (comerciante registrado) mediante el plugin de Polar para Better Auth, `packages/billing` con planes y un libro de créditos | En revisión | [https://polar.sh/docs](https://polar.sh/docs) |
 | Datos | Drizzle ORM, PostgreSQL en Cloud SQL, en `packages/db` | En línea | [https://orm.drizzle.team](https://orm.drizzle.team) |
-| Analítica | PostHog (analítica de producto, `$ai_*`, `$exception`) | En línea; paneles como código en revisión (!115) | [https://posthog.com/docs](https://posthog.com/docs) |
+| Analítica | PostHog (analítica de producto, `$ai_*`, `$exception`) | En línea; paneles como código en revisión | [https://posthog.com/docs](https://posthog.com/docs) |
 | Logs | Eventos amplios de evlog, uno por petición | En línea | [https://evlog.dev](https://evlog.dev) |
 | UI | shadcn/ui sobre Base UI, Tailwind CSS 4, en `packages/ui` | En línea | [https://ui.shadcn.com](https://ui.shadcn.com) |
 | Entorno | Esquemas de Varlock, `ENV` tipado | En línea | [https://varlock.dev](https://varlock.dev) |
-| Especificaciones | OpenSpec (`openspec/`) para especificaciones de capacidades y cambios | Esta MR | [https://github.com/Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) |
-| Infra | Pulumi (GCP, GitLab, Resend, PostHog), GitLab CI | En línea | [https://www.pulumi.com/docs](https://www.pulumi.com/docs) |
+| Especificaciones | OpenSpec (`openspec/`) para especificaciones de capacidades y cambios | En línea | [https://github.com/Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) |
+| Infra | Pulumi (GCP, Resend, PostHog), GitHub Actions | En línea | [https://www.pulumi.com/docs](https://www.pulumi.com/docs) |
 | Sitio de documentación | Fumadocs en inglés, francés y español | En línea | [https://fumadocs.dev](https://fumadocs.dev) |
-| Modelos | NVIDIA Nemotron 3 Super (`NEMOTRON_MODEL`) en Nebius Token Factory | En línea | [https://docs.tokenfactory.nebius.com](https://docs.tokenfactory.nebius.com) |
+| Modelos | NVIDIA Nemotron 3.5 Super VL (`NEMOTRON_MODEL`) en Nebius Token Factory | En línea | [https://docs.tokenfactory.nebius.com](https://docs.tokenfactory.nebius.com) |
 
 ## Dónde se ejecuta y cómo probarlo
 
-- **Producción:** Cloud Run en [https://wovain.com](https://wovain.com); documentación en [https://docs.wovain.com](https://docs.wovain.com). La CI despliega al fusionar en `main` y ejecuta antes las migraciones.
+- **Producción:** Cloud Run en [https://wovain.com](https://wovain.com); documentación en [https://docs.wovain.com](https://docs.wovain.com). Producción se despliega desde la rama `release/transcend` tras una aprobación. Queda congelada en la versión entregada a Transcend hasta alrededor del 2026-11-16.
+- **Entorno de pruebas para los hackatones de Qloo y Nebius:** [https://next.wovain.com](https://next.wovain.com). La CI despliega allí cada fusión en `main`, en su propia instancia de Cloud SQL, y ejecuta antes las migraciones.
 - **ChatGPT:** añade un conector con la URL `https://mcp.wovain.com/api/mcp`. El descubrimiento OAuth se sirve en `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server`; el diseñador inicia sesión y aprueba el acceso en la página de consentimiento.
 - **En local:** Node.js (ver `.nvmrc`), pnpm y Docker para PostgreSQL.
 
@@ -61,7 +62,7 @@ docker compose up -d
 pnpm run dev
 ```
 
-Las claves se declaran en `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; la facturación añade `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT` (MR !116). Nunca hagas commit de valores reales.
+Las claves se declaran en `apps/web/.env.schema`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `EMAIL_REPLY_TO`, `NEBIUS_API_KEY`, `QLOO_API_KEY`, `TAVILY_API_KEY`, `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_POSTHOG_KEY`; la facturación añade `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_ENVIRONMENT`. Nunca hagas commit de valores reales.
 
 La entrega necesita un vídeo de demostración corto y el repositorio público: [https://github.com/sami-m-g/wovain](https://github.com/sami-m-g/wovain) (MIT). URL del vídeo: se añadirá después de subirlo.
 
@@ -106,10 +107,6 @@ Planes en `src/plans.ts` (Free, Studio, Label y un paquete de créditos; las cif
 ### Base de datos (`packages/db`)
 
 Tablas de Better Auth en `src/schema/auth.ts` (generadas); tablas del vendedor en `src/schema/seller.ts`. Ref. del PRD: `prd.md > States and Boundaries`.
-
-### Ops y flujos de Duo (`apps/ops`, `.gitlab/duo`)
-
-Flujos de autorreparación, explorador y desarrollador; definiciones de KPI en `.gitlab/duo/kpis.yml`. Ref. del PRD: `prd.md > After deploy`.
 
 ## Modelo de datos
 
@@ -188,7 +185,7 @@ wovain/
 - Mastra en lugar de un motor hecho a mano o un motor de ejecución duradera aparte — el fundador eligió un solo framework para agentes, workflows, memoria, scorers y trazas; el compromiso es depender del almacenamiento y del ritmo de versiones de Mastra.
 - Polar en lugar de Stripe directamente — el comerciante registrado gestiona el impuesto sobre las ventas y las facturas; el compromiso es la comisión de Polar.
 - Conectores del comerciante para fal, Meta y Fourthwall; Nebius, Tavily y Qloo a cargo de wovain — coincide con quién es dueño del resultado y mantiene corta la incorporación.
-- OpenSpec para especificaciones y cambios — cada cambio funcional empieza como un cambio de OpenSpec vinculado a un issue de GitLab; estos tres documentos siguen siendo el resumen en formato Basics.
+- OpenSpec para especificaciones y cambios — cada cambio funcional empieza como un cambio de OpenSpec vinculado a un issue de GitHub; estos tres documentos siguen siendo el resumen en formato Basics.
 - Resuelto: ChatGPT se conecta a `https://mcp.wovain.com/api/mcp`; el plugin MCP de Better Auth es el servidor OAuth y `requireMcpAuth` verifica cada token.
 - Abierto: cerrar los precios; licencia comercial de Qloo; alcance de la revisión de la app de Meta; conector de fal antes de activar la facturación.
 - Concepto poco familiar tratado: la diferencia entre que un modelo sugiera un valor y que el código lo garantice. Se aclaró con la regla de que las comprobaciones que decide el código (tamaño de impresión, precio mínimo, rango de presupuesto) no son salida del modelo, como muestran las pruebas de `packages/core/src/design.test.ts`. La misma idea se extiende ahora a los scorers: los scorers de código son hechos; los jueces LLM se calibran antes de confiar en ellos.

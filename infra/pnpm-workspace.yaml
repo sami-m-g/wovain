@@ -1,7 +1,7 @@
 # infra/ is its own pnpm project, outside the root workspace, so app installs
 # (CI, the web image) never pull Pulumi packages. `pulumi install` installs it
-# and generates sdks/graphql (gitignored) from the packages in Pulumi.yaml.
+# and generates sdks/posthog (gitignored) from the packages in Pulumi.yaml.
 allowBuilds:
-  # The generated provider SDKs compile themselves on install.
-  "@pulumi/graphql@file:sdks/graphql": true
+  # The generated provider SDK compiles itself on install.
+  "@pulumi/posthog@file:sdks/posthog": true
   protobufjs: false

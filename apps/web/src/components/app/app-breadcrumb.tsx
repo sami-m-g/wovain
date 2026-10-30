@@ -15,23 +15,65 @@ import { Fragment } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 
 const SECTIONS = {
+  "/dashboard/autopilot": "autopilot",
   "/dashboard/billing": "billing",
   "/dashboard/connections": "connections",
+  "/dashboard/drops": "drops",
   "/dashboard/insights": "insights",
   "/dashboard/new": "newDrop",
-  "/dashboard/runs": "runs",
+  "/dashboard/onboarding": "onboarding",
+  "/dashboard/settings": "settings",
+  "/dashboard/settings/account": "account",
+  "/dashboard/settings/security": "security",
+  "/dashboard/store": "store",
 } as const;
 
-const isSection = (path: string): path is keyof typeof SECTIONS =>
-  path in SECTIONS;
+type Section = keyof typeof SECTIONS;
 
-/** Overview › the current section, in the top bar. */
-export const AppBreadcrumb = () => {
+// A section shown under another one: a new drop is one of the drops.
+const PARENTS: Partial<Record<Section, Section>> = {
+  "/dashboard/new": "/dashboard/drops",
+};
+
+// In the story rail, connections, billing and the account are parts of
+// Settings.
+const STORY_PARENTS: Partial<Record<Section, Section>> = {
+  ...PARENTS,
+  "/dashboard/billing": "/dashboard/settings",
+  "/dashboard/connections": "/dashboard/settings",
+  "/dashboard/settings/account": "/dashboard/settings",
+  "/dashboard/settings/security": "/dashboard/settings",
+};
+
+const DROP_PAGE = /^\/dashboard\/drops\/[\w-]+$/u;
+
+const isSection = (path: string): path is Section => path in SECTIONS;
+
+/**
+ * Overview (Home in the story rail) › the parent section, if any › the
+ * current section. `story` is the story-ui flag.
+ */
+export const AppBreadcrumb = ({ story = false }: { story?: boolean }) => {
   const t = useTranslations("Shell.nav");
   const pathname = usePathname();
-  const crumbs = isSection(pathname)
-    ? [{ href: pathname, label: t(SECTIONS[pathname]) }]
+  const root = story ? t("home") : t("overview");
+  const parents = story ? STORY_PARENTS : PARENTS;
+  const parent = isSection(pathname) ? parents[pathname] : undefined;
+  const sectionCrumbs = isSection(pathname)
+    ? [
+        ...(parent === undefined
+          ? []
+          : [{ current: false, href: parent, label: t(SECTIONS[parent]) }]),
+        { current: true, href: pathname, label: t(SECTIONS[pathname]) },
+      ]
     : [];
+  // One drop's page: Drops › Drop.
+  const crumbs = DROP_PAGE.test(pathname)
+    ? [
+        { current: false, href: "/dashboard/drops", label: t("drops") },
+        { current: true, href: pathname, label: t("drop") },
+      ]
+    : sectionCrumbs;
 
   return (
     <Breadcrumb>
@@ -39,18 +81,24 @@ export const AppBreadcrumb = () => {
         {/* Phones show only the current page; the rail sheet has the rest. */}
         <BreadcrumbItem className={cn(crumbs.length > 0 && "max-md:hidden")}>
           {crumbs.length === 0 ? (
-            <BreadcrumbPage>{t("overview")}</BreadcrumbPage>
+            <BreadcrumbPage>{root}</BreadcrumbPage>
           ) : (
             <BreadcrumbLink render={<Link href="/dashboard" />}>
-              {t("overview")}
+              {root}
             </BreadcrumbLink>
           )}
         </BreadcrumbItem>
         {crumbs.map((crumb) => (
           <Fragment key={crumb.href}>
             <BreadcrumbSeparator className="max-md:hidden rtl:rotate-180" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+            <BreadcrumbItem className={cn(!crumb.current && "max-md:hidden")}>
+              {crumb.current ? (
+                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink render={<Link href={crumb.href} />}>
+                  {crumb.label}
+                </BreadcrumbLink>
+              )}
             </BreadcrumbItem>
           </Fragment>
         ))}

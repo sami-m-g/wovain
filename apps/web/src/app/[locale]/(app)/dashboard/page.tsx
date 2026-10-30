@@ -1,15 +1,20 @@
 import { Button } from "@wovain/ui/components/button";
+import { log } from "evlog";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { ConnectionsSummary } from "@/components/app/connections-panel";
+import { WarmDirections } from "@/components/app/drop-directions";
 import { RecentRuns } from "@/components/app/runs-list";
 import { SetupChecklist } from "@/components/app/setup-checklist";
+import { StoryHome } from "@/components/home/story-home-page";
 import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link, redirect } from "@/i18n/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
+import { core } from "@/services";
+import { client } from "@/utils/orpc";
 
 export const generateMetadata = async ({
   params,
@@ -25,6 +30,20 @@ export const generateMetadata = async ({
 
 const RUN_ID = /^[\w-]{1,64}$/u;
 
+// The overview still shows when the check fails; the failure is logged.
+const onboardingOpen = async () => {
+  try {
+    const status = await client.onboarding.status();
+    return status.enabled && !status.finished;
+  } catch (error) {
+    log.error({
+      error: "ONBOARDING_STATUS_FAILED",
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+};
+
 const DashboardPage = async ({
   params,
   searchParams,
@@ -39,10 +58,22 @@ const DashboardPage = async ({
     });
   }
   const session = await requireSession(locale, "/dashboard");
+  // The story-ui Home: the next action, what sells now, drops in progress
+  // and results. The onboarding steps are reached from the next action.
+  if (await core.flags.isOn("story-ui", { userId: session.user.id })) {
+    return <StoryHome name={session.user.name} />;
+  }
+  // With the onboarding-wizard flag on, a merchant starts in the wizard (after
+  // sign-up and sign-in both land here) until they reach its last step.
+  if (await onboardingOpen()) {
+    redirect({ href: "/dashboard/onboarding", locale });
+  }
   const t = await getTranslations("Dashboard");
 
   return (
     <div className="flex flex-col gap-10">
+      {/* Finds the new-drop suggestions in the background. */}
+      <WarmDirections />
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
@@ -71,7 +102,7 @@ const DashboardPage = async ({
             </h2>
             <Link
               className="text-accent-text text-sm font-medium hover:underline"
-              href="/dashboard/runs"
+              href="/dashboard/drops"
             >
               {t("allRuns")}
             </Link>

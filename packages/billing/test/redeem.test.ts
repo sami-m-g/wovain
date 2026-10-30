@@ -1,13 +1,16 @@
 import type { models } from "@polar-sh/sdk/2026-10";
 import type { Database } from "@wovain/db";
+import { user } from "@wovain/db/schema/auth";
 import { promoAttempt } from "@wovain/db/schema/billing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
+import { billingCatalog } from "../src/catalog";
+import { CustomerConflictError } from "../src/customer";
 import { applyGrant } from "../src/mirror";
-import { PROMOS, promoTag } from "../src/promos";
+import { promoTag } from "../src/promos";
 import type { Promo } from "../src/promos";
-import { REDEEM_LIMIT, judgePromo, redeemPromo } from "../src/redeem";
+import { judgePromo, redeemLimit, redeemPromo } from "../src/redeem";
 import type { PromoDiscount, PromoGateway, RedeemInput } from "../src/redeem";
 import { addUser, createTestDb } from "../src/testing";
 
@@ -15,7 +18,11 @@ import { addUser, createTestDb } from "../src/testing";
 // (PGlite): the checks, the rate limit and one redemption per merchant.
 
 const NOW = new Date("2026-10-26T10:00:00Z");
-const [JUDGES] = PROMOS;
+const [JUDGES] = billingCatalog().promos;
+if (JUDGES === undefined) {
+  throw new Error("The test catalog has no promo");
+}
+const REDEEM_LIMIT = redeemLimit();
 
 let db: Database;
 let close: () => Promise<void>;
@@ -95,7 +102,11 @@ const checkout = (paymentRequired = false) =>
 
 const gateway = (
   found?: PromoDiscount,
-  options: { confirmFails?: boolean; paymentRequired?: boolean } = {}
+  options: {
+    confirmFails?: boolean;
+    customerFails?: Error;
+    paymentRequired?: boolean;
+  } = {}
 ) => ({
   confirmFree: vi.fn(() =>
     options.confirmFails === true
@@ -104,6 +115,11 @@ const gateway = (
   ),
   createCheckout: vi.fn(() =>
     Promise.resolve(checkout(options.paymentRequired))
+  ),
+  ensureCustomer: vi.fn(() =>
+    options.customerFails === undefined
+      ? Promise.resolve()
+      : Promise.reject(options.customerFails)
   ),
   findDiscount: vi.fn(() => Promise.resolve(found)),
 });
@@ -122,20 +138,6 @@ const input = (overrides: Partial<RedeemInput> = {}): RedeemInput => ({
 const redeem = async (polar: PromoGateway, overrides?: Partial<RedeemInput>) =>
   await redeemPromo(db, polar, input(overrides));
 
-it("defines the judges' code and a disabled launch code, with no code values", () => {
-  expect(JUDGES).toMatchObject({
-    credits: 300,
-    enabled: true,
-    endsAt: "2026-12-16T23:59:59Z",
-    id: "judges-2026",
-    maxRedemptions: 50,
-  });
-  expect(PROMOS.filter((promo) => !promo.enabled)).toHaveLength(1);
-  for (const promo of PROMOS) {
-    expect(Object.keys(promo)).not.toContain("code");
-  }
-});
-
 it("confirms a free code in place, with the merchant on the checkout", async () => {
   const polar = gateway(discountFor(JUDGES));
   expect(await redeem(polar)).toStrictEqual({
@@ -152,6 +154,7 @@ it("confirms a free code in place, with the merchant on the checkout", async () 
   );
   expect(polar.confirmFree).toHaveBeenCalledWith(expect.anything(), {
     email: "merchant@example.com",
+    emailVerified: true,
     id: userId,
     name: "merchant",
   });
@@ -206,6 +209,36 @@ it("refuses an expired, used up or disabled code", () => {
       { now: NOW, paidPlans: false }
     )
   ).toStrictEqual({ refused: "invalid" });
+});
+
+it("redeems a promo that names its accounts only for those accounts", async () => {
+  const account = billingCatalog().promos.find(
+    (promo) => promo.id === "judges-account-2026"
+  );
+  if (account === undefined) {
+    throw new Error("The test catalog has no account promo");
+  }
+  const other = gateway(discountFor(account));
+  // To anyone else it reads as an unknown code: no promo id comes back.
+  expect(await redeem(other)).toStrictEqual({
+    refused: "invalid",
+    status: "refused",
+  });
+  expect(other.createCheckout).not.toHaveBeenCalled();
+  // The same check, case aside, for the account it names.
+  await db.insert(user).values({
+    email: "Judges@wovain.com",
+    emailVerified: true,
+    id: "judges",
+    name: "Judges",
+  });
+  expect(
+    await redeem(gateway(discountFor(account)), { userId: "judges" })
+  ).toStrictEqual({
+    credits: 300,
+    promoId: "judges-account-2026",
+    status: "redeemed",
+  });
 });
 
 it("refuses a code that isn't free while paid plans are off", async () => {
@@ -263,4 +296,30 @@ it("counts a parallel burst one by one, before calling Polar", async () => {
     results.filter((result) => result.status === "rate_limited")
   ).toHaveLength(burst - REDEEM_LIMIT.attempts);
   expect(polar.findDiscount).toHaveBeenCalledTimes(REDEEM_LIMIT.attempts);
+});
+
+it("opens no checkout when the email's customer belongs to another account", async () => {
+  const polar = gateway(discountFor(JUDGES), {
+    customerFails: new CustomerConflictError("linked_to_other_account", userId),
+  });
+  expect(await redeem(polar)).toEqual({
+    reason: "linked_to_other_account",
+    status: "blocked",
+  });
+  expect(polar.createCheckout).not.toHaveBeenCalled();
+});
+
+it("settles the customer before the checkout opens", async () => {
+  const polar = gateway(discountFor(JUDGES));
+  await redeem(polar);
+  expect(polar.ensureCustomer).toHaveBeenCalledWith(
+    expect.objectContaining({ id: userId })
+  );
+});
+
+it("lets an unexpected Polar failure through", async () => {
+  const polar = gateway(discountFor(JUDGES), {
+    customerFails: new Error("Polar is down"),
+  });
+  await expect(redeem(polar)).rejects.toThrow("Polar is down");
 });

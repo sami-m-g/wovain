@@ -9,7 +9,6 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@wovain/ui/components/empty";
 import { Skeleton } from "@wovain/ui/components/skeleton";
@@ -20,20 +19,21 @@ import {
 import { cn } from "@wovain/ui/lib/utils";
 import { CircleAlert, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
+import { ConnectState } from "@/components/app/connect-state";
 import type { DataColumn } from "@/components/app/data-table";
 import { DataTable } from "@/components/app/data-table";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
-import { ProviderLogo } from "@/components/app/provider-logo";
 import { ShuttleLoader } from "@/components/brand/shuttle-mark";
 import { KpiFrame } from "@/components/insights/kpi-cards";
 import { SalesChart } from "@/components/insights/sales-chart";
-import { getPathname, Link } from "@/i18n/navigation";
+import { WhatWeLearned } from "@/components/insights/what-we-learned";
+import { Link } from "@/i18n/navigation";
 import type { InsightRange, Insights } from "@/lib/flow-client";
-import { connectUrl, describeProblem } from "@/lib/flow-client";
+import { describeProblem } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 const RANGES = ["7d", "28d", "90d"] as const satisfies readonly InsightRange[];
@@ -77,43 +77,6 @@ const useFigures = () => {
 const right = {
   cellClassName: "text-end figures",
   headerClassName: "text-end",
-};
-
-/** A source that isn't connected: what it would show, and the way to connect. */
-const ConnectEmpty = ({
-  provider,
-  title,
-  body,
-  action,
-}: {
-  provider: "fourthwall" | "meta";
-  title: string;
-  body: string;
-  action: string;
-}) => {
-  const locale = useLocale();
-  return (
-    <Empty className="border-input bg-card border border-dashed">
-      <EmptyHeader>
-        <EmptyMedia>
-          <ProviderLogo service={provider} />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{body}</EmptyDescription>
-      </EmptyHeader>
-      <EmptyContent>
-        <a
-          className={cn(buttonVariants({ variant: "outline" }), "h-9 px-4")}
-          href={connectUrl(
-            provider,
-            getPathname({ href: "/dashboard/insights", locale })
-          )}
-        >
-          {action}
-        </a>
-      </EmptyContent>
-    </Empty>
-  );
 };
 
 const QuietEmpty = ({ title, body }: { title: string; body: string }) => (
@@ -169,6 +132,43 @@ const useProductColumns = () => {
   );
 };
 
+export const JourneySection = ({
+  journey,
+}: {
+  journey: Insights["journey"];
+}) => {
+  const t = useTranslations("Insights.journey");
+  const minutes = (value: number | undefined) =>
+    unknown(value, (n) => t("minutes", { value: Math.round(n) }));
+  return (
+    <KpiFrame
+      kpis={[
+        {
+          hint: t("liveCampaignHint", {
+            target: journey.targets.timeToLiveCampaign,
+          }),
+          label: t("liveCampaign"),
+          value: minutes(journey.timeToLiveCampaignMinutes),
+        },
+        {
+          hint: t("metaReviewHint"),
+          label: t("metaReview"),
+          value: minutes(journey.metaReviewMinutes),
+        },
+        {
+          hint: t("firstProfitHint", {
+            target: journey.targets.timeToFirstProfit,
+          }),
+          label: t("firstProfit"),
+          value: minutes(journey.timeToFirstProfitMinutes),
+        },
+      ]}
+      source={t("source")}
+      title={t("title")}
+    />
+  );
+};
+
 const ShopSection = ({ shop }: { shop: Insights["shop"] }) => {
   const t = useTranslations("Insights.shop");
   const figures = useFigures();
@@ -177,8 +177,7 @@ const ShopSection = ({ shop }: { shop: Insights["shop"] }) => {
   if (shop.status === "not_connected") {
     return (
       <section aria-label={t("title")}>
-        <ConnectEmpty
-          action={t("connect")}
+        <ConnectState
           body={t("notConnected")}
           provider="fourthwall"
           title={t("notConnectedTitle")}
@@ -274,8 +273,7 @@ const AdsSection = ({ ads }: { ads: Insights["ads"] }) => {
   if (ads.status === "not_connected") {
     return (
       <section aria-label={t("title")}>
-        <ConnectEmpty
-          action={t("connect")}
+        <ConnectState
           body={t("notConnected")}
           provider="meta"
           title={t("notConnectedTitle")}
@@ -441,7 +439,12 @@ const DashboardSkeleton = () => (
  * The merchant's KPI dashboard: shop sales, ad results and quality per drop
  * for a period. Each source fails or stays empty on its own.
  */
-export const InsightsDashboard = () => {
+export const InsightsDashboard = ({
+  learning = false,
+}: {
+  // The feedback-loop flag: shows "What we learned".
+  learning?: boolean;
+}) => {
   const t = useTranslations("Insights");
   const [range, setRange] = useState<InsightRange>("28d");
   const { data, error, isFetching, isPending } = useQuery(
@@ -496,11 +499,13 @@ export const InsightsDashboard = () => {
           className="flex flex-col gap-8"
           initial={false}
         >
+          <JourneySection journey={data.journey} />
           <ShopSection shop={data.shop} />
           <AdsSection ads={data.ads} />
           <DropsSection drops={data.drops} scoring={data.scoring} />
         </motion.div>
       ) : null}
+      {learning ? <WhatWeLearned /> : null}
     </div>
   );
 };

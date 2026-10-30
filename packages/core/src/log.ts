@@ -3,11 +3,11 @@ import type { RequestLogger } from "evlog";
 
 // Every call wovain makes to another service goes through `external`, so the
 // request's wide event lists each call with its outcome and duration, and a
-// failure surfaces as one structured error naming the provider. The
-// self-healing flow groups and retries on these error codes.
+// failure surfaces as one structured error naming the provider, grouped in
+// error tracking by its code.
 
 export type Logger = Pick<RequestLogger, "set"> &
-  Partial<Pick<RequestLogger, "error">>;
+  Partial<Pick<RequestLogger, "debug" | "error">>;
 
 export type Provider =
   | "fal"
@@ -28,21 +28,33 @@ const FIXES: Record<Provider, string> = {
 
 const MAX_REASON = 300;
 
+// A provider out of credits on wovain's account: Tavily (its SDK drops the
+// 432/433 status and keeps only its words) or fal (a 403 whose
+// detail says "User is locked. Reason: Exhausted balance"; its MCP says
+// "out of credits"). No retry passes until the account is topped up, so it
+// is a 4xx: the run fails at once with the reason instead of spending
+// minutes on retries.
+const OUT_OF_CREDITS =
+  /exceeds your plan's set usage limit|pay-as-you-go limit|exhausted balance|out of credits/iu;
+const PAYMENT_REQUIRED = 402;
+const BAD_GATEWAY = 502;
+
 // The provider's own words, led by its HTTP status when the error has one
-// (the MCP SDK's SdkHttpError, a fetch failure): "401 invalid_token …".
+// (the MCP SDK's SdkHttpError, a fetch failure): "401 invalid_token …",
+// and followed by its body's detail when it has one (fal's ApiError).
 const reasonOf = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  const status =
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof error.status === "number"
-      ? error.status
-      : undefined;
-  const reason =
+  const fields =
+    typeof error === "object" && error !== null
+      ? (error as { body?: { detail?: unknown }; status?: unknown })
+      : {};
+  const status = typeof fields.status === "number" ? fields.status : undefined;
+  const detail = fields.body?.detail;
+  const led =
     status === undefined || message.includes(String(status))
       ? message
       : `${status} ${message}`;
+  const reason = typeof detail === "string" ? `${led}: ${detail}` : led;
   return reason.slice(0, MAX_REASON);
 };
 
@@ -76,7 +88,7 @@ export const external = async <T>(
       internal: { operation, provider },
       // The reason rides in the message too: a run keeps only the message.
       message: `${provider} ${operation} failed: ${why}`,
-      status: 502,
+      status: OUT_OF_CREDITS.test(why) ? PAYMENT_REQUIRED : BAD_GATEWAY,
       why,
       ...(error instanceof Error ? { cause: error } : {}),
     });
@@ -92,7 +104,22 @@ const unconfigured = (provider: Provider, variable: string) =>
     why: `${variable} isn't set.`,
   });
 
+// Qloo matched nothing in the brief, so there is no audience and no theme
+// to research: every idea is a Qloo tag, and none is made up instead. A
+// 4xx, so the run fails at once rather than retrying. The merchant's fix is
+// a brief that names something Qloo knows.
+export const QLOO_NO_MATCH_MESSAGE =
+  "Qloo found no audience for this brief; try naming a band, film, brand or place";
+export const qlooNoMatch = defineError("QLOO_NO_MATCH", {
+  fix: "Name a band, film, brand or place your fans love, for example Studio Ghibli, Tame Impala or Patagonia.",
+  message: QLOO_NO_MATCH_MESSAGE,
+  status: 422,
+  why: "Qloo's taste graph matched no entity, or no taste tag, for the brief.",
+});
+
 export const notConfigured = {
+  // wovain's own fal key, for voice transcription (./voice).
+  fal: unconfigured("fal", "FAL_KEY"),
   meta: unconfigured("meta", "META_APP_ID and META_APP_SECRET"),
   nebius: unconfigured("nebius", "NEBIUS_API_KEY"),
   qloo: unconfigured("qloo", "QLOO_API_KEY"),

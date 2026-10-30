@@ -20,6 +20,7 @@ import { Skeleton } from "@wovain/ui/components/skeleton";
 import { cn } from "@wovain/ui/lib/utils";
 import { Bot, UserRound } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 
 import type { DataColumn } from "@/components/app/data-table";
@@ -155,7 +156,35 @@ export const RecentRuns = ({ limit }: { limit: number }) => {
   return <RunItems runs={data.slice(0, limit)} />;
 };
 
-const useColumns = (): DataColumn<Run>[] => {
+const OPEN_STATUSES: ReadonlySet<Run["status"]> = new Set([
+  "awaiting_approval",
+  "running",
+]);
+
+/**
+ * The drops still on their way to a campaign (working or waiting for the
+ * merchant), for the story Home. `empty` shows when there are none.
+ */
+export const OpenDrops = ({
+  empty,
+  limit,
+}: {
+  empty: ReactNode;
+  limit: number;
+}) => {
+  const { data, error, isPending } = useRuns();
+
+  if (isPending) {
+    return <Skeleton className="h-32 w-full rounded-xl" />;
+  }
+  if (error) {
+    return <FlowProblemNotice problem={describeProblem(error)} />;
+  }
+  const open = data.filter((run) => OPEN_STATUSES.has(run.status));
+  return open.length === 0 ? empty : <RunItems runs={open.slice(0, limit)} />;
+};
+
+const useColumns = (showModels: boolean): DataColumn<Run>[] => {
   const t = useTranslations("Runs");
   const stages = useTranslations("Stages");
   return useMemo(
@@ -206,15 +235,39 @@ const useColumns = (): DataColumn<Run>[] => {
         cell: ({ row }) => <Started at={row.original.createdAt} />,
         header: t("started"),
       },
+      ...(showModels
+        ? [
+            {
+              cell: ({ row }: { row: { original: Run } }) => (
+                <Link
+                  className="text-sm hover:underline"
+                  href={{
+                    pathname: "/dashboard/models" as const,
+                    query: { run: row.original.id },
+                  }}
+                >
+                  {t("models")}
+                </Link>
+              ),
+              header: t("models"),
+              id: "models",
+            } satisfies DataColumn<Run>,
+          ]
+        : []),
     ],
-    [stages, t]
+    [showModels, stages, t]
   );
 };
 
 /** Every run as a ReUI data grid, newest first; rows on phones. */
-export const RunsTable = () => {
+export const RunsTable = ({
+  showModels = false,
+}: {
+  /** Links each run to its model trace (the model-routing flag). */
+  showModels?: boolean;
+}) => {
   const { data, error, isPending } = useRuns();
-  const columns = useColumns();
+  const columns = useColumns(showModels);
 
   if (isPending) {
     return <Skeleton className="h-72 w-full rounded-xl" />;

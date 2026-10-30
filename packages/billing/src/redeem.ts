@@ -8,9 +8,16 @@ import type { Database } from "@wovain/db";
 import { promoAttempt } from "@wovain/db/schema/billing";
 import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 
+import { billingCatalog } from "./catalog";
+import {
+  CustomerConflictError,
+  ensureCustomer,
+  polarCustomerGateway,
+} from "./customer";
+import type { CustomerConflictReason, CustomerMerchant } from "./customer";
 import { merchantOf, promoRedeemed } from "./mirror";
 import { POLAR_METADATA_KEY } from "./plans";
-import { promoOfTag, promoPriceCents, promoTag } from "./promos";
+import { promoAllows, promoOfTag, promoPriceCents, promoTag } from "./promos";
 import type { Promo } from "./promos";
 
 // Redeeming a promo code (src/promos.ts): the code is checked against Polar's
@@ -32,9 +39,13 @@ export type PromoRefusal =
   | "not_free"
   | "used_up";
 
-// Attempts per merchant in a sliding window, refused or not: enough for a
-// typo or two, too few to guess a code.
-export const REDEEM_LIMIT = { attempts: 5, windowMs: 10 * 60 * 1000 } as const;
+// Attempts per merchant in a sliding window, refused or not
+// (BILLING_CATALOG's redeemLimit).
+const MS_PER_S = 1000;
+export const redeemLimit = () => {
+  const { attempts, windowSeconds } = billingCatalog().redeemLimit;
+  return { attempts, windowMs: windowSeconds * MS_PER_S };
+};
 
 // A code as typed: Polar's codes are case insensitive.
 export const normalizeCode = (code: string) => code.trim().toUpperCase();
@@ -46,6 +57,9 @@ export interface PromoDiscount {
 
 // The Polar calls a redemption makes, so tests can stand in for Polar.
 export interface PromoGateway {
+  // The merchant's Polar customer, settled before a checkout so the grant
+  // lands on their id (throws CustomerConflictError when it can't be).
+  ensureCustomer: (merchant: CustomerMerchant) => Promise<void>;
   confirmFree: (
     checkout: models.Checkout,
     customer: { email: string; name: string }
@@ -61,7 +75,10 @@ export interface PromoGateway {
   findDiscount: (code: string) => Promise<PromoDiscount | undefined>;
 }
 
-export const polarPromoGateway = (polar: PolarCore): PromoGateway => ({
+export const polarPromoGateway = (
+  polar: PolarCore,
+  db: Database
+): PromoGateway => ({
   confirmFree: async (checkout, customer) => {
     await clientConfirmCheckouts(polar)(checkout.client_secret, {
       customer_email: customer.email,
@@ -79,6 +96,9 @@ export const polarPromoGateway = (polar: PolarCore): PromoGateway => ({
       return_url: input.returnUrl,
       success_url: input.successUrl,
     }),
+  ensureCustomer: async (merchant) => {
+    await ensureCustomer(db, polarCustomerGateway(polar), merchant);
+  },
   findDiscount: async (code) => {
     const wanted = normalizeCode(code);
     let found: PromoDiscount | undefined;
@@ -152,6 +172,7 @@ export const claimAttempt = async (
   }: { now: Date; surface: RedeemSurface; userId: string }
 ) =>
   await db.transaction(async (tx) => {
+    const limit = redeemLimit();
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
     const [row] = await tx
       .select({ attempts: count() })
@@ -159,13 +180,10 @@ export const claimAttempt = async (
       .where(
         and(
           eq(promoAttempt.userId, userId),
-          gte(
-            promoAttempt.createdAt,
-            new Date(now.getTime() - REDEEM_LIMIT.windowMs)
-          )
+          gte(promoAttempt.createdAt, new Date(now.getTime() - limit.windowMs))
         )
       );
-    if ((row?.attempts ?? 0) >= REDEEM_LIMIT.attempts) {
+    if ((row?.attempts ?? 0) >= limit.attempts) {
       return;
     }
     const [claimed] = await tx
@@ -215,6 +233,9 @@ export type RedeemResult =
   // payment there.
   | { credits: number; promoId: string; status: "checkout"; url: string }
   | { promoId?: string; refused: PromoRefusal; status: "refused" }
+  // The merchant's email is already a Polar customer that isn't theirs to
+  // take over (see ensureCustomer): nothing was opened.
+  | { reason: CustomerConflictReason; status: "blocked" }
   | { status: "rate_limited" };
 
 export interface RedeemInput {
@@ -252,7 +273,13 @@ export const redeemPromo = async (
     merchant === undefined || normalizeCode(input.code) === ""
       ? undefined
       : await gateway.findDiscount(input.code);
-  if (merchant === undefined || found === undefined) {
+  // A promo that names its accounts reads as an unknown code to everyone
+  // else, so its code reveals nothing.
+  if (
+    merchant === undefined ||
+    found === undefined ||
+    !promoAllows(found.promo, merchant.email)
+  ) {
     return await refuse("invalid");
   }
   const { promo } = found;
@@ -262,6 +289,15 @@ export const redeemPromo = async (
   }
   if (await promoRedeemed(db, { promoId: promo.id, userId })) {
     return await refuse("already_redeemed", promo.id);
+  }
+  try {
+    await gateway.ensureCustomer(merchant);
+  } catch (error) {
+    if (error instanceof CustomerConflictError) {
+      await settleAttempt(db, attemptId, "invalid", promo.id);
+      return { reason: error.reason, status: "blocked" };
+    }
+    throw error;
   }
   const checkout = await gateway.createCheckout({
     discountId: found.discount.id,

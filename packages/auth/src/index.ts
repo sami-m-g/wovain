@@ -21,9 +21,8 @@ import { decodeJwt } from "jose";
 export interface AuthConfig {
   BETTER_AUTH_URL: string;
   BETTER_AUTH_SECRET: string;
-  // The public MCP endpoint, when it lives on another host than the app
-  // (https://mcp.wovain.com/api/mcp in production).
-  MCP_URL?: string | undefined;
+  // The public MCP endpoint, which can live on another host than the app.
+  MCP_URL: string;
   // Google sign-in; the provider is off unless both are set.
   GOOGLE_CLIENT_ID?: string | undefined;
   GOOGLE_CLIENT_SECRET?: string | undefined;
@@ -49,8 +48,7 @@ export const socialProviders = (
 const MCP_SCOPES: Scope[] = ["openid", "profile", "email", "offline_access"];
 
 // The MCP endpoint ChatGPT connects to: access tokens are bound to it.
-export const mcpResource = (env: AuthConfig) =>
-  env.MCP_URL ?? `${env.BETTER_AUTH_URL}/api/mcp`;
+export const mcpResource = (env: Pick<AuthConfig, "MCP_URL">) => env.MCP_URL;
 
 // The app's origin, plus the MCP host's when it differs.
 const trustedOrigins = (env: AuthConfig) => [
@@ -71,8 +69,9 @@ const localeOf = (user: object, request?: Request) =>
 export interface AuthAnalytics {
   capture: (event: {
     distinctId: string;
-    event: BillingEvent | "sign_up";
+    event: BillingEvent | "sign_up" | "signed_up";
     properties?: Record<string, unknown>;
+    timestamp?: Date;
   }) => Promise<void>;
   identify?: BillingAnalytics["identify"];
 }
@@ -185,7 +184,10 @@ const polarPlugin = (
                   {
                     analytics,
                     db: database,
-                    log: { set: (fields) => log.info(fields) },
+                    log: {
+                      error: (fields) => log.error(fields),
+                      set: (fields) => log.info(fields),
+                    },
                     polar,
                   },
                   payload
@@ -290,6 +292,17 @@ export const createAuth = (
               distinctId: user.id,
               event: "sign_up",
               properties: method === undefined ? {} : { method },
+            });
+            // The north star's clock starts here; user.createdAt is the
+            // time the Insights page times the journey from.
+            await analytics?.capture({
+              distinctId: user.id,
+              event: "signed_up",
+              properties: {
+                ...(method === undefined ? {} : { method }),
+                reached_at: user.createdAt.toISOString(),
+              },
+              timestamp: user.createdAt,
             });
           },
           before: (user, context) =>

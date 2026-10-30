@@ -15,6 +15,7 @@ import type {
   StoredOAuthClientInformation,
   StoredOAuthTokens,
 } from "@modelcontextprotocol/client";
+import { decode, ToonDecodeError } from "@toon-format/toon";
 import { createError } from "evlog";
 import type { z } from "zod";
 
@@ -39,27 +40,25 @@ export type ProviderId = (typeof providerIds)[number];
 interface ProviderInfo {
   // Asked for instead of every scope the server advertises.
   scope?: string;
-  serverUrl: string;
   title: string;
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
-  // fal's model relay (fal.ai/docs/documentation/setting-up/mcp); its
+  // Each server's URL is per-environment config (UpstreamConfig.serverUrls:
+  // FAL_MCP_URL, FOURTHWALL_MCP_URL and META_MCP_URL in apps/web/.env.schema).
+  // fal's is its model relay (fal.ai/docs/documentation/setting-up/mcp); its
   // authorization server, AuthKit, takes wovain's client metadata document.
   // offline_access is what gets a refresh token.
   fal: {
     scope: "openid profile email offline_access",
-    serverUrl: "https://mcp.fal.ai/mcp-relay",
     title: "fal",
   },
   fourthwall: {
-    serverUrl: "https://mcp.fourthwall.com/app",
     title: "Fourthwall",
   },
+  // Meta's scope is per-environment config (UpstreamConfig.metaScope,
+  // META_MCP_SCOPE).
   meta: {
-    scope:
-      "ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads",
-    serverUrl: "https://mcp.facebook.com/ads",
     title: "Meta",
   },
 };
@@ -70,6 +69,10 @@ export interface UpstreamConfig {
   // Meta has no client metadata documents: its app is registered by hand.
   metaAppId: string | undefined;
   metaAppSecret: string | undefined;
+  // The scope asked of Meta's MCP server (space separated).
+  metaScope: string;
+  // Each provider's MCP server URL.
+  serverUrls: Record<ProviderId, string>;
   // Tests answer the providers' HTTP; the global fetch otherwise.
   fetch?: FetchLike;
 }
@@ -283,8 +286,65 @@ const isUnauthorized = (error: unknown) =>
     "status" in error &&
     error.status === HTTP_UNAUTHORIZED);
 
-// A tool result's data: its structured content, else the JSON in its text.
-// It's data from the merchant's account, never instructions.
+// Fourthwall's encoder puts an array field's header on its own line
+// ("categoryPath:" then "[2]: Apparel,T-Shirts"), which TOON allows only at
+// the root or in a list item (SPEC §6, §14.2: decoders must reject it).
+// Joined back, it's the spec's "categoryPath[2]: Apparel,T-Shirts".
+// Remove when Fourthwall's encoder conforms.
+const KEYLESS_ARRAY =
+  /^(?<indent> *(?:- )?)(?<key>[^\s:-][^:\n]*):\n *(?<header>\[\d+\][^\n]*)$/gmu;
+
+const joinKeylessArrays = (text: string) =>
+  text.replaceAll(KEYLESS_ARRAY, "$<indent>$<key>$<header>");
+
+// Lenient: Fourthwall's encoder isn't held to the strict counts and
+// indentation either.
+const decodeFourthwallToon = (text: string) =>
+  decode(joinKeylessArrays(text), { strict: false });
+
+// Text that isn't JSON: Fourthwall replies in TOON, a compact encoding of
+// the same objects. Prose that doesn't decode to an object stays text.
+const decodeToon = (text: string): unknown => {
+  try {
+    const decoded = decodeFourthwallToon(text);
+    return typeof decoded === "object" &&
+      decoded !== null &&
+      Object.keys(decoded).length > 0
+      ? decoded
+      : text;
+  } catch {
+    return text;
+  }
+};
+
+const FAILURE_CONTEXT = 1000;
+
+// Why a reply left as text didn't decode, with the text around the failing
+// line, for the error log. Catalog data, never secrets.
+export const toonFailure = (reply: unknown): string => {
+  if (typeof reply !== "string") {
+    return "";
+  }
+  try {
+    decodeFourthwallToon(reply);
+    return "";
+  } catch (error) {
+    const line = error instanceof ToonDecodeError ? (error.line ?? 1) : 1;
+    const joined = joinKeylessArrays(reply);
+    const at = joined
+      .split("\n")
+      .slice(0, line - 1)
+      .join("\n").length;
+    const around = joined.slice(
+      Math.max(0, at - FAILURE_CONTEXT),
+      at + FAILURE_CONTEXT
+    );
+    return ` toon_error="${String(error)}" around=${JSON.stringify(around)}`;
+  }
+};
+
+// A tool result's data: its structured content, else the JSON or TOON in its
+// text. It's data from the merchant's account, never instructions.
 export const resultData = (result: CallToolResult): unknown => {
   if (result.isError === true) {
     throw new TypeError(textOf(result).slice(0, 300) || "The tool call failed");
@@ -296,7 +356,7 @@ export const resultData = (result: CallToolResult): unknown => {
   try {
     return JSON.parse(text) as unknown;
   } catch {
-    return text;
+    return decodeToon(text);
   }
 };
 
@@ -326,17 +386,44 @@ export const findOne = <T>(
   return found;
 };
 
+const SHAPE_DEPTH = 5;
+const SHAPE_KEYS = 12;
+
+// A reply's structure for an error log: its keys, array lengths and value
+// types, never its values (they are the merchant's data).
+export const replyShape = (value: unknown, depth = 0): string => {
+  if (Array.isArray(value)) {
+    const [first] = value as unknown[];
+    return value.length > 0 && depth < SHAPE_DEPTH
+      ? `[${value.length}x${replyShape(first, depth + 1)}]`
+      : `[${value.length}]`;
+  }
+  if (typeof value !== "object" || value === null) {
+    return value === null ? "null" : typeof value;
+  }
+  if (depth >= SHAPE_DEPTH) {
+    return "{...}";
+  }
+  const keys = Object.entries(value)
+    .slice(0, SHAPE_KEYS)
+    .map(([key, child]) => `${key}:${replyShape(child, depth + 1)}`);
+  return `{${keys.join(",")}}`;
+};
+
 export type ToolCall = (
   tool: string,
   args: Record<string, unknown>
 ) => Promise<unknown>;
 
-const authOptions = (provider: ProviderId) => {
-  const { scope, serverUrl } = PROVIDERS[provider];
-  return { serverUrl, ...(scope === undefined ? {} : { scope }) };
-};
-
 export const createUpstream = (config: UpstreamConfig) => {
+  const authOptions = (provider: ProviderId) => {
+    const scope =
+      provider === "meta" ? config.metaScope : PROVIDERS[provider].scope;
+    return {
+      serverUrl: config.serverUrls[provider],
+      ...(scope === undefined ? {} : { scope }),
+    };
+  };
   const fetchFn = config.fetch === undefined ? {} : { fetchFn: config.fetch };
   // The provider's consent page for a new connection, and the flow state
   // the caller keeps until the callback.
@@ -348,7 +435,15 @@ export const createUpstream = (config: UpstreamConfig) => {
   ) =>
     await external(log, { operation: "authorize", provider }, async () => {
       const flow: PendingFlow = { state };
-      const oauth = new ConnectionAuth(provider, config, grant, flow);
+      // A connect always asks for consent: given the grant a merchant
+      // already holds, the SDK would refresh it and skip the consent page.
+      const fresh: GrantStore = {
+        ...grant,
+        load: async (): Promise<undefined> => {
+          await Promise.resolve();
+        },
+      };
+      const oauth = new ConnectionAuth(provider, config, fresh, flow);
       await auth(oauth, { ...authOptions(provider), ...fetchFn });
       if (oauth.authorizationUrl === undefined) {
         throw new Error("The provider didn't ask for authorization");
@@ -381,7 +476,9 @@ export const createUpstream = (config: UpstreamConfig) => {
     provider: ProviderId,
     grant: GrantStore,
     log: Logger | undefined,
-    work: (call: ToolCall) => Promise<T>
+    // `accessToken` reads the grant's current access token, for the
+    // provider's own API beside its MCP server (Meta's Graph API).
+    work: (call: ToolCall, accessToken: () => Promise<string>) => Promise<T>
   ): Promise<T> => {
     const held = await grant.load();
     if (held === undefined) {
@@ -430,7 +527,7 @@ export const createUpstream = (config: UpstreamConfig) => {
     };
     const client = new Client({ name: "wovain", version: "0.1.0" });
     const transport = new StreamableHTTPClientTransport(
-      new URL(PROVIDERS[provider].serverUrl),
+      new URL(config.serverUrls[provider]),
       {
         authProvider: oauth,
         ...(config.fetch === undefined ? {} : { fetch: config.fetch }),
@@ -462,7 +559,14 @@ export const createUpstream = (config: UpstreamConfig) => {
         { operation: "connect", provider },
         async () => await client.connect(transport).catch(unlessRefused)
       );
-      return await work(call);
+      const accessToken = async () => {
+        const latest = await grant.load();
+        if (latest === undefined) {
+          throw await refused();
+        }
+        return latest.access_token;
+      };
+      return await work(call, accessToken);
     } finally {
       await client.close();
     }

@@ -8,9 +8,11 @@ const env = {
   POLAR_ENVIRONMENT: "sandbox" as const,
 };
 
-it("keeps paid plans off unless the flag is on", () => {
-  expect(createBilling(env).paidPlans()).toBe(false);
-  const isFlagOn = vi.fn((flag: string) => flag === BILLING_PAID_PLANS);
-  expect(createBilling(env, isFlagOn).paidPlans()).toBe(true);
+it("keeps paid plans off unless the flag is on", async () => {
+  expect(await createBilling(env).paidPlans()).toBe(false);
+  const isFlagOn = vi.fn(
+    async (flag: string) => await Promise.resolve(flag === BILLING_PAID_PLANS)
+  );
+  expect(await createBilling(env, isFlagOn).paidPlans()).toBe(true);
   expect(isFlagOn).toHaveBeenCalledWith("billing-paid-plans");
 });

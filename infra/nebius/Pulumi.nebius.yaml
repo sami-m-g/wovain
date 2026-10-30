@@ -1,0 +1,161 @@
+config:
+  gcp:project: wovain
+  gcp:region: us-central1
+  gcp:billingProject: wovain
+  gcp:userProjectOverride: "true"
+  github:owner: sami-m-g
+  wovain-nebius:falImageModel: openai/gpt-image-2.5/flare/text-to-image
+  wovain-nebius:nemotronModel: nvidia/Nemotron-3.5-Super-VL
+  wovain-nebius:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
+  # The Resend domain wovain.com (the `resend` resource in the wovain stack).
+  # Pulumi makes next its own sending-only key for it with next's own
+  # full-access key, the resendAdminKey stack secret (infra/README.md).
+  wovain-nebius:resendDomainId: 4ec14742-4f9e-4081-a61c-58f499366259
+  wovain-nebius:docsUrl: https://docs.wovain.com
+  wovain-nebius:emailFrom: wovain <support@wovain.com>
+  wovain-nebius:supportEmail: support@wovain.com
+  wovain-nebius:privacyEmail: privacy@wovain.com
+  wovain-nebius:falMcpUrl: https://mcp.fal.ai/mcp-relay
+  wovain-nebius:fourthwallMcpUrl: https://mcp.fourthwall.com/app
+  wovain-nebius:metaMcpUrl: https://mcp.facebook.com/ads
+  wovain-nebius:metaMcpScope: ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads
+  wovain-nebius:mcpWidgetResourceDomains:
+    - https://fal.media
+    - https://*.fal.media
+    - https://cdn.fourthwall.com
+    - https://imgproxy.fourthwall.dev
+  wovain-nebius:fourthwallDefaultProductId: pro_8be1acca2fe7403f89
+  wovain-nebius:nemotronInputPrice: "0.3"
+  wovain-nebius:nemotronOutputPrice: "0.9"
+  # The Nemotron model per job (packages/core/src/model-router.ts).
+  wovain-nebius:nemotronModelFast: nvidia/Nemotron-3_5-Lightning
+  wovain-nebius:nemotronModelDefault: nvidia/Nemotron-3.5-Super-VL
+  wovain-nebius:nemotronModelReasoning: nvidia/Nemotron-3-Ultra-550b-a55b
+  wovain-nebius:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
+  wovain-nebius:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
+  # Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
+  wovain-nebius:tavilyResearchModel: mini
+  # Voice commands' speech to text on fal (packages/core/src/voice.ts).
+  wovain-nebius:voiceSttModel: nvidia/nemotron-asr-multilingual/asr
+  wovain-nebius:voiceSttFallbackModel: fal-ai/wizper
+  # A drop's fal models per art type (packages/core/src/art.ts).
+  wovain-nebius:falArtModels:
+    cutout: fal-ai/birefnet/v2
+    pattern: ideogram/v4/tiling/lora
+    typographic: ideogram/vector/text-to-vector
+    upscale: fal-ai/recraft/upscale/crisp
+    vector: fal-ai/recraft/v4.1/text-to-vector
+  wovain-nebius:guardrailInjectionThreshold: "0.8"
+  wovain-nebius:guardrailModerationThreshold: "0.7"
+  wovain-nebius:guardrailPiiThreshold: "0.7"
+  wovain-nebius:pricingRules:
+    cardFeeFixed: 0.3
+    cardFeePct: 2.9
+    defaultBaseCost: 12
+    minMarginPct: 30
+    minProfit: 10
+    refundReservePct: 2
+    salesTaxPct: 7
+    shipping: 5
+    sizeSurcharges:
+      2XL: 2
+      3XL: 4
+      4XL: 6
+      5XL: 8
+  wovain-nebius:billingCatalog:
+    # Sized so a credit costs wovain about $0.025 (docs/pricing-proposal.md):
+    # a design draws on wovain's fal while onboarding-wizard is on.
+    creditCost:
+      assist: 1
+      design: 4
+      research: 5
+    designsPerRun: 3
+    creditPack:
+      credits: 100
+      name: Credit pack
+      priceCents: 1500
+    plans:
+      free:
+        # Autopilot on Free in dev and next (openspec autopilot-triggers).
+        autopilot: true
+        autopilotDailyCredits: 25
+        # nebius has no Polar, so no promo can be redeemed: the judges'
+        # credits are Free's own, about 16 manual drops at 18 credits each.
+        monthlyCredits: 300
+        name: Free
+        priceCents: 0
+        rank: 0
+        rollover: false
+      label:
+        autopilot: true
+        autopilotDailyCredits: 150
+        monthlyCredits: 1000
+        name: Label
+        priceCents: 7900
+        rank: 2
+        rollover: true
+      studio:
+        autopilot: true
+        autopilotDailyCredits: 50
+        monthlyCredits: 300
+        name: Studio
+        priceCents: 2900
+        rank: 1
+        rollover: false
+    promoCentsPerCredit: 10
+    promos:
+      - audience: "Hackathon judges: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        enabled: true
+        endsAt: "2026-12-24T23:59:59Z"
+        id: judges-2026
+        maxRedemptions: 50
+        name: Judges 2026
+      # The shared judges' demo login (openspec judges-demo-account): only
+      # that account can redeem it, so its code is worthless to anyone else.
+      # 300 credits are about 16 manual drops at 18 credits each.
+      - audience: "The judges' shared demo account on nebius.wovain.com: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        emails:
+          - judges@wovain.com
+        enabled: true
+        endsAt: "2026-12-31T23:59:59Z"
+        id: judges-account-2026
+        maxRedemptions: 1
+        name: Judges account 2026
+      - audience: "Launch: a public code for the first creators, once paid plans are on."
+        credits: 50
+        enabled: false
+        endsAt: "2027-03-31T23:59:59Z"
+        id: launch-2027
+        maxRedemptions: 500
+        name: Launch 2027
+        startsAt: "2027-01-15T00:00:00Z"
+    redeemLimit:
+      attempts: 5
+      windowSeconds: 600
+    runsPerMerchant: 2
+  wovain-nebius:resendAdminKey:
+    secure: v1:wR+9uDlnJ6aaqZjP:hEnGzDEwxyz9GoJrp6MZZ10uAlVUylEr5wljyfuPSs1dHY+SFQFnxbJFz5fFMz+E7wg+mw==
+  github:token:
+    secure: v1:nljnMCX3o4cim+pZ:tjdx3wOSFUduFhOR+0WzbJlngRsMqcWggNvnS4g5BAUC1TrdyxfwLPgHlDBaZL6BWAKxtPaqI+XSM/aKwvkk8JyvCz/XHwi4x8oR7f7TAyNQN5OTyvp9zB5IzLEqTu0n85cSMtqWbPno/e1fAg==
+  posthog:apiKey:
+    secure: v1:yxNZIN4ZvLaZClnw:qov0SZtFPeoCbcMkTZiQe2eU1opFWD2itR/RbfHT5JE3XSCzcMtzi8cYCvPAZ2B6E+kJMSbcHqoPq3JMKIEpG6ZFeN0=
+  wovain-nebius:nebius-api-key:
+    secure: v1:iE+HnzPeRjLoZtbr:GJ1VOnrDFIjz83JYtJAN2QAD+EX/yOIsHFly93pVleM0mTQA0qpZaiMpdFfpi96Tw2Is11oGeZLYNDV/yo6+APBnRxdMa4IqVt/Yztgoi2hlF6CDFjLW+AIrLb8kr+CyoXmXKOITNxWBOuAAGupu2EeiA74VdfvKaC8PQeulX6+R0jRwlKUR2t7LrXQ1YyULmUhj3Gw0nbyNXAdxiVCI98ELm6oX4jlbSb2dhe2LzD3wJNkz2GEIDSa+a3PflX9wcMpDsoiXGwmQG2FAa39tZyYzvYpWufAKAJwYwfzKWusgjaDuChWQEMoqtfvgzvGLwsuuoJ87jgaUqo0=
+  wovain-nebius:fal-key:
+    secure: v1:jpAzZGRUjddLFyRX:6TagCtbSIOLQ2PoHVcVSlmy7zMmCZ5gj3GzUEiPPaSv+tYIEZJfYg96d7hQ+CYWIWADKDYk/Te/Dkj/RxkDr9m4FCahfUn4EdlltqFUPJKE3Guzyrv7WLw==
+  wovain-nebius:tavily-api-key:
+    secure: v1:ehYKL34Gdtg5gzya:76E+R6Vhq4I4r1IConUQaCFiRFV+4MyAxbqWGcSiThFcy0aVGVXmwqz8E4d0+uInjTtJFkiZK9B9
+  wovain-nebius:qloo-api-key:
+    secure: v1:u4V4VuMWnBKId2vY:vPBiuo/zmgsz+fhyYTlaTOUlrjoEGae+BLlPTymRiQSrGjIUAp+B19vYZJiJlOmDD0dSkdUqcqB5LuJTFw==
+  wovain-nebius:meta-app-id:
+    secure: v1:6fPwHUbYUro3k20a:gEEbu9SkjOd4vGDlyxYl/9q1L0kWS4LZP4RFxKsUlA==
+  wovain-nebius:meta-app-secret:
+    secure: v1:Txzy5y7kEQkb23cn:bNrIl+JWM44WzhwQL4tlsI4fgBmlh7nNPKohQn6yiyV7P41nzvg8735usp5cxn5M
+  wovain-nebius:inngest-event-key:
+    secure: v1:sLmugIhaFxamS2tm:LLNmc9llefCsou3PzEgXk4RnrS0E3aojloggRozxq7gHBQeSlvU1JjdGDsphI5f6pa0hubePuJRXXKFG7SRD41TA6SAv19nGLHAyWJ+kzGGSCFVVyKBNtf5OPdUm91uXvJ0d/WSO
+  wovain-nebius:inngest-signing-key:
+    secure: v1:blG8EYd/wFCc7L5X:XMBkXqaECXr4WbDTYGt+LBL+QaQgE9zdX/S0Ep8MZw5eLZMaA/mOO0S7VxSuEGdCni/qY8Ep1LUoNQ/uuqkWE0G1yWhspy6BrVXULpTL+jPmT+BqZRyLVOArHraq
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/next-stack-secrets
+encryptedkey: CiQAh4aI65rG4NpeA/VWF/b5P77qZo91yRGNE0jnl05pjYgzqoMSSQBWC+SVUtPILzTDdjX6sxnXM5FjCczTk9tXeIZw9XUgFhb5erfW90hhRgAGQsKrXz7cK5/3cTjhftZeRT8PREHSE8rfYcA/jRg=

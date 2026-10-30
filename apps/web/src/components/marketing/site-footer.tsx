@@ -35,7 +35,7 @@ export const SiteFooter = async () => {
     {
       id: "footer-product",
       links: [
-        item("how", { hash: "results", pathname: "/" }, t("howItWorks")),
+        item("how", { hash: "how-it-works", pathname: "/" }, t("howItWorks")),
         item("pricing", "/pricing", t("pricing")),
         item("chatgpt", "/integrations/chatgpt", t("chatgpt")),
         item("sign-up", "/sign-up", t("signUp")),
@@ -72,7 +72,7 @@ export const SiteFooter = async () => {
           <ConsentSettingsButton className={linkClass} />
         </li>,
         <li key="contact">
-          <a className={linkClass} href="mailto:support@wovain.com">
+          <a className={linkClass} href={`mailto:${ENV.SUPPORT_EMAIL}`}>
             {t("contact")}
           </a>
         </li>,

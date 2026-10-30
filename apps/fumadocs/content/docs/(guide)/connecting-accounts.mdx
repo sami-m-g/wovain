@@ -17,6 +17,8 @@ Fourthwall is your shop. It prints each order, ships it and runs checkout.
 
 wovain reads the catalog of blanks and their base costs, creates products from the designs you approve, and publishes them when you say so. New products start **hidden**, so nothing appears in your shop until you publish it.
 
+Once your shop is connected, **Store** lists what it still needs before it can sell and ticks each step off as you finish it. See [Your store](/docs/store).
+
 ## fal
 
 fal draws the graphics for each idea, at print resolution, on your fal account.
@@ -33,7 +35,27 @@ Meta is where your ads run. wovain needs an ad account and a Facebook Page.
 1. In **Connections**, choose **Connect Meta**.
 2. Sign in with Facebook and allow access to the ad account and Page you want to use.
 
-wovain writes several ads for each product and builds a campaign with them. Every campaign is created **paused**, with the daily budget you set ($1 to $500). Spend starts only when you turn it on in Meta Ads Manager.
+Then open **Store**. Under **Get your Meta account ready for ads**, wovain checks your account and shows a card for each step left: an ad account, a payment method, a Facebook Page, an Instagram account (optional) and the safety rules. Each card says what to do and opens the exact Meta screen in a new tab. Come back to wovain when you're done: the card ticks off by itself.
+
+If the safety rules card asks you to, choose **Reconnect Meta** and allow everything Meta asks for. You can also reconnect or disconnect Meta from **Connections** at any time.
+
+wovain writes several ads for each product and builds a campaign with them. Every campaign is created **paused**, with the daily budget you set ($1 to $500). Spend starts only when you approve it in wovain, which then starts it on Meta once its spend rules are in place.
+
+## Your Meta pixel on the shop
+
+So your ads learn from the people who buy, your shop needs your Meta pixel. Fourthwall has no way for another app to set it, so wovain gives you the pixel ID with a copy button and opens the exact Fourthwall page:
+
+1. Copy the pixel ID from **Store**.
+2. In Fourthwall's **Tracking pixels**, paste it into the **Facebook Pixel** field and save.
+3. Open your storefront once. The step ticks off when Meta sees the visit.
+
+For sales that ad blockers hide, also connect Meta's Conversions API in Fourthwall's **Meta Conversions** app. It asks for the same pixel ID and an access token from Meta Events Manager.
+
+## Getting paid
+
+Fourthwall pays your sales out through Stripe. Only the shop owner can set it up: in Fourthwall's **Billing and payouts**, choose **Set up your payouts** and give Stripe your ID and bank details. The Store ticks the step off once Stripe is ready.
+
+Where Stripe isn't available, Fourthwall pays through PayPal or bill.com. Once your balance reaches $25, email support@fourthwall.com with your shop's address. Support sets it up by hand, so Fourthwall can't report it: choose **Fourthwall support set up my payouts** on the Store when it's done.
 
 ## Disconnecting
 

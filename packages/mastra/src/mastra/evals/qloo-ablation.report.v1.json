@@ -1,0 +1,279 @@
+{
+  "at": "2026-10-29T10:41:17.625Z",
+  "llmOnly": {
+    "crossDomains": 0,
+    "cues": 0,
+    "explained": 0,
+    "grounded": 0,
+    "novelty": 0.90625,
+    "themes": 3
+  },
+  "model": "nvidia/Nemotron-3.5-Super-VL",
+  "overlap": 0,
+  "seeds": [
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": [
+          "Woodland spirit sketches",
+          "Vintage sky vessels",
+          "Rice paddy village life"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Studio Ghibli",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 41,
+          "explained": 1,
+          "grounded": 1,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": ["J-pop", "anime", "J-rock"],
+        "failedDomains": [],
+        "qloo": "used"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": [
+          "Gothic library arches",
+          "Skull and hourglass",
+          "Secret society rituals"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Dark academia",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 37,
+          "explained": 1,
+          "grounded": 1,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": ["powerviolence", "Fiction", "grindcore"],
+        "failedDomains": [],
+        "qloo": "used"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 0.6666666666666666,
+          "themes": 3
+        },
+        "themes": [
+          "Fisheye skate tapes",
+          "Cyber skate cargo",
+          "Concrete skate bowls"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Y2K skate",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 38,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 0,
+          "themes": 0
+        },
+        "themes": [],
+        "failedDomains": [],
+        "qloo": "no_match"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": [
+          "Wild Mushroom Foraging",
+          "Pressed Flower Herbarium",
+          "Sourdough Starter Culture"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Cottagecore",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 39,
+          "explained": 1,
+          "grounded": 1,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": ["Manga", "LGBT", "Shojo"],
+        "failedDomains": [],
+        "qloo": "used"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": [
+          "Rainy Window Study Beats",
+          "Bedroom Beat Maker Setup",
+          "Neon Tokyo Rainy Nights"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Lo-fi hip hop",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 39,
+          "explained": 1,
+          "grounded": 1,
+          "novelty": 0.7777777777777778,
+          "themes": 3
+        },
+        "themes": ["trap", "beats", "instrumental  hip hop"],
+        "failedDomains": [],
+        "qloo": "used"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 0.6666666666666666,
+          "themes": 3
+        },
+        "themes": [
+          "Pickleball Country Club",
+          "Pro Pickleball Circuit",
+          "Retro Pickleball Posters"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Pickleball",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 0,
+          "themes": 0
+        },
+        "themes": [],
+        "failedDomains": ["brand", "movie", "tv_show"],
+        "qloo": "no_match"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 0.9166666666666666,
+          "themes": 3
+        },
+        "themes": [
+          "Found footage camera horror",
+          "Final girl survivor trope",
+          "Practical effects creature makeup"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Horror movie fans",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 37,
+          "explained": 1,
+          "grounded": 1,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": ["murder", "syria", "isis"],
+        "failedDomains": [],
+        "qloo": "used"
+      }
+    },
+    {
+      "llmOnly": {
+        "metrics": {
+          "crossDomains": 0,
+          "cues": 0,
+          "explained": 0,
+          "grounded": 0,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": [
+          "Stadium concert fashion",
+          "Handmade friendship bracelets",
+          "Cryptic celebrity social clues"
+        ]
+      },
+      "overlap": 0,
+      "seed": "Taylor Swift",
+      "withQloo": {
+        "metrics": {
+          "crossDomains": 3,
+          "cues": 41,
+          "explained": 1,
+          "grounded": 1,
+          "novelty": 1,
+          "themes": 3
+        },
+        "themes": ["Autobiography", "pop", "Pop Rock"],
+        "failedDomains": [],
+        "qloo": "used"
+      }
+    }
+  ],
+  "withQloo": {
+    "crossDomains": 2.625,
+    "cues": 34,
+    "explained": 0.75,
+    "grounded": 0.75,
+    "novelty": 0.7222222222222222,
+    "themes": 2.25
+  }
+}

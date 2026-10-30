@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit reviews every pull request into main as an advisor: it comments
+# but never requests changes or approves, and the main ruleset does not
+# require it (infra/github.ts; Claude's review is the approval). Linting, SAST,
+# secret and dependency scanning run in CI (.github/workflows), so its own
+# tools are off and only the LLM review runs, beside CI.
+#
+# Latency is a rate limit, not queueing: reviews are limited per developer per
+# hour (OSS plan: 1-10 by star count; docs.coderabbit.ai/management/plans),
+# and every push to a reviewed pull request uses one. This file already
+# keeps each review cheap (chill profile, no summaries, no tools, filtered
+# paths); the lever left is fewer pushes (AGENTS.md, "CodeRabbit review loop").
+# Reference: https://docs.coderabbit.ai/reference/configuration
+language: en-US
+reviews:
+  profile: chill
+  # Advisory: comments only. `enabled` is the request-changes/approve workflow
+  # (`request_changes_workflow` is its deprecated alias).
+  auto_approvals:
+    enabled: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: [main]
+    # Each push is reviewed on its own commits only, not the whole pull
+    # request again.
+    auto_incremental_review: true
+    # Never pause after a number of reviewed commits (default 5).
+    auto_pause_after_reviewed_commits: 0
+  # A short walkthrough comment only, nothing written into the description,
+  # and no extra sections or summaries that each cost another pass.
+  high_level_summary: false
+  high_level_summary_in_walkthrough: false
+  changed_files_summary: false
+  assess_linked_issues: false
+  poem: false
+  sequence_diagrams: false
+  in_progress_fortune: false
+  estimate_code_review_effort: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  review_status: false
+  review_info: false
+  review_details: false
+  pre_merge_checks:
+    # commitlint checks titles; the code has no docstring convention; the
+    # OpenSpec change says what the linked issue asks for. A failing check
+    # would also withhold the automatic approval.
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+  # On-demand fixes (Fix comments, merge conflicts) stay; nothing that
+  # generates code or runs on its own.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    fix_ci:
+      enabled: false
+  path_filters:
+    # Lockfiles and the patches pnpm applies.
+    - "!**/pnpm-lock.yaml"
+    - "!docker/*/package-lock.json"
+    - "!patches/**"
+    # Generated: drizzle-kit migrations, Better Auth's schema, Varlock's env
+    # modules, the judge eval report.
+    - "!packages/db/src/migrations/**"
+    - "!packages/db/src/schema/auth.ts"
+    - "!**/src/env.ts"
+    - "!packages/mastra/src/mastra/evals/report.v1.json"
+    # Prose, specs, translations and assets: docs, the Fumadocs content, the
+    # OpenSpec specs and changes, the fr/es/en message catalogs, images.
+    # A pull request that only changes these is approved without a review.
+    - "!**/*.md"
+    - "!**/*.mdx"
+    - "!docs/**"
+    - "!openspec/**"
+    - "!apps/web/messages/*.json"
+    - "!**/public/**"
+    - "!skills-lock.json"
+    # Vendored, updated only with their CLIs (AGENTS.md, "Rules").
+    - "!packages/ui/src/components/**"
+    - "!packages/ui/src/hooks/**"
+    - "!packages/ui/src/lib/**"
+    - "!apps/fumadocs/src/components/ai/**"
+    - "!apps/fumadocs/src/components/codeblock.tsx"
+    - "!apps/fumadocs/src/components/tabs/**"
+    - "!apps/fumadocs/src/components/ui/**"
+    - "!apps/fumadocs/src/lib/cn.ts"
+    - "!apps/fumadocs/src/lib/merge-refs.ts"
+    - "!apps/web/src/components/auth/**"
+    - "!apps/web/src/lib/auth/**"
+    - "!.agents/skills/**"
+    - "!.claude/skills/**"
+    - "!.claude/commands/opsx/**"
+  path_instructions:
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        Repository rules (AGENTS.md):
+        - Every error must reach PostHog Error Tracking: log it at error level through evlog, or throw it from an oRPC procedure or a route. Flag a swallowed error (an empty catch, or a catch that only returns a fallback), an error logged as a plain string, console.error, or an error sent anywhere else.
+        - Environment values come from `ENV` in the app's generated `src/env.ts` (Varlock, from `.env.schema`), never from `process.env` read directly in app code.
+        - Feature flags: a flag lives in `packages/core/src/flag-registry.ts` with an owner, an expiry and a per-environment rollout, and is read with `core.flags.isOn("<name>", ...)` (`isFlagOn` in apps/web) with a literal, typed name, never a built string. The safe state is off: code must behave as off when the flag provider can't be reached. Flag an expired or fully rolled-out flag that is still read.
+        - Frameworks first, minimal code: flag hand-written logic that Mastra or a maintained dependency already covers, and name the replacement. Examples: a hand-written retry loop or re-ask of a model (Mastra step `retries`, Inngest retries, a processor's `abort(reason, { retry: true })`); a validation or guard around a model call (a Mastra input or output processor); orchestration of several steps, fan-out, schedules or waits in plain functions or raw `inngest.createFunction` (a Mastra workflow with steps, `cron`, `.sleepUntil`, `.parallel`); a direct model call outside a Mastra agent; an eval or score computed by hand (`createScorer`, `runEvals`); spans or traces built by hand (Mastra observability and its exporters); MCP servers or clients built on the raw SDK (`MCPServer`, `MCPClient` from `@mastra/mcp`). Also flag a pull request whose description does not name the library or framework used, or does not give a reason for hand-written logic it adds. Don't ask to remove behaviour: a replacement must keep every case the code handles.
+        - Generated and vendored files are changed only with their CLIs: shadcn (`packages/ui/src/{components,hooks,lib}`), Fumadocs, the Better Auth UI registry (`apps/web/src/{components,lib}/auth`), `pnpm run auth:generate` (`packages/db/src/schema/auth.ts`), `pnpm run db:generate` (`packages/db/src/migrations`). Flag hand edits to them.
+    - path: "**/package.json"
+      instructions: |
+        A dependency version shared by more than one workspace package belongs in the pnpm catalog (`pnpm-workspace.yaml`) and is referenced as `catalog:`. Flag a hard-coded version of a catalog dependency. `docker/*/package.json` are npm projects outside the workspace and pin exact versions on purpose.
+    - path: "pnpm-workspace.yaml"
+      instructions: |
+        Every `overrides` and `patchedDependencies` entry needs a comment saying why it exists and when to remove it.
+  tools:
+    # CI runs Oxlint and Oxfmt (Ultracite), CodeQL and Semgrep, OSV-Scanner,
+    # dependency review and ggshield; these would only repeat them.
+    ast-grep:
+      enabled: false
+    actionlint:
+      enabled: false
+    biome:
+      enabled: false
+    checkmake:
+      enabled: false
+    checkov:
+      enabled: false
+    dotenvLint:
+      enabled: false
+    eslint:
+      enabled: false
+    github-checks:
+      enabled: false
+    gitleaks:
+      enabled: false
+    hadolint:
+      enabled: false
+    htmlhint:
+      enabled: false
+    languagetool:
+      enabled: false
+    markdownlint:
+      enabled: false
+    oasdiff:
+      enabled: false
+    opengrep:
+      enabled: false
+    osvScanner:
+      enabled: false
+    oxc:
+      enabled: false
+    presidio:
+      enabled: false
+    prismaLint:
+      enabled: false
+    reactDoctor:
+      enabled: false
+    semgrep:
+      enabled: false
+    shellcheck:
+      enabled: false
+    skillspector:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    squawk:
+      enabled: false
+    stylelint:
+      enabled: false
+    trivy:
+      enabled: false
+    trufflehog:
+      enabled: false
+    vale:
+      enabled: false
+    yamllint:
+      enabled: false
+    zizmor:
+      enabled: false
+chat:
+  art: false
+knowledge_base:
+  # Each review would also search the web; the repository's own docs and
+  # path_instructions are the context it needs.
+  web_search:
+    enabled: false

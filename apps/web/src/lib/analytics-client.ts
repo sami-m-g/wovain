@@ -9,7 +9,7 @@ import { analyticsStarted } from "@/lib/consent-store";
 // from instrumentation-client.ts as the page loads. Consent follows PostHog's
 // cookie banner setup: cookieless "on_reject" mode stores nothing in the
 // browser and records no replays until the visitor accepts, and PostHog
-// counts those visits with a server-side hash (infra/posthog/settings.tf
+// counts those visits with a server-side hash (infra/posthog/program.ts
 // turns on "Cookieless server hash mode"). Where the law asks for an opt-in,
 // or the country is unknown, the visitor starts opted out and sees the
 // banner (lib/consent.ts, components/consent-banner.tsx); elsewhere consent
@@ -18,13 +18,6 @@ import { analyticsStarted } from "@/lib/consent-store";
 // through this site's /ingest rewrite (next.config.ts). Without a key,
 // analytics are off and every posthog.* call is a no-op.
 
-// wovain.com and the hosts that serve the same app (www redirects to it,
-// mcp serves ChatGPT) are production; dev.wovain.com and localhost are not.
-const PRODUCTION_HOSTS = new Set([
-  "wovain.com",
-  "www.wovain.com",
-  "mcp.wovain.com",
-]);
 // How long the page waits for /api/visitor before PostHog starts without it.
 const VISITOR_TIMEOUT_MS = 1500;
 
@@ -59,15 +52,12 @@ const detectBot = async () => {
 
 // Properties every event carries, in PostHog's own names where it has one.
 // `bot` is set only when true, so the project's test account filters
-// (infra/posthog/settings.tf) drop events where it is set.
+// (infra/posthog/program.ts) drop events where it is set.
 const visitorProperties = async () => {
   const [visitor, botCheck] = await Promise.all([fetchVisitor(), detectBot()]);
   return {
-    // One image serves wovain.com and dev.wovain.com, so the host, not a
-    // build-time value, tells their events apart.
-    environment: PRODUCTION_HOSTS.has(window.location.hostname)
-      ? "production"
-      : "development",
+    // The deployment (APP_ENV), which only the server knows.
+    ...(visitor && { environment: visitor.environment }),
     ...(visitor?.country && {
       $geoip_country_code: visitor.country.code,
       $geoip_country_name: visitor.country.name,

@@ -4,7 +4,8 @@ import { createError } from "evlog";
 import { z } from "zod";
 
 import type { Artwork } from "./design";
-import { findAll, findOne } from "./upstream";
+import { logEmptyCatalog, money } from "./fourthwall-drops";
+import { findAll, findOne, replyShape, toonFailure } from "./upstream";
 import type { ToolCall } from "./upstream";
 
 // The merchant's Fourthwall shop through its MCP server: browse the catalog,
@@ -21,7 +22,10 @@ const printAreaSchema = z.object({
 const catalogSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
-  priceFrom: z.number().optional(),
+  // A price Fourthwall spells another way leaves the cost unknown; it never
+  // hides the blank.
+  // oxlint-disable-next-line promise/prefer-await-to-then, promise/valid-params -- zod's catch, not a promise
+  priceFrom: money.nullish().catch(null),
   printDetails: z
     .object({
       printAreas: z.array(printAreaSchema),
@@ -49,24 +53,15 @@ const frontRegion = (areas: z.infer<typeof printAreaSchema>[]) => {
   return (front.find((area) => area.type === "front_large") ?? front[0])?.type;
 };
 
-// Comfort Colors 1717, a front-printable tee that Fourthwall lists for every
-// shop. A search that comes back empty falls back to it.
-export const DEFAULT_CATALOG_PRODUCT_ID = "pro_8be1acca2fe7403f89";
-
 const REPLY_PREVIEW = 200;
-const MAX_KEYS = 10;
 
-// What a catalog reply held, for the error log: never the products' content.
+// What a catalog reply held, for the error log: its shape, never the
+// products' content.
 const summarizeReply = (reply: unknown, renderable: number) => {
-  const shape = Array.isArray(reply) ? "array" : typeof reply;
-  const keys =
-    typeof reply === "object" && reply !== null
-      ? Object.keys(reply).slice(0, MAX_KEYS).join(",")
-      : "";
   const listed = findAll(catalogSchema, reply).length;
   const preview =
     typeof reply === "string" ? ` text="${reply.slice(0, REPLY_PREVIEW)}"` : "";
-  return `${shape}${keys === "" ? "" : ` keys=[${keys}]`} products=${listed} renderable=${renderable}${preview}`;
+  return `products=${listed} renderable=${renderable} shape=${replyShape(reply)}${preview}${toonFailure(reply)}`;
 };
 
 interface CatalogResult {
@@ -95,7 +90,7 @@ const queryCatalog = async (
       ? []
       : [
           {
-            baseCost: product.priceFrom,
+            baseCost: product.priceFrom ?? undefined,
             id: product.id,
             name: product.name,
             region,
@@ -112,7 +107,10 @@ export const searchCatalog = async (
   call: ToolCall,
   options: { productId?: string; query?: string } = {}
 ): Promise<CatalogProduct[]> => {
-  const { blanks } = await queryCatalog(call, options);
+  const { blanks, summary } = await queryCatalog(call, options);
+  if (blanks.length === 0) {
+    logEmptyCatalog(options.productId ?? options.query ?? "t-shirt", summary);
+  }
   return blanks;
 };
 
@@ -121,14 +119,16 @@ const BLANK_RETRY_MS = 400;
 
 // One blank to print on. A reply with nothing usable is retried (Fourthwall
 // can answer a good call with an empty page); a search that stays empty falls
-// back to the default blank. A blank that can't be found is an error that
-// says what Fourthwall answered.
+// back to the default blank (FOURTHWALL_DEFAULT_PRODUCT_ID, a front-printable
+// tee Fourthwall lists for every shop). A blank that can't be found is an
+// error that says what Fourthwall answered.
 export const pickBlank = async (
   call: ToolCall,
   {
+    defaultProductId,
     productId,
     retryMs = BLANK_RETRY_MS,
-  }: { productId?: string; retryMs?: number } = {}
+  }: { defaultProductId: string; productId?: string; retryMs?: number }
 ): Promise<CatalogProduct> => {
   const tried: string[] = [];
   const attempt = async (
@@ -152,12 +152,11 @@ export const pickBlank = async (
   };
   const found =
     (await attempt(productId)) ??
-    (productId === undefined
-      ? await attempt(DEFAULT_CATALOG_PRODUCT_ID)
-      : undefined);
+    (productId === undefined ? await attempt(defaultProductId) : undefined);
   if (found !== undefined) {
     return found;
   }
+  logEmptyCatalog(productId ?? "the default blank", tried.join(" | "));
   throw createError({
     code: "FOURTHWALL_NO_BLANK",
     fix:
@@ -175,7 +174,7 @@ export const pickBlank = async (
 };
 
 // Per-item failures sit next to the successes in Fourthwall's bulk replies.
-const throwBulkErrors = (reply: unknown) => {
+export const throwBulkErrors = (reply: unknown) => {
   const [failed] = findAll(z.object({ bulkError: z.string().min(1) }), reply);
   if (failed !== undefined) {
     throw new Error(`Fourthwall refused: ${failed.bulkError.slice(0, 200)}`);
@@ -243,10 +242,14 @@ export interface DesignPreview {
 }
 
 // Renders the design on the blank: the customization the product is made
-// from, and its mockups.
+// from, and its mockups. Without `colors` and `sizes` Fourthwall uses only
+// the blank's first color and size (design-drops passes them).
 export const previewDesign = async (
   call: ToolCall,
-  product: Pick<NewProduct, "catalogProductId" | "mediaUri" | "region">
+  product: Pick<NewProduct, "catalogProductId" | "mediaUri" | "region"> & {
+    colors?: string[] | undefined;
+    sizes?: string[] | undefined;
+  }
 ): Promise<DesignPreview> => {
   const previews = await call("ecommerce_generate-product-design-previews", {
     products: [
@@ -254,6 +257,8 @@ export const previewDesign = async (
         productId: product.catalogProductId,
         regionNames: [product.region],
         regionUrls: [product.mediaUri],
+        ...(product.colors === undefined ? {} : { colors: product.colors }),
+        ...(product.sizes === undefined ? {} : { sizes: product.sizes }),
       },
     ],
   });

@@ -2,26 +2,38 @@ import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
-import { devEnvironment } from "./dev.ts";
+import { appEnvironment } from "./dev.ts";
 import { configureDomain } from "./domains.ts";
 import type { ShopRecord } from "./domains.ts";
-import { duoFlowAccounts, posthogTrigger } from "./duo.ts";
-import { featureFlags } from "./flags.ts";
-import { githubMirror } from "./github.ts";
-import { ciVariables, environments } from "./gitlab.ts";
+import { previewEnvironment } from "./github-preview.ts";
+import { deployEnvironments } from "./github.ts";
 import { retainLegacy } from "./legacy.ts";
-import { ResendDomain, ResendVerification } from "./resend.ts";
-import { cloudRunService, secretEnv, secretWithValue } from "./resources.ts";
+import { polarPromoSecrets } from "./polar.ts";
+import { configurePostHog, environmentProject } from "./posthog/program.ts";
+import { ResendDomain, ResendTracking, ResendVerification } from "./resend.ts";
+import {
+  cloudRunService,
+  postgresInstance,
+  secretEnv,
+  secretWithValue,
+} from "./resources.ts";
+import {
+  appSettings,
+  buildEnv,
+  environmentEnvs,
+  environmentSecrets,
+  settingEnvs,
+  sharedSettings,
+} from "./settings.ts";
 
 // wovain's Google Cloud project: Cloud Run serves apps/web at wovain.com and
 // apps/fumadocs at docs.wovain.com (each from its Dockerfile), Cloud SQL holds its Postgres database, Secret Manager
-// holds the keys, and GitLab CI builds and deploys through Workload Identity
-// Federation, with no stored Google key.
+// holds the keys, and GitHub Actions builds and deploys through Workload
+// Identity Federation, with no stored Google key.
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
 const project = gcpConfig.require("project");
 const region = gcpConfig.require("region");
-const gitlabProjectId = config.require("gitlabProjectId");
 
 // The billing account is read from the project, so its ID stays out of git.
 const { billingAccount, number: projectNumber } =
@@ -62,12 +74,13 @@ const afterApis = { dependsOn: apis };
 // resource, and the policy pack (infra/policy) requires it on each of them.
 const kept = { ...afterApis, protect: true };
 
-// The identities CI runs as, their roles and the workload identity pools
+// The infrastructure account and the GitHub Actions workload identity pool
 // live in infra/bootstrap, applied once by a project owner: an account that
 // grants itself a role can't use it in the same run, since IAM takes minutes
 // to propagate. Their names are fixed, so this stack just refers to them.
-const pools = `projects/${projectNumber}/locations/global/workloadIdentityPools`;
-const pool = `${pools}/gitlab`;
+const pool = `projects/${projectNumber}/locations/global/workloadIdentityPools/github`;
+// sami-m-g's GitHub user id (`gh api users/sami-m-g --jq .id`).
+const OWNER_GITHUB_ID = 106_979_416;
 
 // Firebase was added to the project by hand at first; adopted, never removed.
 new gcp.firebase.Project(
@@ -106,31 +119,9 @@ const connectionsKey = new gcp.kms.CryptoKey(
   { protect: true }
 );
 
-// Postgres for apps/web (packages/db). Public IP with no authorized networks:
-// only the Cloud SQL Auth Proxy reaches it, which Cloud Run's /cloudsql socket
-// and `cloud-sql-proxy` both use, authorized by IAM (roles/cloudsql.client).
-const sql = new gcp.sql.DatabaseInstance(
-  "postgres",
-  {
-    databaseVersion: "POSTGRES_18",
-    deletionProtection: true,
-    name: "wovain",
-    region,
-    settings: {
-      availabilityType: "ZONAL",
-      backupConfiguration: { enabled: true, startTime: "07:00" },
-      deletionProtectionEnabled: true,
-      diskAutoresize: true,
-      diskSize: 10,
-      // Shared-core tiers need the Enterprise edition (Postgres 16+ defaults
-      // to Enterprise Plus).
-      edition: "ENTERPRISE",
-      ipConfiguration: { ipv4Enabled: true, sslMode: "ENCRYPTED_ONLY" },
-      tier: "db-f1-micro",
-    },
-  },
-  kept
-);
+// Production's Postgres (resources.ts). dev.wovain.com has a database on it;
+// next.wovain.com is its own stack, with its own instance (next/).
+const sql = postgresInstance("postgres", "wovain", region, kept);
 const database = new gcp.sql.Database(
   "wovain",
   { instance: sql.name, name: "wovain" },
@@ -152,19 +143,24 @@ const dbUser = new gcp.sql.User("wovain", {
 // (`pulumi config set --secret <id>` in infra/) or, for the two below, a
 // generated one; Cloud Run mounts only the secrets that have a version, since
 // a revision won't start on an empty secret.
-// fal-key, meta-app-*, nebius-api-key, qloo-api-key, tavily-api-key and
+// fal-key, meta-app-* (the Meta app's id and secret, from the stack secrets
+// `meta-app-id` and `meta-app-secret`), nebius-api-key, qloo-api-key, tavily-api-key and
 // wovain-allowed-emails were created by main; the others are new. fal-key
-// is no longer read (fal runs on each merchant's own key); it stays until
-// its value is retired, since dropping it here would delete the secret.
+// is wovain's own fal key: FAL_KEY transcribes voice commands
+// (packages/core/src/voice.ts), and art draws on it only while the
+// onboarding-wizard flag is on, which is off in production; otherwise fal
+// runs on each merchant's own key.
 // inngest-event-key and inngest-signing-key come from the Inngest app
 // (docs/adr/0001-durable-runs.md): runs can't start until both are set.
 // polar-access-token and polar-webhook-secret are wovain's own billing
 // (packages/billing): a Polar organization token and the webhook endpoint's
-// signing secret. Each stays unmounted until its stack secret is set.
+// signing secret. posthog-secret-key is the PostHog project's secret API key
+// (feature_flag:read), with which the app evaluates feature flags on the
+// server (`pulumi config set --secret posthog-secret-key phs_...`). Each stays
+// unmounted until its stack secret is set.
 const secretIds = [
   "better-auth-secret",
   "fal-key",
-  "gitlab-feature-flags-instance-id",
   "google-client-secret",
   "inngest-event-key",
   "inngest-signing-key",
@@ -173,6 +169,7 @@ const secretIds = [
   "nebius-api-key",
   "polar-access-token",
   "polar-webhook-secret",
+  "posthog-secret-key",
   "qloo-api-key",
   "resend-api-key",
   "tavily-api-key",
@@ -202,11 +199,20 @@ const generated = new Map<string, pulumi.Output<string>>([
 
 const secrets = new Map<string, gcp.secretmanager.Secret>();
 const populated = new Map<string, pulumi.Resource>();
+// The Meta app's credentials were added by hand as version 1 of each secret;
+// their stack secrets hold the same values, so Pulumi adopts those versions
+// instead of adding new ones.
+const adoptedVersions = new Map([
+  ["meta-app-id", `projects/${project}/secrets/meta-app-id/versions/1`],
+  ["meta-app-secret", `projects/${project}/secrets/meta-app-secret/versions/1`],
+]);
 for (const id of secretIds) {
+  const adopted = adoptedVersions.get(id);
   const { secret, version } = secretWithValue(
     id,
     config.getSecret(id) ?? generated.get(id),
-    kept
+    kept,
+    adopted === undefined ? undefined : { import: adopted }
   );
   secrets.set(id, secret);
   if (version !== undefined) {
@@ -226,19 +232,13 @@ if (databaseUrlVersion !== undefined) {
   populated.set("database-url", databaseUrlVersion);
 }
 
-// Secrets whose versions live in Secret Manager outside Pulumi (the Meta app
-// credentials, added by hand): mounted without a SecretVersion here, so
-// `pulumi up` never touches their values. Each must keep an enabled version:
-// Cloud Run refuses a revision whose secret has no `latest` version.
-// Without them, connecting Meta answers META_NOT_CONFIGURED.
-const externalSecretIds = ["meta-app-id", "meta-app-secret"] as const;
 // wovain-allowed-emails is no longer read (the allowlist is gone); its secret
 // stays, unmounted, until it is retired, since dropping it from secretIds
 // would delete a protected resource.
 const unmountedSecretIds = new Set(["wovain-allowed-emails"]);
-const mountedSecretIds = [
-  ...new Set([...populated.keys(), ...externalSecretIds]),
-].filter((id) => !unmountedSecretIds.has(id));
+const mountedSecretIds = [...populated.keys()].filter(
+  (id) => !unmountedSecretIds.has(id)
+);
 
 // The identity apps/web runs as.
 const runner = new gcp.serviceaccount.Account(
@@ -272,7 +272,7 @@ for (const [id, secret] of secrets) {
   });
 }
 
-// Images built by CI (.gitlab/ci/deploy.yml); only the newest ten are kept.
+// Images built by CI (.github/workflows/deploy.yml); only the newest ten are kept.
 const images = new gcp.artifactregistry.Repository(
   "images",
   {
@@ -304,23 +304,24 @@ export const docsUrl = `https://docs.${domain}`;
 export const mcpUrl = `https://mcp.${domain}/api/mcp`;
 const serviceName = "wovain-web";
 
-// Settings production and dev (dev.ts) share.
-const sharedEnvs = {
-  GITLAB_FEATURE_FLAGS_URL: `https://gitlab.com/api/v4/feature_flags/unleash/${gitlabProjectId}`,
-  NEBIUS_BASE_URL: "https://api.tokenfactory.nebius.com/v1/",
-  QLOO_API_URL: "https://hackathon.api.qloo.com",
-};
+// Settings production and dev share (settings.ts). next.wovain.com is its
+// own stack (next/).
+const sharedEnvs = sharedSettings(config);
+// dev calls Graph v26.0 while production stays on v24.0 until the freeze ends.
+const devSharedEnvs = sharedSettings(config, "v26.0");
+// apps/web's per-environment settings: production's under plain keys, and
+// dev's under `<key>-dev` (`pulumi config set emailFrom-dev ...`), never
+// shared with production's.
+const prodSettings = appSettings(config, (key) => key);
+const devKey = (key: string) => `${key}-dev`;
+const devSettings = appSettings(config, devKey);
 
-// PostHog product analytics (apps/web/.env.schema). The public project token
-// (`pulumi config set posthogKey phc_...`) overrides the schema's default at
-// runtime and, through the NEXT_PUBLIC_POSTHOG_KEY CI variable below, in the
-// image build; the scout reads PostHog with a personal API key
-// (`pulumi config set --secret posthog-personal-api-key phx_...`) and the
-// project id (`pulumi config set posthogProjectId <id>`). Each is optional.
+// PostHog product analytics (apps/web/.env.schema, which has no default):
+// production's public project token (`pulumi config set posthogKey phc_...`),
+// at runtime and, through the `Production` environment's
+// NEXT_PUBLIC_POSTHOG_KEY Actions variable below, in the image build. dev and
+// next each have their own project (posthog/program.ts). Optional.
 const posthogKey = config.get("posthogKey");
-const posthogPersonalApiKey = config.getSecret("posthog-personal-api-key");
-const polarAccessToken = config.getSecret("polar-access-token");
-const posthogProjectId = config.get("posthogProjectId");
 const posthogEnv =
   posthogKey === undefined
     ? []
@@ -337,53 +338,46 @@ const googleEnv =
 
 // Polar's environment (apps/web/.env.schema): sandbox until the business
 // is registered (`pulumi config set polarEnvironment production`).
-const polarEnvironment = config.get("polarEnvironment") ?? "sandbox";
+const polarEnvironment = config.require("polarEnvironment");
 
-// GitLab Observability (docs/flows.md, "GitLab Observability"): the group's
-// OTLP endpoint, which Observe > Setup shows once Observability is enabled
-// (`pulumi config set o11yOtlpEndpoint <url>`). With it, apps/web sends its
-// request spans, Mastra's spans, evlog's wide events and Node runtime
-// metrics there over OTLP/HTTP (apps/web/src/lib/otel.ts); without it,
-// nothing is sent. Ingestion needs no token unless the group turns on
-// enforcement. Free for every tier during the beta.
-const o11yOtlpEndpoint = config.get("o11yOtlpEndpoint");
-const o11yEnv = (environment: "development" | "production") =>
-  o11yOtlpEndpoint === undefined
-    ? []
-    : [
-        { name: "OTEL_EXPORTER_OTLP_ENDPOINT", value: o11yOtlpEndpoint },
-        {
-          name: "OTEL_RESOURCE_ATTRIBUTES",
-          value: [
-            `deployment.environment.name=${environment}`,
-            `gitlab.project.id=${gitlabProjectId}`,
-            "gitlab.project.name=showcase",
-          ].join(","),
-        },
-      ];
+// Production runs release/transcend (docs/adr/0004-release-branch.md), the
+// build judges saw at the Transcend deadline, until winners are announced
+// (about 2026-11-16). Until then no `pulumi up` from main may roll a new
+// production revision: wovain-web and wovain-docs keep their live template
+// (image, env, secrets, scaling), and only an approved deploy from the
+// release branch changes them. The live revision still reads
+// GITLAB_FEATURE_FLAGS_* and the GitLab OTLP settings, which the template
+// below no longer has. Set `wovain:freezeProduction false` (or delete this)
+// when main converges onto production.
+const productionFrozen = config.getBoolean("freezeProduction") ?? true;
 
 // The image's own port (apps/web/Dockerfile).
 const service = cloudRunService("web", {
   cloudSqlInstance: sql.connectionName,
   dependsOn: [...populated.values()],
   envs: [
+    { name: "APP_ENV", value: "production" },
     { name: "BETTER_AUTH_URL", value: siteUrl },
+    ...settingEnvs(prodSettings),
+    { name: "INNGEST_APP_ID", value: "wovain" },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
-    { name: "GITLAB_FEATURE_FLAGS_ENVIRONMENT", value: "production" },
+    { name: "NEMOTRON_MODEL", value: sharedEnvs.NEMOTRON_MODEL },
     {
-      name: "GITLAB_FEATURE_FLAGS_URL",
-      value: sharedEnvs.GITLAB_FEATURE_FLAGS_URL,
+      name: "NEMOTRON_VISION_MODEL",
+      value: sharedEnvs.NEMOTRON_VISION_MODEL,
     },
+    { name: "FAL_IMAGE_MODEL", value: sharedEnvs.FAL_IMAGE_MODEL },
     { name: "MCP_URL", value: mcpUrl },
     { name: "POLAR_ENVIRONMENT", value: polarEnvironment },
-    ...o11yEnv("production"),
     ...googleEnv,
     ...posthogEnv,
     { name: "QLOO_API_URL", value: sharedEnvs.QLOO_API_URL },
+    { name: "META_GRAPH_URL", value: sharedEnvs.META_GRAPH_URL },
     { name: "WOVAIN_BUCKET", value: media.name },
     { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
     ...mountedSecretIds.map((id) => secretEnv(id)),
   ],
+  frozen: productionFrozen,
   location: region,
   maxInstances: 2,
   // Mastra's agents run in-process: 512Mi ran out on 2026-10-26.
@@ -401,7 +395,8 @@ export const serviceUri = service.uri;
 // apps/fumadocs: the docs site and its AI chat, which calls Nemotron on
 // Nebius Token Factory with the same nebius-api-key secret as the web app.
 // Without a version of that secret the chat answers 503. SITE_URL is @public
-// in its schema, so the image is built with it too (.gitlab/ci/deploy.yml).
+// in its schema, so the image is built with it too
+// (.github/workflows/deploy.yml).
 const docsRunner = new gcp.serviceaccount.Account(
   "docs-runner",
   { accountId: "wovain-docs", displayName: "wovain docs (Cloud Run)" },
@@ -412,8 +407,14 @@ new gcp.projects.IAMMember("docs-runner-logWriter", {
   project,
   role: "roles/logging.logWriter",
 });
-// The smallest Nemotron on Token Factory ($0.06 in, $0.24 out per 1M tokens).
-const DOCS_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B";
+// The docs chat's Nebius model, its reasoning effort and its answer cap
+// (`pulumi config set docsChatModel <id>`, docsChatReasoningEffort,
+// docsChatMaxOutputTokens).
+const docsChat = Object.entries({
+  DOCS_CHAT_MAX_OUTPUT_TOKENS: "docsChatMaxOutputTokens",
+  DOCS_CHAT_MODEL: "docsChatModel",
+  DOCS_CHAT_REASONING_EFFORT: "docsChatReasoningEffort",
+}).map(([name, key]) => ({ name, value: config.require(key) }));
 const nebiusKey = secrets.get("nebius-api-key");
 const nebiusVersion = populated.get("nebius-api-key");
 if (nebiusKey === undefined) {
@@ -430,9 +431,10 @@ const docsService = cloudRunService("docs", {
   envs: [
     { name: "SITE_URL", value: docsUrl },
     { name: "NEBIUS_BASE_URL", value: sharedEnvs.NEBIUS_BASE_URL },
-    { name: "NEBIUS_MODEL", value: DOCS_MODEL },
+    ...docsChat,
     ...(nebiusVersion === undefined ? [] : [secretEnv("nebius-api-key")]),
   ],
+  frozen: productionFrozen,
   location: region,
   maxInstances: 2,
   name: "wovain-docs",
@@ -453,32 +455,47 @@ const resendDomain =
     : new ResendDomain("resend", {
         apiKey: resendApiKey,
         name: domain,
-        region: config.get("resendRegion") ?? "us-east-1",
+        region: config.require("resendRegion"),
       });
 
-// dev.wovain.com (dev.ts).
+// dev.wovain.com (dev.ts), rolled out by hand or from the `dev` GitHub
+// environment, as its own deploy account. Its database stays on
+// production's instance.
 export const devUrl = `https://dev.${domain}`;
-const dev = devEnvironment({
-  connectionsKey,
+const devPostHog = environmentProject("dev");
+const dev = appEnvironment({
+  afterApis,
+  deploy: { githubEnvironment: "dev", pool },
   envs: [
-    ...Object.entries(sharedEnvs).map(([name, value]) => ({ name, value })),
-    // The same Google OAuth client (dev.wovain.com is a registered origin).
-    ...googleEnv,
-    // The same PostHog project; events say "development" by host.
-    ...posthogEnv,
-    // The same GitLab Observability group, as deployment.environment.name
-    // "development".
-    ...o11yEnv("development"),
-    { name: "WOVAIN_KMS_KEY", value: connectionsKey.id },
+    ...environmentEnvs({
+      appEnv: "development",
+      googleClientId: config.get(devKey("googleClientId")),
+      name: "dev",
+      posthogToken: devPostHog.apiToken,
+      shared: devSharedEnvs,
+    }),
+    ...settingEnvs(devSettings),
   ],
   kept,
-  populated: mountedSecretIds,
+  name: "dev",
   project,
+  providerSecrets: environmentSecrets(
+    config,
+    devKey,
+    "dev",
+    resendDomain === undefined || resendApiKey === undefined
+      ? undefined
+      : { apiKey: resendApiKey, domainId: resendDomain.id }
+  ),
   region,
-  secrets,
   sql,
   url: devUrl,
 });
+
+const devDeploy = dev.deploy;
+if (devDeploy === undefined) {
+  throw new Error("dev needs its deploy account");
+}
 
 // wovain.com end to end (domains.ts). The few values no API hands out are
 // plain stack config keys: `pulumi config set <key> <value>` in infra/.
@@ -488,10 +505,7 @@ const site = configureDomain({
   // show every record it feeds as changed (adding an unrelated API did).
   after: [api.dns, api.run, api.siteverification],
   apex: domain,
-  caaIssuers: config.getObject<string[]>("caaIssuers") ?? [
-    "pki.goog",
-    "letsencrypt.org",
-  ],
+  caaIssuers: config.requireObject<string[]>("caaIssuers"),
   dmarcRua: config.get("dmarcRua"),
   googleDkim: config.get("googleDkim"),
   googleSiteVerification: config.get("googleSiteVerification"),
@@ -507,9 +521,6 @@ const site = configureDomain({
     { host: `mcp.${domain}`, service: service.name },
     { host: `docs.${domain}`, service: docsService.name },
     { host: `dev.${domain}`, service: dev.service.name },
-    // The status page: apps/web proxies this host to GitLab Pages
-    // (apps/web/next.config.ts), so no Pages domain (a Maintainer setting).
-    { host: `status.${domain}`, service: service.name },
   ],
   shopRecords: config.getObject<ShopRecord[]>("shopDnsRecords") ?? [],
   siteOwnerEmail: config.get("siteOwnerEmail"),
@@ -524,29 +535,46 @@ if (resendDomain !== undefined && resendApiKey !== undefined) {
   );
 }
 
+// Opt-in per stack: `resendTracking: off` turns Resend's open and click
+// tracking off for the domain (resend.ts). Unset, the domain keeps Resend's
+// default; Pulumi.prod.yaml leaves it unset until prod's mail is changed.
+if (
+  resendDomain !== undefined &&
+  resendApiKey !== undefined &&
+  config.get("resendTracking") === "off"
+) {
+  new ResendTracking("resend", {
+    apiKey: resendApiKey,
+    clickTracking: false,
+    domainId: resendDomain.id,
+    openTracking: false,
+  });
+}
+
 new gcp.kms.CryptoKeyIAMMember("runner-connections", {
   cryptoKeyId: connectionsKey.id,
   member: runner.member,
   role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
 });
 
-// Builds and pushes the image, migrates the database and rolls out the
-// revision, from jobs in the production environment only.
+// Builds and pushes the images, migrates the database and rolls out the
+// revisions (.github/workflows/deploy.yml). Its account id predates GitHub;
+// renaming it would replace a protected account.
 const deployer = new gcp.serviceaccount.Account(
   "gitlab-deploy",
-  { accountId: "gitlab-deploy", displayName: "GitLab CI deploys" },
+  { accountId: "gitlab-deploy", displayName: "CI deploys (GitHub Actions)" },
   kept
 );
-new gcp.serviceaccount.IAMMember("deployer-from-gitlab", {
-  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool}/attribute.environment/production`,
+// Only GitHub Actions jobs in the `Production` environment (infra/github.ts;
+// the OIDC claim keeps its case), which the pool's
+// provider already limits to sami-m-g/wovain's main branch (infra/bootstrap).
+new gcp.serviceaccount.IAMMember("deployer-from-github", {
+  member: `principalSet://iam.googleapis.com/${pool}/attribute.environment/Production`,
   role: "roles/iam.workloadIdentityUser",
   serviceAccountId: deployer.name,
 });
-// logging.viewer: the canary verdict counts each revision's 5xx responses
-// in Cloud Run's request logs (apps/ops/src/canary.ts).
 for (const role of [
   "roles/cloudsql.client",
-  "roles/logging.viewer",
   "roles/run.developer",
   "roles/serviceusage.serviceUsageConsumer",
 ]) {
@@ -566,7 +594,7 @@ new gcp.artifactregistry.RepositoryIamMember(
   },
   afterApis
 );
-// The migrate job reads DATABASE_URL to run drizzle-kit through the proxy.
+// The migrate step reads DATABASE_URL to run drizzle-kit through the proxy.
 new gcp.secretmanager.SecretIamMember("deployer-database-url", {
   member: deployer.member,
   role: "roles/secretmanager.secretAccessor",
@@ -582,65 +610,6 @@ new gcp.serviceaccount.IAMMember("deployer-acts-as-docs-runner", {
   role: "roles/iam.serviceAccountUser",
   serviceAccountId: docsRunner.name,
 });
-// The same account rolls dev out, from the development environment (still
-// main only): it acts as dev's runner and reads dev's DATABASE_URL.
-new gcp.serviceaccount.IAMMember("deployer-from-gitlab-dev", {
-  member: `principalSet://iam.googleapis.com/${pool}/attribute.environment/development`,
-  role: "roles/iam.workloadIdentityUser",
-  serviceAccountId: deployer.name,
-});
-new gcp.serviceaccount.IAMMember("deployer-acts-as-runner-dev", {
-  member: deployer.member,
-  role: "roles/iam.serviceAccountUser",
-  serviceAccountId: dev.runner.name,
-});
-new gcp.secretmanager.SecretIamMember("deployer-database-url-dev", {
-  member: deployer.member,
-  role: "roles/secretmanager.secretAccessor",
-  secretId: dev.databaseUrl.id,
-});
-// The migrate jobs get DATABASE_URL from GitLab's gcp_secret_manager secrets
-// (.gitlab/ci/deploy.yml), read as the job's own federated identity, not an
-// account: each environment reads only its own database's URL.
-for (const [environment, secret] of [
-  ["production", databaseUrl],
-  ["development", dev.databaseUrl],
-] as const) {
-  new gcp.secretmanager.SecretIamMember(`gitlab-${environment}-database-url`, {
-    member: `principalSet://iam.googleapis.com/${pool}/attribute.environment/${environment}`,
-    role: "roles/secretmanager.secretAccessor",
-    secretId: secret.id,
-  });
-}
-
-// The self-healing loop reads production's logs, errors and metrics as this
-// account, from the operations environment only. It can't read secrets or
-// change anything.
-const ops = new gcp.serviceaccount.Account(
-  "gitlab-ops",
-  {
-    accountId: "gitlab-ops",
-    displayName: "GitLab CI operations (self-healing loop)",
-  },
-  kept
-);
-new gcp.serviceaccount.IAMMember("ops-from-gitlab", {
-  member: pulumi.interpolate`principalSet://iam.googleapis.com/${pool}/attribute.environment/operations`,
-  role: "roles/iam.workloadIdentityUser",
-  serviceAccountId: ops.name,
-});
-for (const role of [
-  "roles/errorreporting.viewer",
-  "roles/logging.viewer",
-  "roles/monitoring.viewer",
-]) {
-  new gcp.projects.IAMMember(`ops-${role.split("/")[1]}`, {
-    member: ops.member,
-    project,
-    role,
-  });
-}
-
 // Email alerts at 50%, 90% and 100% of $20 a month (Cloud SQL's smallest
 // instance is about $10 of it).
 new gcp.billing.Budget(
@@ -657,180 +626,64 @@ new gcp.billing.Budget(
   afterApis
 );
 
-retainLegacy({ project, projectNumber, region });
-const githubMirrorKey = githubMirror();
+retainLegacy({ project });
+polarPromoSecrets(project, kept);
+// Who approves a pull request's infra preview (GitHub user ids): the owner,
+// sami-m-g (`gh api users/sami-m-g --jq .id`), by default.
+previewEnvironment(
+  config.getObject<number[]>("previewReviewerIds") ?? [106_979_416]
+);
 
 export const bucket = media.name;
 export const connectionsKeyName = connectionsKey.id;
 export const sqlConnectionName = sql.connectionName;
-// `pulumi stack output duoAccounts`: each custom flow's service account.
-export { duoFlowAccounts as duoAccounts } from "./duo.ts";
 
-// What the pipeline reads. The tokens are stack secrets
-// (`pulumi config set --secret <name>`); everything else comes from above.
-ciVariables({
-  DEV_SITE_URL: { created: true, protected: true, value: devUrl },
-  DOCS_SITE_URL: { created: true, protected: true, value: docsUrl },
-  // Each custom Duo flow's service account (DUO_HEAL_ACCOUNT, ...), as GitLab
-  // named it when infra/duo.ts enabled the flow.
-  ...Object.fromEntries(
-    Object.entries(duoFlowAccounts).map(([key, value]) => [
-      key,
-      { created: true, protected: true, value },
-    ])
-  ),
-  GCP_DEPLOY_SERVICE_ACCOUNT: { protected: true, value: deployer.email },
-  GCP_IMAGE_REPOSITORY: {
-    created: true,
-    protected: true,
-    value: imageRepository,
+// What the workflows read (`vars.<NAME>`), so nothing is set by hand. None is
+// a secret: deploy.yml gets Google credentials through Workload Identity
+// Federation and reads DATABASE_URL from Secret Manager. The repository's
+// variables are shared; each environment's say where it deploys, as whom.
+// The repository's own settings, rulesets and secret are the `github`
+// stack's (infra/github).
+deployEnvironments({
+  environments: {
+    // No workflow deploys dev yet; a dispatch from main in `dev` would.
+    dev: {
+      DATABASE_URL_SECRET: dev.databaseUrl.secretId,
+      GCP_DEPLOY_SERVICE_ACCOUNT: devDeploy.deployer.email,
+      GCP_IMAGE_REPOSITORY: devDeploy.imageRepository,
+      GCP_SQL_INSTANCE: dev.sql.connectionName,
+      NEXT_PUBLIC_POSTHOG_KEY: devPostHog.apiToken,
+      SITE_URL: devUrl,
+      WEB_BUILD_ENV: buildEnv(devSettings, `${devUrl}/api/mcp`),
+      WEB_SERVICE: dev.service.name,
+    },
+    production: {
+      DATABASE_URL_SECRET: databaseUrl.secretId,
+      DOCS_SERVICE: docsService.name,
+      GCP_DEPLOY_SERVICE_ACCOUNT: deployer.email,
+      GCP_IMAGE_REPOSITORY: imageRepository,
+      GCP_SQL_INSTANCE: sql.connectionName,
+      SITE_URL: siteUrl,
+      WEB_BUILD_ENV: buildEnv(prodSettings, mcpUrl),
+      WEB_SERVICE: service.name,
+      ...(posthogKey === undefined
+        ? {}
+        : { NEXT_PUBLIC_POSTHOG_KEY: posthogKey }),
+    },
   },
-  GCP_INFRA_SERVICE_ACCOUNT: {
-    protected: true,
-    value: `gitlab-infra@${project}.iam.gserviceaccount.com`,
-  },
-  GCP_OPS_SERVICE_ACCOUNT: { created: true, protected: true, value: ops.email },
-  // The merge request preview (.gitlab/ci/verify.yml): read-only, and trusted
-  // only from merge request pipelines, which don't get protected variables.
-  // Set once with the bootstrap, so the first merge request previews; adopted.
-  GCP_PREVIEW_SERVICE_ACCOUNT: {
-    protected: false,
-    value: `gitlab-preview@${project}.iam.gserviceaccount.com`,
-  },
-  GCP_PREVIEW_WORKLOAD_IDENTITY_PROVIDER: {
-    protected: false,
-    value: `${pools}/gitlab-mr/providers/gitlab-mr`,
-  },
-  GCP_PROJECT_ID: { created: true, protected: true, value: project },
-  // What GitLab's gcp_secret_manager secrets exchange the job's token with.
-  GCP_PROJECT_NUMBER: { created: true, protected: true, value: projectNumber },
-  GCP_REGION: { created: true, protected: true, value: region },
-  GCP_SQL_INSTANCE: {
-    created: true,
-    protected: true,
-    value: sql.connectionName,
-  },
-  GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: {
-    created: true,
-    protected: true,
-    value: "gitlab",
-  },
-  GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: {
-    created: true,
-    protected: true,
-    value: "gitlab",
-  },
-  GCP_WORKLOAD_IDENTITY_PROVIDER: {
-    protected: true,
-    value: `${pool}/providers/gitlab`,
-  },
-  // Write deploy key for the GitHub mirror job (infra/github.ts), base64.
-  GITHUB_MIRROR_KEY: {
-    created: true,
-    masked: true,
-    protected: true,
-    value: githubMirrorKey,
-  },
-  // The group's GitLab Observability instance: the ops job links each heal
-  // incident to the error's trace there (apps/ops/src/o11y.ts).
-  GITLAB_O11Y_URL: {
-    created: true,
-    protected: true,
-    value: `https://${config.require("o11yGroupId")}.gitlab-o11y.com`,
-  },
-  // GitLab's CI observability export (pipeline metrics, logs and traces).
-  GITLAB_OBSERVABILITY_EXPORT: {
-    protected: false,
-    value: "metrics,logs,traces",
-  },
-  // The ai-catalog sync and the loop, on main. It's a person's token, so the
-  // loop's assignments count as a human's and start Duo flows (GitLab skips
-  // triggers for bot and flow actions).
-  GITLAB_TOKEN: {
-    masked: true,
-    protected: true,
-    value: config.requireSecret("gitlab-ci-token"),
-  },
-  // The loop's and scout's model calls and competitor searches, and the
-  // judge evals (evals:judges, .gitlab/ci/verify.yml). Protected: only main's
-  // pipelines read it, so a merge request's evals skip and main's run.
-  NEBIUS_API_KEY: {
-    created: true,
-    masked: true,
-    protected: true,
-    value: config.requireSecret("nebius-api-key"),
-  },
-  // The web image's public PostHog token; merge request image checks read it
-  // too, so it isn't protected.
-  ...(posthogKey === undefined
-    ? {}
-    : {
-        NEXT_PUBLIC_POSTHOG_KEY: {
-          created: true,
-          protected: false,
-          value: posthogKey,
-        },
-      }),
-  // The polar:seed job (.gitlab/ci/polar.yml) builds the Polar catalog with
-  // the same token the app uses.
-  ...(polarAccessToken === undefined
-    ? {}
-    : {
-        POLAR_ACCESS_TOKEN: {
-          created: true,
-          masked: true,
-          protected: true,
-          value: polarAccessToken,
-        },
-        POLAR_ENVIRONMENT: {
-          created: true,
-          protected: true,
-          value: polarEnvironment,
-        },
-      }),
-  // The scout's PostHog query API access (apps/ops/src/posthog.ts).
-  ...(posthogPersonalApiKey === undefined
-    ? {}
-    : {
-        POSTHOG_PERSONAL_API_KEY: {
-          created: true,
-          masked: true,
-          protected: true,
-          value: posthogPersonalApiKey,
-        },
-      }),
-  ...(posthogProjectId === undefined
-    ? {}
-    : {
-        POSTHOG_PROJECT_ID: {
-          created: true,
-          protected: true,
-          value: posthogProjectId,
-        },
-      }),
-  // PostHog's destinations start the ops pipeline with it (infra/posthog).
-  ...(posthogTrigger === undefined
-    ? {}
-    : {
-        POSTHOG_TRIGGER_TOKEN: {
-          created: true,
-          masked: true,
-          protected: true,
-          value: posthogTrigger.token,
-        },
-      }),
-  RENOVATE_TOKEN: {
-    masked: true,
-    protected: true,
-    value: config.requireSecret("renovate-token"),
-  },
-  SITE_URL: { protected: true, value: siteUrl },
-  TAVILY_API_KEY: {
-    created: true,
-    masked: true,
-    protected: true,
-    value: config.requireSecret("tavily-api-key"),
+  releaseBranch: config.get("releaseBranch") ?? "release/transcend",
+  // Who approves a production deploy (GitHub user ids): the owner by default.
+  releaseReviewerIds: config.getObject<number[]>("releaseReviewerIds") ?? [
+    OWNER_GITHUB_ID,
+  ],
+  variables: {
+    DOCS_SITE_URL: docsUrl,
+    GCP_PROJECT_ID: project,
+    GCP_REGION: region,
+    GCP_WORKLOAD_IDENTITY_PROVIDER: `${pool}/providers/github`,
   },
 });
-environments(siteUrl, devUrl);
-featureFlags();
+
+// The PostHog project: KPIs and alerts, dashboards, the run-rating survey,
+// project settings and the app's feature flags (posthog/program.ts).
+export const posthogDashboardUrl = configurePostHog();

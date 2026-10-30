@@ -1,3 +1,4 @@
+import { initLogger } from "evlog";
 import type { DrainContext } from "evlog";
 import { createFsDrain } from "evlog/fs";
 import { createEvlog } from "evlog/next";
@@ -18,8 +19,7 @@ const production = process.env.NODE_ENV === "production";
 
 // With a PostHog key, production wide events also go to PostHog Logs, linked
 // to the merchant's person by `userId`, and every error-level one becomes a
-// `$exception` in PostHog Error Tracking, where self-healing watches
-// (docs/flows.md, "One error sink").
+// `$exception` in PostHog Error Tracking, the one error sink.
 const cloudLogging = createCloudLoggingDrain();
 const posthogKey = ENV.NEXT_PUBLIC_POSTHOG_KEY;
 const posthog =
@@ -32,19 +32,18 @@ const posthog =
         }),
         createErrorTrackingDrain(captureServerException),
       ];
-// With an OTLP endpoint (src/lib/otel.ts), they also go to GitLab
-// Observability as OTLP logs, linked to their request's trace. Errors are
-// still tracked in PostHog only; GitLab gets them as logs and spans.
+// With an OTLP endpoint (src/lib/otel.ts), they also go there as OTLP logs,
+// linked to their request's trace. Errors are still tracked in PostHog only;
+// the OTLP backend gets them as logs and spans.
 const otlpEndpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"];
-const gitlab =
+const otlp =
   otlpEndpoint === undefined || otlpEndpoint === ""
     ? []
     : [createOTLPDrain({ recordShape: "compact", semanticConventions: true })];
-const drains = composeDrains([cloudLogging, ...posthog, ...gitlab]);
+const drains = composeDrains([cloudLogging, ...posthog, ...otlp]);
 
 // Every wide event names the trace it belongs to (traceId, spanId), so a
-// Cloud Logging line, a PostHog log or exception and a GitLab Observability
-// trace link up.
+// Cloud Logging line, a PostHog log or exception and an OTLP trace link up.
 const productionDrain = async (ctx: DrainContext) => {
   const ids = activeTraceIds();
   if (ids !== undefined && ctx.event["traceId"] === undefined) {
@@ -63,6 +62,13 @@ export const { withEvlog, useLogger, log, createError } = createEvlog({
   service,
   ...output,
 });
+
+// createEvlog inits evlog's process-wide logger without a drain unless the
+// instrumentation locked it first. On next, nothing logged with `log` from
+// "evlog" outside a request (packages/api: a durable run's failure on
+// /api/inngest) reached Cloud Logging or PostHog (QA, 2026-10-29). The
+// global logger gets the app's drain here.
+initLogger({ env: { service }, ...output });
 
 // stderr lines (a library's console.error, such as Varlock's leak guard) become
 // error events, so plain text reaches error tracking too. stdout stays the

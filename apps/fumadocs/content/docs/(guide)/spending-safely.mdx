@@ -1,0 +1,56 @@
+---
+title: Spending safely
+description: How wovain pauses ads that don't sell, stops spend at your limits and asks before it scales a winner.
+icon: ShieldCheck
+---
+
+Every campaign starts **paused**. When you approve it, wovain first makes sure the rules below are in place, here and in Meta, and refuses to start it otherwise. Then it starts the campaign and watches it for you. On the preview site it checks your ads every 30 minutes. It acts on sales and profit, not on likes or clicks alone.
+
+You'll find these rules on each campaign under **How wovain protects your ad money**.
+
+## When wovain pauses an ad
+
+Your break-even point comes from the profit you make on one sale: the price, minus the blank, minus fees. wovain pauses an ad on its own when it:
+
+- spends one sale's profit with no sale and no add-to-cart;
+- spends two sales' profit with add-to-carts but no sale;
+- gets under 0.8% clicks after 1,000 views;
+- costs more than $1.50 a click after 10 clicks.
+
+When a sale of the product leaves no profit, or every ad in a campaign is paused, wovain pauses the whole campaign.
+
+Once your ads have brought 10 sales, wovain also knows what a sale really costs you. When that is less than one sale's profit, it uses your real cost per sale instead, so an ad that falls far behind your usual results is paused sooner. It never waits longer than one sale's profit.
+
+## How wovain learns what sells for you
+
+Every design you publish teaches wovain something: its theme, Qloo tags, audience, palette, price and blank, against what it earned after ads. A single sale moves little; an angle counts once several designs agree. When a drop launches as a test, designs whose angles sold before get a larger share of the spend floor, and every design still gets its share. **Insights > What we learned** shows the angles that sell for you, for example "your last 2 cottagecore drops made $84".
+
+## When wovain stops all spend
+
+wovain pauses every campaign when:
+
+- today's ad spend reaches your daily cap;
+- this month's ad spend reaches your monthly cap;
+- your ad spend, minus the profit of the sales it brought, reaches your **loss limit**. The limit is $50 unless you change it.
+
+Set your loss limit on any campaign card and choose **Save**. Pauses happen right away, at every autopilot level, because waiting is what costs money. You get an alert each time, by email, on your phone or on Telegram ([Alerts](/docs/alerts)).
+
+## When wovain scales a winner
+
+wovain asks to raise a campaign's budget only when all of these are true:
+
+- Meta has finished learning;
+- the campaign has at least 3 sales;
+- it earns at least 1.3 times what it needs to break even.
+
+A raise is 20% at most, once every 48 hours, and never above your daily cap. It waits for your approval.
+
+## If wovain is down
+
+wovain also copies these rules into your ad account as Meta **Automated rules**, so Meta pauses spend on its own if wovain can't. You'll find them in Ads Manager under **Automated rules**, named `wovain backstop`. They're a little looser than wovain's own rules, so wovain acts first:
+
+- an ad pauses after 1.2 times the no-sale limits above;
+- a campaign pauses when its own spend passes your daily or monthly cap;
+- a campaign with no sale pauses when its spend passes your loss limit.
+
+wovain updates them when you change a cap or your loss limit, and removes them when a campaign ends. Your own rules are never touched.

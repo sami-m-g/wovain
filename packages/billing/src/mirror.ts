@@ -7,7 +7,8 @@ import {
 } from "@wovain/db/schema/billing";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 
-import { PLANS, isPlanCode } from "./plans";
+import { billingCatalog } from "./catalog";
+import { isPlanCode } from "./plans";
 import type { PlanCode } from "./plans";
 
 // Polar's state, copied into Postgres. Only webhooks call the writers here
@@ -246,9 +247,10 @@ export const entitlement = async (
         inArray(billingSubscription.status, ENTITLED)
       )
     );
+  const { plans } = billingCatalog();
   const [best] = rows
     .flatMap(({ plan, ...row }) => (isPlanCode(plan) ? [{ ...row, plan }] : []))
-    .toSorted((a, b) => PLANS[b.plan].rank - PLANS[a.plan].rank);
+    .toSorted((a, b) => plans[b.plan].rank - plans[a.plan].rank);
   if (best === undefined) {
     return { plan: "free", subscription: null };
   }
@@ -268,7 +270,12 @@ export const entitlement = async (
 // skipped.
 export const merchantOf = async (db: Database, userId: string) => {
   const [row] = await db
-    .select({ email: user.email, id: user.id, name: user.name })
+    .select({
+      email: user.email,
+      emailVerified: user.emailVerified,
+      id: user.id,
+      name: user.name,
+    })
     .from(user)
     .where(eq(user.id, userId));
   return row;

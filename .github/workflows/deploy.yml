@@ -1,0 +1,233 @@
+# One workflow, two targets (docs/adr/0004-release-branch.md):
+#   main               -> `next` environment       -> next.wovain.com  (wovain-web-next)
+#   release/transcend  -> `Production` environment -> wovain.com       (wovain-web)
+#                                                     docs.wovain.com  (wovain-docs)
+# The same file lives on both branches, so a cherry-pick never conflicts in
+# it. Each environment's variables (infra/github.ts) say where it deploys and
+# as which Google account; Google trusts each account from its own
+# environment only (infra/index.ts, infra/dev.ts, infra/bootstrap). A
+# Production run waits for a reviewer's approval, and production is frozen
+# until the Transcend winners are announced (about 2026-11-16): approve one
+# only for an emergency fix the hackathon allowed in writing.
+#
+# A push to main deploys to `next` automatically (doc-only changes skip it).
+# Production stays manual: release/transcend is not in the push trigger, so
+# run this workflow by hand on that branch (workflow_dispatch) and approve
+# it. See infra/README.md for the environments, variables and Google trust.
+#
+# Builds the images, applies the target database's migrations, then rolls
+# the images out to Cloud Run. No Google key is stored.
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      # On main only: `nebius` rolls main's head out to nebius.wovain.com,
+      # the frozen environment for the Nebius hackathon judges
+      # (infra/nebius), which nothing else deploys.
+      target:
+        type: choice
+        options: [next, nebius]
+        default: next
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "founder/**"
+      - "openspec/**"
+      # A release pull request only moves the version.
+      - ".release-please-manifest.json"
+      - "version.txt"
+      - ".github/backfill-releases.pending"
+
+permissions:
+  contents: read
+  id-token: write
+
+# One deploy per environment at a time; a newer one waits instead of
+# cancelling a rollout.
+concurrency:
+  group: deploy-${{ github.ref == 'refs/heads/main' && inputs.target == 'nebius' && 'nebius' || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  CLOUD_SQL_PROXY_VERSION: v2.14.0
+
+jobs:
+  # A single job, so a production deploy asks for one approval, not one per
+  # step.
+  deploy:
+    # nebius deploys from main only, never as Production.
+    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/release/transcend' && inputs.target != 'nebius')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && (inputs.target || 'next') || 'Production' }}
+      url: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          token_format: access_token
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ vars.GCP_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          # The runner is thrown away after the job: removing the builder
+          # only added about 30 s.
+          cleanup: false
+      # Varlock validates env while Next builds, so each build gets an env
+      # file as a BuildKit secret, never a layer: placeholders for the web
+      # app's secrets (Cloud Run supplies the real ones), the public values
+      # that are compiled in and the per-environment settings
+      # (WEB_BUILD_ENV, from Pulumi config). A missing variable fails the
+      # build: nothing falls back to a default.
+      - name: Write the build env files
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          DOCS_SITE_URL: ${{ vars.DOCS_SITE_URL }}
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          WEB_BUILD_ENV: ${{ vars.WEB_BUILD_ENV }}
+        run: |
+          : "${SITE_URL:?The SITE_URL Actions variable is not set (infra/index.ts)}"
+          : "${DOCS_SITE_URL:?The DOCS_SITE_URL Actions variable is not set (infra/index.ts)}"
+          : "${WEB_BUILD_ENV:?The WEB_BUILD_ENV Actions variable is not set (infra/index.ts)}"
+          {
+            echo "BETTER_AUTH_SECRET=build-placeholder-never-used-at-runtime"
+            echo "BETTER_AUTH_URL=$SITE_URL"
+            echo "DATABASE_URL=postgresql://build:build@localhost:5432/build"
+            echo "TOKEN_ENCRYPTION_KEY=YnVpbGQtcGxhY2Vob2xkZXItbm90LWEtcmVhbC1rZXk="
+            if [ -n "$NEXT_PUBLIC_POSTHOG_KEY" ]; then
+              echo "NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY"
+            fi
+            printf '%s\n' "$WEB_BUILD_ENV"
+          } > "$RUNNER_TEMP/web_env"
+          echo "SITE_URL=$DOCS_SITE_URL" > "$RUNNER_TEMP/docs_env"
+      - id: web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          # One manifest per image, as Cloud Run expects.
+          provenance: false
+          sbom: false
+          secret-files: web_env=${{ runner.temp }}/web_env
+          tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/web:${{ github.sha }}
+          # The layer cache lives in the environment's own registry, next to
+          # its images, as its own package (web-cache), so it never takes one
+          # of the image versions the cleanup policy keeps. The GitHub Actions
+          # cache it replaces never hit (no step was CACHED) and took about
+          # 150 s per run to export.
+          # mode=min caches the final image's layers only (the runner stage:
+          # fonts, varlock). mode=max also exported the builder stage's
+          # node_modules, source and .next layers: 33-94 s per run, for an
+          # install layer that took as long to pull on a hit (about 40 s) as
+          # to install on a miss (25-38 s), and source and build layers that
+          # change on every commit. A failed cache export never fails the
+          # deploy (ignore-error).
+          cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/web-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
+      # Only production has a docs service (DOCS_SERVICE).
+      - id: docs
+        if: vars.DOCS_SERVICE != ''
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/fumadocs/Dockerfile
+          push: true
+          provenance: false
+          sbom: false
+          secret-files: docs_env=${{ runner.temp }}/docs_env
+          tags: ${{ vars.GCP_IMAGE_REPOSITORY }}/docs:${{ github.sha }}
+          cache-from: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache
+          cache-to: type=registry,ref=${{ vars.GCP_IMAGE_REPOSITORY }}/docs-cache:buildcache,mode=min,image-manifest=true,oci-mediatypes=true,ignore-error=true
+      # Keyless cosign signature (this job's OIDC identity, recorded in the
+      # Sigstore log) on each image by digest, stored next to the image in
+      # the registry. Verify with `cosign verify <image>@<digest>
+      # --certificate-identity-regexp ... --certificate-oidc-issuer
+      # https://token.actions.githubusercontent.com`.
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Sign the images
+        env:
+          IMAGE_REPOSITORY: ${{ vars.GCP_IMAGE_REPOSITORY }}
+          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+          DOCS_DIGEST: ${{ steps.docs.outputs.digest }}
+        run: |
+          cosign sign --yes "$IMAGE_REPOSITORY/web@$WEB_DIGEST"
+          if [ -n "$DOCS_DIGEST" ]; then
+            cosign sign --yes "$IMAGE_REPOSITORY/docs@$DOCS_DIGEST"
+          fi
+
+      # packages/db's Drizzle migrations, then Mastra's storage schema, on the
+      # target's own database (DATABASE_URL_SECRET). The Cloud SQL Auth Proxy
+      # makes the same /cloudsql/<instance> socket Cloud Run mounts, so the
+      # secret works as is. Migrations run before the rollout and stay
+      # backward compatible with the running revision.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Start the Cloud SQL Auth Proxy
+        env:
+          GCP_SQL_INSTANCE: ${{ vars.GCP_SQL_INSTANCE }}
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/cloud-sql-proxy" "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/$CLOUD_SQL_PROXY_VERSION/cloud-sql-proxy.linux.amd64"
+          chmod +x "$RUNNER_TEMP/cloud-sql-proxy"
+          sudo mkdir -p /cloudsql
+          sudo chown "$(id -u)" /cloudsql
+          "$RUNNER_TEMP/cloud-sql-proxy" --unix-socket /cloudsql --health-check "$GCP_SQL_INSTANCE" &
+          "$RUNNER_TEMP/cloud-sql-proxy" wait --max 30s
+      - name: Migrate
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
+          # Which environment's credit settlements apply to this database;
+          # none are nebius's, whose users are new.
+          SETTLEMENT_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'next' || 'production' }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          DATABASE_URL=$(gcloud secrets versions access latest --secret "$DATABASE_URL_SECRET" --project "$GCP_PROJECT_ID")
+          echo "::add-mask::$DATABASE_URL"
+          export DATABASE_URL
+          pnpm --filter @wovain/db exec drizzle-kit migrate
+          pnpm --filter @wovain/mastra run storage:init
+          if [ "$TARGET" != "nebius" ]; then
+            pnpm --filter @wovain/api run billing:settle
+          fi
+
+      # A new revision of each service, with all traffic; Pulumi owns every
+      # other setting of the services (infra/index.ts, infra/dev.ts).
+      - name: Deploy
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+          GCP_IMAGE_REPOSITORY: ${{ vars.GCP_IMAGE_REPOSITORY }}
+          WEB_SERVICE: ${{ vars.WEB_SERVICE }}
+          DOCS_SERVICE: ${{ vars.DOCS_SERVICE }}
+        run: |
+          gcloud run deploy "$WEB_SERVICE" --image "$GCP_IMAGE_REPOSITORY/web:$GITHUB_SHA" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet
+          gcloud run services update-traffic "$WEB_SERVICE" --to-latest --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet
+          if [ -n "$DOCS_SERVICE" ]; then
+            gcloud run deploy "$DOCS_SERVICE" --image "$GCP_IMAGE_REPOSITORY/docs:$GITHUB_SHA" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --quiet
+          fi
+      # Registers the new revision's run workflow with the environment's own
+      # Inngest app (docs/adr/0001-durable-runs.md). A failure here is a real
+      # one and fails the deploy (it fails until the env's keys are set); a
+      # revision that is still starting gets a few retries.
+      - name: Sync Inngest
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: curl -sSf --retry 5 --retry-all-errors --retry-delay 10 -X PUT "$SITE_URL/api/inngest"

@@ -1,0 +1,12 @@
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/github-stack-secrets
+config:
+  github:owner: sami-m-g
+  # The branch production deploys from (docs/adr/0004-release-branch.md).
+  wovain-github:releaseBranch: release/transcend
+  github:token:
+    secure: v1:uRg18LfYnBPGP8QV:W3VZMhtOyvpHmgNjroGwRxmXSg5cKESyDwy0n1gTXaLxV39R9YOUVZf2VS0PB2fRWbCCDRpbmj2zlV11HnCjcIV6MVEqeNR0zxtXbbmwE3aPdMtOdpb2h2rN4UPxyGhQmVPZEvNbNEPbvmnzjg==
+  wovain-github:release-please-token:
+    secure: v1:iRlM1oMEONtACXst:y2lCntWbvEmqH8Kq6FYRILRe9zmQasq8IKdpYttauwXVNyFIvf7zbMMrUynETk0gnZ6UbDqcQYkTILE/bbxBqqAEMdb64CGBgNzhM4rvO5vOCS8NSwPc1dJn/D59gyvm+UfwdydKDNDr27fvOg==
+  wovain-github:claude-code-oauth-token:
+    secure: v1:Pnyqh3fHx+qMN/Zn:7ZoBd+9DUprE9c/hjpTI1ixhXbCChTxa9/D4PSpKxnSb+VdM2l9NxMD5UQrue4tZAHSSqtL5aJjFJR6kulkReR0EOuJtUZcPujNa+Xb7+DHfz3bvl+Zp88gbmL9ChMQvevArX0Mg1TDB4EQ+qiJfgQkz7MgmBSkWMlYSgiw=
+encryptedkey: CiQAmvsEjp6fi/c5PN5k1QERgqLVvzb0NYtwtVMZa/ttGwHawF0SSQDbnX24w6jwwVrUEOR02xeGbzmHOBzfjzBjEtrJrTvaoftqpxbelT/y6hWBk1wdTpu2ojrKVdU1PlapTP5mZVukv4nc4gwRsGs=

@@ -1,0 +1,247 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "5358e484-841c-475e-98b2-a72e88c6c5ab",
+  "prevIds": [
+    "0c214bdb-455f-4bdc-9502-fade49080387",
+    "a5deeaa2-69cb-4548-a8a3-a9f98b1354ea",
+    "67869df9-ca18-4fa4-b58e-4bcf7d86c791"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "direction_cache"
+      ],
+      "writes": [
+        "s|tbl|public.direction_cache",
+        "n|tbl|public.direction_cache",
+        "e|tbl|public.direction_cache",
+        "n|rel|public.direction_cache",
+        "n|type|public.direction_cache",
+        "n|rel|public.direction_cache_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "direction_cache",
+        "direction_cache_user_key_idx"
+      ],
+      "writes": [
+        "s|idx|public.direction_cache_user_key_idx",
+        "n|idx|public.direction_cache_user_key_idx",
+        "e|idx|public.direction_cache_user_key_idx",
+        "n|rel|public.direction_cache_user_key_idx"
+      ],
+      "reads": [
+        "n|tbl|public.direction_cache",
+        "n|sch|public",
+        "n|col|public.direction_cache.user_id",
+        "n|col|public.direction_cache.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "direction_cache"
+      ],
+      "writes": [
+        "s|fk|public.direction_cache.direction_cache_user_id_user_id_fkey",
+        "n|fk|public.direction_cache.direction_cache_user_id_user_id_fkey",
+        "e|fk|public.direction_cache.direction_cache_user_id_user_id_fkey",
+        "n|con|public.direction_cache.direction_cache_user_id_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.direction_cache",
+        "n|sch|public",
+        "n|tbl|public.user",
+        "n|sch|public",
+        "n|col|public.direction_cache.user_id",
+        "n|col|public.user.id",
+        "e|uniqueness|public.user.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "direction_cache",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "payload",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "direction_cache_user_key_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "direction_cache_user_id_user_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "user",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "direction_cache",
+        "name": "direction_cache_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

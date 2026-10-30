@@ -1,0 +1,176 @@
+config:
+  gcp:project: wovain
+  gcp:region: us-central1
+  gcp:billingProject: wovain
+  gcp:userProjectOverride: "true"
+  github:owner: sami-m-g
+  wovain-next:falImageModel: openai/gpt-image-2.5/flare/text-to-image
+  wovain-next:nemotronModel: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
+  # The Resend domain wovain.com (the `resend` resource in the wovain stack).
+  # Pulumi makes next its own sending-only key for it with next's own
+  # full-access key, the resendAdminKey stack secret (infra/README.md).
+  wovain-next:resendDomainId: 4ec14742-4f9e-4081-a61c-58f499366259
+  wovain-next:docsUrl: https://docs.wovain.com
+  wovain-next:emailFrom: wovain <support@wovain.com>
+  wovain-next:supportEmail: support@wovain.com
+  wovain-next:privacyEmail: privacy@wovain.com
+  wovain-next:falMcpUrl: https://mcp.fal.ai/mcp-relay
+  wovain-next:fourthwallMcpUrl: https://mcp.fourthwall.com/app
+  wovain-next:metaMcpUrl: https://mcp.facebook.com/ads
+  wovain-next:metaMcpScope: ads_mcp_management ads_management ads_read business_management pages_show_list pages_manage_ads
+  wovain-next:mcpWidgetResourceDomains:
+    - https://fal.media
+    - https://*.fal.media
+    - https://cdn.fourthwall.com
+    - https://imgproxy.fourthwall.dev
+  wovain-next:fourthwallDefaultProductId: pro_8be1acca2fe7403f89
+  wovain-next:nemotronInputPrice: "0.3"
+  wovain-next:nemotronOutputPrice: "0.9"
+  # The Nemotron model per job (packages/core/src/model-router.ts).
+  wovain-next:nemotronModelFast: nvidia/Nemotron-3_5-Lightning
+  wovain-next:nemotronModelDefault: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronModelReasoning: nvidia/Nemotron-3-Ultra-550b-a55b
+  wovain-next:nemotronModelVision: nvidia/Nemotron-3.5-Super-VL
+  wovain-next:nemotronModelSafety: nvidia/Nemotron-3_5-Lightning
+  # Tavily Research's model for idea dossiers (packages/core/src/evidence.ts).
+  wovain-next:tavilyResearchModel: mini
+  # Voice commands' speech to text on fal (packages/core/src/voice.ts).
+  wovain-next:voiceSttModel: nvidia/nemotron-asr-multilingual/asr
+  wovain-next:voiceSttFallbackModel: fal-ai/wizper
+  # A drop's fal models per art type (packages/core/src/art.ts).
+  wovain-next:falArtModels:
+    cutout: fal-ai/birefnet/v2
+    pattern: ideogram/v4/tiling/lora
+    typographic: ideogram/vector/text-to-vector
+    upscale: fal-ai/recraft/upscale/crisp
+    vector: fal-ai/recraft/v4.1/text-to-vector
+  wovain-next:guardrailInjectionThreshold: "0.8"
+  wovain-next:guardrailModerationThreshold: "0.7"
+  wovain-next:guardrailPiiThreshold: "0.7"
+  wovain-next:pricingRules:
+    cardFeeFixed: 0.3
+    cardFeePct: 2.9
+    defaultBaseCost: 12
+    minMarginPct: 30
+    minProfit: 10
+    refundReservePct: 2
+    salesTaxPct: 7
+    shipping: 5
+    sizeSurcharges:
+      2XL: 2
+      3XL: 4
+      4XL: 6
+      5XL: 8
+  wovain-next:billingCatalog:
+    # Sized so a credit costs wovain about $0.025 (docs/pricing-proposal.md):
+    # a design draws on wovain's fal while onboarding-wizard is on.
+    creditCost:
+      assist: 1
+      design: 4
+      research: 5
+    designsPerRun: 3
+    creditPack:
+      credits: 100
+      name: Credit pack
+      priceCents: 1500
+    plans:
+      free:
+        # Autopilot on Free in dev and next (openspec autopilot-triggers).
+        autopilot: true
+        autopilotDailyCredits: 25
+        monthlyCredits: 40
+        name: Free
+        priceCents: 0
+        rank: 0
+        rollover: false
+      label:
+        autopilot: true
+        autopilotDailyCredits: 150
+        monthlyCredits: 1000
+        name: Label
+        priceCents: 7900
+        rank: 2
+        rollover: true
+      studio:
+        autopilot: true
+        autopilotDailyCredits: 50
+        monthlyCredits: 300
+        name: Studio
+        priceCents: 2900
+        rank: 1
+        rollover: false
+    promoCentsPerCredit: 10
+    promos:
+      - audience: "Hackathon judges: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        enabled: true
+        endsAt: "2026-12-16T23:59:59Z"
+        id: judges-2026
+        maxRedemptions: 50
+        name: Judges 2026
+      # The shared judges' demo login (openspec judges-demo-account): only
+      # that account can redeem it, so its code is worthless to anyone else.
+      # 300 credits are about 16 manual drops at 18 credits each.
+      - audience: "The judges' shared demo account on next.wovain.com: the code is shared only in Devpost's private testing instructions."
+        credits: 300
+        emails:
+          - judges@wovain.com
+        enabled: true
+        endsAt: "2026-12-31T23:59:59Z"
+        id: judges-account-2026
+        maxRedemptions: 1
+        name: Judges account 2026
+      # The founder's own testing code on next: only the founder's email can
+      # redeem it. Polar and the webhook allow one redemption per merchant.
+      - audience: "The founder's own testing on next.wovain.com."
+        credits: 1000
+        emails:
+          - minas.gorgy@gmail.com
+        enabled: true
+        endsAt: "2026-12-31T23:59:59Z"
+        id: founder-testing-2026
+        maxRedemptions: 1
+        name: Founder testing 2026
+      - audience: "Launch: a public code for the first creators, once paid plans are on."
+        credits: 50
+        enabled: false
+        endsAt: "2027-03-31T23:59:59Z"
+        id: launch-2027
+        maxRedemptions: 500
+        name: Launch 2027
+        startsAt: "2027-01-15T00:00:00Z"
+    redeemLimit:
+      attempts: 5
+      windowSeconds: 600
+    runsPerMerchant: 2
+  wovain-next:resendAdminKey:
+    secure: v1:h2EegYC7qEeuHMJU:hGmoAOjC2L+nk/4uhQrkIulVN8H387oVjwwnTcZf1+6Pb0OC58gyOJU3osgTuOhk+Pe6qg==
+  github:token:
+    secure: v1:VvMNV/emBKnd2zmc:qvc9uzojOESNVebefMu+/PFSNxcB98u4veAB9QKRgKfS/jSjBJVjS/zpQpoEvXQ55iy3g0L7WJ3erq9SsDZNqQ1G5Z4KslJacdhY4jBSP6MlufjEWckCgrLCVBIM5p36r1XkB86eGEGnRGRFOQ==
+  posthog:apiKey:
+    secure: v1:48Jg1ccFprleHrjH:jmVvY18m69eIUB/lnZeTB1d6El8AX5jyD3SGIkuDoeznbGWB6519AOyAGQX7obZ/UxgL1kUmGBJHZauIQNBYWnSvPKc=
+  wovain-next:nebius-api-key:
+    secure: v1:orC/YiH3rlJfBQAQ:+S6Gb3u4eke5xj5R8+T82m63TSIhN24kQWb1Vi9OJaRvm7WMSFzCzwEBT9WoRdnHiCFE551I8FpRlmitK8H+hHEzb3WM1e7M8ViJTWlmuaOlnOq6uFPb9+xFa/Ai5fxIb8QwGPwxxEl4tWp3t+1mqzq05qmkiue4k7LrSBHvMkTihiaAiOCVQmHoyDU3lNhPUmeD1JLP+X221JdD2EvpgMdkd3tFQWHUcR5f4oXAy4NnlXyyTN4xQdIWmQ313lQx1P6R5hcIxPstD2aqXT1tnHazY45rr+q6c9b900Zwa/5SakYfxACD6mPFtQXhC8+MeSRS7WBh17vkgNc=
+  wovain-next:fal-key:
+    secure: v1:wXLWYhTyG0p34WTE:0S4PFVFP8GWMJqOrqESW70L1nBuEBLTZFOhv+T37l+yVFlYDv0tTXt9AnKKfKbIP2CAfpk4ZA5kULQcWm2C2B/nyYUNqR0/3CkdikCemZGZhm/F0RT/gSA==
+  wovain-next:tavily-api-key:
+    secure: v1:wY7MV/B/U1ExP9kG:jBO8spJyIB2tbl+UHxDahoKQdbbZAc0j/w7yMMWDLgO0Fsr7PO73CqKPwRUNIxWxalOlce/3fADz
+  wovain-next:inngest-event-key:
+    secure: v1:Xn7HJex2Yw/Pru9w:TwkTGcNDo70NBM9r9u4enX+yvIb+eUUegrPKeH688Eu3pQww3/HiqYQcK0BEKGIgUdqfIct0eYueVxZVahBduh157Nin8Lb79NOLp1NI/DJzkAo0RzlgpmLjdHK/vjHFLN+Yd5hE
+  wovain-next:inngest-signing-key:
+    secure: v1:AoF25Y3qBeO25+ZV:eeTkXZO/vFrBsRZWKXr2tmwpdVpmpCo3O9DJOdfdVZUBzbU9pkZ7wUo/O2GBGB6hzlC1e+rWu3QCd50W5+NELfXXt7mwZNsvAaWHfnFO6Yt3SqQjguM65L23SDQb
+  wovain-next:qloo-api-key:
+    secure: v1:N4kWhEDoOHkfDl2S:xb+W3ktwmaKB3IWO6wFBgr/CLe9vz60mIrPak8uCoa6SlcXUSJmRUVwOCromqx4DrX1nxsJdarmpbYXdDQ==
+  wovain-next:meta-app-id:
+    secure: v1:FmlIzscyppvzC7wt:5YcEXYf9oydgXeBGR76hV8ob1mNbWFaFnk9cpqz/xA==
+  wovain-next:meta-app-secret:
+    secure: v1:lV2+YbU9PRO/Woof:nL3nT9aHG51D7/qm6PQvlWjFAvSBEGboEr9nm47/dGPJnbJlYFix0yQu5mqSR+WM
+  wovain-next:google-client-secret:
+    secure: v1:sAVBpqswSd3Q4Alp:lNW9Mk5oVVqb41V7TBqqkuOxh49hBgVo8zuJYplMiM995/i+Uc6a9L4k3evkcjPQEznV
+  wovain-next:googleClientId: 422330561934-t9c4nd6dblgsuru5oques49mpoa6ksni.apps.googleusercontent.com
+  wovain-next:polar-access-token:
+    secure: v1:jkaUqkKZ14OsXV78:HVdQwG14WkWi417JO+CO+E3lt3AlQSYgTGF1awaW0f/P/qrog7i+gtAQXF1X0WC72RXEwoAKMb4vxmy7YO10qZzvfHHI
+  wovain-next:polarEnvironment: sandbox
+secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/next-stack-secrets
+encryptedkey: CiQAh4aI6yDak5l2QZdPDZitzfXVpMdaSqxyew/aSSpg5D3iOcsSSQBWC+SVoviiXmtQZQHMGjMPEeYWy2Upve/8MUOYrG/Pyx5Zu9ok4sBPSrLuCaG9TxbqLaUz9l4edBnTV/psw8A0PDUS7BC6gb0=

@@ -23,6 +23,8 @@ const leaveFor = (url: string) => window.location.assign(url);
 
 type RedeemErrorKey =
   | "alreadyRedeemed"
+  | "emailLinked"
+  | "emailNotVerified"
   | "error"
   | "expired"
   | "invalid"
@@ -32,6 +34,8 @@ type RedeemErrorKey =
 
 // The API's typed refusals, by the message key that words them.
 const ERROR_KEYS: Record<string, RedeemErrorKey> = {
+  BILLING_EMAIL_LINKED: "emailLinked",
+  BILLING_EMAIL_NOT_VERIFIED: "emailNotVerified",
   PROMO_ALREADY_REDEEMED: "alreadyRedeemed",
   PROMO_EXPIRED: "expired",
   PROMO_INVALID: "invalid",

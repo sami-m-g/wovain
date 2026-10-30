@@ -1,0 +1,130 @@
+# A second reviewer beside CodeRabbit (.coderabbit.yaml): either one's approval
+# satisfies the main ruleset's one required approval (infra/github.ts), so a
+# pull request does not wait out CodeRabbit's hourly rate limit.
+#
+# anthropics/claude-code-action in agent mode (`prompt`), signed in with the
+# founder's Claude subscription (`claude setup-token`, the
+# CLAUDE_CODE_OAUTH_TOKEN secret), not an API key:
+# https://github.com/anthropics/claude-code-action/blob/main/docs/setup.md
+#
+# The review is posted as github-actions[bot]: `github_token` makes the action
+# use the job's token instead of the Claude GitHub App's, so nothing is
+# installed. That token can approve because the repository allows it
+# (can_approve_pull_request_reviews, infra/github.ts). Its approval is never
+# the pull request author's own: the author is the maintainer (or the
+# release-please PAT), not github-actions[bot].
+name: claude-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # The same paths CodeRabbit skips (.coderabbit.yaml path_filters): prose,
+    # specs, translations, assets, lockfiles, generated and vendored files.
+    # A pull request that only changes these costs no subscription quota.
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.mdx"
+      - "docs/**"
+      - "openspec/**"
+      - "apps/web/messages/*.json"
+      - "**/public/**"
+      - "skills-lock.json"
+      - "**/pnpm-lock.yaml"
+      - "docker/*/package-lock.json"
+      - "patches/**"
+      - "packages/db/src/migrations/**"
+      - "packages/db/src/schema/auth.ts"
+      - "**/src/env.ts"
+      - "packages/core/src/evals/report.v1.json"
+      - "packages/ui/src/components/**"
+      - "packages/ui/src/hooks/**"
+      - "packages/ui/src/lib/**"
+      - "apps/fumadocs/src/components/ai/**"
+      - "apps/fumadocs/src/components/codeblock.tsx"
+      - "apps/fumadocs/src/components/tabs/**"
+      - "apps/fumadocs/src/components/ui/**"
+      - "apps/fumadocs/src/lib/cn.ts"
+      - "apps/fumadocs/src/lib/merge-refs.ts"
+      - "apps/web/src/components/auth/**"
+      - "apps/web/src/lib/auth/**"
+      - ".agents/skills/**"
+      - ".claude/skills/**"
+      - ".claude/commands/opsx/**"
+
+# One run per pull request; a new push cancels the one in progress.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  # Until the CLAUDE_CODE_OAUTH_TOKEN secret exists (the infra/github stack's
+  # `claude-code-oauth-token`), the review is skipped, a neutral check,
+  # instead of failing every pull request: without it the action asks for an
+  # API key. A job's `if` can't read secrets, so this job checks it.
+  token:
+    # Not a draft; not a fork or Dependabot run, which get no secrets.
+    if: >-
+      github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set; the Claude review is skipped."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  review:
+    name: claude-review
+    needs: token
+    if: needs.token.outputs.present == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request as the repository's second required reviewer.
+            Read AGENTS.md and the `reviews.path_instructions` in .coderabbit.yaml
+            first: they are the review rules. In particular, frameworks first and
+            minimal code (flag hand-written logic that Mastra, Inngest, Better Auth,
+            oRPC or another maintained dependency already covers, and name the
+            replacement without dropping any case the code handles); every error
+            reaches PostHog Error Tracking through evlog or a thrown procedure error;
+            env comes from the generated `ENV`; flags go through the typed registry;
+            catalog versions use `catalog:`; vendored and generated files change
+            only through their CLIs. Skip formatting, lint and type nits (CI runs
+            them) and anything in files outside the PR's diff.
+
+            Use `gh pr diff` and `gh pr view` to read the change. Post each blocking
+            problem as an inline comment with
+            mcp__github_inline_comment__create_inline_comment (file, line, the
+            problem and the fix). A blocking problem is a bug, a security hole, a
+            lost behaviour, or a broken repository rule above.
+
+            Then submit exactly one review decision:
+            - No blocking problems: `gh pr review ${{ github.event.pull_request.number }} --approve --body "<one-line summary>"`.
+            - Any blocking problem: `gh pr review ${{ github.event.pull_request.number }} --request-changes --body "<one-line summary>"`.
+          claude_args: |
+            --max-turns 25
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review:*)"

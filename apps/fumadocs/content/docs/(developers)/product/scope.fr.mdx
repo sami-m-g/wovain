@@ -30,13 +30,13 @@ Direction -> Graphe de goûts Qloo -> Tavily : pourquoi maintenant -> Design sur
 
 ## Inspiration et identité
 
-Éditorial et sobre : des phrases courtes et réfléchies, des mots d'atelier (collection, capsule, modèle vierge, retouche, marge), des chiffres plutôt que des adjectifs, pas d'emphase. Du côté du créateur : le goût lui reste, wovain s'occupe des corvées. Honnête sur l'argent : frais, marges et dépenses dits clairement. Références : Aesop, Linear, Everlane et Shopify pour le ton et le soin. Nom : wovain, en minuscules. Un nouveau logo est en cours de conception ; le tour 6 recommande le logotype « Impression » (pas définitif). La voix et le public sont décrits dans `.agents/product-marketing.md` (MR !118, en revue).
+Éditorial et sobre : des phrases courtes et réfléchies, des mots d'atelier (collection, capsule, modèle vierge, retouche, marge), des chiffres plutôt que des adjectifs, pas d'emphase. Du côté du créateur : le goût lui reste, wovain s'occupe des corvées. Honnête sur l'argent : frais, marges et dépenses dits clairement. Références : Aesop, Linear, Everlane et Shopify pour le ton et le soin. Nom : wovain, en minuscules. Un nouveau logo est en cours de conception ; le tour 6 recommande le logotype « Impression » (pas définitif). La voix et le public sont décrits dans `.agents/product-marketing.md`.
 
 Construit à partir de services existants plutôt que reconstruit : Fourthwall pour le catalogue, la boutique et l'expédition, Meta pour la diffusion des publicités, fal pour les visuels, Qloo et Tavily pour les signaux, Nemotron pour la rédaction et l'évaluation, Polar pour la facturation.
 
 ## Pourquoi c'est important pour le créateur
 
-Le créateur du projet veut que wovain soit un vrai produit pour lequel les créateurs indépendants paient, pas une démo : un agent prend en charge les corvées de production et de marketing d'une collection en impression à la demande, tandis que le créateur garde chaque décision de goût et de dépense. Le projet a commencé comme projet Build With AI: Basics et participe aussi aux hackathons GitLab Transcend, Nebius x NVIDIA et Qloo.
+Le créateur du projet veut que wovain soit un vrai produit pour lequel les créateurs indépendants paient, pas une démo : un agent prend en charge les corvées de production et de marketing d'une collection en impression à la demande, tandis que le créateur garde chaque décision de goût et de dépense. Le projet a commencé comme projet Build With AI: Basics et participe aussi aux hackathons Nebius x NVIDIA et Qloo.
 
 ## À quoi ressemble « ça marche »
 
@@ -54,23 +54,26 @@ Le créateur du projet veut que wovain soit un vrai produit pour lequel les cré
 | --- | --- | --- |
 | Surfaces | Site web Next.js 16 et application ChatGPT (serveur MCP avec widgets) dans une seule app sur Cloud Run | En ligne |
 | Recherche | Graphe de goûts Qloo et recherche web Tavily | En ligne |
+| Concurrence | Saturation par thème, comment vendent les concurrents et les lacunes du public (Tavily, Nemotron), utilisées par le brief, le rédacteur d'annonces et le pilote automatique | En revue, derrière un flag (dev et next) |
 | Design | Brief, visuel transparent pour l'impression (fal), prix à partir du coût de base du modèle vierge | En ligne |
 | Évaluation | Nemotron sur Nebius Token Factory, taille d'impression vérifiée par le code | En ligne |
 | Publication | Produits Fourthwall masqués, publiés par une étape distincte | En ligne |
+| Gestion de la boutique | Vérification de la boutique, drops avec leur collection, publier, mettre en pause et retirer, codes de lancement programmés, commandes avec remboursements et annulations (toujours validés, avec l'aperçu de coût Fourthwall), échantillons, prix par taille ; chaque écriture passe par la file de validations | En revue, derrière un flag (dev et next) |
 | Publicités | Jusqu'à trois variantes de publicité par produit et une campagne Meta en pause | En ligne |
-| Autopilot | Exécution de bout en bout où Nemotron décide et le code encadre | En ligne |
-| Comptes | Better Auth avec Google et e-mail ; écrans Better Auth UI et paramètres du compte | Google en ligne ; UI en revue (MR !111) |
+| Quoi vendre maintenant | L'étape nouveau drop s'ouvre sur 3 à 5 pistes dont la vente est prouvée (boutiques qui en font la pub depuis 14 et 30 jours ou plus dans la Bibliothèque publicitaire Meta, best-sellers et avis sur les marketplaces), classées par ces preuves x affinité d'audience Qloo x faible saturation, chacune avec qui l'achète et où ; la marque est facultative. Avec `idea-evidence-gate` : seules les idées avec preuve Qloo, preuve de demande et lecture de la concurrence, notées demande contre offre (encombrées et non prouvées écartées), classées par une borne inférieure de Wilson, avec des titres vérifiés contre les preuves et une même carte pour chaque idée | Dev et next (`drop-directions`, `who-buys`, `idea-evidence-gate`) |
+| Autopilot | Exécution de bout en bout où Nemotron décide et le code encadre ; déclencheurs Qloo et Tavily planifiés qui suggèrent des drops et agissent dans la limite du niveau d'autonomie | Mode exécution réservé à l'équipe en production ; déclencheurs en dev seulement (flag `autopilot-triggers` ; coupé sur next tant que `story-ui` raconte une seule histoire) |
+| Comptes | Better Auth avec Google et e-mail ; écrans Better Auth UI et paramètres du compte | Google en ligne ; UI en revue |
 | Connecteurs | Fourthwall et Meta du marchand (OAuth) ; clé fal du marchand | Fourthwall et Meta en ligne ; fal en cours |
-| Facturation | Crédits et forfaits Polar (marchand officiel) ; wovain paie Nebius, Tavily et Qloo sur les crédits | En revue (MR !116), prix proposés |
+| Facturation | Crédits et forfaits Polar (marchand officiel) ; wovain paie Nebius, Tavily et Qloo sur les crédits | En revue, prix proposés |
 | Moteur d'agents | Agents Mastra, workflows avec suspension et reprise pour l'approbation, exécutions durables, mémoire sur `@mastra/pg`, traçage | En cours |
 | Qualité | Scorers Mastra sur chaque agent et chaque étape, juges LLM calibrés, garde-fous | Prévu avec la migration Mastra |
 | Analytique | PostHog ; étoile polaire « marchands activés par semaine » | Tableaux de bord créés ; certains événements prévus |
-| Après le déploiement | Flows GitLab Duo : auto-réparation, éclaireur et développeur ; revue de code sur chaque MR et un flow de revue des dépendances | Trois flows en ligne ; le reste en revue (MR !113, !114, !117) |
+| Drops | Un mot pour une chose : un drop est un passage dans le flux (du brief à la campagne en pause), listé sur la page Drops. « En faire une capsule » est une étape du drop après le choix de l'idée : 4 à 6 produits choisis d'après les tags Qloo (impression dos, marque poitrine, texte de manche, broderie et étiquette), chacun dessiné par le modèle adapté, vérifié dans le code et au prix du coût Fourthwall. « Run » reste un mot interne | Étape capsule en revue, derrière `design-drops` (dev et next) |
 
 ## Plus tard
 
 - Un optimiseur qui lit les résultats des campagnes et propose des changements, une fois qu'il y a des données de dépenses.
-- Des ensembles multi-produits par collection (plusieurs designs sur plusieurs modèles vierges) avec des publicités variées.
+- Des publicités variées pour chaque produit d'un drop.
 - Des organisations et des sièges pour les marques de plus d'une personne.
 - Des forfaits annuels, et sa propre clé Nebius en option du forfait Label.
 - TikTok Shop et les publicités TikTok.
@@ -82,5 +85,5 @@ Le créateur du projet veut que wovain soit un vrai produit pour lequel les cré
 | Vêtements à la demande et fabrication sur mesure | wovain fait uniquement de l'impression à la demande ; la production reste chez Fourthwall |
 | Un modèle d'image ou de vidéo maison | Réutiliser les fournisseurs ; le compte fal du marchand dessine les visuels |
 | Un moteur d'achat média maison | La diffusion de Meta optimise déjà les campagnes |
-| Activation automatique des dépenses publicitaires | Le créateur doit garder le contrôle de l'argent ; les campagnes sont créées en pause |
+| Dépenses publicitaires sans approbation | Le créateur doit garder le contrôle de l'argent : les campagnes sont créées en pause, et wovain n'en lance une qu'après son approbation, dans ses plafonds de dépenses |
 | Affirmations sur des clients, utilisateurs, ventes, revenus ou témoignages | Il n'y a pas encore de clients payants, de ventes ni de témoignages, et aucun n'est inventé. Les prix sont une proposition, pas un résultat |

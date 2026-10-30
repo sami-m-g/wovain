@@ -32,7 +32,12 @@ const handler = createMcpHandler(({ authInfo }) => {
       session: null,
     },
   });
-  return createMcpServer(client, ENV.BETTER_AUTH_URL);
+  return createMcpServer(client, {
+    appUrl: ENV.BETTER_AUTH_URL,
+    resourceDomains: ENV.MCP_WIDGET_RESOURCE_DOMAINS.split(",").map((host) =>
+      host.trim()
+    ),
+  });
 });
 
 const serve = requireMcpAuth(

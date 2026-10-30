@@ -1,0 +1,21 @@
+{
+  "extends": "@wovain/config/tsconfig.lib.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.json"],
+  "references": [
+    {
+      "path": "../db"
+    },
+    {
+      "path": "../billing"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../email"
+    }
+  ]
+}

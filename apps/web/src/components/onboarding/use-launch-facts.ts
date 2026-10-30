@@ -1,0 +1,116 @@
+"use client";
+
+import { ORPCError } from "@orpc/client";
+import { useQuery } from "@tanstack/react-query";
+
+import { orpc } from "@/utils/orpc";
+
+import type { LaunchFacts } from "./launch-steps";
+
+// Polled while the run works, so a step ticks off when the merchant returns.
+const RUN_POLL_MS = 3000;
+
+/** Polls a run only while it is still on its way to a campaign. */
+const pollWhileActive = (
+  run: { campaigns: readonly unknown[]; status: string } | undefined
+) => {
+  const active =
+    run === undefined ||
+    run.status === "running" ||
+    run.status === "awaiting_approval";
+  return active && (run?.campaigns.length ?? 0) === 0 ? RUN_POLL_MS : false;
+};
+
+/** A setup route answers 404 while its flag is off: not a failure. */
+const flagOff = (error: unknown) =>
+  error instanceof ORPCError && error.status === 404;
+
+/** Meta is connected and its required setup cards are done. */
+const metaSetupDone = (
+  setup:
+    | {
+        connected: boolean;
+        steps: readonly { required: boolean; state: string }[];
+      }
+    | undefined
+) =>
+  setup !== undefined &&
+  setup.connected &&
+  setup.steps
+    .filter((step) => step.required)
+    .every((step) => step.state === "done");
+
+/**
+ * What wovain knows about the merchant's way to a first campaign: the one
+ * source of truth for setup. The onboarding flow and the Home's next action
+ * both read it, and the store step reads the same store setup checklist the
+ * Store page shows. Brand is optional and is not a setup step.
+ */
+export const useLaunchFacts = (runId: string | undefined, brief?: string) => {
+  const status = useQuery(orpc.onboarding.status.queryOptions());
+  const ready = status.data?.enabled === true ? status.data : undefined;
+  const fourthwallConnected =
+    ready?.connections.some(
+      (each) => each.provider === "fourthwall" && each.state === "connected"
+    ) ?? false;
+  const store = useQuery({
+    ...orpc.store.setup.queryOptions(),
+    enabled: fourthwallConnected,
+    retry: false,
+  });
+  const run = useQuery({
+    ...orpc.runs.get.queryOptions({ input: { id: runId ?? "" } }),
+    enabled: runId !== undefined,
+    refetchInterval: (query) => pollWhileActive(query.state.data),
+  });
+  // The same query <MetaSetup /> polls, so the step ticks off with its cards.
+  const meta = useQuery({
+    ...orpc.store.metaSetup.queryOptions(),
+    retry: false,
+  });
+  // The store checklist's required steps, as the Store page counts them.
+  const storeSteps = store.data?.steps.filter((step) => step.required) ?? [];
+  // Store setup answers 404 while its flag is off: connecting is enough then.
+  const storeReady =
+    flagOff(store.error) ||
+    (store.data !== undefined &&
+      storeSteps.every((step) => step.state === "done"));
+  const metaLinked =
+    ready?.connections.some(
+      (each) => each.provider === "meta" && each.state === "connected"
+    ) ?? false;
+  // Without the Meta setup check (flag off), a connected Meta is enough.
+  const metaReady = flagOff(meta.error) ? metaLinked : metaSetupDone(meta.data);
+  const facts: LaunchFacts = {
+    brief: brief ?? run.data?.seed,
+    fourthwallConnected,
+    guardrailsSet: ready
+      ? ready.autonomy === null || ready.steps.autonomy
+      : false,
+    metaConnected: metaReady,
+    run: run.data,
+    storeReady,
+  };
+  // Every fact the steps read has arrived: a disabled query (no run, no
+  // Fourthwall) is not loading, so it doesn't hold this back.
+  const settled =
+    !status.isPending && !run.isLoading && !store.isLoading && !meta.isLoading;
+  // A real failure (not a flag off) is shown, never read as "done".
+  const problem = [status.error, run.error, store.error, meta.error].find(
+    (error) => error !== null && error !== undefined && !flagOff(error)
+  );
+  return {
+    facts,
+    problem,
+    ready,
+    run: run.data,
+    settled,
+    status,
+    store: {
+      done: storeSteps.filter((step) => step.state === "done").length,
+      total: storeSteps.length,
+    },
+  };
+};
+
+export type LaunchData = ReturnType<typeof useLaunchFacts>;

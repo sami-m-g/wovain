@@ -17,6 +17,15 @@ import type { FlowProblem, RunDetail } from "@/lib/flow-client";
 import { describeProblem } from "@/lib/flow-client";
 import { client, orpc } from "@/utils/orpc";
 
+// The server's cap on designs per test campaign (MAX_TEST_DESIGNS in
+// @wovain/core/ads, which imports node:crypto, so it stays off the browser).
+const MAX_TEST_DESIGNS = 5;
+
+const chunks = <T>(items: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, index * size + size)
+  );
+
 /**
  * The drop flow's steps. Stepperize owns which step is current; the step is
  * mirrored in the URL (?run=…&step=…) so a refresh, a run email link or the
@@ -34,6 +43,7 @@ export const flow = defineStepper([
 export type Step = (typeof flow.steps)[number]["id"];
 type Work =
   | "research"
+  | "naming"
   | "autopilot"
   | "designs"
   | "review"
@@ -52,18 +62,45 @@ export const failureOf = (run: RunDetail): Stage | undefined =>
   run.status === "failed" ? stageOf(run) : undefined;
 
 /** The step an opened run picks up at. */
-const resumeStep = (run?: RunDetail): Step => {
+export const resumeStep = (run?: RunDetail): Step => {
   if (!run) {
     return "brief";
   }
-  if (run.status === "completed" || run.status === "failed") {
+  if (run.status === "failed") {
     return "done";
+  }
+  // The run completes once its products are made; the drop still waits for
+  // the merchant to publish them and launch the campaign.
+  if (run.status === "completed") {
+    if (run.campaigns.length > 0 || run.products.length === 0) {
+      return "done";
+    }
+    return run.products.every((item) => item.status === "public")
+      ? "campaign"
+      : "products";
   }
   if (run.products.length > 0) {
     return "products";
   }
-  return run.designs.length > 0 ? "designs" : "ideas";
+  // Drawing the ideas the merchant approved: their designs land here.
+  if (run.designs.length > 0 || run.step === "design") {
+    return "designs";
+  }
+  return "ideas";
 };
+
+/** The run waits for the merchant's ideas and has drawn nothing yet. */
+const atIdeasGate = (run?: RunDetail) =>
+  run?.status === "awaiting_approval" && run.step === "ideas";
+
+/**
+ * A drop started from a Home pick, waiting at its designs step for "Make
+ * designs" while the merchant reviews the tone, colours and research.
+ */
+export const atPickGate = (run?: RunDetail) =>
+  run?.status === "awaiting_approval" &&
+  run.step === "design" &&
+  run.designs.length === 0;
 
 /** What a run working in the background is doing, for the busy label. */
 const runWork = (run?: RunDetail): Work | undefined => {
@@ -72,6 +109,10 @@ const runWork = (run?: RunDetail): Work | undefined => {
   }
   if (run.autopilot) {
     return "autopilot";
+  }
+  // Research is done: each idea gets its checked title before it shows.
+  if (run.step === "name") {
+    return "naming";
   }
   // The run draws several designs; the first can land before the others.
   if (run.step === "design") {
@@ -150,6 +191,8 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   const start = useMutation(
     orpc.runs.start.mutationOptions({ onSettled: refreshList })
   );
+  // "See designs" at the run's ideas gate: the run draws the approved ideas.
+  const approveIdeas = useMutation(orpc.runs.approveIdeas.mutationOptions());
   const approve = useMutation(orpc.designs.approve.mutationOptions());
   const reject = useMutation(orpc.designs.reject.mutationOptions());
   const publishProduct = useMutation(orpc.products.publish.mutationOptions());
@@ -200,16 +243,19 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
       dailyBudget: number;
       productIds: string[];
     }) =>
+      // A drop launches as a small test: up to MAX_TEST_DESIGNS designs
+      // share one campaign.
       Promise.all(
-        productIds.map((productId) =>
-          client.campaigns.create({ dailyBudget, productId })
+        chunks(productIds, MAX_TEST_DESIGNS).map((group) =>
+          client.campaigns.test({ dailyBudget, productIds: group })
         )
       ),
-    mutationKey: orpc.campaigns.create.mutationKey(),
+    mutationKey: orpc.campaigns.test.mutationKey(),
     onSettled: refreshList,
   });
   const all = [
     start,
+    approveIdeas,
     generate,
     approve,
     reject,
@@ -219,7 +265,7 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   ];
   const busy: [boolean, Work][] = [
     [start.isPending, start.variables?.autopilot ? "autopilot" : "research"],
-    [generate.isPending, "designs"],
+    [approveIdeas.isPending || generate.isPending, "designs"],
     [approve.isPending || reject.isPending, "review"],
     [createProducts.isPending, "products"],
     [publishProduct.isPending, "publish"],
@@ -227,6 +273,7 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
   ];
   return {
     approve,
+    approveIdeas,
     createCampaigns,
     createProducts,
     failed: all.find((mutation) => mutation.error)?.error,
@@ -345,6 +392,28 @@ export const useDropFlow = (
       });
     },
     handleDesignPicked: () => {
+      // Nothing is drawn before this click, and only the picked ideas are:
+      // the ones ticked at the ideas gate, or a Home pick's own idea.
+      if (run && (atIdeasGate(run) || atPickGate(run))) {
+        const ideaIds = atPickGate(run)
+          ? run.ideas.map((idea) => idea.id)
+          : picked;
+        if (ideaIds.length === 0) {
+          showProblem({ kind: "other", message: t("trends.error") });
+          return;
+        }
+        showProblem();
+        calls.approveIdeas.mutate(
+          { id: run.id, ideaIds },
+          {
+            onSuccess: (drawing) => {
+              cache.seed(drawing);
+              stepper.goTo("designs");
+            },
+          }
+        );
+        return;
+      }
       const designed = new Set(designs.map((item) => item.ideaId));
       const todo = picked.filter((ideaId) => !designed.has(ideaId));
       if (todo.length === 0 && designs.length === 0) {
@@ -366,7 +435,23 @@ export const useDropFlow = (
       showProblem();
       stepper.goTo(next);
     },
-    handleMakeCampaigns: () => {
+    /** Done launching: `live` when the campaigns were asked to spend. */
+    handleLaunched: (live: boolean) => {
+      if (live) {
+        // The approved activation runs on Meta; the done step says so.
+        cache.patch((current) => ({
+          ...current,
+          campaigns: current.campaigns.map((item) =>
+            item.status === "draft" || item.status === "paused"
+              ? { ...item, status: "publishing" as const }
+              : item
+          ),
+        }));
+      }
+      stepper.goTo("done");
+    },
+    /** Stages the paused campaign (its copy written), then `then`. */
+    handleMakeCampaigns: (then: () => void) => {
       if (budgetInvalid) {
         return;
       }
@@ -375,14 +460,12 @@ export const useDropFlow = (
       calls.createCampaigns.mutate(
         { dailyBudget: budgetValue, productIds: live.map((item) => item.id) },
         {
-          onSuccess: async (made) => {
+          onSuccess: (made) => {
             cache.patch((current) => ({
               ...current,
               campaigns: appendNew(current.campaigns, made),
             }));
-            stepper.goTo("done");
-            // The run's status moves on the server too.
-            await cache.refetch();
+            then();
           },
         }
       );
@@ -436,11 +519,17 @@ export const useDropFlow = (
       calls.publishProduct.mutate(
         { id },
         {
-          onSuccess: (updated) =>
+          onSuccess: (updated) => {
             cache.patch((current) => ({
               ...current,
               products: replaceById(current.products, updated),
-            })),
+            }));
+            // The last product live: the drop goes on to its campaign.
+            const next = replaceById(products, updated);
+            if (next.every((item) => item.status === "public")) {
+              stepper.goTo("campaign");
+            }
+          },
         }
       );
     },

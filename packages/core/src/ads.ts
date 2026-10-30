@@ -2,15 +2,23 @@ import { createHash, randomInt } from "node:crypto";
 
 import { z } from "zod";
 
+import { adSetTargeting, deliveryOf, withUtm } from "./ad-delivery";
+import type { MediaBuying } from "./ad-delivery";
+import type { AdCompetition } from "./competition";
+import type { WriterStyle } from "./drop-style";
+import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
 import type { Logger } from "./log";
 import type { Nemotron } from "./nemotron";
+import type { AudiencePersona, MetaTargeting } from "./targeting";
 import { findAll, findOne } from "./upstream";
 import type { ToolCall } from "./upstream";
 
 // Meta ads for a published product, through the Meta Ads MCP server on the
 // merchant's own account: Nemotron writes varied ad copy, then wovain stages
-// a traffic campaign with one ad set and one ad per variant. Everything is
-// created PAUSED (or as a draft); wovain never activates spend.
+// a campaign with one ad set and one ad per variant. Everything is created
+// PAUSED (or as a draft). With the media-buying-live flag (`media`), the
+// campaign optimizes for purchases on the pixel, suggests an audience and
+// tags its links, and ./media-buying takes it live after an approval.
 
 export const copySchema = z.object({
   variants: z
@@ -27,48 +35,210 @@ export const copySchema = z.object({
 });
 export type AdCopy = z.infer<typeof copySchema>["variants"];
 
+const COPY_RULES =
+  "You write Meta ads for a print-on-demand t-shirt. Write 2 or 3 variants, each with a different angle, a headline under 40 characters and primary text under 250. No prices, no claims you can't back, no brand or celebrity names.";
+// With Qloo's audience (./targeting): who the ads reach, so the copy speaks
+// to them. The interests are Meta interest names, never printed.
+const PERSONA_RULES =
+  " The audience field says who the ads reach (ages, gender lean, Qloo audiences and interests): write in a voice and with references that land with them, without naming any brand, person or interest from it.";
+
+// With the competition (./competition, the tavily-competition flag): how
+// near-identical shirts are sold, each line with its page, so the copy
+// takes another angle. The lines are in the prompt, so the grounding guard
+// accepts a fact taken from them, and only from them.
+const COMPETITION_RULES =
+  " The competition field lists how near-identical shirts are already sold (angles, each with its source page) and what their buyers' audience likes that they miss (gaps): counter-position. Take an angle none of them uses, lean on a gap or answer a complaint, never reuse their wording and never name a competitor or a site.";
+
+// With the drop's style (./drop-style): its tone, and the brand's voice as
+// limits the copy never breaks.
+const STYLE_RULES =
+  " The style field is this drop's tone: write every variant in it. Its guardrails are the brand's voice: never break anything they rule out.";
+
 export const writeAdCopy = async (
   ask: Nemotron,
   product: { description: string; idea: string; title: string },
-  log?: Logger
+  log?: Logger,
+  audience?: AudiencePersona,
+  competition?: AdCompetition,
+  style?: Pick<WriterStyle, "guardrails" | "tone">
 ): Promise<AdCopy> => {
+  const system =
+    (audience === undefined ? COPY_RULES : COPY_RULES + PERSONA_RULES) +
+    (competition === undefined ? "" : COMPETITION_RULES) +
+    (style === undefined ? "" : STYLE_RULES);
   const { variants } = await ask({
+    grounded: (reply) =>
+      reply.variants
+        .map((variant) => `${variant.headline}\n${variant.message}`)
+        .join("\n"),
     log,
     name: "ad_copy",
-    prompt: JSON.stringify(product),
+    prompt: JSON.stringify({
+      ...product,
+      ...(audience !== undefined && { audience }),
+      ...(competition !== undefined && { competition }),
+      ...(style !== undefined && { style }),
+    }),
     schema: copySchema,
-    system:
-      "You write Meta ads for a print-on-demand t-shirt. Write 2 or 3 variants, each with a different angle, a headline under 40 characters and primary text under 250. No prices, no claims you can't back, no brand or celebrity names.",
+    system,
     temperature: 0.8,
   });
   return variants;
 };
 
+// The ad judges every variant faces (./judges): a clear, honest angle, and
+// Meta's rules on personal attributes and misleading claims.
+const AD_JUDGES = ["ad_copy_quality", "meta_policy"] as const;
+const PERCENT = 100;
+
+export interface AdScore {
+  // Share of passed judge verdicts across the variants, 0 to 100.
+  score: number;
+  verdicts: {
+    critique: string;
+    judge: (typeof AD_JUDGES)[number];
+    pass: boolean;
+    variant: number;
+  }[];
+}
+
+// Each variant of the ad copy, judged by the binary ad judges on the fast
+// model: the share of passes is the copy's score on the insights page.
+export const scoreAdCopy = async (
+  ask: Nemotron,
+  { copy, title }: { copy: AdCopy; title: string },
+  log?: Logger
+): Promise<AdScore> => {
+  const verdicts = await Promise.all(
+    copy.flatMap((variant, index) =>
+      AD_JUDGES.map(async (judge) => {
+        const verdict = await ask({
+          log,
+          name: "ad_judge",
+          prompt: judgePrompt(
+            judge === "ad_copy_quality" ? { title } : {},
+            variant
+          ),
+          schema: verdictSchema,
+          system: judgeInstructions(judge),
+          temperature: 0,
+        });
+        return {
+          critique: verdict.critique,
+          judge,
+          pass: verdict.result === "Pass",
+          variant: index,
+        };
+      })
+    )
+  );
+  const passed = verdicts.filter((verdict) => verdict.pass).length;
+  return {
+    score:
+      verdicts.length === 0
+        ? 0
+        : Math.round((passed / verdicts.length) * PERCENT),
+    verdicts,
+  };
+};
+
+// One design in a test campaign: its own ad set, an ad per copy variant.
+export interface DesignAds {
+  copy: AdCopy;
+  imageUrl: string;
+  // The caller's id for it (the product), returned with what was staged.
+  key: string;
+  // Short and stable: it names the design's ad set and ads on Meta.
+  label: string;
+  linkUrl: string;
+  // Its share of the test's spend floor (feedback-loop, ./outcomes
+  // floorShares): angles that sold before get more. An even split when
+  // unset.
+  floorShare?: number | undefined;
+}
+
+// A drop launches as a small test: 3 to 5 designs in one campaign.
+export const MAX_TEST_DESIGNS = 5;
+// Half the daily budget is split evenly as each design's floor, so every
+// design gets spend until the profit rules can judge it; Meta's campaign
+// budget (CBO) moves the other half to what sells.
+const FLOOR_SHARE = 0.5;
+export const designFloorCents = (
+  dailyBudgetCents: number,
+  designs: number,
+  share = 1 / designs
+) => Math.floor(dailyBudgetCents * FLOOR_SHARE * share);
+
 export interface CampaignPlan {
   // Numeric, without "act_"; the merchant's first MCP-enabled account if unset.
   adAccountId?: string | undefined;
   copy: AdCopy;
+  // A multi-design test; one design (copy, imageUrl, linkUrl) when unset.
+  designs?: DesignAds[] | undefined;
   // ISO country codes the ad set targets.
   countries: string[];
   dailyBudgetCents: number;
   imageUrl: string;
   linkUrl: string;
+  // Live media buying (./ad-delivery); the legacy traffic staging without it.
+  media?: MediaBuying | undefined;
   name: string;
   // The Page the ads run as; the ad account's first Page if unset.
   pageId?: string | undefined;
   // Stable across retries of one staging: it names every object, so an
   // object whose create got no answer can be found again on Meta.
   tag: string;
+  // Qloo's audience as Meta targeting (./targeting). Required: no ad set is
+  // staged without it (qlooAudienceGap). Its countries are the plan's.
+  targeting: MetaTargeting;
+}
+
+export interface StagedDesign {
+  adIds: string[];
+  adSetId: string;
+  creativeIds: string[];
+  key: string;
 }
 
 export interface StagedCampaign {
   adAccountId: string;
+  // Every design's ads; the first design's ad set.
   adIds: string[];
   adSetId: string;
   campaignId: string;
   creativeIds: string[];
+  // One per design; unset on a single-design campaign saved before tests.
+  designs?: StagedDesign[] | undefined;
   pageId: string;
 }
+
+// Every ad set of a staged campaign, one per design.
+export const adSetIdsOf = (
+  staged: Pick<StagedCampaign, "adSetId" | "designs">
+) =>
+  staged.designs === undefined || staged.designs.length === 0
+    ? [staged.adSetId]
+    : staged.designs.map((design) => design.adSetId);
+
+const designsOf = (plan: CampaignPlan): DesignAds[] => {
+  if (plan.designs !== undefined && plan.designs.length > 0) {
+    if (plan.designs.length > MAX_TEST_DESIGNS) {
+      throw new Error(
+        `A test campaign takes ${MAX_TEST_DESIGNS} designs at most, not ${plan.designs.length}`
+      );
+    }
+    return plan.designs;
+  }
+  return [
+    {
+      copy: plan.copy,
+      imageUrl: plan.imageUrl,
+      key: plan.tag,
+      label: plan.tag,
+      linkUrl: plan.linkUrl,
+    },
+  ];
+};
 
 // Runs one create at most once per staging. `recover` looks for the object
 // an earlier attempt may have made before it lost the answer. The default
@@ -107,7 +277,7 @@ const idField = (key: string) =>
 const idOf = (reply: unknown, key: string) =>
   String(findOne(idField(key), reply, key)[key]);
 
-const resolveAccount = async (call: ToolCall, given?: string) => {
+export const resolveAccount = async (call: ToolCall, given?: string) => {
   if (given !== undefined) {
     return given;
   }
@@ -123,6 +293,22 @@ const resolveAccount = async (call: ToolCall, given?: string) => {
   }
   return String(account.ad_account_id);
 };
+
+// The ad account a staging with this tag will use, looked up the same way.
+export const adAccountFor = async (
+  call: ToolCall,
+  tag: string,
+  given?: string
+) =>
+  await resolveAccount(
+    async (tool, args) =>
+      await call(tool, {
+        advertiser_job: "create_and_launch_new_ads",
+        client_conversation_id: conversationId(tag),
+        ...args,
+      }),
+    given
+  );
 
 const resolvePage = async (
   call: ToolCall,
@@ -174,6 +360,7 @@ export const stagePausedCampaign = async (
   const account = { ad_account_id: adAccountId };
   const named = (suffix: string) => `${plan.name} · ${suffix} · ${plan.tag}`;
   const campaignName = named("campaign");
+  const delivery = deliveryOf(plan.media);
   // Named with its account, which archiving it again needs.
   const campaignId = await once(
     `campaign@${adAccountId}`,
@@ -184,75 +371,127 @@ export const stagePausedCampaign = async (
           buying_type: "AUCTION",
           campaign_daily_budget: plan.dailyBudgetCents,
           campaign_name: campaignName,
-          objective: "OUTCOME_TRAFFIC",
+          objective: delivery.objective,
           special_ad_categories: "[]",
         }),
         "campaign_id"
       ),
     async () => await findByName(meta, adAccountId, "campaign", campaignName)
   );
-  const adSetName = named("broad");
-  const adSetId = await once(
-    "ad_set",
-    async () =>
-      idOf(
-        await meta("ads_create_ad_set", {
-          ...account,
-          ad_set_name: adSetName,
-          billing_event: "IMPRESSIONS",
-          campaign_id: campaignId,
-          destination_type: "WEBSITE",
-          optimization_goal: "LINK_CLICKS",
-          targeting: JSON.stringify({
-            geo_locations: { countries: plan.countries },
-          }),
-        }),
-        "ad_set_id"
-      ),
-    async () => await findByName(meta, adAccountId, "adset", adSetName)
-  );
-  const creativeIds: string[] = [];
-  const adIds: string[] = [];
-  for (const [index, variant] of plan.copy.entries()) {
-    const name = named(`${variant.angle} ${index + 1}`);
-    // One at a time: Meta's draft takes its objects in order. A creative
-    // made twice is harmless (it serves only through an ad), so it has no
-    // lookup.
+  // media-buying-live: Advantage+ audience with the brand's ages and
+  // genders; otherwise the chosen countries. Qloo's ages, gender and
+  // interests always ride on top as suggestions; the countries stay the
+  // hard limit either way.
+  const base =
+    plan.media === undefined
+      ? { geo_locations: { countries: plan.countries } }
+      : adSetTargeting(plan.media.targeting);
+  const targeting: Omit<MetaTargeting, "geo_locations"> & typeof base = {
+    ...base,
+    ...plan.targeting,
+    geo_locations: base.geo_locations,
+  };
+  const designs = designsOf(plan);
+  // A test of several designs: each keeps a floor of the budget until the
+  // profit rules can judge it, and CBO moves the rest to what sells.
+  const floorOf = (design: DesignAds) =>
+    designs.length > 1
+      ? designFloorCents(
+          plan.dailyBudgetCents,
+          designs.length,
+          design.floorShare ?? 1 / designs.length
+        )
+      : undefined;
+  const staged: StagedDesign[] = [];
+  for (const [slot, design] of designs.entries()) {
+    const minSpendCents = floorOf(design);
+    // One design keeps the names and keys a single-design staging always had.
+    const single = designs.length === 1;
+    const at = (name: string) => (single ? name : `${name}:${slot}`);
+    const adSetName = named(single ? "qloo" : `qloo ${design.label}`);
+    // One at a time: Meta's draft takes its objects in order.
     // oxlint-disable-next-line no-await-in-loop
-    const creativeId = await once(`creative:${index}`, async () =>
-      idOf(
-        await meta("ads_create_creative", {
-          ...account,
-          call_to_action_type: "SHOP_NOW",
-          headline: variant.headline,
-          image_url: plan.imageUrl,
-          link_url: plan.linkUrl,
-          message: variant.message,
-          name,
-          page_id: pageId,
-        }),
-        "creative_id"
-      )
-    );
-    creativeIds.push(creativeId);
-    // oxlint-disable-next-line no-await-in-loop
-    const adId = await once(
-      `ad:${index}`,
+    const adSetId = await once(
+      at("ad_set"),
       async () =>
         idOf(
-          await meta("ads_create_ad", {
+          await meta("ads_create_ad_set", {
             ...account,
-            ad_name: name,
-            ad_set_id: adSetId,
-            creative: JSON.stringify({ creative_id: creativeId }),
+            ...delivery.adSet,
+            ad_set_name: adSetName,
+            billing_event: "IMPRESSIONS",
+            campaign_id: campaignId,
+            ...(minSpendCents === undefined
+              ? {}
+              : { daily_min_spend_target: minSpendCents }),
+            destination_type: "WEBSITE",
+            targeting: JSON.stringify(targeting),
           }),
-          "ad_id"
+          "ad_set_id"
         ),
-      async () => await findByName(meta, adAccountId, "ad", name)
+      async () => await findByName(meta, adAccountId, "adset", adSetName)
     );
-    adIds.push(adId);
+    const creativeIds: string[] = [];
+    const adIds: string[] = [];
+    for (const [index, variant] of design.copy.entries()) {
+      const label = single ? "" : `${design.label} `;
+      const name = named(`${label}${variant.angle} ${index + 1}`);
+      const content = single
+        ? `${variant.angle}-${index + 1}`
+        : `${design.label}-${variant.angle}-${index + 1}`;
+      const linkUrl =
+        plan.media === undefined
+          ? design.linkUrl
+          : withUtm(design.linkUrl, { campaign: campaignId, content });
+      // A creative made twice is harmless (it serves only through an ad), so
+      // it has no lookup.
+      // oxlint-disable-next-line no-await-in-loop
+      const creativeId = await once(
+        single ? `creative:${index}` : `creative:${slot}:${index}`,
+        async () =>
+          idOf(
+            await meta("ads_create_creative", {
+              ...account,
+              call_to_action_type: "SHOP_NOW",
+              headline: variant.headline,
+              image_url: design.imageUrl,
+              link_url: linkUrl,
+              message: variant.message,
+              name,
+              page_id: pageId,
+            }),
+            "creative_id"
+          )
+      );
+      creativeIds.push(creativeId);
+      // oxlint-disable-next-line no-await-in-loop
+      const adId = await once(
+        single ? `ad:${index}` : `ad:${slot}:${index}`,
+        async () =>
+          idOf(
+            await meta("ads_create_ad", {
+              ...account,
+              ad_name: name,
+              ad_set_id: adSetId,
+              creative: JSON.stringify({ creative_id: creativeId }),
+            }),
+            "ad_id"
+          ),
+        async () => await findByName(meta, adAccountId, "ad", name)
+      );
+      adIds.push(adId);
+    }
+    staged.push({ adIds, adSetId, creativeIds, key: design.key });
   }
-  return { adAccountId, adIds, adSetId, campaignId, creativeIds, pageId };
+  return {
+    adAccountId,
+    adIds: staged.flatMap((design) => design.adIds),
+    adSetId: staged[0]?.adSetId ?? "",
+    campaignId,
+    creativeIds: staged.flatMap((design) => design.creativeIds),
+    designs: staged,
+    pageId,
+  };
 };
 
 // Undoes a staging that can't finish: archiving the campaign archives its ad

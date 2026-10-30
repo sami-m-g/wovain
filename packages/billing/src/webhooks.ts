@@ -3,6 +3,7 @@ import type { Database } from "@wovain/db";
 
 import { usd } from "./analytics";
 import type { BillingAnalytics } from "./analytics";
+import { billingCatalog } from "./catalog";
 import { subscriptionEvents } from "./kpis";
 import {
   applyGrant,
@@ -13,9 +14,9 @@ import {
   storedSubscription,
   upsertSubscription,
 } from "./mirror";
-import { CREDIT_PACK, POLAR_METADATA_KEY, isPlanCode } from "./plans";
+import { CREDIT_PACK_CODE, POLAR_METADATA_KEY, isPlanCode } from "./plans";
 import { ensureFreePlan } from "./polar";
-import { promoOfTag } from "./promos";
+import { promoAllows, promoOfTag } from "./promos";
 import { redeemSurface } from "./redeem";
 
 // Polar's webhooks, as the Better Auth plugin hands them over after checking
@@ -30,7 +31,13 @@ type MeterCreditGrant = models.BenefitGrantMeterCreditWebhook;
 export interface WebhookDeps {
   analytics?: BillingAnalytics | undefined;
   db: Database;
-  log?: { set: (fields: Record<string, unknown>) => void } | undefined;
+  log?:
+    | {
+        // Reaches error tracking (AGENTS.md): a grant that brings no credits.
+        error?: (fields: Record<string, unknown>) => void;
+        set: (fields: Record<string, unknown>) => void;
+      }
+    | undefined;
   polar: PolarCore;
 }
 
@@ -56,19 +63,66 @@ const creditsOf = (grant: Grant) => {
     promoId: promo?.id,
     rollover: grant.benefit.properties.rollover,
     source:
-      code === "pack" || promo !== undefined
+      code === CREDIT_PACK_CODE || promo !== undefined
         ? ("pack" as const)
         : ("plan" as const),
     userId,
   };
 };
 
-const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
+// Why a promo grant brings no credits, if it doesn't.
+const promoBlocked = async (
+  db: Database,
+  {
+    grant,
+    grantId,
+    promoId,
+    userId,
+  }: NonNullable<ReturnType<typeof creditsOf>>,
+  email: string
+) => {
+  if (promoId === undefined) {
+    return;
+  }
+  // A promo that names its accounts credits no one else, whatever checkout
+  // brought it. The redeem endpoint already refuses them.
+  const promo = promoOfTag(grant.benefit.metadata[POLAR_METADATA_KEY]);
+  if (promo !== undefined && !promoAllows(promo, email)) {
+    return "not_allowed";
+  }
+  // One redemption per merchant per promo: a second one (two checkouts
+  // finished at once) brings no credits. Polar's per-customer limit should
+  // already have refused it.
+  if (await promoRedeemed(db, { exceptGrantId: grantId, promoId, userId })) {
+    return "already_redeemed";
+  }
+};
+
+// Credits Polar granted to a customer no live user has: a stale link. Never
+// silent, so it reaches error tracking.
+const reportUnknownUser = (
+  log: WebhookDeps["log"],
+  { grantId, userId }: { grantId: string; userId: string }
+) => {
+  log?.error?.({
+    billing: { grantId, userId },
+    error: {
+      code: "POLAR_GRANT_UNKNOWN_USER",
+      message: "Polar granted credits to a customer that is no user",
+      name: "PolarGrantUnknownUser",
+    },
+  });
+};
+
+const onGrant = async ({ analytics, db, log }: WebhookDeps, grant: Grant) => {
   const credits = creditsOf(grant);
-  if (
-    credits === undefined ||
-    (await merchantOf(db, credits.userId)) === undefined
-  ) {
+  const merchant =
+    credits === undefined ? undefined : await merchantOf(db, credits.userId);
+  if (credits === undefined) {
+    return "skipped";
+  }
+  if (merchant === undefined) {
+    reportUnknownUser(log, credits);
     return "skipped";
   }
   const { grant: data, ...ref } = credits;
@@ -83,18 +137,9 @@ const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
   }
   const units =
     data.properties.last_credited_units ?? data.benefit.properties.units;
-  // One redemption per merchant per promo: a second one (two checkouts
-  // finished at once) brings no credits. Polar's per-customer limit should
-  // already have refused it.
-  if (
-    ref.promoId !== undefined &&
-    (await promoRedeemed(db, {
-      exceptGrantId: ref.grantId,
-      promoId: ref.promoId,
-      userId: ref.userId,
-    }))
-  ) {
-    return "already_redeemed";
+  const blocked = await promoBlocked(db, credits, merchant.email);
+  if (blocked !== undefined) {
+    return blocked;
   }
   const applied = await applyGrant(db, { ...ref, periodKey, units });
   if (applied && ref.promoId !== undefined) {
@@ -116,9 +161,9 @@ const onGrant = async ({ analytics, db }: WebhookDeps, grant: Grant) => {
       distinctId: ref.userId,
       event: "credits_purchased",
       properties: {
-        amount_usd: usd(CREDIT_PACK.priceCents),
+        amount_usd: usd(billingCatalog().creditPack.priceCents),
         credits: units,
-        pack: CREDIT_PACK.code,
+        pack: CREDIT_PACK_CODE,
       },
     });
   }
@@ -172,7 +217,7 @@ const onSubscription = async (
   });
   // A paid plan that ended leaves the merchant on Free again.
   if (revoked && plan !== "free" && current.subscription === null) {
-    await ensureFreePlan(deps.polar, merchant);
+    await ensureFreePlan(deps.polar, deps.db, merchant);
   }
   return "mirrored";
 };
@@ -187,7 +232,7 @@ const onCustomer = async (deps: WebhookDeps, customer: models.Customer) => {
   if (merchant === undefined) {
     return "skipped";
   }
-  const started = await ensureFreePlan(deps.polar, merchant);
+  const started = await ensureFreePlan(deps.polar, deps.db, merchant);
   return started ? "free_plan" : "has_plan";
 };
 

@@ -1,0 +1,96 @@
+# OSV-Scanner configuration: the vulnerabilities fixed outside a release, and
+# the license exceptions for the `licenses` CI job
+# (.github/workflows/supply-chain.yml). The job scans pnpm-lock.yaml and
+# infra/pnpm-lock.yaml against the allowlist given on its command line; each
+# entry here is a package whose license is outside that allowlist (or that
+# deps.dev reports as UNKNOWN), and why that is acceptable.
+#
+# `license.override` replaces a missing or wrong license with the one the
+# package really has; `license.ignore` accepts a license that is outside the
+# allowlist. Neither turns off vulnerability scanning for the package.
+
+# Vulnerabilities fixed in this repository, with no fixed release to move to.
+# OpenSSF Scorecard reads this file too.
+
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+reason = "deepmerge 4.3.1 (latest; no fixed release) is patched by patches/deepmerge@4.3.1.patch (pnpm patchedDependencies): merged keys are written as own properties, so a __proto__ key cannot replace the prototype. Remove with the patch once deepmerge ships a fix."
+
+# Manifests without a license field: the license from the package's repository.
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@better-auth-ui/.*"
+nameIsRegex = true
+license.override = ["MIT"]
+reason = "MIT in its repository (better-auth-ui/better-auth-ui); the manifest has no license field"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@mastra/inngest"
+license.override = ["Apache-2.0"]
+reason = "Apache-2.0 in its repository (mastra-ai/mastra); the manifest has no license field"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@polar-sh/better-auth"
+license.override = ["Apache-2.0"]
+reason = "Apache-2.0 in its repository (polarsource/polar); the manifest has no license field"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "keyword-extractor"
+license.override = ["MIT"]
+reason = "MIT in its LICENSE file; the manifest has no license field, so deps.dev reports UNKNOWN"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@logdna/tail-file"
+license.override = ["MIT"]
+reason = "MIT in its LICENSE file; the manifest says SEE LICENSE IN LICENSE (infra, via @pulumi/pulumi)"
+
+# Licenses outside the allowlist, accepted for the reason given.
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@img/sharp-(libvips-.*|wasm32|win32-.*)"
+nameIsRegex = true
+license.ignore = true
+reason = "LGPL-3.0-or-later prebuilt libvips binaries (bundled in the wasm32 and win32 builds), dynamically linked by sharp (Apache-2.0) via Next.js image optimization; not modified"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@stdlib/math-base-special-(beta|betainc|gamma-delta-ratio|gamma-lanczos-sum|gamma-lanczos-sum-expg-scaled|gammainc|kernel-betainc|powm1)"
+nameIsRegex = true
+license.ignore = true
+reason = "Apache-2.0 AND BSL-1.0: stdlib's ports of Boost.Math routines keep the Boost Software License 1.0 (OSI-approved, permissive, attribution in source only); used by @stdlib/stats-base-dists-beta-cdf for the feedback loop's Beta posteriors"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "caniuse-lite"
+license.ignore = true
+reason = "CC-BY-4.0 browser-support data, used by build tooling and not shipped"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "geoip-country"
+license.ignore = true
+reason = "MaxMind GeoLite2 data under its EULA, used for a country lookup, with the attribution it requires"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "postal-mime"
+license.ignore = true
+reason = "MIT-0, which is MIT without the attribution requirement"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "spdx-exceptions"
+license.ignore = true
+reason = "CC-BY-3.0 list of SPDX exception ids, used by npm tooling inside @pulumi/pulumi (infra) and not shipped"
+
+[[PackageOverrides]]
+ecosystem = "npm"
+name = "@pulumi/posthog"
+license.ignore = true
+reason = "Local SDK that `pulumi package add` generates in infra/sdks/posthog (file: dependency, not a registry package)"

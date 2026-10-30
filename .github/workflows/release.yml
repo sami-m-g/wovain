@@ -1,0 +1,53 @@
+# Releases with release-please (release-please-config.json): every push to
+# main updates one release pull request (version, CHANGELOG.md) from the
+# conventional commits. Merging it tags the commit, publishes the GitHub
+# Release and signs it (sign-release.yml), which is what OpenSSF Scorecard's
+# Signed-Releases check looks for.
+#
+# Pull requests and tags made with the default token do not start other
+# workflows, so the release pull request's required checks (`verify`) never
+# run. Set the RELEASE_PLEASE_TOKEN Actions secret (a fine-grained token with
+# contents, pull requests and workflows write) and they do; without it the workflow still
+# runs on the default token.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  sign:
+    name: sign
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/sign-release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}

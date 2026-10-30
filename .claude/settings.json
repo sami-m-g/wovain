@@ -34,6 +34,50 @@
     "posthog@claude-plugins-official": true,
     "claude-security@claude-plugins-official": true,
     "chrome-devtools-mcp@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true
+    "pr-review-toolkit@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "inngest@anthropic-plugin-directory": true,
+    "playwright@claude-plugins-official": true,
+    "mastra-skills@mastra-agent-skills": true,
+    "humanizer@humanizer": true,
+    "caveman@caveman": true,
+    "google-cloud-developer@google-plugins": true,
+    "cloud-sql-postgresql@google-plugins": true,
+    "legal@knowledge-work-plugins": true,
+    "product-management@knowledge-work-plugins": true,
+    "finance@knowledge-work-plugins": true,
+    "claude-ads@ai-marketing-hub-claude-ads": true
+  },
+  "extraKnownMarketplaces": {
+    "mastra-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "mastra-ai/skills"
+      }
+    },
+    "humanizer": {
+      "source": {
+        "source": "github",
+        "repo": "blader/humanizer"
+      }
+    },
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    },
+    "google-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "google/skills"
+      }
+    },
+    "knowledge-work-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/knowledge-work-plugins"
+      }
+    }
   }
 }

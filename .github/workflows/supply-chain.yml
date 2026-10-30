@@ -1,0 +1,74 @@
+# Dependency and license checks. dependency-review judges what a pull request
+# adds (vulnerabilities, licenses); licenses is the whole tree of both
+# lockfiles (OSV-Scanner, exceptions in osv-scanner.toml). Secrets in commits
+# are the GitGuardian GitHub App's check (`GitGuardian Security Checks`).
+name: supply-chain
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: supply-chain-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: dependency-review
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Blocks a pull request that adds a high or critical vulnerability, or a
+      # license outside the allowlist (OSI-permissive, MIT-compatible).
+      # allow-dependencies-licenses are the osv-scanner.toml exceptions that this
+      # review has needed so far:
+      # packages whose manifest has no license, and data or binaries under
+      # other terms.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+          allow-licenses: >-
+            MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, Unlicense, CC0-1.0, BlueOak-1.0.0, Python-2.0, MPL-2.0
+          allow-dependencies-licenses: >-
+            pkg:npm/%40better-auth-ui/core, pkg:npm/%40better-auth-ui/locales, pkg:npm/%40better-auth-ui/react, pkg:npm/%40mastra/inngest, pkg:npm/%40polar-sh/better-auth, pkg:npm/%40img/sharp-libvips-darwin-arm64, pkg:npm/%40img/sharp-libvips-darwin-x64, pkg:npm/%40img/sharp-libvips-linux-arm, pkg:npm/%40img/sharp-libvips-linux-arm64, pkg:npm/%40img/sharp-libvips-linux-ppc64, pkg:npm/%40img/sharp-libvips-linux-riscv64, pkg:npm/%40img/sharp-libvips-linux-s390x, pkg:npm/%40img/sharp-libvips-linux-x64, pkg:npm/%40img/sharp-libvips-linuxmusl-arm64, pkg:npm/%40img/sharp-libvips-linuxmusl-x64, pkg:npm/caniuse-lite, pkg:npm/geoip-country, pkg:npm/postal-mime
+      # MPL-2.0 is allowed above; this second pass only reports it as a
+      # warning, because it is file-level copyleft worth a look.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          deny-licenses: MPL-2.0
+          warn-only: true
+          comment-summary-in-pr: never
+
+  licenses:
+    name: licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Every package in both lockfiles against the allowlist, with license
+      # data from deps.dev; exceptions are in osv-scanner.toml. Vulnerability
+      # matching is off here: the osv workflow and dependency-review own it.
+      # MPL-2.0 is allowed; the license summary in the log counts it, and the
+      # second dependency-review pass warns when a pull request adds one.
+      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --config=osv-scanner.toml
+            --lockfile=pnpm-lock.yaml
+            --lockfile=infra/pnpm-lock.yaml
+            --x-disable-plugins=vulnmatch/osvdev
+            --licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,0BSD,Unlicense,CC0-1.0,BlueOak-1.0.0,Python-2.0,MPL-2.0

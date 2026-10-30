@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { Offer, PlanCode } from "@wovain/billing/plans";
-import { CREDIT_PACK, OFFERS, PLANS } from "@wovain/billing/plans";
+import { OFFERS } from "@wovain/billing/plans";
 import { Alert, AlertDescription } from "@wovain/ui/components/alert";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { CircleAlert, CircleCheck } from "lucide-react";
@@ -10,6 +10,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { useCatalog } from "@/components/billing/catalog-provider";
 import {
   CheckoutButton,
   PortalButton,
@@ -43,6 +44,7 @@ const Summary = ({
 }) => {
   const t = useTranslations("Billing");
   const format = useFormatter();
+  const { creditPack, plans } = useCatalog();
   const { credits, enabled, paidPlans, plan, subscription } = status;
   const paid = plan !== "free";
   let renewalLine: string | undefined;
@@ -64,7 +66,7 @@ const Summary = ({
           {t("page.planLabel")}
         </h2>
         <p className="font-display text-3xl font-semibold tracking-[-0.025em]">
-          {PLANS[plan].name}
+          {plans[plan].name}
         </p>
         {renewalLine ? (
           <p className="text-muted-foreground text-sm">{renewalLine}</p>
@@ -84,7 +86,7 @@ const Summary = ({
       {paidPlans ? (
         <div className="flex flex-wrap gap-3 sm:col-span-2">
           <CheckoutButton disabled={!enabled} offer="pack">
-            {t("cta.buyPack", { credits: CREDIT_PACK.credits })}
+            {t("cta.buyPack", { credits: creditPack.credits })}
           </CheckoutButton>
           {paid ? <PortalButton disabled={!enabled} /> : null}
         </div>
@@ -105,6 +107,7 @@ const Summary = ({
 /** The merchant's plan, credits and the ways to change them. */
 export const BillingPanel = () => {
   const t = useTranslations("Billing");
+  const { creditPack, plans } = useCatalog();
   const format = useFormatter();
   const searchParams = useSearchParams();
   const returned = searchParams.get("checkout") === "success";
@@ -115,7 +118,8 @@ export const BillingPanel = () => {
   const status = useQuery(
     orpc.billing.status.queryOptions({
       refetchInterval: (query) =>
-        (returned || redeemed) && query.state.dataUpdateCount < POLLS
+        ((returned || redeemed) && query.state.dataUpdateCount < POLLS) ||
+        query.state.data?.freePlan === "retrying"
           ? POLL_MS
           : false,
     })
@@ -142,6 +146,13 @@ export const BillingPanel = () => {
       })
     : undefined;
   const pastDue = subscription?.status === "past_due";
+  const setupNote = {
+    blocked_email_not_verified: t("page.setupUnverified"),
+    blocked_linked_to_other_account: t("page.setupLinked"),
+    none: undefined,
+    retrying: t("page.setupRetrying"),
+    started: undefined,
+  }[status.data.freePlan];
   const recommended: PlanCode =
     offer === "label" || plan === "studio" ? "label" : "studio";
 
@@ -164,7 +175,7 @@ export const BillingPanel = () => {
         offer={code}
         primary={code === recommended}
       >
-        {t("cta.choose", { plan: PLANS[code].name })}
+        {t("cta.choose", { plan: plans[code].name })}
       </CheckoutButton>
     );
   };
@@ -187,6 +198,12 @@ export const BillingPanel = () => {
           </AlertDescription>
         </Alert>
       ) : null}
+      {setupNote === undefined ? null : (
+        <Alert variant="destructive">
+          <CircleAlert aria-hidden="true" />
+          <AlertDescription className="text-sm">{setupNote}</AlertDescription>
+        </Alert>
+      )}
       {pastDue ? (
         <Alert variant="destructive">
           <CircleAlert aria-hidden="true" />
@@ -229,7 +246,7 @@ export const BillingPanel = () => {
             action={
               paidPlans ? (
                 <CheckoutButton disabled={!enabled} offer="pack">
-                  {t("cta.buyPack", { credits: CREDIT_PACK.credits })}
+                  {t("cta.buyPack", { credits: creditPack.credits })}
                 </CheckoutButton>
               ) : (
                 <NotifyButton offer="pack" surface="billing" />

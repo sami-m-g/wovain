@@ -1,31 +1,32 @@
-// wovain's feature flags: the one list that GitLab's flags (infra/gitlab.ts,
-// Pulumi), the app's SDK (./flags.ts) and the hygiene check (apps/ops) read.
-// Pure data with no imports, so Pulumi (Node's type stripping) and the ops
-// job can import it by path. docs/adr/0001-progressive-delivery.md explains
-// the design; AGENTS.md has the "roll out and roll back" steps.
+// wovain's feature flags: the one list that PostHog's flags (./flag-posthog.ts
+// to infra/posthog/flags.json, applied by Pulumi in infra/posthog/program.ts)
+// and the app's SDK (./flags.ts) read. Pure data with no imports, so tools
+// can import it by path. docs/adr/0001-progressive-delivery.md explains the
+// design; AGENTS.md has the "roll out and roll back" steps.
 //
-// GitLab evaluates the rollout (Unleash strategies per environment); GitLab
-// has no Unleash constraints, so a flag's `plans` allowlist is checked by the
-// app on top of GitLab's answer. Every flag is off when GitLab is unreachable
-// (fail closed), so `on` must never be the safe state of a flag.
+// PostHog evaluates the rollout (a condition per environment) and the
+// `plans` allowlist, which the app also checks. When PostHog has no answer,
+// the registry does: in production only flags rolled out to everyone, so
+// `on` must never be the safe state of a release flag.
 
 // The plans a merchant can be on. `demo` is the hackathon judges' and
 // internal demo accounts; at launch only `free` is sold (billing-paid-plans).
 export const PLAN_CODES = ["free", "demo", "studio", "label"] as const;
 export type FlagPlan = (typeof PLAN_CODES)[number];
 
-// The GitLab environments whose names the Unleash client sends as its app
-// name (GITLAB_FEATURE_FLAGS_ENVIRONMENT).
-export const FLAG_ENVIRONMENTS = ["production", "development"] as const;
+// The environments a rollout is set for. The app passes its own, APP_ENV
+// (set per Cloud Run service by infra/), as the `environment` property:
+// production on wovain.com, next on next.wovain.com (main, for judges, so
+// it follows production's rollouts), development elsewhere.
+export const FLAG_ENVIRONMENTS = ["production", "next", "development"] as const;
 export type FlagEnvironment = (typeof FLAG_ENVIRONMENTS)[number];
 
 // How far a flag is rolled out in one environment:
-// - off: no strategy, nobody gets it.
-// - internal: the `internal-only` GitLab user list: team members' Better
-//   Auth user IDs (INTERNAL_USER_ID below).
-// - percent: the user list plus that percentage of signed-in users, sticky
-//   by user ID (GitLab's "Percent of users", Unleash gradualRolloutUserId).
-// - all: every user (GitLab's "All users", Unleash default).
+// - off: no condition, nobody gets it.
+// - internal: team members, matched by their Better Auth user IDs
+//   (the wovain:posthogInternalUserIds stack config, plus INTERNAL_USER_ID below).
+// - percent: the team plus that percentage of users, sticky by user ID.
+// - all: every user.
 export type Rollout =
   | { kind: "off" }
   | { kind: "internal" }
@@ -40,18 +41,19 @@ export type FlagType = "release" | "kill-switch" | "permission" | "ops";
 
 export interface FlagDefinition {
   description: string;
-  // The team that answers for the flag, and the GitLab user the cleanup
-  // issue is assigned to.
+  // The team that answers for the flag, and the user the cleanup issue is
+  // assigned to.
   owner: { team: string; gitlab: string };
   // ISO date. Past it, the hygiene check opens a cleanup issue.
   expires: string;
   type: FlagType;
-  // GitLab's status toggle when Pulumi creates the flag. After that it is the
+  // PostHog's Status when Pulumi creates the flag. After that it is the
   // global kill switch, left to people and the release guard (ignored by
   // Pulumi, so flipping it is not drift).
   initiallyActive: boolean;
   rollout: Record<FlagEnvironment, Rollout>;
-  // Evaluated by the app: other plans get `false` whatever GitLab says.
+  // A `plan` condition in PostHog, checked by the app too: other plans get
+  // `false` whoever answers.
   plans?: readonly FlagPlan[];
   // The release guard may switch it off on its own when production degrades
   // after the flag changed.
@@ -61,10 +63,52 @@ export interface FlagDefinition {
 const OWNER = "sami-m-g";
 const internalOnly = {
   development: { kind: "all" },
+  next: { kind: "internal" },
   production: { kind: "internal" },
 } as const satisfies Record<FlagEnvironment, Rollout>;
 
+// New work for the Qloo and Nebius demo on next.wovain.com: on in dev and
+// next, off in production (frozen until 2026-11-16).
+const devAndNext = {
+  development: { kind: "all" },
+  next: { kind: "all" },
+  production: { kind: "off" },
+} as const satisfies Record<FlagEnvironment, Rollout>;
+
+// The flags of the workstreams that build on foundation-autonomy-approvals,
+// declared together so their pull requests don't conflict on this file.
+// Kept in the code and on in development only: hidden on next and in
+// production while story-ui tells one story (openspec story-ui).
+const devOnly = {
+  development: { kind: "all" },
+  next: { kind: "off" },
+  production: { kind: "off" },
+} as const satisfies Record<FlagEnvironment, Rollout>;
+
+const workstream = (team: string, description: string) =>
+  ({
+    description,
+    expires: "2027-01-31",
+    guarded: true,
+    initiallyActive: true,
+    owner: { gitlab: OWNER, team },
+    rollout: devAndNext,
+    type: "release",
+  }) as const satisfies FlagDefinition;
+
 export const FLAGS = {
+  "ads-optimizer": workstream(
+    "media",
+    "Thompson-sampling optimizer over ads: reallocation proposals inside the spend caps"
+  ),
+  "ads-profit-rules": workstream(
+    "media",
+    "Kill, stop and scale rules from purchases and profit per sale (openspec ads-profit-rules): pause ads that don't sell, stop at the caps and the loss limit, raise only proven sellers"
+  ),
+  alerts: workstream(
+    "media",
+    "Alerts on email, mobile push and Telegram for rule actions, approvals, a first sale and failures, with per-type channels and quiet hours (openspec alerts)"
+  ),
   "app-ui-v2": {
     description: "The redesigned app UI (openspec app-ui-pass)",
     expires: "2026-12-31",
@@ -74,15 +118,33 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
+  "autonomy-approvals": {
+    description:
+      "The shared approval queue and the merchant's autonomy settings (openspec foundation-autonomy-approvals)",
+    expires: "2027-01-31",
+    guarded: true,
+    initiallyActive: true,
+    owner: { gitlab: OWNER, team: "runs" },
+    rollout: devAndNext,
+    type: "release",
+  },
   autopilot: {
     description:
-      "Autopilot: idea, product set, ads and a paused campaign without a human step",
+      "Autopilot: idea, product set, ads and a paused campaign without a human step. On for every plan, Free included, in dev and next (foundation-autonomy-approvals)",
     expires: "2026-12-31",
     guarded: true,
-    initiallyActive: false,
+    initiallyActive: true,
     owner: { gitlab: OWNER, team: "runs" },
-    rollout: internalOnly,
+    rollout: { ...devAndNext, production: { kind: "internal" } },
     type: "release",
+  },
+  // The page, the rail item and the scheduled scans.
+  "autopilot-triggers": {
+    ...workstream(
+      "runs",
+      "Autopilot fires on trend and Qloo triggers and files suggestions"
+    ),
+    rollout: devOnly,
   },
   "billing-paid-plans": {
     description:
@@ -91,19 +153,29 @@ export const FLAGS = {
     guarded: true,
     initiallyActive: false,
     owner: { gitlab: OWNER, team: "billing" },
-    rollout: { development: { kind: "off" }, production: { kind: "off" } },
+    rollout: {
+      development: { kind: "off" },
+      next: { kind: "off" },
+      production: { kind: "off" },
+    },
     type: "permission",
   },
-  "billing-polar": {
-    description:
-      "Polar billing paths from MR !116: credits, the billing page and webhooks",
-    expires: "2026-12-15",
-    guarded: true,
-    initiallyActive: true,
-    owner: { gitlab: OWNER, team: "billing" },
-    rollout: internalOnly,
-    type: "release",
-  },
+  "brand-discovery": workstream(
+    "growth",
+    "Guided brand discovery in onboarding: Qloo-found starter brands (Suggest for me, a short questionnaire), the buyers panel and per-field suggestions"
+  ),
+  "design-drops": workstream(
+    "design",
+    "Drops: a capsule of products sharing a palette, mark and style family"
+  ),
+  "drop-directions": workstream(
+    "growth",
+    "What to sell now in the new-drop step: 3 to 5 one-click directions from Qloo (across audiences, or within the brand), Tavily momentum and saturation"
+  ),
+  "drop-style": workstream(
+    "design",
+    "Each drop's own tone and palette, suggested from its Qloo audience and the brand defaults, used by the brief and ad writers"
+  ),
   "fal-oauth": {
     description:
       "Connect fal with OAuth instead of a pasted key (openspec add-fal-byo-connector)",
@@ -114,22 +186,14 @@ export const FLAGS = {
     rollout: internalOnly,
     type: "release",
   },
-  "fault-injection-checkout": {
-    description:
-      "Injects a checkout failure so the self-healing loop can detect, fix and verify it",
-    expires: "2027-03-31",
-    guarded: true,
-    initiallyActive: false,
-    owner: { gitlab: OWNER, team: "platform" },
-    // Development only: its Status on never touches production. The
-    // canary demo faults one production revision instead
-    // (FAULT_INJECTION_REVISION).
-    rollout: {
-      development: { kind: "all" },
-      production: { kind: "off" },
-    },
-    type: "ops",
-  },
+  "feedback-loop": workstream(
+    "growth",
+    "Performance snapshots feed scores, taste and the next suggestions"
+  ),
+  "idea-evidence-gate": workstream(
+    "growth",
+    "Ideas shown only with Qloo evidence, proof of demand and a competition read; sweet-spot demand / supply ranked by a Wilson lower bound; one idea card contract; titles checked against the evidence (openspec idea-evidence)"
+  ),
   "mastra-runs": {
     description:
       "New runs go through the Mastra workflow; the legacy run steps are the fallback",
@@ -139,20 +203,68 @@ export const FLAGS = {
     owner: { gitlab: OWNER, team: "runs" },
     rollout: {
       development: { kind: "all" },
+      // Every run on next takes the Mastra workflow, so it is proven there
+      // before the legacy engine is deleted; production stays frozen.
+      next: { kind: "all" },
       production: { kind: "percent", percent: 10 },
     },
     type: "release",
   },
+  "media-buying-live": workstream(
+    "media",
+    "Launch Meta campaigns live after an approval, inside the merchant's spend caps"
+  ),
+  "meta-backstop-rules": workstream(
+    "media",
+    "The kill and stop rules mirrored into Meta's Automated Rules, so spend stops even when wovain is down (openspec meta-backstop)"
+  ),
+  "meta-pixel-automation": workstream(
+    "store",
+    "Pixel set-up on the single Meta grant: find or create the dataset, share it with the ad account and send a test event (openspec pixel-automation)"
+  ),
+  "mobile-app": workstream(
+    "mobile",
+    "The Expo app: approval inbox, push notifications and the store pulse"
+  ),
+  "model-routing": workstream(
+    "agents",
+    "Route each agent to a Nemotron model by job (NEMOTRON_MODEL_FAST, _DEFAULT, _REASONING, _VISION, _SAFETY)"
+  ),
+  "onboarding-wizard": workstream(
+    "growth",
+    "The brand wizard: taste references, Qloo entities, voice, palette, niches and the autonomy level"
+  ),
+  // Autopilot's "Scan now" button, apart from the page it sits on.
+  "scan-now": {
+    ...workstream("runs", "Autopilot's Scan now button: an on-demand scan"),
+    rollout: devOnly,
+  },
+  "store-management": workstream(
+    "store",
+    "Store actions on Fourthwall (publish, retire, reprice, promotions, orders) through the approval queue"
+  ),
+  "story-ui": workstream(
+    "design",
+    "One story in the merchant UI (openspec story-ui): a 4-item rail (Home, Drops, Store, Settings) and a Home with the next action, what sells now, drops in progress and results"
+  ),
+  "tavily-competition": workstream(
+    "growth",
+    "Tavily competitive landscape per Qloo theme: saturation, how competitors sell and the audience's gaps, fed to the brief, the ad writer and autopilot"
+  ),
+  "tavily-evidence": workstream(
+    "growth",
+    "Tavily evidence with citations: per-search failures logged, competitor prices, research dossiers and the trademark check"
+  ),
   "trends-qloo": {
     description:
-      "Qloo taste themes in trend research. Qloo hackathon terms: free and demo plans only until judging ends on 2026-11-05; paid plans get Tavily-only trends",
-    expires: "2026-11-05",
+      "Qloo taste themes in trend research, for every plan (founder decision, 2026-10-28). An ops kill switch only: off, research and new runs are refused with QLOO_OFF, since every idea is a Qloo tag",
+    expires: "2027-06-30",
     guarded: false,
     initiallyActive: true,
     owner: { gitlab: OWNER, team: "growth" },
-    plans: ["free", "demo"],
     rollout: {
       development: { kind: "all" },
+      next: { kind: "all" },
       production: { kind: "all" },
     },
     type: "kill-switch",
@@ -166,10 +278,23 @@ export const FLAGS = {
     owner: { gitlab: OWNER, team: "growth" },
     rollout: {
       development: { kind: "all" },
+      next: { kind: "all" },
       production: { kind: "all" },
     },
     type: "kill-switch",
   },
+  // The header's hold-to-talk mic.
+  "voice-input": {
+    ...workstream(
+      "mobile",
+      "Hold-to-talk: speech to text, then a typed action proposal in the approval queue"
+    ),
+    rollout: devOnly,
+  },
+  "who-buys": workstream(
+    "growth",
+    "Who buys this and where on each idea, from Qloo alone: demographics, ranked audiences, heatmap cities and the fashion brands the fans like"
+  ),
 } as const satisfies Record<string, FlagDefinition>;
 
 export type FlagName = keyof typeof FLAGS;
@@ -179,12 +304,8 @@ export const FLAG_NAMES = Object.keys(FLAGS) as FlagName[];
 export const isFlagName = (name: string): name is FlagName =>
   Object.hasOwn(FLAGS, name);
 
-// The GitLab user list every `internal` and `percent` rollout includes.
-export const INTERNAL_USER_LIST = "internal-only";
-
-// GitLab's strategies match user IDs only (no Unleash constraints), so the
-// list holds the team's Better Auth user IDs: Pulumi's `wovain:internalUserIds`
-// (comma separated, infra/flags.ts), never an email or an app variable. This
-// placeholder keeps the list non-empty before anyone is added. Percent
-// rollouts include the list, so team members are always in.
+// The team condition of `internal` and `percent` rollouts matches the team's
+// Better Auth user IDs (infra/posthog's internal_user_ids), never an email or
+// an app variable. This placeholder keeps the list non-empty before anyone is
+// added. Percent rollouts include the team, so team members are always in.
 export const INTERNAL_USER_ID = "wovain-internal";

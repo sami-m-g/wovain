@@ -1,0 +1,54 @@
+{
+  "name": "@wovain/mastra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/mastra/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b",
+    "test": "vitest run",
+    "evals": "vitest run --config vitest.evals.config.ts",
+    "storage:init": "node src/mastra/workflows/storage-init.ts",
+    "studio": "mastra dev --dir src/mastra"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "catalog:",
+    "@google-cloud/opentelemetry-cloud-trace-exporter": "catalog:",
+    "@mastra/core": "catalog:",
+    "@mastra/evals": "catalog:",
+    "@mastra/inngest": "catalog:",
+    "@mastra/memory": "catalog:",
+    "@mastra/observability": "catalog:",
+    "@mastra/otel-exporter": "catalog:",
+    "@mastra/pg": "catalog:",
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
+    "@orpc/server": "catalog:",
+    "@posthog/ai": "catalog:",
+    "@wovain/billing": "workspace:*",
+    "@wovain/core": "workspace:*",
+    "@wovain/db": "workspace:*",
+    "@wovain/email": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "evlog": "catalog:",
+    "expo-server-sdk": "catalog:",
+    "grammy": "catalog:",
+    "inngest": "catalog:",
+    "p-retry": "catalog:",
+    "posthog-node": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "@wovain/config": "workspace:*",
+    "mastra": "catalog:",
+    "sharp": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

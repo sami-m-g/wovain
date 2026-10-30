@@ -10,16 +10,16 @@ Un producto de impresión bajo demanda, en el sitio web y en ChatGPT, que lleva 
 Fuente: `scope.md > What "Working" Looks Like`.
 
 1. El diseñador inicia sesión en [https://wovain.com](https://wovain.com) con Google o correo (o añade la app de wovain en ChatGPT e inicia sesión allí).
-2. Conecta su propia tienda de Fourthwall y su cuenta publicitaria de Meta y, cuando esté disponible, su propia clave de fal. Las cuentas gratuitas empiezan con 15 créditos al mes (propuesta).
-3. Describe una colección. wovain pide a Qloo las entidades y los temas de gusto de la dirección, luego a Tavily las noticias de esta semana y los anuncios de marketplaces dentro de esos temas, y guarda ideas clasificadas con evidencia.
-4. wovain dibuja un diseño para cada una de las tres mejores ideas, y puede elegir más. Para cada una, Nemotron escribe un brief de diseño y una ficha, fal dibuja arte transparente para imprimir y el precio sale del coste base de la prenda lisa.
+2. Conecta su propia tienda de Fourthwall y su cuenta publicitaria de Meta y, cuando esté disponible, su propia clave de fal. Las cuentas gratuitas empiezan con 40 créditos al mes, unos dos drops (propuesta).
+3. Describe una colección. wovain pide a Qloo las entidades y los temas de gusto de la dirección, luego a Tavily las noticias del último mes y los anuncios de marketplaces dentro de esos temas, y guarda ideas clasificadas con evidencia.
+4. Elige las ideas que le gustan y pulsa Ver diseños: wovain dibuja un diseño para cada idea elegida y para ninguna otra (no se dibuja nada antes de ese clic). Para cada una, Nemotron escribe un brief de diseño y una ficha, fal dibuja arte transparente para imprimir y el precio sale del coste base de la prenda lisa.
 5. Nemotron evalúa el diseño y los scorers lo puntúan. El código comprueba por sí mismo el tamaño de impresión; un veredicto `revise` enumera las correcciones.
 6. El diseñador aprueba o rechaza el diseño (con un motivo). La ejecución espera esta decisión.
 7. Un diseño aprobado se convierte en un producto de Fourthwall, oculto. El diseñador lo publica en un paso aparte.
 8. Nemotron escribe hasta tres variantes de anuncio (enfoque, titular, mensaje) y wovain prepara una campaña, un conjunto de anuncios y anuncios en Meta, todos en pausa, para los países y el presupuesto diario elegidos.
 9. Éxito: el producto está en la tienda de Fourthwall y la campaña en pausa está en el administrador de anuncios de Meta. El diseñador la inicia cuando quiera. Los pasos de pago se cobran en créditos.
 
-El autopilot (una función de los planes de pago en la propuesta de precios) hace los pasos 3 a 8 en una ejecución: Nemotron elige la idea principal y revisa cada diseño, y la ejecución se detiene si no aprueba ninguno; un diseño que el juez pide revisar nunca se aprueba.
+El autopilot (solo en los planes de pago en producción; en dev y next, en todos los planes, Free incluido) hace los pasos 3 a 8 en una ejecución: Nemotron elige la idea principal y revisa cada diseño, y la ejecución se detiene si no aprueba ninguno; un diseño que el juez pide revisar nunca se aprueba.
 
 ```text
 Dirección -> Ideas (Qloo + Tavily) -> Diseño: brief, arte, precio
@@ -31,12 +31,12 @@ Dirección -> Ideas (Qloo + Tavily) -> Diseño: brief, arte, precio
 
 | Superficie | Qué contiene | Estado |
 | --- | --- | --- |
-| Inicio | Qué hace wovain para marcas independientes, guías, casos de uso, integraciones (página de precios en la MR !116) | En línea; reescritura de producto en revisión (MR !118) |
-| Inicio de sesión y registro | Google y correo con Better Auth; restablecer contraseña | En línea; pantallas de Better Auth UI en revisión (MR !111) |
-| Ajustes de cuenta | Perfil, sesiones, cuentas vinculadas | En revisión (MR !111) |
-| Panel | Lista de configuración, asistente de nueva colección, ejecuciones, diseños, productos, campañas | En línea; revisión de la interfaz en curso |
+| Inicio | Qué hace wovain para marcas independientes, guías, casos de uso, integraciones | En línea; reescritura de producto en revisión |
+| Inicio de sesión y registro | Google y correo con Better Auth; restablecer contraseña | En línea; pantallas de Better Auth UI en revisión |
+| Ajustes de cuenta | Perfil, sesiones, cuentas vinculadas | En revisión |
+| Panel | Lista de configuración, asistente de nuevo drop (con el paso de cápsula), la página Drops (todos los drops; la antigua dirección de ejecuciones redirige), diseños, productos, campañas | En línea; revisión de la interfaz en curso |
 | Conexiones | Conectar Fourthwall y Meta (OAuth); clave de API de fal | Fourthwall y Meta en línea; fal en curso |
-| Precios y facturación | Planes, saldo de créditos, pantallas de mejora, pago y portal de Polar | En revisión (MR !116) |
+| Precios y facturación | Planes, saldo de créditos, pantallas de mejora, pago y portal de Polar | En revisión |
 | ChatGPT | Los mismos pasos como herramientas MCP en `https://mcp.wovain.com/api/mcp`, con widgets para tendencias, diseños, productos y campañas | En línea |
 | Consentimiento | La página de consentimiento OAuth a la que ChatGPT envía al diseñador | En línea |
 | Documentación | [https://docs.wovain.com](https://docs.wovain.com) en inglés, francés y español | En línea |
@@ -51,7 +51,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 
 - Como diseñador, quiero iniciar sesión con Google para no crear otra contraseña.
   - [x] Inicio de sesión con Google y correo mediante Better Auth; Better Auth también es el servidor OAuth para ChatGPT.
-  - [ ] Pantallas de Better Auth UI para iniciar sesión, registrarse, restablecer y ajustes de cuenta, con mensajes de error en inglés (MR !111).
+  - [ ] Pantallas de Better Auth UI para iniciar sesión, registrarse, restablecer y ajustes de cuenta, con mensajes de error en inglés.
 
 ### Conectores
 
@@ -65,6 +65,8 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 - Como diseñador, quiero ideas con evidencia para confiar en lo que diseño.
   - [x] Cada idea muestra sus señales de Qloo y Tavily, sus enlaces de origen y los datos de su puntuación.
   - [x] Los nombres que Qloo asoció a la dirección nunca se imprimen en un diseño.
+  - [x] «Why this idea» muestra el mapa de gustos de Qloo: las entidades encontradas, la etiqueta del tema y las afinidades transversales con la parte de cada entidad.
+  - [x] Cada idea es una etiqueta de gusto de Qloo. Si Qloo no reconoce el brief, la ejecución se detiene y pide al diseñador que nombre un grupo, una película, una marca o un lugar, con ejemplos. La comparación con una ejecución solo con LLM es una evaluación offline, no una opción de la ejecución.
   - [x] Si falta una clave de Qloo, Tavily o Nebius, solo falla ese paso, con un error que nombra la variable.
 
 ### Diseños y evaluación
@@ -72,13 +74,17 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 - Como diseñador, quiero un diseño con precio y comprobado antes de aprobar.
   - [x] El precio deja al menos 10 $ de beneficio y un 30 % de margen tras comisiones de tarjeta, impuesto sobre las ventas y reserva para reembolsos.
   - [x] La comprobación del tamaño de impresión la calcula el código y prevalece sobre Nemotron.
-  - [x] El juez revisa el título, la descripción, el encaje con la idea y la originalidad, y devuelve un veredicto, una puntuación y hasta cinco correcciones.
+  - [x] El juez revisa el título, la descripción, el encaje con la idea, la originalidad y que el motivo no sea una prenda, mira el arte dibujado (sin prenda ni maqueta, sin fondo ni recortes, las palabras impresas, el contraste en cada color de prenda) y devuelve un veredicto, una puntuación y hasta cinco correcciones. Un diseño devuelto se vuelve a dibujar una vez y luego se muestra marcado.
 
 ### Publicación y anuncios
 
 - Como diseñador, quiero aprobar antes de que se publique o se gaste algo.
   - [x] Un producto se crea oculto en Fourthwall y solo se publica en un paso aparte.
-  - [x] Todos los objetos de Meta se crean en pausa; wovain nunca activa el gasto.
+- Como diseñador, quiero que wovain gestione mi tienda y que yo apruebe todo lo que vean los clientes o que mueva dinero.
+  - [ ] Comprobación de la tienda, una colección por drop, publicar, pausar y retirar, códigos de lanzamiento programados, muestras y precios por talla, cada uno por la cola de aprobaciones (en revisión, flag `store-management`).
+  - [ ] Los reembolsos y cancelaciones siempre me esperan y muestran lo que se cargará a mi tarjeta.
+  - [x] Todos los objetos de Meta se crean en pausa, y wovain los vuelve a leer para comprobarlo.
+  - [ ] wovain solo inicia una campaña mediante una aprobación, dentro de los límites de gasto diarios y mensuales del diseñador (en curso, tras `media-buying-live`).
   - [x] El presupuesto diario está entre 1 $ y 500 $ y la segmentación se limita a los países elegidos.
 
 ### Ejecuciones, aprobación y autopilot
@@ -88,6 +94,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
   - [x] El motivo de cada aprobación o rechazo se guarda en el diseño.
   - [ ] Las ejecuciones son workflows duraderos de Mastra: la ejecución responde al instante, se suspende en la aprobación, continúa hacia el producto y la campaña tras la decisión y sobrevive a un reinicio (en curso).
   - [ ] Cada paso queda registrado en la ejecución; una ejecución fallida muestra dónde se detuvo y por qué, y un reintento no duplica el producto de Fourthwall ni la campaña de Meta (en curso).
+  - [ ] Cada 6 horas, el autopilot analiza la audiencia de Qloo de cada marca y las noticias de Tavily de la semana, guarda hasta dos drops sugeridos con sus fuentes y pone cada ejecución en la cola de aprobación, dentro del nivel de autonomía del diseñador y de un tope diario de créditos; el diseñador inicia o descarta cada una en el registro de decisiones (solo dev, flag `autopilot-triggers`).
 
 ### Calidad
 
@@ -100,27 +107,20 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 ### Facturación y créditos
 
 - Como diseñador, quiero una pequeña asignación gratuita y un precio claro para probar una colección real antes de pagar.
-  - [ ] Polar es el comerciante registrado. Planes propuestos: Free 15 créditos al mes, Studio 29 $ por 300, Label 79 $ por 1.000 (se acumulan), y un paquete de 100 créditos por 10 $ (MR !116, precios sin cerrar).
-  - [ ] Los créditos se reservan antes de un paso de pago y se devuelven si falla; investigación 3, diseño 2, asistencia 1 (propuesta).
-  - [ ] El autopilot solo está en los planes de pago (propuesta).
+  - [ ] Polar es el comerciante registrado. Planes propuestos: Free 40 créditos al mes, Studio 29 $ por 300, Label 79 $ por 1.000 (se acumulan), y un paquete de 100 créditos por 15 $. Un drop cuesta unos 18 créditos.
+  - [ ] Los créditos se reservan antes de un paso de pago y se devuelven si falla; investigación 5, diseño 4, asistencia 1 (propuesta).
+  - [ ] El autopilot solo está en los planes de pago en producción (propuesta); en dev y next está en todos los planes, Free incluido.
 
 ### Analítica
 
 - Como fundador, quiero ver si los diseñadores llegan a su primer diseño aprobado.
   - [x] North Star: comerciantes activados por semana (un comerciante que aprueba un diseño en los 7 días siguientes al registro). Hay paneles de PostHog de crecimiento, retención, calidad y coste de los agentes, y Web Vitals.
-  - [ ] Se añaden los eventos que faltan (`run_completed`, `run_failed`, `design_generated`, `design_rejected`, `agent_score`, `campaign_activated`, eventos de suscripción y créditos) (previsto; paneles como código en la MR !115).
-
-### Después del despliegue
-
-- Flujo de autorreparación: un error de producción leído de los eventos de evlog se convierte en una merge request con una corrección y una prueba de regresión.
-- Flujo explorador: los KPI y la interfaz se convierten en issues respaldados por evidencia.
-- Flujo de desarrollador: un issue se convierte en una merge request.
-- En revisión: Duo Code Review en cada MR (!113), Renovate con un flujo de revisión de dependencias (!114), flujos personalizados activados en código (!117).
+  - [ ] Se añaden los eventos que faltan (`run_completed`, `run_failed`, `design_generated`, `design_rejected`, `agent_score`, `campaign_activated`, eventos de suscripción y créditos) (previsto).
 
 ## Estados y límites
 
 - **Primer uso** — todavía sin conexiones; la lista de configuración y las herramientas MCP apuntan al enlace de conexión.
-- **Sin créditos** — el paso de pago se rechaza antes de ejecutarse, con el enlace para mejorar el plan (MR !116).
+- **Sin créditos** — el paso de pago se rechaza antes de ejecutarse, con el enlace para mejorar el plan.
 - **Falta una clave de proveedor** — ese paso falla con un error `NOT_CONFIGURED` que nombra la variable.
 - **Fallo de un proveedor** — la ejecución se marca `failed` con su paso y su error; los créditos reservados se devuelven.
 - **Esperando aprobación** — la ejecución queda suspendida hasta que el diseñador decide (migración a Mastra, en curso).
@@ -140,7 +140,7 @@ Editorial y contenido, del lado del diseñador, honesto con el dinero (`scope.md
 
 ## Lo que estamos construyendo
 
-Todo lo que hay en `scope.md > The POC Boundary`: inicio de sesión con Google, conectores en las cuentas del comerciante, investigación con Qloo y Tavily, diseños con el juez Nemotron, aprobación, producto de Fourthwall y publicación, variantes de anuncio de Meta y una campaña en pausa, autopilot, la app de ChatGPT, el sitio de documentación y los flujos de Duo. En curso, sobre el bucle en línea: Better Auth UI, la facturación con Polar, el conector de fal, la migración a Mastra con scorers y la revisión de la interfaz de la app.
+Todo lo que hay en `scope.md > The POC Boundary`: inicio de sesión con Google, conectores en las cuentas del comerciante, investigación con Qloo y Tavily, diseños con el juez Nemotron, aprobación, producto de Fourthwall y publicación, variantes de anuncio de Meta y una campaña en pausa, autopilot, la app de ChatGPT, el sitio de documentación. En curso, sobre el bucle en línea: Better Auth UI, la facturación con Polar, el conector de fal, la migración a Mastra con scorers y la revisión de la interfaz de la app.
 
 ## Aplazado respecto a la prueba de concepto
 
@@ -157,12 +157,12 @@ TikTok Shop y anuncios; clave propia de Nebius en Label; datos demográficos de 
 
 - Nada de ropa bajo demanda ni fabricación a medida: solo impresión bajo demanda.
 - Nada de compra de medios propia: Meta ya optimiza la entrega.
-- Nada de activación automática del gasto en anuncios: el diseñador inicia las campañas.
+- Nada de gasto en anuncios sin aprobación: wovain solo inicia una campaña después de que el diseñador la apruebe, dentro de sus límites.
 - Nada de clientes, usuarios, ventas, ingresos ni testimonios inventados.
 
 ## Preguntas abiertas
 
-- Cerrar las cifras de precios (propuesta en la MR !116) — debe resolverse antes de activar la facturación.
+- Cerrar las cifras de precios — debe resolverse antes de activar la facturación.
 - Licencia de Qloo para reventa comercial (la clave actual es de hackathon) — antes de cobrar.
 - Alcance de la revisión de la app de Meta para crear campañas desde el servidor — antes del lanzamiento público.
 - Logo definitivo (la ronda 6 recomienda «Impression») — puede esperar.

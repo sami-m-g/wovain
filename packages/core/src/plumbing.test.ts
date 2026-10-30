@@ -3,9 +3,10 @@ import { randomBytes } from "node:crypto";
 import { EvlogError } from "evlog";
 import { describe, expect, it, vi } from "vitest";
 
+import { searchCatalog } from "./fourthwall";
 import { external } from "./log";
 import { createSealer } from "./sealing";
-import { resultData } from "./upstream";
+import { resultData, toonFailure } from "./upstream";
 
 describe("external", () => {
   it("logs each call and turns a failure into a structured provider error", async () => {
@@ -49,6 +50,51 @@ describe("external", () => {
         EvlogError.isEvlogError(error) &&
         error.message === "fal submit_job failed: 401 invalid_token" &&
         error.why === "401 invalid_token"
+    );
+  });
+
+  it("makes a provider's spent plan a 4xx, so the run fails at once", async () => {
+    // Tavily's SDK throws a plain Error with only these words.
+    const spent = new Error(
+      "This request exceeds your plan's set usage limit. Please upgrade your plan or contact support@tavily.com"
+    );
+
+    await expect(
+      external(
+        undefined,
+        { operation: "search", provider: "tavily" },
+        async () => await Promise.reject(spent)
+      )
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) &&
+        error.code === "TAVILY_FAILED" &&
+        error.status === 402
+    );
+  });
+
+  it("makes fal's exhausted balance a 4xx, so the run fails at once", async () => {
+    // fal's client keeps the reason only in the 403 body's detail.
+    const locked = Object.assign(new Error("Forbidden"), {
+      body: {
+        detail:
+          "User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing.",
+      },
+      status: 403,
+    });
+
+    await expect(
+      external(
+        undefined,
+        { operation: "submit_art", provider: "fal" },
+        async () => await Promise.reject(locked)
+      )
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) &&
+        error.code === "FAL_FAILED" &&
+        error.status === 402 &&
+        error.message.includes("Exhausted balance")
     );
   });
 
@@ -99,5 +145,97 @@ describe("resultData", () => {
         isError: true,
       })
     ).toThrow("Offer not found");
+  });
+
+  it("decodes Fourthwall's array fields with the header on its own line", async () => {
+    // Fourthwall's reply on next, 2026-10-30 (the logged text up to
+    // "badg"), with printDetails in the same encoding.
+    const text = [
+      "pageNumber: 0",
+      "pageSize: 10",
+      "totalElements: 72",
+      "totalPages: 8",
+      "data[10]:",
+      "  - id: pro_8be1acca2fe7403f89",
+      "    brand: Comfort Colors",
+      '    brandModel: "1717"',
+      "    name: Comfort Colors Garment-Dyed Heavyweight T-Shirt",
+      "    slug: comfort-colors-garment-dyed-heavyweight-t-shirt-dtg",
+      "    categoryPath:",
+      "    [2]: Apparel,T-Shirts",
+      "    productionMethod: DTG",
+      "    priceFrom: 15.45",
+      "    priceTo: 46.77",
+      "    minimumOrdersNumber: 0",
+      "    reviewsSummary:",
+      "        count: 261",
+      "        rating: 4.66",
+      "    customizationType: DESIGNER_V3_READY",
+      "    favourite: false",
+      "    printDetails:",
+      "        supportsBackendRendering: true",
+      "        printAreas:",
+      "        [2]{name,type,supportsBackendRendering}:",
+      "            Front,front_large,true",
+      "            Back,back_large,true",
+    ].join("\n");
+    const reply = resultData({ content: [{ text, type: "text" }] });
+    expect(toonFailure(text)).toBe("");
+    await expect(searchCatalog(() => Promise.resolve(reply))).resolves.toEqual([
+      {
+        baseCost: 15.45,
+        id: "pro_8be1acca2fe7403f89",
+        name: "Comfort Colors Garment-Dyed Heavyweight T-Shirt",
+        region: "front_large",
+        slug: "comfort-colors-garment-dyed-heavyweight-t-shirt-dtg",
+      },
+    ]);
+  });
+
+  it("decodes Fourthwall's TOON catalog into renderable blanks", async () => {
+    const text = [
+      "pageNumber: 0",
+      "pageSize: 10",
+      "totalElements: 72",
+      "totalPages: 8",
+      "data[1]:",
+      "  - id: pro_8be1acca2fe7403f89",
+      "    brand: Comfort Colors",
+      "    name: Garment-Dyed Heavyweight T-Shirt",
+      "    slug: comfort-colors-1717",
+      "    priceFrom:",
+      "      value: 14.5",
+      "      currency: USD",
+      "    printDetails:",
+      "      supportsBackendRendering: true",
+      "      printAreas[2]{name,type,supportsBackendRendering}:",
+      "        Front,front_large,true",
+      "        Back,back_large,true",
+    ].join("\n");
+    const reply = resultData({ content: [{ text, type: "text" }] });
+    await expect(searchCatalog(() => Promise.resolve(reply))).resolves.toEqual([
+      {
+        baseCost: 14.5,
+        id: "pro_8be1acca2fe7403f89",
+        name: "Garment-Dyed Heavyweight T-Shirt",
+        region: "front_large",
+        slug: "comfort-colors-1717",
+      },
+    ]);
+  });
+
+  it("decodes TOON leniently and says why text didn't decode", () => {
+    const text = "data[2]:\n  - id: a\n    name: Tee";
+    expect(resultData({ content: [{ text, type: "text" }] })).toEqual({
+      data: [{ id: "a", name: "Tee" }],
+    });
+    expect(toonFailure('id: a\nname: "Tee')).toContain("toon_error=");
+    expect(toonFailure({ id: "a" })).toBe("");
+  });
+
+  it("keeps prose that isn't JSON or TOON as text", () => {
+    expect(
+      resultData({ content: [{ text: "Product created", type: "text" }] })
+    ).toBe("Product created");
   });
 });

@@ -15,9 +15,10 @@ const posthog =
   key === undefined
     ? undefined
     : new PostHog(key, { host: ENV.NEXT_PUBLIC_POSTHOG_HOST });
-// The same property the browser adds to its events (src/lib/analytics-client.ts).
+// The same property the browser adds to its events (src/lib/analytics-client.ts):
+// the deployment, APP_ENV.
 const site = new URL(ENV.BETTER_AUTH_URL).hostname;
-const environment = site === "wovain.com" ? "production" : "development";
+const environment = ENV.APP_ENV;
 
 /**
  * Sends a server error to PostHog Error Tracking as a `$exception` event

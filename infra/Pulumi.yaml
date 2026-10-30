@@ -1,23 +1,23 @@
 # wovain's Google Cloud setup: `pnpm infra:preview`, then `pnpm infra:up`.
 # State lives in a Cloud Storage bucket in the project (see README).
 name: wovain
-description: Cloud Run, Cloud SQL, media bucket, secrets and CI access for wovain
+description: Cloud Run, Cloud SQL, media bucket, secrets, DNS, the GitHub repository and PostHog for wovain
 runtime:
   name: nodejs
   options:
     # Node runs index.ts itself (type stripping), so no ts-node.
     typescript: false
     packagemanager: pnpm
-# Generated SDK in sdks/graphql (`pulumi package add terraform-provider
-# sullivtr/graphql`): the Duo flow triggers in duo.ts. GitLab's own provider has
-# no resource for them.
+backend:
+  url: gs://wovain-pulumi-state
+# Generated SDK in sdks/posthog (`pulumi package add terraform-provider
+# posthog/posthog`): PostHog's official Terraform provider, bridged, for
+# posthog/program.ts. PostHog publishes no Pulumi package of its own.
 packages:
-  graphql:
+  posthog:
     source: terraform-provider
     version: 1.5.0
     # Pin the provider too: pulumi install regenerates the SDK on every run.
     parameters:
-      - sullivtr/graphql
-      - 2.6.2
-backend:
-  url: gs://wovain-pulumi-state
+      - posthog/posthog
+      - 1.0.27

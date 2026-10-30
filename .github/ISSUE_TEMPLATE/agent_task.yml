@@ -1,0 +1,22 @@
+name: Agent task
+description: A task for Claude. The `claude` label hands it over (.github/workflows/claude.yml); only the owner's issues start a run.
+labels: [claude]
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: What to change, and why. Name the files or the capability if you know them.
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      placeholder: |
+        - [ ]
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this should not touch, so the pull request stays under about 400 lines.

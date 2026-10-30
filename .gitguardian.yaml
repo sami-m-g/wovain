@@ -1,0 +1,12 @@
+# ggshield's configuration, for scans run locally (`ggshield secret scan`).
+# In CI the GitGuardian GitHub App scans pushes and pull requests; its false
+# positives are ignored with .github/workflows/gitguardian-ignore.yml.
+# https://docs.gitguardian.com/ggshield-docs/reference/configuration
+version: 2
+
+secret:
+  # Vendored skill directories (updated by their CLIs, never edited here) hold
+  # example tokens in their docs.
+  ignored-paths:
+    - ".agents/skills/**"
+    - ".claude/skills/**"

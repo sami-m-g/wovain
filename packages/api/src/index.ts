@@ -5,10 +5,28 @@ import type { Context, FunnelEvent } from "./context";
 
 const base = os.$context<Context>();
 
+const SERVER_ERROR = 500;
+
 // evlog's oRPC middleware logs every procedure error onto the request's wide
 // event, which the app's error tracking drain reports to PostHog (4xx
-// excepted), for the website and MCP alike.
-export const publicProcedure = base.use(evlog<Context>());
+// excepted), for the website and MCP alike. It marks every error event as
+// error level; an expected 4xx (signed out, store not connected, no credits)
+// is the caller's, so its event drops to warn. A 5xx or any other throw stays
+// at error.
+const clientErrorsAtWarn = base.middleware(async ({ context, next }) => {
+  try {
+    return await next();
+  } catch (error) {
+    if (error instanceof ORPCError && error.status < SERVER_ERROR) {
+      context.log?.setLevel("warn");
+    }
+    throw error;
+  }
+});
+
+export const publicProcedure = base
+  .use(clientErrorsAtWarn)
+  .use(evlog<Context>());
 
 // A browser session or an MCP access token: either way, one merchant.
 const requireAuth = base.middleware(({ context, next }) => {

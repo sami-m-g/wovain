@@ -11,13 +11,13 @@
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/ai-seo/SKILL.md",
-      "computedHash": "d17bcf49642639b1978e59aee3f13a1a5c80198a56c3c33cb7aee34df7b79359"
+      "computedHash": "ee3528ba51a4d773ec9554f7a5cf2cdca69d96fa8bbd0a44aa5abe64966fce77"
     },
     "analytics": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/analytics/SKILL.md",
-      "computedHash": "9550ba9a282c2ea1eef4eb16bab3a05450cfba83c1a2cc909e8a7f8146cb76d5"
+      "computedHash": "5ffac703d3668127f5aa01dc65f34a0dd8b6b1080d40931414bbdd896278eebb"
     },
     "analyze-logs": {
       "source": "evlog.dev",
@@ -42,7 +42,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/api-and-interface-design/SKILL.md",
-      "computedHash": "8bdbf1fca81bef9258d7e0d9726f933f25677ec8537792e084a3fb7c54acf2ba"
+      "computedHash": "0d823e9ff32f529f21492a3fd7635fc75b43ff1eb1788d4be0974bfa42e22ae3"
     },
     "better-auth-best-practices": {
       "source": "better-auth/skills",
@@ -73,13 +73,13 @@
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/copy-editing/SKILL.md",
-      "computedHash": "92731d3f0fd28f0e432c1031230e6553a2267f517a3e4cd9a44f37ff82ebba04"
+      "computedHash": "2c98bcf29c1adeac0dc5772a53a97d3b4c0320fd03accfb03a204c84d9a2799b"
     },
     "copywriting": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/copywriting/SKILL.md",
-      "computedHash": "b62e532dd34dc666288b241ea05e4e1f36f011d4f65d5d3129e85603064ac1c4"
+      "computedHash": "fa83931a47fad42131875374585cab98c9fcf2c3299543bb5bae8828cf06ea08"
     },
     "cro": {
       "source": "coreyhaines31/marketingskills",
@@ -91,7 +91,25 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/documentation-and-adrs/SKILL.md",
-      "computedHash": "f1bd038e74194364c1dcdb3dd0a72194ffd3ca9d3a103c125ca1a62e801a0cc4"
+      "computedHash": "85db994c5d2853bbd9ebdb8542e43d92b7229918a0c70126f0e94280ea1ceeec"
+    },
+    "dropshipping-product-research": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "dropshipping-product-research/SKILL.md",
+      "computedHash": "fde51ae45e278322116dfeba26296913268e8e90d88b3b9a7281ab7e329b0f75"
+    },
+    "ecommerce-checkout-optimization": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "ecommerce-checkout-optimization/SKILL.md",
+      "computedHash": "2489c741edfead05a4a2fadb4bde1b476c4ec7891f9154a6f7b9b9859576cb99"
+    },
+    "ecommerce-landing-page": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "ecommerce-landing-page/SKILL.md",
+      "computedHash": "3647e4875d6375c2f62f39c8392dbe52c63fb791312f25c3bb5ada10d4171a49"
     },
     "email-and-password-best-practices": {
       "source": "better-auth/skills",
@@ -105,11 +123,23 @@
       "skillPath": "skills/error-analysis/SKILL.md",
       "computedHash": "64840896ab089c9315fc69764e5ebba7d4c3468dabf69b04423c19e8d9c23c87"
     },
+    "etsy-print-on-demand": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "etsy-print-on-demand/SKILL.md",
+      "computedHash": "8468395b9d5c6d72d330a50fbbbdce8d9b463d65311850c80022e601fe98c50f"
+    },
     "eval-audit": {
       "source": "hamelsmu/evals-skills",
       "sourceType": "github",
       "skillPath": "skills/eval-audit/SKILL.md",
       "computedHash": "996ef52f90673647106ac795600c6d32f82ac0e1a51564b3ea47d130c0145a45"
+    },
+    "founder-board": {
+      "source": "Jakeschincariol/founder-skill",
+      "sourceType": "github",
+      "skillPath": "skills/founder-board/SKILL.md",
+      "computedHash": "6895508a35b7b28f5e032e24e991995f6364310a57fabb75008b7d0c066c6d9d"
     },
     "impeccable": {
       "source": "pbakaus/impeccable",
@@ -122,6 +152,24 @@
       "sourceType": "github",
       "skillPath": "skills/improve-animations/SKILL.md",
       "computedHash": "524ea241e41d58bbdd8e288700fe24f5725e2a2f3ae7186ad7cebf9055058356"
+    },
+    "investor-materials": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/investor-materials/SKILL.md",
+      "computedHash": "e1d1c0e530a2f45bb442ffef95aab0eaef5d91757189be9b1d98311268c5308d"
+    },
+    "investor-outreach": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/investor-outreach/SKILL.md",
+      "computedHash": "7a4e527a37fcdcdb808e8469ad6b1e53154fc7f62e3c1d2ea84607f857652d9c"
+    },
+    "market-gap-analysis": {
+      "source": "nexscope-ai/ecommerce-skills",
+      "sourceType": "github",
+      "skillPath": "market-gap-analysis/SKILL.md",
+      "computedHash": "ad8acd95934c47515dc449dca5415c6132f44683418f6cd8c21e5747065e5a32"
     },
     "mastra": {
       "source": "mastra-ai/skills",
@@ -171,11 +219,23 @@
       "skillPath": "skills/observability-and-instrumentation/SKILL.md",
       "computedHash": "e5eba32f952a29d20c0383728a9505d0ca2a90f1d8d075603e53804b441b2dd2"
     },
+    "office-hours": {
+      "source": "garrytan/gstack",
+      "sourceType": "github",
+      "skillPath": "office-hours/SKILL.md",
+      "computedHash": "df86c1586175d68d2da19e8755ed57011dd6fcc49de7395ef258ace06ca8eccf"
+    },
     "onboarding": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "skillPath": "skills/onboarding/SKILL.md",
       "computedHash": "5606ee5c3f1cde7478febf0c957bf414fb2aa919327b4906009d77ee060d1882"
+    },
+    "package-usage": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/package-usage/SKILL.md",
+      "computedHash": "0c4b95ebec57a8a17fca0de5a27c7f44c7a80e32f0e23d9f59c42d0d57515d55"
     },
     "paywalls": {
       "source": "coreyhaines31/marketingskills",
@@ -206,6 +266,133 @@
       "sourceType": "github",
       "skillPath": "skills/product-marketing/SKILL.md",
       "computedHash": "d051a45340cc15c633c008e5e8896dce61f5746830104f2624e7d20fdf5beb48"
+    },
+    "profit-margin-calculator-shopify": {
+      "source": "nexscope-ai/eCommerce-Skills",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "profit-margin-calculator/profit-margin-calculator-shopify/SKILL.md",
+      "computedHash": "f8512a70575302326824cb6a8f8c99fd7279c89578bf255601de03aec3146c29"
+    },
+    "provider-upgrade": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/provider-upgrade/SKILL.md",
+      "computedHash": "0b2c53ea7585a8b7c704bf3cf35fd8097e98fa965c76fb32a3543b2ffa58b5b2"
+    },
+    "pulumi-automation-api": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-automation-api/SKILL.md",
+      "computedHash": "2d19e88634977983169523fc68b227efb170e776a02b53895fce7f34b2d9c390"
+    },
+    "pulumi-best-practices": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-best-practices/SKILL.md",
+      "computedHash": "fe72db4c8d462495bcc5ca6ae5f5fd7ba05318f4668ccb011dce5a7c1c24fa6c"
+    },
+    "pulumi-component": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-component/SKILL.md",
+      "computedHash": "b3e3d1ff41bc3f3c8afa215d46de11e148ae771731540568a6d5467eeb45711f"
+    },
+    "pulumi-context-api": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-context-api/SKILL.md",
+      "computedHash": "bd124ccb1a742355844339e140c8c1e4a93ab5add1ef447e82f9e147573e7448"
+    },
+    "pulumi-debug-failed-operation": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-debug-failed-operation/SKILL.md",
+      "computedHash": "8aacbb60e1e17e4810995a3ec646edbb6f4b0a635ba3b4f1fd578e928bbc4dd6"
+    },
+    "pulumi-esc": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-esc/SKILL.md",
+      "computedHash": "d34704ec6219287d66de3340bf9403670c5380eed604dfef5f809ab66e2fabdb"
+    },
+    "pulumi-overview": {
+      "source": "pulumi/agent-skills",
+      "sourceType": "github",
+      "skillPath": "pulumi/skills/pulumi-overview/SKILL.md",
+      "computedHash": "cf9c02b1a12ea7f5ae8efc4b32fa80b238a4addef6d3a958e21ad9ff6127d9f8"
+    },
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-best-practices/SKILL.md",
+      "computedHash": "105ddafe7e16db760acf88b5aca1ea13a2ff3952e66058e8db41a9cd49df7dbd"
+    },
+    "remotion-captions": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-captions/SKILL.md",
+      "computedHash": "42688fbc8b8caa18547b3001aa671c04bd281f12473e4e9acb7606abc3c9a1a2"
+    },
+    "remotion-create": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-create/SKILL.md",
+      "computedHash": "e6a84bb8d2263f023c1f6a6946cf25ff5490afaff8cb5a5873fb033dfdef04e5"
+    },
+    "remotion-docs": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-docs/SKILL.md",
+      "computedHash": "c4a766494ce147016914f945614f880c2d93dce4f8981919948c36334176fe62"
+    },
+    "remotion-interactivity": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-interactivity/SKILL.md",
+      "computedHash": "23d360847e77c6201ac1a9a75fe23ce71070e201b826b363c59ceffd14814330"
+    },
+    "remotion-maps": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-maps/SKILL.md",
+      "computedHash": "0ca501a9fc57e22599f04b0944fea754a4e4ce909573b5b10c4996e30e0b4943"
+    },
+    "remotion-markup": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-markup/SKILL.md",
+      "computedHash": "fa73e347b9445cbe3d01daa6c5847f2042c33f47e38e55ce20d341d17325cae8"
+    },
+    "remotion-multimedia": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-multimedia/SKILL.md",
+      "computedHash": "38a6bf9d481c68e41fb66cce679350d09b2bc4bc8234287c56e6a144b29c03c8"
+    },
+    "remotion-render": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-render/SKILL.md",
+      "computedHash": "3dba80ad45cfb547e000f7470d7f6810097dda057d103df9fd1447db2372de16"
+    },
+    "remotion-saas": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-saas/SKILL.md",
+      "computedHash": "853886f8a6b874bfd5455bdaaf33641ebcaba8a7d93862d5f53cd2f00c71d9ee"
+    },
+    "remotion-studio": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-studio/SKILL.md",
+      "computedHash": "50584e0493ddb2186eae2f24dcbc72e76e25ed206870c2573d71c6cd6eaed93f"
+    },
+    "remotion-upgrade": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-upgrade/SKILL.md",
+      "computedHash": "00afca20ef79575cc282b871e91b0047621bc077072df2e816c24ea9cc182e7c"
     },
     "review-animations": {
       "source": "emilkowalski/skills",
@@ -244,6 +431,54 @@
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
       "computedHash": "e14e276241805c97dbcfe40dcbea1a3035269cc7293cac4b1832dda41a835e60"
     },
+    "tavily-best-practices": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-best-practices/SKILL.md",
+      "computedHash": "f674b49e68bb5dc55250e4905fae451a7a9a5571cfea8af762da689ccf16bb0a"
+    },
+    "tavily-cli": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-cli/SKILL.md",
+      "computedHash": "2fa20b1db8770f38166711db92189c6b0e5ece65e145f662529690816e0b3ed0"
+    },
+    "tavily-crawl": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-crawl/SKILL.md",
+      "computedHash": "ad94bc432ea9adfaaf2a1ae129343b152d42f06141cf51db548806952d2b6da8"
+    },
+    "tavily-dynamic-search": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-dynamic-search/SKILL.md",
+      "computedHash": "fccd67f6871021e457f4dd6daa6c2b55fb1a4cb06193d667d0756215a87d1d9f"
+    },
+    "tavily-extract": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-extract/SKILL.md",
+      "computedHash": "5b3005d176086d58d8bcd56c9dde78e2fcca7b188bb39762c17cd32131095786"
+    },
+    "tavily-map": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-map/SKILL.md",
+      "computedHash": "f1bc8d1f49eb88a318bf8dd3ce0c07cd05f15ecb47c737f0f5cf3b532a939eb1"
+    },
+    "tavily-research": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-research/SKILL.md",
+      "computedHash": "275ce58c801683e7d5a8fa2585cecf2cd8cadd465ded127b77219caaa9ae40ba"
+    },
+    "tavily-search": {
+      "source": "tavily-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tavily-search/SKILL.md",
+      "computedHash": "0e60c0488b004dd7b5a01fc19a36e52ffd8e763b409dc6c2e3c0aa6681182629"
+    },
     "turborepo": {
       "source": "vercel/turborepo",
       "sourceType": "github",
@@ -267,6 +502,12 @@
       "sourceType": "github",
       "skillPath": "skills/validate-evaluator/SKILL.md",
       "computedHash": "8e6639863c2ce7d9ce98975889e30ad472fe3767e38037ef3c5384ecb50c002b"
+    },
+    "validate-idea": {
+      "source": "emotixco/claude-skills-founder",
+      "sourceType": "github",
+      "skillPath": "skills/validate-idea/SKILL.md",
+      "computedHash": "213c54e8007f7f03d4c0a63ddafeadd9347a3359188cddec13d42f02eb5920db"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

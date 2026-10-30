@@ -1,10 +1,6 @@
+"use client";
+
 import type { PlanCode } from "@wovain/billing/plans";
-import {
-  CREDIT_COST,
-  CREDIT_PACK,
-  DESIGNS_PER_RUN,
-  PLANS,
-} from "@wovain/billing/plans";
 import { Card, CardContent } from "@wovain/ui/components/card";
 import { Separator } from "@wovain/ui/components/separator";
 import { cn } from "@wovain/ui/lib/utils";
@@ -12,6 +8,7 @@ import { Check } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { dropCredits, useCatalog } from "@/components/billing/catalog-provider";
 import { ComingSoonBadge } from "@/components/billing/notify-button";
 
 // Started from the @shadcn-studio/pricing-component-01 block (a horizontal
@@ -21,18 +18,6 @@ import { ComingSoonBadge } from "@/components/billing/notify-button";
 // cochineal line; its action is the one cochineal button (the caller's).
 
 const ORDER: PlanCode[] = ["free", "studio", "label"];
-
-/**
- * Credits for a drop with no autopilot: research, the run's designs and ad
- * copy for one approved design.
- */
-export const MANUAL_DROP_CREDITS =
-  CREDIT_COST.research +
-  DESIGNS_PER_RUN * CREDIT_COST.design +
-  CREDIT_COST.assist;
-/** Autopilot adds its pick and a review per design. */
-export const AUTOPILOT_DROP_CREDITS =
-  MANUAL_DROP_CREDITS + (1 + DESIGNS_PER_RUN) * CREDIT_COST.assist;
 
 /** Whole dollars from cents: plan prices are round. */
 export const useMoney = () => {
@@ -94,12 +79,14 @@ export const PlanCards = ({
 }) => {
   const t = useTranslations("Billing");
   const money = useMoney();
+  const catalog = useCatalog();
+  const drop = dropCredits(catalog);
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
   return (
     <ul className="flex flex-col gap-4">
       {ORDER.map((code) => {
-        const plan = PLANS[code];
+        const plan = catalog.plans[code];
         const unavailable = comingSoon && plan.priceCents > 0;
         const highlighted = !comingSoon && code === recommended;
         const price = (
@@ -151,9 +138,7 @@ export const PlanCards = ({
                     <Feature>
                       <span className="figures">
                         {t("features.drops", {
-                          drops: Math.floor(
-                            plan.monthlyCredits / MANUAL_DROP_CREDITS
-                          ),
+                          drops: Math.floor(plan.monthlyCredits / drop.manual),
                         })}
                       </span>
                     </Feature>
@@ -201,10 +186,11 @@ export const PackCard = ({
 }) => {
   const t = useTranslations("Billing");
   const money = useMoney();
+  const { creditPack } = useCatalog();
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const price = (
     <PriceDisplay
-      amount={money(CREDIT_PACK.priceCents)}
+      amount={money(creditPack.priceCents)}
       suffix={t("pack.suffix")}
     />
   );
@@ -214,12 +200,12 @@ export const PackCard = ({
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Heading className="font-display text-xl font-semibold tracking-[-0.02em]">
-              {CREDIT_PACK.name}
+              {creditPack.name}
             </Heading>
             {comingSoon ? <ComingSoonBadge /> : null}
           </div>
           <p className="text-muted-foreground figures text-sm">
-            {t("pack.body", { credits: CREDIT_PACK.credits })}
+            {t("pack.body", { credits: creditPack.credits })}
           </p>
           <div className="sm:hidden">{price}</div>
           {action ? (

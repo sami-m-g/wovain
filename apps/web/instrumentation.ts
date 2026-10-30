@@ -5,7 +5,7 @@ import { defineNodeInstrumentation } from "evlog/next/instrumentation";
 // only, like evlog.
 const evlog = defineNodeInstrumentation(() => import("./src/lib/evlog"));
 
-// OpenTelemetry to GitLab Observability (src/lib/otel.ts) starts first, so
+// OpenTelemetry (src/lib/otel.ts) starts first, so
 // Next.js's request spans and evlog's events share trace IDs. Node runtime
 // only, like evlog.
 export const register: typeof evlog.register = async () => {
