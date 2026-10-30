@@ -66,6 +66,14 @@ export const TRACE_KEYS = {
 const isRouted = (requestContext: RequestContext | undefined) =>
   requestContext?.get(TRACE_KEYS.routed) === true;
 
+// The fast model (Lightning) reasons unless told not to: thousands of
+// reasoning tokens on a short extraction run into the output cap or the
+// timeout and leave no answer. Routed fast calls send reasoning_effort
+// "none", as the docs chat does (apps/fumadocs api/chat).
+const FAST_PROVIDER_OPTIONS = {
+  nebius: { reasoningEffort: "none" },
+} as const;
+
 export interface AgentKitConfig {
   apiKey: string | undefined;
   baseURL: string;
@@ -255,6 +263,12 @@ export const createAgentKit = ({
         name: id,
         scorers: ({ requestContext }: { requestContext?: RequestContext }) =>
           (isRouted(requestContext) ? fastScorers : scorers).forAgent(id),
+        ...(AGENT_ROLES[id] === "fast" && {
+          defaultOptions: ({ requestContext }) =>
+            isRouted(requestContext)
+              ? { providerOptions: FAST_PROVIDER_OPTIONS }
+              : {},
+        }),
         ...(memory !== undefined && REMEMBERING.has(id) && { memory }),
         ...guardsFor(id),
       }),
