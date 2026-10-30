@@ -1806,6 +1806,7 @@ describe("startPickedRun", () => {
     },
     key: "d0",
     occasion: "identity tee",
+    qlooTag: "urn:tag:genre:media:gothic_romance",
     score: 0.4,
     theme: "Gothic romance",
     title: "Moth and moon crest",
@@ -1856,6 +1857,7 @@ describe("startPickedRun", () => {
     expect(started.step).toBe("design");
     expect(started.seed).toBe(picked.brief);
     const [saved] = started.ideas;
+    expect(saved?.research.qlooTag).toBe("urn:tag:genre:media:gothic_romance");
     expect(saved?.research.words).toMatchObject({
       status: "ok",
       title: "Moth and moon crest",

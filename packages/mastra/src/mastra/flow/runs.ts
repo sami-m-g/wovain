@@ -26,7 +26,7 @@ import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { pickedDirection } from "./drop-directions";
 import type { DirectionPick } from "./drop-directions";
 import { autoStartDossier } from "./evidence";
-import { assertQlooOn, getIdea, researchIdeas } from "./ideas";
+import { assertQlooOn, getIdea, qlooTagOf, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { reachMilestone } from "./milestones";
 import { createDesignProduct, publishDesignProduct } from "./products";
@@ -751,7 +751,13 @@ export const startRun = async (actor: Actor, input: RunInput) => {
 // The picked direction saved as a new run's one idea, the run at its
 // designs: its brief and trends are done.
 const savePicked = async (actor: Actor, direction: DropDirection) => {
-  const research = trendIdeaOf(direction);
+  // A direction kept before directions saved their tag's ID has the name.
+  const research = trendIdeaOf({
+    ...direction,
+    qlooTag:
+      direction.qlooTag ??
+      (await qlooTagOf(actor, { qlooTag: direction.theme })),
+  });
   return await actor.db.transaction(async (tx) => {
     const [created] = await tx
       .insert(run)

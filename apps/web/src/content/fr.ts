@@ -145,7 +145,7 @@ const content: SiteContent = {
         },
         {
           answer:
-            "Non. Chaque campagne est créée en pause, avec le budget quotidien que vous choisissez. La dépense ne commence que lorsque vous l'activez dans Meta.",
+            "Non. Chaque campagne est créée en pause, avec le budget quotidien que vous choisissez. La dépense ne commence que lorsque vous l'approuvez, et wovain ne la lance qu'une fois ses règles de dépense en place.",
           question: "Des publicités tourneront-elles sans moi ?",
         },
       ],
@@ -628,7 +628,7 @@ const content: SiteContent = {
       faq: [
         {
           answer:
-            "Non. Chaque campagne, ensemble de publicités et publicité est créé en pause, et wovain ne les active jamais. La dépense ne commence que lorsque vous activez la campagne dans Meta.",
+            "Non. Chaque campagne, ensemble de publicités et publicité est créé en pause, et rien n'est dépensé avant que vous approuviez la campagne. wovain la lance alors, mais seulement une fois ses règles de dépense et les règles automatisées de Meta en place.",
           question: "wovain peut-il dépenser mon budget publicitaire ?",
         },
         {
@@ -671,8 +671,8 @@ const content: SiteContent = {
           title: "Construire la campagne, en pause",
         },
         {
-          body: "Ouvrez la campagne dans le Gestionnaire de publicités Meta, vérifiez les publicités, l'audience et le budget, puis activez-la quand vous êtes prêt à dépenser.",
-          title: "Vérifier et activer dans Meta",
+          body: "Vérifiez les publicités, l'audience et le budget, dans wovain ou dans le Gestionnaire de publicités Meta, puis approuvez la campagne quand vous êtes prêt à dépenser. wovain la lance une fois ses règles de dépense en place.",
+          title: "Vérifier et approuver",
         },
       ],
       title:

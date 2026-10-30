@@ -1,6 +1,8 @@
 import type { TrendIdea } from "@wovain/core/trends";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
+import type { Actor } from "./actor";
+import { qlooTagOf } from "./ideas";
 import { signalsOf } from "./who-buys";
 
 const ideaWith = (research: Partial<TrendIdea>) =>
@@ -65,18 +67,14 @@ it("reads the brief's entities for an idea without a tag, and says so", () => {
   });
 });
 
-it("reads a direction idea's rising entities, never its theme name as a tag", () => {
-  // A Home idea pick (drop-directions trendIdeaOf) keeps the theme's name:
-  // sent as a tag, Qloo answered 400 "Could not find a valid tag".
-  const seeds = [{ id: "rising", name: "Rising", type: "" }];
-  expect(
-    signalsOf(
-      ideaWith({ qlooTag: "Dark Academia", taste: { affinities: [], seeds } })
-    )
-  ).toStrictEqual({
-    options: { scope: "idea" },
-    signals: { entities: ["rising"], tags: [] },
-  });
+it("finds the tag ID of an idea saved with its theme's name", async () => {
+  const tagsNamed = vi.fn(async () => await Promise.resolve(["urn:tag:a"]));
+  const actor = { core: { qloo: { tagsNamed } } } as unknown as Actor;
+  expect(await qlooTagOf(actor, { qlooTag: "Dark Academia" })).toBe(
+    "urn:tag:a"
+  );
+  expect(await qlooTagOf(actor, { qlooTag: "urn:tag:b" })).toBe("urn:tag:b");
+  expect(tagsNamed).toHaveBeenCalledTimes(1);
 });
 
 it("caps the entities at five", () => {

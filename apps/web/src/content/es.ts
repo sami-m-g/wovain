@@ -143,7 +143,7 @@ const content: SiteContent = {
         },
         {
           answer:
-            "No. Cada campaña se crea en pausa, con el presupuesto diario que elijas. El gasto solo empieza cuando la activas en Meta.",
+            "No. Cada campaña se crea en pausa, con el presupuesto diario que elijas. El gasto solo empieza cuando la apruebas, y wovain solo la inicia cuando sus reglas de gasto están activas.",
           question: "¿Se publicarán anuncios sin mí?",
         },
       ],
@@ -624,7 +624,7 @@ const content: SiteContent = {
       faq: [
         {
           answer:
-            "No. Cada campaña, conjunto de anuncios y anuncio se crea en pausa, y wovain nunca los activa. El gasto solo empieza cuando activas la campaña en Meta.",
+            "No. Cada campaña, conjunto de anuncios y anuncio se crea en pausa, y no se gasta nada hasta que apruebes la campaña. Entonces wovain la inicia, pero solo cuando sus reglas de gasto y las reglas automatizadas de Meta están activas.",
           question: "¿Puede wovain gastar mi presupuesto publicitario?",
         },
         {
@@ -667,8 +667,8 @@ const content: SiteContent = {
           title: "Construye la campaña, en pausa",
         },
         {
-          body: "Abre la campaña en el Administrador de anuncios de Meta, revisa los anuncios, la audiencia y el presupuesto, y actívala cuando estés listo para gastar.",
-          title: "Revisa y activa en Meta",
+          body: "Revisa los anuncios, la audiencia y el presupuesto, en wovain o en el Administrador de anuncios de Meta, y aprueba la campaña cuando estés listo para gastar. wovain la inicia cuando sus reglas de gasto están activas.",
+          title: "Revisa y aprueba",
         },
       ],
       title:

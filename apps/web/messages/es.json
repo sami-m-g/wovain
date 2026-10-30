@@ -123,7 +123,7 @@
       "reserve": "Reserva de reembolsos",
       "profit": "Tu beneficio",
       "margin": "Margen sobre el blank",
-      "campaign": "Campaña de Meta: en pausa hasta que la actives"
+      "campaign": "Campaña de Meta: en pausa hasta que la apruebes"
     },
     "connection": {
       "yours": "Lo conectas tú",
@@ -146,7 +146,7 @@
       },
       {
         "question": "¿wovain gasta dinero en anuncios por su cuenta?",
-        "answer": "No. Cada campaña se crea en pausa, con el presupuesto diario que elijas, de 1 $ a 500 $. El gasto empieza solo cuando la activas en el Administrador de anuncios de Meta."
+        "answer": "No. Cada campaña se crea en pausa, con el presupuesto diario que elijas, de 1 $ a 500 $. El gasto empieza solo cuando apruebas la campaña: entonces wovain la inicia en Meta, y solo cuando sus reglas de gasto y las reglas automatizadas de Meta ya están activas."
       },
       {
         "question": "¿Qué necesito conectar?",
@@ -235,7 +235,7 @@
       "insights": "Estadísticas",
       "sizes": "Talla",
       "addToCart": "Añadir al carrito",
-      "paused": "En pausa hasta que la actives",
+      "paused": "En pausa hasta que la apruebes",
       "photoAlt": "Un modelo en un balcón con la camiseta negra Fern Study No. 3",
       "mockupAlt": "El diseño Fern Study No. 3 en una camiseta gruesa negra, llevada por un modelo, tal como la genera Fourthwall"
     },
@@ -326,7 +326,7 @@
       "contentTitle": "Tu contenido",
       "contentBody": "Tus briefs y los diseños que apruebas son tuyos. Eres responsable de que lo que publiques no infrinja derechos de nadie; wovain revisa marcas registradas, pero no puede garantizarlo.",
       "spendTitle": "Anuncios y gasto",
-      "spendBody": "Las campañas se crean en pausa. El gasto en anuncios solo empieza cuando activas una campaña en Meta, que lo factura a tu cuenta publicitaria.",
+      "spendBody": "Las campañas se crean en pausa. El gasto en anuncios solo empieza cuando apruebas una campaña en wovain, o la activas tú en Meta, que lo factura a tu cuenta publicitaria.",
       "contactTitle": "Contacto",
       "contactBody": "Las preguntas sobre estos términos van a {supportEmail}."
     }
@@ -700,7 +700,7 @@
     },
     "done": {
       "title": "Tu campaña está lista, en pausa",
-      "lead": "{count, plural, one {# campaña} other {# campañas}} a {budget} al día. Actívala en el Administrador de anuncios de Meta cuando quieras empezar a gastar.",
+      "lead": "{count, plural, one {# campaña} other {# campañas}} a {budget} al día, en pausa hasta que la apruebes.",
       "variants": "Variantes de anuncio",
       "open": "Abrir el Administrador de anuncios",
       "another": "Lanzar otro drop",
@@ -709,7 +709,7 @@
         "start": "Iniciar anuncios",
         "pause": "Pausar anuncios",
         "refresh": "Actualizar estado",
-        "confirm": "¿Iniciar esta campaña a {budget} al día? Meta cobra directamente a tu cuenta publicitaria. Puedes pausarla cuando quieras.",
+        "confirm": "¿Iniciar esta campaña a {budget} al día? wovain comprueba primero que sus reglas de gasto y las reglas automatizadas de Meta están activas, y luego inicia la campaña, sus conjuntos de anuncios y sus anuncios. Meta cobra directamente a tu cuenta publicitaria. Puedes pausarla cuando quieras.",
         "approve": "Aprobar e iniciar",
         "notNow": "Ahora no",
         "starting": "Aprobado. Meta revisa los anuncios nuevos antes de publicarlos, lo que puede tardar unas horas.",
@@ -1012,7 +1012,7 @@
       "notConnected": "wovain lee las estadísticas de las campañas que creó para ti.",
       "unavailable": "Las estadísticas de Meta no cargaron: {message}",
       "emptyTitle": "Aún no hay resultados",
-      "empty": "Las campañas se crean en pausa: los resultados llegan cuando activas una en el Administrador de anuncios."
+      "empty": "Las campañas se crean en pausa: los resultados llegan cuando apruebas una."
     },
     "drops": {
       "title": "Drops",
