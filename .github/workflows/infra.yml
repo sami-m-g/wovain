@@ -161,12 +161,16 @@ jobs:
           workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.NEXT_INFRA_SERVICE_ACCOUNT }}
       - run: pnpm run infra:install
-      # --refresh reads the live service first: the image and traffic are
+      # Reads the live Cloud Run services first: the image and traffic are
       # ignored (infra/resources.ts), so Pulumi sends their last recorded
       # values with any template change. Without it, a settings change rolled
-      # next back to a stale image (2026-10-30, #350).
+      # next back to a stale image (2026-10-30, #350). Only the services:
+      # infra-next can't read every resource (a full --refresh 403s on the
+      # Cloud SQL database).
+      - name: Refresh next's services
+        run: pulumi refresh --cwd infra/next --stack next --yes --skip-preview --non-interactive --target 'urn:pulumi:next::wovain-next::gcp:cloudrunv2/service:Service::*'
       - name: Apply next
-        run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview --refresh
+        run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview
 
   # next's Polar catalog and promos, after next's apply. It touches next's
   # Polar state only: POLAR_METADATA_KEY=wovain:next keeps the seed off
