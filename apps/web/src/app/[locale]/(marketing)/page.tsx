@@ -24,7 +24,7 @@ import { exampleTee } from "@/lib/pricing";
 import { localizedUrl, pageMetadata, siteUrl } from "@/lib/seo";
 
 /** The questions the landing answers; the rest live on the docs FAQ. */
-const LANDING_FAQ = new Set([1, 2, 4, 5, 8, 9, 10]);
+const LANDING_FAQ = new Set([1, 2, 4, 5, 8, 9, 10, 12]);
 
 export const generateMetadata = async ({
   params,

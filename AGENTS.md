@@ -44,6 +44,7 @@
 - Add shared dependency versions to the pnpm catalog and reference them with `catalog:`
 - Minimal code, frameworks first, no lost functionality: before writing logic, use what Mastra (workflows, steps, tools, agents, processors, scorers, memory, tracing, `MCPServer`/`MCPClient`), Inngest, Better Auth, oRPC or another maintained library already provides. Write code only for what none of them cover. Every PR body names the library or framework it used, and gives a reason for any hand-written logic it adds
 - Layers (`turbo boundaries`, tags in each package's `turbo.json`, rules in the root `turbo.json`): `core` (domain, provider clients) ← `db`, `billing`, `email`, `auth` (data) ← `mastra` (orchestration) ← `api` (routing) ← `web`; `ui` ← `widgets` (MCP Apps, used by `api`). A package imports only the layers below it, transitively
+- A feature PR that doesn't update the landing page (hero demo, copy and FAQ in en, es and fr) and the docs is incomplete
 - Run `pnpm run check`, `pnpm run check-types`, `pnpm run knip`, `pnpm run boundaries` and `pnpm run spec:validate` before committing
 
 ## Specs and changes (OpenSpec)

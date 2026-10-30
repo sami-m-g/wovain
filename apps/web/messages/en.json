@@ -109,7 +109,7 @@
   },
   "Home": {
     "heroTitle": "One sentence. A whole drop.",
-    "heroLead": "Qloo tells you what will sell and who buys it, with proof: shops advertising it for weeks and marketplace bestsellers. wovain turns that into your product and a campaign: it drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
+    "heroLead": "Qloo says who buys and what is rising. wovain keeps only ideas with proof that they sell (shops advertising them for weeks, marketplace bestsellers) and room left to compete, then drafts the pieces, lists them on your Fourthwall shop at a margin that holds and stages the Meta ads, paused.",
     "briefLabel": "What is your next drop about?",
     "briefPlaceholder": "Washed botanical line drawings for a spring capsule",
     "briefHint": "A sentence is enough: the mood, a reference, who it's for. Or start from what sells now.",
@@ -162,7 +162,7 @@
       },
       {
         "question": "What does it cost?",
-        "answer": "wovain's plans are on the pricing page. Production is paid from each sale through Fourthwall, artwork is billed by fal and ad spend by Meta, each to your own account."
+        "answer": "wovain's plans are on the pricing page. Production is paid from each sale through Fourthwall, artwork is billed by fal and ad spend by Meta, each to your own account. If research finds no ideas, wovain gives the credits back."
       },
       {
         "question": "Can I use it in ChatGPT?",
@@ -183,28 +183,18 @@
       {
         "question": "Which of my designs should I advertise?",
         "answer": "All of them, at first. wovain tests up to five designs in one campaign, gives each a fair share of the budget, pauses the ones that lose money and shows you the winner, so the budget follows the design that sells."
+      },
+      {
+        "question": "How does wovain pick what to sell?",
+        "answer": "It starts from Qloo's taste data for your buyers, then keeps only ideas with proof that they sell: shops advertising them for weeks, marketplace bestsellers and reviews. Crowded themes are dropped, and the rest are ranked by how much demand is left for a new label. Each idea is one card with its sources linked, and wovain counts the ideas it left out."
       }
     ],
     "heroCta": "Start a drop",
     "demo": {
-      "alt": "An example drop in wovain. A one-line brief is typed. Three trend ideas appear, each with its score and evidence. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
+      "alt": "An example drop in wovain. A one-line brief is typed. One idea card appears with what to make, why it sells, who buys and where, and the competition, after wovain left out the ideas with weak evidence, and the designer picks it. Four designs appear as Fourthwall tee mockups with their print checks, and the designer approves one. It becomes a hidden product on Fourthwall, with its price and profit shown. A Meta ad preview appears, and the campaign is created paused.",
       "pause": "Pause the example",
       "play": "Play the example",
       "brief": "Washed botanical line drawings for a spring capsule, for people who garden on balconies.",
-      "ideas": [
-        {
-          "theme": "Balcony growing",
-          "moment": "Small-space gardening is up for a third week."
-        },
-        {
-          "theme": "Seed swaps",
-          "moment": "Libraries are lending seeds this spring."
-        },
-        {
-          "theme": "Pressed botanicals",
-          "moment": "Popular, and already crowded."
-        }
-      ],
       "designs": [
         "Fern Study No. 3",
         "Garden Hours",
@@ -219,7 +209,23 @@
         "cta": "Shop now"
       },
       "paused": "Campaign: Paused",
-      "initials": "YL"
+      "initials": "YL",
+      "idea": {
+        "title": "Fern line-art tee for balcony gardeners",
+        "concept": "Washed fern line drawings on a heavyweight tee, for people who garden in small spaces.",
+        "buyer": "balcony gardeners who shop small labels",
+        "style": "washed line art",
+        "tag": "Container gardening",
+        "sentence": "Small-space gardening is up for a third week, and shops keep their botanical ads running.",
+        "gender": "mostly women",
+        "interests": ["Houseplants", "Slow living"],
+        "places": ["Portland", "Seattle", "Denver"],
+        "gap": "tees for balcony vegetable growers",
+        "sources": [
+          "Balcony gardens, a growing trend",
+          "Botanical tees: marketplace bestsellers"
+        ]
+      }
     },
     "results": {
       "title": "Listed, advertised, counted",
@@ -249,7 +255,7 @@
     },
     "free": {
       "title": "Free to start",
-      "body": "{credits, number} credits a month, enough to try a full drop. wovain never takes a cut of your sales.",
+      "body": "{credits, number} credits a month, enough to try a full drop. If research finds no ideas, your credits come back. wovain never takes a cut of your sales.",
       "link": "See pricing"
     },
     "faqSection": {
@@ -269,7 +275,7 @@
       "steps": {
         "sell": {
           "title": "Pick what to sell",
-          "body": "Choose one of this week's directions from Qloo: what's rising, who buys it and how crowded it is."
+          "body": "Start from the ideas wovain kept: each card says what to make, why it sells, who buys it and where, and how crowded it is. Ideas with weak evidence are left out and counted."
         },
         "store": {
           "title": "Set up your store",
@@ -277,7 +283,7 @@
         },
         "meta": {
           "title": "Connect Meta, set limits",
-          "body": "Your ad account, payment and Page, then the most wovain may spend a day and a month."
+          "body": "One Meta sign-in covers your ad account, Page and pixel. Set the most wovain may spend a day and a month, and choose how you get alerts: email, phone or Telegram."
         },
         "design": {
           "title": "Approve a design",
@@ -285,7 +291,7 @@
         },
         "ads": {
           "title": "Launch your ads",
-          "body": "Review the ad and its daily budget, then start it. Nothing spends past your limits."
+          "body": "Review the ad and its daily budget, then start it. Nothing spends past your limits, and Meta's own automated rules stop the ads even if wovain is down."
         },
         "campaign": {
           "title": "See your campaign",
