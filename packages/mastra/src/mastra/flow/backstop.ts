@@ -7,7 +7,8 @@ import { eq } from "drizzle-orm";
 import { log as evlog } from "evlog";
 
 import type { Actor } from "./actor";
-import { adRulesOf, economicsOf } from "./ad-rules";
+import { notReady } from "./actor";
+import { adRulesOf, economicsOf, isAdRulesOn } from "./ad-rules";
 import { autonomyOf } from "./approvals";
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
@@ -138,5 +139,56 @@ export const requestBackstopSync = async (actor: Actor) => {
       reason: error instanceof Error ? error.message : String(error),
       userId: actor.userId,
     });
+  }
+};
+
+const unguarded = (why: string) =>
+  notReady({
+    fix: "Turn on the ads-profit-rules and meta-backstop-rules flags and reconnect Meta, then approve again.",
+    message:
+      "wovain won't start this campaign before its spend rules are in place",
+    why,
+  });
+
+/**
+ * Starts nothing until wovain's spend rules watch the campaign and Meta
+ * holds its backstop (openspec activate-after-guards): syncs the backstop
+ * now, reads the account's rules back and throws unless every rule of this
+ * campaign is there.
+ */
+export const requireSpendGuards = async (actor: Actor, row: CampaignRow) => {
+  if (!(await isAdRulesOn(actor))) {
+    throw unguarded(
+      "The ads-profit-rules flag is off: no kill, stop or loss-limit rule would watch it."
+    );
+  }
+  if ((await syncBackstop(actor)) === "flag_off") {
+    throw unguarded(
+      "The meta-backstop-rules flag is off: Meta would hold no rule to stop it."
+    );
+  }
+  const [settings, autonomy, economics] = await Promise.all([
+    adRulesOf(actor),
+    autonomyOf(actor),
+    economicsOf(actor, productIdsOf(row)),
+  ]);
+  const wanted = backstopRulesFor(
+    { economics: tightest(row, economics), metaCampaignId: row.metaCampaignId },
+    settings,
+    autonomy
+  );
+  const existing = await withProvider(
+    actor,
+    "meta",
+    async (_call, accessToken) =>
+      await actor.core.metaGraph.rules(
+        await accessToken(),
+        row.adAccountId,
+        actor.log
+      )
+  );
+  const held = new Set(existing.map((rule) => rule.name));
+  if (wanted.length === 0 || wanted.some((rule) => !held.has(rule.name))) {
+    throw unguarded("Meta doesn't hold this campaign's automated rules.");
   }
 };

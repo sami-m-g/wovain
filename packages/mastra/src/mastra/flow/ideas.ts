@@ -3,7 +3,8 @@ import { trendCardOf } from "@wovain/core/idea-card";
 import { trendEvidenceOf, writeIdeaWords } from "@wovain/core/idea-words";
 import { QLOO_NO_MATCH_MESSAGE } from "@wovain/core/log";
 import { currentDecisions } from "@wovain/core/nemotron";
-import type { TrendSources } from "@wovain/core/trends";
+import { isQlooTag } from "@wovain/core/qloo";
+import type { TrendIdea, TrendSources } from "@wovain/core/trends";
 import { idea, run } from "@wovain/db/schema/seller";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { EvlogError } from "evlog";
@@ -212,4 +213,18 @@ export const getIdea = async ({ db, userId }: Actor, id: string) => {
     throw notFound.idea({ id });
   }
   return row;
+};
+
+// An idea's Qloo tag ID. An idea picked from a drop direction before
+// directions kept their tag's ID saved the theme's name instead: Qloo's tag
+// search finds its ID. Undefined when Qloo has no tag of that name.
+export const qlooTagOf = async (
+  actor: Actor,
+  { qlooTag }: Pick<TrendIdea, "qlooTag">
+): Promise<string | undefined> => {
+  if (qlooTag === undefined || isQlooTag(qlooTag)) {
+    return qlooTag;
+  }
+  const [found] = await actor.core.qloo.tagsNamed(qlooTag, actor.log);
+  return found;
 };

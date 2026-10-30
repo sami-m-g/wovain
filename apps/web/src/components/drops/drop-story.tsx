@@ -8,6 +8,7 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { TargetingMark } from "@/components/app/campaign-audience";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import type { useDropFlow } from "@/components/app/use-drop-flow";
@@ -35,8 +36,6 @@ type Idea = RunDetail["ideas"][number];
 
 const MAX_SOURCES = 3;
 const MAX_NAMES = 3;
-// Campaigns are staged for these countries unless the merchant says otherwise.
-const DEFAULT_COUNTRIES = ["US"];
 
 const STATE_VARIANT: Record<
   SectionState,
@@ -241,47 +240,6 @@ const WhoSection = ({ lead }: { lead: Idea | undefined }) => {
   );
 };
 
-/** Qloo's audience as Meta targeting: what the paused campaign reaches. */
-const TargetingMark = () => {
-  const t = useTranslations("DropStory.campaign");
-  const preview = useQuery({
-    ...orpc.targeting.preview.queryOptions({
-      input: { countries: DEFAULT_COUNTRIES },
-    }),
-    retry: false,
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-  if (preview.data === undefined) {
-    return null;
-  }
-  const { evidence } = preview.data;
-  const ages =
-    evidence.age === undefined
-      ? undefined
-      : t("ages", { max: evidence.age.max, min: evidence.age.min });
-  return (
-    <DecidedByQloo
-      decision={t("decision")}
-      evidence={[
-        ...(evidence.audiences.length > 0
-          ? [{ label: t("audiences"), value: names(evidence.audiences) }]
-          : []),
-        ...(evidence.interests.length > 0
-          ? [
-              {
-                label: t("interests"),
-                value: names(
-                  evidence.interests.map((one) => ({ name: one.metaName }))
-                ),
-              },
-            ]
-          : []),
-        ...(ages === undefined ? [] : [{ label: t("agesLabel"), value: ages }]),
-      ]}
-    />
-  );
-};
-
 // The figures a section summary may use: one shape for all four.
 const summaryOf = (section: DropSection, run: RunDetail, picked: number) => {
   const counts: Record<DropSection, number> = {
@@ -350,7 +308,12 @@ export const DropStory = ({
           })}
         </p>
       </header>
-      <RunTape finished={finished} stage={stageOf(run)} />
+      {/* A completed run still waits for its launch: the tape ticks the
+          campaign once the merchant reaches the done step. */}
+      <RunTape
+        finished={finished && step === "done"}
+        stage={finished ? drop.step.stage : stageOf(run)}
+      />
       {notices}
       {failed ? (
         <div className="border-border bg-card rounded-2xl border p-5 sm:p-8">

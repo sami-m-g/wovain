@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AutopilotToggle } from "@/components/app/autopilot-toggle";
+import { CampaignStep, DoneStep } from "@/components/app/campaign-step";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { NoIdeasState, RunFailedState } from "@/components/app/run-failed";
 import type { Step } from "@/components/app/use-drop-flow";
@@ -21,9 +22,7 @@ import {
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
 import {
   BriefStep,
-  CampaignStep,
   DesignsStep,
-  DoneStep,
   IdeasStep,
   PickReviewStep,
   MAX_BRIEF,
@@ -152,7 +151,12 @@ const DropFlow = ({
   const drop = useDropFlow(runId, initialBrief);
   const { actions, busyLabel, run } = drop;
   const designs = run?.designs ?? [];
+  const campaigns = run?.campaigns ?? [];
+  const products = run?.products ?? [];
   const step = drop.step.id;
+  const titles = Object.fromEntries(
+    designs.map((item) => [item.id, item.brief.title])
+  );
 
   const panels: Record<Step, ReactNode> = {
     brief: (
@@ -173,9 +177,13 @@ const DropFlow = ({
         budget={drop.budget}
         budgetInvalid={drop.budgetInvalid}
         busyLabel={busyLabel}
+        campaigns={campaigns}
         onBack={() => actions.handleGoTo("products")}
         onBudget={drop.handleBudget}
-        onNext={actions.handleMakeCampaigns}
+        onLaunched={actions.handleLaunched}
+        onStage={actions.handleMakeCampaigns}
+        products={products.filter((item) => item.status === "public")}
+        titles={titles}
       />
     ),
     designs: atPickGate(run) ? (
@@ -198,12 +206,7 @@ const DropFlow = ({
         reasons={drop.reasons}
       />
     ),
-    done: (
-      <DoneStep
-        campaigns={run?.campaigns ?? []}
-        onRestart={actions.handleRestart}
-      />
-    ),
+    done: <DoneStep campaigns={campaigns} onRestart={actions.handleRestart} />,
     ideas: (
       <IdeasStep
         busyLabel={busyLabel}
@@ -221,10 +224,8 @@ const DropFlow = ({
         busyLabel={busyLabel}
         onNext={actions.handleProductsDone}
         onPublish={(product) => actions.handlePublish(product.id)}
-        products={run?.products ?? []}
-        titles={Object.fromEntries(
-          designs.map((item) => [item.id, item.brief.title])
-        )}
+        products={products}
+        titles={titles}
       />
     ),
   };

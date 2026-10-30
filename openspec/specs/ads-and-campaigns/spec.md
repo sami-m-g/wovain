@@ -86,6 +86,20 @@ With the `media-buying-live` and `autonomy-approvals` flags on, a request to sta
 - **WHEN** Meta rejects the activation
 - **THEN** the approval ends `failed` with Meta's reason, the error is logged at error level, and the campaign keeps its status
 
+### Requirement: Spend rules before activation
+
+Both when the merchant asks to start a campaign and before it publishes an approved activation, wovain SHALL check that the `ads-profit-rules` and `meta-backstop-rules` flags are on and that Meta holds every backstop rule of the campaign after a sync. Otherwise it SHALL refuse to activate.
+
+#### Scenario: Spend rules missing
+
+- **WHEN** the merchant asks to start a campaign while the spend rules or the backstop flag is off, or Meta doesn't hold the campaign's backstop rules
+- **THEN** wovain refuses the request with a precondition error and nothing is activated on Meta
+
+#### Scenario: Rules gone after approval
+
+- **WHEN** an approved activation reaches the executor and the spend rules are no longer in place
+- **THEN** the approval ends `failed`, the error is logged at error level, and nothing is activated on Meta
+
 ### Requirement: Spend caps across campaigns
 
 The spend caps SHALL count the daily budgets wovain has already committed: every campaign that is not draft, paused or archived, and every approved activation not yet carried out. The monthly cap SHALL count each committed daily budget, and the new one, for every day left in the month.
@@ -191,3 +205,22 @@ While the `feedback-loop` flag is on and the merchant's ads have made at least `
 
 - **WHEN** the merchant's ads have made 9 purchases
 - **THEN** the target cost per sale is the profit per sale
+
+### Requirement: The drop's Campaign step
+
+After its products are live, a drop SHALL continue to a Campaign step showing the ad creatives, the copy once written, Qloo's audience, the budget and the spend rules, with one Launch campaign action. Its confirm SHALL be the designer's approval to activate, inside their caps. Without Meta, the step SHALL show the creatives and how to connect Meta, and SHALL NOT launch.
+
+#### Scenario: Last product published
+
+- **WHEN** the designer publishes the drop's last hidden product
+- **THEN** the drop opens its Campaign step with the products' creatives
+
+#### Scenario: Launch with live media buying
+
+- **WHEN** the designer confirms Launch campaign with Meta connected and live media buying on
+- **THEN** the paused campaign is staged if needed, asked to go live and approved in their name, and the drop moves to done
+
+#### Scenario: Meta not connected
+
+- **WHEN** the Campaign step opens without a Meta connection
+- **THEN** it shows the creatives and Connect Meta to launch, and Launch campaign is disabled

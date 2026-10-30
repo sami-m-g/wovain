@@ -53,7 +53,7 @@ import {
 } from "./approvals";
 import { requireFal, withProvider } from "./connections";
 import { flagContextOf } from "./flags";
-import { getIdea } from "./ideas";
+import { getIdea, qlooTagOf } from "./ideas";
 import { once } from "./once";
 import { charge } from "./spend";
 
@@ -156,7 +156,8 @@ export const requireDesignDrops = async (actor: Actor) => {
 const MIN_ITEMS = 2;
 
 // The tags behind an idea: the Qloo tags of its run's ideas (the theme of
-// an idea that came from Qloo is the tag's name), then the brand's niches.
+// an idea that came from Qloo is the tag's name) and the tags their rising
+// entities carry, then the brand's niches.
 const tagsFor = async (actor: Actor, source: typeof idea.$inferSelect) => {
   const siblings =
     source.runId === null
@@ -172,15 +173,22 @@ const tagsFor = async (actor: Actor, source: typeof idea.$inferSelect) => {
     .select()
     .from(brandProfile)
     .where(eq(brandProfile.userId, actor.userId));
-  const sources: TraceSource[] = qloo.map((row) => ({
-    id: row.research.qlooTag,
-    provider: "qloo",
-    title: row.theme,
-  }));
+  const sources: TraceSource[] = await Promise.all(
+    qloo.map(async (row) => ({
+      id: await qlooTagOf(actor, row.research),
+      provider: "qloo" as const,
+      title: row.theme,
+    }))
+  );
   return {
     brand,
     sources,
-    tags: [...qloo.map((row) => row.theme), ...(brand?.niches ?? [])],
+    tags: [
+      ...new Set([
+        ...qloo.flatMap((row) => [row.theme, ...(row.research.cues ?? [])]),
+        ...(brand?.niches ?? []),
+      ]),
+    ],
   };
 };
 

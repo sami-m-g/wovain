@@ -123,7 +123,7 @@
       "reserve": "Refund reserve",
       "profit": "Your profit",
       "margin": "Margin over blank",
-      "campaign": "Meta campaign: paused until you turn it on"
+      "campaign": "Meta campaign: paused until you approve it"
     },
     "connection": {
       "yours": "You connect it",
@@ -146,7 +146,7 @@
       },
       {
         "question": "Will wovain spend money on ads by itself?",
-        "answer": "No. Every campaign is created paused, at the daily budget you choose, from $1 to $500. Spend starts only when you turn it on in Meta Ads Manager."
+        "answer": "No. Every campaign is created paused, at the daily budget you choose, from $1 to $500. Spend starts only when you approve the campaign: wovain then starts it on Meta, and only once its spend rules and Meta's automated rules are in place."
       },
       {
         "question": "What do I need to connect?",
@@ -235,7 +235,7 @@
       "insights": "Insights",
       "sizes": "Size",
       "addToCart": "Add to cart",
-      "paused": "Paused until you turn it on",
+      "paused": "Paused until you approve it",
       "photoAlt": "A model on a balcony wearing the black Fern Study No. 3 tee",
       "mockupAlt": "The Fern Study No. 3 design on a black heavyweight tee, worn by a model, as Fourthwall renders it"
     },
@@ -326,7 +326,7 @@
       "contentTitle": "Your content",
       "contentBody": "You own your briefs and the designs you approve. You are responsible for making sure what you publish does not infringe anyone's rights; wovain screens for trademarks but cannot guarantee it.",
       "spendTitle": "Ads and spend",
-      "spendBody": "Campaigns are created paused. Any ad spend starts only when you turn a campaign on in Meta, and it is billed by Meta to your ad account.",
+      "spendBody": "Campaigns are created paused. Any ad spend starts only when you approve a campaign in wovain, or turn it on in Meta yourself, and it is billed by Meta to your ad account.",
       "contactTitle": "Contact",
       "contactBody": "Questions about these terms go to {supportEmail}."
     }
@@ -657,21 +657,50 @@
       "view": "View on Fourthwall",
       "error": "Publish at least one product first.",
       "publish": "Publish to Fourthwall",
-      "submit": "Plan the campaign",
-      "mockupAlt": "{title}, product mockup"
+      "submit": "Go to the campaign",
+      "mockupAlt": "{title}, product mockup",
+      "confirm": {
+        "title": "Publish “{title}”?",
+        "body": "It goes live on {shop} at {price}, and customers can buy it right away. You can hide it again from the Store.",
+        "product": "Product",
+        "price": "Price",
+        "shop": "Shop",
+        "yourShop": "your Fourthwall shop",
+        "cancel": "Not yet",
+        "action": "Publish now"
+      }
     },
     "campaign": {
-      "title": "Build the campaign",
-      "lead": "One campaign per product with an ad per copy variant. It's created paused: nothing spends until you turn it on in Meta.",
+      "title": "Launch the campaign",
+      "lead": "The ads for your live products: the creatives, the copy, who sees them and what they may spend. Nothing spends until you launch.",
+      "creatives": "Ad creatives",
+      "creativeAlt": "{title}, ad image",
+      "noCreatives": "Publish a product to see its ad images here.",
+      "copy": "Ad copy",
+      "copyPending": "wovain writes three ad variants per design, in the drop's tone, when you launch. You read them before anything spends.",
+      "audience": "Who sees it",
+      "budget": "Daily budget",
+      "budgetSet": "{budget} a day",
+      "rules": "Spend rules",
+      "rulesPending": "Your daily and monthly caps and wovain's profit rules apply from the first dollar. You see them in full before anything spends.",
+      "connectTitle": "Connect Meta to launch",
+      "connectBody": "Your creatives are ready. Connect your Meta ad account and you come back here to launch.",
+      "storeSetup": "Open Store setup",
+      "submit": "Launch campaign",
+      "confirm": {
+        "title": "Launch the campaign?",
+        "body": "{budget} a day on Meta, billed to your ad account. wovain pauses designs that don't sell and stops at your caps. You can pause it at any time.",
+        "cancel": "Not yet",
+        "action": "Launch now"
+      },
       "budgetLabel": "Daily budget (USD)",
       "budgetHint": "Between $1 and $500 a day. You can change it in Meta.",
       "budgetError": "Enter a daily budget from $1 to $500.",
-      "submit": "Build paused campaign",
       "perDay": "a day"
     },
     "done": {
       "title": "Your campaign is ready, paused",
-      "lead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day. Turn it on in Meta Ads Manager when you're ready to spend.",
+      "lead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day, paused until you approve it.",
       "variants": "Ad variants",
       "open": "Open in Ads Manager",
       "another": "Start another drop",
@@ -680,7 +709,7 @@
         "start": "Start ads",
         "pause": "Pause ads",
         "refresh": "Refresh status",
-        "confirm": "Start this campaign at {budget} a day? Meta bills your ad account directly. You can pause it at any time.",
+        "confirm": "Start this campaign at {budget} a day? wovain first checks that its spend rules and Meta's automated rules are in place, then starts the campaign, its ad sets and ads. Meta bills your ad account directly. You can pause it at any time.",
         "approve": "Approve and start",
         "notNow": "Not now",
         "starting": "Approved. Meta reviews new ads before they run, which can take a few hours.",
@@ -729,7 +758,9 @@
           "paused": "Paused",
           "winner": "Winner"
         }
-      }
+      },
+      "launchedTitle": "Your campaign is launching",
+      "launchedLead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day. Meta reviews new ads before they run, which can take a few hours."
     },
     "failed": {
       "title": "The drop stopped during {stage}",
@@ -767,7 +798,7 @@
       "review": "Saving your decision…",
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
-      "campaign": "Building the paused campaign on Meta…"
+      "campaign": "Writing the ads and staging the campaign on Meta…"
     },
     "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
     "autopilotUpgrade": "See plans",
@@ -981,7 +1012,7 @@
       "notConnected": "wovain reads the insights for the campaigns it built for you.",
       "unavailable": "Meta's insights didn't load: {message}",
       "emptyTitle": "No campaign results yet",
-      "empty": "Campaigns are created paused, so results start once you turn one on in Ads Manager."
+      "empty": "Campaigns are created paused, so results start once you approve one."
     },
     "drops": {
       "title": "Drops",

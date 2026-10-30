@@ -27,7 +27,7 @@ export const SMOKE_STATE = ".auth/smoke.json";
 
 export const isSmoke = process.env["E2E_BASE_URL"] !== undefined;
 
-const db = isSmoke
+export const db = isSmoke
   ? undefined
   : createDb({ DATABASE_URL: env("DATABASE_URL") });
 

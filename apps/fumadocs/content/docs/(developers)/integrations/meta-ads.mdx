@@ -7,5 +7,5 @@ Meta is where the ads run.
 
 - **Ad variants.** `writeAdCopy` (Nemotron) writes up to three variants, each with an angle, a headline and a message.
 - **Campaign.** `stagePausedCampaign` in `packages/core/src/ads.ts` creates a campaign, an ad set and ads through Meta's Ads MCP server, with the daily budget ($1 to $500) and the countries the seller chose.
-- **Paused by default.** Every object is created paused and wovain never activates spend. The seller starts the campaign in Meta after reviewing it.
+- **Paused by default.** Every object is created paused. With the `media-buying-live` flag, the seller's approval starts it: wovain activates the campaign, ad sets and ads through the Ads MCP (`activateCampaign` in `packages/core/src/media-buying.ts`), and only after `requireSpendGuards` (`packages/mastra/src/mastra/flow/backstop.ts`) finds the spend rules on and Meta holding the campaign's automated rules. Otherwise it refuses.
 - **Connection.** Each seller connects their own ad account at `/api/connections/meta/start`. It needs `META_APP_ID` and `META_APP_SECRET`, and the app's Valid OAuth Redirect URIs must include `<BETTER_AUTH_URL>/api/connections/meta/callback`.

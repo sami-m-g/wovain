@@ -62,12 +62,22 @@ export const failureOf = (run: RunDetail): Stage | undefined =>
   run.status === "failed" ? stageOf(run) : undefined;
 
 /** The step an opened run picks up at. */
-const resumeStep = (run?: RunDetail): Step => {
+export const resumeStep = (run?: RunDetail): Step => {
   if (!run) {
     return "brief";
   }
-  if (run.status === "completed" || run.status === "failed") {
+  if (run.status === "failed") {
     return "done";
+  }
+  // The run completes once its products are made; the drop still waits for
+  // the merchant to publish them and launch the campaign.
+  if (run.status === "completed") {
+    if (run.campaigns.length > 0 || run.products.length === 0) {
+      return "done";
+    }
+    return run.products.every((item) => item.status === "public")
+      ? "campaign"
+      : "products";
   }
   if (run.products.length > 0) {
     return "products";
@@ -425,7 +435,23 @@ export const useDropFlow = (
       showProblem();
       stepper.goTo(next);
     },
-    handleMakeCampaigns: () => {
+    /** Done launching: `live` when the campaigns were asked to spend. */
+    handleLaunched: (live: boolean) => {
+      if (live) {
+        // The approved activation runs on Meta; the done step says so.
+        cache.patch((current) => ({
+          ...current,
+          campaigns: current.campaigns.map((item) =>
+            item.status === "draft" || item.status === "paused"
+              ? { ...item, status: "publishing" as const }
+              : item
+          ),
+        }));
+      }
+      stepper.goTo("done");
+    },
+    /** Stages the paused campaign (its copy written), then `then`. */
+    handleMakeCampaigns: (then: () => void) => {
       if (budgetInvalid) {
         return;
       }
@@ -434,14 +460,12 @@ export const useDropFlow = (
       calls.createCampaigns.mutate(
         { dailyBudget: budgetValue, productIds: live.map((item) => item.id) },
         {
-          onSuccess: async (made) => {
+          onSuccess: (made) => {
             cache.patch((current) => ({
               ...current,
               campaigns: appendNew(current.campaigns, made),
             }));
-            stepper.goTo("done");
-            // The run's status moves on the server too.
-            await cache.refetch();
+            then();
           },
         }
       );
@@ -495,11 +519,17 @@ export const useDropFlow = (
       calls.publishProduct.mutate(
         { id },
         {
-          onSuccess: (updated) =>
+          onSuccess: (updated) => {
             cache.patch((current) => ({
               ...current,
               products: replaceById(current.products, updated),
-            })),
+            }));
+            // The last product live: the drop goes on to its campaign.
+            const next = replaceById(products, updated);
+            if (next.every((item) => item.status === "public")) {
+              stepper.goTo("campaign");
+            }
+          },
         }
       );
     },
