@@ -14,7 +14,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { authLogger } from "./index";
 
 // The hackathon judges' shared demo account (openspec judges-demo-account),
-// seeded by `pnpm --filter @wovain/auth seed:judges --env next|dev`
+// seeded by `pnpm --filter @wovain/auth seed:judges --env next|nebius|dev`
 // (./seed-judges.ts). The account is made through Better Auth's server API
 // with its email already verified, and lands on the overview with a sample
 // brand and the draft autonomy level. Its credits come only from the
@@ -24,7 +24,7 @@ import { authLogger } from "./index";
 export const JUDGES_EMAIL = "judges@wovain.com";
 const JUDGES_NAME = "Hackathon judges";
 
-export const SEED_ENVIRONMENTS = ["next", "dev"] as const;
+export const SEED_ENVIRONMENTS = ["next", "nebius", "dev"] as const;
 export type SeedEnvironment = (typeof SEED_ENVIRONMENTS)[number];
 
 export const isSeedEnvironment = (value: string): value is SeedEnvironment =>
@@ -41,11 +41,18 @@ export const PRODUCTION_DATABASE = {
   user: "wovain",
 } as const;
 
-// next.wovain.com's own (infra/dev.ts appEnvironment, name "next").
-export const NEXT_DATABASE = {
-  database: "wovain_next",
-  instance: "wovain-next",
-  secret: "database-url-next",
+// next.wovain.com's and nebius.wovain.com's own (infra/dev.ts
+// appEnvironment, named after the stack).
+const cloudDatabase = <Name extends string>(name: Name) =>
+  ({
+    database: `wovain_${name}`,
+    instance: `wovain-${name}`,
+    secret: `database-url-${name}`,
+  }) as const;
+export const NEXT_DATABASE = cloudDatabase("next");
+const CLOUD_DATABASES = {
+  nebius: cloudDatabase("nebius"),
+  next: NEXT_DATABASE,
 } as const;
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
@@ -121,21 +128,20 @@ const productionRefusal = (
   }
 };
 
-const nextRefusal = (
+const cloudRefusal = (
+  env: keyof typeof CLOUD_DATABASES,
   target: UrlTarget,
   secret: string | undefined
 ): string | undefined => {
-  if (target.database !== NEXT_DATABASE.database) {
-    return `--env next needs next's database (${NEXT_DATABASE.database}), not ${target.database || "none"}.`;
+  const own = CLOUD_DATABASES[env];
+  if (target.database !== own.database) {
+    return `--env ${env} needs ${env}'s database (${own.database}), not ${target.database || "none"}.`;
   }
-  if (
-    target.instance !== undefined &&
-    target.instance !== NEXT_DATABASE.instance
-  ) {
-    return `--env next needs next's instance (${NEXT_DATABASE.instance}), not ${target.instance}.`;
+  if (target.instance !== undefined && target.instance !== own.instance) {
+    return `--env ${env} needs ${env}'s instance (${own.instance}), not ${target.instance}.`;
   }
-  if (secret !== undefined && secret !== NEXT_DATABASE.secret) {
-    return `--env next needs next's secret (${NEXT_DATABASE.secret}), not ${secret}.`;
+  if (secret !== undefined && secret !== own.secret) {
+    return `--env ${env} needs ${env}'s secret (${own.secret}), not ${secret}.`;
   }
 };
 
@@ -152,7 +158,7 @@ export const refusalOf = ({
   env,
 }: SeedTarget): string | undefined => {
   if (env === undefined || !isSeedEnvironment(env)) {
-    return `Pass --env next or --env dev (got ${env ?? "nothing"}). The seed never runs on production.`;
+    return `Pass --env next, --env nebius or --env dev (got ${env ?? "nothing"}). The seed never runs on production.`;
   }
   if (databaseUrl === undefined || databaseUrl === "") {
     return "DATABASE_URL isn't set.";
@@ -163,9 +169,9 @@ export const refusalOf = ({
   }
   return (
     productionRefusal(target, databaseUrlSecret) ??
-    (env === "next"
-      ? nextRefusal(target, databaseUrlSecret)
-      : devRefusal(target))
+    (env === "dev"
+      ? devRefusal(target)
+      : cloudRefusal(env, target, databaseUrlSecret))
   );
 };
 
@@ -195,8 +201,11 @@ export const liveRefusalOf = (
   if (facts.cloudSql && facts.database === PRODUCTION_DATABASE.database) {
     return `The server is a Cloud SQL instance holding production's database (${PRODUCTION_DATABASE.database}).`;
   }
-  if (env === "next" && facts.database !== NEXT_DATABASE.database) {
-    return `--env next connected to ${facts.database}, not next's database (${NEXT_DATABASE.database}).`;
+  if (env !== "dev" && !facts.cloudSql) {
+    return `--env ${env} connected to a database that isn't on Cloud SQL.`;
+  }
+  if (env !== "dev" && facts.database !== CLOUD_DATABASES[env].database) {
+    return `--env ${env} connected to ${facts.database}, not ${env}'s database (${CLOUD_DATABASES[env].database}).`;
   }
   if (env === "dev" && facts.cloudSql) {
     return "--env dev connected to a Cloud SQL instance; it seeds a local database only.";

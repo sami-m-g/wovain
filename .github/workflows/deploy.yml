@@ -21,6 +21,14 @@ name: deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      # On main only: `nebius` rolls main's head out to nebius.wovain.com,
+      # the frozen environment for the Nebius hackathon judges
+      # (infra/nebius), which nothing else deploys.
+      target:
+        type: choice
+        options: [next, nebius]
+        default: next
   push:
     branches: [main]
     paths-ignore:
@@ -40,7 +48,7 @@ permissions:
 # One deploy per environment at a time; a newer one waits instead of
 # cancelling a rollout.
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-${{ github.ref == 'refs/heads/main' && inputs.target == 'nebius' && 'nebius' || github.ref_name }}
   cancel-in-progress: false
 
 env:
@@ -50,11 +58,12 @@ jobs:
   # A single job, so a production deploy asks for one approval, not one per
   # step.
   deploy:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/transcend'
+    # nebius deploys from main only, never as Production.
+    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/release/transcend' && inputs.target != 'nebius')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'next' || 'Production' }}
+      name: ${{ github.ref == 'refs/heads/main' && (inputs.target || 'next') || 'Production' }}
       url: ${{ vars.SITE_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -185,15 +194,19 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
-          # Which environment's credit settlements apply to this database.
+          # Which environment's credit settlements apply to this database;
+          # none are nebius's, whose users are new.
           SETTLEMENT_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'next' || 'production' }}
+          TARGET: ${{ inputs.target }}
         run: |
           DATABASE_URL=$(gcloud secrets versions access latest --secret "$DATABASE_URL_SECRET" --project "$GCP_PROJECT_ID")
           echo "::add-mask::$DATABASE_URL"
           export DATABASE_URL
           pnpm --filter @wovain/db exec drizzle-kit migrate
           pnpm --filter @wovain/mastra run storage:init
-          pnpm --filter @wovain/api run billing:settle
+          if [ "$TARGET" != "nebius" ]; then
+            pnpm --filter @wovain/api run billing:settle
+          fi
 
       # A new revision of each service, with all traffic; Pulumi owns every
       # other setting of the services (infra/index.ts, infra/dev.ts).

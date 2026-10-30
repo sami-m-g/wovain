@@ -41,6 +41,8 @@
     "infra:bootstrap:up": "node infra/scripts/pulumi.ts up infra/bootstrap",
     "infra:next:preview": "node infra/scripts/pulumi.ts preview infra/next",
     "infra:next:up": "node infra/scripts/pulumi.ts up infra/next",
+    "infra:nebius:preview": "node infra/scripts/pulumi.ts preview infra/nebius",
+    "infra:nebius:up": "node infra/scripts/pulumi.ts up infra/nebius",
     "infra:preview": "node infra/scripts/pulumi.ts preview infra",
     "infra:test": "pnpm --dir infra run test",
     "infra:up": "node infra/scripts/pulumi.ts up infra"

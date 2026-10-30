@@ -1,0 +1,17 @@
+# nebius.wovain.com, the frozen copy of next.wovain.com the Nebius hackathon
+# judges use until 2026-12-24: infra/next's program as the stack `nebius`,
+# with its own config and every resource its own (its Cloud SQL instance,
+# secrets, PostHog project, Inngest environment and `nebius` GitHub
+# environment). CI never applies it: `pnpm run infra:nebius:up` from a
+# laptop. deploy.yml rolls it out only when run by hand on main with target
+# `nebius`, so next's deploys and migrations never reach it.
+name: wovain-nebius
+description: nebius.wovain.com, the frozen environment for the Nebius hackathon judges
+main: index.ts
+runtime:
+  name: nodejs
+  options:
+    typescript: false
+    packagemanager: pnpm
+backend:
+  url: gs://wovain-pulumi-state

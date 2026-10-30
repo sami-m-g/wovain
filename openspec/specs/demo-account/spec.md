@@ -41,7 +41,7 @@ The seed SHALL add a sample brand profile marked onboarded, keeping the judges' 
 
 ### Requirement: Seed guard before connecting
 
-The seed SHALL refuse to run unless `--env next` or `--env dev` is given. It SHALL refuse a `DATABASE_URL` that reaches production's Cloud SQL instance, signs in as production's database user, or comes from production's secret, as infra declares them. With `--env next` it SHALL require next's database; with `--env dev`, a local database.
+The seed SHALL refuse to run unless `--env next`, `--env nebius` or `--env dev` is given. It SHALL refuse a `DATABASE_URL` that reaches production's Cloud SQL instance, signs in as production's database user, or comes from production's secret, as infra declares them. With `--env next` or `--env nebius` it SHALL require that environment's own database; with `--env dev`, a local database.
 
 #### Scenario: No environment
 
@@ -55,7 +55,7 @@ The seed SHALL refuse to run unless `--env next` or `--env dev` is given. It SHA
 
 ### Requirement: Seed guard once connected
 
-Once connected, the seed SHALL ask the server which database it is and whether it is Cloud SQL, and SHALL refuse production's database on Cloud SQL, any database but next's for `--env next`, and any Cloud SQL server for `--env dev`, before writing anything.
+Once connected, the seed SHALL ask the server which database it is and whether it is Cloud SQL, and SHALL refuse production's database on Cloud SQL, any database but the named environment's own for `--env next` or `--env nebius`, and any Cloud SQL server for `--env dev`, before writing anything.
 
 #### Scenario: The server disagrees
 

@@ -12,6 +12,7 @@
     "*.ts",
     "bootstrap/*.ts",
     "next/*.ts",
+    "nebius/*.ts",
     "github/*.ts",
     "policy/*.ts",
     "posthog/*.ts",

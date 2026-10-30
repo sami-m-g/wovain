@@ -53,7 +53,7 @@ it("reads --env and --reset-password, with or without pnpm's --", () => {
 it("refuses to run without an explicit --env next or dev", () => {
   for (const env of [undefined, "", "prod", "production", "NEXT"]) {
     expect(refusalOf({ databaseUrl: NEXT_URL, env })).toMatch(
-      /Pass --env next or --env dev/u
+      /Pass --env next, --env nebius or --env dev/u
     );
   }
 });
@@ -121,6 +121,19 @@ it("holds --env next to next's database, instance and secret", () => {
   ).toMatch(/next's secret/u);
 });
 
+it("holds --env nebius to nebius's database, never next's", () => {
+  expect(
+    refusalOf({
+      databaseUrl: NEXT_URL.replaceAll("next", "nebius"),
+      databaseUrlSecret: "database-url-nebius",
+      env: "nebius",
+    })
+  ).toBeUndefined();
+  expect(refusalOf({ databaseUrl: NEXT_URL, env: "nebius" })).toMatch(
+    /nebius's database/u
+  );
+});
+
 it("holds --env dev to a local database", () => {
   expect(refusalOf({ databaseUrl: LOCAL_URL, env: "dev" })).toBeUndefined();
   expect(refusalOf({ databaseUrl: NEXT_URL, env: "dev" })).toMatch(
@@ -154,8 +167,11 @@ it("checks again on what the server says it is", () => {
     liveRefusalOf("next", { cloudSql: true, database: "wovain_next" })
   ).toBeUndefined();
   expect(
-    liveRefusalOf("next", { cloudSql: false, database: "postgres" })
+    liveRefusalOf("next", { cloudSql: true, database: "postgres" })
   ).toMatch(/not next's database/u);
+  expect(
+    liveRefusalOf("nebius", { cloudSql: false, database: "wovain_nebius" })
+  ).toMatch(/isn't on Cloud SQL/u);
   expect(
     liveRefusalOf("dev", { cloudSql: true, database: "wovain_dev" })
   ).toMatch(/Cloud SQL/u);
