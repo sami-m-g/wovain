@@ -84,7 +84,7 @@ interface ServiceArgs {
   maxInstances: number;
   // Instances kept warm, so a request never waits on a cold start; 0 if
   // unset. Each idles at Cloud Run's idle rate.
-  minInstances?: number;
+  minInstances?: number | undefined;
   serviceAccount: pulumi.Input<string>;
   // Mounts the instance's Auth Proxy socket under /cloudsql.
   cloudSqlInstance?: pulumi.Input<string>;
