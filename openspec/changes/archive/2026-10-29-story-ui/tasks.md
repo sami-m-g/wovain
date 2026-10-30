@@ -22,7 +22,7 @@ Issues #199, #200 and #201.
 
 ## 3. Idea card (#201)
 
-- [ ] 3.1 Fixed sections in a fixed order, each with a "Not available: <reason>" state
-- [ ] 3.2 Title and concept from the ranking pipeline
-- [ ] 3.3 Decided by Qloo marker on each suggestion and idea
-- [ ] 3.4 Messages, docs, tests; Playwright check at 1470 and 390 px; archive the change
+- [x] 3.1 Fixed sections in a fixed order, each with a "Not available: <reason>" state
+- [x] 3.2 Title and concept from the ranking pipeline
+- [x] 3.3 Decided by Qloo marker on each suggestion and idea
+- [x] 3.4 Messages, docs, tests; Playwright check at 1470 and 390 px; archive the change

@@ -1,7 +1,7 @@
-import { SATURATED_AT, saturationOf } from "./competition";
-import type { SaturationLevel } from "./competition";
 import { PROVEN_REVIEWS } from "./demand";
 import type { AdDemand, MarketDemand } from "./demand";
+import { SATURATED_AT, saturationOf } from "./saturation";
+import type { SaturationLevel } from "./saturation";
 
 // Sweet-spot competition and an honest rank for ideas (openspec
 // idea-evidence). A print-on-demand seller wants a niche that already sells

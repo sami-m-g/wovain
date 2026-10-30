@@ -97,3 +97,17 @@ A "Decided by Qloo" mark SHALL sit beside each decision Qloo makes, and nowhere 
 
 - **WHEN** Qloo returned no affinity for the lead idea
 - **THEN** the mark's evidence says the affinity is not available and why
+
+### Requirement: One fixed idea card
+
+While `story-ui` is on, every idea SHALL show as one card, both in what sells now and in a drop's ideas. The card SHALL have the sections of the idea-card contract in a fixed order: what to make, why it sells, who buys and where, and competition. A section without data SHALL say "Not available: <reason>" and SHALL not vanish. The title SHALL be the readable title from the ranking pipeline. Without one, the card SHALL label the Qloo tag as a tag. Each card SHALL carry a Decided by Qloo mark.
+
+#### Scenario: Who buys not read yet
+
+- **WHEN** an idea's audience has not been read
+- **THEN** its card says "Not available: not read yet" under Who buys and where and offers the read
+
+#### Scenario: Same buyers as the brief
+
+- **WHEN** an idea's audience is the brief's
+- **THEN** its card says so once instead of repeating the brief's buyers as the idea's

@@ -9,12 +9,12 @@ import {
   nearIdentical,
   readCompetition,
   saturatedReason,
-  saturationOf,
 } from "./competition";
 import type { Competition } from "./competition";
 import { unsupportedClaims } from "./grounding";
 import { withLlmTrace } from "./nemotron";
 import type { QlooAffinity } from "./qloo";
+import { saturationOf } from "./saturation";
 import { fakeAgents } from "./test-doubles";
 import { DecisionTrace } from "./trace";
 

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { unavailable } from "@wovain/core/idea-card";
 import { expect, fn, userEvent } from "storybook/test";
 
 import { IdeasStep } from "@/components/app/wizard-steps";
@@ -6,6 +7,13 @@ import type { Idea } from "@/lib/flow-client";
 
 const idea: Idea = {
   avoidNames: [],
+  card: {
+    audience: unavailable("not_read"),
+    competition: unavailable("not_read"),
+    make: unavailable("not_read"),
+    origin: "trends",
+    why: unavailable("not_read"),
+  },
   competition: null,
   createdAt: new Date("2026-10-20T09:30:00Z"),
   id: "idea_1",
@@ -68,4 +76,26 @@ export const Designed: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Design ready")).toBeVisible();
   },
+};
+
+// The two widths the idea card must hold: nothing scrolls sideways.
+const widths = {
+  desktop: { name: "1470", styles: { height: "900px", width: "1470px" } },
+  mobile: { name: "390", styles: { height: "800px", width: "390px" } },
+};
+const fitsWidth = async (canvasElement: HTMLElement) => {
+  const root = canvasElement.ownerDocument.documentElement;
+  await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+};
+
+export const Desktop: Story = {
+  globals: { viewport: { value: "desktop" } },
+  parameters: { viewport: { options: widths } },
+  play: ({ canvasElement }) => fitsWidth(canvasElement),
+};
+
+export const Mobile: Story = {
+  globals: { viewport: { value: "mobile" } },
+  parameters: { viewport: { options: widths } },
+  play: ({ canvasElement }) => fitsWidth(canvasElement),
 };
