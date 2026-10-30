@@ -10,6 +10,7 @@ import { reportUsage } from "@wovain/billing/polar";
 import { refusalError } from "@wovain/billing/refusals";
 import { user } from "@wovain/db/schema/auth";
 import { eq } from "drizzle-orm";
+import { log as evlog } from "evlog";
 
 import type { Actor } from "./actor";
 import { awaitFreeCredits } from "./free-plan";
@@ -76,6 +77,56 @@ export const assertAutopilot = async (actor: Actor) => {
   }
 };
 
+// Spends credits held earlier (reserveCredits), once: a repeat finds them
+// settled and does nothing. Paid work that spans several durable steps (a
+// director-made video ad) holds when it starts and settles here when done.
+export const settleHeld = async (
+  actor: Actor,
+  step: CreditStep,
+  held: { available: number; id: string; runId?: string | null | undefined }
+) => {
+  const { runId } = held;
+  const settled = await settleCredits(actor.db, held.id);
+  actor.log?.set({ credits: { left: held.available, spent: step } });
+  if (settled !== undefined) {
+    actor.analytics?.capture({
+      distinctId: actor.userId,
+      event: "credits_consumed",
+      properties: {
+        balance_after: held.available,
+        credits: settled.credits,
+        run_id: runId ?? null,
+        step,
+      },
+    });
+  }
+  const { polar } = actor.billing;
+  if (settled !== undefined && polar !== undefined) {
+    // Polar's meter is a mirror for the customer portal; Postgres already
+    // holds the spend, so a failed report is logged, not thrown.
+    try {
+      await reportUsage(polar, {
+        credits: settled.credits,
+        reservationId: held.id,
+        step,
+        userId: actor.userId,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      actor.log?.set({ polar: { usageFailed: message } });
+      evlog.error({
+        error: {
+          code: "POLAR_USAGE_REPORT_FAILED",
+          message: `Polar's usage report failed: ${message}`,
+          name: "PolarUsageReportFailed",
+        },
+        polar: { reservationId: held.id, step },
+        userId: actor.userId,
+      });
+    }
+  }
+};
+
 // Runs a paid step on the merchant's credits. A step whose result gave the
 // merchant nothing (`refundIf`) is given back like a failed one.
 export const charge = async <T>(
@@ -117,38 +168,6 @@ export const charge = async <T>(
     actor.log?.set({ credits: { refunded: step } });
     return result;
   }
-  const settled = await settleCredits(actor.db, held.id);
-  actor.log?.set({ credits: { left: held.available, spent: step } });
-  if (settled !== undefined) {
-    actor.analytics?.capture({
-      distinctId: actor.userId,
-      event: "credits_consumed",
-      properties: {
-        balance_after: held.available,
-        credits: settled.credits,
-        run_id: runId ?? null,
-        step,
-      },
-    });
-  }
-  const { polar } = actor.billing;
-  if (settled !== undefined && polar !== undefined) {
-    // Polar's meter is a mirror for the customer portal; Postgres already
-    // holds the spend, so a failed report is logged, not thrown.
-    try {
-      await reportUsage(polar, {
-        credits: settled.credits,
-        reservationId: held.id,
-        step,
-        userId: actor.userId,
-      });
-    } catch (error) {
-      actor.log?.set({
-        polar: {
-          usageFailed: error instanceof Error ? error.message : String(error),
-        },
-      });
-    }
-  }
+  await settleHeld(actor, step, { ...held, runId });
   return result;
 };

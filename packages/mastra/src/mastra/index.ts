@@ -21,6 +21,7 @@ const env = z
     BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1),
     EMAIL_FROM: z.string().min(1),
+    FAL_AD_VIDEO_MODELS: z.string().optional(),
     FAL_IMAGE_MODEL: z.string().min(1),
     FAL_KEY: z.string().optional(),
     FAL_MCP_URL: z.url(),

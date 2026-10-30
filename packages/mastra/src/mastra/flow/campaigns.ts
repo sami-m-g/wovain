@@ -139,6 +139,8 @@ interface PreparedDesign {
   title: string;
   // Its video ad clips (./videos), staged as video ads next to the images.
   videos: string[];
+  // Its clips are a director-made ad (./ad-video) with an AI-generated model.
+  videoAiModel: boolean;
 }
 
 const prepareDesign = async (
@@ -218,6 +220,7 @@ const prepareDesign = async (
     productId: live.id,
     runId,
     title: source.brief.title,
+    videoAiModel: live.videos?.some((clip) => clip.aiModel === true) ?? false,
     videos: live.videos?.map((clip) => clip.url) ?? [],
   };
 };
@@ -358,6 +361,7 @@ export const createDropCampaign = async (
             key: design.productId,
             label: `d${index + 1}`,
             linkUrl: design.linkUrl,
+            videoAiModel: design.videoAiModel,
             videos: design.videos,
           })),
       imageUrl: lead.imageUrl,
@@ -370,6 +374,7 @@ export const createDropCampaign = async (
       tag,
       // Qloo's ages, gender and interests as suggestions.
       targeting: audience.targeting,
+      videoAiModel: lead.videoAiModel,
       videos: lead.videos,
     };
     const stage = async () => {

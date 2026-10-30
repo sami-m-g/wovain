@@ -275,16 +275,19 @@ export const castInput = (
     "The shirt keeps its color and cut, and its print is the artwork in the second image: the same artwork, colors and words, in the same place and size, flat and fully visible, never warped, cropped, mirrored or redrawn. Add no other text, logo or graphic anywhere.",
     `Look: ${concept.cast.look}.`,
     `Setting: ${concept.cast.setting}.`,
-    "Framed from mid-thigh up, facing the camera, natural light, sharp focus on the print. The first frame of the ad's first shot.",
+    "Framed from mid-thigh up, facing the camera, natural light, sharp focus on the print. Any sign in the background carries no readable words. The first frame of the ad's first shot.",
   ].join(" "),
   resolution: "1K",
 });
+
+const TRAILING_STOP = /[.!?]+$/u;
 
 // Wan 3.0 Prime: one take, the shots in a timed prompt, with native audio
 // (music across the cuts, ambient sound and at most one line).
 export const filmInput = (castUrl: string, concept: AdConcept) => {
   const { seconds, shots } = timeline(concept);
-  const speaking = concept.sound.line.trim();
+  // The line as said, without the punctuation the prompt adds.
+  const speaking = concept.sound.line.trim().replace(TRAILING_STOP, "");
   return {
     aspect_ratio: "9:16",
     audio: true,
@@ -293,7 +296,7 @@ export const filmInput = (castUrl: string, concept: AdConcept) => {
     // timings.
     enable_prompt_expansion: false,
     prompt: [
-      `A ${seconds}-second vertical fashion ad, photoreal, with hard cuts between the shots below. The person in the first frame is the model in every shot: same face, body and outfit.`,
+      `Vertical fashion ad, ${seconds} seconds, photoreal, with hard cuts between the shots below. The person in the first frame is the model in every shot: same face, body and outfit.`,
       "The t-shirt and its print stay exactly as in the first frame: the same artwork, colors and words in the same place, never warped, mirrored, redrawn or hidden for long.",
       ...shots.map(
         (shot, index) =>
