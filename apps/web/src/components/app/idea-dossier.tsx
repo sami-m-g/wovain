@@ -125,7 +125,15 @@ const DossierStart = ({
   );
 };
 
-export const IdeaDossier = ({ ideaId }: { ideaId: string }) => {
+export const IdeaDossier = ({
+  automatic = false,
+  ideaId,
+}: {
+  // Started by the server (an idea picked on the Home): no start button,
+  // only a retry if it failed.
+  automatic?: boolean;
+  ideaId: string;
+}) => {
   const t = useTranslations("Wizard.evidence");
   const queryClient = useQueryClient();
   const options = orpc.ideas.dossier.queryOptions({ input: { ideaId } });
@@ -143,6 +151,9 @@ export const IdeaDossier = ({ ideaId }: { ideaId: string }) => {
   // A failed poll keeps the last answer on screen; with no answer at all the
   // merchant gets a retry.
   const record = dossier.data;
+  if (automatic && record === null) {
+    return null;
+  }
   if (record === undefined || record === null || record.status === "failed") {
     return (
       <DossierStart

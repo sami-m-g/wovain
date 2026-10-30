@@ -2,7 +2,7 @@ import { readDossier, startDossier } from "@wovain/core/evidence";
 import type { DossierRecord, DossierState } from "@wovain/core/evidence";
 import { idea } from "@wovain/db/schema/seller";
 import { and, eq } from "drizzle-orm";
-import { createError } from "evlog";
+import { createError, log as evlog } from "evlog";
 
 import type { Actor } from "./actor";
 import { flagContextOf } from "./flags";
@@ -157,4 +157,26 @@ export const readIdeaDossier = async (
     return await save(actor, row, { ...current, error, status: "failed" });
   }
   return current;
+};
+
+// An idea picked on the Home gets its dossier at once, with no click: it
+// runs on Tavily's side beside the run's designs and never holds them up.
+// Off with the flag; a start that fails is logged at error level and the
+// drop page offers a retry.
+export const autoStartDossier = async (actor: Actor, ideaId: string) => {
+  if (!(await actor.core.flags.isOn("tavily-evidence", flagContextOf(actor)))) {
+    return;
+  }
+  try {
+    await startIdeaDossier(actor, ideaId);
+  } catch (error) {
+    evlog.error({
+      dossier: { ideaId },
+      error: {
+        code: "DOSSIER_AUTO_START_FAILED",
+        message: error instanceof Error ? error.message : String(error),
+        name: "DossierAutoStartFailed",
+      },
+    });
+  }
 };
