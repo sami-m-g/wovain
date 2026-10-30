@@ -275,7 +275,7 @@
       "steps": {
         "sell": {
           "title": "Pick what to sell",
-          "body": "Start from the ideas wovain kept: each card says what to make, why it sells, who buys it and where, and how crowded it is. Ideas with weak evidence are left out and counted."
+          "body": "Start from the ideas wovain kept: each card says what to make, why it sells, who buys it and where, and how crowded it is. Ideas with weak evidence are left out and counted. Pick one and the drop opens at its designs, its research done."
         },
         "store": {
           "title": "Set up your store",
@@ -1121,7 +1121,7 @@
     "creditTag": {
       "title": "What a credit buys",
       "subtitle": "Taken when a step runs, given back if it fails",
-      "research": "Trend research",
+      "research": "Trend research, or an idea picked on Home",
       "design": "One design",
       "assist": "Ad copy, or an autopilot call",
       "manualDrop": "A drop you approve",
@@ -1213,7 +1213,7 @@
     "faq": {
       "credit": {
         "question": "What is a credit?",
-        "answer": "A credit pays for one unit of wovain's work. Trend research takes 5, a design takes 4, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 18 credits. If a step fails, its credits come back."
+        "answer": "A credit pays for one unit of wovain's work. Trend research takes 5 (so does starting a drop from a researched idea on Home), a design takes 4, and ad copy or an autopilot call takes 1, and each drop draws three designs, so a drop you approve step by step is about 18 credits. If a step fails, its credits come back."
       },
       "yours": {
         "question": "What do I pay outside wovain?",

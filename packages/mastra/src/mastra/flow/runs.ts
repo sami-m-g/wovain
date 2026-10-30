@@ -669,7 +669,7 @@ export const getRun = async (actor: Actor, id: string) => {
   return { ...rest, campaigns, designs, ideas, products };
 };
 
-// Queues a saved run on its engine and returns it at once (status running).
+// Queues a saved run on its engine; it returns at once (status running).
 // A run that can't be queued is marked failed.
 const queueRun = async (actor: Actor, runId: string, input: RunInput) => {
   if (actor.runs === undefined) {
@@ -688,7 +688,6 @@ const queueRun = async (actor: Actor, runId: string, input: RunInput) => {
     });
     throw error;
   }
-  return await getRun(actor, runId);
 };
 
 // A long-running operation: saves the run, queues it and returns it at once
@@ -717,7 +716,8 @@ export const startRun = async (actor: Actor, input: RunInput) => {
   if (created === undefined) {
     throw new Error("The run wasn't saved");
   }
-  return await queueRun(actor, created.id, input);
+  await queueRun(actor, created.id, input);
+  return await getRun(actor, created.id);
 };
 
 // The picked direction saved as a new run's one idea, the run at its
@@ -762,7 +762,7 @@ const savePicked = async (actor: Actor, direction: DropDirection) => {
 // run's one idea, with the evidence it was shown with (read again when
 // stale), and the run opens at its designs, drawing that idea. Its research
 // was done, so it costs the research credits a typed brief's research does,
-// given back when the pick can't be saved.
+// given back when the pick can't be saved or the run can't be queued.
 export const startPickedRun = async (
   actor: Actor,
   {
@@ -771,16 +771,18 @@ export const startPickedRun = async (
   }: Pick<RunInput, "countries" | "dailyBudget"> & { pick: DirectionPick }
 ) => {
   await requireFal(actor);
-  const { direction, saved } = await charge(actor, "research", {}, async () => {
-    const found = await pickedDirection(actor, pick);
-    return { direction: found, saved: await savePicked(actor, found) };
+  const runId = await charge(actor, "research", {}, async () => {
+    const direction = await pickedDirection(actor, pick);
+    const saved = await savePicked(actor, direction);
+    await queueRun(actor, saved.runId, {
+      ...input,
+      autopilot: false,
+      pick: { ideaId: saved.ideaId },
+      seed: direction.brief,
+    });
+    return saved.runId;
   });
-  return await queueRun(actor, saved.runId, {
-    ...input,
-    autopilot: false,
-    pick: { ideaId: saved.ideaId },
-    seed: direction.brief,
-  });
+  return await getRun(actor, runId);
 };
 
 export const listRuns = async ({ db, userId }: Actor) =>
