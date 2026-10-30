@@ -19,6 +19,7 @@ import type {
   StoreSetupStep as Step,
 } from "@/lib/flow-client";
 import { connectUrl } from "@/lib/flow-client";
+import type { FourthwallAdminPage } from "@/lib/fourthwall-admin";
 import { orpc } from "@/utils/orpc";
 
 // Polled while a step is open, so a step finished in Fourthwall (payouts,
@@ -201,6 +202,13 @@ const PayoutSteps = ({
   );
 };
 
+// The Fourthwall admin page that finishes each linked step.
+const STEP_PAGE: Partial<Record<Step["id"], FourthwallAdminPage>> = {
+  domain: "domain",
+  policies: "policies",
+  shipping: "shipping",
+};
+
 /** What the merchant does for one step: an action here or a deep link. */
 const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
   const t = useTranslations("Store.setup");
@@ -270,7 +278,7 @@ const StepAction = ({ setup, step }: { setup: Setup; step: Step }) => {
     }
     default: {
       return (
-        <AdminLink page="settings" variant="outline">
+        <AdminLink page={STEP_PAGE[step.id] ?? "settings"} variant="outline">
           {t(`${step.id}.action`)}
         </AdminLink>
       );
