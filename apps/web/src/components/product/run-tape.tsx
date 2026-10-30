@@ -20,6 +20,8 @@ const STEP_STAGE: Record<string, Stage> = {
   approved: "designs",
   campaign: "campaign",
   design: "designs",
+  // The ideas gate: the ideas are read and wait for the merchant's pick.
+  ideas: "trends",
   name: "trends",
   product: "products",
   publish: "products",
