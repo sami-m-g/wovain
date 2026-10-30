@@ -4,19 +4,21 @@ import type { IdeaCard } from "@wovain/core/idea-card";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button } from "@wovain/ui/components/button";
 import { Card } from "@wovain/ui/components/card";
-import { Checkbox } from "@wovain/ui/components/checkbox";
 import { cn } from "@wovain/ui/lib/utils";
 import {
+  ArrowRight,
   Check,
+  ChevronLeft,
   ChevronRight,
   House,
   Layers,
-  PanelLeft,
-  Settings,
-  Sun,
   MousePointer2,
+  PanelLeft,
   Pause,
   Play,
+  Settings,
+  ShieldCheck,
+  Sun,
 } from "lucide-react";
 import {
   animate,
@@ -48,7 +50,7 @@ import {
   ProductListing,
 } from "@/components/marketing/demo-pieces";
 import { HangTag } from "@/components/product/hang-tag";
-import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
+import { RunTape, STAGE_COUNT, STAGES } from "@/components/product/run-tape";
 import type { Stage } from "@/components/product/run-tape";
 import type { PriceBreakdown } from "@/lib/pricing";
 
@@ -57,74 +59,78 @@ const TICK = 50;
 const EXPO_OUT = [0.16, 1, 0.3, 1] as const;
 
 // Beats inside each scene, in milliseconds from the scene's start.
-const TYPE_START = 350;
-const TYPE_PER_CHAR = 26;
-const BRIEF_CURSOR = 3000;
-const BRIEF_CLICK = 3800;
-const IDEA_PICK = 6200;
-const IDEA_SCROLL_START = 700;
-const IDEA_SCROLL_MS = 5000;
-/** Ideas the evidence gate left out of the example, for the count above the card. */
-const IDEAS_LEFT_OUT = 4;
+const IDEA_SCROLL_START = 900;
+const IDEA_SCROLL_MS = 4200;
+const IDEA_CURSOR = 5400;
+const IDEA_CLICK = 6300;
+const REVIEW_CURSOR = 2600;
+const REVIEW_CLICK = 3500;
+/** When each of the three design jobs ticks off, inside the working beat. */
+const MAKE_DONE = [800, 1700, 2600] as const;
 const DESIGN_CURSOR = 1500;
 const DESIGN_CLICK = 2400;
 const DESIGN_FOCUS = 3000;
-const TAG_OUT = 2800;
-const AD_IN = 3800;
-const PAUSED_IN = 5200;
+const PUBLISH_CURSOR = 1800;
+const PUBLISH_CLICK = 2700;
+const VIDEO_IN = 900;
+const RULES_IN = 1600;
+const PAUSED_IN = 3000;
 const PRESS_MS = 220;
+/** Ideas in the example's carousel, for its "1 of 5". */
+const IDEAS_SHOWN = 5;
+/** The example's spend rules, in US dollars: the defaults a new seller gets. */
+const DAILY_CAP = 10;
+const MONTHLY_CAP = 150;
+const LOSS_LIMIT = 50;
 /** Where the cursor enters, as a share of the frame, and how it moves. */
 const CURSOR_ENTRY = { x: 0.88, y: 0.96 } as const;
 const CURSOR_GLIDE = 0.75;
 const CURSOR_PRESS = 0.82;
 
-type Scene = "brief" | "trends" | "designs" | "launch";
-type Work = "research" | "designs" | "products";
+type Scene = "home" | "review" | "designs" | "publish" | "campaign";
+type Work = "designs" | "products" | "campaign";
 
 type Beat =
   | { kind: "scene"; scene: Scene; ms: number }
   | { kind: "work"; work: Work; ms: number };
 
-/** The choreography: one drop, brief to paused campaign, about 26 seconds. */
+/**
+ * The choreography, as the app runs it today: an idea picked on Home, its
+ * tone and colours, the designs, publishing to Fourthwall and the campaign
+ * built paused. About 35 seconds.
+ */
 const SEQUENCE: readonly Beat[] = [
-  { kind: "scene", ms: 4500, scene: "brief" },
-  { kind: "work", ms: 1100, work: "research" },
-  { kind: "scene", ms: 7500, scene: "trends" },
-  { kind: "work", ms: 1100, work: "designs" },
+  { kind: "scene", ms: 7600, scene: "home" },
+  { kind: "scene", ms: 4600, scene: "review" },
+  { kind: "work", ms: 3400, work: "designs" },
   { kind: "scene", ms: 4300, scene: "designs" },
   { kind: "work", ms: 1100, work: "products" },
-  { kind: "scene", ms: 8000, scene: "launch" },
+  { kind: "scene", ms: 4400, scene: "publish" },
+  { kind: "work", ms: 1300, work: "campaign" },
+  { kind: "scene", ms: 8500, scene: "campaign" },
 ];
 
-const FINAL: Beat = { kind: "scene", ms: 0, scene: "launch" };
+const FINAL: Beat = { kind: "scene", ms: 0, scene: "campaign" };
 const FINAL_ELAPSED = 99_999;
 
-const STAGE_OF: Record<Scene | Work, Stage> = {
-  brief: "brief",
+/** Where each beat sits on the drop's tape; Home is before the drop. */
+const STAGE_OF: Record<Exclude<Scene, "home"> | Work, Stage> = {
+  campaign: "campaign",
   designs: "designs",
-  launch: "products",
   products: "products",
-  research: "trends",
-  trends: "trends",
+  publish: "products",
+  review: "designs",
 };
 
-const STAGE_ORDER: readonly Stage[] = [
-  "brief",
-  "trends",
-  "designs",
-  "products",
-  "campaign",
-];
-
 const TITLE_OF = {
-  brief: "brief.title",
   campaign: "campaign.title",
   designs: "designs.title",
   products: "products.title",
-  trends: "trends.title",
-} as const satisfies Record<Stage, string>;
+  publish: "products.title",
+  review: "designs.reviewTitle",
+} as const satisfies Record<Exclude<Scene, "home"> | Work, string>;
 
-/** The dashboard's own rail, in its order; a new drop is a page of "drops". */
+/** The dashboard's own rail, in its order. */
 const NAV = [
   { icon: House, key: "home" },
   { icon: Layers, key: "drops" },
@@ -138,6 +144,13 @@ const DESIGNS = [
   { mockup: MOCKUPS.seeds, score: 79 },
 ] as const;
 const READY_SCORE = 75;
+
+/** The example's colour sets: the tee, then the inks checked against it. */
+const PALETTES = [
+  { garment: "#1f1d1b", inks: ["#efe6d2", "#9bb07a"] },
+  { garment: "#a3ad8f", inks: ["#2b3a26", "#f4efe2"] },
+  { garment: "#efe7d8", inks: ["#3f5a3a", "#b0603a"] },
+] as const;
 
 interface Clock {
   index: number;
@@ -158,6 +171,9 @@ const enter = (delay = 0) => ({
   initial: { opacity: 0, y: 10 },
   transition: { delay, duration: 0.5, ease: EXPO_OUT },
 });
+
+const pressedAt = (elapsed: number, click: number) =>
+  elapsed >= click && elapsed < click + PRESS_MS;
 
 /** The pointer that walks the visitor's hand through the flow. */
 const Cursor = ({
@@ -240,49 +256,6 @@ const DemoButton = ({
   </motion.span>
 );
 
-const BriefScene = ({
-  elapsed,
-  target,
-}: {
-  elapsed: number;
-  target: RefObject<HTMLButtonElement | null>;
-}) => {
-  const t = useTranslations("Home");
-  const wizard = useTranslations("Wizard.brief");
-  const brief = t("demo.brief");
-  const typed = Math.max(
-    0,
-    Math.min(brief.length, Math.floor((elapsed - TYPE_START) / TYPE_PER_CHAR))
-  );
-  const done = typed === brief.length;
-  return (
-    <motion.div className="flex flex-col gap-4" {...enter()}>
-      <Card className="gap-3 p-4 sm:p-5">
-        <p className="text-sm font-medium">{wizard("label")}</p>
-        <div className="border-input bg-background min-h-24 rounded-lg border p-3 text-sm leading-relaxed sm:min-h-28 sm:text-base">
-          {brief.slice(0, typed)}
-          <span
-            className={cn(
-              "bg-primary ms-px inline-block h-[1.1em] w-0.5 translate-y-[0.15em]",
-              done && "animate-pulse"
-            )}
-          />
-        </div>
-        <p className="text-muted-foreground text-xs">{wizard("hint")}</p>
-      </Card>
-      <div className="flex justify-end">
-        <DemoButton
-          pressed={elapsed >= BRIEF_CLICK && elapsed < BRIEF_CLICK + PRESS_MS}
-          primary
-          ref={target}
-        >
-          {wizard("submit")}
-        </DemoButton>
-      </div>
-    </motion.div>
-  );
-};
-
 interface IdeaCopy {
   title: string;
   concept: string;
@@ -330,9 +303,9 @@ const exampleCard = (copy: IdeaCopy): IdeaCard => ({
   origin: "trends",
   why: ok({
     affinity: 0.82,
-    citations: copy.sources.map((title) => ({
+    citations: copy.sources.map((title, index) => ({
       title,
-      url: "https://example.com/",
+      url: `https://example.com/source-${index + 1}`,
     })),
     demand: ok({
       ads: ok({
@@ -353,13 +326,18 @@ const exampleCard = (copy: IdeaCopy): IdeaCard => ({
 });
 
 /**
- * The idea step: the app's one idea card, read top to bottom as it scrolls,
- * under the count of ideas the evidence gate left out. Then the designer
- * picks it.
+ * Home: what sells now, one idea card at a time, read top to bottom as it
+ * scrolls. Then the seller starts a drop from it.
  */
-const TrendsScene = ({ elapsed }: { elapsed: number }) => {
+const HomeScene = ({
+  elapsed,
+  target,
+}: {
+  elapsed: number;
+  target: RefObject<HTMLButtonElement | null>;
+}) => {
   const t = useTranslations("Home");
-  const card = useTranslations("IdeaCard");
+  const directions = useTranslations("Wizard.directions");
   const box = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(0);
@@ -374,12 +352,24 @@ const TrendsScene = ({ elapsed }: { elapsed: number }) => {
     1,
     Math.max(0, (elapsed - IDEA_SCROLL_START) / IDEA_SCROLL_MS)
   );
-  const picked = elapsed >= IDEA_PICK;
+  const picked = elapsed >= IDEA_CLICK;
   return (
     <motion.div className="flex h-full flex-col gap-2" {...enter()}>
-      <p className="text-muted-foreground text-xs">
-        {card("droppedCount", { count: IDEAS_LEFT_OUT })}
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-muted-foreground truncate text-xs">
+          {t("demo.homeLead")}
+        </p>
+        <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
+          <ChevronLeft className="size-3.5 rtl:rotate-180" />
+          <span className="figures">
+            {directions("carousel.position", {
+              current: "1",
+              total: String(IDEAS_SHOWN),
+            })}
+          </span>
+          <ChevronRight className="size-3.5 rtl:rotate-180" />
+        </span>
+      </div>
       <div className="min-h-0 flex-1 overflow-hidden" ref={box}>
         <div
           className="transition-transform duration-100 ease-linear"
@@ -387,15 +377,184 @@ const TrendsScene = ({ elapsed }: { elapsed: number }) => {
           style={{ transform: `translateY(${-overflow * read}px)` }}
         >
           <Card className={cn("p-4", picked && "ring-primary ring-2")}>
-            <IdeaCardView
-              card={exampleCard(t.raw("demo.idea") as IdeaCopy)}
-              lead={
-                <Checkbox checked={picked} className="mt-0.5" tabIndex={-1} />
-              }
-            />
+            <IdeaCardView card={exampleCard(t.raw("demo.idea") as IdeaCopy)}>
+              <DemoButton
+                className="w-fit"
+                pressed={pressedAt(elapsed, IDEA_CLICK)}
+                primary
+                ref={target}
+              >
+                {directions("use")}
+                <ArrowRight data-icon="inline-end" />
+              </DemoButton>
+            </IdeaCardView>
           </Card>
         </div>
       </div>
+    </motion.div>
+  );
+};
+
+interface ToneCopy {
+  label: string;
+  line: string;
+}
+
+/**
+ * Designs, before anything is drawn: the research report wovain ran on its
+ * own, and the tone and colours suggested from the buyers. Then "Make
+ * designs".
+ */
+const ReviewScene = ({
+  elapsed,
+  target,
+}: {
+  elapsed: number;
+  target: RefObject<HTMLButtonElement | null>;
+}) => {
+  const t = useTranslations("Home");
+  const evidence = useTranslations("Wizard.evidence");
+  const style = useTranslations("Wizard.style");
+  const designs = useTranslations("Wizard.designs");
+  const report = [
+    { label: evidence("whyNow"), value: t("demo.report.whyNow") },
+    { label: evidence("saturation"), value: t("demo.report.saturation") },
+    { label: evidence("priceBand"), value: t("demo.report.price") },
+  ];
+  const tones = t.raw("demo.tones") as ToneCopy[];
+  const colours = t.raw("demo.colours") as string[];
+  return (
+    <motion.div className="flex flex-col gap-3" {...enter()}>
+      <section className="border-border flex flex-col gap-2 rounded-lg border p-3">
+        <h4 className="flex items-center gap-1.5 text-xs font-semibold">
+          {evidence("dossierTitle")}
+          <Badge className="h-5 text-[0.65rem]" variant="secondary">
+            {t("demo.report.sources")}
+          </Badge>
+        </h4>
+        <dl className="flex flex-col gap-1.5">
+          {report.map((row, index) => (
+            <div
+              className={cn(
+                "grid gap-x-3 sm:grid-cols-[7.5rem_minmax(0,1fr)]",
+                index > 0 && "max-sm:hidden"
+              )}
+              key={row.label}
+            >
+              <dt className="text-muted-foreground text-[0.7rem] font-medium">
+                {row.label}
+              </dt>
+              <dd className="truncate text-xs">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <section className="bg-muted/40 grid gap-3 rounded-lg p-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <h4 className="text-xs font-semibold">{style("tone")}</h4>
+          {tones.map((tone, index) => (
+            <span
+              className={cn(
+                "flex flex-col gap-0.5 rounded-md border px-2.5 py-1.5",
+                index === 0 ? "border-primary bg-accent-soft" : "border-border"
+              )}
+              key={tone.label}
+            >
+              <span className="text-xs font-medium">{tone.label}</span>
+              <span className="text-muted-foreground truncate text-[0.7rem]">
+                “{tone.line}”
+              </span>
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1.5 max-sm:hidden">
+          <h4 className="text-xs font-semibold">{style("colours")}</h4>
+          <div className="flex flex-wrap gap-1.5">
+            {PALETTES.map((palette, index) => (
+              <span
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-md border p-1.5",
+                  index === 0
+                    ? "border-primary bg-accent-soft"
+                    : "border-border"
+                )}
+                key={palette.garment}
+              >
+                <span
+                  className="border-border flex h-7 w-9 items-center justify-center gap-0.5 rounded-md border"
+                  style={{ backgroundColor: palette.garment }}
+                >
+                  {palette.inks.map((ink) => (
+                    <span
+                      className="size-1.5 rounded-full"
+                      key={ink}
+                      style={{ backgroundColor: ink }}
+                    />
+                  ))}
+                </span>
+                <span className="text-[0.65rem]">{colours[index]}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+      <div className="flex justify-end">
+        <DemoButton
+          pressed={pressedAt(elapsed, REVIEW_CLICK)}
+          primary
+          ref={target}
+        >
+          {designs("make")}
+        </DemoButton>
+      </div>
+    </motion.div>
+  );
+};
+
+/** The three jobs behind "Make designs", ticking off as they finish. */
+const MakeScene = ({ elapsed }: { elapsed: number }) => {
+  const t = useTranslations("Home");
+  const wizard = useTranslations("Wizard.working");
+  const jobs = [
+    t("demo.make.brief"),
+    t("demo.make.draw"),
+    t("demo.make.check"),
+  ];
+  return (
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="flex h-full flex-col items-center justify-center gap-4"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+    >
+      <ShuttleLoader label={wizard("designs")} size={40} />
+      <ul className="flex flex-col gap-2 text-sm">
+        {jobs.map((job, index) => {
+          const done = elapsed >= (MAKE_DONE[index] ?? 0);
+          return (
+            <li
+              className={cn(
+                "flex items-center gap-2 transition-opacity",
+                done ? "opacity-100" : "opacity-45"
+              )}
+              key={job}
+            >
+              <span
+                className={cn(
+                  "grid size-4 place-items-center rounded-full border",
+                  done
+                    ? "border-success bg-success text-background"
+                    : "border-border"
+                )}
+              >
+                {done ? <Check className="size-3" /> : null}
+              </span>
+              {job}
+            </li>
+          );
+        })}
+      </ul>
     </motion.div>
   );
 };
@@ -489,10 +648,7 @@ const DesignsScene = ({
                       {index === 0 ? (
                         <DemoButton
                           className={cn(focused && "hidden")}
-                          pressed={
-                            elapsed >= DESIGN_CLICK &&
-                            elapsed < DESIGN_CLICK + PRESS_MS
-                          }
+                          pressed={pressedAt(elapsed, DESIGN_CLICK)}
                           ref={target}
                         >
                           <Check data-icon="inline-start" />
@@ -516,129 +672,189 @@ const DesignsScene = ({
   );
 };
 
-const LaunchScene = ({
+/** The product on Fourthwall with its price math, then published live. */
+const PublishScene = ({
   elapsed,
   tag,
+  target,
 }: {
   elapsed: number;
   tag: PriceBreakdown;
+  target: RefObject<HTMLButtonElement | null>;
 }) => {
   const t = useTranslations("Home");
-  const home = useTranslations("Home");
-  const wizard = useTranslations("Wizard");
+  const wizard = useTranslations("Wizard.products");
   const format = useFormatter();
   const money = (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
-  const withTag = elapsed < TAG_OUT;
-  const withAd = elapsed >= AD_IN;
-  const working = !withTag && !withAd;
+  const live = elapsed >= PUBLISH_CLICK + PRESS_MS;
   return (
-    <LayoutGroup>
-      <div className="relative flex items-start justify-center gap-3 sm:gap-5">
-        <motion.div
-          className={cn(
-            "w-[46%] shrink-0 sm:w-[38%]",
-            withAd && "max-sm:hidden sm:w-[34%]"
-          )}
-          layout
-          {...enter()}
+    <div className="flex items-start justify-center gap-3 sm:gap-5">
+      <motion.div
+        className="flex w-[52%] shrink-0 flex-col gap-2.5 sm:w-[38%]"
+        {...enter()}
+      >
+        <ProductListing
+          className={cn(live && "ring-success ring-2")}
+          image={MOCKUPS.fern}
+          imageAlt=""
+          price={money(tag.price)}
+          status={live ? wizard("public") : wizard("hidden")}
+          title={t("demo.product")}
+        />
+        <DemoButton
+          className={cn(live && "invisible")}
+          pressed={pressedAt(elapsed, PUBLISH_CLICK)}
+          primary
+          ref={target}
         >
-          <ProductListing
-            image={MOCKUPS.fern}
-            imageAlt=""
-            detail={
-              <p className="text-muted-foreground figures text-[0.7rem]">
-                {home("tag.profit")}{" "}
-                <span className="text-foreground font-semibold">
-                  {money(tag.profit)}
-                </span>
-              </p>
-            }
-            price={money(tag.price)}
-            status={wizard("products.hidden")}
-            title={t("demo.product")}
-          />
-        </motion.div>
-        <AnimatePresence mode="popLayout">
-          {withTag ? (
-            <motion.div
-              className="w-[50%] shrink-0 pt-6 sm:w-[40%]"
-              exit={{ opacity: 0, x: 24 }}
-              key="tag"
-              layout
-              {...enter(0.3)}
-            >
-              <HangTag
-                className="rotate-[2deg]"
-                lines={[
-                  { label: home("tag.price"), value: money(tag.price) },
-                  {
-                    label: home("tag.blank"),
-                    value: `− ${money(tag.baseCost)}`,
-                  },
-                  {
-                    label: home("tag.fees"),
-                    value: `− ${money(tag.cardFees)}`,
-                  },
-                  {
-                    emphasis: true,
-                    label: home("tag.profit"),
-                    value: money(tag.profit),
-                  },
-                ]}
-                title={home("tag.title")}
-              />
-            </motion.div>
-          ) : null}
-          {working ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              className="flex w-[40%] flex-col items-center justify-center gap-3 self-center"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="working"
-            >
-              <ShuttleLoader label={wizard("working.campaign")} size={36} />
-              <p className="text-muted-foreground text-center text-xs">
-                {wizard("working.campaign")}
-              </p>
-            </motion.div>
-          ) : null}
-          {withAd ? (
-            <motion.div
-              className="relative w-[78%] max-w-64 shrink-0 sm:w-[42%]"
-              key="ad"
-              layout
-              {...enter()}
-            >
-              <AdPreview
-                photoAlt=""
-                body={t("demo.ad.body")}
-                brand={t("demo.ad.brand")}
-                cta={t("demo.ad.cta")}
-                headline={t("demo.product")}
-                sponsored={t("demo.ad.sponsored")}
-              />
-              {elapsed >= PAUSED_IN ? (
-                <motion.div
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className="absolute start-1/2 -bottom-3 -translate-x-1/2 rtl:translate-x-1/2"
-                  initial={{ opacity: 0, scale: 0.7, y: 8 }}
-                  transition={{ bounce: 0.4, duration: 0.5, type: "spring" }}
-                >
-                  <PausedBadge>{t("demo.paused")}</PausedBadge>
-                </motion.div>
-              ) : null}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
-    </LayoutGroup>
+          {wizard("publish")}
+        </DemoButton>
+      </motion.div>
+      <motion.div className="w-[46%] shrink-0 pt-4 sm:w-[40%]" {...enter(0.3)}>
+        <HangTag
+          className="rotate-[2deg]"
+          lines={[
+            { label: t("tag.price"), value: money(tag.price) },
+            {
+              label: t("tag.blank"),
+              value: `− ${money(tag.baseCost)}`,
+            },
+            {
+              label: t("tag.fees"),
+              value: `− ${money(tag.cardFees)}`,
+            },
+            {
+              emphasis: true,
+              label: t("tag.profit"),
+              value: money(tag.profit),
+            },
+          ]}
+          title={t("tag.title")}
+        />
+        <p className="text-muted-foreground mt-3 text-[0.7rem] leading-snug max-sm:hidden">
+          {t("demo.noStock")}
+        </p>
+      </motion.div>
+    </div>
   );
 };
 
-const WorkScene = ({ work }: { work: Work }) => {
+/** One labelled spend rule. */
+const Rule = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex items-baseline justify-between gap-3">
+    <dt className="text-muted-foreground text-[0.7rem]">{label}</dt>
+    <dd className="figures text-xs font-semibold">{value}</dd>
+  </div>
+);
+
+/**
+ * The campaign: image and video ads for the idea's Qloo audience, built
+ * paused on Meta under the seller's spend rules, waiting for their yes.
+ */
+const CampaignScene = ({ elapsed }: { elapsed: number }) => {
+  const t = useTranslations("Home");
+  const campaign = useTranslations("Wizard.campaign");
+  const format = useFormatter();
+  const dollars = (value: number) =>
+    format.number(value, {
+      currency: "USD",
+      maximumFractionDigits: 0,
+      style: "currency",
+    });
+  return (
+    <div className="flex items-start justify-center gap-3 sm:gap-5">
+      <motion.div
+        className="relative w-[58%] max-w-56 shrink-0 sm:w-[34%]"
+        {...enter()}
+      >
+        <AdPreview
+          body={t("demo.ad.body")}
+          brand={t("demo.ad.brand")}
+          cta={t("demo.ad.cta")}
+          headline={t("demo.product")}
+          photoAlt=""
+          sponsored={t("demo.ad.sponsored")}
+        />
+        {elapsed >= VIDEO_IN ? (
+          <motion.div
+            animate={{ opacity: 1, rotate: -3, y: 0 }}
+            className="border-background shadow-floating absolute end-2 top-24 w-[36%] overflow-hidden rounded-lg border-2"
+            initial={{ opacity: 0, rotate: 0, y: 12 }}
+            transition={{ duration: 0.5, ease: EXPO_OUT }}
+          >
+            <div className="bg-muted relative aspect-[9/16]">
+              <Image
+                alt=""
+                className="object-cover object-[50%_45%]"
+                fill
+                sizes="120px"
+                src={MOCKUPS.fern}
+              />
+              <span className="bg-background/85 absolute inset-x-1 bottom-1 flex items-center gap-1 rounded px-1 py-0.5 text-[0.6rem] font-semibold whitespace-nowrap">
+                <Play className="size-2.5 fill-current" />
+                {t("demo.video")}
+              </span>
+            </div>
+          </motion.div>
+        ) : null}
+      </motion.div>
+      {elapsed >= RULES_IN ? (
+        <motion.div
+          className="flex w-[46%] min-w-0 flex-col gap-3 pt-1 max-sm:hidden"
+          {...enter()}
+        >
+          <section className="flex flex-col gap-1">
+            <h4 className="text-xs font-semibold">{campaign("audience")}</h4>
+            <p className="text-muted-foreground text-[0.7rem] leading-snug">
+              {t("demo.audience")}
+            </p>
+          </section>
+          <section className="border-border flex flex-col gap-1.5 rounded-lg border p-2.5">
+            <h4 className="flex items-center gap-1.5 text-xs font-semibold">
+              <ShieldCheck className="text-success size-3.5" />
+              {campaign("rules")}
+            </h4>
+            <dl className="flex flex-col gap-1">
+              <Rule label={t("demo.rules.daily")} value={dollars(DAILY_CAP)} />
+              <Rule
+                label={t("demo.rules.monthly")}
+                value={dollars(MONTHLY_CAP)}
+              />
+              <Rule label={t("demo.rules.loss")} value={dollars(LOSS_LIMIT)} />
+            </dl>
+            <p className="text-muted-foreground text-[0.65rem] leading-snug">
+              {t("demo.rules.meta")}
+            </p>
+          </section>
+          {elapsed >= PAUSED_IN ? (
+            <motion.div
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.7, y: 8 }}
+              transition={{ bounce: 0.4, duration: 0.5, type: "spring" }}
+            >
+              <PausedBadge>{t("demo.paused")}</PausedBadge>
+            </motion.div>
+          ) : null}
+        </motion.div>
+      ) : null}
+      {elapsed >= PAUSED_IN ? (
+        <motion.div
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="absolute start-1/2 bottom-3 z-10 -translate-x-1/2 sm:hidden rtl:translate-x-1/2"
+          initial={{ opacity: 0, scale: 0.7, y: 8 }}
+          transition={{ bounce: 0.4, duration: 0.5, type: "spring" }}
+        >
+          <PausedBadge>{t("demo.paused")}</PausedBadge>
+        </motion.div>
+      ) : null}
+    </div>
+  );
+};
+
+const WorkScene = ({ work }: { work: Exclude<Work, "designs"> }) => {
   const wizard = useTranslations("Wizard.working");
+  const label = work === "products" ? wizard("products") : wizard("campaign");
   return (
     <motion.div
       animate={{ opacity: 1 }}
@@ -647,9 +863,9 @@ const WorkScene = ({ work }: { work: Work }) => {
       initial={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <ShuttleLoader label={wizard(work)} size={44} />
-      <p className="text-muted-foreground max-w-[28ch] text-center text-sm">
-        {wizard(work)}
+      <ShuttleLoader label={label} size={44} />
+      <p className="text-muted-foreground max-w-[32ch] text-center text-sm">
+        {label}
       </p>
     </motion.div>
   );
@@ -657,8 +873,10 @@ const WorkScene = ({ work }: { work: Work }) => {
 
 /** When the cursor shows up and clicks, for the scenes it acts in. */
 const CURSOR_BEATS: Partial<Record<Scene, { show: number; click: number }>> = {
-  brief: { click: BRIEF_CLICK, show: BRIEF_CURSOR },
   designs: { click: DESIGN_CLICK, show: DESIGN_CURSOR },
+  home: { click: IDEA_CLICK, show: IDEA_CURSOR },
+  publish: { click: PUBLISH_CLICK, show: PUBLISH_CURSOR },
+  review: { click: REVIEW_CLICK, show: REVIEW_CURSOR },
 };
 
 const cursorPhase = (beat: Beat, elapsed: number) => {
@@ -666,8 +884,7 @@ const cursorPhase = (beat: Beat, elapsed: number) => {
   if (!beats || elapsed < beats.show || elapsed >= beats.click + PRESS_MS * 2) {
     return "hidden";
   }
-  const pressing = elapsed >= beats.click && elapsed < beats.click + PRESS_MS;
-  return pressing ? "pressed" : "moving";
+  return pressedAt(elapsed, beats.click) ? "pressed" : "moving";
 };
 
 const SceneView = ({
@@ -682,28 +899,29 @@ const SceneView = ({
   target: RefObject<HTMLButtonElement | null>;
 }) => {
   if (beat.kind === "work") {
-    return <WorkScene work={beat.work} />;
+    return beat.work === "designs" ? (
+      <MakeScene elapsed={elapsed} />
+    ) : (
+      <WorkScene work={beat.work} />
+    );
   }
-  if (beat.scene === "brief") {
-    return <BriefScene elapsed={elapsed} target={target} />;
+  switch (beat.scene) {
+    case "home": {
+      return <HomeScene elapsed={elapsed} target={target} />;
+    }
+    case "review": {
+      return <ReviewScene elapsed={elapsed} target={target} />;
+    }
+    case "designs": {
+      return <DesignsScene elapsed={elapsed} target={target} />;
+    }
+    case "publish": {
+      return <PublishScene elapsed={elapsed} tag={tag} target={target} />;
+    }
+    default: {
+      return <CampaignScene elapsed={elapsed} />;
+    }
   }
-  if (beat.scene === "trends") {
-    return <TrendsScene elapsed={elapsed} />;
-  }
-  if (beat.scene === "designs") {
-    return <DesignsScene elapsed={elapsed} target={target} />;
-  }
-  return <LaunchScene elapsed={elapsed} tag={tag} />;
-};
-
-/** The tape's passage and whether the run is done, at this point of the loop. */
-const tapeOf = (beat: Beat, elapsed: number) => {
-  const launched = beat.kind === "scene" && beat.scene === "launch";
-  const key = beat.kind === "scene" ? beat.scene : beat.work;
-  return {
-    finished: launched && elapsed >= PAUSED_IN,
-    stage: launched && elapsed >= AD_IN ? "campaign" : STAGE_OF[key],
-  } as const;
 };
 
 /** Hover and focus inside the figure, read from the DOM's own events. */
@@ -733,14 +951,87 @@ const useHoverFocus = (ref: RefObject<HTMLElement | null>) => {
   return { focused, hovered };
 };
 
+/** The dashboard's rail, with Home or Drops active. */
+const DemoRail = ({ atHome }: { atHome: boolean }) => {
+  const shell = useTranslations("Shell.nav");
+  return (
+    <div className="bg-sidebar text-sidebar-foreground hidden w-14 shrink-0 flex-col gap-6 px-2 py-4 sm:flex lg:w-44 lg:px-3">
+      <div className="flex h-7 items-center justify-center lg:justify-start lg:px-1.5">
+        <span className="lg:hidden">
+          <ShuttleMark label={null} size={26} />
+        </span>
+        <span className="hidden lg:inline-flex">
+          <Logo height={20} tone="dark" />
+        </span>
+      </div>
+      <ul className="flex flex-col gap-0.5 text-[0.8rem]">
+        {NAV.map(({ icon: Icon, key: item }) => {
+          const active = item === (atHome ? "home" : "drops");
+          return (
+            <li
+              className={cn(
+                "flex h-9 items-center justify-center gap-2.5 rounded-md lg:justify-start lg:px-2.5",
+                active ? "bg-sidebar-accent font-medium" : "opacity-70"
+              )}
+              key={item}
+            >
+              <Icon
+                className={cn(
+                  "size-4 shrink-0",
+                  active && "text-sidebar-primary"
+                )}
+              />
+              <span className="hidden truncate lg:inline">{shell(item)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
+
+/** The top bar: the crumb to the page on show, the theme and the avatar. */
+const DemoTopBar = ({ stage }: { stage: Stage | undefined }) => {
+  const t = useTranslations("Home");
+  const shell = useTranslations("Shell.nav");
+  const stages = useTranslations("Stages");
+  return (
+    <div className="border-border bg-background/90 flex h-11 shrink-0 items-center gap-2.5 border-b px-4 text-xs sm:px-6">
+      <PanelLeft className="text-muted-foreground size-4 max-sm:hidden" />
+      <span className="bg-border h-4 w-px max-sm:hidden" />
+      <span className="sm:hidden">
+        <ShuttleMark label={null} size={20} />
+      </span>
+      {stage === undefined ? (
+        <span className="font-medium">{shell("home")}</span>
+      ) : (
+        <>
+          <span className="text-muted-foreground">{shell("drops")}</span>
+          <ChevronRight className="text-muted-foreground size-3.5 rtl:rotate-180" />
+          <span className="truncate font-medium">{stages(stage)}</span>
+        </>
+      )}
+      <span className="ms-auto flex items-center gap-2">
+        <span className="border-border grid size-7 place-items-center rounded-md border">
+          <Sun className="size-3.5" />
+        </span>
+        <span className="bg-secondary text-secondary-foreground grid size-7 place-items-center rounded-full text-[0.65rem] font-semibold">
+          {t("demo.initials")}
+        </span>
+      </span>
+    </div>
+  );
+};
+
 /**
- * The hero's centrepiece: one example drop played in the app's own UI, from
- * the brief being typed to a paused campaign, on a loop. It plays only while
- * on screen, pauses on hover, focus or the visitor's toggle, and shows the
- * finished frame, still, to visitors who ask for reduced motion. The picture
- * is hidden from assistive tech; the caption carries the same story in words.
- */
-/**
+ * The hero's centrepiece: one example run through the app as it works
+ * today, on a loop. An idea picked on Home, its tone and colours, the
+ * designs drawn and checked, the product published to Fourthwall and the
+ * campaign built paused. It plays only while on screen, pauses on hover,
+ * focus or the visitor's toggle, and shows the finished frame, still, to
+ * visitors who ask for reduced motion. The picture is hidden from assistive
+ * tech; the caption carries the same story in words.
+ *
  * `tag` is a typical tee's price, worked out on the server from the pricing
  * rules (src/lib/pricing.ts).
  */
@@ -753,8 +1044,6 @@ export const HeroDemo = ({
 }) => {
   const t = useTranslations("Home");
   const wizard = useTranslations("Wizard");
-  const shell = useTranslations("Shell.nav");
-  const stages = useTranslations("Stages");
   const reduced = useReducedMotion() ?? false;
   const root = useRef<HTMLElement>(null);
   const frame = useRef<HTMLDivElement>(null);
@@ -778,7 +1067,11 @@ export const HeroDemo = ({
   const beat = reduced ? FINAL : (SEQUENCE[clock.index] ?? FINAL);
   const elapsed = reduced ? FINAL_ELAPSED : clock.elapsed;
   const key = beat.kind === "scene" ? beat.scene : beat.work;
-  const { stage: tapeStage, finished } = tapeOf(beat, elapsed);
+  const atHome = key === "home";
+  const stage = key === "home" ? undefined : STAGE_OF[key];
+  const finished = key === "campaign" && elapsed >= PAUSED_IN;
+  const title =
+    key === "home" ? wizard("directions.title") : wizard(TITLE_OF[key]);
 
   return (
     <figure className={cn("relative", className)} ref={root}>
@@ -795,71 +1088,26 @@ export const HeroDemo = ({
         ref={frame}
       >
         <div className="flex h-full">
-          <div className="bg-sidebar text-sidebar-foreground hidden w-14 shrink-0 flex-col gap-6 px-2 py-4 sm:flex lg:w-44 lg:px-3">
-            <div className="flex h-7 items-center justify-center lg:justify-start lg:px-1.5">
-              <span className="lg:hidden">
-                <ShuttleMark label={null} size={26} />
-              </span>
-              <span className="hidden lg:inline-flex">
-                <Logo height={20} tone="dark" />
-              </span>
-            </div>
-            <ul className="flex flex-col gap-0.5 text-[0.8rem]">
-              {NAV.map(({ icon: Icon, key: item }) => (
-                <li
-                  className={cn(
-                    "flex h-9 items-center justify-center gap-2.5 rounded-md lg:justify-start lg:px-2.5",
-                    item === "drops"
-                      ? "bg-sidebar-accent font-medium"
-                      : "opacity-70"
-                  )}
-                  key={item}
-                >
-                  <Icon
-                    className={cn(
-                      "size-4 shrink-0",
-                      item === "drops" && "text-sidebar-primary"
-                    )}
-                  />
-                  <span className="hidden truncate lg:inline">
-                    {shell(item)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <DemoRail atHome={atHome} />
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="border-border bg-background/90 flex h-11 shrink-0 items-center gap-2.5 border-b px-4 text-xs sm:px-6">
-              <PanelLeft className="text-muted-foreground size-4 max-sm:hidden" />
-              <span className="bg-border h-4 w-px max-sm:hidden" />
-              <span className="sm:hidden">
-                <ShuttleMark label={null} size={20} />
-              </span>
-              <span className="text-muted-foreground">{shell("drops")}</span>
-              <ChevronRight className="text-muted-foreground size-3.5 rtl:rotate-180" />
-              <span className="truncate font-medium">{stages(tapeStage)}</span>
-              <span className="ms-auto flex items-center gap-2">
-                <span className="border-border grid size-7 place-items-center rounded-md border">
-                  <Sun className="size-3.5" />
-                </span>
-                <span className="bg-secondary text-secondary-foreground grid size-7 place-items-center rounded-full text-[0.65rem] font-semibold">
-                  {t("demo.initials")}
-                </span>
-              </span>
-            </div>
+            <DemoTopBar stage={stage} />
             <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:gap-4 sm:p-6">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-display truncate text-lg font-semibold tracking-[-0.02em] sm:text-xl">
-                  {wizard(TITLE_OF[tapeStage])}
+                  {title}
                 </p>
-                <p className="text-muted-foreground figures shrink-0 text-xs">
-                  {wizard("stepOf", {
-                    current: STAGE_ORDER.indexOf(tapeStage) + 1,
-                    total: STAGE_COUNT,
-                  })}
-                </p>
+                {stage === undefined ? null : (
+                  <p className="text-muted-foreground figures shrink-0 text-xs">
+                    {wizard("stepOf", {
+                      current: STAGES.indexOf(stage) + 1,
+                      total: STAGE_COUNT,
+                    })}
+                  </p>
+                )}
               </div>
-              <RunTape finished={finished} stage={tapeStage} />
+              {stage === undefined ? null : (
+                <RunTape finished={finished} stage={stage} />
+              )}
               <div className="relative min-h-0 flex-1 pt-1">
                 <AnimatePresence initial={false} mode="wait">
                   <motion.div

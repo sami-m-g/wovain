@@ -1,15 +1,15 @@
 # Product Marketing Context
 
-**Document version:** v1
-**Last updated:** 2026-10-26
+**Document version:** v2
+**Last updated:** 2026-10-30
 
 Every marketing skill reads this file before drafting. It covers positioning, audience and voice. The visual system is in `apps/web/DESIGN.md`, and the product facts are in `apps/web/PRODUCT.md`.
 
 ## Product Overview
 
-**One-liner:** wovain turns a designer's direction into a print-on-demand drop: researched, drawn, priced, listed on Fourthwall and staged as a paused Meta campaign.
+**One-liner:** wovain takes someone with no selling experience from an idea that already sells to a live product on their Fourthwall shop and Meta ads built paused, in under an hour.
 
-**What it does:** You describe the drop: the mood, the references and who it's for. wovain checks what your audience is into this week, drafts graphics in that direction and waits for your edit. Then it lists the approved pieces on your Fourthwall shop, priced to keep a set margin, and writes several ads for a Meta campaign. The campaign is created paused, so nothing spends until you turn it on.
+**What it does:** Home shows what sells now (Qloo taste trends, checked against Tavily, Meta Ad Library and marketplace evidence), one idea card at a time. A pick opens at Designs with its research report, tone and colours; Nemotron writes the brief, fal draws and a vision check scores each print. The seller approves a design, publishes it to Fourthwall (print-on-demand, no inventory) and approves image and video ads for the idea's Qloo audience, built paused on Meta behind daily and monthly caps, a $50 loss limit and Meta automated rules. A designer can still write their own brief.
 
 **Product category:** print-on-demand for independent designers. It sits on the same shelf as print-on-demand storefronts (Fourthwall, Printful) and the design and ads tools a label strings together around them.
 
@@ -19,7 +19,7 @@ Every marketing skill reads this file before drafting. It covers positioning, au
 
 ## Target Audience
 
-**Target customers:** independent fashion designers and small labels (one to five people) who sell, or want to sell, graphic pieces through print-on-demand: tees, sweatshirts, totes, caps and prints.
+**Target customers:** people with no selling or design experience who want a first product selling, then independent designers and small labels (one to five people) who sell graphic pieces through print-on-demand: tees, sweatshirts, totes, caps and prints.
 
 **Decision-maker:** the designer or founder, who is also the art director, merchandiser and marketer.
 
@@ -155,6 +155,7 @@ Every marketing skill reads this file before drafting. It covers positioning, au
 
 | Date | Learning | Evidence | Applies to | Status |
 |---|---|---|---|---|
+| 2026-10-30 | Lead with the zero-experience promise: idea to a live product and its ads in under an hour, no design skills, no inventory, you approve every dollar. Name Qloo, Tavily, Nemotron and fal where they explain a step of the flow | Founder brief for the landing rewrite (issue #362) | Landing, ads, docs | active |
 | 2026-10-26 | Audience is independent fashion designers and small labels; tone is editorial and restrained, with craft cues and no generic SaaS look | Founder decision | All copy, imagery and docs | active |
 | 2026-10-26 | Position as print-on-demand only; no apparel-on-demand framing | Founder decision | All copy | active |
 | 2026-10-26 | Keep technical internals (frameworks, models, protocols) off the landing page and the user docs | Founder feedback: the site read like a hackathon entry | Landing, docs | active |
@@ -163,4 +164,5 @@ Every marketing skill reads this file before drafting. It covers positioning, au
 
 ## Changelog
 *Newest first. One line per revision: what changed and why.*
+- v2 (2026-10-30) — Repositioned for first-time sellers and the "just sell" flow (Home ideas, Designs review, Fourthwall publish, paused Meta campaign behind spend rules): one-liner, what it does, audience and learnings.
 - v1 (2026-10-26) — Initial context, drafted from the codebase and the founder's direction: fashion designers, print-on-demand, editorial voice.
