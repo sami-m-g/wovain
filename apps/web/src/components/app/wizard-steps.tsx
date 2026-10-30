@@ -768,6 +768,8 @@ const PriceWhy = ({ product }: { product: Product }) => {
   const money = useMoney();
   const costs = useQuery({
     ...orpc.store.priceCheck.queryOptions({ input: { productId: product.id } }),
+    // A detail the card can do without: no toast when it can't be read.
+    meta: { quiet: true },
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
   });
