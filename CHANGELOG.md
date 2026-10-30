@@ -1,5 +1,91 @@
 # Changelog
 
+## [0.33.0](https://github.com/sami-m-g/wovain/compare/v0.32.0...v0.33.0) (2026-10-30)
+
+
+### Features
+
+* a Home idea pick opens the drop at its designs ([#285](https://github.com/sami-m-g/wovain/issues/285)) ([9d07143](https://github.com/sami-m-g/wovain/commit/9d07143105923540f9d415c13c6e5f4d138aed83))
+* **ads:** ad-video workflow makes a finished ad per live product ([#358](https://github.com/sami-m-g/wovain/issues/358)) ([850dafc](https://github.com/sami-m-g/wovain/commit/850dafcfcda857d18b7641b964bd126407f54620))
+* **ads:** director and reviewer agents for production video ads ([#357](https://github.com/sami-m-g/wovain/issues/357)) ([35699b5](https://github.com/sami-m-g/wovain/commit/35699b5d540db6a17529c3f7e4b6e7fc9e61a22f)), closes [#352](https://github.com/sami-m-g/wovain/issues/352)
+* **ads:** fal video ad clips for each live product ([#336](https://github.com/sami-m-g/wovain/issues/336)) ([6ec142e](https://github.com/sami-m-g/wovain/commit/6ec142e0a823d606a3e1504315a5cf87d1f35d15)), closes [#334](https://github.com/sami-m-g/wovain/issues/334)
+* **ads:** start an approved campaign only once its spend rules are in place ([#331](https://github.com/sami-m-g/wovain/issues/331)) ([6a99603](https://github.com/sami-m-g/wovain/commit/6a99603fd04d3552d61c4ea1548f4c56a5dd9157))
+* **ads:** video ads in the Campaign step and on Meta ([#337](https://github.com/sami-m-g/wovain/issues/337)) ([3e2c054](https://github.com/sami-m-g/wovain/commit/3e2c05439855d6c05b931dd47082ba1ff1ab7223)), closes [#334](https://github.com/sami-m-g/wovain/issues/334)
+* founder testing promo on next ([#288](https://github.com/sami-m-g/wovain/issues/288)) ([fb0d1a0](https://github.com/sami-m-g/wovain/commit/fb0d1a0f42655811f6b749a6eaa9db36b814a6a6))
+* hold a design's garment colours to its Fourthwall blank ([#325](https://github.com/sami-m-g/wovain/issues/325)) ([8bb889d](https://github.com/sami-m-g/wovain/commit/8bb889d9b27f4d3aa527ad9feed61e0b9295c9f4)), closes [#324](https://github.com/sami-m-g/wovain/issues/324)
+* **infra:** nebius.wovain.com, a frozen copy of next for the Nebius judges ([#273](https://github.com/sami-m-g/wovain/issues/273)) ([80f0816](https://github.com/sami-m-g/wovain/commit/80f0816746937f45d07d554ffcfe5789b3fbfa5b))
+* publish in the drop flow, then launch from a Campaign step ([#333](https://github.com/sami-m-g/wovain/issues/333)) ([e1807c4](https://github.com/sami-m-g/wovain/commit/e1807c4d071ea6bbb14864e1b2d9454ef9b6db14)), closes [#332](https://github.com/sami-m-g/wovain/issues/332)
+* read the research report at a glance ([#323](https://github.com/sami-m-g/wovain/issues/323)) ([9b62d7f](https://github.com/sami-m-g/wovain/commit/9b62d7f8ca66ac5b864d7dae2ac415803482316e))
+* research a Home pick's idea automatically ([#305](https://github.com/sami-m-g/wovain/issues/305)) ([bbe9101](https://github.com/sami-m-g/wovain/commit/bbe91016980432669d00e364fe64eb28af4676bd))
+* review a Home pick before its designs are made ([#313](https://github.com/sami-m-g/wovain/issues/313)) ([fa59bc8](https://github.com/sami-m-g/wovain/commit/fa59bc84ad2d658ed619c5feec1c845842d7e7e9))
+* **web:** landing sells a first product to sellers with no experience ([#367](https://github.com/sami-m-g/wovain/issues/367)) ([f5b0350](https://github.com/sami-m-g/wovain/commit/f5b03500fcffd8c1a9d20381d51d7774094f10a8)), closes [#362](https://github.com/sami-m-g/wovain/issues/362)
+* **web:** show the Home ideas one card at a time ([#295](https://github.com/sami-m-g/wovain/issues/295)) ([d06f79b](https://github.com/sami-m-g/wovain/commit/d06f79b90b126c629ac732c91a85b69e6fbdfb8b))
+* **web:** the brief step leads with the brief and its starters ([#294](https://github.com/sami-m-g/wovain/issues/294)) ([1500b9c](https://github.com/sami-m-g/wovain/commit/1500b9cc0d41ee0eba76341999b62575ad10b6df)), closes [#286](https://github.com/sami-m-g/wovain/issues/286)
+* **web:** why this price on the drop's product cards and publish confirm ([#340](https://github.com/sami-m-g/wovain/issues/340)) ([500fd56](https://github.com/sami-m-g/wovain/commit/500fd56bfee20b2490db1d5404592d21e8a06e01))
+
+
+### Bug Fixes
+
+* a fal account out of credits fails the run at once ([#284](https://github.com/sami-m-g/wovain/issues/284)) ([22ceab5](https://github.com/sami-m-g/wovain/commit/22ceab50288aaf9c32685708955ab4b38795c176)), closes [#282](https://github.com/sami-m-g/wovain/issues/282)
+* a Home pick keeps its Qloo tag ID, and the capsule style reads its cues ([#329](https://github.com/sami-m-g/wovain/issues/329)) ([1df8c9e](https://github.com/sami-m-g/wovain/commit/1df8c9e141fc3c900647e46ecc0daa4e054af9e4))
+* **ads:** stage "Make the ads" in a background job, and use the seller's own Facebook Page ([#349](https://github.com/sami-m-g/wovain/issues/349)) ([72ac850](https://github.com/sami-m-g/wovain/commit/72ac8504972b66b2f99ae43cdaec6b7d73a825d0)), closes [#348](https://github.com/sami-m-g/wovain/issues/348)
+* **ads:** target the idea's Qloo audience first; a missing brand never blocks the ads ([#347](https://github.com/sami-m-g/wovain/issues/347)) ([dc9b31a](https://github.com/sami-m-g/wovain/commit/dc9b31a06567cc8e895a4985622e179f56de0643))
+* an odd catalog field no longer hides every Fourthwall blank ([#307](https://github.com/sami-m-g/wovain/issues/307)) ([20f8796](https://github.com/sami-m-g/wovain/commit/20f87966cbfa286859849ec42f69a8a39e90cf40)), closes [#306](https://github.com/sami-m-g/wovain/issues/306)
+* **ci:** refresh next's state before up-next applies it ([#351](https://github.com/sami-m-g/wovain/issues/351)) ([7157ee3](https://github.com/sami-m-g/wovain/commit/7157ee3d8f3b3f5392b76b13317344d446a96d89))
+* **ci:** refresh only next's Cloud Run services before up-next ([#353](https://github.com/sami-m-g/wovain/issues/353)) ([d5fcaec](https://github.com/sami-m-g/wovain/commit/d5fcaec49d757d75b8612cb0990e82ffcbbb8207))
+* connecting a provider always asks for consent ([#289](https://github.com/sami-m-g/wovain/issues/289)) ([0d179a1](https://github.com/sami-m-g/wovain/commit/0d179a1b3d6586056ab5ca7108d0b6a2f507f511))
+* **core:** decode Fourthwall's TOON leniently and log why it didn't decode ([#312](https://github.com/sami-m-g/wovain/issues/312)) ([c2f8782](https://github.com/sami-m-g/wovain/commit/c2f87823c62eedc27b6dac509eae173e7e7e0eec))
+* **core:** decode Fourthwall's TOON tool replies ([#311](https://github.com/sami-m-g/wovain/issues/311)) ([7231b2b](https://github.com/sami-m-g/wovain/commit/7231b2bd01e3f258db87e2d53ec3ebfcfb34009a))
+* **core:** read Fourthwall's array fields whose header is on its own line ([#314](https://github.com/sami-m-g/wovain/issues/314)) ([287bf82](https://github.com/sami-m-g/wovain/commit/287bf826ed464fdb1b77b459dd36ef6af6e5d037))
+* **core:** read Meta's JSON-text replies when verifying a staging ([#355](https://github.com/sami-m-g/wovain/issues/355)) ([885fa53](https://github.com/sami-m-g/wovain/commit/885fa5329254af9845d976cb52f9d9fafe8076a3)), closes [#354](https://github.com/sami-m-g/wovain/issues/354)
+* credits for the nebius judges and smoke accounts, which have no Polar ([#299](https://github.com/sami-m-g/wovain/issues/299)) ([553bfa9](https://github.com/sami-m-g/wovain/commit/553bfa9319734527ec420d798e049da9bd70c1b5))
+* **drop-style:** give up on the tone-and-colours suggestion after 45 s ([#380](https://github.com/sami-m-g/wovain/issues/380)) ([b7339d9](https://github.com/sami-m-g/wovain/commit/b7339d90c59ad1ce21ed48b2f18af50458ffbcdd))
+* infra-next reads Cloud Run operations (run.viewer) ([#296](https://github.com/sami-m-g/wovain/issues/296)) ([02fc7de](https://github.com/sami-m-g/wovain/commit/02fc7defb8683074525a7dfa0c4706079dedf1dc))
+* **infra:** adopt next's database user back into its state ([#356](https://github.com/sami-m-g/wovain/issues/356)) ([165a325](https://github.com/sami-m-g/wovain/commit/165a325f7a18335844f9e366dfe7f6cede087986))
+* **infra:** grant infra-next artifactregistry.admin on its repository ([#280](https://github.com/sami-m-g/wovain/issues/280)) ([721ffee](https://github.com/sami-m-g/wovain/commit/721ffee06641e4f13253a2434e0ef737425ec079))
+* **infra:** leave next's existing database user out of its stack ([#361](https://github.com/sami-m-g/wovain/issues/361)) ([90a9e5f](https://github.com/sami-m-g/wovain/commit/90a9e5f960954df7f4b073be9f0c8c1cbaa7c344))
+* **infra:** never apply frozen production from a dispatch; grant infra-next run.admin on its service ([#279](https://github.com/sami-m-g/wovain/issues/279)) ([6abfc14](https://github.com/sami-m-g/wovain/commit/6abfc142676ef198ddbe7e38be609b9116a5f143)), closes [#277](https://github.com/sami-m-g/wovain/issues/277)
+* keep whole sentences in the research report's one-line rows ([#338](https://github.com/sami-m-g/wovain/issues/338)) ([b9ff5fe](https://github.com/sami-m-g/wovain/commit/b9ff5fed86e5e56844fcbe83ecc6013ee3576a2a))
+* **mastra:** a drop item with no saved blank no longer crashes the drop ([#379](https://github.com/sami-m-g/wovain/issues/379)) ([f3009ef](https://github.com/sami-m-g/wovain/commit/f3009ef3b22a0b4ab71d65a855ed8a1a8603220b))
+* **mastra:** estimate a Store product's cost from its blank in the catalog ([#369](https://github.com/sami-m-g/wovain/issues/369)) ([3e2a5a6](https://github.com/sami-m-g/wovain/commit/3e2a5a64ec28f2ce95965e33974749681455d5ae))
+* **mastra:** stage afresh when Meta lost a staging's saved objects ([#360](https://github.com/sami-m-g/wovain/issues/360)) ([4ee3a75](https://github.com/sami-m-g/wovain/commit/4ee3a751d2710263a011571bf5ee6e87135c1942)), closes [#359](https://github.com/sami-m-g/wovain/issues/359)
+* never fail a paid run on a misshapen Nemotron reply ([#320](https://github.com/sami-m-g/wovain/issues/320)) ([cb8760c](https://github.com/sami-m-g/wovain/commit/cb8760cf8ff118313f0d9c5c727128dff32675d1))
+* **pixel:** send a test event Meta accepts, and say why Meta refused ([#344](https://github.com/sami-m-g/wovain/issues/344)) ([aaa6a9b](https://github.com/sami-m-g/wovain/commit/aaa6a9b0ebe0e3aff795505533953c14ce2814e3))
+* **qloo:** wait 30 s for a Qloo call, and retry a timeout once ([#376](https://github.com/sami-m-g/wovain/issues/376)) ([a162987](https://github.com/sami-m-g/wovain/commit/a162987dcdfe8b05bf314ace27fa27e710135b14))
+* **qloo:** wait out a burst of 429s with jittered backoff ([#370](https://github.com/sami-m-g/wovain/issues/370)) ([fc8b9ac](https://github.com/sami-m-g/wovain/commit/fc8b9acbb0400d9c08951822db9b6ddb5c2be8b1))
+* read Fourthwall's pricing text when its structured money has no amount ([#363](https://github.com/sami-m-g/wovain/issues/363)) ([dd95daa](https://github.com/sami-m-g/wovain/commit/dd95daaf48051c2a99aa9355b6c7fa76bedea803))
+* **store:** "Shop connected" ticks once the Fourthwall grant reads the shop ([#301](https://github.com/sami-m-g/wovain/issues/301)) ([4e8115e](https://github.com/sami-m-g/wovain/commit/4e8115ef5439d4ecc5b8de5c1be139511f0bc891))
+* **store:** an unread price check no longer toasts; its log names the reply's shape ([#346](https://github.com/sami-m-g/wovain/issues/346)) ([346cfeb](https://github.com/sami-m-g/wovain/commit/346cfeb88fcb77b31f9c75edc6913a8c7cec1ed0))
+* **store:** drop the shipping check; Fourthwall ships what it makes ([#345](https://github.com/sami-m-g/wovain/issues/345)) ([45f0405](https://github.com/sami-m-g/wovain/commit/45f0405f35d5f222b49a28987245d87d7d28c468))
+* **store:** each Fourthwall step opens its exact admin page in the shop ([#341](https://github.com/sami-m-g/wovain/issues/341)) ([c27cd54](https://github.com/sami-m-g/wovain/commit/c27cd543527721bfc308d2da43aa17abd7bcaec5))
+* **store:** readiness says what's ready and what's next; one product status vocabulary ([#343](https://github.com/sami-m-g/wovain/issues/343)) ([d4e677d](https://github.com/sami-m-g/wovain/commit/d4e677d8aa0ba9d83ccc9c63d5a1a29c78646277))
+* the price check finds the product's drop item by owner and SQL ([#368](https://github.com/sami-m-g/wovain/issues/368)) ([93328a5](https://github.com/sami-m-g/wovain/commit/93328a5f5cd2c49698f1654437d4cf7b9e753d13))
+* turn reasoning off on the fast model tier ([#275](https://github.com/sami-m-g/wovain/issues/275)) ([01a0da6](https://github.com/sami-m-g/wovain/commit/01a0da6a072250158a8d7f4c8c0e10fc6d876369)), closes [#274](https://github.com/sami-m-g/wovain/issues/274)
+* **web:** a design shows in seconds, and the drop page keeps its designs step at the gate ([#372](https://github.com/sami-m-g/wovain/issues/372)) ([06b1a03](https://github.com/sami-m-g/wovain/commit/06b1a03acd276637ecffa20628bcc699e02247eb))
+* **web:** a drop waiting at its ideas gate shows Trends, not Not started ([#382](https://github.com/sami-m-g/wovain/issues/382)) ([bf5a296](https://github.com/sami-m-g/wovain/commit/bf5a29683a8ddb232faf53a90896ea1890fbc50d))
+* **web:** a Home pick's idea counts as picked and shows while drawn ([#304](https://github.com/sami-m-g/wovain/issues/304)) ([d144868](https://github.com/sami-m-g/wovain/commit/d14486875db58ba46fe7fb6607eca75272795966))
+* **web:** drop progress derives earlier steps from the run's data ([#328](https://github.com/sami-m-g/wovain/issues/328)) ([72fbff0](https://github.com/sami-m-g/wovain/commit/72fbff0dd78cf0c8d7edba10ea25fdf1ff1717b9))
+* **web:** first run says what Qloo picks cost and that no shop is needed yet ([#381](https://github.com/sami-m-g/wovain/issues/381)) ([a480525](https://github.com/sami-m-g/wovain/commit/a4805257d0bb5365f5a83e44ac1dd191f1e98022))
+* **web:** fix what blocks a publish in the drop flow, not in the Store ([#339](https://github.com/sami-m-g/wovain/issues/339)) ([2a28349](https://github.com/sami-m-g/wovain/commit/2a28349da2db5622d2e75851bdad5ce313e56d5f))
+* **web:** light flat art gets a dark backdrop so it stays visible ([#378](https://github.com/sami-m-g/wovain/issues/378)) ([c676b11](https://github.com/sami-m-g/wovain/commit/c676b11c13d374cfd0ae82efae6b73af694570c9))
+* **web:** say "From Qloo" where an idea's buyers and a drop's style come from Qloo ([#371](https://github.com/sami-m-g/wovain/issues/371)) ([93193b2](https://github.com/sami-m-g/wovain/commit/93193b29500069a3784e253c9b6660010992e65b))
+* **web:** say why a queued product's Publish button is disabled ([#330](https://github.com/sami-m-g/wovain/issues/330)) ([0249109](https://github.com/sami-m-g/wovain/commit/0249109e5b14bdef817adf0e917ea275c6b2577c))
+* **web:** show why a Home pick was refused ([#308](https://github.com/sami-m-g/wovain/issues/308)) ([da1152a](https://github.com/sami-m-g/wovain/commit/da1152a3dbd89039e50127c30f5df6819ed13877))
+* **web:** tell each drop fact once and keep the tone and colours open ([#322](https://github.com/sami-m-g/wovain/issues/322)) ([e9ebfef](https://github.com/sami-m-g/wovain/commit/e9ebfefdfb2b6e1bb27f3cfc7272b90c40533b04)), closes [#321](https://github.com/sami-m-g/wovain/issues/321)
+* **web:** the home sends a fresh drop to its designs first ([#383](https://github.com/sami-m-g/wovain/issues/383)) ([12340cd](https://github.com/sami-m-g/wovain/commit/12340cdebaf1f9370f65de564fa9cc5a74d20c2f))
+* **web:** the idea card names its Qloo audience and what is rising with it ([#375](https://github.com/sami-m-g/wovain/issues/375)) ([9d0b840](https://github.com/sami-m-g/wovain/commit/9d0b8401977520392a45d8a18d89cbb82a65b829))
+* **who-buys:** no "Not available" by the who-buys button, no 0% bars, no country as a place ([#374](https://github.com/sami-m-g/wovain/issues/374)) ([b7fff7e](https://github.com/sami-m-g/wovain/commit/b7fff7e0c5071ef97ecad3a25542ce32f6895687))
+* **who-buys:** read a direction idea's rising entities, not its theme name as a Qloo tag ([#303](https://github.com/sami-m-g/wovain/issues/303)) ([0b07a27](https://github.com/sami-m-g/wovain/commit/0b07a27a123c01ee8bfece44bcab2d745831d16f)), closes [#302](https://github.com/sami-m-g/wovain/issues/302)
+* **who-buys:** show no buyer places when Qloo didn't rank them by taste ([#377](https://github.com/sami-m-g/wovain/issues/377)) ([eb7566b](https://github.com/sami-m-g/wovain/commit/eb7566b801d5365fbb7cdb710b28e11b238b1e60))
+
+
+### Performance Improvements
+
+* a run reads who buys each idea while its design is drawn ([#318](https://github.com/sami-m-g/wovain/issues/318)) ([a78370d](https://github.com/sami-m-g/wovain/commit/a78370d98223ef48157a3726fa7b25eaa1cae0a3)), closes [#315](https://github.com/sami-m-g/wovain/issues/315)
+* cache Tavily searches for 24 hours per normalized query ([#276](https://github.com/sami-m-g/wovain/issues/276)) ([e001fb3](https://github.com/sami-m-g/wovain/commit/e001fb35c402f0ae243229fb348bfb71764aca1a))
+* the brief's guardrails answer without reasoning on the fast model ([#316](https://github.com/sami-m-g/wovain/issues/316)) ([76d814a](https://github.com/sami-m-g/wovain/commit/76d814a8af327ff24d44b955449bb1f1b8132708)), closes [#315](https://github.com/sami-m-g/wovain/issues/315)
+* the design overlaps its style with the dossier wait and the trademark check with fal ([#317](https://github.com/sami-m-g/wovain/issues/317)) ([7a9dc71](https://github.com/sami-m-g/wovain/commit/7a9dc7143f32df3739b74d4b4aeac49d9064eddc)), closes [#315](https://github.com/sami-m-g/wovain/issues/315)
+
 ## [0.32.0](https://github.com/sami-m-g/wovain/compare/v0.31.0...v0.32.0) (2026-10-30)
 
 
