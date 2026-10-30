@@ -64,6 +64,11 @@ jobs:
               | select(.commit.oid == $h and (.state == "APPROVED" or .state == "CHANGES_REQUESTED"))]
               | group_by(.author.login) | map(last | select(.state == "CHANGES_REQUESTED")) | length' <<<"$detail")
             if [ "$failed" -gt 0 ] || [ "$changes" -gt 0 ]; then
+              # The gate allows one attempt per head commit and writes its
+              # marker first: a head already marked needs no dispatch, so the
+              # scan starts no run that would skip at once.
+              tried=$(jq --arg h "$head" '[.comments[] | select(.author.login == "github-actions" and (.body | contains("shepherd:attempt sha=" + $h + " ")))] | length' <<<"$detail")
+              [ "$tried" -eq 0 ] || continue
               gh workflow run shepherd.yml -f pr="$n" || echo "::warning::#$n: dispatch failed"
               continue
             fi

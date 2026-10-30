@@ -19,8 +19,34 @@ permissions:
   contents: read
 
 jobs:
+  # A pull request that only changes prose or agent config can't change a
+  # SAST result, so codeql and semgrep are skipped, which counts as passed for
+  # the required `codeql` check (the `verify` pattern in ci.yml). main and the
+  # schedule always run both.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - id: diff
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ] \
+            || git diff --name-only HEAD^1 HEAD | grep -qvE '^(docs/|openspec/|\.claude/|\.agents/|[^/]+\.md$)'; then
+            echo code=true >> "$GITHUB_OUTPUT"
+          else
+            echo code=false >> "$GITHUB_OUTPUT"
+          fi
+
   codeql:
     name: codeql
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -42,6 +68,8 @@ jobs:
 
   semgrep:
     name: semgrep
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
