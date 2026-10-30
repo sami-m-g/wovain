@@ -154,16 +154,21 @@ const Why = ({ why }: { why: IdeaWhy }) => {
                     reason: reasons(demand.value.market.reason),
                   })}
             </li>
-            <li>
-              {demand.value.ads.status === "ok"
-                ? t("ads", {
-                    advertisers: demand.value.ads.value.advertisers,
-                    validated: demand.value.ads.value.validated,
-                  })
-                : t("adsMissing", {
-                    reason: reasons(demand.value.ads.reason),
-                  })}
-            </li>
+            {/* Without Meta connected, the page says it once (unconfirmed),
+                not on every card. */}
+            {demand.value.ads.status !== "ok" &&
+            demand.value.ads.reason === "not_connected" ? null : (
+              <li>
+                {demand.value.ads.status === "ok"
+                  ? t("ads", {
+                      advertisers: demand.value.ads.value.advertisers,
+                      validated: demand.value.ads.value.validated,
+                    })
+                  : t("adsMissing", {
+                      reason: reasons(demand.value.ads.reason),
+                    })}
+              </li>
+            )}
           </>
         ) : (
           <li>{t("demandMissing", { reason: reasons(demand.reason) })}</li>

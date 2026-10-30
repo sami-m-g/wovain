@@ -2386,6 +2386,11 @@
         "body": "wovain crea tu campaña en pausa, dentro de los límites de gasto que fijes.",
         "action": "Configurar Meta"
       },
+      "draw": {
+        "title": "Sigue con tu drop: crea los diseños",
+        "body": "Tu drop “{brief}” está listo para sus diseños. Aún no necesitas tienda.",
+        "action": "Crear diseños"
+      },
       "design": {
         "title": "Aprueba un diseño",
         "body": "Tu drop «{brief}» te espera.",
@@ -2467,7 +2472,7 @@
       "no_competition_read": "Sin confirmar: no se pudo revisar los anuncios, así que la competencia es desconocida.",
       "saturated": "Saturado: muchos anuncios o anunciantes similares ya lo venden."
     },
-    "unconfirmed": "Ninguno de estos temas ha probado demanda aún, así que cada uno dice qué falta. Elige uno para probar, o escribe el tuyo.",
+    "unconfirmed": "Qloo ve estos temas en alza. Aún no hay prueba de ventas, así que cada tarjeta dice qué se comprobó. Elige uno para probarlo con diseños, o escribe el tuyo. Los datos de anuncios de Meta aparecen al conectar Meta.",
     "noneChecked": "No pudimos confirmar la demanda de estos temas. Esto es lo que revisamos:",
     "unavailable": "No disponible: {reason}",
     "tagTitle": "Etiqueta de Qloo «{tag}»",

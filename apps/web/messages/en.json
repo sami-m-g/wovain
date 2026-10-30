@@ -2382,6 +2382,11 @@
         "body": "wovain builds your campaign paused, inside the spend limits you set.",
         "action": "Set up Meta"
       },
+      "draw": {
+        "title": "Continue your drop: make designs",
+        "body": "Your drop “{brief}” is ready for its designs. No shop needed yet.",
+        "action": "Make designs"
+      },
       "design": {
         "title": "Approve a design",
         "body": "Your drop “{brief}” is waiting for you.",
@@ -2463,7 +2468,7 @@
       "no_competition_read": "Unconfirmed: the listings check couldn't run, so the competition is unknown.",
       "saturated": "Crowded: many similar listings or advertisers already sell it."
     },
-    "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
+    "unconfirmed": "Qloo sees these themes rising. Sales proof isn't in yet, so each card says what was checked. Pick one to test with designs, or write your own. Meta's ad data shows once Meta is connected.",
     "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:",
     "unavailable": "Not available: {reason}",
     "tagTitle": "Qloo tag “{tag}”",

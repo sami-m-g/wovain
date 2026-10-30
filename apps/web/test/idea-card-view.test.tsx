@@ -62,6 +62,27 @@ const full: IdeaCard = {
   },
 };
 
+const withDemand = (reason: "not_connected" | "read_failed"): IdeaCard =>
+  full.why.status === "ok"
+    ? {
+        ...full,
+        why: {
+          ...full.why,
+          value: {
+            ...full.why.value,
+            demand: {
+              status: "ok",
+              value: {
+                ads: { reason, status: "unavailable" },
+                market: { reason: "none_found", status: "unavailable" },
+                proven: false,
+              },
+            },
+          },
+        },
+      }
+    : full;
+
 const SECTION_ORDER = [
   "What to make",
   "Why it sells",
@@ -70,6 +91,13 @@ const SECTION_ORDER = [
 ];
 
 describe("the fixed idea card", () => {
+  it("leaves out the Meta Ad Library line until Meta is connected", () => {
+    expect(render(withDemand("not_connected"))).not.toContain(
+      "Meta Ad Library"
+    );
+    expect(render(withDemand("read_failed"))).toContain("Meta Ad Library");
+  });
+
   it("shows the four sections in one order, with the readable title", () => {
     const html = render(full);
     const at = SECTION_ORDER.map((title) => html.indexOf(title));
