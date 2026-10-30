@@ -28,30 +28,33 @@ const FIXES: Record<Provider, string> = {
 
 const MAX_REASON = 300;
 
-// Tavily out of credits on wovain's plan (its SDK drops the 432/433 status
-// and keeps only these words). No retry passes until the plan is topped
-// up, so it is a 4xx: the run fails at once with the reason instead of
-// spending minutes on retries.
-const TAVILY_OUT_OF_CREDITS =
-  /exceeds your plan's set usage limit|pay-as-you-go limit/iu;
+// A provider out of credits on wovain's account: Tavily (its SDK drops the
+// 432/433 status and keeps only its words) or fal (a 403 whose
+// detail says "User is locked. Reason: Exhausted balance"; its MCP says
+// "out of credits"). No retry passes until the account is topped up, so it
+// is a 4xx: the run fails at once with the reason instead of spending
+// minutes on retries.
+const OUT_OF_CREDITS =
+  /exceeds your plan's set usage limit|pay-as-you-go limit|exhausted balance|out of credits/iu;
 const PAYMENT_REQUIRED = 402;
 const BAD_GATEWAY = 502;
 
 // The provider's own words, led by its HTTP status when the error has one
-// (the MCP SDK's SdkHttpError, a fetch failure): "401 invalid_token …".
+// (the MCP SDK's SdkHttpError, a fetch failure): "401 invalid_token …",
+// and followed by its body's detail when it has one (fal's ApiError).
 const reasonOf = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  const status =
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    typeof error.status === "number"
-      ? error.status
-      : undefined;
-  const reason =
+  const fields =
+    typeof error === "object" && error !== null
+      ? (error as { body?: { detail?: unknown }; status?: unknown })
+      : {};
+  const status = typeof fields.status === "number" ? fields.status : undefined;
+  const detail = fields.body?.detail;
+  const led =
     status === undefined || message.includes(String(status))
       ? message
       : `${status} ${message}`;
+  const reason = typeof detail === "string" ? `${led}: ${detail}` : led;
   return reason.slice(0, MAX_REASON);
 };
 
@@ -85,10 +88,7 @@ export const external = async <T>(
       internal: { operation, provider },
       // The reason rides in the message too: a run keeps only the message.
       message: `${provider} ${operation} failed: ${why}`,
-      status:
-        provider === "tavily" && TAVILY_OUT_OF_CREDITS.test(why)
-          ? PAYMENT_REQUIRED
-          : BAD_GATEWAY,
+      status: OUT_OF_CREDITS.test(why) ? PAYMENT_REQUIRED : BAD_GATEWAY,
       why,
       ...(error instanceof Error ? { cause: error } : {}),
     });

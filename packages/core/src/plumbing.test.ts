@@ -72,6 +72,31 @@ describe("external", () => {
     );
   });
 
+  it("makes fal's exhausted balance a 4xx, so the run fails at once", async () => {
+    // fal's client keeps the reason only in the 403 body's detail.
+    const locked = Object.assign(new Error("Forbidden"), {
+      body: {
+        detail:
+          "User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing.",
+      },
+      status: 403,
+    });
+
+    await expect(
+      external(
+        undefined,
+        { operation: "submit_art", provider: "fal" },
+        async () => await Promise.reject(locked)
+      )
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) &&
+        error.code === "FAL_FAILED" &&
+        error.status === 402 &&
+        error.message.includes("Exhausted balance")
+    );
+  });
+
   it("passes a result through and records success", async () => {
     const set = vi.fn();
     const value = await external(
