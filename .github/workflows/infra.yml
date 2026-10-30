@@ -161,8 +161,12 @@ jobs:
           workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.NEXT_INFRA_SERVICE_ACCOUNT }}
       - run: pnpm run infra:install
+      # --refresh reads the live service first: the image and traffic are
+      # ignored (infra/resources.ts), so Pulumi sends their last recorded
+      # values with any template change. Without it, a settings change rolled
+      # next back to a stale image (2026-10-30, #350).
       - name: Apply next
-        run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview
+        run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview --refresh
 
   # next's Polar catalog and promos, after next's apply. It touches next's
   # Polar state only: POLAR_METADATA_KEY=wovain:next keeps the seed off
