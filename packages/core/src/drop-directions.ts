@@ -2,7 +2,7 @@ import { log as evlog } from "evlog";
 
 import { discoveryQlooFailed, momentumOf, seedsOf } from "./brand-discovery";
 import { readSaturation } from "./competition";
-import type { Saturation, SaturationLevel } from "./competition";
+import type { Saturation } from "./competition";
 import { demandOf, marketDemandOf } from "./demand";
 import type { AdDemand, Demand } from "./demand";
 import { keyOf as wordsKeyOf } from "./evidence";
@@ -22,6 +22,7 @@ import type { Nemotron } from "./nemotron";
 import { outcomeScore } from "./outcomes";
 import type { OutcomeModel, OutcomeWhy } from "./outcomes";
 import type { InsightsQuery, Qloo, QlooInsight } from "./qloo";
+import type { SaturationLevel } from "./saturation";
 import { cautionOf, fallbackScore, judgeIdea, sweetSpotOf } from "./sweet-spot";
 import type {
   Caution,

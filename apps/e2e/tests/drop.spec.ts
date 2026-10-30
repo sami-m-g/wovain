@@ -46,7 +46,7 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
     : /\d+ news stor(?:y|ies) this month/u;
   const listings = isSmoke
     ? /similar listings?|listings not checked/u
-    : /reviews on similar listings/u;
+    : /reviews on (?:similar listings|marketplaces)/u;
   await expect(page.getByText(news).first()).toBeVisible();
   await expect(page.getByText(listings).first()).toBeVisible();
   await page.getByRole("button", { name: "Who buys this" }).first().click();
@@ -82,8 +82,13 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   await expectWhoBuysSettled(page);
   // How crowded it is: the listings read, and the competition panel
   // when the tavily-competition read has come back.
+  // The idea card says it as "N similar of M listings read".
   await expect(
-    page.getByRole("term").filter({ hasText: "Listings" }).first()
+    page
+      .getByRole("term")
+      .filter({ hasText: "Listings" })
+      .or(page.getByText(/similar of \d+ listings read|similar listings?/u))
+      .first()
   ).toBeVisible();
   await page.getByRole("checkbox").first().check();
   await page.getByRole("button", { name: "See designs" }).click();

@@ -4,7 +4,7 @@ import { createError, log as evlog } from "evlog";
 import { z } from "zod";
 
 import { readSaturation } from "./competition";
-import type { Saturation, SaturationLevel } from "./competition";
+import type { Saturation } from "./competition";
 import {
   AGE_BANDS,
   FEELINGS,
@@ -22,6 +22,7 @@ import type { Nemotron } from "./nemotron";
 import type { Qloo, QlooDemographics, QlooInsight } from "./qloo";
 import { QLOO_AUDIENCES } from "./qloo-audiences";
 import type { QlooAudience } from "./qloo-audiences";
+import type { SaturationLevel } from "./saturation";
 import type { DecisionTrace, TraceSource } from "./trace";
 
 // Guided brand discovery for a newcomer with no niche yet (openspec

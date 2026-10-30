@@ -596,7 +596,8 @@
         "brand": "Marque",
         "movie": "Film",
         "tv_show": "Série"
-      }
+      },
+      "pickIdea": "Choisir « {title} »"
     },
     "designs": {
       "title": "Valider les visuels",
@@ -2353,16 +2354,8 @@
     "sections": {
       "make": "Quoi créer",
       "why": "Pourquoi ça se vend",
-      "audience": "Qui achète et où",
+      "audience": "Qui achète, et où",
       "competition": "Concurrence"
-    },
-    "unavailable": {
-      "not_read": "Pas encore lu.",
-      "read_failed": "La lecture a échoué. Relancez la recherche.",
-      "not_connected": "Connectez Meta pour lire les publicités que les boutiques maintiennent.",
-      "none_found": "Rien trouvé pour cette idée.",
-      "ungrounded": "Pas de titre : le texte affirmait ce que les preuves ne montrent pas.",
-      "raw_tag": "Pas de titre : seule l'étiquette de goût brute est revenue."
     },
     "dropped": {
       "no_qloo_evidence": "Aucune preuve Qloo",
@@ -2386,7 +2379,58 @@
       "saturated": "Saturé : beaucoup d'annonces ou d'annonceurs similaires le vendent déjà."
     },
     "unconfirmed": "Aucun de ces thèmes n'a encore prouvé sa demande : chacun indique ce qui manque. Choisissez-en un à tester, ou écrivez le vôtre.",
-    "noneChecked": "Nous n'avons pas pu confirmer la demande pour ces thèmes. Voici ce que nous avons vérifié :"
+    "noneChecked": "Nous n'avons pas pu confirmer la demande pour ces thèmes. Voici ce que nous avons vérifié :",
+    "unavailable": "Indisponible : {reason}",
+    "tagTitle": "Tag Qloo « {tag} »",
+    "reasons": {
+      "not_read": "pas encore lu",
+      "read_failed": "la lecture a échoué",
+      "not_connected": "connectez Meta pour le lire",
+      "none_found": "rien n'a été trouvé",
+      "ungrounded": "les mots ne correspondaient pas aux preuves",
+      "raw_tag": "seul le tag Qloo brut est revenu"
+    },
+    "make": {
+      "products": "Prouvé sur : {products}",
+      "style": "Style : {style}"
+    },
+    "why": {
+      "affinity": "Qloo : « {tag} » correspond à ce public ({affinity})",
+      "news": "{count, plural, =0 {Aucune actualité ce mois-ci} one {# actualité ce mois-ci} other {# actualités ce mois-ci}}",
+      "market": "{bestsellers, plural, =0 {Aucun best-seller} one {# best-seller} other {# best-sellers}}, {reviews, plural, =0 {aucun avis} one {# avis} other {# avis}} sur les marketplaces",
+      "marketMissing": "Marketplaces : indisponible, {reason}",
+      "ads": "{advertisers, plural, =0 {Aucune boutique n'en fait la pub} one {# boutique en fait la pub} other {# boutiques en font la pub}}, {validated, number} depuis 14 jours ou plus",
+      "adsMissing": "Bibliothèque publicitaire Meta : indisponible, {reason}",
+      "demandMissing": "Preuve de demande : indisponible, {reason}"
+    },
+    "audience": {
+      "sameAsBrief": "Les mêmes acheteurs que votre brief.",
+      "fromBrief": "d'après votre brief",
+      "noAges": "Âges inconnus",
+      "places": "Où : {places}",
+      "interests": "Centres d'intérêt : {interests}"
+    },
+    "competition": {
+      "level": {
+        "open": "Libre",
+        "sweet-spot": "Créneau idéal",
+        "crowded": "Saturé"
+      },
+      "listings": "{count, plural, =0 {Aucune annonce similaire} one {# annonce similaire} other {# annonces similaires}}",
+      "listingsOf": "{count, number} similaires sur {sampled, number} annonces lues",
+      "medianPrice": "Elles se vendent environ {price}",
+      "noPrice": "Prix non lus",
+      "advertisers": "{count, plural, =0 {aucun annonceur} one {# annonceur} other {# annonceurs}}",
+      "gaps": "Personne ne couvre : {gaps}"
+    },
+    "mark": {
+      "decision": "Qloo a choisi « {tag} » pour ces acheteurs : c'est un goût qu'ils partagent.",
+      "tag": "Tag Qloo",
+      "affinity": "Affinité de goût",
+      "audience": "Audience Qloo",
+      "entities": "Monté avec",
+      "places": "Lieux principaux"
+    }
   },
   "Alerts": {
     "title": "Alertes",

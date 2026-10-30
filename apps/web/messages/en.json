@@ -596,7 +596,8 @@
         "brand": "Brand",
         "movie": "Film",
         "tv_show": "TV"
-      }
+      },
+      "pickIdea": "Pick “{title}”"
     },
     "designs": {
       "title": "Approve the designs",
@@ -2356,14 +2357,6 @@
       "audience": "Who buys and where",
       "competition": "Competition"
     },
-    "unavailable": {
-      "not_read": "Not read yet.",
-      "read_failed": "The read failed. Try Research again.",
-      "not_connected": "Connect Meta to read the ads shops keep running.",
-      "none_found": "Nothing found for this idea.",
-      "ungrounded": "No title: the words stated something the evidence doesn't show.",
-      "raw_tag": "No title: only the raw taste tag came back."
-    },
     "dropped": {
       "no_qloo_evidence": "No Qloo evidence",
       "no_demand_proof": "No proof that it sells",
@@ -2386,7 +2379,58 @@
       "saturated": "Crowded: many similar listings or advertisers already sell it."
     },
     "unconfirmed": "None of these themes proved demand yet, so each one says what's missing. Pick one to test, or write your own.",
-    "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:"
+    "noneChecked": "We couldn't confirm demand for these themes. Here's what we checked:",
+    "unavailable": "Not available: {reason}",
+    "tagTitle": "Qloo tag “{tag}”",
+    "reasons": {
+      "not_read": "not read yet",
+      "read_failed": "the read failed",
+      "not_connected": "connect Meta to read it",
+      "none_found": "nothing was found",
+      "ungrounded": "the words didn't match the evidence",
+      "raw_tag": "only the raw Qloo tag came back"
+    },
+    "make": {
+      "products": "Proven on: {products}",
+      "style": "Style: {style}"
+    },
+    "why": {
+      "affinity": "Qloo: “{tag}” fits this audience ({affinity})",
+      "news": "{count, plural, =0 {No news this month} one {# news story this month} other {# news stories this month}}",
+      "market": "{bestsellers, plural, =0 {No bestsellers} one {# bestseller} other {# bestsellers}}, {reviews, plural, =0 {no reviews} one {# review} other {# reviews}} on marketplaces",
+      "marketMissing": "Marketplaces: not available, {reason}",
+      "ads": "{advertisers, plural, =0 {No shop advertising it} one {# shop advertising it} other {# shops advertising it}}, {validated, number} for 14 days or more",
+      "adsMissing": "Meta Ad Library: not available, {reason}",
+      "demandMissing": "Proof of demand: not available, {reason}"
+    },
+    "audience": {
+      "sameAsBrief": "Same buyers as your brief.",
+      "fromBrief": "from your brief",
+      "noAges": "Ages not known",
+      "places": "Where: {places}",
+      "interests": "Into: {interests}"
+    },
+    "competition": {
+      "level": {
+        "open": "Open",
+        "sweet-spot": "Sweet spot",
+        "crowded": "Crowded"
+      },
+      "listings": "{count, plural, =0 {No similar listings} one {# similar listing} other {# similar listings}}",
+      "listingsOf": "{count, number} similar of {sampled, number} listings read",
+      "medianPrice": "They sell for about {price}",
+      "noPrice": "Prices not read",
+      "advertisers": "{count, plural, =0 {no advertisers} one {# advertiser} other {# advertisers}}",
+      "gaps": "Nobody covers: {gaps}"
+    },
+    "mark": {
+      "decision": "Qloo picked “{tag}” for these buyers: it is a taste they share.",
+      "tag": "Qloo tag",
+      "affinity": "Taste affinity",
+      "audience": "Qloo audience",
+      "entities": "Rose with",
+      "places": "Top places"
+    }
   },
   "Alerts": {
     "title": "Alerts",

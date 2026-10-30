@@ -18,6 +18,8 @@ import type { Logger } from "./log";
 import { currentDecisions } from "./nemotron";
 import type { Nemotron } from "./nemotron";
 import type { QlooAffinity } from "./qloo";
+import { SATURATED_AT, saturationOf } from "./saturation";
+import type { SaturationLevel } from "./saturation";
 import type { TraceSource } from "./trace";
 
 // The competitive landscape of one theme, read with Tavily (the
@@ -57,20 +59,6 @@ const POINTS_MAX = 20;
 const GAPS_MAX = 5;
 // Words of the theme shorter than this ("a", "of") don't decide a match.
 const MIN_WORD = 3;
-
-// How crowded the theme is, from the near-identical listings among the
-// SEARCH_MAX results: high is over the threshold autopilot skips.
-export const SATURATION_LEVELS = ["low", "medium", "high"] as const;
-export type SaturationLevel = (typeof SATURATION_LEVELS)[number];
-const MEDIUM_AT = 4;
-export const SATURATED_AT = 8;
-
-export const saturationOf = (count: number): SaturationLevel => {
-  if (count >= SATURATED_AT) {
-    return "high";
-  }
-  return count >= MEDIUM_AT ? "medium" : "low";
-};
 
 export const POINT_KINDS = [
   "title",
