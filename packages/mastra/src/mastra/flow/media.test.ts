@@ -131,9 +131,41 @@ const refusingMeta: ToolCall = async (tool) => {
   throw new Error(`${tool}: Your ad account has no payment method`);
 };
 
+// Graph's automated rules on the ad account; `holds: false` is an account
+// that accepts a rule and doesn't keep it.
+const fakeGraph = ({ holds = true }: { holds?: boolean } = {}) => {
+  const rules = new Map<string, string>();
+  return {
+    createRule: async (
+      _token: string,
+      _account: string,
+      rule: { name: string }
+    ) => {
+      if (holds) {
+        rules.set(`r${rules.size + 1}`, rule.name);
+      }
+      return await Promise.resolve(`r${rules.size}`);
+    },
+    deleteRule: async (_token: string, id: string) => {
+      rules.delete(id);
+      await Promise.resolve();
+    },
+    rules: async () =>
+      await Promise.resolve([...rules].map(([id, name]) => ({ id, name }))),
+  };
+};
+
+const GUARDED = [
+  "media-buying-live",
+  "autonomy-approvals",
+  "ads-profit-rules",
+  "meta-backstop-rules",
+];
+
 const setup = async (
   meta: ToolCall,
-  flags: string[] = ["media-buying-live", "autonomy-approvals"]
+  flags: string[] = GUARDED,
+  graph = fakeGraph()
 ) => {
   const client = new PGlite();
   const db = drizzle({ client, relations });
@@ -164,6 +196,7 @@ const setup = async (
     flags: {
       isOn: async (name: string) => await Promise.resolve(flags.includes(name)),
     },
+    metaGraph: graph,
     nemotron: ask,
     ...qlooAudienceCore,
     upstream: {
@@ -171,13 +204,13 @@ const setup = async (
         provider: ProviderId,
         _grant: unknown,
         _log: unknown,
-        work: (call: ToolCall) => Promise<unknown>
+        work: (call: ToolCall, token: () => Promise<string>) => Promise<unknown>
       ) => {
         const call = providers[provider];
         if (call === undefined) {
           throw new Error(`${provider} isn't faked`);
         }
-        return await work(call);
+        return await work(call, async () => await Promise.resolve("token"));
       },
     },
   } as unknown as Core;
@@ -199,7 +232,7 @@ const setup = async (
     }),
     userId: USER_ID,
   };
-  return { actor, db, sent };
+  return { actor, db, graph, sent };
 };
 
 type Db = Awaited<ReturnType<typeof setup>>["db"];
@@ -618,6 +651,97 @@ describe("live media buying", () => {
       .from(campaign)
       .where(eq(campaign.id, staged.id));
     expect(kept?.status).toBe("draft");
+  });
+
+  it("holds Meta's backstop for the campaign before it activates", async () => {
+    await setAutonomy(ctx.actor, CAPS);
+    const staged = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+
+    const asked = await requestCampaignActivation(ctx.actor, {
+      campaignId: staged.id,
+      requestId: REQUEST,
+    });
+
+    const held = await ctx.graph.rules();
+    const names = held.map((rule) => rule.name);
+    expect(names.some((name) => name.includes("stop_loss_limit"))).toBe(true);
+    expect(names.every((name) => name.includes(staged.metaCampaignId))).toBe(
+      true
+    );
+    await decide(ctx.actor, asked.id);
+    const done = await executeMediaApproval(ctx.actor, asked.id);
+    expect(done.status).toBe("done");
+  });
+
+  it.each([
+    [
+      "the spend rules are off",
+      ["media-buying-live", "autonomy-approvals", "meta-backstop-rules"],
+      fakeGraph(),
+    ],
+    [
+      "the backstop is off",
+      ["media-buying-live", "autonomy-approvals", "ads-profit-rules"],
+      fakeGraph(),
+    ],
+    ["Meta doesn't keep the backstop", GUARDED, fakeGraph({ holds: false })],
+  ])("refuses to start a campaign when %s", async (_case, flags, graph) => {
+    const unguarded = await setup(meta.call, flags, graph);
+    await setAutonomy(unguarded.actor, CAPS);
+    const ownProduct = await seedProduct(unguarded.db);
+    await unguarded.db.insert(brandProfile).values({
+      demographics: { ageMax: 34, ageMin: 22, genders: ["female"] },
+      qlooEntities: [QLOO_BRAND],
+      userId: USER_ID,
+    });
+    const staged = await createProductCampaign(unguarded.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId: ownProduct,
+    });
+
+    await expect(
+      requestCampaignActivation(unguarded.actor, {
+        campaignId: staged.id,
+        requestId: REQUEST,
+      })
+    ).rejects.toThrow(/spend rules are in place/u);
+    expect(meta.calls.some((item) => item.tool === "ads_activate_entity")).toBe(
+      false
+    );
+  });
+
+  it("refuses an approved activation whose rules went missing since", async () => {
+    await setAutonomy(ctx.actor, CAPS);
+    const staged = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+    const asked = await requestCampaignActivation(ctx.actor, {
+      campaignId: staged.id,
+      requestId: REQUEST,
+    });
+    await decide(ctx.actor, asked.id);
+    const off = await setup(meta.call, [
+      "media-buying-live",
+      "autonomy-approvals",
+      "meta-backstop-rules",
+    ]);
+    // Same database, the spend rules turned off after the approval.
+    const actor = { ...ctx.actor, core: off.actor.core };
+
+    const failed = await executeMediaApproval(actor, asked.id);
+
+    expect(failed.status).toBe("failed");
+    expect(failed.error).toMatch(/spend rules are in place/u);
+    expect(meta.calls.some((item) => item.tool === "ads_activate_entity")).toBe(
+      false
+    );
   });
 
   it("refuses activation while the flag is off", async () => {

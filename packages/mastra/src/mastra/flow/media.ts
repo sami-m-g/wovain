@@ -21,12 +21,14 @@ import {
   spendToDate,
   traceSinkFor,
 } from "./approvals";
+import { requireSpendGuards } from "./backstop";
 import { withProvider } from "./connections";
 import { flagContextOf } from "./flags";
 
 // Live media buying (openspec change media-buying-live, flag
 // media-buying-live): a staged campaign goes live only through the approval
-// queue, inside the merchant's caps. The merchant asks (campaigns.activate),
+// queue, inside the merchant's caps, and only once its spend rules and
+// Meta's backstop are in place (./backstop). The merchant asks (campaigns.activate),
 // the queue decides (approvals.decide, or the policy), and the executor
 // below publishes it on Meta when wovain/approval.decided says "approved"
 // (../workflows/media.ts). Pausing is the safe direction: the merchant's own
@@ -138,6 +140,7 @@ export const requestCampaignActivation = async (
       message: `The campaign is ${row.status}`,
     });
   }
+  await requireSpendGuards(actor, row);
   const [settings, spent] = await Promise.all([
     autonomyOf(actor),
     spendToDate(actor),
@@ -344,6 +347,10 @@ export const performMediaApproval = async (
       String(item.payload["campaignId"] ?? "")
     );
     campaignId = row.id;
+    if (item.actionType === "media.campaign.activate") {
+      // The rules may have gone since the merchant asked: check again.
+      await requireSpendGuards(actor, row);
+    }
     const { status, verified } = await applyOnMeta(actor, item, row, applied);
     return { campaignId, ok: true, status, verified };
   } catch (error) {
