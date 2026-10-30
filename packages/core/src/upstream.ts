@@ -328,6 +328,30 @@ export const findOne = <T>(
   return found;
 };
 
+const SHAPE_DEPTH = 5;
+const SHAPE_KEYS = 12;
+
+// A reply's structure for an error log: its keys, array lengths and value
+// types, never its values (they are the merchant's data).
+export const replyShape = (value: unknown, depth = 0): string => {
+  if (Array.isArray(value)) {
+    const [first] = value as unknown[];
+    return value.length > 0 && depth < SHAPE_DEPTH
+      ? `[${value.length}x${replyShape(first, depth + 1)}]`
+      : `[${value.length}]`;
+  }
+  if (typeof value !== "object" || value === null) {
+    return value === null ? "null" : typeof value;
+  }
+  if (depth >= SHAPE_DEPTH) {
+    return "{...}";
+  }
+  const keys = Object.entries(value)
+    .slice(0, SHAPE_KEYS)
+    .map(([key, child]) => `${key}:${replyShape(child, depth + 1)}`);
+  return `{${keys.join(",")}}`;
+};
+
 export type ToolCall = (
   tool: string,
   args: Record<string, unknown>

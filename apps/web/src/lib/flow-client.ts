@@ -89,6 +89,8 @@ const VARIABLE = /\b(?<name>[A-Z][A-Z0-9_]{2,})\b/u;
 const SERVICE_CODE =
   /^(?<service>[A-Z]+)_(?<kind>NOT_CONFIGURED|NOT_CONNECTED|RECONNECT_NEEDED)$/u;
 
+const FULL_STOP = /\.$/u;
+
 const text = (value: unknown) =>
   typeof value === "string" ? { fix: value } : {};
 const count = (key: "available" | "needed", value: unknown) =>
@@ -105,8 +107,20 @@ const refusal = (
     available?: unknown;
     fix?: unknown;
     needed?: unknown;
+    why?: unknown;
   };
   switch (String(error.code)) {
+    // A step whose input isn't ready (Fourthwall's catalog had too few
+    // blanks for a capsule): the server words why and what to do.
+    case "PRECONDITION_FAILED": {
+      const why =
+        typeof data.why === "string" ? data.why.replace(FULL_STOP, "") : "";
+      return {
+        kind: "limit",
+        message: why === "" ? error.message : `${error.message}. ${why}`,
+        ...text(data.fix),
+      };
+    }
     case "OUT_OF_CREDITS": {
       return {
         kind: "credits",
