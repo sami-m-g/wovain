@@ -1,9 +1,12 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { expect, test as base } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { createSealer } from "@wovain/core/sealing";
+import type { ProviderId } from "@wovain/core/upstream";
 import { createDb } from "@wovain/db";
 import * as schema from "@wovain/db/schema/auth";
 import { billingSubscription, creditGrant } from "@wovain/db/schema/billing";
+import { connection } from "@wovain/db/schema/seller";
 import { betterAuth } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
 import { testUtils } from "better-auth/plugins";
@@ -81,6 +84,29 @@ const freePlanOf = async (userId: string) => {
     source: "plan",
     userId,
   });
+};
+
+// The merchant's Fourthwall shop and Meta ad account, connected as the
+// OAuth callback saves them (sealed with the app's key); MSW answers their
+// MCP servers (mocks/mcp.ts).
+export const connectProviders = async (
+  userId: string,
+  providers: ProviderId[]
+) => {
+  const sealer = createSealer(env("TOKEN_ENCRYPTION_KEY"));
+  await db?.insert(connection).values(
+    providers.map((provider) => ({
+      provider,
+      sealedTokens: sealer.seal(
+        JSON.stringify({
+          access_token: `e2e-${provider}`,
+          token_type: "Bearer",
+        }),
+        `${userId}:${provider}`
+      ),
+      userId,
+    }))
+  );
 };
 
 export const signInWithPassword = async (

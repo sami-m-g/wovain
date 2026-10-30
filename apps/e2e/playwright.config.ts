@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Two suites over the same specs:
 // - pr: the app built in CI (apps/web standalone) on the CI database, with
 //   every outside provider answered by MSW inside the server (./mocks).
-// - smoke: next.wovain.com after each deploy, with real providers and the
+// - smoke: next.wovain.com each night, with real providers and the
 //   seeded smoke account (src/seed-smoke.ts); only specs tagged @smoke.
 // Never point either at wovain.com: production is frozen.
 // The app's own origin, which is compiled into the build.
@@ -37,7 +37,7 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], baseURL: PR_URL },
     },
     // No trace on either: it would record the smoke account's password into
-    // the report deploy.yml uploads.
+    // the report nightly-e2e.yml uploads.
     {
       name: "smoke-setup",
       testMatch: /smoke\.setup\.ts/u,
@@ -82,6 +82,8 @@ export default defineConfig({
               FAL_KEY: "msw-fal-key-placeholder",
               GUARDRAILS: "off",
               INNGEST_DEV: "1",
+              META_APP_ID: "msw-meta-app-id",
+              META_APP_SECRET: "msw-meta-app-secret-placeholder",
               NEBIUS_API_KEY: "msw-nebius-api-key-placeholder",
               POLAR_ACCESS_TOKEN: "msw-polar-access-token-placeholder",
               PORT: new URL(PR_URL).port,

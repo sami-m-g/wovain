@@ -8,8 +8,8 @@ import { createDb } from "@wovain/db";
 import { creditGrant } from "@wovain/db/schema/billing";
 import { log } from "evlog";
 
-// The post-deploy smoke suite's account on the deployed target's site
-// (next.wovain.com or nebius.wovain.com), run by deploy.yml before the
+// The smoke suite's account on the target's site
+// (next.wovain.com or nebius.wovain.com), run by nightly-e2e.yml before the
 // suite, which sets SMOKE_ENV to its target:
 //
 //   DATABASE_URL=... DATABASE_URL_SECRET=database-url-next \
@@ -22,7 +22,7 @@ import { log } from "evlog";
 const SMOKE_EMAIL = "e2e-smoke@wovain.com";
 const SMOKE_ENV = process.env["SMOKE_ENV"] === "nebius" ? "nebius" : "next";
 // Each run's research and designs spend credits (BILLING_CATALOG): the
-// account's own grant is topped up to this on every deploy, so the suite
+// account's own grant is topped up to this on every run, so the suite
 // never stops at a paywall. On the target's own ledger; no Polar customer
 // pays.
 const SMOKE_CREDITS = 100;
