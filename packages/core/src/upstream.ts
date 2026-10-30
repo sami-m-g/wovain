@@ -286,12 +286,26 @@ const isUnauthorized = (error: unknown) =>
     "status" in error &&
     error.status === HTTP_UNAUTHORIZED);
 
+// Fourthwall's encoder puts an array field's header on its own line
+// ("categoryPath:" then "[2]: Apparel,T-Shirts"), which TOON allows only at
+// the root or in a list item. Joined back, it's the spec's
+// "categoryPath[2]: Apparel,T-Shirts".
+const KEYLESS_ARRAY =
+  /^(?<indent> *(?:- )?)(?<key>[^\s:-][^:\n]*):\n *(?<header>\[\d+\][^\n]*)$/gmu;
+
+const joinKeylessArrays = (text: string) =>
+  text.replaceAll(KEYLESS_ARRAY, "$<indent>$<key>$<header>");
+
+// Lenient: Fourthwall's encoder isn't held to the strict counts and
+// indentation either.
+const decodeFourthwallToon = (text: string) =>
+  decode(joinKeylessArrays(text), { strict: false });
+
 // Text that isn't JSON: Fourthwall replies in TOON, a compact encoding of
-// the same objects. Lenient: Fourthwall's encoder isn't held to the strict
-// counts and indentation. Prose that doesn't decode to an object stays text.
+// the same objects. Prose that doesn't decode to an object stays text.
 const decodeToon = (text: string): unknown => {
   try {
-    const decoded = decode(text, { strict: false });
+    const decoded = decodeFourthwallToon(text);
     return typeof decoded === "object" &&
       decoded !== null &&
       Object.keys(decoded).length > 0
@@ -302,7 +316,7 @@ const decodeToon = (text: string): unknown => {
   }
 };
 
-const FAILURE_CONTEXT = 250;
+const FAILURE_CONTEXT = 1000;
 
 // Why a reply left as text didn't decode, with the text around the failing
 // line, for the error log. Catalog data, never secrets.
@@ -311,15 +325,16 @@ export const toonFailure = (reply: unknown): string => {
     return "";
   }
   try {
-    decode(reply, { strict: false });
+    decodeFourthwallToon(reply);
     return "";
   } catch (error) {
     const line = error instanceof ToonDecodeError ? (error.line ?? 1) : 1;
-    const at = reply
+    const joined = joinKeylessArrays(reply);
+    const at = joined
       .split("\n")
       .slice(0, line - 1)
       .join("\n").length;
-    const around = reply.slice(
+    const around = joined.slice(
       Math.max(0, at - FAILURE_CONTEXT),
       at + FAILURE_CONTEXT
     );

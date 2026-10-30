@@ -147,6 +147,51 @@ describe("resultData", () => {
     ).toThrow("Offer not found");
   });
 
+  it("decodes Fourthwall's array fields with the header on its own line", async () => {
+    // Fourthwall's reply on next, 2026-10-30 (the logged text up to
+    // "badg"), with printDetails in the same encoding.
+    const text = [
+      "pageNumber: 0",
+      "pageSize: 10",
+      "totalElements: 72",
+      "totalPages: 8",
+      "data[10]:",
+      "  - id: pro_8be1acca2fe7403f89",
+      "    brand: Comfort Colors",
+      '    brandModel: "1717"',
+      "    name: Comfort Colors Garment-Dyed Heavyweight T-Shirt",
+      "    slug: comfort-colors-garment-dyed-heavyweight-t-shirt-dtg",
+      "    categoryPath:",
+      "    [2]: Apparel,T-Shirts",
+      "    productionMethod: DTG",
+      "    priceFrom: 15.45",
+      "    priceTo: 46.77",
+      "    minimumOrdersNumber: 0",
+      "    reviewsSummary:",
+      "        count: 261",
+      "        rating: 4.66",
+      "    customizationType: DESIGNER_V3_READY",
+      "    favourite: false",
+      "    printDetails:",
+      "        supportsBackendRendering: true",
+      "        printAreas:",
+      "        [2]{name,type,supportsBackendRendering}:",
+      "            Front,front_large,true",
+      "            Back,back_large,true",
+    ].join("\n");
+    const reply = resultData({ content: [{ text, type: "text" }] });
+    expect(toonFailure(text)).toBe("");
+    await expect(searchCatalog(() => Promise.resolve(reply))).resolves.toEqual([
+      {
+        baseCost: 15.45,
+        id: "pro_8be1acca2fe7403f89",
+        name: "Comfort Colors Garment-Dyed Heavyweight T-Shirt",
+        region: "front_large",
+        slug: "comfort-colors-garment-dyed-heavyweight-t-shirt-dtg",
+      },
+    ]);
+  });
+
   it("decodes Fourthwall's TOON catalog into renderable blanks", async () => {
     const text = [
       "pageNumber: 0",
