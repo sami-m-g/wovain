@@ -1,10 +1,41 @@
 import { describe, expect, it } from "vitest";
 
-import { leadIdeaOf, sectionState } from "@/components/drops/drop-sections";
+import {
+  leadIdeaOf,
+  pickedIdeaIdsOf,
+  sectionState,
+} from "@/components/drops/drop-sections";
 
 import en from "../messages/en.json";
 import es from "../messages/es.json";
 import fr from "../messages/fr.json";
+
+describe("the ideas a drop draws", () => {
+  const one = [{ id: "i1" }];
+
+  it("counts a Home pick's one idea as picked before its design lands", () => {
+    expect(
+      pickedIdeaIdsOf({ designs: [], ideas: one, step: "design" }, [])
+    ).toEqual(["i1"]);
+  });
+
+  it("picks nothing while the run researches or waits at its ideas gate", () => {
+    for (const step of ["research", "name", "ideas", null]) {
+      expect(pickedIdeaIdsOf({ designs: [], ideas: one, step }, [])).toEqual(
+        []
+      );
+    }
+  });
+
+  it("counts drawn and approved ideas, once each", () => {
+    const run = {
+      designs: [{ ideaId: "i1" }],
+      ideas: [{ id: "i1" }, { id: "i2" }, { id: "i3" }],
+      step: "design",
+    };
+    expect(pickedIdeaIdsOf(run, ["i1", "i2"])).toEqual(["i1", "i2"]);
+  });
+});
 
 describe("the drop page's section states", () => {
   it("marks earlier sections done and the current one waiting", () => {

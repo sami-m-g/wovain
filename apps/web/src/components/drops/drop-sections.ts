@@ -60,6 +60,35 @@ export const sectionState = (
   return run.status === "running" ? "working" : "waiting";
 };
 
+// Steps before the ideas gate opens: nothing is picked yet.
+const BEFORE_PICK = new Set([null, undefined, "research", "name", "ideas"]);
+
+/**
+ * The ideas the run draws: those with a design, the ones the merchant just
+ * approved at the gate and, past the gate with nothing drawn yet, a run's
+ * only idea. A drop started from an idea picked on the Home has that one
+ * idea and no gate, so it is picked from the start.
+ */
+export const pickedIdeaIdsOf = (
+  run: {
+    designs: readonly { ideaId: string }[];
+    ideas: readonly { id: string }[];
+    step?: string | null;
+  },
+  approved: readonly string[]
+): string[] => {
+  const [only, ...others] = run.ideas;
+  const pickedRun =
+    only !== undefined && others.length === 0 && !BEFORE_PICK.has(run.step);
+  return [
+    ...new Set([
+      ...run.designs.map((one) => one.ideaId),
+      ...approved,
+      ...(pickedRun ? [only.id] : []),
+    ]),
+  ];
+};
+
 /** The idea the drop's Qloo sections explain: the first picked, else the best scored. */
 export const leadIdeaOf = <T extends { id: string; score: number }>(
   ideas: readonly T[],

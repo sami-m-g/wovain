@@ -635,7 +635,8 @@
       "viewFlat": "Arte plano",
       "viewLabel": "Vista del diseño",
       "mockupUnavailable": "Fourthwall no pudo mostrar este diseño en la camiseta. Se muestra el arte plano.",
-      "mockupNotConnected": "Conecta Fourthwall para ver este diseño en la camiseta."
+      "mockupNotConnected": "Conecta Fourthwall para ver este diseño en la camiseta.",
+      "drawing": "Dibujando un diseño para «{title}». Tarda unos minutos."
     },
     "products": {
       "title": "Publica los productos",

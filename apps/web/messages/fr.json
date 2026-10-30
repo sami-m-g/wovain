@@ -635,7 +635,8 @@
       "viewFlat": "Visuel seul",
       "viewLabel": "Vue du visuel",
       "mockupUnavailable": "Fourthwall n'a pas pu afficher ce visuel sur le t-shirt. Voici le visuel à plat.",
-      "mockupNotConnected": "Connectez Fourthwall pour voir ce visuel sur le t-shirt."
+      "mockupNotConnected": "Connectez Fourthwall pour voir ce visuel sur le t-shirt.",
+      "drawing": "Dessin d’un design pour « {title} ». Cela prend quelques minutes."
     },
     "products": {
       "title": "Publier les produits",

@@ -29,6 +29,7 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from "@wovain/ui/components/input-group";
+import { Skeleton } from "@wovain/ui/components/skeleton";
 import { Textarea } from "@wovain/ui/components/textarea";
 import { cn } from "@wovain/ui/lib/utils";
 import {
@@ -642,6 +643,7 @@ const DesignCard = ({
 
 export const DesignsStep = ({
   designs,
+  drawing,
   reasons,
   busyLabel,
   onReason,
@@ -652,6 +654,8 @@ export const DesignsStep = ({
   onNext,
 }: {
   designs: Design[];
+  // Picked ideas whose design is still being drawn, by title.
+  drawing: readonly { id: string; title: string }[];
   reasons: Record<string, string>;
   busyLabel?: string | undefined;
   onReason: (id: string, value: string) => void;
@@ -677,6 +681,18 @@ export const DesignsStep = ({
             onRetry={() => onRetry(design)}
             reason={reasons[design.id] ?? ""}
           />
+        ))}
+        {drawing.map((idea) => (
+          <li
+            aria-busy="true"
+            className="border-border bg-card flex flex-col gap-3 rounded-xl border p-4"
+            key={idea.id}
+          >
+            <Skeleton className="aspect-square w-full rounded-lg" />
+            <output className="text-muted-foreground text-sm">
+              {t("drawing", { title: idea.title })}
+            </output>
+          </li>
         ))}
       </ul>
       <StepActions busyLabel={busyLabel} onBack={onBack}>

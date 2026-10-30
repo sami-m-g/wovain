@@ -23,6 +23,7 @@ import {
   MAX_BRIEF,
   ProductsStep,
 } from "@/components/app/wizard-steps";
+import { pickedIdeaIdsOf } from "@/components/drops/drop-sections";
 import { DropStory } from "@/components/drops/drop-story";
 import type { Stage } from "@/components/product/run-tape";
 import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
@@ -74,6 +75,22 @@ const PanelSkeleton = () => {
 };
 
 type Drop = ReturnType<typeof useDropFlow>;
+
+// The picked ideas still being drawn while the run works: each shows as a
+// placeholder with its title until its design lands.
+const drawingOf = (run: Drop["run"], approved: readonly string[]) => {
+  if (run?.status !== "running") {
+    return [];
+  }
+  const drawn = new Set(run.designs.map((one) => one.ideaId));
+  const picked = new Set(pickedIdeaIdsOf(run, approved));
+  return run.ideas
+    .filter((idea) => picked.has(idea.id) && !drawn.has(idea.id))
+    .map((idea) => ({
+      id: idea.id,
+      title: namedWords(idea)?.title ?? idea.theme,
+    }));
+};
 
 /**
  * The step's panel, unless the run says otherwise: a failed run, or research
@@ -159,6 +176,7 @@ const DropFlow = ({
       <DesignsStep
         busyLabel={busyLabel}
         designs={designs}
+        drawing={drawingOf(run, drop.picked)}
         onApprove={(design) => actions.handleDecide(design.id, true)}
         onBack={() => actions.handleGoTo("ideas")}
         onNext={actions.handleMakeProducts}
