@@ -121,6 +121,17 @@ config:
         id: judges-account-2026
         maxRedemptions: 1
         name: Judges account 2026
+      # The founder's own testing code on next: only the founder's email can
+      # redeem it. Polar and the webhook allow one redemption per merchant.
+      - audience: "The founder's own testing on next.wovain.com."
+        credits: 1000
+        emails:
+          - sami.mg@outlook.com
+        enabled: true
+        endsAt: "2026-12-31T23:59:59Z"
+        id: founder-testing-2026
+        maxRedemptions: 1
+        name: Founder testing 2026
       - audience: "Launch: a public code for the first creators, once paid plans are on."
         credits: 50
         enabled: false
