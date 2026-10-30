@@ -1,3 +1,4 @@
+import { isQlooTag } from "@wovain/core/qloo";
 import { DecisionTrace } from "@wovain/core/trace";
 import type { TrendIdea } from "@wovain/core/trends";
 import { DEFAULT_LOCATION, whoBuys } from "@wovain/core/who-buys";
@@ -48,12 +49,20 @@ const briefEntitiesOf = (research: TrendIdea) => {
 // are read from it alone, so each idea gets its own buyers (with the
 // brief's entities mixed in, every idea of a run got the same). The age and
 // gender need entities, so they come from the brief's, and say so. An idea
-// without a tag (saved before Qloo was required) reads the brief's.
+// without a tag (saved before Qloo was required) reads the brief's. An idea
+// picked from a drop direction keeps the theme's name, not a tag ID (Qloo
+// answers 400 "Could not find a valid tag"), and its seeds are the
+// direction's own rising entities: it reads those.
 export const signalsOf = (research: TrendIdea) => {
   const brief = briefEntitiesOf(research);
-  if (research.qlooTag === undefined) {
+  if (research.qlooTag === undefined || !isQlooTag(research.qlooTag)) {
     return {
-      options: { scope: "brief" as const },
+      options: {
+        scope:
+          research.qlooTag === undefined
+            ? ("brief" as const)
+            : ("idea" as const),
+      },
       signals: { entities: brief, tags: [] },
     };
   }
