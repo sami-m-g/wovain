@@ -2114,6 +2114,7 @@
   "Drops": {
     "intro": "Un drop, c'est 4 à 6 produits qui partagent une palette et une marque. Les tags de goût de Qloo choisissent le style et les produits. Chaque produit a ses emplacements, ses maquettes et son prix.",
     "plan": "En faire une capsule",
+    "planning": "Préparation de la capsule avec le catalogue Fourthwall…",
     "building": "Dessin et placement de l'art. Les produits apparaissent ici dès qu'ils sont prêts.",
     "reviewPass": "La vérification visuelle est passée : emplacements, hiérarchie et un style commun.",
     "publish": "Publier le drop",

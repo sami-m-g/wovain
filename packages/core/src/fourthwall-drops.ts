@@ -1,6 +1,7 @@
+import { log as evlog } from "evlog";
 import { z } from "zod";
 
-import { findAll, findOne } from "./upstream";
+import { findAll, findOne, replyShape } from "./upstream";
 import type { ToolCall } from "./upstream";
 
 // The Fourthwall calls a drop needs (openspec design-drops): blanks with
@@ -11,7 +12,7 @@ import type { ToolCall } from "./upstream";
 
 const NOT_AMOUNT = /[^\d.]/gu;
 
-const money = z.union([
+export const money = z.union([
   z.number(),
   z.string().transform((value, ctx) => {
     const digits = value.replaceAll(NOT_AMOUNT, "");
@@ -28,12 +29,16 @@ const money = z.union([
 
 const placementSchema = z.object({ id: z.string().min(1), name: z.string() });
 
+// A field wovain can do without never rejects a blank: spelled another way
+// (a price as an object, a placement without a name), it reads as missing
+// and the blank still prints. Every reply's blank failed to parse otherwise.
+/* oxlint-disable promise/prefer-await-to-then, promise/valid-params -- zod's catch, not a promise */
 const printAreaSchema = z.object({
-  name: z.string().default(""),
-  placements: z.array(placementSchema).nullish().default([]),
+  name: z.string().catch(""),
+  placements: z.array(placementSchema).nullish().default([]).catch([]),
   required: z.boolean().nullish().default(false),
   // The area's own price, e.g. "$8.50".
-  salePrice: money.nullish(),
+  salePrice: money.nullish().catch(null),
   supportsBackendRendering: z.boolean(),
   type: z.string().min(1),
 });
@@ -41,8 +46,9 @@ export type PrintArea = z.infer<typeof printAreaSchema>;
 
 const blankSchema = z.object({
   id: z.string().min(1),
-  name: z.string(),
-  priceFrom: money.nullish(),
+  name: z.string().catch(""),
+  priceFrom: money.nullish().catch(null),
+  /* oxlint-enable promise/prefer-await-to-then, promise/valid-params */
   printDetails: z.object({
     printAreas: z.array(printAreaSchema),
     supportsBackendRendering: z.boolean(),
@@ -68,6 +74,18 @@ export interface BlankQuery {
 
 const SEARCH_SIZE = 5;
 
+// A catalog read that found nothing to print on, logged with the reply's
+// shape (keys and types, never values) so the cause reaches Error Tracking.
+export const logEmptyCatalog = (what: string, summary: string) => {
+  evlog.error({
+    error: {
+      code: "FOURTHWALL_CATALOG_EMPTY",
+      message: `Fourthwall's catalog listed no renderable blank for ${what}: ${summary}`,
+      name: "FourthwallCatalogEmpty",
+    },
+  });
+};
+
 // Blanks for a product kind, most popular first, that Fourthwall can render
 // a design on.
 export const searchBlanks = async (
@@ -83,7 +101,8 @@ export const searchBlanks = async (
     ...(printRegions === undefined ? {} : { printRegions }),
     ...(productionMethods === undefined ? {} : { productionMethods }),
   });
-  return findAll(blankSchema, reply).flatMap((product) => {
+  const listed = findAll(blankSchema, reply);
+  const blanks = listed.flatMap((product) => {
     const areas = product.printDetails.printAreas.filter(
       (area) => area.supportsBackendRendering
     );
@@ -99,6 +118,13 @@ export const searchBlanks = async (
         ]
       : [];
   });
+  if (blanks.length === 0) {
+    logEmptyCatalog(
+      `"${query}"`,
+      `products=${listed.length} shape=${replyShape(reply)}`
+    );
+  }
+  return blanks;
 };
 
 const variantsSchema = z.object({

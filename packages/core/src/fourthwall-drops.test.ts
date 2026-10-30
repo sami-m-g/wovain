@@ -1,3 +1,4 @@
+import { log as evlog } from "evlog";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -54,6 +55,55 @@ describe("searchBlanks", () => {
     expect(
       blank?.printAreas.map((area) => [area.type, area.salePrice])
     ).toEqual([["back_large", 8.5]]);
+  });
+});
+
+describe("searchBlanks with an odd reply", () => {
+  it("keeps a blank whose optional fields are spelled another way", async () => {
+    const call = replying({
+      results: [
+        {
+          id: "prd_2",
+          name: "Classic tee",
+          priceFrom: { currency: "USD", value: "12.50" },
+          printDetails: {
+            printAreas: [
+              {
+                name: "Front",
+                placements: [{ id: "center" }],
+                salePrice: { formatted: "$8.50" },
+                supportsBackendRendering: true,
+                type: "front_large",
+              },
+            ],
+            supportsBackendRendering: true,
+          },
+          slug: "classic-tee",
+        },
+      ],
+    });
+    const [blank] = await searchBlanks(call, { query: "tee" });
+    expect(blank?.id).toBe("prd_2");
+    expect(blank?.baseCost).toBeUndefined();
+    expect(blank?.printAreas[0]?.placements).toEqual([]);
+  });
+
+  it("logs the shape of a reply with nothing to print on, not its values", async () => {
+    const error = vi.spyOn(evlog, "error").mockImplementation(() => {});
+    const blanks = await searchBlanks(
+      replying({ content: [{ secret: "shop-data", total: 0 }] }),
+      { query: "tee" }
+    );
+    expect(blanks).toEqual([]);
+    const [[logged]] = error.mock.calls as [
+      [{ error: { code: string; message: string } }],
+    ];
+    expect(logged.error.code).toBe("FOURTHWALL_CATALOG_EMPTY");
+    expect(logged.error.message).toContain(
+      "shape={content:[1x{secret:string,total:number}]}"
+    );
+    expect(logged.error.message).not.toContain("shop-data");
+    error.mockRestore();
   });
 });
 

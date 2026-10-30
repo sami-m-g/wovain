@@ -331,6 +331,11 @@ export const CapsulePanel = ({
           >
             {t("plan")}
           </Button>
+          {plan.isPending ? (
+            <output className="text-muted-foreground text-sm">
+              {t("planning")}
+            </output>
+          ) : null}
           {ideaId === undefined ? (
             <span className="text-muted-foreground text-sm">
               {t("capsulePick")}
