@@ -900,7 +900,7 @@
       "checkedOn": "Vérifié sur {blank}",
       "guardrails": "La voix de votre marque s'applique toujours : {voice}",
       "loading": "Suggestion d'un ton et de couleurs selon les acheteurs de ce drop…",
-      "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
+      "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant. Vous pouvez tout de même cliquer sur Créer les designs : ils choisissent leurs propres couleurs.",
       "retry": "Réessayer",
       "info": "À propos de {field}",
       "source": "Selon Qloo : suggéré pour le thème Qloo de ce drop et ce qu'aiment aussi ses acheteurs."

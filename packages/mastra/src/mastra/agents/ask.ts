@@ -177,10 +177,14 @@ export const createNemotron =
     schema,
     system,
     temperature = 0.4,
+    timeoutMs,
   }: Ask<T>): Promise<z.output<T>> => {
     if (kit === undefined) {
       throw notConfigured.nebius();
     }
+    // One budget for every attempt of a call the merchant waits on.
+    const budget =
+      timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs);
     const trace = currentLlmTrace();
     const routed = trace?.routed === true;
     const requestContext = new RequestContext(
@@ -221,7 +225,7 @@ export const createNemotron =
       await external(log, { operation: name, provider: "nebius" }, async () => {
         const send = async (withMemory: boolean, rules: string) =>
           await kit.agents[name].generate(input, {
-            abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+            abortSignal: budget ?? AbortSignal.timeout(TIMEOUT_MS),
             instructions: rules,
             modelSettings: { temperature },
             requestContext,

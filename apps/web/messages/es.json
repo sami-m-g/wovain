@@ -904,7 +904,7 @@
       "checkedOn": "Comprobado en {blank}",
       "guardrails": "La voz de tu marca se mantiene: {voice}",
       "loading": "Sugiriendo tono y colores según los compradores de este lanzamiento…",
-      "failed": "No pudimos sugerir tono y colores ahora.",
+      "failed": "No pudimos sugerir tono y colores ahora. Aun así puedes pulsar Crear diseños: los diseños eligen sus propios colores.",
       "retry": "Reintentar",
       "info": "Sobre {field}",
       "source": "Según Qloo: sugerido para el tema de Qloo de este drop y lo que también les gusta a sus compradores."
