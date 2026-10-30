@@ -617,3 +617,22 @@ it("gives up on a 5xx after two retries", async () => {
   await tags;
   expect(fetchMock).toHaveBeenCalledTimes(3);
 });
+
+it("still retries a 5xx that follows a run of 429s", async () => {
+  vi.useFakeTimers();
+  const statuses = [429, 429, 503];
+  const fetchMock = vi.fn(async () => {
+    const status = statuses.shift();
+    return await Promise.resolve(
+      status === undefined
+        ? Response.json(TAGS_REPLY)
+        : new Response("busy", { status })
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "key", baseURL: "https://qloo.test" });
+  const tags = qloo.tagsFor(["E3"]);
+  await vi.runAllTimersAsync();
+  await expect(tags).resolves.toHaveLength(1);
+  expect(fetchMock).toHaveBeenCalledTimes(4);
+});
