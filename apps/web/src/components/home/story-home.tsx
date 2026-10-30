@@ -124,6 +124,13 @@ export const HomeDirections = () => {
   const router = useRouter();
   const start = useMutation(
     orpc.runs.startFromDirection.mutationOptions({
+      // A refused pick (out of credits, the idea gone) says why above the
+      // ideas: bring it into view from the card the merchant clicked.
+      onError: () => {
+        document.querySelector(`#${SELLS_NOW_ID}`)?.scrollIntoView({
+          block: "start",
+        });
+      },
       onSuccess: (started) => {
         router.push(`/dashboard/drops/${started.id}`);
       },
