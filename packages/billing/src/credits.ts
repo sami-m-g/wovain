@@ -7,7 +7,7 @@ import {
 import type { CreditTake } from "@wovain/db/schema/billing";
 import { and, asc, eq, gt, isNull, sql, sum } from "drizzle-orm";
 
-import { billingCatalog } from "./catalog";
+import { creditCostOf } from "./catalog";
 import type { CreditStep } from "./plans";
 
 // Spending credits: reserve before a paid step, then settle it when the step
@@ -71,7 +71,7 @@ export const reserveCredits = async (
     userId,
   }: { runId?: string | null | undefined; step: CreditStep; userId: string }
 ): Promise<Reservation> => {
-  const needed = billingCatalog().creditCost[step];
+  const needed = creditCostOf(step);
   return await db.transaction(async (tx) => {
     const grants = await tx
       .select({

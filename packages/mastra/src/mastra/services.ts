@@ -54,6 +54,9 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   NEMOTRON_VISION_MODEL: string;
   // The fal endpoint that draws the print art (apps/web/.env.schema).
   FAL_IMAGE_MODEL: string;
+  // The fal endpoint that animates video ads (apps/web/.env.schema); video
+  // ads are off without it.
+  FAL_VIDEO_MODEL?: string | undefined;
   // wovain's own fal key: it transcribes voice commands (./voice), and
   // designs draw on it, paid by credits, while the onboarding-wizard flag is
   // on (packages/mastra/src/mastra/flow/connections.ts). Voice commands fail without it.
@@ -188,6 +191,12 @@ export const createCore = (
         meta: env.META_MCP_URL,
       },
     }),
+    // The fal endpoint for video ad clips (./video-ads.ts); undefined where
+    // video ads are off.
+    videoModel:
+      env.FAL_VIDEO_MODEL === undefined || env.FAL_VIDEO_MODEL === ""
+        ? undefined
+        : env.FAL_VIDEO_MODEL,
   };
 };
 

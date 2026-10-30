@@ -5,6 +5,9 @@ config:
   gcp:userProjectOverride: "true"
   github:owner: sami-m-g
   wovain-next:falImageModel: openai/gpt-image-2.5/flare/text-to-image
+  # Video ad clips: Wan 3.0 Prime image-to-video, $0.05 a second on fal, so
+  # $0.25 a 5 s clip (fal MCP, 2026-10-30); creditCost.video prices it.
+  wovain-next:falVideoModel: alibaba/wan-3.0-prime/image-to-video
   wovain-next:nemotronModel: nvidia/Nemotron-3.5-Super-VL
   wovain-next:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
   # The Resend domain wovain.com (the `resend` resource in the wovain stack).
@@ -69,6 +72,8 @@ config:
       assist: 1
       design: 4
       research: 5
+      # One 5 s clip, $0.25 on fal: 10 credits at about $0.025 each.
+      video: 10
     designsPerRun: 3
     creditPack:
       credits: 100

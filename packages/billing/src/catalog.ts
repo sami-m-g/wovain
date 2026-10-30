@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CREDIT_PACK_CODE } from "./plans.ts";
+import type { CreditStep } from "./plans.ts";
 
 // wovain's catalog: the plans and the credit pack sold through Polar, what
 // each paid step costs in credits, the promo codes, the redemption limit and
@@ -69,6 +70,9 @@ export const billingCatalogSchema = z.strictObject({
     design: credits,
     // A run's trend research: Qloo once and Tavily for each theme.
     research: credits,
+    // One video ad clip on fal (FAL_VIDEO_MODEL). Video ads are off where
+    // it's unset.
+    video: credits.optional(),
   }),
   // A one-time top-up; its credits never expire.
   creditPack: z
@@ -131,6 +135,15 @@ let loaded: BillingCatalog | undefined;
 export const billingCatalog = (): BillingCatalog => {
   loaded ??= parseBillingCatalog(process.env[BILLING_CATALOG_VAR]);
   return loaded;
+};
+
+// What one step costs. A step the catalog doesn't price can't be charged.
+export const creditCostOf = (step: CreditStep) => {
+  const cost = billingCatalog().creditCost[step];
+  if (cost === undefined) {
+    throw new Error(`${BILLING_CATALOG_VAR} prices no ${step} step`);
+  }
+  return cost;
 };
 
 // What the browser may see: everything but the promos.

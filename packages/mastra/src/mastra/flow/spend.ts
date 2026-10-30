@@ -1,4 +1,4 @@
-import { billingCatalog } from "@wovain/billing/catalog";
+import { billingCatalog, creditCostOf } from "@wovain/billing/catalog";
 import {
   releaseCredits,
   reserveCredits,
@@ -43,9 +43,8 @@ export const assertCredits = async (
   ...after: CreditStep[]
 ) => {
   const merchant = await merchantOf(actor);
-  const cost = billingCatalog().creditCost;
   const needed = [step, ...after].reduce(
-    (total, each) => total + cost[each],
+    (total, each) => total + creditCostOf(each),
     0
   );
   const available = await awaitFreeCredits(actor, needed);
