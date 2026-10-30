@@ -24,6 +24,7 @@ const env = z
     FAL_IMAGE_MODEL: z.string().min(1),
     FAL_KEY: z.string().optional(),
     FAL_MCP_URL: z.url(),
+    FAL_VIDEO_MODEL: z.string().optional(),
     FOURTHWALL_DEFAULT_PRODUCT_ID: z.string().min(1),
     FOURTHWALL_MCP_URL: z.url(),
     GUARDRAILS: z.enum(["on", "off"]).default("on"),

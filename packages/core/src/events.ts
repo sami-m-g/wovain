@@ -33,6 +33,8 @@ export const EVENTS = {
   optimizerTick: "wovain/optimizer.tick",
   // A performance snapshot was saved (feedback loop input).
   performanceSnapshot: "wovain/performance.snapshot",
+  // A product went live: make its video ad creatives (video-ad-creatives).
+  productVideos: "wovain/product.videos.requested",
   // Something worth a suggestion happened (a trend, a Qloo signal, a
   // schedule, a performance change).
   triggerFired: "wovain/trigger.fired",
@@ -132,6 +134,10 @@ export const eventSchemas = {
     date: z.string(),
     snapshotIds: z.array(z.string()),
     source: z.enum(["meta", "fourthwall"]),
+    userId: z.string(),
+  }),
+  [EVENTS.productVideos]: z.object({
+    productId: z.string(),
     userId: z.string(),
   }),
   [EVENTS.triggerFired]: z.object({

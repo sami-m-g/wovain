@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "ce33fb65-230e-41ef-8474-93f54b41f353",
+  "prevIds": [
+    "e4bab58c-3080-47b7-9f76-aa19a6198313"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "product",
+        "videos"
+      ],
+      "writes": [
+        "s|col|public.product.videos",
+        "n|col|public.product.videos",
+        "e|col|public.product.videos"
+      ],
+      "reads": [
+        "n|tbl|public.product",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "product",
+        "name": "videos",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

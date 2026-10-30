@@ -24,6 +24,7 @@ import {
 } from "./run";
 import type { RunServices } from "./run";
 import { createStoreFunctions } from "./store";
+import { createVideoFunctions } from "./videos";
 
 // The durable engine behind runs: Mastra workflows executed by Inngest
 // (docs/adr/0001-durable-runs.md). Mastra keeps workflow snapshots (what a
@@ -186,6 +187,7 @@ export const createRunEngine = ({
       ...createOptimizerFunctions(inngest, { ...services, events }),
       ...createStoreFunctions(inngest, services),
       ...createDropFunctions(inngest, services),
+      ...createVideoFunctions(inngest, services),
       ...createDirectionFunctions(inngest, services),
       // Alerts (openspec alerts) send wovain/notify for approvals and
       // failed jobs, and deliver it.

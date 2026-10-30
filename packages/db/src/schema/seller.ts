@@ -5,6 +5,7 @@ import type { DirectionsAnswer } from "@wovain/core/drop-directions";
 import type { DropStyle } from "@wovain/core/drop-style";
 import type { TrendIdea } from "@wovain/core/trends";
 import type { PendingFlow, ProviderId } from "@wovain/core/upstream";
+import type { AdVideo } from "@wovain/core/video-ads";
 import type { WhoBuys } from "@wovain/core/who-buys";
 import {
   boolean,
@@ -194,6 +195,9 @@ export const product = pgTable(
       .notNull(),
     updatedAt: updatedAt(),
     userId: owner(),
+    // Its video ad creatives, made by fal once it is published (openspec
+    // video-ad-creatives); null until then, or where video ads are off.
+    videos: jsonb("videos").$type<AdVideo[]>(),
   },
   (table) => [index("product_user_idx").on(table.userId)]
 );

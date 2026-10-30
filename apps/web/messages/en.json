@@ -1176,6 +1176,7 @@
       "research": "Trend research, or an idea picked on Home",
       "design": "One design",
       "assist": "Ad copy, or an autopilot call",
+      "video": "One video ad clip",
       "manualDrop": "A drop you approve",
       "autopilotDrop": "An autopilot drop",
       "credits": "{count, plural, one {# credit} other {# credits}}",

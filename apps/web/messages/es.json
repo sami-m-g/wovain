@@ -1176,6 +1176,7 @@
       "research": "Investigación de tendencias, o una idea elegida en Inicio",
       "design": "Un diseño",
       "assist": "Texto de anuncio, o una llamada del piloto automático",
+      "video": "Un clip de anuncio en vídeo",
       "manualDrop": "Un drop que apruebas tú",
       "autopilotDrop": "Un drop en piloto automático",
       "credits": "{count, plural, one {# crédito} other {# créditos}}",

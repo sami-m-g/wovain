@@ -6,7 +6,7 @@ import type { billingCatalogSchema } from "./catalog.ts";
 // it): the proposed launch values (docs/pricing-proposal.md), so the tests
 // read like the product. Deployed environments get theirs from Pulumi config.
 export const TEST_CATALOG = {
-  creditCost: { assist: 1, design: 4, research: 5 },
+  creditCost: { assist: 1, design: 4, research: 5, video: 10 },
   creditPack: { credits: 100, name: "Credit pack", priceCents: 1500 },
   designsPerRun: 3,
   plans: {

@@ -10,3 +10,7 @@ fal ejecuta el modelo de imagen (GPT Image en fal, la variable de entorno `FAL_I
 - **Tu cuenta, tu factura.** Cada vendedor conecta su cuenta de fal en la página de Conexiones (OAuth a través del relay MCP de fal, `https://mcp.fal.ai/mcp-relay`). wovain sella la autorización como las demás conexiones y dibuja con ella (`submit_job`, `check_job`, `get_job_result`), así que el vendedor paga a fal directamente. wovain no tiene clave de fal propia.
 
 Sin conexión con fal, la generación de diseños y las ejecuciones fallan con un error `FAL_NOT_CONNECTED` que enlaza a Conexiones.
+
+## Anuncios en vídeo
+
+fal también anima el mockup de cada producto publicado en dos clips de anuncio de 5 segundos (9:16 y 1:1) para su campaña de Meta. El modelo es la variable de entorno `FAL_VIDEO_MODEL`, definida por entorno en la configuración de Pulumi (`falVideoModel`); en next es Wan 3.0 Prime image-to-video (`alibaba/wan-3.0-prime/image-to-video`), $0.05 por segundo en fal, es decir $0.25 por clip. Los clips usan la clave de fal de wovain (`FAL_KEY`) y se pagan con los créditos `video` de `BILLING_CATALOG`. La función de Inngest `product-videos` (`packages/mastra/src/mastra/workflows/videos.ts`) guarda cada envío con su clave, así que un reintento consulta la misma petición de fal y nunca cobra dos veces. Los anuncios en vídeo están desactivados donde falta `FAL_VIDEO_MODEL` o el precio `video`.

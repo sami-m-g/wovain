@@ -37,6 +37,9 @@ export const sharedSettings = (
 // default), from the stack's config. The JSON ones are objects. Each
 // service gets them at runtime and each GitHub environment's image build
 // through its WEB_BUILD_ENV variable.
+const optional = (name: string, value: string | undefined) =>
+  value === undefined ? {} : { [name]: value };
+
 export const appSettings = (config: pulumi.Config, key: SettingKey) => {
   const plain = Object.fromEntries(
     Object.entries({
@@ -79,6 +82,9 @@ export const appSettings = (config: pulumi.Config, key: SettingKey) => {
       .requireObject<string[]>(key("mcpWidgetResourceDomains"))
       .join(","),
     PRICING_RULES: JSON.stringify(config.requireObject(key("pricingRules"))),
+    // The fal endpoint for video ad clips (packages/core/src/video-ads.ts);
+    // video ads are off in an environment that doesn't set it.
+    ...optional("FAL_VIDEO_MODEL", config.get(key("falVideoModel"))),
   } as Record<string, string>;
 };
 

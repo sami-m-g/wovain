@@ -21,6 +21,7 @@ import { flagContextOf } from "./flags";
 import { reachMilestone } from "./milestones";
 import { once } from "./once";
 import { previewKey, variantsFor } from "./variants";
+import { requestProductVideos } from "./videos";
 
 // An approved design becomes a Fourthwall product: the art goes to the
 // shop's media library, the product is created hidden at wovain's price, and
@@ -188,6 +189,8 @@ export const publishDesignProduct = async (actor: Actor, id: string) => {
     .where(and(eq(product.id, id), eq(product.userId, actor.userId)))
     .returning();
   await reachMilestone(actor, "products_published");
+  // Its video ad clips, made in the background where video ads are on.
+  await requestProductVideos(actor, id);
   return row ?? { ...hidden, productUrl, status: "public" as const };
 };
 
