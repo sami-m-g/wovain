@@ -38,7 +38,6 @@ export const InProgress: Story = {
           { how: "none", id: "connect", required: true, state: "done" },
           { how: "none", id: "site_live", required: true, state: "done" },
           { how: "link", id: "payouts", required: true, state: "todo" },
-          { how: "link", id: "shipping", required: true, state: "check" },
           { how: "none", id: "domain", required: false, state: "waiting" },
         ])
       )

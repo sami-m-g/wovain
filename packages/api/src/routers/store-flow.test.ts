@@ -86,10 +86,6 @@ const LIVE_SHOP = {
     verificationRestrictions: [],
   },
   "ecommerce_get-payout-info": { status: "ACTIVE" },
-  "ecommerce_get-shipping-profiles": {
-    enabled: true,
-    shippingProfiles: [{ enabled: true }],
-  },
 };
 
 const fakeShop = (replies: Record<string, unknown>) => {
@@ -848,7 +844,6 @@ describe("store setup", () => {
       payouts: "done",
       pixel: "waiting",
       policies: "check",
-      shipping: "done",
       site_live: "done",
     });
   });
