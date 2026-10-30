@@ -6,7 +6,7 @@ import {
 } from "@wovain/core/pixel-setup";
 import { readShopFacts } from "@wovain/core/store";
 import { auditEvent } from "@wovain/db/schema/autonomy";
-import { createError } from "evlog";
+import { createError, EvlogError } from "evlog";
 
 import type { Actor } from "./actor";
 import { withProvider } from "./connections";
@@ -29,6 +29,26 @@ const pixelAutomationOff = () =>
     status: 404,
     why: "The meta-pixel-automation flag is off.",
   });
+
+// The step Meta refused, Meta's own words and what the merchant does next,
+// in the message the Store shows.
+const BAD_GATEWAY = 502;
+const refused = (step: string, fix: string) => (error: unknown) => {
+  const why = EvlogError.isEvlogError(error)
+    ? (error.why ?? error.message)
+    : String(error);
+  throw createError({
+    ...(error instanceof Error ? { cause: error } : {}),
+    fix,
+    message: `Meta refused ${step}: ${why}. ${fix}`,
+    status: BAD_GATEWAY,
+    why,
+  });
+};
+const DATASET_FIX =
+  "Reconnect Meta in Meta setup and allow every permission it asks for, including business_management. Or create a pixel once in Meta Events Manager (Connect data sources, Web), then press Set up again.";
+const TEST_FIX =
+  "Your pixel is set up: paste its ID into Fourthwall, then check Events Manager for live events.";
 
 /**
  * The dataset the shop should use, through Graph: the one chooseDataset
@@ -67,27 +87,33 @@ export const setupPixel = async (actor: Actor): Promise<PixelSetupResult> => {
       const adAccountId = await adAccountFor(call, "pixel-setup");
       const token = await accessToken();
       const graph = actor.core.metaGraph;
-      const found = await graphDatasetFor(actor, token, adAccountId);
+      const found = await graphDatasetFor(actor, token, adAccountId).catch(
+        refused("listing your ad account's pixels", DATASET_FIX)
+      );
       let datasetId = found;
       if (datasetId === undefined) {
-        const made = await graph.createDataset(
-          token,
-          adAccountId,
-          datasetNameFor(shop.name),
-          actor.log
-        );
+        const made = await graph
+          .createDataset(
+            token,
+            adAccountId,
+            datasetNameFor(shop.name),
+            actor.log
+          )
+          .catch(refused("creating a pixel", DATASET_FIX));
         datasetId = made.id;
       }
       if (shop.baseUrl === undefined) {
         return { created: found === undefined, datasetId, testEvent: null };
       }
       const code = newTestEventCode();
-      const received = await graph.sendTestEvent(
-        token,
-        datasetId,
-        { sourceUrl: shop.baseUrl, testEventCode: code },
-        actor.log
-      );
+      const received = await graph
+        .sendTestEvent(
+          token,
+          datasetId,
+          { sourceUrl: shop.baseUrl, testEventCode: code },
+          actor.log
+        )
+        .catch(refused(`the test event to pixel ${datasetId}`, TEST_FIX));
       return {
         created: found === undefined,
         datasetId,

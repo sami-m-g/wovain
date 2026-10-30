@@ -138,7 +138,7 @@ const SetupPixel = ({ again }: { again: boolean }) => {
       </div>
       {setup.isError ? (
         <p className="text-destructive" role="alert">
-          {t("setUpFailed")}
+          {setup.error.message || t("setUpFailed")}
         </p>
       ) : null}
       {data === undefined ? null : (
