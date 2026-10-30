@@ -176,7 +176,7 @@ const setup = (relay: Partial<Relay>, grant: Grant) => {
       undefined,
       async (call) => await call("submit_job", { endpoint_id: "x" })
     );
-  return { fake, held, submit };
+  return { fake, held, submit, upstream };
 };
 
 const stale: Grant = {
@@ -320,5 +320,23 @@ describe("upstream session", () => {
     );
     expect(ctx.held.state.expired).toBe(false);
     expect(ctx.held.state.grant.refresh_token).toBe("refresh_rotated");
+  });
+});
+
+describe("upstream connect", () => {
+  it("asks for consent even when the merchant already holds a grant", async () => {
+    const { fake, held, upstream } = setup({}, stale);
+
+    const { authorizationUrl } = await upstream.startConnect(
+      "fal",
+      held.store,
+      "state_1"
+    );
+
+    const url = new URL(authorizationUrl);
+    expect(`${url.origin}${url.pathname}`).toBe(`${ISSUER}/authorize`);
+    expect(url.searchParams.get("state")).toBe("state_1");
+    expect(fake.refreshes).toBe(0);
+    expect(held.state.grant).toBe(stale);
   });
 });
