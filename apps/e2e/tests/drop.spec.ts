@@ -72,9 +72,14 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   const failed = page
     .getByRole("alert")
     .filter({ hasText: /The drop stopped during/u });
-  await expect(ideasHeading.or(failed)).toBeVisible({ timeout: 120_000 });
+  // Qloo matching nothing shows its own state, not the alert.
+  const noMatch = page.getByText("Qloo found no audience for this brief");
+  await expect(ideasHeading.or(failed).or(noMatch)).toBeVisible({
+    timeout: 120_000,
+  });
   // The diff names the step and the provider's words.
   expect(await failed.allInnerTexts()).toEqual([]);
+  await expect(noMatch).toHaveCount(0);
   await expect(ideasHeading).toBeVisible();
   // Each idea with its evidence, who buys it and its competition.
   await expect(
