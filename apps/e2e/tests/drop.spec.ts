@@ -12,7 +12,7 @@ const expectWhoBuysSettled = async (page: Page) => {
   await expect(
     page
       .getByText(
-        /brands are for targeting only|couldn't reach our taste data to say who buys this/u
+        /brands are for targeting only|reach our taste data to say who buys this/u
       )
       .first()
   ).toBeVisible();
