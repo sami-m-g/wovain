@@ -762,6 +762,54 @@ describe("createDropCampaign", () => {
     expect(await ctx.db.select().from(campaign)).toHaveLength(1);
   });
 
+  it("stages afresh, once, when the merchant deleted what a failed attempt staged", async () => {
+    const ads = meta({ loseAdSetAnswer: false });
+    let creativeFails = true;
+    const has = (id: unknown) => ads.made.some((item) => item.id === id);
+    const notFound = new Error(
+      '{"error_category":"NOT_FOUND","error_message":"The requested entity was not found","error_code":"100"}'
+    );
+    const call: ToolCall = async (tool, args) => {
+      if (tool === "ads_create_creative" && creativeFails) {
+        creativeFails = false;
+        throw new Error(
+          "Ads creative post was created by an app in development mode"
+        );
+      }
+      const parent =
+        tool === "ads_create_ad_set" ? args["campaign_id"] : args["ad_set_id"];
+      if (
+        ["ads_create_ad_set", "ads_create_ad"].includes(tool) &&
+        !has(parent)
+      ) {
+        throw notFound;
+      }
+      return await ads.call(tool, args);
+    };
+    const ctx = await setup({ meta: call });
+    const { designId } = await seedRun(ctx.db, "running");
+    const input = {
+      countries: ["US"],
+      dailyBudget: 15,
+      productIds: [await publishedProduct(ctx.db, designId)],
+    };
+    await expect(createDropCampaign(ctx.actor, input)).rejects.toThrow(
+      /development mode/u
+    );
+    // The merchant discards the draft in Ads Manager.
+    const stale = ads.made.splice(0);
+
+    const staged = await createDropCampaign(ctx.actor, input);
+
+    const campaigns = ads.calls.filter(
+      (item) => item.tool === "ads_create_campaign"
+    );
+    expect(campaigns).toHaveLength(2);
+    expect(stale.map((item) => item.id)).not.toContain(staged.metaCampaignId);
+    expect(has(staged.metaCampaignId)).toBe(true);
+    expect(staged.adIds.every((id) => has(id))).toBe(true);
+  });
+
   it("keeps one product's campaign as a plain campaign", async () => {
     const ads = meta({ loseAdSetAnswer: false });
     const ctx = await setup({ meta: ads.call });
