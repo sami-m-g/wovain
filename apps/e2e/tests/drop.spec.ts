@@ -25,6 +25,8 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
   merchant: _merchant,
   page,
 }) => {
+  // The 60 s settle wait and the 60 s directions wait outlast the default.
+  test.setTimeout(isSmoke ? 180_000 : 90_000);
   await page.goto("/dashboard/new");
   await expect(
     page.getByRole("heading", { name: /^What to sell now/u })
