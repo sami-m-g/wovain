@@ -7,7 +7,7 @@ import type { RequestLogger } from "evlog";
 // self-healing flow groups and retries on these error codes.
 
 export type Logger = Pick<RequestLogger, "set"> &
-  Partial<Pick<RequestLogger, "error">>;
+  Partial<Pick<RequestLogger, "debug" | "error">>;
 
 export type Provider =
   | "fal"

@@ -4,6 +4,7 @@ import type {
   TavilySearchOptions,
   TavilySearchResponse,
 } from "@tavily/core";
+import { LRUCache } from "lru-cache";
 
 import { external, notConfigured } from "./log";
 import type { Logger } from "./log";
@@ -177,7 +178,13 @@ export const rankSources = (
     });
 };
 
-const search = async (
+// A repeat query within a day is answered from memory, not billed again: the
+// cache holds the in-flight call too, and never a failure. Themes the
+// evidence gate dropped are repeats too, so they cost nothing the second time.
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_MAX = 500;
+
+const fetchSearch = async (
   client: TavilySearch,
   query: string,
   options: TavilySearchOptions,
@@ -199,16 +206,50 @@ const search = async (
     };
   });
 
-// The news search reads Tavily's reranked "advanced" snippets from the past
-// month; the marketplace search only counts and prices listings.
-const searchTheme = async (
-  client: TavilySearch,
-  theme: Theme,
+const searchCache = (client: TavilySearch) =>
+  new LRUCache<
+    string,
+    Awaited<ReturnType<typeof fetchSearch>>,
+    { log: Logger | undefined; options: TavilySearchOptions; query: string }
+  >({
+    fetchMethod: async (_key, _stale, { context }) =>
+      await fetchSearch(client, context.query, context.options, context.log),
+    max: CACHE_MAX,
+    ttl: CACHE_TTL_MS,
+  });
+
+type SearchCache = ReturnType<typeof searchCache>;
+
+const WHITESPACE = /\s+/gu;
+
+const search = async (
+  cache: SearchCache,
+  query: string,
+  options: TavilySearchOptions,
   log?: Logger
 ) => {
+  const key = JSON.stringify({
+    options,
+    query: query.trim().toLowerCase().replaceAll(WHITESPACE, " "),
+  });
+  if (cache.has(key)) {
+    log?.debug?.("tavily search served from cache", { query });
+  }
+  const found = await cache.fetch(key, {
+    context: { log, options, query },
+  });
+  if (found === undefined) {
+    throw new Error(`Tavily search returned nothing for "${query}"`);
+  }
+  return found;
+};
+
+// The news search reads Tavily's reranked "advanced" snippets from the past
+// month; the marketplace search only counts and prices listings.
+const searchTheme = async (cache: SearchCache, theme: Theme, log?: Logger) => {
   const [news, market] = await Promise.all([
     search(
-      client,
+      cache,
       theme.query,
       {
         includeAnswer: "advanced",
@@ -221,7 +262,7 @@ const searchTheme = async (
       log
     ),
     search(
-      client,
+      cache,
       `${theme.query} t-shirt`,
       {
         includeDomains: MARKETPLACES,
@@ -298,59 +339,62 @@ export const createTrends = (
   // Splits a brief into themes when Qloo names too few; without it, design
   // angles on the brief's subject stand in (./themes).
   ask?: Nemotron
-) => ({
-  research: async (
-    seed: string,
-    log?: Logger,
-    sources: TrendSources = ALL_SOURCES
-  ): Promise<TrendResearch> => {
-    // Tavily is the evidence: without it there is nothing to rank.
-    if (!sources.tavily) {
-      return {
-        avoidNames: [],
-        ideas: [],
-        qloo: sources.qloo ? "no_match" : "off",
-      };
-    }
-    // Qloo sharpens the themes; the brief tops them up to MIN_THEMES.
-    const taste = sources.qloo
-      ? await qloo.tasteOf(seed, log).catch((error: unknown) => {
-          // Research goes on without Qloo, but the failure still reaches
-          // the error sink (PostHog Error Tracking).
-          log?.error?.(
-            error instanceof Error ? error : new Error(String(error))
-          );
-          return { failed: true, names: [], themes: [] };
+) => {
+  const cache = searchCache(client);
+  return {
+    research: async (
+      seed: string,
+      log?: Logger,
+      sources: TrendSources = ALL_SOURCES
+    ): Promise<TrendResearch> => {
+      // Tavily is the evidence: without it there is nothing to rank.
+      if (!sources.tavily) {
+        return {
+          avoidNames: [],
+          ideas: [],
+          qloo: sources.qloo ? "no_match" : "off",
+        };
+      }
+      // Qloo sharpens the themes; the brief tops them up to MIN_THEMES.
+      const taste = sources.qloo
+        ? await qloo.tasteOf(seed, log).catch((error: unknown) => {
+            // Research goes on without Qloo, but the failure still reaches
+            // the error sink (PostHog Error Tracking).
+            log?.error?.(
+              error instanceof Error ? error : new Error(String(error))
+            );
+            return { failed: true, names: [], themes: [] };
+          })
+        : NO_TASTE;
+      const themes = await themesFor(seed, taste.themes, ask, log);
+      const searched = await Promise.all(
+        themes.map(async (theme) => await searchTheme(cache, theme, log))
+      );
+      // Names Qloo matched never go on a product, but the merchant's own seed
+      // doesn't count against itself ("Pickleball" is also a game title).
+      const avoidNames = [...new Set(taste.names)];
+      const protectedNames = avoidNames.filter(
+        (name) => name.toLowerCase() !== seed.toLowerCase()
+      );
+      const ideas = themes
+        .flatMap((theme, index) => {
+          const found = searched[index];
+          const idea =
+            found === undefined
+              ? undefined
+              : ideaOf(theme, found, protectedNames);
+          return idea === undefined ? [] : [idea];
         })
-      : NO_TASTE;
-    const themes = await themesFor(seed, taste.themes, ask, log);
-    const searched = await Promise.all(
-      themes.map(async (theme) => await searchTheme(client, theme, log))
-    );
-    // Names Qloo matched never go on a product, but the merchant's own seed
-    // doesn't count against itself ("Pickleball" is also a game title).
-    const avoidNames = [...new Set(taste.names)];
-    const protectedNames = avoidNames.filter(
-      (name) => name.toLowerCase() !== seed.toLowerCase()
-    );
-    const ideas = themes
-      .flatMap((theme, index) => {
-        const found = searched[index];
-        const idea =
-          found === undefined
-            ? undefined
-            : ideaOf(theme, found, protectedNames);
-        return idea === undefined ? [] : [idea];
-      })
-      .toSorted((a, b) => b.score - a.score)
-      .map((idea, index) => ({ ...idea, rank: index + 1 }));
-    return {
-      avoidNames: avoidNames.slice(0, 3),
-      ideas,
-      qloo: sources.qloo ? qlooStatus(taste) : "off",
-    };
-  },
-});
+        .toSorted((a, b) => b.score - a.score)
+        .map((idea, index) => ({ ...idea, rank: index + 1 }));
+      return {
+        avoidNames: avoidNames.slice(0, 3),
+        ideas,
+        qloo: sources.qloo ? qlooStatus(taste) : "off",
+      };
+    },
+  };
+};
 
 export type Trends = ReturnType<typeof createTrends>;
 

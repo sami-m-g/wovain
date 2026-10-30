@@ -21,6 +21,7 @@
     "@posthog/ai": "catalog:",
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
+    "lru-cache": "catalog:",
     "posthog-node": "catalog:",
     "unleash-client": "catalog:",
     "zod": "catalog:"

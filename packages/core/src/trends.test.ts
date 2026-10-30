@@ -337,3 +337,25 @@ describe("rankSources", () => {
     ]);
   });
 });
+
+describe("Tavily cache", () => {
+  it("answers a repeat query within 24 hours without a Tavily call", async () => {
+    const { client, search } = fakeTavily();
+    const none = qlooWith(
+      async () => await Promise.resolve({ names: [], themes: [] })
+    );
+    const trends = createTrends(
+      client,
+      none,
+      fakeNemotron(HALLOWEEN_THEMES).ask
+    );
+    const debug = vi.fn();
+
+    await trends.research(BRIEF);
+    const calls = search.mock.calls.length;
+    await trends.research(BRIEF, { debug, set: vi.fn() });
+
+    expect(search).toHaveBeenCalledTimes(calls);
+    expect(debug).toHaveBeenCalled();
+  });
+});
