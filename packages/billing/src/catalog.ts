@@ -63,6 +63,10 @@ const promoSchema = z.strictObject({
 export const billingCatalogSchema = z.strictObject({
   // What each metered step debits.
   creditCost: z.strictObject({
+    // One finished director-made video ad (FAL_AD_VIDEO_MODELS): its cast,
+    // film, two captioned cuts and review, with at most one redo. Those ads
+    // are off where it's unset.
+    adVideo: credits.optional(),
     // Autopilot's pick and review, or the ad copy: one Nemotron call.
     assist: credits,
     // One design: Nemotron's brief and judgment, and the art on wovain's fal

@@ -23,6 +23,8 @@ export const AGENT_IDS = [
   "drop_style",
   "idea_words",
   "product_listing",
+  "ad_director",
+  "ad_video_review",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
@@ -33,7 +35,12 @@ export type AgentId = (typeof AGENT_IDS)[number];
 // - fast: short binary checks (the ad judges).
 export const AGENT_ROLES = {
   ad_copy: "default",
+  // Writes a video ad's concept (hook, shots, text, sound) from the drop's
+  // evidence (openspec director-video-ads).
+  ad_director: "default",
   ad_judge: "fast",
+  // Looks at the finished video ad's frames against the art.
+  ad_video_review: "vision",
   ads_optimizer_review: "reasoning",
   autopilot_pick_idea: "reasoning",
   autopilot_review_design: "reasoning",

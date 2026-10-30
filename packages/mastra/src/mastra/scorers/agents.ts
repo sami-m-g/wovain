@@ -71,7 +71,9 @@ export type AnyScorer = MastraScorers[string]["scorer"];
 
 const DOMAIN: Record<AgentId, JudgeId[]> = {
   ad_copy: ["ad_copy_quality", "meta_policy", "brand_fit"],
+  ad_director: ["meta_policy"],
   ad_judge: [],
+  ad_video_review: [],
   ads_optimizer_review: [],
   autopilot_pick_idea: ["trend_fit"],
   autopilot_review_design: [],
@@ -95,8 +97,12 @@ const DOMAIN: Record<AgentId, JudgeId[]> = {
 // brief was written from (its prompt), so they only fit the brief writer.
 const BUILT_INS: Record<AgentId, string[]> = {
   ad_copy: ["answer_relevancy", "prompt_alignment", "toxicity", "bias"],
+  // Writes the video ad's words and shots from the evidence given.
+  ad_director: ["answer_relevancy", "prompt_alignment", "toxicity", "bias"],
   // A judge itself: its verdict is the score.
   ad_judge: [],
+  // The text scorers can't see the frames the answer is about.
+  ad_video_review: [],
   ads_optimizer_review: ["answer_relevancy"],
   autopilot_pick_idea: ["answer_relevancy", "prompt_alignment"],
   autopilot_review_design: ["answer_relevancy", "prompt_alignment", "bias"],

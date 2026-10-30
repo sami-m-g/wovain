@@ -44,6 +44,13 @@ import { missingConnection } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 const CENTS = 100;
+// Each creative's tile in its own shape: Reels cuts tall, feed cuts 4:5.
+const TILE_SHAPES: Record<string, string> = {
+  "1:1": "aspect-square",
+  "4:5": "aspect-[4/5]",
+  "9:16": "aspect-[9/16]",
+};
+
 const CREATIVE_SIZE = 320;
 // Only a staged campaign that can't spend yet is launched.
 const STARTABLE = new Set<Campaign["status"]>(["draft", "paused"]);
@@ -161,12 +168,25 @@ export const CampaignStep = ({
     campaigns.length > 0
       ? campaigns.reduce((sum, one) => sum + one.dailyBudgetCents, 0)
       : Math.round(Number(budget) * CENTS);
-  // The images, then the video ad clips fal made for each product.
+  // The images, then each product's video ads: the silent clips, or the
+  // cuts of its director-made ad, each in its own shape.
   const creatives = products.flatMap((product) => {
     const title = titles[product.designId] ?? "";
     return [
-      ...product.mockups.map((url) => ({ title, url, video: false })),
-      ...(product.videos ?? []).map(({ url }) => ({ title, url, video: true })),
+      ...product.mockups.map((url) => ({
+        aiModel: false,
+        aspect: "1:1",
+        title,
+        url,
+        video: false,
+      })),
+      ...(product.videos ?? []).map(({ aiModel, aspect, url }) => ({
+        aiModel: aiModel === true,
+        aspect,
+        title,
+        url,
+        video: true,
+      })),
     ];
   });
 
@@ -219,9 +239,14 @@ export const CampaignStep = ({
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {creatives.map((creative) => (
               <li
-                className="bg-muted aspect-square overflow-hidden rounded-xl"
+                className={`bg-muted relative overflow-hidden rounded-xl ${TILE_SHAPES[creative.aspect] ?? "aspect-square"}`}
                 key={creative.url}
               >
+                {creative.aiModel ? (
+                  <span className="bg-background/80 absolute top-2 left-2 z-10 rounded-full px-2 py-0.5 text-xs">
+                    {t("aiModel")}
+                  </span>
+                ) : null}
                 {creative.video ? (
                   <video
                     aria-label={t("videoAlt", { title: creative.title })}
