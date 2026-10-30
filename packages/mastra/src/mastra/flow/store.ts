@@ -462,18 +462,15 @@ export const requestProductMove = async (
   });
 };
 
-// products.publish with store-management on. From the website it is the
-// merchant's own request (decided in their name, like requestProductMove).
-// Through MCP (the publish_product tool and its widget) the caller may be
-// an agent, so the publish is queued under the autonomy policy and waits
-// for the merchant unless their level publishes alone. Either way the
-// executor checks readiness before anything goes live. A hidden product
-// moves to in review while it waits. Returns the product as it is now,
-// with its approval.
+// products.publish with store-management on, through MCP (the
+// publish_product tool and its widget): the caller may be an agent, so the
+// publish is queued under the autonomy policy and waits for the merchant
+// unless their level publishes alone. The executor checks readiness before
+// anything goes live. A hidden product moves to in review while it waits.
+// Returns the product as it is now, with its approval.
 export const proposeProductPublish = async (
   actor: Actor,
-  productId: string,
-  { byMerchant }: { byMerchant: boolean }
+  productId: string
 ) => {
   const row = await getProduct(actor, productId);
   if (row.status === "public") {
@@ -497,26 +494,31 @@ export const proposeProductPublish = async (
   const designRow = await actor.db.query.design.findFirst({
     where: { id: current.designId, userId: actor.userId },
   });
-  const proposal: StoreProposal = {
+  const approval = await queueAction(actor, {
     // One request per state of the product: asking twice returns the same
     // approval; asking again after an unpublish queues a new one.
     idempotencyKey: `store.product.publish:${productId}:${current.updatedAt.getTime()}`,
     inverse: MOVE_INVERSE.publish?.(productId),
     payload: { productId },
     proposedBy: "store_agent",
-    reason: byMerchant
-      ? "Asked for in the drop flow."
-      : "Asked for through an agent tool.",
+    reason: "Asked for through an agent tool.",
     title: `Publish "${designRow?.brief.title ?? "product"}"`,
     type: "store.product.publish",
-  };
-  const approval = byMerchant
-    ? await merchantAction(actor, proposal)
-    : await queueAction(actor, proposal);
+  });
   return {
     ...current,
     approval: { id: approval.id, status: approval.status },
   };
+};
+
+// The merchant's own Publish in the drop flow, after its confirm: the click
+// is the approval, so the product goes live now. Nothing is queued. With
+// store-management on, only once the shop can take orders.
+export const publishOwnProduct = async (actor: Actor, productId: string) => {
+  if (await storeManagementOn(actor)) {
+    await assertReady(actor);
+  }
+  return await publishDesignProduct(actor, productId);
 };
 
 export const requestDropPublish = async (actor: Actor, dropId: string) => {

@@ -36,7 +36,6 @@ import {
   browseCatalog,
   createDesignProduct,
   listProducts,
-  publishDesignProduct,
 } from "@wovain/mastra/flow/products";
 import {
   approveIdeas,
@@ -47,6 +46,7 @@ import {
 } from "@wovain/mastra/flow/runs";
 import {
   proposeProductPublish,
+  publishOwnProduct,
   storeManagementOn,
 } from "@wovain/mastra/flow/store";
 import { transitionErrors } from "@wovain/mastra/flow/transitions";
@@ -210,28 +210,26 @@ export const productsRouter = {
   list: protectedProcedure.handler(
     async ({ context }) => await listProducts(context)
   ),
-  // With store-management on, publishing is an action in the approval
-  // queue (flow/store proposeProductPublish): the product comes back as it
-  // is now, with its approval, and goes live when the executor runs it.
-  // Without the flag it is published at once (approval null).
+  // From the website the merchant's click, after its confirm, is the
+  // approval: the product goes live at once (flow/store publishOwnProduct).
+  // Through MCP the caller may be an agent: with store-management on, the
+  // publish is queued for approval (flow/store proposeProductPublish) and
+  // goes live when the executor runs it.
   publish: protectedProcedure
     .input(byId)
     .handler(async ({ context, input }) => {
-      const published = (await storeManagementOn(context))
-        ? await proposeProductPublish(context, input.id, {
-            byMerchant: context.mcpUserId === undefined,
-          })
-        : {
-            ...(await publishDesignProduct(context, input.id)),
-            approval: null,
-          };
+      const viaAgent = context.mcpUserId !== undefined;
+      const published =
+        viaAgent && (await storeManagementOn(context))
+          ? await proposeProductPublish(context, input.id)
+          : { ...(await publishOwnProduct(context, input.id)), approval: null };
       // Counted only once it is live, whatever path it took.
       if (published.status === "public") {
         await context.analytics?.capture({
           distinctId: context.userId,
           event: "product_published",
           properties: {
-            via: context.mcpUserId === undefined ? "web" : "chatgpt",
+            via: viaAgent ? "chatgpt" : "web",
           },
         });
       }

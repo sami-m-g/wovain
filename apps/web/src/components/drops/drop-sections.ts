@@ -36,6 +36,8 @@ const ORDER: readonly Stage[] = [
 interface RunState {
   status: "running" | "awaiting_approval" | "completed" | "failed";
   step?: string | null;
+  campaigns?: readonly unknown[];
+  products?: readonly unknown[];
 }
 
 /** Where a section stands, from the run's status and step. */
@@ -43,8 +45,13 @@ export const sectionState = (
   section: DropSection,
   run: RunState
 ): SectionState => {
+  // A completed run's campaign is done once it exists; until then it waits
+  // for the merchant's launch, if there is a product to advertise.
   if (run.status === "completed") {
-    return "done";
+    if (section !== "campaign" || run.campaigns?.length !== 0) {
+      return "done";
+    }
+    return run.products?.length === 0 ? "not_started" : "waiting";
   }
   const at = ORDER.indexOf(stageOf(run));
   const own = ORDER.indexOf(SECTION_STAGE[section]);

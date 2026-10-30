@@ -657,16 +657,45 @@
       "view": "Ver en Fourthwall",
       "error": "Publica al menos un producto primero.",
       "publish": "Publicar en Fourthwall",
-      "submit": "Planificar la campaña",
-      "mockupAlt": "{title}, maqueta del producto"
+      "submit": "Ir a la campaña",
+      "mockupAlt": "{title}, maqueta del producto",
+      "confirm": {
+        "title": "¿Publicar «{title}»?",
+        "body": "Se publica en {shop} a {price} y los clientes pueden comprarlo enseguida. Puedes ocultarlo de nuevo desde la Tienda.",
+        "product": "Producto",
+        "price": "Precio",
+        "shop": "Tienda",
+        "yourShop": "tu tienda de Fourthwall",
+        "cancel": "Todavía no",
+        "action": "Publicar ahora"
+      }
     },
     "campaign": {
-      "title": "Crea la campaña",
-      "lead": "Una campaña por producto, con un anuncio por variante de texto. Se crea en pausa: no se gasta nada hasta que la actives en Meta.",
+      "title": "Lanza la campaña",
+      "lead": "Los anuncios de tus productos publicados: las creatividades, el texto, quién los ve y cuánto pueden gastar. Nada gasta hasta que lances.",
+      "creatives": "Creatividades",
+      "creativeAlt": "{title}, imagen del anuncio",
+      "noCreatives": "Publica un producto para ver aquí sus imágenes de anuncio.",
+      "copy": "Texto del anuncio",
+      "copyPending": "wovain escribe tres variantes por diseño, en el tono del drop, al lanzar. Las lees antes de que se gaste nada.",
+      "audience": "Quién lo ve",
+      "budget": "Presupuesto diario",
+      "budgetSet": "{budget} al día",
+      "rules": "Reglas de gasto",
+      "rulesPending": "Tus límites diario y mensual y las reglas de beneficio de wovain se aplican desde el primer dólar. Las ves completas antes de que se gaste nada.",
+      "connectTitle": "Conecta Meta para lanzar",
+      "connectBody": "Tus creatividades están listas. Conecta tu cuenta publicitaria de Meta y vuelves aquí para lanzar.",
+      "storeSetup": "Abrir la configuración de la Tienda",
+      "submit": "Lanzar campaña",
+      "confirm": {
+        "title": "¿Lanzar la campaña?",
+        "body": "{budget} al día en Meta, cobrado a tu cuenta publicitaria. wovain pausa los diseños que no venden y se detiene en tus límites. Puedes pausarla cuando quieras.",
+        "cancel": "Todavía no",
+        "action": "Lanzar ahora"
+      },
       "budgetLabel": "Presupuesto diario (USD)",
       "budgetHint": "Entre 1 US$ y 500 US$ al día. Puedes cambiarlo en Meta.",
       "budgetError": "Introduce un presupuesto diario de 1 US$ a 500 US$.",
-      "submit": "Crear campaña en pausa",
       "perDay": "al día"
     },
     "done": {
@@ -729,7 +758,9 @@
           "paused": "En pausa",
           "winner": "Ganador"
         }
-      }
+      },
+      "launchedTitle": "Tu campaña se está lanzando",
+      "launchedLead": "{count, plural, one {# campaña} other {# campañas}} a {budget} al día. Meta revisa los anuncios nuevos antes de publicarlos, lo que puede tardar unas horas."
     },
     "failed": {
       "title": "El drop se detuvo en el paso {stage}",
@@ -767,7 +798,7 @@
       "review": "Guardando tu decisión…",
       "products": "Creando productos en Fourthwall…",
       "publish": "Publicando en Fourthwall…",
-      "campaign": "Creando la campaña en pausa en Meta…"
+      "campaign": "Escribiendo los anuncios y preparando la campaña en Meta…"
     },
     "autopilotLocked": "El piloto automático viene con Studio y Label. En Free, apruebas cada paso.",
     "autopilotUpgrade": "Ver planes",
