@@ -29,6 +29,21 @@ describe("the Home's next step", () => {
     expect(nextHref(step)).toBe("/dashboard/store");
   });
 
+  it("opens the picked drop for its designs before the shop", () => {
+    const facts: LaunchFacts = {
+      ...fresh,
+      brief: "folk hiking apparel",
+      run: { campaigns: [], designs: [] },
+    };
+
+    expect(nextStepOf(facts)).toBe("draw");
+    expect(nextHref("draw", "run-1")).toStrictEqual({
+      pathname: "/dashboard/new",
+      query: { run: "run-1" },
+    });
+    expect(nextStepOf({ ...facts, run: RUN })).toBe("store");
+  });
+
   it("opens the drop once only a design is left", () => {
     const facts: LaunchFacts = {
       brief: "folk hiking apparel",
@@ -65,7 +80,15 @@ describe("the Home's next step", () => {
 });
 
 describe("story Home messages", () => {
-  const steps = ["sell", "store", "meta", "design", "ads", "done"] as const;
+  const steps = [
+    "sell",
+    "draw",
+    "store",
+    "meta",
+    "design",
+    "ads",
+    "done",
+  ] as const;
 
   it.each([
     ["en", en],
