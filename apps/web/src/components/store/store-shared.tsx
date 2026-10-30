@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
 import { ExternalLink } from "lucide-react";
@@ -81,6 +81,13 @@ export const AdminLink = ({
   variant?: "link" | "outline" | "ghost";
 }) => {
   const t = useTranslations("Store");
+  // The shop's slug from the readiness the page already read: never a
+  // fetch of its own.
+  const readiness = useQuery({
+    ...orpc.store.readiness.queryOptions(),
+    enabled: false,
+  });
+  const shopSlug = slug === undefined ? readiness.data?.shop.slug : slug;
   return (
     <a
       className={cn(
@@ -89,7 +96,7 @@ export const AdminLink = ({
           : cn(buttonVariants({ size: "sm", variant }), "gap-1.5"),
         className
       )}
-      href={fourthwallAdminUrl(page, slug)}
+      href={fourthwallAdminUrl(page, shopSlug)}
       rel="noopener noreferrer"
       target="_blank"
     >
