@@ -192,8 +192,8 @@ export interface CampaignPlan {
   // Stable across retries of one staging: it names every object, so an
   // object whose create got no answer can be found again on Meta.
   tag: string;
-  // Qloo's audience as Meta targeting (./targeting). Required: no ad set is
-  // staged without it (qlooAudienceGap). Its countries are the plan's.
+  // Qloo's audience as Meta targeting (./targeting); broad when Qloo found
+  // none (evidence.fallback). Its countries are the plan's.
   targeting: MetaTargeting;
   // One design's video ad clips, when `designs` is unset.
   videos?: string[] | undefined;

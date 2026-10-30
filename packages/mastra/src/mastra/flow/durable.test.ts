@@ -847,27 +847,78 @@ describe("createProductCampaign", () => {
     expect(staged.adSetId).toBeTruthy();
   });
 
-  it("refuses a brand Qloo has no audience for with the fix", async () => {
+  it("targets a no-brand seller's Home pick with the idea's Qloo audience", async () => {
     const ads = meta({ loseAdSetAnswer: false });
     const ctx = await setup({ meta: ads.call });
+    await ctx.db.delete(brandProfile).where(eq(brandProfile.userId, USER_ID));
+    const { designId } = await seedRun(ctx.db, "running");
+    const [drafted] = await ctx.db
+      .select()
+      .from(design)
+      .where(eq(design.id, designId));
+    const [picked] = await ctx.db
+      .select()
+      .from(idea)
+      .where(eq(idea.id, drafted?.ideaId ?? ""));
+    // A Home pick: its Qloo tag and cues, and the who-buys kept in the run.
     await ctx.db
-      .update(brandProfile)
-      .set({ qlooEntities: [] })
-      .where(eq(brandProfile.userId, USER_ID));
+      .update(idea)
+      .set({
+        research: {
+          ...picked?.research,
+          cues: ["streetwear"],
+          qlooTag: "urn:tag:genre:qloo:reading",
+        } as never,
+        whoBuys: {
+          audiences: [
+            {
+              affinity: 0.9,
+              id: "urn:audience:hobbies_and_interests:sneakerheads",
+              name: "Sneakers",
+            },
+          ],
+          brands: [],
+          buyers: {},
+          location: "United States",
+          places: [],
+          scope: "idea",
+        },
+      })
+      .where(eq(idea.id, picked?.id ?? ""));
+    const productId = await publishedProduct(ctx.db, designId);
+
+    await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
+    });
+
+    const adSet = ads.calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(JSON.parse(String(adSet?.args["targeting"]))).toMatchObject({
+      flexible_spec: [
+        { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+      ],
+    });
+  });
+
+  it("never blocks the ads because the brand is missing", async () => {
+    const ads = meta({ loseAdSetAnswer: false });
+    const ctx = await setup({ meta: ads.call });
+    await ctx.db.delete(brandProfile).where(eq(brandProfile.userId, USER_ID));
     const { designId } = await seedRun(ctx.db, "running");
     const productId = await publishedProduct(ctx.db, designId);
 
-    await expect(
-      createProductCampaign(ctx.actor, {
-        countries: ["US"],
-        dailyBudget: 15,
-        productId,
-      })
-    ).rejects.toMatchObject({
-      code: "QLOO_AUDIENCE_MISSING",
-      data: { fix: expect.stringContaining("brand"), reason: "no_audience" },
+    const staged = await createProductCampaign(ctx.actor, {
+      countries: ["US"],
+      dailyBudget: 15,
+      productId,
     });
-    expect(ads.calls).toHaveLength(0);
+
+    expect(staged.adSetId).toBeTruthy();
+    const adSet = ads.calls.find((item) => item.tool === "ads_create_ad_set");
+    expect(JSON.parse(String(adSet?.args["targeting"])).geo_locations).toEqual({
+      countries: ["US"],
+    });
   });
 
   it("targets the ad set with Qloo's audience and saves the trace", async () => {

@@ -45,7 +45,7 @@ Every Meta campaign, ad set and ad SHALL be staged so that it cannot spend: in t
 
 ### Requirement: Qloo audience suggestions
 
-Every ad set SHALL carry Qloo's ages, gender and Meta interests (audience-targeting) as Advantage+ audience suggestions, and the ad copy SHALL be written for that audience. When a targeting step failed or Qloo kept no audience for the brand, `campaigns.create` SHALL refuse with `QLOO_AUDIENCE_MISSING`, carrying the reason (`failed` or `no_audience`) and a fix, and SHALL stage nothing on Meta. A retry SHALL ask Qloo again.
+Every ad set SHALL carry Qloo's ages, gender and Meta interests (audience-targeting) as Advantage+ audience suggestions, and the ad copy SHALL be written for that audience. The audience SHALL come from the idea first, then the brand, then the brief; with none it SHALL go broad (`fallback`), never refused for a missing brand. A failed step SHALL refuse with `QLOO_AUDIENCE_MISSING` (`failed`) and stage nothing.
 
 #### Scenario: Qloo targeting
 
@@ -59,8 +59,8 @@ Every ad set SHALL carry Qloo's ages, gender and Meta interests (audience-target
 
 #### Scenario: No audience
 
-- **WHEN** the brand has no Qloo brand entity, so Qloo keeps no audience
-- **THEN** the call fails with `QLOO_AUDIENCE_MISSING`, reason `no_audience` and a fix that asks for a brand Qloo knows
+- **WHEN** the seller has no brand and the picked idea has Qloo who-buys audiences
+- **THEN** the ad set targets the idea's audience; with no Qloo data at all it stages broad, never refused for the missing brand
 
 ### Requirement: Activation through approvals
 
