@@ -1,8 +1,10 @@
+import { setTimeout as sleep } from "node:timers/promises";
+
 import { z } from "zod";
 
 import { adSetIdsOf, conversationId } from "./ads";
 import type { StagedCampaign } from "./ads";
-import { findAll } from "./upstream";
+import { findAll, replyShape } from "./upstream";
 import type { ToolCall } from "./upstream";
 
 // Live media buying on the merchant's own Meta ad account (openspec change
@@ -62,23 +64,31 @@ export const findSalesPixel = async (call: ToolCall, adAccountId: string) => {
   return ids.length === 1 ? ids[0] : undefined;
 };
 
-const draftIds = async (
+const draftIdsIn = (reply: unknown) =>
+  new Set(
+    findAll(
+      z.object({ ad_object_id: z.union([z.string(), z.number()]) }),
+      reply
+    ).map((entity) => String(entity.ad_object_id))
+  );
+
+const readDraft = async (
   call: (tool: string, args: Record<string, unknown>) => Promise<unknown>,
   {
     adAccountId,
     campaignId,
   }: Pick<StagedCampaign, "adAccountId" | "campaignId">
 ) =>
-  new Set(
-    findAll(
-      z.object({ ad_object_id: z.union([z.string(), z.number()]) }),
-      await call("ads_get_ad_entities", {
-        ad_account_id: adAccountId,
-        object_ids: [campaignId],
-        object_state: "draft",
-      })
-    ).map((entity) => String(entity.ad_object_id))
-  );
+  await call("ads_get_ad_entities", {
+    ad_account_id: adAccountId,
+    object_ids: [campaignId],
+    object_state: "draft",
+  });
+
+const draftIds = async (
+  call: (tool: string, args: Record<string, unknown>) => Promise<unknown>,
+  staged: Pick<StagedCampaign, "adAccountId" | "campaignId">
+) => draftIdsIn(await readDraft(call, staged));
 
 const liveEntity = z.object({
   effective_status: z.string().optional(),
@@ -92,9 +102,6 @@ const liveStatuses = async (
   level: "ad" | "adset" | "campaign",
   ids: string[]
 ) => {
-  if (ids.length === 0) {
-    return new Map<string, string | undefined>();
-  }
   const reply = await call("ads_get_ad_entities", {
     ad_account_id: adAccountId,
     fields: ["id", "status", "effective_status"],
@@ -102,12 +109,13 @@ const liveStatuses = async (
     object_ids: ids,
     reporting_purpose: ["entity_lookup"],
   });
-  return new Map(
+  const statuses = new Map(
     findAll(liveEntity, reply).map((entity) => [
       String(entity.id),
       entity.status ?? entity.effective_status,
     ])
   );
+  return { reply, statuses };
 };
 
 export const pauseCampaign = async (
@@ -131,42 +139,75 @@ export const pauseCampaign = async (
   });
 };
 
-// Proves a fresh staging cannot spend: every object is in the draft, or live
-// and PAUSED. Anything else is paused at once and the staging fails.
-export const verifyStagedPaused = async (
-  call: ToolCall,
+// Every staged object, once: in the draft, or live with the status Meta
+// reports (undefined when neither read found it), and each reply's shape.
+const readStaged = async (
+  ask: (tool: string, args: Record<string, unknown>) => Promise<unknown>,
   staged: StagedCampaign
-): Promise<{ state: "draft" | "paused" }> => {
-  const ask = meta(call, staged.campaignId, "create_and_launch_new_ads");
-  const inDraft = await draftIds(ask, staged);
+) => {
+  const draft = await readDraft(ask, staged);
+  const inDraft = draftIdsIn(draft);
+  const shapes = [`draft=${replyShape(draft)}`];
+  const live: { id: string; level: string; status: string | undefined }[] = [];
   const levels = [
     ["campaign", [staged.campaignId]],
     ["adset", adSetIdsOf(staged)],
     ["ad", staged.adIds],
   ] as const;
-  const live = levels.map(
-    ([level, ids]) => [level, ids.filter((id) => !inDraft.has(id))] as const
-  );
-  if (live.every(([, ids]) => ids.length === 0)) {
-    return { state: "draft" };
-  }
-  const notPaused: string[] = [];
-  for (const [level, ids] of live) {
-    // oxlint-disable-next-line no-await-in-loop
-    const statuses = await liveStatuses(ask, staged.adAccountId, level, ids);
-    for (const id of ids) {
-      if (statuses.get(id) !== "PAUSED") {
-        notPaused.push(`${level} ${id}: ${statuses.get(id) ?? "missing"}`);
-      }
+  for (const [level, all] of levels) {
+    const ids = all.filter((id) => !inDraft.has(id));
+    if (ids.length > 0) {
+      // oxlint-disable-next-line no-await-in-loop
+      const read = await liveStatuses(ask, staged.adAccountId, level, ids);
+      shapes.push(`${level}=${replyShape(read.reply)}`);
+      live.push(
+        ...ids.map((id) => ({ id, level, status: read.statuses.get(id) }))
+      );
     }
   }
-  if (notPaused.length > 0) {
-    await pauseCampaign(call, staged);
-    throw new Error(
-      `Meta objects were not paused after staging (${notPaused.join(", ")}); the campaign was paused`
-    );
+  return { live, shapes };
+};
+
+// Meta can take a few seconds to show a just-created object.
+const READ_BACK_WAITS_MS = [2000, 4000, 8000];
+
+// Proves a fresh staging cannot spend: every object is in the draft, or live
+// and PAUSED. Anything else is paused at once and the staging fails. An
+// object no read found is reported as unread, with the replies' shapes:
+// never as missing, since a reply wovain can't parse looks the same.
+export const verifyStagedPaused = async (
+  call: ToolCall,
+  staged: StagedCampaign,
+  { wait = sleep }: { wait?: (ms: number) => Promise<unknown> } = {}
+): Promise<{ state: "draft" | "paused" }> => {
+  const ask = meta(call, staged.campaignId, "create_and_launch_new_ads");
+  let seen = await readStaged(ask, staged);
+  for (const ms of READ_BACK_WAITS_MS) {
+    if (seen.live.every((object) => object.status !== undefined)) {
+      break;
+    }
+    // oxlint-disable-next-line no-await-in-loop
+    await wait(ms);
+    // oxlint-disable-next-line no-await-in-loop
+    seen = await readStaged(ask, staged);
   }
-  return { state: "paused" };
+  const unread = seen.live.filter((object) => object.status === undefined);
+  const notPaused = seen.live.filter(
+    (object) => object.status !== undefined && object.status !== "PAUSED"
+  );
+  if (unread.length === 0 && notPaused.length === 0) {
+    return { state: seen.live.length === 0 ? "draft" : "paused" };
+  }
+  await pauseCampaign(call, staged);
+  const list = (objects: typeof seen.live) =>
+    objects
+      .map((object) => `${object.level} ${object.id}: ${object.status}`)
+      .join(", ");
+  throw new Error(
+    unread.length > 0
+      ? `wovain couldn't read Meta objects back after staging in ad account ${staged.adAccountId} (${unread.map((object) => `${object.level} ${object.id}`).join(", ")}; replies ${seen.shapes.join(" ")}); the campaign was paused`
+      : `Meta objects were not paused after staging (${list(notPaused)}); the campaign was paused`
+  );
 };
 
 // Takes an approved campaign live. A draft is published whole, as active; a
