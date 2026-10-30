@@ -43,6 +43,24 @@ El motivo de cada decisión se guarda en el diseño y una ejecución registra su
 
 El chat de IA del sitio de documentación (`apps/fumadocs`) usa el mismo endpoint de Token Factory y `NEBIUS_API_KEY`, con **Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`, la variable de entorno `DOCS_CHAT_MODEL`, 0,06 $ de entrada y 0,24 $ de salida por millón de tokens). Busca en la documentación y responde con tres fragmentos cortos. Para gastar poco, limita la respuesta a 400 tokens, envía solo los últimos cuatro mensajes, rechaza sin llamar al modelo las preguntas vacías, demasiado largas o fuera de tema, y limita a cada visitante a 10 mensajes cada 10 minutos y 50 al día, con un tope diario global. Cada llamada es un evento `$ai_generation` de PostHog con tokens y coste, sin el texto de los mensajes.
 
+## Modelos por tarea
+
+Con el flag `model-routing` activado (desarrollo, next.wovain.com y nebius.wovain.com), cada agente pide una tarea y la variable de entorno de esa tarea nombra el modelo (`packages/core/src/model-router.ts`, `AGENT_ROLES` en `packages/core/src/agents.ts`). La configuración de Pulumi fija cada ID por entorno.
+
+| Variable de entorno | ID del modelo | Lo usa |
+| --- | --- | --- |
+| `NEMOTRON_MODEL` | `nvidia/Nemotron-3.5-Super-VL` | Todos los agentes con `model-routing` desactivado |
+| `NEMOTRON_VISION_MODEL` | `nvidia/Nemotron-3.5-Super-VL` | La revisión visual del juez con `model-routing` desactivado |
+| `NEMOTRON_MODEL_DEFAULT` | `nvidia/Nemotron-3.5-Super-VL` | `design_brief`, `ad_copy`, `idea_words`, `research_themes`, `competition_summary`, `brand_discovery`, `brand_proxies`, `drop_directions`, `drop_style`, `product_listing`, `voice_intent` |
+| `NEMOTRON_MODEL_REASONING` | `nvidia/Nemotron-3-Ultra-550b-a55b` | `design_judge`, `autopilot_pick_idea`, `autopilot_review_design`, `ads_optimizer_review` |
+| `NEMOTRON_MODEL_VISION` | `nvidia/Nemotron-3.5-Super-VL` | `design_vision` |
+| `NEMOTRON_MODEL_FAST` | `nvidia/Nemotron-3_5-Lightning` | `ad_judge`, `brief_terms`, los scorers de Mastra, los guardrails de inyección de prompts y de datos personales |
+| `NEMOTRON_MODEL_SAFETY` | `nvidia/Nemotron-3_5-Lightning` | La moderación de Mastra sobre lo que publica el comerciante |
+| `DOCS_CHAT_MODEL` | `nvidia/Nemotron-3_5-Lightning` | El chat de la documentación |
+| `VOICE_STT_MODEL` | `nvidia/nemotron-asr-multilingual/asr` | Comandos de voz, servido por fal, no por Token Factory |
+
+Tavily se llama en vivo en la misma ejecución: Search y Extract para cada tema de Qloo, una búsqueda de marcas registradas por cada frase impresa y Research bajo demanda. Consulta [Tavily](/es/docs/integrations/tavily).
+
 ## Por qué Nemotron
 
 - Un segundo modelo con una rúbrica fija y un esquema detecta lo que la autorrevisión de un agente anfitrión pasa por alto.
