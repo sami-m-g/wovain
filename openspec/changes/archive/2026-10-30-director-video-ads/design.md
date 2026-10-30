@@ -51,5 +51,13 @@ The last caption cue reads "AI-generated model", and the video ad's text on Meta
 ## Risks / Trade-offs
 
 - Wan may not cut cleanly between the timed shots. The Reviewer sees frames and can send fixes; the worst case is one continuous take.
-- VEED places the captions where its preset does. The Reviewer checks that text doesn't cover the print.
+- VEED places the captions where its preset does, and paces each cue's words through the cue (Reels-style captions) instead of showing the cue whole; neighbouring cues can share a line. The call to action and the AI label are separate cues for that reason. Exact text overlays would need an ffmpeg drawtext step in the app's image, which it doesn't have. The Reviewer checks that text doesn't cover the print.
+- An 18 s Wan take ran about 4.5 minutes in the verification run, longer than one fal wait (4 minutes): the film step's retry reads the same request again, at no cost.
+
+## Verification (2026-10-30)
+
+One real run of the production inputs on fal (the Director's concept written to its rules, as Nemotron on fal's queue didn't start): cast $0.15, an 18 s Wan take with an AAC audio track (music, ambient sound, the line; mean -14 dB) $0.90, the 4:5 crop and two captioned cuts, and frames. The print stayed accurate through the cast and the film. About $1.27 for the finished ad.
+
+- 9:16: https://v3b.fal.media/files/b/0ab07f9d/YKlKeHAt4Qy2r0EC7qodO_6752532f-364c-4483-a0cc-33dac080ac1b.mp4
+- 4:5: https://v3b.fal.media/files/b/0ab07fa1/S5-G989B6RQHvsHPf4rYJ_bdff2c27-bd82-438c-ae9a-f3604146488f.mp4
 - The Reviewer sees three frames, not motion, so a distortion between them can pass.

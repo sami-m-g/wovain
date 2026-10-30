@@ -14,3 +14,15 @@ Without a fal connection, design generation and runs fail with a `FAL_NOT_CONNEC
 ## Video ads
 
 fal also animates each live product's mockup into two 5-second video ad clips (9:16 and 1:1) for its Meta campaign. The model is the `FAL_VIDEO_MODEL` env var, set per environment in Pulumi config (`falVideoModel`); on next it is Wan 3.0 Prime image-to-video (`alibaba/wan-3.0-prime/image-to-video`), $0.05 a second on fal, so $0.25 a clip. The clips run on wovain's own fal key (`FAL_KEY`) and are paid by the `video` credits in `BILLING_CATALOG`. The Inngest function `product-videos` (`packages/mastra/src/mastra/workflows/videos.ts`) keys each submit, so a retry polls the same fal request and never charges twice. Video ads are off where `FAL_VIDEO_MODEL` or the `video` price is unset.
+
+## Director-made video ads
+
+Where `FAL_AD_VIDEO_MODELS` (Pulumi `falAdVideoModels`) and the `adVideo` price are set, a live product gets one finished video ad in place of the clips. It comes from the Mastra workflow `ad-video` (`packages/mastra/src/mastra/workflows/ad-video.ts`):
+
+1. The Director agent (`ad_director`, Nemotron) writes a 15-20 s concept from the drop's evidence: a 3-second hook, 3 or 4 shots, on-screen text, a sound direction and a call to action.
+2. fal casts a person who matches the idea's Qloo buyers in the actual shirt (`fal-ai/nano-banana-pro/edit`, from the mockup and the art, $0.15).
+3. fal films one take with native audio (`alibaba/wan-3.0-prime/image-to-video`, $0.05 a second).
+4. fal crops a 4:5 cut (`fal-ai/workflow-utilities/scale-video`) and burns wovain's captions into both cuts (`veed/subtitles`), ending on the call to action and "AI-generated model".
+5. The Reviewer agent (`ad_video_review`, Nemotron VL) checks frames from `fal-ai/ffmpeg-api/extract-frame` against the art. If it fails the ad, the Director gets its fixes for one redo.
+
+A finished ad costs about $1.28 on fal, and at most $2.56 with its redo. Every fal call is keyed by product, attempt and stage, so a retry never pays twice. The assembly runs on fal's utilities, with no ffmpeg or Remotion renderer in the app.
