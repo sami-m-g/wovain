@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
 import { external } from "./log";
@@ -68,8 +70,28 @@ const eventsSchema = z.object({ events_received: z.number() });
 const MS_PER_SECOND = 1000;
 
 const graphErrorSchema = z.object({
-  error: z.object({ code: z.number().optional(), message: z.string() }),
+  error: z.object({
+    code: z.number().optional(),
+    error_subcode: z.number().optional(),
+    error_user_msg: z.string().optional(),
+    error_user_title: z.string().optional(),
+    fbtrace_id: z.string().optional(),
+    message: z.string(),
+  }),
 });
+
+// Graph's whole answer: "Invalid parameter" alone doesn't say which one;
+// its user title and message do, and the codes and trace id let Meta
+// support find the call.
+const graphReason = ({
+  code,
+  error_subcode: subcode,
+  error_user_msg: userMessage,
+  error_user_title: userTitle,
+  fbtrace_id: trace,
+  message,
+}: z.infer<typeof graphErrorSchema>["error"]) =>
+  `${[message, userTitle, userMessage].filter(Boolean).join(": ")} (code ${code ?? "-"}/${subcode ?? "-"}, fbtrace_id ${trace ?? "-"})`;
 
 // Graph answered that the token is no good (expired, revoked, or not a
 // Graph token): the merchant must reconnect Meta.
@@ -138,7 +160,7 @@ export const createMetaGraph = ({
       const failed = graphErrorSchema.safeParse(body);
       const code = failed.success ? failed.data.error.code : undefined;
       const message = failed.success
-        ? failed.data.error.message
+        ? graphReason(failed.data.error)
         : `Graph answered ${response.status}`;
       throw new GraphRefusedError(`Graph ${path}: ${message}`, code);
     });
@@ -327,7 +349,18 @@ export const createMetaGraph = ({
             event_name: "PageView",
             event_source_url: sourceUrl,
             event_time: Math.floor(now.getTime() / MS_PER_SECOND),
-            user_data: { client_user_agent: "wovain pixel setup" },
+            // Meta refuses an event with too little customer information
+            // ("Invalid parameter", subcode 2804050), and a user agent
+            // alone is too little: the dataset's id, hashed, stands in for
+            // a shopper's external_id.
+            user_data: {
+              client_user_agent: "wovain pixel setup",
+              external_id: [
+                createHash("sha256")
+                  .update(`wovain-test-${datasetId}`)
+                  .digest("hex"),
+              ],
+            },
           },
         ]),
         test_event_code: testEventCode,
