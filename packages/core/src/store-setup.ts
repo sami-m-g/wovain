@@ -238,7 +238,8 @@ export const evaluateSetup = ({
           ? "none"
           : "link",
       id: "shipping",
-      required: true,
+      // Fourthwall ships what it makes: shipping covers self-fulfilled items.
+      required: false,
       state:
         shop.shippingEnabled && shop.enabledShippingProfiles > 0
           ? "done"

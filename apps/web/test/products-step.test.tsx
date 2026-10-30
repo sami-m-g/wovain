@@ -50,14 +50,19 @@ const render = (readiness?: StoreReadiness) => {
 
 const readiness = (failing: string[]): StoreReadiness => ({
   checks: (["site_live", "verified", "shipping", "payouts"] as const).map(
-    (id) => ({ blocking: id !== "payouts", id, ok: !failing.includes(id) })
+    (id) => ({
+      blocking: id === "site_live" || id === "verified",
+      id,
+      ok: !failing.includes(id),
+    })
   ),
-  ready: failing.every((id) => id === "payouts"),
+  ready: failing.every((id) => id === "payouts" || id === "shipping"),
   shop: {
     baseUrl: "https://atelier.fourthwall.com",
     name: "Atelier",
     payoutStatus: "ACTIVE",
     siteStatus: failing.includes("site_live") ? "COMING_SOON" : "LIVE",
+    slug: "wovain-goods",
   },
 });
 
@@ -70,7 +75,8 @@ describe("ProductsStep", () => {
     expect(html).toContain("Fix these before anything goes public.");
     expect(html).toContain("Shop is live");
     expect(html).toContain("Go live");
-    expect(html).toContain("Shipping is on");
+    // Fourthwall ships what it makes: shipping doesn't hold a publish.
+    expect(html).not.toContain("Shipping is on");
     expect(html.match(PUBLISH_BUTTON)?.[0]).toContain(' disabled=""');
   });
 

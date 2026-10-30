@@ -819,6 +819,8 @@ const PublishConfirm = ({
   );
 };
 
+const READINESS_POLL_MS = 10_000;
+
 export const ProductsStep = ({
   products,
   titles,
@@ -838,8 +840,11 @@ export const ProductsStep = ({
   // The shop must take orders before a publish goes through (store
   // management): what blocks it is fixed here, never only in the Store.
   // Errors (store management off) leave publishing open.
+  // Polled while a check fails, so it ticks once fixed in Fourthwall.
   const readiness = useQuery({
     ...orpc.store.readiness.queryOptions(),
+    refetchInterval: (query) =>
+      query.state.data?.ready === false ? READINESS_POLL_MS : false,
     retry: false,
   });
   const blocked = readiness.data?.ready === false;

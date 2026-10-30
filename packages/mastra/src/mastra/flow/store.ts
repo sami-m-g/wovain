@@ -106,6 +106,7 @@ export const storeReadiness = async (actor: Actor) => {
       name: facts.name ?? null,
       payoutStatus: facts.payoutStatus ?? null,
       siteStatus: facts.siteStatus ?? null,
+      slug: facts.slug ?? null,
     },
   };
 };

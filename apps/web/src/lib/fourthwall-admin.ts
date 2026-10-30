@@ -14,6 +14,8 @@ const PATHS = {
   products: "/products/",
   promotions: "/promotions/",
   settings: "/settings/",
+  // Settings > Shipping: shipping options and profiles.
+  shipping: "/settings/shipping/",
   storeDesign: "/store-design/",
   // Analytics > Options > Tracking pixels: the Facebook Pixel field.
   trackingPixels: "/analytics/overview/tracking-pixels",
@@ -21,5 +23,12 @@ const PATHS = {
 
 export type FourthwallAdminPage = keyof typeof PATHS;
 
-export const fourthwallAdminUrl = (page: FourthwallAdminPage) =>
-  `https://admin.fourthwall.com/?redirectPath=${encodeURIComponent(PATHS[page])}`;
+// With the shop's slug, straight to its page; otherwise the admin picks
+// the creator's shop.
+export const fourthwallAdminUrl = (
+  page: FourthwallAdminPage,
+  slug?: string | null
+) =>
+  slug
+    ? `https://admin.fourthwall.com/store/${encodeURIComponent(slug)}${PATHS[page]}`
+    : `https://admin.fourthwall.com/?redirectPath=${encodeURIComponent(PATHS[page])}`;

@@ -109,12 +109,19 @@ export const GoLive = ({ name }: { name: string | null }) => {
 };
 
 /** The fix for one failing check: an action here, else a Fourthwall link. */
-const FixIt = ({ id, shopName }: { id: CheckId; shopName: string | null }) => {
+const FixIt = ({ id, shop }: { id: CheckId; shop: StoreReadiness["shop"] }) => {
   const t = useTranslations("Store.summary");
   if (id === "site_live") {
-    return <GoLive name={shopName} />;
+    return <GoLive name={shop.name} />;
   }
-  return <AdminLink page="settings">{t("fixIt")}</AdminLink>;
+  return (
+    <AdminLink
+      page={id === "shipping" ? "shipping" : "settings"}
+      slug={shop.slug}
+    >
+      {t("fixIt")}
+    </AdminLink>
+  );
 };
 
 /**
@@ -148,7 +155,7 @@ export const ReadinessGate = ({ readiness }: { readiness: StoreReadiness }) => {
                 {checks(`${check.id}.fix`)}
               </span>
             </span>
-            <FixIt id={check.id} shopName={readiness.shop.name} />
+            <FixIt id={check.id} shop={readiness.shop} />
           </li>
         ))}
       </ul>
@@ -246,7 +253,7 @@ export const StoreSummary = ({
                   </span>
                 </span>
               </span>
-              <FixIt id={fix.id} shopName={shop.name} />
+              <FixIt id={fix.id} shop={shop} />
             </>
           )}
         </div>
