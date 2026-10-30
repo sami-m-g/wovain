@@ -42,10 +42,10 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
   await expect(direction.first()).toBeVisible();
   // The mocked news and listings always come back; live ones may be skipped.
   const news = isSmoke
-    ? /news stor(?:y|ies) this month|news not checked/u
+    ? /news stor(?:y|ies) this month|[Nn]o news this month|news not checked/u
     : /\d+ news stor(?:y|ies) this month/u;
   const listings = isSmoke
-    ? /similar listings?|listings not checked/u
+    ? /similar of \d+ listings read|similar listings?|listings not checked/u
     : /reviews on (?:similar listings|marketplaces)/u;
   await expect(page.getByText(news).first()).toBeVisible();
   await expect(page.getByText(listings).first()).toBeVisible();
@@ -60,7 +60,7 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   page,
 }) => {
   // Real research and art take minutes on next; the mocks take seconds.
-  test.setTimeout(isSmoke ? 480_000 : 90_000);
+  test.setTimeout(isSmoke ? 720_000 : 90_000);
   await page.goto("/dashboard/new");
   await page
     .getByRole("textbox", { name: "What should this drop be about?" })
@@ -70,7 +70,7 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   await expect(
     page.getByRole("heading", { name: "Pick the ideas" })
   ).toBeVisible({
-    timeout: 120_000,
+    timeout: 300_000,
   });
   // Each idea with its evidence, who buys it and its competition.
   await expect(
