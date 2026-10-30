@@ -569,8 +569,8 @@
       "others": "Show me others",
       "use": "Start this drop",
       "whyFallback": "{count, plural, =0 {Rising with these buyers on Qloo.} one {Rising with these buyers on Qloo; # news story this month.} other {Rising with these buyers on Qloo; # news stories this month.}}",
-      "for": "For {audience}",
-      "rising": "Rising with: {names}",
+      "for": "For {audience}, from Qloo",
+      "rising": "Rising on Qloo with: {names}",
       "news": "{count, plural, =0 {no news this month} one {# news story this month} other {# news stories this month}}",
       "newsUnknown": "news not checked",
       "listings": {
@@ -902,7 +902,8 @@
       "loading": "Suggesting a tone and colours from this drop's buyers…",
       "failed": "We couldn't suggest a tone and colours just now.",
       "retry": "Try again",
-      "info": "About {field}"
+      "info": "About {field}",
+      "source": "From Qloo: suggested for this drop's Qloo theme and what its buyers also like."
     },
     "whoBuys": {
       "title": "Who buys this",
@@ -2492,7 +2493,8 @@
       "fromBrief": "from your brief",
       "noAges": "Ages not known",
       "places": "Where: {places}",
-      "interests": "Into: {interests}"
+      "interests": "Into: {interests}",
+      "source": "From Qloo: these ages, places and audiences are Qloo's read of who buys this."
     },
     "competition": {
       "level": {

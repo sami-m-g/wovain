@@ -196,6 +196,7 @@ const Audience = ({ audience }: { audience: IdeaAudience }) => {
           })}
         </p>
       ) : null}
+      <p className="text-muted-foreground text-[0.7rem]">{t("source")}</p>
     </>
   );
 };
