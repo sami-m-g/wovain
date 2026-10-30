@@ -43,6 +43,8 @@ await pulumi.runtime.setMocks(
 
 const REPOSITORY = "github:index/repository:Repository::wovain";
 const MAIN = "github:index/repositoryRuleset:RepositoryRuleset::main";
+const INFRASTRUCTURE =
+  "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure";
 
 test("the github program declares the repository's own resources only", async () => {
   await import("./index.ts");
@@ -64,6 +66,8 @@ test("the github program declares the repository's own resources only", async ()
       "github:index/workflowRepositoryPermissions:WorkflowRepositoryPermissions::wovain",
       "github:index/repositoryEnvironment:RepositoryEnvironment::github-infrastructure",
       "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::github-infrastructure-main",
+      INFRASTRUCTURE,
+      "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::infrastructure-main",
     ].toSorted()
   );
   // Nothing of Google's: the stack runs with only a GitHub token.
@@ -99,4 +103,15 @@ test("pull requests merge themselves once CodeRabbit and CI pass", () => {
       "verify",
     ].toSorted()
   );
+});
+
+test("production's pulumi up waits for the owner's approval, on main only", () => {
+  expect(inputsOf.get(INFRASTRUCTURE)).toMatchObject({
+    deploymentBranchPolicy: {
+      customBranchPolicies: true,
+      protectedBranches: false,
+    },
+    environment: "infrastructure",
+    reviewers: [{ users: [106_979_416] }],
+  });
 });

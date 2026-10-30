@@ -12,10 +12,11 @@
 //   the repository).
 // - It reads and writes only next's objects in the state bucket.
 // - Its project roles are conditioned on next's resource names: the
-//   `wovain-next` Cloud SQL instance, `wovain-web-next` Cloud Run service,
-//   `wovain-next` image repository, `wovain-media-next` bucket and the
-//   `<id>-next` secrets. It can grant only the project roles next's own
-//   accounts hold, and administer only those two accounts.
+//   `wovain-next` Cloud SQL instance, `wovain-next` image repository,
+//   `wovain-media-next` bucket and the `<id>-next` secrets. Cloud Run's
+//   conditions can't test a resource name, so `run.admin` is granted on
+//   the `wovain-web-next` service itself. It can grant only the project
+//   roles next's own accounts hold, and administer only those two accounts.
 //
 // What it still shares with production: the `wovain-com` DNS zone (next adds
 // next.wovain.com's records), and Search Console, where next's domain
@@ -41,6 +42,10 @@ interface NextArgs {
 }
 
 // Roles granted on the project, each only on next's resources.
+// Cloud Run isn't among the services whose resource names IAM Conditions
+// can test (cloud.google.com/iam/docs/conditions-resource-attributes): a
+// project role conditioned on the service's name never grants anything, so
+// its role is granted on the service itself (nextInfrastructure below).
 const conditional = (
   project: string,
   projectNumber: string,
@@ -50,12 +55,6 @@ const conditional = (
     expression: `resource.name.startsWith("projects/${project}/instances/wovain-${NAME}")`,
     role: "roles/cloudsql.admin",
     title: "next's Cloud SQL instance",
-  },
-  {
-    // Cloud Run names the project by number in IAM conditions; accept both.
-    expression: `resource.name.startsWith("projects/${projectNumber}/locations/${region}/services/wovain-web-${NAME}") || resource.name.startsWith("projects/${project}/locations/${region}/services/wovain-web-${NAME}")`,
-    role: "roles/run.admin",
-    title: "next's Cloud Run service",
   },
   {
     expression: `resource.name.startsWith("projects/${project}/locations/${region}/repositories/wovain-${NAME}")`,
@@ -148,6 +147,16 @@ export const nextInfrastructure = (args: NextArgs) => {
     member: account.member,
     role: "roles/iam.serviceAccountUser",
     serviceAccountId: `projects/${project}/serviceAccounts/wovain-web-${NAME}@${project}.iam.gserviceaccount.com`,
+  });
+
+  // next's Cloud Run service, on the service: it exists already (next's
+  // stack made it), and infra-next can't create another one.
+  new gcp.cloudrunv2.ServiceIamMember("infra-next-run-admin", {
+    location: region,
+    member: account.member,
+    name: `wovain-web-${NAME}`,
+    project,
+    role: "roles/run.admin",
   });
 
   // next.wovain.com's records are in production's zone.
