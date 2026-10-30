@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from "node:timers/promises";
+
 import { readDossier, startDossier } from "@wovain/core/evidence";
 import type { DossierRecord, DossierState } from "@wovain/core/evidence";
 import { idea } from "@wovain/db/schema/seller";
@@ -159,24 +161,63 @@ export const readIdeaDossier = async (
   return current;
 };
 
-// An idea picked on the Home gets its dossier at once, with no click: it
-// runs on Tavily's side beside the run's designs and never holds them up.
-// Off with the flag; a start that fails is logged at error level and the
-// drop page offers a retry.
+const dossierFailed = (ideaId: string, code: string, error: unknown) => {
+  evlog.error({
+    dossier: { ideaId },
+    error: {
+      code,
+      message: error instanceof Error ? error.message : String(error),
+      name: "DossierFailed",
+    },
+  });
+};
+
+const evidenceOn = async (actor: Actor) =>
+  await actor.core.flags.isOn("tavily-evidence", flagContextOf(actor));
+
+// An idea picked on the Home gets its dossier at once, with no click, while
+// the merchant reviews the drop. Off with the flag; a start that fails is
+// logged at error level and the drop page offers a retry.
 export const autoStartDossier = async (actor: Actor, ideaId: string) => {
-  if (!(await actor.core.flags.isOn("tavily-evidence", flagContextOf(actor)))) {
+  if (!(await evidenceOn(actor))) {
     return;
   }
   try {
     await startIdeaDossier(actor, ideaId);
   } catch (error) {
-    evlog.error({
-      dossier: { ideaId },
-      error: {
-        code: "DOSSIER_AUTO_START_FAILED",
-        message: error instanceof Error ? error.message : String(error),
-        name: "DossierAutoStartFailed",
-      },
-    });
+    dossierFailed(ideaId, "DOSSIER_AUTO_START_FAILED", error);
+  }
+};
+
+// How long a design waits for its idea's report, and how often it looks.
+export const REPORT_WAIT_MS = 90_000;
+const REPORT_POLL_MS = 5000;
+
+// Before a design is drawn, its idea's report, if one is running, gets up
+// to REPORT_WAIT_MS to finish, so the brief can use it. A report that isn't
+// done by then (or can't be read, logged) is left out; the design goes on.
+export const awaitDossier = async (
+  actor: Actor,
+  ideaId: string,
+  waitMs = REPORT_WAIT_MS
+) => {
+  if (!(await evidenceOn(actor))) {
+    return;
+  }
+  const until = Date.now() + waitMs;
+  for (;;) {
+    let record: DossierRecord | null;
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- one read per poll
+      record = await readIdeaDossier(actor, ideaId);
+    } catch (error) {
+      dossierFailed(ideaId, "DOSSIER_READ_FAILED", error);
+      return;
+    }
+    if (record?.status !== "pending" || Date.now() >= until) {
+      return;
+    }
+    // oxlint-disable-next-line no-await-in-loop -- waiting between polls
+    await sleep(Math.min(REPORT_POLL_MS, until - Date.now()));
   }
 };

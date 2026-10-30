@@ -83,6 +83,15 @@ const resumeStep = (run?: RunDetail): Step => {
 const atIdeasGate = (run?: RunDetail) =>
   run?.status === "awaiting_approval" && run.step === "ideas";
 
+/**
+ * A drop started from a Home pick, waiting at its designs step for "Make
+ * designs" while the merchant reviews the tone, colours and research.
+ */
+export const atPickGate = (run?: RunDetail) =>
+  run?.status === "awaiting_approval" &&
+  run.step === "design" &&
+  run.designs.length === 0;
+
 /** What a run working in the background is doing, for the busy label. */
 const runWork = (run?: RunDetail): Work | undefined => {
   if (run?.status !== "running") {
@@ -373,15 +382,19 @@ export const useDropFlow = (
       });
     },
     handleDesignPicked: () => {
-      // Nothing is drawn before this click, and only the picked ideas are.
-      if (run && atIdeasGate(run)) {
-        if (picked.length === 0) {
+      // Nothing is drawn before this click, and only the picked ideas are:
+      // the ones ticked at the ideas gate, or a Home pick's own idea.
+      if (run && (atIdeasGate(run) || atPickGate(run))) {
+        const ideaIds = atPickGate(run)
+          ? run.ideas.map((idea) => idea.id)
+          : picked;
+        if (ideaIds.length === 0) {
           showProblem({ kind: "other", message: t("trends.error") });
           return;
         }
         showProblem();
         calls.approveIdeas.mutate(
-          { id: run.id, ideaIds: picked },
+          { id: run.id, ideaIds },
           {
             onSuccess: (drawing) => {
               cache.seed(drawing);

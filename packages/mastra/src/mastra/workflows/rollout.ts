@@ -96,9 +96,9 @@ export const createLegacyRunEngine = (services: RunServices): RunEngine => {
           });
           return;
         }
-        // A picked direction is drawn at once: the merchant chose it.
+        // A picked direction waits at its designs step for "Make designs".
         if (input.pick !== undefined) {
-          await drawAndWait(actor, runId, ideaIds);
+          await awaitIdeas(actor, runId, "design");
           return;
         }
         // A merchant's run draws nothing until they approve ideas.

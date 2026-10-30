@@ -123,17 +123,23 @@ describe("seller-run steps", () => {
     );
   });
 
-  it("a picked direction skips naming and the ideas gate, drawing its idea", async () => {
+  it("a picked direction skips naming, then waits at its designs step until Make designs", async () => {
     const picked = {
       ...from,
       ideaIds: ["i9"],
       input: { ...input, pick: { ideaId: "i9" } },
     };
     expect(await execute("name", picked)).toEqual(picked);
-    expect(await execute("ideas", picked)).toEqual(picked);
     expect(nameIdeas).not.toHaveBeenCalled();
-    expect(awaitIdeas).not.toHaveBeenCalled();
-    expect(suspend).not.toHaveBeenCalled();
+    // Nothing is drawn on the pick: the merchant reviews first.
+    expect(await execute("ideas", picked)).toBe(SUSPENDED);
+    expect(awaitIdeas).toHaveBeenCalledWith(
+      expect.anything(),
+      "run_1",
+      "design"
+    );
+    // "Make designs" resumes it with the picked idea.
+    expect(await execute("ideas", picked, { ideaIds: ["i9"] })).toEqual(picked);
   });
 
   it("name fails the run when no idea could be named", async () => {

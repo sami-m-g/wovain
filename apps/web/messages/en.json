@@ -642,7 +642,9 @@
       "viewLabel": "Artwork view",
       "mockupUnavailable": "Fourthwall couldn't render this design on the shirt. Showing the flat art.",
       "mockupNotConnected": "Connect Fourthwall to see this design on the shirt.",
-      "drawing": "Drawing a design for “{title}”. It takes a few minutes."
+      "drawing": "Drawing a design for “{title}”. It takes a few minutes.",
+      "make": "Make designs",
+      "reviewLead": "Check the tone and colours, change them if you like, and let the research report load. The designs use all of it."
     },
     "products": {
       "title": "Publish the products",

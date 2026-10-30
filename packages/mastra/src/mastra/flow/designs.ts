@@ -15,6 +15,7 @@ import { withAgentTrace } from "./agent-trace";
 import { isCompetitionOn } from "./competition";
 import { requireFal, withArtistCall } from "./connections";
 import { writerStyleFor } from "./drop-style";
+import { awaitDossier } from "./evidence";
 import { flagContextOf } from "./flags";
 import { getIdea } from "./ideas";
 import { track } from "./metrics";
@@ -78,6 +79,9 @@ export const generateDesign = async (
     // A retried step that crashed before the preview renders it now.
     return await previewPlacement(actor, made);
   }
+  // The idea's research report, if running, gets a short wait to land in the
+  // brief (./evidence awaitDossier).
+  await awaitDossier(actor, ideaId);
   const source = await getIdea(actor, ideaId);
   const { runId } = source;
   // The merchant's own fal account draws, or wovain's key while the
