@@ -35,7 +35,6 @@ const READY: ShopFacts = {
   hosts: ["shop.example"],
   name: "Atelier",
   payoutStatus: "ACTIVE",
-  roles: ["OWNER"],
   shippingEnabled: true,
   siteStatus: "LIVE",
   verificationRestrictions: [],
@@ -52,15 +51,14 @@ const fake = (byTool: Record<string, unknown>) => {
 };
 
 describe("evaluateReadiness", () => {
-  it("is ready when the shop is live, verified, owned, ships and pays out", () => {
+  it("is ready when the shop is live, verified, ships and pays out", () => {
     expect(evaluateReadiness(READY).ready).toBe(true);
   });
 
-  it("blocks on a shop that isn't live, is held for verification, or can't be run", () => {
+  it("blocks on a shop that isn't live, is held for verification, or doesn't ship", () => {
     for (const patch of [
       { siteStatus: "COMING_SOON" },
       { verificationRestrictions: ["storefront_noindex"] },
-      { roles: ["DESIGNER"] },
       { shippingEnabled: false },
       { enabledShippingProfiles: 0 },
     ] satisfies Partial<ShopFacts>[]) {
@@ -96,12 +94,8 @@ describe("readShopFacts", () => {
         enabled: true,
         shippingProfiles: [{ enabled: true }, { enabled: false }],
       },
-      "ecommerce_get-shop-permissions": { groups: ["MANAGER"] },
     });
-    expect(await readShopFacts(call)).toEqual({
-      ...READY,
-      roles: ["MANAGER"],
-    });
+    expect(await readShopFacts(call)).toEqual(READY);
   });
 
   it("treats a missing reply as not ready", async () => {

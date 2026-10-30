@@ -38,9 +38,11 @@ const render = (
 };
 
 const checks = (failing: string[]): StoreReadiness["checks"] =>
-  (["site_live", "verified", "store_role", "shipping", "payouts"] as const).map(
-    (id) => ({ blocking: id !== "payouts", id, ok: !failing.includes(id) })
-  );
+  (["site_live", "verified", "shipping", "payouts"] as const).map((id) => ({
+    blocking: id !== "payouts",
+    id,
+    ok: !failing.includes(id),
+  }));
 
 const shop = (patch: Partial<StoreReadiness["shop"]> = {}) => ({
   baseUrl: "https://atelier.fourthwall.com",
@@ -83,7 +85,7 @@ describe("StoreSummary", () => {
     );
     expect(html).toContain("Coming soon");
     expect(html).toContain("Shop is live");
-    expect(html).toContain("(4 of 5 checks pass)");
+    expect(html).toContain("(3 of 4 checks pass)");
     expect(html).toContain("Go live");
     expect(html).toContain("Nothing to approve");
   });

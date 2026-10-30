@@ -17,7 +17,6 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useHere } from "@/components/app/connect-state";
 import { usePendingStoreApprovals } from "@/components/store/store-approvals";
 import type { Tone } from "@/components/store/store-shared";
 import {
@@ -27,7 +26,6 @@ import {
   useMoney,
   useRefresh,
 } from "@/components/store/store-shared";
-import { connectUrl } from "@/lib/flow-client";
 import type { StoreReadiness } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
@@ -113,19 +111,8 @@ export const GoLive = ({ name }: { name: string | null }) => {
 /** The fix for one failing check: an action here, else a Fourthwall link. */
 const FixIt = ({ id, shopName }: { id: CheckId; shopName: string | null }) => {
   const t = useTranslations("Store.summary");
-  const here = useHere();
   if (id === "site_live") {
     return <GoLive name={shopName} />;
-  }
-  if (id === "store_role") {
-    return (
-      <a
-        className="text-sm underline underline-offset-4"
-        href={connectUrl("fourthwall", here)}
-      >
-        {t("reconnect")}
-      </a>
-    );
   }
   return <AdminLink page="settings">{t("fixIt")}</AdminLink>;
 };

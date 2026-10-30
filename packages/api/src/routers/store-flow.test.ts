@@ -90,7 +90,6 @@ const LIVE_SHOP = {
     enabled: true,
     shippingProfiles: [{ enabled: true }],
   },
-  "ecommerce_get-shop-permissions": { groups: ["OWNER"] },
 };
 
 const fakeShop = (replies: Record<string, unknown>) => {

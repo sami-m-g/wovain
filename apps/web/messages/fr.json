@@ -1640,7 +1640,6 @@
       "passing": "({done, number} vérifications sur {total, number} réussies)",
       "allChecks": "Toutes les vérifications",
       "fixIt": "Corriger dans Fourthwall",
-      "reconnect": "Reconnecter Fourthwall",
       "goLive": "Mettre en ligne",
       "goLiveTitle": "Mettre {name} en ligne ?",
       "goLiveTitleFallback": "Mettre votre boutique en ligne ?",
@@ -1681,10 +1680,6 @@
       "verified": {
         "label": "La boutique est vérifiée",
         "fix": "Fourthwall examine encore votre boutique. Contactez le support Fourthwall pour finaliser."
-      },
-      "store_role": {
-        "label": "Vous pouvez gérer la boutique",
-        "fix": "Reconnectez Fourthwall en tant que propriétaire ou gestionnaire de la boutique."
       },
       "shipping": {
         "label": "La livraison est activée",

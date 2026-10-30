@@ -1640,7 +1640,6 @@
       "passing": "({done, number} of {total, number} checks pass)",
       "allChecks": "All readiness checks",
       "fixIt": "Fix in Fourthwall",
-      "reconnect": "Reconnect Fourthwall",
       "goLive": "Go live",
       "goLiveTitle": "Take {name} live?",
       "goLiveTitleFallback": "Take your shop live?",
@@ -1681,10 +1680,6 @@
       "verified": {
         "label": "Shop is verified",
         "fix": "Fourthwall is still reviewing your shop. Contact Fourthwall support to finish it."
-      },
-      "store_role": {
-        "label": "You can manage the shop",
-        "fix": "Reconnect Fourthwall as the shop's owner or a manager."
       },
       "shipping": {
         "label": "Shipping is on",
