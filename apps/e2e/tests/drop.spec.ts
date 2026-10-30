@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, isSmoke, test } from "./fixtures";
+import { connectProviders, expect, isSmoke, test } from "./fixtures";
 
 // Live Qloo can take far longer than the default expect timeout: wait for
 // the loading line to go, then require the panel to settle on its source
@@ -146,13 +146,17 @@ test("a brief starter fills the box and starts nothing", async ({
   await expect(page).toHaveURL(/\/dashboard#what-sells-now$/u);
 });
 
-// A researched idea picked on the Home: the drop opens at its designs with
-// that idea, never at Trends and never asking which ideas to draw.
-test("a Home pick opens the drop at its designs @smoke", async ({
-  merchant: _merchant,
+// The golden path, as a seller runs it: a researched idea picked on the
+// Home opens the drop at its designs (never at Trends, never asking which
+// ideas to draw); the designs are made and approved, the product made and
+// published in the flow, and "Launch campaign" stages a paused campaign in
+// the background. The smoke suite stops at the designs: the rest publishes
+// for real.
+test("golden path: a Home pick to a paused campaign @smoke", async ({
+  merchant,
   page,
 }) => {
-  test.setTimeout(isSmoke ? 480_000 : 120_000);
+  test.setTimeout(isSmoke ? 480_000 : 180_000);
   await page.goto("/dashboard");
   const start = page.getByRole("button", { name: "Start this drop" }).first();
   const empty = page.getByText(/Qloo found nothing new rising right now/u);
@@ -180,4 +184,36 @@ test("a Home pick opens the drop at its designs @smoke", async ({
   await expect(page.getByRole("button", { name: "See designs" })).toHaveCount(
     0
   );
+  if (isSmoke) {
+    return;
+  }
+
+  // The shop and the ad account, connected once the designs are drawn.
+  await connectProviders(merchant.id ?? "", ["fourthwall", "meta"]);
+  await page
+    .getByRole("button", { name: /^Approve(?: anyway)?$/u })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "Make products" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Publish the products" })
+  ).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("button", { name: "Publish to Fourthwall" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Publish now" })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { name: "Launch the campaign" })
+  ).toBeVisible({ timeout: 30_000 });
+  // "Make the ads": staged paused in the background, then the launch
+  // confirm. Never launched here: that would start the spend.
+  await page.getByRole("button", { name: "Launch campaign" }).click();
+  const launch = page.getByRole("alertdialog", {
+    name: "Launch the campaign?",
+  });
+  await expect(launch).toBeVisible({ timeout: 60_000 });
+  await launch.getByRole("button", { name: "Not yet" }).click();
+  await expect(page.getByText("$15.00 a day").first()).toBeVisible();
 });

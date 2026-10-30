@@ -120,7 +120,8 @@ describe("director-made video ads", () => {
     const cues = srt.trim().split("\n\n");
     expect(cues[0]).toContain("00:00:00,000 --> 00:00:03,000");
     expect(cues[0]).toContain(CONCEPT.hook);
-    expect(cues.at(-1)).toContain(`${CONCEPT.cta}\n${AI_LABEL}`);
+    expect(cues.at(-2)).toContain(CONCEPT.cta);
+    expect(cues.at(-1)).toContain(AI_LABEL);
     const { seconds } = timeline(CONCEPT);
     expect(cues.at(-1)).toContain(`00:00:${String(seconds)},000`);
   });

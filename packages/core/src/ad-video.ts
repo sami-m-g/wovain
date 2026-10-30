@@ -69,6 +69,8 @@ export const MIN_SECONDS = 15;
 export const MAX_SECONDS = 20;
 const MIN_SHOT_SECONDS = 3;
 const CTA_SECONDS = 3;
+// The AI disclosure's own last seconds.
+const LABEL_SECONDS = 1.5;
 
 export const GENDERS = ["woman", "man"] as const;
 export type CastGender = (typeof GENDERS)[number];
@@ -342,7 +344,7 @@ const srtTime = (seconds: number) => {
 };
 
 // The captions: each shot's text in its shot (the hook first), then the
-// call to action with the AI disclosure for the last 3 seconds.
+// call to action and the AI disclosure in the last 3 seconds.
 export const srtOf = (concept: AdConcept) => {
   const { seconds, shots } = timeline(concept);
   const ctaStart = seconds - CTA_SECONDS;
@@ -353,11 +355,12 @@ export const srtOf = (concept: AdConcept) => {
       text: shot.text.trim(),
     }))
     .filter((cue) => cue.text !== "" && cue.end > cue.start);
-  cues.push({
-    end: seconds,
-    start: ctaStart,
-    text: `${concept.cta.trim()}\n${AI_LABEL}`,
-  });
+  // Two cues: VEED paces a cue's words through it, so the call to action
+  // and the disclosure each get their own time on screen.
+  cues.push(
+    { end: seconds - LABEL_SECONDS, start: ctaStart, text: concept.cta.trim() },
+    { end: seconds, start: seconds - LABEL_SECONDS, text: AI_LABEL }
+  );
   return cues
     .map(
       (cue, index) =>
@@ -419,7 +422,7 @@ Check each, pass or fail, with a short note:
 - hook: the first frame shows the person and the print, and the hook text gives a reason to keep watching.
 - product: the shirt and its print are clearly visible and in focus in most frames.
 - design: the print matches the artwork (same image, colors and words, same placement); fail any warping, missing or invented parts, misspelled printed words or a mirrored print.
-- text: the captions are spelled as the concept says, readable, and don't cover the print; the last frame shows the call to action and the label "${AI_LABEL}".
+- text: the captions are spelled as the concept says, readable, and don't cover the print; the last frame shows the label "${AI_LABEL}".
 - policy: nothing breaks Meta's advertising policies (personal attributes, adult content, misleading claims, a minor on screen, brands or celebrities).
 
 On any fail, list fixes for the creative director: concrete changes to the concept (cast, look, setting, actions, text), one per line.`;

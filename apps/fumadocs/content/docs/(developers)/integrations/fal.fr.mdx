@@ -14,3 +14,15 @@ Sans connexion fal, la génération de designs et les exécutions échouent avec
 ## Pubs vidéo
 
 fal anime aussi le mockup de chaque produit publié en deux clips pub de 5 secondes (9:16 et 1:1) pour sa campagne Meta. Le modèle est la variable d'environnement `FAL_VIDEO_MODEL`, définie par environnement dans la configuration Pulumi (`falVideoModel`) ; sur next c'est Wan 3.0 Prime image-to-video (`alibaba/wan-3.0-prime/image-to-video`), 0,05 $ la seconde sur fal, soit 0,25 $ le clip. Les clips passent par la clé fal de wovain (`FAL_KEY`) et sont payés par les crédits `video` de `BILLING_CATALOG`. La fonction Inngest `product-videos` (`packages/mastra/src/mastra/workflows/videos.ts`) enregistre chaque envoi sous une clé, donc une relance relit la même requête fal et ne débite jamais deux fois. Les pubs vidéo sont désactivées là où `FAL_VIDEO_MODEL` ou le prix `video` manque.
+
+## Pubs vidéo réalisées
+
+Là où `FAL_AD_VIDEO_MODELS` (`falAdVideoModels` dans Pulumi) et le prix `adVideo` sont définis, un produit publié reçoit une pub vidéo finie à la place des clips. Elle vient du workflow Mastra `ad-video` (`packages/mastra/src/mastra/workflows/ad-video.ts`) :
+
+1. L'agent réalisateur (`ad_director`, Nemotron) écrit un concept de 15 à 20 s à partir des données du drop : une accroche de 3 secondes, 3 ou 4 plans, du texte à l'écran, une direction sonore et un appel à l'action.
+2. fal choisit une personne qui correspond aux acheteurs Qloo de l'idée et lui fait porter le vrai t-shirt (`fal-ai/nano-banana-pro/edit`, à partir de la maquette et du visuel, 0,15 $).
+3. fal tourne une seule prise avec le son natif (`alibaba/wan-3.0-prime/image-to-video`, 0,05 $ la seconde).
+4. fal recadre une version 4:5 (`fal-ai/workflow-utilities/scale-video`) et incruste les sous-titres de wovain dans les deux versions (`veed/subtitles`). Ils se terminent par l'appel à l'action et « AI-generated model ».
+5. L'agent relecteur (`ad_video_review`, Nemotron VL) compare des images de `fal-ai/ffmpeg-api/extract-frame` au visuel. S'il refuse la pub, le réalisateur reçoit ses corrections pour la refaire une fois.
+
+Une pub finie coûte environ 1,28 $ sur fal, et au plus 2,56 $ si elle est refaite. Chaque appel à fal a une clé par produit, tentative et étape, donc une nouvelle tentative ne paie jamais deux fois. Le montage se fait avec les utilitaires de fal, sans ffmpeg ni moteur de rendu Remotion dans l'app.

@@ -1,6 +1,7 @@
 import { HttpResponse, http } from "msw";
 
 import { fal } from "./fal.ts";
+import { mcp } from "./mcp.ts";
 import { nemotron } from "./nemotron.ts";
 
 // Fixed answers from the providers the server calls, at their HTTP
@@ -87,6 +88,7 @@ export const handlers = [
   ),
   nemotron,
   ...fal,
+  ...mcp,
   http.get("https://hackathon.api.qloo.com/search", () =>
     HttpResponse.json({ results: qlooInsights.results.entities })
   ),
