@@ -422,6 +422,7 @@ const ExpectedMargin = ({ product }: { product: StoreProduct }) => {
   const format = useFormatter();
   const costs = useQuery({
     ...orpc.store.priceCheck.queryOptions({ input: { productId: product.id } }),
+    meta: { quiet: true },
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
   });

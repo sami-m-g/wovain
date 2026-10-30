@@ -282,7 +282,9 @@ export const customizationCost = async (
   }
   const costs = Object.values(bySize).filter((cost) => cost > 0);
   if (costs.length === 0) {
-    throw new Error("Fourthwall's pricing reply had no cost per size");
+    throw new Error(
+      `Fourthwall's pricing reply had no cost per size: shape=${replyShape(reply)}${toonFailure(reply)}`
+    );
   }
   return { bySize, max: Math.max(...costs) };
 };
