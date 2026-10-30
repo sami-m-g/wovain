@@ -14,3 +14,15 @@ Sin conexión con fal, la generación de diseños y las ejecuciones fallan con u
 ## Anuncios en vídeo
 
 fal también anima el mockup de cada producto publicado en dos clips de anuncio de 5 segundos (9:16 y 1:1) para su campaña de Meta. El modelo es la variable de entorno `FAL_VIDEO_MODEL`, definida por entorno en la configuración de Pulumi (`falVideoModel`); en next es Wan 3.0 Prime image-to-video (`alibaba/wan-3.0-prime/image-to-video`), $0.05 por segundo en fal, es decir $0.25 por clip. Los clips usan la clave de fal de wovain (`FAL_KEY`) y se pagan con los créditos `video` de `BILLING_CATALOG`. La función de Inngest `product-videos` (`packages/mastra/src/mastra/workflows/videos.ts`) guarda cada envío con su clave, así que un reintento consulta la misma petición de fal y nunca cobra dos veces. Los anuncios en vídeo están desactivados donde falta `FAL_VIDEO_MODEL` o el precio `video`.
+
+## Anuncios en vídeo dirigidos
+
+Donde `FAL_AD_VIDEO_MODELS` (`falAdVideoModels` en Pulumi) y el precio `adVideo` están definidos, un producto publicado recibe un anuncio en vídeo terminado en lugar de los clips. Lo hace el workflow de Mastra `ad-video` (`packages/mastra/src/mastra/workflows/ad-video.ts`):
+
+1. El agente director (`ad_director`, Nemotron) escribe un concepto de 15-20 s con la evidencia del drop: un gancho de 3 segundos, 3 o 4 planos, texto en pantalla, una dirección de sonido y una llamada a la acción.
+2. fal elige a una persona que encaja con los compradores de Qloo de la idea y le pone la camiseta real (`fal-ai/nano-banana-pro/edit`, a partir del mockup y el arte, $0.15).
+3. fal rueda una sola toma con audio nativo (`alibaba/wan-3.0-prime/image-to-video`, $0.05 por segundo).
+4. fal recorta una versión 4:5 (`fal-ai/workflow-utilities/scale-video`) y graba los subtítulos de wovain en ambas (`veed/subtitles`), que terminan con la llamada a la acción y "AI-generated model".
+5. El agente revisor (`ad_video_review`, Nemotron VL) compara fotogramas de `fal-ai/ffmpeg-api/extract-frame` con el arte. Si rechaza el anuncio, el director recibe sus correcciones para rehacerlo una vez.
+
+Un anuncio terminado cuesta unos $1.28 en fal, y como mucho $2.56 si se rehace. Cada llamada a fal tiene una clave por producto, intento y etapa, así que un reintento nunca paga dos veces. El montaje se hace con las utilidades de fal, sin ffmpeg ni un renderizador de Remotion en la app.

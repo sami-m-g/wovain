@@ -19,7 +19,7 @@
 
 - [x] 4.1 AI disclosure in the video ad's text on Meta
 - [x] 4.2 Campaign step: cuts in their shape, AI-generated label
-- [ ] 4.3 Docs (en, es, fr), the FAQ and `docs/spec.md`
+- [x] 4.3 Docs (en, es, fr), the FAQ and `docs/spec.md`
 
 ## 5. Verify
 
