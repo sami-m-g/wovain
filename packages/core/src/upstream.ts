@@ -15,7 +15,7 @@ import type {
   StoredOAuthClientInformation,
   StoredOAuthTokens,
 } from "@modelcontextprotocol/client";
-import { decode } from "@toon-format/toon";
+import { decode, ToonDecodeError } from "@toon-format/toon";
 import { createError } from "evlog";
 import type { z } from "zod";
 
@@ -287,10 +287,11 @@ const isUnauthorized = (error: unknown) =>
     error.status === HTTP_UNAUTHORIZED);
 
 // Text that isn't JSON: Fourthwall replies in TOON, a compact encoding of
-// the same objects. Prose that doesn't decode to an object stays text.
+// the same objects. Lenient: Fourthwall's encoder isn't held to the strict
+// counts and indentation. Prose that doesn't decode to an object stays text.
 const decodeToon = (text: string): unknown => {
   try {
-    const decoded = decode(text);
+    const decoded = decode(text, { strict: false });
     return typeof decoded === "object" &&
       decoded !== null &&
       Object.keys(decoded).length > 0
@@ -298,6 +299,31 @@ const decodeToon = (text: string): unknown => {
       : text;
   } catch {
     return text;
+  }
+};
+
+const FAILURE_CONTEXT = 250;
+
+// Why a reply left as text didn't decode, with the text around the failing
+// line, for the error log. Catalog data, never secrets.
+export const toonFailure = (reply: unknown): string => {
+  if (typeof reply !== "string") {
+    return "";
+  }
+  try {
+    decode(reply, { strict: false });
+    return "";
+  } catch (error) {
+    const line = error instanceof ToonDecodeError ? (error.line ?? 1) : 1;
+    const at = reply
+      .split("\n")
+      .slice(0, line - 1)
+      .join("\n").length;
+    const around = reply.slice(
+      Math.max(0, at - FAILURE_CONTEXT),
+      at + FAILURE_CONTEXT
+    );
+    return ` toon_error="${String(error)}" around=${JSON.stringify(around)}`;
   }
 };
 

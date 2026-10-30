@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { searchCatalog } from "./fourthwall";
 import { external } from "./log";
 import { createSealer } from "./sealing";
-import { resultData } from "./upstream";
+import { resultData, toonFailure } from "./upstream";
 
 describe("external", () => {
   it("logs each call and turns a failure into a structured provider error", async () => {
@@ -177,6 +177,15 @@ describe("resultData", () => {
         slug: "comfort-colors-1717",
       },
     ]);
+  });
+
+  it("decodes TOON leniently and says why text didn't decode", () => {
+    const text = "data[2]:\n  - id: a\n    name: Tee";
+    expect(resultData({ content: [{ text, type: "text" }] })).toEqual({
+      data: [{ id: "a", name: "Tee" }],
+    });
+    expect(toonFailure('id: a\nname: "Tee')).toContain("toon_error=");
+    expect(toonFailure({ id: "a" })).toBe("");
   });
 
   it("keeps prose that isn't JSON or TOON as text", () => {
