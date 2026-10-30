@@ -1,5 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import type { MastraModelConfig } from "@mastra/core/llm";
+import { RequestContext } from "@mastra/core/request-context";
 import { InMemoryStore } from "@mastra/core/storage";
 import { createMockModel } from "@mastra/core/test-utils/llm-mock";
 import { Memory } from "@mastra/memory";
@@ -10,9 +11,10 @@ import { withLlmTrace } from "@wovain/core/nemotron";
 import { fakeAgents } from "@wovain/core/test-doubles";
 import { DecisionTrace } from "@wovain/core/trace";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import { createNemotron } from "./ask";
-import { createAgentKit } from "./kit";
+import { TRACE_KEYS, createAgentKit } from "./kit";
 import type { AgentKit } from "./kit";
 
 // Model routing: with the model-routing flag on for a call, each agent runs
@@ -62,6 +64,54 @@ describe("agent kit routing", () => {
     expect(new Set(Object.values(AGENT_ROLES))).toEqual(
       new Set(["default", "fast", "reasoning", "vision"])
     );
+  });
+});
+
+// The request body one brief_terms call sends to Nebius.
+const sentBody = async (routed: boolean) => {
+  const fetchMock = vi.fn((_url: string, _init: RequestInit) =>
+    Response.json({
+      choices: [
+        {
+          finish_reason: "stop",
+          index: 0,
+          message: { content: '{"terms":["denim"]}', role: "assistant" },
+        },
+      ],
+      created: 0,
+      id: "c",
+      model: "m-fast",
+      object: "chat.completion",
+      usage: { completion_tokens: 1, prompt_tokens: 1, total_tokens: 2 },
+    })
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  try {
+    const kit = createAgentKit({ ...kitConfig, router, scoreSampleRate: 0 });
+    const requestContext = new RequestContext();
+    requestContext.set(TRACE_KEYS.routed, routed);
+    await kit?.agents.brief_terms.generate("denim jackets", {
+      requestContext,
+      structuredOutput: { schema: z.object({ terms: z.array(z.string()) }) },
+    });
+    const init = fetchMock.mock.calls[0]?.[1];
+    return JSON.parse(String(init?.body)) as Record<string, unknown>;
+  } finally {
+    vi.unstubAllGlobals();
+  }
+};
+
+describe("fast tier reasoning", () => {
+  it("sends reasoning_effort none on routed fast calls", async () => {
+    const body = await sentBody(true);
+    expect(body.model).toBe("m-fast");
+    expect(body.reasoning_effort).toBe("none");
+  });
+
+  it("leaves reasoning alone on unrouted calls", async () => {
+    const body = await sentBody(false);
+    expect(body.model).toBe("m-legacy");
+    expect(body.reasoning_effort).toBeUndefined();
   });
 });
 
