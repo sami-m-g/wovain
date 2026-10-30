@@ -31,6 +31,24 @@ const LIST_MAX = 6;
 export const clip = (value: string, max: number) =>
   value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 
+const SENTENCE_END = /(?<=[.!?])\s+/u;
+
+/**
+ * Whole sentences up to `max` characters, never a cut word: a first sentence
+ * longer than `max` stays whole (the page wraps it).
+ */
+export const sentencesWithin = (text: string, max: number) => {
+  const [first = "", ...rest] = text.trim().split(SENTENCE_END);
+  let line = first;
+  for (const next of rest) {
+    if (`${line} ${next}`.length > max) {
+      break;
+    }
+    line = `${line} ${next}`;
+  }
+  return line;
+};
+
 export const isWebUrl = (value: string) =>
   URL.canParse(value) && /^https?:$/u.test(new URL(value).protocol);
 
@@ -442,22 +460,24 @@ export const DOSSIER_SCHEMA = {
     // The report at a glance: what the drop page shows before the full text.
     summary: {
       description:
-        "The same answers at a glance, one short line each, for a designer scanning the report.",
+        "The same answers at a glance, one complete sentence each of at most 140 characters, for a designer scanning the report.",
       properties: {
         price: {
           description:
-            "Where most comparable shirts are priced, at most 10 words, e.g. 'Most sell for $24 to $28 on Etsy'.",
+            "Where most comparable shirts are priced, one complete sentence of at most 140 characters, e.g. 'Most sell for $24 to $28 on Etsy'.",
+          maxLength: 140,
           type: "string",
         },
         risks: {
           description:
-            "Up to 3 risks, at most 8 words each, e.g. 'Movie title is trademarked'.",
-          items: { type: "string" },
+            "Up to 3 risks, each one complete sentence of at most 140 characters, e.g. 'Movie title is trademarked'.",
+          items: { maxLength: 140, type: "string" },
           type: "array",
         },
         saturation: {
           description:
-            "Why it is that crowded, at most 12 words, e.g. 'Hundreds of generic fern tees, few in this style'.",
+            "Why it is that crowded, one complete sentence of at most 140 characters, e.g. 'Hundreds of generic fern tees, few in this style'.",
+          maxLength: 140,
           type: "string",
         },
         saturation_level: {
@@ -467,7 +487,8 @@ export const DOSSIER_SCHEMA = {
         },
         why_now: {
           description:
-            "Why buyers want it this month, at most 12 words, e.g. 'Season 2 premieres next week'.",
+            "Why buyers want it this month, one complete sentence of at most 140 characters, e.g. 'Season 2 premieres next week'.",
+          maxLength: 140,
           type: "string",
         },
       },
@@ -492,8 +513,8 @@ export const DOSSIER_SCHEMA = {
 
 const SATURATION_LEVELS = ["low", "medium", "high"] as const;
 export type SaturationLevel = (typeof SATURATION_LEVELS)[number];
-// A one-line answer: anything longer is cut, never wrapped into a paragraph.
-const LINE_MAX = 120;
+// A one-line answer: one short sentence, kept whole when over-long.
+export const LINE_MAX = 140;
 const SUMMARY_RISKS_MAX = 3;
 
 const saturationLevelOf = (
@@ -633,14 +654,14 @@ export const dossierOf = (
     whyNow: clip(parsed.why_now, TEXT_MAX),
     ...(summary !== undefined && {
       summary: {
-        price: clip(summary.price, LINE_MAX),
+        price: sentencesWithin(summary.price, LINE_MAX),
         risks: summary.risks
           .filter((risk) => risk.trim() !== "")
           .slice(0, SUMMARY_RISKS_MAX)
-          .map((risk) => clip(risk, LINE_MAX)),
-        saturation: clip(summary.saturation, LINE_MAX),
+          .map((risk) => sentencesWithin(risk, LINE_MAX)),
+        saturation: sentencesWithin(summary.saturation, LINE_MAX),
         saturationLevel: saturationLevelOf(summary.saturation_level),
-        whyNow: clip(summary.why_now, LINE_MAX),
+        whyNow: sentencesWithin(summary.why_now, LINE_MAX),
       },
     }),
   };
