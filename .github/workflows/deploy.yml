@@ -232,8 +232,8 @@ jobs:
           SITE_URL: ${{ vars.SITE_URL }}
         run: curl -sSf --retry 5 --retry-all-errors --retry-delay 10 -X PUT "$SITE_URL/api/inngest"
 
-      # The post-deploy smoke suite (apps/e2e, @smoke specs) on next only:
-      # only next's environment has E2E_SMOKE_PASSWORD_SECRET
+      # The post-deploy smoke suite (apps/e2e, @smoke specs) on next and
+      # nebius, whose environments have E2E_SMOKE_PASSWORD_SECRET
       # (infra/next/index.ts). It seeds the smoke account with that password
       # through the proxy still running from Migrate, then signs in and runs
       # against the live site with real providers. A failure fails the deploy
@@ -247,6 +247,7 @@ jobs:
           E2E_SMOKE_PASSWORD_SECRET: ${{ vars.E2E_SMOKE_PASSWORD_SECRET }}
           E2E_BASE_URL: ${{ vars.SITE_URL }}
           E2E_EMAIL: e2e-smoke@wovain.com
+          SMOKE_ENV: ${{ inputs.target || 'next' }}
           E2E_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
         run: |
           E2E_PASSWORD=$(gcloud secrets versions access latest --secret "$E2E_SMOKE_PASSWORD_SECRET" --project "$GCP_PROJECT_ID")

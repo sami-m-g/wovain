@@ -56,7 +56,10 @@ const run = async () => {
       refuse(live);
       return;
     }
-    const result = await seedJudges(db, { resetPassword: args.resetPassword });
+    const result = await seedJudges(db, {
+      env,
+      resetPassword: args.resetPassword,
+    });
     const lines = [
       `${JUDGES_EMAIL} ${result.created ? "created" : "already exists"} on ${env} (user ${result.userId}); brand and autonomy (draft) are set.`,
       result.password === undefined
