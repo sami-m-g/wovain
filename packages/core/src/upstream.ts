@@ -402,7 +402,7 @@ export const findOne = <T>(
   return found;
 };
 
-const SHAPE_DEPTH = 5;
+const SHAPE_DEPTH = 8;
 const SHAPE_KEYS = 12;
 
 // A reply's structure for an error log: its keys, array lengths and value
