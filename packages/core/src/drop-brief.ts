@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { DropArt } from "./art";
+import { DEFAULT_GARMENT_COLORS } from "./design";
 import { MAX_THREAD_COLORS, PRODUCT_KINDS, PRODUCT_KIND_IDS } from "./drops";
 import type { ProductKind, StyleFamily } from "./drops";
 import type { Logger } from "./log";
@@ -18,7 +19,8 @@ const SLEEVE_MAX = 24;
 
 export const dropBriefSchema = z.object({
   description: z.string().min(1).max(400),
-  garmentColors: z.array(z.string().min(1).max(40)).min(1).max(5),
+  // Empty is fine: code then uses the default garments (draftDropBrief).
+  garmentColors: z.array(z.string().min(1).max(40)).max(5),
   graphicPrompt: z.string().min(10).max(1500),
   graphicText: z.array(z.string().min(1).max(60)).max(3),
   labelText: z.string().min(1).max(24),
@@ -98,7 +100,11 @@ export const draftDropBrief = async (
     input.brandPalette !== undefined && input.brandPalette.length >= 3
       ? input.brandPalette.slice(0, MAX_THREAD_COLORS)
       : brief.palette;
-  return { ...brief, palette };
+  const garmentColors =
+    brief.garmentColors.length > 0
+      ? brief.garmentColors
+      : [...DEFAULT_GARMENT_COLORS];
+  return { ...brief, garmentColors, palette };
 };
 
 // The art every product of the drop shares.
