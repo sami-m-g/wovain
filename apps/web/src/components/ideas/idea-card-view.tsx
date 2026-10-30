@@ -31,7 +31,7 @@ const LEVEL_VARIANT: Record<
 };
 
 /** "Not available: <reason>": a section never vanishes without saying why. */
-export const Unavailable = ({ reason }: { reason: UnavailableReason }) => {
+const Unavailable = ({ reason }: { reason: UnavailableReason }) => {
   const t = useTranslations("IdeaCard");
   return (
     <p className="text-muted-foreground text-sm">
@@ -298,6 +298,7 @@ export const IdeaCardView = ({
   heading: Heading = "h3",
   lead,
   readAudience,
+  titleFor,
 }: {
   card: IdeaCard;
   children?: ReactNode;
@@ -306,6 +307,8 @@ export const IdeaCardView = ({
   lead?: ReactNode;
   // Who buys is read on demand: what reads it while it is not read yet.
   readAudience?: ReactNode;
+  // The id of the lead's control: the title selects it too.
+  titleFor?: string;
 }) => {
   const t = useTranslations("IdeaCard");
   const mark = useQlooMark(card.why, card.audience);
@@ -318,7 +321,13 @@ export const IdeaCardView = ({
         <div className="flex items-start gap-2">
           {lead}
           <Heading className="text-base font-semibold text-pretty">
-            {title}
+            {titleFor === undefined ? (
+              title
+            ) : (
+              <label className="block cursor-pointer py-2" htmlFor={titleFor}>
+                {title}
+              </label>
+            )}
           </Heading>
         </div>
         {mark === undefined ? null : (

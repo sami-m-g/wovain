@@ -323,6 +323,7 @@ export const IdeasStep = ({
                   <IdeaCardView
                     card={idea.card}
                     readAudience={<WhoBuysPanel ideaId={idea.id} />}
+                    titleFor={checkboxId}
                     lead={
                       <Checkbox
                         aria-label={t("pickIdea", {

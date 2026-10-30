@@ -8,7 +8,6 @@ import { log as evlog } from "evlog";
 import { z } from "zod";
 
 import { gapsOf, readSaturation } from "./competition";
-import type { SaturationLevel } from "./competition";
 import { marketDemandOf } from "./demand";
 import type { MarketDemand } from "./demand";
 import {
@@ -36,6 +35,7 @@ import type {
   Taste,
 } from "./qloo";
 import { searchTermsOf } from "./qloo";
+import type { SaturationLevel } from "./saturation";
 import {
   ipSafetyOf,
   marginOf,
