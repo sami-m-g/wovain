@@ -655,6 +655,8 @@
       "title": "Publica los productos",
       "lead": "Prendas reales de Fourthwall, con un precio que deja al menos 10 US$ de beneficio por venta tras comisiones. Siguen ocultos hasta que los publiques.",
       "price": "Precio",
+      "breakdown": "Coste base {cost} · tu beneficio {profit} por venta · margen {margin}",
+      "rule": "Por qué este precio: al menos {profit} de beneficio y {margin} de margen tras comisiones de tarjeta, impuestos y una reserva para reembolsos.",
       "hidden": "Oculto",
       "inReview": "Por publicar",
       "public": "Publicado",

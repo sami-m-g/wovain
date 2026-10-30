@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { checkPrice } from "@wovain/core/price-check";
 import { Alert, AlertDescription } from "@wovain/ui/components/alert";
 import {
   AlertDialog,
@@ -756,6 +757,49 @@ export const PickReviewStep = ({
  * The confirm before a product goes live: the click in the flow is the
  * merchant's approval, so it names the product, its price and the shop.
  */
+/**
+ * Why this price, from Fourthwall's cost to make it (the cheapest size) and
+ * wovain's pricing rule. Shows nothing until the cost is read.
+ */
+const PriceWhy = ({ product }: { product: Product }) => {
+  const t = useTranslations("Wizard.products");
+  const format = useFormatter();
+  const money = useMoney();
+  const costs = useQuery({
+    ...orpc.store.priceCheck.queryOptions({ input: { productId: product.id } }),
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  if (!costs.data) {
+    return null;
+  }
+  const check = checkPrice(costs.data.rules, product.price, costs.data.costs);
+  const [base] = (check?.sizes ?? []).toSorted((a, b) => a.cost - b.cost);
+  if (base === undefined) {
+    return null;
+  }
+  const percent = (value: number) =>
+    format.number(value, { maximumFractionDigits: 0, style: "percent" });
+  const { rules } = costs.data;
+  return (
+    <span className="text-muted-foreground flex flex-col gap-0.5 text-xs">
+      <span className="figures">
+        {t("breakdown", {
+          cost: money(base.cost),
+          margin: percent(base.grossMargin),
+          profit: money(base.profit),
+        })}
+      </span>
+      <span>
+        {t("rule", {
+          margin: percent(rules.minMarginPct / 100),
+          profit: money(rules.minProfit),
+        })}
+      </span>
+    </span>
+  );
+};
+
 const PublishConfirm = ({
   onCancel,
   onConfirm,
@@ -798,6 +842,11 @@ const PublishConfirm = ({
           <dd className="font-medium">{title}</dd>
           <dt className="text-muted-foreground">{t("price")}</dt>
           <dd className="figures font-medium">{price}</dd>
+          {product ? (
+            <dd className="col-span-2">
+              <PriceWhy product={product} />
+            </dd>
+          ) : null}
           <dt className="text-muted-foreground">{t("shop")}</dt>
           <dd className="font-medium">{shopName}</dd>
         </dl>
@@ -871,6 +920,7 @@ export const ProductsStep = ({
                     <span className="text-foreground figures font-semibold">
                       {money(product.price)}
                     </span>
+                    <PriceWhy product={product} />
                   </CardDescription>
                 </CardHeader>
                 <CardFooter className="mt-auto pb-4">

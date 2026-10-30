@@ -655,6 +655,8 @@
       "title": "Publish the products",
       "lead": "Real Fourthwall blanks, priced to clear at least $10 profit per sale after fees. They stay hidden until you publish.",
       "price": "Price",
+      "breakdown": "Base cost {cost} · your profit {profit} per sale · {margin} margin",
+      "rule": "Why this price: at least {profit} profit and {margin} margin after card fees, tax and a refund reserve.",
       "hidden": "Hidden",
       "inReview": "Waiting to publish",
       "public": "Live",
