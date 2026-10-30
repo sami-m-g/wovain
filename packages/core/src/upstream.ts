@@ -288,8 +288,9 @@ const isUnauthorized = (error: unknown) =>
 
 // Fourthwall's encoder puts an array field's header on its own line
 // ("categoryPath:" then "[2]: Apparel,T-Shirts"), which TOON allows only at
-// the root or in a list item. Joined back, it's the spec's
-// "categoryPath[2]: Apparel,T-Shirts".
+// the root or in a list item (SPEC §6, §14.2: decoders must reject it).
+// Joined back, it's the spec's "categoryPath[2]: Apparel,T-Shirts".
+// Remove when Fourthwall's encoder conforms.
 const KEYLESS_ARRAY =
   /^(?<indent> *(?:- )?)(?<key>[^\s:-][^:\n]*):\n *(?<header>\[\d+\][^\n]*)$/gmu;
 
