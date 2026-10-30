@@ -60,7 +60,8 @@ const staged = {
 
 const render = (
   campaigns: Campaign[],
-  connections: { provider: string; needsReconnect: boolean }[]
+  connections: { provider: string; needsReconnect: boolean }[],
+  products: Product[] = [live]
 ) => {
   const client = new QueryClient();
   client.setQueryData(
@@ -78,7 +79,7 @@ const render = (
           onBudget={noop}
           onLaunched={noop}
           onStage={noop}
-          products={[live]}
+          products={products}
           titles={{ d1: "Dune Tee" }}
         />
       </NextIntlClientProvider>
@@ -105,6 +106,18 @@ describe("the campaign step", () => {
     expect(html).toContain("Daily budget (USD)");
     expect(html).toContain("wovain writes three ad variants");
     expect(html).toMatch(/<button(?![^>]*disabled="")[^>]*>Launch campaign/u);
+  });
+
+  it("plays each product's video ad clips, muted, next to its images", () => {
+    const withVideos = {
+      ...live,
+      videos: [{ aspect: "9:16", url: "https://fal.example/tall.mp4" }],
+    } as unknown as Product;
+    const html = render([], META, [withVideos]);
+    expect(html).toContain("https://cdn.example/front.png");
+    expect(html).toMatch(
+      /<video[^>]*aria-label="Dune Tee, video ad"[^>]*muted=""[^>]*src="https:\/\/fal.example\/tall.mp4"/u
+    );
   });
 
   it("once staged, shows the ad copy and the budget set", () => {

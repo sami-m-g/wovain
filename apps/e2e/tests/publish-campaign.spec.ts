@@ -5,7 +5,10 @@ import { db, expect, isSmoke, test } from "./fixtures";
 
 // A drop whose products are made and hidden: the run has completed, the
 // merchant still publishes and launches.
-const seedDrop = async (userId: string) => {
+const seedDrop = async (
+  userId: string,
+  made: Partial<typeof product.$inferInsert> = {}
+) => {
   if (db === undefined) {
     throw new Error("The pr suite seeds the database");
   }
@@ -72,7 +75,7 @@ const seedDrop = async (userId: string) => {
       userId,
     })
     .returning();
-  const [made] = await db
+  const [saved] = await db
     .insert(product)
     .values({
       catalogProductId: "prd_tee",
@@ -83,12 +86,13 @@ const seedDrop = async (userId: string) => {
       offerId: "off_1",
       price: 32,
       userId,
+      ...made,
     })
     .returning();
-  if (started === undefined || made === undefined) {
+  if (started === undefined || saved === undefined) {
     throw new Error("The drop wasn't seeded");
   }
-  return { product: made, runId: started.id };
+  return { product: saved, runId: started.id };
 };
 
 // The founder's path: Publish in the drop's Products step is the approval
@@ -147,4 +151,29 @@ test("publishing in the drop flow goes on to the campaign step", async ({
     .first();
   await expect(tape).toContainText("Products: done");
   await expect(tape).toContainText("Campaign: current");
+});
+
+// A live product's video ad clips (openspec video-ad-creatives) show in the
+// Campaign step next to its images: playable and muted. The clip is seeded,
+// never made on fal.
+test("the campaign step plays the product's video ads", async ({
+  merchant,
+  page,
+}) => {
+  test.skip(isSmoke, "Seeds the database.");
+  const { runId } = await seedDrop(merchant.id ?? "", {
+    productUrl: "https://shop.example/dune-tee",
+    status: "public",
+    videos: [{ aspect: "9:16", url: "https://fal.example/dune-tee.mp4" }],
+  });
+  await page.goto(`/dashboard/new?run=${runId}&step=campaign`);
+  await expect(
+    page.getByRole("heading", { name: "Launch the campaign" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "Dune Tee, ad image" })
+  ).toBeVisible();
+  const clip = page.getByLabel("Dune Tee, video ad");
+  await expect(clip).toBeVisible();
+  await expect(clip).toHaveJSProperty("muted", true);
 });

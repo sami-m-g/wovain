@@ -123,7 +123,7 @@
       "reserve": "Réserve remboursements",
       "profit": "Votre profit",
       "margin": "Marge sur le blank",
-      "campaign": "Campagne Meta : en pause jusqu'à ce que vous l'approuviez"
+      "campaign": "Campagne Meta : pubs image et vidéo, en pause jusqu'à votre accord"
     },
     "connection": {
       "yours": "Vous le connectez",
@@ -183,6 +183,10 @@
       {
         "question": "Lesquels de mes designs dois-je promouvoir ?",
         "answer": "Tous, au début. wovain teste jusqu'à cinq designs dans une seule campagne, donne à chacun une part équitable du budget, met en pause ceux qui perdent de l'argent et vous montre le gagnant, pour que le budget suive le design qui vend."
+      },
+      {
+        "question": "wovain fait-il des pubs vidéo ?",
+        "answer": "Oui. Quand un produit est publié, fal transforme son mockup en deux clips de 5 secondes au mouvement doux : un vertical pour les Reels et les Stories, un carré pour le fil. Ils se lisent dans l'étape Campagne à côté des images et sont diffusés comme pubs à leurs côtés. Chaque clip coûte 10 crédits. Si un clip échoue, la campagne se lance quand même avec les pubs image."
       },
       {
         "question": "Comment wovain choisit-il quoi vendre ?",
@@ -675,6 +679,7 @@
       "lead": "Les publicités de vos produits en ligne : les visuels, les textes, qui les voit et ce qu'elles peuvent dépenser. Rien n'est dépensé avant le lancement.",
       "creatives": "Visuels publicitaires",
       "creativeAlt": "{title}, image publicitaire",
+      "videoAlt": "{title}, pub vidéo",
       "noCreatives": "Publiez un produit pour voir ses images publicitaires ici.",
       "copy": "Textes publicitaires",
       "copyPending": "wovain écrit trois variantes par design, dans le ton du drop, au lancement. Vous les lisez avant toute dépense.",

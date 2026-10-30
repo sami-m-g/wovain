@@ -123,7 +123,7 @@
       "reserve": "Refund reserve",
       "profit": "Your profit",
       "margin": "Margin over blank",
-      "campaign": "Meta campaign: paused until you approve it"
+      "campaign": "Meta campaign: image and video ads, paused until you approve it"
     },
     "connection": {
       "yours": "You connect it",
@@ -183,6 +183,10 @@
       {
         "question": "Which of my designs should I advertise?",
         "answer": "All of them, at first. wovain tests up to five designs in one campaign, gives each a fair share of the budget, pauses the ones that lose money and shows you the winner, so the budget follows the design that sells."
+      },
+      {
+        "question": "Does wovain make video ads?",
+        "answer": "Yes. When a product goes live, fal turns its mockup into two 5-second clips with gentle motion: one tall for Reels and Stories, one square for the feed. They play in the Campaign step next to the images and run as ads beside them. Each clip costs 10 credits. If a clip fails, the campaign still launches with the image ads."
       },
       {
         "question": "How does wovain pick what to sell?",
@@ -675,6 +679,7 @@
       "lead": "The ads for your live products: the creatives, the copy, who sees them and what they may spend. Nothing spends until you launch.",
       "creatives": "Ad creatives",
       "creativeAlt": "{title}, ad image",
+      "videoAlt": "{title}, video ad",
       "noCreatives": "Publish a product to see its ad images here.",
       "copy": "Ad copy",
       "copyPending": "wovain writes three ad variants per design, in the drop's tone, when you launch. You read them before anything spends.",

@@ -1,4 +1,5 @@
 import { createHash, randomInt } from "node:crypto";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import { z } from "zod";
 
@@ -151,6 +152,9 @@ export interface DesignAds {
   // Short and stable: it names the design's ad set and ads on Meta.
   label: string;
   linkUrl: string;
+  // Its video ad clips (./video-ads): one more ad each, next to the image
+  // ads.
+  videos?: string[] | undefined;
   // Its share of the test's spend floor (feedback-loop, ./outcomes
   // floorShares): angles that sold before get more. An even split when
   // unset.
@@ -191,6 +195,8 @@ export interface CampaignPlan {
   // Qloo's audience as Meta targeting (./targeting). Required: no ad set is
   // staged without it (qlooAudienceGap). Its countries are the plan's.
   targeting: MetaTargeting;
+  // One design's video ad clips, when `designs` is unset.
+  videos?: string[] | undefined;
 }
 
 export interface StagedDesign {
@@ -210,6 +216,9 @@ export interface StagedCampaign {
   // One per design; unset on a single-design campaign saved before tests.
   designs?: StagedDesign[] | undefined;
   pageId: string;
+  // Why each video ad that couldn't be staged was skipped; the image ads
+  // went ahead without it.
+  videoErrors?: string[] | undefined;
 }
 
 // Every ad set of a staged campaign, one per design.
@@ -236,6 +245,7 @@ const designsOf = (plan: CampaignPlan): DesignAds[] => {
       key: plan.tag,
       label: plan.tag,
       linkUrl: plan.linkUrl,
+      videos: plan.videos,
     },
   ];
 };
@@ -344,10 +354,162 @@ const findByName = async (
     ?.id.toString();
 };
 
+// Meta encodes an uploaded video before an ad can use it.
+const VIDEO_POLLS = 12;
+const VIDEO_POLL_MS = 5000;
+
+const videoStatusSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  status: z.union([
+    z.string(),
+    z.object({ video_status: z.string() }).transform((one) => one.video_status),
+  ]),
+});
+
+const waitForVideo = async (
+  meta: ToolCall,
+  adAccountId: string,
+  videoId: string,
+  wait: (ms: number) => Promise<unknown>
+) => {
+  for (let poll = 0; poll < VIDEO_POLLS; poll += 1) {
+    // Polled one at a time: each check waits for the last.
+    // oxlint-disable-next-line no-await-in-loop
+    const reply = await meta("ads_get_ad_videos", {
+      ad_account_id: adAccountId,
+      fields: ["id", "status"],
+      video_ids: [videoId],
+    });
+    const found = findAll(videoStatusSchema, reply).find(
+      (one) => String(one.id) === videoId
+    );
+    if (found?.status === "ready") {
+      return;
+    }
+    if (found?.status === "error") {
+      throw new Error(`Meta couldn't process video ${videoId}`);
+    }
+    // oxlint-disable-next-line no-await-in-loop
+    await wait(VIDEO_POLL_MS);
+  }
+  throw new Error(`Meta is still processing video ${videoId}`);
+};
+
+// A video ad per clip of a design, with its first variant's copy and its
+// image as the cover. A clip Meta won't take is skipped, not fatal: its
+// reason comes back in `errors`.
+const stageVideoAds = async ({
+  account,
+  adAccountId,
+  adSetId,
+  campaignId,
+  design,
+  media,
+  meta,
+  named,
+  once,
+  pageId,
+  label,
+  slot,
+  wait,
+}: {
+  account: { ad_account_id: string };
+  adAccountId: string;
+  adSetId: string;
+  campaignId: string;
+  design: DesignAds;
+  media: MediaBuying | undefined;
+  meta: ToolCall;
+  named: (suffix: string) => string;
+  once: WriteOnce;
+  pageId: string;
+  // The design's label in a test; unset for one design.
+  label: string | undefined;
+  slot: string;
+  wait: (ms: number) => Promise<unknown>;
+}) => {
+  const made = { adIds: [] as string[], creativeIds: [] as string[] };
+  const errors: string[] = [];
+  const [lead] = design.copy;
+  if (lead === undefined) {
+    return { ...made, errors };
+  }
+  for (const [index, videoUrl] of (design.videos ?? []).entries()) {
+    const video = `video ${index + 1}`;
+    const name = named(label === undefined ? video : `${label} ${video}`);
+    const key = `${slot}${index}`;
+    try {
+      // One at a time: Meta's draft takes its objects in order.
+      // oxlint-disable-next-line no-await-in-loop
+      const videoId = await once(`video:${key}`, async () =>
+        idOf(
+          await meta("ads_creative_upload_media", {
+            ...account,
+            media_type: "VIDEO",
+            media_url: videoUrl,
+            name,
+            upload_source: "URL",
+          }),
+          "video_id"
+        )
+      );
+      // oxlint-disable-next-line no-await-in-loop
+      await waitForVideo(meta, adAccountId, videoId, wait);
+      const linkUrl =
+        media === undefined
+          ? design.linkUrl
+          : withUtm(design.linkUrl, {
+              campaign: campaignId,
+              content: `${label === undefined ? "" : `${label}-`}video-${index + 1}`,
+            });
+      // oxlint-disable-next-line no-await-in-loop
+      const creativeId = await once(`video_creative:${key}`, async () =>
+        idOf(
+          await meta("ads_create_creative", {
+            ...account,
+            call_to_action_type: "SHOP_NOW",
+            headline: lead.headline,
+            image_url: design.imageUrl,
+            link_url: linkUrl,
+            message: lead.message,
+            name,
+            page_id: pageId,
+            video_id: videoId,
+          }),
+          "creative_id"
+        )
+      );
+      // oxlint-disable-next-line no-await-in-loop
+      const adId = await once(
+        `video_ad:${key}`,
+        async () =>
+          idOf(
+            await meta("ads_create_ad", {
+              ...account,
+              ad_name: name,
+              ad_set_id: adSetId,
+              creative: JSON.stringify({ creative_id: creativeId }),
+            }),
+            "ad_id"
+          ),
+        async () => await findByName(meta, adAccountId, "ad", name)
+      );
+      made.creativeIds.push(creativeId);
+      made.adIds.push(adId);
+    } catch (error) {
+      errors.push(
+        `${name}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+  return { ...made, errors };
+};
+
 export const stagePausedCampaign = async (
   call: ToolCall,
   plan: CampaignPlan,
-  once: WriteOnce = sendEveryTime
+  once: WriteOnce = sendEveryTime,
+  { wait = sleep }: { wait?: (ms: number) => Promise<unknown> } = {}
 ): Promise<StagedCampaign> => {
   const common = {
     advertiser_job: "create_and_launch_new_ads",
@@ -403,6 +565,7 @@ export const stagePausedCampaign = async (
         )
       : undefined;
   const staged: StagedDesign[] = [];
+  const videoErrors: string[] = [];
   for (const [slot, design] of designs.entries()) {
     const minSpendCents = floorOf(design);
     // One design keeps the names and keys a single-design staging always had.
@@ -481,6 +644,25 @@ export const stagePausedCampaign = async (
       );
       adIds.push(adId);
     }
+    // oxlint-disable-next-line no-await-in-loop
+    const videoAds = await stageVideoAds({
+      account,
+      adAccountId,
+      adSetId,
+      campaignId,
+      design,
+      label: single ? undefined : design.label,
+      media: plan.media,
+      meta,
+      named,
+      once,
+      pageId,
+      slot: single ? "" : `${slot}:`,
+      wait,
+    });
+    adIds.push(...videoAds.adIds);
+    creativeIds.push(...videoAds.creativeIds);
+    videoErrors.push(...videoAds.errors);
     staged.push({ adIds, adSetId, creativeIds, key: design.key });
   }
   return {
@@ -491,6 +673,7 @@ export const stagePausedCampaign = async (
     creativeIds: staged.flatMap((design) => design.creativeIds),
     designs: staged,
     pageId,
+    ...(videoErrors.length === 0 ? {} : { videoErrors }),
   };
 };
 
