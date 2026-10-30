@@ -164,6 +164,71 @@ jobs:
       - name: Apply next
         run: node infra/scripts/pulumi.ts up infra/next -- --yes --skip-preview
 
+  # next's Polar catalog and promos, after next's apply. It touches next's
+  # Polar state only: POLAR_METADATA_KEY=wovain:next keeps the seed off
+  # production's plans, benefits and promos, the token is next's own secret,
+  # and each promo's code goes to polar-promo-<id>-next, never to the log.
+  # The seed is idempotent. It does not read or change production.
+  # It needs no output of up-next: the catalog is read from the stack file and
+  # the token from Secret Manager, so a failing up-next doesn't block it.
+  polar-seed-next:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: next-infrastructure
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: polar-seed-next
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: pulumi/setup-pulumi@b374ceb6168550de27c6eba92e01c1a774040e11 # v2.0.0
+      # postinstall runs the Varlock codegen, which validates apps/web's env:
+      # throwaway values, as in ci.yml. The seed reads none of them.
+      - name: Generate placeholder env
+        run: |
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
+            echo "BETTER_AUTH_URL=http://localhost:3001"
+            echo "DATABASE_URL=postgresql://ci:$(openssl rand -hex 16)@localhost:5432/ci"
+            echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+          } >> "$GITHUB_ENV"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run infra:install
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.INFRA_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.NEXT_INFRA_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Seed Polar for next
+        env:
+          POLAR_ENVIRONMENT: sandbox
+          POLAR_METADATA_KEY: wovain:next
+          POLAR_WEBHOOK_URL: https://next.wovain.com/api/auth/polar/webhooks
+          POLAR_WEBHOOK_SECRET_ID: polar-webhook-secret-next
+        run: |
+          POLAR_ACCESS_TOKEN=$(gcloud secrets versions access latest --secret polar-access-token-next --project "$GCP_PROJECT_ID")
+          echo "::add-mask::$POLAR_ACCESS_TOKEN"
+          export POLAR_ACCESS_TOKEN
+          # next's catalog is its stack's config, the value up-next gives the app.
+          BILLING_CATALOG=$(cd infra && node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { parse } from "yaml";
+            const { config } = parse(readFileSync("next/Pulumi.next.yaml", "utf-8"));
+            process.stdout.write(JSON.stringify(config["wovain-next:billingCatalog"]));
+          ')
+          export BILLING_CATALOG
+          node packages/billing/src/seed.ts
+
   up-github:
     # Every push to main (and a manual run on main) applies the repository's
     # settings and rulesets, after the same guard (scripts/pulumi.ts).
