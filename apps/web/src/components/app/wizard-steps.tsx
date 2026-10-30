@@ -71,6 +71,7 @@ import {
   StepHeader,
 } from "@/components/app/wizard-parts";
 import { IdeaCardView } from "@/components/ideas/idea-card-view";
+import { ReadinessGate } from "@/components/store/store-summary";
 import type { Design, Idea, Product } from "@/lib/flow-client";
 import { namedWords } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
@@ -834,9 +835,18 @@ export const ProductsStep = ({
   const t = useTranslations("Wizard.products");
   const money = useMoney();
   const [confirming, setConfirming] = useState<Product>();
+  // The shop must take orders before a publish goes through (store
+  // management): what blocks it is fixed here, never only in the Store.
+  // Errors (store management off) leave publishing open.
+  const readiness = useQuery({
+    ...orpc.store.readiness.queryOptions(),
+    retry: false,
+  });
+  const blocked = readiness.data?.ready === false;
   return (
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
+      {readiness.data ? <ReadinessGate readiness={readiness.data} /> : null}
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => {
           const live = product.status === "public";
@@ -890,7 +900,7 @@ export const ProductsStep = ({
                   ) : (
                     <Button
                       className="h-9 w-full"
-                      disabled={Boolean(busyLabel) || live}
+                      disabled={Boolean(busyLabel) || live || blocked}
                       onClick={() => setConfirming(product)}
                       variant="outline"
                     >

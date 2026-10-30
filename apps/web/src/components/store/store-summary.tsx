@@ -117,6 +117,45 @@ const FixIt = ({ id, shopName }: { id: CheckId; shopName: string | null }) => {
   return <AdminLink page="settings">{t("fixIt")}</AdminLink>;
 };
 
+/**
+ * Where a publish happens outside the Store (the drop flow): the checks that
+ * block it, each with its fix right there.
+ */
+export const ReadinessGate = ({ readiness }: { readiness: StoreReadiness }) => {
+  const checks = useTranslations("Store.readiness");
+  const blocking = readiness.checks.filter(
+    (check) => check.blocking && !check.ok
+  );
+  if (blocking.length === 0) {
+    return null;
+  }
+  return (
+    <section
+      aria-label={checks("title")}
+      className="border-border bg-card flex flex-col gap-3 rounded-xl border px-4 py-3"
+    >
+      <p className="text-sm font-medium">{checks("notReady")}</p>
+      <ul className="flex flex-col gap-3">
+        {blocking.map((check) => (
+          <li
+            className="flex flex-wrap items-center justify-between gap-2 text-sm"
+            key={check.id}
+          >
+            <span>
+              {checks(`${check.id}.label`)}
+              <span className="sr-only">{checks("failed")}</span>
+              <span className="text-muted-foreground block text-xs">
+                {checks(`${check.id}.fix`)}
+              </span>
+            </span>
+            <FixIt id={check.id} shopName={readiness.shop.name} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+};
+
 const Figure = ({
   label,
   children,

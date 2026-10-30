@@ -141,8 +141,8 @@ const assertReady = async (actor: Actor) => {
       .map((check) => check.id);
     throw storeError(
       "Your shop isn't ready to sell yet",
-      `Readiness checks failing: ${failing.join(", ")}`,
-      "Open the Store in wovain and fix the checks it lists, then approve again."
+      `Readiness checks failing: ${failing.join(", ")} (site status ${readiness.shop.siteStatus ?? "unread"})`,
+      "Fix the checks wovain lists above the products, then publish again."
     );
   }
 };
