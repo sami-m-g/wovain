@@ -527,7 +527,12 @@
       "placeholder": "Cozy outdoorsy merch for my houseplant channel",
       "error": "Write at least a few words (10 characters or more).",
       "submit": "Research trends",
-      "submitAutopilot": "Run on autopilot"
+      "submitAutopilot": "Run on autopilot",
+      "starters": "Or start from one of these",
+      "starter1": "Line-art tees for balcony gardeners",
+      "starter2": "Retro arcade tees for weekend gamers",
+      "starter3": "Moody poetry tees for night-owl readers",
+      "pickIdea": "Not sure? Pick a researched idea"
     },
     "directions": {
       "title": "What to sell now",

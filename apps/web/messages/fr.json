@@ -527,7 +527,12 @@
       "placeholder": "Du merch nature et cosy pour ma chaîne sur les plantes",
       "error": "Écrivez au moins quelques mots (10 caractères ou plus).",
       "submit": "Rechercher des tendances",
-      "submitAutopilot": "Lancer en pilote automatique"
+      "submitAutopilot": "Lancer en pilote automatique",
+      "starters": "Ou partez de l’une de ces pistes",
+      "starter1": "T-shirts en dessin au trait pour jardiniers de balcon",
+      "starter2": "T-shirts arcade rétro pour joueurs du week-end",
+      "starter3": "T-shirts de poésie sombre pour lecteurs noctambules",
+      "pickIdea": "Pas sûr ? Choisissez une idée déjà étudiée"
     },
     "directions": {
       "title": "Quoi vendre maintenant",

@@ -104,7 +104,7 @@ While the `story-ui` flag is on, the app rail SHALL show four places: Home, Drop
 While `story-ui` is on, `/dashboard` SHALL show, in this order:
 
 1. The next action.
-2. What sells now, from Qloo. One click opens a new drop with that brief.
+2. What sells now, from Qloo. One click opens a drop at its designs with that idea and its evidence.
 3. The drops in progress.
 4. The results of the last 28 days.
 

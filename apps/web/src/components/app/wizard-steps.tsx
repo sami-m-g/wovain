@@ -43,6 +43,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useId } from "react";
 
+import { BriefStarters } from "@/components/app/brief-starters";
 import { CampaignControls } from "@/components/app/campaign-controls";
 import { CapsulePanel } from "@/components/app/capsule";
 import { Citations } from "@/components/app/citations";
@@ -52,7 +53,6 @@ import {
 } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
 import { DictationMic } from "@/components/app/dictation-mic";
-import { DropDirections } from "@/components/app/drop-directions";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import { TasteMapPanel } from "@/components/app/taste-map";
@@ -136,8 +136,6 @@ export const BriefStep = ({
   onChange,
   onBudget,
   onSubmit,
-  onUseDirection,
-  story = false,
 }: {
   brief: string;
   error?: string | undefined;
@@ -148,9 +146,6 @@ export const BriefStep = ({
   onChange: (value: string) => void;
   onBudget: (value: string) => void;
   onSubmit: () => void;
-  onUseDirection: (brief: string) => void;
-  // The story-ui flag: suggestions as the one fixed idea card.
-  story?: boolean;
 }) => {
   const t = useTranslations("Wizard.brief");
   const format = useFormatter();
@@ -165,11 +160,8 @@ export const BriefStep = ({
       }}
     >
       <StepHeader focusOnMount={false} title={t("title")} />
-      <DropDirections
-        disabled={Boolean(busyLabel)}
-        onUse={(pick) => onUseDirection(pick.brief)}
-        story={story}
-      />
+      {/* One place to write (here) and one to pick a researched idea (the
+          Home): starters only fill the box. */}
       <Field data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor={id}>{t("label")}</FieldLabel>
         <InputGroup>
@@ -199,6 +191,7 @@ export const BriefStep = ({
         <FieldDescription id={`${id}-hint`}>{t("hint")}</FieldDescription>
         {error ? <FieldError>{error}</FieldError> : null}
       </Field>
+      <BriefStarters disabled={Boolean(busyLabel)} onPick={onChange} />
       {autopilot ? (
         <BudgetField
           budget={budget}

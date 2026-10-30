@@ -42,7 +42,7 @@ export interface DirectionPick {
 
 // What the chunks streamed so far add up to: the whole answer once done,
 // else the cards written so far (best first) and the step under way.
-const progressOf = (chunks: readonly DirectionsChunk[]) => {
+export const progressOf = (chunks: readonly DirectionsChunk[]) => {
   let answer: Directions | undefined;
   let step: Step | undefined;
   // A card arrives with its facts, then again with its words: the last wins.
