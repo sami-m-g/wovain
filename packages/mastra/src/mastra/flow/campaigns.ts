@@ -10,7 +10,9 @@ import {
 } from "@wovain/core/ads";
 import type { AdCopy, WriteOnce } from "@wovain/core/ads";
 import { adCompetition } from "@wovain/core/competition";
+import { EVENTS } from "@wovain/core/events";
 import { findSalesPixel, verifyStagedPaused } from "@wovain/core/media-buying";
+import { evaluateMetaSetup, readMetaAccount } from "@wovain/core/meta-setup";
 import type { AudienceTargeting } from "@wovain/core/targeting";
 import { externalWrite } from "@wovain/db/schema/durable";
 import { campaign } from "@wovain/db/schema/seller";
@@ -28,6 +30,7 @@ import { getDesign } from "./designs";
 import { writerStyleFor } from "./drop-style";
 import { getIdea } from "./ideas";
 import { isMediaBuyingLive } from "./media";
+import { pageForAds } from "./meta-pages";
 import { once } from "./once";
 import { testFloorSharesOf } from "./outcomes";
 import { getProduct } from "./products";
@@ -222,10 +225,7 @@ const campaignKey = (actor: Actor, input: DropCampaignInput) => {
 // on Meta's campaign budget, an ad set per design with a floor of the
 // budget, and an ad per copy variant. The profit rules (./ad-rules) pause
 // the designs that don't sell and scale the winner.
-export const createDropCampaign = async (
-  actor: Actor,
-  input: DropCampaignInput
-) => {
+const testedProducts = (input: DropCampaignInput) => {
   const productIds = [...new Set(input.productIds)];
   if (productIds.length === 0 || productIds.length > MAX_TEST_DESIGNS) {
     throw notReady({
@@ -233,6 +233,14 @@ export const createDropCampaign = async (
       message: `A campaign tests 1 to ${MAX_TEST_DESIGNS} designs`,
     });
   }
+  return productIds;
+};
+
+export const createDropCampaign = async (
+  actor: Actor,
+  input: DropCampaignInput
+) => {
+  const productIds = testedProducts(input);
   const key = campaignKey(actor, { ...input, productIds });
   const staged = await byKey(actor, key);
   if (staged !== undefined) {
@@ -241,10 +249,11 @@ export const createDropCampaign = async (
   const single = productIds.length === 1;
   // The run of the first design names the trace and the Meta writes.
   const first = await getProduct(actor, productIds[0] ?? "");
-  const { runId } = await getDesign(actor, first.designId);
-  // Qloo's audience as the ad sets' targeting and the copy's persona, kept
-  // with the key so a retry stages the same ad sets (./audiences). Without
-  // one nothing is staged: QLOO_AUDIENCE_MISSING, and the retry asks again.
+  const { ideaId, runId } = await getDesign(actor, first.designId);
+  // Qloo's audience for the idea (then the brand, then the brief) as the ad
+  // sets' targeting and the copy's persona, kept with the key so a retry
+  // stages the same ad sets (./audiences). A failed Qloo step stages
+  // nothing: QLOO_AUDIENCE_MISSING, and the retry asks again.
   const audience = await once(actor, {
     key: `${key}:audience`,
     operation: "audience",
@@ -252,6 +261,7 @@ export const createDropCampaign = async (
       requireQlooAudience(
         await audienceFor(actor, {
           countries: input.countries,
+          ideaId,
           runId: runId ?? undefined,
         })
       ),
@@ -317,8 +327,9 @@ export const createDropCampaign = async (
     ? `w-${lead.productId.slice(0, 8)}`
     : `w-${createHash("sha256").update(key).digest("hex").slice(0, 8)}`;
   const { made, status } = await withProvider(actor, "meta", async (call) => {
+    const adAccountId = await adAccountFor(call, tag, input.adAccountId);
     const plan = {
-      adAccountId: input.adAccountId,
+      adAccountId,
       copy: lead.copy,
       countries: input.countries,
       dailyBudgetCents,
@@ -338,7 +349,8 @@ export const createDropCampaign = async (
       name: single
         ? `wovain · ${lead.title}`
         : `wovain · test of ${designs.length} designs`,
-      pageId: input.pageId,
+      // The merchant's Page (./meta-pages), unless the caller named one.
+      pageId: input.pageId ?? (await pageForAds(actor, call, adAccountId)),
       tag,
       // Qloo's ages, gender and interests as suggestions.
       targeting: audience.targeting,
@@ -350,11 +362,10 @@ export const createDropCampaign = async (
         status: "paused" as const,
       };
     }
-    const adAccountId = await adAccountFor(call, plan.tag, input.adAccountId);
     const pixelId = input.pixelId ?? (await findSalesPixel(call, adAccountId));
     const stagedNow = await stagePausedCampaign(
       call,
-      { ...plan, adAccountId, media: { pixelId, targeting } },
+      { ...plan, media: { pixelId, targeting } },
       metaOnce
     );
     // Throws (after pausing it) when anything came back able to spend.
@@ -415,6 +426,158 @@ export const createProductCampaign = async (
   actor: Actor,
   { productId, ...input }: CampaignInput
 ) => await createDropCampaign(actor, { ...input, productIds: [productId] });
+
+// "Make the ads" in the background (../workflows/campaigns.ts): Meta's
+// writes, video uploads and their processing outlast a web request, so the
+// request checks the Meta account, queues the staging and returns its key;
+// the page polls campaignStaging. A staging that failed for good is kept
+// under its key as `:failed`, and the next request clears it and stages
+// again, resuming from the keyed writes (./once) instead of recreating them.
+
+const failedKey = (key: string) => `${key}:failed`;
+
+// A failure the page can explain again: the error's code, message and data
+// (why, fix), as the procedure would have thrown it.
+export interface StagingFailure {
+  code: string;
+  data: unknown;
+  message: string;
+}
+
+export const stagingFailureOf = (error: unknown): StagingFailure => {
+  const shaped = error as { code?: unknown; data?: unknown } | null;
+  return {
+    code:
+      typeof shaped?.code === "string" ? shaped.code : "INTERNAL_SERVER_ERROR",
+    data: shaped?.data ?? null,
+    message: error instanceof Error ? error.message : String(error),
+  };
+};
+
+// Meta refuses a campaign without a Page to run it as, and a disabled
+// account takes nothing: both are Meta setup cards the step shows, with the
+// exact Meta screen. A missing payment method doesn't stop a paused
+// campaign; its card says the ads can't spend until one is added.
+const requireMetaSetup = async (actor: Actor, pageId: string | undefined) => {
+  const facts = await withProvider(
+    actor,
+    "meta",
+    async (call) => await readMetaAccount(call)
+  );
+  const first = evaluateMetaSetup({ facts, graph: undefined }).find(
+    (step) =>
+      step.state !== "done" &&
+      (step.id === "ad_account" || (step.id === "page" && pageId === undefined))
+  );
+  if (first === undefined) {
+    return;
+  }
+  throw notReady({
+    fix:
+      first.id === "page"
+        ? "Create a Facebook Page in Meta, or get access to one (the Meta setup card has the links), then make the ads again."
+        : "Open your Meta ad account (the Meta setup card has the link), then make the ads again.",
+    message:
+      first.id === "page"
+        ? "Your Meta ad account has no Facebook Page to run the ads as"
+        : "Your Meta ad account isn't open for ads",
+  });
+};
+
+export type CampaignStaging =
+  | { key: string; state: "ready"; campaign: typeof campaign.$inferSelect }
+  | { key: string; state: "staging" }
+  | ({ key: string; state: "failed" } & StagingFailure);
+
+export const campaignStaging = async (
+  actor: Actor,
+  key: string
+): Promise<CampaignStaging> => {
+  const row = await byKey(actor, key);
+  if (row !== undefined) {
+    return { campaign: row, key, state: "ready" };
+  }
+  const [failed] = await actor.db
+    .select({ result: externalWrite.result })
+    .from(externalWrite)
+    .where(
+      and(
+        eq(externalWrite.key, failedKey(key)),
+        eq(externalWrite.userId, actor.userId)
+      )
+    );
+  return failed === undefined
+    ? { key, state: "staging" }
+    : { key, state: "failed", ...(failed.result as StagingFailure) };
+};
+
+export const requestDropCampaign = async (
+  actor: Actor,
+  input: DropCampaignInput
+): Promise<CampaignStaging> => {
+  const productIds = testedProducts(input);
+  const key = campaignKey(actor, { ...input, productIds });
+  const staged = await byKey(actor, key);
+  if (staged !== undefined) {
+    return { campaign: staged, key, state: "ready" };
+  }
+  if (actor.events === undefined) {
+    throw new Error("Background jobs aren't set up here");
+  }
+  await requireMetaSetup(actor, input.pageId);
+  const [cleared] = await actor.db
+    .delete(externalWrite)
+    .where(
+      and(
+        eq(externalWrite.key, failedKey(key)),
+        eq(externalWrite.userId, actor.userId)
+      )
+    )
+    .returning({ at: externalWrite.updatedAt });
+  await actor.events.send({
+    data: { input: { ...input, productIds }, key, userId: actor.userId },
+    // Inngest drops a repeat click while the staging runs; a retry after a
+    // failure is a new event.
+    id: cleared === undefined ? key : `${key}@${cleared.at.getTime()}`,
+    name: EVENTS.campaignStage,
+  });
+  return { key, state: "staging" };
+};
+
+// A staging that failed for good: kept for the page, and to error tracking.
+// The first record wins: the job's step keeps the original error (its code,
+// why and fix), and Inngest's failure handler only fills in for a crash.
+export const failCampaignStaging = async (
+  actor: Actor,
+  key: string,
+  error: unknown
+) => {
+  const failure = stagingFailureOf(error);
+  const [kept] = await actor.db
+    .insert(externalWrite)
+    .values({
+      key: failedKey(key),
+      operation: "campaign_failed",
+      provider: "meta",
+      result: failure,
+      state: "done",
+      userId: actor.userId,
+    })
+    .onConflictDoNothing()
+    .returning({ key: externalWrite.key });
+  if (kept === undefined) {
+    return;
+  }
+  log.error({
+    campaign: { key },
+    error: {
+      code: failure.code,
+      message: `A campaign staging failed: ${failure.message}`,
+      name: "CampaignStagingFailed",
+    },
+    userId: actor.userId,
+  });
+};
 
 // The staging a Meta write belongs to: its key up to ":meta:".
 const stagingKey = (writeKey: string) =>

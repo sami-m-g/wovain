@@ -49,6 +49,9 @@ export const connection = pgTable(
     // The provider refused the grant and wouldn't refresh it: the merchant
     // must reconnect. Cleared when a new grant is saved.
     needsReconnect: boolean("needs_reconnect").default(false).notNull(),
+    // Meta only: the Facebook Page the merchant picked for their ads; unset,
+    // the ads run as the Page that best matches the shop.
+    pageId: text("page_id"),
     provider: text("provider").$type<ProviderId>().notNull(),
     sealedTokens: text("sealed_tokens").notNull(),
     updatedAt: updatedAt(),

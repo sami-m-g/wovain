@@ -17,7 +17,9 @@ const createQueryClient = () =>
   new QueryClient({
     queryCache: new QueryCache({
       onError: async (error, query) => {
-        if (isMissingConnection(error)) {
+        // A query marked quiet only adds detail its screen can do without:
+        // its error is logged on the server and the screen shows a dash.
+        if (isMissingConnection(error) || query.meta?.quiet === true) {
           return;
         }
         const { toast } = await import("sonner");

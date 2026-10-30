@@ -112,7 +112,6 @@ export const SETUP_STEPS = [
   "connect",
   "payouts",
   "site_live",
-  "shipping",
   "pixel",
   "domain",
   "policies",
@@ -231,19 +230,6 @@ export const evaluateSetup = ({
       id: "site_live",
       required: true,
       state: siteState,
-    },
-    {
-      how:
-        shop.shippingEnabled && shop.enabledShippingProfiles > 0
-          ? "none"
-          : "link",
-      id: "shipping",
-      // Fourthwall ships what it makes: shipping covers self-fulfilled items.
-      required: false,
-      state:
-        shop.shippingEnabled && shop.enabledShippingProfiles > 0
-          ? "done"
-          : "todo",
     },
     { ...pixelStep(), id: "pixel", required: true },
     { ...domainStep(), id: "domain", required: false },

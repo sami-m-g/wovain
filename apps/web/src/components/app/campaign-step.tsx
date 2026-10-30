@@ -28,6 +28,7 @@ import { useState } from "react";
 
 import { CampaignAudience } from "@/components/app/campaign-audience";
 import { CampaignControls } from "@/components/app/campaign-controls";
+import { CampaignMetaSetup } from "@/components/app/campaign-page";
 import { CampaignRules } from "@/components/app/campaign-rules";
 import { CampaignCompetition } from "@/components/app/competition-panel";
 import { ConnectState } from "@/components/app/connect-state";
@@ -85,6 +86,30 @@ const useMetaReady = () => {
   return meta !== undefined && !meta.needsReconnect;
 };
 
+// The Meta setup cards a campaign needs: an open ad account and a Page to
+// stage it at all, a payment method before it can spend.
+const CAMPAIGN_SETUP = new Set(["ad_account", "payment", "page"]);
+const STAGING_SETUP = new Set(["ad_account", "page"]);
+
+/**
+ * Which of those cards are open: `show` puts the Meta setup cards on the
+ * step, `blocked` holds "Make the ads" until Meta can stage the campaign.
+ */
+const useMetaSetupGap = (metaReady: boolean | undefined) => {
+  const setup = useQuery({
+    ...orpc.store.metaSetup.queryOptions(),
+    enabled: metaReady === true,
+    retry: false,
+  });
+  const open = (setup.data?.steps ?? []).filter(
+    (step) => CAMPAIGN_SETUP.has(step.id) && step.state !== "done"
+  );
+  return {
+    blocked: open.some((step) => STAGING_SETUP.has(step.id)),
+    show: open.length > 0,
+  };
+};
+
 /**
  * The campaign step: the ad creatives, the copy, Qloo's audience, the
  * budget and the spend rules, then one "Launch campaign". Launching stages
@@ -122,6 +147,7 @@ export const CampaignStep = ({
   const media = useTranslations("Wizard.done.media");
   const money = useMoney();
   const metaReady = useMetaReady();
+  const setupGap = useMetaSetupGap(metaReady);
   const liveBuying = useQuery(orpc.campaigns.liveBuying.queryOptions());
   const activate = useMutation(orpc.campaigns.activate.mutationOptions());
   const decide = useMutation(orpc.approvals.decide.mutationOptions());
@@ -251,6 +277,11 @@ export const CampaignStep = ({
         </ConnectState>
       ) : (
         <>
+          <CampaignMetaSetup
+            setup={setupGap.show}
+            staged={campaigns.length > 0}
+            title={t("page")}
+          />
           <Part title={t("budget")}>
             {campaigns.length === 0 ? (
               <BudgetField
@@ -299,7 +330,7 @@ export const CampaignStep = ({
             Boolean(busyLabel) ||
             launching ||
             metaReady !== true ||
-            (campaigns.length === 0 && budgetInvalid)
+            (campaigns.length === 0 && (budgetInvalid || setupGap.blocked))
           }
           onClick={onLaunch}
         >

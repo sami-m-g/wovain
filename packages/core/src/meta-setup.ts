@@ -1,7 +1,7 @@
 import { log as evlog } from "evlog";
 import { z } from "zod";
 
-import { conversationId } from "./ads";
+import { conversationId, usablePages } from "./ads";
 import type { GraphReadiness } from "./meta-graph";
 import { findAll } from "./upstream";
 import type { ToolCall } from "./upstream";
@@ -88,10 +88,7 @@ export const readMetaAccount = async (
     return { account: undefined, instagram: undefined, pages: [] };
   }
   const id = String(open.ad_account_id);
-  const pages = findAll(
-    z.looseObject({ page_id: idish, page_name: z.string().optional() }),
-    await ask("ads_get_ad_account_pages", { ad_account_id: id })
-  ).map((page) => ({ id: String(page.page_id), name: page.page_name ?? null }));
+  const pages = await usablePages(ask, id);
   let instagram: MetaAccountFacts["instagram"];
   try {
     instagram = findAll(

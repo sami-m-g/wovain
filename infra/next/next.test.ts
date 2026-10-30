@@ -94,3 +94,10 @@ test("next's web service can scale past one instance", () => {
     template: { scaling: { maxInstanceCount: 2 } },
   });
 });
+
+// 2026-10-30: a campaign request waited 110 s on a cold start.
+test("next keeps one instance warm", () => {
+  expect(inputsOf.get("web-next")).toMatchObject({
+    template: { scaling: { minInstanceCount: 1 } },
+  });
+});

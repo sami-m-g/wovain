@@ -351,7 +351,7 @@ it("logs a failed step at error level and refuses the targeting", async () => {
   ).toBe(false);
 });
 
-it("finds no Qloo audience when the brand has no Qloo entities", async () => {
+it("goes broad, never refused, when nothing has Qloo data", async () => {
   const { deps } = fakeDeps();
   const result = await buildAudienceTargeting(deps, {
     countries: ["CA"],
@@ -359,7 +359,37 @@ it("finds no Qloo audience when the brand has no Qloo entities", async () => {
   });
   expect(result.targeting).toEqual({ geo_locations: { countries: ["CA"] } });
   expect(deps.interests.search).not.toHaveBeenCalled();
-  expect(qlooAudienceGap(result.evidence)).toEqual({ reason: "no_audience" });
+  expect(result.evidence.fallback).toBe("broad");
+  expect(qlooAudienceGap(result.evidence)).toBeUndefined();
+});
+
+it("targets the idea's own Qloo audiences first, with no brand", async () => {
+  const { deps } = fakeDeps();
+  const result = await buildAudienceTargeting(deps, {
+    audiences: [{ affinity: 0.9, id: SNEAKERS, name: "Sneakers" }],
+    countries: ["US"],
+    entities: [],
+    queries: [{ qlooId: "urn:tag:genre:x", query: "Sneakers" }],
+  });
+  expect(deps.qloo.audienceAffinity).not.toHaveBeenCalled();
+  expect(result.evidence.audiences.map((one) => one.id)).toEqual([SNEAKERS]);
+  expect(result.evidence.fallback).toBeUndefined();
+  expect(result.targeting.flexible_spec).toEqual([
+    { interests: [{ id: "6003000000010", name: "Sneakers" }] },
+  ]);
+  expect(qlooAudienceGap(result.evidence)).toBeUndefined();
+});
+
+it("falls back to the idea's interests when Qloo has no audience", async () => {
+  const { deps } = fakeDeps();
+  const result = await buildAudienceTargeting(deps, {
+    countries: ["US"],
+    entities: [],
+    queries: [{ qlooId: "urn:tag:genre:x", query: "Sneakers" }],
+  });
+  expect(result.evidence.fallback).toBe("interests");
+  expect(result.evidence.interests[0]?.from).toBe("qloo_tag");
+  expect(qlooAudienceGap(result.evidence)).toBeUndefined();
 });
 
 it("leaves out audiences Qloo has no score for", async () => {
@@ -380,5 +410,5 @@ it("leaves out audiences Qloo has no score for", async () => {
   // Every scored audience sits at the same baseline: none stands out.
   expect(result.evidence.audiences).toEqual([]);
   expect(result.evidence.failed).toEqual([]);
-  expect(qlooAudienceGap(result.evidence)).toEqual({ reason: "no_audience" });
+  expect(qlooAudienceGap(result.evidence)).toBeUndefined();
 });

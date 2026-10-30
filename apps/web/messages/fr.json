@@ -688,6 +688,9 @@
       "audience": "Qui la voit",
       "budget": "Budget quotidien",
       "budgetSet": "{budget} par jour",
+      "page": "Page Facebook",
+      "pageAs": "Vos publicités sont diffusées au nom de {name}.",
+      "changePage": "Changer de Page",
       "rules": "Règles de dépense",
       "rulesPending": "Vos plafonds quotidien et mensuel et les règles de rentabilité de wovain s'appliquent dès le premier dollar. Vous les voyez en entier avant toute dépense.",
       "connectTitle": "Connectez Meta pour lancer",
@@ -805,7 +808,7 @@
       "review": "Enregistrement de votre décision…",
       "products": "Création des produits sur Fourthwall…",
       "publish": "Publication sur Fourthwall…",
-      "campaign": "Rédaction des publicités et préparation de la campagne sur Meta…"
+      "campaign": "Rédaction des publicités et préparation de la campagne sur Meta. Cela peut prendre quelques minutes, le temps que Meta traite les vidéos…"
     },
     "autopilotLocked": "L'autopilote est inclus dans Studio et Label. En Free, vous validez chaque étape.",
     "autopilotUpgrade": "Voir les formules",
@@ -1739,11 +1742,6 @@
         "fix": "Fourthwall examine encore votre boutique. Contactez le support Fourthwall pour finaliser.",
         "next": "la vérification de Fourthwall"
       },
-      "shipping": {
-        "label": "La livraison est activée",
-        "fix": "Dans Fourthwall, activez la livraison et ajoutez au moins un profil de livraison.",
-        "next": "l'expédition, pour les articles que vous expédiez vous-même"
-      },
       "payouts": {
         "label": "Les versements sont configurés",
         "fix": "Dans Fourthwall, finalisez votre compte de versement pour recevoir vos ventes.",
@@ -2048,14 +2046,6 @@
         "waiting": "Fourthwall examine votre boutique. Seul le support Fourthwall peut terminer cette étape.",
         "check": "Vérifiez le statut de votre boutique.",
         "support": "Contacter le support Fourthwall"
-      },
-      "shipping": {
-        "label": "Livraison activée",
-        "done": "Les acheteurs peuvent payer avec livraison.",
-        "todo": "Activez la livraison et ajoutez un profil de livraison dans Fourthwall. L'étape se coche ici une fois faite.",
-        "waiting": "En attente de Fourthwall.",
-        "check": "Vérifiez votre livraison.",
-        "action": "Configurer la livraison"
       },
       "pixel": {
         "label": "Pixel Meta sur votre boutique",

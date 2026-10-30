@@ -688,6 +688,9 @@
       "audience": "Quién lo ve",
       "budget": "Presupuesto diario",
       "budgetSet": "{budget} al día",
+      "page": "Página de Facebook",
+      "pageAs": "Tus anuncios se publican como {name}.",
+      "changePage": "Cambiar página",
       "rules": "Reglas de gasto",
       "rulesPending": "Tus límites diario y mensual y las reglas de beneficio de wovain se aplican desde el primer dólar. Las ves completas antes de que se gaste nada.",
       "connectTitle": "Conecta Meta para lanzar",
@@ -805,7 +808,7 @@
       "review": "Guardando tu decisión…",
       "products": "Creando productos en Fourthwall…",
       "publish": "Publicando en Fourthwall…",
-      "campaign": "Escribiendo los anuncios y preparando la campaña en Meta…"
+      "campaign": "Escribiendo los anuncios y preparando la campaña en Meta. Puede tardar unos minutos mientras Meta procesa los vídeos…"
     },
     "autopilotLocked": "El piloto automático viene con Studio y Label. En Free, apruebas cada paso.",
     "autopilotUpgrade": "Ver planes",
@@ -1739,11 +1742,6 @@
         "fix": "Fourthwall aún revisa tu tienda. Contacta con el soporte de Fourthwall para terminar.",
         "next": "la revisión de Fourthwall"
       },
-      "shipping": {
-        "label": "Los envíos están activos",
-        "fix": "En Fourthwall, activa los envíos y añade al menos un perfil de envío.",
-        "next": "el envío, para artículos que envías tú"
-      },
       "payouts": {
         "label": "Los pagos están configurados",
         "fix": "En Fourthwall, completa tu cuenta de pagos para recibir tus ventas.",
@@ -2048,14 +2046,6 @@
         "waiting": "Fourthwall está revisando tu tienda. Solo el soporte de Fourthwall puede terminarlo.",
         "check": "Revisa el estado de tu tienda.",
         "support": "Contactar con el soporte de Fourthwall"
-      },
-      "shipping": {
-        "label": "Envíos activados",
-        "done": "Los compradores pueden pagar con envío.",
-        "todo": "Activa los envíos y añade un perfil de envío en Fourthwall. Se marcará aquí cuando esté hecho.",
-        "waiting": "Esperando a Fourthwall.",
-        "check": "Revisa tus envíos.",
-        "action": "Configurar envíos"
       },
       "pixel": {
         "label": "Píxel de Meta en tu tienda",
