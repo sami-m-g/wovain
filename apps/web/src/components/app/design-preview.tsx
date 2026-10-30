@@ -8,7 +8,7 @@ import {
 import { cn } from "@wovain/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import type { ReactNode } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 
 import { useHere } from "@/components/app/connect-state";
@@ -29,32 +29,107 @@ const NO_MOCKUPS: string[] = [];
 
 type MockupStatus = "ready" | "failed" | "not_connected" | null;
 
+// Transparent art is judged by its visible pixels' mean relative luminance
+// (sRGB weights), read from a small copy: light art gets a dark backdrop and
+// dark art a light one, so either stands out from the frame.
+type Tone = "light" | "dark" | "mid";
+const SAMPLE_PX = 32;
+const LIGHT_ART = 0.55;
+const DARK_ART = 0.35;
+const CHANNEL_MAX = 255;
+const RED = 0.2126;
+const GREEN = 0.7152;
+const BLUE = 0.0722;
+
+const toneOf = (img: HTMLImageElement): Tone => {
+  const canvas = document.createElement("canvas");
+  canvas.width = SAMPLE_PX;
+  canvas.height = SAMPLE_PX;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (context === null) {
+    return "mid";
+  }
+  context.drawImage(img, 0, 0, SAMPLE_PX, SAMPLE_PX);
+  const { data } = context.getImageData(0, 0, SAMPLE_PX, SAMPLE_PX);
+  let lit = 0;
+  let seen = 0;
+  for (let index = 0; index < data.length; index += 4) {
+    const alpha = (data[index + 3] ?? 0) / CHANNEL_MAX;
+    const luminance =
+      (RED * (data[index] ?? 0) +
+        GREEN * (data[index + 1] ?? 0) +
+        BLUE * (data[index + 2] ?? 0)) /
+      CHANNEL_MAX;
+    lit += alpha * luminance;
+    seen += alpha;
+  }
+  const mean = seen === 0 ? undefined : lit / seen;
+  if (mean !== undefined && mean > LIGHT_ART) {
+    return "light";
+  }
+  if (mean !== undefined && mean < DARK_ART) {
+    return "dark";
+  }
+  return "mid";
+};
+
+// The frame sits on bg-muted: light in the light theme, dark in the dark one.
+const BACKDROP: Record<Tone, string> = {
+  dark: "dark:bg-foreground",
+  light: "bg-foreground dark:bg-transparent",
+  mid: "",
+};
+
 // The image stays invisible until it has loaded; the skeleton holds the space.
-const useLoaded = () => {
+// `measure` reads the art's tone once loaded; only same-origin images can be
+// read, which is what Next's image optimizer serves.
+const useLoaded = (measure: boolean) => {
   const [loaded, setLoaded] = useState(false);
+  const [tone, setTone] = useState<Tone>("mid");
+  const done = (img: HTMLImageElement) => {
+    setLoaded(true);
+    if (measure) {
+      setTone(toneOf(img));
+    }
+  };
   const ref = (img: HTMLImageElement | null) => {
     // A cached image can finish loading before React attaches onLoad.
     if (img?.complete && img.naturalWidth > 0) {
-      setLoaded(true);
+      done(img);
     }
   };
-  return { loaded, onLoad: () => setLoaded(true), ref };
+  return {
+    loaded,
+    onLoad: (event: SyntheticEvent<HTMLImageElement>) =>
+      done(event.currentTarget),
+    ref,
+    tone,
+  };
 };
 
 // One image filling the square frame. Keyed by its source, so a new image
 // starts hidden behind the skeleton again.
 const FrameImage = ({
   alt,
+  art,
   dimmed,
   src,
 }: {
   alt: string;
+  art: boolean;
   dimmed: boolean | undefined;
   src: string;
 }) => {
-  const { loaded, onLoad, ref } = useLoaded();
+  const { loaded, onLoad, ref, tone } = useLoaded(art && optimizable(src));
   return (
     <>
+      <div
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-0 transition-colors duration-300",
+          BACKDROP[tone]
+        )}
+      />
       {loaded ? null : (
         <Skeleton
           aria-hidden="true"
@@ -124,6 +199,7 @@ export const DesignPreview = ({
       <div className="relative aspect-square w-full overflow-hidden">
         <FrameImage
           alt={onShirt ? t("shirtAlt", { title }) : t("artAlt", { title })}
+          art={!onShirt}
           dimmed={dimmed}
           key={src}
           src={src}
