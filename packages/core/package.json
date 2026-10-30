@@ -17,6 +17,7 @@
     "@stdlib/stats-base-dists-beta-cdf": "catalog:",
     "@tavily/core": "catalog:",
     "@toon-format/toon": "catalog:",
+    "culori": "catalog:",
     "evlog": "catalog:",
     "lru-cache": "catalog:",
     "p-limit": "catalog:",
@@ -26,6 +27,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/culori": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "@wovain/config": "workspace:*",

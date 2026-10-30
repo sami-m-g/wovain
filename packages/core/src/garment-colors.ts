@@ -1,3 +1,5 @@
+import { differenceCiede2000 } from "culori";
+
 // The garment side of a brand palette: the colours a Fourthwall blank really
 // comes in, and the ink (art) colours that stay readable on them.
 //
@@ -123,6 +125,35 @@ export const knownGarments = (colors: readonly string[]): GarmentColor[] => {
     seen.add(key);
     return [{ hex, name: name.trim() }];
   });
+};
+
+const deltaE = differenceCiede2000();
+
+// The wanted garment colours held to what the blank offers, as the blank
+// spells them: each one is the blank's colour of that name, else the blank's
+// nearest known colour (CIEDE2000, culori). A wanted colour wovain has no
+// hex for is skipped. None left: the blank's first colour, its default.
+export const blankGarments = (
+  wanted: readonly string[],
+  blankColors: readonly string[]
+): string[] => {
+  const offered = knownGarments(blankColors);
+  const picked: string[] = [];
+  for (const name of wanted) {
+    const exact = blankColors.find((color) => keyOf(color) === keyOf(name));
+    const hex = garmentHex(name);
+    const nearest =
+      hex === undefined
+        ? undefined
+        : offered.toSorted((a, b) => deltaE(hex, a.hex) - deltaE(hex, b.hex))[0]
+            ?.name;
+    const found = exact ?? nearest;
+    if (found !== undefined && !picked.includes(found)) {
+      picked.push(found);
+    }
+  }
+  const [fallback] = blankColors;
+  return picked.length === 0 && fallback !== undefined ? [fallback] : picked;
 };
 
 const channels = (hex: string) => [

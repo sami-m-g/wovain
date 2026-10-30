@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import { reviewDesign } from "@wovain/core/autopilot";
 import { briefCompetition } from "@wovain/core/competition";
-import { draftBrief, judgeDesign, redrawCanFix } from "@wovain/core/design";
+import {
+  draftBrief,
+  garmentColorsFor,
+  judgeDesign,
+  redrawCanFix,
+} from "@wovain/core/design";
 import type { Previous } from "@wovain/core/design";
 import { checkTrademarks } from "@wovain/core/evidence";
 import { design, run } from "@wovain/db/schema/seller";
@@ -21,7 +26,7 @@ import { getIdea } from "./ideas";
 import { track } from "./metrics";
 import { reachMilestone } from "./milestones";
 import { once } from "./once";
-import { previewPlacement } from "./placements";
+import { garmentsOnBlank, previewPlacement } from "./placements";
 import { charge } from "./spend";
 import { designAlreadyDecided, runNotWaiting } from "./transitions";
 
@@ -119,6 +124,8 @@ export const generateDesign = async (
             competition: competing
               ? briefCompetition(source.competition)
               : undefined,
+            // The palette held to the colours the product's blank offers.
+            garments: await garmentsOnBlank(actor, garmentColorsFor(style)),
             idea: source.research,
             previous,
             style,
