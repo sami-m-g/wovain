@@ -72,17 +72,18 @@ import {
   StepHeader,
 } from "@/components/app/wizard-parts";
 import { IdeaCardView } from "@/components/ideas/idea-card-view";
+import { ReadinessGate } from "@/components/store/store-summary";
 import type { Design, Idea, Product } from "@/lib/flow-client";
 import { namedWords } from "@/lib/flow-client";
 import { orpc } from "@/utils/orpc";
 
 const IMAGE_SIZE = 640;
 
-// The products step's badge per product status. In review is a publish an
-// agent queued for approval; the rest read as hidden.
-const STATUS_KEY: Partial<
-  Record<Product["status"], "public" | "inReview" | "hidden">
-> = { in_review: "inReview", public: "public" };
+// The products step's badge per product status: live, else hidden. A
+// product queued for review before the in-flow publish is a draft too.
+const STATUS_KEY: Partial<Record<Product["status"], "public" | "hidden">> = {
+  public: "public",
+};
 export const MAX_BRIEF = 200;
 const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
@@ -867,6 +868,8 @@ const PublishConfirm = ({
   );
 };
 
+const READINESS_POLL_MS = 10_000;
+
 export const ProductsStep = ({
   products,
   titles,
@@ -883,9 +886,21 @@ export const ProductsStep = ({
   const t = useTranslations("Wizard.products");
   const money = useMoney();
   const [confirming, setConfirming] = useState<Product>();
+  // The shop must take orders before a publish goes through (store
+  // management): what blocks it is fixed here, never only in the Store.
+  // Errors (store management off) leave publishing open.
+  // Polled while a check fails, so it ticks once fixed in Fourthwall.
+  const readiness = useQuery({
+    ...orpc.store.readiness.queryOptions(),
+    refetchInterval: (query) =>
+      query.state.data?.ready === false ? READINESS_POLL_MS : false,
+    retry: false,
+  });
+  const blocked = readiness.data?.ready === false;
   return (
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
+      {readiness.data ? <ReadinessGate readiness={readiness.data} /> : null}
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => {
           const live = product.status === "public";
@@ -940,7 +955,7 @@ export const ProductsStep = ({
                   ) : (
                     <Button
                       className="h-9 w-full"
-                      disabled={Boolean(busyLabel) || live}
+                      disabled={Boolean(busyLabel) || live || blocked}
                       onClick={() => setConfirming(product)}
                       variant="outline"
                     >

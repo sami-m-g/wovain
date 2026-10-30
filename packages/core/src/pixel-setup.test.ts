@@ -139,8 +139,41 @@ describe("dataset set-up on Graph", () => {
         event_name: "PageView",
         event_source_url: "https://shop.example.com",
         event_time: 1_793_275_200,
+        user_data: expect.objectContaining({
+          external_id: [expect.stringMatching(/^[0-9a-f]{64}$/u)],
+        }),
       }),
     ]);
+  });
+
+  it("keeps Meta's whole refusal: its words, codes and trace id", async () => {
+    const graph = createMetaGraph({
+      fetch: async () =>
+        await Promise.resolve(
+          Response.json(
+            {
+              error: {
+                code: 100,
+                error_subcode: 2_804_050,
+                error_user_msg: "Add more customer information.",
+                error_user_title: "Not enough customer information",
+                fbtrace_id: "AbC",
+                message: "Invalid parameter",
+              },
+            },
+            { status: 400 }
+          )
+        ),
+      graphUrl: "https://graph.facebook.com/v26.0",
+    });
+    await expect(
+      graph.sendTestEvent("token", "777", {
+        sourceUrl: "https://shop.example.com",
+        testEventCode: "TEST12345",
+      })
+    ).rejects.toThrow(
+      "Invalid parameter: Not enough customer information: Add more customer information. (code 100/2804050, fbtrace_id AbC)"
+    );
   });
 
   it("lists the account's datasets with when each last fired", async () => {

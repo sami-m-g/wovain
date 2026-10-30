@@ -55,12 +55,10 @@ describe("evaluateReadiness", () => {
     expect(evaluateReadiness(READY).ready).toBe(true);
   });
 
-  it("blocks on a shop that isn't live, is held for verification, or doesn't ship", () => {
+  it("blocks on a shop that isn't live or is held for verification", () => {
     for (const patch of [
       { siteStatus: "COMING_SOON" },
       { verificationRestrictions: ["storefront_noindex"] },
-      { shippingEnabled: false },
-      { enabledShippingProfiles: 0 },
     ] satisfies Partial<ShopFacts>[]) {
       expect(evaluateReadiness({ ...READY, ...patch }).ready).toBe(false);
     }
@@ -96,6 +94,27 @@ describe("readShopFacts", () => {
       },
     });
     expect(await readShopFacts(call)).toEqual(READY);
+  });
+
+  it("reads the shop's admin slug from its Fourthwall subdomain", async () => {
+    const { call } = fake({
+      "ecommerce_get-current-shop": {
+        internalDomain: "Wovain-Goods.fourthwall.com",
+        status: "COMING_SOON",
+      },
+    });
+    const facts = await readShopFacts(call);
+    expect(facts.slug).toBe("wovain-goods");
+  });
+
+  it("sells without shipping set: Fourthwall ships what it makes", () => {
+    expect(
+      evaluateReadiness({
+        ...READY,
+        enabledShippingProfiles: 0,
+        shippingEnabled: false,
+      }).ready
+    ).toBe(true);
   });
 
   it("treats a missing reply as not ready", async () => {

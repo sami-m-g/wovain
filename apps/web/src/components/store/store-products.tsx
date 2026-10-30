@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { checkPrice } from "@wovain/core/price-check";
 import { Button } from "@wovain/ui/components/button";
 import { Checkbox } from "@wovain/ui/components/checkbox";
 import {
@@ -64,7 +65,7 @@ const MOVES: Record<Status, Move[]> = {
 
 const STATUS_TONE: Record<Status, Tone> = {
   hidden: "muted",
-  in_review: "warning",
+  in_review: "muted",
   paused: "muted",
   public: "success",
   retired: "danger",
@@ -412,6 +413,36 @@ const Thumb = ({ product }: { product: StoreProduct }) => {
   );
 };
 
+/**
+ * Before a sale: the margin the price leaves on Fourthwall's cost to make
+ * it (its cheapest size), from the price check.
+ */
+const ExpectedMargin = ({ product }: { product: StoreProduct }) => {
+  const t = useTranslations("Store.products");
+  const format = useFormatter();
+  const costs = useQuery({
+    ...orpc.store.priceCheck.queryOptions({ input: { productId: product.id } }),
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const check = costs.data
+    ? checkPrice(costs.data.rules, product.price, costs.data.costs)
+    : undefined;
+  const [base] = (check?.sizes ?? []).toSorted((a, b) => a.cost - b.cost);
+  if (base === undefined) {
+    return DASH;
+  }
+  return (
+    <span className="flex flex-col">
+      {format.number(base.grossMargin, {
+        maximumFractionDigits: 0,
+        style: "percent",
+      })}
+      <span className="text-xs">{t("expected")}</span>
+    </span>
+  );
+};
+
 const openTab = (url: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
 };
@@ -526,7 +557,7 @@ const ProductRow = ({
         <p className="truncate font-medium">{product.title}</p>
         {product.runId && product.dropName ? (
           <Link
-            className="text-muted-foreground hover:text-foreground truncate text-xs underline-offset-4 hover:underline"
+            className="text-muted-foreground hover:text-foreground block truncate text-xs underline-offset-4 hover:underline"
             href={`/dashboard?run=${encodeURIComponent(product.runId)}`}
           >
             {t("fromDrop", { name: product.dropName })}
@@ -551,12 +582,14 @@ const ProductRow = ({
         {money.dollars(product.price)}
       </span>
       <span className="figures text-muted-foreground hidden text-end text-sm sm:block">
-        {sold?.margin === undefined
-          ? DASH
-          : format.number(sold.margin / PERCENT, {
-              maximumFractionDigits: 0,
-              style: "percent",
-            })}
+        {sold?.margin === undefined ? (
+          <ExpectedMargin product={product} />
+        ) : (
+          format.number(sold.margin / PERCENT, {
+            maximumFractionDigits: 0,
+            style: "percent",
+          })
+        )}
       </span>
       <span className="figures hidden text-end text-sm sm:block">
         {sold === undefined ? DASH : format.number(sold.unitsSold)}

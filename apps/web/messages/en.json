@@ -1692,7 +1692,8 @@
         "unknown": "Status unknown"
       },
       "ready": "Ready to sell",
-      "passing": "({done, number} of {total, number} checks pass)",
+      "passing": "{done, number} of {total, number} ready",
+      "next": "Next: {step}",
       "allChecks": "All readiness checks",
       "fixIt": "Fix in Fourthwall",
       "goLive": "Go live",
@@ -1730,19 +1731,23 @@
       "failed": "(to fix)",
       "site_live": {
         "label": "Shop is live",
-        "fix": "In Fourthwall, set your site status to Live."
+        "fix": "In Fourthwall, set your site status to Live.",
+        "next": "take the shop live"
       },
       "verified": {
         "label": "Shop is verified",
-        "fix": "Fourthwall is still reviewing your shop. Contact Fourthwall support to finish it."
+        "fix": "Fourthwall is still reviewing your shop. Contact Fourthwall support to finish it.",
+        "next": "Fourthwall's review"
       },
       "shipping": {
         "label": "Shipping is on",
-        "fix": "In Fourthwall, turn on shipping and add at least one shipping profile."
+        "fix": "In Fourthwall, turn on shipping and add at least one shipping profile.",
+        "next": "shipping, for items you ship yourself"
       },
       "payouts": {
         "label": "Payouts are set up",
-        "fix": "In Fourthwall, finish your payout account so sales reach you."
+        "fix": "In Fourthwall, finish your payout account so sales reach you.",
+        "next": "finish payouts"
       }
     },
     "queue": {
@@ -1790,7 +1795,8 @@
       "bulkLabel": "Bulk actions",
       "clear": "Clear",
       "actions": "Actions for {title}",
-      "fromDrop": "From {name}",
+      "fromDrop": "Drop: {name}",
+      "expected": "expected",
       "soldShort": "{count, number} sold",
       "salesSource": "Margin and units sold: last 28 days, from Fourthwall's top-products report.",
       "empty": "No products yet.",
@@ -1811,7 +1817,7 @@
     },
     "productStatus": {
       "hidden": "Draft",
-      "in_review": "In review",
+      "in_review": "Draft",
       "public": "Live",
       "paused": "Paused",
       "retired": "Retired"

@@ -2,6 +2,7 @@
 
 import { ORPCError } from "@orpc/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { LINE_MAX, sentencesWithin } from "@wovain/core/evidence";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button } from "@wovain/ui/components/button";
 import { Spinner } from "@wovain/ui/components/spinner";
@@ -21,10 +22,6 @@ import { orpc } from "@/utils/orpc";
 
 const POLL_MS = 5000;
 const NOT_FOUND = 404;
-// A report saved before the glance existed: each answer's first sentence,
-// cut at about one line.
-const SENTENCE_END = /(?<=[.!?])\s/u;
-const LINE_MAX = 110;
 const GLANCE_RISKS = 3;
 const MAX_SOURCES = 6;
 
@@ -40,13 +37,8 @@ const LEVEL_VARIANT = {
   medium: "outline",
 } as const;
 
-/** One line of prose: the first sentence, cut at a line's length. */
-const lineOf = (text: string) => {
-  const [first = ""] = text.trim().split(SENTENCE_END);
-  return first.length > LINE_MAX
-    ? `${first.slice(0, LINE_MAX - 1).trimEnd()}…`
-    : first;
-};
+/** A report saved before the glance existed: whole sentences, never cut. */
+const lineOf = (text: string) => sentencesWithin(text, LINE_MAX);
 
 /** One labelled line of the report at a glance. */
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -123,7 +115,7 @@ const FullReport = ({ dossier }: { dossier: Dossier }) => {
  * The report at a glance: why now, how crowded, the price band and the
  * risks, one line each, then the sources. The full text opens on request.
  */
-const DossierView = ({ dossier }: { dossier: Dossier }) => {
+export const DossierView = ({ dossier }: { dossier: Dossier }) => {
   const t = useTranslations("Wizard.evidence");
   const { citations, priceBand, risks, saturation, summary, whyNow } = dossier;
   const glance = {

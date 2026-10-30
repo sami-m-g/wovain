@@ -17,9 +17,34 @@ permissions:
   contents: read
 
 jobs:
+  # A pull request that touches no manifest or lockfile adds no dependency,
+  # so dependency-review and licenses are skipped, which counts as passed for
+  # the required `dependency-review` check (the `verify` pattern in ci.yml).
+  # main always runs licenses.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      deps: ${{ steps.diff.outputs.deps }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - id: diff
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ] \
+            || git diff --name-only HEAD^1 HEAD | grep -qE '(^|/)(package\.json|pnpm-lock\.yaml|package-lock\.json|pnpm-workspace\.yaml)$|^osv-scanner\.toml$|^\.github/workflows/supply-chain\.yml$'; then
+            echo deps=true >> "$GITHUB_OUTPUT"
+          else
+            echo deps=false >> "$GITHUB_OUTPUT"
+          fi
+
   dependency-review:
     name: dependency-review
-    if: ${{ github.event_name == 'pull_request' }}
+    needs: changes
+    if: ${{ github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -53,6 +78,8 @@ jobs:
 
   licenses:
     name: licenses
+    needs: changes
+    if: needs.changes.outputs.deps == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

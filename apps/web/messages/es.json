@@ -1692,7 +1692,8 @@
         "unknown": "Estado desconocido"
       },
       "ready": "Lista para vender",
-      "passing": "({done, number} de {total, number} comprobaciones superadas)",
+      "passing": "{done, number} de {total, number} listos",
+      "next": "Siguiente: {step}",
       "allChecks": "Todas las comprobaciones",
       "fixIt": "Corregir en Fourthwall",
       "goLive": "Publicar tienda",
@@ -1730,19 +1731,23 @@
       "failed": "(por corregir)",
       "site_live": {
         "label": "La tienda está en línea",
-        "fix": "En Fourthwall, pon el estado del sitio en Live."
+        "fix": "En Fourthwall, pon el estado del sitio en Live.",
+        "next": "publicar la tienda"
       },
       "verified": {
         "label": "La tienda está verificada",
-        "fix": "Fourthwall aún revisa tu tienda. Contacta con el soporte de Fourthwall para terminar."
+        "fix": "Fourthwall aún revisa tu tienda. Contacta con el soporte de Fourthwall para terminar.",
+        "next": "la revisión de Fourthwall"
       },
       "shipping": {
         "label": "Los envíos están activos",
-        "fix": "En Fourthwall, activa los envíos y añade al menos un perfil de envío."
+        "fix": "En Fourthwall, activa los envíos y añade al menos un perfil de envío.",
+        "next": "el envío, para artículos que envías tú"
       },
       "payouts": {
         "label": "Los pagos están configurados",
-        "fix": "En Fourthwall, completa tu cuenta de pagos para recibir tus ventas."
+        "fix": "En Fourthwall, completa tu cuenta de pagos para recibir tus ventas.",
+        "next": "completar los pagos"
       }
     },
     "queue": {
@@ -1790,7 +1795,8 @@
       "bulkLabel": "Acciones en bloque",
       "clear": "Quitar selección",
       "actions": "Acciones para {title}",
-      "fromDrop": "De {name}",
+      "fromDrop": "Drop: {name}",
+      "expected": "prevista",
       "soldShort": "{count, number} vendidos",
       "salesSource": "Margen y unidades vendidas: últimos 28 días, del informe de productos más vendidos de Fourthwall.",
       "empty": "Aún no hay productos.",
@@ -1811,7 +1817,7 @@
     },
     "productStatus": {
       "hidden": "Borrador",
-      "in_review": "En revisión",
+      "in_review": "Borrador",
       "public": "Publicado",
       "paused": "En pausa",
       "retired": "Retirado"
