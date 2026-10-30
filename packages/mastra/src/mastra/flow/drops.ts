@@ -534,6 +534,30 @@ const placeArt = async (
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
+// The cost estimated from Fourthwall's catalog: the blank's price plus each
+// extra area's, for when its customization pricing can't be read.
+export const estimatedCost = async (
+  call: ToolCall,
+  item: ItemRow,
+  regions: string[],
+  cause: unknown
+) => {
+  const [blank] = await searchBlanks(call, {
+    query: itemStateOf(item).blankName,
+  });
+  const areas: PrintArea[] =
+    blank?.id === item.catalogProductId ? blank.printAreas : [];
+  if (blank?.baseCost === undefined || areas.length === 0) {
+    throw new Error(
+      "Neither Fourthwall's pricing nor its catalog gave a cost",
+      {
+        cause,
+      }
+    );
+  }
+  return catalogCost(blank.baseCost, areas, regions);
+};
+
 // What making the product costs: Fourthwall's price for this
 // customization, or, when that can't be read (logged at error level), the
 // blank's price plus each extra area's.
@@ -557,21 +581,8 @@ const costOf = async (
       },
       userId: actor.userId,
     });
-    const [blank] = await searchBlanks(call, {
-      query: itemStateOf(item).blankName,
-    });
-    const areas: PrintArea[] =
-      blank?.id === item.catalogProductId ? blank.printAreas : [];
-    if (blank?.baseCost === undefined || areas.length === 0) {
-      throw new Error(
-        "Neither Fourthwall's pricing nor its catalog gave a cost",
-        {
-          cause: error,
-        }
-      );
-    }
     return {
-      dollars: catalogCost(blank.baseCost, areas, regions),
+      dollars: await estimatedCost(call, item, regions, error),
       source: "catalog",
     };
   }
