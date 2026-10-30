@@ -653,6 +653,7 @@
       "price": "Price",
       "hidden": "Hidden",
       "inReview": "Waiting to publish",
+      "queuedHint": "Queued for your approval. Approve it in the approvals queue and it goes live.",
       "public": "Live",
       "view": "View on Fourthwall",
       "error": "Publish at least one product first.",

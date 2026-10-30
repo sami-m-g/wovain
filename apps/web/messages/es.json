@@ -653,6 +653,7 @@
       "price": "Precio",
       "hidden": "Oculto",
       "inReview": "Por publicar",
+      "queuedHint": "En cola para tu aprobación. Apruébalo en la cola de aprobaciones y se publica.",
       "public": "Publicado",
       "view": "Ver en Fourthwall",
       "error": "Publica al menos un producto primero.",

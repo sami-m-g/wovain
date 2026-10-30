@@ -803,7 +803,7 @@ export const ProductsStep = ({
                     </span>
                   </CardDescription>
                 </CardHeader>
-                <CardFooter className="mt-auto pb-4">
+                <CardFooter className="mt-auto flex-wrap pb-4">
                   {live && product.productUrl ? (
                     <a
                       className={cn(
@@ -828,6 +828,11 @@ export const ProductsStep = ({
                       {t("publish")}
                     </Button>
                   )}
+                  {queued ? (
+                    <p className="text-muted-foreground w-full text-xs">
+                      {t("queuedHint")}
+                    </p>
+                  ) : null}
                 </CardFooter>
               </Card>
             </li>
