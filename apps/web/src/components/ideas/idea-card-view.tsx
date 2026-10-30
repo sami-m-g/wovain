@@ -127,6 +127,18 @@ const Why = ({ why }: { why: IdeaWhy }) => {
             tag: why.qlooTag.name,
           })}
         </li>
+        {/* The Qloo audience and its rising artists and shows behind the
+            idea, on the card and not only in the Decided by Qloo mark. */}
+        {why.qloo.audience === undefined ? null : (
+          <li>{t("audience", { audience: why.qloo.audience })}</li>
+        )}
+        {why.qloo.entities.length === 0 ? null : (
+          <li>
+            {t("rising", {
+              names: why.qloo.entities.map((one) => one.name).join(", "),
+            })}
+          </li>
+        )}
         {why.trend === undefined ? null : (
           <li>{t("news", { count: why.trend.news })}</li>
         )}
