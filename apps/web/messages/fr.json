@@ -897,7 +897,7 @@
       "colours": "Couleurs",
       "coloursTip": "Les couleurs du vêtement et du motif pour ce drop, par ex. un motif rouille et crème sur un t-shirt sauge. Chaque couleur du motif est vérifiée pour ressortir sur le vêtement.",
       "noColours": "Aucun ensemble de couleurs ne convient à ce support. Le design choisit les siennes.",
-      "checkedOn": "Vérifié sur le {blank}",
+      "checkedOn": "Vérifié sur {blank}",
       "guardrails": "La voix de votre marque s'applique toujours : {voice}",
       "loading": "Suggestion d'un ton et de couleurs selon les acheteurs de ce drop…",
       "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
