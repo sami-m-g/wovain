@@ -569,8 +569,8 @@
       "others": "En voir d'autres",
       "use": "Lancer ce drop",
       "whyFallback": "{count, plural, =0 {En hausse chez ces acheteurs sur Qloo.} one {En hausse chez ces acheteurs sur Qloo ; # article ce mois-ci.} other {En hausse chez ces acheteurs sur Qloo ; # articles ce mois-ci.}}",
-      "for": "Pour {audience}",
-      "rising": "En hausse avec : {names}",
+      "for": "Pour {audience}, selon Qloo",
+      "rising": "En hausse sur Qloo avec : {names}",
       "news": "{count, plural, =0 {aucun article ce mois-ci} one {# article ce mois-ci} other {# articles ce mois-ci}}",
       "newsUnknown": "actualité non vérifiée",
       "listings": {
@@ -902,7 +902,8 @@
       "loading": "Suggestion d'un ton et de couleurs selon les acheteurs de ce drop…",
       "failed": "Nous n'avons pas pu suggérer de ton et de couleurs pour l'instant.",
       "retry": "Réessayer",
-      "info": "À propos de {field}"
+      "info": "À propos de {field}",
+      "source": "Selon Qloo : suggéré pour le thème Qloo de ce drop et ce qu'aiment aussi ses acheteurs."
     },
     "whoBuys": {
       "title": "Qui achète ça",
@@ -2492,7 +2493,8 @@
       "fromBrief": "d'après votre brief",
       "noAges": "Âges inconnus",
       "places": "Où : {places}",
-      "interests": "Centres d'intérêt : {interests}"
+      "interests": "Centres d'intérêt : {interests}",
+      "source": "Selon Qloo : ces âges, lieux et audiences sont la lecture par Qloo de qui achète ceci."
     },
     "competition": {
       "level": {

@@ -78,6 +78,7 @@ describe("the fixed idea card", () => {
     expect(at).toStrictEqual([...at].toSorted((a, b) => a - b));
     expect(html).toContain("Moth and moon line-art crest");
     expect(html).toContain("Decided by Qloo");
+    expect(html).toContain("From Qloo: these ages, places and audiences");
   });
 
   it("says why a section has no data instead of hiding it", () => {

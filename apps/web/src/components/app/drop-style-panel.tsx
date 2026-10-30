@@ -180,6 +180,7 @@ export const DropStylePanel = ({ ideaId }: { ideaId: string }) => {
             {t("guardrails", { voice: style.data.guardrails })}
           </p>
         )}
+        <p className="text-muted-foreground text-[0.7rem]">{t("source")}</p>
       </section>
     </TooltipProvider>
   );
