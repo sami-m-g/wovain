@@ -228,7 +228,14 @@ const DirectionRow = ({
   if (story && direction.card !== undefined) {
     return (
       <li className="border-border bg-card flex flex-col rounded-xl border p-4">
-        <IdeaCardView card={direction.card}>
+        <IdeaCardView
+          card={direction.card}
+          readAudience={
+            <BuyersToggle
+              entities={direction.evidence.rising.map((one) => one.id)}
+            />
+          }
+        >
           {direction.caution === undefined ? null : (
             <p className="text-muted-foreground text-xs">
               {tCard(`caution.${direction.caution}`)}
