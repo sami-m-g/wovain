@@ -43,7 +43,10 @@ const run = async () => {
     env === undefined ||
     !isSeedEnvironment(env)
   ) {
-    refuse(refusal ?? "Pass --env next or --env dev, with DATABASE_URL.");
+    refuse(
+      refusal ??
+        "Pass --env next, --env nebius or --env dev, with DATABASE_URL."
+    );
     return;
   }
   const db = createDb({ DATABASE_URL: databaseUrl });

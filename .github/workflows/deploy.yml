@@ -21,6 +21,14 @@ name: deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      # On main only: `nebius` rolls main's head out to nebius.wovain.com,
+      # the frozen environment for the Nebius hackathon judges
+      # (infra/nebius), which nothing else deploys.
+      target:
+        type: choice
+        options: [next, nebius]
+        default: next
   push:
     branches: [main]
     paths-ignore:
@@ -40,7 +48,7 @@ permissions:
 # One deploy per environment at a time; a newer one waits instead of
 # cancelling a rollout.
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-${{ github.ref_name }}-${{ inputs.target || 'next' }}
   cancel-in-progress: false
 
 env:
@@ -54,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'next' || 'Production' }}
+      name: ${{ github.ref == 'refs/heads/main' && (inputs.target || 'next') || 'Production' }}
       url: ${{ vars.SITE_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

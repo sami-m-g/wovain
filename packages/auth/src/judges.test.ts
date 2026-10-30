@@ -53,7 +53,7 @@ it("reads --env and --reset-password, with or without pnpm's --", () => {
 it("refuses to run without an explicit --env next or dev", () => {
   for (const env of [undefined, "", "prod", "production", "NEXT"]) {
     expect(refusalOf({ databaseUrl: NEXT_URL, env })).toMatch(
-      /Pass --env next or --env dev/u
+      /Pass --env next, --env nebius or --env dev/u
     );
   }
 });
@@ -119,6 +119,19 @@ it("holds --env next to next's database, instance and secret", () => {
       env: "next",
     })
   ).toMatch(/next's secret/u);
+});
+
+it("holds --env nebius to nebius's database, never next's", () => {
+  expect(
+    refusalOf({
+      databaseUrl: NEXT_URL.replaceAll("next", "nebius"),
+      databaseUrlSecret: "database-url-nebius",
+      env: "nebius",
+    })
+  ).toBeUndefined();
+  expect(refusalOf({ databaseUrl: NEXT_URL, env: "nebius" })).toMatch(
+    /nebius's database/u
+  );
 });
 
 it("holds --env dev to a local database", () => {

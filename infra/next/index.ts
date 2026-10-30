@@ -1,5 +1,8 @@
 // next.wovain.com, where main deploys while production is frozen for the
-// Transcend judging (docs/adr/0004-release-branch.md): its own stack, so
+// Transcend judging (docs/adr/0004-release-branch.md), and, as the stack
+// `nebius` (infra/nebius), nebius.wovain.com, the frozen copy the Nebius
+// hackathon judges use until 2026-12-24: NAME is the stack's name, so each
+// owns its own copy of every resource below. Its own stack, so
 // applying it can't plan a change to production. It owns every resource it
 // declares (dev.ts appEnvironment): its Cloud SQL instance, database and
 // user, an `<id>-next` secret for every key the app reads, bucket, runtime
@@ -36,7 +39,7 @@ import {
   sharedSettings,
 } from "../settings.ts";
 
-const NAME = "next";
+const NAME = pulumi.getStack();
 const APEX = "wovain.com";
 
 const config = new pulumi.Config();
@@ -80,7 +83,7 @@ const environment = appEnvironment({
     ...settingEnvs(settings),
     // next shares production's Polar sandbox organization, so its catalog
     // carries its own metadata key (packages/billing/src/plans.ts).
-    { name: "POLAR_METADATA_KEY", value: "wovain:next" },
+    { name: "POLAR_METADATA_KEY", value: `wovain:${NAME}` },
   ],
   kept: { protect: true },
   name: NAME,
@@ -101,14 +104,14 @@ if (deploy === undefined) {
 // password, generated here and kept only in Secret Manager. deploy.yml
 // reads it as next's deploy account, seeds the account and signs in with it.
 const smokePassword = secretWithValue(
-  "e2e-smoke-password-next",
-  new random.RandomPassword("e2e-smoke-password-next", {
+  `e2e-smoke-password-${NAME}`,
+  new random.RandomPassword(`e2e-smoke-password-${NAME}`, {
     length: 32,
     special: false,
   }).result,
   { protect: true }
 );
-new gcp.secretmanager.SecretIamMember("deploy-next-e2e-smoke-password", {
+new gcp.secretmanager.SecretIamMember(`deploy-${NAME}-e2e-smoke-password`, {
   member: deploy.deployer.member,
   role: "roles/secretmanager.secretAccessor",
   secretId: smokePassword.secret.id,
@@ -133,8 +136,11 @@ mappedHost({
 // Where CI applies this stack on every push to main (.github/workflows/
 // infra.yml, `up-next`): Google trusts infra-next only from jobs in it
 // (infra/bootstrap/next.ts). The job's first run creates it on GitHub, with
-// no branch policy, and its `up` adopts it with this one.
-mainOnlyEnvironment("next-infrastructure", "wovain");
+// no branch policy, and its `up` adopts it with this one. CI doesn't apply
+// nebius: its `up` runs from a laptop (infra/nebius/Pulumi.yaml).
+if (NAME === "next") {
+  mainOnlyEnvironment("next-infrastructure", "wovain");
+}
 
 environmentVariables(NAME, mainOnlyEnvironment(NAME, "wovain"), {
   DATABASE_URL_SECRET: environment.databaseUrl.secretId,
