@@ -93,7 +93,11 @@ const Places = ({ places }: { places: WhoBuys["places"] }) => {
  * never put on a design).
  */
 export const WhoBuysPanel = (
-  props: { entities: string[]; ideaId?: never } | { ideaId: string }
+  props: ({ entities: string[]; ideaId?: never } | { ideaId: string }) & {
+    // Inside a drop page section that already says "Who buys": no heading
+    // or box of its own.
+    embedded?: boolean;
+  }
 ) => {
   const t = useTranslations("Wizard.whoBuys");
   const headingId = useId();
@@ -116,18 +120,26 @@ export const WhoBuysPanel = (
   if (query.isError && statusOf(query.error) === NOT_FOUND) {
     return null;
   }
+  const embedded = props.embedded === true;
   return (
     <section
-      aria-labelledby={headingId}
-      className="bg-muted/40 flex flex-col gap-3 rounded-lg p-3"
+      aria-label={embedded ? t("title") : undefined}
+      aria-labelledby={embedded ? undefined : headingId}
+      className={
+        embedded
+          ? "flex flex-col gap-3"
+          : "bg-muted/40 flex flex-col gap-3 rounded-lg p-3"
+      }
     >
-      <h4
-        className="flex items-center gap-1.5 text-xs font-semibold"
-        id={headingId}
-      >
-        <Users aria-hidden="true" className="size-3.5" />
-        {t("title")}
-      </h4>
+      {embedded ? null : (
+        <h4
+          className="flex items-center gap-1.5 text-xs font-semibold"
+          id={headingId}
+        >
+          <Users aria-hidden="true" className="size-3.5" />
+          {t("title")}
+        </h4>
+      )}
       {query.isError ? (
         <div className="flex flex-wrap items-center gap-2 text-xs" role="alert">
           <span className="text-muted-foreground">

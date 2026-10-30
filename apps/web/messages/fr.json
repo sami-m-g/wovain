@@ -644,7 +644,8 @@
       "mockupNotConnected": "Connectez Fourthwall pour voir ce visuel sur le t-shirt.",
       "drawing": "Dessin d’un design pour « {title} ». Cela prend quelques minutes.",
       "make": "Créer les designs",
-      "reviewLead": "Vérifiez le ton et les couleurs, modifiez-les si vous voulez, et laissez le rapport de recherche se charger. Les designs utilisent tout cela."
+      "reviewTitle": "Choisissez le ton et les couleurs",
+      "reviewLead": "Suggérés d’après les acheteurs et la recherche ci-dessus. Changez-les si vous voulez, puis créez les designs."
     },
     "products": {
       "title": "Publier les produits",
@@ -842,7 +843,7 @@
       "affinity": "Affinité Qloo {value}",
       "brands": "Ils achètent aussi :",
       "source": "D'après les données de goûts de Qloo. Les marques servent au ciblage, jamais au design.",
-      "loading": "Qloo cherche qui achète ça…",
+      "loading": "Qloo cherche qui achète cette idée. La première recherche prend environ 20 secondes.",
       "failed": "Nous n'avons pas pu joindre nos données de goûts pour dire qui achète ça.",
       "retry": "Réessayer"
     }
