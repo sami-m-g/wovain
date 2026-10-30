@@ -62,16 +62,15 @@
 
 ## CodeRabbit review loop
 
-- CodeRabbit's approval is required. Its limit is the cost: PR reviews are rate limited per developer per hour (OSS plan: 1-10 by star count; [rate limits](https://docs.coderabbit.ai/management/plans#rate-limits)), and every agent shares one developer. Each review, including each incremental review of a push, uses one; a comment "Your next included review will be available in N minutes" means the limit was hit. A blocked push costs none.
+- CodeRabbit is advisory: it comments but never requests changes or approves, and the ruleset does not require it (Claude's review gives the one approval). Its limit is the cost: PR reviews are rate limited per developer per hour (OSS plan: 1-10 by star count; [rate limits](https://docs.coderabbit.ai/management/plans#rate-limits)), and every agent shares one developer. Each review, including each incremental review of a push, uses one; a comment "Your next included review will be available in N minutes" means the limit was hit. A blocked push costs none.
 - Keep a PR under about 400 changed lines. Review time grows with the diff, and a small PR leaves fewer comments to fix.
 - Fix all comments in one commit and push once. Do not push a commit per comment: each push is a review.
-- Resolve each thread you fixed (reply "Fixed in <sha>" and resolve), then comment `@coderabbitai review` once on the new head. CodeRabbit approves once its threads are resolved and the head is reviewed.
+- Resolve each thread you fixed (reply "Fixed in <sha>" and resolve), then comment `@coderabbitai review` once on the new head.
 - No review on the head commit after 10 minutes: comment `@coderabbitai full review`. After 10 more, read the PR for a rate-limit comment and wait the time it states. Do not re-ping inside the wait.
-- A stale CHANGES_REQUESTED stays until CodeRabbit reviews again: its comments are fixed and resolved, so the next review on the head approves.
 
 ## PR shepherd
 
-- `.github/workflows/shepherd.yml` fixes a pull request after a failed check or CodeRabbit's change request, and `shepherd-scan.yml` re-checks open pull requests every 30 minutes. Both run on the founder's Claude subscription and push as the Claude GitHub App. The limits (`SHEPHERD_MAX_PER_PR`, `SHEPHERD_MAX_PER_DAY`, `SHEPHERD_MODE`) are in the workflow's `env`. It never merges or approves, and it adds `needs-human` when a person must decide.
+- `.github/workflows/shepherd.yml` fixes a pull request after a failed check or a change request from Claude's review, in `live` mode (it commits and pushes within the limits), and `shepherd-scan.yml` re-checks open pull requests every 30 minutes. Both run on the founder's Claude subscription and push as the Claude GitHub App. The limits (`SHEPHERD_MAX_PER_PR`, `SHEPHERD_MAX_PER_DAY`, `SHEPHERD_MODE`) are in the workflow's `env`. It never merges or approves, and it adds `needs-human` when a person must decide.
 - To have Claude's cloud Auto-fix watch a pull request instead (`/autofix-pr`), add the `autofix` label. The shepherd then skips that pull request, so the two never push to the same branch.
 
 ## Tooling (project scope)

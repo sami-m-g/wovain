@@ -10,7 +10,6 @@ const READY: ShopFacts = {
   hosts: ["atelier.fourthwall.com"],
   name: "Atelier",
   payoutStatus: "ACTIVE",
-  roles: ["OWNER"],
   shippingEnabled: true,
   siteStatus: "LIVE",
   verificationRestrictions: [],
@@ -42,6 +41,22 @@ describe("evaluateSetup", () => {
         .every((step) => step.state === "done")
     ).toBe(true);
     expect(stateOf(steps, "domain")?.state).toBe("check");
+  });
+
+  it("ticks the shop connected once the grant reads the shop", () => {
+    const base = { domain: undefined, metaConnected: false, pixel: undefined };
+    expect(
+      stateOf(evaluateSetup({ ...base, shop: READY }), "connect")
+    ).toMatchObject({
+      how: "none",
+      state: "done",
+    });
+    expect(
+      stateOf(
+        evaluateSetup({ ...base, shop: { ...READY, siteStatus: undefined } }),
+        "connect"
+      )
+    ).toMatchObject({ how: "reconnect", state: "todo" });
   });
 
   it("takes the merchant's word for payouts support set up by hand", () => {

@@ -527,7 +527,12 @@
       "placeholder": "Merch acogedor y de naturaleza para mi canal de plantas",
       "error": "Escribe al menos unas palabras (10 caracteres o más).",
       "submit": "Investigar tendencias",
-      "submitAutopilot": "Lanzar en piloto automático"
+      "submitAutopilot": "Lanzar en piloto automático",
+      "starters": "O empieza con una de estas",
+      "starter1": "Camisetas de trazo fino para jardineros de balcón",
+      "starter2": "Camisetas arcade retro para jugadores de fin de semana",
+      "starter3": "Camisetas de poesía melancólica para lectores nocturnos",
+      "pickIdea": "¿No lo tienes claro? Elige una idea investigada"
     },
     "directions": {
       "title": "Qué vender ahora",
@@ -636,7 +641,8 @@
       "viewFlat": "Arte plano",
       "viewLabel": "Vista del diseño",
       "mockupUnavailable": "Fourthwall no pudo mostrar este diseño en la camiseta. Se muestra el arte plano.",
-      "mockupNotConnected": "Conecta Fourthwall para ver este diseño en la camiseta."
+      "mockupNotConnected": "Conecta Fourthwall para ver este diseño en la camiseta.",
+      "drawing": "Dibujando un diseño para «{title}». Tarda unos minutos."
     },
     "products": {
       "title": "Publica los productos",
@@ -1641,7 +1647,6 @@
       "passing": "({done, number} de {total, number} comprobaciones superadas)",
       "allChecks": "Todas las comprobaciones",
       "fixIt": "Corregir en Fourthwall",
-      "reconnect": "Reconectar Fourthwall",
       "goLive": "Publicar tienda",
       "goLiveTitle": "¿Publicar {name}?",
       "goLiveTitleFallback": "¿Publicar tu tienda?",
@@ -1682,10 +1687,6 @@
       "verified": {
         "label": "La tienda está verificada",
         "fix": "Fourthwall aún revisa tu tienda. Contacta con el soporte de Fourthwall para terminar."
-      },
-      "store_role": {
-        "label": "Puedes gestionar la tienda",
-        "fix": "Vuelve a conectar Fourthwall como propietario o gestor de la tienda."
       },
       "shipping": {
         "label": "Los envíos están activos",

@@ -88,7 +88,11 @@ test("infra-next has no project role that reaches production", () => {
       .filter(({ condition }) => condition === undefined)
       .map(({ role }) => role)
       .toSorted()
-  ).toEqual(["roles/browser", "roles/serviceusage.serviceUsageConsumer"]);
+  ).toEqual([
+    "roles/browser",
+    "roles/run.viewer",
+    "roles/serviceusage.serviceUsageConsumer",
+  ]);
   for (const { condition } of nextRoles) {
     if (condition !== undefined) {
       expect(condition).toMatch(/next|modifiedGrantsByRole/u);

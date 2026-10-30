@@ -116,7 +116,7 @@ export const repositorySettings = ({
     "wovain",
     {
       // `gh pr merge --squash --auto`: a pull request merges itself once the
-      // main ruleset below is met (CodeRabbit's approval and green checks),
+      // main ruleset below is met (Claude's approval and green checks),
       // and its branch is deleted.
       allowAutoMerge: true,
       deleteBranchOnMerge: true,
@@ -161,11 +161,9 @@ export const repositorySettings = ({
   // a pull request whose CI passed: the tests (`verify`), `infra`, CodeQL,
   // the dependency review and the full OSV scan (.github/workflows), with one
   // approval that a new push dismisses. The maintainer works alone, so the
-  // approval comes from CodeRabbit (.coderabbit.yaml: it requests changes on
-  // blocking findings and approves once they are resolved) or from Claude
-  // (.github/workflows/claude-review.yml), whichever answers first. No one may
-  // bypass the rules. CodeRabbit is not a required check: its review runs
-  // beside CI, and its approval is what counts.
+  // approval comes from Claude (.github/workflows/claude-review.yml). No one
+  // may bypass the rules. CodeRabbit is advisory (.coderabbit.yaml): neither
+  // a required check nor a required reviewer.
   new github.RepositoryRuleset("main", {
     conditions: {
       refName: { excludes: [], includes: ["~DEFAULT_BRANCH"] },

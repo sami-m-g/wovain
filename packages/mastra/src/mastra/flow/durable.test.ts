@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { ORPCError } from "@orpc/server";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { creditBalance, releaseCredits } from "@wovain/billing/credits";
 import { applyGrant } from "@wovain/billing/mirror";
 import { createBilling } from "@wovain/billing/service";
@@ -13,7 +14,7 @@ import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { brandProfile, decisionTrace } from "@wovain/db/schema/autonomy";
-import { creditReservation } from "@wovain/db/schema/billing";
+import { creditGrant, creditReservation } from "@wovain/db/schema/billing";
 import { externalWrite } from "@wovain/db/schema/durable";
 import {
   campaign,
@@ -1834,6 +1835,54 @@ describe("startPickedRun", () => {
     expect(held).toMatchObject({ status: "settled", step: "research" });
     const after = await creditBalance(actor.db, USER_ID);
     expect(after.available).toBeLessThan(before.available);
+    flagsOn.clear();
+  });
+
+  it("starts the picked idea's research dossier with the run, at no extra charge", async () => {
+    flagsOn.add("drop-directions");
+    flagsOn.add("tavily-evidence");
+    const { actor, db } = await withFal();
+    const research = vi.fn(
+      async () => await Promise.resolve({ requestId: "req_1" })
+    );
+    actor.core = { ...actor.core, tavily: { research } } as unknown as Core;
+    await keep(db);
+
+    const started = await startPickedRun(actor, {
+      countries: ["US"],
+      dailyBudget: 5,
+      pick,
+    });
+
+    expect(research).toHaveBeenCalledOnce();
+    const [saved] = await db
+      .select()
+      .from(idea)
+      .where(eq(idea.runId, started.id));
+    expect(saved?.research.dossier).toMatchObject({
+      requestId: "req_1",
+      status: "pending",
+    });
+    // One research charge for the pick, the dossier included.
+    expect(await db.select().from(creditReservation)).toHaveLength(1);
+    flagsOn.clear();
+  });
+
+  it("refuses a pick it couldn't draw a design for, before charging anything", async () => {
+    flagsOn.add("drop-directions");
+    const { actor, db, runs } = await withFal();
+    await keep(db);
+    // Enough for the research, not for the design after it.
+    await db
+      .update(creditGrant)
+      .set({ remaining: billingCatalog().creditCost.research + 1 });
+
+    await expect(
+      startPickedRun(actor, { countries: ["US"], dailyBudget: 5, pick })
+    ).rejects.toMatchObject({ status: 402 });
+    expect(runs.start).not.toHaveBeenCalled();
+    expect(await db.select().from(run)).toEqual([]);
+    expect(await db.select().from(creditReservation)).toEqual([]);
     flagsOn.clear();
   });
 

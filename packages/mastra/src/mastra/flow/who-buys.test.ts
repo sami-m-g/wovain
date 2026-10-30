@@ -65,6 +65,20 @@ it("reads the brief's entities for an idea without a tag, and says so", () => {
   });
 });
 
+it("reads a direction idea's rising entities, never its theme name as a tag", () => {
+  // A Home idea pick (drop-directions trendIdeaOf) keeps the theme's name:
+  // sent as a tag, Qloo answered 400 "Could not find a valid tag".
+  const seeds = [{ id: "rising", name: "Rising", type: "" }];
+  expect(
+    signalsOf(
+      ideaWith({ qlooTag: "Dark Academia", taste: { affinities: [], seeds } })
+    )
+  ).toStrictEqual({
+    options: { scope: "idea" },
+    signals: { entities: ["rising"], tags: [] },
+  });
+});
+
 it("caps the entities at five", () => {
   const seeds = Array.from({ length: 8 }, (_, index) => ({
     id: `seed-${index}`,

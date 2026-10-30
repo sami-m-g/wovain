@@ -35,10 +35,19 @@ const merchantOf = async ({ db, userId }: Actor) => {
 };
 
 // Refuses early, before anything is saved, when the merchant can't afford the
-// step (a run's research). The step itself still reserves its credits.
-export const assertCredits = async (actor: Actor, step: CreditStep) => {
+// step (a run's research), and the steps that must follow it (a Home pick's
+// first design). Each step itself still reserves its credits.
+export const assertCredits = async (
+  actor: Actor,
+  step: CreditStep,
+  ...after: CreditStep[]
+) => {
   const merchant = await merchantOf(actor);
-  const needed = billingCatalog().creditCost[step];
+  const cost = billingCatalog().creditCost;
+  const needed = [step, ...after].reduce(
+    (total, each) => total + cost[each],
+    0
+  );
   const available = await awaitFreeCredits(actor, needed);
   if (available < needed) {
     throw refusalError("out_of_credits", merchant.locale, {

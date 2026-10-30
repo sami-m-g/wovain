@@ -8,6 +8,7 @@ import {
   autonomySetting,
   brandProfile,
 } from "@wovain/db/schema/autonomy";
+import { creditGrant } from "@wovain/db/schema/billing";
 import { betterAuth } from "better-auth";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
@@ -383,11 +384,35 @@ const ensureAutonomy = async (db: Database, userId: string) => {
   });
 };
 
+// nebius has no Polar, so no plan or promo credits ever reach its ledger:
+// the judges get the judges-account-2026 promo's 300 credits as one grant
+// on nebius's own ledger, made once (a rerun leaves what they spent).
+export const NEBIUS_JUDGES_CREDITS = 300;
+const NEBIUS_JUDGES_GRANT = "judges-nebius-credits";
+
+const ensureCredits = async (db: Database, userId: string) => {
+  await db
+    .insert(creditGrant)
+    .values({
+      id: NEBIUS_JUDGES_GRANT,
+      periodKey: NEBIUS_JUDGES_GRANT,
+      remaining: NEBIUS_JUDGES_CREDITS,
+      rollover: true,
+      source: "pack",
+      userId,
+    })
+    .onConflictDoNothing({ target: creditGrant.id });
+};
+
 // Idempotent: a second run changes nothing but a drifted autonomy setting,
 // and chooses a password only for a new account or with resetPassword.
 export const seedJudges = async (
   db: Database,
-  { now = new Date(), resetPassword = false } = {}
+  {
+    env,
+    now = new Date(),
+    resetPassword = false,
+  }: { env?: SeedEnvironment; now?: Date; resetPassword?: boolean } = {}
 ): Promise<SeedResult> => {
   const result = await ensureAccount(db, {
     email: JUDGES_EMAIL,
@@ -396,5 +421,8 @@ export const seedJudges = async (
   });
   await ensureBrand(db, result.userId, now);
   await ensureAutonomy(db, result.userId);
+  if (env === "nebius") {
+    await ensureCredits(db, result.userId);
+  }
   return result;
 };

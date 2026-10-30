@@ -144,8 +144,6 @@ export interface SetupStep {
 export const CONFIRMABLE_STEPS = ["payouts"] as const;
 export type ConfirmableStep = (typeof CONFIRMABLE_STEPS)[number];
 
-const STORE_ROLES = new Set(["OWNER", "MANAGER"]);
-
 const DOMAIN_DONE: ReadonlySet<string> = new Set([
   "CONNECTED",
   "PARTIALLY_CONNECTED",
@@ -185,7 +183,8 @@ export const evaluateSetup = ({
   metaConnected,
   confirmed = [],
 }: SetupInput): SetupStep[] => {
-  const manager = shop.roles.some((role) => STORE_ROLES.has(role));
+  // The grant reads the shop: connected.
+  const connected = shop.siteStatus !== undefined;
   const held = shop.verificationRestrictions.length > 0;
   const live = shop.siteStatus === "LIVE";
   // Fourthwall's review blocks going live; only Fourthwall lifts it.
@@ -217,10 +216,10 @@ export const evaluateSetup = ({
   };
   return [
     {
-      how: manager ? "none" : "reconnect",
+      how: connected ? "none" : "reconnect",
       id: "connect",
       required: true,
-      state: manager ? "done" : "todo",
+      state: connected ? "done" : "todo",
     },
     {
       ...payoutsStep(shop.payoutStatus, confirmed.includes("payouts")),

@@ -18,7 +18,7 @@ const expectWhoBuysSettled = async (page: Page) => {
   ).toBeVisible();
 };
 
-// Use case 3: New drop shows what sells now, each direction with its
+// Use case 3: the Home shows what sells now, each direction with its
 // evidence (news, listings) and who buys it, or an honest empty state that
 // says why.
 test("what sells now: directions with evidence, or why there are none @smoke", async ({
@@ -27,7 +27,7 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
 }) => {
   // The 60 s settle wait and the 60 s directions wait outlast the default.
   test.setTimeout(isSmoke ? 180_000 : 90_000);
-  await page.goto("/dashboard/new");
+  await page.goto("/dashboard");
   await expect(
     page.getByRole("heading", { name: /^What to sell now/u })
   ).toBeVisible();
@@ -121,6 +121,31 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   await expect(page.getByText("Approved").first()).toBeVisible();
 });
 
+// The brief step: the box first, starters that only fill it, and one way
+// back to the researched ideas on the Home.
+test("a brief starter fills the box and starts nothing", async ({
+  merchant: _merchant,
+  page,
+}) => {
+  await page.goto("/dashboard/new");
+  const box = page.getByRole("textbox", {
+    name: "What should this drop be about?",
+  });
+  await expect(box).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Start this drop" })
+  ).toHaveCount(0);
+  const starters = page
+    .getByRole("group", { name: "Or start from one of these" })
+    .getByRole("button");
+  await expect(starters.first()).toBeVisible({ timeout: 60_000 });
+  await starters.first().click();
+  await expect(box).not.toHaveValue("");
+  await expect(page).toHaveURL(/\/dashboard\/new$/u);
+  await page.getByRole("link", { name: /Pick a researched idea/u }).click();
+  await expect(page).toHaveURL(/\/dashboard#what-sells-now$/u);
+});
+
 // A researched idea picked on the Home: the drop opens at its designs with
 // that idea, never at Trends and never asking which ideas to draw.
 test("a Home pick opens the drop at its designs @smoke", async ({
@@ -140,9 +165,13 @@ test("a Home pick opens the drop at its designs @smoke", async ({
   await expect(page).toHaveURL(/\/dashboard\/drops\/[\w-]+$/u, {
     timeout: 30_000,
   });
+  // The picked idea counts as picked from the start, never "0 picked".
+  await expect(page.getByText(/1 idea, 1 picked\./u)).toBeVisible();
+  await expect(page.getByText(/0 picked/u)).toHaveCount(0);
+  // Real art takes minutes on next; the mocks take seconds.
   await expect(
     page.getByRole("img", { name: /^Design: /u }).first()
-  ).toBeVisible({ timeout: 180_000 });
+  ).toBeVisible({ timeout: isSmoke ? 420_000 : 180_000 });
   await expect(page.getByRole("button", { name: "See designs" })).toHaveCount(
     0
   );

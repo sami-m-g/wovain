@@ -250,6 +250,8 @@ const rankedSchema = z.object({
 });
 
 const QLOO_TAG = /^urn:tag:[\w.:-]+$/u;
+// A Qloo tag ID ("urn:tag:genre:media:goth"), not a tag's name.
+export const isQlooTag = (id: string) => QLOO_TAG.test(id);
 const QLOO_ENTITY = /^urn:entity:[\w.:-]+$/u;
 
 // What a designer names as a taste reference: artists, films and brands,

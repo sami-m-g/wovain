@@ -8,6 +8,7 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { IdeaDossier } from "@/components/app/idea-dossier";
 import type { useDropFlow } from "@/components/app/use-drop-flow";
 import { WhoBuysPanel } from "@/components/app/who-buys";
 import type { QlooEvidence } from "@/components/drops/decided-by-qloo";
@@ -19,6 +20,7 @@ import type {
 import {
   DROP_SECTIONS,
   leadIdeaOf,
+  pickedIdeaIdsOf,
   sectionState,
 } from "@/components/drops/drop-sections";
 import { RunTape, stageOf } from "@/components/product/run-tape";
@@ -171,6 +173,8 @@ const WhySection = ({ lead }: { lead: Idea | undefined }) => {
       ) : (
         <NotAvailable reason={t("noSources")} />
       )}
+      {/* The research dossier: started with a Home pick, shown once there. */}
+      <IdeaDossier automatic ideaId={lead.id} />
     </Section>
   );
 };
@@ -311,9 +315,7 @@ export const DropStory = ({
     );
   }
   const step = drop.step.id;
-  const picked = [
-    ...new Set([...run.designs.map((one) => one.ideaId), ...drop.picked]),
-  ];
+  const picked = pickedIdeaIdsOf(run, drop.picked);
   const lead = leadIdeaOf(run.ideas, picked);
   const failed = run.status === "failed";
   const finished = run.status === "completed";
