@@ -79,15 +79,21 @@ export const generateDesign = async (
     // A retried step that crashed before the preview renders it now.
     return await previewPlacement(actor, made);
   }
-  // The idea's research report, if running, gets a short wait to land in the
-  // brief (./evidence awaitDossier).
-  await awaitDossier(actor, ideaId);
-  const source = await getIdea(actor, ideaId);
-  const { runId } = source;
   // The merchant's own fal account draws, or wovain's key while the
   // onboarding-wizard flag is on; checked first, so a missing grant stops
   // the step before any model call.
   await requireFal(actor);
+  // The idea's research report, if running, gets a short wait to land in the
+  // brief (./evidence awaitDossier). drop-style: the drop's tone and
+  // palette, with the brand voice as guardrails; none when the flag is off
+  // or the suggestion failed. Suggested while the report is awaited: it
+  // doesn't read the report.
+  const [, style] = await Promise.all([
+    awaitDossier(actor, ideaId),
+    writerStyleFor(actor, ideaId),
+  ]);
+  const source = await getIdea(actor, ideaId);
+  const { runId } = source;
   const { artist, nemotron } = actor.core;
   // tavily-evidence: the printed words are checked against trademark
   // records before the judge decides, and a match sends the design back.
@@ -96,9 +102,6 @@ export const generateDesign = async (
     flagContextOf(actor)
   );
   const competing = await isCompetitionOn(actor);
-  // drop-style: the drop's tone and palette, with the brand voice as
-  // guardrails; none when the flag is off or the suggestion failed.
-  const style = await writerStyleFor(actor, ideaId);
   // One drawing: a brief, fal's art and the judge's look at both. Each paid
   // call is keyed, so a retried step reuses it; `previous` makes it the
   // redraw of a design the judge sent back.
@@ -143,14 +146,19 @@ export const generateDesign = async (
       provider: "fal",
       runId,
     });
-    // Reading fal's answer again is free: no key needed.
-    const art = await withArtistCall(
-      actor,
-      async (call) => await artist(call).result(requested, actor.log)
-    );
+    // Reading fal's answer again is free: no key needed. The printed words
+    // are checked against trademark records while fal draws.
+    const [art, trademark] = await Promise.all([
+      withArtistCall(
+        actor,
+        async (call) => await artist(call).result(requested, actor.log)
+      ),
+      guarded
+        ? checkTrademarks(actor.core.tavily, drafted.printedText, actor.log)
+        : undefined,
+    ]);
     // Keyed too, so a retried step makes the same call on redrawing. The
-    // trademark check rides in the same key: its result is saved with the
-    // judgment.
+    // trademark check's result is saved with the judgment.
     const judged = await once(actor, {
       key: `${at}:judge`,
       operation: "design_judge",
@@ -161,13 +169,7 @@ export const generateDesign = async (
             artwork: art,
             brief: drafted,
             idea: source.theme,
-            trademark: guarded
-              ? await checkTrademarks(
-                  actor.core.tavily,
-                  drafted.printedText,
-                  actor.log
-                )
-              : undefined,
+            trademark,
           },
           actor.log
         ),
