@@ -65,20 +65,26 @@ const Places = ({ places }: { places: WhoBuys["places"] }) => {
                 <span className="text-muted-foreground">, {place.country}</span>
               )}
             </span>
-            <span className="sr-only">
-              {t("affinity", {
-                value: format.number(place.affinity, { style: "percent" }),
-              })}
-            </span>
-            <span
-              aria-hidden="true"
-              className="bg-muted h-1.5 overflow-hidden rounded-full"
-            >
-              <span
-                className="bg-primary block h-full rounded-full"
-                style={{ width: `${Math.round(place.affinity * 100)}%` }}
-              />
-            </span>
+            {/* Qloo ranks some localities by popularity alone, with no
+                affinity: no bar then, rather than an empty one at 0%. */}
+            {place.affinity > 0 ? (
+              <>
+                <span className="sr-only">
+                  {t("affinity", {
+                    value: format.number(place.affinity, { style: "percent" }),
+                  })}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="bg-muted h-1.5 overflow-hidden rounded-full"
+                >
+                  <span
+                    className="bg-primary block h-full rounded-full"
+                    style={{ width: `${Math.round(place.affinity * 100)}%` }}
+                  />
+                </span>
+              </>
+            ) : null}
           </li>
         ))}
       </ol>

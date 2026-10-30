@@ -57,14 +57,12 @@ const CardSection = <T,>({
     <h4 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
       {title}
     </h4>
-    {field.status === "ok" ? (
-      children(field.value)
-    ) : (
-      <>
-        <Unavailable reason={field.reason} />
-        {field.reason === "not_read" ? notRead : null}
-      </>
-    )}
+    {/* A section read on demand shows its button, not "Not available". */}
+    {field.status === "ok"
+      ? children(field.value)
+      : ((field.reason === "not_read" ? notRead : undefined) ?? (
+          <Unavailable reason={field.reason} />
+        ))}
   </section>
 );
 
