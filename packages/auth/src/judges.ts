@@ -201,6 +201,9 @@ export const liveRefusalOf = (
   if (facts.cloudSql && facts.database === PRODUCTION_DATABASE.database) {
     return `The server is a Cloud SQL instance holding production's database (${PRODUCTION_DATABASE.database}).`;
   }
+  if (env !== "dev" && !facts.cloudSql) {
+    return `--env ${env} connected to a database that isn't on Cloud SQL.`;
+  }
   if (env !== "dev" && facts.database !== CLOUD_DATABASES[env].database) {
     return `--env ${env} connected to ${facts.database}, not ${env}'s database (${CLOUD_DATABASES[env].database}).`;
   }

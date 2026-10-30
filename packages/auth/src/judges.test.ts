@@ -167,8 +167,11 @@ it("checks again on what the server says it is", () => {
     liveRefusalOf("next", { cloudSql: true, database: "wovain_next" })
   ).toBeUndefined();
   expect(
-    liveRefusalOf("next", { cloudSql: false, database: "postgres" })
+    liveRefusalOf("next", { cloudSql: true, database: "postgres" })
   ).toMatch(/not next's database/u);
+  expect(
+    liveRefusalOf("nebius", { cloudSql: false, database: "wovain_nebius" })
+  ).toMatch(/isn't on Cloud SQL/u);
   expect(
     liveRefusalOf("dev", { cloudSql: true, database: "wovain_dev" })
   ).toMatch(/Cloud SQL/u);
