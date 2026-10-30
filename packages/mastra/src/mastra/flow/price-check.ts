@@ -1,15 +1,16 @@
-import { customizationCost } from "@wovain/core/fourthwall-drops";
+import { searchCatalog } from "@wovain/core/fourthwall";
+import {
+  blankVariants,
+  customizationCost,
+} from "@wovain/core/fourthwall-drops";
 import { checkPrice } from "@wovain/core/price-check";
 import type { PriceRules } from "@wovain/core/price-check";
 import { pricingRules } from "@wovain/core/pricing";
 import type { ToolCall } from "@wovain/core/upstream";
-import { dropItem } from "@wovain/db/schema/autonomy";
-import { and, eq } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { Actor } from "./actor";
 import { withProvider } from "./connections";
-import { estimatedCost, itemStateOf, regionsOf } from "./drops";
 import { getProduct } from "./products";
 
 // The Store's price check (openspec store-management): what Fourthwall
@@ -31,30 +32,28 @@ const priceRules = (): PriceRules => {
 };
 
 // Fourthwall's cost per size; when its pricing can't be read (logged at
-// error level), a drop's product gets the catalog estimate in every size.
+// error level), the blank's catalog price in each of its sizes, estimated.
+// The product prints one front area, which the blank's price includes.
 const costsOf = async (
   actor: Actor,
   call: ToolCall,
-  productId: string,
-  customizationId: string
+  row: { catalogProductId: string; customizationId: string; id: string }
 ) => {
   try {
-    const { bySize } = await customizationCost(call, customizationId);
+    const { bySize } = await customizationCost(call, row.customizationId);
     return { bySize, estimated: false };
   } catch (error) {
-    const [item] = await actor.db
-      .select()
-      .from(dropItem)
-      .where(
-        and(
-          eq(dropItem.productId, productId),
-          eq(dropItem.userId, actor.userId)
-        )
-      )
-      .limit(1);
-    // Only a drop's product knows its blank and print areas.
-    if (item === undefined || itemStateOf(item) === undefined) {
-      throw error;
+    const blanks = await searchCatalog(call, {
+      productId: row.catalogProductId,
+    });
+    const blank = blanks.find((found) => found.id === row.catalogProductId);
+    if (blank?.baseCost === undefined) {
+      throw new Error(
+        "Neither Fourthwall's pricing nor its catalog gave a cost",
+        {
+          cause: error,
+        }
+      );
     }
     log.error({
       error: {
@@ -62,14 +61,13 @@ const costsOf = async (
         message: `Fourthwall's customization pricing couldn't be read, so the cost is estimated from its catalog: ${error instanceof Error ? error.message : String(error)}`,
         name: "PriceCheckEstimated",
       },
-      product: { id: productId },
+      product: { id: row.id },
       userId: actor.userId,
     });
-    const regions = regionsOf(item).map(([region]) => region);
-    const dollars = await estimatedCost(call, item, regions, error);
-    const { sizes } = itemStateOf(item);
+    const { baseCost } = blank;
+    const { sizes } = await blankVariants(call, blank.slug);
     return {
-      bySize: Object.fromEntries(sizes.map((size) => [size, dollars])),
+      bySize: Object.fromEntries(sizes.map((size) => [size, baseCost])),
       estimated: true,
     };
   }
@@ -80,7 +78,7 @@ export const productCosts = async (actor: Actor, productId: string) => {
   const { bySize, estimated } = await withProvider(
     actor,
     "fourthwall",
-    async (call) => await costsOf(actor, call, productId, row.customizationId)
+    async (call) => await costsOf(actor, call, row)
   );
   const rules = priceRules();
   return {
