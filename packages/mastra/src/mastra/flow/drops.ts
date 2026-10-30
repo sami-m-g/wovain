@@ -536,7 +536,7 @@ const errorMessage = (error: unknown) =>
 
 // The cost estimated from Fourthwall's catalog: the blank's price plus each
 // extra area's, for when its customization pricing can't be read.
-export const estimatedCost = async (
+const estimatedCost = async (
   call: ToolCall,
   item: ItemRow,
   regions: string[],
