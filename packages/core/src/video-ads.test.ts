@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { AI_DISCLOSURE } from "./ad-video";
 import { stagePausedCampaign } from "./ads";
 import type { WriteOnce } from "./ads";
 import type { ToolCall } from "./upstream";
@@ -116,6 +117,27 @@ describe("video ad creatives", () => {
     expect(of("ads_create_ad")).toHaveLength(4);
     expect(staged.adIds).toHaveLength(4);
     expect(staged.videoErrors).toBeUndefined();
+  });
+
+  it("says in the video ad's text when its model is AI-generated", async () => {
+    const { call, calls } = fakeMeta();
+    await stagePausedCampaign(
+      call,
+      { ...plan, videoAiModel: true },
+      undefined,
+      { wait: noWait }
+    );
+    const messages = calls
+      .filter(
+        (item) =>
+          item.tool === "ads_create_creative" &&
+          item.args["video_id"] !== undefined
+      )
+      .map((item) => item.args["message"]);
+    expect(messages).toEqual([
+      `m1\n\n${AI_DISCLOSURE}`,
+      `m1\n\n${AI_DISCLOSURE}`,
+    ]);
   });
 
   it("skips a clip Meta can't process, and still stages the rest", async () => {

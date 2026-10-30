@@ -23,6 +23,9 @@ export const CreditTag = ({ className = "" }: { className?: string }) => {
         ...(creditCost.video === undefined
           ? []
           : [{ label: t("video"), value: credits(creditCost.video) }]),
+        ...(creditCost.adVideo === undefined
+          ? []
+          : [{ label: t("adVideo"), value: credits(creditCost.adVideo) }]),
         { label: t("manualDrop"), value: credits(drop.manual) },
         {
           emphasis: true,

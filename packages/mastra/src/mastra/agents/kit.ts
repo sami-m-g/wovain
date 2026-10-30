@@ -38,7 +38,10 @@ import type { AnyScorer } from "../scorers/agents";
 const TOKENS_PER_MILLION = 1_000_000;
 
 // The agents that read images, on the vision model.
-const SEEING: ReadonlySet<AgentId> = new Set(["design_vision"]);
+const SEEING: ReadonlySet<AgentId> = new Set([
+  "ad_video_review",
+  "design_vision",
+]);
 
 // The agents that weigh evidence before an action: on their job's model
 // (reasoning, NEMOTRON_MODEL_REASONING, ./model-router) even when the call

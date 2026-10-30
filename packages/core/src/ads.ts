@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { adSetTargeting, deliveryOf, withUtm } from "./ad-delivery";
 import type { MediaBuying } from "./ad-delivery";
+import { AI_DISCLOSURE } from "./ad-video";
 import type { AdCompetition } from "./competition";
 import type { WriterStyle } from "./drop-style";
 import { judgeInstructions, judgePrompt, verdictSchema } from "./judges";
@@ -155,6 +156,8 @@ export interface DesignAds {
   // Its video ad clips (./video-ads): one more ad each, next to the image
   // ads.
   videos?: string[] | undefined;
+  // Its clips show an AI-generated model (./ad-video): their ads say so.
+  videoAiModel?: boolean | undefined;
   // Its share of the test's spend floor (feedback-loop, ./outcomes
   // floorShares): angles that sold before get more. An even split when
   // unset.
@@ -197,6 +200,8 @@ export interface CampaignPlan {
   targeting: MetaTargeting;
   // One design's video ad clips, when `designs` is unset.
   videos?: string[] | undefined;
+  // Those clips show an AI-generated model.
+  videoAiModel?: boolean | undefined;
 }
 
 export interface StagedDesign {
@@ -245,6 +250,7 @@ const designsOf = (plan: CampaignPlan): DesignAds[] => {
       key: plan.tag,
       label: plan.tag,
       linkUrl: plan.linkUrl,
+      videoAiModel: plan.videoAiModel,
       videos: plan.videos,
     },
   ];
@@ -507,7 +513,11 @@ const stageVideoAds = async ({
             headline: lead.headline,
             image_url: design.imageUrl,
             link_url: linkUrl,
-            message: lead.message,
+            // An AI-generated model is disclosed in the ad's text too.
+            message:
+              design.videoAiModel === true
+                ? `${lead.message}\n\n${AI_DISCLOSURE}`
+                : lead.message,
             name,
             page_id: pageId,
             video_id: videoId,

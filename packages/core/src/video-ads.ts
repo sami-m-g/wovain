@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { AdCut } from "./ad-video";
 import { findOne } from "./upstream";
 
 // Video ad creatives (openspec change video-ad-creatives): fal animates a
@@ -35,8 +36,11 @@ export const videoUrlOf = (reply: unknown) =>
     "video"
   ).video.url;
 
-// One clip of a product, as the product row keeps it.
+// One clip of a product, as the product row keeps it: a silent clip
+// (9:16 or 1:1), or a cut of a director-made ad (9:16 or 4:5, ./ad-video)
+// whose model is AI-generated (`aiModel`), which its ad must disclose.
 export interface AdVideo {
-  aspect: VideoAspect;
+  aiModel?: boolean | undefined;
+  aspect: AdCut | VideoAspect;
   url: string;
 }

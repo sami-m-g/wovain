@@ -4,7 +4,7 @@
 // seed directly, so this file imports nothing.
 
 // The metered steps (their costs are BILLING_CATALOG's creditCost).
-export type CreditStep = "assist" | "design" | "research" | "video";
+export type CreditStep = "adVideo" | "assist" | "design" | "research" | "video";
 
 export const PLAN_CODES = ["free", "studio", "label"] as const;
 export type PlanCode = (typeof PLAN_CODES)[number];
