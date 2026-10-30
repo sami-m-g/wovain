@@ -44,18 +44,27 @@ export const dropsRouter = {
           status: row.status,
           styleFamily: (row.styleFamily ?? "streetwear") as StyleFamily,
         },
-        items: items.map((item) => ({
-          ...itemStateOf(item),
-          colors: item.colors,
-          id: item.id,
-          placements: regionsOf(item).map(([region, piece]) => ({
-            ...piece,
-            region,
-          })),
-          position: item.position,
-          priceCents: item.priceCents,
-          status: item.status,
-        })),
+        // A Store-made item has no state of its own (its product is
+        // already in the Store), so the capsule has nothing to show for it.
+        items: items.flatMap((item) => {
+          const itemState = itemStateOf(item);
+          return itemState === undefined
+            ? []
+            : [
+                {
+                  ...itemState,
+                  colors: item.colors,
+                  id: item.id,
+                  placements: regionsOf(item).map(([region, piece]) => ({
+                    ...piece,
+                    region,
+                  })),
+                  position: item.position,
+                  priceCents: item.priceCents,
+                  status: item.status,
+                },
+              ];
+        }),
       };
     }),
   list: protectedProcedure.handler(async ({ context }) => {

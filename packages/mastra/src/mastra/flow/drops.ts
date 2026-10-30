@@ -128,8 +128,10 @@ export interface DropState {
   skipped: ProductKind[];
 }
 
+// Undefined for a drop item the Store made from products that already
+// exist (store.ts): it has no blank or placements of its own.
 export const itemStateOf = (row: Pick<ItemRow, "regions">) =>
-  row.regions[ITEM_KEY] as unknown as ItemState;
+  row.regions[ITEM_KEY] as unknown as ItemState | undefined;
 
 export const regionsOf = (row: Pick<ItemRow, "regions">) =>
   Object.entries(row.regions).filter(
@@ -539,12 +541,11 @@ const errorMessage = (error: unknown) =>
 const estimatedCost = async (
   call: ToolCall,
   item: ItemRow,
+  blankName: string,
   regions: string[],
   cause: unknown
 ) => {
-  const [blank] = await searchBlanks(call, {
-    query: itemStateOf(item).blankName,
-  });
+  const [blank] = await searchBlanks(call, { query: blankName });
   const areas: PrintArea[] =
     blank?.id === item.catalogProductId ? blank.printAreas : [];
   if (blank?.baseCost === undefined || areas.length === 0) {
@@ -565,6 +566,7 @@ const costOf = async (
   actor: Actor,
   call: ToolCall,
   item: ItemRow,
+  blankName: string,
   customizationId: string,
   regions: string[]
 ): Promise<NonNullable<ItemState["cost"]>> => {
@@ -582,7 +584,7 @@ const costOf = async (
       userId: actor.userId,
     });
     return {
-      dollars: await estimatedCost(call, item, regions, error),
+      dollars: await estimatedCost(call, item, blankName, regions, error),
       source: "catalog",
     };
   }
@@ -617,6 +619,10 @@ export const buildDropItem = async (
   if (item.status === "ready" || item.status === "published") {
     return item;
   }
+  const state = itemStateOf(item);
+  if (state === undefined) {
+    throw new Error(`Drop item ${itemId} has no saved blank to build`);
+  }
   await requireFal(actor);
   const placed: [string, RegionState][] = [];
   for (const entry of regionsOf(item)) {
@@ -624,7 +630,6 @@ export const buildDropItem = async (
     // oxlint-disable-next-line no-await-in-loop
     placed.push([entry[0], await placeArt(actor, row, item, entry)]);
   }
-  const state = itemStateOf(item);
   const { cost, preview } = await withProvider(
     actor,
     "fourthwall",
@@ -654,6 +659,7 @@ export const buildDropItem = async (
           actor,
           call,
           item,
+          state.blankName,
           made.customizationId,
           placed.map(([region]) => region)
         ),
@@ -714,12 +720,13 @@ export const reviewDrop = async (actor: Actor, dropId: string) => {
   const items = await dropItems(actor, dropId);
   const ready = items.filter((item) => item.status === "ready");
   const mockups = ready.flatMap((item) => {
-    const [mockup] = itemStateOf(item).mockups ?? [];
-    return mockup === undefined
+    const state = itemStateOf(item);
+    const [mockup] = state?.mockups ?? [];
+    return state === undefined || mockup === undefined
       ? []
       : [
           {
-            kind: itemStateOf(item).kind,
+            kind: state.kind,
             mockup,
             position: item.position,
             regions: regionsOf(item).map(([region]) => region),
@@ -799,7 +806,10 @@ export const executeDropPublish = async (actor: Actor, dropId: string) => {
     const offerIds: string[] = [];
     for (const item of ready) {
       const itemState = itemStateOf(item);
-      if (itemState.customizationId === undefined || item.priceCents === null) {
+      if (
+        itemState?.customizationId === undefined ||
+        item.priceCents === null
+      ) {
         continue;
       }
       const { customizationId } = itemState;

@@ -10,7 +10,12 @@ import type { ProviderId, ToolCall } from "@wovain/core/upstream";
 import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
-import { approval, decisionTrace, drop } from "@wovain/db/schema/autonomy";
+import {
+  approval,
+  decisionTrace,
+  drop,
+  dropItem,
+} from "@wovain/db/schema/autonomy";
 import { connection, idea, run } from "@wovain/db/schema/seller";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
@@ -364,7 +369,7 @@ describe("drops", () => {
     expect(ctx.sent).toHaveLength(2);
 
     const items = await dropItems(ctx.actor, planned.id);
-    expect(items.map((item) => itemStateOf(item).kind)).toEqual([
+    expect(items.map((item) => itemStateOf(item)?.kind)).toEqual([
       "hero_tee",
       "long_sleeve",
       "beanie",
@@ -396,7 +401,7 @@ describe("drops", () => {
     expect(built.every((item) => item.status === "ready")).toBe(true);
     const [builtTee] = built;
     expect(builtTee?.priceCents).toBeGreaterThan(2290);
-    expect(itemStateOf(builtTee ?? { regions: {} }).cost).toEqual({
+    expect(itemStateOf(builtTee ?? { regions: {} })?.cost).toEqual({
       dollars: 22.9,
       source: "customization",
     });
@@ -445,5 +450,40 @@ describe("drops", () => {
       "blanks",
     ]);
     expect(traced[0]?.sources[0]).toMatchObject({ provider: "qloo" });
+  });
+
+  // The Store makes drop items from products that already exist
+  // (store.ts): they have no saved blank, so nothing reads one.
+  it("skips a Store-made item with no saved blank instead of crashing", async () => {
+    await stubFetch();
+    const ctx = await setup();
+    const planned = await planDrop(ctx.actor, {
+      ideaId: ctx.ideaId,
+      requestId: "req_store",
+    });
+    const [draft, ready] = await ctx.db
+      .insert(dropItem)
+      .values([
+        {
+          catalogProductId: "blank_store",
+          dropId: planned.id,
+          position: 10,
+          userId: USER_ID,
+        },
+        {
+          catalogProductId: "blank_store",
+          dropId: planned.id,
+          position: 11,
+          status: "ready" as const,
+          userId: USER_ID,
+        },
+      ])
+      .returning();
+    expect(itemStateOf(ready ?? { regions: {} })).toBeUndefined();
+    await expect(
+      buildDropItem(ctx.actor, planned.id, draft?.id ?? "")
+    ).rejects.toThrow("has no saved blank");
+    const reviewed = await reviewDrop(ctx.actor, planned.id);
+    expect(reviewed.id).toBe(planned.id);
   });
 });
