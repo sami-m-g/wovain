@@ -5,6 +5,7 @@ import type {
   TavilySearchResponse,
 } from "@tavily/core";
 import { log as evlog } from "evlog";
+import { LRUCache } from "lru-cache";
 import { z } from "zod";
 
 import { gapsOf, readSaturation } from "./competition";
@@ -303,7 +304,7 @@ export const rankSources = (
     });
 };
 
-const search = async (
+const fetchSearch = async (
   client: TavilySearch,
   query: string,
   options: TavilySearchOptions,
@@ -324,6 +325,64 @@ const search = async (
       results: reply.results,
     };
   });
+
+// A repeat query within a day is answered from memory, not billed again: each
+// client's cache shares in-flight calls and never keeps a failure. A theme the
+// evidence gate dropped comes back empty from the cache, so it costs nothing.
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_MAX = 500;
+const WHITESPACE = /\s+/gu;
+
+interface SearchCall {
+  log: Logger | undefined;
+  options: TavilySearchOptions;
+  query: string;
+}
+
+const caches = new WeakMap<
+  TavilySearch,
+  LRUCache<string, Awaited<ReturnType<typeof fetchSearch>>, SearchCall>
+>();
+
+const cacheOf = (client: TavilySearch) => {
+  const found = caches.get(client);
+  if (found !== undefined) {
+    return found;
+  }
+  const made = new LRUCache<
+    string,
+    Awaited<ReturnType<typeof fetchSearch>>,
+    SearchCall
+  >({
+    fetchMethod: async (_key, _stale, { context }) =>
+      await fetchSearch(client, context.query, context.options, context.log),
+    max: CACHE_MAX,
+    ttl: CACHE_TTL_MS,
+  });
+  caches.set(client, made);
+  return made;
+};
+
+const search = async (
+  client: TavilySearch,
+  query: string,
+  options: TavilySearchOptions,
+  log?: Logger
+) => {
+  const cache = cacheOf(client);
+  const key = JSON.stringify({
+    options,
+    query: query.trim().toLowerCase().replaceAll(WHITESPACE, " "),
+  });
+  if (cache.has(key)) {
+    log?.debug?.("tavily search served from cache", { query });
+  }
+  const found = await cache.fetch(key, { context: { log, options, query } });
+  if (found === undefined) {
+    throw new Error(`Tavily search returned nothing for "${query}"`);
+  }
+  return found;
+};
 
 const NO_RESULTS = {
   answer: undefined,

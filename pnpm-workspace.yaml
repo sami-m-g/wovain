@@ -61,6 +61,7 @@ catalog:
   tailwindcss: ^4.3.3
   drizzle-orm: 1.0.0-rc.5
   evlog: ^2.33.1
+  lru-cache: ^11.5.3
   next: ^16.4.3
   next-intl: ^4.14.9
   "@varlock/nextjs-integration": 1.2.5

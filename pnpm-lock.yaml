@@ -326,6 +326,9 @@ catalogs:
     jose:
       specifier: ^6.2.13
       version: 6.2.13
+    lru-cache:
+      specifier: ^11.5.3
+      version: 11.5.3
     lucide-react:
       specifier: ^1.61.0
       version: 1.61.0
@@ -1046,6 +1049,9 @@ importers:
       evlog:
         specifier: 'catalog:'
         version: 2.33.1(@orpc/server@1.16.1(@opentelemetry/api@1.10.0))(ai@7.0.152(zod@4.6.7))(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@7.29.7)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.5.3
       p-limit:
         specifier: 'catalog:'
         version: 7.3.3

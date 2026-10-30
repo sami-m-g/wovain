@@ -17,6 +17,7 @@
     "@stdlib/stats-base-dists-beta-cdf": "catalog:",
     "@tavily/core": "catalog:",
     "evlog": "catalog:",
+    "lru-cache": "catalog:",
     "p-limit": "catalog:",
     "p-retry": "catalog:",
     "posthog-node": "catalog:",
