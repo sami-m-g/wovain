@@ -338,6 +338,11 @@ export const IdeasStep = ({
                       />
                     }
                   >
+                    {research.caution === undefined ? null : (
+                      <p className="text-muted-foreground text-xs">
+                        {tCard(`caution.${research.caution}`)}
+                      </p>
+                    )}
                     {designed ? (
                       <Badge className="w-fit" variant="secondary">
                         {t("hasDesign")}

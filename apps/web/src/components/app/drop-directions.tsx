@@ -229,6 +229,11 @@ const DirectionRow = ({
     return (
       <li className="border-border bg-card flex flex-col rounded-xl border p-4">
         <IdeaCardView card={direction.card}>
+          {direction.caution === undefined ? null : (
+            <p className="text-muted-foreground text-xs">
+              {tCard(`caution.${direction.caution}`)}
+            </p>
+          )}
           <Button
             className="h-9 w-fit px-4"
             disabled={disabled}

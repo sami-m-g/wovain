@@ -77,3 +77,25 @@ export const Designed: Story = {
     await expect(canvas.getByText("Design ready")).toBeVisible();
   },
 };
+
+// The two widths the idea card must hold: nothing scrolls sideways.
+const widths = {
+  desktop: { name: "1470", styles: { height: "900px", width: "1470px" } },
+  mobile: { name: "390", styles: { height: "800px", width: "390px" } },
+};
+const fitsWidth = async (canvasElement: HTMLElement) => {
+  const root = canvasElement.ownerDocument.documentElement;
+  await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+};
+
+export const Desktop: Story = {
+  globals: { viewport: { value: "desktop" } },
+  parameters: { viewport: { options: widths } },
+  play: ({ canvasElement }) => fitsWidth(canvasElement),
+};
+
+export const Mobile: Story = {
+  globals: { viewport: { value: "mobile" } },
+  parameters: { viewport: { options: widths } },
+  play: ({ canvasElement }) => fitsWidth(canvasElement),
+};
