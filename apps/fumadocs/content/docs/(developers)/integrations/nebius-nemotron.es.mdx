@@ -39,6 +39,17 @@ Con el autopilot activado, `pickIdea` elige la idea ordenada más prometedora y 
 
 El motivo de cada decisión se guarda en el diseño y una ejecución registra su paso y cualquier error.
 
+## Compra de medios
+
+Está construido y probado, pero no se ejecutó contra una cuenta real de Meta en la demo: la cuenta del jurado no tiene Meta conectado.
+
+- **Creación de la campaña.** `stagePausedCampaign` en `packages/core/src/ads.ts` crea la campaña, los conjuntos de anuncios, los creativos y los anuncios con el MCP de anuncios de Meta (`ads_create_campaign`, `ads_create_ad_set`, `ads_create_creative`, `ads_create_ad`), todo en pausa. El flujo del drop es `createDropCampaign` en `packages/mastra/src/mastra/flow/campaigns.ts`.
+- **Segmentación con Qloo (#161).** No hay campaña sin audiencia de Qloo: `requireQlooAudience` (`flow/audiences.ts`) la rechaza, y la audiencia fija edades, género e intereses de los conjuntos y la persona de los textos.
+- **Píxel (#212).** Con el único permiso de Meta del vendedor, wovain encuentra o crea el píxel (dataset), lo comparte con la cuenta publicitaria y envía un evento de prueba de la API de conversiones (`flow/pixel-setup.ts`, `packages/core/src/pixel-setup.ts`, flag `meta-pixel-automation`).
+- **Reglas de gasto (#141).** Cada 30 minutos (`packages/core/src/ad-rules.ts`, `flow/ad-rules.ts`, flag `ads-profit-rules`): los topes pausan todas las campañas al llegar al tope diario, al mensual o al límite de pérdida (50 $ por defecto: gasto en anuncios menos el beneficio de sus ventas); los cortes pausan un anuncio que gasta su coste por venta objetivo sin vender, o que supera los límites de coste por clic o de CTR; una subida añade como máximo un 20 % al presupuesto diario tras 3 compras a 1,3 veces el ROAS de equilibrio, como mucho cada 48 horas.
+- **Respaldo en Meta (#215).** Las reglas de corte y de tope se copian a las reglas automatizadas de la cuenta publicitaria (`packages/core/src/meta-backstop.ts`, `flow/backstop.ts`, flag `meta-backstop-rules`), así Meta pausa el gasto aunque wovain no responda.
+- **Agentes Nemotron.** Super VL escribe los textos (`writeAdCopy`, tarea Default); Lightning ejecuta los jueces de anuncios (`ad_judge`, tarea Fast); Ultra revisa las propuestas del optimizador (`ads_optimizer_review`) y toma las decisiones del autopilot (tarea Reasoning).
+
 ## 5. Chat de la documentación
 
 El chat de IA del sitio de documentación (`apps/fumadocs`) usa el mismo endpoint de Token Factory y `NEBIUS_API_KEY`, con **Nemotron 3.5 Lightning** (`nvidia/Nemotron-3_5-Lightning`, la variable de entorno `DOCS_CHAT_MODEL`, 0,06 $ de entrada y 0,24 $ de salida por millón de tokens). Busca en la documentación y responde con tres fragmentos cortos. Para gastar poco, limita la respuesta a 400 tokens, envía solo los últimos cuatro mensajes, rechaza sin llamar al modelo las preguntas vacías, demasiado largas o fuera de tema, y limita a cada visitante a 10 mensajes cada 10 minutos y 50 al día, con un tope diario global. Cada llamada es un evento `$ai_generation` de PostHog con tokens y coste, sin el texto de los mensajes.

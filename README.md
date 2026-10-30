@@ -90,6 +90,17 @@ The agent-to-job map is `AGENT_ROLES` in [`packages/core/src/agents.ts`](package
 - **Trace.** Every agent call and guard check of a run goes into its decision trace with the agent, model, duration and result. Only the input's field names are stored, never their values. `/dashboard/models?run=<id>` shows the trace, linked from Runs.
 - **Evals.** `pnpm --filter @wovain/mastra run evals` checks the six judges against a labeled set ([`judges.v1.json`](packages/core/src/evals/judges.v1.json)). On 2026-10-28, `nemotron-3-super-120b-a12b` and Nemotron 3.5 Super VL both agreed with all 20 scored labels. With a set this small, that is a smoke test.
 
+### Media buying
+
+Built and tested, but not run against a live Meta account in the demo: the judge account has no Meta connection.
+
+- **Campaign build.** `stagePausedCampaign` in `packages/core/src/ads.ts` builds the campaign, ad sets, creatives and ads through Meta's Ads MCP (`ads_create_campaign`, `ads_create_ad_set`, `ads_create_creative`, `ads_create_ad`), every object paused. The drop's flow is `createDropCampaign` in `packages/mastra/src/mastra/flow/campaigns.ts`.
+- **Qloo targeting (#161).** No campaign without a Qloo audience: `requireQlooAudience` (`packages/mastra/src/mastra/flow/audiences.ts`) refuses one, and the audience sets the ad sets' ages, gender and interests and the copy's persona.
+- **Pixel (#212).** On the merchant's single Meta grant, wovain finds or creates the pixel (dataset), shares it with the ad account and sends a Conversions API test event (`packages/mastra/src/mastra/flow/pixel-setup.ts`, `packages/core/src/pixel-setup.ts`, flag `meta-pixel-automation`).
+- **Spend rules (#141).** Every 30 minutes (`packages/core/src/ad-rules.ts`, `packages/mastra/src/mastra/flow/ad-rules.ts`, flag `ads-profit-rules`): the stops pause every campaign at the daily cap, the monthly cap or the loss limit ($50 by default: ad spend minus the profit of its sales); the kills pause an ad that spends its target cost per sale with no sale, or breaks the cost-per-click or click-through limits; a raise adds at most 20% to the daily budget after 3 purchases at 1.3 times break-even ROAS, at most every 48 hours.
+- **Meta backstop (#215).** The kill and stop rules are mirrored into the ad account's Automated Rules (`packages/core/src/meta-backstop.ts`, `packages/mastra/src/mastra/flow/backstop.ts`, flag `meta-backstop-rules`), so Meta pauses spend even when wovain is down.
+- **Nemotron agents.** Super VL writes the ad copy (`writeAdCopy`, Default job); Lightning runs the ad judges (`ad_judge`, Fast job); Ultra reviews the optimizer's proposals (`ads_optimizer_review`) and makes autopilot's calls (Reasoning job).
+
 ### Where Token Factory helped
 
 - One endpoint and one key serve Super VL, Ultra and Lightning, so routing by job is a config change per environment.
