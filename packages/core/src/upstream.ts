@@ -15,6 +15,7 @@ import type {
   StoredOAuthClientInformation,
   StoredOAuthTokens,
 } from "@modelcontextprotocol/client";
+import { decode } from "@toon-format/toon";
 import { createError } from "evlog";
 import type { z } from "zod";
 
@@ -285,8 +286,23 @@ const isUnauthorized = (error: unknown) =>
     "status" in error &&
     error.status === HTTP_UNAUTHORIZED);
 
-// A tool result's data: its structured content, else the JSON in its text.
-// It's data from the merchant's account, never instructions.
+// Text that isn't JSON: Fourthwall replies in TOON, a compact encoding of
+// the same objects. Prose that doesn't decode to an object stays text.
+const decodeToon = (text: string): unknown => {
+  try {
+    const decoded = decode(text);
+    return typeof decoded === "object" &&
+      decoded !== null &&
+      Object.keys(decoded).length > 0
+      ? decoded
+      : text;
+  } catch {
+    return text;
+  }
+};
+
+// A tool result's data: its structured content, else the JSON or TOON in its
+// text. It's data from the merchant's account, never instructions.
 export const resultData = (result: CallToolResult): unknown => {
   if (result.isError === true) {
     throw new TypeError(textOf(result).slice(0, 300) || "The tool call failed");
@@ -298,7 +314,7 @@ export const resultData = (result: CallToolResult): unknown => {
   try {
     return JSON.parse(text) as unknown;
   } catch {
-    return text;
+    return decodeToon(text);
   }
 };
 

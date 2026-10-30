@@ -257,6 +257,9 @@ catalogs:
     '@tavily/core':
       specifier: 0.7.14
       version: 0.7.14
+    '@toon-format/toon':
+      specifier: ^4.4.0
+      version: 4.4.0
     '@types/negotiator':
       specifier: ^0.6.5
       version: 0.6.5
@@ -1046,6 +1049,9 @@ importers:
       '@tavily/core':
         specifier: 'catalog:'
         version: 0.7.14(debug@4.4.3)
+      '@toon-format/toon':
+        specifier: 'catalog:'
+        version: 4.4.0
       evlog:
         specifier: 'catalog:'
         version: 2.33.1(@orpc/server@1.16.1(@opentelemetry/api@1.10.0))(ai@7.0.152(zod@4.6.7))(express@5.3.0)(hono@4.13.13)(next@16.4.3(@babel/core@7.29.7)(@opentelemetry/api@1.10.0)(@types/node@26.6.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(varlock@1.23.0))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -7138,6 +7144,9 @@ packages:
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
+
+  '@toon-format/toon@4.4.0':
+    resolution: {integrity: sha512-A6UcsVoWbNdhdLNhJbe6JpRlocmf/DZGG57fur3bd8oQtsjBaKWo2hHbOU2zTuy+byUmLIOyP1xJeitopCZzpQ==}
 
   '@traceloop/ai-semantic-conventions@0.20.0':
     resolution: {integrity: sha512-bvivhZU6U8TW4TKktYnjdTi+7GE4WxI8epaGjawalSKDunmxaA+4UVFQ+4tSCBvp2Scby+gnYNaTZSrtABfOlQ==}
@@ -18271,6 +18280,8 @@ snapshots:
   '@testing-library/user-event@14.6.8(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
+
+  '@toon-format/toon@4.4.0': {}
 
   '@traceloop/ai-semantic-conventions@0.20.0':
     dependencies:
