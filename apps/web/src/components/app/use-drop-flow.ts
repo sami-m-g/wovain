@@ -527,15 +527,6 @@ export const useDropFlow = (
       setPicked((previous) =>
         checked ? [...previous, id] : previous.filter((item) => item !== id)
       ),
-    /** A suggested direction: one click starts the drop from its brief. */
-    handleUseDirection: (direction: string) => {
-      setBrief(direction);
-      if (autopilot && budgetInvalid) {
-        return;
-      }
-      setBriefError(undefined);
-      startRun({ autopilot, seed: direction });
-    },
   };
 
   const working = calls.working ?? runWork(run);

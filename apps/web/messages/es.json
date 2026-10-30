@@ -527,7 +527,12 @@
       "placeholder": "Merch acogedor y de naturaleza para mi canal de plantas",
       "error": "Escribe al menos unas palabras (10 caracteres o más).",
       "submit": "Investigar tendencias",
-      "submitAutopilot": "Lanzar en piloto automático"
+      "submitAutopilot": "Lanzar en piloto automático",
+      "starters": "O empieza con una de estas",
+      "starter1": "Camisetas de trazo fino para jardineros de balcón",
+      "starter2": "Camisetas arcade retro para jugadores de fin de semana",
+      "starter3": "Camisetas de poesía melancólica para lectores nocturnos",
+      "pickIdea": "¿No lo tienes claro? Elige una idea investigada"
     },
     "directions": {
       "title": "Qué vender ahora",
