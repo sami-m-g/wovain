@@ -23,7 +23,7 @@ import type { FourthwallAdminPage } from "@/lib/fourthwall-admin";
 import { orpc } from "@/utils/orpc";
 
 // Polled while a step is open, so a step finished in Fourthwall (payouts,
-// shipping, the pixel) ticks off here by itself.
+// the pixel) ticks off here by itself.
 const POLL_MS = 10_000;
 
 export const StateIcon = ({ state }: { state: Step["state"] }) => {
@@ -206,7 +206,6 @@ const PayoutSteps = ({
 const STEP_PAGE: Partial<Record<Step["id"], FourthwallAdminPage>> = {
   domain: "domain",
   policies: "policies",
-  shipping: "shipping",
 };
 
 /** What the merchant does for one step: an action here or a deep link. */

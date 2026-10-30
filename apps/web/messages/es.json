@@ -1737,11 +1737,6 @@
         "fix": "Fourthwall aún revisa tu tienda. Contacta con el soporte de Fourthwall para terminar.",
         "next": "la revisión de Fourthwall"
       },
-      "shipping": {
-        "label": "Los envíos están activos",
-        "fix": "En Fourthwall, activa los envíos y añade al menos un perfil de envío.",
-        "next": "el envío, para artículos que envías tú"
-      },
       "payouts": {
         "label": "Los pagos están configurados",
         "fix": "En Fourthwall, completa tu cuenta de pagos para recibir tus ventas.",
@@ -2046,14 +2041,6 @@
         "waiting": "Fourthwall está revisando tu tienda. Solo el soporte de Fourthwall puede terminarlo.",
         "check": "Revisa el estado de tu tienda.",
         "support": "Contactar con el soporte de Fourthwall"
-      },
-      "shipping": {
-        "label": "Envíos activados",
-        "done": "Los compradores pueden pagar con envío.",
-        "todo": "Activa los envíos y añade un perfil de envío en Fourthwall. Se marcará aquí cuando esté hecho.",
-        "waiting": "Esperando a Fourthwall.",
-        "check": "Revisa tus envíos.",
-        "action": "Configurar envíos"
       },
       "pixel": {
         "label": "Píxel de Meta en tu tienda",

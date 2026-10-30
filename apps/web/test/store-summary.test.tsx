@@ -38,7 +38,7 @@ const render = (
 };
 
 const checks = (failing: string[]): StoreReadiness["checks"] =>
-  (["site_live", "verified", "shipping", "payouts"] as const).map((id) => ({
+  (["site_live", "verified", "payouts"] as const).map((id) => ({
     blocking: id === "site_live" || id === "verified",
     id,
     ok: !failing.includes(id),
@@ -86,7 +86,7 @@ describe("StoreSummary", () => {
     );
     expect(html).toContain("Coming soon");
     expect(html).toContain("Shop is live");
-    expect(html).toContain("3 of 4 ready");
+    expect(html).toContain("2 of 3 ready");
     expect(html).toContain("Next: take the shop live");
     expect(html).toContain("Go live");
     expect(html).toContain("Nothing to approve");
@@ -125,43 +125,6 @@ describe("StoreSummary", () => {
       "https://admin.fourthwall.com/store/atelier/settings/billing/"
     );
   });
-
-  it("links shipping to the shop's own shipping settings", () => {
-    const html = render(
-      <StoreSummary
-        onApprovals={noop}
-        readiness={{
-          checks: checks(["shipping"]),
-          ready: true,
-          shop: shop({ slug: "wovain-goods" }),
-        }}
-      />,
-      (client) => seedNumbers(client)
-    );
-    expect(html).toContain(
-      "https://admin.fourthwall.com/store/wovain-goods/settings/shipping/"
-    );
-    // Shipping is advisory: the shop still reads as ready to sell.
-    expect(html).toContain("Ready to sell");
-    expect(html).toContain("Next: shipping, for items you ship yourself");
-  });
-
-  it("falls back to the admin's shop picker without a slug", () => {
-    const html = render(
-      <StoreSummary
-        onApprovals={noop}
-        readiness={{
-          checks: checks(["shipping"]),
-          ready: true,
-          shop: shop({ slug: null }),
-        }}
-      />,
-      (client) => seedNumbers(client)
-    );
-    expect(html).toContain(
-      "https://admin.fourthwall.com/?redirectPath=%2Fsettings%2Fshipping%2F"
-    );
-  });
 });
 
 describe("StoreDashboard", () => {
@@ -191,7 +154,6 @@ const SETUP: Setup = {
     { how: "none", id: "connect", required: true, state: "done" },
     { how: "link", id: "payouts", required: true, state: "todo" },
     { how: "do_it", id: "site_live", required: true, state: "todo" },
-    { how: "none", id: "shipping", required: true, state: "done" },
     { how: "link", id: "pixel", required: true, state: "todo" },
     { how: "link", id: "domain", required: false, state: "check" },
     { how: "link", id: "policies", required: false, state: "check" },
@@ -204,7 +166,7 @@ describe("StoreSetup", () => {
       client.setQueryData(orpc.store.setup.queryKey(), SETUP);
     });
     expect(html).toContain("Get your shop ready to sell");
-    expect(html).toContain("2 of 5 done");
+    expect(html).toContain("1 of 4 done");
     expect(html).toContain("Go live");
     expect(html).toContain("Open Billing and payouts");
     expect(html).toContain("redirectPath=%2Fsettings%2Fbilling%2F");

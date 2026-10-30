@@ -49,14 +49,12 @@ const render = (readiness?: StoreReadiness) => {
 };
 
 const readiness = (failing: string[]): StoreReadiness => ({
-  checks: (["site_live", "verified", "shipping", "payouts"] as const).map(
-    (id) => ({
-      blocking: id === "site_live" || id === "verified",
-      id,
-      ok: !failing.includes(id),
-    })
-  ),
-  ready: failing.every((id) => id === "payouts" || id === "shipping"),
+  checks: (["site_live", "verified", "payouts"] as const).map((id) => ({
+    blocking: id === "site_live" || id === "verified",
+    id,
+    ok: !failing.includes(id),
+  })),
+  ready: failing.every((id) => id === "payouts"),
   shop: {
     baseUrl: "https://atelier.fourthwall.com",
     name: "Atelier",
@@ -71,12 +69,10 @@ const PUBLISH_BUTTON =
 
 describe("ProductsStep", () => {
   it("fixes a shop that can't take orders in the flow, not in the Store", () => {
-    const html = render(readiness(["site_live", "shipping"]));
+    const html = render(readiness(["site_live"]));
     expect(html).toContain("Fix these before anything goes public.");
     expect(html).toContain("Shop is live");
     expect(html).toContain("Go live");
-    // Fourthwall ships what it makes: shipping doesn't hold a publish.
-    expect(html).not.toContain("Shipping is on");
     expect(html.match(PUBLISH_BUTTON)?.[0]).toContain(' disabled=""');
   });
 

@@ -112,7 +112,6 @@ export const GoLive = ({ name }: { name: string | null }) => {
 // The admin page that fixes each check Fourthwall must change.
 const FIX_PAGE: Partial<Record<CheckId, FourthwallAdminPage>> = {
   payouts: "billing",
-  shipping: "shipping",
 };
 
 /** The fix for one failing check: an action here, else a Fourthwall link. */
@@ -208,8 +207,8 @@ export const StoreSummary = ({
   const { shop } = readiness;
   const failing = readiness.checks.filter((check) => !check.ok);
   const fix = failing.find((check) => check.blocking) ?? failing[0];
-  // Ready to sell once nothing blocking fails; advisory checks (shipping,
-  // payouts) still show as the next step.
+  // Ready to sell once nothing blocking fails; payouts, advisory, still
+  // show as the next step.
   const blocked = failing.some((check) => check.blocking);
   const site = known(SITE_TONE, shop.siteStatus);
   const payout = known(PAYOUT_TONE, shop.payoutStatus);

@@ -21,8 +21,6 @@ const PATHS = {
   products: "/products/",
   promotions: "/promotions/",
   settings: "/settings/",
-  // Settings > Shipping: shipping options and profiles.
-  shipping: "/settings/shipping/",
   storeDesign: "/store-design/",
   // Analytics > Options > Tracking pixels: the Facebook Pixel field.
   trackingPixels: "/analytics/overview/tracking-pixels",

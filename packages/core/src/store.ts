@@ -21,8 +21,6 @@ export interface ShopFacts {
   siteStatus: string | undefined;
   // Non-empty while Fourthwall is verifying the shop. Never shown by name.
   verificationRestrictions: string[];
-  shippingEnabled: boolean;
-  enabledShippingProfiles: number;
   // INACTIVE, IN_PROGRESS or ACTIVE.
   payoutStatus: string | undefined;
   baseUrl: string | undefined;
@@ -34,21 +32,16 @@ export interface ShopFacts {
   slug?: string | undefined;
 }
 
-export const READINESS_CHECKS = [
-  "site_live",
-  "verified",
-  "shipping",
-  "payouts",
-] as const;
+export const READINESS_CHECKS = ["site_live", "verified", "payouts"] as const;
 export type ReadinessCheckId = (typeof READINESS_CHECKS)[number];
 
 export interface ReadinessCheck {
   id: ReadinessCheckId;
   ok: boolean;
   // Blocks publishing when not ok. Payouts only warn: sales still go
-  // through while Stripe onboarding finishes. Shipping only warns too: it
-  // covers self-fulfilled items, and Fourthwall ships what it makes
-  // (help.fourthwall.com change-shipping-options).
+  // through while Stripe onboarding finishes. Shipping isn't checked:
+  // Fourthwall ships what it makes, and its shipping settings cover only
+  // self-fulfilled items (help.fourthwall.com change-shipping-options).
   blocking: boolean;
 }
 
@@ -64,11 +57,6 @@ export const evaluateReadiness = (facts: ShopFacts): Readiness => {
       blocking: true,
       id: "verified",
       ok: facts.verificationRestrictions.length === 0,
-    },
-    {
-      blocking: false,
-      id: "shipping",
-      ok: facts.shippingEnabled && facts.enabledShippingProfiles > 0,
     },
     { blocking: false, id: "payouts", ok: facts.payoutStatus === "ACTIVE" },
   ];
@@ -89,12 +77,6 @@ const shopSchema = z.object({
   slug: z.string().min(1).optional(),
   status: z.string(),
   verificationRestrictions: z.array(z.string()).default([]),
-});
-const shippingSchema = z.object({
-  enabled: z.boolean(),
-  shippingProfiles: z
-    .array(z.object({ enabled: z.boolean().default(true) }))
-    .default([]),
 });
 const payoutSchema = z.object({
   status: z.enum(["INACTIVE", "IN_PROGRESS", "ACTIVE"]),
@@ -131,26 +113,21 @@ const shopHosts = (site: z.infer<typeof shopSchema> | undefined) => {
   ];
 };
 
-// Reads the three replies the readiness check needs, in parallel. The
+// Reads the two replies the readiness check needs, in parallel. The
 // user's Fourthwall role isn't read: Fourthwall refuses any write the role
 // doesn't allow, and that error reaches the merchant.
 export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
-  const [shop, shipping, payout] = await Promise.all([
+  const [shop, payout] = await Promise.all([
     call("ecommerce_get-current-shop", {}),
-    call("ecommerce_get-shipping-profiles", {}),
     call("ecommerce_get-payout-info", {}),
   ]);
   const [site] = findAll(shopSchema, shop);
-  const [ship] = findAll(shippingSchema, shipping);
   const [pay] = findAll(payoutSchema, payout);
   return {
     baseUrl: site?.baseUrl,
-    enabledShippingProfiles:
-      ship?.shippingProfiles.filter((profile) => profile.enabled).length ?? 0,
     hosts: shopHosts(site),
     name: site?.name,
     payoutStatus: pay?.status,
-    shippingEnabled: ship?.enabled ?? false,
     siteStatus: site?.status,
     slug: site?.slug ?? fourthwallSubdomain(site?.internalDomain),
     verificationRestrictions: site?.verificationRestrictions ?? [],
