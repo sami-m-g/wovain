@@ -36,13 +36,24 @@ export default defineConfig({
       name: "pr",
       use: { ...devices["Desktop Chrome"], baseURL: PR_URL },
     },
+    // No trace on either: it would record the smoke account's password into
+    // the report deploy.yml uploads.
     {
+      name: "smoke-setup",
+      testMatch: /smoke\.setup\.ts/u,
+      use: { ...devices["Desktop Chrome"], baseURL: smokeUrl, trace: "off" },
+    },
+    {
+      dependencies: ["smoke-setup"],
       grep: /@smoke/u,
       name: "smoke",
       retries: 1,
-      // No trace: it would record the smoke account's password into the
-      // report deploy.yml uploads.
-      use: { ...devices["Desktop Chrome"], baseURL: smokeUrl, trace: "off" },
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: smokeUrl,
+        storageState: ".auth/smoke.json",
+        trace: "off",
+      },
     },
   ],
   reporter: isCI
