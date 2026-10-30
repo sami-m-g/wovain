@@ -21,7 +21,11 @@ export interface QlooConfig {
   baseURL: string;
 }
 
-const TIMEOUT_MS = 15_000;
+// The hackathon server took 5 to 19 s on some insights calls (tried live on
+// 2026-10-30), so a call waits 30 s. A timed-out call is retried once, not
+// RETRIES times, so a merchant waits at most about a minute for it.
+const TIMEOUT_MS = 30_000;
+const TIMEOUT_RETRIES = 1;
 // How long a Qloo answer is reused, and how many are kept per client.
 const ANSWER_TTL_MS = 30 * 60_000;
 const ANSWERS_KEPT = 500;
@@ -566,7 +570,11 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
                 return true;
               }
               transientFailures += 1;
-              return transientFailures <= RETRIES;
+              const timedOut =
+                error instanceof Error && error.name === "TimeoutError";
+              return (
+                transientFailures <= (timedOut ? TIMEOUT_RETRIES : RETRIES)
+              );
             },
           }
         )
