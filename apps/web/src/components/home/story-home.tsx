@@ -19,6 +19,7 @@ import { useEffect } from "react";
 
 import { DropDirections } from "@/components/app/drop-directions";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
+import { useCatalog } from "@/components/billing/catalog-provider";
 import { nextHref, nextStepOf } from "@/components/home/next-step";
 import { KpiFrame } from "@/components/insights/kpi-cards";
 import { useLaunchFacts } from "@/components/onboarding/use-launch-facts";
@@ -59,6 +60,7 @@ export const NextAction = () => {
   const run =
     runs.data?.find((each) => OPEN.has(each.status)) ?? runs.data?.[0];
   const { facts, problem, ready, settled, store } = useLaunchFacts(run?.id);
+  const { creditCost, plans } = useCatalog();
 
   // Wait for every fact, so the card never shows an earlier step first.
   if (runs.isPending || !settled) {
@@ -79,7 +81,12 @@ export const NextAction = () => {
   const body =
     step === "store" && store.total > 0
       ? t("store.progress", { done: store.done, total: store.total })
-      : t(`${step}.body`, { brief: run?.seed ?? "" });
+      : t(`${step}.body`, {
+          brief: run?.seed ?? "",
+          // A Home pick pays its research and its first design.
+          cost: creditCost.research + creditCost.design,
+          credits: plans.free.monthlyCredits,
+        });
   const action = cn(
     buttonVariants({ variant: "default" }),
     "h-9 w-fit shrink-0 px-4"

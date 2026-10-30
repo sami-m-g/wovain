@@ -1,4 +1,5 @@
 import type { AuthView as View } from "@better-auth-ui/core";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { Skeleton } from "@wovain/ui/components/skeleton";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -22,7 +23,12 @@ const headingFor = async (view: View) => {
       return { lead: auth("loginLead"), title: auth("loginTitle") };
     }
     case "signUp": {
-      return { lead: auth("signUpLead"), title: auth("signUpTitle") };
+      return {
+        lead: auth("signUpLead", {
+          credits: billingCatalog().plans.free.monthlyCredits,
+        }),
+        title: auth("signUpTitle"),
+      };
     }
     case "forgotPassword": {
       return { lead: reset("requestLead"), title: reset("requestTitle") };
