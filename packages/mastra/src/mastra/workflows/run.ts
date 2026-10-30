@@ -204,17 +204,22 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   });
 
   // The ideas gate. Autopilot goes on with the ideas research ranked behind
-  // its pick: the merchant turned it on to make this call. A drop started
-  // from a picked direction goes on with it: the merchant chose it. Any
-  // other run suspends with nothing drawn, and goes on with only the ideas
-  // the merchant approved.
+  // its pick: the merchant turned it on to make this call. Any other run
+  // suspends with nothing drawn, and goes on with only the ideas the
+  // merchant approved. A drop started from a picked direction waits at its
+  // designs step instead, while the merchant reviews the tone, colours and
+  // research, until "Make designs".
   const ideas = createStep({
     execute: async ({ inputData, resumeData, suspend }) => {
-      if (inputData.input.autopilot || inputData.input.pick !== undefined) {
+      if (inputData.input.autopilot) {
         return inputData;
       }
       if (resumeData === undefined) {
-        await awaitIdeas(actorFor(inputData.userId), inputData.runId);
+        await awaitIdeas(
+          actorFor(inputData.userId),
+          inputData.runId,
+          inputData.input.pick === undefined ? "ideas" : "design"
+        );
         return await suspend({ ideaIds: inputData.ideaIds ?? [] });
       }
       return { ...inputData, ideaIds: resumeData.ideaIds };

@@ -1278,6 +1278,42 @@ describe("ideas gate", () => {
     expect(approve).toHaveBeenCalledTimes(1);
   });
 
+  it("Make designs draws a Home pick waiting at its designs step, once", async () => {
+    const { ideaIds, runId } = await seedIdeasGate(ctx.db, 1);
+    await ctx.db.update(run).set({ step: "design" }).where(eq(run.id, runId));
+    const approve = vi.fn(async () => {
+      await Promise.resolve();
+    });
+    const actor = { ...ctx.actor, runs: engine(vi.fn(), approve) };
+
+    await approveIdeas(actor, runId, ideaIds);
+
+    expect(approve).toHaveBeenCalledWith(runId, ideaIds);
+    const [after] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(after).toMatchObject({ status: "running", step: "design" });
+    await expect(approveIdeas(actor, runId, ideaIds)).rejects.toMatchObject({
+      code: "RUN_NOT_AT_IDEAS",
+    });
+  });
+
+  it("puts a Home pick back at its designs step when the resume fails", async () => {
+    const { ideaIds, runId } = await seedIdeasGate(ctx.db, 1);
+    await ctx.db.update(run).set({ step: "design" }).where(eq(run.id, runId));
+    const approve = vi.fn(async () => {
+      await Promise.reject(new Error("Inngest down"));
+    });
+    const actor = { ...ctx.actor, runs: engine(vi.fn(), approve) };
+
+    await expect(approveIdeas(actor, runId, ideaIds)).rejects.toMatchObject({
+      code: "RUN_NOT_WAITING",
+    });
+    const [after] = await ctx.db.select().from(run).where(eq(run.id, runId));
+    expect(after).toMatchObject({
+      status: "awaiting_approval",
+      step: "design",
+    });
+  });
+
   it("refuses an idea from another run before the run moves", async () => {
     const { runId } = await seedIdeasGate(ctx.db, 2);
     const other = await seedIdeasGate(ctx.db, 1);

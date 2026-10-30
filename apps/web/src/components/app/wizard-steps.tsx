@@ -704,6 +704,55 @@ export const DesignsStep = ({
   );
 };
 
+/**
+ * A Home pick's designs step before anything is drawn: the idea, its tone
+ * and colours to review or change, and its research report as it loads.
+ * "Make designs" draws them with all of it.
+ */
+export const PickReviewStep = ({
+  busyLabel,
+  ideas,
+  onMake,
+}: {
+  busyLabel?: string | undefined;
+  ideas: readonly Idea[];
+  onMake: () => void;
+}) => {
+  const t = useTranslations("Wizard.designs");
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader lead={t("reviewLead")} title={t("title")} />
+      <ul className="flex flex-col gap-4">
+        {ideas.map((idea) => {
+          const words = namedWords(idea);
+          return (
+            <li
+              className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4"
+              key={idea.id}
+            >
+              <div className="flex flex-col gap-1">
+                <h3 className="font-semibold">{words?.title ?? idea.theme}</h3>
+                {words === undefined ? null : (
+                  <p className="text-muted-foreground max-w-[70ch] text-sm">
+                    {words.concept}
+                  </p>
+                )}
+              </div>
+              <DropStylePanel ideaId={idea.id} />
+              <IdeaDossier automatic ideaId={idea.id} />
+            </li>
+          );
+        })}
+      </ul>
+      <StepActions busyLabel={busyLabel}>
+        <NextButton disabled={Boolean(busyLabel)} onClick={onMake}>
+          {t("make")}
+        </NextButton>
+      </StepActions>
+    </div>
+  );
+};
+
 export const ProductsStep = ({
   products,
   titles,

@@ -218,10 +218,20 @@ export const autopilotStep = async (
 export const autopilotRejection = (reasons: string[]) =>
   `Autopilot rejected the designs: ${reasons.join("; ")}`;
 
+// The steps a run waits at before anything is drawn: its ideas gate, or,
+// for a drop started from a Home pick, its designs step, where the merchant
+// reviews the tone, colours and research before "Make designs".
+type DrawGate = "design" | "ideas";
+const DRAW_GATES: DrawGate[] = ["ideas", "design"];
+
 // Stops a merchant's run at its ideas gate: nothing is drawn until they
 // approve ideas (approveIdeas).
-export const awaitIdeas = async (actor: Actor, runId: string) => {
-  await markRun(actor, runId, { status: "awaiting_approval", step: "ideas" });
+export const awaitIdeas = async (
+  actor: Actor,
+  runId: string,
+  step: DrawGate = "ideas"
+) => {
+  await markRun(actor, runId, { status: "awaiting_approval", step });
 };
 
 // The merchant's "See designs": the ideas they approved, checked against the
@@ -253,19 +263,33 @@ export const approveIdeas = async (
   if (stranger !== undefined) {
     throw notFound.idea({ id: stranger });
   }
-  const [moved] = await actor.db
-    .update(run)
-    .set({ status: "running", step: "design" })
+  const [waiting] = await actor.db
+    .select({ step: run.step })
+    .from(run)
     .where(
       and(
         eq(run.id, runId),
         eq(run.userId, actor.userId),
         eq(run.status, "awaiting_approval"),
-        eq(run.step, "ideas")
+        inArray(run.step, DRAW_GATES)
       )
-    )
-    .returning({ id: run.id });
-  if (moved === undefined) {
+    );
+  const gate = DRAW_GATES.find((one) => one === waiting?.step);
+  const [moved] =
+    gate === undefined
+      ? []
+      : await actor.db
+          .update(run)
+          .set({ status: "running", step: "design" })
+          .where(
+            and(
+              eq(run.id, runId),
+              eq(run.status, "awaiting_approval"),
+              eq(run.step, gate)
+            )
+          )
+          .returning({ id: run.id });
+  if (gate === undefined || moved === undefined) {
     throw runNotAtIdeas(runId);
   }
   actor.log?.set({ run: { approvedIdeas: wanted.length, id: runId } });
@@ -276,7 +300,7 @@ export const approveIdeas = async (
     try {
       await actor.db
         .update(run)
-        .set({ status: "awaiting_approval", step: "ideas" })
+        .set({ status: "awaiting_approval", step: gate })
         .where(
           and(
             eq(run.id, runId),

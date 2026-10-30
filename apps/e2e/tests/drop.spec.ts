@@ -168,6 +168,11 @@ test("a Home pick opens the drop at its designs @smoke", async ({
   // The picked idea counts as picked from the start, never "0 picked".
   await expect(page.getByText(/1 idea, 1 picked\./u)).toBeVisible();
   await expect(page.getByText(/0 picked/u)).toHaveCount(0);
+  // Nothing is drawn yet: the merchant reviews, then makes the designs.
+  const make = page.getByRole("button", { name: "Make designs" });
+  await expect(make).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("img", { name: /^Design: /u })).toHaveCount(0);
+  await make.click();
   // Real art takes minutes on next; the mocks take seconds.
   await expect(
     page.getByRole("img", { name: /^Design: /u }).first()

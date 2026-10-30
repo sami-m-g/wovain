@@ -377,6 +377,58 @@ describe("draftBrief", () => {
     expect(prompt).not.toContain("Studio Ghibli");
   });
 
+  it("draws with the tone and colours the merchant chose and the research report's findings", async () => {
+    const { ask, asked } = fakeAgents({ design_brief: [brief] });
+    const reported: TrendIdea = {
+      ...idea("anime", 0.9),
+      dossier: {
+        dossier: {
+          citations: [],
+          priceBand: { highUsd: 34, lowUsd: 24, note: "Most sell near $28" },
+          risks: ["Fan-art takedowns"],
+          saturation: "Crowded with chibi faces",
+          whyNow: "A new season airs this month",
+        },
+        requestId: "req_1",
+        startedAt: "2026-10-30T14:00:00Z",
+        status: "done",
+      },
+    };
+    const style = {
+      garments: ["Sand"],
+      guardrails: "Never crude",
+      inks: ["#B0245F"],
+      tone: 'Wry: "Dry and quiet"',
+    };
+
+    await draftBrief(ask, { avoidNames: [], idea: reported, style });
+
+    const prompt = JSON.parse(asked[0]?.prompt ?? "{}");
+    expect(prompt.style).toEqual(style);
+    expect(prompt.research).toEqual({
+      priceBand: { highUsd: 34, lowUsd: 24, note: "Most sell near $28" },
+      risks: ["Fan-art takedowns"],
+      saturation: "Crowded with chibi faces",
+      whyNow: "A new season airs this month",
+    });
+  });
+
+  it("leaves the report out while it is still running", async () => {
+    const { ask, asked } = fakeAgents({ design_brief: [brief] });
+    const pending: TrendIdea = {
+      ...idea("anime", 0.9),
+      dossier: {
+        requestId: "req_1",
+        startedAt: "2026-10-30T14:00:00Z",
+        status: "pending",
+      },
+    };
+
+    await draftBrief(ask, { avoidNames: [], idea: pending });
+
+    expect(JSON.parse(asked[0]?.prompt ?? "{}").research).toBeUndefined();
+  });
+
   it("sends no taste when Qloo didn't shape the idea", async () => {
     const { ask, asked } = fakeAgents({ design_brief: [brief] });
 

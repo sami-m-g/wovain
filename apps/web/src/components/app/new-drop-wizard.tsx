@@ -12,7 +12,12 @@ import { AutopilotToggle } from "@/components/app/autopilot-toggle";
 import { FlowProblemNotice } from "@/components/app/flow-problem";
 import { NoIdeasState, RunFailedState } from "@/components/app/run-failed";
 import type { Step } from "@/components/app/use-drop-flow";
-import { failureOf, flow, useDropFlow } from "@/components/app/use-drop-flow";
+import {
+  atPickGate,
+  failureOf,
+  flow,
+  useDropFlow,
+} from "@/components/app/use-drop-flow";
 import { STEP_TITLE_ID } from "@/components/app/wizard-parts";
 import {
   BriefStep,
@@ -20,6 +25,7 @@ import {
   DesignsStep,
   DoneStep,
   IdeasStep,
+  PickReviewStep,
   MAX_BRIEF,
   ProductsStep,
 } from "@/components/app/wizard-steps";
@@ -172,7 +178,13 @@ const DropFlow = ({
         onNext={actions.handleMakeCampaigns}
       />
     ),
-    designs: (
+    designs: atPickGate(run) ? (
+      <PickReviewStep
+        busyLabel={busyLabel}
+        ideas={run?.ideas ?? []}
+        onMake={actions.handleDesignPicked}
+      />
+    ) : (
       <DesignsStep
         busyLabel={busyLabel}
         designs={designs}
