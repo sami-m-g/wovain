@@ -1,3 +1,4 @@
+import { log as evlog } from "evlog";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -102,6 +103,40 @@ describe("readShopFacts", () => {
       ...READY,
       roles: ["MANAGER"],
     });
+  });
+
+  it.each([
+    { groups: ["SUPER_ADMIN"] },
+    { groups: ["Super admin"] },
+    { groups: [{ id: "g1", name: "SUPER_ADMIN" }] },
+    { permissions: { roles: [{ role: "super-admin" }] } },
+    { role: "MANAGER" },
+  ])("reads the shop's creator or a manager from %j", async (reply) => {
+    const { call } = fake({
+      "ecommerce_get-current-shop": { status: "LIVE" },
+      "ecommerce_get-shipping-profiles": {
+        enabled: true,
+        shippingProfiles: [{ enabled: true }],
+      },
+      "ecommerce_get-shop-permissions": reply,
+    });
+    const { checks } = evaluateReadiness(await readShopFacts(call));
+    expect(checks.find((check) => check.id === "store_role")?.ok).toBe(true);
+  });
+
+  it("logs the keys of a reply that names no role, never its values", async () => {
+    const error = vi.spyOn(evlog, "error").mockImplementation(() => {});
+    const { call } = fake({
+      "ecommerce_get-shop-permissions": { access: [{ scope: "secret" }] },
+    });
+    const { roles } = await readShopFacts(call);
+    expect(roles).toEqual([]);
+    expect(error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shopPermissions: { shape: '{"access":[{"scope":"string"}]}' },
+      })
+    );
+    error.mockRestore();
   });
 
   it("treats a missing reply as not ready", async () => {

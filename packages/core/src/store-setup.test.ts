@@ -44,6 +44,19 @@ describe("evaluateSetup", () => {
     expect(stateOf(steps, "domain")?.state).toBe("check");
   });
 
+  it("ticks the shop connected for its Super admin", () => {
+    const steps = evaluateSetup({
+      domain: undefined,
+      metaConnected: false,
+      pixel: undefined,
+      shop: { ...READY, roles: ["SUPER_ADMIN"] },
+    });
+    expect(stateOf(steps, "connect")).toMatchObject({
+      how: "none",
+      state: "done",
+    });
+  });
+
   it("takes the merchant's word for payouts support set up by hand", () => {
     const inactive = { ...READY, payoutStatus: "INACTIVE" };
     const base = {

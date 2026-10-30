@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { conversationId } from "./ads";
+import { STORE_ROLES } from "./store";
 import type { ShopFacts } from "./store";
 import { findAll } from "./upstream";
 import type { ToolCall } from "./upstream";
@@ -143,8 +144,6 @@ export interface SetupStep {
 // Fourthwall support, which the dashboard (and get-payout-info) can't see.
 export const CONFIRMABLE_STEPS = ["payouts"] as const;
 export type ConfirmableStep = (typeof CONFIRMABLE_STEPS)[number];
-
-const STORE_ROLES = new Set(["OWNER", "MANAGER"]);
 
 const DOMAIN_DONE: ReadonlySet<string> = new Set([
   "CONNECTED",

@@ -1,3 +1,4 @@
+import { log as evlog } from "evlog";
 import { z } from "zod";
 
 import { throwBulkErrors } from "./fourthwall";
@@ -21,7 +22,8 @@ export interface ShopFacts {
   siteStatus: string | undefined;
   // Non-empty while Fourthwall is verifying the shop. Never shown by name.
   verificationRestrictions: string[];
-  // OWNER, MANAGER, DESIGNER or VIEWER: the connected user's groups.
+  // The connected user's Fourthwall roles, upper-case with underscores
+  // (SUPER_ADMIN, MANAGER, DESIGNER, ...).
   roles: string[];
   shippingEnabled: boolean;
   enabledShippingProfiles: number;
@@ -56,7 +58,13 @@ export interface Readiness {
   checks: ReadinessCheck[];
 }
 
-const STORE_ROLES = new Set(["OWNER", "MANAGER"]);
+// The roles that run the shop: Super admin (whoever created the shop) and
+// Manager. OWNER stays for replies that name the creator that way.
+export const STORE_ROLES: ReadonlySet<string> = new Set([
+  "SUPER_ADMIN",
+  "OWNER",
+  "MANAGER",
+]);
 
 export const evaluateReadiness = (facts: ShopFacts): Readiness => {
   const checks: ReadinessCheck[] = [
@@ -95,7 +103,64 @@ const shopSchema = z.object({
   status: z.string(),
   verificationRestrictions: z.array(z.string()).default([]),
 });
-const permissionsSchema = z.object({ groups: z.array(z.string()) });
+// get-shop-permissions names the user's roles as `groups`, `roles` or one
+// `role`, each a name or an object carrying one.
+const permissionsSchema = z.union([
+  z.object({ groups: z.array(z.unknown()) }).transform((each) => each.groups),
+  z.object({ roles: z.array(z.unknown()) }).transform((each) => each.roles),
+  z.object({ role: z.unknown() }).transform((each) => [each.role]),
+]);
+const namedSchema = z.union([
+  z.string(),
+  z.object({ name: z.string() }).transform((each) => each.name),
+  z.object({ role: z.string() }).transform((each) => each.role),
+  z.object({ group: z.string() }).transform((each) => each.group),
+]);
+const SEPARATORS = /[\s-]+/gu;
+// "Super admin", "super-admin" and "SUPER_ADMIN" are one role.
+const roleName = (value: unknown) => {
+  const parsed = namedSchema.safeParse(value);
+  return parsed.success
+    ? [parsed.data.trim().toUpperCase().replaceAll(SEPARATORS, "_")]
+    : [];
+};
+
+// A reply's keys and value types, never its values: logged when a reply
+// has a shape wovain doesn't read.
+const MAX_SHAPE_DEPTH = 3;
+const shapeOf = (value: unknown, depth = 0): unknown => {
+  if (Array.isArray(value)) {
+    return value.length === 0 ? [] : [shapeOf(value[0], depth + 1)];
+  }
+  if (value === null || typeof value !== "object") {
+    return value === null ? "null" : typeof value;
+  }
+  if (depth >= MAX_SHAPE_DEPTH) {
+    return "object";
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      shapeOf(child, depth + 1),
+    ])
+  );
+};
+
+const readRoles = (reply: unknown) => {
+  const [found] = findAll(permissionsSchema, reply);
+  const roles = (found ?? []).flatMap(roleName);
+  if (roles.length === 0) {
+    evlog.error({
+      error: {
+        code: "SHOP_ROLE_UNREAD",
+        message: "The shop permissions reply named no role wovain reads",
+        name: "ShopRoleUnread",
+      },
+      shopPermissions: { shape: JSON.stringify(shapeOf(reply)) },
+    });
+  }
+  return roles;
+};
 const shippingSchema = z.object({
   enabled: z.boolean(),
   shippingProfiles: z
@@ -140,7 +205,6 @@ export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
     call("ecommerce_get-payout-info", {}),
   ]);
   const [site] = findAll(shopSchema, shop);
-  const [roles] = findAll(permissionsSchema, permissions);
   const [ship] = findAll(shippingSchema, shipping);
   const [pay] = findAll(payoutSchema, payout);
   return {
@@ -150,7 +214,7 @@ export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
     hosts: shopHosts(site),
     name: site?.name,
     payoutStatus: pay?.status,
-    roles: roles?.groups ?? [],
+    roles: readRoles(permissions),
     shippingEnabled: ship?.enabled ?? false,
     siteStatus: site?.status,
     verificationRestrictions: site?.verificationRestrictions ?? [],
