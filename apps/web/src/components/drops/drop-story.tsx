@@ -386,7 +386,12 @@ export const DropStory = ({
               <p className="text-muted-foreground text-sm">
                 {t(`${section}.notStarted`)}
               </p>
-            ) : (
+            ) : null}
+            {/* An open step with nothing made yet ("0 of 0 designs") needs
+                no count: its panel says what to do. */}
+            {state === "not_started" ||
+            (open &&
+              summaryOf(section, run, picked.length).count === 0) ? null : (
               <p className="text-muted-foreground text-sm">
                 {t(
                   `${section}.summary`,
