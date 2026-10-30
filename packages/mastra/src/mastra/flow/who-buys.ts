@@ -128,6 +128,29 @@ export const ideaWhoBuys = async (
   }
 };
 
+// A run reads who buys each idea while its design is drawn, so the drop
+// page finds it kept on the idea instead of waiting on Qloo (its places
+// take about 17 s). Best effort: a failure is logged at error level, never
+// fails the design, and the page reads again.
+export const warmWhoBuys = async (actor: Actor, ideaId: string) => {
+  if (!(await whoBuysOn(actor))) {
+    return;
+  }
+  try {
+    await ideaWhoBuys(actor, ideaId);
+  } catch (error) {
+    evlog.error({
+      error: {
+        code: "WHO_BUYS_WARM_FAILED",
+        message: error instanceof Error ? error.message : String(error),
+        name: "WhoBuysWarmFailed",
+        ...(error instanceof Error && { stack: error.stack }),
+      },
+      whoBuys: { ideaId, userId: actor.userId },
+    });
+  }
+};
+
 // Who buys a suggested direction (drop-directions) and where: read from
 // the Qloo entities rising for it. Not kept: Qloo's own answers are reused
 // for 30 minutes, and the suggestion itself is kept.

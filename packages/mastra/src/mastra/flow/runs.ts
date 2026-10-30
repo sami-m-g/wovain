@@ -33,6 +33,7 @@ import { createDesignProduct, publishDesignProduct } from "./products";
 import { assertAutopilot, assertCredits, charge } from "./spend";
 import { stageRunDrop, storeManagementOn } from "./store";
 import { runNotAtIdeas, runNotWaiting } from "./transitions";
+import { warmWhoBuys } from "./who-buys";
 
 // A run takes a seed through the flow: research → ideas → designs →
 // approval → products → publish → PAUSED campaigns. The request only saves
@@ -150,9 +151,11 @@ export const researchStep = async (
 // One idea's design, keyed by the run and the idea: a retried step keeps
 // the designs it drew and pays for none of them twice.
 const drawDesign = async (actor: Actor, runId: string, ideaId: string) => {
-  const drafted = await generateDesign(actor, ideaId, {
-    requestId: `run:${runId}:${ideaId}`,
-  });
+  // Who buys the idea is read while the design is drawn (./who-buys).
+  const [drafted] = await Promise.all([
+    generateDesign(actor, ideaId, { requestId: `run:${runId}:${ideaId}` }),
+    warmWhoBuys(actor, ideaId),
+  ]);
   const source = await getIdea(actor, ideaId);
   const { brief } = drafted;
   // What the step's code scorer checks (scorers/steps).
