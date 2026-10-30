@@ -29,6 +29,9 @@ const ANSWERS_KEPT = 500;
 const PLACES_TIMEOUT_MS = 60_000;
 const QLOO_CONCURRENCY = 4;
 const RETRIES = 2;
+// A 429 is retried longer, with jitter, so a burst (several merchants on Home
+// at once) spreads out instead of failing together.
+const RATE_LIMIT_RETRIES = 5;
 const RETRY_MS = 500;
 const TOO_MANY = 429;
 const SERVER_ERROR = 500;
@@ -502,8 +505,9 @@ const signalParams = ({ entities = [], tags = [] }: WhoSignals) => ({
 export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
   // At most QLOO_CONCURRENCY requests in flight per client: the hackathon
   // server answers 429 to a burst (brand discovery's twelve insights calls
-  // did, tried live on 2026-10-29). A 429 or 5xx is retried with backoff;
-  // any other failure is final.
+  // did, tried live on 2026-10-29). A 429 is retried up to
+  // RATE_LIMIT_RETRIES times with jittered backoff; a 5xx, timeout or network
+  // failure RETRIES times; any other failure is final.
   const limit = pLimit(QLOO_CONCURRENCY);
   // Qloo's answers, kept a while per URL: the same request (a brand's
   // references, an audience) is asked again within minutes by the new-drop
@@ -527,6 +531,9 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     key: string,
     timeoutMs: number
   ): Promise<unknown> => {
+    // Failures other than a 429 get RETRIES retries of their own, however many
+    // 429s came first.
+    let transientFailures = 0;
     const response = await limit(
       async () =>
         await pRetry(
@@ -550,7 +557,18 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
             }
             return reply;
           },
-          { minTimeout: RETRY_MS, retries: RETRIES }
+          {
+            minTimeout: RETRY_MS,
+            randomize: true,
+            retries: RATE_LIMIT_RETRIES,
+            shouldRetry: ({ error }) => {
+              if (error instanceof QlooHttpError && error.status === TOO_MANY) {
+                return true;
+              }
+              transientFailures += 1;
+              return transientFailures <= RETRIES;
+            },
+          }
         )
     );
     return await response.json();
