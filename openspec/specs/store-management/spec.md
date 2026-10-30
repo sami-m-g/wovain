@@ -8,7 +8,7 @@ Running the designer's Fourthwall store after products exist: readiness, the pro
 
 ### Requirement: Store writes go through the approval queue
 
-Every write wovain makes to the designer's store SHALL be an action in the approval queue, settled by the autonomy policy or by the designer, and SHALL be performed at most once after it is approved. A failed action SHALL be recorded on its approval and SHALL reach Error Tracking. The whole capability SHALL be off unless the `store-management` flag is on.
+Every write wovain makes to the designer's store, except their own confirmed publish in the drop flow, SHALL be an approval-queue action, settled by the autonomy policy or the designer and performed at most once. A failed action SHALL be recorded on its approval and SHALL reach Error Tracking. The capability SHALL be off unless the `store-management` flag is on.
 
 #### Scenario: Delivered twice
 
@@ -22,8 +22,13 @@ Every write wovain makes to the designer's store SHALL be an action in the appro
 
 #### Scenario: Designer publishes from the drop flow
 
-- **WHEN** the designer clicks publish on a product in the website's drop flow with `store-management` on
-- **THEN** the publish is queued and approved in their name, and the product goes live only when the executor runs it after the readiness check
+- **WHEN** the designer confirms publish on a product in the website's drop flow with `store-management` on and the shop is ready
+- **THEN** the product goes live at once and nothing is queued
+
+#### Scenario: Shop not ready
+
+- **WHEN** the designer confirms publish in the drop flow while the shop isn't ready to sell
+- **THEN** the publish is refused with the failing checks and the offer stays hidden
 
 ### Requirement: Executor lock and undo
 

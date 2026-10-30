@@ -653,21 +653,49 @@
       "price": "Price",
       "hidden": "Hidden",
       "inReview": "Waiting to publish",
-      "queuedHint": "Queued for your approval. Approve it in the approvals queue and it goes live.",
       "public": "Live",
       "view": "View on Fourthwall",
       "error": "Publish at least one product first.",
       "publish": "Publish to Fourthwall",
-      "submit": "Plan the campaign",
-      "mockupAlt": "{title}, product mockup"
+      "submit": "Go to the campaign",
+      "mockupAlt": "{title}, product mockup",
+      "confirm": {
+        "title": "Publish “{title}”?",
+        "body": "It goes live on {shop} at {price}, and customers can buy it right away. You can hide it again from the Store.",
+        "product": "Product",
+        "price": "Price",
+        "shop": "Shop",
+        "yourShop": "your Fourthwall shop",
+        "cancel": "Not yet",
+        "action": "Publish now"
+      }
     },
     "campaign": {
-      "title": "Build the campaign",
-      "lead": "One campaign per product with an ad per copy variant. It's created paused: nothing spends until you approve it.",
+      "title": "Launch the campaign",
+      "lead": "The ads for your live products: the creatives, the copy, who sees them and what they may spend. Nothing spends until you launch.",
+      "creatives": "Ad creatives",
+      "creativeAlt": "{title}, ad image",
+      "noCreatives": "Publish a product to see its ad images here.",
+      "copy": "Ad copy",
+      "copyPending": "wovain writes three ad variants per design, in the drop's tone, when you launch. You read them before anything spends.",
+      "audience": "Who sees it",
+      "budget": "Daily budget",
+      "budgetSet": "{budget} a day",
+      "rules": "Spend rules",
+      "rulesPending": "Your daily and monthly caps and wovain's profit rules apply from the first dollar. You see them in full before anything spends.",
+      "connectTitle": "Connect Meta to launch",
+      "connectBody": "Your creatives are ready. Connect your Meta ad account and you come back here to launch.",
+      "storeSetup": "Open Store setup",
+      "submit": "Launch campaign",
+      "confirm": {
+        "title": "Launch the campaign?",
+        "body": "{budget} a day on Meta, billed to your ad account. wovain pauses designs that don't sell and stops at your caps. You can pause it at any time.",
+        "cancel": "Not yet",
+        "action": "Launch now"
+      },
       "budgetLabel": "Daily budget (USD)",
       "budgetHint": "Between $1 and $500 a day. You can change it in Meta.",
       "budgetError": "Enter a daily budget from $1 to $500.",
-      "submit": "Build paused campaign",
       "perDay": "a day"
     },
     "done": {
@@ -730,7 +758,9 @@
           "paused": "Paused",
           "winner": "Winner"
         }
-      }
+      },
+      "launchedTitle": "Your campaign is launching",
+      "launchedLead": "{count, plural, one {# campaign} other {# campaigns}} at {budget} a day. Meta reviews new ads before they run, which can take a few hours."
     },
     "failed": {
       "title": "The drop stopped during {stage}",
@@ -768,7 +798,7 @@
       "review": "Saving your decision…",
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
-      "campaign": "Building the paused campaign on Meta…"
+      "campaign": "Writing the ads and staging the campaign on Meta…"
     },
     "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
     "autopilotUpgrade": "See plans",

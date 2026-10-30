@@ -1,6 +1,17 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@wovain/ui/components/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@wovain/ui/components/alert-dialog";
 import { Badge } from "@wovain/ui/components/badge";
 import { Button, buttonVariants } from "@wovain/ui/components/button";
 import {
@@ -42,16 +53,12 @@ import {
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import Image from "next/image";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { BriefStarters } from "@/components/app/brief-starters";
-import { CampaignControls } from "@/components/app/campaign-controls";
 import { CapsulePanel } from "@/components/app/capsule";
 import { Citations } from "@/components/app/citations";
-import {
-  CampaignCompetition,
-  IdeaCompetition,
-} from "@/components/app/competition-panel";
+import { IdeaCompetition } from "@/components/app/competition-panel";
 import { DesignPreview } from "@/components/app/design-preview";
 import { DictationMic } from "@/components/app/dictation-mic";
 import { DropStylePanel } from "@/components/app/drop-style-panel";
@@ -64,15 +71,14 @@ import {
   StepHeader,
 } from "@/components/app/wizard-parts";
 import { IdeaCardView } from "@/components/ideas/idea-card-view";
-import { Link } from "@/i18n/navigation";
-import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
+import type { Design, Idea, Product } from "@/lib/flow-client";
 import { namedWords } from "@/lib/flow-client";
+import { orpc } from "@/utils/orpc";
 
-const CENTS = 100;
 const IMAGE_SIZE = 640;
 
-// The products step's badge per product status. In review is a publish
-// queued with store-management on; the rest read as hidden.
+// The products step's badge per product status. In review is a publish an
+// agent queued for approval; the rest read as hidden.
 const STATUS_KEY: Partial<
   Record<Product["status"], "public" | "inReview" | "hidden">
 > = { in_review: "inReview", public: "public" };
@@ -80,13 +86,13 @@ export const MAX_BRIEF = 200;
 const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
 
-const useMoney = () => {
+export const useMoney = () => {
   const format = useFormatter();
   return (value: number) =>
     format.number(value, { currency: "USD", style: "currency" });
 };
 
-const BudgetField = ({
+export const BudgetField = ({
   budget,
   invalid,
   onBudget,
@@ -746,6 +752,72 @@ export const PickReviewStep = ({
   );
 };
 
+/**
+ * The confirm before a product goes live: the click in the flow is the
+ * merchant's approval, so it names the product, its price and the shop.
+ */
+const PublishConfirm = ({
+  onCancel,
+  onConfirm,
+  product,
+  title,
+}: {
+  onCancel: () => void;
+  onConfirm: (product: Product) => void;
+  product: Product | undefined;
+  title: string;
+}) => {
+  const t = useTranslations("Wizard.products.confirm");
+  const money = useMoney();
+  const shop = useQuery({
+    ...orpc.store.setup.queryOptions(),
+    enabled: product !== undefined,
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const shopName = shop.data?.shop.name ?? t("yourShop");
+  const price = money(product?.price ?? 0);
+  return (
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onCancel();
+        }
+      }}
+      open={product !== undefined}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("title", { title })}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("body", { price, shop: shopName })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+          <dt className="text-muted-foreground">{t("product")}</dt>
+          <dd className="font-medium">{title}</dd>
+          <dt className="text-muted-foreground">{t("price")}</dt>
+          <dd className="figures font-medium">{price}</dd>
+          <dt className="text-muted-foreground">{t("shop")}</dt>
+          <dd className="font-medium">{shopName}</dd>
+        </dl>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              if (product) {
+                onConfirm(product);
+              }
+            }}
+          >
+            {t("action")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 export const ProductsStep = ({
   products,
   titles,
@@ -761,15 +833,13 @@ export const ProductsStep = ({
 }) => {
   const t = useTranslations("Wizard.products");
   const money = useMoney();
+  const [confirming, setConfirming] = useState<Product>();
   return (
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => {
           const live = product.status === "public";
-          // With store-management on, a publish is queued: in review until
-          // the executor puts it live.
-          const queued = product.status === "in_review";
           const title = titles[product.designId] ?? "";
           const [mockup] = product.mockups;
           return (
@@ -803,7 +873,7 @@ export const ProductsStep = ({
                     </span>
                   </CardDescription>
                 </CardHeader>
-                <CardFooter className="mt-auto flex-wrap pb-4">
+                <CardFooter className="mt-auto pb-4">
                   {live && product.productUrl ? (
                     <a
                       className={cn(
@@ -820,146 +890,34 @@ export const ProductsStep = ({
                   ) : (
                     <Button
                       className="h-9 w-full"
-                      disabled={Boolean(busyLabel) || live || queued}
-                      onClick={() => onPublish(product)}
+                      disabled={Boolean(busyLabel) || live}
+                      onClick={() => setConfirming(product)}
                       variant="outline"
                     >
                       <Upload aria-hidden="true" data-icon="inline-start" />
                       {t("publish")}
                     </Button>
                   )}
-                  {queued ? (
-                    <p className="text-muted-foreground w-full text-xs">
-                      {t("queuedHint")}
-                    </p>
-                  ) : null}
                 </CardFooter>
               </Card>
             </li>
           );
         })}
       </ul>
+      <PublishConfirm
+        onCancel={() => setConfirming(undefined)}
+        onConfirm={(product) => {
+          setConfirming(undefined);
+          onPublish(product);
+        }}
+        product={confirming}
+        title={confirming ? (titles[confirming.designId] ?? "") : ""}
+      />
       <StepActions busyLabel={busyLabel}>
         <NextButton disabled={Boolean(busyLabel)} onClick={onNext}>
           {t("submit")}
         </NextButton>
       </StepActions>
-    </div>
-  );
-};
-
-export const CampaignStep = ({
-  budget,
-  budgetInvalid,
-  busyLabel,
-  onBudget,
-  onBack,
-  onNext,
-}: {
-  budget: string;
-  budgetInvalid: boolean;
-  busyLabel?: string | undefined;
-  onBudget: (value: string) => void;
-  onBack: () => void;
-  onNext: () => void;
-}) => {
-  const t = useTranslations("Wizard.campaign");
-  return (
-    <form
-      className="flex flex-col gap-6"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        onNext();
-      }}
-    >
-      <StepHeader lead={t("lead")} title={t("title")} />
-      <BudgetField
-        budget={budget}
-        invalid={budgetInvalid}
-        onBudget={onBudget}
-      />
-      <StepActions busyLabel={busyLabel} onBack={onBack}>
-        <NextButton disabled={Boolean(busyLabel)} type="submit">
-          {t("submit")}
-        </NextButton>
-      </StepActions>
-    </form>
-  );
-};
-
-const adsManagerUrl = (campaign: Campaign) =>
-  `https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${campaign.adAccountId}&selected_campaign_ids=${campaign.metaCampaignId}`;
-
-export const DoneStep = ({
-  campaigns,
-  onRestart,
-}: {
-  campaigns: Campaign[];
-  onRestart: () => void;
-}) => {
-  const t = useTranslations("Wizard.done");
-  const money = useMoney();
-  const [first] = campaigns;
-  return (
-    <div className="flex flex-col items-start gap-6">
-      <StepHeader
-        lead={t("lead", {
-          budget: money((first?.dailyBudgetCents ?? 0) / CENTS),
-          count: campaigns.length,
-        })}
-        title={t("title")}
-      />
-      {campaigns.map((campaign) => (
-        <section
-          aria-label={t("variants")}
-          className="flex w-full flex-col gap-3"
-          key={campaign.id}
-        >
-          <h3 className="text-muted-foreground text-xs font-medium">
-            {t("variants")}
-          </h3>
-          <ul className="grid gap-3 md:grid-cols-3">
-            {campaign.copy.map((variant) => (
-              <li className="flex" key={variant.headline}>
-                <Card className="w-full" size="sm">
-                  <CardHeader>
-                    <Badge className="w-fit" variant="secondary">
-                      {variant.angle}
-                    </Badge>
-                    <CardTitle className="mt-1 font-medium">
-                      {variant.headline}
-                    </CardTitle>
-                    <CardDescription>{variant.message}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </li>
-            ))}
-          </ul>
-          <a
-            className={cn(buttonVariants(), "h-9 w-fit px-4")}
-            href={adsManagerUrl(campaign)}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            {t("open")}
-            <ExternalLink aria-hidden="true" data-icon="inline-end" />
-          </a>
-          <CampaignCompetition campaign={campaign} />
-          <CampaignControls campaign={campaign} />
-        </section>
-      ))}
-      <div className="flex flex-wrap gap-3">
-        <Button className="h-9 px-4" onClick={onRestart} variant="outline">
-          {t("another")}
-        </Button>
-        <Link
-          className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-4")}
-          href="/dashboard/drops"
-        >
-          {t("history")}
-        </Link>
-      </div>
     </div>
   );
 };

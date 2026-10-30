@@ -461,22 +461,30 @@ describe("products.publish with store-management on", () => {
     expect(await ctx.db.select().from(approval)).toHaveLength(1);
   });
 
-  it("approves the merchant's own click and still publishes only through the executor", async () => {
+  it("publishes the merchant's own click at once, with nothing queued", async () => {
     const ctx = await setup(SHOP_WRITES);
     const { productId } = await seedProduct(ctx.db);
     const published = await publishThrough(ctx, productId, "web");
-    expect(published.status).toBe("in_review");
-    expect(published.approval?.status).toBe("approved");
-    expect(ctx.shop.count("ecommerce_update-offer-status")).toBe(0);
+    expect(published.status).toBe("public");
+    expect(published.approval).toBeNull();
+    expect(ctx.shop.count("ecommerce_update-offer-status")).toBe(1);
+    expect(await ctx.db.select().from(approval)).toHaveLength(0);
+  });
 
-    expect(
-      await executeStoreApproval(ctx.actor, published.approval?.id ?? "")
-    ).toEqual({ done: published.approval?.id });
-    const [row] = await ctx.db
-      .select()
-      .from(product)
-      .where(eq(product.id, productId));
-    expect(row?.status).toBe("public");
+  it("refuses the merchant's click while the shop isn't ready", async () => {
+    const ctx = await setup({
+      ...SHOP_WRITES,
+      "ecommerce_get-current-shop": {
+        baseUrl: "https://shop.example",
+        status: "COMING_SOON",
+        verificationRestrictions: [],
+      },
+    });
+    const { productId } = await seedProduct(ctx.db);
+    await expect(publishThrough(ctx, productId, "web")).rejects.toThrow(
+      "isn't ready"
+    );
+    expect(ctx.shop.count("ecommerce_update-offer-status")).toBe(0);
   });
 });
 
