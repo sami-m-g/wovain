@@ -53,6 +53,8 @@ interface EnvironmentArgs {
   deploy?: Deploy;
   // Instances kept warm; 0 (scale to zero) if unset.
   minInstances?: number;
+  // Adopts a database user that exists but is missing from the state.
+  adoptUser?: boolean;
 }
 
 // The deploy account and image repository of an environment main deploys.
@@ -159,11 +161,18 @@ export const appEnvironment = (args: EnvironmentArgs) => {
     length: 32,
     special: false,
   });
-  const user = new gcp.sql.User(`wovain-${name}`, {
-    instance: sql.name,
-    name: `wovain_${name}`,
-    password: password.result,
-  });
+  // Cloud SQL never returns a password, so an adopted user keeps its own: the
+  // one this RandomPassword set when it created the user.
+  const user = new gcp.sql.User(
+    `wovain-${name}`,
+    { instance: sql.name, name: `wovain_${name}`, password: password.result },
+    args.adoptUser === true
+      ? {
+          ignoreChanges: ["password"],
+          import: `${args.project}/wovain-${name}/wovain_${name}`,
+        }
+      : {}
+  );
   // Generated here; the provider secrets come from the caller.
   const values: Record<string, pulumi.Input<string> | undefined> = {
     "better-auth-secret": new random.RandomPassword(
