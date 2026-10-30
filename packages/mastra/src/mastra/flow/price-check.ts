@@ -3,6 +3,8 @@ import { checkPrice } from "@wovain/core/price-check";
 import type { PriceRules } from "@wovain/core/price-check";
 import { pricingRules } from "@wovain/core/pricing";
 import type { ToolCall } from "@wovain/core/upstream";
+import { dropItem } from "@wovain/db/schema/autonomy";
+import { and, eq } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { Actor } from "./actor";
@@ -40,10 +42,18 @@ const costsOf = async (
     const { bySize } = await customizationCost(call, customizationId);
     return { bySize, estimated: false };
   } catch (error) {
-    const item = await actor.db.query.dropItem.findFirst({
-      where: { productId },
-    });
-    if (item === undefined) {
+    const [item] = await actor.db
+      .select()
+      .from(dropItem)
+      .where(
+        and(
+          eq(dropItem.productId, productId),
+          eq(dropItem.userId, actor.userId)
+        )
+      )
+      .limit(1);
+    // Only a drop's product knows its blank and print areas.
+    if (item === undefined || itemStateOf(item) === undefined) {
       throw error;
     }
     log.error({

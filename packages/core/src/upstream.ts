@@ -425,6 +425,7 @@ const textData = (text: string): unknown => {
 const amountlessMoney = zod.object({
   amount: zod.undefined().optional(),
   currency: zod.string(),
+  currencyScale: zod.number(),
   value: zod.undefined().optional(),
 });
 const lacksAmount = (value: unknown) =>
