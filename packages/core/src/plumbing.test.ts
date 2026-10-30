@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { EvlogError } from "evlog";
 import { describe, expect, it, vi } from "vitest";
 
+import { searchCatalog } from "./fourthwall";
 import { external } from "./log";
 import { createSealer } from "./sealing";
 import { resultData } from "./upstream";
@@ -144,5 +145,43 @@ describe("resultData", () => {
         isError: true,
       })
     ).toThrow("Offer not found");
+  });
+
+  it("decodes Fourthwall's TOON catalog into renderable blanks", async () => {
+    const text = [
+      "pageNumber: 0",
+      "pageSize: 10",
+      "totalElements: 72",
+      "totalPages: 8",
+      "data[1]:",
+      "  - id: pro_8be1acca2fe7403f89",
+      "    brand: Comfort Colors",
+      "    name: Garment-Dyed Heavyweight T-Shirt",
+      "    slug: comfort-colors-1717",
+      "    priceFrom:",
+      "      value: 14.5",
+      "      currency: USD",
+      "    printDetails:",
+      "      supportsBackendRendering: true",
+      "      printAreas[2]{name,type,supportsBackendRendering}:",
+      "        Front,front_large,true",
+      "        Back,back_large,true",
+    ].join("\n");
+    const reply = resultData({ content: [{ text, type: "text" }] });
+    await expect(searchCatalog(() => Promise.resolve(reply))).resolves.toEqual([
+      {
+        baseCost: 14.5,
+        id: "pro_8be1acca2fe7403f89",
+        name: "Garment-Dyed Heavyweight T-Shirt",
+        region: "front_large",
+        slug: "comfort-colors-1717",
+      },
+    ]);
+  });
+
+  it("keeps prose that isn't JSON or TOON as text", () => {
+    expect(
+      resultData({ content: [{ text: "Product created", type: "text" }] })
+    ).toBe("Product created");
   });
 });
