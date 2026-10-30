@@ -1,7 +1,7 @@
 import { log as evlog } from "evlog";
 import { z } from "zod";
 
-import { findAll, findOne, replyShape } from "./upstream";
+import { findAll, findOne, replyShape, toonFailure } from "./upstream";
 import type { ToolCall } from "./upstream";
 
 // The Fourthwall calls a drop needs (openspec design-drops): blanks with
@@ -121,7 +121,7 @@ export const searchBlanks = async (
   if (blanks.length === 0) {
     logEmptyCatalog(
       `"${query}"`,
-      `products=${listed.length} shape=${replyShape(reply)}`
+      `products=${listed.length} shape=${replyShape(reply)}${toonFailure(reply)}`
     );
   }
   return blanks;

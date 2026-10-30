@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import type { Artwork } from "./design";
 import { logEmptyCatalog, money } from "./fourthwall-drops";
-import { findAll, findOne, replyShape } from "./upstream";
+import { findAll, findOne, replyShape, toonFailure } from "./upstream";
 import type { ToolCall } from "./upstream";
 
 // The merchant's Fourthwall shop through its MCP server: browse the catalog,
@@ -61,7 +61,7 @@ const summarizeReply = (reply: unknown, renderable: number) => {
   const listed = findAll(catalogSchema, reply).length;
   const preview =
     typeof reply === "string" ? ` text="${reply.slice(0, REPLY_PREVIEW)}"` : "";
-  return `products=${listed} renderable=${renderable} shape=${replyShape(reply)}${preview}`;
+  return `products=${listed} renderable=${renderable} shape=${replyShape(reply)}${preview}${toonFailure(reply)}`;
 };
 
 interface CatalogResult {
