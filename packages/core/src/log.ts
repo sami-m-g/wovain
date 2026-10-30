@@ -7,7 +7,7 @@ import type { RequestLogger } from "evlog";
 // error tracking by its code.
 
 export type Logger = Pick<RequestLogger, "set"> &
-  Partial<Pick<RequestLogger, "error">>;
+  Partial<Pick<RequestLogger, "debug" | "error">>;
 
 export type Provider =
   | "fal"

@@ -207,6 +207,19 @@ describe("createTrends", () => {
     expect(top?.signals.marketHits).toBe(2);
   });
 
+  it("answers a repeat query within 24 hours without a Tavily call", async () => {
+    const { client, search } = fakeTavily();
+    const trends = createTrends(client, qlooGhibli);
+    const debug = vi.fn();
+
+    await trends.research("ghibli");
+    const calls = search.mock.calls.length;
+    await trends.research("ghibli", { debug, set: vi.fn() });
+
+    expect(search).toHaveBeenCalledTimes(calls);
+    expect(debug).toHaveBeenCalled();
+  });
+
   it("makes every idea a Qloo tag", async () => {
     const { client } = fakeTavily();
 
