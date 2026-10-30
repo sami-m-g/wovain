@@ -653,6 +653,7 @@
       "price": "Prix",
       "hidden": "Masqué",
       "inReview": "En attente de publication",
+      "queuedHint": "En attente de votre approbation. Approuvez-le dans la file d'approbations et il passe en ligne.",
       "public": "En ligne",
       "view": "Voir sur Fourthwall",
       "error": "Publiez d'abord au moins un produit.",
