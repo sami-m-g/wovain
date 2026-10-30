@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { ORPCError } from "@orpc/server";
+import { billingCatalog } from "@wovain/billing/catalog";
 import { creditBalance, releaseCredits } from "@wovain/billing/credits";
 import { applyGrant } from "@wovain/billing/mirror";
 import { createBilling } from "@wovain/billing/service";
@@ -13,7 +14,7 @@ import type { Database } from "@wovain/db";
 import { relations } from "@wovain/db/relations";
 import { user } from "@wovain/db/schema/auth";
 import { brandProfile, decisionTrace } from "@wovain/db/schema/autonomy";
-import { creditReservation } from "@wovain/db/schema/billing";
+import { creditGrant, creditReservation } from "@wovain/db/schema/billing";
 import { externalWrite } from "@wovain/db/schema/durable";
 import {
   campaign,
@@ -1864,6 +1865,24 @@ describe("startPickedRun", () => {
     });
     // One research charge for the pick, the dossier included.
     expect(await db.select().from(creditReservation)).toHaveLength(1);
+    flagsOn.clear();
+  });
+
+  it("refuses a pick it couldn't draw a design for, before charging anything", async () => {
+    flagsOn.add("drop-directions");
+    const { actor, db, runs } = await withFal();
+    await keep(db);
+    // Enough for the research, not for the design after it.
+    await db
+      .update(creditGrant)
+      .set({ remaining: billingCatalog().creditCost.research + 1 });
+
+    await expect(
+      startPickedRun(actor, { countries: ["US"], dailyBudget: 5, pick })
+    ).rejects.toMatchObject({ status: 402 });
+    expect(runs.start).not.toHaveBeenCalled();
+    expect(await db.select().from(run)).toEqual([]);
+    expect(await db.select().from(creditReservation)).toEqual([]);
     flagsOn.clear();
   });
 

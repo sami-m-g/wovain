@@ -775,6 +775,8 @@ export const startPickedRun = async (
     throw new Error("No run engine to start the run");
   }
   await requireFal(actor);
+  // The pick is only worth paying for if its design can be drawn too.
+  await assertCredits(actor, "research", "design");
   const saved = await charge(actor, "research", {}, async () => {
     const direction = await pickedDirection(actor, pick);
     const picked = await savePicked(actor, direction);
