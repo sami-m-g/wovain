@@ -14,4 +14,5 @@
 
 - [ ] `pnpm run check`, `check-types`, `knip`, `spec:validate` and `test` pass
 - [ ] Spec change archived (`openspec archive <change>`), if this is a feature
+- [ ] Landing page (hero demo, copy, FAQ in en, es, fr) and docs updated, if this is a feature
 - [ ] No secrets or real env values added

@@ -109,7 +109,7 @@
   },
   "Home": {
     "heroTitle": "Une phrase. Un drop entier.",
-    "heroLead": "Qloo vous dit ce qui va se vendre et qui l'achète, preuves à l'appui : des boutiques qui en font la pub depuis des semaines et des best-sellers sur les marketplaces. wovain en fait votre produit et une campagne : il dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
+    "heroLead": "Qloo vous dit qui achète et ce qui monte. wovain ne garde que les idées dont on a la preuve qu'elles se vendent (des boutiques qui en font la pub depuis des semaines, des best-sellers sur les marketplaces) et où il reste de la place, puis dessine les pièces, les met en vente sur votre boutique Fourthwall avec une marge qui tient et prépare les publicités Meta, en pause.",
     "briefLabel": "Sur quoi porte votre prochain drop ?",
     "briefPlaceholder": "Dessins botaniques au trait, délavés, pour une capsule de printemps",
     "briefHint": "Une phrase suffit : l'ambiance, une référence, pour qui. Ou partez de ce qui se vend maintenant.",
@@ -162,7 +162,7 @@
       },
       {
         "question": "Combien ça coûte ?",
-        "answer": "Les formules de wovain sont sur la page tarifs. La production est payée par chaque vente via Fourthwall, les visuels sont facturés par fal et les annonces par Meta, chacun sur votre propre compte."
+        "answer": "Les formules de wovain sont sur la page tarifs. La production est payée par chaque vente via Fourthwall, les visuels sont facturés par fal et les annonces par Meta, chacun sur votre propre compte. Si la recherche ne trouve aucune idée, wovain rend les crédits."
       },
       {
         "question": "Puis-je l'utiliser dans ChatGPT ?",
@@ -183,28 +183,18 @@
       {
         "question": "Lesquels de mes designs dois-je promouvoir ?",
         "answer": "Tous, au début. wovain teste jusqu'à cinq designs dans une seule campagne, donne à chacun une part équitable du budget, met en pause ceux qui perdent de l'argent et vous montre le gagnant, pour que le budget suive le design qui vend."
+      },
+      {
+        "question": "Comment wovain choisit-il quoi vendre ?",
+        "answer": "Il part des données de goût de Qloo sur vos acheteurs, puis ne garde que les idées dont on a la preuve qu'elles se vendent : des boutiques qui en font la pub depuis des semaines, des best-sellers et des avis sur les marketplaces. Les thèmes saturés sont écartés et le reste est classé selon la demande qui reste pour une jeune marque. Chaque idée est une fiche avec ses sources en lien, et wovain compte les idées qu'il a écartées."
       }
     ],
     "heroCta": "Lancer un drop",
     "demo": {
-      "alt": "Un exemple de drop dans wovain. Un brief d'une ligne est saisi. Trois idées de tendances apparaissent, chacune avec son score et ses indices. Quatre designs apparaissent en maquettes de t-shirt Fourthwall avec leur contrôle d'impression, et le designer en approuve un. Il devient un produit masqué sur Fourthwall, avec son prix et son bénéfice. Un aperçu de publicité Meta apparaît, et la campagne est créée en pause.",
+      "alt": "Un drop d'exemple dans wovain. Un brief d'une ligne est saisi. Une fiche d'idée apparaît avec quoi faire, pourquoi ça se vend, qui l'achète et où, et la concurrence, après que wovain a écarté les idées aux preuves faibles, et la designer la choisit. Quatre designs apparaissent en maquettes de t-shirt Fourthwall avec leurs contrôles d'impression, et la designer en approuve un. Il devient un produit masqué sur Fourthwall, avec son prix et son bénéfice. Un aperçu de publicité Meta apparaît et la campagne est créée en pause.",
       "pause": "Mettre l'exemple en pause",
       "play": "Lire l'exemple",
       "brief": "Dessins botaniques délavés au trait pour une capsule de printemps, pour ceux qui jardinent sur leur balcon.",
-      "ideas": [
-        {
-          "theme": "Jardins de balcon",
-          "moment": "Le jardinage en petit espace progresse pour la troisième semaine."
-        },
-        {
-          "theme": "Trocs de graines",
-          "moment": "Les bibliothèques prêtent des graines ce printemps."
-        },
-        {
-          "theme": "Herbiers",
-          "moment": "Populaire, et déjà encombré."
-        }
-      ],
       "designs": [
         "Fern Study No. 3",
         "Garden Hours",
@@ -219,7 +209,23 @@
         "cta": "Acheter"
       },
       "paused": "Campagne : en pause",
-      "initials": "VL"
+      "initials": "VL",
+      "idea": {
+        "title": "T-shirt aux fougères pour jardiniers de balcon",
+        "concept": "Des dessins de fougères délavés, au trait, sur un t-shirt épais, pour celles et ceux qui jardinent en petit espace.",
+        "buyer": "jardiniers de balcon qui achètent aux petites marques",
+        "style": "trait délavé",
+        "tag": "Jardinage en pots",
+        "sentence": "Le jardinage en petit espace progresse pour la troisième semaine et les boutiques gardent leurs publicités botaniques.",
+        "gender": "surtout des femmes",
+        "interests": ["Plantes d'intérieur", "Slow living"],
+        "places": ["Lyon", "Nantes", "Lille"],
+        "gap": "t-shirts pour qui cultive des légumes sur son balcon",
+        "sources": [
+          "Jardins de balcon, une tendance en hausse",
+          "T-shirts botaniques : best-sellers des marketplaces"
+        ]
+      }
     },
     "results": {
       "title": "En vente, en pub, mesuré",
@@ -249,7 +255,7 @@
     },
     "free": {
       "title": "Gratuit pour commencer",
-      "body": "{credits, number} crédits par mois, de quoi essayer un drop complet. wovain ne prend jamais de part sur vos ventes.",
+      "body": "{credits, number} crédits par mois, de quoi essayer un drop complet. Si la recherche ne trouve aucune idée, vos crédits vous sont rendus. wovain ne prend jamais de part sur vos ventes.",
       "link": "Voir les tarifs"
     },
     "faqSection": {
@@ -269,7 +275,7 @@
       "steps": {
         "sell": {
           "title": "Choisir quoi vendre",
-          "body": "Choisissez une des pistes Qloo de la semaine : ce qui monte, qui l'achète, et la concurrence en face."
+          "body": "Partez des idées que wovain a gardées : chaque fiche dit quoi faire, pourquoi ça se vend, qui l'achète et où, et le degré de concurrence. Les idées aux preuves faibles sont écartées et comptées."
         },
         "store": {
           "title": "Préparer la boutique",
@@ -277,7 +283,7 @@
         },
         "meta": {
           "title": "Connecter Meta, fixer des limites",
-          "body": "Votre compte publicitaire, le paiement et la Page, puis le maximum que wovain peut dépenser par jour et par mois."
+          "body": "Une seule connexion Meta couvre votre compte publicitaire, la Page et le pixel. Fixez le maximum que wovain peut dépenser par jour et par mois et choisissez vos alertes : e-mail, mobile ou Telegram."
         },
         "design": {
           "title": "Approuver un design",
@@ -285,7 +291,7 @@
         },
         "ads": {
           "title": "Lancer les publicités",
-          "body": "Relisez la publicité et son budget quotidien, puis lancez-la. Rien ne dépasse vos limites."
+          "body": "Relisez la publicité et son budget quotidien, puis lancez-la. Rien ne dépasse vos limites, et les règles automatiques de Meta arrêtent les publicités même si wovain est en panne."
         },
         "campaign": {
           "title": "Voir votre campagne",
