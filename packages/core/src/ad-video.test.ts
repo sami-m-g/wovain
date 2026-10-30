@@ -112,7 +112,7 @@ describe("director-made video ads", () => {
       start_image_url: "https://a.test/cast.png",
     });
     expect(input.prompt).toContain("Shot 1 (0-3s)");
-    expect(input.prompt).toContain('"Night shift, all good."');
+    expect(input.prompt).toContain('"Night shift, all good". No other speech.');
   });
 
   it("captions the hook first and ends on the call to action and the AI label", () => {
