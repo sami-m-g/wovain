@@ -439,14 +439,76 @@ export const DOSSIER_SCHEMA = {
         "How crowded the theme already is on print-on-demand marketplaces: low, medium or high, then one sentence why.",
       type: "string",
     },
+    // The report at a glance: what the drop page shows before the full text.
+    summary: {
+      description:
+        "The same answers at a glance, one short line each, for a designer scanning the report.",
+      properties: {
+        price: {
+          description:
+            "Where most comparable shirts are priced, at most 10 words, e.g. 'Most sell for $24 to $28 on Etsy'.",
+          type: "string",
+        },
+        risks: {
+          description:
+            "Up to 3 risks, at most 8 words each, e.g. 'Movie title is trademarked'.",
+          items: { type: "string" },
+          type: "array",
+        },
+        saturation: {
+          description:
+            "Why it is that crowded, at most 12 words, e.g. 'Hundreds of generic fern tees, few in this style'.",
+          type: "string",
+        },
+        saturation_level: {
+          description:
+            "How crowded the theme is on print-on-demand marketplaces: exactly low, medium or high.",
+          type: "string",
+        },
+        why_now: {
+          description:
+            "Why buyers want it this month, at most 12 words, e.g. 'Season 2 premieres next week'.",
+          type: "string",
+        },
+      },
+      required: ["why_now", "saturation_level", "saturation", "price", "risks"],
+      type: "object",
+    },
     why_now: {
       description:
         "Two or three sentences on why this theme matters to buyers this month, citing recent events.",
       type: "string",
     },
   },
-  required: ["why_now", "saturation", "price_band", "risks", "citations"],
+  required: [
+    "why_now",
+    "saturation",
+    "price_band",
+    "risks",
+    "summary",
+    "citations",
+  ],
 } as const;
+
+const SATURATION_LEVELS = ["low", "medium", "high"] as const;
+export type SaturationLevel = (typeof SATURATION_LEVELS)[number];
+// A one-line answer: anything longer is cut, never wrapped into a paragraph.
+const LINE_MAX = 120;
+const SUMMARY_RISKS_MAX = 3;
+
+const saturationLevelOf = (
+  level: string | undefined
+): SaturationLevel | undefined =>
+  SATURATION_LEVELS.find((one) => one === level?.trim().toLowerCase());
+
+// The report at a glance. Dossiers saved before it existed have none.
+const summarySchema = z.object({
+  price: z.string().default(""),
+  risks: z.array(z.string()).default([]),
+  saturation: z.string().default(""),
+  saturation_level: z.string().optional(),
+  why_now: z.string().default(""),
+});
 
 // Tavily fills the schema; anything it leaves out reads as empty.
 const dossierSchema = z.object({
@@ -463,8 +525,19 @@ const dossierSchema = z.object({
     .default({ note: "" }),
   risks: z.array(z.string()).default([]),
   saturation: z.string().default(""),
+  // Read on its own below: a summary Tavily got wrong never fails the report.
+  summary: z.unknown().optional(),
   why_now: z.string().min(1),
 });
+
+/** The report at a glance: one short line per answer. */
+export interface DossierSummary {
+  whyNow: string;
+  saturationLevel?: SaturationLevel | undefined;
+  saturation: string;
+  price: string;
+  risks: string[];
+}
 
 export interface Dossier {
   whyNow: string;
@@ -476,6 +549,7 @@ export interface Dossier {
   };
   risks: string[];
   citations: Citation[];
+  summary?: DossierSummary | undefined;
 }
 
 // Tavily Research's model (TAVILY_RESEARCH_MODEL, set per environment from
@@ -545,6 +619,8 @@ export const dossierOf = (
   sources: { title: string; url: string }[]
 ): Dossier => {
   const parsed = dossierSchema.parse(parseContent(content));
+  const glance = summarySchema.safeParse(parsed.summary);
+  const summary = glance.success ? glance.data : undefined;
   return {
     citations: citationsOf([...parsed.citations, ...sources]).slice(0, 10),
     priceBand: {
@@ -555,6 +631,18 @@ export const dossierOf = (
     risks: parsed.risks.slice(0, LIST_MAX).map((risk) => clip(risk, TEXT_MAX)),
     saturation: clip(parsed.saturation, TEXT_MAX),
     whyNow: clip(parsed.why_now, TEXT_MAX),
+    ...(summary !== undefined && {
+      summary: {
+        price: clip(summary.price, LINE_MAX),
+        risks: summary.risks
+          .filter((risk) => risk.trim() !== "")
+          .slice(0, SUMMARY_RISKS_MAX)
+          .map((risk) => clip(risk, LINE_MAX)),
+        saturation: clip(summary.saturation, LINE_MAX),
+        saturationLevel: saturationLevelOf(summary.saturation_level),
+        whyNow: clip(summary.why_now, LINE_MAX),
+      },
+    }),
   };
 };
 

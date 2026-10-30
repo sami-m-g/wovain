@@ -782,11 +782,17 @@
       "dossierHint": "Tavily lee la web y tus datos de gusto de Qloo, y te dice por qué ahora, cuánta competencia hay, a qué precio se venden las camisetas y los riesgos. Tarda alrededor de un minuto.",
       "dossierPending": "Investigando. Tarda alrededor de un minuto.",
       "dossierFailed": "La investigación no terminó.",
-      "dossierTitle": "Investigación",
+      "dossierTitle": "Informe de investigación",
       "whyNow": "Por qué ahora",
       "saturation": "Cuánta competencia",
       "priceBand": "A qué precio se venden",
       "risks": "Riesgos",
+      "readFull": "Leer el informe completo",
+      "level": {
+        "low": "Abierto",
+        "medium": "Algo de competencia",
+        "high": "Saturado"
+      },
       "trademarkTitle": "Revisión de marcas",
       "trademarkBlocked": "coincide con una marca registrada. Cambia el texto antes de vender.",
       "trademarkCaution": "ya se vende en marketplaces.",

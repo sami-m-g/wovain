@@ -146,36 +146,47 @@ const WhySection = ({ lead }: { lead: Idea | undefined }) => {
         {words ? (
           <h3 className="text-base font-semibold">{words.title}</h3>
         ) : null}
-        {words ? (
-          <p className="max-w-[70ch] text-sm">
-            {words.concept} {words.whyNow}
-          </p>
-        ) : (
-          <NotAvailable reason={t("noMoment")} />
-        )}
+        {words ? <p className="max-w-[70ch] text-sm">{words.concept}</p> : null}
       </div>
-      {research.sources.length > 0 ? (
-        <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          {research.sources.slice(0, MAX_SOURCES).map((source, index) => (
-            <li key={source.url}>
-              <a
-                className="text-accent-text inline-flex min-h-6 max-w-64 items-center gap-1 font-semibold underline"
-                href={source.url}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <span className="figures">[{index + 1}]</span>
-                <span className="truncate">{source.title}</span>
-                <ExternalLink aria-hidden="true" className="size-3 shrink-0" />
-              </a>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <NotAvailable reason={t("noSources")} />
-      )}
-      {/* The research dossier: started with a Home pick, shown once there. */}
-      <IdeaDossier automatic ideaId={lead.id} />
+      {/* The research report, started with the pick, tells why now with its
+          sources; until it is done the idea's own why-now and sources stand
+          in, so the two are never shown together. */}
+      <IdeaDossier
+        automatic
+        fallback={
+          <div className="flex flex-col gap-2">
+            {words ? (
+              <p className="max-w-[70ch] text-sm">{words.whyNow}</p>
+            ) : (
+              <NotAvailable reason={t("noMoment")} />
+            )}
+            {research.sources.length > 0 ? (
+              <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                {research.sources.slice(0, MAX_SOURCES).map((source, index) => (
+                  <li key={source.url}>
+                    <a
+                      className="text-accent-text inline-flex min-h-6 max-w-64 items-center gap-1 font-semibold underline"
+                      href={source.url}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <span className="figures">[{index + 1}]</span>
+                      <span className="truncate">{source.title}</span>
+                      <ExternalLink
+                        aria-hidden="true"
+                        className="size-3 shrink-0"
+                      />
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <NotAvailable reason={t("noSources")} />
+            )}
+          </div>
+        }
+        ideaId={lead.id}
+      />
     </Section>
   );
 };
