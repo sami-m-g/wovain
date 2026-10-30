@@ -81,6 +81,8 @@ const cuesOf = (idea: TrendIdea) =>
     ),
   ].slice(0, 12);
 
+const STYLE_TIMEOUT_MS = 45_000;
+
 // Three tones and up to three palettes for one drop, the palettes held to
 // the drop's blank; the first of each is picked until the merchant chooses.
 export const suggestDropStyle = async (
@@ -114,6 +116,8 @@ export const suggestDropStyle = async (
     schema: styleSchema,
     system: STYLE_SYSTEM,
     temperature: 0.6,
+    // The merchant waits on it, and the drop is made without it.
+    timeoutMs: STYLE_TIMEOUT_MS,
   });
   const palettes = reply.palettes.flatMap((proposal) => {
     const fit = fitPalette(proposal, blank.colors);

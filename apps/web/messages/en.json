@@ -900,7 +900,7 @@
       "checkedOn": "Checked on {blank}",
       "guardrails": "Your brand voice still applies: {voice}",
       "loading": "Suggesting a tone and colours from this drop's buyers…",
-      "failed": "We couldn't suggest a tone and colours just now.",
+      "failed": "We couldn't suggest a tone and colours just now. You can still press Make designs: the designs pick their own colours.",
       "retry": "Try again",
       "info": "About {field}",
       "source": "From Qloo: suggested for this drop's Qloo theme and what its buyers also like."

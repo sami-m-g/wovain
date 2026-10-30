@@ -1,3 +1,5 @@
+import { once } from "node:events";
+
 import { ErrorCategory, ErrorDomain, MastraError } from "@mastra/core/error";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -64,5 +66,49 @@ describe("a reply that misses the schema", () => {
 
     await expect(ask(kitWith(generate))).rejects.toThrow("socket hang up");
     expect(generate).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 2026-10-30: drop_style kept "Suggesting a tone and colours…" spinning for
+// over two minutes (a 90 s call, then its shape retry). A call the merchant
+// waits on sets one budget for every attempt.
+describe("a call with a time budget", () => {
+  it("gives every attempt the same abort signal", async () => {
+    const generate = vi
+      .fn()
+      .mockRejectedValueOnce(misshapen())
+      .mockResolvedValueOnce({ messages: [], object: { title: "Moth tee" } });
+
+    await createNemotron(kitWith(generate))({
+      name: "design_judge",
+      prompt: "{}",
+      schema,
+      system: "Judge.",
+      timeoutMs: 45_000,
+    });
+    const [first, second] = generate.mock.calls.map(
+      (call) => call[1].abortSignal as AbortSignal
+    );
+    expect(first).toBeInstanceOf(AbortSignal);
+    expect(second).toBe(first);
+  });
+
+  it("fails once the budget runs out", async () => {
+    const generate = vi.fn(
+      async (_input: unknown, options: { abortSignal: AbortSignal }) => {
+        await once(options.abortSignal, "abort");
+        throw options.abortSignal.reason;
+      }
+    );
+
+    await expect(
+      createNemotron(kitWith(generate as ReturnType<typeof vi.fn>))({
+        name: "design_judge",
+        prompt: "{}",
+        schema,
+        system: "Judge.",
+        timeoutMs: 10,
+      })
+    ).rejects.toThrow();
   });
 });

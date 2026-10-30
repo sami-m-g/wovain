@@ -45,6 +45,9 @@ export interface Ask<T extends z.ZodType> {
   schema: T;
   system: string;
   temperature?: number;
+  // The longest the whole call may take, its retries included, for a call
+  // the merchant waits on. Unset, each model call gets its own 90 s.
+  timeoutMs?: number | undefined;
 }
 
 // The trace of the call in progress, for the implementation of `ask`.
