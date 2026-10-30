@@ -42,6 +42,7 @@ import {
   approveIdeas,
   getRun,
   listRuns,
+  startPickedRun,
   startRun,
 } from "@wovain/mastra/flow/runs";
 import {
@@ -335,6 +336,31 @@ export const runsRouter = {
       })
     )
     .handler(async ({ context, input }) => await startRun(context, input)),
+  // A direction picked from "What sells now": the drop starts at its
+  // designs with that idea and its evidence, without new research.
+  startFromDirection: funnelProcedure("run_started")
+    .errors(connectionErrors)
+    .input(
+      z.object({
+        countries: countries.default(["US"]),
+        dailyBudget: dailyBudget.default(15),
+        ignoreBrand: z.boolean().default(false),
+        key: z.string().min(1).max(32),
+        round: z.number().int().min(0).max(1000).default(0),
+        theme: z.string().min(1).max(200),
+      })
+    )
+    .handler(
+      async ({
+        context,
+        input: { countries: where, dailyBudget: budget, ...pick },
+      }) =>
+        await startPickedRun(context, {
+          countries: where,
+          dailyBudget: budget,
+          pick,
+        })
+    ),
   // Opening the app finds the suggestions in the background when the kept
   // ones are missing or stale.
   warmDirections: protectedProcedure.handler(

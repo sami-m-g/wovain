@@ -120,3 +120,30 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
     .click();
   await expect(page.getByText("Approved").first()).toBeVisible();
 });
+
+// A researched idea picked on the Home: the drop opens at its designs with
+// that idea, never at Trends and never asking which ideas to draw.
+test("a Home pick opens the drop at its designs @smoke", async ({
+  merchant: _merchant,
+  page,
+}) => {
+  test.setTimeout(isSmoke ? 480_000 : 120_000);
+  await page.goto("/dashboard");
+  const start = page.getByRole("button", { name: "Start this drop" }).first();
+  const empty = page.getByText(/Qloo found nothing new rising right now/u);
+  await expect(start.or(empty)).toBeVisible({ timeout: 60_000 });
+  // Real providers may honestly find nothing to pick.
+  if (isSmoke && (await empty.isVisible())) {
+    return;
+  }
+  await start.click();
+  await expect(page).toHaveURL(/\/dashboard\/drops\/[\w-]+$/u, {
+    timeout: 30_000,
+  });
+  await expect(
+    page.getByRole("img", { name: /^Design: /u }).first()
+  ).toBeVisible({ timeout: 180_000 });
+  await expect(page.getByRole("button", { name: "See designs" })).toHaveCount(
+    0
+  );
+});

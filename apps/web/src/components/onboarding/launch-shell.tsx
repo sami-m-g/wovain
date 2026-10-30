@@ -109,7 +109,10 @@ export const SellStep = ({
     <div className="flex flex-col gap-6">
       <StepHeader lead={t("lead")} title={t("title")} />
       <div data-tour="sell">
-        <DropDirections disabled={false} onUse={setDraft} />
+        <DropDirections
+          disabled={false}
+          onUse={(pick) => setDraft(pick.brief)}
+        />
       </div>
       <Field>
         <FieldLabel htmlFor={id}>{tBrief("label")}</FieldLabel>

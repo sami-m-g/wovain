@@ -123,6 +123,19 @@ describe("seller-run steps", () => {
     );
   });
 
+  it("a picked direction skips naming and the ideas gate, drawing its idea", async () => {
+    const picked = {
+      ...from,
+      ideaIds: ["i9"],
+      input: { ...input, pick: { ideaId: "i9" } },
+    };
+    expect(await execute("name", picked)).toEqual(picked);
+    expect(await execute("ideas", picked)).toEqual(picked);
+    expect(nameIdeas).not.toHaveBeenCalled();
+    expect(awaitIdeas).not.toHaveBeenCalled();
+    expect(suspend).not.toHaveBeenCalled();
+  });
+
   it("name fails the run when no idea could be named", async () => {
     vi.mocked(nameIdeas).mockResolvedValue([] as never);
     expect(await execute("name", { ...from, ideaIds: ["i1"] })).toBe(BAILED);

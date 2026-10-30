@@ -82,6 +82,9 @@ export interface RunInput {
   autopilot: boolean;
   countries: string[];
   dailyBudget: number;
+  // A drop started from a picked direction: its one idea, already saved
+  // with its evidence, so the run skips research and the ideas gate.
+  pick?: { ideaId: string } | undefined;
   seed: string;
 }
 

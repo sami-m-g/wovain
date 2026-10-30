@@ -31,6 +31,15 @@ type Directions = Extract<DirectionsChunk, { kind: "done" }>["answer"];
 type Direction = Directions["directions"][number];
 type Step = Extract<DirectionsChunk, { kind: "step" }>["step"];
 
+/** A picked direction: its brief, and where it sits in the kept answer. */
+export interface DirectionPick {
+  brief: string;
+  ignoreBrand: boolean;
+  key: string;
+  round: number;
+  theme: string;
+}
+
 // What the chunks streamed so far add up to: the whole answer once done,
 // else the cards written so far (best first) and the step under way.
 const progressOf = (chunks: readonly DirectionsChunk[]) => {
@@ -217,7 +226,7 @@ const DirectionRow = ({
 }: {
   direction: Direction;
   disabled: boolean;
-  onUse: (brief: string) => void;
+  onUse: (direction: Direction) => void;
   story: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
@@ -244,7 +253,7 @@ const DirectionRow = ({
           <Button
             className="h-9 w-fit px-4"
             disabled={disabled}
-            onClick={() => onUse(direction.brief)}
+            onClick={() => onUse(direction)}
             type="button"
           >
             {t("use")}
@@ -260,7 +269,7 @@ const DirectionRow = ({
         aria-describedby={`${id}-why`}
         className="group focus-visible:ring-ring flex items-start justify-between gap-3 rounded-md text-start outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={disabled}
-        onClick={() => onUse(direction.brief)}
+        onClick={() => onUse(direction)}
         type="button"
       >
         <span className="flex flex-col gap-1">
@@ -361,7 +370,7 @@ const DirectionsBody = ({
   error: Error | undefined;
   loading: boolean;
   onRetry: () => Promise<void>;
-  onUse: (brief: string) => void;
+  onUse: (direction: Direction) => void;
   retrying: boolean;
   seconds: number;
   step: Step | undefined;
@@ -538,7 +547,7 @@ export const DropDirections = ({
   disabled: boolean;
   // h2 where it heads a page section (the story Home), else h3.
   heading?: "h2" | "h3";
-  onUse: (brief: string) => void;
+  onUse: (pick: DirectionPick) => void;
 }) => {
   const t = useTranslations("Wizard.directions");
   const headingId = useId();
@@ -591,7 +600,15 @@ export const DropDirections = ({
         onRetry={async () => {
           await directions.refetch();
         }}
-        onUse={onUse}
+        onUse={(direction) =>
+          onUse({
+            brief: direction.brief,
+            ignoreBrand,
+            key: direction.key,
+            round,
+            theme: direction.theme,
+          })
+        }
         retrying={directions.isFetching}
         seconds={seconds}
         step={step}

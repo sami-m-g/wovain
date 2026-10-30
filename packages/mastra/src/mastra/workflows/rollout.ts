@@ -43,6 +43,15 @@ const failOnError = async (
   }
 };
 
+// Draws the ideas, then waits at the approval gate (or ends the run when
+// every design is already decided).
+const drawAndWait = async (actor: Actor, runId: string, ideaIds: string[]) => {
+  await designStep(actor, runId, ideaIds);
+  if (!(await awaitApproval(actor, runId))) {
+    await finishRun(actor, runId, { status: "completed" });
+  }
+};
+
 // The legacy flow: every step awaited inside the request that started it.
 export const createLegacyRunEngine = (services: RunServices): RunEngine => {
   const actorFor = (userId: string): Actor => ({ ...services, userId });
@@ -58,12 +67,11 @@ export const createLegacyRunEngine = (services: RunServices): RunEngine => {
         return;
       }
       const actor = actorFor(row.userId);
-      await failOnError(actor, runId, async () => {
-        await designStep(actor, runId, ideaIds);
-        if (!(await awaitApproval(actor, runId))) {
-          await finishRun(actor, runId, { status: "completed" });
-        }
-      });
+      await failOnError(
+        actor,
+        runId,
+        async () => await drawAndWait(actor, runId, ideaIds)
+      );
     },
     // The legacy flow never continued past approval: the merchant's call on
     // the run's last pending design ends the run, and the wizard makes a
@@ -86,6 +94,11 @@ export const createLegacyRunEngine = (services: RunServices): RunEngine => {
             error: "Research found no ideas for this seed.",
             status: "failed",
           });
+          return;
+        }
+        // A picked direction is drawn at once: the merchant chose it.
+        if (input.pick !== undefined) {
+          await drawAndWait(actor, runId, ideaIds);
           return;
         }
         // A merchant's run draws nothing until they approve ideas.

@@ -44,6 +44,10 @@ const runInput = z.object({
   autopilot: z.boolean(),
   countries: z.array(z.string()),
   dailyBudget: z.number(),
+  // A drop started from a picked direction (flow/runs startPickedRun): its
+  // one idea, saved with its evidence. Research, naming and the ideas gate
+  // pass it through; the run draws that idea.
+  pick: z.object({ ideaId: z.string() }).optional(),
   seed: z.string(),
 });
 
@@ -172,6 +176,10 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   // the decision trace. The ideas show only once named, never as a raw tag.
   const name = createStep({
     execute: async ({ bail, inputData }) => {
+      // A picked direction's words were checked when it was written.
+      if (inputData.input.pick !== undefined) {
+        return inputData;
+      }
       const named = await body(
         "name",
         async (actor, from) =>
@@ -196,12 +204,13 @@ export const createRunWorkflow = (inngest: Inngest, services: RunServices) => {
   });
 
   // The ideas gate. Autopilot goes on with the ideas research ranked behind
-  // its pick: the merchant turned it on to make this call. A merchant's run
-  // suspends with nothing drawn, and goes on with only the ideas they
-  // approved.
+  // its pick: the merchant turned it on to make this call. A drop started
+  // from a picked direction goes on with it: the merchant chose it. Any
+  // other run suspends with nothing drawn, and goes on with only the ideas
+  // the merchant approved.
   const ideas = createStep({
     execute: async ({ inputData, resumeData, suspend }) => {
-      if (inputData.input.autopilot) {
+      if (inputData.input.autopilot || inputData.input.pick !== undefined) {
         return inputData;
       }
       if (resumeData === undefined) {
