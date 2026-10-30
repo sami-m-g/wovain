@@ -142,7 +142,7 @@ const content: SiteContent = {
         },
         {
           answer:
-            "No. Every campaign is created paused, with the daily budget you choose. Spend starts only when you turn it on in Meta.",
+            "No. Every campaign is created paused, with the daily budget you choose. Spend starts only when you approve it, and wovain starts it only once its spend rules are in place.",
           question: "Will ads run without me?",
         },
       ],
@@ -621,7 +621,7 @@ const content: SiteContent = {
       faq: [
         {
           answer:
-            "No. Every campaign, ad set and ad is created paused, and wovain never turns them on. Spend starts only when you activate the campaign in Meta.",
+            "No. Every campaign, ad set and ad is created paused, and nothing spends until you approve the campaign. wovain then starts it, but only once its spend rules and Meta's automated rules are in place.",
           question: "Can wovain spend my ad budget?",
         },
         {
@@ -664,8 +664,8 @@ const content: SiteContent = {
           title: "Build the campaign, paused",
         },
         {
-          body: "Open the campaign in Meta Ads Manager, check the ads, audience and budget, and turn it on when you are ready to spend.",
-          title: "Review and turn it on in Meta",
+          body: "Check the ads, audience and budget, in wovain or in Meta Ads Manager, then approve the campaign when you are ready to spend. wovain starts it once its spend rules are in place.",
+          title: "Review and approve",
         },
       ],
       title:

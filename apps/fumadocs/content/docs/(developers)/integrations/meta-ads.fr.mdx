@@ -7,5 +7,5 @@ Meta est l'endroit où les publicités sont diffusées.
 
 - **Variantes de publicité.** `writeAdCopy` (Nemotron) rédige jusqu'à trois variantes, chacune avec un angle, un titre et un message.
 - **Campagne.** `stagePausedCampaign` dans `packages/core/src/ads.ts` crée une campagne, un ensemble de publicités et des publicités via le serveur MCP Ads de Meta, avec le budget quotidien (1 $ à 500 $) et les pays choisis par le vendeur.
-- **En pause par défaut.** Chaque objet est créé en pause et wovain n'active jamais de dépense. Le vendeur lance la campagne dans Meta après l'avoir relue.
+- **En pause par défaut.** Chaque objet est créé en pause. Avec le flag `media-buying-live`, l'approbation du vendeur la lance : wovain active la campagne, les ensembles de publicités et les publicités via le MCP Ads (`activateCampaign` dans `packages/core/src/media-buying.ts`), et seulement après que `requireSpendGuards` (`packages/mastra/src/mastra/flow/backstop.ts`) a vérifié que les règles de dépense sont actives et que Meta détient les règles automatisées de la campagne. Sinon, il refuse.
 - **Connexion.** Chaque vendeur connecte son propre compte publicitaire sur `/api/connections/meta/start`. Cela exige `META_APP_ID` et `META_APP_SECRET`, et les URI de redirection OAuth valides de l'application doivent inclure `<BETTER_AUTH_URL>/api/connections/meta/callback`.

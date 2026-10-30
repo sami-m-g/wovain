@@ -123,7 +123,7 @@
       "reserve": "Réserve remboursements",
       "profit": "Votre profit",
       "margin": "Marge sur le blank",
-      "campaign": "Campagne Meta : en pause jusqu'à ce que vous l'activiez"
+      "campaign": "Campagne Meta : en pause jusqu'à ce que vous l'approuviez"
     },
     "connection": {
       "yours": "Vous le connectez",
@@ -146,7 +146,7 @@
       },
       {
         "question": "wovain dépense-t-il de l'argent en publicité tout seul ?",
-        "answer": "Non. Chaque campagne est créée en pause, avec le budget quotidien que vous choisissez, de 1 $ à 500 $. La dépense ne commence que lorsque vous l'activez dans le Gestionnaire de publicités Meta."
+        "answer": "Non. Chaque campagne est créée en pause, avec le budget quotidien que vous choisissez, de 1 $ à 500 $. La dépense ne commence que lorsque vous approuvez la campagne : wovain la lance alors sur Meta, et seulement une fois ses règles de dépense et les règles automatisées de Meta en place."
       },
       {
         "question": "Que dois-je connecter ?",
@@ -235,7 +235,7 @@
       "insights": "Statistiques",
       "sizes": "Taille",
       "addToCart": "Ajouter au panier",
-      "paused": "En pause jusqu'à ce que vous l'activiez",
+      "paused": "En pause jusqu'à ce que vous l'approuviez",
       "photoAlt": "Un modèle sur un balcon portant le t-shirt noir Fern Study No. 3",
       "mockupAlt": "Le design Fern Study No. 3 sur un t-shirt épais noir, porté par un modèle, tel que Fourthwall le génère"
     },
@@ -326,7 +326,7 @@
       "contentTitle": "Votre contenu",
       "contentBody": "Vos briefs et les visuels que vous validez vous appartiennent. Vous devez vous assurer que ce que vous publiez ne porte atteinte aux droits de personne ; wovain vérifie les marques déposées mais ne peut pas le garantir.",
       "spendTitle": "Publicités et dépenses",
-      "spendBody": "Les campagnes sont créées en pause. Aucune dépense publicitaire ne commence avant que vous activiez une campagne dans Meta, qui la facture à votre compte publicitaire.",
+      "spendBody": "Les campagnes sont créées en pause. Aucune dépense publicitaire ne commence avant que vous approuviez une campagne dans wovain, ou l'activiez vous-même dans Meta, qui la facture à votre compte publicitaire.",
       "contactTitle": "Contact",
       "contactBody": "Pour toute question sur ces conditions, écrivez à {supportEmail}."
     }
@@ -663,7 +663,7 @@
     },
     "campaign": {
       "title": "Créer la campagne",
-      "lead": "Une campagne par produit, avec une pub par variante de texte. Elle est créée en pause : rien n'est dépensé avant que vous l'activiez dans Meta.",
+      "lead": "Une campagne par produit, avec une pub par variante de texte. Elle est créée en pause : rien n'est dépensé avant que vous l'approuviez.",
       "budgetLabel": "Budget quotidien (USD)",
       "budgetHint": "Entre 1 $ et 500 $ par jour. Modifiable dans Meta.",
       "budgetError": "Saisissez un budget quotidien entre 1 $ et 500 $.",
@@ -672,7 +672,7 @@
     },
     "done": {
       "title": "Votre campagne est prête, en pause",
-      "lead": "{count, plural, one {# campagne} other {# campagnes}} à {budget} par jour. Activez-la dans le Gestionnaire de publicités Meta quand vous voulez dépenser.",
+      "lead": "{count, plural, one {# campagne} other {# campagnes}} à {budget} par jour, en pause jusqu'à ce que vous l'approuviez.",
       "variants": "Variantes publicitaires",
       "open": "Ouvrir le Gestionnaire de publicités",
       "another": "Lancer un autre drop",
@@ -681,7 +681,7 @@
         "start": "Lancer les publicités",
         "pause": "Mettre en pause",
         "refresh": "Actualiser le statut",
-        "confirm": "Lancer cette campagne à {budget} par jour ? Meta facture directement votre compte publicitaire. Vous pouvez la mettre en pause à tout moment.",
+        "confirm": "Lancer cette campagne à {budget} par jour ? wovain vérifie d'abord que ses règles de dépense et les règles automatisées de Meta sont en place, puis lance la campagne, ses ensembles de publicités et ses publicités. Meta facture directement votre compte publicitaire. Vous pouvez la mettre en pause à tout moment.",
         "approve": "Approuver et lancer",
         "notNow": "Pas maintenant",
         "starting": "Approuvé. Meta examine les nouvelles publicités avant leur diffusion, ce qui peut prendre quelques heures.",
@@ -982,7 +982,7 @@
       "notConnected": "wovain lit les statistiques des campagnes qu'il a créées pour vous.",
       "unavailable": "Les statistiques Meta n'ont pas chargé : {message}",
       "emptyTitle": "Pas encore de résultats",
-      "empty": "Les campagnes sont créées en pause : les résultats arrivent dès que vous en activez une dans le Gestionnaire de publicités."
+      "empty": "Les campagnes sont créées en pause : les résultats arrivent dès que vous en approuvez une."
     },
     "drops": {
       "title": "Drops",
