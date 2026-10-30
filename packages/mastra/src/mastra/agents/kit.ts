@@ -208,29 +208,39 @@ export const createAgentKit = ({
   // moderation on the safety model.
   const guardsOn = (
     checks: MastraModelConfig,
-    moderator: MastraModelConfig
-  ) => ({
-    injection: new PromptInjectionDetector({
-      model: checks,
-      strategy: "block",
-      threshold: guardThresholds.injection,
-    }),
-    moderation: new ModerationProcessor({
-      model: moderator,
-      strategy: "block",
-      threshold: guardThresholds.moderation,
-    }),
-    pii: new PIIDetector({
-      model: checks,
-      strategy: "block",
-      threshold: guardThresholds.pii,
-    }),
-  });
+    moderator: MastraModelConfig,
+    // The guards are classifiers: on the fast and safety models they send
+    // reasoning_effort "none", as the fast agents do. Reasoning there spent
+    // 5 to 18 s per guard on each design brief (PostHog, 2026-10-30).
+    providerOptions?: typeof FAST_PROVIDER_OPTIONS
+  ) => {
+    const tuned = providerOptions === undefined ? {} : { providerOptions };
+    return {
+      injection: new PromptInjectionDetector({
+        model: checks,
+        ...tuned,
+        strategy: "block",
+        threshold: guardThresholds.injection,
+      }),
+      moderation: new ModerationProcessor({
+        model: moderator,
+        ...tuned,
+        strategy: "block",
+        threshold: guardThresholds.moderation,
+      }),
+      pii: new PIIDetector({
+        model: checks,
+        ...tuned,
+        strategy: "block",
+        threshold: guardThresholds.pii,
+      }),
+    };
+  };
   const guard = guardsOn(base, base);
   const routedGuard =
     router === undefined
       ? guard
-      : guardsOn(routedModels.fast, routedModels.safety);
+      : guardsOn(routedModels.fast, routedModels.safety, FAST_PROVIDER_OPTIONS);
   const guardsOf = (set: typeof guard) => ({
     ad_copy: { input: [], output: [set.moderation, set.pii] },
     design_brief: { input: [set.injection], output: [set.moderation] },
