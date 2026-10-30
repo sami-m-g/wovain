@@ -4,6 +4,7 @@ import { createQloo, searchTermsOf } from "./qloo";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 // Answers Qloo's tag search with no tag, and every other call with the
@@ -579,4 +580,40 @@ it("reuses an answer for the same request and forgets a failed one", async () =>
   const again = await qloo.tagsFor(["E1"]);
   expect(again).toStrictEqual(first);
   expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+const TAGS_REPLY = {
+  results: { tags: [{ id: "urn:tag:genre:media:goth", name: "Goth" }] },
+};
+
+it("waits out a burst of 429s longer than other failures", async () => {
+  vi.useFakeTimers();
+  const statuses = [429, 429, 429, 429];
+  const fetchMock = vi.fn(async () => {
+    const status = statuses.shift();
+    return await Promise.resolve(
+      status === undefined
+        ? Response.json(TAGS_REPLY)
+        : new Response("slow down", { status })
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "key", baseURL: "https://qloo.test" });
+  const tags = qloo.tagsFor(["E1"]);
+  await vi.runAllTimersAsync();
+  await expect(tags).resolves.toHaveLength(1);
+  expect(fetchMock).toHaveBeenCalledTimes(5);
+});
+
+it("gives up on a 5xx after two retries", async () => {
+  vi.useFakeTimers();
+  const fetchMock = vi.fn(
+    async () => await Promise.resolve(new Response("down", { status: 503 }))
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const qloo = createQloo({ apiKey: "key", baseURL: "https://qloo.test" });
+  const tags = expect(qloo.tagsFor(["E2"])).rejects.toThrow("answered 503");
+  await vi.runAllTimersAsync();
+  await tags;
+  expect(fetchMock).toHaveBeenCalledTimes(3);
 });
