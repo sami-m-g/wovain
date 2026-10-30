@@ -8,6 +8,7 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { DropStylePanel } from "@/components/app/drop-style-panel";
 import { IdeaDossier } from "@/components/app/idea-dossier";
 import type { useDropFlow } from "@/components/app/use-drop-flow";
 import { WhoBuysPanel } from "@/components/app/who-buys";
@@ -224,7 +225,7 @@ const WhoSection = ({ lead }: { lead: Idea | undefined }) => {
       }
       title={t("title")}
     >
-      <WhoBuysPanel ideaId={lead.id} />
+      <WhoBuysPanel embedded ideaId={lead.id} />
     </Section>
   );
 };
@@ -345,8 +346,14 @@ export const DropStory = ({
           {active}
         </div>
       ) : null}
-      <WhySection lead={lead} />
-      <WhoSection lead={lead} />
+      {/* Before a pick, each idea card carries its own why and who; the
+          drop's sections tell them once, for the idea it makes. */}
+      {picked.length > 0 ? (
+        <>
+          <WhySection lead={lead} />
+          <WhoSection lead={lead} />
+        </>
+      ) : null}
       {DROP_SECTIONS.map((section) => {
         const state = sectionState(section, run);
         const open = step === section && !failed;
@@ -388,6 +395,15 @@ export const DropStory = ({
               </p>
             )}
             {open ? active : null}
+            {/* Stopped before a design was drawn: the tone and colours stay
+                open to review before trying again. */}
+            {section === "designs" &&
+            state === "stopped" &&
+            run.designs.length === 0
+              ? picked.map((ideaId) => (
+                  <DropStylePanel ideaId={ideaId} key={ideaId} />
+                ))
+              : null}
           </Section>
         );
       })}

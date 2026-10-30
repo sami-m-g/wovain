@@ -644,7 +644,8 @@
       "mockupNotConnected": "Connect Fourthwall to see this design on the shirt.",
       "drawing": "Drawing a design for “{title}”. It takes a few minutes.",
       "make": "Make designs",
-      "reviewLead": "Check the tone and colours, change them if you like, and let the research report load. The designs use all of it."
+      "reviewTitle": "Set the tone and colours",
+      "reviewLead": "Suggested from the buyers and research above. Change either one, then make the designs."
     },
     "products": {
       "title": "Publish the products",
@@ -842,7 +843,7 @@
       "affinity": "Qloo affinity {value}",
       "brands": "They also buy:",
       "source": "From Qloo's taste data. The brands are for targeting only, never for the design.",
-      "loading": "Asking Qloo who buys this…",
+      "loading": "Asking Qloo who buys this. The first look takes about 20 seconds.",
       "failed": "We couldn't reach our taste data to say who buys this.",
       "retry": "Try again"
     }

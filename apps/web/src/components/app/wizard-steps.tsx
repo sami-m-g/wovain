@@ -705,9 +705,10 @@ export const DesignsStep = ({
 };
 
 /**
- * A Home pick's designs step before anything is drawn: the idea, its tone
- * and colours to review or change, and its research report as it loads.
- * "Make designs" draws them with all of it.
+ * A Home pick's designs step before anything is drawn: its tone and colours,
+ * open to review or change. The idea, its research report and who buys it
+ * read once, in the drop page's own sections above. "Make designs" draws
+ * them with all of it.
  */
 export const PickReviewStep = ({
   busyLabel,
@@ -719,30 +720,22 @@ export const PickReviewStep = ({
   onMake: () => void;
 }) => {
   const t = useTranslations("Wizard.designs");
+  // One idea (a Home pick) needs no name: the page is about it.
+  const named = ideas.length > 1;
   return (
     <div className="flex flex-col gap-6">
-      <StepHeader lead={t("reviewLead")} title={t("title")} />
+      <StepHeader lead={t("reviewLead")} title={t("reviewTitle")} />
       <ul className="flex flex-col gap-4">
-        {ideas.map((idea) => {
-          const words = namedWords(idea);
-          return (
-            <li
-              className="border-border bg-card flex flex-col gap-4 rounded-xl border p-4"
-              key={idea.id}
-            >
-              <div className="flex flex-col gap-1">
-                <h3 className="font-semibold">{words?.title ?? idea.theme}</h3>
-                {words === undefined ? null : (
-                  <p className="text-muted-foreground max-w-[70ch] text-sm">
-                    {words.concept}
-                  </p>
-                )}
-              </div>
-              <DropStylePanel ideaId={idea.id} />
-              <IdeaDossier automatic ideaId={idea.id} />
-            </li>
-          );
-        })}
+        {ideas.map((idea) => (
+          <li className="flex flex-col gap-2" key={idea.id}>
+            {named ? (
+              <h3 className="text-sm font-semibold">
+                {namedWords(idea)?.title ?? idea.theme}
+              </h3>
+            ) : null}
+            <DropStylePanel ideaId={idea.id} />
+          </li>
+        ))}
       </ul>
       <StepActions busyLabel={busyLabel}>
         <NextButton disabled={Boolean(busyLabel)} onClick={onMake}>
