@@ -897,7 +897,7 @@
       "colours": "Colours",
       "coloursTip": "The shirt colours and the art colours for this drop, e.g. rust and cream art on a sage tee. Every art colour is checked to stand out on the shirt.",
       "noColours": "No colour set fits this blank. The design picks its own.",
-      "checkedOn": "Checked on the {blank}",
+      "checkedOn": "Checked on {blank}",
       "guardrails": "Your brand voice still applies: {voice}",
       "loading": "Suggesting a tone and colours from this drop's buyers…",
       "failed": "We couldn't suggest a tone and colours just now.",

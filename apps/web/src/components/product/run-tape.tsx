@@ -15,11 +15,15 @@ export const STAGE_COUNT = STAGES.length;
 
 /** The backend's step names, mapped onto the tape. */
 const STEP_STAGE: Record<string, Stage> = {
+  // The design gate: waiting on the merchant, then their decision.
+  approval: "designs",
+  approved: "designs",
   campaign: "campaign",
   design: "designs",
   name: "trends",
   product: "products",
   publish: "products",
+  rejected: "designs",
   research: "trends",
 };
 

@@ -19,6 +19,12 @@ const SIZES = "(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw";
 
 type View = "shirt" | "flat";
 
+// fal's art is served through Next's image optimizer (next.config.ts
+// remotePatterns); Fourthwall's mockups come from hosts it doesn't list.
+const FAL_ART_HOST = /\.fal\.media$/u;
+const optimizable = (src: string) =>
+  FAL_ART_HOST.test(URL.parse(src)?.hostname ?? "");
+
 const NO_MOCKUPS: string[] = [];
 
 type MockupStatus = "ready" | "failed" | "not_connected" | null;
@@ -67,7 +73,7 @@ const FrameImage = ({
         ref={ref}
         sizes={SIZES}
         src={src}
-        unoptimized
+        unoptimized={!optimizable(src)}
         width={FRAME_SIZE}
       />
     </>

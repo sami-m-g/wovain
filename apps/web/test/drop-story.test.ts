@@ -46,6 +46,15 @@ describe("the drop page's section states", () => {
     expect(sectionState("products", run)).toBe("not_started");
   });
 
+  it("keeps the designs current at the design gate and after a decision", () => {
+    for (const step of ["approval", "approved", "rejected"]) {
+      const run = { status: "awaiting_approval" as const, step };
+
+      expect(sectionState("ideas", run)).toBe("done");
+      expect(sectionState("designs", run)).toBe("waiting");
+    }
+  });
+
   it("says working while the run works, stopped when it failed", () => {
     expect(sectionState("ideas", { status: "running", step: "research" })).toBe(
       "working"

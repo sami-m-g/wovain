@@ -41,6 +41,9 @@ const MOVED_PAGES = [
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
+    // fal's design art is a 3K PNG of about 6 MB: the optimizer serves the
+    // card a small AVIF of it instead (FAL_ART_HOST in design-preview.tsx).
+    remotePatterns: [{ hostname: "**.fal.media", protocol: "https" }],
   },
   output: "standalone",
   // The country lookup (src/lib/geo.ts, used by the proxy and /api/visitor)
