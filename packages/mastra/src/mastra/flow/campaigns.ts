@@ -118,6 +118,8 @@ interface PreparedDesign {
   linkUrl: string;
   productId: string;
   title: string;
+  // Its video ad clips (./videos), staged as video ads next to the images.
+  videos: string[];
 }
 
 const prepareDesign = async (
@@ -197,6 +199,7 @@ const prepareDesign = async (
     productId: live.id,
     runId,
     title: source.brief.title,
+    videos: live.videos?.map((clip) => clip.url) ?? [],
   };
 };
 
@@ -328,6 +331,7 @@ export const createDropCampaign = async (
             key: design.productId,
             label: `d${index + 1}`,
             linkUrl: design.linkUrl,
+            videos: design.videos,
           })),
       imageUrl: lead.imageUrl,
       linkUrl: lead.linkUrl,
@@ -338,6 +342,7 @@ export const createDropCampaign = async (
       tag,
       // Qloo's ages, gender and interests as suggestions.
       targeting: audience.targeting,
+      videos: lead.videos,
     };
     if (targeting === undefined) {
       return {
@@ -356,6 +361,19 @@ export const createDropCampaign = async (
     const verified = await verifyStagedPaused(call, stagedNow);
     return { made: stagedNow, status: verified.state };
   });
+  // A video ad Meta wouldn't take was skipped: the campaign runs with the
+  // rest, and each one goes to error tracking.
+  for (const reason of made.videoErrors ?? []) {
+    log.error({
+      campaign: { key, metaCampaignId: made.campaignId },
+      error: {
+        code: "VIDEO_AD_UPLOAD_FAILED",
+        message: `A video ad wasn't staged on Meta: ${reason}`,
+        name: "VideoAdUploadFailed",
+      },
+      userId: actor.userId,
+    });
+  }
   const byProduct = new Map(
     designs.map((design) => [design.productId, design])
   );

@@ -135,12 +135,14 @@ export const CampaignStep = ({
     campaigns.length > 0
       ? campaigns.reduce((sum, one) => sum + one.dailyBudgetCents, 0)
       : Math.round(Number(budget) * CENTS);
-  const creatives = products.flatMap((product) =>
-    product.mockups.map((url) => ({
-      title: titles[product.designId] ?? "",
-      url,
-    }))
-  );
+  // The images, then the video ad clips fal made for each product.
+  const creatives = products.flatMap((product) => {
+    const title = titles[product.designId] ?? "";
+    return [
+      ...product.mockups.map((url) => ({ title, url, video: false })),
+      ...(product.videos ?? []).map(({ url }) => ({ title, url, video: true })),
+    ];
+  });
 
   const afterStaged = () => (live ? setConfirming(true) : onLaunched(false));
   const onLaunch = () => {
@@ -194,14 +196,28 @@ export const CampaignStep = ({
                 className="bg-muted aspect-square overflow-hidden rounded-xl"
                 key={creative.url}
               >
-                <Image
-                  alt={t("creativeAlt", { title: creative.title })}
-                  className="size-full object-contain"
-                  height={CREATIVE_SIZE}
-                  src={creative.url}
-                  unoptimized
-                  width={CREATIVE_SIZE}
-                />
+                {creative.video ? (
+                  <video
+                    aria-label={t("videoAlt", { title: creative.title })}
+                    autoPlay
+                    className="size-full object-contain"
+                    controls
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    src={creative.url}
+                  />
+                ) : (
+                  <Image
+                    alt={t("creativeAlt", { title: creative.title })}
+                    className="size-full object-contain"
+                    height={CREATIVE_SIZE}
+                    src={creative.url}
+                    unoptimized
+                    width={CREATIVE_SIZE}
+                  />
+                )}
               </li>
             ))}
           </ul>
