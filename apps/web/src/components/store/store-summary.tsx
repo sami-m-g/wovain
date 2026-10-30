@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@wovain/ui/components/dialog";
 import { Skeleton } from "@wovain/ui/components/skeleton";
-import { CircleCheck, CircleDashed } from "lucide-react";
+import { CircleAlert, CircleCheck, CircleDashed } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -27,6 +27,7 @@ import {
   useRefresh,
 } from "@/components/store/store-shared";
 import type { StoreReadiness } from "@/lib/flow-client";
+import type { FourthwallAdminPage } from "@/lib/fourthwall-admin";
 import { orpc } from "@/utils/orpc";
 
 type CheckId = StoreReadiness["checks"][number]["id"];
@@ -108,6 +109,12 @@ export const GoLive = ({ name }: { name: string | null }) => {
   );
 };
 
+// The admin page that fixes each check Fourthwall must change.
+const FIX_PAGE: Partial<Record<CheckId, FourthwallAdminPage>> = {
+  payouts: "billing",
+  shipping: "shipping",
+};
+
 /** The fix for one failing check: an action here, else a Fourthwall link. */
 const FixIt = ({ id, shop }: { id: CheckId; shop: StoreReadiness["shop"] }) => {
   const t = useTranslations("Store.summary");
@@ -115,10 +122,7 @@ const FixIt = ({ id, shop }: { id: CheckId; shop: StoreReadiness["shop"] }) => {
     return <GoLive name={shop.name} />;
   }
   return (
-    <AdminLink
-      page={id === "shipping" ? "shipping" : "settings"}
-      slug={shop.slug}
-    >
+    <AdminLink page={FIX_PAGE[id] ?? "settings"} slug={shop.slug}>
       {t("fixIt")}
     </AdminLink>
   );
@@ -204,6 +208,9 @@ export const StoreSummary = ({
   const { shop } = readiness;
   const failing = readiness.checks.filter((check) => !check.ok);
   const fix = failing.find((check) => check.blocking) ?? failing[0];
+  // Ready to sell once nothing blocking fails; advisory checks (shipping,
+  // payouts) still show as the next step.
+  const blocked = failing.some((check) => check.blocking);
   const site = known(SITE_TONE, shop.siteStatus);
   const payout = known(PAYOUT_TONE, shop.payoutStatus);
   const waiting = pending.data?.length ?? 0;
@@ -227,31 +234,27 @@ export const StoreSummary = ({
           <StatusDot tone={SITE_TONE[site]}>{t(`site.${site}`)}</StatusDot>
         </p>
         <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-2 text-sm sm:justify-end">
-          {fix === undefined ? (
-            <span className="text-success inline-flex items-center gap-1.5">
+          {blocked ? (
+            <span className="inline-flex items-center gap-1.5 font-medium">
+              <CircleAlert
+                aria-hidden="true"
+                className="text-warning size-4 shrink-0"
+              />
+              {t("passing", {
+                done: readiness.checks.length - failing.length,
+                total: readiness.checks.length,
+              })}
+            </span>
+          ) : (
+            <span className="text-success inline-flex items-center gap-1.5 font-medium">
               <CircleCheck aria-hidden="true" className="size-4" />
               {t("ready")}
             </span>
-          ) : (
+          )}
+          {fix === undefined ? null : (
             <>
-              <span className="inline-flex items-center gap-1.5">
-                <CircleDashed
-                  aria-hidden="true"
-                  className="text-warning size-4 shrink-0"
-                />
-                <span>
-                  <span className="font-medium">
-                    {checks(`${fix.id}.label`)}
-                  </span>
-                  <span className="sr-only">{checks("failed")}</span>
-                  <span className="text-muted-foreground">
-                    {" "}
-                    {t("passing", {
-                      done: readiness.checks.length - failing.length,
-                      total: readiness.checks.length,
-                    })}
-                  </span>
-                </span>
+              <span className="text-muted-foreground">
+                {t("next", { step: checks(`${fix.id}.next`) })}
               </span>
               <FixIt id={fix.id} shop={shop} />
             </>
@@ -325,7 +328,9 @@ export const StoreSummary = ({
         <Figure
           hint={
             payout === "ACTIVE" ? null : (
-              <AdminLink page="settings">{t("payoutFix")}</AdminLink>
+              <AdminLink page="billing" slug={shop.slug}>
+                {t("payoutFix")}
+              </AdminLink>
             )
           }
           label={t("payouts")}

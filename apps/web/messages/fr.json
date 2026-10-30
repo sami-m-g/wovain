@@ -1690,7 +1690,8 @@
         "unknown": "Statut inconnu"
       },
       "ready": "Prête à vendre",
-      "passing": "({done, number} vérifications sur {total, number} réussies)",
+      "passing": "{done, number} sur {total, number} prêts",
+      "next": "Ensuite : {step}",
       "allChecks": "Toutes les vérifications",
       "fixIt": "Corriger dans Fourthwall",
       "goLive": "Mettre en ligne",
@@ -1728,19 +1729,23 @@
       "failed": "(à corriger)",
       "site_live": {
         "label": "La boutique est en ligne",
-        "fix": "Dans Fourthwall, passez le statut du site à Live."
+        "fix": "Dans Fourthwall, passez le statut du site à Live.",
+        "next": "mettre la boutique en ligne"
       },
       "verified": {
         "label": "La boutique est vérifiée",
-        "fix": "Fourthwall examine encore votre boutique. Contactez le support Fourthwall pour finaliser."
+        "fix": "Fourthwall examine encore votre boutique. Contactez le support Fourthwall pour finaliser.",
+        "next": "la vérification de Fourthwall"
       },
       "shipping": {
         "label": "La livraison est activée",
-        "fix": "Dans Fourthwall, activez la livraison et ajoutez au moins un profil de livraison."
+        "fix": "Dans Fourthwall, activez la livraison et ajoutez au moins un profil de livraison.",
+        "next": "l'expédition, pour les articles que vous expédiez vous-même"
       },
       "payouts": {
         "label": "Les versements sont configurés",
-        "fix": "Dans Fourthwall, finalisez votre compte de versement pour recevoir vos ventes."
+        "fix": "Dans Fourthwall, finalisez votre compte de versement pour recevoir vos ventes.",
+        "next": "finaliser les paiements"
       }
     },
     "queue": {
@@ -1788,7 +1793,8 @@
       "bulkLabel": "Actions groupées",
       "clear": "Désélectionner",
       "actions": "Actions pour {title}",
-      "fromDrop": "Issu de {name}",
+      "fromDrop": "Drop : {name}",
+      "expected": "prévue",
       "soldShort": "{count, number} vendus",
       "salesSource": "Marge et unités vendues : 28 derniers jours, d'après le rapport des meilleures ventes de Fourthwall.",
       "empty": "Pas encore de produits.",
@@ -1809,7 +1815,7 @@
     },
     "productStatus": {
       "hidden": "Brouillon",
-      "in_review": "En revue",
+      "in_review": "Brouillon",
       "public": "En ligne",
       "paused": "En pause",
       "retired": "Retiré"
