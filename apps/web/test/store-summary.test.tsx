@@ -39,7 +39,7 @@ const render = (
 
 const checks = (failing: string[]): StoreReadiness["checks"] =>
   (["site_live", "verified", "shipping", "payouts"] as const).map((id) => ({
-    blocking: id !== "payouts",
+    blocking: id === "site_live" || id === "verified",
     id,
     ok: !failing.includes(id),
   }));
@@ -86,7 +86,8 @@ describe("StoreSummary", () => {
     );
     expect(html).toContain("Coming soon");
     expect(html).toContain("Shop is live");
-    expect(html).toContain("(3 of 4 checks pass)");
+    expect(html).toContain("3 of 4 ready");
+    expect(html).toContain("Next: take the shop live");
     expect(html).toContain("Go live");
     expect(html).toContain("Nothing to approve");
   });
@@ -121,7 +122,7 @@ describe("StoreSummary", () => {
     );
     expect(html).toContain("Finishing");
     expect(html).toContain(
-      "https://admin.fourthwall.com/store/atelier/settings/"
+      "https://admin.fourthwall.com/store/atelier/settings/billing/"
     );
   });
 
@@ -140,6 +141,9 @@ describe("StoreSummary", () => {
     expect(html).toContain(
       "https://admin.fourthwall.com/store/wovain-goods/settings/shipping/"
     );
+    // Shipping is advisory: the shop still reads as ready to sell.
+    expect(html).toContain("Ready to sell");
+    expect(html).toContain("Next: shipping, for items you ship yourself");
   });
 
   it("falls back to the admin's shop picker without a slug", () => {

@@ -78,11 +78,11 @@ import { orpc } from "@/utils/orpc";
 
 const IMAGE_SIZE = 640;
 
-// The products step's badge per product status. In review is a publish an
-// agent queued for approval; the rest read as hidden.
-const STATUS_KEY: Partial<
-  Record<Product["status"], "public" | "inReview" | "hidden">
-> = { in_review: "inReview", public: "public" };
+// The products step's badge per product status: live, else hidden. A
+// product queued for review before the in-flow publish is a draft too.
+const STATUS_KEY: Partial<Record<Product["status"], "public" | "hidden">> = {
+  public: "public",
+};
 export const MAX_BRIEF = 200;
 const MIN_BUDGET = 1;
 const MAX_BUDGET = 500;
