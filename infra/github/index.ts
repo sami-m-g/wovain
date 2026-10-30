@@ -31,3 +31,14 @@ repositorySettings({
 });
 // Google trusts infra-github only from jobs in this environment, on main.
 mainOnlyEnvironment("github-infrastructure", REPOSITORY);
+// Production's `pulumi up` (.github/workflows/infra.yml, `up`): Google trusts
+// gitlab-infra only from jobs in this environment (infra/bootstrap), and each
+// run waits for the owner's approval. Declared here, not in production's
+// stack: production's stack is frozen, and a job that names an environment
+// GitHub doesn't have yet creates it with no protection at all.
+mainOnlyEnvironment(
+  "infrastructure",
+  REPOSITORY,
+  // sami-m-g (`gh api users/sami-m-g --jq .id`) by default.
+  config.getObject<number[]>("infrastructureReviewerIds") ?? [106_979_416]
+);

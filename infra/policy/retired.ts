@@ -34,7 +34,9 @@ export type Release = "code" | "deleted" | "moved" | "unprotect";
 //
 // The repository, and the GitLab mirror's ruleset and deploy key, moved to
 // the `github` stack (infra/github), which adopts them with `pulumi import`
-// and deletes the mirror's two leftovers itself.
+// and deletes the mirror's two leftovers itself. The `infrastructure`
+// environment moved there too: GitHub creates or updates an environment by
+// name, so that stack's `up` takes it over without an import.
 export const RETIRED: Record<string, Release> = {
   "wovain-bootstrap::gcp:iam/workloadIdentityPool:WorkloadIdentityPool::gitlab":
     "unprotect",
@@ -64,6 +66,8 @@ export const RETIRED: Record<string, Release> = {
   "wovain::gcp:storage/bucket:Bucket::apphosting-sources": "deleted",
   "wovain::github:index/repository:Repository::wovain": "moved",
   "wovain::github:index/repositoryDeployKey:RepositoryDeployKey::gitlab-ci-mirror":
+    "moved",
+  "wovain::github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure":
     "moved",
   "wovain::github:index/repositoryRuleset:RepositoryRuleset::main-from-gitlab":
     "moved",

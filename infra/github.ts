@@ -23,11 +23,13 @@ const GITHUB_ACTIONS_APP_ID = 15_368;
 
 type Variables = Record<string, pulumi.Input<string>>;
 
-// An environment only main may use, with no approval. Google trusts each
-// deploy account only from its own environment (infra/dev.ts).
+// An environment only main may use. Google trusts each deploy account only
+// from its own environment (infra/dev.ts). With reviewerIds, a job in it
+// also waits until one of those GitHub users approves the run.
 export const mainOnlyEnvironment = (
   name: string,
-  repository: pulumi.Input<string>
+  repository: pulumi.Input<string>,
+  reviewerIds?: number[]
 ) => {
   const environment = new github.RepositoryEnvironment(name, {
     deploymentBranchPolicy: {
@@ -36,6 +38,13 @@ export const mainOnlyEnvironment = (
     },
     environment: name,
     repository,
+    ...(reviewerIds === undefined
+      ? {}
+      : {
+          // The owner approves their own runs: the approval is the gate.
+          preventSelfReview: false,
+          reviewers: [{ users: reviewerIds }],
+        }),
   });
   new github.RepositoryEnvironmentDeploymentPolicy(`${name}-main`, {
     branchPattern: "main",
@@ -325,11 +334,11 @@ export const deployEnvironments = ({
     repository: REPOSITORY,
   });
 
-  // Environments that only main may use, with no approval: dev.wovain.com,
-  // and `infrastructure`, the one Google trusts as the infrastructure
-  // account (infra/bootstrap), for when a workflow runs `pulumi up`.
+  // dev.wovain.com's environment: only main may use it, with no approval.
+  // `infrastructure`, where production's `pulumi up` runs, is the `github`
+  // stack's (infra/github), so its approval gate exists before production's
+  // stack is ever applied.
   const dev = mainOnlyEnvironment("dev", REPOSITORY);
-  mainOnlyEnvironment("infrastructure", REPOSITORY);
   // What the workflows read as `vars.<NAME>`; none is a secret.
   for (const [variableName, value] of Object.entries(variables)) {
     new github.ActionsVariable(variableName, {

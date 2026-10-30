@@ -7,8 +7,10 @@
 #   repository's pull_request events and which can read but not change
 #   anything (infra/bootstrap/preview.ts). The plan, and the guard's
 #   verdict (infra/policy/guard.ts), go to the job summary.
-# main: `pulumi up` of the prod stack in the `infrastructure` environment, as
-#   gitlab-infra (infra/bootstrap), after the same preview and guard; then
+# main, by hand only, and only once `wovain:freezeProduction` is false:
+#   `pulumi up` of the prod stack in the `infrastructure` environment, which
+#   waits for the owner's approval, as gitlab-infra (infra/bootstrap), after
+#   the same preview and guard; then
 #   the Polar catalog seed (packages/billing/src/seed.ts), which is
 #   production's Polar organization, so it is skipped while
 #   `wovain:freezeProduction` is on.
@@ -209,11 +211,39 @@ jobs:
         name: Apply github
         run: node infra/scripts/pulumi.ts up infra/github -- --yes --skip-preview
 
-  up:
-    # Manual only while production is frozen (until the Transcend winners,
-    # ~2026-11-16): a merge to main never applies. Switch back to push by
-    # dropping the event_name check.
+  # Whether production is frozen: `wovain:freezeProduction` in
+  # infra/Pulumi.prod.yaml, on unless set to false (infra/index.ts, the
+  # guard). Read from the checkout, before any credential.
+  production-freeze:
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frozen: ${{ steps.freeze.outputs.frozen }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: infra/Pulumi.prod.yaml
+          sparse-checkout-cone-mode: false
+      - id: freeze
+        name: Read wovain:freezeProduction
+        run: |
+          if grep -Eq '^[[:space:]]+wovain:freezeProduction:[[:space:]]*"?false"?[[:space:]]*$' infra/Pulumi.prod.yaml; then
+            echo "frozen=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "frozen=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Production is frozen (wovain:freezeProduction): its pulumi up is skipped."
+          fi
+
+  up:
+    # Manual only, and never while production is frozen (until the Transcend
+    # winners, ~2026-11-16): a dispatch skips it, so a run started for
+    # up-next or up-github can't apply production. The `infrastructure`
+    # environment (infra/github) also waits for the owner's approval. To
+    # apply, set `wovain:freezeProduction: "false"` in a pull request first.
+    needs: production-freeze
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && needs.production-freeze.outputs.frozen == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: infrastructure

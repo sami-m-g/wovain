@@ -80,18 +80,17 @@ test("the program registers every resource once, without throwing", async () => 
   expect(registered).toContain(
     "gcp:dns/recordSet:RecordSet::rsend-wovain-com-cname"
   );
-  // GitHub is the primary repository: production declares its Production,
-  // dev and infrastructure environments and the Actions variables deploy.yml
-  // reads (docs/adr/0004-release-branch.md). next's environment is its own
+  // GitHub is the primary repository: production declares its Production
+  // and dev environments and the Actions variables deploy.yml reads
+  // (docs/adr/0004-release-branch.md). next's environment is its own
   // stack's (next/next.test.ts); the repository, its rulesets, label and
-  // secret are the github stack's (github/github.test.ts).
+  // secret, and the `infrastructure` environment production's `up` runs in,
+  // are the github stack's (github/github.test.ts).
   for (const urn of [
     "github:index/repositoryEnvironment:RepositoryEnvironment::production",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::production-release",
     "github:index/repositoryEnvironment:RepositoryEnvironment::dev",
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::dev-main",
-    "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure",
-    "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::infrastructure-main",
     "github:index/actionsVariable:ActionsVariable::GCP_WORKLOAD_IDENTITY_PROVIDER",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::production-GCP_DEPLOY_SERVICE_ACCOUNT",
     "github:index/actionsEnvironmentVariable:ActionsEnvironmentVariable::dev-GCP_DEPLOY_SERVICE_ACCOUNT",
@@ -107,6 +106,10 @@ test("the program registers every resource once, without throwing", async () => 
   // nor next mounts any of production's secrets: each has its own.
   expect(registered).not.toContain(
     "github:index/repositoryEnvironmentDeploymentPolicy:RepositoryEnvironmentDeploymentPolicy::production-main"
+  );
+  // Two stacks never own one environment.
+  expect(registered).not.toContain(
+    "github:index/repositoryEnvironment:RepositoryEnvironment::infrastructure"
   );
   for (const urn of [
     "gcp:serviceaccount/iAMMember:IAMMember::deployer-acts-as-runner-dev",
