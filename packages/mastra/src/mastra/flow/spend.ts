@@ -10,6 +10,7 @@ import { reportUsage } from "@wovain/billing/polar";
 import { refusalError } from "@wovain/billing/refusals";
 import { user } from "@wovain/db/schema/auth";
 import { eq } from "drizzle-orm";
+import { log as evlog } from "evlog";
 
 import type { Actor } from "./actor";
 import { awaitFreeCredits } from "./free-plan";
@@ -111,10 +112,16 @@ export const settleHeld = async (
         userId: actor.userId,
       });
     } catch (error) {
-      actor.log?.set({
-        polar: {
-          usageFailed: error instanceof Error ? error.message : String(error),
+      const message = error instanceof Error ? error.message : String(error);
+      actor.log?.set({ polar: { usageFailed: message } });
+      evlog.error({
+        error: {
+          code: "POLAR_USAGE_REPORT_FAILED",
+          message: `Polar's usage report failed: ${message}`,
+          name: "PolarUsageReportFailed",
         },
+        polar: { reservationId: held.id, step },
+        userId: actor.userId,
       });
     }
   }
