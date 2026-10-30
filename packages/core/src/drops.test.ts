@@ -53,6 +53,16 @@ describe("chooseStyleFamily", () => {
     });
   });
 
+  it("picks a style for a Home pick from its theme and its Qloo cues", () => {
+    expect(chooseStyleFamily(["Dark Academia"]).family).toBe("quiet_luxury");
+    expect(
+      chooseStyleFamily(["Witchcore", "Vintage", "Botanical illustration"])
+    ).toEqual({
+      family: "indie_folk",
+      matched: ["Vintage", "Botanical illustration"],
+    });
+  });
+
   it("changes the mix when the tags change", () => {
     const anime = DROP_MIX[chooseStyleFamily(["Anime", "JRPG"]).family];
     const folk = DROP_MIX[chooseStyleFamily(["Cottagecore"]).family];

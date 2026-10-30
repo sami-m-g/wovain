@@ -130,6 +130,9 @@ export interface TrendIdea {
   // A Qloo tag of another of the brief's concepts, paired with the theme
   // (./themes).
   bridge?: { id: string; name: string } | undefined;
+  // The other Qloo tags the theme's rising entities carry, by name (an idea
+  // picked from a drop direction): the capsule's style reads them too.
+  cues?: string[] | undefined;
   // The brief's key concepts the idea carries, of how many Qloo knew.
   concepts?: { covered: string[]; total: number } | undefined;
   // Shown although it didn't pass the evidence gate, because none did: why

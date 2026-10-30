@@ -1045,6 +1045,15 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
       }
     );
 
+  // The Qloo tag IDs a name finds (/v2/tags), best first: an idea saved
+  // with its theme's name instead of its tag ID reads its tag this way.
+  const tagsNamed = async (name: string, log?: Logger): Promise<string[]> =>
+    await external(
+      log,
+      { operation: "tags.search", provider: "qloo" },
+      async () => await termTags(name)
+    );
+
   // The genre tags the given entities' fans share, highest affinity first.
   const tagsFor = async (
     entityIds: readonly string[],
@@ -1156,6 +1165,7 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     search,
     searchEntities,
     tagsFor,
+    tagsNamed,
     tasteOf,
   };
 };

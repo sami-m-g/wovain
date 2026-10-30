@@ -163,7 +163,12 @@ export interface DropDirection {
   evidence: DirectionEvidence;
   key: string;
   score: number;
-  // The Qloo genre tag the direction grew from.
+  // The other Qloo tags its rising entities carry, by name.
+  cues?: string[] | undefined;
+  // The ID of the Qloo tag the direction grew from; directions kept before
+  // it was saved have none.
+  qlooTag?: string | undefined;
+  // The Qloo genre tag the direction grew from, by name.
   theme: string;
   title: string;
   whyNow: string;
@@ -267,6 +272,8 @@ interface Candidate {
   carriers: QlooInsight[];
   // The other Qloo tags its rising entities carry: audience cues.
   cues: string[];
+  // The theme's Qloo tag ID ("urn:tag:genre:media:dark_academia").
+  id: string;
   name: string;
   weight: number;
 }
@@ -319,6 +326,7 @@ const brandCandidates = async (
       const theme = themes.get(key) ?? {
         carriers: [],
         cues: [],
+        id: tag.id,
         name: tag.name,
         weight: 0,
       };
@@ -386,6 +394,7 @@ const openCandidates = async (
       audience: audience.name,
       carriers,
       cues: tags.filter((one) => one !== tag).map((one) => one.name),
+      id: tag.id,
       name: tag.name,
       weight: tag.affinity,
     });
@@ -458,6 +467,8 @@ const saturationFor = async (
 
 interface Draft {
   caution?: Caution | undefined;
+  cues?: string[] | undefined;
+  qlooTag?: string | undefined;
   evidence: DirectionEvidence;
   key: string;
   outcome?: OutcomeWhy | undefined;
@@ -525,6 +536,7 @@ const draftOf = (
   const carriers = candidate.carriers.slice(0, EVIDENCE_REFS);
   const qlooAffinity = mean(carriers.map((one) => one.affinity));
   return {
+    cues: candidate.cues,
     evidence: {
       adLibrary,
       audience: candidate.audience,
@@ -552,6 +564,7 @@ const draftOf = (
             },
     },
     key: `d${index}`,
+    qlooTag: candidate.id,
     score: rankOf(demand, qlooAffinity, saturation?.level),
     theme: candidate.name,
   };
@@ -625,7 +638,7 @@ export const directionCardOf = (
               audience: evidence.audience,
               entities: evidence.rising,
             },
-            qlooTag: { name: draft.theme },
+            qlooTag: { id: draft.qlooTag, name: draft.theme },
             sentence: words?.status === "ok" ? words.whyNow : "",
             trend:
               evidence.momentum === undefined
@@ -1055,6 +1068,7 @@ export const trendIdeaOf = (direction: DropDirection): TrendIdea => {
   const { demand, saturation } = evidence;
   return {
     caution: direction.caution,
+    cues: direction.cues,
     moment: direction.whyNow === "" ? undefined : direction.whyNow,
     outcome: direction.outcome,
     proof: {
@@ -1071,7 +1085,7 @@ export const trendIdeaOf = (direction: DropDirection): TrendIdea => {
               sampled: saturation.sampled ?? 0,
             },
     },
-    qlooTag: direction.theme,
+    qlooTag: direction.qlooTag,
     rank: 1,
     references: [],
     score: direction.score,
