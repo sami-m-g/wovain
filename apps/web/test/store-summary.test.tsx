@@ -49,6 +49,7 @@ const shop = (patch: Partial<StoreReadiness["shop"]> = {}) => ({
   name: "Atelier",
   payoutStatus: "ACTIVE",
   siteStatus: "LIVE",
+  slug: "atelier",
   ...patch,
 });
 
@@ -120,7 +121,41 @@ describe("StoreSummary", () => {
     );
     expect(html).toContain("Finishing");
     expect(html).toContain(
-      "https://admin.fourthwall.com/?redirectPath=%2Fsettings%2F"
+      "https://admin.fourthwall.com/store/atelier/settings/"
+    );
+  });
+
+  it("links shipping to the shop's own shipping settings", () => {
+    const html = render(
+      <StoreSummary
+        onApprovals={noop}
+        readiness={{
+          checks: checks(["shipping"]),
+          ready: true,
+          shop: shop({ slug: "wovain-goods" }),
+        }}
+      />,
+      (client) => seedNumbers(client)
+    );
+    expect(html).toContain(
+      "https://admin.fourthwall.com/store/wovain-goods/settings/shipping/"
+    );
+  });
+
+  it("falls back to the admin's shop picker without a slug", () => {
+    const html = render(
+      <StoreSummary
+        onApprovals={noop}
+        readiness={{
+          checks: checks(["shipping"]),
+          ready: true,
+          shop: shop({ slug: null }),
+        }}
+      />,
+      (client) => seedNumbers(client)
+    );
+    expect(html).toContain(
+      "https://admin.fourthwall.com/?redirectPath=%2Fsettings%2Fshipping%2F"
     );
   });
 });

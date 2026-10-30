@@ -69,11 +69,13 @@ export const useMoney = () => {
  */
 export const AdminLink = ({
   page,
+  slug,
   children,
   className,
   variant = "link",
 }: {
   page: FourthwallAdminPage;
+  slug?: string | null;
   children?: ReactNode;
   className?: string;
   variant?: "link" | "outline" | "ghost";
@@ -87,7 +89,7 @@ export const AdminLink = ({
           : cn(buttonVariants({ size: "sm", variant }), "gap-1.5"),
         className
       )}
-      href={fourthwallAdminUrl(page)}
+      href={fourthwallAdminUrl(page, slug)}
       rel="noopener noreferrer"
       target="_blank"
     >

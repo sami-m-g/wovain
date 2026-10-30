@@ -30,6 +30,8 @@ export interface ShopFacts {
   name: string | undefined;
   // The hosts the storefront answers on, lower-case.
   hosts: string[];
+  // The shop's handle in the Fourthwall admin (admin.fourthwall.com/store/<slug>/).
+  slug?: string | undefined;
 }
 
 export const READINESS_CHECKS = [
@@ -44,7 +46,9 @@ export interface ReadinessCheck {
   id: ReadinessCheckId;
   ok: boolean;
   // Blocks publishing when not ok. Payouts only warn: sales still go
-  // through while Stripe onboarding finishes.
+  // through while Stripe onboarding finishes. Shipping only warns too: it
+  // covers self-fulfilled items, and Fourthwall ships what it makes
+  // (help.fourthwall.com change-shipping-options).
   blocking: boolean;
 }
 
@@ -62,7 +66,7 @@ export const evaluateReadiness = (facts: ShopFacts): Readiness => {
       ok: facts.verificationRestrictions.length === 0,
     },
     {
-      blocking: true,
+      blocking: false,
       id: "shipping",
       ok: facts.shippingEnabled && facts.enabledShippingProfiles > 0,
     },
@@ -82,6 +86,7 @@ const shopSchema = z.object({
   internalDomain: z.string().optional(),
   name: z.string().optional(),
   primaryDomain: z.string().optional(),
+  slug: z.string().min(1).optional(),
   status: z.string(),
   verificationRestrictions: z.array(z.string()).default([]),
 });
@@ -94,6 +99,12 @@ const shippingSchema = z.object({
 const payoutSchema = z.object({
   status: z.enum(["INACTIVE", "IN_PROGRESS", "ACTIVE"]),
 });
+
+// The shop's handle from its Fourthwall subdomain (<slug>.fourthwall.com),
+// when the reply has no slug of its own.
+const FOURTHWALL_SUBDOMAIN = /^(?<slug>[a-z0-9-]+)\.fourthwall\.com$/u;
+const fourthwallSubdomain = (host: string | undefined) =>
+  host?.toLowerCase().match(FOURTHWALL_SUBDOMAIN)?.groups?.slug;
 
 // Every host the storefront answers on (its Fourthwall subdomain and any
 // custom domain), lower-case: what the Meta pixel's events must come from.
@@ -141,6 +152,7 @@ export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
     payoutStatus: pay?.status,
     shippingEnabled: ship?.enabled ?? false,
     siteStatus: site?.status,
+    slug: site?.slug ?? fourthwallSubdomain(site?.internalDomain),
     verificationRestrictions: site?.verificationRestrictions ?? [],
   };
 };

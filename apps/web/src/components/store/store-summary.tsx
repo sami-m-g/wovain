@@ -109,12 +109,58 @@ export const GoLive = ({ name }: { name: string | null }) => {
 };
 
 /** The fix for one failing check: an action here, else a Fourthwall link. */
-const FixIt = ({ id, shopName }: { id: CheckId; shopName: string | null }) => {
+const FixIt = ({ id, shop }: { id: CheckId; shop: StoreReadiness["shop"] }) => {
   const t = useTranslations("Store.summary");
   if (id === "site_live") {
-    return <GoLive name={shopName} />;
+    return <GoLive name={shop.name} />;
   }
-  return <AdminLink page="settings">{t("fixIt")}</AdminLink>;
+  return (
+    <AdminLink
+      page={id === "shipping" ? "shipping" : "settings"}
+      slug={shop.slug}
+    >
+      {t("fixIt")}
+    </AdminLink>
+  );
+};
+
+/**
+ * Where a publish happens outside the Store (the drop flow): the checks that
+ * block it, each with its fix right there.
+ */
+export const ReadinessGate = ({ readiness }: { readiness: StoreReadiness }) => {
+  const checks = useTranslations("Store.readiness");
+  const blocking = readiness.checks.filter(
+    (check) => check.blocking && !check.ok
+  );
+  if (blocking.length === 0) {
+    return null;
+  }
+  return (
+    <section
+      aria-label={checks("title")}
+      className="border-border bg-card flex flex-col gap-3 rounded-xl border px-4 py-3"
+    >
+      <p className="text-sm font-medium">{checks("notReady")}</p>
+      <ul className="flex flex-col gap-3">
+        {blocking.map((check) => (
+          <li
+            className="flex flex-wrap items-center justify-between gap-2 text-sm"
+            key={check.id}
+          >
+            <span>
+              {checks(`${check.id}.label`)}
+              <span className="sr-only">{checks("failed")}</span>
+              <span className="text-muted-foreground block text-xs">
+                {checks(`${check.id}.fix`)}
+              </span>
+            </span>
+            <FixIt id={check.id} shop={readiness.shop} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 };
 
 const Figure = ({
@@ -207,7 +253,7 @@ export const StoreSummary = ({
                   </span>
                 </span>
               </span>
-              <FixIt id={fix.id} shopName={shop.name} />
+              <FixIt id={fix.id} shop={shop} />
             </>
           )}
         </div>
