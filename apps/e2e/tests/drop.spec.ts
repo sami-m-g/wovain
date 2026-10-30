@@ -30,7 +30,8 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
   await expect(page.getByText(news).first()).toBeVisible();
   await expect(page.getByText(listings).first()).toBeVisible();
   await page.getByRole("button", { name: "Who buys this" }).first().click();
-  await expect(page.getByText(/^Mostly /u).first()).toBeVisible();
+  // The age line needs Qloo demographics; the source line is always there.
+  await expect(page.getByText(/From Qloo's taste data/u).first()).toBeVisible();
 });
 
 // Use case 4: a typed brief, then trends, ideas, pick, designs and approve.
