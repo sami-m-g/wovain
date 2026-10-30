@@ -82,6 +82,9 @@ interface ServiceArgs {
   // The image's own port (its Dockerfile).
   port: number;
   maxInstances: number;
+  // Instances kept warm, so a request never waits on a cold start; 0 if
+  // unset. Each idles at Cloud Run's idle rate.
+  minInstances?: number;
   serviceAccount: pulumi.Input<string>;
   // Mounts the instance's Auth Proxy socket under /cloudsql.
   cloudSqlInstance?: pulumi.Input<string>;
@@ -131,7 +134,10 @@ export const cloudRunService = (logicalName: string, args: ServiceArgs) => {
                 : [{ mountPath: "/cloudsql", name: "cloudsql" }],
           },
         ],
-        scaling: { maxInstanceCount: args.maxInstances, minInstanceCount: 0 },
+        scaling: {
+          maxInstanceCount: args.maxInstances,
+          minInstanceCount: args.minInstances ?? 0,
+        },
         serviceAccount: args.serviceAccount,
         timeout: args.timeout,
         volumes:

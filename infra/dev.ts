@@ -51,6 +51,8 @@ interface EnvironmentArgs {
   kept: pulumi.CustomResourceOptions;
   afterApis: pulumi.CustomResourceOptions;
   deploy?: Deploy;
+  // Instances kept warm; 0 (scale to zero) if unset.
+  minInstances?: number;
 }
 
 // The deploy account and image repository of an environment main deploys.
@@ -252,6 +254,7 @@ export const appEnvironment = (args: EnvironmentArgs) => {
     maxInstances: 2,
     // The same app as production's, with Mastra's agents in-process.
     memory: "1Gi",
+    minInstances: args.minInstances,
     name: `wovain-web-${name}`,
     port: 3001,
     serviceAccount: runner.email,
