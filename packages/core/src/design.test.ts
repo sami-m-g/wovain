@@ -466,6 +466,23 @@ describe("draftBrief", () => {
     expect(briefSchema.shape).not.toHaveProperty("garmentColors");
   });
 
+  it("draws on the blank's colours when the product's blank is known", async () => {
+    const { garmentColors: _asked, ...reply } = brief;
+    const { ask, asked } = fakeAgents({ design_brief: [reply] });
+
+    const drafted = await draftBrief(ask, {
+      avoidNames: [],
+      garments: ["Ivory", "Pepper"],
+      idea: idea("anime", 0.9),
+    });
+
+    expect(drafted.garmentColors).toEqual(["Ivory", "Pepper"]);
+    expect(JSON.parse(asked[0]?.prompt ?? "{}").garmentColors).toEqual([
+      "Ivory",
+      "Pepper",
+    ]);
+  });
+
   it("uses the default garments when no palette is chosen", async () => {
     const { garmentColors: _asked, ...reply } = brief;
     const { ask } = fakeAgents({ design_brief: [reply] });

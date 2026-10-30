@@ -155,6 +155,7 @@ export const draftBrief = async (
   {
     avoidNames,
     competition,
+    garments,
     idea,
     previous,
     style,
@@ -162,6 +163,9 @@ export const draftBrief = async (
     avoidNames: string[];
     // The competition's looks to avoid and gaps to aim at (./competition).
     competition?: { aimAt: string[]; avoidLooks: string[] } | undefined;
+    // The garment colours as the product's blank offers them
+    // (./garment-colors blankGarments); the palette's when not given.
+    garments?: string[] | undefined;
     idea: TrendIdea;
     previous?: Previous | undefined;
     // The drop's tone and palette, and the brand voice as guardrails
@@ -170,7 +174,10 @@ export const draftBrief = async (
   },
   log?: Logger
 ): Promise<DesignBrief> => {
-  const garmentColors = garmentColorsFor(style);
+  const garmentColors =
+    garments !== undefined && garments.length > 0
+      ? garments
+      : garmentColorsFor(style);
   const brief = await ask({
     // The listing a buyer reads; the art prompt only steers the artist.
     grounded: (reply) => `${reply.title}\n${reply.description}`,

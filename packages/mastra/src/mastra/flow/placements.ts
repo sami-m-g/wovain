@@ -3,6 +3,8 @@ import {
   previewDesign,
   uploadArtwork,
 } from "@wovain/core/fourthwall";
+import { blankVariants } from "@wovain/core/fourthwall-drops";
+import { blankGarments } from "@wovain/core/garment-colors";
 import { connection, design } from "@wovain/db/schema/seller";
 import { and, eq } from "drizzle-orm";
 import { log } from "evlog";
@@ -29,6 +31,39 @@ const hasFourthwall = async ({ db, userId }: Actor) => {
       and(eq(connection.userId, userId), eq(connection.provider, "fourthwall"))
     );
   return row !== undefined && !row.needsReconnect;
+};
+
+// The design's garment colours held to the colours its product's blank
+// comes in (the same pick as the preview and ./products), so the brief, the
+// vision check and the product all name the same colours. Without a working
+// Fourthwall connection the wanted colours stay as they are; a failed read
+// is logged at error level and does the same.
+export const garmentsOnBlank = async (
+  actor: Actor,
+  wanted: string[]
+): Promise<string[]> => {
+  if (!(await hasFourthwall(actor))) {
+    return wanted;
+  }
+  try {
+    return await withProvider(actor, "fourthwall", async (call) => {
+      const blank = await pickBlank(call, {
+        defaultProductId: actor.core.defaultCatalogProductId,
+      });
+      const { colors } = await blankVariants(call, blank.slug);
+      return blankGarments(wanted, colors);
+    });
+  } catch (error) {
+    log.error({
+      error: {
+        code: "BLANK_COLORS_UNREAD",
+        message: error instanceof Error ? error.message : String(error),
+        name: "BlankColorsUnread",
+      },
+      garments: { userId: actor.userId, wanted },
+    });
+    return wanted;
+  }
 };
 
 // Uploads the art and renders it on the blank's front print. Each write is

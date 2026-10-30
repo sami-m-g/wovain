@@ -23,6 +23,8 @@ catalog:
   "@playwright/test": ^1.64.1
   zod: ^4.6.7
   "@toon-format/toon": ^4.4.0
+  culori: ^4.0.2
+  "@types/culori": ^4.0.1
   "@stdlib/stats-base-dists-beta-cdf": ^0.2.3
   sharp: ^0.35.5
   "@base-ui/react": ^1.9.0

@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 
 import {
   MIN_INK_CONTRAST,
+  blankGarments,
   contrastRatio,
   fitPalette,
   knownGarments,
@@ -75,4 +76,24 @@ it("drops inks that can't read on both a light and a dark garment", () => {
   );
   // Mid grey moved toward white still fails on Ivory; nothing reads on both.
   expect(fitted).toBeUndefined();
+});
+
+// A blank's colours, spelled as Fourthwall lists them.
+const blank = ["Black", "Pepper", "Ivory", "Navy"];
+
+it("keeps a palette colour the blank offers, spelled as the blank lists it", () => {
+  expect(blankGarments(["black", "ivory"], blank)).toEqual(["Black", "Ivory"]);
+});
+
+it("maps a palette colour the blank lacks to its nearest colour", () => {
+  // Natural is closest to Ivory, Charcoal to Pepper (CIEDE2000).
+  expect(blankGarments(["Natural", "Charcoal"], blank)).toEqual([
+    "Ivory",
+    "Pepper",
+  ]);
+});
+
+it("uses the blank's own first colour when no palette colour can be matched", () => {
+  expect(blankGarments(["Watermelon Swirl"], blank)).toEqual(["Black"]);
+  expect(blankGarments([], blank)).toEqual(["Black"]);
 });
