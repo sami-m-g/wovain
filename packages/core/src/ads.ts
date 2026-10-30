@@ -320,16 +320,52 @@ export const adAccountFor = async (
     given
   );
 
+const pageSchema = z.looseObject({
+  page_id: z.union([z.string().min(1), z.number()]),
+  page_name: z.string().optional(),
+});
+
+export interface MetaPage {
+  id: string;
+  name: string | null;
+}
+
+const pagesIn = (reply: unknown): MetaPage[] =>
+  findAll(pageSchema, reply).map((page) => ({
+    id: String(page.page_id),
+    name: page.page_name ?? null,
+  }));
+
+// The Pages an ad can run as: those already promoted under the ad account,
+// or, when it has promoted none yet (a new account always), every Page the
+// merchant may advertise for (ads_get_user_pages: the Pages they admin and
+// their businesses' Pages).
+export const usablePages = async (
+  call: ToolCall,
+  adAccountId: string
+): Promise<MetaPage[]> => {
+  const promoted = pagesIn(
+    await call("ads_get_ad_account_pages", { ad_account_id: adAccountId })
+  );
+  return promoted.length > 0
+    ? promoted
+    : pagesIn(await call("ads_get_user_pages", {}));
+};
+
 const resolvePage = async (
   call: ToolCall,
   adAccountId: string,
   given?: string
-) =>
-  given ??
-  idOf(
-    await call("ads_get_ad_account_pages", { ad_account_id: adAccountId }),
-    "page_id"
-  );
+) => {
+  if (given !== undefined) {
+    return given;
+  }
+  const [first] = await usablePages(call, adAccountId);
+  if (first === undefined) {
+    throw new Error("The merchant has no Facebook Page to run ads as");
+  }
+  return first.id;
+};
 
 // The campaign, ad set or ad on the account whose name ends with `name`.
 const findByName = async (

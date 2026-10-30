@@ -14,7 +14,7 @@ import { useState } from "react";
 import type { Stage } from "@/components/product/run-tape";
 import { stageOf } from "@/components/product/run-tape";
 import type { FlowProblem, RunDetail } from "@/lib/flow-client";
-import { describeProblem } from "@/lib/flow-client";
+import { awaitCampaign, describeProblem } from "@/lib/flow-client";
 import { client, orpc } from "@/utils/orpc";
 
 // The server's cap on designs per test campaign (MAX_TEST_DESIGNS in
@@ -245,9 +245,15 @@ const useFlowMutations = (refreshList: () => Promise<void>) => {
     }) =>
       // A drop launches as a small test: up to MAX_TEST_DESIGNS designs
       // share one campaign.
+      // Each stages in the background (Meta's processing outlasts a
+      // request); the step waits for it here.
       Promise.all(
-        chunks(productIds, MAX_TEST_DESIGNS).map((group) =>
-          client.campaigns.test({ dailyBudget, productIds: group })
+        chunks(productIds, MAX_TEST_DESIGNS).map(
+          async (group) =>
+            await awaitCampaign(
+              await client.campaigns.test({ dailyBudget, productIds: group }),
+              async (key) => await client.campaigns.staging({ key })
+            )
         )
       ),
     mutationKey: orpc.campaigns.test.mutationKey(),

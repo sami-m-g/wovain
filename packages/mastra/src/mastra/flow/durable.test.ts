@@ -34,17 +34,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Core } from "../services";
 import { createLegacyRunEngine, createRunRouter } from "../workflows/rollout";
 import { isPermanent } from "../workflows/run";
-import type { Actor, RunEngine } from "./actor";
+import type { Actor, EventSender, RunEngine } from "./actor";
+import { notReady } from "./actor";
 import {
+  campaignStaging,
   compensateRun,
   createDropCampaign,
   createProductCampaign,
+  failCampaignStaging,
+  requestDropCampaign,
 } from "./campaigns";
 import { listConnections, requireFal, withProvider } from "./connections";
 import { decideDesign, generateDesign } from "./designs";
 import { cacheKeyOf } from "./drop-directions";
 import { researchIdeas } from "./ideas";
 import { getInsights, storedAdScores } from "./insights";
+import { chooseMetaPage, metaPages } from "./meta-pages";
 import { once } from "./once";
 import { previewPlacement } from "./placements";
 import { createDesignProduct } from "./products";
@@ -777,6 +782,165 @@ describe("createDropCampaign", () => {
       productId,
     });
     expect(plain.id).toBe(staged.id);
+  });
+});
+
+const READS = new Set([
+  "ads_get_ad_account_pages",
+  "ads_get_ad_accounts",
+  "ads_get_ig_accounts",
+]);
+
+// The Meta fake, with Instagram (Meta setup reads it) and, optionally, an
+// account without Pages; events go to a spy.
+// `own`: the merchant's Pages when the ad account has promoted none.
+const staging = async ({
+  own,
+}: { own?: { page_id: string; page_name: string }[] } = {}) => {
+  const ads = meta({ loseAdSetAnswer: false });
+  const call: ToolCall = async (tool, args) => {
+    if (tool === "ads_get_ig_accounts") {
+      return await Promise.resolve({ ig_accounts: [] });
+    }
+    if (tool === "ads_get_ad_account_pages" && own !== undefined) {
+      return await Promise.resolve({ pages: [] });
+    }
+    if (tool === "ads_get_user_pages") {
+      return await Promise.resolve({ pages: own ?? [] });
+    }
+    return await ads.call(tool, args);
+  };
+  const ctx = await setup({ meta: call });
+  const send = vi.fn<EventSender["send"]>(async () => await Promise.resolve());
+  const actor: Actor = { ...ctx.actor, events: { send } };
+  const { designId } = await seedRun(ctx.db, "running");
+  const productIds = [await publishedProduct(ctx.db, designId)];
+  return {
+    actor,
+    ads,
+    ctx,
+    input: { countries: ["US"], dailyBudget: 15, productIds },
+    send,
+  };
+};
+
+describe("requestDropCampaign", () => {
+  it("queues the staging and returns before any Meta write or video wait", async () => {
+    const { actor, ads, input, send } = await staging();
+
+    const started = await requestDropCampaign(actor, input);
+
+    expect(started.state).toBe("staging");
+    // Only the setup reads ran in the request: no upload, no video poll.
+    expect(ads.calls.every((item) => READS.has(item.tool))).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: started.key,
+        name: "wovain/campaign.stage.requested",
+      })
+    );
+    // A second click while it stages sends the same event id: Inngest
+    // drops it.
+    await requestDropCampaign(actor, input);
+    expect(send.mock.calls.map(([event]) => event.id)).toEqual([
+      started.key,
+      started.key,
+    ]);
+    expect(await campaignStaging(actor, started.key)).toEqual({
+      key: started.key,
+      state: "staging",
+    });
+  });
+
+  it("stages one campaign however often the job runs, then answers ready", async () => {
+    const { actor, ads, ctx, input, send } = await staging();
+    const started = await requestDropCampaign(actor, input);
+
+    // The job, and a retry of it after a crash or a timeout.
+    await createDropCampaign(actor, input);
+    await createDropCampaign(actor, input);
+
+    expect(ads.count("ads_create_campaign")).toBe(1);
+    expect(await ctx.db.select().from(campaign)).toHaveLength(1);
+    const ready = await campaignStaging(actor, started.key);
+    expect(ready.state).toBe("ready");
+    // Asked again, it answers with the campaign and queues nothing.
+    const again = await requestDropCampaign(actor, input);
+    expect(again.state).toBe("ready");
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a failure for the page, and a retry queues a new staging", async () => {
+    const { actor, input, send } = await staging();
+    const started = await requestDropCampaign(actor, input);
+    const refused = notReady({ fix: "Do this.", message: "Not yet" });
+
+    await failCampaignStaging(actor, started.key, refused);
+    // The failure handler's later, poorer copy doesn't replace it.
+    await failCampaignStaging(actor, started.key, new Error("timed out"));
+
+    expect(await campaignStaging(actor, started.key)).toMatchObject({
+      code: "PRECONDITION_FAILED",
+      data: { fix: "Do this." },
+      message: "Not yet",
+      state: "failed",
+    });
+    await requestDropCampaign(actor, input);
+    const ids = send.mock.calls.map(([event]) => event.id);
+    expect(ids).toHaveLength(2);
+    expect(ids[1]).not.toBe(started.key);
+    const retried = await campaignStaging(actor, started.key);
+    expect(retried.state).toBe("staging");
+  });
+
+  it("runs the ads as the merchant's own Page on a new ad account, and keeps their pick", async () => {
+    const { actor, ads, ctx, input } = await staging({
+      own: [
+        { page_id: "1176937232179011", page_name: "Wodev" },
+        { page_id: "1463029740227129", page_name: "Wovain" },
+      ],
+    });
+    await ctx.db
+      .update(brandProfile)
+      .set({ displayName: "wovain" })
+      .where(eq(brandProfile.userId, USER_ID));
+    await ctx.db.insert(connection).values({
+      provider: "meta",
+      sealedTokens: "sealed",
+      userId: USER_ID,
+    });
+
+    // A new ad account has promoted no Page: the merchant's own count, and
+    // the one named like the brand is the default.
+    expect(await metaPages(actor)).toEqual({
+      pages: [
+        { id: "1176937232179011", name: "Wodev" },
+        { id: "1463029740227129", name: "Wovain" },
+      ],
+      selected: "1463029740227129",
+    });
+    const started = await requestDropCampaign(actor, input);
+    expect(started.state).toBe("staging");
+
+    await chooseMetaPage(actor, "1176937232179011");
+    await createDropCampaign(actor, input);
+    const creative = ads.calls.find(
+      (item) => item.tool === "ads_create_creative"
+    );
+    expect(JSON.stringify(creative?.args)).toContain("1176937232179011");
+    await expect(chooseMetaPage(actor, "999")).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+    });
+  });
+
+  it("refuses without a Facebook Page and queues nothing", async () => {
+    const { actor, input, send } = await staging({ own: [] });
+
+    await expect(requestDropCampaign(actor, input)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "Your Meta ad account has no Facebook Page to run the ads as",
+    });
+    expect(send).not.toHaveBeenCalled();
   });
 });
 

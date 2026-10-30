@@ -38,6 +38,7 @@ describe("Meta setup", () => {
         ads_get_ad_account_pages: { pages: [] },
         ads_get_ad_accounts: { ad_accounts: [ACCOUNT] },
         ads_get_ig_accounts: { ig_accounts: [] },
+        ads_get_user_pages: { pages: [] },
       })
     );
     const steps = evaluateMetaSetup({ facts, graph: undefined });
@@ -92,6 +93,7 @@ describe("Meta setup", () => {
           ad_accounts: [{ ...ACCOUNT, account_status: 2 }],
         },
         ads_get_ig_accounts: { ig_accounts: [] },
+        ads_get_user_pages: { pages: [] },
       })
     );
     const steps = evaluateMetaSetup({ facts, graph: undefined });

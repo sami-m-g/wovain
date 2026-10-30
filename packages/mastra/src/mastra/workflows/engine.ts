@@ -9,6 +9,7 @@ import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
 import { createAlertFunctions } from "./alerts";
 import { createAutopilotFunctions } from "./autopilot";
+import { createCampaignFunctions } from "./campaigns";
 import { createDirectionFunctions } from "./directions";
 import { createDropFunctions } from "./drops";
 import { createFeedbackFunctions } from "./feedback";
@@ -188,6 +189,7 @@ export const createRunEngine = ({
       ...createStoreFunctions(inngest, services),
       ...createDropFunctions(inngest, services),
       ...createVideoFunctions(inngest, services),
+      ...createCampaignFunctions(inngest, services),
       ...createDirectionFunctions(inngest, services),
       // Alerts (openspec alerts) send wovain/notify for approvals and
       // failed jobs, and deliver it.
