@@ -60,18 +60,22 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   page,
 }) => {
   // Real research and art take minutes on next; the mocks take seconds.
-  test.setTimeout(isSmoke ? 720_000 : 90_000);
+  test.setTimeout(isSmoke ? 480_000 : 90_000);
   await page.goto("/dashboard/new");
   await page
     .getByRole("textbox", { name: "What should this drop be about?" })
     .fill("Cozy botanical tees for plant lovers, Studio Ghibli fans");
   await page.getByRole("button", { name: "Research trends" }).click();
 
-  await expect(
-    page.getByRole("heading", { name: "Pick the ideas" })
-  ).toBeVisible({
-    timeout: 300_000,
-  });
+  // A failed run shows why at once; fail on it rather than wait it out.
+  const ideasHeading = page.getByRole("heading", { name: "Pick the ideas" });
+  const failed = page
+    .getByRole("alert")
+    .filter({ hasText: /The drop stopped during/u });
+  await expect(ideasHeading.or(failed)).toBeVisible({ timeout: 120_000 });
+  // The diff names the step and the provider's words.
+  expect(await failed.allInnerTexts()).toEqual([]);
+  await expect(ideasHeading).toBeVisible();
   // Each idea with its evidence, who buys it and its competition.
   await expect(
     page.getByRole("link", { name: /^\[1\]/u }).first()

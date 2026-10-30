@@ -28,6 +28,14 @@ const FIXES: Record<Provider, string> = {
 
 const MAX_REASON = 300;
 
+// A provider out of credits on wovain's plan (Tavily's SDK drops its 432
+// status and keeps only these words). No retry passes until the plan is
+// topped up, so it is a 4xx: the run fails at once with the reason instead
+// of spending minutes on retries.
+const OUT_OF_CREDITS = /usage limit|exceeds your plan|pay-as-you-go limit/iu;
+const PAYMENT_REQUIRED = 402;
+const BAD_GATEWAY = 502;
+
 // The provider's own words, led by its HTTP status when the error has one
 // (the MCP SDK's SdkHttpError, a fetch failure): "401 invalid_token …".
 const reasonOf = (error: unknown) => {
@@ -76,7 +84,7 @@ export const external = async <T>(
       internal: { operation, provider },
       // The reason rides in the message too: a run keeps only the message.
       message: `${provider} ${operation} failed: ${why}`,
-      status: 502,
+      status: OUT_OF_CREDITS.test(why) ? PAYMENT_REQUIRED : BAD_GATEWAY,
       why,
       ...(error instanceof Error ? { cause: error } : {}),
     });

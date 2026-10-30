@@ -52,6 +52,26 @@ describe("external", () => {
     );
   });
 
+  it("makes a provider's spent plan a 4xx, so the run fails at once", async () => {
+    // Tavily's SDK throws a plain Error with only these words.
+    const spent = new Error(
+      "This request exceeds your plan's set usage limit. Please upgrade your plan or contact support@tavily.com"
+    );
+
+    await expect(
+      external(
+        undefined,
+        { operation: "search", provider: "tavily" },
+        async () => await Promise.reject(spent)
+      )
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        EvlogError.isEvlogError(error) &&
+        error.code === "TAVILY_FAILED" &&
+        error.status === 402
+    );
+  });
+
   it("passes a result through and records success", async () => {
     const set = vi.fn();
     const value = await external(
