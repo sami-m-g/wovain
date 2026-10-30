@@ -133,7 +133,9 @@ export const PriceCheck = ({
           </Button>
         )}
       </div>
-      <p className="text-muted-foreground text-xs">{t("source")}</p>
+      <p className="text-muted-foreground text-xs">
+        {t(costs.data.estimated ? "sourceEstimated" : "source")}
+      </p>
     </section>
   );
 };

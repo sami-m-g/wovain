@@ -655,6 +655,7 @@
       "title": "Publish the products",
       "lead": "Real Fourthwall blanks, priced to clear at least $10 profit per sale after fees. They stay hidden until you publish.",
       "price": "Price",
+      "estimated": "{cost} (estimated)",
       "breakdown": "Base cost {cost} · your profit {profit} per sale · {margin} margin",
       "rule": "Why this price: at least {profit} profit and {margin} margin after card fees, tax and a refund reserve.",
       "hidden": "Hidden",
@@ -1889,6 +1890,7 @@
       "useFloor": "Use {price} (wovain's floor)",
       "useBenchmark": "Use {price} ({margin} margin)",
       "source": "Cost: what Fourthwall charges to make each size. Profit: after card fees, tax and a refund reserve.",
+      "sourceEstimated": "Cost estimated from Fourthwall's catalog (the blank's price plus each print area's), because its pricing for this product couldn't be read. Profit: after card fees, tax and a refund reserve.",
       "noCost": "Fourthwall gave no cost for this product, so the price can't be checked.",
       "unavailable": "The price check isn't available: {reason}"
     },

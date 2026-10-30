@@ -784,7 +784,9 @@ const PriceWhy = ({ product }: { product: Product }) => {
     <span className="text-muted-foreground flex flex-col gap-0.5 text-xs">
       <span className="figures">
         {t("breakdown", {
-          cost: money(base.cost),
+          cost: costs.data.estimated
+            ? t("estimated", { cost: money(base.cost) })
+            : money(base.cost),
           // The margin the rule speaks of: profit after fees over price.
           margin: percent(base.profit / product.price),
           profit: money(base.profit),

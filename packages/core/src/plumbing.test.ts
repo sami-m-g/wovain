@@ -233,6 +233,32 @@ describe("resultData", () => {
     expect(toonFailure({ id: "a" })).toBe("");
   });
 
+  it("reads the text when the structured money has no amount", () => {
+    // Fourthwall's pricing reply on next: structured money without its amount.
+    const amountless = {
+      currency: "USD",
+      currencyScale: 2,
+      isZero: false,
+    };
+    const structuredContent = {
+      pricing: [{ perSize: [{ cost: amountless, size: "M" }] }],
+    };
+    const text = JSON.stringify({
+      pricing: [
+        { perSize: [{ cost: { currency: "USD", value: 21.4 }, size: "M" }] },
+      ],
+    });
+    expect(
+      resultData({ content: [{ text, type: "text" }], structuredContent })
+    ).toEqual(JSON.parse(text));
+    expect(
+      resultData({
+        content: [{ text: "Done", type: "text" }],
+        structuredContent,
+      })
+    ).toBe(structuredContent);
+  });
+
   it("keeps prose that isn't JSON or TOON as text", () => {
     expect(
       resultData({ content: [{ text: "Product created", type: "text" }] })
