@@ -39,7 +39,7 @@ permissions: {}
 
 env:
   # `shadow` until the first week shows the plans are right, then `live`.
-  SHEPHERD_MODE: shadow
+  SHEPHERD_MODE: live
   SHEPHERD_MAX_PER_PR: 5
   SHEPHERD_MAX_PER_DAY: 30
 
