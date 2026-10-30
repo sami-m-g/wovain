@@ -23,4 +23,4 @@
 
 ## 5. Verify
 
-- [ ] 5.1 One real ad on next; record its URL and cost
+- [x] 5.1 One real ad on fal with the production inputs; its URLs and cost are in design.md
