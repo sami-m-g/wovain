@@ -21,8 +21,6 @@ export interface ShopFacts {
   siteStatus: string | undefined;
   // Non-empty while Fourthwall is verifying the shop. Never shown by name.
   verificationRestrictions: string[];
-  // OWNER, MANAGER, DESIGNER or VIEWER: the connected user's groups.
-  roles: string[];
   shippingEnabled: boolean;
   enabledShippingProfiles: number;
   // INACTIVE, IN_PROGRESS or ACTIVE.
@@ -37,7 +35,6 @@ export interface ShopFacts {
 export const READINESS_CHECKS = [
   "site_live",
   "verified",
-  "store_role",
   "shipping",
   "payouts",
 ] as const;
@@ -56,8 +53,6 @@ export interface Readiness {
   checks: ReadinessCheck[];
 }
 
-const STORE_ROLES = new Set(["OWNER", "MANAGER"]);
-
 export const evaluateReadiness = (facts: ShopFacts): Readiness => {
   const checks: ReadinessCheck[] = [
     { blocking: true, id: "site_live", ok: facts.siteStatus === "LIVE" },
@@ -65,11 +60,6 @@ export const evaluateReadiness = (facts: ShopFacts): Readiness => {
       blocking: true,
       id: "verified",
       ok: facts.verificationRestrictions.length === 0,
-    },
-    {
-      blocking: true,
-      id: "store_role",
-      ok: facts.roles.some((role) => STORE_ROLES.has(role)),
     },
     {
       blocking: true,
@@ -95,7 +85,6 @@ const shopSchema = z.object({
   status: z.string(),
   verificationRestrictions: z.array(z.string()).default([]),
 });
-const permissionsSchema = z.object({ groups: z.array(z.string()) });
 const shippingSchema = z.object({
   enabled: z.boolean(),
   shippingProfiles: z
@@ -131,16 +120,16 @@ const shopHosts = (site: z.infer<typeof shopSchema> | undefined) => {
   ];
 };
 
-// Reads the four replies the readiness check needs, in parallel.
+// Reads the three replies the readiness check needs, in parallel. The
+// user's Fourthwall role isn't read: Fourthwall refuses any write the role
+// doesn't allow, and that error reaches the merchant.
 export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
-  const [shop, permissions, shipping, payout] = await Promise.all([
+  const [shop, shipping, payout] = await Promise.all([
     call("ecommerce_get-current-shop", {}),
-    call("ecommerce_get-shop-permissions", {}),
     call("ecommerce_get-shipping-profiles", {}),
     call("ecommerce_get-payout-info", {}),
   ]);
   const [site] = findAll(shopSchema, shop);
-  const [roles] = findAll(permissionsSchema, permissions);
   const [ship] = findAll(shippingSchema, shipping);
   const [pay] = findAll(payoutSchema, payout);
   return {
@@ -150,7 +139,6 @@ export const readShopFacts = async (call: ToolCall): Promise<ShopFacts> => {
     hosts: shopHosts(site),
     name: site?.name,
     payoutStatus: pay?.status,
-    roles: roles?.groups ?? [],
     shippingEnabled: ship?.enabled ?? false,
     siteStatus: site?.status,
     verificationRestrictions: site?.verificationRestrictions ?? [],

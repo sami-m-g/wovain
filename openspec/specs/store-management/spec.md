@@ -46,7 +46,7 @@ Only a lost race for the executor's lock SHALL be skipped without an error; any 
 
 ### Requirement: Store readiness
 
-The system SHALL report whether the shop is ready to sell: the site is live, the shop is not held for verification, the connected user is an owner or manager, shipping is on with at least one profile, and payouts are set up. Payouts SHALL only warn. Publishing SHALL fail with the failing checks named while any blocking check fails.
+The system SHALL report whether the shop is ready to sell: the site is live, the shop is not held for verification, shipping is on with at least one profile, and payouts are set up. Payouts SHALL only warn. Publishing SHALL fail with the failing checks named while any blocking check fails.
 
 #### Scenario: Shop coming soon
 
@@ -201,7 +201,7 @@ The Store SHALL offer to rewrite a product's page: a title of at most 60 charact
 
 ### Requirement: Store setup checklist
 
-The Store page SHALL show a setup checklist for the connected shop: shop connected as owner or manager, payouts, shop live, shipping and the Meta pixel on the shop (required), plus custom domain and policies (optional). Each open step SHALL be done by wovain through the approval queue or offer a one-click deep link into Fourthwall. While a required step is open, the page SHALL poll so a step finished in Fourthwall ticks off without a reload.
+The Store page SHALL show a setup checklist for the connected shop: shop connected (the grant reads the shop), payouts, shop live, shipping and the Meta pixel on the shop (required), plus custom domain and policies (optional). Each open step SHALL be done by wovain through the approval queue or offer a one-click deep link into Fourthwall. While a required step is open, the page SHALL poll so a step finished in Fourthwall ticks off without a reload.
 
 #### Scenario: Payouts finished in Fourthwall
 
