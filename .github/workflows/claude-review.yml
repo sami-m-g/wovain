@@ -18,39 +18,9 @@ name: claude-review
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    # The same paths CodeRabbit skips (.coderabbit.yaml path_filters): prose,
-    # specs, translations, assets, lockfiles, generated and vendored files.
-    # A pull request that only changes these costs no subscription quota.
-    paths-ignore:
-      - "**/*.md"
-      - "**/*.mdx"
-      - "docs/**"
-      - "openspec/**"
-      - "apps/web/messages/*.json"
-      - "**/public/**"
-      - "skills-lock.json"
-      - "**/pnpm-lock.yaml"
-      - "docker/*/package-lock.json"
-      - "patches/**"
-      - "packages/db/src/migrations/**"
-      - "packages/db/src/schema/auth.ts"
-      - "**/src/env.ts"
-      - "packages/core/src/evals/report.v1.json"
-      - "packages/ui/src/components/**"
-      - "packages/ui/src/hooks/**"
-      - "packages/ui/src/lib/**"
-      - "apps/fumadocs/src/components/ai/**"
-      - "apps/fumadocs/src/components/codeblock.tsx"
-      - "apps/fumadocs/src/components/tabs/**"
-      - "apps/fumadocs/src/components/ui/**"
-      - "apps/fumadocs/src/lib/cn.ts"
-      - "apps/fumadocs/src/lib/merge-refs.ts"
-      - "apps/web/src/components/auth/**"
-      - "apps/web/src/lib/auth/**"
-      - ".agents/skills/**"
-      - ".claude/skills/**"
-      - ".claude/commands/opsx/**"
-
+    # No paths-ignore: the main ruleset requires one approval on every pull
+    # request, and CodeRabbit skips prose, so a docs-only PR would otherwise
+    # never get one and sit at REVIEW_REQUIRED.
 # One run per pull request; a new push cancels the one in progress.
 concurrency:
   group: claude-review-${{ github.event.pull_request.number }}
