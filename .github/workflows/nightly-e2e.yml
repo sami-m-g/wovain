@@ -63,7 +63,6 @@ jobs:
           DATABASE_URL_SECRET: ${{ vars.DATABASE_URL_SECRET }}
           E2E_SMOKE_PASSWORD_SECRET: ${{ vars.E2E_SMOKE_PASSWORD_SECRET }}
           E2E_BASE_URL: ${{ vars.SITE_URL }}
-          E2E_EMAIL: e2e-smoke@wovain.com
           E2E_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
           SMOKE_ENV: next
         run: |

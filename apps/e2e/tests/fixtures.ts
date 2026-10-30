@@ -28,6 +28,9 @@ const env = (name: string) => {
 
 export const SMOKE_STATE = ".auth/smoke.json";
 
+// The account src/seed-smoke.ts seeds.
+export const SMOKE_EMAIL = process.env["E2E_EMAIL"] ?? "e2e-smoke@wovain.com";
+
 export const isSmoke = process.env["E2E_BASE_URL"] !== undefined;
 
 export const db = isSmoke
@@ -130,7 +133,7 @@ interface Fixtures {
 export const test = base.extend<Fixtures>({
   merchant: async ({ baseURL, page }, provide) => {
     if (testAuth === undefined) {
-      const email = env("E2E_EMAIL");
+      const email = SMOKE_EMAIL;
       // Already signed in by smoke.setup.ts (storageState).
       await provide({ email, id: undefined });
       return;
