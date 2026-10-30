@@ -12,11 +12,44 @@ concurrency:
 permissions:
   contents: read
 
+# On a pull request, `--affected` and `turbo query affected` compare the
+# merge commit with its first parent, main's tip, so a two-commit checkout is
+# history enough.
+env:
+  TURBO_SCM_BASE: HEAD^1
+
 # The checks run as parallel jobs; `verify`, the required check
-# (infra/github.ts), passes only when every one of them passed. Each job
-# sets up through .github/actions/setup and keeps its own Turborepo cache,
-# saved only from main.
+# (infra/github.ts), passes only when every one of them passed or was skipped
+# because the pull request can't change its result. Each job sets up through
+# .github/actions/setup, which connects the Turborepo Remote Cache.
 jobs:
+  # Whether storybook and e2e can change: Turborepo's package graph says
+  # whether web, @wovain/e2e or a package either depends on changed. A change
+  # to CI itself (.github) runs them too. A push to main runs everything.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web: ${{ steps.affected.outputs.web }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - id: affected
+        if: github.event_name == 'pull_request'
+        # --exit-code: 0 when nothing is affected, 1 when something is, 2 on
+        # an error, which runs them too.
+        run: |
+          turbo="turbo@$(jq -r .devDependencies.turbo package.json)"
+          if npx --yes "$turbo" query affected --packages web @wovain/e2e --exit-code > /dev/null \
+            && git diff --quiet HEAD^1 HEAD -- .github; then
+            echo web=false >> "$GITHUB_OUTPUT"
+          else
+            echo web=true >> "$GITHUB_OUTPUT"
+          fi
+
   # Format and lint, the types, unused code and the OpenSpec specs. knip
   # runs after check-types, which builds the outputs it resolves imports
   # against (packages/widgets/dist).
@@ -30,23 +63,18 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
         with:
-          turbo-cache: lint
+          turbo-cache: true
       - run: pnpm run check
       - run: pnpm run check-types
       - run: pnpm run knip
       - run: pnpm run boundaries
       - run: pnpm run spec:validate
-      - if: github.event_name == 'push'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-lint-${{ github.sha }}
 
-  # Every package's tests. packages/mastra's flow tests (PGlite, every
-  # migration per test) take three minutes on one runner, so they run in
-  # three shards beside the other packages' tests. The shard is passed to
-  # vitest through turbo, so it is part of the task's hash and each shard
-  # caches on its own.
+  # The tests of every package a pull request affects (every package on
+  # main). packages/mastra's flow tests (PGlite, every migration per test)
+  # take three minutes on one runner, so they run in three shards beside the
+  # other packages' tests. The shard is passed to vitest through turbo, so it
+  # is part of the task's hash and each shard caches on its own.
   test:
     name: test (${{ matrix.name }})
     runs-on: ubuntu-latest
@@ -67,21 +95,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 2
       - uses: ./.github/actions/setup
         with:
-          turbo-cache: test-${{ strategy.job-index }}
+          turbo-cache: true
       - name: Test
         env:
+          AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           TURBO_ARGS: ${{ matrix.args }}
         # TURBO_ARGS is split into words on purpose: a filter, then vitest's.
         run: |
           # shellcheck disable=SC2086
-          pnpm exec turbo run test $TURBO_ARGS
-      - if: github.event_name == 'push'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-test-${{ strategy.job-index }}-${{ github.sha }}
+          pnpm exec turbo run test $AFFECTED $TURBO_ARGS
 
   build:
     name: build
@@ -91,22 +116,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 2
       - uses: ./.github/actions/setup
         with:
-          turbo-cache: build
-      - run: pnpm run build
-      - if: github.event_name == 'push'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-build-${{ github.sha }}
+          turbo-cache: true
+      - name: Build
+        env:
+          AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: |
+          # shellcheck disable=SC2086
+          pnpm exec turbo run build $AFFECTED
 
   # Storybook (apps/web/.storybook): the static build, uploaded for review,
   # and every story as a component test in Chromium (play functions and the
-  # a11y checks). Not part of `verify` nor a required check until it has
-  # proved stable.
+  # a11y checks). Only when `changes` says web is affected.
   storybook:
     name: storybook
+    needs: changes
+    if: github.event_name == 'push' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -115,7 +142,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
         with:
-          turbo-cache: storybook
+          turbo-cache: true
       - run: pnpm run build-storybook
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -124,24 +151,19 @@ jobs:
           retention-days: 7
       - run: pnpm --filter web exec playwright install --with-deps chromium
       - run: pnpm run test-storybook
-      - if: github.event_name == 'push'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-storybook-${{ github.sha }}
 
   # End-to-end tests (apps/e2e): Playwright against the web app built here,
   # on a Postgres service with the migrations applied, every outside provider
   # answered by MSW inside the server and runs on the Inngest Dev Server.
-  # Two shards. Not part of `verify` until it has proven stable.
+  # One job: the tests take under a minute and the web build they need two,
+  # so a second shard only built web again. Only when `changes` says web is
+  # affected.
   e2e:
-    name: e2e (${{ matrix.shard }}/2)
+    name: e2e
+    needs: changes
+    if: github.event_name == 'push' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
     services:
       # Trust auth, so the placeholder DATABASE_URL (.github/actions/setup)
       # connects as is and the web build keeps main's Turborepo cache.
@@ -159,32 +181,29 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Restores the build job's cache (saved from main) without saving one.
       - uses: ./.github/actions/setup
         with:
-          turbo-cache: build
+          turbo-cache: true
       - name: Migrate
         run: |
           pnpm --filter @wovain/db exec drizzle-kit migrate
           pnpm --filter @wovain/mastra run storage:init
       - run: pnpm exec turbo run build --filter=web
       - run: pnpm --filter @wovain/e2e exec playwright install --with-deps chromium
-      - name: Test
-        env:
-          SHARD: ${{ matrix.shard }}/2
-        run: pnpm --filter @wovain/e2e run test:e2e --shard="$SHARD"
+      - run: pnpm --filter @wovain/e2e run test:e2e
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: e2e-report-${{ matrix.shard }}
+          name: e2e-report
           path: apps/e2e/playwright-report
           retention-days: 7
 
-  # The required check: green only when every check above passed.
+  # The required check: green only when every check above passed or was
+  # skipped by `changes`.
   verify:
     name: verify
     if: always()
-    needs: [lint, test, build]
+    needs: [changes, lint, test, build, storybook, e2e, infra]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -192,9 +211,9 @@ jobs:
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "lint, test, build: $RESULTS"
+          echo "changes, lint, test, build, storybook, e2e, infra: $RESULTS"
           for result in $RESULTS; do
-            if [ "$result" != "success" ]; then
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "::error::A CI job did not pass ($result)"
               exit 1
             fi
