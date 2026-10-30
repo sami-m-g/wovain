@@ -531,6 +531,9 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
     key: string,
     timeoutMs: number
   ): Promise<unknown> => {
+    // Failures other than a 429 get RETRIES retries of their own, however many
+    // 429s came first.
+    let transientFailures = 0;
     const response = await limit(
       async () =>
         await pRetry(
@@ -558,9 +561,13 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
             minTimeout: RETRY_MS,
             randomize: true,
             retries: RATE_LIMIT_RETRIES,
-            shouldRetry: ({ attemptNumber, error }) =>
-              attemptNumber <= RETRIES ||
-              (error instanceof QlooHttpError && error.status === TOO_MANY),
+            shouldRetry: ({ error }) => {
+              if (error instanceof QlooHttpError && error.status === TOO_MANY) {
+                return true;
+              }
+              transientFailures += 1;
+              return transientFailures <= RETRIES;
+            },
           }
         )
     );
