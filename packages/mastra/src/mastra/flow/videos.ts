@@ -8,6 +8,7 @@ import { log } from "evlog";
 
 import type { Actor } from "./actor";
 import { notFound } from "./actor";
+import { adVideoOn } from "./ad-video";
 import { getDesign } from "./designs";
 import { once } from "./once";
 import { charge } from "./spend";
@@ -61,7 +62,7 @@ export const logVideoFailure = (
 // Asks for a live product's clips, once per product (Inngest drops a repeat
 // of the same event id).
 export const requestProductVideos = async (actor: Actor, productId: string) => {
-  if (!videoAdsOn(actor)) {
+  if (!(videoAdsOn(actor) || adVideoOn(actor))) {
     return;
   }
   try {

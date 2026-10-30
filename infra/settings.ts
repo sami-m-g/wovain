@@ -40,6 +40,11 @@ export const sharedSettings = (
 const optional = (name: string, value: string | undefined) =>
   value === undefined ? {} : { [name]: value };
 
+const adVideoModels = (config: pulumi.Config, key: SettingKey) => {
+  const models = config.getObject(key("falAdVideoModels"));
+  return models === undefined ? undefined : JSON.stringify(models);
+};
+
 export const appSettings = (config: pulumi.Config, key: SettingKey) => {
   const plain = Object.fromEntries(
     Object.entries({
@@ -85,6 +90,9 @@ export const appSettings = (config: pulumi.Config, key: SettingKey) => {
     // The fal endpoint for video ad clips (packages/core/src/video-ads.ts);
     // video ads are off in an environment that doesn't set it.
     ...optional("FAL_VIDEO_MODEL", config.get(key("falVideoModel"))),
+    // The fal endpoints of director-made video ads
+    // (packages/core/src/ad-video.ts); those ads are off without them.
+    ...optional("FAL_AD_VIDEO_MODELS", adVideoModels(config, key)),
   } as Record<string, string>;
 };
 

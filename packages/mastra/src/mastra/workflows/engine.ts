@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import type { EventSender, RunEngine } from "../flow/actor";
 import { finishRun } from "../flow/runs";
+import { AD_VIDEO_WORKFLOW_ID, createAdVideoWorkflow } from "./ad-video";
 import { createAlertFunctions } from "./alerts";
 import { createAutopilotFunctions } from "./autopilot";
 import { createCampaignFunctions } from "./campaigns";
@@ -76,7 +77,10 @@ export const createMastra = ({
     }),
     scorers: services.core.agents?.scorers ?? {},
     storage,
-    workflows: { [RUN_WORKFLOW_ID]: createRunWorkflow(inngest, services) },
+    workflows: {
+      [AD_VIDEO_WORKFLOW_ID]: createAdVideoWorkflow(inngest, services),
+      [RUN_WORKFLOW_ID]: createRunWorkflow(inngest, services),
+    },
   });
 
 export const createRunEngine = ({
@@ -188,7 +192,16 @@ export const createRunEngine = ({
       ...createOptimizerFunctions(inngest, { ...services, events }),
       ...createStoreFunctions(inngest, services),
       ...createDropFunctions(inngest, services),
-      ...createVideoFunctions(inngest, services),
+      ...createVideoFunctions(inngest, services, {
+        // A director-made video ad: its own Mastra workflow run.
+        startAdVideo: async (input) => {
+          const run = await mastra
+            .getWorkflow(AD_VIDEO_WORKFLOW_ID)
+            .createRun({ resourceId: input.userId });
+          await run.startAsync({ inputData: input });
+          return run.runId;
+        },
+      }),
       ...createCampaignFunctions(inngest, services),
       ...createDirectionFunctions(inngest, services),
       // Alerts (openspec alerts) send wovain/notify for approvals and

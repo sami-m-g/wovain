@@ -8,6 +8,17 @@ config:
   # Video ad clips: Wan 3.0 Prime image-to-video, $0.05 a second on fal, so
   # $0.25 a 5 s clip (fal MCP, 2026-10-30); creditCost.video prices it.
   wovain-next:falVideoModel: alibaba/wan-3.0-prime/image-to-video
+  # Director-made video ads (packages/core/src/ad-video.ts), picked with the
+  # fal MCP on 2026-10-30: Nano Banana Pro edit casts ($0.15), Wan 3.0 Prime
+  # films 15-20 s with native audio ($0.05 a second), scale-video crops the
+  # 4:5 cut, VEED burns the captions ($0.10 a minute) and extract-frame
+  # reads frames for the Reviewer. About $1.28 an ad, $2.56 with its redo.
+  wovain-next:falAdVideoModels:
+    captions: veed/subtitles
+    cast: fal-ai/nano-banana-pro/edit
+    film: alibaba/wan-3.0-prime/image-to-video
+    frame: fal-ai/ffmpeg-api/extract-frame
+    resize: fal-ai/workflow-utilities/scale-video
   wovain-next:nemotronModel: nvidia/Nemotron-3.5-Super-VL
   wovain-next:nemotronVisionModel: nvidia/Nemotron-3.5-Super-VL
   # The Resend domain wovain.com (the `resend` resource in the wovain stack).
@@ -69,6 +80,9 @@ config:
     # Sized so a credit costs wovain about $0.025 (docs/pricing-proposal.md):
     # a design draws on wovain's fal while onboarding-wizard is on.
     creditCost:
+      # One finished director-made video ad, about $1.28 on fal ($2.56 with
+      # its one redo): 60 credits at about $0.025 each.
+      adVideo: 60
       assist: 1
       design: 4
       research: 5

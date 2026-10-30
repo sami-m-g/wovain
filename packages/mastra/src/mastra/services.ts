@@ -1,4 +1,5 @@
 import type { MastraCompositeStore } from "@mastra/core/storage";
+import { parseAdVideoModels } from "@wovain/core/ad-video";
 import { ART_MODELS_VAR, parseArtModels } from "@wovain/core/art";
 import type { ArtModels } from "@wovain/core/art";
 import { createSignals } from "@wovain/core/autopilot-signals";
@@ -57,6 +58,9 @@ export interface CoreConfig extends FlagsConfig, ModelRouterConfig {
   // The fal endpoint that animates video ads (apps/web/.env.schema); video
   // ads are off without it.
   FAL_VIDEO_MODEL?: string | undefined;
+  // The fal endpoints that make director-made video ads, as JSON
+  // (@wovain/core/ad-video); those ads are off without it.
+  FAL_AD_VIDEO_MODELS?: string | undefined;
   // wovain's own fal key: it transcribes voice commands (./voice), and
   // designs draw on it, paid by credits, while the onboarding-wizard flag is
   // on (packages/mastra/src/mastra/flow/connections.ts). Voice commands fail without it.
@@ -116,7 +120,12 @@ export const createCore = (
     apiKey: env.QLOO_API_KEY,
     baseURL: env.QLOO_API_URL,
   });
+  // Parsed once, so a bad value fails at startup, naming the variable.
+  const adVideoModels = parseAdVideoModels(env.FAL_AD_VIDEO_MODELS);
   return {
+    // The fal endpoints of director-made video ads (./ad-video.ts);
+    // undefined where they are off.
+    adVideoModels,
     // The Mastra agents and scorers, registered on the app's Mastra
     // instance; undefined without a Nebius key.
     agents,
