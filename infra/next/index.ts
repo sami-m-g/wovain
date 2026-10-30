@@ -86,6 +86,11 @@ const environment = appEnvironment({
     { name: "POLAR_METADATA_KEY", value: `wovain:${NAME}` },
   ],
   kept: { protect: true },
+  // next is where the founder tests: one warm instance, so a click never
+  // waits on a cold start (a campaign request queued 110 s behind one,
+  // 2026-10-30). About $13 a month at Cloud Run's idle rate (1 vCPU,
+  // 1 GiB). nebius stays frozen and scales to zero.
+  minInstances: NAME === "next" ? 1 : 0,
   name: NAME,
   project,
   providerSecrets: environmentSecrets(config, plain, NAME, {
