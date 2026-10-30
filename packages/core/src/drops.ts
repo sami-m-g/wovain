@@ -88,6 +88,8 @@ const FAMILY_WORDS: Record<Exclude<StyleFamily, "streetwear">, string[]> = {
     "fashion",
     "art house",
     "arthouse",
+    "academia",
+    "preppy",
   ],
   skate_punk: [
     "skate",

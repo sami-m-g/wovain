@@ -439,7 +439,7 @@ it("with the evidence gate, every direction carries the same card, best first", 
             status: "ok",
             value: { ads: { reason: "not_connected" }, proven: true },
           },
-          qlooTag: { name: direction.theme },
+          qlooTag: { id: direction.qlooTag, name: direction.theme },
         },
       },
     });
@@ -538,6 +538,10 @@ it("saves a picked direction as the run's one idea, named and never printing its
   }
   const idea = trendIdeaOf(picked);
   expect(idea.theme).toBe(picked.theme);
+  // The Qloo tag is the theme's tag ID, never its name (#285): who buys
+  // and the capsule's style read it.
+  expect(idea.qlooTag).toMatch(/^urn:tag:genre:/u);
+  expect(idea.cues?.length).toBeGreaterThan(0);
   expect(idea.words).toMatchObject({ status: "ok", title: picked.title });
   expect(idea.signals.affinity).toBe(picked.evidence.qlooAffinity);
   expect(idea.taste?.seeds.map((seed) => seed.id)).toStrictEqual(

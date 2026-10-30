@@ -1,4 +1,3 @@
-import { isQlooTag } from "@wovain/core/qloo";
 import { DecisionTrace } from "@wovain/core/trace";
 import type { TrendIdea } from "@wovain/core/trends";
 import { DEFAULT_LOCATION, whoBuys } from "@wovain/core/who-buys";
@@ -10,7 +9,7 @@ import { createError, log as evlog } from "evlog";
 import type { Actor } from "./actor";
 import { traceSinkFor } from "./approvals";
 import { flagContextOf } from "./flags";
-import { assertQlooOn, getIdea } from "./ideas";
+import { assertQlooOn, getIdea, qlooTagOf } from "./ideas";
 
 // "Who buys this and where" on each idea (openspec who-buys), behind the
 // who-buys flag: read from Qloo the first time it is asked for, kept on the
@@ -49,20 +48,13 @@ const briefEntitiesOf = (research: TrendIdea) => {
 // are read from it alone, so each idea gets its own buyers (with the
 // brief's entities mixed in, every idea of a run got the same). The age and
 // gender need entities, so they come from the brief's, and say so. An idea
-// without a tag (saved before Qloo was required) reads the brief's. An idea
-// picked from a drop direction keeps the theme's name, not a tag ID (Qloo
-// answers 400 "Could not find a valid tag"), and its seeds are the
-// direction's own rising entities: it reads those.
+// without a tag (saved before Qloo was required) reads the brief's. The
+// caller passes the tag's ID (qlooTagOf), never a theme's name.
 export const signalsOf = (research: TrendIdea) => {
   const brief = briefEntitiesOf(research);
-  if (research.qlooTag === undefined || !isQlooTag(research.qlooTag)) {
+  if (research.qlooTag === undefined) {
     return {
-      options: {
-        scope:
-          research.qlooTag === undefined
-            ? ("brief" as const)
-            : ("idea" as const),
-      },
+      options: { scope: "brief" as const },
       signals: { entities: brief, tags: [] },
     };
   }
@@ -111,7 +103,10 @@ export const ideaWhoBuys = async (
     traceSinkFor(actor)
   );
   try {
-    const { options, signals } = signalsOf(row.research);
+    const { options, signals } = signalsOf({
+      ...row.research,
+      qlooTag: await qlooTagOf(actor, row.research),
+    });
     const result = await whoBuys(
       { log: actor.log, qloo: actor.core.qloo, trace },
       signals,
