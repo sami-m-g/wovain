@@ -635,7 +635,8 @@
       "viewFlat": "Flat art",
       "viewLabel": "Artwork view",
       "mockupUnavailable": "Fourthwall couldn't render this design on the shirt. Showing the flat art.",
-      "mockupNotConnected": "Connect Fourthwall to see this design on the shirt."
+      "mockupNotConnected": "Connect Fourthwall to see this design on the shirt.",
+      "drawing": "Drawing a design for “{title}”. It takes a few minutes."
     },
     "products": {
       "title": "Publish the products",

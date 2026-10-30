@@ -19,6 +19,7 @@ import type {
 import {
   DROP_SECTIONS,
   leadIdeaOf,
+  pickedIdeaIdsOf,
   sectionState,
 } from "@/components/drops/drop-sections";
 import { RunTape, stageOf } from "@/components/product/run-tape";
@@ -311,9 +312,7 @@ export const DropStory = ({
     );
   }
   const step = drop.step.id;
-  const picked = [
-    ...new Set([...run.designs.map((one) => one.ideaId), ...drop.picked]),
-  ];
+  const picked = pickedIdeaIdsOf(run, drop.picked);
   const lead = leadIdeaOf(run.ideas, picked);
   const failed = run.status === "failed";
   const finished = run.status === "completed";

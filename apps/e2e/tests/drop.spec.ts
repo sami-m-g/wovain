@@ -165,9 +165,13 @@ test("a Home pick opens the drop at its designs @smoke", async ({
   await expect(page).toHaveURL(/\/dashboard\/drops\/[\w-]+$/u, {
     timeout: 30_000,
   });
+  // The picked idea counts as picked from the start, never "0 picked".
+  await expect(page.getByText(/1 idea, 1 picked\./u)).toBeVisible();
+  await expect(page.getByText(/0 picked/u)).toHaveCount(0);
+  // Real art takes minutes on next; the mocks take seconds.
   await expect(
     page.getByRole("img", { name: /^Design: /u }).first()
-  ).toBeVisible({ timeout: 180_000 });
+  ).toBeVisible({ timeout: isSmoke ? 420_000 : 180_000 });
   await expect(page.getByRole("button", { name: "See designs" })).toHaveCount(
     0
   );
