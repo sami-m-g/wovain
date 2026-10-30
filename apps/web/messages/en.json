@@ -361,7 +361,7 @@
     "loginTitle": "Welcome back",
     "loginLead": "Sign in to pick up your drops where you left them.",
     "signUpTitle": "Create your account",
-    "signUpLead": "Then connect Fourthwall and Meta, and write your first brief.",
+    "signUpLead": "Then pick an idea Qloo sees rising and get designs for it. Free: {credits, number} credits a month, no card. Connect your shop and ads only when you publish.",
     "name": "Name",
     "email": "Email",
     "password": "Password",
@@ -2368,12 +2368,12 @@
       "eyebrow": "Next step",
       "sell": {
         "title": "Pick what to sell",
-        "body": "Start from one of Qloo's directions below, or write your own brief.",
+        "body": "Pick one of Qloo's ideas below: wovain researches it and draws its first design for {cost, number} credits. Free gives you {credits, number} a month, no shop needed yet.",
         "action": "See what sells now"
       },
       "store": {
         "title": "Get your shop ready to sell",
-        "body": "Connect Fourthwall so wovain can price and publish your products.",
+        "body": "Your drop's designs don't need a shop: open it under Drops in progress. Connect Fourthwall when you want to price and publish them.",
         "progress": "{done, number} of {total, number} store steps done. Fourthwall needs them before your first sale.",
         "action": "Open Store"
       },
