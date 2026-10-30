@@ -571,7 +571,13 @@
       "proofSources": "Proof for {title}",
       "leadHome": "Rising now on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start a drop.",
       "leadBrandHome": "Rising now with your brand's buyers on Qloo, with this month's news and how crowded the listings are, best bet first. Pick one to start a drop.",
-      "noneHome": "Qloo found nothing new rising right now. Start a drop with your own brief."
+      "noneHome": "Qloo found nothing new rising right now. Start a drop with your own brief.",
+      "carousel": {
+        "label": "Ideas to sell now, one at a time",
+        "next": "Next idea",
+        "position": "{current} of {total}",
+        "previous": "Previous idea"
+      }
     },
     "trends": {
       "title": "Pick the ideas",

@@ -60,6 +60,7 @@ catalog:
   "@types/react-dom": ^19.3.0
   tailwindcss: ^4.3.3
   drizzle-orm: 1.0.0-rc.5
+  embla-carousel-react: ^8.6.0
   evlog: ^2.33.1
   lru-cache: ^11.5.3
   next: ^16.4.3

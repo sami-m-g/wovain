@@ -571,7 +571,13 @@
       "proofSources": "Preuves pour {title}",
       "leadHome": "Ce qui monte en ce moment sur Qloo, avec l'actualité du mois et la saturation des annonces, le meilleur pari d'abord. Choisissez-en une pour lancer un drop.",
       "leadBrandHome": "Ce qui monte en ce moment chez les acheteurs de votre marque sur Qloo, avec l'actualité du mois et la saturation des annonces, le meilleur pari d'abord. Choisissez-en une pour lancer un drop.",
-      "noneHome": "Qloo n'a rien trouvé de nouveau en hausse pour l'instant. Lancez un drop avec votre propre brief."
+      "noneHome": "Qloo n'a rien trouvé de nouveau en hausse pour l'instant. Lancez un drop avec votre propre brief.",
+      "carousel": {
+        "label": "Idées à vendre maintenant, une à la fois",
+        "next": "Idée suivante",
+        "position": "{current} sur {total}",
+        "previous": "Idée précédente"
+      }
     },
     "trends": {
       "title": "Choisir les idées",

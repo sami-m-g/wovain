@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 
 import { Citations } from "@/components/app/citations";
+import { IdeaCarousel } from "@/components/app/idea-carousel";
 import { WhoBuysPanel } from "@/components/app/who-buys";
 import { IdeaCardView } from "@/components/ideas/idea-card-view";
 import { OutcomeWhy } from "@/components/insights/outcome-why";
@@ -218,51 +219,103 @@ const CheckedList = ({
   );
 };
 
+// story-ui: the one fixed idea card, with the start button.
+const StoryCard = ({
+  card,
+  direction,
+  disabled,
+  onUse,
+}: {
+  card: NonNullable<Direction["card"]>;
+  direction: Direction;
+  disabled: boolean;
+  onUse: (direction: Direction) => void;
+}) => {
+  const t = useTranslations("Wizard.directions");
+  const tCard = useTranslations("IdeaCard");
+  return (
+    <div className="border-border bg-card flex h-full flex-col rounded-xl border p-4">
+      <IdeaCardView
+        card={card}
+        readAudience={
+          <BuyersToggle
+            entities={direction.evidence.rising.map((one) => one.id)}
+          />
+        }
+      >
+        {direction.caution === undefined ? null : (
+          <p className="text-muted-foreground text-xs">
+            {tCard(`caution.${direction.caution}`)}
+          </p>
+        )}
+        <Button
+          className="h-9 w-fit px-4"
+          disabled={disabled}
+          onClick={() => onUse(direction)}
+          type="button"
+        >
+          {t("use")}
+          <ArrowRight aria-hidden="true" data-icon="inline-end" />
+        </Button>
+      </IdeaCardView>
+    </div>
+  );
+};
+
+// story-ui: the ideas one card at a time; a placeholder card until the
+// first is written.
+const StoryCards = ({
+  cards,
+  disabled,
+  loading,
+  onUse,
+}: {
+  cards: readonly Direction[];
+  disabled: boolean;
+  loading: boolean;
+  onUse: (direction: Direction) => void;
+}) => {
+  const t = useTranslations("Wizard.directions.carousel");
+  const items = cards.flatMap((direction) =>
+    direction.card === undefined
+      ? []
+      : [
+          {
+            key: direction.key,
+            node: (
+              <StoryCard
+                card={direction.card}
+                direction={direction}
+                disabled={disabled}
+                onUse={onUse}
+              />
+            ),
+          },
+        ]
+  );
+  if (items.length === 0) {
+    return loading ? (
+      <ul aria-busy="true">
+        <CardSkeleton />
+      </ul>
+    ) : null;
+  }
+  return <IdeaCarousel items={items} label={t("label")} />;
+};
+
 const DirectionRow = ({
   direction,
   disabled,
   onUse,
-  story,
 }: {
   direction: Direction;
   disabled: boolean;
   onUse: (direction: Direction) => void;
-  story: boolean;
 }) => {
   const t = useTranslations("Wizard.directions");
   const tCard = useTranslations("IdeaCard");
   const id = useId();
   const { momentum } = direction.evidence;
-  // story-ui: the one fixed idea card, with the same start button.
-  if (story && direction.card !== undefined) {
-    return (
-      <li className="border-border bg-card flex flex-col rounded-xl border p-4">
-        <IdeaCardView
-          card={direction.card}
-          readAudience={
-            <BuyersToggle
-              entities={direction.evidence.rising.map((one) => one.id)}
-            />
-          }
-        >
-          {direction.caution === undefined ? null : (
-            <p className="text-muted-foreground text-xs">
-              {tCard(`caution.${direction.caution}`)}
-            </p>
-          )}
-          <Button
-            className="h-9 w-fit px-4"
-            disabled={disabled}
-            onClick={() => onUse(direction)}
-            type="button"
-          >
-            {t("use")}
-            <ArrowRight aria-hidden="true" data-icon="inline-end" />
-          </Button>
-        </IdeaCardView>
-      </li>
-    );
-  }
   return (
     <li className="border-border bg-card has-[button:hover]:border-foreground/40 flex flex-col gap-2 rounded-xl border p-4 transition-colors">
       <button
@@ -416,7 +469,15 @@ const DirectionsBody = ({
       {!loading && unconfirmed && cards.length > 0 ? (
         <p className="text-muted-foreground text-sm">{tCard("unconfirmed")}</p>
       ) : null}
-      {cards.length > 0 || waiting.length > 0 ? (
+      {story ? (
+        <StoryCards
+          cards={cards}
+          disabled={disabled}
+          loading={loading}
+          onUse={onUse}
+        />
+      ) : null}
+      {!story && (cards.length > 0 || waiting.length > 0) ? (
         <ul aria-busy={loading} className="flex flex-col gap-2">
           {cards.map((direction) => (
             <DirectionRow
@@ -424,7 +485,6 @@ const DirectionsBody = ({
               disabled={disabled}
               key={direction.key}
               onUse={onUse}
-              story={story}
             />
           ))}
           {waiting.map((key) => (
