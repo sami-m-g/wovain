@@ -24,6 +24,7 @@
     "@tanstack/react-virtual": "^3.14.22",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
+    "embla-carousel-react": "catalog:",
     "lucide-react": "catalog:",
     "motion": "catalog:",
     "next-themes": "catalog:",

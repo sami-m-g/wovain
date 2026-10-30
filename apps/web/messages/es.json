@@ -576,7 +576,13 @@
       "proofSources": "Pruebas de {title}",
       "leadHome": "Lo que sube ahora en Qloo, con las noticias del mes y lo saturados que están los anuncios, la mejor apuesta primero. Elige una para empezar un drop.",
       "leadBrandHome": "Lo que sube ahora entre los compradores de tu marca en Qloo, con las noticias del mes y lo saturados que están los anuncios, la mejor apuesta primero. Elige una para empezar un drop.",
-      "noneHome": "Qloo no encontró nada nuevo en alza ahora mismo. Empieza un drop con tu propio brief."
+      "noneHome": "Qloo no encontró nada nuevo en alza ahora mismo. Empieza un drop con tu propio brief.",
+      "carousel": {
+        "label": "Ideas para vender ahora, una a una",
+        "next": "Idea siguiente",
+        "position": "{current} de {total}",
+        "previous": "Idea anterior"
+      }
     },
     "trends": {
       "title": "Elige las ideas",
