@@ -101,7 +101,7 @@ Every marketing skill reads this file before drafting. It covers positioning, au
 - "I never know what to charge after fees."
 **How they describe us:** no customer quotes yet. Do not invent any.
 **Words to use:** drop, capsule, piece, direction, references, edit, label, blank, margin, listed, paused.
-**Words to avoid:** merch (reads creator-channel, not label), agent, agentic, AI-powered, LLM, model names, MCP, oRPC, API, tokens, pipeline, "seamless", "unlock", "revolutionize", "apparel-on-demand" (not the positioning; wovain is print-on-demand).
+**Words to avoid:** merch (reads creator-channel, not label), agent, agentic, AI-powered, LLM, model names, MCP, oRPC, API, tokens, pipeline, "seamless", "unlock", "revolutionize", "apparel-on-demand" (a roadmap vision, not today's positioning; wovain is print-on-demand today).
 **Glossary:**
 
 | Term | Meaning |
@@ -157,7 +157,7 @@ Every marketing skill reads this file before drafting. It covers positioning, au
 |---|---|---|---|---|
 | 2026-10-30 | Lead with the zero-experience promise: idea to a live product and its ads in under an hour, no design skills, no inventory, you approve every dollar. Name Qloo, Tavily, Nemotron and fal where they explain a step of the flow | Founder brief for the landing rewrite (issue #362) | Landing, ads, docs | active |
 | 2026-10-26 | Audience is independent fashion designers and small labels; tone is editorial and restrained, with craft cues and no generic SaaS look | Founder decision | All copy, imagery and docs | active |
-| 2026-10-26 | Position as print-on-demand only; no apparel-on-demand framing | Founder decision | All copy | active |
+| 2026-10-26 | Position today's product as print-on-demand; apparel on demand for big companies is the long-term vision, a roadmap item, not today's positioning | Founder decision; updated 2026-10-30 from the Qloo submission | All copy | active |
 | 2026-10-26 | Keep technical internals (frameworks, models, protocols) off the landing page and the user docs | Founder feedback: the site read like a hackathon entry | Landing, docs | active |
 | 2026-10-26 | Use the logo only through the `<Logo/>` component; a new mark is in progress | Founder decision | Design | superseded |
 | 2026-10-26 | The logo is the Shuttle: a loom shuttle on a rising diagonal carrying a saffron thread, with a custom Geist wordmark. Use it through `<Logo/>`, `ShuttleMark` and `ShuttleLoader` | Founder picked it from logo round 8 | Design, all surfaces | active |

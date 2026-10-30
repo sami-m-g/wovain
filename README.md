@@ -4,6 +4,7 @@
 
 **A Qloo-powered agentic print-on-demand app for independent designers. Qloo finds who would buy and what else they love, Tavily finds why now and checks the evidence, NVIDIA Nemotron on Nebius Token Factory writes and judges the drop, and you approve the Fourthwall products and a paused Meta campaign.**
 
+- Video: https://youtu.be/s-vzNtS2V_U
 - Demo for the Nebius x NVIDIA Global AI Hackathon: https://nebius.wovain.com, a build frozen for judging. It runs the same code and Nemotron models as next.wovain.com.
 - Demo: https://next.wovain.com (the hackathon build; see [Demo login](#demo-login))
 - Production: https://wovain.com runs the 2026-10-27 build, frozen for another hackathon's judging until 2026-11-16. The features this README marks "on next" are not on it.
@@ -13,6 +14,10 @@
 The seller flow runs on the website and in ChatGPT, both backed by one Next.js 16 app:
 
 Qloo taste graph → Tavily evidence → you pick ideas → Nemotron brief → fal draws the art → the Nemotron judge looks at it → you approve → Fourthwall products → Nemotron ad copy → a paused Meta campaign targeted from Qloo demographics.
+
+## Vision
+
+wovain is apparel on demand for brands and big companies, starting with solo sellers. A brand that can measure what each audience segment loves can run many small drops, one per segment, and make each piece only when someone orders it. Today wovain is print-on-demand for solo sellers and small labels.
 
 ## Demo login
 
@@ -95,7 +100,7 @@ The agent-to-job map is `AGENT_ROLES` in [`packages/core/src/agents.ts`](package
 Built and tested, but not run against a live Meta account in the demo: the judge account has no Meta connection.
 
 - **Campaign build.** `stagePausedCampaign` in `packages/core/src/ads.ts` builds the campaign, ad sets, creatives and ads through Meta's Ads MCP (`ads_create_campaign`, `ads_create_ad_set`, `ads_create_creative`, `ads_create_ad`), every object paused. The drop's flow is `createDropCampaign` in `packages/mastra/src/mastra/flow/campaigns.ts`.
-- **Qloo targeting (#161).** No campaign without a Qloo audience: `requireQlooAudience` (`packages/mastra/src/mastra/flow/audiences.ts`) refuses one, and the audience sets the ad sets' ages, gender and interests and the copy's persona.
+- **Qloo targeting (#161, #347).** The idea's Qloo audience sets the ad sets' ages, gender and interests and the copy's persona (`packages/mastra/src/mastra/flow/audiences.ts`). It falls back to the brand's, then the brief's; with none, the ads go broad. A failed targeting step still refuses the campaign.
 - **Pixel (#212).** On the merchant's single Meta grant, wovain finds or creates the pixel (dataset), shares it with the ad account and sends a Conversions API test event (`packages/mastra/src/mastra/flow/pixel-setup.ts`, `packages/core/src/pixel-setup.ts`, flag `meta-pixel-automation`).
 - **Spend rules (#141).** Every 30 minutes (`packages/core/src/ad-rules.ts`, `packages/mastra/src/mastra/flow/ad-rules.ts`, flag `ads-profit-rules`): the stops pause every campaign at the daily cap, the monthly cap or the loss limit ($50 by default: ad spend minus the profit of its sales); the kills pause an ad that spends its target cost per sale with no sale, or breaks the cost-per-click or click-through limits; a raise adds at most 20% to the daily budget after 3 purchases at 1.3 times break-even ROAS, at most every 48 hours.
 - **Meta backstop (#215).** The kill and stop rules are mirrored into the ad account's Automated Rules (`packages/core/src/meta-backstop.ts`, `packages/mastra/src/mastra/flow/backstop.ts`, flag `meta-backstop-rules`), so Meta pauses spend even when wovain is down.
@@ -113,7 +118,15 @@ Details: [Nebius and Nemotron](apps/fumadocs/content/docs/%28developers%29/integ
 
 ## Qloo-powered
 
-Qloo's taste graph decides what a drop is about and who its ads reach. Every idea is a Qloo taste tag, so without Qloo there are no ideas: no Qloo, no run. On next.wovain.com every run calls Qloo, whatever the plan. The `trends-qloo` flag is only an ops kill switch: when it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503), and no run starts. The cross-domain taste map and the "Why this idea" panel are in every run. Every Meta campaign targets Qloo's audience for the brand: when Qloo finds none, or a targeting step fails, `campaigns.create` refuses with `QLOO_AUDIENCE_MISSING` and stages nothing.
+Qloo's taste graph decides what a drop is about and who its ads reach. Every idea is a Qloo taste tag, so without Qloo there are no ideas: no Qloo, no run. On next.wovain.com every run calls Qloo, whatever the plan. The `trends-qloo` flag is only an ops kill switch: when it is off, `runs.start` and `ideas.research` refuse with `QLOO_OFF` (503), and no run starts. The cross-domain taste map and the "Why this idea" panel are in every run. Today's flow, from Qloo's audience to the ads:
+
+1. **What is rising.** For an apparel-relevant Qloo audience, Qloo names the artists and TV shows rising with it.
+2. **Tags, then themes.** The tags those rising entities share become the drop's theme and its style cues.
+3. **Who buys.** Qloo's age and gender affinity, the audiences that like the idea most, their cities and the fashion brands they already buy.
+4. **Capsule style.** The Qloo tag IDs of the idea pick the capsule's style family and product mix.
+5. **Ad targeting.** Every Meta ad set targets the idea's Qloo audience first, then the brand's, then the brief's: ages, gender and Meta interests, and the ad copy's persona.
+
+Without Qloo there is no run. A brief Qloo can't place stops with `QLOO_NO_MATCH`. A failed audience step stops the campaign: `campaigns.create` refuses with `QLOO_AUDIENCE_MISSING` and stages nothing. Only when there is no audience at all (no idea audience, brand or brief) do the ads go broad, with the targeting marked as a fallback; a missing brand never blocks the ads.
 
 ### Endpoints
 
