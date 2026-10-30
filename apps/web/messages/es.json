@@ -2484,6 +2484,8 @@
     },
     "why": {
       "affinity": "Qloo: «{tag}» encaja con este público ({affinity})",
+      "audience": "Público de Qloo: {audience}",
+      "rising": "En auge entre ellos en Qloo: {names}",
       "news": "{count, plural, =0 {Sin noticias este mes} one {# noticia este mes} other {# noticias este mes}}",
       "market": "{bestsellers, plural, =0 {Ningún superventas} one {# superventas} other {# superventas}}, {reviews, plural, =0 {sin reseñas} one {# reseña} other {# reseñas}} en los marketplaces",
       "marketMissing": "Marketplaces: no disponible, {reason}",

@@ -2480,6 +2480,8 @@
     },
     "why": {
       "affinity": "Qloo: “{tag}” fits this audience ({affinity})",
+      "audience": "Qloo audience: {audience}",
+      "rising": "Rising with them on Qloo: {names}",
       "news": "{count, plural, =0 {No news this month} one {# news story this month} other {# news stories this month}}",
       "market": "{bestsellers, plural, =0 {No bestsellers} one {# bestseller} other {# bestsellers}}, {reviews, plural, =0 {no reviews} one {# review} other {# reviews}} on marketplaces",
       "marketMissing": "Marketplaces: not available, {reason}",

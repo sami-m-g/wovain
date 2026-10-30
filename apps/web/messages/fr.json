@@ -2480,6 +2480,8 @@
     },
     "why": {
       "affinity": "Qloo : « {tag} » correspond à ce public ({affinity})",
+      "audience": "Public Qloo : {audience}",
+      "rising": "En hausse chez eux sur Qloo : {names}",
       "news": "{count, plural, =0 {Aucune actualité ce mois-ci} one {# actualité ce mois-ci} other {# actualités ce mois-ci}}",
       "market": "{bestsellers, plural, =0 {Aucun best-seller} one {# best-seller} other {# best-sellers}}, {reviews, plural, =0 {aucun avis} one {# avis} other {# avis}} sur les marketplaces",
       "marketMissing": "Marketplaces : indisponible, {reason}",
