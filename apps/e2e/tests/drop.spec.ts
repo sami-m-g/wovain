@@ -1,4 +1,22 @@
+import type { Page } from "@playwright/test";
+
 import { expect, isSmoke, test } from "./fixtures";
+
+// Live Qloo can take far longer than the default expect timeout: wait for
+// the loading line to go, then require the panel to settle on its source
+// line or its failure message, never to hang loading.
+const expectWhoBuysSettled = async (page: Page) => {
+  await expect(page.getByText(/Asking Qloo who buys this/u)).toHaveCount(0, {
+    timeout: 60_000,
+  });
+  await expect(
+    page
+      .getByText(
+        /brands are for targeting only|couldn't reach our taste data to say who buys this/u
+      )
+      .first()
+  ).toBeVisible();
+};
 
 // Use case 3: New drop shows what sells now, each direction with its
 // evidence (news, listings) and who buys it, or an honest empty state that
@@ -31,9 +49,7 @@ test("what sells now: directions with evidence, or why there are none @smoke", a
   await expect(page.getByText(listings).first()).toBeVisible();
   await page.getByRole("button", { name: "Who buys this" }).first().click();
   // The age line needs Qloo demographics; the source line is always there.
-  await expect(
-    page.getByText(/brands are for targeting only/u).first()
-  ).toBeVisible();
+  await expectWhoBuysSettled(page);
 });
 
 // Use case 4: a typed brief, then trends, ideas, pick, designs and approve.
@@ -61,6 +77,7 @@ test("a typed brief: trends, ideas, pick, designs, approve @smoke", async ({
   await expect(
     page.getByRole("region", { name: "Who buys this" }).first()
   ).toBeVisible();
+  await expectWhoBuysSettled(page);
   // How crowded it is: the listings read, and the competition panel
   // when the tavily-competition read has come back.
   await expect(
