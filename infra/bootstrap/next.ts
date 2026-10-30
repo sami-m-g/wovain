@@ -45,21 +45,16 @@ interface NextArgs {
 // Cloud Run isn't among the services whose resource names IAM Conditions
 // can test (cloud.google.com/iam/docs/conditions-resource-attributes): a
 // project role conditioned on the service's name never grants anything, so
-// its role is granted on the service itself (nextInfrastructure below).
-const conditional = (
-  project: string,
-  projectNumber: string,
-  region: string
-) => [
+// its role is granted on the service itself (nextInfrastructure below). The
+// same holds for Artifact Registry: Cloud Run checks downloadArtifacts on
+// the image repository when it updates the service, and a project role
+// conditioned on the repository's name was denied, so that role is granted
+// on the repository itself.
+const conditional = (project: string, projectNumber: string) => [
   {
     expression: `resource.name.startsWith("projects/${project}/instances/wovain-${NAME}")`,
     role: "roles/cloudsql.admin",
     title: "next's Cloud SQL instance",
-  },
-  {
-    expression: `resource.name.startsWith("projects/${project}/locations/${region}/repositories/wovain-${NAME}")`,
-    role: "roles/artifactregistry.admin",
-    title: "next's image repository",
   },
   {
     expression: `resource.name.startsWith("projects/_/buckets/${project}-media-${NAME}")`,
@@ -123,8 +118,7 @@ export const nextInfrastructure = (args: NextArgs) => {
   }
   for (const { expression, role, title } of conditional(
     project,
-    projectNumber,
-    region
+    projectNumber
   )) {
     new gcp.projects.IAMMember(`infra-next-${role.split("/")[1]}`, {
       condition: { expression, title },
@@ -157,6 +151,15 @@ export const nextInfrastructure = (args: NextArgs) => {
     name: `wovain-web-${NAME}`,
     project,
     role: "roles/run.admin",
+  });
+
+  // next's image repository, on the repository (see `conditional`).
+  new gcp.artifactregistry.RepositoryIamMember("infra-next-artifact-admin", {
+    location: region,
+    member: account.member,
+    project,
+    repository: `wovain-${NAME}`,
+    role: "roles/artifactregistry.admin",
   });
 
   // next.wovain.com's records are in production's zone.
