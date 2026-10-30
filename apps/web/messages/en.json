@@ -1737,11 +1737,6 @@
         "fix": "Fourthwall is still reviewing your shop. Contact Fourthwall support to finish it.",
         "next": "Fourthwall's review"
       },
-      "shipping": {
-        "label": "Shipping is on",
-        "fix": "In Fourthwall, turn on shipping and add at least one shipping profile.",
-        "next": "shipping, for items you ship yourself"
-      },
       "payouts": {
         "label": "Payouts are set up",
         "fix": "In Fourthwall, finish your payout account so sales reach you.",
@@ -2046,14 +2041,6 @@
         "waiting": "Fourthwall is reviewing your shop. Only Fourthwall support can finish it.",
         "check": "Check your site status.",
         "support": "Contact Fourthwall support"
-      },
-      "shipping": {
-        "label": "Shipping is on",
-        "done": "Buyers can check out with shipping.",
-        "todo": "Turn on shipping and add a shipping profile in Fourthwall. This ticks off here once it's done.",
-        "waiting": "Waiting for Fourthwall.",
-        "check": "Check your shipping.",
-        "action": "Set up shipping"
       },
       "pixel": {
         "label": "Meta pixel on your shop",

@@ -6,11 +6,9 @@ import type { ToolCall } from "./upstream";
 
 const READY: ShopFacts = {
   baseUrl: "https://atelier.fourthwall.com",
-  enabledShippingProfiles: 1,
   hosts: ["atelier.fourthwall.com"],
   name: "Atelier",
   payoutStatus: "ACTIVE",
-  shippingEnabled: true,
   siteStatus: "LIVE",
   verificationRestrictions: [],
 };
@@ -80,14 +78,13 @@ describe("evaluateSetup", () => {
     ).not.toHaveProperty("confirmedByMerchant");
   });
 
-  it("offers going live, links payouts and shipping, and waits on Meta", () => {
+  it("offers going live, links payouts, and waits on Meta", () => {
     const steps = evaluateSetup({
       domain: undefined,
       metaConnected: false,
       pixel: undefined,
       shop: {
         ...READY,
-        enabledShippingProfiles: 0,
         payoutStatus: "IN_PROGRESS",
         siteStatus: "COMING_SOON",
       },
@@ -97,7 +94,7 @@ describe("evaluateSetup", () => {
       state: "todo",
     });
     expect(stateOf(steps, "payouts")).toMatchObject({ how: "link" });
-    expect(stateOf(steps, "shipping")).toMatchObject({ how: "link" });
+    expect(steps.map((step) => step.id)).not.toContain("shipping");
     expect(stateOf(steps, "pixel")).toMatchObject({
       how: "connect_meta",
       state: "waiting",

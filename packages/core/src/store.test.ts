@@ -31,11 +31,9 @@ import type { ToolCall } from "./upstream";
 
 const READY: ShopFacts = {
   baseUrl: "https://shop.example",
-  enabledShippingProfiles: 1,
   hosts: ["shop.example"],
   name: "Atelier",
   payoutStatus: "ACTIVE",
-  shippingEnabled: true,
   siteStatus: "LIVE",
   verificationRestrictions: [],
 };
@@ -77,7 +75,7 @@ describe("evaluateReadiness", () => {
 });
 
 describe("readShopFacts", () => {
-  it("reads the four replies, wherever their fields sit", async () => {
+  it("reads the replies, wherever their fields sit", async () => {
     const { call } = fake({
       "ecommerce_get-current-shop": {
         shop: {
@@ -88,10 +86,6 @@ describe("readShopFacts", () => {
         },
       },
       "ecommerce_get-payout-info": { status: "ACTIVE" },
-      "ecommerce_get-shipping-profiles": {
-        enabled: true,
-        shippingProfiles: [{ enabled: true }, { enabled: false }],
-      },
     });
     expect(await readShopFacts(call)).toEqual(READY);
   });
@@ -107,14 +101,10 @@ describe("readShopFacts", () => {
     expect(facts.slug).toBe("wovain-goods");
   });
 
-  it("sells without shipping set: Fourthwall ships what it makes", () => {
+  it("never checks shipping: Fourthwall ships what it makes", () => {
     expect(
-      evaluateReadiness({
-        ...READY,
-        enabledShippingProfiles: 0,
-        shippingEnabled: false,
-      }).ready
-    ).toBe(true);
+      evaluateReadiness(READY).checks.map((check) => check.id)
+    ).not.toContain("shipping");
   });
 
   it("treats a missing reply as not ready", async () => {

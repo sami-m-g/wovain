@@ -4,8 +4,8 @@ import { fourthwallAdminUrl } from "@/lib/fourthwall-admin";
 
 describe("fourthwallAdminUrl", () => {
   it("opens the shop's own page from its slug", () => {
-    expect(fourthwallAdminUrl("shipping", "wovain-goods")).toBe(
-      "https://admin.fourthwall.com/store/wovain-goods/settings/shipping/"
+    expect(fourthwallAdminUrl("billing", "wovain-goods")).toBe(
+      "https://admin.fourthwall.com/store/wovain-goods/settings/billing/"
     );
     expect(fourthwallAdminUrl("domain", "wovain-goods")).toBe(
       "https://admin.fourthwall.com/store/wovain-goods/settings/domain/"
