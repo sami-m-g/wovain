@@ -76,7 +76,7 @@ describe("evaluateReadiness", () => {
 
 describe("readShopFacts", () => {
   it("reads the replies, wherever their fields sit", async () => {
-    const { call } = fake({
+    const { call, calls } = fake({
       "ecommerce_get-current-shop": {
         shop: {
           baseUrl: "https://shop.example",
@@ -88,6 +88,10 @@ describe("readShopFacts", () => {
       "ecommerce_get-payout-info": { status: "ACTIVE" },
     });
     expect(await readShopFacts(call)).toEqual(READY);
+    expect(calls.map(({ tool }) => tool)).toEqual([
+      "ecommerce_get-current-shop",
+      "ecommerce_get-payout-info",
+    ]);
   });
 
   it("reads the shop's admin slug from its Fourthwall subdomain", async () => {

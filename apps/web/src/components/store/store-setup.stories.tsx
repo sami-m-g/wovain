@@ -44,7 +44,7 @@ export const InProgress: Story = {
     );
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("2 of 4 done")).toBeVisible();
+    await expect(await canvas.findByText("2 of 3 done")).toBeVisible();
     const toggle = canvas.getByRole("button", { name: "Hide steps" });
     await userEvent.click(toggle);
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
