@@ -169,8 +169,9 @@ jobs:
   # production's plans, benefits and promos, the token is next's own secret,
   # and each promo's code goes to polar-promo-<id>-next, never to the log.
   # The seed is idempotent. It does not read or change production.
+  # It needs no output of up-next: the catalog is read from the stack file and
+  # the token from Secret Manager, so a failing up-next doesn't block it.
   polar-seed-next:
-    needs: up-next
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
