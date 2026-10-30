@@ -98,7 +98,11 @@ export const createAdVideoWorkflow = (
   ) =>
     createStep({
       execute: async ({ inputData }) =>
-        attempt !== undefined && inputData.attempt !== attempt
+        // An ad with no credits held makes nothing (hold bails the run; this
+        // keeps a later step from paying even so), and a redo step passes
+        // the first cut through.
+        inputData.held.id === "" ||
+        (attempt !== undefined && inputData.attempt !== attempt)
           ? inputData
           : await guarded(
               async (from: Carry) => await work(actorFor(from.userId), from)
@@ -239,8 +243,10 @@ export const createAdVideoWorkflow = (
       });
       return from;
     }
-    await saveAdVideos(actor, from.productId, need(from.cuts, "cut"));
+    // Spent before it is saved: a settled hold can't be released, so a
+    // failure after this never gives a saved ad away for free.
     await settleAdCredits(actor, from.held, from.sources.runId);
+    await saveAdVideos(actor, from.productId, need(from.cuts, "cut"));
     return from;
   });
 

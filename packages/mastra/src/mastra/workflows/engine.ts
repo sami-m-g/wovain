@@ -6,6 +6,7 @@ import { serve } from "inngest/next";
 import { z } from "zod";
 
 import type { EventSender, RunEngine } from "../flow/actor";
+import { releaseHeldAd } from "../flow/ad-video";
 import { finishRun } from "../flow/runs";
 import { AD_VIDEO_WORKFLOW_ID, createAdVideoWorkflow } from "./ad-video";
 import { createAlertFunctions } from "./alerts";
@@ -46,7 +47,9 @@ const failedRun = z.object({
   error: z.object({ message: z.string() }).partial().optional(),
   event: z.object({
     data: z.object({
-      inputData: z.object({ userId: z.string() }).optional(),
+      inputData: z
+        .object({ productId: z.string().optional(), userId: z.string() })
+        .optional(),
       runId: z.string(),
     }),
   }),
@@ -121,10 +124,20 @@ export const createRunEngine = ({
     },
     async ({ event }) => {
       const failed = failedRun.safeParse(event.data);
+      if (!failed.success) {
+        return { skipped: true };
+      }
+      // A director-made ad whose function died for good gives back what it
+      // held (its own onError never ran).
+      const ad = failed.data.event.data.inputData;
       if (
-        !failed.success ||
-        !failed.data.function_id.endsWith(`workflow.${RUN_WORKFLOW_ID}`)
+        failed.data.function_id.endsWith(`workflow.${AD_VIDEO_WORKFLOW_ID}`) &&
+        ad?.productId !== undefined
       ) {
+        await releaseHeldAd({ ...services, userId: ad.userId }, ad.productId);
+        return { released: ad.productId };
+      }
+      if (!failed.data.function_id.endsWith(`workflow.${RUN_WORKFLOW_ID}`)) {
         return { skipped: true };
       }
       const { error, event: trigger } = failed.data;
