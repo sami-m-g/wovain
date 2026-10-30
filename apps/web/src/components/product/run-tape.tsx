@@ -1,7 +1,13 @@
 import { cn } from "@wovain/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
-const STAGES = ["brief", "trends", "designs", "products", "campaign"] as const;
+export const STAGES = [
+  "brief",
+  "trends",
+  "designs",
+  "products",
+  "campaign",
+] as const;
 
 export type Stage = (typeof STAGES)[number];
 
@@ -19,13 +25,48 @@ const STEP_STAGE: Record<string, Stage> = {
 export const stageOf = (run: { step?: string | null }): Stage =>
   (run.step ? STEP_STAGE[run.step] : undefined) ?? "brief";
 
+/**
+ * The furthest stage a run has reached, from what it holds as well as the
+ * step it reports: a Home pick starts at designs, so brief and trends count
+ * as done through the cached direction and the automatic research.
+ */
+export const reachedStage = (run: {
+  step?: string | null;
+  ideas: unknown[];
+  designs: unknown[];
+  products: unknown[];
+  campaigns: unknown[];
+}): Stage => {
+  const byData: Stage[] = [
+    ...(run.ideas.length > 0 ? (["trends"] as const) : []),
+    ...(run.designs.length > 0 ? (["designs"] as const) : []),
+    ...(run.products.length > 0 ? (["products"] as const) : []),
+    ...(run.campaigns.length > 0 ? (["campaign"] as const) : []),
+  ];
+  let far = stageOf(run);
+  for (const item of byData) {
+    if (STAGES.indexOf(item) > STAGES.indexOf(far)) {
+      far = item;
+    }
+  }
+  return far;
+};
+
 type State = "done" | "current" | "pending";
 
-const stateOf = (index: number, current: number, finished: boolean): State => {
-  if (finished || index < current) {
+export const stateOf = (
+  index: number,
+  current: number,
+  passed: number,
+  finished: boolean
+): State => {
+  if (finished) {
     return "done";
   }
-  return index === current ? "current" : "pending";
+  if (index === current) {
+    return "current";
+  }
+  return index < passed ? "done" : "pending";
 };
 
 /**
@@ -37,18 +78,21 @@ const stateOf = (index: number, current: number, finished: boolean): State => {
 export const RunTape = ({
   stage,
   finished = false,
+  reached,
   compact = false,
   weave = false,
   className,
 }: {
   stage: Stage;
   finished?: boolean;
+  reached?: Stage;
   compact?: boolean;
   weave?: boolean;
   className?: string;
 }) => {
   const t = useTranslations("Stages");
   const current = STAGES.indexOf(stage);
+  const passed = Math.max(current, reached ? STAGES.indexOf(reached) : 0);
 
   const tape = (
     <ol
@@ -62,7 +106,7 @@ export const RunTape = ({
       )}
     >
       {STAGES.map((item, index) => {
-        const state = stateOf(index, current, finished);
+        const state = stateOf(index, current, passed, finished);
         const fill = {
           current: "bg-primary",
           done: "bg-foreground",
