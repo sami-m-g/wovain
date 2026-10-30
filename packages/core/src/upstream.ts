@@ -353,7 +353,15 @@ export const createUpstream = (config: UpstreamConfig) => {
   ) =>
     await external(log, { operation: "authorize", provider }, async () => {
       const flow: PendingFlow = { state };
-      const oauth = new ConnectionAuth(provider, config, grant, flow);
+      // A connect always asks for consent: given the grant a merchant
+      // already holds, the SDK would refresh it and skip the consent page.
+      const fresh: GrantStore = {
+        ...grant,
+        load: async (): Promise<undefined> => {
+          await Promise.resolve();
+        },
+      };
+      const oauth = new ConnectionAuth(provider, config, fresh, flow);
       await auth(oauth, { ...authOptions(provider), ...fetchFn });
       if (oauth.authorizationUrl === undefined) {
         throw new Error("The provider didn't ask for authorization");
