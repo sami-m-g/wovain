@@ -4,6 +4,7 @@
 
 **A Qloo-powered agentic print-on-demand app for independent designers. Qloo finds who would buy and what else they love, Tavily finds why now and checks the evidence, NVIDIA Nemotron on Nebius Token Factory writes and judges the drop, and you approve the Fourthwall products and a paused Meta campaign.**
 
+- Demo for the Nebius x NVIDIA Global AI Hackathon: https://nebius.wovain.com, a build frozen for judging. It runs the same code and Nemotron models as next.wovain.com.
 - Demo: https://next.wovain.com (the hackathon build; see [Demo login](#demo-login))
 - Production: https://wovain.com runs the 2026-10-27 build, frozen for another hackathon's judging until 2026-11-16. The features this README marks "on next" are not on it.
 - Docs: https://docs.wovain.com, or `apps/fumadocs` locally
@@ -50,6 +51,34 @@ With the `model-routing` flag on (dev and next.wovain.com; off in production), e
 | Safety | `NEMOTRON_MODEL_SAFETY` | Nemotron 3.5 Lightning | Mastra moderation on what the merchant publishes |
 
 With the flag off, as in production, every agent uses `NEMOTRON_MODEL` (Nemotron 3.5 Super VL) and the judge's vision check uses `NEMOTRON_VISION_MODEL`. The docs chat runs on `DOCS_CHAT_MODEL` (Nemotron 3.5 Lightning, `reasoning_effort: none`, at most 400 output tokens, rate limited per visitor).
+
+### Every model ID
+
+All of them are set in Pulumi config (`infra/next/Pulumi.next.yaml`, `infra/Pulumi.prod.yaml`) and read from the env vars in [`apps/web/.env.schema`](apps/web/.env.schema). All but the last row are called on Nebius Token Factory.
+
+| Env var | Model ID (next.wovain.com, nebius.wovain.com) | Called from |
+| --- | --- | --- |
+| `NEMOTRON_MODEL` | `nvidia/Nemotron-3.5-Super-VL` | Every agent when `model-routing` is off ([`kit.ts`](packages/mastra/src/mastra/agents/kit.ts)) |
+| `NEMOTRON_VISION_MODEL` | `nvidia/Nemotron-3.5-Super-VL` | The judge's vision check when `model-routing` is off (`inspectArtwork` in [`design.ts`](packages/core/src/design.ts)) |
+| `NEMOTRON_MODEL_DEFAULT` | `nvidia/Nemotron-3.5-Super-VL` | `design_brief`, `ad_copy`, `idea_words`, `research_themes`, `competition_summary`, `brand_discovery`, `brand_proxies`, `drop_directions`, `drop_style`, `product_listing`, `voice_intent` |
+| `NEMOTRON_MODEL_REASONING` | `nvidia/Nemotron-3-Ultra-550b-a55b` | `design_judge`, `autopilot_pick_idea`, `autopilot_review_design`, `ads_optimizer_review` |
+| `NEMOTRON_MODEL_VISION` | `nvidia/Nemotron-3.5-Super-VL` | `design_vision` |
+| `NEMOTRON_MODEL_FAST` | `nvidia/Nemotron-3_5-Lightning` | `ad_judge`, `brief_terms`, the Mastra scorers, and the prompt-injection and PII guardrails |
+| `NEMOTRON_MODEL_SAFETY` | `nvidia/Nemotron-3_5-Lightning` | Mastra's moderation processor on what the merchant publishes |
+| `DOCS_CHAT_MODEL` | `nvidia/Nemotron-3_5-Lightning` | The docs chat ([`route.ts`](apps/fumadocs/src/app/api/chat/route.ts)) |
+| `VOICE_STT_MODEL` | `nvidia/nemotron-asr-multilingual/asr` | Voice commands ([`voice.ts`](packages/core/src/voice.ts)). This NVIDIA model is served by fal, not Token Factory |
+
+The agent-to-job map is `AGENT_ROLES` in [`packages/core/src/agents.ts`](packages/core/src/agents.ts). The Mastra agents are built once in [`packages/mastra/src/mastra/agents/kit.ts`](packages/mastra/src/mastra/agents/kit.ts) on an OpenAI-compatible provider pointed at `NEBIUS_BASE_URL` ([`services.ts`](packages/mastra/src/mastra/services.ts)), and every call goes through `ask` in [`ask.ts`](packages/mastra/src/mastra/agents/ask.ts). Each call is a PostHog `$ai_generation` event with its model, latency, tokens and cost.
+
+### Runtime calls in one run
+
+1. Qloo names the audience and its themes.
+2. Tavily Search (news and marketplaces) and Tavily Extract (competitor listings) run live for each theme ([`trends.ts`](packages/core/src/trends.ts), [`evidence.ts`](packages/core/src/evidence.ts)). Lightning pulls the search terms out of the brief first (`brief_terms`).
+3. Super VL names each idea from that evidence (`idea_words`) and writes the brief (`design_brief`).
+4. fal draws the art. Super VL looks at the PNG (`design_vision`) and Ultra gives the verdict (`design_judge`). Tavily searches every printed phrase for trademarks.
+5. Super VL writes the ad copy. Lightning runs the ad judges, the guardrails and moderation on it.
+
+**Research this idea** adds a Tavily Research task per idea. See [Tavily](#tavily).
 
 ### What the agents do
 
@@ -169,7 +198,7 @@ Details: [Tavily](apps/fumadocs/content/docs/%28developers%29/integrations/tavil
 - **Small evals.** The judge set has 20 scored cases. The Qloo ablation report and a judge run on the routed models (Ultra, Lightning) are not in the repo yet, because both need the provider keys.
 - **Ultra's latency.** Nemotron 3 Ultra must answer within the 90 s agent timeout. If it doesn't, `nemotronModelReasoning` on next goes back to Super VL, which is a config change.
 - **Tavily images.** The news search returns images, and wovain doesn't use them yet.
-- **Durable runs.** On next, 10% of runs use the Mastra workflow on Inngest and the rest use the earlier engine. Both run the same steps.
+- **Durable runs.** On next, every run uses the Mastra workflow on Inngest (#218). The earlier engine stays as the fallback and runs the same steps.
 
 ## What changed since Aug 26 / Sep 30
 
@@ -181,6 +210,7 @@ The repository's first commit is from 2026-10-06. All of wovain was built after 
 | Oct 25–26 | The web app on Cloud Run and Cloud SQL, with Better Auth, Google sign-in and email verification. The seller flow as oRPC procedures and MCP tools. Mastra agents with scorers, guardrails, memory and tracing, and runs as a durable Mastra workflow on Inngest. Credits and the Polar catalog (Free only). The docs site in en, es and fr with a Nemotron docs chat. The Build With AI: Basics submission (tag `submission/basics`) |
 | Oct 27 | Development moved to GitHub: Actions CI, Dependabot, and PostHog feature flags managed by Pulumi |
 | Oct 28 | Model IDs as env vars per environment, ahead of Nebius's 2026-11-09 removals (#28). The judge looks at the drawn art (#23). Designs only for the ideas the merchant approves (#21). next.wovain.com in its own Pulumi stack (#25, #57). Autonomy levels, one approval queue and decision traces (#60). Nemotron routing by job, the grounding guard, real ad scores and the models page (#74). The Qloo taste map with explainability, cross-domain cues and the LLM-only ablation (#79). Qloo demographics and audiences driving Meta targeting and the ad persona (#75). Tavily as the evidence layer: per-search failures, competitor prices, research dossiers and the trademark check (#73). SAST, dependency, license, secret and SBOM scanning (#61). The onboarding wizard (#76), scheduled autopilot triggers (#78), live media buying through approvals (#72), the ads optimizer (#70), the feedback loop (#83), voice input (#85), store management (#87), design drops (#91) and the judges' demo account (#97) |
+| Oct 29–30 | The Mastra layer in its own package, with the seller flow and workflows (#231, #245). What to sell now, with or without a brand (#140). Who buys this and where, from Qloo (#154). One idea card with an evidence gate and a track-record rank (#203, #214, #256). Tavily's competitive landscape per Qloo theme (#108) and research on every key concept of a brief (#253). Guided brand discovery (#117). Learning from real design outcomes (#202). Meta automated rules and the Meta pixel (#212, #215). Alerts by email, push and Telegram (#204). Dictation in text fields (#208). End-to-end, contract and Storybook tests (#226, #230, #242). A run fails at once when a provider is out of credits (#266) |
 
 ## Setup from a clean clone
 
