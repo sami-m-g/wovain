@@ -182,7 +182,7 @@ describe("customizationCost", () => {
   it("fails when the reply has no cost", async () => {
     const call = replying({ sizes: ["M"] });
     await expect(customizationCost(call, "cus_1")).rejects.toThrow(
-      /no cost per size/u
+      /no cost per size: shape=\{sizes:\[1xstring\]\}/u
     );
   });
 });
