@@ -70,6 +70,9 @@ new pulumi.Config("posthog").requireSecret("apiKey");
 
 const posthog = environmentProject(NAME);
 const environment = appEnvironment({
+  // A failed `pulumi up --refresh` (2026-10-30) dropped next's database user
+  // from the state; the user and its password are unchanged.
+  adoptUser: NAME === "next",
   afterApis: {},
   deploy: { githubEnvironment: NAME, pool },
   envs: [

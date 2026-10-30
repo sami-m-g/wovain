@@ -192,7 +192,9 @@ describe("a multi-design test campaign", () => {
     const { call, calls } = meta();
     const staged = await stagePausedCampaign(call, plan);
     const before = calls.length;
-    await expect(verifyStagedPaused(call, staged)).rejects.toThrow();
+    await expect(
+      verifyStagedPaused(call, staged, { wait: async () => {} })
+    ).rejects.toThrow();
     calls.length = before;
     await activateCampaign(call, staged);
     const sets = calls

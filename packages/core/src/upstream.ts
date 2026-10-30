@@ -360,9 +360,25 @@ export const resultData = (result: CallToolResult): unknown => {
   }
 };
 
+// Meta's Ads MCP nests its rows as JSON text (`ad_entities: "[...]"`,
+// `ad_drafts: "[...]"`): such a string is searched as the value it encodes.
+const JSON_TEXT = /^\s*[[{]/u;
+
+const jsonText = (value: unknown): unknown => {
+  if (typeof value !== "string" || !JSON_TEXT.test(value)) {
+    return value;
+  }
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
+  }
+};
+
 // Every object in a reply, at any depth, that the schema accepts: providers
 // document their fields but not the envelope around them.
-export const findAll = <T>(schema: z.ZodType<T>, value: unknown): T[] => {
+export const findAll = <T>(schema: z.ZodType<T>, raw: unknown): T[] => {
+  const value = jsonText(raw);
   if (typeof value !== "object" || value === null) {
     return [];
   }
@@ -386,7 +402,7 @@ export const findOne = <T>(
   return found;
 };
 
-const SHAPE_DEPTH = 5;
+const SHAPE_DEPTH = 8;
 const SHAPE_KEYS = 12;
 
 // A reply's structure for an error log: its keys, array lengths and value

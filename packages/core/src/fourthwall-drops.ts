@@ -12,7 +12,7 @@ import type { ToolCall } from "./upstream";
 
 const NOT_AMOUNT = /[^\d.]/gu;
 
-export const money = z.union([
+const amount = z.union([
   z.number(),
   z.string().transform((value, ctx) => {
     const digits = value.replaceAll(NOT_AMOUNT, "");
@@ -23,8 +23,14 @@ export const money = z.union([
     }
     return parsed;
   }),
-  z.object({ value: z.number() }).transform((value) => value.value),
-  z.object({ amount: z.number() }).transform((value) => value.amount),
+]);
+
+// A price as Fourthwall spells it: a number, "$8.50", or a Money object
+// whose value or amount is either.
+export const money = z.union([
+  amount,
+  z.object({ value: amount }).transform((value) => value.value),
+  z.object({ amount }).transform((value) => value.amount),
 ]);
 
 const placementSchema = z.object({ id: z.string().min(1), name: z.string() });
@@ -258,9 +264,12 @@ const sizeCostSchema = z
   .catchall(z.unknown())
   .transform((entry, ctx) => {
     for (const key of COST_KEYS) {
-      const parsed = money.safeParse(entry[key]);
-      if (parsed.success) {
-        return { cost: parsed.data, size: entry.size };
+      // A cost is a price, or an object that holds its parts and their
+      // total (Fourthwall's perSize[].cost): the largest price in it.
+      const direct = money.safeParse(entry[key]);
+      const found = direct.success ? [direct.data] : findAll(money, entry[key]);
+      if (found.length > 0) {
+        return { cost: Math.max(...found), size: entry.size };
       }
     }
     ctx.addIssue({ code: "custom", message: "no cost" });

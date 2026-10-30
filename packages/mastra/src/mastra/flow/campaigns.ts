@@ -60,6 +60,22 @@ export interface CampaignInput {
 
 const CAMPAIGN_WRITE = ":meta:campaign@";
 
+// Meta's answer for an ID it no longer has (deleted, or a discarded draft).
+const META_NOT_FOUND = /"error_category":\s*"NOT_FOUND"/u;
+
+// The Meta objects an earlier attempt of this staging already made.
+const metaWritesOf = async ({ db, userId }: Actor, key: string) =>
+  await db
+    .select({ result: externalWrite.result })
+    .from(externalWrite)
+    .where(
+      and(
+        eq(externalWrite.userId, userId),
+        eq(externalWrite.state, "done"),
+        like(externalWrite.key, `${key}:meta:%`)
+      )
+    );
+
 const byKey = async ({ db, userId }: Actor, key: string) =>
   await db.query.campaign.findFirst({
     where: { idempotencyKey: key, userId },
@@ -361,21 +377,57 @@ export const createDropCampaign = async (
       videoAiModel: lead.videoAiModel,
       videos: lead.videos,
     };
-    if (targeting === undefined) {
-      return {
-        made: await stagePausedCampaign(call, plan, metaOnce),
-        status: "paused" as const,
-      };
+    const stage = async () => {
+      if (targeting === undefined) {
+        return {
+          made: await stagePausedCampaign(call, plan, metaOnce),
+          status: "paused" as const,
+        };
+      }
+      const pixelId =
+        input.pixelId ?? (await findSalesPixel(call, adAccountId));
+      const stagedNow = await stagePausedCampaign(
+        call,
+        { ...plan, media: { pixelId, targeting } },
+        metaOnce
+      );
+      // Throws (after pausing it) when anything came back able to spend.
+      const verified = await verifyStagedPaused(call, stagedNow);
+      return { made: stagedNow, status: verified.state };
+    };
+    const reused = await metaWritesOf(actor, key);
+    try {
+      return await stage();
+    } catch (error) {
+      const notFound =
+        error instanceof Error && META_NOT_FOUND.test(error.message);
+      if (!notFound || reused.length === 0) {
+        throw error;
+      }
+      // The merchant deleted what an earlier attempt staged (discarded the
+      // draft in Ads Manager, say): its saved IDs are stale. Forget every
+      // Meta write of this staging and stage it afresh, once.
+      log.warn({
+        campaign: {
+          key,
+          staleMetaIds: reused.map((row) => String(row.result)),
+        },
+        error: {
+          code: "META_STAGING_STALE",
+          message: `Meta no longer has a staged object; staging again: ${error.message}`,
+        },
+        userId: actor.userId,
+      });
+      await actor.db
+        .delete(externalWrite)
+        .where(
+          and(
+            eq(externalWrite.userId, actor.userId),
+            like(externalWrite.key, `${key}:meta:%`)
+          )
+        );
+      return await stage();
     }
-    const pixelId = input.pixelId ?? (await findSalesPixel(call, adAccountId));
-    const stagedNow = await stagePausedCampaign(
-      call,
-      { ...plan, media: { pixelId, targeting } },
-      metaOnce
-    );
-    // Throws (after pausing it) when anything came back able to spend.
-    const verified = await verifyStagedPaused(call, stagedNow);
-    return { made: stagedNow, status: verified.state };
   });
   // A video ad Meta wouldn't take was skipped: the campaign runs with the
   // rest, and each one goes to error tracking.
