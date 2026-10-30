@@ -1,12 +1,12 @@
 # The setup every CI job shares: pnpm and Node with the pnpm store cached
 # (one store for every job, keyed on the lockfile), the placeholder env
-# Varlock validates, the install, and the job's own Turborepo cache.
+# Varlock validates, the install, and the Turborepo Remote Cache.
 name: setup
-description: Install the workspace and restore the job's Turborepo cache
+description: Install the workspace and connect the Turborepo Remote Cache
 
 inputs:
   turbo-cache:
-    description: The name of this job's Turborepo cache; empty for none
+    description: "'true' to use the Turborepo Remote Cache; empty for none"
     required: false
     default: ""
 
@@ -29,21 +29,11 @@ runs:
     - name: Install
       shell: bash
       run: pnpm install --frozen-lockfile --prefer-offline
-    # Turborepo's local cache, one per job. Only a push to main saves it
-    # (ci.yml), so pull requests read main's latest and never crowd it out of
-    # the repository's 10 GB: a package a pull request leaves alone replays
-    # main's result instead of running again. Entries older than a week are
-    # dropped, so the cache does not grow without end.
-    - if: inputs.turbo-cache != ''
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        path: .turbo/cache
-        key: turbo-${{ runner.os }}-${{ inputs.turbo-cache }}-${{ github.sha }}
-        restore-keys: turbo-${{ runner.os }}-${{ inputs.turbo-cache }}-
-    - if: inputs.turbo-cache != ''
-      name: Drop week-old cache entries
-      shell: bash
-      run: |
-        if [ -d .turbo/cache ]; then
-          find .turbo/cache -type f -mtime +7 -delete
-        fi
+    # Turborepo's Remote Cache on the GitHub Actions cache (caching-for-turbo
+    # serves the Remote Cache API on localhost and sets TURBO_API, TURBO_TOKEN
+    # and TURBO_TEAM). Each task's output is its own cache entry, fetched only
+    # when its hash is asked for, so a job downloads what it replays instead of
+    # one archive of every job's history. Entries a pull request writes are
+    # scoped to it; main's are read by every pull request.
+    - if: inputs.turbo-cache == 'true'
+      uses: rharkor/caching-for-turbo@760158c05c47e7a764f78e9a22ca3b5a6ed8c52e # v2.5.2
