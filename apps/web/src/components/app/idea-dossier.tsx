@@ -157,7 +157,8 @@ const DossierView = ({ dossier }: { dossier: Dossier }) => {
           </Row>
         )}
         <Row label={t("priceBand")}>
-          <PriceRange band={priceBand} />
+          {/* The glance names its own prices; the range stands in without it. */}
+          {summary?.price ? null : <PriceRange band={priceBand} />}
           {glance.price}
         </Row>
         {glance.risks.length > 0 ? (
