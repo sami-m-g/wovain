@@ -153,5 +153,9 @@ config:
     secure: v1:6fPwHUbYUro3k20a:gEEbu9SkjOd4vGDlyxYl/9q1L0kWS4LZP4RFxKsUlA==
   wovain-nebius:meta-app-secret:
     secure: v1:Txzy5y7kEQkb23cn:bNrIl+JWM44WzhwQL4tlsI4fgBmlh7nNPKohQn6yiyV7P41nzvg8735usp5cxn5M
+  wovain-nebius:inngest-event-key:
+    secure: v1:sLmugIhaFxamS2tm:LLNmc9llefCsou3PzEgXk4RnrS0E3aojloggRozxq7gHBQeSlvU1JjdGDsphI5f6pa0hubePuJRXXKFG7SRD41TA6SAv19nGLHAyWJ+kzGGSCFVVyKBNtf5OPdUm91uXvJ0d/WSO
+  wovain-nebius:inngest-signing-key:
+    secure: v1:blG8EYd/wFCc7L5X:XMBkXqaECXr4WbDTYGt+LBL+QaQgE9zdX/S0Ep8MZw5eLZMaA/mOO0S7VxSuEGdCni/qY8Ep1LUoNQ/uuqkWE0G1yWhspy6BrVXULpTL+jPmT+BqZRyLVOArHraq
 secretsprovider: gcpkms://projects/wovain/locations/us-central1/keyRings/pulumi/cryptoKeys/next-stack-secrets
 encryptedkey: CiQAh4aI65rG4NpeA/VWF/b5P77qZo91yRGNE0jnl05pjYgzqoMSSQBWC+SVUtPILzTDdjX6sxnXM5FjCczTk9tXeIZw9XUgFhb5erfW90hhRgAGQsKrXz7cK5/3cTjhftZeRT8PREHSE8rfYcA/jRg=
