@@ -241,10 +241,11 @@ export const createDropCampaign = async (
   const single = productIds.length === 1;
   // The run of the first design names the trace and the Meta writes.
   const first = await getProduct(actor, productIds[0] ?? "");
-  const { runId } = await getDesign(actor, first.designId);
-  // Qloo's audience as the ad sets' targeting and the copy's persona, kept
-  // with the key so a retry stages the same ad sets (./audiences). Without
-  // one nothing is staged: QLOO_AUDIENCE_MISSING, and the retry asks again.
+  const { ideaId, runId } = await getDesign(actor, first.designId);
+  // Qloo's audience for the idea (then the brand, then the brief) as the ad
+  // sets' targeting and the copy's persona, kept with the key so a retry
+  // stages the same ad sets (./audiences). A failed Qloo step stages
+  // nothing: QLOO_AUDIENCE_MISSING, and the retry asks again.
   const audience = await once(actor, {
     key: `${key}:audience`,
     operation: "audience",
@@ -252,6 +253,7 @@ export const createDropCampaign = async (
       requireQlooAudience(
         await audienceFor(actor, {
           countries: input.countries,
+          ideaId,
           runId: runId ?? undefined,
         })
       ),

@@ -23,8 +23,10 @@ import type { DecisionTrace, TraceSource } from "./trace";
 // Advantage+ audience suggestions, the setting Meta's Ads MCP keeps on: Meta
 // may reach past them when that converts better. Every match is kept as
 // evidence. A step that fails is logged at error level and marked failed in
-// the evidence; a targeting with a failed step or no Qloo audience is never
-// staged (qlooAudienceGap): no Qloo audience, no campaign.
+// the evidence; a targeting with a failed step is never staged
+// (qlooAudienceGap). The brand is optional ("just sell"): the idea's own Qloo
+// audiences come first, then the brand's, and with none the ads go broad on
+// the idea's interests (evidence.fallback), never refused.
 
 export interface QlooEntityInput {
   id: string;
@@ -39,10 +41,21 @@ export interface DemographicsOverride {
   genders?: ("female" | "male" | "all")[] | undefined;
 }
 
+// A Qloo audience already read for the idea (its who-buys).
+export interface KnownAudience {
+  affinity: number;
+  id: string;
+  name: string;
+}
+
 export interface TargetingInput {
+  // The idea's own Qloo audiences: kept first, before any brand scoring.
+  audiences?: readonly KnownAudience[] | undefined;
   // ISO country codes the ads may run in.
   countries: string[];
   entities: readonly QlooEntityInput[];
+  // The idea's Qloo tag and cues, searched on Meta as interests.
+  queries?: readonly { qlooId: string; query: string }[] | undefined;
   override?: DemographicsOverride | undefined;
 }
 
@@ -61,7 +74,7 @@ type Source = "merchant" | "qloo";
 
 export interface InterestMatch {
   audienceSize?: number | undefined;
-  from: "qloo_audience" | "qloo_entity";
+  from: "qloo_audience" | "qloo_entity" | "qloo_tag";
   metaId: string;
   metaName: string;
   path: string[];
@@ -86,6 +99,9 @@ export interface TargetingEvidence {
   }[];
   // Steps that failed and were left out ("qloo.demographics" …).
   failed: string[];
+  // Set when no Qloo audience was found: the ad set goes broad, on the
+  // idea's interests when Meta matched any, else on countries alone.
+  fallback?: "broad" | "interests" | undefined;
   gender?:
     | {
         female?: number | undefined;
@@ -115,25 +131,19 @@ export interface AudienceTargeting {
   targeting: MetaTargeting;
 }
 
-// Why a targeting can't be staged. Every idea is a Qloo tag, so every ad
-// reaches Qloo's audience for it: a failed step (retry it) or no Qloo
-// audience kept (the brand needs a reference Qloo knows) refuses the
-// campaign, never a countries-only ad set.
-export type QlooAudienceGap =
-  | { reason: "failed"; steps: string[] }
-  | { reason: "no_audience" };
+// Why a targeting can't be staged: a failed step (retry it). A missing
+// brand or Qloo audience never refuses the ads (evidence.fallback).
+export interface QlooAudienceGap {
+  reason: "failed";
+  steps: string[];
+}
 
 export const qlooAudienceGap = (
-  evidence: Pick<TargetingEvidence, "audiences" | "failed">
-): QlooAudienceGap | undefined => {
-  if (evidence.failed.length > 0) {
-    return { reason: "failed", steps: [...evidence.failed] };
-  }
-  if (evidence.audiences.length === 0) {
-    return { reason: "no_audience" };
-  }
-  return undefined;
-};
+  evidence: Pick<TargetingEvidence, "failed">
+): QlooAudienceGap | undefined =>
+  evidence.failed.length > 0
+    ? { reason: "failed", steps: [...evidence.failed] }
+    : undefined;
 
 // Qloo's age buckets in Meta's years; Meta's ages stop at 65.
 export const QLOO_AGE_BUCKETS = [
@@ -442,7 +452,29 @@ const audiencesStep = async (
   deps: TargetingDeps,
   input: TargetingInput,
   evidence: TargetingEvidence
-) => {
+): Promise<QlooAudience[]> => {
+  // The idea's own audiences win: no brand scoring needed.
+  const known = (input.audiences ?? []).slice(0, MAX_AUDIENCES);
+  if (known.length > 0) {
+    evidence.audiences = known.map(({ affinity, id, name }) => ({
+      affinity,
+      id,
+      lift: 0,
+      name,
+    }));
+    deps.trace?.add({
+      agent: AGENT,
+      inputSummary: "the idea's Qloo audiences (who buys)",
+      output: evidence.audiences,
+      sources: known.map(({ id, name }) => ({
+        id,
+        provider: "qloo" as const,
+        title: name,
+      })),
+      step: "qloo.audiences",
+    });
+    return known.map(({ id, name }) => ({ id, metaQuery: name, name }));
+  }
   // Qloo's hackathon API scores audiences against brands only: other
   // entity types answer a flat baseline.
   const brands = input.entities
@@ -531,6 +563,11 @@ const interestsStep = async (
       from: "qloo_audience" as const,
       qlooId: audience.id,
       query: audience.metaQuery,
+    })),
+    ...(input.queries ?? []).map(({ qlooId, query }) => ({
+      from: "qloo_tag" as const,
+      qlooId,
+      query,
     })),
     ...input.entities.slice(0, MAX_ENTITY_QUERIES).map((entity) => ({
       from: "qloo_entity" as const,
@@ -633,6 +670,9 @@ export const buildAudienceTargeting = async (
     audiencesStep(deps, input, evidence),
   ]);
   await interestsStep(deps, input, audiences, evidence);
+  if (evidence.audiences.length === 0) {
+    evidence.fallback = evidence.interests.length > 0 ? "interests" : "broad";
+  }
   const targeting = metaTargetingOf(input.countries, evidence);
   const sources: TraceSource[] = [
     ...evidence.qlooEntities.map((entity) => ({
