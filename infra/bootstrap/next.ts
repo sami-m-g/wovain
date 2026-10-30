@@ -104,10 +104,16 @@ export const nextInfrastructure = (args: NextArgs) => {
     stateBucket: args.stateBucket,
   });
 
-  // Reading the project (getProject) and billing API calls to it
-  // (gcp:userProjectOverride).
+  // Reading the project (getProject), billing API calls to it
+  // (gcp:userProjectOverride) and, for `run.viewer`, polling Cloud Run's
+  // long-running operations: `run.operations.get` is checked on the
+  // project's location, not on the service, so `run.admin` on the service
+  // never covers it and an update failed with a 403 after it had started.
+  // Read-only; it also lets this account read production's Cloud Run
+  // configuration, which it can't change.
   for (const role of [
     "roles/browser",
+    "roles/run.viewer",
     "roles/serviceusage.serviceUsageConsumer",
   ]) {
     new gcp.projects.IAMMember(`infra-next-${role.split("/")[1]}`, {
