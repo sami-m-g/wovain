@@ -23,6 +23,8 @@ const env = (name: string) => {
   return value;
 };
 
+export const SMOKE_STATE = ".auth/smoke.json";
+
 export const isSmoke = process.env["E2E_BASE_URL"] !== undefined;
 
 const db = isSmoke
@@ -103,7 +105,7 @@ export const test = base.extend<Fixtures>({
   merchant: async ({ baseURL, page }, provide) => {
     if (testAuth === undefined) {
       const email = env("E2E_EMAIL");
-      await signInWithPassword(page, email, env("E2E_PASSWORD"));
+      // Already signed in by smoke.setup.ts (storageState).
       await provide({ email, id: undefined });
       return;
     }

@@ -75,3 +75,4 @@ playwright-report/
 # Storybook
 storybook-static
 *storybook.log
+apps/e2e/.auth/

@@ -5,7 +5,7 @@
   },
   "workspaces": {
     "apps/e2e": {
-      "entry": ["src/posthog-reporter.ts"]
+      "entry": ["src/posthog-reporter.ts", "tests/smoke.setup.ts"]
     },
     "apps/fumadocs": {
       "ignoreDependencies": ["tailwindcss", "@tailwindcss/postcss"],
