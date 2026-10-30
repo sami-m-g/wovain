@@ -28,6 +28,7 @@
   - Also the per-environment settings in `apps/web/.env.schema` (`BILLING_CATALOG`, `PRICING_RULES`, the MCP URLs, `EMAIL_FROM` and the rest), set in `apps/web/.env.local`.
   - Agents also need `NEBIUS_API_KEY`; without it, Studio shows the workflow and the step scorers only.
 - Running the workflow needs the Inngest Dev Server: `INNGEST_DEV=1` and `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`, with `pnpm dev:web` running.
+- End-to-end (`apps/e2e/README.md`): `pnpm --filter @wovain/e2e run test:e2e` runs the golden path (Home pick to a staged paused campaign) with every provider mocked, as CI does; `.github/workflows/nightly-e2e.yml` runs it each night on next.wovain.com with real providers, up to the designs.
 - Judge evals: `pnpm --filter @wovain/mastra run evals` (needs `NEBIUS_API_KEY` and `NEMOTRON_MODEL`) writes `packages/mastra/src/mastra/evals/report.v1.json`. The labeled set is `packages/core/src/evals/judges.v1.json`.
 
 ## Rules

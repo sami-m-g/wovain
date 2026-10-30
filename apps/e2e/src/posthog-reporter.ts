@@ -4,7 +4,7 @@ import { PostHog } from "posthog-node";
 // Sends each smoke test that finally failed to PostHog Error Tracking, the
 // one place errors are watched (AGENTS.md), as an exception on the
 // environment's own project. On only when E2E_POSTHOG_KEY is set
-// (deploy.yml: next's project token).
+// (nightly-e2e.yml: next's project token).
 export default class PostHogReporter implements Reporter {
   private readonly posthog = process.env["E2E_POSTHOG_KEY"]
     ? new PostHog(process.env["E2E_POSTHOG_KEY"], {

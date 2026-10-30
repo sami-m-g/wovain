@@ -1,9 +1,12 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { expect, test as base } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { createSealer } from "@wovain/core/sealing";
+import type { ProviderId } from "@wovain/core/upstream";
 import { createDb } from "@wovain/db";
 import * as schema from "@wovain/db/schema/auth";
 import { billingSubscription, creditGrant } from "@wovain/db/schema/billing";
+import { connection } from "@wovain/db/schema/seller";
 import { betterAuth } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
 import { testUtils } from "better-auth/plugins";
@@ -24,6 +27,9 @@ const env = (name: string) => {
 };
 
 export const SMOKE_STATE = ".auth/smoke.json";
+
+// The account src/seed-smoke.ts seeds.
+export const SMOKE_EMAIL = process.env["E2E_EMAIL"] ?? "e2e-smoke@wovain.com";
 
 export const isSmoke = process.env["E2E_BASE_URL"] !== undefined;
 
@@ -83,6 +89,29 @@ const freePlanOf = async (userId: string) => {
   });
 };
 
+// The merchant's Fourthwall shop and Meta ad account, connected as the
+// OAuth callback saves them (sealed with the app's key); MSW answers their
+// MCP servers (mocks/mcp.ts).
+export const connectProviders = async (
+  userId: string,
+  providers: ProviderId[]
+) => {
+  const sealer = createSealer(env("TOKEN_ENCRYPTION_KEY"));
+  await db?.insert(connection).values(
+    providers.map((provider) => ({
+      provider,
+      sealedTokens: sealer.seal(
+        JSON.stringify({
+          access_token: `e2e-${provider}`,
+          token_type: "Bearer",
+        }),
+        `${userId}:${provider}`
+      ),
+      userId,
+    }))
+  );
+};
+
 export const signInWithPassword = async (
   page: Page,
   email: string,
@@ -104,7 +133,7 @@ interface Fixtures {
 export const test = base.extend<Fixtures>({
   merchant: async ({ baseURL, page }, provide) => {
     if (testAuth === undefined) {
-      const email = env("E2E_EMAIL");
+      const email = SMOKE_EMAIL;
       // Already signed in by smoke.setup.ts (storageState).
       await provide({ email, id: undefined });
       return;
