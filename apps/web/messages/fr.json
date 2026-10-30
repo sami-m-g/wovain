@@ -158,7 +158,7 @@
       },
       {
         "question": "Comment les prix sont-ils fixés ?",
-        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Quand vous changez un prix, wovain affiche votre profit pour chaque taille face au coût réel de Fourthwall et refuse un prix qui perd de l'argent."
+        "answer": "À partir du coût de base réel du blank sur Fourthwall : au moins 10 $ de profit et 30 % de marge, après frais de carte, taxe de vente et réserve pour remboursements, arrondi au dollar supérieur. Quand vous changez un prix, wovain affiche votre profit pour chaque taille face au coût réel de Fourthwall et refuse un prix qui perd de l'argent. Avant de publier, chaque produit affiche son coût de base, votre profit par vente, votre marge et la règle derrière son prix."
       },
       {
         "question": "Combien ça coûte ?",

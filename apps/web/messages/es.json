@@ -158,7 +158,7 @@
       },
       {
         "question": "¿Cómo se fijan los precios?",
-        "answer": "Desde el coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, tras comisiones de tarjeta, impuesto sobre ventas y una reserva para reembolsos, redondeado al dólar superior. Cuando cambias un precio, wovain muestra tu beneficio en cada talla frente al coste real de Fourthwall y rechaza uno que pierda dinero."
+        "answer": "Desde el coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, tras comisiones de tarjeta, impuesto sobre ventas y una reserva para reembolsos, redondeado al dólar superior. Cuando cambias un precio, wovain muestra tu beneficio en cada talla frente al coste real de Fourthwall y rechaza uno que pierda dinero. Antes de publicar, cada producto muestra su coste base, tu beneficio por venta, tu margen y la regla detrás de su precio."
       },
       {
         "question": "¿Cuánto cuesta?",

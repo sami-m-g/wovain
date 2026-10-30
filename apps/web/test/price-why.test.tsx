@@ -60,10 +60,11 @@ describe("ProductsStep price breakdown", () => {
         { check: null, costs: { "2XL": 15, M: 12 }, price: 28, rules: RULES }
       )
     );
-    // M: 28 - 12 - (28 x 2.9% + 0.30) - 28 x 2% = 14.33; (28 - 12) / 28 = 57%.
+    // M: 28 - 12 - (28 x 2.9% + 0.30) - 28 x 2% = 14.33; 14.33 / 28 = 51%,
+    // the margin after fees the rule speaks of.
     expect(html).toContain("Base cost $12.00");
     expect(html).toContain("your profit $14.33 per sale");
-    expect(html).toContain("57% margin");
+    expect(html).toContain("51% margin");
     expect(html).toContain("at least $10.00 profit and 30% margin");
   });
 

@@ -158,7 +158,7 @@
       },
       {
         "question": "How are prices set?",
-        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. When you change a price, wovain shows your profit in every size against Fourthwall's real cost and refuses one that loses money."
+        "answer": "From the blank's real base cost on Fourthwall: at least $10 profit and a 30% margin, after card fees, sales tax and a refund reserve, rounded up to a whole dollar. When you change a price, wovain shows your profit in every size against Fourthwall's real cost and refuses one that loses money. Before you publish, each product shows its base cost, your profit per sale, your margin and the rule behind its price."
       },
       {
         "question": "What does it cost?",

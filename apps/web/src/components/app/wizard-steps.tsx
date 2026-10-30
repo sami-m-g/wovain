@@ -755,10 +755,6 @@ export const PickReviewStep = ({
 };
 
 /**
- * The confirm before a product goes live: the click in the flow is the
- * merchant's approval, so it names the product, its price and the shop.
- */
-/**
  * Why this price, from Fourthwall's cost to make it (the cheapest size) and
  * wovain's pricing rule. Shows nothing until the cost is read.
  */
@@ -789,7 +785,8 @@ const PriceWhy = ({ product }: { product: Product }) => {
       <span className="figures">
         {t("breakdown", {
           cost: money(base.cost),
-          margin: percent(base.grossMargin),
+          // The margin the rule speaks of: profit after fees over price.
+          margin: percent(base.profit / product.price),
           profit: money(base.profit),
         })}
       </span>
@@ -803,6 +800,10 @@ const PriceWhy = ({ product }: { product: Product }) => {
   );
 };
 
+/**
+ * The confirm before a product goes live: the click in the flow is the
+ * merchant's approval, so it names the product, its price and the shop.
+ */
 const PublishConfirm = ({
   onCancel,
   onConfirm,
