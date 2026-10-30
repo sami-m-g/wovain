@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { pickIdea, reviewDesign } from "./autopilot";
 import {
   applyFacts,
+  briefSchema,
+  DEFAULT_GARMENT_COLORS,
   draftBrief,
   judgeDesign,
   judgeReplySchema,
@@ -435,5 +437,45 @@ describe("draftBrief", () => {
     await draftBrief(ask, { avoidNames: [], idea: idea("anime", 0.9) });
 
     expect(JSON.parse(asked[0]?.prompt ?? "{}").taste).toBeUndefined();
+  });
+
+  // 2026-10-30: Nemotron answered garmentColors: [] and the paid run failed.
+  it("never asks the model for garment colours: the chosen palette sets them", async () => {
+    const { garmentColors: _asked, ...reply } = brief;
+    const { ask, asked } = fakeAgents({
+      design_brief: [{ ...reply, garmentColors: [] }],
+    });
+    const style = {
+      garments: ["Sand", "Pepper"],
+      guardrails: undefined,
+      inks: [],
+      tone: undefined,
+    };
+
+    const drafted = await draftBrief(ask, {
+      avoidNames: [],
+      idea: idea("anime", 0.9),
+      style,
+    });
+
+    expect(drafted.garmentColors).toEqual(["Sand", "Pepper"]);
+    expect(JSON.parse(asked[0]?.prompt ?? "{}").garmentColors).toEqual([
+      "Sand",
+      "Pepper",
+    ]);
+    expect(briefSchema.shape).not.toHaveProperty("garmentColors");
+  });
+
+  it("uses the default garments when no palette is chosen", async () => {
+    const { garmentColors: _asked, ...reply } = brief;
+    const { ask } = fakeAgents({ design_brief: [reply] });
+
+    const drafted = await draftBrief(ask, {
+      avoidNames: [],
+      idea: idea("anime", 0.9),
+      style: { garments: [], guardrails: undefined, inks: [], tone: undefined },
+    });
+
+    expect(drafted.garmentColors).toEqual([...DEFAULT_GARMENT_COLORS]);
   });
 });

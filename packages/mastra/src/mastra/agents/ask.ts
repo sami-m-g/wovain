@@ -96,6 +96,45 @@ const memoryUnavailable = (
   });
 };
 
+// Mastra's structured-output check failed: the model's JSON missed the
+// schema (an empty list where one item is required, a blank field). The
+// MastraError in the error or its causes; undefined for any other failure.
+const SHAPE_ERROR_ID = "STRUCTURED_OUTPUT_SCHEMA_VALIDATION_FAILED";
+const shapeErrorOf = (error: unknown): Error | undefined => {
+  let current: unknown = error;
+  for (let depth = 0; depth < MAX_CAUSES; depth += 1) {
+    if (!(current instanceof Error)) {
+      return undefined;
+    }
+    const { code, id = code } = current as Error & {
+      code?: unknown;
+      id?: unknown;
+    };
+    if (id === SHAPE_ERROR_ID) {
+      return current;
+    }
+    current = current.cause;
+  }
+  return undefined;
+};
+
+const SHAPE_RULE =
+  "Your last answer did not match the JSON schema. Fill every required field and list; it failed with:";
+
+// A misshapen reply is asked again; the failure still goes to PostHog.
+const shapeRetried = (log: Logger | undefined, agent: string, error: Error) => {
+  log?.set({ shapeRetry: { agent } });
+  evlog.error({
+    error: {
+      code: SHAPE_ERROR_ID,
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    },
+    shapeRetry: { agent },
+  });
+};
+
 // The messages a call added (its input and its answer), without the
 // history it read from memory: what memory would have saved.
 const newMessages = (reply: {
@@ -180,10 +219,10 @@ export const createNemotron =
     let accepted: MastraDBMessage[] = [];
     const answer = async (instructions: string) =>
       await external(log, { operation: name, provider: "nebius" }, async () => {
-        const generate = async (withMemory: boolean) =>
+        const send = async (withMemory: boolean, rules: string) =>
           await kit.agents[name].generate(input, {
             abortSignal: AbortSignal.timeout(TIMEOUT_MS),
-            instructions,
+            instructions: rules,
             modelSettings: { temperature },
             requestContext,
             structuredOutput: { schema },
@@ -205,6 +244,23 @@ export const createNemotron =
               ...(traceId !== undefined && HEX_ID.test(traceId) && { traceId }),
             },
           });
+        // A reply that misses the schema (an empty list, a blank field) is
+        // asked once more, naming what failed, before the call fails.
+        const generate = async (withMemory: boolean) => {
+          try {
+            return await send(withMemory, instructions);
+          } catch (error) {
+            const failed = shapeErrorOf(error);
+            if (failed === undefined) {
+              throw error;
+            }
+            shapeRetried(log, name, failed);
+            return await send(
+              withMemory,
+              `${instructions}\n\n${SHAPE_RULE} ${failed.message}`
+            );
+          }
+        };
         let reply: Awaited<ReturnType<typeof generate>>;
         let keepable = remember && guarded;
         try {
