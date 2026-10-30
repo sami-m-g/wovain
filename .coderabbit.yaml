@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
-# CodeRabbit reviews every pull request into main, and its approval is the
-# one the main ruleset requires (infra/github.ts): it requests changes on
-# blocking findings and approves once they are resolved. Linting, SAST,
+# CodeRabbit reviews every pull request into main as an advisor: it comments
+# but never requests changes or approves, and the main ruleset does not
+# require it (infra/github.ts; Claude's review is the approval). Linting, SAST,
 # secret and dependency scanning run in CI (.github/workflows), so its own
 # tools are off and only the LLM review runs, beside CI.
 #
@@ -15,13 +15,10 @@
 language: en-US
 reviews:
   profile: chill
-  # Request changes on blocking findings; approve when they are resolved.
-  # (`request_changes_workflow` is the deprecated alias of `enabled`.)
+  # Advisory: comments only. `enabled` is the request-changes/approve workflow
+  # (`request_changes_workflow` is its deprecated alias).
   auto_approvals:
-    enabled: true
-    # No `@coderabbitai approve` from a pull request's own author: the
-    # approval must come from the review.
-    allow_author_approval: false
+    enabled: false
   auto_review:
     enabled: true
     drafts: false
@@ -29,9 +26,7 @@ reviews:
     # Each push is reviewed on its own commits only, not the whole pull
     # request again.
     auto_incremental_review: true
-    # Never pause after a number of reviewed commits (default 5): approval
-    # needs the latest commit reviewed, so a paused review would hold the
-    # required approval until someone runs `@coderabbitai review`.
+    # Never pause after a number of reviewed commits (default 5).
     auto_pause_after_reviewed_commits: 0
   # A short walkthrough comment only, nothing written into the description,
   # and no extra sections or summaries that each cost another pass.
