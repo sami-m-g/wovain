@@ -770,6 +770,9 @@ export const startPickedRun = async (
     ...input
   }: Pick<RunInput, "countries" | "dailyBudget"> & { pick: DirectionPick }
 ) => {
+  if (actor.runs === undefined) {
+    throw new Error("No run engine to start the run");
+  }
   await requireFal(actor);
   const runId = await charge(actor, "research", {}, async () => {
     const direction = await pickedDirection(actor, pick);
