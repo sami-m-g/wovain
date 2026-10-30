@@ -31,13 +31,28 @@ import {
 import { pickedIdeaIdsOf } from "@/components/drops/drop-sections";
 import { DropStory } from "@/components/drops/drop-story";
 import type { Stage } from "@/components/product/run-tape";
-import { RunTape, STAGE_COUNT } from "@/components/product/run-tape";
+import {
+  reachedStage,
+  RunTape,
+  STAGE_COUNT,
+  STAGES,
+} from "@/components/product/run-tape";
 import { describeRunFailure, namedWords } from "@/lib/flow-client";
 
-const StepNav = ({ step, stage }: { step: Step; stage: Stage }) => {
+const StepNav = ({
+  step,
+  stage,
+  run,
+}: {
+  step: Step;
+  stage: Stage;
+  run?: Parameters<typeof reachedStage>[0] | undefined;
+}) => {
+  const reached = run ? reachedStage(run) : undefined;
   const t = useTranslations("Wizard");
   const stages = useTranslations("Stages");
   const index = flow.steps.findIndex((item) => item.id === step);
+  const passed = Math.max(index, reached ? STAGES.indexOf(reached) : 0);
   return (
     <nav aria-label={t("stepsLabel")} className="flex flex-col gap-3">
       <p className="text-muted-foreground figures text-xs font-medium">
@@ -46,7 +61,7 @@ const StepNav = ({ step, stage }: { step: Step; stage: Stage }) => {
           total: STAGE_COUNT,
         })}
       </p>
-      <RunTape finished={step === "done"} stage={stage} />
+      <RunTape finished={step === "done"} reached={reached} stage={stage} />
       <ol className="sr-only">
         {flow.steps.map((item, position) => (
           <li
@@ -54,7 +69,7 @@ const StepNav = ({ step, stage }: { step: Step; stage: Stage }) => {
             key={item.id}
           >
             {stages(item.stage)}
-            {position < index ? ` (${stages("done")})` : ""}
+            {position < passed ? ` (${stages("done")})` : ""}
           </li>
         ))}
       </ol>
@@ -282,7 +297,7 @@ const DropFlow = ({
         />
       </div>
 
-      <StepNav stage={drop.step.stage} step={step} />
+      <StepNav run={run} stage={drop.step.stage} step={step} />
 
       {notices}
 
