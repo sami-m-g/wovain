@@ -45,7 +45,7 @@ Interest IDs SHALL come only from Meta's targeting search. An interest SHALL be 
 
 ### Requirement: Failed steps are visible and left out
 
-A step that fails (Qloo demographics, Qloo audiences or Meta interests) SHALL be logged at error level and marked failed in the decision trace and in the evidence. The targeting SHALL never contain a guessed value, and a targeting with a failed step or no Qloo audience SHALL NOT be staged (`qlooAudienceGap`).
+A step that fails (Qloo demographics, Qloo audiences or Meta interests) SHALL be logged at error level and marked failed in the decision trace and in the evidence. The targeting SHALL never contain a guessed value, and a targeting with a failed step SHALL NOT be staged (`qlooAudienceGap`). No Qloo audience SHALL NOT block it: it goes broad (`fallback`).
 
 #### Scenario: Meta search fails
 
