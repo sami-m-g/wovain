@@ -1837,6 +1837,36 @@ describe("startPickedRun", () => {
     flagsOn.clear();
   });
 
+  it("starts the picked idea's research dossier with the run, at no extra charge", async () => {
+    flagsOn.add("drop-directions");
+    flagsOn.add("tavily-evidence");
+    const { actor, db } = await withFal();
+    const research = vi.fn(
+      async () => await Promise.resolve({ requestId: "req_1" })
+    );
+    actor.core = { ...actor.core, tavily: { research } } as unknown as Core;
+    await keep(db);
+
+    const started = await startPickedRun(actor, {
+      countries: ["US"],
+      dailyBudget: 5,
+      pick,
+    });
+
+    expect(research).toHaveBeenCalledOnce();
+    const [saved] = await db
+      .select()
+      .from(idea)
+      .where(eq(idea.runId, started.id));
+    expect(saved?.research.dossier).toMatchObject({
+      requestId: "req_1",
+      status: "pending",
+    });
+    // One research charge for the pick, the dossier included.
+    expect(await db.select().from(creditReservation)).toHaveLength(1);
+    flagsOn.clear();
+  });
+
   it("refuses a pick no longer in the suggestions, saving nothing and charging nothing", async () => {
     flagsOn.add("drop-directions");
     const { actor, db, runs } = await withFal();

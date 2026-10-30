@@ -25,6 +25,7 @@ import { requireFal } from "./connections";
 import { autopilotDecide, generateDesign, getDesign } from "./designs";
 import { pickedDirection } from "./drop-directions";
 import type { DirectionPick } from "./drop-directions";
+import { autoStartDossier } from "./evidence";
 import { assertQlooOn, getIdea, researchIdeas } from "./ideas";
 import { classifyFailure, track } from "./metrics";
 import { reachMilestone } from "./milestones";
@@ -774,18 +775,20 @@ export const startPickedRun = async (
     throw new Error("No run engine to start the run");
   }
   await requireFal(actor);
-  const runId = await charge(actor, "research", {}, async () => {
+  const saved = await charge(actor, "research", {}, async () => {
     const direction = await pickedDirection(actor, pick);
-    const saved = await savePicked(actor, direction);
-    await queueRun(actor, saved.runId, {
+    const picked = await savePicked(actor, direction);
+    await queueRun(actor, picked.runId, {
       ...input,
       autopilot: false,
-      pick: { ideaId: saved.ideaId },
+      pick: { ideaId: picked.ideaId },
       seed: direction.brief,
     });
-    return saved.runId;
+    return picked;
   });
-  return await getRun(actor, runId);
+  // Its research dossier starts with the run, within the pick's credits.
+  await autoStartDossier(actor, saved.ideaId);
+  return await getRun(actor, saved.runId);
 };
 
 export const listRuns = async ({ db, userId }: Actor) =>
