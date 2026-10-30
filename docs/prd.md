@@ -160,11 +160,11 @@ Everything in `scope.md > The POC Boundary`: sign-in with Google, own-account co
 
 ## Possible Later Enhancements
 
-TikTok Shop and ads; bring-your-own Nebius key on Label; Qloo audience demographics for targeting; more docs locales.
+Apparel on demand for big companies (the long-term vision); TikTok Shop and ads; bring-your-own Nebius key on Label; Qloo audience demographics for targeting; more docs locales.
 
 ## Non-Goals
 
-- No apparel-on-demand or cut-and-sew: print-on-demand only.
+- No cut-and-sew, and no apparel on demand for big companies yet: today's scope is print-on-demand only.
 - No custom media buying: Meta already optimizes delivery.
 - No ad spend without an approval: wovain starts a campaign only after the designer approves it, inside their caps.
 - No fabricated customers, users, sales, revenue or testimonials.
