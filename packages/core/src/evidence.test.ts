@@ -283,6 +283,48 @@ describe("dossier", () => {
       note: "No prices",
     });
   });
+
+  it("reads the report at a glance, one line per answer", () => {
+    const dossier = dossierOf(
+      {
+        summary: {
+          price: "Most sell for $24 to $28",
+          risks: [
+            "Show title is trademarked",
+            "",
+            "Fading after the finale",
+            "a",
+            "b",
+          ],
+          saturation: "Many generic fern tees, few gothic ones",
+          saturation_level: " Medium ",
+          why_now: "Season 2 premieres next week",
+        },
+        why_now: "A new season airs this month.",
+      },
+      []
+    );
+    expect(dossier.summary).toEqual({
+      price: "Most sell for $24 to $28",
+      risks: ["Show title is trademarked", "Fading after the finale", "a"],
+      saturation: "Many generic fern tees, few gothic ones",
+      saturationLevel: "medium",
+      whyNow: "Season 2 premieres next week",
+    });
+  });
+
+  it("keeps a report whose glance is missing or malformed", () => {
+    expect(dossierOf({ why_now: "Now." }, []).summary).toBeUndefined();
+    const odd = dossierOf({ summary: "not an object", why_now: "Now." }, []);
+    expect(odd.whyNow).toBe("Now.");
+    expect(odd.summary).toBeUndefined();
+    expect(
+      dossierOf(
+        { summary: { saturation_level: "very high" }, why_now: "Now." },
+        []
+      ).summary?.saturationLevel
+    ).toBeUndefined();
+  });
 });
 
 // Next, run 783b6885: the evidence read "Dark As Night Shirt Shop the look →

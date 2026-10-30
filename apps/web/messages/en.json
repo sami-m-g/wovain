@@ -781,11 +781,17 @@
       "dossierHint": "Tavily reads the web and your Qloo taste data, then reports why now, how crowded it is, what shirts sell for and the risks. Takes about a minute.",
       "dossierPending": "Researching. This takes about a minute.",
       "dossierFailed": "The research didn't finish.",
-      "dossierTitle": "Research",
+      "dossierTitle": "Research report",
       "whyNow": "Why now",
       "saturation": "How crowded",
       "priceBand": "What shirts sell for",
       "risks": "Risks",
+      "readFull": "Read full report",
+      "level": {
+        "low": "Open",
+        "medium": "Some competition",
+        "high": "Crowded"
+      },
       "trademarkTitle": "Trademark check",
       "trademarkBlocked": "matches a trademark record. Change the words before you sell.",
       "trademarkCaution": "already sells on marketplaces.",

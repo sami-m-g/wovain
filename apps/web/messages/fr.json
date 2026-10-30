@@ -781,11 +781,17 @@
       "dossierHint": "Tavily lit le web et vos données de goût Qloo, puis indique pourquoi maintenant, la concurrence, les prix des t-shirts et les risques. Environ une minute.",
       "dossierPending": "Étude en cours. Environ une minute.",
       "dossierFailed": "L'étude n'a pas abouti.",
-      "dossierTitle": "Étude",
+      "dossierTitle": "Rapport de recherche",
       "whyNow": "Pourquoi maintenant",
       "saturation": "Concurrence",
       "priceBand": "Prix des t-shirts",
       "risks": "Risques",
+      "readFull": "Lire le rapport complet",
+      "level": {
+        "low": "Ouvert",
+        "medium": "Un peu de concurrence",
+        "high": "Saturé"
+      },
       "trademarkTitle": "Vérification des marques",
       "trademarkBlocked": "correspond à une marque déposée. Changez le texte avant de vendre.",
       "trademarkCaution": "se vend déjà sur les marketplaces.",
