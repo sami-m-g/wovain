@@ -53,6 +53,82 @@ export const keyOf = (value: string) =>
 const asError = (error: unknown) =>
   error instanceof Error ? error : new Error(String(error));
 
+// Social posts: a caption with a call to action and a link, not a page
+// about the theme ("Dark As Night Shirt Shop the look → link in bio …").
+export const SOCIAL_DOMAINS = [
+  "facebook.com",
+  "instagram.com",
+  "pinterest.com",
+  "threads.net",
+  "tiktok.com",
+  "twitter.com",
+  "x.com",
+];
+
+// Separators page titles put between a name and the site's boilerplate:
+// marks that break a title wherever they stand ("Tee|Etsy"), and dashes
+// that break it only between spaces ("Spider-Man" is one name).
+const TITLE_MARKS = ["|", "→", "»", "•", "·"];
+const TITLE_DASHES = new Set(["–", "—", "-"]);
+// Calls to action web titles end with.
+const CALLS_TO_ACTION = [
+  "buy now",
+  "click here",
+  "learn more",
+  "link in bio",
+  "order now",
+  "read more",
+  "shop now",
+  "shop the look",
+];
+// Punctuation a link may stand in: "(https://…)".
+const LINK_WRAP = /^[([{<"'“]+|[)\]}>"'”.,;:!?]+$/gu;
+
+const isLinkWord = (word: string) => {
+  const bare = word.replaceAll(LINK_WRAP, "").toLowerCase();
+  return (
+    bare.startsWith("www.") ||
+    bare.startsWith("http:") ||
+    bare.startsWith("https:")
+  );
+};
+
+// The title before its first separator mark.
+const firstPart = (title: string) => {
+  let text = title;
+  for (const mark of TITLE_MARKS) {
+    text = text.split(mark)[0] ?? text;
+  }
+  return text;
+};
+
+// A source's title as the merchant reads it: its first part, without links
+// or a trailing call to action; the page's host when nothing is left.
+export const sourceTitle = (title: string | null | undefined, url: string) => {
+  const words: string[] = [];
+  for (const word of firstPart(title ?? "").split(/\s+/u)) {
+    if (TITLE_DASHES.has(word) && words.length > 0) {
+      break;
+    }
+    if (word !== "" && !isLinkWord(word) && !TITLE_DASHES.has(word)) {
+      words.push(word);
+    }
+  }
+  let text = words.join(" ");
+  let trimmed = true;
+  while (trimmed) {
+    const lower = text.toLowerCase();
+    const call = CALLS_TO_ACTION.find(
+      (one) => lower === one || lower.endsWith(` ${one}`)
+    );
+    trimmed = call !== undefined;
+    if (call !== undefined) {
+      text = text.slice(0, text.length - call.length).trim();
+    }
+  }
+  return clip(text === "" ? hostOf(url) : text, TITLE_MAX);
+};
+
 export const citationsOf = (
   items: { title?: string | null | undefined; url: string }[]
 ) => {
@@ -62,7 +138,7 @@ export const citationsOf = (
       return [];
     }
     seen.add(url);
-    return [{ title: clip(title?.trim() || hostOf(url), TITLE_MAX), url }];
+    return [{ title: sourceTitle(title, url), url }];
   });
 };
 

@@ -11,6 +11,7 @@ export const STAGE_COUNT = STAGES.length;
 const STEP_STAGE: Record<string, Stage> = {
   campaign: "campaign",
   design: "designs",
+  name: "trends",
   product: "products",
   publish: "products",
   research: "trends",

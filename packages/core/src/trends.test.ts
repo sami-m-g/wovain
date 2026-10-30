@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { fitOutcomeModel } from "./outcomes";
 import type { DesignOutcome } from "./outcomes";
+import { createQloo } from "./qloo";
 import type { Qloo } from "./qloo";
 import { fakeNemotron } from "./test-doubles";
 import { RUN_THEMES } from "./themes";
@@ -97,8 +98,83 @@ const qlooBlank = qlooWith(
 );
 
 const BRIEF = "Spooky Halloween tees for horror movie fans";
+// #243: 64 characters, one clause.
+const LONG_BRIEF =
+  "Cozy botanical tees for houseplant lovers who love Studio Ghibli";
 const DARK_BRIEF =
   "Gothic botanical tees for plant lovers who like dark academia";
+
+// What Nemotron copies from the dark-academia brief: three concepts, one
+// with two phrases, and a name the brief doesn't hold.
+const DARK_CONCEPTS = [
+  { name: "Gothic", phrases: ["Gothic"] },
+  { name: "botanical", phrases: ["botanical", "plant"] },
+  { name: "dark academia", phrases: ["dark academia"] },
+  { name: "Studio Ghibli", phrases: ["Studio Ghibli"] },
+];
+
+// Qloo's answers for the dark-academia brief, as read live on 2026-10-29
+// (trimmed): each concept's tags, the tags each one's fans share, and the
+// shared query, which the dark-academia and gothic tags outweigh.
+const DARK_TAGS: Record<string, string[]> = {
+  botanical: ["urn:tag:keyword:media:botanical_garden"],
+  "dark academia": [
+    "urn:tag:keyword:media:dark_academia",
+    "urn:tag:genre:media:dark",
+  ],
+  gothic: ["urn:tag:genre:media:gothic", "urn:tag:keyword:media:gothic"],
+  plant: ["urn:tag:genre:media:plants"],
+};
+const tagsNamed = (names: [string, number][]) =>
+  names.map(([name, affinity]) => ({
+    id: `urn:tag:keyword:media:${name.toLowerCase().replaceAll(" ", "_")}`,
+    name,
+    query: { affinity },
+  }));
+const DARK_NEAR: Record<string, [string, number][]> = {
+  "urn:tag:genre:media:gothic,urn:tag:keyword:media:gothic": [
+    ["The Gothic", 0.974],
+    ["Gothic Literature", 0.957],
+    ["gothic romance", 0.946],
+  ],
+  "urn:tag:keyword:media:botanical_garden,urn:tag:genre:media:plants": [
+    ["botany", 0.971],
+    ["flora", 0.955],
+    ["houseplant", 0.915],
+  ],
+  "urn:tag:keyword:media:dark_academia": [
+    ["Dark Academia", 0.961],
+    ["Academic", 0.955],
+    ["Philosophy", 0.89],
+  ],
+};
+const DARK_SHARED: [string, number][] = [
+  ["Academic", 0.95],
+  ["Philosophy", 0.94],
+  ["Gothic Literature", 0.92],
+  ["Dark Academia", 0.91],
+  ["gothic romance", 0.9],
+];
+const qlooDarkBrief = async (url: URL) => {
+  const { pathname, searchParams } = url;
+  let body: unknown = { results: [] };
+  if (pathname === "/v2/tags") {
+    const ids =
+      DARK_TAGS[searchParams.get("filter.query")?.toLowerCase() ?? ""];
+    body = {
+      results: { tags: (ids ?? []).map((id) => ({ id, name: id })) },
+    };
+  } else if (pathname === "/v2/insights") {
+    const signal = searchParams.get("signal.interests.tags") ?? "";
+    body = {
+      results: {
+        entities: [],
+        tags: tagsNamed(DARK_NEAR[signal] ?? DARK_SHARED),
+      },
+    };
+  }
+  return await Promise.resolve(Response.json(body));
+};
 
 // What Qloo answers for Studio Ghibli: three taste tags.
 const GHIBLI_TASTE = {
@@ -428,17 +504,114 @@ describe("createTrends", () => {
     const tasteOf = vi.fn<Qloo["tasteOf"]>(
       async () => await Promise.resolve(GHIBLI_TASTE)
     );
-    const { ask } = fakeNemotron({
-      terms: ["Gothic botanical", "dark academia", "Studio Ghibli"],
-    });
+    const { ask } = fakeNemotron({ concepts: DARK_CONCEPTS });
 
     await createTrends(client, qlooWith(tasteOf), ask).research(DARK_BRIEF);
 
     expect(tasteOf).toHaveBeenCalledWith(DARK_BRIEF, undefined, {
+      concepts: [
+        { name: "Gothic", phrases: ["Gothic"] },
+        { name: "botanical", phrases: ["botanical", "plant"] },
+        { name: "dark academia", phrases: ["dark academia"] },
+      ],
       crossDomain: true,
       // The brief itself is too long a term for Qloo's /search.
-      terms: ["Gothic botanical", "dark academia"],
+      terms: ["Gothic", "botanical", "plant", "dark academia"],
     });
+  });
+
+  // #243: one clause over 60 characters left no search term, and the
+  // research ended in "Qloo found no audience".
+  it.each([
+    ["with the brief's concepts", true],
+    ["with its subject words when brief_terms is down", false],
+  ])(
+    "reaches Qloo for a long brief with no punctuation (%s)",
+    async (_, asked) => {
+      const searched: string[] = [];
+      vi.stubGlobal("fetch", async (url: URL) => {
+        const query =
+          url.searchParams.get("query") ??
+          url.searchParams.get("filter.query") ??
+          "";
+        if (url.pathname === "/search") {
+          searched.push(query);
+          return await Promise.resolve(
+            Response.json({
+              results:
+                query === "Studio Ghibli"
+                  ? [{ entity_id: "E-GHIBLI", name: "Studio Ghibli" }]
+                  : [],
+            })
+          );
+        }
+        const botanical =
+          query === "botanical"
+            ? [{ id: "urn:tag:keyword:media:botanical", name: "Botanical" }]
+            : [];
+        return await Promise.resolve(
+          Response.json({
+            results: {
+              entities: [],
+              tags:
+                url.pathname === "/v2/tags"
+                  ? botanical
+                  : tagsNamed([
+                      ["botany", 0.9],
+                      ["cottagecore", 0.8],
+                    ]),
+            },
+          })
+        );
+      });
+      const { client } = fakeTavily();
+      const ask = asked
+        ? fakeNemotron({
+            concepts: [
+              { name: "cozy", phrases: ["Cozy"] },
+              { name: "botanical", phrases: ["botanical", "houseplant"] },
+              { name: "Studio Ghibli", phrases: ["Studio Ghibli"] },
+            ],
+          }).ask
+        : undefined;
+      const qloo = createQloo({ apiKey: "k", baseURL: "https://qloo.example" });
+
+      const { ideas } = await createTrends(client, qloo, ask).research(
+        LONG_BRIEF
+      );
+
+      expect(searched.length).toBeGreaterThan(0);
+      expect(ideas.length).toBeGreaterThan(0);
+      if (asked) {
+        expect(searched).toContain("Studio Ghibli");
+      }
+      vi.unstubAllGlobals();
+    }
+  );
+
+  // Next, run 783b6885: the ideas were "Academic", "Philosophy" and
+  // "Academia", with nothing gothic or botanical.
+  it("researches themes that carry at least two of the brief's three concepts", async () => {
+    vi.stubGlobal("fetch", qlooDarkBrief);
+    const { client } = fakeTavily();
+    const { ask } = fakeNemotron({ concepts: DARK_CONCEPTS });
+    const qloo = createQloo({ apiKey: "k", baseURL: "https://qloo.example" });
+
+    const { ideas } = await createTrends(client, qloo, ask).research(
+      DARK_BRIEF
+    );
+
+    expect(ideas).toHaveLength(RUN_THEMES);
+    for (const idea of ideas) {
+      expect(idea.concepts?.total).toBe(3);
+      expect(idea.concepts?.covered.length).toBeGreaterThanOrEqual(2);
+    }
+    const covered = new Set(ideas.flatMap((idea) => idea.concepts?.covered));
+    expect(covered).toStrictEqual(
+      new Set(["Gothic", "botanical", "dark academia"])
+    );
+    expect(ideas.map((idea) => idea.theme)).not.toContain("Academic");
+    vi.unstubAllGlobals();
   });
 });
 describe("rankSources", () => {
@@ -477,6 +650,20 @@ describe("rankSources", () => {
     );
 
     expect(kept.map(({ url }) => url)).toEqual(["https://good.example/a"]);
+  });
+
+  it("drops social posts: a caption, not a page about the theme", () => {
+    const ranked = rankSources(
+      [
+        hit("https://www.instagram.com/p/abc", "Gothic tee link in bio", ""),
+        hit("https://news.example/gothic", "Gothic tees are back", ""),
+      ],
+      "gothic",
+      { minScore: 0 }
+    );
+    expect(ranked.map((one) => one.url)).toStrictEqual([
+      "https://news.example/gothic",
+    ]);
   });
 
   it("dedupes pages and headlines and ranks fresh, relevant ones first", () => {

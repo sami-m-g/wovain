@@ -260,22 +260,6 @@ export const repositorySettings = ({
     });
   }
 
-  // The shepherd's limits on the founder's Claude subscription: attempts per
-  // pull request (at most one per head commit) and Claude runs per day across
-  // the repository. `shadow` comments the planned fix and pushes nothing;
-  // `live` pushes.
-  for (const [name, value] of [
-    ["SHEPHERD_MODE", "shadow"],
-    ["SHEPHERD_MAX_PER_PR", "5"],
-    ["SHEPHERD_MAX_PER_DAY", "30"],
-  ] as const) {
-    new github.ActionsVariable(name, {
-      repository: repository.name,
-      value,
-      variableName: name,
-    });
-  }
-
   // The one repository secret: GitGuardian's token. It is a stack secret, so
   // Pulumi keeps it encrypted in state; only gitguardian-ignore reads it.
   if (gitguardianApiKey !== undefined) {

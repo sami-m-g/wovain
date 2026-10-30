@@ -457,6 +457,7 @@ export const notifyRun = async (actor: Actor, runId: string) => {
 
 const STEPS = [
   "research",
+  "name",
   "design",
   "approval",
   "product",

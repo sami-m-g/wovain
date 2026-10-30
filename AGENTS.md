@@ -68,6 +68,11 @@
 - No review on the head commit after 10 minutes: comment `@coderabbitai full review`. After 10 more, read the PR for a rate-limit comment and wait the time it states. Do not re-ping inside the wait.
 - A stale CHANGES_REQUESTED stays until CodeRabbit reviews again: its comments are fixed and resolved, so the next review on the head approves.
 
+## PR shepherd
+
+- `.github/workflows/shepherd.yml` fixes a pull request after a failed check or CodeRabbit's change request, and `shepherd-scan.yml` re-checks open pull requests every 30 minutes. Both run on the founder's Claude subscription and push as the Claude GitHub App. The limits (`SHEPHERD_MAX_PER_PR`, `SHEPHERD_MAX_PER_DAY`, `SHEPHERD_MODE`) are in the workflow's `env`. It never merges or approves, and it adds `needs-human` when a person must decide.
+- To have Claude's cloud Auto-fix watch a pull request instead (`/autofix-pr`), add the `autofix` label. The shepherd then skips that pull request, so the two never push to the same branch.
+
 ## Tooling (project scope)
 
 - Declared in `.mcp.json`, `.claude/settings.json` and `skills-lock.json`; never install at user or global scope.

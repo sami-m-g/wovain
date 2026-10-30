@@ -86,6 +86,14 @@ export class QlooHttpError extends Error {
 
 const BAD_REQUEST = 400;
 const SEED_TAKE = 3;
+// A brief concept's own tags in the theme query, and the tags its fans share
+// read to tell which concept a theme belongs to.
+const CONCEPT_SIGNAL = 2;
+const CONCEPT_NEIGHBOURS = "30";
+// A concept's closest tags offered as themes beside the shared query's.
+const CONCEPT_THEMES = 5;
+// Themes read when the brief's concepts are spread over the query.
+const SPREAD_THEMES = "25";
 const MAX_TERMS = 4;
 const TERM_MAX = 60;
 // Clause breaks in a brief: each clause is a candidate entity name.
@@ -280,6 +288,9 @@ export interface QlooEntity {
 
 export interface QlooTheme {
   affinity: number;
+  // The brief's concepts the tag belongs to (TasteOptions.concepts): the
+  // concept's own tag, or one of the tags its fans share.
+  concepts?: string[] | undefined;
   id: string;
   name: string;
 }
@@ -314,6 +325,8 @@ export interface Taste {
   // Domains whose affinities call failed (logged at error level), when
   // cross-domain affinities were asked for.
   failedDomains?: AffinityType[] | undefined;
+  // The brief's concepts Qloo knows as tags (TasteOptions.concepts).
+  concepts?: string[] | undefined;
   // Brands, artists and titles Qloo matched: ideas must never print them.
   names: string[];
   // The entities Qloo matched for the seed, when asked for.
@@ -363,7 +376,17 @@ export interface QlooInsight extends QlooEntity {
   popularity: number;
 }
 
+// One key concept of the brief ("gothic", "botanical", "dark academia")
+// and the brief's phrases that say it ("botanical", "plant").
+export interface BriefConcept {
+  name: string;
+  phrases: string[];
+}
+
 export interface TasteOptions {
+  // The brief's key concepts: the themes come from all of them at once,
+  // each concept weighed alike, and each theme says which it belongs to.
+  concepts?: readonly BriefConcept[] | undefined;
   // Also ask which brands, films and shows the seed's fans like, with
   // explainability and a trend bias, in every run.
   crossDomain?: boolean | undefined;
@@ -437,6 +460,24 @@ const affinitiesOf = (
     };
   });
 
+// One key per tag name: "JPop" and " J-pop" are one tag.
+const tagKey = (name: string) =>
+  name.toLowerCase().replaceAll(/[^\p{L}\p{N}]/gu, "");
+
+// Qloo lists spelling variants of one tag ("JPop", " J-pop"): keep the
+// highest-affinity one.
+const dedupeThemes = (themes: QlooTheme[]): QlooTheme[] => {
+  const seen = new Set<string>();
+  return themes
+    .toSorted((a, b) => b.affinity - a.affinity)
+    .filter(({ name }) => {
+      const key = tagKey(name);
+      const fresh = key !== "" && !seen.has(key);
+      seen.add(key);
+      return fresh;
+    });
+};
+
 const themesFrom = (tags: z.output<typeof tagsSchema>): QlooTheme[] => {
   const themes = tags.results.tags.flatMap((tag) => {
     const id = tag.id ?? tag.tag_id ?? "";
@@ -445,17 +486,7 @@ const themesFrom = (tags: z.output<typeof tagsSchema>): QlooTheme[] => {
       ? [{ affinity, id, name: tag.name.trim().slice(0, THEME_MAX) }]
       : [];
   });
-  // Qloo lists spelling variants of one tag ("JPop", " J-pop"): keep the
-  // highest-affinity one.
-  const seen = new Set<string>();
-  return themes
-    .toSorted((a, b) => b.affinity - a.affinity)
-    .filter(({ name }) => {
-      const key = name.toLowerCase().replaceAll(/[^\p{L}\p{N}]/gu, "");
-      const fresh = key !== "" && !seen.has(key);
-      seen.add(key);
-      return fresh;
-    });
+  return dedupeThemes(themes);
 };
 
 // The signal parameters of a "who buys" query.
@@ -706,13 +737,93 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
 
   // The seed's entities and tags, and the tags their fans share; with
   // crossDomain, also what the entities' fans like in other domains, and why.
+  // Each concept's tags, and the tags its fans share (its neighbourhood),
+  // for the concepts Qloo knows. A failed neighbourhood read is logged at
+  // error level and leaves that concept with its own tags only.
+  const conceptsOf = async (
+    concepts: readonly BriefConcept[],
+    log?: Logger
+  ) => {
+    const known = await Promise.all(
+      concepts.map(async (concept) => {
+        const found = await Promise.all(
+          concept.phrases.map(async (phrase) => {
+            const ids = await termTags(phrase);
+            // The phrase's own tag ("gothic"), not one that only starts
+            // with it ("Dark" for "dark academia").
+            const slug = phrase.trim().toLowerCase().replaceAll(/\s+/gu, "_");
+            const own = ids.filter((id) => id.split(":").at(-1) === slug);
+            return own.length > 0 ? own : ids.slice(0, 1);
+          })
+        );
+        const tags = firstOf(found, (id) => id).slice(0, CONCEPT_SIGNAL);
+        return { concept, tags };
+      })
+    );
+    const matched = known.filter(({ tags }) => tags.length > 0);
+    return await Promise.all(
+      matched.map(async ({ concept: { name, phrases }, tags }) => {
+        // The concept's own words name its tag too ("Gothic" is gothic).
+        const own = [name, ...phrases].map(tagKey);
+        try {
+          const near = await get(
+            "/v2/insights",
+            {
+              "filter.tag.types": THEME_TAG_TYPES,
+              "filter.type": "urn:tag",
+              "signal.interests.tags": tags.join(","),
+              take: CONCEPT_NEIGHBOURS,
+            },
+            tagsSchema
+          );
+          return {
+            keys: new Set([
+              ...own,
+              ...near.results.tags.map((tag) => tagKey(tag.name)),
+            ]),
+            name,
+            near: themesFrom(near).slice(0, CONCEPT_THEMES),
+            tags,
+          };
+        } catch (error) {
+          log?.error?.(
+            error instanceof Error ? error : new Error(String(error))
+          );
+          return { keys: new Set(own), name, near: [], tags };
+        }
+      })
+    );
+  };
+
   const tasteOf = async (
     seed: string,
     log?: Logger,
-    { crossDomain = false, terms }: TasteOptions = {}
+    { concepts = [], crossDomain = false, terms }: TasteOptions = {}
   ): Promise<Taste> =>
     await external(log, { operation: "taste", provider: "qloo" }, async () => {
-      const { entities, tags: seedTags } = await seedMatches(seed, log, terms);
+      const [{ entities, tags: matchedTags }, known] = await Promise.all([
+        seedMatches(seed, log, terms),
+        conceptsOf(concepts, log),
+      ]);
+      // With the brief's concepts known, the themes come from all of them,
+      // each weighed alike: one concept's entities (a dark-academia book)
+      // would otherwise pull every theme its way.
+      const spread = known.length > 1;
+      const seedTags = spread ? known.flatMap(({ tags }) => tags) : matchedTags;
+      const conceptsOfTheme = (theme: QlooTheme) =>
+        known
+          .filter(
+            ({ keys, tags }) =>
+              tags.includes(theme.id) || keys.has(tagKey(theme.name))
+          )
+          .map(({ name }) => name);
+      const withConcepts = (themes: QlooTheme[]) =>
+        known.length === 0
+          ? themes
+          : themes.map((theme) => ({
+              ...theme,
+              concepts: conceptsOfTheme(theme),
+            }));
       if (entities.length === 0 && seedTags.length === 0) {
         return crossDomain
           ? {
@@ -735,13 +846,16 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
           {
             "filter.tag.types": THEME_TAG_TYPES,
             "filter.type": "urn:tag",
-            ...(seeds.length > 0 && {
-              "signal.interests.entities": seeds.map(({ id }) => id).join(","),
-            }),
+            ...(seeds.length > 0 &&
+              !spread && {
+                "signal.interests.entities": seeds
+                  .map(({ id }) => id)
+                  .join(","),
+              }),
             ...(seedTags.length > 0 && {
               "signal.interests.tags": seedTags.join(","),
             }),
-            take: "10",
+            take: spread ? SPREAD_THEMES : "10",
             ...(crossDomain && { "bias.trends": TREND_BIAS }),
           },
           tagsSchema
@@ -753,8 +867,18 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
           : []),
       ]);
       const names = seeds.map(({ name }) => name);
+      // Each concept's own closest tags join the themes, so a concept the
+      // others outweigh in the shared query still has a theme to lead.
+      const themes = withConcepts(
+        dedupeThemes([
+          ...themesFrom(tags),
+          ...known.flatMap(({ near }) => near),
+        ])
+      );
+      const conceptNames =
+        known.length === 0 ? {} : { concepts: known.map(({ name }) => name) };
       if (!crossDomain) {
-        return { names, themes: themesFrom(tags) };
+        return { ...conceptNames, names, themes };
       }
       const affinities = domains.flatMap((domain) => domain.affinities);
       return {
@@ -764,7 +888,8 @@ export const createQloo = ({ apiKey, baseURL }: QlooConfig) => {
           .map(({ type }) => type),
         names: [...names, ...affinities.map(({ name }) => name)],
         seeds,
-        themes: themesFrom(tags),
+        themes,
+        ...conceptNames,
       };
     });
 

@@ -65,6 +65,7 @@ import {
 import { IdeaCardView } from "@/components/ideas/idea-card-view";
 import { Link } from "@/i18n/navigation";
 import type { Campaign, Design, Idea, Product } from "@/lib/flow-client";
+import { namedWords } from "@/lib/flow-client";
 
 const CENTS = 100;
 const IMAGE_SIZE = 640;
@@ -356,6 +357,7 @@ export const IdeasStep = ({
                 </li>
               );
             }
+            const words = namedWords(idea);
             return (
               <li className="flex flex-col gap-2" key={idea.id}>
                 {/* shadcn's choice card: the whole card is the label. */}
@@ -369,7 +371,7 @@ export const IdeasStep = ({
                     />
                     <FieldContent className="gap-3">
                       <FieldTitle className="text-base">
-                        {idea.theme}
+                        {words?.title}
                         {designed ? (
                           <Badge variant="secondary">{t("hasDesign")}</Badge>
                         ) : null}
@@ -382,9 +384,9 @@ export const IdeasStep = ({
                           {tCard(`caution.${research.caution}`)}
                         </span>
                       )}
-                      {research.moment || research.answer ? (
+                      {words ? (
                         <FieldDescription className="text-foreground line-clamp-4">
-                          {research.moment ?? research.answer}
+                          {words.concept} {words.whyNow}
                         </FieldDescription>
                       ) : null}
                       <dl className="grid grid-cols-3 gap-2 text-xs">
