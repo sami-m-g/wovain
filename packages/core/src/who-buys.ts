@@ -238,13 +238,17 @@ export const whoBuys = async (
     buyers: buyersOf(demographics, entities),
     buyersScope,
     location,
-    places: markets(places).map((one) => ({
-      affinity: one.affinity,
-      country: countryOf(one.where),
-      id: one.id,
-      name: one.name,
-      where: one.where,
-    })),
+    // Qloo ranks the location itself among its localities ("United
+    // States" within the United States): not a place to aim at.
+    places: markets(places.filter((one) => one.name !== location)).map(
+      (one) => ({
+        affinity: one.affinity,
+        country: countryOf(one.where),
+        id: one.id,
+        name: one.name,
+        where: one.where,
+      })
+    ),
     scope,
   };
   deps.trace?.add({

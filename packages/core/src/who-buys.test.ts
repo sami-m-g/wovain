@@ -119,6 +119,20 @@ it("looks for the buyers within the country asked for", async () => {
   expect(result.places[0]?.country).toBe("Canada");
 });
 
+it("never names the country it looks in as a place", async () => {
+  const qloo = qlooFake();
+  qloo.placesOf.mockResolvedValueOnce([
+    { affinity: 0, id: "us", name: "United States", popularity: 1 },
+    { affinity: 0, id: "nyc", name: "New York City", popularity: 1 },
+  ]);
+  const result = await whoBuys(
+    depsWith({ qloo }),
+    { entities: ["Q-goth"] },
+    "United States"
+  );
+  expect(result.places.map((one) => one.name)).toStrictEqual(["New York City"]);
+});
+
 it.each(["audiences", "brands", "places"] as const)(
   "never guesses without Qloo: a %s failure throws",
   async (failing) => {
