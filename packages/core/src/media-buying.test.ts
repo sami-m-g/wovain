@@ -216,6 +216,61 @@ describe("verifyStagedPaused", () => {
     });
   });
 
+  it("reads the draft Meta returns as JSON text", async () => {
+    const { call } = fakeMeta({
+      ads_get_ad_entities: {
+        ad_drafts: JSON.stringify(
+          draftOf(["c_1", "as_1", "ad_1", "ad_2"]).ad_drafts
+        ),
+      },
+    });
+    await expect(verifyStagedPaused(call, STAGED)).resolves.toEqual({
+      state: "draft",
+    });
+  });
+
+  it("waits for objects Meta doesn't show yet", async () => {
+    let reads = 0;
+    const { call } = fakeMeta({
+      ads_get_ad_entities: (args: Record<string, unknown>) => {
+        if (args["object_state"] === "draft") {
+          reads += 1;
+          return { ad_drafts: "[]" };
+        }
+        return {
+          ad_entities: JSON.stringify(
+            reads < 3
+              ? []
+              : (args["object_ids"] as string[]).map((id) => ({
+                  id,
+                  status: "PAUSED",
+                }))
+          ),
+        };
+      },
+    });
+    const wait = vi.fn(async () => {});
+    await expect(verifyStagedPaused(call, STAGED, { wait })).resolves.toEqual({
+      state: "paused",
+    });
+    expect(wait).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports objects it can't read as unread, never as missing", async () => {
+    const { call, calls } = fakeMeta({
+      ads_get_ad_entities: { unexpected: true },
+      ads_update_entity: { success: true },
+    });
+    const failure = verifyStagedPaused(call, STAGED, {
+      wait: async () => {},
+    });
+    await expect(failure).rejects.toThrow(
+      /couldn't read Meta objects back .*\(campaign c_1.*draft=\{unexpected:boolean\}/u
+    );
+    await expect(failure).rejects.not.toThrow(/missing/u);
+    expect(calls.some((item) => item.tool === "ads_update_entity")).toBe(true);
+  });
+
   it("accepts live objects that are all paused", async () => {
     const { call } = fakeMeta({
       ads_get_ad_entities: (args: Record<string, unknown>) =>
