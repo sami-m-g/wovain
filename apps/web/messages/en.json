@@ -686,6 +686,9 @@
       "audience": "Who sees it",
       "budget": "Daily budget",
       "budgetSet": "{budget} a day",
+      "page": "Facebook Page",
+      "pageAs": "Your ads run as {name}.",
+      "changePage": "Change Page",
       "rules": "Spend rules",
       "rulesPending": "Your daily and monthly caps and wovain's profit rules apply from the first dollar. You see them in full before anything spends.",
       "connectTitle": "Connect Meta to launch",
@@ -803,7 +806,7 @@
       "review": "Saving your decision…",
       "products": "Setting up products on Fourthwall…",
       "publish": "Publishing to Fourthwall…",
-      "campaign": "Writing the ads and staging the campaign on Meta…"
+      "campaign": "Writing the ads and staging the campaign on Meta. This can take a few minutes while Meta processes the videos…"
     },
     "autopilotLocked": "Autopilot comes with Studio and Label. On Free, you approve each step.",
     "autopilotUpgrade": "See plans",

@@ -1,9 +1,10 @@
 import { MAX_TEST_DESIGNS } from "@wovain/core/ads";
 import { audienceErrors } from "@wovain/mastra/flow/audiences";
 import {
-  createDropCampaign,
+  campaignStaging,
   createProductCampaign,
   listCampaigns,
+  requestDropCampaign,
 } from "@wovain/mastra/flow/campaigns";
 import {
   campaignCompetition,
@@ -32,6 +33,7 @@ import {
   researchErrors,
   researchIdeas,
 } from "@wovain/mastra/flow/ideas";
+import { chooseMetaPage, metaPages } from "@wovain/mastra/flow/meta-pages";
 import {
   browseCatalog,
   createDesignProduct,
@@ -238,6 +240,12 @@ export const productsRouter = {
 };
 
 export const campaignsRouter = {
+  // "Change Page": kept on the merchant's Meta connection.
+  choosePage: protectedProcedure
+    .input(z.object({ pageId: z.string().regex(/^\d+$/u) }))
+    .handler(
+      async ({ context, input }) => await chooseMetaPage(context, input.pageId)
+    ),
   // The competition the campaign's ads were written against, for the ad
   // approval view (tavily-competition); null when none was read.
   competition: protectedProcedure
@@ -273,8 +281,20 @@ export const campaignsRouter = {
   list: protectedProcedure.handler(
     async ({ context }) => await listCampaigns(context)
   ),
+  // The Facebook Pages the ads may run as, and the one they run as.
+  pages: protectedProcedure.handler(
+    async ({ context }) => await metaPages(context)
+  ),
+  // Where a staging queued by `test` is: ready (with the campaign), still
+  // staging, or failed (with the error's code, message and fix).
+  staging: protectedProcedure
+    .input(z.object({ key: z.string().min(1).max(512) }))
+    .handler(
+      async ({ context, input }) => await campaignStaging(context, input.key)
+    ),
   // A drop's launch: its live designs as one small test campaign (one
-  // design is a plain campaign).
+  // design is a plain campaign). Checks the Meta account, then stages in
+  // the background and returns at once; the page polls `staging`.
   test: funnelProcedure("campaign_created")
     .errors(audienceErrors)
     .input(
@@ -289,7 +309,7 @@ export const campaignsRouter = {
       })
     )
     .handler(
-      async ({ context, input }) => await createDropCampaign(context, input)
+      async ({ context, input }) => await requestDropCampaign(context, input)
     ),
 };
 

@@ -18,6 +18,9 @@ export const EVENTS = {
   // Scan one brand for autopilot triggers (Qloo, Tavily): the cron fans
   // out one per brand, and "Scan now" sends one.
   autopilotScan: "wovain/autopilot.scan",
+  // Stage a drop's paused Meta campaign in the background ("Make the ads"):
+  // Meta's writes and video processing outlast a web request.
+  campaignStage: "wovain/campaign.stage.requested",
   // Find the merchant's new-drop suggestions again and keep them
   // (drop-directions): sent when the kept ones are stale or missing.
   directionsRefresh: "wovain/directions.refresh",
@@ -118,6 +121,20 @@ export const eventSchemas = {
     // The page the alert opens, as a path on the site (e.g.
     // "/dashboard/autopilot").
     url: z.string().startsWith("/").optional(),
+    userId: z.string(),
+  }),
+  [EVENTS.campaignStage]: z.object({
+    input: z.object({
+      adAccountId: z.string().optional(),
+      countries: z.array(z.string()),
+      dailyBudget: z.number(),
+      pageId: z.string().optional(),
+      pixelId: z.string().optional(),
+      productIds: z.array(z.string()).min(1),
+      requestId: z.string().optional(),
+    }),
+    // The campaign's idempotency key: one staging per key at a time.
+    key: z.string(),
     userId: z.string(),
   }),
   [EVENTS.dropBuildRequested]: z.object({

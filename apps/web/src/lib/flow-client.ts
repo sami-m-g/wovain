@@ -260,3 +260,49 @@ export const describeRunFailure = (run: {
   }
   return { message, reason: "other" };
 };
+
+export type CampaignStaging = Outputs["campaigns"]["staging"];
+
+// "Make the ads" stages on Inngest; the step polls until Meta is done.
+const STAGING_POLL_MS = 3000;
+// Video ads wait on Meta's processing: room for the job's retries too.
+const STAGING_MAX_POLLS = 400;
+
+// The browser has no promise timer (node:timers/promises is server only).
+const pause = async (ms: number) =>
+  // oxlint-disable-next-line promise/avoid-new
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+/**
+ * Waits for a campaign staged in the background: the campaign when it is
+ * ready, or the failure rethrown as the procedure would have thrown it, so
+ * `describeProblem` explains it with its fix.
+ */
+export const awaitCampaign = async (
+  started: CampaignStaging,
+  read: (key: string) => Promise<CampaignStaging>,
+  wait: (ms: number) => Promise<unknown> = pause
+): Promise<Campaign> => {
+  let current = started;
+  for (let poll = 0; current.state === "staging"; poll += 1) {
+    if (poll >= STAGING_MAX_POLLS) {
+      throw new Error(
+        "Meta is still building the campaign. Come back in a few minutes: it appears here when it's ready."
+      );
+    }
+    // One read at a time, a few seconds apart.
+    // oxlint-disable-next-line no-await-in-loop
+    await wait(STAGING_POLL_MS);
+    // oxlint-disable-next-line no-await-in-loop
+    current = await read(started.key);
+  }
+  if (current.state === "failed") {
+    throw new ORPCError(current.code, {
+      data: current.data,
+      message: current.message,
+    });
+  }
+  return current.campaign;
+};

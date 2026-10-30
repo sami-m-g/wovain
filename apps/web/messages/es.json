@@ -686,6 +686,9 @@
       "audience": "Quién lo ve",
       "budget": "Presupuesto diario",
       "budgetSet": "{budget} al día",
+      "page": "Página de Facebook",
+      "pageAs": "Tus anuncios se publican como {name}.",
+      "changePage": "Cambiar página",
       "rules": "Reglas de gasto",
       "rulesPending": "Tus límites diario y mensual y las reglas de beneficio de wovain se aplican desde el primer dólar. Las ves completas antes de que se gaste nada.",
       "connectTitle": "Conecta Meta para lanzar",
@@ -803,7 +806,7 @@
       "review": "Guardando tu decisión…",
       "products": "Creando productos en Fourthwall…",
       "publish": "Publicando en Fourthwall…",
-      "campaign": "Escribiendo los anuncios y preparando la campaña en Meta…"
+      "campaign": "Escribiendo los anuncios y preparando la campaña en Meta. Puede tardar unos minutos mientras Meta procesa los vídeos…"
     },
     "autopilotLocked": "El piloto automático viene con Studio y Label. En Free, apruebas cada paso.",
     "autopilotUpgrade": "Ver planes",
