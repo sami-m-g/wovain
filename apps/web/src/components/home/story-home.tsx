@@ -1,7 +1,7 @@
 "use client";
 
 import { ORPCError } from "@orpc/client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { buttonVariants } from "@wovain/ui/components/button";
 import { Card } from "@wovain/ui/components/card";
 import {
@@ -116,18 +116,29 @@ export const NextAction = () => {
   );
 };
 
-/** What sells now, from Qloo: one click opens a new drop with that brief. */
+/**
+ * What sells now, from Qloo: one click starts a drop with that idea and its
+ * evidence, and opens it at its designs (Brief and Trends done).
+ */
 export const HomeDirections = () => {
   const router = useRouter();
+  const start = useMutation(
+    orpc.runs.startFromDirection.mutationOptions({
+      onSuccess: (started) => {
+        router.push(`/dashboard/drops/${started.id}`);
+      },
+    })
+  );
   return (
-    <section className="scroll-mt-20" id={SELLS_NOW_ID}>
+    <section className="flex scroll-mt-20 flex-col gap-3" id={SELLS_NOW_ID}>
+      {start.error ? <ReportedProblem error={start.error} /> : null}
       <DropDirections
         briefBelow={false}
-        disabled={false}
+        disabled={start.isPending || start.isSuccess}
         heading="h2"
         story
-        onUse={(brief) => {
-          router.push({ pathname: "/dashboard/new", query: { brief } });
+        onUse={({ brief: _brief, ...pick }) => {
+          start.mutate(pick);
         }}
       />
     </section>

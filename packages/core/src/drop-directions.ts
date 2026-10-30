@@ -32,6 +32,7 @@ import type {
   Verdict,
 } from "./sweet-spot";
 import type { DecisionTrace } from "./trace";
+import type { TrendIdea } from "./trends";
 
 // What to sell next, in the new-drop step (openspec drop-directions). The
 // step always opens with 3 to 5 directions, ranked by sales potential, with
@@ -431,8 +432,11 @@ export const rankOf = (
   qlooAffinity *
   (saturation === undefined ? UNKNOWN_OPENNESS : OPENNESS[saturation]);
 
+// What a theme's checks read with: Tavily, and the Ad Library when connected.
+type CheckDeps = Pick<DirectionDeps, "adLibrary" | "log" | "tavily">;
+
 // Recent news for the theme; undefined when Tavily failed (logged).
-const momentumFor = async (deps: DirectionDeps, query: string) => {
+const momentumFor = async (deps: CheckDeps, query: string) => {
   try {
     return await momentumOf(deps, query);
   } catch (error) {
@@ -442,7 +446,7 @@ const momentumFor = async (deps: DirectionDeps, query: string) => {
 
 // Near-identical listings for the theme; undefined when Tavily failed.
 const saturationFor = async (
-  deps: DirectionDeps,
+  deps: CheckDeps,
   query: string
 ): Promise<Saturation | undefined> => {
   try {
@@ -463,7 +467,7 @@ interface Draft {
 
 // A theme's checks, all at once: the news, the listings count and both
 // proofs of demand.
-const checksOf = async (deps: DirectionDeps, theme: string, query: string) => {
+const checksOf = async (deps: CheckDeps, theme: string, query: string) => {
   const [momentum, saturation, ads, market] = await Promise.all([
     momentumFor(deps, query),
     saturationFor(deps, query),
@@ -968,5 +972,126 @@ export const suggestDirections = async (
     scope,
     tavilyFailed,
     ...(unconfirmed && { unconfirmed: true }),
+  };
+};
+
+// A picked direction's words, as the run's naming step keeps them: they
+// were checked against the evidence when the direction was written.
+const pickedWords = (direction: DropDirection): IdeaWordsResult | undefined => {
+  const make = direction.card?.make;
+  if (make?.status !== "ok") {
+    return undefined;
+  }
+  return {
+    buyer: make.value.buyer ?? direction.buyer ?? "",
+    concept: make.value.concept,
+    occasion: make.value.occasion ?? direction.occasion ?? "",
+    status: "ok",
+    style: make.value.style ?? "",
+    title: make.value.title,
+    whyNow: direction.whyNow,
+  };
+};
+
+// A kept direction picked to start a drop, its checks read again (the
+// news, the listings, the marketplaces' proof). Its Qloo evidence and its
+// checked words stay; a read that fails keeps what was kept.
+export const recheckDirection = async (
+  deps: CheckDeps,
+  direction: DropDirection,
+  query = direction.theme
+): Promise<DropDirection> => {
+  const kept = direction.evidence;
+  const { ads, market, momentum, saturation } = await checksOf(
+    deps,
+    direction.theme,
+    query
+  );
+  const demand = demandOf(
+    ads ?? kept.demand?.ads,
+    market ?? kept.demand?.market
+  );
+  const evidence: DirectionEvidence = {
+    ...kept,
+    demand,
+    gaps:
+      saturation === undefined
+        ? kept.gaps
+        : gapsAmong(kept.gaps ?? [], saturation.listings),
+    momentum:
+      momentum === undefined
+        ? kept.momentum
+        : {
+            hits: momentum.hits,
+            sources: momentum.sources.slice(0, NEWS_PER_DIRECTION),
+          },
+    saturation:
+      saturation === undefined
+        ? kept.saturation
+        : {
+            count: saturation.count,
+            level: saturation.level,
+            sampled: saturation.sampled,
+          },
+  };
+  const rechecked = {
+    ...direction,
+    evidence,
+    score: rankOf(demand, kept.qlooAffinity, evidence.saturation?.level),
+  };
+  return {
+    ...rechecked,
+    card: directionCardOf(rechecked, pickedWords(direction)),
+  };
+};
+
+const NEUTRAL_SIGNAL = 0.5;
+
+// A picked direction as the run's one idea (./trends TrendIdea): its
+// evidence, its checked words and its rank, so the run draws it without
+// researching the brief again.
+export const trendIdeaOf = (direction: DropDirection): TrendIdea => {
+  const { evidence } = direction;
+  const { demand, saturation } = evidence;
+  return {
+    caution: direction.caution,
+    moment: direction.whyNow === "" ? undefined : direction.whyNow,
+    outcome: direction.outcome,
+    proof: {
+      gaps: evidence.gaps ?? [],
+      market: demand?.market,
+      proven: demand?.proven ?? false,
+      supply:
+        saturation === undefined
+          ? null
+          : {
+              citations: demand?.market?.listings ?? [],
+              count: saturation.count,
+              level: saturation.level,
+              sampled: saturation.sampled ?? 0,
+            },
+    },
+    qlooTag: direction.theme,
+    rank: 1,
+    references: [],
+    score: direction.score,
+    // What directions don't read (prices, recency, relevance) is neutral.
+    signals: {
+      affinity: evidence.qlooAffinity,
+      ipSafety: 1,
+      margin: NEUTRAL_SIGNAL,
+      marketHits: saturation?.count ?? 0,
+      newsHits: evidence.momentum?.hits ?? 0,
+      recency: NEUTRAL_SIGNAL,
+      relevance: NEUTRAL_SIGNAL,
+    },
+    sources: evidence.momentum?.sources ?? [],
+    spot: direction.spot,
+    taste: {
+      affinities: [],
+      seeds: evidence.rising.map(({ id, name }) => ({ id, name, type: "" })),
+    },
+    theme: direction.theme,
+    words: pickedWords(direction),
   };
 };

@@ -275,7 +275,7 @@
       "steps": {
         "sell": {
           "title": "Choisir quoi vendre",
-          "body": "Partez des idées que wovain a gardées : chaque fiche dit quoi faire, pourquoi ça se vend, qui l'achète et où, et le degré de concurrence. Les idées aux preuves faibles sont écartées et comptées."
+          "body": "Partez des idées que wovain a gardées : chaque fiche dit quoi faire, pourquoi ça se vend, qui l'achète et où, et le degré de concurrence. Les idées aux preuves faibles sont écartées et comptées. Choisissez-en une et le drop s'ouvre sur ses designs, la recherche faite."
         },
         "store": {
           "title": "Préparer la boutique",
@@ -1121,7 +1121,7 @@
     "creditTag": {
       "title": "Ce que paie un crédit",
       "subtitle": "Débité quand une étape tourne, rendu si elle échoue",
-      "research": "Recherche de tendances",
+      "research": "Recherche de tendances, ou une idée choisie sur l'accueil",
       "design": "Un design",
       "assist": "Texte de pub, ou un appel de l'autopilote",
       "manualDrop": "Un drop que vous validez",
@@ -1213,7 +1213,7 @@
     "faq": {
       "credit": {
         "question": "Qu'est-ce qu'un crédit ?",
-        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 5, un design 4, et un texte de pub ou un appel de l'autopilote 1, et chaque drop dessine trois designs : un drop validé étape par étape coûte donc environ 18 crédits. Si une étape échoue, ses crédits vous sont rendus."
+        "answer": "Un crédit paie une unité de travail de wovain. La recherche de tendances en prend 5 (comme lancer un drop depuis une idée étudiée sur l'accueil), un design 4, et un texte de pub ou un appel de l'autopilote 1, et chaque drop dessine trois designs : un drop validé étape par étape coûte donc environ 18 crédits. Si une étape échoue, ses crédits vous sont rendus."
       },
       "yours": {
         "question": "Que dois-je payer en dehors de wovain ?",

@@ -19,6 +19,7 @@ import {
   campaign,
   connection,
   design,
+  directionCache,
   idea,
   product,
   run,
@@ -40,6 +41,7 @@ import {
 } from "./campaigns";
 import { listConnections, requireFal, withProvider } from "./connections";
 import { decideDesign, generateDesign } from "./designs";
+import { cacheKeyOf } from "./drop-directions";
 import { researchIdeas } from "./ideas";
 import { getInsights, storedAdScores } from "./insights";
 import { once } from "./once";
@@ -52,6 +54,7 @@ import {
   awaitApproval,
   eachSettled,
   finishRun,
+  startPickedRun,
   startRun,
 } from "./runs";
 import { transitionErrors } from "./transitions";
@@ -1736,6 +1739,119 @@ describe("startRun", () => {
     const [held] = await db.select().from(creditReservation);
     expect(held?.status).toBe("released");
     expect(await releaseCredits(actor.db, held?.id ?? "")).toBe(0);
+    expect(await creditBalance(actor.db, USER_ID)).toEqual(before);
+    flagsOn.clear();
+  });
+});
+
+describe("startPickedRun", () => {
+  const picked = {
+    brief: "Moth and moon line-art crest tee for night-owl readers",
+    buyer: "for night-owl readers",
+    card: {
+      make: {
+        status: "ok",
+        value: {
+          brief: "Moth and moon line-art crest tee for night-owl readers",
+          concept: "Moth and moon line-art crest tee for night-owl readers",
+          products: ["t-shirt"],
+          style: "line art",
+          title: "Moth and moon crest",
+        },
+      },
+    },
+    evidence: {
+      demand: { proven: true, score: 0.6 },
+      momentum: { hits: 3, sources: [] },
+      qlooAffinity: 0.7,
+      rising: [{ id: "Q9", name: "Bauhaus" }],
+      saturation: { count: 2, level: "low" },
+    },
+    key: "d0",
+    occasion: "identity tee",
+    score: 0.4,
+    theme: "Gothic romance",
+    title: "Moth and moon crest",
+    whyNow: "Gothic romance news rose this month.",
+  };
+  const pick = {
+    ignoreBrand: false,
+    key: "d0",
+    round: 0,
+    theme: "Gothic romance",
+  };
+
+  // The kept answer the Home showed, under the key the merchant's request
+  // reads.
+  const keep = async (db: Awaited<ReturnType<typeof setup>>["db"]) => {
+    const [brand] = await db
+      .select({
+        demographics: brandProfile.demographics,
+        niches: brandProfile.niches,
+        qlooEntities: brandProfile.qlooEntities,
+        voice: brandProfile.voice,
+      })
+      .from(brandProfile);
+    await db.insert(directionCache).values({
+      key: cacheKeyOf(pick, brand, "en"),
+      payload: {
+        directions: [picked],
+        hasBrand: true,
+        scope: "brand",
+        tavilyFailed: false,
+      } as never,
+      userId: USER_ID,
+    });
+  };
+
+  it("saves the picked idea, opens the run at its designs and charges research once", async () => {
+    flagsOn.add("drop-directions");
+    const { actor, db, runs } = await withFal();
+    await keep(db);
+    const before = await creditBalance(actor.db, USER_ID);
+
+    const started = await startPickedRun(actor, {
+      countries: ["US"],
+      dailyBudget: 5,
+      pick,
+    });
+
+    expect(started.step).toBe("design");
+    expect(started.seed).toBe(picked.brief);
+    const [saved] = started.ideas;
+    expect(saved?.research.words).toMatchObject({
+      status: "ok",
+      title: "Moth and moon crest",
+    });
+    expect(saved?.avoidNames).toEqual(["Bauhaus"]);
+    expect(runs.start).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({ pick: { ideaId: saved?.id } }),
+        runId: started.id,
+      })
+    );
+    const [held] = await db.select().from(creditReservation);
+    expect(held).toMatchObject({ status: "settled", step: "research" });
+    const after = await creditBalance(actor.db, USER_ID);
+    expect(after.available).toBeLessThan(before.available);
+    flagsOn.clear();
+  });
+
+  it("refuses a pick no longer in the suggestions, saving nothing and charging nothing", async () => {
+    flagsOn.add("drop-directions");
+    const { actor, db, runs } = await withFal();
+    await keep(db);
+    const before = await creditBalance(actor.db, USER_ID);
+
+    await expect(
+      startPickedRun(actor, {
+        countries: ["US"],
+        dailyBudget: 5,
+        pick: { ...pick, theme: "Something else" },
+      })
+    ).rejects.toMatchObject({ status: 409 });
+    expect(runs.start).not.toHaveBeenCalled();
+    expect(await db.select().from(run)).toEqual([]);
     expect(await creditBalance(actor.db, USER_ID)).toEqual(before);
     flagsOn.clear();
   });

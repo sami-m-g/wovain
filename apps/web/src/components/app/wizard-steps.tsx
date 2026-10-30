@@ -167,7 +167,7 @@ export const BriefStep = ({
       <StepHeader focusOnMount={false} title={t("title")} />
       <DropDirections
         disabled={Boolean(busyLabel)}
-        onUse={onUseDirection}
+        onUse={(pick) => onUseDirection(pick.brief)}
         story={story}
       />
       <Field data-invalid={error ? true : undefined}>

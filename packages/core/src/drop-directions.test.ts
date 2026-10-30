@@ -1,7 +1,12 @@
 import { afterEach, expect, it, vi } from "vitest";
 import type { z } from "zod";
 
-import { MAX_DIRECTIONS, suggestDirections } from "./drop-directions";
+import {
+  MAX_DIRECTIONS,
+  recheckDirection,
+  suggestDirections,
+  trendIdeaOf,
+} from "./drop-directions";
 import type {
   DirectionBrand,
   DirectionEvent,
@@ -523,4 +528,40 @@ it("with no track record, the rank is unchanged", async () => {
     plain.directions.map((one) => one.score)
   );
   expect(empty.directions.every((one) => one.outcome === undefined)).toBe(true);
+});
+
+it("saves a picked direction as the run's one idea, named and never printing its Qloo names", async () => {
+  const suggested = await suggestDirections(depsWith(), request());
+  const [picked] = suggested.directions;
+  if (picked === undefined) {
+    throw new Error("No direction to pick");
+  }
+  const idea = trendIdeaOf(picked);
+  expect(idea.theme).toBe(picked.theme);
+  expect(idea.words).toMatchObject({ status: "ok", title: picked.title });
+  expect(idea.signals.affinity).toBe(picked.evidence.qlooAffinity);
+  expect(idea.taste?.seeds.map((seed) => seed.id)).toStrictEqual(
+    picked.evidence.rising.map((one) => one.id)
+  );
+  expect(idea.proof?.proven).toBe(true);
+});
+
+it("reads a stale pick's checks again and keeps what a failed read can't replace", async () => {
+  const suggested = await suggestDirections(depsWith(), request());
+  const [picked] = suggested.directions;
+  if (picked === undefined) {
+    throw new Error("No direction to pick");
+  }
+  const tavily = tavilyFake();
+  const fresh = await recheckDirection({ tavily }, picked);
+  expect(tavily.search).toHaveBeenCalled();
+  expect(fresh.title).toBe(picked.title);
+  expect(fresh.evidence.rising).toStrictEqual(picked.evidence.rising);
+  const failing = {
+    search: vi.fn(async () => await Promise.reject(new Error("down"))),
+  } as unknown as DirectionDeps["tavily"];
+  const kept = await recheckDirection({ tavily: failing }, picked);
+  expect(kept.evidence.momentum).toStrictEqual(picked.evidence.momentum);
+  expect(kept.evidence.saturation).toStrictEqual(picked.evidence.saturation);
+  expect(kept.evidence.demand?.proven).toBe(true);
 });

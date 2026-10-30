@@ -4,7 +4,10 @@ import { EventPublisher } from "@orpc/server";
 import { conversationId } from "@wovain/core/ads";
 import { adDemandOf } from "@wovain/core/demand";
 import type { AdDemand } from "@wovain/core/demand";
-import { suggestDirections } from "@wovain/core/drop-directions";
+import {
+  recheckDirection,
+  suggestDirections,
+} from "@wovain/core/drop-directions";
 import type {
   DirectionEvent,
   Directions,
@@ -345,16 +348,8 @@ interface Progress {
     | { error: unknown; kind: "failed" };
 }
 
-// The new-drop step's directions: what was kept, at once, or a new search
-// streamed card by card (oRPC's event iterator).
-export const streamDirections = async function* streamDirections(
-  actor: Actor,
-  input: DirectionsInput
-): AsyncGenerator<DirectionsChunk> {
-  if (!(await directionsOn(actor))) {
-    throw directionsOff();
-  }
-  await assertQlooOn(actor);
+// The kept answer for a request, and the brand it was kept for.
+const keptFor = async (actor: Actor, input: DirectionsInput) => {
   const [brand, locale, gate, record] = await Promise.all([
     loadBrand(actor),
     localeOf(actor),
@@ -365,6 +360,64 @@ export const streamDirections = async function* streamDirections(
     actor,
     cacheKeyOf(input, brand, locale, gate, record)
   );
+  return { brand, kept };
+};
+
+// A direction the merchant picked to start a drop from: its request, and
+// its key and theme in the kept answer the page showed.
+export interface DirectionPick extends DirectionsInput {
+  key: string;
+  theme: string;
+}
+
+const directionGone = () =>
+  createError({
+    code: "DIRECTION_GONE",
+    fix: "Pick an idea again from What sells now.",
+    message: "That idea isn't in the suggestions any more",
+    status: 409,
+    why: "The suggestions were found again since the page showed them.",
+  });
+
+// The picked direction, from the kept answer. Kept longer than FRESH_MS,
+// its news, listings and proof of demand are read again first (free, like
+// the directions); its Qloo evidence and checked words stay.
+export const pickedDirection = async (
+  actor: Actor,
+  pick: DirectionPick
+): Promise<DropDirection> => {
+  if (!(await directionsOn(actor))) {
+    throw directionsOff();
+  }
+  const { brand, kept } = await keptFor(actor, pick);
+  const direction = kept?.payload.directions.find(
+    (one) => one.key === pick.key && one.theme === pick.theme
+  );
+  if (kept === undefined || direction === undefined) {
+    throw directionGone();
+  }
+  if (Date.now() - kept.at.getTime() < FRESH_MS) {
+    return direction;
+  }
+  const niche = pick.ignoreBrand ? undefined : brand?.niches[0];
+  return await recheckDirection(
+    { log: actor.log, tavily: actor.core.tavily },
+    direction,
+    niche === undefined ? direction.theme : `${direction.theme} ${niche}`
+  );
+};
+
+// The new-drop step's directions: what was kept, at once, or a new search
+// streamed card by card (oRPC's event iterator).
+export const streamDirections = async function* streamDirections(
+  actor: Actor,
+  input: DirectionsInput
+): AsyncGenerator<DirectionsChunk> {
+  if (!(await directionsOn(actor))) {
+    throw directionsOff();
+  }
+  await assertQlooOn(actor);
+  const { kept } = await keptFor(actor, input);
   const age =
     kept === undefined
       ? Number.POSITIVE_INFINITY
@@ -415,16 +468,7 @@ export const warmDirections = async (actor: Actor) => {
     return { queued: false };
   }
   const input = { ignoreBrand: false, round: 0 };
-  const [brand, locale, gate, record] = await Promise.all([
-    loadBrand(actor),
-    localeOf(actor),
-    gateOn(actor),
-    trackRecordOf(actor),
-  ]);
-  const kept = await readCache(
-    actor,
-    cacheKeyOf(input, brand, locale, gate, record)
-  );
+  const { kept } = await keptFor(actor, input);
   if (kept !== undefined && Date.now() - kept.at.getTime() < FRESH_MS) {
     return { queued: false };
   }
