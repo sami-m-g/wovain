@@ -122,15 +122,32 @@ it("looks for the buyers within the country asked for", async () => {
 it("never names the country it looks in as a place", async () => {
   const qloo = qlooFake();
   qloo.placesOf.mockResolvedValueOnce([
-    { affinity: 0, id: "us", name: "United States", popularity: 1 },
-    { affinity: 0, id: "nyc", name: "New York City", popularity: 1 },
+    { affinity: 0.9, id: "us", name: "United States", popularity: 1 },
+    { affinity: 0.8, id: "nyc", name: "New York City", popularity: 1 },
+    { affinity: 0.7, id: "la", name: "Los Angeles", popularity: 1 },
   ]);
   const result = await whoBuys(
     depsWith({ qloo }),
     { entities: ["Q-goth"] },
     "United States"
   );
-  expect(result.places.map((one) => one.name)).toStrictEqual(["New York City"]);
+  expect(result.places.map((one) => one.name)).toStrictEqual([
+    "New York City",
+    "Los Angeles",
+  ]);
+});
+
+it.each([
+  ["no affinity", [0, 0, 0]],
+  ["one affinity for all", [0.76, 0.76, 0.76]],
+])("names no place when Qloo ranks them with %s", (_, affinities) => {
+  const places = affinities.map((affinity, index) => ({
+    affinity,
+    id: `p-${index}`,
+    name: `Place ${index}`,
+    popularity: 1 - index / 10,
+  }));
+  expect(markets(places)).toStrictEqual([]);
 });
 
 it.each(["audiences", "brands", "places"] as const)(

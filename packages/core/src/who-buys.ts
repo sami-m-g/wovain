@@ -148,11 +148,20 @@ export const targetable = (audiences: readonly QlooRanked[]) =>
     )
     .slice(0, TOP_AUDIENCES);
 
+// Whether Qloo ranked the places by the fans' taste: some affinity, not
+// one shared by them all. Tried live on 2026-10-30, Qloo's hackathon
+// server answers the same localities at one affinity for any tag, and
+// ranks them by popularity alone, with no affinity, for entities: neither
+// says where these buyers are, so no place is shown.
+const tasteRanked = (places: readonly QlooRanked[]) =>
+  places.some((one) => one.affinity > 0) &&
+  new Set(places.map((one) => one.affinity)).size > 1;
+
 // Places worth a campaign: Qloo's affinity weighed by the place's
 // popularity, so a city with many fans outranks a village where a few
 // love it.
 export const markets = (places: readonly QlooRanked[]) =>
-  places
+  (tasteRanked(places) ? places : [])
     .toSorted(
       (first, second) =>
         second.affinity * (second.popularity ?? 1) -
