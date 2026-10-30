@@ -4,9 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 import {
   checkTrademarks,
   competitorPrices,
+  DOSSIER_SCHEMA,
   dossierOf,
   priceOnPage,
   readDossier,
+  sentencesWithin,
   sourceTitle,
   startDossier,
   trademarkNote,
@@ -311,6 +313,29 @@ describe("dossier", () => {
       saturationLevel: "medium",
       whyNow: "Season 2 premieres next week",
     });
+  });
+
+  it("keeps whole sentences for an over-long glance, never a cut word", () => {
+    const long =
+      "Chinese drama viewership is at a peak with record-breaking series in 2026 and strong international buzz in 2025, and the genre is still growing.";
+    const dossier = dossierOf(
+      {
+        summary: { price: `Short one. ${long}`, risks: [long], why_now: long },
+        why_now: "Now.",
+      },
+      []
+    );
+    expect(dossier.summary?.whyNow).toBe(long);
+    expect(dossier.summary?.price).toBe("Short one.");
+    expect(dossier.summary?.risks).toEqual([long]);
+    expect(sentencesWithin("One. Two. Three.", 10)).toBe("One. Two.");
+    expect(JSON.stringify(dossier)).not.toContain("…");
+  });
+
+  it("asks Tavily for one sentence of at most 140 characters", () => {
+    expect(DOSSIER_SCHEMA.properties.summary.properties.why_now.maxLength).toBe(
+      140
+    );
   });
 
   it("keeps a report whose glance is missing or malformed", () => {
