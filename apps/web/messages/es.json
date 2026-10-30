@@ -1,11 +1,11 @@
 {
   "Metadata": {
     "siteName": "wovain",
-    "defaultTitle": "wovain: drops en print-on-demand para marcas independientes",
-    "defaultDescription": "Describe una cápsula: wovain la investiga, bosqueja los gráficos para tu revisión, publica las piezas en tu tienda de Fourthwall con un margen que se sostiene y prepara una campaña de Meta en pausa.",
-    "ogAlt": "wovain: drops en print-on-demand para marcas independientes",
-    "ogTagline": "Tú marcas la dirección. wovain hace el drop.",
-    "ogSteps": "Dirección · Bocetos · Tu revisión · Fourthwall · Anuncios de Meta",
+    "defaultTitle": "wovain: vende print-on-demand sin experiencia",
+    "defaultDescription": "wovain encuentra lo que se vende ahora, dibuja los diseños, los publica en tu tienda de Fourthwall y prepara anuncios de Meta para los compradores, en pausa hasta que los apruebes. De la idea a un producto publicado en menos de una hora. Empieza gratis.",
+    "ogAlt": "wovain: de la idea a un producto publicado y sus anuncios en menos de una hora",
+    "ogTagline": "De la idea a un producto publicado y sus anuncios en menos de una hora.",
+    "ogSteps": "Lo que se vende · Diseños · Fourthwall · Anuncios de Meta, en pausa",
     "privacyTitle": "Privacidad",
     "privacyDescription": "Qué recopila wovain, por qué y cómo eliminarlo.",
     "termsTitle": "Términos",
@@ -76,13 +76,13 @@
     "integrations": "Integraciones",
     "guides": "Guías",
     "pricing": "Precios",
-    "startDrop": "Lanzar un drop",
+    "startDrop": "Empieza gratis",
     "dashboard": "Panel",
     "docs": "Docs",
     "menu": "Menú"
   },
   "Footer": {
-    "tagline": "Drops en print-on-demand para marcas independientes. Tú marcas la dirección; wovain se encarga de la producción.",
+    "tagline": "Print-on-demand para quien vende por primera vez. wovain encuentra lo que se vende, lo crea y prepara los anuncios; tú apruebas cada paso.",
     "product": "Producto",
     "resources": "Recursos",
     "integrations": "Integraciones",
@@ -108,8 +108,8 @@
     "settings": "Configuración de cookies"
   },
   "Home": {
-    "heroTitle": "Una frase. Un drop entero.",
-    "heroLead": "Qloo te dice quién compra y qué está subiendo. wovain se queda solo con las ideas que tienen pruebas de que se venden (tiendas que las anuncian desde hace semanas, superventas en los marketplaces) y espacio para competir; después dibuja las piezas, las pone a la venta en tu tienda de Fourthwall con un margen que se sostiene y prepara los anuncios de Meta, en pausa.",
+    "heroTitle": "De la idea a un producto publicado y sus anuncios en menos de una hora",
+    "heroLead": "wovain elige una idea que ya se vende, dibuja los diseños, los pone en tu tienda de Fourthwall y prepara anuncios de Meta para la gente que la compra.",
     "briefLabel": "¿De qué trata tu próximo drop?",
     "briefPlaceholder": "Dibujos botánicos de línea, deslavados, para una cápsula de primavera",
     "briefHint": "Basta una frase: el ambiente, una referencia, para quién es. O empieza por lo que se vende ahora.",
@@ -137,68 +137,43 @@
     "heroSecondary": "Ver cómo funciona",
     "faq": [
       {
-        "question": "¿Para quién es wovain?",
-        "answer": "Para diseñadores independientes y marcas pequeñas que venden piezas gráficas en print-on-demand: camisetas, sudaderas, bolsas tote y láminas en Fourthwall."
+        "question": "Nunca he vendido nada en internet. ¿Puedo usar wovain?",
+        "answer": "Sí. wovain está pensado para un primer producto. Sugiere qué vender, escribe la investigación, dibuja los diseños, fija el precio y prepara los anuncios. Tú eliges, apruebas y publicas, paso a paso."
       },
       {
-        "question": "¿Hará que mi marca parezca genérica?",
-        "answer": "Tú marcas la dirección y apruebas cada pieza. Rechaza un diseño con una nota y wovain dibuja otra ronda. Nada se publica sin tu sí."
+        "question": "¿Necesito saber diseñar?",
+        "answer": "No. Nemotron escribe el brief, fal dibuja los diseños y una revisión visual puntúa cada estampado. Apruebas el que venderías, o lo rechazas con una nota y wovain dibuja otro."
       },
       {
-        "question": "¿wovain gasta dinero en anuncios por su cuenta?",
-        "answer": "No. Cada campaña se crea en pausa, con el presupuesto diario que elijas, de 1 $ a 500 $. El gasto empieza solo cuando apruebas la campaña: entonces wovain la inicia en Meta, y solo cuando sus reglas de gasto y las reglas automatizadas de Meta ya están activas."
-      },
-      {
-        "question": "¿Qué necesito conectar?",
-        "answer": "Una tienda de Fourthwall para los productos, una cuenta de fal para los gráficos y una cuenta publicitaria de Meta para la campaña. Conectas cada una con su propio inicio de sesión después de crear tu cuenta."
-      },
-      {
-        "question": "¿Mi tienda estará lista para vender?",
-        "answer": "Sí. La Tienda muestra lo que tu tienda de Fourthwall necesita antes de aceptar un pedido (pagos, envíos, publicarla, el píxel de Meta), hace lo que puede por ti, enlaza el resto y marca cada paso sola. También reescribe cada página de producto como lo haría un redactor de e-commerce, y nada cambia hasta que lo apruebas."
-      },
-      {
-        "question": "¿Cómo se fijan los precios?",
-        "answer": "Desde el coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, tras comisiones de tarjeta, impuesto sobre ventas y una reserva para reembolsos, redondeado al dólar superior. Cuando cambias un precio, wovain muestra tu beneficio en cada talla frente al coste real de Fourthwall y rechaza uno que pierda dinero. Antes de publicar, cada producto muestra su coste base, tu beneficio por venta, tu margen y la regla detrás de su precio."
-      },
-      {
-        "question": "¿Cuánto cuesta?",
-        "answer": "Los planes de wovain están en la página de precios. La producción se paga con cada venta a través de Fourthwall, fal factura los gráficos y Meta el gasto en anuncios, cada uno a tu propia cuenta. Si la investigación no encuentra ideas, wovain te devuelve los créditos."
-      },
-      {
-        "question": "¿Puedo usarlo en ChatGPT?",
-        "answer": "Sí. wovain también es una app en ChatGPT, con los mismos pasos y aprobaciones. La documentación explica cómo añadirla."
-      },
-      {
-        "question": "¿De quién son los diseños?",
-        "answer": "Tus briefs y los diseños que apruebas son tuyos. wovain revisa los bocetos en busca de nombres y marcas, pero tú sigues siendo responsable de lo que publicas."
-      },
-      {
-        "question": "¿Quién ve mis anuncios?",
-        "answer": "Personas que aman lo mismo que tu marca. Qloo elige esa audiencia a partir de las marcas de tu perfil, y cada anuncio se escribe para ella. Si wovain no encuentra esa audiencia, no crea anuncios y te dice qué añadir."
-      },
-      {
-        "question": "¿Qué evita que mis anuncios pierdan dinero?",
-        "answer": "wovain revisa tus anuncios cada 30 minutos. Pausa un anuncio que gasta el beneficio de una venta sin vender, y detiene todo el gasto en tu límite diario, tu límite mensual o tu límite de pérdidas (50 $ salvo que lo cambies). Te pregunta antes de subir el presupuesto de un ganador. Te avisa cada vez por correo, en tu teléfono o en Telegram. Si wovain no está disponible, Meta pausa los anuncios por su cuenta: wovain copia estas reglas en tu cuenta publicitaria como reglas automatizadas de Meta."
-      },
-      {
-        "question": "¿Qué diseños debo anunciar?",
-        "answer": "Todos, al principio. wovain prueba hasta cinco diseños en una sola campaña, da a cada uno una parte justa del presupuesto, pausa los que pierden dinero y te muestra el ganador, para que el presupuesto siga al diseño que vende."
-      },
-      {
-        "question": "¿wovain hace anuncios en vídeo?",
-        "answer": "Sí. Cuando un producto se publica, un agente director escribe un anuncio corto a partir de la investigación del drop: un gancho de 3 segundos, unos planos, texto en pantalla y una llamada a la acción. fal pone tu camiseta real a un modelo que encaja con los compradores del drop y rueda unos 18 segundos con sonido. Un agente revisor comprueba que el diseño no se deforme y que el anuncio cumpla las normas de Meta, y pide rehacerlo una vez si hace falta. Recibes un formato vertical para Reels e Historias y otro 4:5 para el feed, etiquetados como generados por IA. Cuesta 60 créditos por anuncio terminado. Si falla, no se cobra nada y la campaña se lanza con los anuncios de imagen."
+        "question": "¿Tengo que comprar stock?",
+        "answer": "No. Los productos se imprimen bajo demanda en tu tienda de Fourthwall. Cuando alguien compra, Fourthwall lo imprime, lo envía y te paga el beneficio. No se fabrica nada antes de venderse."
       },
       {
         "question": "¿Cómo elige wovain qué vender?",
-        "answer": "Parte de los datos de gusto de Qloo sobre tus compradores y se queda solo con las ideas que tienen pruebas de que se venden: tiendas que las anuncian desde hace semanas, superventas y reseñas en marketplaces. Los temas saturados se descartan y el resto se ordena por la demanda que queda para una marca nueva. Cada idea es una tarjeta con sus fuentes enlazadas, y wovain cuenta las ideas que descartó."
+        "answer": "Parte de las tendencias de gusto de Qloo y se queda solo con las ideas que tienen pruebas de venta: tiendas que las anuncian en Meta desde hace semanas, superventas en marketplaces y reseñas. Descarta las ideas saturadas. Cada tarjeta enlaza sus fuentes y dice cuántas ideas se descartaron."
+      },
+      {
+        "question": "¿wovain gasta dinero en anuncios por su cuenta?",
+        "answer": "No. Cada campaña se crea en pausa en tu cuenta publicitaria de Meta. El gasto empieza solo cuando la apruebas, dentro de tus topes diario y mensual y de un límite de pérdidas de 50 $ salvo que lo cambies. Las mismas reglas se crean como reglas automatizadas de Meta."
+      },
+      {
+        "question": "¿Qué tengo que conectar?",
+        "answer": "Una tienda de Fourthwall (abrirla es gratis) para los productos, y una cuenta publicitaria de Meta con una página de Facebook y un método de pago para los anuncios. wovain se conecta a cada una con su propio inicio de sesión y te guía en las dos."
+      },
+      {
+        "question": "¿Cómo se fijan los precios?",
+        "answer": "A partir del coste base real del blank en Fourthwall: al menos 10 $ de beneficio y un 30 % de margen, después de comisiones de tarjeta, impuestos y una reserva para reembolsos, redondeado al dólar. Antes de publicar, cada producto muestra su coste base, tu beneficio por venta, tu margen y la regla detrás de su precio."
+      },
+      {
+        "question": "¿De verdad se tarda menos de una hora?",
+        "answer": "Cada paso en wovain suele llevar minutos: elegir una idea, dibujar diseños, publicar y preparar los anuncios. Abrir una tienda de Fourthwall o una cuenta publicitaria de Meta lleva más tiempo la primera vez, y Meta revisa los anuncios nuevos antes de publicarlos."
       }
     ],
-    "heroCta": "Empezar un drop",
+    "heroCta": "Encontrar mi primer producto",
     "demo": {
-      "alt": "Un drop de ejemplo en wovain. Se escribe un brief de una línea. Aparece una tarjeta de idea con qué hacer, por qué se vende, quién compra y dónde, y la competencia, después de que wovain descarte las ideas con pruebas débiles, y la diseñadora la elige. Aparecen cuatro diseños como maquetas de camiseta de Fourthwall con sus controles de impresión, y la diseñadora aprueba uno. Se convierte en un producto oculto en Fourthwall, con su precio y beneficio. Aparece la vista previa de un anuncio de Meta y la campaña se crea en pausa.",
+      "alt": "Un ejemplo en wovain. Inicio muestra una idea que se vende ahora, con qué hacer, por qué se vende, quién la compra y cuánta competencia tiene, y la persona empieza un drop con ella. El drop se abre en Diseños con un informe de investigación, un tono y unos colores sugeridos, y pulsa Crear diseños. Nemotron escribe el brief, fal dibuja cuatro diseños y una revisión visual puntúa cada uno; aprueba el mejor. El producto se publica en Fourthwall con su precio y su beneficio. Aparecen un anuncio de imagen y uno de vídeo para los compradores de la idea, con un tope diario, un tope mensual y un límite de pérdidas de 50 $, y la campaña queda creada en pausa hasta que la apruebe.",
       "pause": "Pausar el ejemplo",
       "play": "Reproducir el ejemplo",
-      "brief": "Dibujos botánicos lavados de línea para una cápsula de primavera, para quienes cultivan en el balcón.",
       "designs": [
         "Fern Study No. 3",
         "Garden Hours",
@@ -212,7 +187,7 @@
         "body": "Dibujos de línea para quienes cultivan en espacios pequeños. Cápsula de primavera, impresa bajo demanda.",
         "cta": "Comprar"
       },
-      "paused": "Campaña: en pausa",
+      "paused": "Creada en pausa: espera tu aprobación",
       "initials": "TM",
       "idea": {
         "title": "Camiseta de helechos para quienes cultivan en el balcón",
@@ -229,23 +204,47 @@
           "Huertos de balcón, una tendencia al alza",
           "Camisetas botánicas: superventas en marketplaces"
         ]
+      },
+      "homeLead": "Lo que se vende ahora, según las tendencias de Qloo",
+      "report": {
+        "whyNow": "Las búsquedas de huertos de balcón suben tres semanas seguidas",
+        "saturation": "Algo de competencia: 12 anuncios parecidos",
+        "price": "Unos 28 $ por camiseta",
+        "sources": "6 fuentes"
+      },
+      "tones": [
+        {
+          "label": "Cálido y natural",
+          "line": "Crecido en un balcón, para llevar a todas partes."
+        },
+        {
+          "label": "Seco e ingenioso",
+          "line": "Tres helechos y una silla plegable."
+        }
+      ],
+      "colours": [
+        "Crema sobre negro",
+        "Bosque sobre salvia",
+        "Musgo sobre avena"
+      ],
+      "make": {
+        "brief": "Nemotron escribe el brief del diseño",
+        "draw": "fal dibuja cuatro diseños",
+        "check": "Una revisión visual puntúa cada estampado"
+      },
+      "noStock": "Nada que almacenar. Fourthwall imprime y envía cada pedido y te paga el beneficio.",
+      "video": "Anuncio en vídeo",
+      "audience": "Fans de la jardinería en macetas en Qloo: de 25 a 44 años, sobre todo mujeres, en Madrid, Valencia y Sevilla.",
+      "rules": {
+        "daily": "Tope diario",
+        "monthly": "Tope mensual",
+        "loss": "Límite de pérdidas",
+        "meta": "También como reglas automatizadas de Meta."
       }
     },
-    "results": {
-      "title": "A la venta, anunciado, medido",
-      "lead": "En qué se convierte un diseño aprobado, en tus propias cuentas.",
-      "product": "Página de producto",
-      "ad": "Anuncio",
-      "insights": "Estadísticas",
-      "sizes": "Talla",
-      "addToCart": "Añadir al carrito",
-      "paused": "En pausa hasta que la apruebes",
-      "photoAlt": "Un modelo en un balcón con la camiseta negra Fern Study No. 3",
-      "mockupAlt": "El diseño Fern Study No. 3 en una camiseta gruesa negra, llevada por un modelo, tal como la genera Fourthwall"
-    },
     "connectors": {
-      "title": "Funciona en las cuentas que ya tienes",
-      "lead": "Cada una se conecta con su propio inicio de sesión. Los productos, el arte y los anuncios siguen siendo tuyos.",
+      "title": "Tu tienda, tu cuenta publicitaria",
+      "lead": "Necesitas una tienda de Fourthwall y una cuenta publicitaria de Meta. Cada una se conecta con su propio inicio de sesión, y wovain te guía en las dos. Los productos y los anuncios siguen siendo tuyos.",
       "link": "Cómo funciona la conexión",
       "fourthwall": {
         "role": "Tienda"
@@ -257,51 +256,78 @@
         "role": "Anuncios"
       }
     },
-    "free": {
-      "title": "Gratis para empezar",
-      "body": "{credits, number} créditos al mes, suficientes para probar un drop completo. Si la investigación no encuentra ideas, recuperas los créditos. wovain nunca se queda con una parte de tus ventas.",
-      "link": "Ver precios"
-    },
     "faqSection": {
-      "title": "Antes de empezar",
+      "title": "Preguntas antes de empezar",
       "more": "Leer la documentación"
     },
     "cta": {
-      "title": "Tu próximo drop empieza con una frase",
-      "body": "Tú decides todo. wovain se encarga de la producción.",
-      "button": "Empezar un drop",
+      "title": "Tu primer producto está a una idea",
+      "body": "Elige una idea que se vende. Aprueba lo que te guste. wovain hace el resto.",
+      "button": "Encontrar mi primer producto",
       "secondary": "Ver precios"
     },
     "how": {
-      "title": "Del registro a los anuncios en marcha en unos 10 minutos",
-      "lead": "Un solo recorrido guiado, con temporizador y lista. Los pasos que haces en Fourthwall o Meta vuelven y se marcan solos.",
-      "guide": "Leer la guía de primeros pasos",
+      "title": "Cómo se hace tu primer producto",
+      "lead": "Cinco pasos. Tú decides en cada uno; wovain hace el trabajo de en medio.",
+      "guide": "Leer la guía para empezar",
       "steps": {
-        "sell": {
-          "title": "Elige qué vender",
-          "body": "Parte de las ideas que wovain conserva: cada tarjeta dice qué hacer, por qué se vende, quién lo compra y dónde, y cuánta competencia hay. Las ideas con pruebas débiles se descartan y se cuentan. Elige una y el drop se abre en sus diseños, con la investigación hecha."
+        "pick": {
+          "title": "Elige una idea que se vende ahora",
+          "body": "Inicio muestra ideas de las tendencias de gusto de Qloo, una tarjeta cada vez: qué hacer, quién lo compra, por qué se vende y cuánta competencia hay."
         },
-        "store": {
-          "title": "Prepara la tienda",
-          "body": "Conecta tu tienda Fourthwall y completa pagos, envíos y el resto, tarjeta por tarjeta."
-        },
-        "meta": {
-          "title": "Conecta Meta y fija límites",
-          "body": "Un solo inicio de sesión de Meta cubre tu cuenta publicitaria, la Página y el píxel. Fija lo máximo que wovain puede gastar al día y al mes y elige cómo recibir alertas: correo, móvil o Telegram."
+        "review": {
+          "title": "Revisa la investigación, elige el estilo",
+          "body": "La idea se abre en Diseños con su informe de investigación ya escrito. Mantén o cambia el tono y los colores sugeridos y pulsa Crear diseños."
         },
         "design": {
           "title": "Aprueba un diseño",
-          "body": "wovain investiga tu dirección y dibuja diseños. Tú apruebas los que venderías."
+          "body": "Nemotron escribe el brief, fal dibuja el arte y una revisión visual puntúa cada estampado antes de que lo veas. Aprueba el que venderías."
         },
-        "ads": {
-          "title": "Lanza los anuncios",
-          "body": "Revisa el anuncio y su presupuesto diario, y lánzalo. Nada supera tus límites, y las reglas automáticas de Meta detienen los anuncios aunque wovain esté caído."
+        "publish": {
+          "title": "Publica en tu tienda",
+          "body": "El producto se publica en tu tienda de Fourthwall, con un precio que deja al menos 10 $ de beneficio por venta. Fourthwall imprime y envía cada pedido."
         },
         "campaign": {
-          "title": "Mira tu campaña",
-          "body": "Productos, tienda, anuncios, gasto y resultados en directo, en una sola página."
+          "title": "Aprueba los anuncios",
+          "body": "wovain prepara anuncios de imagen y vídeo para los compradores de la idea en tu cuenta publicitaria de Meta, en pausa. Solo se activan cuando los apruebas."
         }
       }
+    },
+    "heroPoints": [
+      "No hace falta saber diseñar",
+      "Sin inventario: Fourthwall imprime y envía cada pedido",
+      "Tú apruebas cada dólar de gasto en anuncios"
+    ],
+    "heroNote": "Empieza gratis: {credits, number} créditos al mes, sin tarjeta.",
+    "proof": {
+      "title": "Primero las pruebas. El gasto, al final.",
+      "lead": "Cada idea llega con las pruebas de que se vende, y tus anuncios se quedan dentro de los límites que tú pones.",
+      "evidence": {
+        "title": "Las pruebas de cada idea",
+        "items": [
+          "Datos de gusto de Qloo: qué le gusta a este público y qué sube con ello.",
+          "Tiendas que anuncian la misma idea en Meta desde hace semanas.",
+          "Superventas en marketplaces y sus reseñas.",
+          "Cuánta competencia hay: anuncios parecidos y a qué precio se venden.",
+          "Fuentes enlazadas. Las ideas sin pruebas se descartan, y la tarjeta dice cuántas."
+        ]
+      },
+      "spend": {
+        "title": "Las reglas de cada dólar",
+        "items": [
+          "Cada campaña se crea en pausa. Nada se gasta hasta que la apruebas.",
+          "Un tope diario y un tope mensual para todo el gasto en anuncios.",
+          "Un límite de pérdidas, 50 $ salvo que lo cambies, que pausa todos los anuncios.",
+          "Un anuncio que gasta el beneficio de una venta sin vender nada se pausa.",
+          "Las mismas reglas se crean como reglas automatizadas de Meta, así que se cumplen aunque wovain no esté disponible."
+        ],
+        "note": "Los anuncios usan tu propia cuenta publicitaria de Meta, y Meta te la factura directamente."
+      }
+    },
+    "pricing": {
+      "title": "Empieza gratis",
+      "lead": "Gratis te da {credits, number} créditos al mes, suficiente para unos dos productos paso a paso. Studio y Label llegan pronto. wovain nunca se queda una parte de tus ventas.",
+      "link": "Ver todos los precios"
     }
   },
   "Legal": {

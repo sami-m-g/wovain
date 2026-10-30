@@ -1,19 +1,14 @@
 import { billingCatalog } from "@wovain/billing/catalog";
-import { BlurFade } from "@wovain/ui/components/blur-fade";
-import { Button, buttonVariants } from "@wovain/ui/components/button";
+import { buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
-import { ArrowRight } from "lucide-react";
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { ArrowRight, Check, ShieldCheck, TrendingUp } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
+import { NotifyButton } from "@/components/billing/notify-button";
+import { PlanCards } from "@/components/billing/plan-cards";
 import { ConnectBeams } from "@/components/marketing/connect-beams";
-import {
-  AdPreview,
-  MOCKUPS,
-  PausedBadge,
-  ProductListing,
-} from "@/components/marketing/demo-pieces";
-import { ExampleInsights } from "@/components/marketing/example-insights";
+import { CtaLink } from "@/components/marketing/cta-link";
 import { PartnerLogo } from "@/components/marketing/partner-logo";
 import { container, displayTitle } from "@/components/marketing/section";
 import CTASection from "@/components/shadcn-studio/blocks/cta-section-10/cta-section-10";
@@ -22,7 +17,6 @@ import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { exampleTee } from "@/lib/pricing";
 
 /** A page on the docs site, in the visitor's language (English has no prefix). */
 const docsHref = async (path: string) => {
@@ -30,10 +24,6 @@ const docsHref = async (path: string) => {
   const prefix = locale === routing.defaultLocale ? "" : `/${locale}`;
   return new URL(`${prefix}/docs/${path}`, ENV.DOCS_URL).toString();
 };
-
-const SIZES = ["S", "M", "L", "XL"] as const;
-const PICKED_SIZE = "M";
-const REVEAL_STAGGER = 0.12;
 
 /** A section's headline and its one supporting line. */
 const SectionHead = ({
@@ -56,114 +46,131 @@ const SectionHead = ({
   </div>
 );
 
-/** One output of a drop, labelled, revealed as it scrolls in. */
-const Result = ({
-  label,
-  index,
-  children,
-  className,
-}: {
-  label: string;
-  index: number;
-  children: ReactNode;
-  className?: string;
-}) => (
-  <BlurFade
-    className={cn("flex min-w-0 flex-col gap-3", className)}
-    delay={index * REVEAL_STAGGER}
-    direction="up"
-    inView
-    offset={16}
-  >
-    <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
-      {label}
-    </p>
-    {children}
-  </BlurFade>
-);
+/** The steps of today's flow, in the order the app runs them. */
+const HOW_STEPS = ["pick", "review", "design", "publish", "campaign"] as const;
 
-/** What one approved design becomes: the product page, the ad and the numbers. */
-export const Results = async () => {
+/** Home pick to paused campaign, in five steps. */
+export const HowItWorks = async () => {
   const t = await getTranslations("Home");
-  const format = await getFormatter();
-  const money = (value: number) =>
-    format.number(value, { currency: "USD", style: "currency" });
-  const tag = exampleTee();
+  const guide = await docsHref("getting-started");
   return (
     <section
-      aria-labelledby="results-title"
+      aria-labelledby="how-it-works-title"
       className="scroll-mt-20 py-16 sm:py-24"
-      id="results"
+      id="how-it-works"
     >
-      <div className={cn(container, "flex flex-col gap-10 sm:gap-14")}>
+      <div className={cn(container, "flex flex-col gap-10 sm:gap-12")}>
         <SectionHead
-          id="results"
-          lead={t("results.lead")}
-          title={t("results.title")}
-        />
-        <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:gap-8 lg:grid-cols-[1fr_1fr_1.35fr]">
-          <Result index={0} label={t("results.product")}>
-            <div inert>
-              <ProductListing
-                image={MOCKUPS.fern}
-                imageAlt={t("results.mockupAlt")}
-                detail={
-                  <div className="flex flex-col gap-3 pt-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-muted-foreground me-1 text-xs max-sm:hidden">
-                        {t("results.sizes")}
-                      </span>
-                      {SIZES.map((size) => (
-                        <span
-                          className={cn(
-                            "grid h-7 min-w-8 place-items-center rounded-md border px-1.5 text-xs font-medium",
-                            size === PICKED_SIZE
-                              ? "border-foreground"
-                              : "border-border text-muted-foreground"
-                          )}
-                          key={size}
-                        >
-                          {size}
-                        </span>
-                      ))}
-                    </div>
-                    <Button className="w-full" tabIndex={-1}>
-                      {t("results.addToCart")}
-                    </Button>
-                  </div>
-                }
-                price={money(tag.price)}
-                title={t("demo.product")}
-              />
-            </div>
-          </Result>
-          <Result index={1} label={t("results.ad")}>
-            <div inert>
-              <AdPreview
-                photoAlt={t("results.photoAlt")}
-                body={t("demo.ad.body")}
-                brand={t("demo.ad.brand")}
-                cta={t("demo.ad.cta")}
-                footer={
-                  <div className="border-border flex flex-wrap items-center gap-2 border-t p-3">
-                    <PausedBadge>{t("demo.paused")}</PausedBadge>
-                    <span className="text-muted-foreground text-xs max-sm:hidden">
-                      {t("results.paused")}
-                    </span>
-                  </div>
-                }
-                headline={t("demo.product")}
-                sponsored={t("demo.ad.sponsored")}
-              />
-            </div>
-          </Result>
-          <Result
-            className="col-span-2 lg:col-span-1"
-            index={2}
-            label={t("results.insights")}
+          id="how-it-works"
+          lead={t("how.lead")}
+          title={t("how.title")}
+        >
+          <a
+            className="text-foreground inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+            href={guide}
           >
-            <ExampleInsights tee={tag} />
-          </Result>
+            {t("how.guide")}
+            <ArrowRight
+              aria-hidden="true"
+              className="size-3.5 rtl:rotate-180"
+            />
+          </a>
+        </SectionHead>
+        <ol className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-5">
+          {HOW_STEPS.map((step, index) => (
+            <li
+              className="border-border flex flex-col gap-3 border-t pt-5"
+              key={step}
+            >
+              <span
+                aria-hidden="true"
+                className="font-display figures text-primary text-sm font-semibold"
+              >
+                {index + 1}
+              </span>
+              <h3 className="font-display text-lg leading-snug font-semibold tracking-[-0.015em] text-balance">
+                {t(`how.steps.${step}.title`)}
+              </h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {t(`how.steps.${step}.body`)}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+};
+
+/** One column of the proof section: a heading and its list of facts. */
+const ProofList = ({
+  icon,
+  title,
+  items,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  items: string[];
+  children?: ReactNode;
+}) => (
+  <div className="bg-card border-border flex flex-col gap-5 rounded-2xl border p-6 sm:p-8">
+    <h3 className="font-display flex items-center gap-2.5 text-xl font-semibold tracking-[-0.02em]">
+      {icon}
+      {title}
+    </h3>
+    <ul className="flex flex-col gap-3.5">
+      {items.map((item) => (
+        <li
+          className="flex items-start gap-3 text-[0.95rem] leading-relaxed"
+          key={item}
+        >
+          <Check
+            aria-hidden="true"
+            className="text-success mt-1 size-4 shrink-0"
+          />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+    {children}
+  </div>
+);
+
+/** Why an idea should sell, and what keeps the ad spend safe. */
+export const Proof = async () => {
+  const t = await getTranslations("Home");
+  return (
+    <section
+      aria-labelledby="proof-title"
+      className="bg-muted/40 border-border scroll-mt-20 border-y py-16 sm:py-24"
+      id="proof"
+    >
+      <div className={cn(container, "flex flex-col gap-10 sm:gap-12")}>
+        <SectionHead
+          id="proof"
+          lead={t("proof.lead")}
+          title={t("proof.title")}
+        />
+        <div className="grid gap-6 md:grid-cols-2">
+          <ProofList
+            icon={
+              <TrendingUp aria-hidden="true" className="text-primary size-5" />
+            }
+            items={t.raw("proof.evidence.items") as string[]}
+            title={t("proof.evidence.title")}
+          />
+          <ProofList
+            icon={
+              <ShieldCheck aria-hidden="true" className="text-success size-5" />
+            }
+            items={t.raw("proof.spend.items") as string[]}
+            title={t("proof.spend.title")}
+          >
+            <p className="text-muted-foreground border-border border-t pt-4 text-sm">
+              {t("proof.spend.note")}
+            </p>
+          </ProofList>
         </div>
       </div>
     </section>
@@ -175,7 +182,7 @@ export const Connectors = async () => {
   return (
     <section
       aria-labelledby="connectors-title"
-      className="bg-card border-border scroll-mt-20 border-y py-16 sm:py-24"
+      className="scroll-mt-20 py-16 sm:py-24"
       id="connectors"
     >
       <div
@@ -190,7 +197,7 @@ export const Connectors = async () => {
           title={t("connectors.title")}
         >
           <a
-            className="text-accent-text inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
+            className="text-accent-text inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium hover:underline"
             href={await docsHref("connecting-accounts")}
           >
             {t("connectors.link")}
@@ -224,37 +231,54 @@ export const Connectors = async () => {
   );
 };
 
-export const FreeToStart = async () => {
+const planAction = "h-11 rounded-lg px-4 sm:h-9";
+
+/** The plans, from the billing catalog: Free now, the paid plans soon. */
+export const HomePricing = async () => {
   const t = await getTranslations("Home");
+  const billing = await getTranslations("Billing");
   return (
-    <section aria-labelledby="free-title" className="py-16 sm:py-20">
-      <div
-        className={cn(
-          container,
-          "flex flex-col items-start justify-between gap-6 md:flex-row md:items-end"
-        )}
-      >
+    <section
+      aria-labelledby="pricing-title"
+      className="scroll-mt-20 py-16 sm:py-24"
+      id="pricing"
+    >
+      <div className={cn(container, "flex flex-col gap-10")}>
         <SectionHead
-          id="free"
-          lead={t("free.body", {
+          id="pricing"
+          lead={t("pricing.lead", {
             credits: billingCatalog().plans.free.monthlyCredits,
           })}
-          title={t("free.title")}
-        />
-        <Link
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "h-11 shrink-0 rounded-xl px-5"
-          )}
-          href="/pricing"
+          title={t("pricing.title")}
         >
-          {t("free.link")}
-          <ArrowRight
-            aria-hidden="true"
-            className="rtl:rotate-180"
-            data-icon="inline-end"
-          />
-        </Link>
+          <Link
+            className="text-foreground inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+            href="/pricing"
+          >
+            {t("pricing.link")}
+            <ArrowRight
+              aria-hidden="true"
+              className="size-3.5 rtl:rotate-180"
+            />
+          </Link>
+        </SectionHead>
+        <PlanCards
+          actions={{
+            free: (
+              <CtaLink
+                className={cn(buttonVariants(), planAction)}
+                cta="home-pricing-free"
+                href="/sign-up"
+                prefetch={false}
+              >
+                {billing("cta.startFree")}
+              </CtaLink>
+            ),
+            label: <NotifyButton offer="label" surface="home" />,
+            studio: <NotifyButton offer="studio" surface="home" />,
+          }}
+          comingSoon
+        />
       </div>
     </section>
   );
@@ -269,67 +293,6 @@ export const HomeFaq = async ({ items }: { items: Faq[] }) => {
       more={{ href: await docsHref("faq"), label: t("faqSection.more") }}
       title={t("faqSection.title")}
     />
-  );
-};
-
-const HOW_STEPS = [
-  "sell",
-  "store",
-  "meta",
-  "design",
-  "ads",
-  "campaign",
-] as const;
-
-/** The one guided flow: sign-in to a running campaign in about 10 minutes. */
-export const HowItWorks = async () => {
-  const t = await getTranslations("Home");
-  const guide = await docsHref("getting-started");
-  return (
-    <section
-      aria-labelledby="how-it-works-title"
-      className="scroll-mt-20 py-16 sm:py-20"
-      id="how-it-works"
-    >
-      <div className={cn(container, "flex flex-col gap-10")}>
-        <SectionHead
-          id="how-it-works"
-          lead={t("how.lead")}
-          title={t("how.title")}
-        >
-          <a
-            className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
-            href={guide}
-          >
-            {t("how.guide")}
-            <ArrowRight
-              aria-hidden="true"
-              className="size-3.5 rtl:rotate-180"
-            />
-          </a>
-        </SectionHead>
-        <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {HOW_STEPS.map((step, index) => (
-            <li className="flex gap-4" key={step}>
-              <span
-                aria-hidden="true"
-                className="font-display figures bg-muted flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-              >
-                {index + 1}
-              </span>
-              <div className="flex flex-col gap-1">
-                <h3 className="font-display text-base font-semibold">
-                  {t(`how.steps.${step}.title`)}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {t(`how.steps.${step}.body`)}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
   );
 };
 

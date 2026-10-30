@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { posthog } from "posthog-js";
 import { useState } from "react";
 
-export type InterestSurface = "billing" | "paywall" | "pricing";
+export type InterestSurface = "billing" | "home" | "paywall" | "pricing";
 
 /**
  * While only Free is on sale, a paid offer shows this instead of a checkout:

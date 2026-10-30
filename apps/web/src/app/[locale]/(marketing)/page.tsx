@@ -1,6 +1,7 @@
+import { billingCatalog } from "@wovain/billing/catalog";
 import { buttonVariants } from "@wovain/ui/components/button";
 import { cn } from "@wovain/ui/lib/utils";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
@@ -11,10 +12,10 @@ import { HeroDemo } from "@/components/marketing/hero-demo";
 import {
   ClosingCta,
   Connectors,
-  FreeToStart,
   HomeFaq,
+  HomePricing,
   HowItWorks,
-  Results,
+  Proof,
 } from "@/components/marketing/home-sections";
 import type { Faq } from "@/content/types";
 import { ENV } from "@/env.server";
@@ -22,9 +23,6 @@ import { enterLocale, requireLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { exampleTee } from "@/lib/pricing";
 import { localizedUrl, pageMetadata, siteUrl } from "@/lib/seo";
-
-/** The questions the landing answers; the rest live on the docs FAQ. */
-const LANDING_FAQ = new Set([1, 2, 4, 5, 8, 9, 10, 12]);
 
 export const generateMetadata = async ({
   params,
@@ -37,9 +35,8 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
   const locale = await enterLocale(params);
   const t = await getTranslations("Home");
   const meta = await getTranslations("Metadata");
-  const faq = (t.raw("faq") as Faq[]).filter((_, index) =>
-    LANDING_FAQ.has(index)
-  );
+  const faq = t.raw("faq") as Faq[];
+  const points = t.raw("heroPoints") as string[];
 
   const jsonLd = [
     {
@@ -74,7 +71,7 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
         <div className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 sm:gap-10 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
           <div className="flex flex-col gap-4 sm:gap-6">
             <h1
-              className="font-display text-display-1 font-semibold text-balance lg:text-[clamp(2.75rem,1rem+3.2vw,4.25rem)]"
+              className="font-display text-display-1 font-semibold text-balance lg:text-[clamp(2.5rem,0.9rem+2.6vw,3.75rem)]"
               id="hero-title"
             >
               {t("heroTitle")}
@@ -82,30 +79,48 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
             <p className="text-muted-foreground max-w-[46ch] text-base leading-relaxed sm:text-lg">
               {t("heroLead")}
             </p>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              <CtaLink
-                className={cn(
-                  buttonVariants(),
-                  "h-12 rounded-xl px-6 text-[0.95rem]"
-                )}
-                cta="hero-sign-up"
-                href="/sign-up"
-                prefetch={false}
-              >
-                {t("heroCta")}
-                <ArrowRight
-                  aria-hidden="true"
-                  className="rtl:rotate-180"
-                  data-icon="inline-end"
-                />
-              </CtaLink>
-              <Link
-                className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
-                href={{ hash: "how-it-works", pathname: "/" }}
-              >
-                {t("heroSecondary")}
-                <ArrowDown aria-hidden="true" className="size-3.5" />
-              </Link>
+            <ul className="flex flex-col gap-2 text-[0.95rem]">
+              {points.map((point) => (
+                <li className="flex items-start gap-2.5" key={point}>
+                  <Check
+                    aria-hidden="true"
+                    className="text-success mt-1 size-4 shrink-0"
+                  />
+                  {point}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                <CtaLink
+                  className={cn(
+                    buttonVariants(),
+                    "h-12 rounded-xl px-6 text-[0.95rem]"
+                  )}
+                  cta="hero-sign-up"
+                  href="/sign-up"
+                  prefetch={false}
+                >
+                  {t("heroCta")}
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="rtl:rotate-180"
+                    data-icon="inline-end"
+                  />
+                </CtaLink>
+                <Link
+                  className="text-foreground inline-flex min-h-11 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+                  href={{ hash: "how-it-works", pathname: "/" }}
+                >
+                  {t("heroSecondary")}
+                  <ArrowDown aria-hidden="true" className="size-3.5" />
+                </Link>
+              </div>
+              <p className="text-muted-foreground text-sm">
+                {t("heroNote", {
+                  credits: billingCatalog().plans.free.monthlyCredits,
+                })}
+              </p>
             </div>
           </div>
           <HeroDemo
@@ -116,9 +131,9 @@ const HomePage = async ({ params }: PageProps<"/[locale]">) => {
       </section>
 
       <HowItWorks />
-      <Results />
+      <Proof />
       <Connectors />
-      <FreeToStart />
+      <HomePricing />
       <HomeFaq items={faq} />
       <ClosingCta />
     </>
