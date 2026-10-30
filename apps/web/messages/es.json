@@ -655,6 +655,7 @@
       "title": "Publica los productos",
       "lead": "Prendas reales de Fourthwall, con un precio que deja al menos 10 US$ de beneficio por venta tras comisiones. Siguen ocultos hasta que los publiques.",
       "price": "Precio",
+      "estimated": "{cost} (estimado)",
       "breakdown": "Coste base {cost} · tu beneficio {profit} por venta · margen {margin}",
       "rule": "Por qué este precio: al menos {profit} de beneficio y {margin} de margen tras comisiones de tarjeta, impuestos y una reserva para reembolsos.",
       "hidden": "Oculto",
@@ -1889,6 +1890,7 @@
       "useFloor": "Usar {price} (mínimo de wovain)",
       "useBenchmark": "Usar {price} ({margin} de margen)",
       "source": "Coste: lo que Fourthwall cobra por fabricar cada talla. Beneficio: tras comisiones de tarjeta, impuestos y una reserva para reembolsos.",
+      "sourceEstimated": "Coste estimado con el catálogo de Fourthwall (el precio del blank más el de cada zona de impresión), porque no se pudo leer su precio para este producto. Beneficio: tras comisiones de tarjeta, impuestos y una reserva para reembolsos.",
       "noCost": "Fourthwall no dio un coste para este producto, así que no se puede revisar el precio.",
       "unavailable": "La revisión del precio no está disponible: {reason}"
     },

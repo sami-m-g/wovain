@@ -70,9 +70,6 @@ new pulumi.Config("posthog").requireSecret("apiKey");
 
 const posthog = environmentProject(NAME);
 const environment = appEnvironment({
-  // A failed `pulumi up --refresh` (2026-10-30) dropped next's database user
-  // from the state; the user and its password are unchanged.
-  adoptUser: NAME === "next",
   afterApis: {},
   deploy: { githubEnvironment: NAME, pool },
   envs: [
@@ -88,6 +85,9 @@ const environment = appEnvironment({
     // carries its own metadata key (packages/billing/src/plans.ts).
     { name: "POLAR_METADATA_KEY", value: `wovain:${NAME}` },
   ],
+  // A failed `pulumi up --refresh` (2026-10-30) dropped next's database user
+  // from the state, and infra-next can't read it back (dev.ts).
+  existingUser: NAME === "next",
   kept: { protect: true },
   // next is where the founder tests: one warm instance, so a click never
   // waits on a cold start (a campaign request queued 110 s behind one,

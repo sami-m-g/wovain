@@ -655,6 +655,7 @@
       "title": "Publier les produits",
       "lead": "De vrais supports Fourthwall, au prix qui garantit au moins 10 $ de bénéfice par vente après frais. Ils restent masqués jusqu'à la publication.",
       "price": "Prix",
+      "estimated": "{cost} (estimé)",
       "breakdown": "Coût de base {cost} · votre bénéfice {profit} par vente · marge {margin}",
       "rule": "Pourquoi ce prix : au moins {profit} de bénéfice et {margin} de marge après frais de carte, taxes et réserve de remboursement.",
       "hidden": "Masqué",
@@ -1889,6 +1890,7 @@
       "useFloor": "Utiliser {price} (seuil de wovain)",
       "useBenchmark": "Utiliser {price} ({margin} de marge)",
       "source": "Coût : ce que Fourthwall facture pour fabriquer chaque taille. Profit : après frais de carte, taxes et réserve pour remboursements.",
+      "sourceEstimated": "Coût estimé à partir du catalogue Fourthwall (le prix du blank plus celui de chaque zone d'impression), car son prix pour ce produit n'a pas pu être lu. Profit : après frais de carte, taxes et réserve pour remboursements.",
       "noCost": "Fourthwall n'a pas donné de coût pour ce produit, le prix ne peut donc pas être vérifié.",
       "unavailable": "La vérification du prix n'est pas disponible : {reason}"
     },

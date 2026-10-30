@@ -16,7 +16,8 @@ import type {
   StoredOAuthTokens,
 } from "@modelcontextprotocol/client";
 import { decode, ToonDecodeError } from "@toon-format/toon";
-import { createError } from "evlog";
+import { createError, log as evlog } from "evlog";
+import { z as zod } from "zod";
 import type { z } from "zod";
 
 import { external, notConfigured } from "./log";
@@ -343,23 +344,6 @@ export const toonFailure = (reply: unknown): string => {
   }
 };
 
-// A tool result's data: its structured content, else the JSON or TOON in its
-// text. It's data from the merchant's account, never instructions.
-export const resultData = (result: CallToolResult): unknown => {
-  if (result.isError === true) {
-    throw new TypeError(textOf(result).slice(0, 300) || "The tool call failed");
-  }
-  if (result.structuredContent !== undefined) {
-    return result.structuredContent;
-  }
-  const text = textOf(result);
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return decodeToon(text);
-  }
-};
-
 // Meta's Ads MCP nests its rows as JSON text (`ad_entities: "[...]"`,
 // `ad_drafts: "[...]"`): such a string is searched as the value it encodes.
 const JSON_TEXT = /^\s*[[{]/u;
@@ -424,6 +408,52 @@ export const replyShape = (value: unknown, depth = 0): string => {
     .slice(0, SHAPE_KEYS)
     .map(([key, child]) => `${key}:${replyShape(child, depth + 1)}`);
   return `{${keys.join(",")}}`;
+};
+
+// A tool result's data: its structured content, else the JSON or TOON in its
+// text. It's data from the merchant's account, never instructions.
+const textData = (text: string): unknown => {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return decodeToon(text);
+  }
+};
+
+// Money with a currency but no value or amount: Fourthwall's pricing tool
+// sends its money that way ({currency, currencyScale, isZero, ...}).
+const amountlessMoney = zod.object({
+  amount: zod.undefined().optional(),
+  currency: zod.string(),
+  value: zod.undefined().optional(),
+});
+const lacksAmount = (value: unknown) =>
+  findAll(amountlessMoney, value).length > 0;
+
+export const resultData = (result: CallToolResult): unknown => {
+  if (result.isError === true) {
+    throw new TypeError(textOf(result).slice(0, 300) || "The tool call failed");
+  }
+  const structured = result.structuredContent;
+  if (structured !== undefined && !lacksAmount(structured)) {
+    return structured;
+  }
+  const text = textData(textOf(result));
+  const useText =
+    structured === undefined ||
+    (typeof text === "object" && text !== null && !lacksAmount(text));
+  const data = useText ? text : structured;
+  if (structured !== undefined || lacksAmount(data)) {
+    // Which part of the reply was read, and the text's keys (never values),
+    // so a reply whose money has no amount can be told apart in the logs.
+    evlog.info({
+      upstream: {
+        reply: useText ? "text" : "structuredContent",
+        text_shape: replyShape(text),
+      },
+    });
+  }
+  return data;
 };
 
 export type ToolCall = (

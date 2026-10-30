@@ -57,15 +57,37 @@ describe("ProductsStep price breakdown", () => {
     const html = render((client) =>
       client.setQueryData(
         orpc.store.priceCheck.queryKey({ input: { productId: "p1" } }),
-        { check: null, costs: { "2XL": 15, M: 12 }, price: 28, rules: RULES }
+        {
+          check: null,
+          costs: { "2XL": 15, M: 12 },
+          estimated: false,
+          price: 28,
+          rules: RULES,
+        }
       )
     );
     // M: 28 - 12 - (28 x 2.9% + 0.30) - 28 x 2% = 14.33; 14.33 / 28 = 51%,
     // the margin after fees the rule speaks of.
-    expect(html).toContain("Base cost $12.00");
+    expect(html).toContain("Base cost $12.00 ·");
     expect(html).toContain("your profit $14.33 per sale");
     expect(html).toContain("51% margin");
     expect(html).toContain("at least $10.00 profit and 30% margin");
+  });
+
+  it("labels a cost estimated from Fourthwall's catalog", () => {
+    const html = render((client) =>
+      client.setQueryData(
+        orpc.store.priceCheck.queryKey({ input: { productId: "p1" } }),
+        {
+          check: null,
+          costs: { M: 12 },
+          estimated: true,
+          price: 28,
+          rules: RULES,
+        }
+      )
+    );
+    expect(html).toContain("Base cost $12.00 (estimated)");
   });
 
   it("shows only the price until Fourthwall's cost is read", () => {
