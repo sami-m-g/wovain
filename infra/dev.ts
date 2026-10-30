@@ -53,8 +53,11 @@ interface EnvironmentArgs {
   deploy?: Deploy;
   // Instances kept warm; 0 (scale to zero) if unset.
   minInstances?: number;
-  // Adopts a database user that exists but is missing from the state.
-  adoptUser?: boolean;
+  // Leaves an existing database user out of the stack. Cloud SQL's IAM
+  // conditions cover only instances and backup runs, so an account whose
+  // `cloudsql.admin` is conditioned on its instance can't read or create a
+  // user; the user keeps the password this stack's RandomPassword set.
+  existingUser?: boolean;
 }
 
 // The deploy account and image repository of an environment main deploys.
@@ -161,25 +164,21 @@ export const appEnvironment = (args: EnvironmentArgs) => {
     length: 32,
     special: false,
   });
-  // Cloud SQL never returns a password, so an adopted user keeps its own: the
-  // one this RandomPassword set when it created the user.
-  const user = new gcp.sql.User(
-    `wovain-${name}`,
-    { instance: sql.name, name: `wovain_${name}`, password: password.result },
-    args.adoptUser === true
-      ? {
-          ignoreChanges: ["password"],
-          import: `${args.project}/wovain-${name}/wovain_${name}`,
-        }
-      : {}
-  );
+  const userName = `wovain_${name}`;
+  if (args.existingUser !== true) {
+    new gcp.sql.User(`wovain-${name}`, {
+      instance: sql.name,
+      name: userName,
+      password: password.result,
+    });
+  }
   // Generated here; the provider secrets come from the caller.
   const values: Record<string, pulumi.Input<string> | undefined> = {
     "better-auth-secret": new random.RandomPassword(
       `better-auth-secret-${name}`,
       { length: 48, special: false }
     ).result,
-    "database-url": pulumi.interpolate`postgresql://${user.name}:${password.result}@localhost/${database.name}?host=/cloudsql/${sql.connectionName}`,
+    "database-url": pulumi.interpolate`postgresql://${userName}:${password.result}@localhost/${database.name}?host=/cloudsql/${sql.connectionName}`,
     "token-encryption-key": new random.RandomBytes(
       `token-encryption-key-${name}`,
       { length: 32 }
