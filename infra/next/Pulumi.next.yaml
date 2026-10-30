@@ -126,7 +126,7 @@ config:
       - audience: "The founder's own testing on next.wovain.com."
         credits: 1000
         emails:
-          - sami.mg@outlook.com
+          - minas.gorgy@gmail.com
         enabled: true
         endsAt: "2026-12-31T23:59:59Z"
         id: founder-testing-2026
