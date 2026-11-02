@@ -48,11 +48,11 @@ catalog:
   "@orpc/openapi": ^1.16.1
   "@orpc/zod": ^1.16.1
   "@orpc/tanstack-query": ^1.16.1
-  better-auth: 1.7.12
+  better-auth: 1.7.13
   jose: ^6.2.13
-  "@better-auth-ui/core": ^1.7.31
-  "@better-auth-ui/react": ^1.7.31
-  "@better-auth-ui/locales": ^1.7.31
+  "@better-auth-ui/core": ^1.7.32
+  "@better-auth-ui/react": ^1.7.32
+  "@better-auth-ui/locales": ^1.7.32
   bowser: ^2.14.1
   class-variance-authority: ^0.7.1
   cn: ^0.5.0
@@ -70,13 +70,13 @@ catalog:
   next-intl: ^4.14.9
   "@varlock/nextjs-integration": 1.2.5
   drizzle-kit: 1.0.0-rc.5
-  "@better-auth/core": 1.7.12
-  "@better-auth/drizzle-adapter": 1.7.12
-  "@better-auth/oauth-provider": 1.7.12
-  "@better-auth/mcp": 1.7.12
-  "@better-auth/cimd": 1.7.12
-  "@modelcontextprotocol/client": 2.3.1
-  "@modelcontextprotocol/server": 2.3.1
+  "@better-auth/core": 1.7.13
+  "@better-auth/drizzle-adapter": 1.7.13
+  "@better-auth/oauth-provider": 1.7.13
+  "@better-auth/mcp": 1.7.13
+  "@better-auth/cimd": 1.7.13
+  "@modelcontextprotocol/client": 2.4.0
+  "@modelcontextprotocol/server": 2.4.0
   "@modelcontextprotocol/ext-apps": 2.0.3
   esbuild: 0.28.2
   resend: 6.34.1
