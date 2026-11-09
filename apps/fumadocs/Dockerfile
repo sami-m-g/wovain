@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Pinned by digest; Dependabot (docker) bumps the tag and digest together
-FROM node:26-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39 AS base
+FROM node:26-slim@sha256:5adad64f9a1fca2d51972caa65983634c8a774eb300d72b20f7f2a0f60368072 AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 # Node 25+ no longer bundles corepack; npm ci installs it from docker/corepack's
@@ -43,7 +43,7 @@ WORKDIR /varlock
 COPY docker/varlock/package.json docker/varlock/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
-FROM node:26-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39 AS runner
+FROM node:26-slim@sha256:5adad64f9a1fca2d51972caa65983634c8a774eb300d72b20f7f2a0f60368072 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
