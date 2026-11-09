@@ -3,6 +3,6 @@
   "private": true,
   "description": "varlock for the Docker runner (varlock/auto-load); keep the version equal to the pnpm catalog",
   "dependencies": {
-    "varlock": "1.23.0"
+    "varlock": "1.24.0"
   }
 }
