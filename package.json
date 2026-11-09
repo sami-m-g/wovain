@@ -55,13 +55,13 @@
     "@types/node": "catalog:",
     "@wovain/config": "workspace:*",
     "git-cliff": "catalog:",
-    "knip": "^6.43.0",
+    "knip": "^6.44.1",
     "lefthook": "latest",
-    "oxfmt": "^0.74.0",
-    "oxlint": "^1.86.0",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
     "turbo": "^2.11.7",
     "typescript": "catalog:",
-    "ultracite": "8.0.1",
+    "ultracite": "8.1.1",
     "varlock": "catalog:"
   },
   "engines": {
