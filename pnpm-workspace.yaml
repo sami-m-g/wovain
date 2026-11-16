@@ -29,105 +29,105 @@ catalog:
   sharp: ^0.35.5
   "@base-ui/react": ^1.9.0
   fast-check: ^4.10.2
-  vitest: ^5.0.5
+  vitest: ^5.1.0
   tsx: ^4.23.15
   typescript: npm:@typescript/typescript6@^6.0.2
   "@typescript/native": npm:typescript@^7.0.2
-  "@types/node": ^26.6.5
+  "@types/node": ^26.6.6
   varlock: 1.23.0
   git-cliff: ^2.14.2
   lucide-react: ^1.61.0
-  driver.js: ^1.10.2
+  driver.js: ^1.11.0
   next-themes: ^0.4.6
   motion: ^14.6.0
   react: ^19.3.1
   react-dom: ^19.3.1
   sonner: ^2.0.8
-  "@orpc/server": ^1.16.1
-  "@orpc/client": ^1.16.1
-  "@orpc/openapi": ^1.16.1
-  "@orpc/zod": ^1.16.1
-  "@orpc/tanstack-query": ^1.16.1
-  better-auth: 1.7.12
-  jose: ^6.2.13
-  "@better-auth-ui/core": ^1.7.31
-  "@better-auth-ui/react": ^1.7.31
-  "@better-auth-ui/locales": ^1.7.31
-  bowser: ^2.14.1
+  "@orpc/server": ^1.16.2
+  "@orpc/client": ^1.16.2
+  "@orpc/openapi": ^1.16.2
+  "@orpc/zod": ^1.16.2
+  "@orpc/tanstack-query": ^1.16.2
+  better-auth: 1.7.18
+  jose: ^6.2.16
+  "@better-auth-ui/core": ^1.7.33
+  "@better-auth-ui/react": ^1.7.33
+  "@better-auth-ui/locales": ^1.7.33
+  bowser: ^2.15.0
   class-variance-authority: ^0.7.1
-  cn: ^0.5.0
+  cn: ^0.5.2
   date-fns: ^4.4.0
   react-day-picker: ^10.0.2
-  "@tailwindcss/postcss": ^4.3.3
+  "@tailwindcss/postcss": ^4.3.5
   "@types/react": ^19.3.0
   "@types/react-dom": ^19.3.0
   tailwindcss: ^4.3.3
   drizzle-orm: 1.0.0-rc.5
   embla-carousel-react: ^8.6.0
-  evlog: ^2.33.1
+  evlog: ^2.35.1
   lru-cache: ^11.5.3
-  next: ^16.4.3
+  next: ^16.4.5
   next-intl: ^4.14.9
   "@varlock/nextjs-integration": 1.2.5
   drizzle-kit: 1.0.0-rc.5
-  "@better-auth/core": 1.7.12
-  "@better-auth/drizzle-adapter": 1.7.12
-  "@better-auth/oauth-provider": 1.7.12
-  "@better-auth/mcp": 1.7.12
-  "@better-auth/cimd": 1.7.12
-  "@modelcontextprotocol/client": 2.3.1
-  "@modelcontextprotocol/server": 2.3.1
-  "@modelcontextprotocol/ext-apps": 2.0.3
+  "@better-auth/core": 1.7.18
+  "@better-auth/drizzle-adapter": 1.7.18
+  "@better-auth/oauth-provider": 1.7.18
+  "@better-auth/mcp": 1.7.18
+  "@better-auth/cimd": 1.7.18
+  "@modelcontextprotocol/client": 2.4.0
+  "@modelcontextprotocol/server": 2.4.0
+  "@modelcontextprotocol/ext-apps": 2.0.4
   esbuild: 0.28.2
-  resend: 6.34.1
+  resend: 6.37.0
   "@react-email/components": 1.0.12
-  "@react-email/render": 2.1.1
-  postcss: 8.5.31
+  "@react-email/render": 2.2.0
+  postcss: 8.5.32
   "@tavily/core": 0.7.14
   "@fal-ai/client": 1.10.1
-  "@posthog/ai": ^8.16.3
-  posthog-js: ^1.438.21
-  posthog-node: ^5.57.2
+  "@posthog/ai": ^8.18.5
+  posthog-js: ^1.447.3
+  posthog-node: ^5.63.1
   negotiator: ^1.1.0
   "@types/negotiator": ^0.6.5
-  "@formatjs/intl-localematcher": ^0.9.0
-  "@fission-ai/openspec": ^1.15.0
+  "@formatjs/intl-localematcher": ^0.10.1
+  "@fission-ai/openspec": ^1.16.1
   "@polar-sh/sdk": 1.0.2
-  "@polar-sh/better-auth": 2.1.0
+  "@polar-sh/better-auth": 2.1.3
   "@google-cloud/secret-manager": 7.2.0
   "@tanstack/react-table": ^9.3.1
   recharts: 3.10.1
-  "@mastra/core": 1.79.0
-  "@mastra/inngest": 1.10.7
-  "@mastra/pg": 1.32.0
-  "@mastra/evals": 1.10.8
-  "@mastra/memory": 1.39.0
-  "@mastra/observability": 1.21.0
-  "@mastra/otel-exporter": 1.4.9
-  mastra: 1.35.0
+  "@mastra/core": 1.82.0
+  "@mastra/inngest": 1.11.1
+  "@mastra/pg": 1.35.0
+  "@mastra/evals": 1.10.11
+  "@mastra/memory": 1.41.0
+  "@mastra/observability": 1.23.1
+  "@mastra/otel-exporter": 1.5.1
+  mastra: 1.38.0
   p-limit: ^7.3.3
   p-retry: ^8.0.1
   "@google-cloud/opentelemetry-cloud-trace-exporter": 3.1.0
   "@opentelemetry/api": 1.10.0
-  "@opentelemetry/sdk-node": 0.300.0
+  "@opentelemetry/sdk-node": 0.301.0
   # The 0.221 line @mastra/otel-exporter's own SDK uses (its optional peer).
   "@opentelemetry/exporter-trace-otlp-http": 0.221.0
-  "@opentelemetry/instrumentation-runtime-node": 0.37.0
-  "@opentelemetry/instrumentation-undici": 0.34.0
+  "@opentelemetry/instrumentation-runtime-node": 0.38.0
+  "@opentelemetry/instrumentation-undici": 0.35.0
   "@ai-sdk/openai-compatible": ^2.0.87
   inngest: ^4.26.0
   expo-server-sdk: ^8.0.0
   grammy: ^1.46.0
-  "@electric-sql/pglite": ^0.5.11
-  storybook: ^10.6.5
-  "@storybook/react": ^10.6.5
-  "@storybook/nextjs-vite": ^10.6.5
-  "@storybook/addon-a11y": ^10.6.5
-  "@storybook/addon-vitest": ^10.6.5
-  "@vitest/browser-playwright": ^5.0.5
+  "@electric-sql/pglite": ^0.5.15
+  storybook: ^10.6.6
+  "@storybook/react": ^10.6.6
+  "@storybook/nextjs-vite": ^10.6.6
+  "@storybook/addon-a11y": ^10.6.6
+  "@storybook/addon-vitest": ^10.6.6
+  "@vitest/browser-playwright": ^5.1.0
   playwright: ^1.64.1
-  vite: ^8.3.5
-  msw: ^3.0.3
+  vite: ^8.3.6
+  msw: ^3.0.4
   msw-storybook-addon: ^3.0.3
 minimumReleaseAgeExclude:
   - posthog-node@5.57.2
