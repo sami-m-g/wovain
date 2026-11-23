@@ -60,7 +60,7 @@ jobs:
       # review has needed so far:
       # packages whose manifest has no license, and data or binaries under
       # other terms.
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
@@ -70,7 +70,7 @@ jobs:
             pkg:npm/%40better-auth-ui/core, pkg:npm/%40better-auth-ui/locales, pkg:npm/%40better-auth-ui/react, pkg:npm/%40mastra/inngest, pkg:npm/%40polar-sh/better-auth, pkg:npm/%40img/sharp-libvips-darwin-arm64, pkg:npm/%40img/sharp-libvips-darwin-x64, pkg:npm/%40img/sharp-libvips-linux-arm, pkg:npm/%40img/sharp-libvips-linux-arm64, pkg:npm/%40img/sharp-libvips-linux-ppc64, pkg:npm/%40img/sharp-libvips-linux-riscv64, pkg:npm/%40img/sharp-libvips-linux-s390x, pkg:npm/%40img/sharp-libvips-linux-x64, pkg:npm/%40img/sharp-libvips-linuxmusl-arm64, pkg:npm/%40img/sharp-libvips-linuxmusl-x64, pkg:npm/caniuse-lite, pkg:npm/geoip-country, pkg:npm/postal-mime
       # MPL-2.0 is allowed above; this second pass only reports it as a
       # warning, because it is file-level copyleft worth a look.
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           deny-licenses: MPL-2.0
           warn-only: true
@@ -91,7 +91,7 @@ jobs:
       # matching is off here: the osv workflow and dependency-review own it.
       # MPL-2.0 is allowed; the license summary in the log counts it, and the
       # second dependency-review pass warns when a pull request adds one.
-      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+      - uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
         with:
           scan-args: |-
             --config=osv-scanner.toml
